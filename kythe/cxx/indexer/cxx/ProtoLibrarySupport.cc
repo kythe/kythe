@@ -125,11 +125,19 @@ class ParseTextProtoHandler {
 };
 
 const clang::CXXMethodDecl* FindAccessorDeclWithName(
-    const clang::CXXRecordDecl& MsgDecl, const std::string& Name) {
+    const clang::CXXRecordDecl& MsgDecl, llvm::StringRef Name) {
   for (const clang::CXXMethodDecl* Method : MsgDecl.methods()) {
     // Accessors are user-provided, skip any compiler-generated operator/ctor.
-    if (Method->isUserProvided() && Method->getName() == Name.c_str()) {
-      return Method;
+    if (Method->isUserProvided()) {
+      const auto MethodName = Method->getName();
+      // Field accessors will either be the same as the field name or, if they
+      // conflict with a language keyword, the field name with a trailing
+      // underscore.
+      if (MethodName == Name ||
+          (MethodName.size() == Name.size() + 1 &&
+           MethodName.startswith(Name) && MethodName.endswith("_"))) {
+        return Method;
+      }
     }
   }
   return nullptr;
@@ -393,8 +401,12 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
 
   const auto Callback = [&V](const clang::CXXMethodDecl& AccessorDecl,
                              const clang::SourceRange& Range) {
-    V.RecordCallEdges(V.ExplicitRangeInCurrentContext(Range).primary(),
-                      V.BuildNodeIdForDecl(&AccessorDecl));
+    if (const auto RCC = V.ExplicitRangeInCurrentContext(Range)) {
+      const auto NodeId = V.BuildNodeIdForDecl(&AccessorDecl);
+      V.RecordCallEdges(RCC.primary(), NodeId);
+      V.getGraphObserver().recordDeclUseLocation(
+          RCC.primary(), NodeId, GraphObserver::Claimability::Unclaimable);
+    }
   };
   ParseTextProtoHandler::Parse(
       Callback, Literal, *Expr->getType()->getAsCXXRecordDecl(),
