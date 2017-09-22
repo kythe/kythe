@@ -25,6 +25,7 @@ import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
 import com.google.devtools.kythe.analyzers.base.NodeKind;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
+import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
@@ -51,6 +52,8 @@ import javax.tools.JavaFileObject;
 
 /** Specialization of {@link KytheEntrySets} for Java. */
 public class JavaEntrySets extends KytheEntrySets {
+  private static final FormattingLogger logger = FormattingLogger.getLogger(JavaEntrySets.class);
+
   private final Map<Symbol, VName> symbolNodes = new HashMap<>();
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
   private final boolean ignoreVNamePaths;
@@ -128,8 +131,14 @@ public class JavaEntrySets extends KytheEntrySets {
     }
 
     if (v == null) {
-      node = getNameAndEmit(signature);
-      // NAME node was already emitted
+      getStatisticsCollector().incrementCounter("unextracted-input-file");
+      String msg =
+          String.format(
+              "Couldn't generate vname for symbol %s.  Input file for enclosing class %s not seen during extraction.",
+              sym, enclClass);
+      logger.warning(msg);
+      Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(msg);
+      return emitDiagnostic(d.build()).getVName();
     } else {
       if (ignoreVNamePaths) {
         v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();

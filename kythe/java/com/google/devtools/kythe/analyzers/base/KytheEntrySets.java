@@ -50,8 +50,6 @@ public class KytheEntrySets {
 
   public static final String NODE_PREFIX = "/kythe/";
 
-  private final Map<String, EntrySet> nameNodes = new HashMap<>();
-
   private final StatisticsCollector statistics;
   private final FactEmitter emitter;
   private final String language;
@@ -174,14 +172,15 @@ public class KytheEntrySets {
     return emitAndReturn(anchor);
   }
 
-  /** Returns and emits a NAME node. NAME nodes are cached so that they are only emitted once. */
-  public EntrySet getNameAndEmit(String name) {
-    EntrySet node =
-        nameNodes.computeIfAbsent(name, k -> emitAndReturn(newNode(NodeKind.NAME).setSignature(k)));
-    return node;
+  /** Emits and returns a DIAGNOSTIC node attached to no file. */
+  public EntrySet emitDiagnostic(Diagnostic d) {
+    return emitDiagnostic(null, d);
   }
 
-  /** Emits and returns a DIAGNOSTIC node attached for the given file. */
+  /**
+   * Emits and returns a DIAGNOSTIC node attached to the given file (which may be null if file
+   * context unknown).
+   */
   public EntrySet emitDiagnostic(VName fileVName, Diagnostic d) {
     NodeBuilder builder =
         newNode(NodeKind.DIAGNOSTIC)
@@ -196,13 +195,17 @@ public class KytheEntrySets {
       builder.setProperty("/kythe/context/url", d.getContextUrl());
     }
     EntrySet dn = emitAndReturn(builder);
-    if (d.hasSpan()) {
-      Span s =
-          new Span(d.getSpan().getStart().getByteOffset(), d.getSpan().getEnd().getByteOffset());
-      EntrySet anchor = newAnchorAndEmit(fileVName, s, null);
-      emitEdge(anchor, EdgeKind.TAGGED, dn);
+    if (fileVName == null) {
+      return dn;
     } else {
-      emitEdge(fileVName, EdgeKind.TAGGED, dn.getVName());
+      if (d.hasSpan()) {
+        Span s =
+            new Span(d.getSpan().getStart().getByteOffset(), d.getSpan().getEnd().getByteOffset());
+        EntrySet anchor = newAnchorAndEmit(fileVName, s, null);
+        emitEdge(anchor, EdgeKind.TAGGED, dn);
+      } else {
+        emitEdge(fileVName, EdgeKind.TAGGED, dn.getVName());
+      }
     }
     return dn;
   }
