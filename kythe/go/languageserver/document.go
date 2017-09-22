@@ -93,6 +93,12 @@ func (doc *document) rangeInNewSource(r lsp.Range) *lsp.Range {
 // generateNewRefs generates refs by diffing the current file contents against
 // the old contents
 func (doc *document) generateNewRefs() {
+	defer func() { doc.staleRefs = false }()
+
+	// Short circuit if there are no references
+	if len(doc.refs) == 0 {
+		return
+	}
 	// Invalidate all previously calculated ranges
 	for _, r := range doc.refs {
 		r.newRange = nil
@@ -245,8 +251,6 @@ diffLoop:
 			}
 		}
 	}
-
-	doc.staleRefs = false
 }
 
 // RefResolution represents the mapping from a location in a document to a

@@ -156,3 +156,10 @@ func TestDiffing(t *testing.T) {
 		}
 	}
 }
+
+func TestEmpty(t *testing.T) {
+	// Verify that generating new references correctly handles the case where
+	// there are none. This will panic (and thus fail) if it doesn't.
+	doc := newDocument(nil, "nothing", "\nothing", nil)
+	doc.generateNewRefs()
+}
