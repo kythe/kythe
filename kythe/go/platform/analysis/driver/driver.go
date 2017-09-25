@@ -36,6 +36,7 @@ type Compilation struct {
 	Unit       *apb.CompilationUnit // the compilation to analyze
 	Revision   string               // revision marker to attribute to the compilation
 	UnitDigest string               // unit digest identifying the compilation in a KCD
+	BuildID    string               // id of the build executing the compilation
 }
 
 // CompilationFunc handles a single CompilationUnit.
