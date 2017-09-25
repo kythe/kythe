@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "absl/memory/memory.h"
 #include "gmock/gmock.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/message_differencer.h"
@@ -136,10 +137,9 @@ TEST(ClaimPragmaTest, ClaimPragmaIsSupported) {
   });
 
   int call_count = 0;
-  std::unique_ptr<kythe::IndexWriterSink> sink(
-      new FakeIndexWriterSink(&call_count));
   EXPECT_TRUE(
-      extractor.Extract(supported_language::Language::kCpp, std::move(sink)));
+      extractor.Extract(supported_language::Language::kCpp,
+                        absl::make_unique<FakeIndexWriterSink>(&call_count)));
   EXPECT_EQ(call_count, 1);
 }
 

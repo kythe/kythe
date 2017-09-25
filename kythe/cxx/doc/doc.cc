@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include "absl/memory/memory.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -180,9 +181,8 @@ doc -common_signatures
     return kythe::DocumentNodesFromStdin();
   } else {
     kythe::JsonClient::InitNetwork();
-    kythe::XrefsJsonClient client(
-        std::unique_ptr<kythe::JsonClient>(new kythe::JsonClient()),
-        FLAGS_xrefs);
+    kythe::XrefsJsonClient client(absl::make_unique<kythe::JsonClient>(),
+                                  FLAGS_xrefs);
     auto ticket = kythe::URI::FromString(FLAGS_path);
     if (!ticket.first) {
       ticket = kythe::URI::FromString(

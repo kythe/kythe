@@ -111,6 +111,7 @@ cc_test(
         "//third_party:gmock_main",
         "//third_party:gtest",
         "//third_party/proto:protobuf",
+        "@com_google_absl//absl/memory",
     ],
 )
 

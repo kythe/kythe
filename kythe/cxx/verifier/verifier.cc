@@ -19,6 +19,7 @@
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
 
+#include "absl/memory/memory.h"
 #include "assertions.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/proto/common.pb.h"
@@ -646,7 +647,7 @@ void Verifier::SetGoalCommentPrefix(const std::string &it) {
 
 bool Verifier::SetGoalCommentRegex(const std::string &regex,
                                    std::string *error) {
-  auto re2 = std::unique_ptr<RE2>(new RE2(regex));
+  auto re2 = absl::make_unique<RE2>(regex);
   if (re2->error_code() != RE2::NoError) {
     if (error) {
       *error = re2->error();

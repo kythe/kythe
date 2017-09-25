@@ -27,6 +27,8 @@
 #include <string>
 #include <utility>
 
+#include "absl/memory/memory.h"
+
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -383,12 +385,13 @@ TEST(KytheIndexerUnitTest, BufferStackMergeFailures) {
 TEST(KytheIndexerUnitTest, TrivialHappyCase) {
   NullGraphObserver observer;
   LibrarySupports no_supports;
-  std::unique_ptr<clang::FrontendAction> Action(new IndexerFrontendAction(
-      &observer, nullptr, []() { return false; },
-      [](IndexerASTVisitor* visitor) {
-        return IndexerWorklist::CreateDefaultWorklist(visitor);
-      },
-      &no_supports));
+  std::unique_ptr<clang::FrontendAction> Action =
+      absl::make_unique<IndexerFrontendAction>(
+          &observer, nullptr, []() { return false; },
+          [](IndexerASTVisitor* visitor) {
+            return IndexerWorklist::CreateDefaultWorklist(visitor);
+          },
+          &no_supports);
   ASSERT_TRUE(
       RunToolOnCode(std::move(Action), "int main() {}", "valid_main.cc"));
 }
@@ -444,12 +447,13 @@ class PushPopLintingGraphObserver : public NullGraphObserver {
 TEST(KytheIndexerUnitTest, PushFilePopFileTracking) {
   PushPopLintingGraphObserver Observer;
   LibrarySupports no_supports;
-  std::unique_ptr<clang::FrontendAction> Action(new IndexerFrontendAction(
-      &Observer, nullptr, []() { return false; },
-      [](IndexerASTVisitor* visitor) {
-        return IndexerWorklist::CreateDefaultWorklist(visitor);
-      },
-      &no_supports));
+  std::unique_ptr<clang::FrontendAction> Action =
+      absl::make_unique<IndexerFrontendAction>(
+          &Observer, nullptr, []() { return false; },
+          [](IndexerASTVisitor* visitor) {
+            return IndexerWorklist::CreateDefaultWorklist(visitor);
+          },
+          &no_supports);
   ASSERT_TRUE(RunToolOnCode(std::move(Action), "int i;", "main.cc"));
   ASSERT_FALSE(Observer.hadUnderrun());
   ASSERT_EQ(0, Observer.getFileNameStackSize());

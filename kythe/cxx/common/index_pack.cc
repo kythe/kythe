@@ -20,6 +20,7 @@
 #include <uuid/uuid.h>
 #include <utility>
 
+#include "absl/memory/memory.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -44,8 +45,8 @@ std::unique_ptr<IndexPackPosixFilesystem> IndexPackPosixFilesystem::Open(
     *error_text = err.message();
     return nullptr;
   }
-  auto filesystem = std::unique_ptr<IndexPackPosixFilesystem>(
-      new IndexPackPosixFilesystem(abs_root.str(), open_mode));
+  auto filesystem = absl::make_unique<IndexPackPosixFilesystem>(
+      abs_root.str(), open_mode, Token{});
   llvm::SmallString<256> unit_path = abs_root;
   llvm::sys::path::append(unit_path,
                           llvm::StringRef(kCompilationUnitDirectoryName));

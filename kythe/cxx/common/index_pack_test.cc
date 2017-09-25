@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "absl/memory/memory.h"
 #include "index_pack.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -74,8 +75,7 @@ class InMemoryIndexPackFilesystem : public IndexPackFilesystem {
 };
 
 TEST(IndexPack, AddCompilationUnit) {
-  auto filesystem = std::unique_ptr<InMemoryIndexPackFilesystem>(
-      new InMemoryIndexPackFilesystem());
+  auto filesystem = absl::make_unique<InMemoryIndexPackFilesystem>();
   IndexPack pack(std::move(filesystem));
   kythe::proto::CompilationUnit unit;
   std::string error_text;
@@ -84,8 +84,7 @@ TEST(IndexPack, AddCompilationUnit) {
 }
 
 TEST(IndexPack, AddFileData) {
-  auto filesystem = std::unique_ptr<InMemoryIndexPackFilesystem>(
-      new InMemoryIndexPackFilesystem());
+  auto filesystem = absl::make_unique<InMemoryIndexPackFilesystem>();
   IndexPack pack(std::move(filesystem));
   kythe::proto::FileData file_data;
   file_data.set_content("test");
@@ -95,8 +94,7 @@ TEST(IndexPack, AddFileData) {
 }
 
 TEST(IndexPack, ScanData) {
-  auto filesystem = std::unique_ptr<InMemoryIndexPackFilesystem>(
-      new InMemoryIndexPackFilesystem());
+  auto filesystem = absl::make_unique<InMemoryIndexPackFilesystem>();
   IndexPack pack(std::move(filesystem));
   std::string error_text;
   kythe::proto::FileData file_data;
@@ -160,8 +158,7 @@ TEST(IndexPack, ScanData) {
 }
 
 TEST(IndexPack, ReadFileData) {
-  auto filesystem = std::unique_ptr<InMemoryIndexPackFilesystem>(
-      new InMemoryIndexPackFilesystem());
+  auto filesystem = absl::make_unique<InMemoryIndexPackFilesystem>();
   filesystem->files_[IndexPackFilesystem::DataKind::kFileData]["fakehash"] =
       "test";
   IndexPack pack(std::move(filesystem));
@@ -175,8 +172,7 @@ TEST(IndexPack, ReadFileData) {
 }
 
 TEST(IndexPack, ReadCompilationUnit) {
-  auto filesystem = std::unique_ptr<InMemoryIndexPackFilesystem>(
-      new InMemoryIndexPackFilesystem());
+  auto filesystem = absl::make_unique<InMemoryIndexPackFilesystem>();
   filesystem
       ->files_[IndexPackFilesystem::DataKind::kCompilationUnit]["fakehash"] =
       "{\"format\":\"kythe\",\"content\":{\"output_key\":\"test\"}}";
@@ -191,8 +187,7 @@ TEST(IndexPack, ReadCompilationUnit) {
 }
 
 TEST(IndexPack, ReadCompilationUnitBadVersion) {
-  auto filesystem = std::unique_ptr<InMemoryIndexPackFilesystem>(
-      new InMemoryIndexPackFilesystem());
+  auto filesystem = absl::make_unique<InMemoryIndexPackFilesystem>();
   filesystem
       ->files_[IndexPackFilesystem::DataKind::kCompilationUnit]["fakehash"] =
       "{\"format\":\"wrong\",\"content\":{\"output_key\":\"test\"}}";

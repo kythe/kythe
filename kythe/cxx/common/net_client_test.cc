@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "absl/memory/memory.h"
 #include "kythe/cxx/common/net_client.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -25,8 +26,8 @@ DEFINE_string(xrefs, "http://localhost:8080", "Base URI for xrefs service");
 
 namespace {
 void TestNodeRequest() {
-  kythe::XrefsJsonClient client(
-      std::unique_ptr<kythe::JsonClient>(new kythe::JsonClient()), FLAGS_xrefs);
+  kythe::XrefsJsonClient client(absl::make_unique<kythe::JsonClient>(),
+                                FLAGS_xrefs);
   kythe::proto::NodesRequest request;
   kythe::proto::NodesReply response;
   // TODO(zarko): Use kythe::URI once it's merged in.

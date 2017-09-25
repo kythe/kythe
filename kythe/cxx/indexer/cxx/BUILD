@@ -34,8 +34,8 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        ":indexer_library_support",
         ":indexer_ast_hooks",
+        ":indexer_library_support",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
@@ -76,15 +76,16 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        ":marked_source",
         ":graph_observer",
         ":indexer_library_support",
-        "//kythe/cxx/common/indexing:lib",
+        ":marked_source",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",
+        "//kythe/cxx/common/indexing:lib",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -100,9 +101,9 @@ cc_library(
     ],
     deps = [
         ":graph_observer",
-        "//kythe/cxx/common/indexing:lib",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",
+        "//kythe/cxx/common/indexing:lib",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
@@ -148,9 +149,9 @@ cc_library(
     deps = [
         ":graph_observer",
         ":indexer_ast_hooks",
-        "//kythe/cxx/common/indexing:lib",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",
+        "//kythe/cxx/common/indexing:lib",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
@@ -225,11 +226,11 @@ cc_library(
         ":marked_source",
         ":proto_library_support",
         "//external:libmemcached",
-        "//kythe/cxx/common/indexing:lib",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",
+        "//kythe/cxx/common/indexing:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:common_proto_cc",
         "//kythe/proto:cxx_proto_cc",
@@ -238,6 +239,7 @@ cc_library(
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -286,6 +288,7 @@ cc_library(
         "//third_party:gtest",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
+        "@com_google_absl//absl/memory",
     ],
 )
 

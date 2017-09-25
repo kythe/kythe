@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/memory/memory.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
 #include "kythe/cxx/common/indexing/KytheClaimClient.h"
@@ -139,9 +140,10 @@ std::string IndexCompilationUnit(
           return VFS->get_vname(path, out);
         });
   }
-  std::unique_ptr<IndexerFrontendAction> Action(new IndexerFrontendAction(
-      &Observer, HSIValid ? &HSI : nullptr, Options.ShouldStopIndexing,
-      std::move(CreateWorklist), LibrarySupports));
+  std::unique_ptr<IndexerFrontendAction> Action =
+      absl::make_unique<IndexerFrontendAction>(
+          &Observer, HSIValid ? &HSI : nullptr, Options.ShouldStopIndexing,
+          std::move(CreateWorklist), LibrarySupports);
   Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
   Action->setTemplateMode(Options.TemplateBehavior);
   Action->setVerbosity(Options.Verbosity);
@@ -154,8 +156,9 @@ std::string IndexCompilationUnit(
     Args.insert(Args.begin() + 1, FixupArgument);
   }
   // StdinAdjustSingleFrontendActionFactory takes ownership of its action.
-  std::unique_ptr<StdinAdjustSingleFrontendActionFactory> Tool(
-      new StdinAdjustSingleFrontendActionFactory(std::move(Action)));
+  std::unique_ptr<StdinAdjustSingleFrontendActionFactory> Tool =
+      absl::make_unique<StdinAdjustSingleFrontendActionFactory>(
+          std::move(Action));
   // ToolInvocation doesn't take ownership of ToolActions.
   clang::tooling::ToolInvocation Invocation(
       Args, Tool.get(), FileManager.get(),

@@ -154,7 +154,7 @@ bool FileVNameGenerator::LoadJsonString(const std::string &data,
     }
     VNameRule next_rule;
     // RE2s don't act like values. Just box them.
-    next_rule.pattern = std::shared_ptr<RE2>(new RE2(regex->value.GetString()));
+    next_rule.pattern = std::make_shared<RE2>(regex->value.GetString());
     if (next_rule.pattern->error_code() != RE2::NoError) {
       *error_text = next_rule.pattern->error();
       return false;

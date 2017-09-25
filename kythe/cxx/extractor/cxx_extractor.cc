@@ -33,6 +33,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
 
+#include "absl/memory/memory.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/CommandLineUtils.h"
@@ -812,7 +813,7 @@ void IndexPackWriterSink::OpenIndex(const std::string& path,
       path, IndexPackFilesystem::OpenMode::kReadWrite, &error_text);
   CHECK(filesystem) << "Couldn't open index pack in " << path << ": "
                     << error_text;
-  pack_.reset(new IndexPack(std::move(filesystem)));
+  pack_ = absl::make_unique<IndexPack>(std::move(filesystem));
 }
 
 void IndexPackWriterSink::WriteHeader(
@@ -842,20 +843,20 @@ void KindexWriterSink::OpenIndex(const std::string& directory,
   fd_ = ::open(file_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
   CHECK_GE(fd_, 0) << "Couldn't open output file " << file_path;
   open_path_ = file_path;
-  file_stream_.reset(new FileOutputStream(fd_));
+  file_stream_ = absl::make_unique<FileOutputStream>(fd_);
   GzipOutputStream::Options options;
   // Accept the default compression level and compression strategy.
   options.format = GzipOutputStream::GZIP;
-  gzip_stream_.reset(new GzipOutputStream(file_stream_.get(), options));
-  coded_stream_.reset(new CodedOutputStream(gzip_stream_.get()));
+  gzip_stream_ = absl::make_unique<GzipOutputStream>(file_stream_.get(), options);
+  coded_stream_ = absl::make_unique<CodedOutputStream>(gzip_stream_.get());
 }
 
 KindexWriterSink::~KindexWriterSink() {
   CHECK(!coded_stream_->HadError())
       << "Errors encountered writing to " << open_path_;
-  coded_stream_.reset(nullptr);
-  gzip_stream_.reset(nullptr);
-  file_stream_.reset(nullptr);
+  coded_stream_.reset();
+  gzip_stream_.reset();
+  file_stream_.reset();
   close(fd_);
 }
 
@@ -1062,8 +1063,7 @@ void IndexWriter::WriteIndex(
 
 std::unique_ptr<clang::FrontendAction> NewExtractor(
     IndexWriter* index_writer, ExtractorCallback callback) {
-  return std::unique_ptr<clang::FrontendAction>(
-      new ExtractorAction(index_writer, std::move(callback)));
+  return absl::make_unique<ExtractorAction>(index_writer, std::move(callback));
 }
 
 void MapCompilerResources(clang::tooling::ToolInvocation* invocation,
@@ -1219,9 +1219,9 @@ bool ExtractorConfiguration::Extract(supported_language::Language lang,
 bool ExtractorConfiguration::Extract(supported_language::Language lang) {
   std::unique_ptr<IndexWriterSink> sink;
   if (using_index_packs_) {
-    sink.reset(new IndexPackWriterSink());
+    sink = absl::make_unique<IndexPackWriterSink>();
   } else {
-    sink.reset(new KindexWriterSink(kindex_path_));
+    sink = absl::make_unique<KindexWriterSink>(kindex_path_);
   }
   return Extract(lang, std::move(sink));
 }

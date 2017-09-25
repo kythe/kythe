@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <string>
 
+#include "absl/memory/memory.h"
 #include "gflags/gflags.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -289,8 +290,7 @@ void IndexerContext::LoadDataFromUnpackedFile(
 
 void IndexerContext::InitializeClaimClient() {
   if (!FLAGS_experimental_dynamic_claim_cache.empty()) {
-    auto dynamic_claims = std::unique_ptr<kythe::DynamicClaimClient>(
-        new kythe::DynamicClaimClient());
+    auto dynamic_claims = absl::make_unique<kythe::DynamicClaimClient>();
     dynamic_claims->set_max_redundant_claims(
         FLAGS_experimental_dynamic_overclaim);
     if (!dynamic_claims->OpenMemcache(FLAGS_experimental_dynamic_claim_cache)) {
@@ -299,8 +299,7 @@ void IndexerContext::InitializeClaimClient() {
     }
     claim_client_ = std::move(dynamic_claims);
   } else {
-    auto static_claims = std::unique_ptr<kythe::StaticClaimClient>(
-        new kythe::StaticClaimClient());
+    auto static_claims = absl::make_unique<kythe::StaticClaimClient>();
     if (!FLAGS_static_claim.empty()) {
       DecodeStaticClaimTable(FLAGS_static_claim, static_claims.get());
     }
@@ -329,8 +328,8 @@ void IndexerContext::OpenOutputStreams() {
       ::exit(1);
     }
   }
-  raw_output_.reset(new google::protobuf::io::FileOutputStream(write_fd_));
-  kythe_output_.reset(new kythe::FileOutputStream(raw_output_.get()));
+  raw_output_ = absl::make_unique<google::protobuf::io::FileOutputStream>(write_fd_);
+  kythe_output_ = absl::make_unique<kythe::FileOutputStream>(raw_output_.get());
   kythe_output_->set_show_stats(FLAGS_cache_stats);
   kythe_output_->set_flush_after_each_entry(FLAGS_flush_after_each_entry);
 }

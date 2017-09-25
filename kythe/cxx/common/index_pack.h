@@ -117,6 +117,9 @@ class IndexPackFilesystem {
 
 /// \brief A read/write `IndexPackFilesystem` that uses atomic renames.
 class IndexPackPosixFilesystem : public IndexPackFilesystem {
+  /// \brief Private empty type for delegating construction.
+  struct Token {};
+
  public:
   /// \brief Mounts a subdirectory as an index pack.
   /// \param root_path The root path to use.
@@ -145,14 +148,15 @@ class IndexPackPosixFilesystem : public IndexPackFilesystem {
   bool ScanFiles(DataKind data_kind, ScanCallback callback,
                  std::string *error_text) override;
 
- private:
   /// \brief Build an IndexPackPosixFilesystem without verifying that it's OK.
   /// \param root_directory The mount point as an absolute path.
   /// \param open_mode Mount as read-only or read/write?
+  //  \param token Private token type for delegating construction.
   IndexPackPosixFilesystem(std::string root_directory,
-                           IndexPackFilesystem::OpenMode open_mode)
+                           IndexPackFilesystem::OpenMode open_mode, Token token)
       : root_directory_(std::move(root_directory)), open_mode_(open_mode) {}
 
+ private:
   /// \brief Returns the absolute path to the directory for storing data.
   const std::string &directory_for(DataKind data_kind) const {
     return data_kind == DataKind::kFileData ? data_directory_ : unit_directory_;

@@ -19,6 +19,7 @@
 
 #include "kythe/proto/storage.pb.h"
 
+#include "absl/memory/memory.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "rapidjson/document.h"
@@ -46,7 +47,7 @@ class MetadataFile {
   template <typename InputIterator>
   static std::unique_ptr<MetadataFile> LoadFromRules(InputIterator begin,
                                                      InputIterator end) {
-    std::unique_ptr<MetadataFile> meta_file(new MetadataFile());
+    std::unique_ptr<MetadataFile> meta_file = absl::make_unique<MetadataFile>();
     for (auto rule = begin; rule != end; ++rule) {
       meta_file->rules_.emplace(rule->begin, *rule);
     }

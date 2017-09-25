@@ -18,6 +18,7 @@
 
 #include <map>
 
+#include "absl/memory/memory.h"
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
@@ -207,8 +208,7 @@ class CxxExtractorTest : public testing::Test {
             const std::unordered_map<std::string, SourceFile> &source_files,
             const HeaderSearchInfo *header_search_info, bool had_errors) {
           index_writer.WriteIndex(supported_language::Language::kCpp,
-                                  std::unique_ptr<kythe::IndexWriterSink>(
-                                      new ForwardingIndexWriterSink(sink)),
+                                  absl::make_unique<ForwardingIndexWriterSink>(sink),
                                   main_source_file, transcript, source_files,
                                   header_search_info, had_errors, ".");
         });

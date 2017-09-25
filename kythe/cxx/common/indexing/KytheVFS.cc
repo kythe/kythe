@@ -18,6 +18,7 @@
 
 #include "kythe/cxx/common/proto_conversions.h"
 
+#include "absl/memory/memory.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -79,7 +80,7 @@ llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> IndexVFS::openFileForRead(
   if (FileRecord *record =
           FileRecordForPath(path.str(), BehaviorOnMissing::kReturnError, 0)) {
     if (record->status.getType() == llvm::sys::fs::file_type::regular_file) {
-      return std::unique_ptr<clang::vfs::File>(new File(record));
+      return absl::make_unique<File>(record);
     }
   }
   return make_error_code(llvm::errc::no_such_file_or_directory);

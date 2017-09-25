@@ -24,6 +24,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "absl/memory/memory.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -83,7 +84,7 @@ class IndexedParentASTVisitor
   /// The caller takes ownership of the returned `IndexedParentMap`.
   static std::unique_ptr<IndexedParentMap> buildMap(
       clang::TranslationUnitDecl &TU) {
-    std::unique_ptr<IndexedParentMap> ParentMap(new IndexedParentMap);
+    std::unique_ptr<IndexedParentMap> ParentMap = absl::make_unique<IndexedParentMap>();
     IndexedParentASTVisitor Visitor(ParentMap.get());
     Visitor.TraverseDecl(&TU);
     return ParentMap;

@@ -44,6 +44,7 @@ cc_library(
         "//kythe/proto:analysis_proto_cc",
         "//third_party/proto:protobuf",
         "//third_party/zlib",
+        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -90,6 +91,7 @@ cc_library(
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/memory",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -220,6 +222,7 @@ cc_library(
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -276,6 +279,7 @@ cc_library(
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/memory",
     ],
 )
 

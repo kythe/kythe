@@ -30,6 +30,7 @@ cc_library(
         "//kythe/proto:storage_proto_cc",
         "//third_party/proto:protobuf",
         "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -59,5 +60,6 @@ cc_library(
     deps = [
         ":lib",
         "//kythe/proto:claim_proto_cc",
+        "@com_google_absl//absl/memory",
     ],
 )

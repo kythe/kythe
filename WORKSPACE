@@ -40,6 +40,12 @@ http_archive(
     url = "https://boringssl.googlesource.com/boringssl/+archive/9612e1d2ce16a1bd67fbbe6ce969839af4d84a29.tar.gz",
 )
 
+http_archive(
+    name = "com_google_absl",
+    strip_prefix = "abseil-cpp-master",
+    url = "https://github.com/abseil/abseil-cpp/archive/master.zip",
+)
+
 new_http_archive(
     name = "com_github_google_googletest",
     build_file = "third_party/googletest.BUILD",
