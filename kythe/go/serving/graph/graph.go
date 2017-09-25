@@ -428,6 +428,10 @@ func e2e(es []*srvpb.EdgeGroup_Edge) []*gpb.EdgeSet_Group_Edge {
 	return edges
 }
 
+// NewSplitTable returns a table based on the given serving tables for each API
+// component.
+func NewSplitTable(c *SplitTable) *Table { return &Table{c} }
+
 // NewCombinedTable returns a table for the given combined graph lookup table.
 // The table's keys are expected to be constructed using only the EdgeSetKey,
 // EdgePageKey, and DecorationsKey functions.
