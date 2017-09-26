@@ -620,27 +620,44 @@ class Vistor {
     }
   }
 
+  visitVariableStatement(stmt: ts.VariableStatement) {
+    // A VariableStatement contains potentially multiple variable declarations,
+    // as in:
+    //   var x = 3, y = 4;
+    // In the (common) case where there's a single variable declared, we look
+    // for documentation for that variable above the statement.
+    let vname: VName|undefined;
+    for (const decl of stmt.declarationList.declarations) {
+      vname = this.visitVariableDeclaration(decl);
+    }
+    if (stmt.declarationList.declarations.length === 1 && vname !== undefined) {
+      this.visitJSDoc(stmt, vname);
+    }
+  }
+
   /**
    * Note: visitVariableDeclaration is also used for class properties;
    * the decl parameter is the union of the attributes of the two types.
+   * @return the generated VName for the declaration, if any.
    */
   visitVariableDeclaration(decl: {
     name: ts.BindingName|ts.PropertyName,
     type?: ts.TypeNode,
     initializer?: ts.Expression,
-  }) {
+  }): VName|undefined {
+    let vname: VName|undefined;
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
         let sym = this.getSymbolAtLocation(decl.name);
         if (!sym) {
           this.todo(
               decl.name, `declaration ${decl.name.getText()} has no symbol`);
-          return;
+          return undefined;
         }
-        let kVar = this.getSymbolName(sym, TSNamespace.VALUE);
-        this.emitNode(kVar, 'variable');
+        vname = this.getSymbolName(sym, TSNamespace.VALUE);
+        this.emitNode(vname, 'variable');
 
-        this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kVar);
+        this.emitEdge(this.newAnchor(decl.name), 'defines/binding', vname);
         break;
       case ts.SyntaxKind.ObjectBindingPattern:
       case ts.SyntaxKind.ArrayBindingPattern:
@@ -655,6 +672,7 @@ class Vistor {
     }
     if (decl.type) this.visitType(decl.type);
     if (decl.initializer) this.visit(decl.initializer);
+    return vname;
   }
 
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
@@ -676,6 +694,8 @@ class Vistor {
         this.emitNode(kFunc, 'function');
 
         this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
+
+        this.visitJSDoc(decl, kFunc);
       }
     } else {
       // TODO: choose VName for anonymous functions.
@@ -756,6 +776,8 @@ class Vistor {
       const anchor = this.newAnchor(decl.name);
       this.emitEdge(anchor, 'defines/binding', kClass);
       this.emitEdge(anchor, 'defines/binding', kClassCtor);
+
+      this.visitJSDoc(decl, kClass);
     }
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     if (decl.heritageClauses) {
@@ -792,6 +814,38 @@ class Vistor {
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kMember);
   }
 
+  /**
+   * visitJSDoc attempts to attach a 'doc' node to a given target, by looking
+   * for JSDoc comments.
+   */
+  visitJSDoc(node: ts.Node, target: VName) {
+    const text = node.getFullText();
+    const comments = ts.getLeadingCommentRanges(text, 0);
+    if (!comments) return;
+
+    let jsdoc: string|undefined;
+    for (const commentRange of comments) {
+      if (commentRange.kind !== ts.SyntaxKind.MultiLineCommentTrivia) continue;
+      const comment =
+          text.substring(commentRange.pos + 2, commentRange.end - 2);
+      if (!comment.startsWith('*')) {
+        // Not a JSDoc comment.
+        continue;
+      }
+      // Strip the ' * ' bits that start lines within the comment.
+      jsdoc = comment.replace(/^ ?\* ?/mg, '');
+      break;
+    }
+    if (jsdoc === undefined) return;
+
+    // Strip leading and trailing whitespace.
+    jsdoc = jsdoc.replace(/^\s+/, '').replace(/\s+$/, '');
+    const doc = this.newVName(target.signature + '#doc', target.path);
+    this.emitNode(doc, 'doc');
+    this.emitEdge(doc, 'documents', target);
+    this.emitFact(doc, 'text', jsdoc);
+  }
+
   /** visit is the main dispatch for visiting AST nodes. */
   visit(node: ts.Node): void {
     switch (node.kind) {
@@ -801,11 +855,13 @@ class Vistor {
         return this.visitExportAssignment(node as ts.ExportAssignment);
       case ts.SyntaxKind.ExportDeclaration:
         return this.visitExportDeclaration(node as ts.ExportDeclaration);
-      case ts.SyntaxKind.VariableDeclaration:
-        return this.visitVariableDeclaration(node as ts.VariableDeclaration);
+      case ts.SyntaxKind.VariableStatement:
+        return this.visitVariableStatement(node as ts.VariableStatement);
       case ts.SyntaxKind.PropertyDeclaration:
       case ts.SyntaxKind.PropertySignature:
-        return this.visitVariableDeclaration(node as ts.PropertyDeclaration);
+        const vname = this.visitVariableDeclaration(node as ts.PropertyDeclaration);
+        if (vname) this.visitJSDoc(node, vname);
+        return;
       case ts.SyntaxKind.ArrowFunction:
       case ts.SyntaxKind.Constructor:
       case ts.SyntaxKind.FunctionDeclaration:
@@ -826,7 +882,8 @@ class Vistor {
       case ts.SyntaxKind.TypeReference:
         return this.visitType(node as ts.TypeNode);
       case ts.SyntaxKind.BindingElement:
-        return this.visitVariableDeclaration(node as ts.BindingElement);
+        this.visitVariableDeclaration(node as ts.BindingElement);
+        return;
       case ts.SyntaxKind.Identifier:
         // Assume that this identifer is occurring as part of an
         // expression; we handle identifiers that occur in other
