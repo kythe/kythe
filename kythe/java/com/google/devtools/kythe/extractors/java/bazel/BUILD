@@ -17,17 +17,17 @@ extra_action(
 
 java_binary(
     name = "java_extractor",
-    srcs = [
-        "JavaExtractor.java",
-    ],
+    srcs = ["JavaExtractor.java"],
+    data = ["//third_party/javac:javac_jar"],
+    jvm_flags = ["-Xbootclasspath/p:$${RUNPATH}$(location //third_party/javac:javac_jar)"],
     main_class = "com.google.devtools.kythe.extractors.java.bazel.JavaExtractor",
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//third_party/bazel:extra_actions_base_proto_java",
-        "//third_party/proto:protobuf_java",
         "//third_party/javac",
+        "//third_party/proto:protobuf_java",
         "@com_google_guava_guava//jar",
     ],
 )

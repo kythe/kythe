@@ -38,8 +38,9 @@ EOF
 ALL=1
 JAVA=
 CXX=
+GO=
 INDEX_PACK=
-BAZEL_ARGS=(--bazelrc=/dev/null build -k --spawn_strategy=standalone)
+BAZEL_ARGS=(--bazelrc=/dev/null build -k)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -100,8 +101,10 @@ if [[ -n "$GO" ]]; then
   BAZEL_ARGS+=(--experimental_action_listener=//kythe/go/extractors/cmd/bazel:extract_kindex_go)
 fi
 
+set -x
 bazel "${BAZEL_ARGS[@]}" //... || \
   echo "Bazel exited with error code $?; trying to continue..." >&2
+set +x
 
 xad="$(find -L bazel-out -type d -name extra_actions)"
 INDICES=($(find "$xad" -name '*.kindex'))
