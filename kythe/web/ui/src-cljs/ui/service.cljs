@@ -78,6 +78,7 @@
      {:params (merge {:definition_kind    "BINDING_DEFINITIONS"
                       :declaration_kind   "ALL_DECLARATIONS"
                       :reference_kind     "ALL_REFERENCES"
+                      :snippets           "DEFAULT"
                       :filter [schema/node-kind-fact]
                       :anchor_text true
                       :page_size 20}
