@@ -4134,10 +4134,10 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
       std::vector<GraphObserver::NodeId> NodeIds;
       std::vector<const GraphObserver::NodeId *> NodeIdPtrs;
-      auto ReturnType(BuildNodeIdForType(
+      auto ReturnType = BuildNodeIdForType(
           T.getReturnLoc(),
           DT ? DT->getReturnType().getTypePtr() : T.getReturnLoc().getTypePtr(),
-          EmitRanges));
+          EmitRanges);
       if (!ReturnType) {
         return ReturnType;
       }
@@ -4377,14 +4377,10 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       // one possible (depth, index).
       const auto *TypeParm = cast<TemplateTypeParmType>(TypeLoc.getTypePtr());
       const auto *TD = TypeParm->getDecl();
-      if (!IgnoreUnimplemented) {
-        // TODO(zarko): Remove sanity checks. If things go poorly here,
-        // dump with DumpTypeContext(T->getDepth(), T->getIndex());
-        CHECK_LT(TypeParm->getDepth(), Job->TypeContext.size())
-            << "Decl for type parameter missing from context.";
-        CHECK_LT(TypeParm->getIndex(),
-                 Job->TypeContext[TypeParm->getDepth()]->size())
-            << "Decl for type parameter missing at specified depth.";
+      if (!IgnoreUnimplemented &&
+          TypeParm->getDepth() < Job->TypeContext.size() &&
+          TypeParm->getIndex() <
+              Job->TypeContext[TypeParm->getDepth()]->size()) {
         const auto *ND = Job->TypeContext[TypeParm->getDepth()]->getParam(
             TypeParm->getIndex());
         TD = cast<TemplateTypeParmDecl>(ND);

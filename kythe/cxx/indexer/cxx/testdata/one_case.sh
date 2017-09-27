@@ -20,11 +20,12 @@
 # Output the commands that are run to help when debugging test failures.
 set -x
 
-VERIFIER="kythe/cxx/verifier/verifier"
-INDEXER="kythe/cxx/indexer/cxx/indexer"
-source kythe/cxx/indexer/cxx/testdata/parse_args.sh
+RUNFILES=${RUNFILES_DIR:-$0.runfiles}/io_kythe
+VERIFIER="${RUNFILES}/kythe/cxx/verifier/verifier"
+INDEXER="${RUNFILES}/kythe/cxx/indexer/cxx/indexer"
+source ${RUNFILES}/kythe/cxx/indexer/cxx/testdata/parse_args.sh
 "${INDEXER}" -i "${TEST_FILE}" "${INDEXER_ARGS[@]}" -- \
     "${CLANG_ARGS[@]}" | "${VERIFIER}" "${TEST_FILE}" \
     "${VERIFIER_ARGS[@]}"
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
-source kythe/cxx/indexer/cxx/testdata/handle_results.sh
+source ${RUNFILES}/kythe/cxx/indexer/cxx/testdata/handle_results.sh

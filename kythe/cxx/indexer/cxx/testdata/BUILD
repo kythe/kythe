@@ -710,6 +710,40 @@ cxx_indexer_test(
     tags = ["basic"],
 )
 
+cxx_indexer_test(
+    name = "binary_literals",
+    srcs = ["basic/binary_literals.cc"],
+    std = "c++14",
+    tags = [
+        "basic",
+        "c++14",
+    ],
+)
+
+cxx_indexer_test(
+    name = "generalized_constexpr",
+    srcs = ["basic/generalized_constexpr.cc"],
+    ignore_dups = True,
+    std = "c++14",
+    tags = [
+        "basic",
+        "c++14",
+    ],
+)
+
+cxx_indexer_test(
+    name = "constexpr_ref_call",
+    srcs = ["basic/constexpr_ref_call.cc"],
+    ignore_dups = True,
+    tags = [
+        "basic",
+        # TODO(shahms): ref/call edges are not currently emitted for constexpr functions
+        # in a constexpr context.
+        "manual",
+        "arc-ignore",
+    ],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
@@ -951,6 +985,29 @@ cxx_indexer_test(
     name = "function_vararg_ty",
     srcs = ["function/function_vararg_ty.cc"],
     tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_deduced_return",
+    srcs = ["function/function_deduced_return.cc"],
+    std = "c++14",
+    tags = [
+        "c++14",
+        "function",
+    ],
+)
+
+cxx_indexer_test(
+    name = "function_deduced_decltype_return",
+    srcs = ["function/function_deduced_decltype_return.cc"],
+    std = "c++14",
+    tags = [
+        "c++14",
+        "function",
+        # TODO(shahms): decltype(type) return types do not currently work.
+        "manual",
+        "arc-ignore",
+    ],
 )
 
 test_suite(
@@ -2092,6 +2149,14 @@ cxx_indexer_test(
     ignore_dups = True,
     std = "c++14",
     tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "generic_lambda",
+    srcs = ["template/generic_lambda.cc"],
+    ignore_dups = True,
+    std = "c++14",
+    tags = ["template, c++14"],
 )
 
 test_suite(
