@@ -27,8 +27,10 @@ import (
 	"path/filepath"
 
 	"kythe.io/kythe/go/services/filetree"
+	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
+	gsrv "kythe.io/kythe/go/serving/graph"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
@@ -73,6 +75,7 @@ func main() {
 
 	var (
 		xs xrefs.Service
+		gs graph.Service
 		ft filetree.Service
 	)
 
@@ -84,9 +87,14 @@ func main() {
 	defer db.Close()
 	tbl := &table.KVProto{db}
 	xs = xsrv.NewCombinedTable(tbl)
+	gs = gsrv.NewCombinedTable(tbl)
 	if *maxTicketsPerRequest > 0 {
 		xs = xrefs.BoundedRequests{
 			Service:    xs,
+			MaxTickets: *maxTicketsPerRequest,
+		}
+		gs = graph.BoundedRequests{
+			Service:    gs,
 			MaxTickets: *maxTicketsPerRequest,
 		}
 	}
@@ -102,6 +110,7 @@ func main() {
 		})
 
 		xrefs.RegisterHTTPHandlers(ctx, xs, apiMux)
+		graph.RegisterHTTPHandlers(ctx, gs, apiMux)
 		filetree.RegisterHTTPHandlers(ctx, ft, apiMux)
 		if *publicResources != "" {
 			log.Println("Serving public resources at", *publicResources)
