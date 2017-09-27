@@ -20,7 +20,7 @@
 # Output the commands that are run to help when debugging test failures.
 set -x
 
-RUNFILES=${RUNFILES_DIR:-$0.runfiles}/io_kythe
+RUNFILES=${RUNFILES_DIR:-$0.runfiles}/${TEST_WORKSPACE:-io_kythe}
 VERIFIER="${RUNFILES}/kythe/cxx/verifier/verifier"
 INDEXER="${RUNFILES}/kythe/cxx/indexer/cxx/indexer"
 source ${RUNFILES}/kythe/cxx/indexer/cxx/testdata/parse_args.sh
