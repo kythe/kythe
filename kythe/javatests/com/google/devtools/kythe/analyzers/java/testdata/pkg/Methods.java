@@ -75,7 +75,7 @@ public class Methods {
   public static void main(String[] args) {
     //- @#0toString ref ToString
     //- @#1toString ref ToString
-    "".toString().toString();
+    String s = "".toString().toString();
   }
 
   //- @IOException ref IOE
