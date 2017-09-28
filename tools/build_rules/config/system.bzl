@@ -66,7 +66,7 @@ cc_system_package_configure = repository_rule(
     local = True,
 )
 
-def cc_system_package(*, name, **kwargs):
+def cc_system_package(name, **kwargs):
   if 'modname' not in kwargs:
     kwargs['modname'] = name
   cc_system_package_configure(name="local_" + name, **kwargs)
