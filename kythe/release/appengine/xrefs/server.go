@@ -24,6 +24,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"kythe.io/kythe/go/services/filetree"
 	"kythe.io/kythe/go/services/xrefs"
@@ -44,28 +45,39 @@ var (
 func main() {
 	flag.Parse()
 
-	db, err := leveldb.Open(*servingTable, nil)
-	if err != nil {
-		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
-	}
-	defer db.Close()
-	tbl := &table.KVProto{db}
-
-	ctx := context.Background()
-	xrefs.RegisterHTTPHandlers(ctx, xsrv.NewCombinedTable(tbl), http.DefaultServeMux)
-	filetree.RegisterHTTPHandlers(ctx, &ftsrv.Table{tbl, true}, http.DefaultServeMux)
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join(*publicResources, filepath.Clean(r.URL.Path)))
-	})
-
 	http.HandleFunc("/_ah/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "ok")
 	})
 	http.HandleFunc("/_ah/start", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "sure, we'll start!")
 	})
+	http.HandleFunc("/liveness_check", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "ok")
+	})
 
 	log.Printf("Server listening on %q", *listeningAddr)
-	log.Fatal(http.ListenAndServe(*listeningAddr, nil))
+	go func() { log.Fatal(http.ListenAndServe(*listeningAddr, nil)) }()
+
+	start := time.Now()
+	db, err := leveldb.Open(*servingTable, nil)
+	if err != nil {
+		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
+	}
+	defer db.Close()
+	tbl := &table.KVProto{db}
+	log.Printf("Serving data opened in %s", time.Since(start))
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(*publicResources, filepath.Clean(r.URL.Path)))
+	})
+	ctx := context.Background()
+	xrefs.RegisterHTTPHandlers(ctx, xsrv.NewCombinedTable(tbl), http.DefaultServeMux)
+	filetree.RegisterHTTPHandlers(ctx, &ftsrv.Table{tbl, true}, http.DefaultServeMux)
+
+	http.HandleFunc("/readiness_check", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "ok")
+	})
+	log.Print("Server ready for traffic")
+
+	select {} // block forever
 }

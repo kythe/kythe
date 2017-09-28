@@ -14,11 +14,28 @@
 
 FROM debian:jessie
 
-EXPOSE 8080
+RUN apt-get update \
+ && apt-get -y upgrade \
+ && apt-get -y install libleveldb-dev git curl gcc python
 
-ADD server /usr/local/bin/
-ENTRYPOINT ["/usr/local/bin/server"]
-CMD ["--listen", ":8080"]
+ENV GOPATH=/tmp/gopath
+RUN curl -LO https://storage.googleapis.com/golang/go1.9.linux-amd64.tar.gz \
+ && tar -C /usr/local -xzf go1.9.linux-amd64.tar.gz \
+ && rm -f go1.9.linux-amd64.tar.gz \
+ && mkdir -p $GOPATH
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+RUN go get --insecure kythe.io/kythe/release/appengine/xrefs \
+ && mv $GOPATH/bin/xrefs /usr/local/bin/server \
+ && rm -rf $GOPATH
+
+RUN curl -LO https://storage.googleapis.com/pub/gsutil.tar.gz \
+ && tar -C /usr/local/ -xzf gsutil.tar.gz \
+ && rm -rf gsutil.tar.gz
+ENV PATH="/usr/local/gsutil:${PATH}"
+
+EXPOSE 8080
+ADD run_server.sh /usr/local/bin/
+ENTRYPOINT ["/usr/local/bin/run_server.sh"]
 
 ADD public /srv/public/
-ADD serving /srv/table
