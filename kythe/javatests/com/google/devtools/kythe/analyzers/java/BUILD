@@ -74,5 +74,12 @@ java_library(
 
 java_library(
     name = "java_analyzer_fake_library",
-    srcs = glob(["testdata/**/*.java"]),
+    srcs = glob(
+        ["testdata/**/*.java"],
+        exclude = [
+            # Exclude meta-data tests
+            "testdata/pkg/Metadata.java",
+            "testdata/pkg/ProtobufMetadata.java",
+        ],
+    ),
 )
