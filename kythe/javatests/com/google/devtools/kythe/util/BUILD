@@ -1,12 +1,28 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_test(
+    name = "source_builder_test",
+    size = "small",
+    srcs = ["SourceBuilderTest.java"],
+    test_class = "com.google.devtools.kythe.util.SourceBuilderTest",
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/util:kythe_uri",
+        "//kythe/java/com/google/devtools/kythe/util:source_builder",
+        "//kythe/proto:internal_proto_java",
+        "//kythe/proto:storage_proto_java",
+        "//third_party/proto:protobuf_java",
+        "@com_google_truth_truth//jar",
+        "@junit_junit//jar",
+    ],
+)
+
+java_test(
     name = "kythe_uri_test",
     size = "small",
     srcs = ["KytheURITest.java"],
     test_class = "com.google.devtools.kythe.util.KytheURITest",
     deps = [
-        "//kythe/java/com/google/devtools/kythe/util",
+        "//kythe/java/com/google/devtools/kythe/util:kythe_uri",
         "//kythe/proto:storage_proto_java",
         "//third_party/proto:protobuf_java",
         "@com_google_truth_truth//jar",

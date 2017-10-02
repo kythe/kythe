@@ -2,16 +2,43 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
     name = "util",
-    srcs = [
-        "DeleteRecursively.java",
-        "KytheURI.java",
-        "Span.java",
+    exports = [
+        ":delete_recursively",
+        ":kythe_uri",
+        ":span",
     ],
+)
+
+java_library(
+    name = "source_builder",
+    srcs = ["SourceBuilder.java"],
+    deps = [
+        ":kythe_uri",
+        "//kythe/proto:internal_proto_java",
+        "//kythe/proto:storage_proto_java",
+        "//third_party/proto:protobuf_java",
+        "@com_google_guava_guava//jar",
+    ],
+)
+
+java_library(
+    name = "kythe_uri",
+    srcs = ["KytheURI.java"],
     deps = [
         "//kythe/proto:storage_proto_java",
         "//third_party/proto:protobuf_java",
         "@com_google_guava_guava//jar",
     ],
+)
+
+java_library(
+    name = "span",
+    srcs = ["Span.java"],
+)
+
+java_library(
+    name = "delete_recursively",
+    srcs = ["DeleteRecursively.java"],
 )
 
 java_library(

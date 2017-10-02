@@ -138,6 +138,11 @@ public class KytheURI implements Serializable {
     return this == o || (o instanceof KytheURI && vName.equals(((KytheURI) o).vName));
   }
 
+  /** Returns an equivalent Kythe ticket for the given {@link VName}. */
+  public static String toString(VName vName) {
+    return new KytheURI(vName).toString();
+  }
+
   /** Parses the given string to produce a new {@link KytheURI}. */
   public static KytheURI parse(String str) {
     checkNotNull(str, "str must be non-null");
