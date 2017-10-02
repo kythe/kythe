@@ -88,6 +88,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
+import javax.lang.model.element.NestingKind;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 
@@ -315,6 +316,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // initializers. But there's no harm in emitting the same fact twice!
     if (container != null) {
       entrySets.emitEdge(classNode, EdgeKind.CHILDOF, container.getNode().getVName());
+    }
+
+    // Emit NAME nodes for the jvm binary name of classes (except for local and anonymous classes).
+    NestingKind nestingKind = classDef.sym.getNestingKind();
+    if (nestingKind != NestingKind.LOCAL && nestingKind != NestingKind.ANONYMOUS) {
+      VName nameNode = entrySets.getJvmNameAndEmit(classDef.sym.flatname.toString()).getVName();
+      entrySets.emitEdge(classNode, EdgeKind.NAMED, nameNode);
     }
 
     Span classIdent = filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
