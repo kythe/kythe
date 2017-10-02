@@ -755,6 +755,32 @@ template <typename T> struct S {
 };
 --------------------------------------------------------------------------------
 
+[[named]]
+named
+~~~~~
+
+Brief description::
+  A *named* B if B is an external identifier for A.
+Commonly arises from::
+  definitions and declarations
+Points from::
+  semantic nodes
+Points toward::
+  names
+Ordinals are used::
+  never
+See also::
+  <<name>>
+
+[kythe,Java,"Classes have JVM binary names."]
+--------------------------------------------------------------------------------
+package pkg;
+//- @C defines/binding CClass
+//- CClass named CClassName = vname("pkg.C", "", "", "", "jvm")
+//- CClassName.node/kind name
+public class C {}
+--------------------------------------------------------------------------------
+
 [[overrides]]
 overrides
 ~~~~~~~~~
@@ -1744,6 +1770,41 @@ Naming convention::
 [kythe,C++,"C++ defines a meta node for tapps."]
 --------------------------------------------------------------------------------
 //- vname("tapp#meta","","","","c++").node/kind meta
+--------------------------------------------------------------------------------
+
+[[name]]
+name
+~~~~
+
+Brief description::
+  A *name* specifies an external identifier for a node, typically used for linking.
+Naming convention::
+  Signature:::
+    The name string.
+  Language:::
+    The namespace to which the name belongs.
+  Path:::
+    *empty*
+  Root:::
+    *empty*
+  Corpus:::
+    *empty*
+Notes::
+  The namespace is some domain in which the names are expected to be unique at linkage
+  time and/or runtime, such as JVM binary names, or the Itanium C++ ABI.
+
+[kythe,Java,"JVM binary class names, as used for classloading, are names."]
+--------------------------------------------------------------------------------
+package pkg;
+//- @C defines/binding CClass
+//- CClass named CClassName = vname("pkg.C", "", "", "", "jvm")
+//- CClassName.node/kind name
+public class C {
+  //- @Inner defines/binding InnerClass
+  //- InnerClass named InnerClassName = vname("pkg.C$Inner", "", "", "", "jvm")
+  //- InnerClassName.node/kind name
+  public class Inner {}
+}
 --------------------------------------------------------------------------------
 
 [[package]]
