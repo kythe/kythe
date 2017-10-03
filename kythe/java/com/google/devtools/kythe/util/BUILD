@@ -13,6 +13,16 @@ java_library(
 )
 
 java_library(
+    name = "normalizer",
+    srcs = ["Normalizer.java"],
+    deps = [
+        "//kythe/proto:common_proto_java",
+        "//kythe/proto:serving_proto_java",
+        "//third_party/proto:protobuf_java",
+    ],
+)
+
+java_library(
     name = "kythe_uri",
     srcs = ["KytheURI.java"],
     deps = [

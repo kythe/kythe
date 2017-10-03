@@ -16,6 +16,22 @@ java_test(
 )
 
 java_test(
+    name = "point_expander_test",
+    size = "small",
+    srcs = ["NormalizerTest.java"],
+    test_class = "com.google.devtools.kythe.util.NormalizerTest",
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/util:normalizer",
+        "//kythe/proto:common_proto_java",
+        "//kythe/proto:serving_proto_java",
+        "//third_party/proto:protobuf_java",
+        "@com_google_guava_guava//jar",
+        "@com_google_truth_truth//jar",
+        "@junit_junit//jar",
+    ],
+)
+
+java_test(
     name = "kythe_uri_test",
     size = "small",
     srcs = ["KytheURITest.java"],

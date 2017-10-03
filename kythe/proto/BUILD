@@ -215,6 +215,8 @@ proto_library(
     visibility = [
         "//kythe/go/serving:__subpackages__",
         "//kythe/go/util/tools:__subpackages__",
+        "//kythe/java/com/google/devtools/kythe/util:__subpackages__",
+        "//kythe/javatests/com/google/devtools/kythe/util:__subpackages__",
     ],
     deps = [":common_proto"],
 )
