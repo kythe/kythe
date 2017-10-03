@@ -8,7 +8,7 @@ java_test(
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
-        "//kythe/java/com/google/devtools/kythe/util",
+        "//kythe/java/com/google/devtools/kythe/util:delete_recursively",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party/proto:protobuf_java",

@@ -12,9 +12,9 @@ java_library(
     ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/common",
-        "//kythe/java/com/google/devtools/kythe/util",
-        "//third_party/proto:protobuf_java",
+        "//kythe/java/com/google/devtools/kythe/util:span",
         "//third_party/javac",
+        "//third_party/proto:protobuf_java",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
     ],

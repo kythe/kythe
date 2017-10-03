@@ -6,7 +6,6 @@ java_test(
     srcs = ["SourceBuilderTest.java"],
     test_class = "com.google.devtools.kythe.util.SourceBuilderTest",
     deps = [
-        "//kythe/java/com/google/devtools/kythe/util:kythe_uri",
         "//kythe/java/com/google/devtools/kythe/util:source_builder",
         "//kythe/proto:internal_proto_java",
         "//kythe/proto:storage_proto_java",

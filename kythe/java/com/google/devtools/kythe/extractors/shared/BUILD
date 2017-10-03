@@ -10,7 +10,6 @@ java_library(
         "IndexInfoUtils.java",
     ],
     deps = [
-        "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party/proto:protobuf_java",

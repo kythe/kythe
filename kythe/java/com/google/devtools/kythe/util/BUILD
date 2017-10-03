@@ -1,15 +1,6 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
-    name = "util",
-    exports = [
-        ":delete_recursively",
-        ":kythe_uri",
-        ":span",
-    ],
-)
-
-java_library(
     name = "source_builder",
     srcs = ["SourceBuilder.java"],
     deps = [

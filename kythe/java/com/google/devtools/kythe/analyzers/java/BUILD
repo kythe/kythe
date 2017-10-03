@@ -19,7 +19,6 @@ java_library(
     ],
     deps = [
         ":plugin",
-        ":source_text",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
@@ -30,8 +29,9 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
-        "//kythe/java/com/google/devtools/kythe/util",
+        "//kythe/java/com/google/devtools/kythe/util:kythe_uri",
         "//kythe/java/com/google/devtools/kythe/util:position_mappings",
+        "//kythe/java/com/google/devtools/kythe/util:span",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:common_proto_java",
         "//kythe/proto:storage_proto_java",
@@ -49,8 +49,8 @@ java_library(
     srcs = ["SourceText.java"],
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
-        "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/java/com/google/devtools/kythe/util:position_mappings",
+        "//kythe/java/com/google/devtools/kythe/util:span",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
     ],
 )
@@ -61,7 +61,7 @@ java_library(
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
-        "//kythe/java/com/google/devtools/kythe/util",
+        "//kythe/java/com/google/devtools/kythe/util:span",
         "//kythe/proto:storage_proto_java",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
     ],
@@ -70,9 +70,7 @@ java_library(
 java_binary(
     name = "indexer",
     srcs = ["JavaIndexer.java"],
-    data = [
-        "//third_party/javac:javac_jar",
-    ],
+    data = ["//third_party/javac:javac_jar"],
     jvm_flags = [
         "-Xbootclasspath/p:$${RUNPATH}$(location //third_party/javac:javac_jar)",
     ],
@@ -80,8 +78,6 @@ java_binary(
     deps = [
         ":analyzer",
         ":plugin",
-        "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
-        "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:stream_fact_emitter",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
