@@ -166,7 +166,7 @@ public final class MarkedSources {
               .build());
       symNames
           .apply(type.tsym)
-          .map(v -> new KytheURI(v).toString())
+          .map(KytheURI::asString)
           .ifPresent(ticket -> builder.addLink(Link.newBuilder().addDefinition(ticket)));
     } else {
       builder.addChild(

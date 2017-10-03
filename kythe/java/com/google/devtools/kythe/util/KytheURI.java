@@ -139,7 +139,7 @@ public class KytheURI implements Serializable {
   }
 
   /** Returns an equivalent Kythe ticket for the given {@link VName}. */
-  public static String toString(VName vName) {
+  public static String asString(VName vName) {
     return new KytheURI(vName).toString();
   }
 

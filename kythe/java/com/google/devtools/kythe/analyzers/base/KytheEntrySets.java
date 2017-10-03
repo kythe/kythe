@@ -411,7 +411,7 @@ public class KytheEntrySets {
     }
 
     public NodeBuilder addSignatureSalt(VName vname) {
-      return addSignatureSalt(new KytheURI(vname).toString());
+      return addSignatureSalt(KytheURI.asString(vname));
     }
 
     public NodeBuilder setCorpusPath(CorpusPath p) {

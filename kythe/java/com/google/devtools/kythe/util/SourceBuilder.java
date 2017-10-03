@@ -68,7 +68,7 @@ public class SourceBuilder {
    * no-op.
    */
   public SourceBuilder addEdge(String edgeKind, VName target) {
-    Source.Edge.Builder edge = Source.Edge.newBuilder().setTicket(KytheURI.toString(target));
+    Source.Edge.Builder edge = Source.Edge.newBuilder().setTicket(KytheURI.asString(target));
     Matcher m = ORDINAL_EDGE_KIND_PATTERN.matcher(edgeKind);
     if (m.matches()) {
       edgeKind = m.group(1);
