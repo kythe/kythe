@@ -22,5 +22,5 @@ cgo_library(
             "doc.go",
         ],
     ),
-    cdeps = ["@//third_party/leveldb"],
+    cdeps = ["@io_kythe//third_party/leveldb"],
 )
