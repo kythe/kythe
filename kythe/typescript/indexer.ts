@@ -833,7 +833,7 @@ class Vistor {
         continue;
       }
       // Strip the ' * ' bits that start lines within the comment.
-      jsdoc = comment.replace(/^ ?\* ?/mg, '');
+      jsdoc = comment.replace(/^[ \t]*\* ?/mg, '');
       break;
     }
     if (jsdoc === undefined) return;

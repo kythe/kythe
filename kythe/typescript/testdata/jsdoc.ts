@@ -37,9 +37,19 @@ class Class {
 //- MethodDoc.text "Method doc."
   /** Method doc. */
   method() {}
+
+//- @:49"method2" defines/binding Method2
+//- Method2Doc documents Method2
+//- Method2Doc.node/kind doc
+//- Method2Doc.text "Multi line doc.\n  Indented."
+  /**
+   * Multi line doc.
+   *   Indented.
+   */
+  method2() {}
 }
 
-//- @:47"myFunc" defines/binding Function
+//- @:57"myFunc" defines/binding Function
 //- FunctionDoc documents Function
 //- FunctionDoc.node/kind doc
 //- FunctionDoc.text "Function doc."
