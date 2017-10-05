@@ -91,8 +91,6 @@ def _genproto_impl(ctx):
     else:
       outputs += [ctx.outputs.go_src]
     go_cfg = ["import_path=" + go_package, _go_import_path(ctx.attr.deps)]
-    if ctx.attr.has_services:
-      go_cfg += ["plugins=grpc"]
     if ctx.attr.gofast:
       inputs += [ctx.executable._protoc_gen_gofast]
       arguments += [
@@ -239,11 +237,6 @@ def proto_library(name, srcs, deps=[], visibility=None,
 
   if go_api_version:
     go_deps = ["@go_protobuf//:proto"]
-    if has_services:
-      go_deps += [
-        "@go_x_net//:context",
-        "@go_grpc//:grpc",
-      ]
     for dep in deps:
       go_deps += [dep + "_go"]
     _go_proto_library_hack(
