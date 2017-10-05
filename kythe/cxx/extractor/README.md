@@ -1,16 +1,19 @@
 ## Bazel C++ extractor
- 
-An extractor that builds index files from a Bazel-based project. Extractor builds a kindex file for 
-each `cc_library` and `cc_binary` in the project. This extractor based on Bazel 
-[action_listener](https://docs.bazel.build/versions/master/be/extra-actions.html) rule.
+
+An extractor that builds index files from a Bazel-based project. Extractor
+builds a kindex file for each `cc_library` and `cc_binary` in the project. This
+extractor based on Bazel
+[action_listener](https://docs.bazel.build/versions/master/be/extra-actions.html)
+rule.
 
 #### Usage
 
-These instructions assume the kythe is installed in /opt/kythe. If not, follow 
+These instructions assume the kythe is installed in /opt/kythe. If not, follow
 [installation](http://kythe.io/getting-started) instructions.
 
-Currently Bazel doesn't have a convenient way to use action listener outside of a project.
-So first you need to add `action_listener` to the root BUILD file of the project.`
+Currently Bazel doesn't have a convenient way to use action listener outside of
+a project. So first you need to add `action_listener` to the root BUILD file of
+the project.
 
 ```python
 # Extra action invokes /opt/kythe/extractors/bazel_cxx_extractor
@@ -30,18 +33,20 @@ action_listener(
 )
 ```
 
-Extractor requires a `vnames.json` file that tells extractor how to translate certain 
-filepaths. For example in Bazel project java files often stored in `java` and `javatests`
-directories. But filepath like `java/com/some/domain/Foo.java` should be extracted as 
-`com/some/domain/Foo.java` with the `java` prefix omitted. `vnames.json` file tells 
-extractor how to rename certain filepaths during extraction. As an example check `vnames.json` from Kythe repo: 
-[link](https://github.com/google/kythe/blob/master/kythe/data/vnames.json). 
+Extractor requires a `vnames.json` file that tells extractor how to translate
+certain filepaths. For example in Bazel project java files often stored in
+`java` and `javatests` directories. But filepath like
+`java/com/some/domain/Foo.java` should be extracted as
+`com/some/domain/Foo.java` with the `java` prefix omitted. `vnames.json` file
+tells extractor how to rename certain filepaths during extraction. As an example
+check `vnames.json` from Kythe repo:
+[link](https://github.com/google/kythe/blob/master/kythe/data/vnames.json).
 
 ```shell
 cd $YOUR_BAZEL_PROJECT
 # As example copy vnames.json from Kythe repo. But you should change it for your project
 # later.
-curl https://raw.githubusercontent.com/google/kythe/master/kythe/data/vnames.json > vnames.json 
+curl https://raw.githubusercontent.com/google/kythe/master/kythe/data/vnames.json > vnames.json
 ```
 
 Run extractor:
@@ -54,8 +59,9 @@ bazel test --experimental_action_listener=:extract_cxx  //...
 bazel test --experimental_action_listener=:extract_cxx  //java/some/folder:foo
 ```
 
-Extracted kindex files will be in `bazel-out/local-fastbuild/extra_actions/extractor` 
-folder. One kindex file per target.
+Extracted kindex files will be in
+`bazel-out/local-fastbuild/extra_actions/extractor` folder. One kindex file per
+target.
 
 ```shell
 find -L bazel-out -name '*cxx.kindex'
@@ -71,7 +77,8 @@ cd $KYTHE_PROJECT
 bazel build //kythe/cxx/extractor:cxx_extractor_bazel
 ```
 
-Freshly built extractor will be in folder 
-`bazel-bin/kythe/cxx/extractor/cxx_extractor_bazel /opt/kythe/extractors/bazel_cxx_extractor`.
-Follow instructions of above but `extra_action` replace `/opt/kythe/extractors/bazel_cxx_extractor` 
-with the path to the freshly built exractor.
+Freshly built extractor will be in folder
+`bazel-bin/kythe/cxx/extractor/cxx_extractor_bazel
+/opt/kythe/extractors/bazel_cxx_extractor`. Follow instructions of above but
+`extra_action` replace `/opt/kythe/extractors/bazel_cxx_extractor` with the path
+to the freshly built exractor.

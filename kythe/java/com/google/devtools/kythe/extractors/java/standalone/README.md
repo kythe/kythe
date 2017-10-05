@@ -1,12 +1,12 @@
 ## Javac extractor
- 
-An extractor that wraps javac to extract compilation information and write it to an index file.
+
+An extractor that wraps javac to extract compilation information and write it to
+an index file.
 
 #### Usage
 
-These instructions assume the kythe is installed in /opt/kythe. If not, follow [installation]
-(http://kythe.io/getting-started) 
-instructions.
+These instructions assume kythe is installed in /opt/kythe. If not, follow the
+[installation](http://kythe.io/getting-started) instructions.
 
 ```shell
 cd some/folder/with/java/files
@@ -21,8 +21,7 @@ mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 /opt/kythe/extractors/javac-wrapper.sh Foo.java Bar.java
 ```
 
-kindex file will be generated in `/tmp/kythe` folder. 
-
+kindex file will be generated in `/tmp/kythe` folder.
 
 #### Development
 
@@ -35,7 +34,7 @@ bazel build //kythe/java/com/google/devtools/kythe/extractors/java/standalone:ja
 ```
 
 Running freshly built extractor:
- 
+
 ```shell
 cd some/folder/with/java/files
 
@@ -50,4 +49,4 @@ mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 $KYTHE_PROJECT/kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac-wrapper.sh Foo.java Bar.java
 ```
 
-kindex file will be generated in `/tmp/kythe` folder. 
+kindex file will be generated in `/tmp/kythe` folder.

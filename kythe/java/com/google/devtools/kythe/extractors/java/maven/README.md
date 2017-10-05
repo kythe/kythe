@@ -1,14 +1,13 @@
 ## Maven extractor
- 
-An extractor that builds index files from a maven-based project. It uses 
-[javac extractor](../standalone/README.md) as compiler for maven. There is no special 
+
+An extractor that builds index files from a maven-based project. It uses [javac
+extractor](../standalone/README.md) as compiler for maven. There is no special
 maven-related code and maven extractor is just a way to use javac extractor.
 
 #### Usage
 
-These instructions assume the kythe is installed in /opt/kythe. If not, follow [installation]
-(http://kythe.io/getting-started) 
-instructions.
+These instructions assume kythe is installed in /opt/kythe. If not, follow the
+[installation](http://kythe.io/getting-started) instructions.
 
 ```shell
 cd some/maven/project
@@ -26,8 +25,7 @@ mvn clean compile \
   -Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh
 ```
 
-kindex files will be generated in `/tmp/kythe` folder. 
-
+kindex files will be generated in `/tmp/kythe` folder.
 
 #### Development
 
