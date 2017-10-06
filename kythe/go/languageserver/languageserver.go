@@ -140,6 +140,11 @@ func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) 
 	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return err
+	} else if len(params.ContentChanges) == 0 {
+		// This should not be possible, since we request full sync, but some
+		// plugins appear not to respect this in every case.  Treat this
+		// similarly to a file that was never opened.
+		return fmt.Errorf("unexpectedly empty change update on %q", params.TextDocument.URI)
 	}
 
 	if doc, ok := ls.docs[local]; ok {
