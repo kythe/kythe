@@ -1366,6 +1366,13 @@ cxx_indexer_test(
     ],
 )
 
+cxx_indexer_test(
+    name = "make_unique_factories",
+    srcs = ["libraries/make_unique_factories.cc"],
+    ignore_dups = True,
+    tags = ["libraries"],
+)
+
 test_suite(
     name = "indexer_libraries",
     tags = ["libraries"],

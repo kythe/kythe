@@ -43,6 +43,24 @@ cc_library(
 )
 
 cc_library(
+    name = "imputed_constructor_library_support",
+    srcs = [
+        "ImputedConstructorSupport.cc",
+    ],
+    hdrs = [
+        "ImputedConstructorSupport.h",
+    ],
+    deps = [
+        ":indexer_ast_hooks",
+        ":indexer_library_support",
+        "//third_party/llvm",
+        "//third_party/llvm/src:clang_builtin_headers",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:optional",
+    ],
+)
+
+cc_library(
     name = "graph_observer",
     hdrs = [
         "GraphObserver.h",
@@ -221,6 +239,7 @@ cc_library(
         ":clang_utils",
         ":google_flags_library_support",
         ":graph_observer",
+        ":imputed_constructor_library_support",
         ":indexer_pp_callbacks",
         ":kythe_graph_observer",
         ":marked_source",

@@ -28,6 +28,7 @@
 #include "kythe/cxx/common/indexing/frontend.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
 #include "kythe/cxx/indexer/cxx/GoogleFlagsLibrarySupport.h"
+#include "kythe/cxx/indexer/cxx/ImputedConstructorSupport.h"
 #include "kythe/cxx/indexer/cxx/IndexerFrontendAction.h"
 #include "kythe/cxx/indexer/cxx/ProtoLibrarySupport.h"
 #include "kythe/cxx/indexer/cxx/indexer_worklist.h"
@@ -85,6 +86,7 @@ int main(int argc, char *argv[]) {
     kythe::LibrarySupports library_supports;
     library_supports.push_back(llvm::make_unique<GoogleFlagsLibrarySupport>());
     library_supports.push_back(llvm::make_unique<GoogleProtoLibrarySupport>());
+    library_supports.push_back(llvm::make_unique<ImputedConstructorSupport>());
 
     std::string result = IndexCompilationUnit(
         job.unit, job.virtual_files, *context.claim_client(),
