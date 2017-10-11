@@ -830,8 +830,11 @@ void KytheGraphObserver::recordMarkedSource(
   AddMarkedSource(node_vname, marked_source);
 }
 
-void KytheGraphObserver::recordAbsVarNode(const NodeId &node_id) {
-  recorder_->AddProperty(VNameRefFromNodeId(node_id), NodeKindID::kAbsVar);
+void KytheGraphObserver::recordAbsVarNode(
+    const NodeId &node_id, const MaybeFew<MarkedSource> &marked_source) {
+  auto node_vname = VNameRefFromNodeId(node_id);
+  recorder_->AddProperty(node_vname, NodeKindID::kAbsVar);
+  AddMarkedSource(node_vname, marked_source);
 }
 
 void KytheGraphObserver::recordLookupNode(const NodeId &node_id,

@@ -482,8 +482,10 @@ class GraphObserver {
   /// \brief Records a node representing a variable in a dependent type
   /// abstraction.
   /// \param Node The `NodeId` of the variable.
+  /// \param MarkedSource marked source for this variable.
   /// \sa recordAbsNode
-  virtual void recordAbsVarNode(const NodeId &Node) {}
+  virtual void recordAbsVarNode(const NodeId &Node,
+                                const MaybeFew<MarkedSource> &MarkedSource) {}
 
   /// \brief Records a node representing a deferred lookup.
   /// \param Node The `NodeId` of the lookup.

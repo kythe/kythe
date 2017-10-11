@@ -2172,6 +2172,14 @@ test_suite(
 )
 
 cxx_indexer_test(
+    name = "ms_absvar",
+    srcs = ["marked_source/ms_absvar.cc"],
+    convert_marked_source = True,
+    std = "c++14",
+    tags = ["marked_source"],
+)
+
+cxx_indexer_test(
     name = "ms_class",
     srcs = ["marked_source/ms_class.cc"],
     convert_marked_source = True,

@@ -507,7 +507,11 @@ bool MarkedSourceGenerator::WillGenerateMarkedSource() const {
          llvm::isa<clang::FieldDecl>(decl_) ||
          llvm::isa<clang::EnumConstantDecl>(decl_) ||
          llvm::isa<clang::ObjCMethodDecl>(decl_) ||
-         llvm::isa<clang::ObjCContainerDecl>(decl_);
+         llvm::isa<clang::ObjCContainerDecl>(decl_) ||
+         llvm::isa<clang::TemplateTypeParmDecl>(decl_) ||
+         llvm::isa<clang::NonTypeTemplateParmDecl>(decl_) ||
+         llvm::isa<clang::TemplateTemplateParmDecl>(decl_) ||
+         llvm::isa<clang::ObjCTypeParamDecl>(decl_);
 }
 
 std::string GetDeclName(const clang::LangOptions &lang_options,
@@ -814,6 +818,14 @@ MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
     }
   } else if (llvm::isa<clang::ObjCMethodDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);
+  } else if (llvm::isa<clang::TemplateTypeParmDecl>(decl_) ||
+             llvm::isa<clang::NonTypeTemplateParmDecl>(decl_) ||
+             llvm::isa<clang::TemplateTemplateParmDecl>(decl_) ||
+             llvm::isa<clang::ObjCTypeParamDecl>(decl_)) {
+    MarkedSource self;
+    self.set_kind(MarkedSource::IDENTIFIER);
+    self.set_pre_text(GetDeclName(cache_->lang_options(), decl_));
+    return self;
   }
   return GenerateMarkedSourceForNamedDecl();
 }

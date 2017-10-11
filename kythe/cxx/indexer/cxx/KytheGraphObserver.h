@@ -179,7 +179,8 @@ class KytheGraphObserver : public GraphObserver {
                           FunctionSubkind Subkind,
                           const MaybeFew<MarkedSource> &MarkedSource) override;
 
-  void recordAbsVarNode(const NodeId &Node) override;
+  void recordAbsVarNode(const NodeId &Node,
+                        const MaybeFew<MarkedSource> &MarkedSource) override;
 
   void recordAbsNode(const NodeId &Node) override;
 

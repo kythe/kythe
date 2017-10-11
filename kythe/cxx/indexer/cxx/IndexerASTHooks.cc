@@ -2258,14 +2258,15 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
   for (const auto *ND : *Decl->getTemplateParameters()) {
     GraphObserver::NodeId ParamId(Observer.getDefaultClaimToken(), "");
     unsigned ParamIndex = 0;
+    auto Marks = MarkedSources.Generate(ND);
     if (const auto *TTPD = dyn_cast<clang::TemplateTypeParmDecl>(ND)) {
       ParamId = BuildNodeIdForDecl(ND);
-      Observer.recordAbsVarNode(ParamId);
+      Observer.recordAbsVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
       ParamIndex = TTPD->getIndex();
     } else if (const auto *NTTPD =
                    dyn_cast<clang::NonTypeTemplateParmDecl>(ND)) {
       ParamId = BuildNodeIdForDecl(ND);
-      Observer.recordAbsVarNode(ParamId);
+      Observer.recordAbsVarNode(ParamId, Marks.GenerateMarkedSource(ParamId));
       ParamIndex = NTTPD->getIndex();
     } else if (const auto *TTPD =
                    dyn_cast<clang::TemplateTemplateParmDecl>(ND)) {
@@ -2273,7 +2274,8 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
       // uses of the ParmDecl later on point at the Abs and not the wrapped
       // AbsVar.
       GraphObserver::NodeId ParamBodyId = BuildNodeIdForDecl(ND, 0);
-      Observer.recordAbsVarNode(ParamBodyId);
+      Observer.recordAbsVarNode(ParamBodyId,
+                                Marks.GenerateMarkedSource(ParamBodyId));
       ParamId = RecordTemplate(TTPD, ParamBodyId);
       ParamIndex = TTPD->getIndex();
     } else {
@@ -2763,8 +2765,10 @@ IndexerASTVisitor::BuildNodeIdForTypedefNameDecl(
 
 bool IndexerASTVisitor::VisitObjCTypeParamDecl(
     const clang::ObjCTypeParamDecl *Decl) {
+  auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId TypeParamId = BuildNodeIdForDecl(Decl);
-  Observer.recordAbsVarNode(TypeParamId);
+  Observer.recordAbsVarNode(TypeParamId,
+                            Marks.GenerateMarkedSource(TypeParamId));
   SourceRange TypeSR = RangeForNameOfDeclaration(Decl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), TypeParamId, TypeSR),
