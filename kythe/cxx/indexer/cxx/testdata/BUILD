@@ -47,6 +47,12 @@ sh_test(
 )
 
 cxx_indexer_test(
+    name = "static_variable_test",
+    srcs = ["basic/static_variable.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
     name = "anonymous_namespace_header",
     srcs = ["basic/anonymous_namespace_header.cc"],
     bundled = True,

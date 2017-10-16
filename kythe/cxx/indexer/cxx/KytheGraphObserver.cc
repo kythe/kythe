@@ -942,6 +942,11 @@ void KytheGraphObserver::recordDeclUseLocation(
   RecordAnchor(source_range, node, EdgeKindID::kRef, claimability);
 }
 
+void KytheGraphObserver::recordStaticVariable(const NodeId &VarNodeId) {
+  const VNameRef node_vname = VNameRefFromNodeId(VarNodeId);
+  recorder_->AddProperty(node_vname, PropertyID::kTagStatic, "");
+}
+
 GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
     const llvm::StringRef &spelling) {
   const auto &info = builtins_.find(spelling.str());

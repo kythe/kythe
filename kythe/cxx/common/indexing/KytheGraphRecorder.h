@@ -63,7 +63,8 @@ enum class PropertyID {
   kNodeKind,
   kCode,
   kVariance,
-  kParamDefault
+  kParamDefault,
+  kTagStatic
 };
 
 /// \brief Known edge kinds. See the schema for details.

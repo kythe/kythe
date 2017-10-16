@@ -1774,6 +1774,11 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
     DeclNode = BodyDeclNode;
   }
 
+  // if this variable is a static member record it as static
+  if (Decl->isStaticDataMember()) {
+    Observer.recordStaticVariable(DeclNode);
+  }
+
   if (auto *VTSD = dyn_cast<const clang::VarTemplateSpecializationDecl>(Decl)) {
     Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation ||
                        !VTSD->isExplicitInstantiationOrSpecialization());

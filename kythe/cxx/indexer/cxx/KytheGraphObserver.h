@@ -303,6 +303,8 @@ class KytheGraphObserver : public GraphObserver {
   void recordBoundQueryRange(const Range &SourceRange,
                              const NodeId &MacroId) override;
 
+  void recordStaticVariable(const NodeId &VarNodeId) override;
+
   void pushFile(clang::SourceLocation BlameLocation,
                 clang::SourceLocation Location) override;
 

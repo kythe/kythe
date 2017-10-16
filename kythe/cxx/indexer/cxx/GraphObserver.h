@@ -786,6 +786,10 @@ class GraphObserver {
   virtual void recordIncludesRange(const Range &SourceRange,
                                    const clang::FileEntry *File) {}
 
+  /// \brief Records that the specified variable is static.
+  /// \param VarNodeId The `NodeId` of the static variable.
+  virtual void recordStaticVariable(const NodeId &VarNodeId) {}
+
   /// \brief Called when a new input file is entered.
   ///
   /// The file entered in the first `pushFile` is the compilation unit being
