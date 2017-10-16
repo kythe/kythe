@@ -246,3 +246,9 @@ java_verifier_test(
     srcs = ["PluginTests.java"],
     load_plugin = "//kythe/javatests/com/google/devtools/kythe/analyzers/java:test_plugin",
 )
+
+java_verifier_test(
+    name = "static_variable_tests",
+    size = "small",
+    srcs = ["StaticVariables.java"],
+)

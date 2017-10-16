@@ -87,6 +87,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.NestingKind;
 import javax.tools.FileObject;
@@ -572,6 +573,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       entrySets.emitEdge(varNode, EdgeKind.CHILDOF, parentContext.getNode().getVName());
     }
     visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), ctx);
+
+    if (varDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
+      entrySets.getEmitter().emitFact(varNode, "/kythe/tag/static", "");
+    }
 
     JavaNode typeNode = scan(varDef.getType(), ctx);
     if (typeNode != null) {
