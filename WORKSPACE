@@ -136,6 +136,12 @@ maven_jar(
     sha1 = "4073ab16ab4aceb9a217273da6442166bf51ae16",
 )
 
+maven_jar(
+    name = "com_google_common_html_types",
+    artifact = "com.google.common.html.types:types:1.0.7",
+    sha1 = "7d4afac9f631a2c1adecc21350a4e88241185eb4",
+)
+
 git_repository(
     name = "io_bazel_rules_go",
     remote = "https://github.com/bazelbuild/rules_go.git",
