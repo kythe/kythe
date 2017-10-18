@@ -19,6 +19,8 @@ package cli
 import (
 	"context"
 	"flag"
+	"fmt"
+	"log"
 	"strings"
 
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -52,7 +54,75 @@ func (c docsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error
 	return c.displayDocumentation(reply)
 }
 
+func findLinkText(rawText string) []string {
+	var linkText []string
+	var current []int
+	var invalid bool
+	for i := 0; i < len(rawText); i++ {
+		c := rawText[i]
+		switch c {
+		case '[':
+			current = append(current, len(linkText))
+			linkText = append(linkText, "")
+		case ']':
+			if len(current) == 0 {
+				invalid = true
+				continue
+			}
+			current = current[:len(current)-1]
+		default:
+			if c == '\\' {
+				if i+1 >= len(rawText) {
+					invalid = true
+					continue
+				}
+				i++
+				c = rawText[i]
+			}
+			for _, l := range current {
+				linkText[l] += string(c)
+			}
+		}
+	}
+	if invalid {
+		log.Printf("WARNING: invalid document raw text: %q", rawText)
+	}
+	return linkText
+}
+
+func displayDoc(indent string, doc *xpb.DocumentationReply_Document) {
+	fmt.Println(indent + showSignature(doc.MarkedSource))
+	if len(doc.Text.GetRawText()) > 0 {
+		fmt.Println(indent + doc.Text.RawText)
+		linkText := findLinkText(doc.Text.RawText)
+		for i, link := range doc.Text.Link {
+			if i >= len(linkText) {
+				log.Printf("WARNING: mismatch between raw text and number of links: %v", doc)
+				break
+			}
+			if len(link.Definition) > 0 {
+				fmt.Printf("%s    %s: %s\n", indent, linkText[i], strings.Join(link.Definition, "\t"))
+			}
+		}
+	}
+
+	for _, child := range doc.Children {
+		fmt.Println()
+		displayDoc(indent+"  ", child)
+	}
+}
+
 func (c docsCommand) displayDocumentation(reply *xpb.DocumentationReply) error {
-	// TODO(zarko): Emit formatted data for -json=false.
-	return PrintJSONMessage(reply)
+	if DisplayJSON {
+		return PrintJSONMessage(reply)
+	} else if len(reply.Document) == 0 {
+		return nil
+	}
+
+	displayDoc("", reply.Document[0])
+	for _, doc := range reply.Document[1:] {
+		fmt.Println()
+		displayDoc("", doc)
+	}
+	return nil
 }
