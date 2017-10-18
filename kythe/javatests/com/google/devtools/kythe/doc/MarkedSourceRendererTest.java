@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.devtools.kythe.util;
+package com.google.devtools.kythe.doc;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -34,7 +34,7 @@ import junit.framework.TestCase;
 
 public class MarkedSourceRendererTest extends TestCase {
   private static final Path TEST_DATA_DIR =
-      Paths.get("kythe/javatests/com/google/devtools/kythe/util/testdata/");
+      Paths.get("kythe/javatests/com/google/devtools/kythe/doc/testdata/");
   private static final Function<String, SafeUrl> makeLink = inTicket -> SafeUrls.sanitize(inTicket);
 
   public void testRendering() throws IOException {

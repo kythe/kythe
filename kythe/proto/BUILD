@@ -177,6 +177,8 @@ proto_library(
         # TODO(schroederc): prune once MarkedSource has migrated to common.proto
         "//kythe/cxx/common:__pkg__",
         "//kythe/cxx/doc:__pkg__",
+        "//kythe/java/com/google/devtools/kythe/doc:__subpackages__",
+        "//kythe/javatests/com/google/devtools/kythe/doc:__subpackages__",
         "//kythe/go/languageserver:__subpackages__",
         "//kythe/go/platform/tools:__subpackages__",
         "//kythe/go/services:__subpackages__",

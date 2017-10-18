@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.devtools.kythe.util;
+package com.google.devtools.kythe.doc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
