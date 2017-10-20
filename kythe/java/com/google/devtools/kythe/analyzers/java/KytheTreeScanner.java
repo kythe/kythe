@@ -816,7 +816,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     List<Comment> lst = comments.get(line);
     if (lst != null) {
       for (Comment comment : lst) {
-        commentAnchor(comment, node);
+        String bracketed =
+            MiniAnchor.bracket(
+                comment.text.replaceFirst("^(//|/\\*) ?", "").replaceFirst(" ?\\*/$", ""),
+                pos -> pos,
+                Lists.newArrayList());
+        emitDoc(bracketed, Lists.newArrayList(), node, null);
       }
       return !lst.isEmpty();
     }
@@ -1047,11 +1052,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (absNode != null) {
       entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, absNode);
     }
-  }
-
-  private EntrySet commentAnchor(Comment comment, VName node) {
-    return emitAnchor(
-        entrySets.newAnchorAndEmit(filePositions, comment.byteSpan), EdgeKind.DOCUMENTS, node);
   }
 
   // Unwraps the target EntrySet and emits an edge to it from the sourceNode
