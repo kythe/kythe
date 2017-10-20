@@ -1,0 +1,194 @@
+child {
+  kind: TYPE
+  child {
+    kind: IDENTIFIER
+    pre_text: "void "
+  }
+}
+child {
+  kind: CONTEXT
+  child {
+    kind: IDENTIFIER
+    pre_text: "a"
+  }
+  child {
+    kind: IDENTIFIER
+    pre_text: "b"
+  }
+  child {
+    kind: IDENTIFIER
+    pre_text: "c"
+  }
+  child {
+    kind: IDENTIFIER
+    pre_text: "d"
+  }
+  child {
+    kind: IDENTIFIER
+    pre_text: "e"
+  }
+  child {
+    kind: IDENTIFIER
+    pre_text: "f"
+  }
+  child {
+    kind: IDENTIFIER
+    pre_text: "g"
+  }
+  child {
+    kind: IDENTIFIER
+    pre_text: "H"
+  }
+  post_child_text: "."
+  add_final_list_token: true
+}
+child {
+  kind: IDENTIFIER
+  pre_text: "H"
+}
+child {
+  kind: PARAMETER
+  pre_text: "("
+  child {
+    child {
+      kind: TYPE
+      child {
+        kind: CONTEXT
+        child {
+          kind: IDENTIFIER
+          pre_text: "java"
+        }
+        child {
+          kind: IDENTIFIER
+          pre_text: "lang"
+        }
+        post_child_text: "."
+        add_final_list_token: true
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "String "
+      }
+      link {
+        definition: "kythe://a"
+      }
+    }
+    child {
+      kind: CONTEXT
+      child {
+        kind: IDENTIFIER
+        pre_text: "a"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "b"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "c"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "d"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "e"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "f"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "g"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "H"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "<init>"
+      }
+      post_child_text: "."
+      add_final_list_token: true
+    }
+    child {
+      kind: IDENTIFIER
+      pre_text: "message"
+    }
+  }
+  child {
+    child {
+      kind: TYPE
+      child {
+        kind: CONTEXT
+        child {
+          kind: IDENTIFIER
+          pre_text: "java"
+        }
+        child {
+          kind: IDENTIFIER
+          pre_text: "lang"
+        }
+        post_child_text: "."
+        add_final_list_token: true
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "Throwable "
+      }
+      link {
+        definition: "kythe://b"
+      }
+    }
+    child {
+      kind: CONTEXT
+      child {
+        kind: IDENTIFIER
+        pre_text: "a"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "b"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "c"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "d"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "e"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "f"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "g"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "H"
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "<init>"
+      }
+      post_child_text: "."
+      add_final_list_token: true
+    }
+    child {
+      kind: IDENTIFIER
+      pre_text: "cause"
+    }
+  }
+  post_child_text: ", "
+  post_text: ")"
+}

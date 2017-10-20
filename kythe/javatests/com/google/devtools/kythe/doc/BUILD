@@ -23,6 +23,7 @@ java_test(
     srcs = ["MarkedSourceRendererTest.java"],
     data = [
         "testdata/marked_source_renderer_test.textproto",
+        "testdata/marked_source_signature_test.textproto",
     ],
     test_class = "com.google.devtools.kythe.doc.MarkedSourceRendererTest",
     deps = [

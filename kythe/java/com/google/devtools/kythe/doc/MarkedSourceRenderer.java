@@ -170,7 +170,7 @@ public class MarkedSourceRenderer {
         SafeUrl link = makeLinkForSource(node);
         if (link != null) {
           savedBuilder = buffer;
-          buffer = new SafeHtmlBuilder("a").setSrc(link);
+          buffer = new SafeHtmlBuilder("a").setHref(link);
         }
         append(node.getPreText());
       }
@@ -179,7 +179,7 @@ public class MarkedSourceRenderer {
         if (shouldRender(enabled, under)) {
           if (child + 1 != node.getChildCount()) {
             append(node.getPostChildText());
-          } else {
+          } else if (node.getAddFinalListToken()) {
             appendFinalListToken(node.getPostChildText());
           }
         }
@@ -250,7 +250,7 @@ public class MarkedSourceRenderer {
      */
     private void appendHeuristicSpace() {
       if (bufferIsNonempty && !bufferEndsInSpace) {
-        prependBuffer.append(" ");
+        appendFinalListToken(" ");
       }
     }
     /** The buffer used to hold escaped data. */

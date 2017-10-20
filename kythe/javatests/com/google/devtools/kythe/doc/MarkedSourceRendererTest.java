@@ -35,7 +35,8 @@ import junit.framework.TestCase;
 public class MarkedSourceRendererTest extends TestCase {
   private static final Path TEST_DATA_DIR =
       Paths.get("kythe/javatests/com/google/devtools/kythe/doc/testdata/");
-  private static final Function<String, SafeUrl> makeLink = inTicket -> SafeUrls.sanitize(inTicket);
+  private static final Function<String, SafeUrl> makeLink =
+      inTicket -> SafeUrls.sanitize(inTicket.substring(inTicket.length() - 1));
 
   public void testRendering() throws IOException {
     MarkedSource.Builder input = MarkedSource.newBuilder();
@@ -59,5 +60,32 @@ public class MarkedSourceRendererTest extends TestCase {
     assertThat(params.size()).isEqualTo(2);
     assertThat(params.get(0).getSafeHtmlString()).isEqualTo("<span>param_name_one</span>");
     assertThat(params.get(1).getSafeHtmlString()).isEqualTo("<span>param_name_two</span>");
+  }
+
+  public void testRenderingSignatures() throws IOException {
+    MarkedSource.Builder input = MarkedSource.newBuilder();
+    try (BufferedReader reader =
+        Files.newBufferedReader(TEST_DATA_DIR.resolve("marked_source_signature_test.textproto"))) {
+      TextFormat.merge(reader, input);
+    }
+    MarkedSource markedSource = input.build();
+    assertThat(MarkedSourceRenderer.renderSignature(makeLink, markedSource).getSafeHtmlString())
+        .isEqualTo(
+            "<span>void H(<a href=\"a\">String </a>message, <a href=\"b\">Throwable </a>cause)</span>");
+  }
+
+  public void testRenderingLists() throws IOException {
+    MarkedSource markedSource =
+        MarkedSource.newBuilder()
+            .setKind(MarkedSource.Kind.PARAMETER)
+            .setAddFinalListToken(false)
+            .setPostChildText(", ")
+            .addChild(
+                MarkedSource.newBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText("a"))
+            .addChild(
+                MarkedSource.newBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText("b"))
+            .build();
+    assertThat(MarkedSourceRenderer.renderSignature(makeLink, markedSource).getSafeHtmlString())
+        .isEqualTo("<span>a, b</span>");
   }
 }
