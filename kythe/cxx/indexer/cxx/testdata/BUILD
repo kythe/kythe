@@ -2182,6 +2182,16 @@ cxx_indexer_test(
     ],
 )
 
+cxx_indexer_test(
+    name = "template_auto_parameter",
+    srcs = ["template/template_auto_parameter.cc"],
+    std = "c++1z",
+    tags = [
+        "c++17",
+        "template",
+    ],
+)
+
 test_suite(
     name = "indexer_template",
     tags = ["template"],
