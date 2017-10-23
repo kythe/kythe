@@ -2172,6 +2172,16 @@ cxx_indexer_test(
     tags = ["template, c++14"],
 )
 
+cxx_indexer_test(
+    name = "template_using_pack_expansion",
+    srcs = ["template/template_using_pack_expansion.cc"],
+    std = "c++1z",
+    tags = [
+        "c++17",
+        "template",
+    ],
+)
+
 test_suite(
     name = "indexer_template",
     tags = ["template"],
