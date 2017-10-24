@@ -644,6 +644,7 @@ class Vistor {
     name: ts.BindingName|ts.PropertyName,
     type?: ts.TypeNode,
     initializer?: ts.Expression,
+    kind: ts.SyntaxKind
   }): VName|undefined {
     let vname: VName|undefined;
     switch (decl.name.kind) {
@@ -672,6 +673,12 @@ class Vistor {
     }
     if (decl.type) this.visitType(decl.type);
     if (decl.initializer) this.visit(decl.initializer);
+    if (vname && decl.kind === ts.SyntaxKind.PropertyDeclaration) {
+      let declNode = decl as ts.PropertyDeclaration;
+      if (ts.getCombinedModifierFlags(declNode) & ts.ModifierFlags.Static) {
+         this.emitFact(vname, 'tag/static', '');
+      }
+    }
     return vname;
   }
 
