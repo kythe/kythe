@@ -71,4 +71,16 @@ public class QualifiedNameExtractorTest {
     Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isFalse();
   }
+
+  @Test
+  public void testNestedContext() throws Exception {
+    MarkedSource.Builder builder = MarkedSource.newBuilder();
+    TextFormat.merge(
+        "child { pre_text: \"type \" } child { child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"kythe/go/platform/kindex\" } post_child_text: \".\" add_final_list_token: true } child { kind: IDENTIFIER pre_text: \"Settings\" } } child { kind: TYPE pre_text: \" \" } child { kind: TYPE pre_text: \"struct {...}\" }",
+        builder);
+    MarkedSource testInput = builder.build();
+    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    assertThat(resolvedName.isPresent()).isTrue();
+    assertThat(resolvedName.get()).isEqualTo("kythe/go/platform/kindex.Settings");
+  }
 }

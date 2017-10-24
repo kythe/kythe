@@ -458,11 +458,12 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	//           |                |
 	//     +----"."----+(".")    name
 	//     |           |
-	//    pkg         type
+	//    (id) pkg    type
 	//
 	var ctx []*cpb.MarkedSource
 	if pkg := obj.Pkg(); pkg != nil {
 		ctx = append(ctx, &cpb.MarkedSource{
+			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: pi.importPath(pkg),
 		})
 	}
