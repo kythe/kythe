@@ -350,7 +350,7 @@ class Vistor {
     return vname;
   }
 
-  visitTypeParameters(params: ts.TypeParameterDeclaration[]) {
+  visitTypeParameters(params: ReadonlyArray<ts.TypeParameterDeclaration>) {
     for (const param of params) {
       const sym = this.getSymbolAtLocation(param.name);
       if (!sym) {
