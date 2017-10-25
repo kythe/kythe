@@ -311,6 +311,12 @@ message CrossReferencesRequest {
   // for the format of the filter globs.
   repeated string filter = 5;
 
+  // Determines which kinds of RelatedNodes should be returned in the response.
+  // If empty, all known RelatedNodes will be returned that match the above
+  // filter.  Otherwise, only RelatedNodes with one of these requested kinds,
+  // and matching the above filter, will be returned in the response.
+  repeated string related_node_kind = 14;
+
   // Determines whether each Anchor in the response should have its text field
   // populated.
   bool anchor_text = 6;

@@ -34,6 +34,7 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/sergi/go-diff/diffmatchpatch"
 
 	cpb "kythe.io/kythe/proto/common_proto"
@@ -162,10 +163,10 @@ func IsInternalKind(kind string) bool {
 	return strings.HasPrefix(kind, internalKindPrefix)
 }
 
-// IsRelatedNodeKind determines whether the give edge kind is a non-anchor,
-// related node kind.
-func IsRelatedNodeKind(kind string) bool {
-	return !IsInternalKind(kind) && !edges.IsAnchorEdge(kind)
+// IsRelatedNodeKind determines whether the give edge kind matches the requested
+// related node kinds.
+func IsRelatedNodeKind(requestedKinds stringset.Set, kind string) bool {
+	return !IsInternalKind(kind) && !edges.IsAnchorEdge(kind) && (len(requestedKinds) == 0 || requestedKinds.Contains(kind))
 }
 
 // IsCallerKind determines whether the given edgeKind matches the requested
