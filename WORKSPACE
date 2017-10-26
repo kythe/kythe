@@ -40,10 +40,11 @@ http_archive(
     url = "https://boringssl.googlesource.com/boringssl/+archive/9612e1d2ce16a1bd67fbbe6ce969839af4d84a29.tar.gz",
 )
 
+# Make sure to update regularly in accordance with Abseil's principle of live at HEAD
 http_archive(
     name = "com_google_absl",
-    strip_prefix = "abseil-cpp-master",
-    url = "https://github.com/abseil/abseil-cpp/archive/master.zip",
+    strip_prefix = "abseil-cpp-dedb4eec6cf0addc26cc27b67c270aa5a478fcc5",
+    url = "https://github.com/abseil/abseil-cpp/archive/dedb4eec6cf0addc26cc27b67c270aa5a478fcc5.zip",
 )
 
 new_http_archive(
