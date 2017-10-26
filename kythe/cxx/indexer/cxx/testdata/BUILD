@@ -105,6 +105,17 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "nested_namespace_definition",
+    srcs = ["basic/nested_namespace_definition.cc"],
+    check_for_singletons = True,
+    std = "c++1z",
+    tags = [
+        "basic",
+        "c++17",
+    ],
+)
+
+cc_indexer_test(
     name = "bundle_self_test",
     srcs = ["bundle_self_test.cc"],
     bundled = True,
@@ -750,6 +761,19 @@ cc_indexer_test(
     ],
 )
 
+cc_indexer_test(
+    name = "structured_bindings",
+    srcs = ["basic/structured_bindings.cc"],
+    check_for_singletons = True,
+    ignore_dups = True,
+    std = "c++1z",
+    tags = [
+        "basic",
+        "broken",  # Indexes, but does not emit references to local vars.
+        "c++17",
+    ],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
@@ -901,6 +925,28 @@ cc_indexer_test(
     srcs = ["function/function_lambda.cc"],
     ignore_dups = True,
     tags = ["function"],
+)
+
+cc_indexer_test(
+    name = "function_lambda_value_this",
+    srcs = ["function/function_lambda_value_this.cc"],
+    ignore_dups = True,
+    std = "c++1z",
+    tags = [
+        "c++17",
+        "function",
+    ],
+)
+
+cc_indexer_test(
+    name = "function_constexpr_lambda",
+    srcs = ["function/function_constexpr_lambda.cc"],
+    ignore_dups = True,
+    std = "c++1z",
+    tags = [
+        "c++17",
+        "function",
+    ],
 )
 
 cc_indexer_test(
@@ -2186,7 +2232,7 @@ cc_indexer_test(
     ],
 )
 
-cxx_indexer_test(
+cc_indexer_test(
     name = "template_auto_parameter",
     srcs = ["template/template_auto_parameter.cc"],
     std = "c++1z",

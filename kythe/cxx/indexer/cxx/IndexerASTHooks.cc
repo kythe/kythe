@@ -1196,6 +1196,15 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr *E) {
   if (E->getMemberLoc().isInvalid()) {
     return true;
   }
+  for (const auto *Child : E->children()) {
+    if (const auto *DeclRef = dyn_cast<clang::DeclRefExpr>(Child)) {
+      if (isa<clang::DecompositionDecl>(DeclRef->getDecl())) {
+        // Ignore field references synthesized from structured bindings, as
+        // they are just a clang implementation detail. Skip the references.
+        return true;
+      }
+    }
+  }
   VisitNestedNameSpecifierLoc(E->getQualifierLoc());
   if (const auto *FieldDecl = E->getMemberDecl()) {
     auto Range = RangeForASTEntityFromSourceLocation(
@@ -1927,6 +1936,24 @@ bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl *Decl) {
   }
   Observer.recordNamespaceNode(DeclNode, Marks.GenerateMarkedSource(DeclNode));
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
+  return true;
+}
+
+bool IndexerASTVisitor::VisitBindingDecl(const clang::BindingDecl *Decl) {
+  SourceRange NameRange = RangeForNameOfDeclaration(Decl);
+  GraphObserver::NodeId DeclNode = BuildNodeIdForDecl(Decl);
+
+  if (auto RCC = ExplicitRangeInCurrentContext(NameRange)) {
+    Observer.recordDefinitionBindingRange(RCC.primary(), DeclNode, None());
+  }
+
+  auto Marks = MarkedSources.Generate(Decl);
+  Marks.set_marked_source_end(Decl->getSourceRange().getEnd());
+
+  AddChildOfEdgeToDeclContext(Decl, DeclNode);
+  Observer.recordVariableNode(DeclNode, GraphObserver::Completeness::Definition,
+                              GraphObserver::VariableSubkind::None,
+                              Marks.GenerateMarkedSource(DeclNode));
   return true;
 }
 

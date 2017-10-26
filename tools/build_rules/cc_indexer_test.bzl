@@ -282,7 +282,8 @@ _bazel_extract_kindex = rule(
 )
 
 def _cc_index_source(ctx, src):
-  entries = ctx.actions.declare_file(ctx.label.name + src.basename + ".entries")
+  entries = ctx.actions.declare_file(
+      ctx.label.name + "/" + src.basename + ".entries")
   ctx.actions.run(
       mnemonic = "CcIndexSource",
       outputs = [entries],
@@ -301,7 +302,7 @@ def _cc_index_compilation(ctx, kindex):
   if ctx.attr.copts:
     print("Ignoring compiler options:", ctx.attr.copts)
   entries = ctx.actions.declare_file(
-      ctx.label.name + kindex.basename + ".entries")
+      ctx.label.name + "/" + kindex.basename + ".entries")
   ctx.actions.run(
       mnemonic = "CcIndexCompilation",
       outputs = [entries],
