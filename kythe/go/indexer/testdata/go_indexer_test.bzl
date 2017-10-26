@@ -26,9 +26,10 @@ load(
     "go_library_attrs",
 )
 load(
-    "//tools:build_rules/kythe.bzl",
+    "//tools:build_rules/verifier_test.bzl",
     "kythe_integration_test",
     "verifier_test",
+    "KytheEntries",
 )
 
 # Emit a shell script that sets up the environment needed by the extractor to
@@ -178,7 +179,7 @@ def _go_entries(ctx):
       outputs  = [output],
       inputs   = [pack] + ctx.files._indexer,
   )
-  return struct(kythe_entries = [output])
+  return [KytheEntries(files=depset(), compressed=depset([output]))]
 
 # Run the Kythe indexer on the output that results from a go_indexpack rule.
 go_entries = rule(

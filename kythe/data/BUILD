@@ -5,6 +5,11 @@ filegroup(
     srcs = ["vnames.json"],
 )
 
+filegroup(
+    name = "empty_vnames_config",
+    srcs = ["empty_vnames.json"],
+)
+
 sh_test(
     name = "filevnames_config",
     size = "small",

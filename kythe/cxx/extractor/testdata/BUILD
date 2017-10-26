@@ -1,8 +1,8 @@
 load(
-    "//tools:build_rules/kythe.bzl",
-    "cc_verifier_test",
-    "objc_bazel_verifier_test",
-    "cc_bazel_verifier_test",
+    "//tools:build_rules/cc_indexer_test.bzl",
+    "cc_extractor_test",
+    "objc_bazel_extractor_test",
+    "cc_bazel_extractor_test",
 )
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -220,7 +220,7 @@ sh_test(
     ],
 )
 
-cc_verifier_test(
+cc_extractor_test(
     name = "recursish_macro_test",
     size = "small",
     srcs = [
@@ -228,7 +228,7 @@ cc_verifier_test(
     ],
 )
 
-cc_verifier_test(
+cc_extractor_test(
     name = "extract_verify_test",
     size = "small",
     srcs = [
@@ -236,7 +236,7 @@ cc_verifier_test(
     ],
 )
 
-cc_verifier_test(
+cc_extractor_test(
     name = "extract_verify_stddef_test",
     size = "small",
     srcs = [
@@ -244,7 +244,7 @@ cc_verifier_test(
     ],
 )
 
-cc_verifier_test(
+cc_extractor_test(
     name = "extract_verify_std_string_test",
     size = "small",
     srcs = [
@@ -252,7 +252,7 @@ cc_verifier_test(
     ],
 )
 
-cc_verifier_test(
+cc_extractor_test(
     name = "extract_verify_std_vector_test",
     size = "small",
     srcs = [
@@ -260,7 +260,7 @@ cc_verifier_test(
     ],
 )
 
-cc_verifier_test(
+cc_extractor_test(
     name = "extract_verify_iostream_test",
     size = "small",
     srcs = [
@@ -274,6 +274,7 @@ objc_library(
     # This is a little tricky to build, so don't do it automatically.
     tags = [
         "arc-ignore",
+        "broken",
         "manual",
     ],
 )
@@ -286,14 +287,16 @@ objc_library(
 #
 # The xa file is generated and copied into this directory by running the helper
 # script run_objc_bazel_extraction.sh.
-objc_bazel_verifier_test(
+objc_bazel_extractor_test(
     name = "objc_lib_test",
     size = "small",
     src = "objc_lib.m",
     data = "objc_lib.xa",
-    # This test can only pass on darwin, so do not include it in our presubmit.
+    restricted_to = ["//buildenv:darwin"],
+    # This test no longer passes, even on darwin, so do not include it in our presubmit.
     tags = [
         "arc-ignore",
+        "broken",
         "manual",
     ],
 )
@@ -310,7 +313,7 @@ cc_library(
 #
 # The xa file is generated and copied into this directory by running the helper
 # script run_cxx_bazel_extraction.sh.
-cc_bazel_verifier_test(
+cc_bazel_extractor_test(
     name = "cc_lib_test",
     size = "small",
     src = "cc_lib.cc",

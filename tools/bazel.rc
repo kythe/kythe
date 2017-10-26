@@ -1,3 +1,4 @@
 build --workspace_status_command tools/buildstamp/get_workspace_status
 build --incompatible_disallow_set_constructor=false
 test --incompatible_disallow_set_constructor=false
+test --experimental_auto_cpu_environment_group=//buildenv:cpu

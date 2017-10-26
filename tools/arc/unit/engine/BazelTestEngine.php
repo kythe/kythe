@@ -19,6 +19,7 @@
  * bazel wrapper.
  */
 final class BazelTestEngine extends ArcanistUnitTestEngine {
+  private static $omit_tags = ["manual", "broken", "arc-ignore", "docker"];
   private $debug;
   private $useConfig;
   private $waitForBazel;
@@ -69,7 +70,8 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     $this->debugPrint("files: " . $files);
 
     $cmd = $this->bazelCommand("query", ["%s"]);
-    $query = 'rdeps(//..., set('.$files.')) except attr(tags, "docker|arc-ignore", //...)';
+    $tag_filter = join("|", self::$omit_tags);
+    $query = 'rdeps(//..., set('.$files.')) except attr(tags, "'.$tag_filter.'", //...)';
     $this->debugPrint($query);
     $future = new ExecFuture($cmd, $query);
     $future->setCWD($this->project_root);
@@ -111,9 +113,10 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   private function runTests($targets) {
     $this->debugPrint("runTests(" . join($targets, ", ") . ")");
 
+    $tag_filters = join(",", array_map(function($s) { return "-$s"; }, self::$omit_tags));
     $future = new ExecFuture($this->bazelCommand("test", array_merge([
         "--verbose_failures",
-        "--test_tag_filters=-broken",
+        "--test_tag_filters=$tag_filters",
         "--noshow_loading_progress",
         "--noshow_progress"], $targets)));
     $future->setCWD($this->project_root);
@@ -136,7 +139,8 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     }
 
     $cmd = $this->bazelCommand("query", ["-k", "%s"]);
-    $query = 'tests(set('.join(" ", $targets).')) except attr(tags, "broken", //...)';
+    $tag_filter = join("|", self::$omit_tags);
+    $query = 'tests(set('.join(" ", $targets).'))';
     $this->debugPrint($query);
     $future = new ExecFuture($cmd, $query);
     $future->setCWD($this->project_root);
@@ -144,21 +148,31 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
 
     $results = array();
     foreach ($testTargets as $test) {
-      $data = $this->parseTestResultFile($test);
       $result = new ArcanistUnitTestResult();
       $result->setName($test);
-      if (property_exists($data, "test_case")) {
-        $testCase = $data->{"test_case"};
-        if (property_exists($testCase, "run_duration_millis")) {
-          $result->setDuration($testCase->{"run_duration_millis"} / 1000);
+      try {
+        $data = $this->parseTestResultFile($test);
+        if (array_key_exists("test_case", $data)) {
+          $testCase = $data["test_case"];
+          if (array_key_exists("run_duration_millis", $testCase)) {
+            $result->setDuration($testCase["run_duration_millis"] / 1000);
+          }
         }
-      }
-      if ($data->{"test_passed"}) {
-        $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
-      } else if ($data->{"status"} == 4) {
-        $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
-      } else {
-        $result->setResult(ArcanistUnitTestResult::RESULT_BROKEN);
+        if ($data["test_passed"]) {
+          $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
+        } else if ($data["status"] == 4) {
+          $result->setResult(ArcanistUnitTestResult::RESULT_FAIL);
+        } else {
+          $result->setResult(ArcanistUnitTestResult::RESULT_BROKEN);
+        }
+      } catch (CommandException $exc) {
+        if ($code == 0) {
+          // bazel test exited successfully, therefore these are
+          // skipped tests, rather than broken.
+          $result->setResult(ArcanistUnitTestResult::RESULT_SKIP);
+        } else {
+          $result->setResult(ArcanistUnitTestResult::RESULT_BROKEN);
+        }
       }
 
       $results[] = $result;
@@ -171,7 +185,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     $path = "bazel-testlogs/".str_replace(":", "/", substr($target, 2))."/test.cache_status";
     $future = new ExecFuture("bazel-bin/kythe/go/util/tools/print_test_status/print_test_status %s", $path);
     $future->setCWD($this->project_root);
-    return json_decode($future->resolvex()[0]);
+    return $future->resolveJSON();
   }
 
   private static function fileToTarget($file) {
