@@ -39,7 +39,7 @@ rm -rf /opt/kythe
 mv kythe-v*/ /opt/kythe
 ----
 
-See /opt/kythe/README for a complete description of the packaged tools and their
+See `/opt/kythe/README` for a complete description of the packaged tools and their
 usages.
 
 == Contributing and Building Kythe
@@ -48,7 +48,7 @@ https://kythe.io/contributing
 
 == Issue Tracker
 
-https://kythe.io/phabricator/maniphest
+https://phabricator-dot-kythe-repo.appspot.com/maniphest/
 
 == Documentation
 
