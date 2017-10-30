@@ -461,7 +461,7 @@ def _indexer_test(name, srcs, copts, deps=[], tags=[], size="small",
 def cc_indexer_test(name, srcs, deps=[], tags=[], size="small",
                     restricted_to=["//buildenv:all"], std="c++11",
                     bundled=False, expect_fail_verify=False,
-                    indexer="//kythe/cxx/indexer/cxx:indexer",
+                    indexer="//kythe/cxx/indexer/cxx:indexer", copts=[],
                     **kwargs):
   """C++ indexer test rule.
 
@@ -494,7 +494,7 @@ def cc_indexer_test(name, srcs, deps=[], tags=[], size="small",
       deps = deps,
       tags = tags,
       size = size,
-      copts = ["-std=" + std],
+      copts = ["-std=" + std] + copts,
       restricted_to = restricted_to,
       bundled = bundled,
       expect_fail_verify = expect_fail_verify,
