@@ -76,7 +76,7 @@ def _cc_extract_kindex_impl(ctx):
     extract(
         ctx = ctx,
         kindex = getattr(ctx.outputs, src.basename),
-        extractor = ctx.executable._extractor,
+        extractor = ctx.executable.extractor,
         vnames_config = ctx.file.vnames_config,
         srcs = [src],
         opts = ctx.attr.opts,
@@ -139,7 +139,7 @@ cc_extract_kindex = rule(
             These will be included in the resulting .kindex CompilationUnits.
             """,
         ),
-        "_extractor": attr.label(
+        "extractor": attr.label(
             default = Label("//kythe/cxx/extractor:cxx_extractor"),
             executable = True,
             cfg = "host",
@@ -157,16 +157,16 @@ cc_extract_kindex = rule(
 def _extract_bundle_impl(ctx):
   bundle = ctx.actions.declare_directory(ctx.label.name + "_unbundled")
   ctx.actions.run(
-      inputs = [ctx.executable._unbundle, ctx.file.src],
+      inputs = [ctx.executable.unbundle, ctx.file.src],
       outputs = [bundle],
       mnemonic = "Unbundle",
-      executable = ctx.executable._unbundle,
+      executable = ctx.executable.unbundle,
       arguments = [ctx.file.src.path, bundle.path]
   )
   ctx.actions.run_shell(
       inputs = [
-          ctx.executable._extractor,
-          ctx.file._vnames_config,
+          ctx.executable.extractor,
+          ctx.file.vnames_config,
           bundle,
       ],
       outputs = [ctx.outputs.kindex],
@@ -174,10 +174,10 @@ def _extract_bundle_impl(ctx):
       env = {
         "KYTHE_ROOT_DIRECTORY": ".",
         "KYTHE_OUTPUT_FILE": ctx.outputs.kindex.path,
-        "KYTHE_VNAMES": ctx.file._vnames_config.path,
+        "KYTHE_VNAMES": ctx.file.vnames_config.path,
       },
       arguments = [
-          ctx.executable._extractor.path,
+          ctx.executable.extractor.path,
           bundle.path,
       ] + ctx.attr.opts,
       command = "\"$1\" -c \"${@:2}\" $(cat \"${2}/cflags\") \"${2}/test_bundle/test.cc\"",
@@ -196,16 +196,16 @@ cc_extract_bundle = rule(
             mandatory = True,
             allow_single_file = True,
         ),
-        "_vnames_config": attr.label(
+        "vnames_config": attr.label(
             default = Label("//kythe/cxx/indexer/cxx/testdata:test_vnames.json"),
             allow_single_file = True,
         ),
-        "_unbundle": attr.label(
+        "unbundle": attr.label(
             default = Label("//tools/build_rules/verifier_test:unbundle"),
             executable = True,
             cfg = "host",
         ),
-        "_extractor": attr.label(
+        "extractor": attr.label(
             default = Label("//kythe/cxx/extractor:cxx_extractor"),
             executable = True,
             cfg = "host",
@@ -287,8 +287,8 @@ def _cc_index_source(ctx, src):
   ctx.actions.run(
       mnemonic = "CcIndexSource",
       outputs = [entries],
-      inputs = [ctx.executable._indexer] + ctx.files.srcs + ctx.files.deps,
-      executable = ctx.executable._indexer,
+      inputs = [ctx.executable.indexer] + ctx.files.srcs + ctx.files.deps,
+      executable = ctx.executable.indexer,
       arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
           "-i", src.path,
           "-o", entries.path,
@@ -306,8 +306,8 @@ def _cc_index_compilation(ctx, kindex):
   ctx.actions.run(
       mnemonic = "CcIndexCompilation",
       outputs = [entries],
-      inputs = [ctx.executable._indexer, kindex],
-      executable = ctx.executable._indexer,
+      inputs = [ctx.executable.indexer, kindex],
+      executable = ctx.executable.indexer,
       arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
           "-o", entries.path, kindex.path,
       ]
@@ -391,7 +391,7 @@ cc_index = rule(
         "copts": attr.string_list(
             doc = "Options to pass to the compiler while indexing.",
         ),
-        "_indexer": attr.label(
+        "indexer": attr.label(
             default = Label("//kythe/cxx/indexer/cxx:indexer"),
             executable = True,
             cfg = "host",
@@ -411,7 +411,8 @@ cc_index = rule(
 
 def _indexer_test(name, srcs, copts, deps=[], tags=[], size="small",
                   restricted_to=["//buildenv:all"],
-                  bundled=False, expect_fail_verify=False, **kwargs):
+                  bundled=False, expect_fail_verify=False, indexer=None,
+                  **kwargs):
   flags = _split_flags(kwargs)
   if bundled:
     if len(srcs) != 1:
@@ -434,6 +435,7 @@ def _indexer_test(name, srcs, copts, deps=[], tags=[], size="small",
       copts = copts if not bundled else [],
       restricted_to = restricted_to,
       opts = (["-claim_unknown=false"] if bundled else []) + flags.indexer,
+      indexer = indexer,
   )
   verifier_test(
       name = name,
@@ -451,7 +453,9 @@ def _indexer_test(name, srcs, copts, deps=[], tags=[], size="small",
 # causes the actual test to execute on darwin.
 def cc_indexer_test(name, srcs, deps=[], tags=[], size="small",
                     restricted_to=["//buildenv:all"], std="c++11",
-                    bundled=False, expect_fail_verify=False, **kwargs):
+                    bundled=False, expect_fail_verify=False,
+                    indexer="//kythe/cxx/indexer/cxx:indexer",
+                    **kwargs):
   """C++ indexer test rule.
 
   Args:
@@ -487,12 +491,14 @@ def cc_indexer_test(name, srcs, deps=[], tags=[], size="small",
       restricted_to = restricted_to,
       bundled = bundled,
       expect_fail_verify = expect_fail_verify,
+      indexer = indexer,
       **kwargs
   )
 
 def objc_indexer_test(name, srcs, deps=[], tags=[], size="small",
                       restricted_to=["//buildenv:all"], bundled=False,
-                      expect_fail_verify=False, **kwargs):
+                      expect_fail_verify=False,
+                      indexer="//kythe/cxx/indexer/cxx:indexer", **kwargs):
   """Objective C indexer test rule.
 
   Args:
@@ -527,6 +533,7 @@ def objc_indexer_test(name, srcs, deps=[], tags=[], size="small",
       restricted_to = restricted_to,
       bundled = bundled,
       expect_fail_verify = expect_fail_verify,
+      indexer = indexer,
       **kwargs
   )
 
