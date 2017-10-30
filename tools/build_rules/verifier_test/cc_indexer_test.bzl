@@ -45,6 +45,9 @@ _INDEXER_FLAGS = {
 }
 
 def _flag(name, typename, value):
+  if value == None:  # Omit None flags.
+    return None
+
   if type(value) != typename:
     fail("Invalid value for %s: %s; expected %s, found %s" % (
         name, value, typename, type(value)))
@@ -52,12 +55,16 @@ def _flag(name, typename, value):
     value = str(value).lower()
   return "--%s=%s" % (name, value)
 
+def _flags(values, defaults):
+  return [flag
+          for flag in [_flag(name, type(default), values.pop(name, default))
+                       for name, default in defaults.items()]
+          if flag != None]
+
 def _split_flags(kwargs):
   flags = struct(
-      indexer = [_flag(name, type(default), kwargs.pop(name, default))
-                 for name, default in _INDEXER_FLAGS.items()],
-      verifier = [_flag(name, type(default), kwargs.pop(name, default))
-                  for name, default in _VERIFIER_FLAGS.items()],
+      indexer = _flags(kwargs, _INDEXER_FLAGS),
+      verifier = _flags(kwargs, _VERIFIER_FLAGS),
   )
   if kwargs:
     fail("Unrecognized verifier flags: %s" % (kwargs.keys(),))
