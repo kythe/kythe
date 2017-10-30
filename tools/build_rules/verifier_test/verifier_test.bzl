@@ -42,7 +42,7 @@ def _atomize_entries_impl(ctx):
   postprocessor = ctx.executable._postprocessor
   atomizer = ctx.executable._atomizer
 
-  inputs = set(ctx.files.srcs)
+  inputs = depset(ctx.files.srcs)
   for dep in ctx.attr.deps:
     inputs += dep.kythe_entries
 
