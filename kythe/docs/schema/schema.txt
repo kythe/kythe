@@ -1021,23 +1021,6 @@ Notes::
 int FOO;
 --------------------------------------------------------------------------------
 
-[[reffile]]
-ref/file
-~~~~~~~~
-
-Brief description::
-  A *ref/file* F if A is an anchor referencing a file F. This is distinct from
-  <<refincludes,[ref/includes]>>, which indicates that the anchor causes the contents of
-  `F` to be inserted into the surrounding file. *ref/file* should be used when the
-  anchor refers explicitly to the identity of `F`, as in a hardcoded path in a test or
-  build script.
-Points from::
-  <<anchor>>
-Points toward::
-  <<file>>
-Ordinals are used::
-  never
-
 [[refexpandstransitive]]
 ref/expands/transitive
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -1054,6 +1037,23 @@ Ordinals are used::
 Notes::
   First-level macro expansions (like those written down in the source file)
   are recorded with the <<refexpands,[ref/expands]>> edge.
+
+[[reffile]]
+ref/file
+~~~~~~~~
+
+Brief description::
+  A *ref/file* F if A is an anchor referencing a file F. This is distinct from
+  <<refincludes,[ref/includes]>>, which indicates that the anchor causes the contents of
+  `F` to be inserted into the surrounding file. *ref/file* should be used when the
+  anchor refers explicitly to the identity of `F`, as in a hardcoded path in a test or
+  build script.
+Points from::
+  <<anchor>>
+Points toward::
+  <<file>>
+Ordinals are used::
+  never
 
 [kythe,C++,"Macros can expand other macros."]
 --------------------------------------------------------------------------------
