@@ -1,0 +1,8 @@
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["verifier_test.sh.in"])
+
+py_binary(
+    name = "unbundle",
+    srcs = ["unbundle.py"],
+)

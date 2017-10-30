@@ -361,7 +361,7 @@ verifier_test = rule(
             cfg = "target",
         ),
         "_template": attr.label(
-            default = Label("//tools:build_rules/verifier_test.sh.in"),
+            default = Label("//tools/build_rules/verifier_test:verifier_test.sh.in"),
             allow_single_file = True,
         ),
         "opts": attr.string_list(),

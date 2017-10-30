@@ -26,7 +26,7 @@ load(
     "go_library_attrs",
 )
 load(
-    "//tools:build_rules/verifier_test.bzl",
+    "//tools/build_rules/verifier_test:verifier_test.bzl",
     "kythe_integration_test",
     "verifier_test",
     "KytheEntries",

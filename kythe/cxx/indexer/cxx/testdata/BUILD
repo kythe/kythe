@@ -1,7 +1,7 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 load(
-    "//tools:build_rules/cc_indexer_test.bzl",
+    "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
     "cc_indexer_test",
     "objc_indexer_test",
 )

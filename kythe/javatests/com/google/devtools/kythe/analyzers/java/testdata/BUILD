@@ -1,4 +1,4 @@
-load("//tools:build_rules/verifier_test.bzl", "java_verifier_test")
+load("//tools/build_rules/verifier_test:verifier_test.bzl", "java_verifier_test")
 
 exports_files(
     ["corner_case.kindex"],

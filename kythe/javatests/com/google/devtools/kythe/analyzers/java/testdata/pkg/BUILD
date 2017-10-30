@@ -1,4 +1,8 @@
-load("//tools:build_rules/verifier_test.bzl", "java_verifier_test", "kythe_integration_test")
+load(
+    "//tools/build_rules/verifier_test:verifier_test.bzl",
+    "java_verifier_test",
+    "kythe_integration_test",
+)
 
 ticket_root = "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg"
 

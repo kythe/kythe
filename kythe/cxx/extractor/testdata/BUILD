@@ -1,5 +1,5 @@
 load(
-    "//tools:build_rules/cc_indexer_test.bzl",
+    "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
     "cc_extractor_test",
     "objc_bazel_extractor_test",
     "cc_bazel_extractor_test",

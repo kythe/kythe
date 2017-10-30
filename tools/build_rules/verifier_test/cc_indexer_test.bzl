@@ -15,7 +15,7 @@
 #
 
 load(
-    "//tools:build_rules/verifier_test.bzl",
+    ":verifier_test.bzl",
     "extract",
     "verifier_test",
     "KytheEntries",
@@ -201,7 +201,7 @@ cc_extract_bundle = rule(
             allow_single_file = True,
         ),
         "_unbundle": attr.label(
-            default = Label("//tools:unbundle"),
+            default = Label("//tools/build_rules/verifier_test:unbundle"),
             executable = True,
             cfg = "host",
         ),
