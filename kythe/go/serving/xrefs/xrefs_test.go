@@ -130,6 +130,16 @@ var (
 				"/kythe/loc/start", "0",
 				"/kythe/loc/end", "4",
 			),
+		}, {
+			Ticket: "kythe:#documented",
+			Fact: makeFactList(
+				"/kythe/node/kind", "record",
+			),
+		}, {
+			Ticket: "kythe:#documentedBy",
+			Fact: makeFactList(
+				"/kythe/node/kind", "record",
+			),
 		},
 	}
 
@@ -379,6 +389,25 @@ var (
 					Snippet: "some random text",
 				}},
 			},
+		}},
+
+		Documents: []*srvpb.Document{{
+			Ticket:  "kythe:#documented",
+			RawText: "some documentation text",
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "DocumentBuilderFactory",
+			},
+			Node: getNodes("kythe:#documented"),
+		}, {
+			Ticket:       "kythe:#documentedBy",
+			DocumentedBy: "kythe:#documented",
+			RawText:      "replaced documentation text",
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "ReplacedDocumentBuilderFactory",
+			},
+			Node: getNodes("kythe:#documentedBy"),
 		}},
 	}
 
@@ -1013,11 +1042,72 @@ func nodeInfos(nss ...[]*srvpb.Node) map[string]*cpb.NodeInfo {
 	return m
 }
 
+func TestDocumentationEmpty(t *testing.T) {
+	st := tbl.Construct(t)
+	reply, err := st.Documentation(ctx, &xpb.DocumentationRequest{
+		Ticket: []string{"kythe:#undocumented"},
+	})
+
+	expected := &xpb.DocumentationReply{}
+
+	if reply == nil || err != nil {
+		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
+	} else if err := testutil.DeepEqual(expected, reply); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDocumentation(t *testing.T) {
 	st := tbl.Construct(t)
-	reply, err := st.Documentation(ctx, &xpb.DocumentationRequest{})
-	if reply != nil || err == nil {
-		t.Fatalf("Documentation expected to fail")
+	reply, err := st.Documentation(ctx, &xpb.DocumentationRequest{
+		Ticket: []string{"kythe:#documented"},
+	})
+
+	expected := &xpb.DocumentationReply{
+		Document: []*xpb.DocumentationReply_Document{{
+			Ticket: "kythe:#documented",
+			Text: &xpb.Printable{
+				RawText: "some documentation text",
+			},
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "DocumentBuilderFactory",
+			},
+		}},
+		Nodes: nodeInfos(getNodes("kythe:#documented")),
+	}
+
+	if reply == nil || err != nil {
+		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
+	} else if err := testutil.DeepEqual(expected, reply); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDocumentationIndirection(t *testing.T) {
+	st := tbl.Construct(t)
+	reply, err := st.Documentation(ctx, &xpb.DocumentationRequest{
+		Ticket: []string{"kythe:#documentedBy"},
+	})
+
+	expected := &xpb.DocumentationReply{
+		Document: []*xpb.DocumentationReply_Document{{
+			Ticket: "kythe:#documentedBy",
+			Text: &xpb.Printable{
+				RawText: "some documentation text",
+			},
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "DocumentBuilderFactory",
+			},
+		}},
+		Nodes: nodeInfos(getNodes("kythe:#documented", "kythe:#documentedBy")),
+	}
+
+	if reply == nil || err != nil {
+		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
+	} else if err := testutil.DeepEqual(expected, reply); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -1073,6 +1163,7 @@ type testTable struct {
 	Decorations []*srvpb.FileDecorations
 	RefSets     []*srvpb.PagedCrossReferences
 	RefPages    []*srvpb.PagedCrossReferences_Page
+	Documents   []*srvpb.Document
 }
 
 func (tbl *testTable) Construct(t *testing.T) *Table {
@@ -1089,6 +1180,9 @@ func (tbl *testTable) Construct(t *testing.T) *Table {
 	}
 	for _, crp := range tbl.RefPages {
 		testutil.FatalOnErrT(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesPageKey(crp.PageKey), crp))
+	}
+	for _, doc := range tbl.Documents {
+		testutil.FatalOnErrT(t, "Error writing documents: %v", p.Put(ctx, DocumentationKey(doc.Ticket), doc))
 	}
 	return NewCombinedTable(p)
 }

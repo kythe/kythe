@@ -301,6 +301,10 @@ message Document {
 
   // Nodes referenced by documentation Links.
   repeated Node node = 6;
+
+  // If non-empty, this is the ticket of a node whose documentation should
+  // subsume this node's documentation.
+  string documented_by = 7;
 }
 
 // A single identifier's information for the Identifier API

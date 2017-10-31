@@ -893,6 +893,29 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 		}
 		tracePrintf(ctx, "Document: %s", ticket)
 
+		// If DocumentedBy is provided, replace document with another lookup.
+		if d.DocumentedBy != "" {
+			doc, err := t.documentation(ctx, d.DocumentedBy)
+			if err == table.ErrNoSuchKey {
+				log.Printf("Could not find subsuming documentation for {%+v}", d)
+				continue
+			} else if err != nil {
+				return nil, fmt.Errorf("error looking up subsuming documentation for ticket %q: %v", ticket, err)
+			}
+
+			// Ensure the subsuming documentation has the correct ticket and node.
+			doc.Ticket = ticket
+			for _, n := range d.Node {
+				if n.Ticket == ticket {
+					doc.Node = append(doc.Node, n)
+					break
+				}
+			}
+
+			tracePrintf(ctx, "DocumentedBy: %s", d.DocumentedBy)
+			d = doc
+		}
+
 		doc := d2d(d, patterns, reply.Nodes, reply.DefinitionLocations)
 		if req.IncludeChildren {
 			for _, child := range d.ChildTicket {
