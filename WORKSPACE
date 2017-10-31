@@ -154,6 +154,20 @@ load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
 go_repositories(go_version = "1.8.1")
 
 new_git_repository(
+    name = "go_grpc",
+    build_file = "third_party/go/grpc.BUILD",
+    commit = "61d37c5d657a47e4404fd6823bd598341a2595de",
+    remote = "https://github.com/grpc/grpc-go.git",
+)
+
+new_git_repository(
+    name = "go_genproto",
+    build_file = "third_party/go/genproto.BUILD",
+    commit = "f676e0f3ac6395ff1a529ae59a6670878a8371a6",
+    remote = "https://github.com/google/go-genproto.git",
+)
+
+new_git_repository(
     name = "go_errors",
     build_file = "third_party/go/errors.BUILD",
     commit = "ff09b135c25aae272398c51a07235b90a75aa4f0",

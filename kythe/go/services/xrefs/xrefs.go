@@ -36,6 +36,8 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/sergi/go-diff/diffmatchpatch"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -59,20 +61,20 @@ type Service interface {
 
 // ErrDecorationsNotFound is returned by an implementation of the Decorations
 // method when decorations for the given file cannot be found.
-var ErrDecorationsNotFound = errors.New("file decorations not found")
+var ErrDecorationsNotFound = status.Error(codes.NotFound, "file decorations not found")
 
 // FixTickets converts the specified tickets, which are expected to be Kythe
 // URIs, into canonical form. It is an error if len(tickets) == 0.
 func FixTickets(tickets []string) ([]string, error) {
 	if len(tickets) == 0 {
-		return nil, errors.New("no tickets specified")
+		return nil, status.Error(codes.InvalidArgument, "no tickets specified")
 	}
 
 	canonical := make([]string, len(tickets))
 	for i, ticket := range tickets {
 		fixed, err := kytheuri.Fix(ticket)
 		if err != nil {
-			return nil, fmt.Errorf("invalid ticket %q: %v", ticket, err)
+			return nil, status.Errorf(codes.InvalidArgument, "invalid ticket %q: %v", ticket, err)
 		}
 		canonical[i] = fixed
 	}
@@ -434,7 +436,7 @@ type BoundedRequests struct {
 // CrossReferences implements part of the Service interface.
 func (b BoundedRequests) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
 	if len(req.Ticket) > b.MaxTickets {
-		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(req.Ticket), b.MaxTickets)
+		return nil, status.Errorf(codes.InvalidArgument, "too many tickets requested: %d (max %d)", len(req.Ticket), b.MaxTickets)
 	}
 	return b.Service.CrossReferences(ctx, req)
 }
@@ -442,7 +444,7 @@ func (b BoundedRequests) CrossReferences(ctx context.Context, req *xpb.CrossRefe
 // Documentation implements part of the Service interface.
 func (b BoundedRequests) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	if len(req.Ticket) > b.MaxTickets {
-		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(req.Ticket), b.MaxTickets)
+		return nil, status.Errorf(codes.InvalidArgument, "too many tickets requested: %d (max %d)", len(req.Ticket), b.MaxTickets)
 	}
 	return b.Service.Documentation(ctx, req)
 }

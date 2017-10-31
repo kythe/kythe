@@ -27,7 +27,6 @@ package xrefs
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -43,6 +42,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/snappy"
 	"golang.org/x/net/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"
@@ -195,12 +196,12 @@ func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *cpb.NodeInfo {
 // Decorations implements part of the xrefs Service interface.
 func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if req.GetLocation() == nil || req.GetLocation().Ticket == "" {
-		return nil, errors.New("missing location")
+		return nil, status.Error(codes.InvalidArgument, "missing location")
 	}
 
 	ticket, err := kytheuri.Fix(req.GetLocation().Ticket)
 	if err != nil {
-		return nil, fmt.Errorf("invalid ticket %q: %v", req.GetLocation().Ticket, err)
+		return nil, status.Errorf(codes.InvalidArgument, "invalid ticket %q: %v", req.GetLocation().Ticket, err)
 	}
 
 	decor, err := t.fileDecorations(ctx, ticket)
@@ -416,7 +417,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		max: int(req.PageSize),
 	}
 	if stats.max < 0 {
-		return nil, fmt.Errorf("invalid page_size: %d", req.PageSize)
+		return nil, status.Errorf(codes.InvalidArgument, "invalid page_size: %d", req.PageSize)
 	} else if stats.max == 0 {
 		stats.max = defaultPageSize
 	} else if stats.max > maxPageSize {
@@ -427,18 +428,18 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	if req.PageToken != "" {
 		rec, err := base64.StdEncoding.DecodeString(req.PageToken)
 		if err != nil {
-			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page_token: %q", req.PageToken)
 		}
 		rec, err = snappy.Decode(nil, rec)
 		if err != nil {
-			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page_token: %q", req.PageToken)
 		}
 		if err := proto.Unmarshal(rec, &pageToken); err != nil {
-			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page_token: %q", req.PageToken)
 		}
 		for _, index := range pageToken.Indices {
 			if index < 0 {
-				return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
+				return nil, status.Errorf(codes.InvalidArgument, "invalid page_token: %q", req.PageToken)
 			}
 		}
 	}
