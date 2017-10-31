@@ -769,7 +769,16 @@ cc_indexer_test(
     std = "c++1z",
     tags = [
         "basic",
-        "broken",  # Indexes, but does not emit references to local vars.
+        "c++17",
+    ],
+)
+
+cc_indexer_test(
+    name = "if_switch_init",
+    srcs = ["basic/if_switch_init.cc"],
+    std = "c++1z",
+    tags = [
+        "basic",
         "c++17",
     ],
 )
@@ -2243,6 +2252,17 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_auto_parameter",
     srcs = ["template/template_auto_parameter.cc"],
+    std = "c++1z",
+    tags = [
+        "c++17",
+        "template",
+    ],
+)
+
+cc_indexer_test(
+    name = "template_fold_expressions",
+    srcs = ["template/template_fold_expressions.cc"],
+    ignore_dups = True,
     std = "c++1z",
     tags = [
         "c++17",
