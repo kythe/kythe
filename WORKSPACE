@@ -120,19 +120,19 @@ maven_jar(
 )
 
 maven_jar(
-    name = "com_google_auto_value",
+    name = "com_google_auto_value_auto_value",
     artifact = "com.google.auto.value:auto-value:1.4.1",
     sha1 = "8172ebbd7970188aff304c8a420b9f17168f6f48",
 )
 
 maven_jar(
-    name = "com_google_auto_service",
+    name = "com_google_auto_service_auto_service",
     artifact = "com.google.auto.service:auto-service:1.0-rc3",
     sha1 = "35c5d43b0332b8f94d473f9fee5fb1d74b5e0056",
 )
 
 maven_jar(
-    name = "com_google_auto_common",
+    name = "com_google_auto_auto_common",
     artifact = "com.google.auto:auto-common:0.3",
     sha1 = "4073ab16ab4aceb9a217273da6442166bf51ae16",
 )
