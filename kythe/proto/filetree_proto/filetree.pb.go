@@ -20,11 +20,6 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
-import (
-	context "golang.org/x/net/context"
-	grpc "google.golang.org/grpc"
-)
-
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -153,116 +148,6 @@ func init() {
 	proto.RegisterType((*DirectoryRequest)(nil), "kythe.proto.DirectoryRequest")
 	proto.RegisterType((*DirectoryReply)(nil), "kythe.proto.DirectoryReply")
 }
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion4
-
-// Client API for FileTreeService service
-
-type FileTreeServiceClient interface {
-	// CorpusRoots returns all known corpus/root pairs for stored files.
-	CorpusRoots(ctx context.Context, in *CorpusRootsRequest, opts ...grpc.CallOption) (*CorpusRootsReply, error)
-	// Directory returns the file/sub-directory contents of the given directory.
-	Directory(ctx context.Context, in *DirectoryRequest, opts ...grpc.CallOption) (*DirectoryReply, error)
-}
-
-type fileTreeServiceClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewFileTreeServiceClient(cc *grpc.ClientConn) FileTreeServiceClient {
-	return &fileTreeServiceClient{cc}
-}
-
-func (c *fileTreeServiceClient) CorpusRoots(ctx context.Context, in *CorpusRootsRequest, opts ...grpc.CallOption) (*CorpusRootsReply, error) {
-	out := new(CorpusRootsReply)
-	err := grpc.Invoke(ctx, "/kythe.proto.FileTreeService/CorpusRoots", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *fileTreeServiceClient) Directory(ctx context.Context, in *DirectoryRequest, opts ...grpc.CallOption) (*DirectoryReply, error) {
-	out := new(DirectoryReply)
-	err := grpc.Invoke(ctx, "/kythe.proto.FileTreeService/Directory", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// Server API for FileTreeService service
-
-type FileTreeServiceServer interface {
-	// CorpusRoots returns all known corpus/root pairs for stored files.
-	CorpusRoots(context.Context, *CorpusRootsRequest) (*CorpusRootsReply, error)
-	// Directory returns the file/sub-directory contents of the given directory.
-	Directory(context.Context, *DirectoryRequest) (*DirectoryReply, error)
-}
-
-func RegisterFileTreeServiceServer(s *grpc.Server, srv FileTreeServiceServer) {
-	s.RegisterService(&_FileTreeService_serviceDesc, srv)
-}
-
-func _FileTreeService_CorpusRoots_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CorpusRootsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(FileTreeServiceServer).CorpusRoots(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/kythe.proto.FileTreeService/CorpusRoots",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileTreeServiceServer).CorpusRoots(ctx, req.(*CorpusRootsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _FileTreeService_Directory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DirectoryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(FileTreeServiceServer).Directory(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/kythe.proto.FileTreeService/Directory",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileTreeServiceServer).Directory(ctx, req.(*DirectoryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _FileTreeService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "kythe.proto.FileTreeService",
-	HandlerType: (*FileTreeServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "CorpusRoots",
-			Handler:    _FileTreeService_CorpusRoots_Handler,
-		},
-		{
-			MethodName: "Directory",
-			Handler:    _FileTreeService_Directory_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "kythe/proto/filetree.proto",
-}
-
 func (m *CorpusRootsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)

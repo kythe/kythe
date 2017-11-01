@@ -22,11 +22,6 @@ import fmt "fmt"
 import math "math"
 import kythe_proto_common "kythe.io/kythe/proto/common_proto"
 
-import (
-	context "golang.org/x/net/context"
-	grpc "google.golang.org/grpc"
-)
-
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -309,118 +304,6 @@ func init() {
 	proto.RegisterType((*EdgeSet_Group_Edge)(nil), "kythe.proto.EdgeSet.Group.Edge")
 	proto.RegisterType((*EdgesReply)(nil), "kythe.proto.EdgesReply")
 }
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion4
-
-// Client API for GraphService service
-
-type GraphServiceClient interface {
-	// Nodes returns a subset of the facts for each of the requested nodes.
-	Nodes(ctx context.Context, in *NodesRequest, opts ...grpc.CallOption) (*NodesReply, error)
-	// Edges returns a subset of the outbound edges for each of a set of
-	// requested nodes.
-	Edges(ctx context.Context, in *EdgesRequest, opts ...grpc.CallOption) (*EdgesReply, error)
-}
-
-type graphServiceClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewGraphServiceClient(cc *grpc.ClientConn) GraphServiceClient {
-	return &graphServiceClient{cc}
-}
-
-func (c *graphServiceClient) Nodes(ctx context.Context, in *NodesRequest, opts ...grpc.CallOption) (*NodesReply, error) {
-	out := new(NodesReply)
-	err := grpc.Invoke(ctx, "/kythe.proto.GraphService/Nodes", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *graphServiceClient) Edges(ctx context.Context, in *EdgesRequest, opts ...grpc.CallOption) (*EdgesReply, error) {
-	out := new(EdgesReply)
-	err := grpc.Invoke(ctx, "/kythe.proto.GraphService/Edges", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// Server API for GraphService service
-
-type GraphServiceServer interface {
-	// Nodes returns a subset of the facts for each of the requested nodes.
-	Nodes(context.Context, *NodesRequest) (*NodesReply, error)
-	// Edges returns a subset of the outbound edges for each of a set of
-	// requested nodes.
-	Edges(context.Context, *EdgesRequest) (*EdgesReply, error)
-}
-
-func RegisterGraphServiceServer(s *grpc.Server, srv GraphServiceServer) {
-	s.RegisterService(&_GraphService_serviceDesc, srv)
-}
-
-func _GraphService_Nodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NodesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GraphServiceServer).Nodes(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/kythe.proto.GraphService/Nodes",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GraphServiceServer).Nodes(ctx, req.(*NodesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GraphService_Edges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EdgesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GraphServiceServer).Edges(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/kythe.proto.GraphService/Edges",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GraphServiceServer).Edges(ctx, req.(*EdgesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _GraphService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "kythe.proto.GraphService",
-	HandlerType: (*GraphServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Nodes",
-			Handler:    _GraphService_Nodes_Handler,
-		},
-		{
-			MethodName: "Edges",
-			Handler:    _GraphService_Edges_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "kythe/proto/graph.proto",
-}
-
 func (m *NodesRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)

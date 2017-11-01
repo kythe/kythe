@@ -193,6 +193,7 @@ proto_library(
     name = "identifier_proto",
     srcs = ["identifier.proto"],
     has_services = 1,
+    cc_api_version = 2,
     go_api_version = 2,
 )
 
