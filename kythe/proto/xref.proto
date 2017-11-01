@@ -47,8 +47,8 @@ service XRefService {
   // particular file node.
   rpc Decorations(DecorationsRequest) returns (DecorationsReply) {}
 
-  // CrossReferences returns the global references, definitions, and
-  // documentation of a set of requested nodes.
+  // CrossReferences returns the global references, definitions, declarations,
+  // callers, and related nodes of a set of requested nodes.
   rpc CrossReferences(CrossReferencesRequest) returns (CrossReferencesReply) {}
 
   // Documentation takes a set of tickets for semantic objects and returns
@@ -227,8 +227,6 @@ message DecorationsReply {
   // Maps from semantic nodes on the right-hand side of defines/binding
   // references to the list of their overrides.
   map<string, Overrides> extends_overrides = 17;
-
-  // TODO(fromberger): Patch diff information.
 }
 
 message CrossReferencesRequest {
@@ -311,10 +309,14 @@ message CrossReferencesRequest {
   // for the format of the filter globs.
   repeated string filter = 5;
 
-  // Determines which kinds of RelatedNodes should be returned in the response.
-  // If empty, all known RelatedNodes will be returned that match the above
-  // filter.  Otherwise, only RelatedNodes with one of these requested kinds,
-  // and matching the above filter, will be returned in the response.
+  // Determines which relation kinds for RelatedNodes should be returned in the
+  // response.  If empty, all known RelatedNodes will be returned that match the
+  // above filter.  Otherwise, only RelatedNodes with one of these requested
+  // relation kinds, and matching the above filter, will be returned in the
+  // response.
+  //
+  // Importantly, this is not a list of node kinds; this is a list of edge kinds
+  // (i.e. values for RelatedNode.relation_kind field).
   repeated string related_node_kind = 14;
 
   // Determines whether each Anchor in the response should have its text field
