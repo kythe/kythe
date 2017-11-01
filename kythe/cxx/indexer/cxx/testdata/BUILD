@@ -1611,6 +1611,14 @@ cc_indexer_test(
     tags = ["rec"],
 )
 
+cc_indexer_test(
+    name = "rec_nested_ctor",
+    srcs = ["rec/rec_nested_ctor.cc"],
+    check_for_singletons = True,
+    ignore_dups = True,
+    tags = ["rec"],
+)
+
 test_suite(
     name = "indexer_rec",
     tags = ["rec"],

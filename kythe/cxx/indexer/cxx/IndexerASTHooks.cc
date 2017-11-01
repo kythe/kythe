@@ -1236,12 +1236,29 @@ bool IndexerASTVisitor::VisitCXXConstructExpr(
     // TODO(zarko): What about static initializers? Do we blame these on the
     // translation unit?
     clang::SourceLocation RPL = E->getParenOrBraceRange().getEnd();
+
+    // When a constructor is invoked directly, the result is a
+    // CXXTemporaryObjectExpr whose location points to the start of
+    // the nested name specifier (if any) rather than the start of the
+    // type.  Adjust this as necessary.
+    clang::SourceLocation RefLoc = E->getLocStart();
+    if (const auto *TE = dyn_cast<clang::CXXTemporaryObjectExpr>(E)) {
+      if (const auto *TSI = TE->getTypeSourceInfo()) {
+        if (const auto ETL =
+                TSI->getTypeLoc().getAs<clang::ElaboratedTypeLoc>()) {
+          VisitNestedNameSpecifierLoc(ETL.getQualifierLoc());
+          BuildNodeIdForType(ETL.getNamedTypeLoc(), ETL.getType(), EmitRanges::Yes);
+          RefLoc = ETL.getNamedTypeLoc().getBeginLoc();
+        }
+      }
+    }
+
     // We assume that a constructor call was inserted by the compiler (or
     // is otherwise implicit) if it's being provided with arguments but it has
     // an invalid right-paren location, since such a call would be impossible
     // to write down.
     bool IsImplicit = !RPL.isValid() && E->getNumArgs() > 0;
-    VisitDeclRefOrIvarRefExpr(E, Callee, E->getLocation(), IsImplicit);
+    VisitDeclRefOrIvarRefExpr(E, Callee, RefLoc, IsImplicit);
     if (!Job->BlameStack.empty()) {
       clang::SourceRange SR = E->getSourceRange();
       if (RPL.isValid()) {
@@ -1661,6 +1678,8 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
 
 void IndexerASTVisitor::VisitNestedNameSpecifierLoc(
     clang::NestedNameSpecifierLoc NNSL) {
+  // TODO(shahms): Remove this and use Visit*TypeLoc directly, rather than
+  // ad-hoc calls to VisitNestedNameSpecifierLoc everywhere.
   while (NNSL) {
     NestedNameSpecifier *NNS = NNSL.getNestedNameSpecifier();
     if (NNS->getKind() != NestedNameSpecifier::TypeSpec &&
