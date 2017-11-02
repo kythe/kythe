@@ -86,7 +86,11 @@ def _cc_extract_kindex_impl(ctx):
         extractor = ctx.executable.extractor,
         vnames_config = ctx.file.vnames_config,
         srcs = [src],
-        opts = ctx.attr.opts,
+        opts = (ctx.fragments.cpp.compiler_options([]) +
+                ctx.fragments.cpp.unfiltered_compiler_options([]) +
+                ["-I{}".format(d)
+                 for d in ctx.fragments.cpp.built_in_include_directories] +
+                ctx.attr.opts),
         deps = ctx.files.deps + ctx.files.srcs,
     )
     for src in ctx.files.srcs])
@@ -157,6 +161,7 @@ cc_extract_kindex = rule(
     Each file in srcs will be extracted into a separate .kindex file, based on the name
     of the source.
     """,
+    fragments = ["cpp"],
     outputs = _cc_extract_kindex_outs,
     implementation = _cc_extract_kindex_impl,
 )
@@ -619,16 +624,7 @@ def cc_extractor_test(name, srcs, deps=[], data=[], size="small", std="c++11", t
       tags = tags,
       restricted_to = restricted_to,
       testonly = True,
-      opts = select({
-          "//conditions:default": args,
-          "//:darwin": args + [
-              # TODO(zarko): This needs to be autodetected (or does doing so even make sense?)
-              "-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1",
-              # TODO(salguarnieri): This could be made more generic with:
-              # $(xcrun --show-sdk-path)/usr/include
-              "-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include",
-          ],
-      }),
+      opts = args,
   )
   cc_index(
       name = name + "_entries",

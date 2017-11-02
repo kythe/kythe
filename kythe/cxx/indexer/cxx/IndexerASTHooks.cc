@@ -3972,13 +3972,20 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   // type back to the underlying type's definition. For example:
   // `@property Data * _Nullable var;` should connect back to the type Data *,
   // not Data * _Nullable;
-  if (TypeLoc.getTypeLocClass() == TypeLoc::Attributed) {
+  if (TypeLoc.getTypeLocClass() == TypeLoc::Attributed ||
+      TypeLoc.getTypeLocClass() == TypeLoc::DependentAddressSpace) {
     // Sometimes the TypeLoc is Attributed, but the type is actually
     // TypedefType.
     if (const auto *AT = dyn_cast<AttributedType>(PT)) {
       const auto &ATL = TypeLoc.castAs<AttributedTypeLoc>();
       return BuildNodeIdForType(ATL.getModifiedLoc(),
                                 AT->getModifiedType().getTypePtr(), EmitRanges,
+                                SR);
+    }
+    if (const auto *DT = dyn_cast<DependentAddressSpaceType>(PT)) {
+      const auto &DTL = TypeLoc.castAs<DependentAddressSpaceTypeLoc>();
+      return BuildNodeIdForType(DTL.getPointeeTypeLoc(),
+                                DT->getPointeeType().getTypePtr(), EmitRanges,
                                 SR);
     }
   }
@@ -4737,6 +4744,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       // Attributed is handled in a special way at the top of this function so
       // it is impossible for the typeloc to be TypeLoc::Attributed.
       UNSUPPORTED_CLANG_TYPE(Attributed);
+      UNSUPPORTED_CLANG_TYPE(DependentAddressSpace);
   }
   if (TypeAlreadyBuilt) {
     ID = Prev->second;

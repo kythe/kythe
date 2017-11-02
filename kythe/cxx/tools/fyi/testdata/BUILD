@@ -1,5 +1,16 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+load(":compile_commands.bzl", "compile_commands")
+
+compile_commands(
+    name = "compile_commands",
+    filenames = [
+        "nothing.cc",
+        "basic.cc",
+        "hopeless.cc",
+    ],
+)
+
 sh_test(
     name = "nothing",
     size = "small",
