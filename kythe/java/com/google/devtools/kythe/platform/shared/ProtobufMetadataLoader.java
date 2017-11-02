@@ -21,6 +21,7 @@ import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo;
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
@@ -32,13 +33,12 @@ public class ProtobufMetadataLoader implements MetadataLoader {
       FormattingLogger.getLogger(ProtobufMetadataLoader.class);
 
   /**
-   * @param vnameLookup maps from paths to VNames.
-   * @param defaultCorpus should vnameLookup return null, this value should be used for the corpus
-   *     field; if it is null, then no metadata will be emitted.
+   * Interface to support different ways of extracting GeneratedCodeInfo from a file. For example
+   * .pb.meta file contain proto in binary format while in other cases proto is embedded in a
+   * comment in base64 format.
    */
-  public ProtobufMetadataLoader(Function<String, VName> vnameLookup, String defaultCorpus) {
-    this.vnameLookup = vnameLookup;
-    this.defaultCorpus = defaultCorpus;
+  public interface GeneratedCodeInfoExtractor {
+    @Nullable GeneratedCodeInfo extract(String fileName, byte[] data);
   }
 
   /**
@@ -47,8 +47,20 @@ public class ProtobufMetadataLoader implements MetadataLoader {
    *     field; if it is null, then no metadata will be emitted.
    */
   public ProtobufMetadataLoader(CompilationUnit unit, String defaultCorpus) {
+    this(unit, defaultCorpus, ProtobufMetadataLoader::extractAnnotationsFromPbMetaFile);
+  }
+
+  /**
+   * @param unit used to look up VNames for paths.
+   * @param defaultCorpus should vnameLookup return null, this value should be used for the corpus
+   *     field; if it is null, then no metadata will be emitted.
+   * @param extractor extractor to read GeneratedCodeInfoExtractor from input files.
+   */
+  public ProtobufMetadataLoader(
+      CompilationUnit unit, String defaultCorpus, GeneratedCodeInfoExtractor extractor) {
     this.vnameLookup = lookupVNameFromCompilationUnit(unit);
     this.defaultCorpus = defaultCorpus;
+    this.extractor = extractor;
   }
 
   /** This extension signifies a GeneratedCodeInfo metadata file. */
@@ -63,6 +75,9 @@ public class ProtobufMetadataLoader implements MetadataLoader {
   /** defaultCorpus is used when no corpus can be found for a given file. */
   private final String defaultCorpus;
 
+  /** extractor is used to extract GeneratedCodeInfo proto from a file. */
+  private final GeneratedCodeInfoExtractor extractor;
+
   /** @return a function that looks up the VName for some filename in the given CompilationUnit. */
   private static Function<String, VName> lookupVNameFromCompilationUnit(CompilationUnit unit) {
     HashMap<String, VName> map = new HashMap<>();
@@ -74,14 +89,8 @@ public class ProtobufMetadataLoader implements MetadataLoader {
 
   @Override
   public Metadata parseFile(String fileName, byte[] data) {
-    if (!fileName.endsWith(META_SUFFIX)) {
-      return null;
-    }
-    GeneratedCodeInfo info;
-    try (ByteArrayInputStream stream = new ByteArrayInputStream(data)) {
-      info = GeneratedCodeInfo.parseFrom(stream);
-    } catch (IOException ex) {
-      logger.warning("IOException on " + fileName);
+    GeneratedCodeInfo info = extractor.extract(fileName, data);
+    if (info == null) {
       return null;
     }
     VName contextVName = vnameLookup.apply(fileName);
@@ -126,4 +135,20 @@ public class ProtobufMetadataLoader implements MetadataLoader {
     }
     return metadata;
   }
+
+  @Nullable
+  private static GeneratedCodeInfo extractAnnotationsFromPbMetaFile(
+      String fileName, byte[] data) {
+    if (!fileName.endsWith(META_SUFFIX)) {
+      return null;
+    }
+    GeneratedCodeInfo info;
+    try (ByteArrayInputStream stream = new ByteArrayInputStream(data)) {
+      info = GeneratedCodeInfo.parseFrom(stream);
+    } catch (IOException ex) {
+      logger.warning("IOException on " + fileName);
+      return null;
+    }
+    return info;
+  };
 }
