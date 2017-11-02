@@ -267,6 +267,7 @@ index_compilation = rule(
         ),
         "tools": attr.label_list(
             cfg = "host",
+            allow_files = True,
         ),
         "indexer": attr.label(
             mandatory = True,
@@ -393,11 +394,19 @@ def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
   indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:wrapped_indexer"
   tools = []
   if load_plugin:
+    # If loaded plugins have deps, those must be included in the loaded jar
+    native.java_binary(
+        name = name + "_load_plugin",
+        main_class = "not.Used",
+        runtime_deps = [load_plugin],
+    )
+    load_plugin_deploy_jar = ":{}_load_plugin_deploy.jar".format(name)
     indexer_opts += [
       "--load_plugin",
-      "$(location " + load_plugin + ")",
+      "$(location {})".format(load_plugin_deploy_jar),
     ]
-    tools += [load_plugin]
+    tools += [load_plugin_deploy_jar]
+
   entries = _invoke(index_compilation,
       name = name + "_entries",
       indexer = indexer,
