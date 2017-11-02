@@ -127,7 +127,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           entrySets,
           signatureGenerator,
           compilation,
-          nodes == null ? null : (t, v) -> nodes.put(t, new KytheNodeImpl(v)),
+          (t, v) -> nodes.put(t, new KytheNodeImpl(v)),
           src,
           config.getVerboseLogging(),
           details.getFileManager(),
