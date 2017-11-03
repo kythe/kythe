@@ -256,3 +256,12 @@ java_verifier_test(
     size = "small",
     srcs = ["StaticVariables.java"],
 )
+
+java_verifier_test(
+    name = "package_tests",
+    size = "small",
+    srcs = [
+        "Packages.java",
+        "package-info.java",
+    ],
+)

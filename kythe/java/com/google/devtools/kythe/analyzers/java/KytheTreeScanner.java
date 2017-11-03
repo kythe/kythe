@@ -76,6 +76,7 @@ import com.sun.tools.javac.util.Context;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -99,6 +100,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   /** Maximum allowed text size for variable {@link MarkedSource.Kind.INITIALIZER}s */
   private static final int MAX_INITIALIZER_LENGTH = 80;
+
+  /** Filename for special source file containing package annotations and documentation. */
+  private static final String PACKAGE_INFO_FILENAME = "package-info.java";
 
   private final boolean verboseLogging;
 
@@ -201,7 +205,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     if (compilation.getPackageName() != null) {
       EntrySet pkgNode = entrySets.newPackageNodeAndEmit(compilation.packge);
-      emitAnchor(ctx.down((JCTree) compilation.getPackageName()), EdgeKind.REF, pkgNode.getVName());
+      String fileName =
+          Paths.get(compilation.getSourceFile().toUri().getPath()).getFileName().toString();
+      emitAnchor(
+          ctx.down((JCTree) compilation.getPackageName()),
+          PACKAGE_INFO_FILENAME.equals(fileName) ? EdgeKind.DEFINES_BINDING : EdgeKind.REF,
+          pkgNode.getVName());
       for (JavaNode n : decls) {
         entrySets.emitEdge(n.getVName(), EdgeKind.CHILDOF, pkgNode.getVName());
       }

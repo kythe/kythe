@@ -1,5 +1,3 @@
-//- @pkg ref PkgPackage
-//- PkgPackage.node/kind package
 package pkg;
 
 //- @CASE_INSENSITIVE_ORDER ref/imports StringConst
