@@ -36,6 +36,8 @@ cc_library(
         ":headers",
     ],
     copts = [
+        # Needed for Xcode 9.0+. It doesn't affect Linux builds. See D2013.
+        "-D_DARWIN_C_SOURCE",
         "-D_XOPEN_SOURCE",
         "-Ithird_party/googlelog/src",
     ],
