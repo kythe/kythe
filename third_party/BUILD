@@ -27,20 +27,20 @@ exports_files(["libmemcached.mem_config.h"])
 
 alias(
     name = "gtest",
-    actual = "@com_github_google_googletest//:gtest",
+    actual = "@com_google_googletest//:gtest",
 )
 
 alias(
     name = "gtest_main",
-    actual = "@com_github_google_googletest//:gtest_main",
+    actual = "@com_google_googletest//:gtest_main",
 )
 
 alias(
     name = "gmock",
-    actual = "@com_github_google_googletest//:gmock",
+    actual = "@com_google_googletest//:gtest",
 )
 
 alias(
     name = "gmock_main",
-    actual = "@com_github_google_googletest//:gmock_main",
+    actual = "@com_google_googletest//:gtest_main",
 )
