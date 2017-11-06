@@ -867,6 +867,36 @@ func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.Nod
 	}
 }
 
+func (t *Table) lookupDocument(ctx context.Context, ticket string) (*srvpb.Document, error) {
+	d, err := t.documentation(ctx, ticket)
+	if err != nil {
+		return nil, err
+	}
+	tracePrintf(ctx, "Document: %s", ticket)
+
+	// If DocumentedBy is provided, replace document with another lookup.
+	if d.DocumentedBy != "" {
+		doc, err := t.documentation(ctx, d.DocumentedBy)
+		if err != nil {
+			log.Printf("Error looking up subsuming documentation for {%+v}: %v", d, err)
+			return nil, err
+		}
+
+		// Ensure the subsuming documentation has the correct ticket and node.
+		doc.Ticket = ticket
+		for _, n := range d.Node {
+			if n.Ticket == ticket {
+				doc.Node = append(doc.Node, n)
+				break
+			}
+		}
+
+		tracePrintf(ctx, "DocumentedBy: %s", d.DocumentedBy)
+		d = doc
+	}
+	return d, nil
+}
+
 // Documentation implements part of the xrefs Service interface.
 func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	tickets, err := xrefs.FixTickets(req.Ticket)
@@ -885,43 +915,19 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	}
 
 	for _, ticket := range tickets {
-		d, err := t.documentation(ctx, ticket)
+		d, err := t.lookupDocument(ctx, ticket)
 		if err == table.ErrNoSuchKey {
-			log.Println("Missing Documentation:", ticket)
+			log.Printf("Missing Documentation for %s", ticket)
 			continue
 		} else if err != nil {
 			return nil, fmt.Errorf("error looking up documentation for ticket %q: %v", ticket, err)
-		}
-		tracePrintf(ctx, "Document: %s", ticket)
-
-		// If DocumentedBy is provided, replace document with another lookup.
-		if d.DocumentedBy != "" {
-			doc, err := t.documentation(ctx, d.DocumentedBy)
-			if err == table.ErrNoSuchKey {
-				log.Printf("Could not find subsuming documentation for {%+v}", d)
-				continue
-			} else if err != nil {
-				return nil, fmt.Errorf("error looking up subsuming documentation for ticket %q: %v", ticket, err)
-			}
-
-			// Ensure the subsuming documentation has the correct ticket and node.
-			doc.Ticket = ticket
-			for _, n := range d.Node {
-				if n.Ticket == ticket {
-					doc.Node = append(doc.Node, n)
-					break
-				}
-			}
-
-			tracePrintf(ctx, "DocumentedBy: %s", d.DocumentedBy)
-			d = doc
 		}
 
 		doc := d2d(d, patterns, reply.Nodes, reply.DefinitionLocations)
 		if req.IncludeChildren {
 			for _, child := range d.ChildTicket {
 				// TODO(schroederc): store children with root of documentation tree
-				cd, err := t.documentation(ctx, child)
+				cd, err := t.lookupDocument(ctx, child)
 				if err == table.ErrNoSuchKey {
 					log.Printf("Missing Documentation for child (of %s): %s", ticket, child)
 					continue

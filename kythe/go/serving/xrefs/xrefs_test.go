@@ -140,6 +140,21 @@ var (
 			Fact: makeFactList(
 				"/kythe/node/kind", "record",
 			),
+		}, {
+			Ticket: "kythe:#childDoc",
+			Fact: makeFactList(
+				"/kythe/node/kind", "record",
+			),
+		}, {
+			Ticket: "kythe:#childDocBy",
+			Fact: makeFactList(
+				"/kythe/node/kind", "record",
+			),
+		}, {
+			Ticket: "kythe:#secondChildDoc",
+			Fact: makeFactList(
+				"/kythe/node/kind", "record",
+			),
 		},
 	}
 
@@ -398,7 +413,8 @@ var (
 				Kind:    cpb.MarkedSource_IDENTIFIER,
 				PreText: "DocumentBuilderFactory",
 			},
-			Node: getNodes("kythe:#documented"),
+			Node:        getNodes("kythe:#documented"),
+			ChildTicket: []string{"kythe:#childDoc", "kythe:#childDocBy"},
 		}, {
 			Ticket:       "kythe:#documentedBy",
 			DocumentedBy: "kythe:#documented",
@@ -408,6 +424,18 @@ var (
 				PreText: "ReplacedDocumentBuilderFactory",
 			},
 			Node: getNodes("kythe:#documentedBy"),
+		}, {
+			Ticket:  "kythe:#childDoc",
+			RawText: "child document text",
+			Node:    getNodes("kythe:#childDoc"),
+		}, {
+			Ticket:       "kythe:#childDocBy",
+			DocumentedBy: "kythe:#secondChildDoc",
+			Node:         getNodes("kythe:#childDocBy"),
+		}, {
+			Ticket:  "kythe:#secondChildDoc",
+			RawText: "second child document text",
+			Node:    getNodes("kythe:#secondChildDoc"),
 		}},
 	}
 
@@ -1075,6 +1103,51 @@ func TestDocumentation(t *testing.T) {
 			},
 		}},
 		Nodes: nodeInfos(getNodes("kythe:#documented")),
+	}
+
+	if reply == nil || err != nil {
+		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
+	} else if err := testutil.DeepEqual(expected, reply); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDocumentationChildren(t *testing.T) {
+	st := tbl.Construct(t)
+	reply, err := st.Documentation(ctx, &xpb.DocumentationRequest{
+		Ticket: []string{"kythe:#documented"},
+
+		IncludeChildren: true,
+	})
+
+	expected := &xpb.DocumentationReply{
+		Document: []*xpb.DocumentationReply_Document{{
+			Ticket: "kythe:#documented",
+			Text: &xpb.Printable{
+				RawText: "some documentation text",
+			},
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "DocumentBuilderFactory",
+			},
+			Children: []*xpb.DocumentationReply_Document{{
+				Ticket: "kythe:#childDoc",
+				Text: &xpb.Printable{
+					RawText: "child document text",
+				},
+			}, {
+				Ticket: "kythe:#childDocBy",
+				Text: &xpb.Printable{
+					RawText: "second child document text",
+				},
+			}},
+		}},
+		Nodes: nodeInfos(getNodes(
+			"kythe:#childDoc",
+			"kythe:#childDocBy",
+			"kythe:#documented",
+			"kythe:#secondChildDoc",
+		)),
 	}
 
 	if reply == nil || err != nil {
