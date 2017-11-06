@@ -37,56 +37,55 @@ http_archive(
     # Gitiles creates gzip files with an embedded timestamp, so we cannot use
     # sha256 to validate the archives.  We must rely on the commit hash and https.
     # Commits must come from the master-with-bazel branch.
-    url = "https://boringssl.googlesource.com/boringssl/+archive/9612e1d2ce16a1bd67fbbe6ce969839af4d84a29.tar.gz",
+    url = "https://boringssl.googlesource.com/boringssl/+archive/4be3aa87917b20fedc45fa1fc5b6a2f3738612ad.tar.gz",
 )
 
 # Make sure to update regularly in accordance with Abseil's principle of live at HEAD
 http_archive(
     name = "com_google_absl",
-    strip_prefix = "abseil-cpp-dedb4eec6cf0addc26cc27b67c270aa5a478fcc5",
-    url = "https://github.com/abseil/abseil-cpp/archive/dedb4eec6cf0addc26cc27b67c270aa5a478fcc5.zip",
+    strip_prefix = "abseil-cpp-da336a84e9c1f86409b21996164ae9602b37f9ca",
+    url = "https://github.com/abseil/abseil-cpp/archive/da336a84e9c1f86409b21996164ae9602b37f9ca.zip",
 )
 
-new_http_archive(
-    name = "com_github_google_googletest",
-    build_file = "third_party/googletest.BUILD",
-    sha256 = "f3ed3b58511efd272eb074a3a6d6fb79d7c2e6a0e374323d1e6bcbcc1ef141bf",
-    strip_prefix = "googletest-release-1.8.0",
-    url = "https://github.com/google/googletest/archive/release-1.8.0.zip",
+http_archive(
+    name = "com_google_googletest",
+    sha256 = "89cebb92b9a7eb32c53e180ccc0db8f677c3e838883c5fbd07e6412d7e1f12c7",
+    strip_prefix = "googletest-d175c8bf823e709d570772b038757fadf63bc632",
+    url = "https://github.com/google/googletest/archive/d175c8bf823e709d570772b038757fadf63bc632.zip",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_gflags_gflags",
-    build_file = "third_party/googleflags.BUILD",  # Upstream's BUILD file doesn't quite work.
-    sha256 = "659de3fab5ba5a0376e3c2da333e4ecec9c8a4b41709861765e28e02dd562f7a",
-    strip_prefix = "gflags-cce68f0c9c5d054017425e6e6fd54f696d36e8ee",
-    url = "https://github.com/gflags/gflags/archive/cce68f0c9c5d054017425e6e6fd54f696d36e8ee.zip",
+    sha256 = "94ad0467a0de3331de86216cbc05636051be274bf2160f6e86f07345213ba45b",
+    strip_prefix = "gflags-77592648e3f3be87d6c7123eb81cbad75f9aef5a",
+    url = "https://github.com/gflags/gflags/archive/77592648e3f3be87d6c7123eb81cbad75f9aef5a.zip",
 )
 
-git_repository(
+http_archive(
     name = "com_googlesource_code_re2",
-    commit = "fc6337a382bfd4f7c861abea08f872d3c85b31da",
-    remote = "https://code.googlesource.com/re2",
+    # Gitiles creates gzip files with an embedded timestamp, so we cannot use
+    # sha256 to validate the archives.  We must rely on the commit hash and https.
+    url = "https://code.googlesource.com/re2/+archive/2c220e7df3c10d42d74cb66290ec89116bb5e6be.tar.gz",
 )
 
 new_http_archive(
     name = "com_github_google_glog",
     build_file = "third_party/googlelog.BUILD",
-    sha256 = "8fd1eca8e8e24d7240a106cf8183221f5319b6b7b69bcc1bb5f3826ade2bb4cd",
-    strip_prefix = "glog-cf36dabd8e24469c1b16748711f38c0d08085b36",
-    url = "https://github.com/google/glog/archive/cf36dabd8e24469c1b16748711f38c0d08085b36.zip",
+    sha256 = "ce61883437240d650be724043e8b3c67e257690f876ca9fd53ace2a791cfea6c",
+    strip_prefix = "glog-bac8811710c77ac3718be1c4801f43d37c1aea46",
+    url = "https://github.com/google/glog/archive/bac8811710c77ac3718be1c4801f43d37c1aea46.zip",
 )
 
 maven_jar(
     name = "com_google_code_gson_gson",
-    artifact = "com.google.code.gson:gson:2.8.0",
-    sha1 = "c4ba5371a29ac9b2ad6129b1d39ea38750043eff",
+    artifact = "com.google.code.gson:gson:2.8.2",
+    sha1 = "3edcfe49d2c6053a70a2a47e4e1c2f94998a49cf",
 )
 
 maven_jar(
     name = "com_google_guava_guava",
-    artifact = "com.google.guava:guava:21.0",
-    sha1 = "3a3d111be1be1b745edfa7d91678a12d7ed38709",
+    artifact = "com.google.guava:guava:23.3-jre",
+    sha1 = "9124c2675a9de3ba953f66d62339cf62f8e1a143",
 )
 
 maven_jar(
@@ -103,14 +102,14 @@ maven_jar(
 
 maven_jar(
     name = "com_beust_jcommander",
-    artifact = "com.beust:jcommander:1.48",
-    sha1 = "bfcb96281ea3b59d626704f74bc6d625ff51cbce",
+    artifact = "com.beust:jcommander:1.72",
+    sha1 = "6375e521c1e11d6563d4f25a07ce124ccf8cd171",
 )
 
 maven_jar(
     name = "com_google_truth_truth",
-    artifact = "com.google.truth:truth:0.27",
-    sha1 = "bd17774d2dc0fffa884d42c07d2537e86c67acd6",
+    artifact = "com.google.truth:truth:0.36",
+    sha1 = "7485219d2c1d341097a19382c02bde07e69ff5d2",
 )
 
 maven_jar(
@@ -121,8 +120,8 @@ maven_jar(
 
 maven_jar(
     name = "com_google_auto_value_auto_value",
-    artifact = "com.google.auto.value:auto-value:1.4.1",
-    sha1 = "8172ebbd7970188aff304c8a420b9f17168f6f48",
+    artifact = "com.google.auto.value:auto-value:1.5.2",
+    sha1 = "1b94ab7ec707e2220a0d1a7517488d1843236345",
 )
 
 maven_jar(
@@ -133,8 +132,8 @@ maven_jar(
 
 maven_jar(
     name = "com_google_auto_auto_common",
-    artifact = "com.google.auto:auto-common:0.3",
-    sha1 = "4073ab16ab4aceb9a217273da6442166bf51ae16",
+    artifact = "com.google.auto:auto-common:0.8",
+    sha1 = "c6f7af0e57b9d69d81b05434ef9f3c5610d498c4",
 )
 
 maven_jar(
@@ -143,6 +142,8 @@ maven_jar(
     sha1 = "7d4afac9f631a2c1adecc21350a4e88241185eb4",
 )
 
+#TODO(T276): Update Go rules to version 0.5.5 or later,
+#  along with external repositories.
 git_repository(
     name = "io_bazel_rules_go",
     remote = "https://github.com/bazelbuild/rules_go.git",
