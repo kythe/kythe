@@ -65,6 +65,7 @@ import com.sun.tools.javac.tree.JCTree.JCMemberReference;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
+import com.sun.tools.javac.tree.JCTree.JCPackageDecl;
 import com.sun.tools.javac.tree.JCTree.JCPrimitiveTypeTree;
 import com.sun.tools.javac.tree.JCTree.JCReturn;
 import com.sun.tools.javac.tree.JCTree.JCThrow;
@@ -203,22 +204,33 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     List<JavaNode> decls = scanList(compilation.getTypeDecls(), ctx);
     decls.removeAll(Collections.singleton(null));
 
-    if (compilation.getPackageName() != null) {
-      EntrySet pkgNode = entrySets.newPackageNodeAndEmit(compilation.packge);
-      String fileName =
-          Paths.get(compilation.getSourceFile().toUri().getPath()).getFileName().toString();
-      emitAnchor(
-          ctx.down((JCTree) compilation.getPackageName()),
-          PACKAGE_INFO_FILENAME.equals(fileName) ? EdgeKind.DEFINES_BINDING : EdgeKind.REF,
-          pkgNode.getVName());
+    JavaNode pkgNode = scan(compilation.getPackage(), ctx);
+    if (pkgNode != null) {
       for (JavaNode n : decls) {
         entrySets.emitEdge(n.getVName(), EdgeKind.CHILDOF, pkgNode.getVName());
       }
     }
 
     scan(compilation.getImports(), ctx);
-    scan(compilation.getPackageAnnotations(), ctx);
     return new JavaNode(fileNode);
+  }
+
+  @Override
+  public JavaNode visitPackage(JCPackageDecl pkg, TreeContext owner) {
+    TreeContext ctx = owner.down(pkg.pid);
+
+    VName pkgNode = entrySets.newPackageNodeAndEmit(pkg.packge).getVName();
+
+    String fileName =
+        Paths.get(filePositions.getSourceFile().toUri().getPath()).getFileName().toString();
+    EdgeKind anchorKind =
+        PACKAGE_INFO_FILENAME.equals(fileName) ? EdgeKind.DEFINES_BINDING : EdgeKind.REF;
+    emitAnchor(ctx, anchorKind, pkgNode);
+
+    visitDocComment(pkgNode, null);
+    visitAnnotations(pkgNode, pkg.getAnnotations(), ctx);
+
+    return new JavaNode(pkgNode);
   }
 
   @Override

@@ -209,7 +209,10 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
   }
 
   public R visitTopLevel(JCCompilationUnit tree, P p) {
-    return scan(tree.defs, p);
+    R r = scan(tree.getPackage(), p);
+    r = scanAndReduce(tree.getImports(), p, r);
+    r = scanAndReduce(tree.getTypeDecls(), p, r);
+    return r;
   }
 
   @Override
@@ -739,7 +742,7 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
     return visitPackage((JCPackageDecl) tree, p);
   }
 
-  public final R visitPackage(JCPackageDecl tree, P p) {
+  public R visitPackage(JCPackageDecl tree, P p) {
     R r = scan(tree.annotations, p);
     return scanAndReduce(tree.pid, p, r);
   }
