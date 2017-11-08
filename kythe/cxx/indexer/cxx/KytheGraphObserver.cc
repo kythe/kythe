@@ -73,6 +73,8 @@ static const char *FunctionSubkindToString(
       return "constructor";
     case KytheGraphObserver::FunctionSubkind::Destructor:
       return "destructor";
+    case KytheGraphObserver::FunctionSubkind::Initializer:
+      return "initializer";
   }
   LOG(FATAL) << "Invalid enumerator passed to FunctionSubkindToString.";
   return "invalid-fn-subkind";
@@ -492,6 +494,35 @@ void KytheGraphObserver::recordCallEdge(
                Claimability::Claimable);
   RecordAnchor(source_range, callee_id, EdgeKindID::kRefCall,
                Claimability::Unclaimable);
+}
+
+MaybeFew<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
+    const Range &range) {
+  // Always use physical ranges for these. We'll record a reference site as
+  // well, but including virtual ranges in the callgraph itself isn't useful
+  // (since the data we'd be expressing amounts to 'a call exists, somewhere').
+  if (range.Kind == GraphObserver::Range::RangeKind::Implicit ||
+      !range.PhysicalRange.getBegin().isValid()) {
+    return None();
+  }
+  clang::SourceLocation begin = range.PhysicalRange.getBegin();
+  if (begin.isMacroID()) {
+    begin = SourceManager->getExpansionLoc(begin);
+  }
+  SourceLocation file_start =
+      SourceManager->getLocForStartOfFile(SourceManager->getFileID(begin));
+  const auto *token = getClaimTokenForLocation(file_start);
+  NodeId file_id(token, "#init");
+  if (recorded_inits_.insert(token).second) {
+    MarkedSource file_source;
+    file_source.set_pre_text(token->vname().path());
+    file_source.set_kind(MarkedSource::IDENTIFIER);
+    recordFunctionNode(file_id, Completeness::Definition,
+                       FunctionSubkind::Initializer, file_source);
+    recordDefinitionBindingRange(Range(clang::SourceRange(file_start, file_start), token),
+                                 file_id, None());
+  }
+  return file_id;
 }
 
 VNameRef KytheGraphObserver::VNameRefFromNodeId(

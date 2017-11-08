@@ -286,6 +286,8 @@ class KytheGraphObserver : public GraphObserver {
   void recordCallEdge(const Range &SourceRange, const NodeId &CallerId,
                       const NodeId &CalleeId) override;
 
+  MaybeFew<NodeId> recordFileInitializer(const Range &CallSite) override;
+
   void recordMacroNode(const NodeId &MacroNode) override;
 
   void recordExpandsRange(const Range &SourceRange,
@@ -534,6 +536,8 @@ class KytheGraphObserver : public GraphObserver {
   /// Used to eliminate redundant stamped ranges.
   std::unordered_set<std::pair<Range, GraphObserver::NodeId>, StampedRangeHash>
       stamped_ranges_;
+  /// Used to eliminate redundant file-level initializers.
+  std::unordered_set<const KytheClaimToken *> recorded_inits_;
   /// If true, anchors and edges from a given physical source location will
   /// be dropped if they were previously emitted from the same location
   /// with the same edge kind to the same target.

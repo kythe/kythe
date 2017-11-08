@@ -416,7 +416,9 @@ class GraphObserver {
     /// This is a constructor.
     Constructor,
     /// This is a destructor.
-    Destructor
+    Destructor,
+    /// This is a synthesized initializer.
+    Initializer
   };
 
   enum class Variance { Covariant, Contravariant, Invariant };
@@ -687,6 +689,14 @@ class GraphObserver {
   /// \param CalleeId The node being called.
   virtual void recordCallEdge(const Range &SourceRange, const NodeId &CallerId,
                               const NodeId &CalleeId) {}
+
+  /// \brief Creates a node to represent a file-level initialization routine
+  /// that can be blamed for a call at `CallSite`.
+  /// \param CallSite The call site that needs a routine to blame.
+  /// \return The `NodeId` for the routine to blame.
+  virtual MaybeFew<NodeId> recordFileInitializer(const Range &CallSite) {
+    return None();
+  }
 
   /// \brief Records a child-to-parent relationship as an edge in the graph.
   /// \param ChildNodeId The identifier for the child node.

@@ -549,7 +549,11 @@ void IndexerASTVisitor::MaybeRecordDefinitionRange(
 
 void IndexerASTVisitor::RecordCallEdges(const GraphObserver::Range &Range,
                                         const GraphObserver::NodeId &Callee) {
-  if (!Job->BlameStack.empty()) {
+  if (Job->BlameStack.empty()) {
+    if (auto FileId = Observer.recordFileInitializer(Range)) {
+      Observer.recordCallEdge(Range, FileId.primary(), Callee);
+    }
+  } else {
     for (const auto &Caller : Job->BlameStack.back()) {
       Observer.recordCallEdge(Range, Caller, Callee);
     }
@@ -1247,7 +1251,8 @@ bool IndexerASTVisitor::VisitCXXConstructExpr(
         if (const auto ETL =
                 TSI->getTypeLoc().getAs<clang::ElaboratedTypeLoc>()) {
           VisitNestedNameSpecifierLoc(ETL.getQualifierLoc());
-          BuildNodeIdForType(ETL.getNamedTypeLoc(), ETL.getType(), EmitRanges::Yes);
+          BuildNodeIdForType(ETL.getNamedTypeLoc(), ETL.getType(),
+                             EmitRanges::Yes);
           RefLoc = ETL.getNamedTypeLoc().getBeginLoc();
         }
       }
@@ -1259,27 +1264,22 @@ bool IndexerASTVisitor::VisitCXXConstructExpr(
     // to write down.
     bool IsImplicit = !RPL.isValid() && E->getNumArgs() > 0;
     VisitDeclRefOrIvarRefExpr(E, Callee, RefLoc, IsImplicit);
-    if (!Job->BlameStack.empty()) {
-      clang::SourceRange SR = E->getSourceRange();
-      if (RPL.isValid()) {
-        // This loses the right paren without the offset.
-        SR.setEnd(RPL.getLocWithOffset(1));
-      } else {
-        SR.setEnd(SR.getEnd().getLocWithOffset(1));
-      }
-      auto StmtId = BuildNodeIdForImplicitStmt(E);
-      if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
-        RecordCallEdges(RCC.primary(), BuildNodeIdForRefToDecl(Callee));
-      }
+    clang::SourceRange SR = E->getSourceRange();
+    if (RPL.isValid()) {
+      // This loses the right paren without the offset.
+      SR.setEnd(RPL.getLocWithOffset(1));
+    } else {
+      SR.setEnd(SR.getEnd().getLocWithOffset(1));
+    }
+    auto StmtId = BuildNodeIdForImplicitStmt(E);
+    if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
+      RecordCallEdges(RCC.primary(), BuildNodeIdForRefToDecl(Callee));
     }
   }
   return true;
 }
 
 bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
-  if (Job->BlameStack.empty()) {
-    return true;
-  }
   auto DTy = E->getDestroyedType();
   if (DTy.isNull()) {
     return true;
@@ -1382,44 +1382,37 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
 
 bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
     const clang::CXXUnresolvedConstructExpr *E) {
-  if (!Job->BlameStack.empty()) {
-    auto QTCan = E->getTypeAsWritten().getCanonicalType();
-    if (QTCan.isNull()) {
-      return true;
+  auto QTCan = E->getTypeAsWritten().getCanonicalType();
+  if (QTCan.isNull()) {
+    return true;
+  }
+  CHECK(E->getTypeSourceInfo() != nullptr);
+  auto TyId = BuildNodeIdForType(E->getTypeSourceInfo()->getTypeLoc(),
+                                 E->getTypeSourceInfo()->getTypeLoc().getType(),
+                                 EmitRanges::Yes);
+  if (!TyId) {
+    return true;
+  }
+  auto CtorName = Context.DeclarationNames.getCXXConstructorName(
+      CanQualType::CreateUnsafe(QTCan));
+  if (auto LookupId =
+          BuildNodeIdForDependentName(clang::NestedNameSpecifierLoc(), CtorName,
+                                      E->getLocStart(), TyId, EmitRanges::No)) {
+    clang::SourceLocation RPL = E->getRParenLoc();
+    clang::SourceRange SR = E->getSourceRange();
+    // This loses the right paren without the offset.
+    if (RPL.isValid()) {
+      SR.setEnd(RPL.getLocWithOffset(1));
     }
-    CHECK(E->getTypeSourceInfo() != nullptr);
-    auto TyId = BuildNodeIdForType(
-        E->getTypeSourceInfo()->getTypeLoc(),
-        E->getTypeSourceInfo()->getTypeLoc().getType(), EmitRanges::Yes);
-    if (!TyId) {
-      return true;
-    }
-    auto CtorName = Context.DeclarationNames.getCXXConstructorName(
-        CanQualType::CreateUnsafe(QTCan));
-    if (auto LookupId = BuildNodeIdForDependentName(
-            clang::NestedNameSpecifierLoc(), CtorName, E->getLocStart(), TyId,
-            EmitRanges::No)) {
-      clang::SourceLocation RPL = E->getRParenLoc();
-      clang::SourceRange SR = E->getSourceRange();
-      // This loses the right paren without the offset.
-      if (RPL.isValid()) {
-        SR.setEnd(RPL.getLocWithOffset(1));
-      }
-      auto StmtId = BuildNodeIdForImplicitStmt(E);
-      if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
-        RecordCallEdges(RCC.primary(), LookupId.primary());
-      }
+    auto StmtId = BuildNodeIdForImplicitStmt(E);
+    if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
+      RecordCallEdges(RCC.primary(), LookupId.primary());
     }
   }
   return true;
 }
 
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr *E) {
-  if (Job->BlameStack.empty()) {
-    // TODO(zarko): What about static initializers? Do we blame these on the
-    // translation unit?
-    return true;
-  }
   clang::SourceLocation RPL = E->getRParenLoc();
   clang::SourceRange SR = E->getSourceRange();
   if (RPL.isValid()) {
@@ -5457,10 +5450,6 @@ bool IndexerASTVisitor::VisitObjCIvarRefExpr(
 
 bool IndexerASTVisitor::VisitObjCMessageExpr(
     const clang::ObjCMessageExpr *Expr) {
-  if (Job->BlameStack.empty()) {
-    return true;
-  }
-
   if (Expr->isClassMessage()) {
     const QualType &CR = Expr->getClassReceiver();
     if (CR.isNull()) {

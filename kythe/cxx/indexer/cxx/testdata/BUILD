@@ -108,7 +108,19 @@ cc_indexer_test(
     name = "nested_namespace_definition",
     srcs = ["basic/nested_namespace_definition.cc"],
     check_for_singletons = True,
-    std = "c++1z",
+    std = "c++17",
+    tags = [
+        "basic",
+        "c++17",
+    ],
+)
+
+cc_indexer_test(
+    name = "file_call",
+    srcs = ["basic/file_call.cc"],
+    check_for_singletons = True,
+    convert_marked_source = True,
+    std = "c++17",
     tags = [
         "basic",
         "c++17",
@@ -282,6 +294,7 @@ cc_indexer_test(
     name = "builtin_functions_ctd",
     srcs = ["basic/builtin_functions_ctd.c"],
     check_for_singletons = True,
+    ignore_dups = True,
     std = "gnu99",
     tags = ["basic"],
 )
@@ -478,6 +491,7 @@ cc_indexer_test(
     name = "macros_internal_exp_ref",
     srcs = ["basic/macros_internal_exp_ref.cc"],
     check_for_singletons = True,
+    ignore_dups = True,
     tags = ["basic"],
 )
 
@@ -485,6 +499,7 @@ cc_indexer_test(
     name = "macros_internal_type_ref",
     srcs = ["basic/macros_internal_type_ref.cc"],
     check_for_singletons = True,
+    ignore_dups = True,
     tags = ["basic"],
 )
 
@@ -752,12 +767,10 @@ cc_indexer_test(
     name = "constexpr_ref_call",
     srcs = ["basic/constexpr_ref_call.cc"],
     ignore_dups = True,
+    std = "c++17",
     tags = [
         "basic",
-        # TODO(shahms): ref/call edges are not currently emitted for constexpr functions
-        # in a constexpr context.
-        "manual",
-        "arc-ignore",
+        "c++17",
     ],
 )
 
@@ -766,7 +779,7 @@ cc_indexer_test(
     srcs = ["basic/structured_bindings.cc"],
     check_for_singletons = True,
     ignore_dups = True,
-    std = "c++1z",
+    std = "c++17",
     tags = [
         "basic",
         "c++17",
@@ -776,7 +789,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "if_switch_init",
     srcs = ["basic/if_switch_init.cc"],
-    std = "c++1z",
+    std = "c++17",
     tags = [
         "basic",
         "c++17",
@@ -940,7 +953,7 @@ cc_indexer_test(
     name = "function_lambda_value_this",
     srcs = ["function/function_lambda_value_this.cc"],
     ignore_dups = True,
-    std = "c++1z",
+    std = "c++17",
     tags = [
         "c++17",
         "function",
@@ -951,7 +964,7 @@ cc_indexer_test(
     name = "function_constexpr_lambda",
     srcs = ["function/function_constexpr_lambda.cc"],
     ignore_dups = True,
-    std = "c++1z",
+    std = "c++17",
     tags = [
         "c++17",
         "function",
@@ -1065,13 +1078,12 @@ cc_indexer_test(
 cc_indexer_test(
     name = "function_deduced_decltype_return",
     srcs = ["function/function_deduced_decltype_return.cc"],
+    # TODO(shahms): decltype(type) return types do not currently work.
+    expect_fail_verify = True,
     std = "c++14",
     tags = [
         "c++14",
         "function",
-        # TODO(shahms): decltype(type) return types do not currently work.
-        "manual",
-        "arc-ignore",
     ],
 )
 
@@ -1913,6 +1925,18 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template_file_call",
+    srcs = ["template/template_file_call.cc"],
+    check_for_singletons = True,
+    convert_marked_source = True,
+    std = "c++17",
+    tags = [
+        "c++17",
+        "template",
+    ],
+)
+
+cc_indexer_test(
     name = "template_fn_call",
     srcs = ["template/template_fn_call.cc"],
     tags = ["template"],
@@ -2242,7 +2266,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_using_pack_expansion",
     srcs = ["template/template_using_pack_expansion.cc"],
-    std = "c++1z",
+    std = "c++17",
     tags = [
         "c++17",
         "template",
@@ -2252,7 +2276,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_auto_parameter",
     srcs = ["template/template_auto_parameter.cc"],
-    std = "c++1z",
+    std = "c++17",
     tags = [
         "c++17",
         "template",
@@ -2263,7 +2287,7 @@ cc_indexer_test(
     name = "template_fold_expressions",
     srcs = ["template/template_fold_expressions.cc"],
     ignore_dups = True,
-    std = "c++1z",
+    std = "c++17",
     tags = [
         "c++17",
         "template",
