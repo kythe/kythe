@@ -115,7 +115,7 @@ final class KytheBindingGraphFactory {
     InjectValidator injectMethodValidator = new InjectValidator(types, elements, compilerOptions);
 
     InjectBindingRegistry injectBindingRegistry =
-        new InjectBindingRegistry(
+        new InjectBindingRegistryImpl(
             elements,
             types,
             messager,
