@@ -638,7 +638,7 @@ public class JavaExtractorTest extends TestCase {
 
     CompilationUnit unit = description.getCompilationUnit();
 
-   assertThat(unit).isNotNull();
+    assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
     assertThat(unit.getSourceFileCount()).isEqualTo(0);
     assertThat(unit.getRequiredInputCount()).isEqualTo(0);

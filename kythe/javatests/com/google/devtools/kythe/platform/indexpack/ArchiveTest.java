@@ -18,8 +18,6 @@ package com.google.devtools.kythe.platform.indexpack;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;

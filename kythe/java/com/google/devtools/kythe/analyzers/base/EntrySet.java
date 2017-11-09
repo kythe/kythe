@@ -149,10 +149,10 @@ public final class EntrySet {
       return false;
     }
     EntrySet entrySet = (EntrySet) o;
-    return Objects.equals(source, entrySet.source) &&
-        Objects.equals(edgeKind, entrySet.edgeKind) &&
-        Objects.equals(target, entrySet.target) &&
-        Objects.equals(properties, entrySet.properties);
+    return Objects.equals(source, entrySet.source)
+        && Objects.equals(edgeKind, entrySet.edgeKind)
+        && Objects.equals(target, entrySet.target)
+        && Objects.equals(properties, entrySet.properties);
   }
 
   @Override

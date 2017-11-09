@@ -19,7 +19,6 @@ package com.google.devtools.kythe.platform.shared;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -52,6 +51,5 @@ public class FileDataDirectory implements FileDataProvider {
   }
 
   @Override
-  public void close() {
-  }
+  public void close() {}
 }

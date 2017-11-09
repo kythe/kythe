@@ -105,7 +105,7 @@ public class ExtractorUtilsTest extends TestCase {
     assertThat(ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/rootrelative"))
         .isEqualTo("rootrelative");
     assertThat(ExtractorUtils.tryMakeRelative("/someroot/", "./cwd_sub"))
-       .isEqualTo(cwd + "/cwd_sub");
+        .isEqualTo(cwd + "/cwd_sub");
     assertThat(ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/../one_up"))
         .isEqualTo("/one_up");
 

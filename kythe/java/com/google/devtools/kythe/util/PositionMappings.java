@@ -21,10 +21,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 
-/**
- * Provides a mapping of file character offsets to byte offsets
- * and line numbers.
- */
+/** Provides a mapping of file character offsets to byte offsets and line numbers. */
 public class PositionMappings {
   private final int[] byteOffsets;
   private final int[] lineNumbers;
@@ -34,8 +31,8 @@ public class PositionMappings {
    *
    * @param encoding The encoding of the text to be mapped.
    * @param text The source text to be mapped.
-   * @throws IllegalStateException If an error was encountered while attempting
-   * to read the source text.
+   * @throws IllegalStateException If an error was encountered while attempting to read the source
+   *     text.
    */
   public PositionMappings(Charset encoding, CharSequence text) {
     byteOffsets = new int[text.length() + 1];
@@ -61,8 +58,7 @@ public class PositionMappings {
    * Returns the line number corresponding to the specified char offset.
    *
    * @param charOffset The char offset of the requested line.
-   * @return The line number for the specified offset. -1 if the specified offset
-   * was out of bounds.
+   * @return The line number for the specified offset. -1 if the specified offset was out of bounds.
    */
   public int charToLine(int charOffset) {
     if (charOffset < 0) {
@@ -79,8 +75,8 @@ public class PositionMappings {
    * Returns the byte offset corresponding to the specified char offset.
    *
    * @param charOffset The char offset of the requested byte offset.
-   * @return The byte offset for the specified char offset. -1 if the specified offset
-   * was out of bounds.
+   * @return The byte offset for the specified char offset. -1 if the specified offset was out of
+   *     bounds.
    */
   public int charToByteOffset(int charOffset) {
     if (charOffset < 0) {

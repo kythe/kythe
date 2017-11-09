@@ -16,19 +16,17 @@
 
 package com.google.devtools.kythe.platform.shared;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.proto.Analysis;
 import com.google.protobuf.ByteString;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
-import static com.google.common.truth.Truth.assertThat;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class FileDataCacheTest {
@@ -77,7 +75,8 @@ public final class FileDataCacheTest {
   }
 
   @Test
-  public void testCorrectDigestLookupReturnsMatch() throws ExecutionException, InterruptedException {
+  public void testCorrectDigestLookupReturnsMatch()
+      throws ExecutionException, InterruptedException {
     List<Analysis.FileData> fileData = new ArrayList<>();
 
     Analysis.FileData.Builder fd1 = Analysis.FileData.newBuilder();
@@ -127,7 +126,8 @@ public final class FileDataCacheTest {
   }
 
   @Test
-  public void testMultipleFilesWithTheSameDigestNotThrows() throws InterruptedException, ExecutionException {
+  public void testMultipleFilesWithTheSameDigestNotThrows()
+      throws InterruptedException, ExecutionException {
     List<Analysis.FileData> fileData = new ArrayList<>();
 
     Analysis.FileData.Builder fd1 = Analysis.FileData.newBuilder();

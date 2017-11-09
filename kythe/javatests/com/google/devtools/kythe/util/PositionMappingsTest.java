@@ -21,15 +21,14 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_16;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.devtools.kythe.util.PositionMappings;
 import java.nio.charset.Charset;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests {@link PositionMappings} */
+/** Tests {@link com.google.devtools.kythe.util.PositionMappings} */
 @RunWith(JUnit4.class)
-public class PositionMappingsTest{
+public class PositionMappingsTest {
   @Test
   public void testASCII() {
     String text = "Hello\nWorld!";
@@ -84,7 +83,7 @@ public class PositionMappingsTest{
 
   private static void assertLineCountsAreCorrect(PositionMappings mapping, String text) {
     int lineCount = 1;
-    for(int i = 0; i < text.length(); i++) {
+    for (int i = 0; i < text.length(); i++) {
       assertThat(mapping.charToLine(i)).isEqualTo(lineCount);
 
       if (text.charAt(i) == '\n') {
@@ -93,15 +92,19 @@ public class PositionMappingsTest{
     }
   }
 
-  private static void assertOffsetsMatchSubstrings(PositionMappings positionMappings, String text, Charset charset) {
+  private static void assertOffsetsMatchSubstrings(
+      PositionMappings positionMappings, String text, Charset charset) {
     // Check edges first
     assertThat(positionMappings.charToByteOffset(0)).isEqualTo(0);
-    assertThat(positionMappings.charToByteOffset(text.length())).isEqualTo(text.getBytes(charset).length);
+    assertThat(positionMappings.charToByteOffset(text.length()))
+        .isEqualTo(text.getBytes(charset).length);
 
     // check for correct byte offsets at each index in the text
     for (int i = 0; i < text.length(); i++) {
       String ss = text.substring(0, i);
-      assertThat(positionMappings.charToByteOffset(i)).named("offsets[" + i + "]").isEqualTo(ss.getBytes(charset).length);
+      assertThat(positionMappings.charToByteOffset(i))
+          .named("offsets[" + i + "]")
+          .isEqualTo(ss.getBytes(charset).length);
     }
   }
 }

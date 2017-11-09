@@ -17,13 +17,11 @@
 package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.util.concurrent.ListenableFuture;
-
+import java.nio.file.Paths;
+import java.util.concurrent.ExecutionException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import java.nio.file.Paths;
-import java.util.concurrent.ExecutionException;
 
 @RunWith(JUnit4.class)
 public final class FileDataDirectoryTest {

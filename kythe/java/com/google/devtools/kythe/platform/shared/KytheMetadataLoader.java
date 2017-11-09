@@ -66,8 +66,11 @@ public class KytheMetadataLoader implements MetadataLoader {
       return new AutoValue_KytheMetadataLoader_RuleXorError(null, error);
     }
 
-    @Nullable abstract Metadata.Rule rule();
-    @Nullable abstract String error();
+    @Nullable
+    abstract Metadata.Rule rule();
+
+    @Nullable
+    abstract String error();
   }
 
   @Nullable
@@ -134,7 +137,7 @@ public class KytheMetadataLoader implements MetadataLoader {
     Metadata metadata = new Metadata();
     for (JsonElement rule : rules) {
       RuleXorError ruleXorError = parseRule(rule.getAsJsonObject());
-      if (ruleXorError != null) {  // skip nulls
+      if (ruleXorError != null) { // skip nulls
         Metadata.Rule metadataRule = ruleXorError.rule();
         if (metadataRule != null) {
           metadata.addRule(metadataRule);

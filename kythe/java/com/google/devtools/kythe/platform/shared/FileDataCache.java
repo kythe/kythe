@@ -21,19 +21,17 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.proto.Analysis.FileData;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * {@link FileDataProvider} that looks up file data from a given {@link Iterable} of
- * {@link FileData}.
+ * {@link FileDataProvider} that looks up file data from a given {@link Iterable} of {@link
+ * FileData}.
  */
 public class FileDataCache implements FileDataProvider {
 
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(FileDataProvider.class);
+  private static final FormattingLogger logger = FormattingLogger.getLogger(FileDataProvider.class);
 
   private final Map<String, byte[]> fileContents;
 
@@ -45,8 +43,7 @@ public class FileDataCache implements FileDataProvider {
       if (addedFiles.contains(digest)) {
         logger.warningfmt(
             "File %s with digest %s occurs multiple times in compilation unit.",
-            data.getInfo().getPath(),
-            digest);
+            data.getInfo().getPath(), digest);
       } else {
         addedFiles.add(digest);
         builder.put(digest, data.getContent().toByteArray());
@@ -61,8 +58,8 @@ public class FileDataCache implements FileDataProvider {
       return Futures.immediateFailedFuture(new IllegalArgumentException("digest cannot be null"));
     }
     byte[] content = fileContents.get(digest);
-    return content == null ?
-        Futures.immediateFailedFuture(
+    return content == null
+        ? Futures.immediateFailedFuture(
             new RuntimeException("Cache does not contain file for digest: " + digest))
         : Futures.immediateFuture(content);
   }

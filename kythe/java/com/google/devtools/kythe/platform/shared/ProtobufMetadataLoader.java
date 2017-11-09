@@ -21,11 +21,11 @@ import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo;
-import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 /** Loads protobuf metadata (stored as GeneratedCodeInfo messages). */
 public class ProtobufMetadataLoader implements MetadataLoader {
@@ -38,7 +38,8 @@ public class ProtobufMetadataLoader implements MetadataLoader {
    * comment in base64 format.
    */
   public interface GeneratedCodeInfoExtractor {
-    @Nullable GeneratedCodeInfo extract(String fileName, byte[] data);
+    @Nullable
+    GeneratedCodeInfo extract(String fileName, byte[] data);
   }
 
   /**
@@ -137,8 +138,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
   }
 
   @Nullable
-  private static GeneratedCodeInfo extractAnnotationsFromPbMetaFile(
-      String fileName, byte[] data) {
+  private static GeneratedCodeInfo extractAnnotationsFromPbMetaFile(String fileName, byte[] data) {
     if (!fileName.endsWith(META_SUFFIX)) {
       return null;
     }

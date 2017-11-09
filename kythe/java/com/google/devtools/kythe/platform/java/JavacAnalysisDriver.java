@@ -54,9 +54,7 @@ public class JavacAnalysisDriver {
   }
 
   public void analyze(
-      JavacAnalyzer analyzer,
-      CompilationUnit compilationUnit,
-      FileDataProvider fileDataProvider)
+      JavacAnalyzer analyzer, CompilationUnit compilationUnit, FileDataProvider fileDataProvider)
       throws AnalysisException {
 
     // If there are no source files, then there is nothing for us to do.

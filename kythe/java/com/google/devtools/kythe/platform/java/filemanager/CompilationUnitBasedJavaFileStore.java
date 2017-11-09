@@ -123,12 +123,7 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
           String clsName = packageName + "." + simpleName;
           files.add(
               new CustomJavaFileObject(
-                  contentProvider,
-                  join(dirToLookIn, fileName),
-                  digest,
-                  clsName,
-                  kind,
-                  encoding));
+                  contentProvider, join(dirToLookIn, fileName), digest, clsName, kind, encoding));
           break;
         }
       }

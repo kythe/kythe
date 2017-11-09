@@ -41,23 +41,24 @@ import java.util.List;
 /**
  * General logic for a javac-based {@link CompilationUnit} extractor.
  *
- * Environment Variables Used (note that these can also be set as JVM system properties):
- *   KYTHE_VNAMES: optional path to a JSON configuration file for {@link FileVNames} to populate
- *                 the {@link CompilationUnit}'s required input {@link VName}s
+ * <p>Environment Variables Used (note that these can also be set as JVM system properties):
  *
- *   KYTHE_CORPUS: if KYTHE_VNAMES is not given, all {@link VName}s will be populated with this
- *                 corpus (default {@link DEFAULT_CORPUS})
+ * <p>KYTHE_VNAMES: optional path to a JSON configuration file for {@link FileVNames} to populate the
+ * {@link CompilationUnit}'s required input {@link VName}s
  *
- *   KYTHE_ROOT_DIRECTORY: required root path for file inputs; the {@link FileData} paths stored in
- *                         the {@link CompilationUnit} will be made to be relative to this directory
+ * <p>KYTHE_CORPUS: if KYTHE_VNAMES is not given, all {@link VName}s will be populated with this
+ * corpus (default {@link DEFAULT_CORPUS})
  *
- *   KYTHE_OUTPUT_FILE: if set to a non-empty value, write the resulting .kindex file to this path
- *                      instead of using KYTHE_OUTPUT_DIRECTORY
+ * <p>KYTHE_ROOT_DIRECTORY: required root path for file inputs; the {@link FileData} paths stored in
+ * the {@link CompilationUnit} will be made to be relative to this directory
  *
- *   KYTHE_OUTPUT_DIRECTORY: required directory path to store the resulting .kindex file
+ * <p>KYTHE_OUTPUT_FILE: if set to a non-empty value, write the resulting .kindex file to this path
+ * instead of using KYTHE_OUTPUT_DIRECTORY
  *
- *   KYTHE_INDEX_PACK: if set to a non-empty value, interpret KYTHE_OUTPUT_DIRECTORY as the root of
- *                     an indexpack instead of a collection of .kindex files
+ * <p>KYTHE_OUTPUT_DIRECTORY: required directory path to store the resulting .kindex file
+ *
+ * <p>KYTHE_INDEX_PACK: if set to a non-empty value, interpret KYTHE_OUTPUT_DIRECTORY as the root of
+ * an indexpack instead of a collection of .kindex files
  */
 public abstract class AbstractJavacWrapper {
   public static final String DEFAULT_CORPUS = "kythe";
