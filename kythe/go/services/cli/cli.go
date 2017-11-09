@@ -30,6 +30,7 @@ import (
 	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/serving/identifiers"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
@@ -53,9 +54,10 @@ func init() {
 
 // API contains access points the CLI's backend services.
 type API struct {
-	XRefService     xrefs.Service
-	GraphService    graph.Service
-	FileTreeService filetree.Service
+	XRefService       xrefs.Service
+	GraphService      graph.Service
+	FileTreeService   filetree.Service
+	IdentifierService identifiers.Service
 }
 
 // Execute registers all Kythe CLI commands to subcommands.DefaultCommander and
@@ -70,6 +72,7 @@ func Execute(ctx context.Context, api API) subcommands.ExitStatus {
 	RegisterCommand(&nodesCommand{}, "graph")
 	RegisterCommand(&edgesCommand{}, "graph")
 
+	RegisterCommand(&identCommand{}, "")
 	RegisterCommand(&lsCommand{}, "")
 
 	RegisterCommand(&decorCommand{}, "xrefs")

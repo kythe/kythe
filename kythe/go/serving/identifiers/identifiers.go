@@ -22,7 +22,11 @@ package identifiers
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"time"
 
+	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
 
@@ -99,4 +103,49 @@ func contains(haystack []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+// RegisterHTTPHandlers registers a JSON HTTP handler with mux using the given
+// identifiers Service.  The following method with be exposed:
+//
+//   GET /find_identifier
+//     Request: JSON encoded identifier.FindRequest
+//     Response: JSON encoded identifier.FindReply
+//
+// Note: /find_identifier will return its response as a serialized protobuf if
+// the "proto" query parameter is set.
+func RegisterHTTPHandlers(ctx context.Context, id Service, mux *http.ServeMux) {
+	mux.HandleFunc("/find_identifier", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			log.Printf("identifiers.Find:\t%s", time.Since(start))
+		}()
+		var req ipb.FindRequest
+		if err := web.ReadJSONBody(r, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		reply, err := id.Find(ctx, &req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err := web.WriteResponse(w, r, reply); err != nil {
+			log.Println(err)
+		}
+	})
+}
+
+type webClient struct{ addr string }
+
+// Find implements part of the Service interface.
+func (w *webClient) Find(ctx context.Context, q *ipb.FindRequest) (*ipb.FindReply, error) {
+	var reply ipb.FindReply
+	return &reply, web.Call(w.addr, "find_identifier", q, &reply)
+}
+
+// WebClient returns an identifiers Service based on a remote web server.
+func WebClient(addr string) Service {
+	return &webClient{addr}
 }

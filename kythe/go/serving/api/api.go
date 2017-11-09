@@ -31,12 +31,14 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
 	gsrv "kythe.io/kythe/go/serving/graph"
+	"kythe.io/kythe/go/serving/identifiers"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"
+	ipb "kythe.io/kythe/proto/identifier_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -46,6 +48,7 @@ type Interface interface {
 	xrefs.Service
 	graph.Service
 	filetree.Service
+	identifiers.Service
 }
 
 const (
@@ -77,6 +80,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		api.xs = xrefs.WebClient(apiSpec)
 		api.gs = graph.WebClient(apiSpec)
 		api.ft = filetree.WebClient(apiSpec)
+		api.id = identifiers.WebClient(apiSpec)
 	} else if _, err := os.Stat(apiSpec); err == nil {
 		db, err := leveldb.Open(apiSpec, nil)
 		if err != nil {
@@ -88,6 +92,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		api.xs = xsrv.NewCombinedTable(tbl)
 		api.gs = gsrv.NewCombinedTable(tbl)
 		api.ft = &ftsrv.Table{tbl, true}
+		api.id = &identifiers.Table{tbl}
 	} else {
 		return nil, fmt.Errorf("unknown API spec format: %q", apiSpec)
 	}
@@ -118,6 +123,7 @@ type apiCloser struct {
 	xs xrefs.Service
 	gs graph.Service
 	ft filetree.Service
+	id identifiers.Service
 
 	closer func() error
 }
@@ -163,4 +169,9 @@ func (api apiCloser) Directory(ctx context.Context, req *ftpb.DirectoryRequest) 
 // CorpusRoots implements part of the filetree Service interface.
 func (api apiCloser) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error) {
 	return api.ft.CorpusRoots(ctx, req)
+}
+
+// Find implements part of the identifiers Service interface.
+func (api apiCloser) Find(ctx context.Context, req *ipb.FindRequest) (*ipb.FindReply, error) {
+	return api.id.Find(ctx, req)
 }

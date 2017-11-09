@@ -11,11 +11,13 @@ go_package_library(
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
         "//kythe/go/serving/graph",
+        "//kythe/go/serving/identifiers",
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:graph_proto_go",
+        "//kythe/proto:identifier_proto_go",
         "//kythe/proto:xref_proto_go",
     ],
 )
