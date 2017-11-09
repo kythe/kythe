@@ -73,7 +73,7 @@ func (c identCommand) displayMatches(reply *ipb.FindReply) error {
 		if m.NodeSubkind != "" {
 			kind += "/" + m.NodeSubkind
 		}
-		fmt.Sprintf("%s [kind: %s]", m.Ticket, kind)
+		fmt.Printf("%s [kind: %s]\n", m.Ticket, kind)
 	}
 	return nil
 }
