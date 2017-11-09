@@ -195,12 +195,12 @@ public class KytheEntrySets {
             .addSignatureSalt(d.getMessage())
             .addSignatureSalt(d.getDetails())
             .addSignatureSalt(d.getContextUrl())
-            .setProperty("/kythe/message", d.getMessage());
+            .setProperty("message", d.getMessage());
     if (!d.getDetails().isEmpty()) {
-      builder.setProperty("/kythe/details", d.getDetails());
+      builder.setProperty("details", d.getDetails());
     }
     if (!d.getContextUrl().isEmpty()) {
-      builder.setProperty("/kythe/context/url", d.getContextUrl());
+      builder.setProperty("context/url", d.getContextUrl());
     }
     EntrySet dn = emitAndReturn(builder);
     if (fileVName == null) {
