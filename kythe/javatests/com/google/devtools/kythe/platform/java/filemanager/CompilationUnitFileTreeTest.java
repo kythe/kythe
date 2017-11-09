@@ -21,7 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.devtools.kythe.proto.Analysis;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import junit.framework.TestCase;
 
@@ -42,7 +42,7 @@ public class CompilationUnitFileTreeTest extends TestCase {
   }
 
   private List<FileInput> createDummyFileInput(String path) {
-    List<FileInput> ret = new LinkedList<>();
+    List<FileInput> ret = new ArrayList<>();
     ret.add(
         CompilationUnit.FileInput.newBuilder()
             .setInfo(

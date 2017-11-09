@@ -32,7 +32,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -42,7 +41,7 @@ import javax.tools.JavaFileObject;
 
 public final class SourceText {
   private final Positions positions;
-  private final List<Comment> comments = new LinkedList<>();
+  private final List<Comment> comments = new ArrayList<>();
 
   public SourceText(Context context, JCCompilationUnit compilation, Charset sourceEncoding)
       throws IOException {

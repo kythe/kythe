@@ -27,9 +27,9 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -323,7 +323,7 @@ public class KytheEntrySets {
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */
   public EntrySet newFunctionTypeAndEmit(VName returnType, List<VName> arguments) {
-    List<VName> tArgs = new LinkedList<>(arguments);
+    List<VName> tArgs = new ArrayList<>(arguments);
     tArgs.add(0, returnType);
     return newTApplyAndEmit(newBuiltinAndEmit("fn").getVName(), tArgs);
   }

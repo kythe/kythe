@@ -23,7 +23,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 /** Kythe context within a {@link JCTree}. */
@@ -111,7 +111,7 @@ class TreeContext {
 
   @Override
   public String toString() {
-    List<String> parts = new LinkedList<>();
+    List<String> parts = new ArrayList<>();
     parts.add("JCTree = " + tree);
     if (node != null) {
       parts.add("JavaNode = " + node);
@@ -120,7 +120,7 @@ class TreeContext {
     if (snippet != null) {
       parts.add("Snippet span = " + snippet);
     }
-    List<String> parents = new LinkedList<>();
+    List<String> parents = new ArrayList<>();
     TreeContext cur = up;
     while (cur != null) {
       String parent = "" + cur.getTree().getTag();

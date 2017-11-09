@@ -79,7 +79,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -268,7 +267,7 @@ public class JavaCompilationUnitExtractor {
     }
 
     List<FileData> fileContents = ExtractorUtils.convertBytesToFileDatas(results.fileContents);
-    List<FileInput> compilationFileInputs = new LinkedList<>();
+    List<FileInput> compilationFileInputs = new ArrayList<>();
     for (FileData data : fileContents) {
       String relativePath = results.relativePaths.get(data.getInfo().getPath());
       VName vname = fileVNames.lookupBaseVName(relativePath);

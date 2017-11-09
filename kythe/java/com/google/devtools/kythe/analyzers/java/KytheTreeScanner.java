@@ -82,7 +82,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -365,7 +364,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     boolean documented = visitDocComment(classNode, absNode);
 
     if (absNode != null) {
-      List<String> tParamNames = new LinkedList<>();
+      List<String> tParamNames = new ArrayList<>();
       for (JCTypeParameter tParam : classDef.getTypeParameters()) {
         tParamNames.add(tParam.getName().toString());
       }
@@ -446,9 +445,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     scan(methodDef.getThrows(), ctx);
 
     JavaNode returnType = scan(methodDef.getReturnType(), ctx);
-    List<JavaNode> params = new LinkedList<>();
-    List<JavaNode> paramTypes = new LinkedList<>();
-    List<VName> wildcards = new LinkedList<>();
+    List<JavaNode> params = new ArrayList<>();
+    List<JavaNode> paramTypes = new ArrayList<>();
+    List<VName> wildcards = new ArrayList<>();
     for (JCVariableDecl param : methodDef.getParameters()) {
       JavaNode n = scan(param, ctx);
       params.add(n);
@@ -619,7 +618,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     List<JavaNode> arguments = scanList(tApply.getTypeArguments(), ctx);
-    List<VName> argVNames = new LinkedList<>();
+    List<VName> argVNames = new ArrayList<>();
     Builder<VName> childWildcards = ImmutableList.builder();
     for (JavaNode n : arguments) {
       argVNames.add(n.getVName());
@@ -868,7 +867,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return null;
     }
 
-    List<VName> typeParams = new LinkedList<>();
+    List<VName> typeParams = new ArrayList<>();
     for (JCTypeParameter tParam : params) {
       TreeContext ctx = ownerContext.down(tParam);
       VName node = getNode(tParam.type.asElement());
@@ -1108,7 +1107,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private <T extends JCTree> List<JavaNode> scanList(List<T> trees, TreeContext owner) {
-    List<JavaNode> nodes = new LinkedList<>();
+    List<JavaNode> nodes = new ArrayList<>();
     for (T t : trees) {
       nodes.add(scan(t, owner));
     }
