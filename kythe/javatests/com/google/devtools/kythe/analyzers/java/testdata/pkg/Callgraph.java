@@ -9,6 +9,22 @@ public class Callgraph {
   //- StaticGCall childof Class
   final int ZERO = g();
 
+  static {
+    //- StaticBlockGCall.loc/start @^"g()"
+    //- StaticBlockGCall.loc/end @$"g()"
+    //- StaticBlockGCall ref/call G
+    //- StaticBlockGCall childof Class
+    int zero = g();
+  }
+
+  {
+    //- BlockGCall.loc/start @^"g()"
+    //- BlockGCall.loc/end @$"g()"
+    //- BlockGCall ref/call G
+    //- BlockGCall childof Class
+    int zero = g();
+  }
+
   //- StaticCtorCall.loc/start @^"new Callgraph()"
   //- StaticCtorCall.loc/end @$"new Callgraph()"
   //- StaticCtorCall ref/call ECtor
