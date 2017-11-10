@@ -672,7 +672,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     EntrySet anchor = emitAnchor(ctx, EdgeKind.REF_CALL, method.getVName());
-    TreeContext parentContext = ctx.getMethodParent();
+    TreeContext parentContext = ctx.getClassOrMethodParent();
     if (anchor != null && parentContext != null && parentContext.getNode() != null) {
       emitEdge(anchor, EdgeKind.CHILDOF, parentContext.getNode());
     }
@@ -710,7 +710,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     EntrySet callAnchor = entrySets.newAnchorAndEmit(filePositions, callSpan, ctx.getSnippet());
     emitAnchor(callAnchor, EdgeKind.REF_CALL, ctorNode);
-    TreeContext parentContext = owner.getMethodParent();
+    TreeContext parentContext = owner.getClassOrMethodParent();
     if (anchor != null && parentContext != null && parentContext.getNode() != null) {
       emitEdge(callAnchor, EdgeKind.CHILDOF, parentContext.getNode());
     }

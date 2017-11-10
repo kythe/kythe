@@ -1,6 +1,19 @@
 package pkg;
 
+//- @Callgraph defines/binding Class
 public class Callgraph {
+
+  //- StaticGCall.loc/start @^"g()"
+  //- StaticGCall.loc/end @$"g()"
+  //- StaticGCall ref/call G
+  //- StaticGCall childof Class
+  final int ZERO = g();
+
+  //- StaticCtorCall.loc/start @^"new Callgraph()"
+  //- StaticCtorCall.loc/end @$"new Callgraph()"
+  //- StaticCtorCall ref/call ECtor
+  //- StaticCtorCall childof Class
+  final Callgraph INSTANCE = new Callgraph();
 
   //- @Callgraph defines/binding ECtor
   //- ECtor.node/kind function
@@ -34,12 +47,13 @@ public class Callgraph {
 
   //- @g defines/binding G
   //- G.node/kind function
-  static void g() {
+  static int g() {
     //- CallAnchor.loc/start @^"f(4)"
     //- CallAnchor.loc/end   @$"f(4)"
     f(4);
 
     //- CallAnchor ref/call F
     //- CallAnchor childof  G
+    return 0;
   }
 }
