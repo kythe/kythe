@@ -852,7 +852,7 @@ public class JavaCompilationUnitExtractor {
 
     // TODO(T281): remove reflection and call ClassLoader.getPlatformClassLoader() directly
     // once JDK 8 compatibility is no longer required.
-    private static ClassLoader getPlatformClassLoader() {
+    public static ClassLoader getPlatformClassLoader() {
       try {
         // In JDK 9, all platform classes are visible to the platform class loader:
         // https://docs.oracle.com/javase/9/docs/api/java/lang/ClassLoader.html#getPlatformClassLoader--
