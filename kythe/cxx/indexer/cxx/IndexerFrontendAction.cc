@@ -67,7 +67,10 @@ bool DecodeHeaderSearchInformation(const proto::CompilationUnit &Unit,
 
 std::string ConfigureSystemHeaders(const proto::CompilationUnit &Unit,
                                    std::vector<proto::FileData> &Files) {
+  std::vector<proto::FileData> OldFiles;
+  OldFiles.swap(Files);
   const std::string HeaderPath = "/kythe_builtins/include/";
+  std::unordered_set<std::string> NewHeaders;
   for (const auto *Header = builtin_headers_create(); Header->name != nullptr;
        ++Header) {
     auto Path = HeaderPath + Header->name;
@@ -77,6 +80,12 @@ std::string ConfigureSystemHeaders(const proto::CompilationUnit &Unit,
     NewFile.mutable_info()->set_digest("");
     *NewFile.mutable_content() = Data;
     Files.push_back(NewFile);
+    NewHeaders.insert(Path);
+  }
+  for (const auto &File : OldFiles) {
+    if (NewHeaders.find(File.info().path()) == NewHeaders.end()) {
+      Files.push_back(File);
+    }
   }
   return "-resource-dir=/kythe_builtins";
 }
@@ -91,9 +100,9 @@ std::string IndexCompilationUnit(
         CreateWorklist) {
   HeaderSearchInfo HSI;
   bool HSIValid = DecodeHeaderSearchInformation(Unit, HSI);
-  std::string FixupArgument;
-  if (!HSIValid) {
-    FixupArgument = ConfigureSystemHeaders(Unit, Files);
+  std::string FixupArgument = ConfigureSystemHeaders(Unit, Files);
+  if (HSIValid) {
+    FixupArgument.clear();
   }
   clang::FileSystemOptions FSO;
   FSO.WorkingDir = Options.EffectiveWorkingDirectory;
