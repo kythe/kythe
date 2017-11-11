@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// This file uses the Clang style conventions.
-
 // Implementation notes:
 // The proto indexer and the proto compiler collaborate through metadata to link
 // generated code back to the protobuf definitions. In our case, we care about
@@ -356,23 +354,30 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
     return;
   }
 
-  // Now find the parameter to the constructor for the ParseProtoHelper.
-  // Get the ParseProtoHelper that was converted to the proto type.
   const auto* ParseProtoExpr =
       Expr->getImplicitObjectArgument()->IgnoreParenImpCasts();
+  // See through CXXBindTemporaryExpr if one should exist.
+  if (const auto* const BindTemporary =
+          clang::dyn_cast<clang::CXXBindTemporaryExpr>(ParseProtoExpr)) {
+    ParseProtoExpr = BindTemporary->getSubExpr();
+    if (ParseProtoExpr == nullptr) {
+      return;
+    }
+  }
 
   const clang::StringLiteral* Literal = nullptr;
-  if (const auto* const CtorCallExpr =
+  if (const auto* const HelperCallExpr =
           clang::dyn_cast<clang::CallExpr>(ParseProtoExpr)) {
-    // Most of the times this will be a temporary ParseProtoHelper built from a
-    // CallExpr to ParseProtoHelper::ParseProtoHelper(StringPiece, ...)
+    // We're matching against a call to ParseTextProtoOrDieAt, a function
+    // template that returns some proto type T via ParseProtoHelper's
+    // operator() (which performs the actual message parsing).
     // Get the inner stringpiece.
-    if (CtorCallExpr->getNumArgs() != 4) {
-      LOG(ERROR) << "Unknown ParseProtoHelper ctor";
+    if (HelperCallExpr->getNumArgs() != 4) {
+      LOG(ERROR) << "Unknown signature for ParseTextProtoOrDieAt";
       return;
     }
     const auto* const StringpieceCtorExpr =
-        CtorCallExpr->getArg(0)->IgnoreParenImpCasts();
+        HelperCallExpr->getArg(0)->IgnoreParenImpCasts();
     // TODO(courbet): Handle the case when the stringpiece is not a temporary.
     if (const auto* const CxxConstruct =
             clang::dyn_cast<clang::CXXConstructExpr>(StringpieceCtorExpr)) {
@@ -398,7 +403,10 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
     return;
   }
 
-  CHECK(Literal);
+  if (Literal == nullptr) {
+    LOG(ERROR) << "No string literal found";
+    return;
+  }
 
   const auto Callback = [&V](const clang::CXXMethodDecl& AccessorDecl,
                              const clang::SourceRange& Range) {
