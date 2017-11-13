@@ -210,7 +210,8 @@ message DecorationsReply {
     repeated Override override = 1;
   }
 
-  // The reference edges located in the specified window.
+  // The reference edges located in the specified window. Sorted in the order
+  // of their position in the file (first by start offset, then by end offset).
   repeated Reference reference = 4;
 
   // If requested, a list of diagnostics applying to the requested file location.
