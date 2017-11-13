@@ -168,6 +168,18 @@ const char* TagNameForStyle(PrintableSpan::Style style) {
       return "h5";
     case PrintableSpan::Style::H6:
       return "h6";
+    case PrintableSpan::Style::Big:
+      return "big";
+    case PrintableSpan::Style::Small:
+      return "small";
+    case PrintableSpan::Style::Blockquote:
+      return "blockquote";
+    case PrintableSpan::Style::Superscript:
+      return "sup";
+    case PrintableSpan::Style::Subscript:
+      return "sub";
+    case PrintableSpan::Style::Underline:
+      return "ul";
   }
 }
 

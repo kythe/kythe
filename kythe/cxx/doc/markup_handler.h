@@ -53,7 +53,22 @@ class PrintableSpan {
     Throws,
     See
   };
-  enum class Style : int { Bold, Italic, H1, H2, H3, H4, H5, H6 };
+  enum class Style : int {
+    Bold,
+    Italic,
+    H1,
+    H2,
+    H3,
+    H4,
+    H5,
+    H6,
+    Blockquote,
+    Big,
+    Small,
+    Superscript,
+    Subscript,
+    Underline
+  };
   PrintableSpan(size_t begin, size_t end, const proto::common::Link& link)
       : begin_(begin), end_(end), link_(link), semantic_(Semantic::Link) {}
   PrintableSpan(size_t begin, size_t end, Semantic sema)
@@ -103,7 +118,8 @@ class PrintableSpans {
   /// Empty or negative-length spans are discarded.
   void Merge(const PrintableSpans& more);
   /// Construct a span and insert it.
-  template <typename... T> void Emplace(T&&... span_args) {
+  template <typename... T>
+  void Emplace(T&&... span_args) {
     spans_.emplace_back(span_args...);
   }
   /// \return the number of spans being stored.

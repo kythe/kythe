@@ -183,6 +183,13 @@ TEST_F(HtmlRendererTest, PassThroughStyles) {
       RenderHtml("<B><I><H1><H2><H3><H4><H5><H6>x</H6></H5></H4></H3></H2></"
                  "H1></I></B>"));
 }
+TEST_F(HtmlRendererTest, PassThroughMoreStyles) {
+  EXPECT_EQ(
+      "<blockquote><small><tt><tt><big><ul><sub><sup>x</sup></sub></ul></big></"
+      "tt></tt></small></blockquote>",
+      RenderHtml("<BLOCKQUOTE><SMALL><TT><CODE><BIG><UL><SUB><SUP>x</SUP></"
+                 "SUB></UL></BIG></CODE></TT></SMALL></BLOCKQUOTE>"));
+}
 TEST_F(HtmlRendererTest, PassThroughEntities) {
   EXPECT_EQ("&foo;", RenderHtml("&foo;"));
   EXPECT_EQ("&amp;&lt;bar&gt;;", RenderHtml("&<bar>;"));

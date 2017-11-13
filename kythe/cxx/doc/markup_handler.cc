@@ -182,6 +182,24 @@ std::string PrintableSpans::Dump(const std::string& annotated_buffer) const {
             case PrintableSpan::Style::H6:
               text_out.append("H6 ");
               break;
+            case PrintableSpan::Style::Big:
+              text_out.append("BIG ");
+              break;
+            case PrintableSpan::Style::Small:
+              text_out.append("SMALL ");
+              break;
+            case PrintableSpan::Style::Blockquote:
+              text_out.append("BQ ");
+              break;
+            case PrintableSpan::Style::Superscript:
+              text_out.append("SUP ");
+              break;
+            case PrintableSpan::Style::Subscript:
+              text_out.append("SUB ");
+              break;
+            case PrintableSpan::Style::Underline:
+              text_out.append("UL ");
+              break;
           }
         } break;
         case PrintableSpan::Semantic::Link: {

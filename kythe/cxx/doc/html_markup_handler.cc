@@ -20,20 +20,31 @@
 namespace kythe {
 namespace {
 enum class HtmlTag : int {
-  P,
-  LI,
+  A,
   B,
-  I,
-  UL,
+  BIG,
+  BLOCKQUOTE,
+  CODE,
+  EM,
   H1,
   H2,
   H3,
   H4,
   H5,
   H6,
+  I,
+  LI,
+  P,
   PRE,
+  SMALL,
   STRONG,
-  A
+  SUB,
+  SUP,
+  TT,
+  UL,
+  // TODO(zarko): OL
+  // TODO(zarko): DL, DT, DD
+  // TODO(zarko): CAPTION, TABLE, TBODY, TD, TFOOT, TH, THEAD, TR
 };
 struct HtmlTagInfo {
   size_t name_length;
@@ -96,6 +107,15 @@ constexpr HtmlTagInfo kHtmlTagList[] = {
     {"pre", HtmlTag::PRE, HtmlTagInfo::NeedsClose},
     {"strong", HtmlTag::STRONG, PrintableSpan::Style::Bold},
     {"a", HtmlTag::A, HtmlTagInfo::NeedsClose},
+    {"blockquote", HtmlTag::BLOCKQUOTE, PrintableSpan::Style::Blockquote},
+    {"big", HtmlTag::BIG, PrintableSpan::Style::Big},
+    {"small", HtmlTag::SMALL, PrintableSpan::Style::Small},
+    {"sup", HtmlTag::SUP, PrintableSpan::Style::Superscript},
+    {"sub", HtmlTag::SUB, PrintableSpan::Style::Subscript},
+    {"em", HtmlTag::EM, PrintableSpan::Style::Bold},
+    {"ul", HtmlTag::UL, PrintableSpan::Style::Underline},
+    {"code", HtmlTag::CODE, HtmlTagInfo::NeedsClose},
+    {"tt", HtmlTag::TT, HtmlTagInfo::NeedsClose},
 };
 constexpr size_t kHtmlTagCount = sizeof(kHtmlTagList) / sizeof(HtmlTagInfo);
 
@@ -285,6 +305,11 @@ class ParseState {
           out_spans_->Emplace(open_tag->end, at_pos,
                               PrintableSpan::Semantic::UnorderedList);
           break;
+        case HtmlTag::CODE:
+        case HtmlTag::TT: /* fallthrough */
+          out_spans_->Emplace(open_tag->end, at_pos,
+                              PrintableSpan::Semantic::CodeRef);
+          break;
         case HtmlTag::PRE:
           out_spans_->Emplace(open_tag->end, at_pos,
                               PrintableSpan::Semantic::CodeBlock);
@@ -353,6 +378,11 @@ class ParseState {
                 case HtmlTag::PRE:
                   out_spans_->Emplace(open_tag->end, tag_start,
                                       PrintableSpan::Semantic::CodeBlock);
+                  break;
+                case HtmlTag::CODE:
+                case HtmlTag::TT:
+                  out_spans_->Emplace(open_tag->end, tag_start,
+                                      PrintableSpan::Semantic::CodeRef);
                   break;
                 // Mark the entire <a href=[uri foo]>text</a> as a link (such
                 // that it contains the uri).
