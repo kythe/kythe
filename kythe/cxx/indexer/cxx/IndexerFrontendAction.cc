@@ -44,17 +44,21 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 
 namespace {
 
-bool DecodeHeaderSearchInformation(const proto::CompilationUnit &Unit,
-                                   HeaderSearchInfo &Info) {
-  bool FoundDetails = false;
-  proto::CxxCompilationUnitDetails Details;
+bool DecodeDetails(const proto::CompilationUnit &Unit,
+                   proto::CxxCompilationUnitDetails &Details) {
   for (const auto &Any : Unit.details()) {
     if (Any.type_url() == kCxxCompilationUnitDetailsURI) {
-      FoundDetails = UnpackAny(Any, &Details);
-      break;
+      if (UnpackAny(Any, &Details)) {
+        return true;
+      }
     }
   }
-  if (!FoundDetails) {
+  return false;
+}
+
+bool DecodeHeaderSearchInfo(const proto::CxxCompilationUnitDetails &Details,
+                            HeaderSearchInfo &Info) {
+  if (!Details.has_header_search_info()) {
     return false;
   }
   if (!Info.CopyFrom(Details)) {
@@ -99,14 +103,21 @@ std::string IndexCompilationUnit(
     std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
         CreateWorklist) {
   HeaderSearchInfo HSI;
-  bool HSIValid = DecodeHeaderSearchInformation(Unit, HSI);
+  proto::CxxCompilationUnitDetails Details;
+  bool HSIValid = false;
+  std::vector<llvm::StringRef> Dirs;
+  if (DecodeDetails(Unit, Details)) {
+    HSIValid = DecodeHeaderSearchInfo(Details, HSI);
+    for (const auto &stat_path : Details.stat_path()) {
+      Dirs.push_back(stat_path.path());
+    }
+  }
   std::string FixupArgument = ConfigureSystemHeaders(Unit, Files);
   if (HSIValid) {
     FixupArgument.clear();
   }
   clang::FileSystemOptions FSO;
   FSO.WorkingDir = Options.EffectiveWorkingDirectory;
-  std::vector<llvm::StringRef> Dirs;
   for (auto &Path : HSI.paths) {
     Dirs.push_back(Path.path);
   }

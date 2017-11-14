@@ -25,6 +25,7 @@ EXTRACT="${BASE_DIR}/extract_compilation_database.sh"
 EXPECTED_FILE_HASH="deac66ccb79f6d31c0fa7d358de48e083c15c02ff50ec1ebd4b64314b9e6e196"
 KINDEX_TOOL="$PWD/kythe/cxx/tools/kindex_tool"
 export KYTHE_EXTRACTOR="$PWD/kythe/cxx/extractor/cxx_extractor"
+export KYTHE_EXCLUDE_EMPTY_DIRS=1
 export JQ="$PWD/third_party/jq/jq"
 cd "${BASE_DIR}/testdata"
 KYTHE_CORPUS=test_corpus KYTHE_ROOT_DIRECTORY="${BASE_DIR}" \

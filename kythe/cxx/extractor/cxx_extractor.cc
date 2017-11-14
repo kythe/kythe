@@ -34,6 +34,7 @@
 #include "clang/Tooling/Tooling.h"
 
 #include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/CommandLineUtils.h"
@@ -847,7 +848,8 @@ void KindexWriterSink::OpenIndex(const std::string& directory,
   GzipOutputStream::Options options;
   // Accept the default compression level and compression strategy.
   options.format = GzipOutputStream::GZIP;
-  gzip_stream_ = absl::make_unique<GzipOutputStream>(file_stream_.get(), options);
+  gzip_stream_ =
+      absl::make_unique<GzipOutputStream>(file_stream_.get(), options);
   coded_stream_ = absl::make_unique<CodedOutputStream>(gzip_stream_.get());
 }
 
@@ -895,6 +897,7 @@ void IndexWriter::FillFileInput(
     const std::string& clang_path, const SourceFile& source_file,
     kythe::proto::CompilationUnit_FileInput* file_input) {
   extra_includes_.erase(clang_path);
+  status_checked_paths_.erase(clang_path);
   CHECK(source_file.vname.language().empty());
   file_input->mutable_v_name()->CopyFrom(source_file.vname);
   // This path is distinct from the VName path. It is used by analysis tools
@@ -920,7 +923,9 @@ void IndexWriter::FillFileInput(
   }
 }
 
-void IndexWriter::InsertExtraIncludes(kythe::proto::CompilationUnit* unit) {
+void IndexWriter::InsertExtraIncludes(
+    kythe::proto::CompilationUnit* unit,
+    kythe::proto::CxxCompilationUnitDetails* details) {
   auto fs = clang::vfs::getRealFileSystem();
   std::set<std::string> normalized_clang_paths;
   for (const auto& input : unit->required_input()) {
@@ -928,7 +933,9 @@ void IndexWriter::InsertExtraIncludes(kythe::proto::CompilationUnit* unit) {
         RelativizePath(input.info().path(), root_directory()));
   }
   for (const auto& path : extra_includes_) {
+    status_checked_paths_.erase(path);
     auto normalized = RelativizePath(path, root_directory());
+    status_checked_paths_.erase(normalized);
     if (normalized_clang_paths.count(normalized) != 0) {
       // This file is redundant with a required input after normalization.
       continue;
@@ -949,13 +956,47 @@ void IndexWriter::InsertExtraIncludes(kythe::proto::CompilationUnit* unit) {
     file_content->mutable_content()->assign((*buffer)->getBufferStart(),
                                             (*buffer)->getBufferEnd());
   }
+  if (exclude_empty_dirs_) {
+    return;
+  }
+  auto find_child = [](const std::set<std::string>& paths,
+                       const std::string& path) {
+    auto maybe_prefix = paths.upper_bound(path);
+    if (maybe_prefix == paths.end()) {
+      return std::string();
+    }
+    return *maybe_prefix;
+  };
+  for (const auto& path : status_checked_paths_) {
+    if (path == "/") {
+      continue;
+    }
+    auto child_file = find_child(normalized_clang_paths, path);
+    auto child_dir = find_child(status_checked_paths_, path);
+    auto path_slash = absl::StrCat(path, "/");
+    if ((!child_file.empty() || !child_dir.empty()) &&
+        !llvm::StringRef(child_file).startswith(path_slash) &&
+        !llvm::StringRef(child_dir).startswith(path_slash)) {
+      details->add_stat_path()->set_path(path);
+    }
+  }
 }
 
-void IndexWriter::CancelPreviouslyOpenedFiles() { extra_includes_.clear(); }
+void IndexWriter::CancelPreviouslyOpenedFiles() {
+  // Don't clear status_checked_paths_, because we *need* information about
+  // which files get Status()d before the compiler proper starts.
+  extra_includes_.clear();
+}
 
 void IndexWriter::OpenedForRead(const std::string& path) {
   if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
     extra_includes_.insert(path);
+  }
+}
+
+void IndexWriter::DirectoryOpenedForStatus(const std::string& path) {
+  if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
+    status_checked_paths_.insert(RelativizePath(path, root_directory()));
   }
 }
 
@@ -964,11 +1005,13 @@ void IndexWriter::ScrubIntermediateFiles(
   if (options.ModuleCachePath.empty()) {
     return;
   }
-  for (auto it = extra_includes_.begin(); it != extra_includes_.end();) {
-    if (llvm::StringRef(*it).startswith(options.ModuleCachePath)) {
-      it = extra_includes_.erase(it);
-    } else {
-      ++it;
+  for (auto set : {&extra_includes_, &status_checked_paths_}) {
+    for (auto it = set->begin(); it != set->end();) {
+      if (llvm::StringRef(*it).startswith(options.ModuleCachePath)) {
+        it = set->erase(it);
+      } else {
+        ++it;
+      }
     }
   }
 }
@@ -1016,12 +1059,6 @@ void IndexWriter::WriteIndex(
   unit_vname->set_language(supported_language::ToString(lang));
   unit_vname->clear_path();
 
-  if (header_search_info != nullptr) {
-    kythe::proto::CxxCompilationUnitDetails cxx_details;
-    header_search_info->CopyTo(&cxx_details);
-    PackAny(cxx_details, kCxxCompilationUnitDetailsURI, unit.add_details());
-  }
-
   if (!target_name_.empty()) {
     kythe::proto::BuildDetails build_details;
     build_details.set_build_target(target_name_);
@@ -1032,7 +1069,13 @@ void IndexWriter::WriteIndex(
   for (const auto& file : source_files) {
     FillFileInput(file.first, file.second, unit.add_required_input());
   }
-  InsertExtraIncludes(&unit);
+
+  kythe::proto::CxxCompilationUnitDetails cxx_details;
+  if (header_search_info != nullptr) {
+    header_search_info->CopyTo(&cxx_details);
+  }
+  InsertExtraIncludes(&unit, &cxx_details);
+  PackAny(cxx_details, kCxxCompilationUnitDetailsURI, unit.add_details());
   unit.set_entry_context(entry_context);
   unit.set_has_compile_errors(had_errors);
   unit.add_source_file(main_source_file);
@@ -1148,6 +1191,9 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   if (const char* env_output_file = getenv("KYTHE_OUTPUT_FILE")) {
     SetKindexOutputFile(env_output_file);
   }
+  if (const char* env_exclude_empty_dirs = getenv("KYTHE_EXCLUDE_EMPTY_DIRS")) {
+    index_writer_.set_exclude_empty_dirs(true);
+  }
 }
 
 /// Shims Clang's file system. We need to do this because other parts of the
@@ -1161,7 +1207,11 @@ class RecordingFS : public clang::vfs::FileSystem {
               IndexWriter* index_writer)
       : base_file_system_(base_file_system), index_writer_(index_writer) {}
   llvm::ErrorOr<clang::vfs::Status> status(const llvm::Twine& path) override {
-    return base_file_system_->status(path);
+    auto nested_result = base_file_system_->status(path);
+    if (nested_result && nested_result->isDirectory()) {
+      index_writer_->DirectoryOpenedForStatus(path.str());
+    }
+    return nested_result;
   }
   llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> openFileForRead(
       const llvm::Twine& path) override {

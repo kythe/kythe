@@ -59,4 +59,13 @@ message CxxCompilationUnitDetails {
   }
 
   repeated SystemHeaderPrefix system_header_prefix = 2;
+
+  // Adds an additional path to the indexer's virtual file system that
+  // has no content (or has zero-length content).
+  message StatPath {
+    // The path to add. Assumed to be a directory.
+    string path = 1;
+  }
+
+  repeated StatPath stat_path = 3;
 }

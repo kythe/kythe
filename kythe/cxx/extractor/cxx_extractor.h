@@ -187,6 +187,8 @@ class IndexWriter {
   /// \brief Configure the path used for the root.
   void set_root_directory(const std::string &dir) { root_directory_ = dir; }
   const std::string &root_directory() const { return root_directory_; }
+  /// \brief Don't include empty directories.
+  void set_exclude_empty_dirs(bool exclude) { exclude_empty_dirs_ = exclude; }
   /// \brief Write the index file to `sink`, consuming the sink in the process.
   void WriteIndex(
       supported_language::Language lang, std::unique_ptr<IndexWriterSink> sink,
@@ -214,13 +216,17 @@ class IndexWriter {
   /// \brief Records that a path was successfully opened for reading.
   void OpenedForRead(const std::string &clang_path);
 
+  /// \brief Records that a directory path was successfully opened for status.
+  void DirectoryOpenedForStatus(const std::string &clang_path);
+
   /// \brief Attempts to generate a VName for the file at some path.
   /// \param path The path (likely from Clang) to the file.
   kythe::proto::VName VNameForPath(const std::string &path);
 
  private:
   /// Called to read and insert content for extra include files.
-  void InsertExtraIncludes(kythe::proto::CompilationUnit *unit);
+  void InsertExtraIncludes(kythe::proto::CompilationUnit *unit,
+                           kythe::proto::CxxCompilationUnitDetails *details);
   /// The `FileVNameGenerator` used to generate file vnames.
   FileVNameGenerator vname_generator_;
   /// The arguments used for this compilation.
@@ -242,8 +248,12 @@ class IndexWriter {
   /// Paths opened through the VFS that may not have been opened through the
   /// preprocessor.
   std::set<std::string> extra_includes_;
+  /// Paths queried for status through the VFS.
+  std::set<std::string> status_checked_paths_;
   /// FileData for those extra_includes_ that are actually necessary.
   std::vector<kythe::proto::FileData> extra_data_;
+  /// Don't include empty directories.
+  bool exclude_empty_dirs_ = false;
 };
 
 /// \brief Creates a `FrontendAction` that records information about a

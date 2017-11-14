@@ -24,3 +24,4 @@ KINDEX_TOOL="${PWD}/kythe/cxx/tools/kindex_tool"
 VERIFIER="${PWD}/kythe/cxx/verifier/verifier"
 INDEXER="${PWD}/kythe/cxx/indexer/cxx/indexer"
 INDEXPACK="${PWD}/kythe/go/platform/tools/indexpack/indexpack"
+export KYTHE_EXCLUDE_EMPTY_DIRS=1
