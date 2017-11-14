@@ -110,7 +110,7 @@ std::string IndexCompilationUnit(
   if (DecodeDetails(Unit, Details)) {
     HSIValid = DecodeHeaderSearchInfo(Details, HSI);
     for (const auto &stat_path : Details.stat_path()) {
-      Dirs.push_back(stat_path.path());
+      Dirs.push_back(ToStringRef(stat_path.path()));
     }
   }
   std::string FixupArgument = ConfigureSystemHeaders(Unit, Files);
