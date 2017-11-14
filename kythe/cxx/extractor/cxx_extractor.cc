@@ -971,9 +971,9 @@ void IndexWriter::InsertExtraIncludes(
     if (path == "/") {
       continue;
     }
-    auto child_file = find_child(normalized_clang_paths, path);
-    auto child_dir = find_child(status_checked_paths_, path);
-    auto path_slash = absl::StrCat(path, "/");
+    std::string child_file = find_child(normalized_clang_paths, path);
+    std::string child_dir = find_child(status_checked_paths_, path);
+    std::string path_slash = absl::StrCat(path, "/");
     if ((!child_file.empty() || !child_dir.empty()) &&
         !llvm::StringRef(child_file).startswith(path_slash) &&
         !llvm::StringRef(child_dir).startswith(path_slash)) {

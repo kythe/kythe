@@ -27,6 +27,7 @@
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/KytheVFS.h"
 #include "kythe/cxx/common/json_proto.h"
+#include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/cxx.pb.h"
 #include "llvm/ADT/Twine.h"
@@ -119,7 +120,7 @@ std::string IndexCompilationUnit(
   clang::FileSystemOptions FSO;
   FSO.WorkingDir = Options.EffectiveWorkingDirectory;
   for (auto &Path : HSI.paths) {
-    Dirs.push_back(Path.path);
+    Dirs.push_back(ToStringRef(Path.path));
   }
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(
       new IndexVFS(FSO.WorkingDir, Files, Dirs));
