@@ -2,8 +2,18 @@
 
 ## Development
 
+### Dependencies
+
 Install [yarn](https://yarnpkg.com/), then run it with no arguments to download
 dependencies.
+
+You also need an install of the kythe tools like `entrystream` and `verifier`,
+and point the `KYTHE` environment variable at the path to it.  You can either
+get these by [building Kythe](http://kythe.io/getting-started) or by downloading
+the Kythe binaries from the [Kythe
+releases](https://github.com/google/kythe/releases) page.
+
+### Commands
 
 Run `yarn run build` to compile the TypeScript once.
 
