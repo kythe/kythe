@@ -604,7 +604,7 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   text_id_ = IdentifierFor(builtin_location_, "/kythe/text");
   code_id_ = IdentifierFor(builtin_location_, "/kythe/code");
   marked_source_child_id_ =
-      IdentifierFor(builtin_location_, "/kythe/edge/child");
+      IdentifierFor(builtin_location_, "/kythe/edge/childof");
   marked_source_box_id_ = IdentifierFor(builtin_location_, "BOX");
   marked_source_type_id_ = IdentifierFor(builtin_location_, "TYPE");
   marked_source_parameter_id_ = IdentifierFor(builtin_location_, "PARAMETER");
