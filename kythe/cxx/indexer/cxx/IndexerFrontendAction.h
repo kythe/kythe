@@ -200,6 +200,12 @@ class StdinAdjustSingleFrontendActionFactory
                                          Input.isSystem());
       }
     }
+    // Disable dependency outputs. The indexer should not write to arbitrary
+    // files on its host (as dictated by -MD-style flags).
+    Invocation->getDependencyOutputOpts().OutputFile.clear();
+    Invocation->getDependencyOutputOpts().HeaderIncludeOutputFile.clear();
+    Invocation->getDependencyOutputOpts().DOTOutputFile.clear();
+    Invocation->getDependencyOutputOpts().ModuleDependencyOutputDir.clear();
     return clang::tooling::FrontendActionFactory::runInvocation(
         Invocation, Files, PCHContainerOps, DiagConsumer);
   }
