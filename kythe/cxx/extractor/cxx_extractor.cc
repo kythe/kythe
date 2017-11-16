@@ -960,7 +960,7 @@ void IndexWriter::InsertExtraIncludes(
     return;
   }
   auto find_child = [](const std::set<std::string>& paths,
-                       const std::string& path) {
+                       const std::string& path) -> std::string {
     auto maybe_prefix = paths.upper_bound(path);
     if (maybe_prefix == paths.end()) {
       return std::string();
