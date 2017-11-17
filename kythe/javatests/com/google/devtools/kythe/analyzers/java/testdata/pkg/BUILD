@@ -251,17 +251,14 @@ java_verifier_test(
     load_plugin = "//kythe/javatests/com/google/devtools/kythe/analyzers/java:test_plugin",
 )
 
-# TODO(ronshapiro): enable tests for dagger
-# java_verifier_test(
-#     name = "dagger_test",
-#     size = "small",
-#     srcs = ["DaggerTest.java"] + glob(["daggerstubs/*.java"]),
-#     load_plugin = "//kythe/java/dagger/internal/codegen:dagger-kythe-plugin",
-#     verifier_opts = [
-#         "--convert_marked_source",
-#         "--ignore_dups",
-#     ],
-# )
+filegroup(
+    name = "dagger_stubs",
+    srcs = glob(["daggerstubs/*.java"]),
+)
+
+load(":dagger.bzl", "dagger_verifier_tests")
+
+dagger_verifier_tests(srcs = glob(["Dagger*.java"]))
 
 java_verifier_test(
     name = "static_variable_tests",
