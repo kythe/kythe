@@ -70,6 +70,7 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 		Ticket:    flag.Args(),
 		PageToken: c.pageToken,
 		PageSize:  int32(c.pageSize),
+		Snippets:  xpb.SnippetsKind_DEFAULT,
 
 		AnchorText:             c.anchorText,
 		NodeDefinitions:        c.nodeDefinitions,
