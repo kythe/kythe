@@ -189,6 +189,10 @@ class IndexWriter {
   const std::string &root_directory() const { return root_directory_; }
   /// \brief Don't include empty directories.
   void set_exclude_empty_dirs(bool exclude) { exclude_empty_dirs_ = exclude; }
+  /// \brief Don't include files read during autoconfiguration.
+  void set_exclude_autoconfiguration_files(bool exclude) {
+    exclude_autoconfiguration_files_ = exclude;
+  }
   /// \brief Write the index file to `sink`, consuming the sink in the process.
   void WriteIndex(
       supported_language::Language lang, std::unique_ptr<IndexWriterSink> sink,
@@ -254,6 +258,8 @@ class IndexWriter {
   std::vector<kythe::proto::FileData> extra_data_;
   /// Don't include empty directories.
   bool exclude_empty_dirs_ = false;
+  /// Don't include files read during the autoconfiguration phase.
+  bool exclude_autoconfiguration_files_ = false;
 };
 
 /// \brief Creates a `FrontendAction` that records information about a

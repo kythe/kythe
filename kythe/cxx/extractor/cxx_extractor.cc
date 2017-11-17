@@ -985,7 +985,9 @@ void IndexWriter::InsertExtraIncludes(
 void IndexWriter::CancelPreviouslyOpenedFiles() {
   // Don't clear status_checked_paths_, because we *need* information about
   // which files get Status()d before the compiler proper starts.
-  extra_includes_.clear();
+  if (exclude_autoconfiguration_files_) {
+    extra_includes_.clear();
+  }
 }
 
 void IndexWriter::OpenedForRead(const std::string& path) {
@@ -1193,6 +1195,10 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   }
   if (const char* env_exclude_empty_dirs = getenv("KYTHE_EXCLUDE_EMPTY_DIRS")) {
     index_writer_.set_exclude_empty_dirs(true);
+  }
+  if (const char* env_exclude_autoconfiguration_files =
+          getenv("KYTHE_EXCLUDE_AUTOCONFIGURATION_FILES")) {
+    index_writer_.set_exclude_autoconfiguration_files(true);
   }
 }
 
