@@ -20,6 +20,7 @@ java_library(
         "@com_google_dagger//java/dagger/internal/codegen:processor",
         "@com_google_dagger//java/dagger/internal/codegen:validation",
         "@com_google_dagger//java/dagger/producers",
+        "@com_google_guava_guava//jar",
         "@com_squareup_javapoet//jar",
     ],
 )
