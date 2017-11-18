@@ -173,6 +173,7 @@ std::string IndexCompilationUnit(
   std::vector<std::string> Args(Unit.argument().begin(), Unit.argument().end());
   Args.insert(Args.begin() + 1, "-fsyntax-only");
   Args.insert(Args.begin() + 1, "-w");
+  Args.insert(Args.begin() + 1, "-nocudalib");
   if (!FixupArgument.empty()) {
     Args.insert(Args.begin() + 1, FixupArgument);
   }
