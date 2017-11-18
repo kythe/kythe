@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <functional>
 
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "kythe/proto/analysis.pb.h"
