@@ -32,11 +32,11 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 
-final class KytheBindingGraphFactory {
+final class BindingGraphFactory {
   private final ComponentDescriptor.Factory componentDescriptorFactory;
   private final BindingGraph.Factory bindingGraphFactory;
 
-  KytheBindingGraphFactory(KytheGraph kytheGraph) {
+  BindingGraphFactory(KytheGraph kytheGraph) {
     Types types = JavacTypes.instance(kytheGraph.getJavaContext());
     Elements elements = JavacElements.instance(kytheGraph.getJavaContext());
     DaggerElements daggerElements = new DaggerElements(elements, types);
@@ -55,7 +55,7 @@ final class KytheBindingGraphFactory {
 
   private static ComponentDescriptor.Factory createComponentDescriptorFactory(
       DaggerElements elements, DaggerTypes types) {
-    Key.Factory keyFactory = new Key.Factory(types, elements);
+    KeyFactory keyFactory = new KeyFactory(types, elements);
     DependencyRequest.Factory dependencyRequestFactory = new DependencyRequest.Factory(keyFactory);
     MembersInjectionBinding.Factory membersInjectionBindingFactory =
         new MembersInjectionBinding.Factory(elements, types, keyFactory, dependencyRequestFactory);
@@ -88,7 +88,7 @@ final class KytheBindingGraphFactory {
 
   private static BindingGraph.Factory createBindingGraphFactory(
       DaggerTypes types, DaggerElements elements) {
-    Key.Factory keyFactory = new Key.Factory(types, elements);
+    KeyFactory keyFactory = new KeyFactory(types, elements);
     DependencyRequest.Factory dependencyRequestFactory = new DependencyRequest.Factory(keyFactory);
     Messager messager = new NullMessager();
     CompilerOptions compilerOptions =

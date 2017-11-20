@@ -139,8 +139,8 @@ maven_jar(
 http_archive(
     name = "com_google_dagger",
     # TODO(ronshapiro): Switch back to a versioned release of dagger
-    strip_prefix = "dagger-6863e7ef018a3f483ed76092cd41d83daf0b45e5",
-    url = "https://github.com/google/dagger/archive/6863e7ef018a3f483ed76092cd41d83daf0b45e5.zip",
+    strip_prefix = "dagger-a6416fc2f5f7ef4f9389b8f12c96bfd77bd11014",
+    url = "https://github.com/google/dagger/archive/a6416fc2f5f7ef4f9389b8f12c96bfd77bd11014.zip",
 )
 
 maven_jar(

@@ -54,7 +54,7 @@ public class DaggerPlugin extends Plugin.Scanner<Void, Void> {
   private FactEmitter emitter;
   private JCCompilationUnit compilationUnit;
   private VName fileVName;
-  private KytheBindingGraphFactory bindingGraphFactory;
+  private BindingGraphFactory bindingGraphFactory;
   private CorpusPath corpusPath;
   private KeyVNameFactory keys;
 
@@ -175,7 +175,7 @@ public class DaggerPlugin extends Plugin.Scanner<Void, Void> {
     if (bindingGraphFactory == null) {
       trees = JavacTrees.instance(kytheGraph.getJavaContext());
       emitter = entrySets.getEmitter();
-      bindingGraphFactory = new KytheBindingGraphFactory(kytheGraph);
+      bindingGraphFactory = new BindingGraphFactory(kytheGraph);
       keys = new KeyVNameFactory(kytheGraph, entrySets, emitter);
     }
     this.compilationUnit = compilationUnit;
