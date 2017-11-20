@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#include "kythe_metadata_file.h"
+#include "kythe/cxx/common/kythe_metadata_file.h"
 
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"  // DecodeBase64
 #include "kythe/cxx/common/proto_conversions.h"
+#include "kythe/cxx/common/schema/edges.h"
 #include "kythe/proto/storage.pb.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
@@ -132,9 +133,9 @@ bool KytheMetadataSupport::LoadMetaElement(const rapidjson::Value &value,
     edge_string = edge_string.drop_front(1);
     reverse_edge = true;
   }
-  *rule =
-      MetadataFile::Rule{begin_int,   end_int,   "/kythe/edge/defines/binding",
-                         edge_string, vname_out, reverse_edge};
+  *rule = MetadataFile::Rule{
+      begin_int,   end_int,   kythe::common::schema::kDefinesBinding,
+      edge_string, vname_out, reverse_edge};
   return true;
 }
 

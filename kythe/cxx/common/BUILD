@@ -81,6 +81,7 @@ cc_library(
     ],
     deps = [
         ":json_proto",
+        "//kythe/cxx/common/schema:edges",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",

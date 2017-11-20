@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "fyi.h"
+#include "kythe/cxx/tools/fyi/fyi.h"
 
+#include "absl/strings/str_cat.h"
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
@@ -26,6 +27,8 @@
 #include "clang/Sema/Sema.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/proto_conversions.h"
+#include "kythe/cxx/common/schema/edges.h"
+#include "kythe/cxx/common/schema/facts.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
@@ -365,11 +368,12 @@ class Action : public clang::ASTFrontendAction,
 
   /// \brief Adds the paths of all /kythe/node/file nodes from `reply.node` to
   /// this Action's `FileTracker`'s include list.
-  template <typename Reply> void AddFileNodesToTracker(const Reply &reply) {
+  template <typename Reply>
+  void AddFileNodesToTracker(const Reply &reply) {
     for (const auto &parent : reply.nodes()) {
       bool is_file = false;
       for (const auto &fact : parent.second.facts()) {
-        if (fact.first == "/kythe/node/kind") {
+        if (fact.first == kythe::common::schema::kFactNodeKind) {
           is_file = (fact.second == "/kythe/node/file");
           break;
         }
@@ -403,7 +407,8 @@ class Action : public clang::ASTFrontendAction,
     named_edges_request.add_ticket(name_uri);
     // We've found at least one interesting name in the graph. Now we need
     // to figure out which nodes those names are bound to.
-    named_edges_request.add_kind(ToStringRef("%/kythe/edge/named"));
+    named_edges_request.add_kind(
+        ToStringRef(absl::StrCat("%", kythe::common::schema::kNamed)));
     proto::EdgesReply named_edges_reply;
     std::string error_text;
     if (!factory_.xrefs_->Edges(named_edges_request, &named_edges_reply,
@@ -417,7 +422,8 @@ class Action : public clang::ASTFrontendAction,
     if (!CopyTicketsFromEdgeSets(named_edges_reply, &defined_edges_request)) {
       return clang::TypoCorrection();
     }
-    defined_edges_request.add_kind(ToStringRef("%/kythe/edge/defines"));
+    defined_edges_request.add_kind(
+        ToStringRef(absl::StrCat("%", kythe::common::schema::kDefines)));
     if (!factory_.xrefs_->Edges(defined_edges_request, &defined_edges_reply,
                                 &error_text)) {
       fprintf(stderr, "Xrefs error (defines): %s\n", error_text.c_str());
@@ -430,8 +436,8 @@ class Action : public clang::ASTFrontendAction,
     if (!CopyTicketsFromEdgeSets(defined_edges_reply, &childof_request)) {
       return clang::TypoCorrection();
     }
-    childof_request.add_filter("/kythe/node/kind");
-    childof_request.add_kind(ToStringRef("/kythe/edge/childof"));
+    childof_request.add_filter(kythe::common::schema::kFactNodeKind);
+    childof_request.add_kind(ToStringRef(kythe::common::schema::kChildOf));
     if (!factory_.xrefs_->Edges(childof_request, &childof_reply, &error_text)) {
       fprintf(stderr, "Xrefs error (childof): %s\n", error_text.c_str());
       return clang::TypoCorrection();
@@ -557,7 +563,8 @@ void ActionFactory::BeginNextIteration() {
 bool ActionFactory::ShouldRunAgain() { return iterations_ > 0; }
 
 bool ActionFactory::runInvocation(
-    std::shared_ptr<clang::CompilerInvocation> invocation, clang::FileManager *files,
+    std::shared_ptr<clang::CompilerInvocation> invocation,
+    clang::FileManager *files,
     std::shared_ptr<clang::PCHContainerOperations> pch_container_ops,
     clang::DiagnosticConsumer *diagnostics) {
   // ASTUnit::LoadFromCompilerInvocationAction complains about this too, but

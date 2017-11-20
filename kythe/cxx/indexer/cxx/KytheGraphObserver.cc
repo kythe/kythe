@@ -39,6 +39,7 @@
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/language.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/common/schema/edges.h"
 
 #include "IndexerASTHooks.h"
 
@@ -375,8 +376,8 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile &meta,
   auto rules = meta.rules().equal_range(range_begin);
   for (auto rule = rules.first; rule != rules.second; ++rule) {
     if (rule->second.begin == range_begin && rule->second.end == range_end &&
-        (rule->second.edge_in == "/kythe/edge/defines" ||
-         rule->second.edge_in == "/kythe/edge/defines/binding")) {
+        (rule->second.edge_in == kythe::common::schema::kDefines ||
+         rule->second.edge_in == kythe::common::schema::kDefinesBinding)) {
       EdgeKindID edge_kind;
       if (of_spelling(rule->second.edge_out, &edge_kind)) {
         if (rule->second.reverse_edge) {
@@ -519,8 +520,9 @@ MaybeFew<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
     file_source.set_kind(MarkedSource::IDENTIFIER);
     recordFunctionNode(file_id, Completeness::Definition,
                        FunctionSubkind::Initializer, file_source);
-    recordDefinitionBindingRange(Range(clang::SourceRange(file_start, file_start), token),
-                                 file_id, None());
+    recordDefinitionBindingRange(
+        Range(clang::SourceRange(file_start, file_start), token), file_id,
+        None());
   }
   return file_id;
 }
@@ -913,7 +915,7 @@ void KytheGraphObserver::recordRecordNode(
     case RecordKind::Category:
       recorder_->AddProperty(node_vname, PropertyID::kSubkind, "category");
       break;
-  };
+  }
   recorder_->AddProperty(node_vname, PropertyID::kComplete,
                          CompletenessToString(completeness));
   AddMarkedSource(node_vname, marked_source);

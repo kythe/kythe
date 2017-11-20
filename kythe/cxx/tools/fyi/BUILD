@@ -17,11 +17,14 @@ cc_library(
     deps = [
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:net_client",
+        "//kythe/cxx/common/schema:edges",
+        "//kythe/cxx/common/schema:facts",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/proto:protobuf",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
     ],
 )
 

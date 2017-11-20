@@ -90,6 +90,8 @@ cc_library(
         ":markup_handler",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:net_client",
+        "//kythe/cxx/common/schema:edges",
+        "//kythe/cxx/common/schema:facts",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",

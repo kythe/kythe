@@ -22,6 +22,7 @@
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "kythe/cxx/common/schema/edges.h"
 
 namespace kythe {
 
@@ -58,8 +59,8 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     rule.begin = annotation.begin();
     rule.end = annotation.end();
     rule.vname = VNameForAnnotation(context_vname, annotation);
-    rule.edge_in = "/kythe/edge/defines/binding";
-    rule.edge_out = "/kythe/edge/generates";
+    rule.edge_in = kythe::common::schema::kDefinesBinding;
+    rule.edge_out = kythe::common::schema::kGenerates;
     rule.reverse_edge = true;
     rules.push_back(rule);
   }

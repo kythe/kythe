@@ -27,6 +27,8 @@
 #include "google/protobuf/text_format.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/net_client.h"
+#include "kythe/cxx/common/schema/edges.h"
+#include "kythe/cxx/common/schema/facts.h"
 #include "kythe/cxx/doc/html_markup_handler.h"
 #include "kythe/cxx/doc/html_renderer.h"
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
@@ -59,7 +61,6 @@ constexpr char kDocFooter[] = R"(
   </body>
 </html>
 )";
-constexpr char kDefinesBinding[] = "/kythe/edge/defines/binding";
 
 int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
   ::fputs(kDocHeaderPrefix, stdout);
@@ -75,7 +76,7 @@ int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
   options.kind_name = [&options](const std::string& ticket) {
     if (const auto* node = options.node_info(ticket)) {
       for (const auto& fact : node->facts()) {
-        if (fact.first == "/kythe/node/kind") {
+        if (fact.first == kythe::common::schema::kFactNodeKind) {
           return std::string(fact.second);
         }
       }
@@ -128,7 +129,7 @@ int DocumentNodesFrom(XrefsJsonClient* client, const proto::VName& file_name) {
   proto::DocumentationRequest doc_request;
   proto::DocumentationReply doc_reply;
   for (const auto& reference : reply.reference()) {
-    if (reference.kind() == kDefinesBinding) {
+    if (reference.kind() == kythe::common::schema::kDefinesBinding) {
       doc_request.add_ticket(reference.target_ticket());
     }
   }

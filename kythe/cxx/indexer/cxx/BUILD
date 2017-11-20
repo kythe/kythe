@@ -170,6 +170,7 @@ cc_library(
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",
         "//kythe/cxx/common/indexing:lib",
+        "//kythe/cxx/common/schema:edges",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
