@@ -69,6 +69,9 @@ enum TSNamespace {
 
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Vistor {
+  /** The file we're visiting. */
+  file: ts.SourceFile;
+
   /** kFile is the VName for the source file. */
   kFile: VName;
 
@@ -96,6 +99,12 @@ class Vistor {
    * longest first.  See this.moduleName().
    */
   rootDirs: string[];
+
+  /**
+   * Tracks whether we've emitted the module anchor yet;
+   * see emitModuleAnchorForFirstExport.
+   */
+  emittedModuleAnchor = false;
 
   constructor(
       /** Corpus name for produced VNames. */
@@ -566,6 +575,27 @@ class Vistor {
   }
 
   /**
+   * When we first encounter an 'export' statement (making the file a
+   * module), we tag the 'export' as anchoring the module.
+   */
+  emitModuleAnchorForFirstExport(node: ts.Node) {
+    // Emit metadata defining only the first export in the file to be
+    // the source of the module, so check if we've emitted the module
+    // anchor before.
+    if (this.emittedModuleAnchor) return;
+      
+    // Emit a "record" node, representing the module object.
+    let kMod = this.newVName('module', this.moduleName(this.file.fileName));
+    this.emitFact(kMod, 'node/kind', 'record');
+    this.emitEdge(this.kFile, 'childof', kMod);
+
+    // Emit the anchor, bound to the "export" keyword
+    const anchor = this.newAnchor(node.getFirstToken(this.file));
+    this.emitEdge(anchor, 'defines/binding', kMod);
+    this.emittedModuleAnchor = true;
+  }
+
+  /**
    * Handles code like:
    *   export default ...;
    *   export = ...;
@@ -597,6 +627,7 @@ class Vistor {
    * and that case is handled as part of the ordinary declaration handling.
    */
   visitExportDeclaration(decl: ts.ExportDeclaration) {
+    this.emitModuleAnchorForFirstExport(decl);
     if (decl.exportClause) {
       for (const exp of decl.exportClause.elements) {
         const localSym = this.getSymbolAtLocation(exp.name);
@@ -629,6 +660,9 @@ class Vistor {
     let vname: VName|undefined;
     for (const decl of stmt.declarationList.declarations) {
       vname = this.visitVariableDeclaration(decl);
+    }
+    if (ts.getCombinedModifierFlags(stmt) & ts.ModifierFlags.Export) {
+      this.emitModuleAnchorForFirstExport(stmt);
     }
     if (stmt.declarationList.declarations.length === 1 && vname !== undefined) {
       this.visitJSDoc(stmt, vname);
@@ -915,6 +949,8 @@ class Vistor {
 
   /** indexFile is the main entry point, starting the recursive visit. */
   indexFile(file: ts.SourceFile) {
+    this.file = file;
+
     // Emit a "file" node, containing the source text.
     this.kFile = this.newVName(
         /* empty signature */ '',
@@ -922,11 +958,6 @@ class Vistor {
     this.kFile.language = '';
     this.emitFact(this.kFile, 'node/kind', 'file');
     this.emitFact(this.kFile, 'text', file.text);
-
-    // Emit a "record" node, representing the module object.
-    let kMod = this.newVName('module', this.moduleName(file.fileName));
-    this.emitFact(kMod, 'node/kind', 'record');
-    this.emitEdge(this.kFile, 'childof', kMod);
 
     ts.forEachChild(file, n => this.visit(n));
   }
