@@ -17,11 +17,11 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_MARKED_SOURCE_H_
 #define KYTHE_CXX_INDEXER_CXX_MARKED_SOURCE_H_
 
+#include "absl/types/optional.h"
 #include "clang/AST/Decl.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Sema/Sema.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
-#include "kythe/cxx/common/indexing/MaybeFew.h"
 #include "kythe/cxx/indexer/cxx/GraphObserver.h"
 #include "llvm/ADT/DenseMap.h"
 
@@ -51,7 +51,7 @@ class MarkedSourceGenerator {
 
   /// Attempt to build a marked source given all available information. Assumes
   /// that `decl_`'s ID is `decl_id`.
-  MaybeFew<MarkedSource> GenerateMarkedSource(
+  absl::optional<MarkedSource> GenerateMarkedSource(
       const GraphObserver::NodeId &decl_id);
 
  private:
@@ -61,7 +61,7 @@ class MarkedSourceGenerator {
       : cache_(cache), decl_(decl) {}
 
   /// Attempt to generate marked source using the original source code.
-  MaybeFew<MarkedSource> GenerateMarkedSourceUsingSource(
+  absl::optional<MarkedSource> GenerateMarkedSourceUsingSource(
       const GraphObserver::NodeId &decl_id);
 
   /// Generate marked source by pretty-printing a function's prototype.

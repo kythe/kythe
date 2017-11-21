@@ -13,7 +13,6 @@ cc_library(
         "KytheGraphRecorder.h",
         "KytheOutputStream.h",
         "KytheVFS.h",
-        "MaybeFew.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -31,6 +30,7 @@ cc_library(
         "//third_party/proto:protobuf",
         "@com_github_gflags_gflags//:gflags",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/types:optional",
     ],
 )
 

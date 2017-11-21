@@ -412,9 +412,9 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
                              const clang::SourceRange& Range) {
     if (const auto RCC = V.ExplicitRangeInCurrentContext(Range)) {
       const auto NodeId = V.BuildNodeIdForDecl(&AccessorDecl);
-      V.RecordCallEdges(RCC.primary(), NodeId);
+      V.RecordCallEdges(*RCC, NodeId);
       V.getGraphObserver().recordDeclUseLocation(
-          RCC.primary(), NodeId, GraphObserver::Claimability::Unclaimable);
+          *RCC, NodeId, GraphObserver::Claimability::Unclaimable);
     }
   };
   ParseTextProtoHandler::Parse(

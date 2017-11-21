@@ -25,6 +25,7 @@
 #include <utility>
 
 #include "absl/memory/memory.h"
+#include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -84,7 +85,8 @@ class IndexedParentASTVisitor
   /// The caller takes ownership of the returned `IndexedParentMap`.
   static std::unique_ptr<IndexedParentMap> buildMap(
       clang::TranslationUnitDecl &TU) {
-    std::unique_ptr<IndexedParentMap> ParentMap = absl::make_unique<IndexedParentMap>();
+    std::unique_ptr<IndexedParentMap> ParentMap =
+        absl::make_unique<IndexedParentMap>();
     IndexedParentASTVisitor Visitor(ParentMap.get());
     Visitor.TraverseDecl(&TU);
     return ParentMap;
@@ -298,15 +300,15 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   // Objective C methods don't have TypeSourceInfo so we must construct a type
   // for the methods to be used in the graph.
-  MaybeFew<GraphObserver::NodeId> CreateObjCMethodTypeNode(
+  absl::optional<GraphObserver::NodeId> CreateObjCMethodTypeNode(
       const clang::ObjCMethodDecl *MD, EmitRanges ER);
 
   /// \brief Builds a stable node ID for a compile-time expression.
   /// \param Expr The expression to represent.
   /// \param ER Whether to notify the `GraphObserver` about source text
   /// ranges for expressions.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForExpr(const clang::Expr *Expr,
-                                                     EmitRanges ER);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForExpr(
+      const clang::Expr *Expr, EmitRanges ER);
 
   /// \brief Builds a stable node ID for a special template argument.
   /// \param Id A string representing the special argument.
@@ -316,7 +318,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief Builds a stable node ID for a template expansion template argument.
   /// \param Name The template pattern being expanded.
   /// \param L The location of the expansion.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateExpansion(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateExpansion(
       clang::TemplateName Name, clang::SourceLocation L);
 
   /// \brief Builds a stable node ID for `Type`.
@@ -327,7 +329,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param ER whether to notify the `GraphObserver` about source text ranges
   /// for types.
   /// \return The Node ID for `Type`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
       const clang::TypeLoc &TypeLoc, const clang::Type *DType, EmitRanges ER);
 
   /// \brief Builds a stable node ID for `Type`.
@@ -340,7 +342,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param SR source range to use for the type location. This will be used
   /// instead of the range in TypeLoc.
   /// \return The Node ID for `Type`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
       const clang::TypeLoc &TypeLoc, const clang::Type *DType, EmitRanges ER,
       clang::SourceRange SR);
 
@@ -352,9 +354,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param ER whether to notify the `GraphObserver` about source text ranges
   /// for types.
   /// \return The Node ID for `Type`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(const clang::TypeLoc &Type,
-                                                     const clang::QualType &QT,
-                                                     EmitRanges ER);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
+      const clang::TypeLoc &Type, const clang::QualType &QT, EmitRanges ER);
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param Type The type that is being identified. If its location is valid
@@ -363,8 +364,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param ER whether to notify the `GraphObserver` about source text ranges
   /// for types.
   /// \return The Node ID for `Type`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(const clang::TypeLoc &Type,
-                                                     EmitRanges ER);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
+      const clang::TypeLoc &Type, EmitRanges ER);
 
   /// \brief Builds a stable node ID for `QT`.
   /// \param QT The type that is being identified.
@@ -373,18 +374,19 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// This function will invent a `TypeLoc` with an invalid location.
   /// If you can provide a `TypeLoc` for the type, it is better to use
   /// `BuildNodeIdForType(const clang::TypeLoc, EmitRanges)`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(const clang::QualType &QT);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
+      const clang::QualType &QT);
 
   /// \brief Builds a stable node ID for the given `TemplateName`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateName(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateName(
       const clang::TemplateName &Name, clang::SourceLocation L);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
       const clang::TemplateArgumentLoc &Arg, EmitRanges ER);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
       const clang::TemplateArgument &Arg, clang::SourceLocation L);
 
   /// \brief Builds a stable node ID for `Stmt`.
@@ -396,23 +398,23 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param Decl The statement that is being identified
   /// \return The node for `Stmt` if the statement was implicit; otherwise,
   /// None.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForImplicitStmt(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForImplicitStmt(
       const clang::Stmt *Stmt);
 
   /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
   /// template instantiation.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForImplicitTemplateInstantiation(
-      const clang::Decl *Decl);
+  absl::optional<GraphObserver::NodeId>
+  BuildNodeIdForImplicitTemplateInstantiation(const clang::Decl *Decl);
 
   /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
   /// function template instantiation.
-  MaybeFew<GraphObserver::NodeId>
+  absl::optional<GraphObserver::NodeId>
   BuildNodeIdForImplicitFunctionTemplateInstantiation(
       const clang::FunctionDecl *Decl);
 
   /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
   /// class template instantiation.
-  MaybeFew<GraphObserver::NodeId>
+  absl::optional<GraphObserver::NodeId>
   BuildNodeIdForImplicitClassTemplateInstantiation(
       const clang::ClassTemplateSpecializationDecl *Decl);
 
@@ -439,19 +441,20 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \return The node for the definition `Decl` if `Decl` isn't a definition
   /// and its definition can be found; or None.
   template <typename D>
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForDefnOfDecl(const D *Decl) {
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForDefnOfDecl(
+      const D *Decl) {
     if (const auto *Defn = Decl->getDefinition()) {
       if (Defn != Decl) {
         return BuildNodeIdForDecl(Defn);
       }
     }
-    return None();
+    return absl::nullopt;
   }
 
   /// \brief Builds a stable node ID for `TND`.
   ///
   /// \param Decl The declaration that is being identified.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTypedefNameDecl(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForTypedefNameDecl(
       const clang::TypedefNameDecl *TND);
 
   /// \brief Builds a stable node ID for `Decl`.
@@ -488,10 +491,10 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param Root If provided, the primary NodeId is morally prepended to `NNS`
   /// such that the dependent name is lookup(lookup*(Root, NNS), Id).
   /// \param ER If `EmitRanges::Yes`, records ranges for syntactic elements.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForDependentName(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForDependentName(
       const clang::NestedNameSpecifierLoc &NNS,
       const clang::DeclarationName &Id, const clang::SourceLocation IdLoc,
-      const MaybeFew<GraphObserver::NodeId> &Root, EmitRanges ER);
+      const absl::optional<GraphObserver::NodeId> &Root, EmitRanges ER);
 
   /// \brief Is `VarDecl` a definition?
   ///
@@ -552,8 +555,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief Records the range of a definition. If the range cannot be placed
   /// somewhere inside a source file, no record is made.
   void MaybeRecordDefinitionRange(
-      const MaybeFew<GraphObserver::Range> &R, const GraphObserver::NodeId &Id,
-      const MaybeFew<GraphObserver::NodeId> &DeclId);
+      const absl::optional<GraphObserver::Range> &R,
+      const GraphObserver::NodeId &Id,
+      const absl::optional<GraphObserver::NodeId> &DeclId);
 
   /// \brief Returns the attached GraphObserver.
   GraphObserver &getGraphObserver() { return Observer; }
@@ -563,21 +567,22 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
-  MaybeFew<GraphObserver::Range> ExplicitRangeInCurrentContext(
+  absl::optional<GraphObserver::Range> ExplicitRangeInCurrentContext(
       const clang::SourceRange &SR);
 
   /// If `Implicit` is true, returns `Id` as an implicit Range; otherwise,
   /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
-  MaybeFew<GraphObserver::Range> RangeInCurrentContext(
+  absl::optional<GraphObserver::Range> RangeInCurrentContext(
       bool Implicit, const GraphObserver::NodeId &Id,
       const clang::SourceRange &SR);
 
   /// If `Id` is some NodeId, returns it as an implicit Range; otherwise,
   /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
-  MaybeFew<GraphObserver::Range> RangeInCurrentContext(
-      const MaybeFew<GraphObserver::NodeId> &Id, const clang::SourceRange &SR);
+  absl::optional<GraphObserver::Range> RangeInCurrentContext(
+      const absl::optional<GraphObserver::NodeId> &Id,
+      const clang::SourceRange &SR);
 
   void RunJob(std::unique_ptr<IndexJob> JobToRun) {
     Job = std::move(JobToRun);
@@ -703,15 +708,16 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Attempts to find the ID of the first parent of `Decl` for
   /// attaching a `childof` relationship.
-  MaybeFew<GraphObserver::NodeId> GetDeclChildOf(const clang::Decl *D);
+  absl::optional<GraphObserver::NodeId> GetDeclChildOf(const clang::Decl *D);
 
   /// \brief Attempts to add some representation of `ND` to `Ostream`.
   /// \return true on success; false on failure.
   bool AddNameToStream(llvm::raw_string_ostream &Ostream,
                        const clang::NamedDecl *ND);
 
-  MaybeFew<GraphObserver::NodeId> ApplyBuiltinTypeConstructor(
-      const char *BuiltinName, const MaybeFew<GraphObserver::NodeId> &Param);
+  absl::optional<GraphObserver::NodeId> ApplyBuiltinTypeConstructor(
+      const char *BuiltinName,
+      const absl::optional<GraphObserver::NodeId> &Param);
 
   /// \brief Ascribes a type to `AscribeTo`.
   /// \param Type The `TypeLoc` referring to the type
@@ -751,8 +757,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename NodeT>
-  IndexedParent *getIndexedParent(const NodeT &Node) {
+  template <typename NodeT> IndexedParent *getIndexedParent(const NodeT &Node) {
     return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
   }
 
@@ -810,18 +815,18 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// Points at the inner node of the DeclContext, if it's a template.
   /// Otherwise points at the DeclContext as a Decl.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForDeclContext(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForDeclContext(
       const clang::DeclContext *DC);
 
   /// Points at the tapp node for a DeclContext, if it's an implicit template
   /// instantiation. Otherwise behaves as `BuildNodeIdForDeclContext`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForRefToDeclContext(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForRefToDeclContext(
       const clang::DeclContext *DC);
 
   /// Avoid regenerating type node IDs and keep track of where we are while
   /// generating node IDs for recursive types. The key is opaque and
   /// makes sense only within the implementation of this class.
-  std::unordered_map<int64_t, MaybeFew<GraphObserver::NodeId>> TypeNodes;
+  std::unordered_map<int64_t, absl::optional<GraphObserver::NodeId>> TypeNodes;
 
   /// \brief Visit a DeclRefExpr or a ObjCIvarRefExpr
   ///
@@ -872,7 +877,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// If this is a naked id (no protocols listed), this returns the node id
   /// for the builtin id node. Otherwise, this calls BuildNodeIdForDecl for
   /// each protocol and constructs a new tapp node for this TypeUnion.
-  MaybeFew<GraphObserver::NodeId> RecordObjCInterfaceType(
+  absl::optional<GraphObserver::NodeId> RecordObjCInterfaceType(
       GraphObserver::NodeId BaseType, bool BaseIsId,
       const clang::ObjCObjectType *T,
       llvm::ArrayRef<clang::SourceLocation> ProtocolLocs);

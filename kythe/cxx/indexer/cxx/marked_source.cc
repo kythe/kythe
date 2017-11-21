@@ -731,7 +731,8 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
   return true;
 }
 
-MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
+absl::optional<MarkedSource>
+MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
     const GraphObserver::NodeId &decl_id) {
   auto start_loc = decl_->getSourceRange().getBegin();
   if (start_loc.isMacroID()) {
@@ -754,7 +755,7 @@ MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
               << "\n         to "
               << end_loc_.printToString(cache_->source_manager());
     }
-    return None();
+    return absl::nullopt;
   }
   MarkedSource out_sig;
   if (FLAGS_reformat_marked_source) {
@@ -766,7 +767,7 @@ MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
     if (incomplete) {
       LOG(WARNING) << "Incomplete reformatting for " << decl_id.getRawIdentity()
                    << " (" << decl_->getQualifiedNameAsString() << ")";
-      return None();
+      return absl::nullopt;
     }
     DeclAnnotator annotator(cache_, &replacements, start_loc, formatted_range,
                             &out_sig, name_range_);
@@ -800,13 +801,13 @@ MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForNamedDecl() {
   return out;
 }
 
-MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
+absl::optional<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
     const GraphObserver::NodeId &decl_id) {
   // MarkedSource generation is expensive. If we're not going to write out the
   // marked source later on, don't spend time on it.
   // TODO(zarko): Introduce a similar check for documentation.
   if (!WillGenerateMarkedSource()) {
-    return None();
+    return absl::nullopt;
   }
   if (llvm::isa<clang::VarDecl>(decl_) || llvm::isa<clang::FieldDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);

@@ -149,7 +149,7 @@ void ImputedConstructorSupport::InspectCallExpr(
         if (auto range_context =
                 visitor.ExplicitRangeInCurrentContext(call_range)) {
           visitor.getGraphObserver().recordDeclUseLocation(
-              range_context.primary(), node_id,
+              *range_context, node_id,
               GraphObserver::Claimability::Unclaimable);
         }
       }
