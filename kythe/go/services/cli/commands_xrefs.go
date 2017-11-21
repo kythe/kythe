@@ -44,7 +44,6 @@ type xrefsCommand struct {
 
 	relatedNodes    bool
 	nodeDefinitions bool
-	signatures      bool
 	anchorText      bool
 }
 
@@ -60,7 +59,6 @@ func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.nodeFilters, "filters", "", "Comma-separated list of additional fact filters to use when requesting related nodes")
 	flag.BoolVar(&c.nodeDefinitions, "node_definitions", false, "Whether to request definition locations for related nodes")
 	flag.BoolVar(&c.anchorText, "anchor_text", false, "Whether to request text for anchors")
-	flag.BoolVar(&c.signatures, "signatures", true, "Whether to request experimental signatures")
 
 	flag.StringVar(&c.pageToken, "page_token", "", "CrossReferences page token")
 	flag.IntVar(&c.pageSize, "page_size", 0, "Maximum number of cross-references returned (0 lets the service use a sensible default)")
@@ -74,7 +72,6 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 
 		AnchorText:             c.anchorText,
 		NodeDefinitions:        c.nodeDefinitions,
-		ExperimentalSignatures: c.signatures,
 	}
 	if c.relatedNodes {
 		req.Filter = []string{facts.NodeKind, facts.Subkind}

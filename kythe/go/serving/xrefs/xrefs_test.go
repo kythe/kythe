@@ -676,10 +676,7 @@ func TestCrossReferences(t *testing.T) {
 		Ticket:         []string{ticket},
 		DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
 		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
-
-		ExperimentalSignatures: true,
-
-		Snippets: xpb.SnippetsKind_DEFAULT,
+		Snippets:       xpb.SnippetsKind_DEFAULT,
 	})
 	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
 
@@ -802,6 +799,10 @@ func TestCrossReferencesRelatedNodes(t *testing.T) {
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
+		MarkedSource: &cpb.MarkedSource{
+			Kind:    cpb.MarkedSource_IDENTIFIER,
+			PreText: "id",
+		},
 
 		RelatedNode: []*xpb.CrossReferencesReply_RelatedNode{{
 			Ticket:       "kythe:#someRelatedNode",
@@ -839,9 +840,8 @@ func TestCrossReferencesMarkedSource(t *testing.T) {
 
 	st := tbl.Construct(t)
 	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
-		Ticket:                 []string{ticket},
-		Filter:                 []string{"**"},
-		ExperimentalSignatures: true,
+		Ticket: []string{ticket},
+		Filter: []string{"**"},
 	})
 	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
 
@@ -891,8 +891,6 @@ func TestCrossReferencesMerge(t *testing.T) {
 		Ticket:     []string{ticket},
 		CallerKind: xpb.CrossReferencesRequest_DIRECT_CALLERS,
 		Filter:     []string{"**"},
-
-		ExperimentalSignatures: true,
 	})
 	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
 
@@ -958,8 +956,6 @@ func TestCrossReferencesDirectCallers(t *testing.T) {
 	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
 		Ticket:     []string{ticket},
 		CallerKind: xpb.CrossReferencesRequest_DIRECT_CALLERS,
-
-		ExperimentalSignatures: true,
 	})
 	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
 
@@ -1018,6 +1014,10 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 				Span:   arbitrarySpan,
 			},
 			Ticket: "kythe:#someCaller",
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "id",
+			},
 			Site: []*xpb.Anchor{{
 				Ticket: "kythe:?path=someFile#someCallsiteAnchor",
 				Parent: "kythe:?path=someFile",

@@ -508,8 +508,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				Ticket: ticket,
 			}
 		}
-		if features[srvpb.PagedCrossReferences_MARKED_SOURCE] &&
-			req.ExperimentalSignatures && crs.MarkedSource == nil {
+		if features[srvpb.PagedCrossReferences_MARKED_SOURCE] && crs.MarkedSource == nil {
 			crs.MarkedSource = cr.MarkedSource
 		}
 
@@ -554,7 +553,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				xrefs.IsCallerKind(req.CallerKind, grp.Kind):
 				reply.Total.Callers += int64(len(grp.Caller))
 				if wantMoreCrossRefs {
-					stats.addCallers(crs, grp, req.ExperimentalSignatures)
+					stats.addCallers(crs, grp)
 				}
 			}
 		}
@@ -606,7 +605,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
-					stats.addCallers(crs, p.Group, req.ExperimentalSignatures)
+					stats.addCallers(crs, p.Group)
 				}
 			}
 		}
@@ -680,7 +679,7 @@ func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 	return s.total >= s.max
 }
 
-func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group, includeSignature bool) bool {
+func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group) bool {
 	cs := grp.Caller
 
 	if s.total == s.max {
@@ -706,9 +705,7 @@ func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, g
 			Ticket: c.SemanticCaller,
 			Site:   make([]*xpb.Anchor, 0, len(c.Callsite)),
 		}
-		if includeSignature {
-			ra.MarkedSource = c.MarkedSource
-		}
+		ra.MarkedSource = c.MarkedSource
 		for _, site := range c.Callsite {
 			ra.Site = append(ra.Site, a2a(site, false).Anchor)
 		}

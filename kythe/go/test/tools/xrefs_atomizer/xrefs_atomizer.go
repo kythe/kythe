@@ -99,8 +99,6 @@ func atomizeCrossReferences(ctx context.Context, xs xrefs.Service, ticket string
 		ReferenceKind:   xpb.CrossReferencesRequest_ALL_REFERENCES,
 
 		Filter: defaultFilters,
-
-		ExperimentalSignatures: true,
 	})
 	if err != nil {
 		return err
