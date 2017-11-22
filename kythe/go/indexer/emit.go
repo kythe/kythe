@@ -462,7 +462,7 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 	}
 }
 
-// emitPosRef emits a zero-width anchor at the start of loc, pointing to obj.
+// emitPosRef emits an anchor spanning loc, pointing to obj.
 func (e *emitter) emitPosRef(loc ast.Node, obj types.Object, kind string) {
 	target := e.pi.ObjectVName(obj)
 	file, start, end := e.pi.Span(loc)
