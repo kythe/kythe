@@ -974,6 +974,12 @@ void KytheGraphObserver::recordDeclUseLocation(
   RecordAnchor(source_range, node, EdgeKindID::kRef, claimability);
 }
 
+void KytheGraphObserver::recordInitLocation(
+    const GraphObserver::Range &source_range, const NodeId &node,
+    Claimability claimability) {
+  RecordAnchor(source_range, node, EdgeKindID::kRefInit, claimability);
+}
+
 void KytheGraphObserver::recordStaticVariable(const NodeId &VarNodeId) {
   const VNameRef node_vname = VNameRefFromNodeId(VarNodeId);
   recorder_->AddProperty(node_vname, PropertyID::kTagStatic, "");

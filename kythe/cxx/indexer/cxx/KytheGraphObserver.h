@@ -227,6 +227,9 @@ class KytheGraphObserver : public GraphObserver {
   void recordDeclUseLocation(const Range &SourceRange, const NodeId &DeclId,
                              GraphObserver::Claimability Cl) override;
 
+  void recordInitLocation(const Range &SourceRange, const NodeId &DeclId,
+                          GraphObserver::Claimability Cl) override;
+
   void recordVariableNode(
       const NodeId &DeclNode, Completeness VarCompleteness,
       VariableSubkind Subkind,

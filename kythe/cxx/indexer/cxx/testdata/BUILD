@@ -1524,6 +1524,14 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "rec_designated_initializer",
+    srcs = ["rec/rec_designated_initializer.c"],
+    std = "c99",
+    tags = ["rec"],
+    ignore_dups = True,  # clang visits these expressions multiple times.
+)
+
+cc_indexer_test(
     name = "rec_fwd_struct_name",
     srcs = ["rec/rec_fwd_struct_name.c"],
     std = "c99",

@@ -218,6 +218,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitNamespaceDecl(const clang::NamespaceDecl *Decl);
   bool VisitBindingDecl(const clang::BindingDecl *Decl);
   bool VisitDeclRefExpr(const clang::DeclRefExpr *DRE);
+  bool VisitDesignatedInitExpr(const clang::DesignatedInitExpr *DIE);
   bool VisitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr *E);
   bool VisitCXXConstructExpr(const clang::CXXConstructExpr *E);
   bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
@@ -757,7 +758,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename NodeT> IndexedParent *getIndexedParent(const NodeT &Node) {
+  template <typename NodeT>
+  IndexedParent *getIndexedParent(const NodeT &Node) {
     return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
   }
 
@@ -828,14 +830,16 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// makes sense only within the implementation of this class.
   std::unordered_map<int64_t, absl::optional<GraphObserver::NodeId>> TypeNodes;
 
-  /// \brief Visit a DeclRefExpr or a ObjCIvarRefExpr
+  /// \brief Visit an Expr that refers to some NamedDecl.
   ///
   /// DeclRefExpr and ObjCIvarRefExpr are similar entities and can be processed
   /// in the same way but do not have a useful common ancestry.
+  ///
+  /// \param IsInit set to true if this is an initializing reference.
   bool VisitDeclRefOrIvarRefExpr(const clang::Expr *Expr,
                                  const clang::NamedDecl *const FoundDecl,
                                  clang::SourceLocation SL,
-                                 bool IsImplicit = false);
+                                 bool IsImplicit = false, bool IsInit = false);
 
   /// \brief Connect a NodeId to the super and implemented protocols for a
   /// ObjCInterfaceDecl.

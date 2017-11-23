@@ -734,6 +734,11 @@ class GraphObserver {
       const Range &SourceRange, const NodeId &DeclId,
       Claimability Cl = Claimability::Claimable) {}
 
+  /// \brief Records an init site for some decl.
+  virtual void recordInitLocation(const Range &SourceRange,
+                                  const NodeId &DeclId,
+                                  Claimability Cl = Claimability::Claimable) {}
+
   /// \brief Records that a type was spelled out at a particular location.
   /// \param SourceRange The source range covering the type spelling.
   /// \param TypeNode The identifier for the type being spelled out.

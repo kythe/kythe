@@ -203,7 +203,8 @@ int64_t ComputeKeyFromQualType(const ASTContext &Context, const QualType &QT,
 
 /// \brief Restores the type of a stacklike container of `ElementType` upon
 /// destruction.
-template <typename StackType> class StackSizeRestorer {
+template <typename StackType>
+class StackSizeRestorer {
  public:
   explicit StackSizeRestorer(StackType &Target)
       : Target(&Target), Size(Target.size()) {}
@@ -1670,6 +1671,19 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
   return true;
 }
 
+bool IndexerASTVisitor::VisitDesignatedInitExpr(
+    const clang::DesignatedInitExpr *DIE) {
+  for (const auto &D : DIE->designators()) {
+    if (!D.isFieldDesignator()) continue;
+    if (const auto *F = D.getField()) {
+      if (!VisitDeclRefOrIvarRefExpr(DIE, F, D.getFieldLoc(), false, true)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 void IndexerASTVisitor::VisitNestedNameSpecifierLoc(
     clang::NestedNameSpecifierLoc NNSL) {
   // TODO(shahms): Remove this and use Visit*TypeLoc directly, rather than
@@ -1689,7 +1703,7 @@ void IndexerASTVisitor::VisitNestedNameSpecifierLoc(
 // instantiations.
 bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     const clang::Expr *Expr, const NamedDecl *const FoundDecl,
-    SourceLocation SL, bool IsImplicit) {
+    SourceLocation SL, bool IsImplicit, bool IsInit) {
   // TODO(zarko): check to see if this DeclRefExpr has already been indexed.
   // (Use a simple N=1 cache.)
   // TODO(zarko): Point at the capture as well as the thing being captured;
@@ -1717,8 +1731,13 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(TargetDecl);
-      Observer.recordDeclUseLocation(RCC.value(), DeclId,
-                                     GraphObserver::Claimability::Unclaimable);
+      if (IsInit) {
+        Observer.recordInitLocation(RCC.value(), DeclId,
+                                    GraphObserver::Claimability::Unclaimable);
+      } else {
+        Observer.recordDeclUseLocation(
+            RCC.value(), DeclId, GraphObserver::Claimability::Unclaimable);
+      }
       for (const auto &S : Supports) {
         S->InspectDeclRef(*this, SL, RCC.value(), DeclId, TargetDecl);
       }
