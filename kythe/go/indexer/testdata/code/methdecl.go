@@ -33,13 +33,15 @@ type w int
 //- LTReturn.pre_text "bool"
 //-
 //- LTRType.kind "TYPE"
-//- LTRType.pre_text "w"
+//- LTRType.pre_text "*w"
 //-
 //- LTContext.kind "CONTEXT"
 //- LTContext.post_child_text "."
 //- LTContext child.0 LTPkg
+//- LTContext child.1 LTCType
 //- LTPkg.pre_text "methdecl"
+//- LTCType.pre_text "w"
 //- LTIdent.pre_text "LessThan"
-func (rec w) LessThan(x int) bool {
-	return int(rec) < x
+func (rec *w) LessThan(x int) bool {
+	return int(*rec) < x
 }

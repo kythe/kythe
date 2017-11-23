@@ -468,9 +468,21 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		})
 	}
 	if par, ok := pi.owner[obj]; ok {
+		// This includes methods declared by an interface, but not methods on a
+		// concrete type.
 		if _, ok := par.Type().(*types.Named); ok {
 			ctx = append(ctx, &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
 				PreText: typeName(par.Type()),
+			})
+		}
+	} else if t, ok := obj.(*types.Func); ok {
+		// This handles context for methods of concrete types.  Ignore pointers
+		// for this purpose; the reader can't easily predict which to use.
+		if recv := t.Type().(*types.Signature).Recv(); recv != nil {
+			ctx = append(ctx, &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: strings.TrimPrefix(typeName(recv.Type()), "*"),
 			})
 		}
 	}
@@ -600,6 +612,8 @@ func typeName(typ types.Type) string {
 		return "struct {...}"
 	case *types.Interface:
 		return "interface {...}"
+	case *types.Pointer:
+		return "*" + typeName(t.Elem())
 	}
 	return typ.String()
 }
