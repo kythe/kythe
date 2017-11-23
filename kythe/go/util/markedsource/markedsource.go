@@ -20,6 +20,7 @@ package markedsource
 import (
 	"bytes"
 	"io"
+	"strings"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 )
@@ -120,4 +121,52 @@ func renderParams(ms *cpb.MarkedSource, st state, params []string) []string {
 		// do nothing
 	}
 	return params
+}
+
+// RenderQualifiedName renders a language-appropriate qualified name from a
+// MarkedSource message.
+func RenderQualifiedName(ms *cpb.MarkedSource) string {
+	id := firstMatching(ms, func(ms *cpb.MarkedSource) bool {
+		return ms.Kind == cpb.MarkedSource_IDENTIFIER && ms.PreText != ""
+	})
+	ctx := firstMatching(ms, func(ms *cpb.MarkedSource) bool {
+		return ms.Kind == cpb.MarkedSource_CONTEXT
+	})
+	if ctx == nil {
+		return ""
+	}
+
+	delim := ctx.PostChildText
+	if delim == "" {
+		delim = "."
+	}
+	var quals []string
+	for _, kid := range ctx.Child {
+		if kid.Kind == cpb.MarkedSource_IDENTIFIER && kid.PreText != "" {
+			quals = append(quals, kid.PreText)
+		}
+	}
+	if pkg := strings.Join(quals, delim); pkg != "" {
+		return pkg + delim + id.GetPreText()
+	}
+	return id.GetPreText()
+}
+
+// firstMatching returns the first node in a breadth-first traversal of the
+// children of ms for which f reports true, or nil.
+func firstMatching(ms *cpb.MarkedSource, f func(*cpb.MarkedSource) bool) *cpb.MarkedSource {
+	if ms == nil || len(ms.Child) == 0 {
+		return nil
+	}
+	for _, kid := range ms.Child {
+		if f(kid) {
+			return kid
+		}
+	}
+	for _, kid := range ms.Child {
+		if match := firstMatching(kid, f); match != nil {
+			return match
+		}
+	}
+	return nil
 }

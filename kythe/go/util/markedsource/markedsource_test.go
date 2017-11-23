@@ -213,3 +213,39 @@ func TestRender(t *testing.T) {
 		}
 	}
 }
+
+func TestQName(t *testing.T) {
+	// Tests transliterated from QualifiedNameExtractorTest.java.
+	tests := []struct {
+		input string // text-format proto
+		want  string
+	}{
+		{input: "child {\nkind: CONTEXT\nchild {\nkind: IDENTIFIER\npre_text: \"java\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"com\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"google\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"devtools\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"kythe\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"analyzers\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"java\"\n} \npost_child_text: \".\"\nadd_final_list_token: true\n} \nchild {\nkind: IDENTIFIER\npre_text: \"JavaEntrySets\"\n}",
+			want: "java.com.google.devtools.kythe.analyzers.java.JavaEntrySets"},
+
+		{input: "child {\nkind: CONTEXT \npost_child_text: \".\"\nadd_final_list_token: true\n} \nchild {\nkind: IDENTIFIER\npre_text: \"JavaEntrySets\"\n}",
+			want: "JavaEntrySets"},
+
+		{input: "child {\nchild {\nkind: IDENTIFIER\npre_text: \"JavaEntrySets\"\n}\n}"},
+
+		{input: "child {}"},
+
+		{input: "child { pre_text: \"type \" } child { child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"kythe/go/platform/kindex\" } post_child_text: \".\" add_final_list_token: true } child { kind: IDENTIFIER pre_text: \"Settings\" } } child { kind: TYPE pre_text: \" \" } child { kind: TYPE pre_text: \"struct {...}\" }",
+			want: "kythe/go/platform/kindex.Settings"},
+
+		{input: "child: {\n  pre_text: \"func \"\n}\nchild: {\n  kind: PARAMETER\n  pre_text: \"(\"\n  child: {\n    kind: TYPE\n    pre_text: \"*w\"\n  }\n  post_text: \") \"\n}\nchild: {\n  child: {\n    kind: CONTEXT\n    child: {\n      kind: IDENTIFIER\n      pre_text: \"methdecl\"\n    }\n    child: {\n      kind: IDENTIFIER\n      pre_text: \"w\"\n    }\n    post_child_text: \".\"\n    add_final_list_token: true\n  }\n  child: {\n    kind: IDENTIFIER\n    pre_text: \"LessThan\"\n  }\n}\nchild: {\n  kind: PARAMETER_LOOKUP_BY_PARAM\n  pre_text: \"(\"\n  post_child_text: \", \"\n  post_text: \")\"\n  lookup_index: 1\n}\nchild: {\n  pre_text: \" \"\n  child: {\n    pre_text: \"bool\"\n  }\n}",
+			want: "methdecl.w.LessThan"},
+	}
+
+	for _, test := range tests {
+		var ms cpb.MarkedSource
+		if err := proto.UnmarshalText(test.input, &ms); err != nil {
+			t.Errorf("Invalid test input: %v\nInput was %#q", err, test.input)
+			continue
+		}
+		got := RenderQualifiedName(&ms)
+		if got != test.want {
+			t.Errorf("Invalid result: got %q, want %q\nInput was %#q", got, test.want, test.input)
+		}
+	}
+}
