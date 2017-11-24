@@ -1,0 +1,2 @@
+This is probably not the right approach, since objects from different packages
+are probably not hashable correctly.
