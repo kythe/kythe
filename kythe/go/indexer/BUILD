@@ -179,6 +179,11 @@ go_indexer_test(
     srcs = ["testdata/structinit.go"],
 )
 
+go_indexer_test(
+    name = "initcall_test",
+    srcs = ["testdata/initcall.go"],
+)
+
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
 # TODO(T270): requires MarkedSource resolution in pipeline
 # go_integration_test(

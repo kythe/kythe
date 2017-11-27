@@ -85,11 +85,12 @@ type impl struct{ A, B types.Object }
 // first error encountered is reported.
 func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) error {
 	e := &emitter{
-		ctx:  ctx,
-		pi:   pi,
-		sink: sink,
-		opts: opts,
-		impl: make(map[impl]bool),
+		ctx:      ctx,
+		pi:       pi,
+		sink:     sink,
+		opts:     opts,
+		impl:     make(map[impl]bool),
+		anchored: make(map[ast.Node]bool),
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -155,6 +156,7 @@ type emitter struct {
 	opts     *EmitOptions
 	impl     map[impl]bool                        // see checkImplements
 	rmap     map[*ast.File]map[int]metadata.Rules // see applyRules
+	anchored map[ast.Node]bool                    // see writeAnchor
 	firstErr error
 }
 
@@ -467,7 +469,7 @@ func (e *emitter) emitPosRef(loc ast.Node, obj types.Object, kind string) {
 	target := e.pi.ObjectVName(obj)
 	file, start, end := e.pi.Span(loc)
 	anchor := e.pi.AnchorVName(file, start, end)
-	e.writeAnchor(anchor, start, end)
+	e.writeAnchor(loc, anchor, start, end)
 	e.writeEdge(anchor, target, kind)
 }
 
@@ -693,7 +695,11 @@ func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
 	e.check(e.sink.writeEdge(e.ctx, src, tgt, kind))
 }
 
-func (e *emitter) writeAnchor(src *spb.VName, start, end int) {
+func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
+	if e.anchored[node] {
+		return // this node already has an anchor
+	}
+	e.anchored[node] = true
 	e.check(e.sink.writeAnchor(e.ctx, src, start, end))
 }
 
@@ -704,7 +710,7 @@ func (e *emitter) writeDiagnostic(src *spb.VName, d diagnostic) {
 func (e *emitter) writeNodeDiagnostic(src ast.Node, d diagnostic) {
 	file, start, end := e.pi.Span(src)
 	anchor := e.pi.AnchorVName(file, start, end)
-	e.writeAnchor(anchor, start, end)
+	e.writeAnchor(src, anchor, start, end)
 	e.writeDiagnostic(anchor, d)
 }
 
@@ -713,7 +719,7 @@ func (e *emitter) writeNodeDiagnostic(src ast.Node, d diagnostic) {
 func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb.VName {
 	file, start, end := e.pi.Span(origin)
 	anchor := e.pi.AnchorVName(file, start, end)
-	e.writeAnchor(anchor, start, end)
+	e.writeAnchor(origin, anchor, start, end)
 	e.writeEdge(anchor, target, kind)
 
 	// Check whether we are intended to emit metadata linkage edges, and if so,
