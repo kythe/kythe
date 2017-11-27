@@ -111,6 +111,7 @@ public class JavaCompilationUnitExtractor {
   private static final FormattingLogger logger =
       FormattingLogger.getLogger(JavaCompilationUnitExtractor.class);
 
+  private static final String MODULE_INFO_NAME = "module-info";
   private static final String SOURCE_JAR_ROOT = "!SOURCE_JAR!";
 
   private static String classJarRoot(Location location) {
@@ -514,24 +515,26 @@ public class JavaCompilationUnitExtractor {
                   "Unsupported java file kind: '%s' for '%s'",
                   requiredInput.getKind().name(), uri));
       }
-    }
-    if (!isJarPath && requiredInput.getKind() == Kind.CLASS) {
+    } else {
       // If the class file was on disk, we need to infer the correct classpath to add.
       String binaryName = getBinaryNameForClass(fileManager, requiredInput);
-      // Java package names map to folders on disk, so if we want to find the right directory
-      // we replace each . with a /.
-      String csubdir = binaryName.replace('.', '/');
-      int cindex = strippedPath.indexOf(csubdir);
-      if (cindex <= 0) {
-        throw new ExtractionException(
-            String.format(
-                "unable to infer classpath for %s from %s, %s", strippedPath, csubdir, binaryName),
-            false);
-      } else {
-        (location == StandardLocation.PLATFORM_CLASS_PATH
-                ? results.newBootClassPath
-                : results.newClassPath)
-            .add(strippedPath.substring(0, cindex));
+      if (binaryName != null) {
+        // Java package names map to folders on disk, so if we want to find the right directory
+        // we replace each . with a /.
+        String csubdir = binaryName.replace('.', '/');
+        int cindex = strippedPath.indexOf(csubdir);
+        if (cindex <= 0) {
+          throw new ExtractionException(
+              String.format(
+                  "unable to infer classpath for %s from %s, %s",
+                  strippedPath, csubdir, binaryName),
+              false);
+        } else {
+          (location == StandardLocation.PLATFORM_CLASS_PATH
+                  ? results.newBootClassPath
+                  : results.newClassPath)
+              .add(strippedPath.substring(0, cindex));
+        }
       }
     }
 
@@ -591,6 +594,10 @@ public class JavaCompilationUnitExtractor {
       if ((binaryName = fileManager.inferBinaryName(location, fileObject)) != null) {
         return binaryName;
       }
+    }
+    if (fileObject.isNameCompatible(MODULE_INFO_NAME, Kind.CLASS)) {
+      // Ignore automatic module-info.class files
+      return null;
     }
     throw new ExtractionException(
         String.format("unable to infer classpath for %s", fileObject.getName()), false);

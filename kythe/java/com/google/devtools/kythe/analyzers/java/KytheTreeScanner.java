@@ -77,7 +77,6 @@ import com.sun.tools.javac.util.Context;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,8 +100,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   /** Maximum allowed text size for variable {@link MarkedSource.Kind.INITIALIZER}s */
   private static final int MAX_INITIALIZER_LENGTH = 80;
 
-  /** Filename for special source file containing package annotations and documentation. */
-  private static final String PACKAGE_INFO_FILENAME = "package-info.java";
+  /** Name for special source file containing package annotations and documentation. */
+  private static final String PACKAGE_INFO_NAME = "package-info";
 
   private final boolean verboseLogging;
 
@@ -220,10 +219,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     VName pkgNode = entrySets.newPackageNodeAndEmit(pkg.packge).getVName();
 
-    String fileName =
-        Paths.get(filePositions.getSourceFile().toUri().getPath()).getFileName().toString();
-    EdgeKind anchorKind =
-        PACKAGE_INFO_FILENAME.equals(fileName) ? EdgeKind.DEFINES_BINDING : EdgeKind.REF;
+    boolean isPkgInfo =
+        filePositions
+            .getSourceFile()
+            .isNameCompatible(PACKAGE_INFO_NAME, JavaFileObject.Kind.SOURCE);
+    EdgeKind anchorKind = isPkgInfo ? EdgeKind.DEFINES_BINDING : EdgeKind.REF;
     emitAnchor(ctx, anchorKind, pkgNode);
 
     visitDocComment(pkgNode, null);
