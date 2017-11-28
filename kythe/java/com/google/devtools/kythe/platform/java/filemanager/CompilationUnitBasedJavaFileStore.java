@@ -44,7 +44,7 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   @Override
   public CustomJavaFileObject find(String className, Kind kind, Set<String> pathPrefixes) {
     Path file = Paths.get(className.replace('.', '/') + kind.extension);
-    String dirname = file.getParent().toString();
+    String dirname = file.getParent() == null ? "." : file.getParent().toString();
     String basename = file.getFileName().toString();
     for (String prefix : pathPrefixes) {
       String dirToLookIn = join(prefix, dirname);
