@@ -37,6 +37,9 @@ message AnalysisRequest {
 
   // The revision marker that should be attributed to this compilation.
   string revision = 3;
+
+  // An identifier for the current analysis.
+  string build_id = 4;
 }
 
 // AnalysisOutput contains an output artifact for the current analysis taking
