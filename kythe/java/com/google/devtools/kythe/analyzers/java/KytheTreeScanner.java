@@ -46,6 +46,7 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.code.Symtab;
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCAnnotation;
@@ -289,6 +290,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
                 // be saved in the CompilationUnit and this will throw an exception.
                 if (member.type != null) {
                   member.type.tsym.complete();
+                  member.type.getParameterTypes().forEach(t -> t.tsym.complete());
+                  Type returnType = member.type.getReturnType();
+                  if (returnType != null) {
+                    returnType.tsym.complete();
+                  }
                 }
 
                 lastMember = emitNameUsage(ctx, member, imprtField.name, EdgeKind.REF_IMPORTS);
