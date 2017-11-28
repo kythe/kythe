@@ -412,7 +412,6 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
                              const clang::SourceRange& Range) {
     if (const auto RCC = V.ExplicitRangeInCurrentContext(Range)) {
       const auto NodeId = V.BuildNodeIdForDecl(&AccessorDecl);
-      V.RecordCallEdges(*RCC, NodeId);
       V.getGraphObserver().recordDeclUseLocation(
           *RCC, NodeId, GraphObserver::Claimability::Unclaimable);
     }
