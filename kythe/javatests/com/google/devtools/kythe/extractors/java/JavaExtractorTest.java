@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import junit.framework.TestCase;
 
 /** Tests for {@link JavaCompilationExtractor}. */
@@ -51,6 +53,14 @@ public class JavaExtractorTest extends TestCase {
   private static final String TARGET1 = "target1";
 
   private static final ImmutableList<String> EMPTY = ImmutableList.of();
+
+  private static final FileInfo GENERATED_ANNOATION_CLASS =
+      FileInfo.newBuilder()
+          .setPath(join("!CLASS_PATH_JAR!", "javax/annotation/Generated.class"))
+          // This digest depends on the external javax_annotation_jsr250_api dependency.  If it is
+          // updated, this will also need to change.
+          .setDigest("e5ee743f5c6df4923a934cba33c73d3d73e19d277c8ddec5c4e7ac59788fc674")
+          .build();
 
   /** Tests the basic case of indexing a java compilation with two sources. */
   public void testJavaExtractorSimple() throws Exception {
@@ -124,12 +134,12 @@ public class JavaExtractorTest extends TestCase {
 
     // With the expected dependencies as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
-        .containsExactlyElementsIn(getExpectedInfos(dependencies));
+        .containsExactlyElementsIn(getExpectedInfos(dependencies, GENERATED_ANNOATION_CLASS));
 
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
-    assertThat(details.getClasspathList()).isEmpty();
+    assertThat(details.getClasspathList()).containsExactly("!CLASS_PATH_JAR!");
   }
 
   /** Tests indexing within a symlink root. */
@@ -308,9 +318,8 @@ public class JavaExtractorTest extends TestCase {
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).hasSize(1);
     assertThat(details.getSourcepathList().get(0)).isEqualTo(join(TEST_DATA_DIR, "child"));
-    assertThat(details.getClasspathList()).hasSize(1);
     // Ensure the magic !CLASS_PATH_JAR! classpath is added.
-    assertThat(details.getClasspathList().get(0)).isEqualTo("!CLASS_PATH_JAR!");
+    assertThat(details.getClasspathList()).containsExactly("!CLASS_PATH_JAR!");
   }
 
   /**
@@ -679,13 +688,16 @@ public class JavaExtractorTest extends TestCase {
     assertThat(unit.getSourceFileCount()).isEqualTo(1);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
 
-    assertThat(unit.getRequiredInputCount()).isEqualTo(2);
+    assertThat(unit.getRequiredInputCount()).isEqualTo(3);
     List<String> requiredPaths = new ArrayList<>();
     for (FileInput input : unit.getRequiredInputList()) {
       requiredPaths.add(input.getInfo().getPath());
     }
     assertThat(requiredPaths)
-        .containsExactly(sources.get(0), "!PLATFORM_CLASS_PATH_JAR!/java/lang/Fake.class");
+        .containsExactly(
+            sources.get(0),
+            "!PLATFORM_CLASS_PATH_JAR!/java/lang/Fake.class",
+            "!CLASS_PATH_JAR!/javax/annotation/Generated.class");
 
     assertThat(unit.getArgumentList())
         .containsNoneOf("-bootclasspath", "-sourcepath", "-cp", "-classpath");
@@ -693,7 +705,7 @@ public class JavaExtractorTest extends TestCase {
     // And the correct source/class locations set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).isEmpty();
-    assertThat(details.getClasspathList()).isEmpty();
+    assertThat(details.getClasspathList()).containsExactly("!CLASS_PATH_JAR!");
     assertThat(details.getBootclasspathList()).containsExactly("!PLATFORM_CLASS_PATH_JAR!");
   }
 
@@ -709,8 +721,9 @@ public class JavaExtractorTest extends TestCase {
     return Lists.transform(files, FileInput::getInfo);
   }
 
-  private static List<FileInfo> getExpectedInfos(List<String> files) {
-    return Lists.transform(files, JavaExtractorTest::makeFileInfo);
+  private static List<FileInfo> getExpectedInfos(List<String> files, FileInfo... extra) {
+    return Stream.concat(files.stream().map(JavaExtractorTest::makeFileInfo), Stream.of(extra))
+        .collect(Collectors.toList());
   }
 
   private static FileInfo makeFileInfo(String path) {

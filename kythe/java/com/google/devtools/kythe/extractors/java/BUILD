@@ -25,5 +25,6 @@ java_library(
         "//third_party/proto:protobuf_java",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
+        "@javax_annotation_jsr250_api//jar",
     ],
 )
