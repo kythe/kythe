@@ -1,0 +1,7 @@
+Unfortunately, this does not work. The official go_library rules still suffer
+from some dependency-related issues, where the Go library generated from a
+proto A that depends on proto B will not correctly get the dependency on the Go
+library generated from B.
+
+This is more or less what the "hack" I just deleted was doing. I might have to
+see if I can replicate the hack.
