@@ -60,6 +60,8 @@ func (m *mock) out() analysis.OutputFunc {
 	}
 }
 
+const buildID = "aabbcc"
+
 // Analyze implements the analysis.CompilationAnalyzer interface.
 func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analysis.OutputFunc) error {
 	m.OutputIndex = 0
@@ -72,6 +74,9 @@ func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analys
 	}
 	if m.OutputIndex != len(m.Outputs) {
 		m.t.Errorf("Expected OutputIndex: %d; found: %d", len(m.Outputs), m.OutputIndex)
+	}
+	if req.BuildId != buildID {
+		m.t.Errorf("Missing build ID")
 	}
 	return m.AnalyzeError
 }
@@ -246,6 +251,9 @@ func TestDriverSetup(t *testing.T) {
 				if cu.Revision == "" {
 					missing = append(missing, "revision marker")
 				}
+				if cu.BuildID == "" {
+					missing = append(missing, "build ID")
+				}
 				if len(missing) != 0 {
 					return fmt.Errorf("missing %s: %v", strings.Join(missing, ", "), cu)
 				}
@@ -301,6 +309,7 @@ func comps(sigs ...string) (cs []Compilation) {
 			Unit:       &apb.CompilationUnit{VName: &spb.VName{Signature: sig}},
 			Revision:   "12345",
 			UnitDigest: "digest:" + sig,
+			BuildID:    buildID,
 		})
 	}
 	return

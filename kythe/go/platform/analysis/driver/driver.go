@@ -130,6 +130,7 @@ func (d *Driver) Run(ctx context.Context, queue Queue) error {
 					Compilation:     cu.Unit,
 					FileDataService: d.FileDataService,
 					Revision:        cu.Revision,
+					BuildId:         cu.BuildID,
 				}, d.writeOutput))
 			}
 			if terr := d.teardown(ctx, cu); terr != nil {
