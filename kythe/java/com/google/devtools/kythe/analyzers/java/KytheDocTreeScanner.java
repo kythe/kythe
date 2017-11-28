@@ -82,7 +82,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     Symbol sym = null;
     try {
       sym = (Symbol) trees.getElement(getCurrentPath());
-    } catch (Symbol.CompletionFailure e) {
+    } catch (Symbol.CompletionFailure | NullPointerException e) {
       logger.warningfmt(e, "Failed to resolve documentation reference: %s", tree);
     }
     if (sym == null) {
