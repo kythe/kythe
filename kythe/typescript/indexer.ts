@@ -583,7 +583,7 @@ class Vistor {
     // the source of the module, so check if we've emitted the module
     // anchor before.
     if (this.emittedModuleAnchor) return;
-      
+
     // Emit a "record" node, representing the module object.
     let kMod = this.newVName('module', this.moduleName(this.file.fileName));
     this.emitFact(kMod, 'node/kind', 'record');
@@ -660,9 +660,6 @@ class Vistor {
     let vname: VName|undefined;
     for (const decl of stmt.declarationList.declarations) {
       vname = this.visitVariableDeclaration(decl);
-    }
-    if (ts.getCombinedModifierFlags(stmt) & ts.ModifierFlags.Export) {
-      this.emitModuleAnchorForFirstExport(stmt);
     }
     if (stmt.declarationList.declarations.length === 1 && vname !== undefined) {
       this.visitJSDoc(stmt, vname);
@@ -889,6 +886,11 @@ class Vistor {
 
   /** visit is the main dispatch for visiting AST nodes. */
   visit(node: ts.Node): void {
+    // Ensure that the first 'export' seen in the file gets tagged as
+    // the anchor attributed as the definition site for the module.
+    if (ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Export) {
+      this.emitModuleAnchorForFirstExport(node);
+    }
     switch (node.kind) {
       case ts.SyntaxKind.ImportDeclaration:
         return this.visitImportDeclaration(node as ts.ImportDeclaration);
