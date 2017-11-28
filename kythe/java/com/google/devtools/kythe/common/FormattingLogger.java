@@ -193,7 +193,7 @@ public class FormattingLogger {
           || record.getSourceMethodName() == null
           || LOGGER_CLASSES.contains(record.getSourceClassName())) {
         Throwable t = record.getThrown();
-        if (t == null) {
+        if (t == null || t.getStackTrace().length == 0) {
           t = new Throwable();
         }
         for (StackTraceElement e : t.getStackTrace()) {
