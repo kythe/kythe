@@ -461,29 +461,28 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	//    (id) pkg    type
 	//
 	var ctx []*cpb.MarkedSource
-	if pkg := obj.Pkg(); pkg != nil {
+	addID := func(s string) {
 		ctx = append(ctx, &cpb.MarkedSource{
 			Kind:    cpb.MarkedSource_IDENTIFIER,
-			PreText: pi.importPath(pkg),
+			PreText: s,
 		})
 	}
+	if pkg := obj.Pkg(); pkg != nil {
+		addID(pi.importPath(pkg))
+	}
 	if par, ok := pi.owner[obj]; ok {
-		// This includes methods declared by an interface, but not methods on a
-		// concrete type.
-		if _, ok := par.Type().(*types.Named); ok {
-			ctx = append(ctx, &cpb.MarkedSource{
-				Kind:    cpb.MarkedSource_IDENTIFIER,
-				PreText: typeName(par.Type()),
-			})
+		if t, ok := par.(*types.Func); ok {
+			// Parameter of a function or method.
+			addID(t.Name())
+		} else if t, ok := par.Type().(*types.Named); ok {
+			// Method of an interface, but not of a concrete type.
+			addID(typeName(t))
 		}
 	} else if t, ok := obj.(*types.Func); ok {
 		// This handles context for methods of concrete types.  Ignore pointers
 		// for this purpose; the reader can't easily predict which to use.
 		if recv := t.Type().(*types.Signature).Recv(); recv != nil {
-			ctx = append(ctx, &cpb.MarkedSource{
-				Kind:    cpb.MarkedSource_IDENTIFIER,
-				PreText: strings.TrimPrefix(typeName(recv.Type()), "*"),
-			})
+			addID(strings.TrimPrefix(typeName(recv.Type()), "*"))
 		}
 	}
 	if len(ctx) != 0 {

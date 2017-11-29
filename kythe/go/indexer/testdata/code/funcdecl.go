@@ -4,8 +4,28 @@ package funcdecl
 //- @Positive defines/binding Pos
 //- Pos code PosCode
 //-
-//- @x defines/binding Param
-//- Param code ParamCode
+//- @x defines/binding Param  // see Note [1].
+//- Param code XCode
+//- XCode child.0 XName
+//- XCode child.1 XSp
+//- XCode child.2 XType
+//-
+//- XName child.0 XCtx
+//- XName child.1 XId
+//-
+//- XCtx child.0 XPkg
+//- XCtx child.1 XFunc
+//- XPkg.kind "IDENTIFIER"
+//- XPkg.pre_text "funcdecl"
+//- XFunc.kind "IDENTIFIER"
+//- XFunc.pre_text "Positive"
+//- XId.kind "IDENTIFIER"
+//- XId.pre_text "x"
+//-
+//- XSp.kind "TYPE"
+//- XSp.pre_text " "
+//- XType.kind "TYPE"
+//- XType.pre_text "int"
 //-
 //- //--------------------------------------------------
 //- PosCode child.0 PCFunc   // func
@@ -39,6 +59,10 @@ func Positive(x int) bool {
 	return x > 0
 }
 
+// Note [1]: The occurrence of the signature for x inside the marked source for
+// the function will be looked up by the server (or denormalized in post). This
+// checks that the explicit signature is generated correctly in situ.
+
 //- @True defines/binding True
 //- True code TrueCode
 //-
@@ -58,4 +82,4 @@ func Positive(x int) bool {
 //- TCResult.pre_text " "
 //- TCResult child.0 TCReturn
 //- TCReturn.pre_text "bool"
-func True() bool { return true}
+func True() bool { return true }
