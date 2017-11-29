@@ -67,19 +67,3 @@ java_library(
         "@bazel_tools//third_party/java/jdk/langtools:javac",
     ],
 )
-
-# java_analyzer_fake_binary is so that these tests are processed as part of the
-# regular Kythe pipeline, so that we can do end-to-end tests for tools that use
-# Kythe facts.
-
-java_library(
-    name = "java_analyzer_fake_library",
-    srcs = glob(
-        ["testdata/**/*.java"],
-        exclude = [
-            # Exclude meta-data tests
-            "testdata/pkg/Metadata.java",
-            "testdata/pkg/ProtobufMetadata.java",
-        ],
-    ),
-)

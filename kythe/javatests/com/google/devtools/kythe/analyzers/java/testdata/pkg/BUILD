@@ -4,6 +4,25 @@ load(
     "kythe_integration_test",
 )
 
+java_library(
+    name = "pkg",
+    srcs = glob(
+        ["**/*.java"],
+        exclude = [
+            # Exclude meta-data tests
+            "Metadata.java",
+            "ProtobufMetadata.java",
+            # Exclude Dagger test stubs
+            "daggerstubs/*",
+        ],
+    ),
+    visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
+    deps = [
+        "@com_google_code_findbugs_jsr305//jar",
+        "@com_google_dagger//java/dagger:core",
+    ],
+)
+
 ticket_root = "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg"
 
 # TODO(schroederc): requires related nodes generated in pipeline
