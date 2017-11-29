@@ -40,6 +40,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.function.Supplier;
 
 /** Binary to run Kythe's Java index over a single .kindex file, emitting entries to STDOUT. */
 public class JavaIndexer {
@@ -47,17 +48,25 @@ public class JavaIndexer {
     StandaloneConfig config = new StandaloneConfig();
     config.parseCommandLine(args);
 
-    List<Plugin> plugins = new ArrayList<>();
+    List<Supplier<Plugin>> plugins = new ArrayList<>();
     if (!Strings.isNullOrEmpty(config.getPlugin())) {
       URLClassLoader classLoader =
           new URLClassLoader(new URL[] {new URL("file://" + config.getPlugin())});
       for (Plugin plugin : ServiceLoader.load(Plugin.class, classLoader)) {
-        System.err.println("Registering plugin: " + plugin.getClass());
-        plugins.add(plugin);
+        final Class<? extends Plugin> clazz = plugin.getClass();
+        System.err.println("Registering plugin: " + clazz);
+        plugins.add(
+            () -> {
+              try {
+                return clazz.getConstructor().newInstance();
+              } catch (Exception e) {
+                throw new IllegalStateException("failed to construct Plugin " + clazz, e);
+              }
+            });
       }
     }
     if (config.getPrintVNames()) {
-      plugins.add(new Plugin.PrintKytheNodes());
+      plugins.add(Plugin.PrintKytheNodes::new);
     }
 
     MemoryStatisticsCollector statistics = null;

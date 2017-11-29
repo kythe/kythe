@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import javax.lang.model.element.Name;
 import javax.tools.Diagnostic;
 
@@ -54,7 +55,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
   private final FactEmitter emitter;
   private final JavaIndexerConfig config;
   private final MetadataLoaders metadataLoaders;
-  private final List<Plugin> plugins = new ArrayList<>();
+  private final List<Supplier<Plugin>> plugins = new ArrayList<>();
 
   // should be set in analyzeCompilationUnit before any call to analyzeFile
   private JavaEntrySets entrySets;
@@ -74,9 +75,10 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
 
   /**
    * Register a {@link Plugin} to be run for each {@link JCCompilationUnit} analysis. Plugins are
-   * executed in the same order they are registered.
+   * executed in the same order they are registered and a new {@link Plugin} instance will be
+   * requested from the given {@link Supplier} for each {@link JCCompilationUnit} to be analyzed.
    */
-  public KytheJavacAnalyzer registerPlugin(Plugin plugin) {
+  public KytheJavacAnalyzer registerPlugin(Supplier<Plugin> plugin) {
     plugins.add(plugin);
     return this;
   }
@@ -143,11 +145,12 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
       Plugin.KytheGraph graph =
           new KytheGraphImpl(
               context, src.getPositions(), symNodes, Collections.unmodifiableMap(nodes));
-      for (Plugin plugin : plugins) {
+      for (Supplier<Plugin> p : plugins) {
         try {
+          Plugin plugin = p.get();
           plugin.run(compilation, entrySets, graph);
         } catch (Throwable e) {
-          logger.warningfmt(e, "Error running plugin %s: %s", plugin.getClass(), e.getMessage());
+          logger.warningfmt(e, "Error running plugin: %s", e.getMessage());
         }
       }
     }
