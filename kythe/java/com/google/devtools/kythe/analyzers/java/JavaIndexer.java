@@ -31,6 +31,7 @@ import com.google.devtools.kythe.platform.shared.MetadataLoaders;
 import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.ProtobufMetadataLoader;
 import java.io.BufferedOutputStream;
+import java.io.EOFException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -76,7 +77,16 @@ public class JavaIndexer {
       desc = new Archive(config.getIndexPackRoot()).readDescription(compilation.get(0));
     } else {
       // java_indexer kindex-file
-      desc = IndexInfoUtils.readIndexInfoFromFile(compilation.get(0));
+      try {
+        desc = IndexInfoUtils.readIndexInfoFromFile(compilation.get(0));
+      } catch (EOFException e) {
+        if (config.getIgnoreEmptyKIndex()) {
+          return;
+        }
+        throw new IllegalArgumentException(
+            "given empty .kindex file \"" + compilation.get(0) + "\"; try --ignore_empty_kindex",
+            e);
+      }
     }
 
     if (desc == null) {
@@ -148,6 +158,12 @@ public class JavaIndexer {
     private String indexPackRoot;
 
     @Parameter(
+      names = "--ignore_empty_kindex",
+      description = "Ignore empty .kindex files; exit successfully with no output"
+    )
+    private boolean ignoreEmptyKIndex;
+
+    @Parameter(
       names = {"--out", "-out"},
       description = "Write the entries to this file (or stdout if unspecified)"
     )
@@ -171,6 +187,10 @@ public class JavaIndexer {
 
     public final String getIndexPackRoot() {
       return indexPackRoot;
+    }
+
+    public final boolean getIgnoreEmptyKIndex() {
+      return ignoreEmptyKIndex;
     }
 
     public final String getOutputPath() {

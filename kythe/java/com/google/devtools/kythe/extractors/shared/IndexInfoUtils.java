@@ -43,11 +43,9 @@ public class IndexInfoUtils {
       throws IOException {
     checkArgument(!Strings.isNullOrEmpty(indexInfoFilename), "indexInfoFilename");
 
-    InputStream indexInfoInputStream = new GZIPInputStream(new FileInputStream(indexInfoFilename));
-    try {
+    try (InputStream indexInfoInputStream =
+        new GZIPInputStream(new FileInputStream(indexInfoFilename))) {
       return readIndexInfoFromStream(indexInfoInputStream);
-    } finally {
-      indexInfoInputStream.close();
     }
   }
 
