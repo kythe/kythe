@@ -341,10 +341,31 @@ public class JavaEntrySets extends KytheEntrySets {
       return false;
     }
     String cls = sym.enclClass().className();
+    // For performance, first check common package prefixes, then delegate
+    // to the slower loadedByJDKClassLoader() method.
     return SignatureGenerator.isArrayHelperClass(sym.enclClass())
         || cls.startsWith("java.")
         || cls.startsWith("javax.")
         || cls.startsWith("com.sun.")
-        || cls.startsWith("sun.");
+        || cls.startsWith("sun.")
+        || loadedByJDKClassLoader(cls);
+  }
+
+  /**
+   * Detects whether the class with the given name was loaded by the ClassLoader used to load JDK
+   * classes.
+   *
+   * <p>Although this is not required by the JVM spec, standard JVM implementations use separate
+   * classloaders for loading JDK classes vs. user classes.
+   *
+   * <p>Therefore, although not completely bulletproof, this is a good heuristic in practice for
+   * detecting whether a class is supplied by the JDK.
+   */
+  private static boolean loadedByJDKClassLoader(String cls) {
+    try {
+      return Class.forName(cls).getClassLoader() == String.class.getClassLoader();
+    } catch (ClassNotFoundException | SecurityException e) {
+      return false;
+    }
   }
 }

@@ -112,6 +112,12 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "jdk_tests",
+    size = "small",
+    srcs = ["JDK.java"],
+)
+
+java_verifier_test(
     name = "files_tests",
     size = "small",
     srcs = ["Files.java"],
