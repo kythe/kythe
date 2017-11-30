@@ -147,29 +147,27 @@ def _java_extract_kindex_impl(ctx):
   for dep in ctx.attr.deps:
     jars += [dep[KytheJavaJar].jar]
 
+  # Actually compile the sources to be used as a dependency for other tests
   jar = ctx.new_file(ctx.outputs.kindex, ctx.outputs.kindex.basename + ".jar")
-  srcsdir = ctx.new_file(jar, jar.basename + ".srcs")
+  info = java_common.compile(ctx,
+    javac_opts = java_common.default_javac_opts(
+        ctx, java_toolchain_attr = "_java_toolchain") + ctx.attr.opts,
+    java_toolchain = ctx.attr._java_toolchain,
+    host_javabase = ctx.attr._host_javabase,
+    source_files = ctx.files.srcs,
+    output = jar,
+    deps = [java_common.create_provider(
+      compile_time_jars = jars,
+      use_ijar = False,
+    )],
+  )
 
   args = ctx.attr.opts + [
       "-encoding", "utf-8",
       "-cp", ":".join([j.path for j in jars]),
-      "-d", srcsdir.path
   ]
   for src in ctx.files.srcs:
     args += [src.short_path]
-
-  ctx.action(
-      inputs = ctx.files.srcs + jars + [ctx.file._jar, ctx.file._javac] + ctx.files._jdk,
-      outputs = [jar, srcsdir],
-      mnemonic = "MockJavac",
-      command = "\n".join([
-          "set -e",
-          "mkdir -p " + srcsdir.path,
-          ctx.file._javac.path + '  "$@"',
-          ctx.file._jar.path + " cf " + jar.path + " -C " + srcsdir.path + " .",
-      ]),
-      arguments = args,
-  )
   extract(
       ctx = ctx,
       kindex = ctx.outputs.kindex,
@@ -208,19 +206,16 @@ java_extract_kindex = rule(
             cfg = "host",
         ),
         "opts": attr.string_list(),
-        "_javac": attr.label(
-            default = Label("@bazel_tools//tools/jdk:javac"),
-            single_file = True,
+        "_java_toolchain": attr.label(
+            default = Label("@bazel_tools//tools/jdk:toolchain"),
         ),
-        "_jar": attr.label(
-            default = Label("@bazel_tools//tools/jdk:jar"),
-            single_file = True,
-        ),
-        "_jdk": attr.label(
-            default = Label("@bazel_tools//tools/jdk:jdk"),
-            allow_files = True,
+        "_host_javabase": attr.label(
+            cfg = "host",
+            default = Label("@bazel_tools//tools/jdk:toolchain"),
         ),
     },
+    fragments = ["java"],
+    host_fragments = ["java"],
     outputs = {
         "kindex": "%{name}.kindex",
     },
