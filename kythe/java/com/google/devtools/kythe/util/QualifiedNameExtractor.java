@@ -51,7 +51,7 @@ public class QualifiedNameExtractor {
       return Optional.empty();
     }
     String postChildText = context.get().getPostChildText();
-    String packageDelim = postChildText.isEmpty() ? context.get().getPostChildText() : ".";
+    String packageDelim = !postChildText.isEmpty() ? postChildText : ".";
     String packageName =
         String.join(
             packageDelim,

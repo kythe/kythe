@@ -95,4 +95,16 @@ public class QualifiedNameExtractorTest {
     assertThat(resolvedName.isPresent()).isTrue();
     assertThat(resolvedName.get()).isEqualTo("//kythe/proto:analysis_go_proto");
   }
+
+  @Test
+  public void testDefaultSeparator() throws Exception {
+    MarkedSource.Builder builder = MarkedSource.newBuilder();
+    TextFormat.merge(
+        "child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"a\" } child { kind: IDENTIFIER pre_text: \"b\" } } child { kind: IDENTIFIER pre_text: \"-tail\" }",
+        builder);
+    MarkedSource testInput = builder.build();
+    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    assertThat(resolvedName.isPresent()).isTrue();
+    assertThat(resolvedName.get()).isEqualTo("a.b-tail");
+  }
 }

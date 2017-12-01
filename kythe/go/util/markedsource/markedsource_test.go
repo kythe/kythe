@@ -236,8 +236,13 @@ func TestQName(t *testing.T) {
 		{input: "child: {\n  pre_text: \"func \"\n}\nchild: {\n  kind: PARAMETER\n  pre_text: \"(\"\n  child: {\n    kind: TYPE\n    pre_text: \"*w\"\n  }\n  post_text: \") \"\n}\nchild: {\n  child: {\n    kind: CONTEXT\n    child: {\n      kind: IDENTIFIER\n      pre_text: \"methdecl\"\n    }\n    child: {\n      kind: IDENTIFIER\n      pre_text: \"w\"\n    }\n    post_child_text: \".\"\n    add_final_list_token: true\n  }\n  child: {\n    kind: IDENTIFIER\n    pre_text: \"LessThan\"\n  }\n}\nchild: {\n  kind: PARAMETER_LOOKUP_BY_PARAM\n  pre_text: \"(\"\n  post_child_text: \", \"\n  post_text: \")\"\n  lookup_index: 1\n}\nchild: {\n  pre_text: \" \"\n  child: {\n    pre_text: \"bool\"\n  }\n}",
 			want: "methdecl.w.LessThan"},
 
+		// Verify that a default separator does not get injected at the end.
 		{input: `child { kind: CONTEXT child { kind: IDENTIFIER pre_text: "//kythe/proto" } } child { kind: IDENTIFIER pre_text: ":analysis_go_proto" }`,
 			want: "//kythe/proto:analysis_go_proto"},
+
+		// Verify that the default separator is correctly used.
+		{input: `child { kind: CONTEXT child { kind: IDENTIFIER pre_text: "a" } child { kind: IDENTIFIER pre_text: "b" } } child { kind: IDENTIFIER pre_text: "-tail" }`,
+			want: "a.b-tail"},
 	}
 
 	for _, test := range tests {
