@@ -50,8 +50,8 @@ public class QualifiedNameExtractor {
       // if the current class node's marked source does not contain a context, skip it
       return Optional.empty();
     }
-    String packageDelim =
-        !context.get().getPostChildText().isEmpty() ? context.get().getPostChildText() : ".";
+    String postChildText = context.get().getPostChildText();
+    String packageDelim = postChildText.isEmpty() ? context.get().getPostChildText() : ".";
     String packageName =
         String.join(
             packageDelim,
@@ -69,7 +69,7 @@ public class QualifiedNameExtractor {
     // emit the qualified class name
     return packageName.isEmpty()
         ? Optional.of(className)
-        : Optional.of(String.format("%s%s%s", packageName, packageDelim, className));
+        : Optional.of(String.format("%s%s%s", packageName, postChildText, className));
   }
 
   /**

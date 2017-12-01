@@ -147,7 +147,7 @@ func RenderQualifiedName(ms *cpb.MarkedSource) string {
 		}
 	}
 	if pkg := strings.Join(quals, delim); pkg != "" {
-		return pkg + delim + id.GetPreText()
+		return pkg + ctx.PostChildText + id.GetPreText()
 	}
 	return id.GetPreText()
 }

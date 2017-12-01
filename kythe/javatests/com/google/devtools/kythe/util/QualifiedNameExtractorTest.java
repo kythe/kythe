@@ -83,4 +83,16 @@ public class QualifiedNameExtractorTest {
     assertThat(resolvedName.isPresent()).isTrue();
     assertThat(resolvedName.get()).isEqualTo("kythe/go/platform/kindex.Settings");
   }
+
+  @Test
+  public void testUnmarkedBaseName() throws Exception {
+    MarkedSource.Builder builder = MarkedSource.newBuilder();
+    TextFormat.merge(
+        "child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"//kythe/proto\" } } child { kind: IDENTIFIER pre_text: \":analysis_go_proto\" }",
+        builder);
+    MarkedSource testInput = builder.build();
+    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    assertThat(resolvedName.isPresent()).isTrue();
+    assertThat(resolvedName.get()).isEqualTo("//kythe/proto:analysis_go_proto");
+  }
 }
