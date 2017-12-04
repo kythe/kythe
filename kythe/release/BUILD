@@ -54,6 +54,7 @@ genrule(
         "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
+        "--exclude '.*.a$$'",  # Exclude go_binary archive files
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
         "--relpaths kythe/web/ui/resources/public",
@@ -136,7 +137,6 @@ filegroup(
         "//kythe/go/platform/tools/indexpack",
         "//kythe/go/platform/tools/viewindex",
         "//kythe/go/serving/tools:http_server",
-        "//kythe/go/serving/tools:kwazthis",
         "//kythe/go/serving/tools:kythe",
         "//kythe/go/serving/tools:write_tables",
         "//kythe/go/storage/tools:directory_indexer",

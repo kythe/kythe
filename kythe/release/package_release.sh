@@ -21,6 +21,7 @@
 # resulting archive.  The --relpath, --path, and --cp flags change this behavior
 # so that file paths can be structured.
 #
+#   --verbose: Log each action as it is taken.
 #   --path <path>: Each file is copied to ARCHIVE_ROOT/<path>/$(basename file).
 #   --relpaths <prefix>: Strip $GENBIR, $BINDIR and then <prefix> from each
 #                        file's path.  The resulting path is used for the file
@@ -28,6 +29,7 @@
 #                        change the root of the resulting file path.
 #   --cp <path> <path>: Copy the first file to the archive using exactly the
 #                       second path.
+#   --exclude <glob>: Exclude all further files matching the given glob.
 #
 # Example:
 #   BINDIR=bazel-bin/ \
@@ -54,8 +56,21 @@ P=$PBASE
 mkdir -p "$PBASE"
 trap "rm -rf '$PWD/$OUT.dir'" EXIT ERR INT
 
+VERBOSE=
+function log() {
+  if [[ -z "$VERBOSE" ]]; then
+    return
+  fi
+  echo "$@" >&2
+}
+
+EXCLUDE=()
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --verbose)
+      VERBOSE=true
+      ;;
     --relpaths)
       RELPATHS=$2
       shift
@@ -70,14 +85,29 @@ while [[ $# -gt 0 ]]; do
       cp "$2" "$PBASE/$3"
       shift 2
       ;;
+    --exclude)
+      EXCLUDE+=("$2")
+      shift
+      ;;
     *)
-      if [[ -z "$RELPATHS" ]]; then
+      skip=
+      for exclude in "${EXCLUDE[@]}"; do
+        if [[ "$1" =~ $exclude ]]; then
+          skip=true
+          break
+        fi
+      done
+      if [[ ! -z "$skip" ]]; then
+        log "Excluding $1"
+      elif [[ -z "$RELPATHS" ]]; then
+        log "Copying $1 to $P"
         cp "$1" "$P"/
       else
         rp="${1#$GENDIR/}"
         rp="${rp#$BINDIR/}"
         rp="$(dirname "${rp#$RELPATHS/}")"
         mkdir -p "$P/$rp"
+        log "Copying $1 to $P/$rp"
         cp "$1" "$P/$rp"
       fi
       ;;

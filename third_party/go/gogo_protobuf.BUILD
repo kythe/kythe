@@ -5,6 +5,8 @@ load("@//third_party:go/build.bzl", "external_go_package")
 
 licenses(["notice"])
 
+exports_files(["LICENSE"])
+
 go_binary(
     name = "protoc-gen-gofast",
     srcs = ["protoc-gen-gofast/main.go"],
