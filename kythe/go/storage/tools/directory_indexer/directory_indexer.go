@@ -117,9 +117,6 @@ func emitPath(path string, info os.FileInfo, err error) error {
 	digest := sha256.Sum256(contents)
 	vName.Signature = hex.EncodeToString(digest[:])
 
-	if vName.Language == "" {
-		vName.Language = sourceLanguage(path)
-	}
 	if vName.Path == "" {
 		vName.Path = path
 	}
@@ -156,19 +153,5 @@ func main() {
 		if err := filepath.Walk(dir, emitPath); err != nil {
 			log.Fatalf("Error walking %s: %v", dir, err)
 		}
-	}
-}
-
-func sourceLanguage(path string) string {
-	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")
-	switch ext {
-	case "java", "go":
-		return ext
-	case "py":
-		return "python"
-	case "cc", "cpp", "h":
-		return "c++"
-	default:
-		return ""
 	}
 }
