@@ -240,6 +240,10 @@ type Unit interface {
 	// Canonicalize organizes the unit into a canonical form.  The meaning of
 	// canonicalization is unit-dependent, and may safely be a no-op.
 	Canonicalize()
+
+	// Digest writes a unique representation of the unit to w sufficient to
+	// generate a content-addressable digest.
+	Digest(w io.Writer)
 }
 
 // Index represents the indexable terms of a compilation.

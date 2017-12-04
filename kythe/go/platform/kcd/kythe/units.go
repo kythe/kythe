@@ -19,6 +19,8 @@ package kythe
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"sort"
 	"strings"
 
@@ -81,6 +83,39 @@ func (u Unit) Canonicalize() {
 	sort.Sort(byName(pb.Environment))
 	sort.Strings(pb.SourceFile)
 	ptypes.SortByTypeURL(pb.Details)
+}
+
+// Digest satisfies part of the kcd.Unit interface.
+func (u Unit) Digest(w io.Writer) {
+	pb := u.Proto
+	if pb == nil {
+		pb = new(apb.CompilationUnit)
+	}
+	put := func(tag string, ss ...string) {
+		fmt.Fprintln(w, tag)
+		for _, s := range ss {
+			fmt.Fprint(w, s, "\x00")
+		}
+	}
+	putv := func(tag string, v *spb.VName) {
+		put(tag, v.GetSignature(), v.GetCorpus(), v.GetRoot(), v.GetPath(), v.GetLanguage())
+	}
+	putv("CU", pb.VName)
+	for _, ri := range pb.RequiredInput {
+		putv("RI", ri.VName)
+		put("IN", ri.Info.GetPath(), ri.Info.GetDigest())
+	}
+	put("ARG", pb.Argument...)
+	put("OUT", pb.OutputKey)
+	put("SRC", pb.SourceFile...)
+	put("CWD", pb.WorkingDirectory)
+	put("CTX", pb.EntryContext)
+	for _, env := range pb.Environment {
+		put("ENV", env.Name, env.Value)
+	}
+	for _, d := range pb.Details {
+		put("DET", d.TypeUrl, string(d.Value))
+	}
 }
 
 // ConvertUnit reports whether v can be converted to a Kythe kcd.Unit, and if
