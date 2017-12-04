@@ -6,13 +6,13 @@
                  :post "https://groups.google.com/group/kythe/post"
                  :subscribe "http://groups.google.com/group/kythe/boxsubscribe"
                  :unsubscribe "http://groups.google.com/group/kythe/boxsubscribe"}
-  :dependencies [[org.clojure/clojure "1.7.0"]
-                 [org.clojure/clojurescript "0.0-2371"
+  :dependencies [[org.clojure/clojure "1.8.0"]
+                 [org.clojure/clojurescript "1.9.946"
                   :exclusions [org.apache.ant/ant]]
-                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [om "0.8.0-alpha2"]
-                 [cljs-ajax "0.3.3"]]
-  :plugins [[lein-cljsbuild "1.1.0"]
+                 [org.clojure/core.async "0.3.465"]
+                 [org.omcljs/om "0.9.0"]
+                 [cljs-ajax "0.7.3"]]
+  :plugins [[lein-cljsbuild "1.1.1"]
             [lein-licenses "0.2.0"]]
   :hooks [leiningen.cljsbuild]
   :cljsbuild {
