@@ -396,7 +396,7 @@ def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
         runtime_deps = [load_plugin],
     )
     load_plugin_deploy_jar = ":{}_load_plugin_deploy.jar".format(name)
-    indexer_opts += [
+    indexer_opts = indexer_opts + [
       "--load_plugin",
       "$(location {})".format(load_plugin_deploy_jar),
     ]
