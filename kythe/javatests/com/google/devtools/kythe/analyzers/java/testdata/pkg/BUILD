@@ -23,9 +23,8 @@ java_library(
     ],
 )
 
-ticket_root = "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg"
-
 # TODO(schroederc): requires related nodes generated in pipeline
+# ticket_root = "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg"
 # kythe_integration_test(
 #     name = "cross_file_integration_test",
 #     srcs = [
