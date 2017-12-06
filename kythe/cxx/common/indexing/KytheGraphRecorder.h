@@ -118,7 +118,7 @@ llvm::StringRef spelling_of(NodeKindID node_kind_id);
 /// \brief Returns the Kythe spelling of `property_id`
 ///
 /// ~~~
-/// spelling_of(kLocation) == "/kythe/loc/uri"
+/// spelling_of(kLocationUri) == "/kythe/loc/uri"
 /// ~~~
 llvm::StringRef spelling_of(PropertyID property_id);
 
