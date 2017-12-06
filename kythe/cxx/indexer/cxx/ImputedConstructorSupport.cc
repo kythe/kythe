@@ -16,14 +16,17 @@
 
 #include "ImputedConstructorSupport.h"
 
+#include <memory>
 #include <queue>
 
 #include "IndexerASTHooks.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
+#include "re2/re2.h"
 
 namespace kythe {
 namespace {
@@ -122,11 +125,32 @@ clang::SourceRange FindNamedCalleeRange(const clang::Expr* expr) {
   return clang::SourceRange();
 }
 
+std::function<bool(absl::string_view)> CompilePatterns(
+    const std::unordered_set<std::string>& patterns) {
+  re2::RE2::Options options;
+  options.set_never_capture(true);
+  // TODO(shahms): A mechanism for reporting compile errors.
+  std::shared_ptr<re2::RE2> regex = std::make_shared<re2::RE2>(
+      absl::StrJoin(patterns, "|",
+                    [](std::string* out, absl::string_view value) {
+                      absl::StrAppend(out, "(", value, ")");
+                    }),
+      options);
+  return [regex](absl::string_view name) {
+    return re2::RE2::FullMatch({name.data(), name.size()}, *regex);
+  };
+}
+
 }  // namespace
 
 ImputedConstructorSupport::ImputedConstructorSupport(
     std::unordered_set<std::string> allowed_constructor_names)
-    : constructor_whitelist_(std::move(allowed_constructor_names)) {}
+    : ImputedConstructorSupport(
+          CompilePatterns(std::move(allowed_constructor_names))) {}
+
+ImputedConstructorSupport::ImputedConstructorSupport(
+    std::function<bool(absl::string_view)> allow_constructor_name)
+    : allow_constructor_name_(std::move(allow_constructor_name)) {}
 
 void ImputedConstructorSupport::InspectCallExpr(
     IndexerASTVisitor& visitor, const clang::CallExpr* call_expr,
@@ -135,7 +159,7 @@ void ImputedConstructorSupport::InspectCallExpr(
   if (callee == nullptr) return;
 
   const auto qual_name = callee->getQualifiedNameAsString();
-  if (constructor_whitelist_.find(qual_name) == constructor_whitelist_.end()) {
+  if (!allow_constructor_name_(qual_name)) {
     return;
   }
 

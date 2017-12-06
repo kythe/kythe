@@ -17,11 +17,13 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_IMPUTED_CONSTRUCTOR_SUPPORT_H_
 #define KYTHE_CXX_INDEXER_CXX_IMPUTED_CONSTRUCTOR_SUPPORT_H_
 
+#include <functional>
 #include <string>
 #include <unordered_set>
 
 #include "IndexerLibrarySupport.h"
 #include "clang/AST/Expr.h"
+#include "absl/strings/string_view.h"
 
 namespace kythe {
 
@@ -30,8 +32,12 @@ namespace kythe {
 class ImputedConstructorSupport : public LibrarySupport {
  public:
   explicit ImputedConstructorSupport(
-      std::unordered_set<std::string> allowed_constructor_names = {
-          "std::make_unique", "absl::make_unique", "llvm::make_unique"});
+      std::unordered_set<std::string> allowed_constructor_patterns = {
+          "std(::\\w+)*::make_unique", "absl::make_unique",
+          "llvm::make_unique"});
+
+  explicit ImputedConstructorSupport(
+      std::function<bool(absl::string_view)> allow_constructor_name);
 
   void InspectCallExpr(IndexerASTVisitor& visitor,
                        const clang::CallExpr* call_expr,
@@ -39,7 +45,7 @@ class ImputedConstructorSupport : public LibrarySupport {
                        GraphObserver::NodeId& callee_id) override;
 
  private:
-  const std::unordered_set<std::string> constructor_whitelist_;
+  const std::function<bool(absl::string_view)> allow_constructor_name_;
 };
 
 }  // namespace kythe

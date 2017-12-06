@@ -56,7 +56,9 @@ cc_library(
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 

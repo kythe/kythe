@@ -36,3 +36,20 @@ void f() {
   //- @"make_unique<B>('a')" ref/call ConsB2
   make_unique<B>('a');
 }
+
+
+namespace std {
+inline namespace v1 {
+template <typename T, typename... Args>
+absl::unique_ptr<T> make_unique(Args&&... args) {
+  return absl::unique_ptr<T>(new T(args...));
+}
+}
+}
+
+void g() {
+  //- @B ref StructB
+  //- @"make_unique<B>" ref ConsB1
+  //- @"::std::make_unique<B>(1, nullptr)" ref/call ConsB1
+  ::std::make_unique<B>(1, nullptr);
+}
