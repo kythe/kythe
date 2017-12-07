@@ -271,10 +271,6 @@ var (
 			}},
 		}, {
 			SourceTicket: "kythe://someCorpus?lang=otpl#withRelated",
-			Feature: []srvpb.PagedCrossReferences_Feature{
-				srvpb.PagedCrossReferences_RELATED_NODES,
-				srvpb.PagedCrossReferences_MARKED_SOURCE,
-			},
 			MarkedSource: &cpb.MarkedSource{
 				Kind:    cpb.MarkedSource_IDENTIFIER,
 				PreText: "id",
@@ -309,9 +305,6 @@ var (
 			},
 		}, {
 			SourceTicket: "kythe://someCorpus?lang=otpl#withCallers",
-			Feature: []srvpb.PagedCrossReferences_Feature{
-				srvpb.PagedCrossReferences_CALLERS,
-			},
 
 			Group: []*srvpb.PagedCrossReferences_Group{{
 				Kind: "#internal/ref/call/direct",

@@ -203,19 +203,7 @@ message FileDecorations {
 // CrossReferencesReply.{definition,reference,documentation} anchors.  Related
 // nodes can be retrieved from edge sets/pages.
 message PagedCrossReferences {
-  // Set of features implemented by this serving datum.  This tells the server
-  // which data must be computed dynamically.
-  repeated Feature feature = 10;
-  enum Feature {
-    // Related nodes are mixed with related anchors.
-    RELATED_NODES = 0;
-    // The marked_source field is populated.
-    MARKED_SOURCE = 1;
-    // Callers are mixed with related anchors.
-    CALLERS = 2;
-    // Declarations are mixed with related anchors.
-    DECLARATIONS = 3;
-  }
+  reserved 10;
 
   // Nodes with cross-references that should be merged into this node's set of
   // cross-references.  These are highly related nodes that share a definition.
