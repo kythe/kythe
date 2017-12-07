@@ -1,6 +1,7 @@
 load(
     "@io_bazel_rules_go//go:def.bzl",
     "go_library",
+    "go_binary",
     g_go_test = "go_test",
 )
 
@@ -18,4 +19,14 @@ def go_package_library(name, srcs, deps=[], visibility=None):
       srcs = srcs,
       deps = deps,
       visibility = visibility,
+  )
+
+def go_release_binary(name, srcs, deps=None, visibility=None):
+  """Macro for Go binaries destined to be released."""
+  go_binary(
+      name = name,
+      srcs = srcs,
+      deps = deps,
+      visibility = visibility,
+      linkstamp = "kythe.io/kythe/go/util/build",
   )
