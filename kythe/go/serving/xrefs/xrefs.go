@@ -460,7 +460,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		reply.DefinitionLocations = make(map[string]*xpb.Anchor)
 	}
 
-	features := make(map[srvpb.PagedCrossReferences_Feature]bool)
 	patterns := xrefs.ConvertFilters(req.Filter)
 
 	nextPageToken := &ipb.PageToken{
@@ -493,9 +492,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			return nil, fmt.Errorf("error looking up cross-references for ticket %q: %v", ticket, err)
 		}
 		foundCrossRefs = true
-		for _, feature := range cr.Feature {
-			features[feature] = true
-		}
 
 		// If this node is to be merged into another, we will use that node's ticket
 		// for all further book-keeping purposes.
@@ -508,7 +504,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				Ticket: ticket,
 			}
 		}
-		if features[srvpb.PagedCrossReferences_MARKED_SOURCE] && crs.MarkedSource == nil {
+		if crs.MarkedSource == nil {
 			crs.MarkedSource = cr.MarkedSource
 		}
 
@@ -543,14 +539,12 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp, req.AnchorText)
 				}
-			case features[srvpb.PagedCrossReferences_RELATED_NODES] &&
-				len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind):
+			case len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind):
 				reply.Total.RelatedNodesByRelation[grp.Kind] += int64(len(grp.RelatedNode))
 				if wantMoreCrossRefs {
 					stats.addRelatedNodes(reply, crs, grp, patterns)
 				}
-			case features[srvpb.PagedCrossReferences_CALLERS] &&
-				xrefs.IsCallerKind(req.CallerKind, grp.Kind):
+			case xrefs.IsCallerKind(req.CallerKind, grp.Kind):
 				reply.Total.Callers += int64(len(grp.Caller))
 				if wantMoreCrossRefs {
 					stats.addCallers(crs, grp)
@@ -587,8 +581,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					}
 					stats.addAnchors(&crs.Reference, p.Group, req.AnchorText)
 				}
-			case features[srvpb.PagedCrossReferences_RELATED_NODES] &&
-				len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind):
+			case len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind):
 				reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
@@ -597,8 +590,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					}
 					stats.addRelatedNodes(reply, crs, p.Group, patterns)
 				}
-			case features[srvpb.PagedCrossReferences_CALLERS] &&
-				xrefs.IsCallerKind(req.CallerKind, idx.Kind):
+			case xrefs.IsCallerKind(req.CallerKind, idx.Kind):
 				reply.Total.Callers += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
