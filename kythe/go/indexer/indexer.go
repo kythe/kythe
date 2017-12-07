@@ -449,6 +449,9 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	//     package p
 	//     var v int                // context is "p"
 	//     type s struct { v int }  // context is "p.s"
+	//     func (v) f(x int) {}
+	//              ^ ^--------------- context is "p.v.f"
+	//              \----------------- context is "p.v"
 	//
 	// The tree structure is:
 	//
@@ -460,32 +463,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	//     |           |
 	//    (id) pkg    type
 	//
-	var ctx []*cpb.MarkedSource
-	addID := func(s string) {
-		ctx = append(ctx, &cpb.MarkedSource{
-			Kind:    cpb.MarkedSource_IDENTIFIER,
-			PreText: s,
-		})
-	}
-	if pkg := obj.Pkg(); pkg != nil {
-		addID(pi.importPath(pkg))
-	}
-	if par, ok := pi.owner[obj]; ok {
-		if t, ok := par.(*types.Func); ok {
-			// Parameter of a function or method.
-			addID(t.Name())
-		} else if t, ok := par.Type().(*types.Named); ok {
-			// Method of an interface, but not of a concrete type.
-			addID(typeName(t))
-		}
-	} else if t, ok := obj.(*types.Func); ok {
-		// This handles context for methods of concrete types.  Ignore pointers
-		// for this purpose; the reader can't easily predict which to use.
-		if recv := t.Type().(*types.Signature).Recv(); recv != nil {
-			addID(strings.TrimPrefix(typeName(recv.Type()), "*"))
-		}
-	}
-	if len(ctx) != 0 {
+	if ctx := pi.typeContext(obj); len(ctx) != 0 {
 		ms.Child = append([]*cpb.MarkedSource{{
 			Kind:              cpb.MarkedSource_CONTEXT,
 			PostChildText:     ".",
@@ -615,6 +593,37 @@ func typeName(typ types.Type) string {
 		return "*" + typeName(t.Elem())
 	}
 	return typ.String()
+}
+
+// typeContext returns the package, type, and function context identifiers that
+// qualify the name of obj, if any are applicable. The result is empty if there
+// are no appropriate qualifiers.
+func (pi *PackageInfo) typeContext(obj types.Object) []*cpb.MarkedSource {
+	var ms []*cpb.MarkedSource
+	addID := func(s string) {
+		ms = append(ms, &cpb.MarkedSource{
+			Kind:    cpb.MarkedSource_IDENTIFIER,
+			PreText: s,
+		})
+	}
+	for cur := pi.owner[obj]; cur != nil; cur = pi.owner[cur] {
+		if t, ok := cur.(interface {
+			Name() string
+		}); ok {
+			addID(t.Name())
+		} else {
+			addID(typeName(cur.Type()))
+		}
+	}
+	if pkg := obj.Pkg(); pkg != nil {
+		addID(pi.importPath(pkg))
+	}
+	for i, j := 0, len(ms)-1; i < j; {
+		ms[i], ms[j] = ms[j], ms[i]
+		i++
+		j--
+	}
+	return ms
 }
 
 // FileVName returns a VName for path relative to the package base.
@@ -810,6 +819,34 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 // names.  They should be rare in readable code.
 func (pi *PackageInfo) addOwners(pkg *types.Package) {
 	scope := pkg.Scope()
+	addFunc := func(obj *types.Func) {
+		// Inspect the receiver, parameters, and result values.
+		fsig := obj.Type().(*types.Signature)
+		if recv := fsig.Recv(); recv != nil {
+			pi.owner[recv] = obj
+		}
+		if params := fsig.Params(); params != nil {
+			for i := 0; i < params.Len(); i++ {
+				pi.owner[params.At(i)] = obj
+			}
+		}
+		if res := fsig.Results(); res != nil {
+			for i := 0; i < res.Len(); i++ {
+				pi.owner[res.At(i)] = obj
+			}
+		}
+	}
+	addMethods := func(obj types.Object, n int, method func(i int) *types.Func) {
+		for i := 0; i < n; i++ {
+			if m := method(i); m.Pkg() == pkg {
+				if _, ok := pi.owner[m]; !ok {
+					pi.owner[m] = obj
+					addFunc(m)
+				}
+			}
+		}
+	}
+
 	for _, name := range scope.Names() {
 		switch obj := scope.Lookup(name).(type) {
 		case *types.TypeName:
@@ -834,33 +871,15 @@ func (pi *PackageInfo) addOwners(pkg *types.Package) {
 				}
 			case *types.Interface:
 				// Inspect the declared methods of an interface.
-				for i := 0; i < t.NumMethods(); i++ {
-					m := t.Method(i)
-					if m.Pkg() != pkg {
-						continue // wrong package
-					}
-					if _, ok := pi.owner[m]; !ok {
-						pi.owner[m] = obj
-					}
-				}
+				addMethods(obj, t.NumExplicitMethods(), t.ExplicitMethod)
+
+			default:
+				// Inspect declared methods of other named types.
+				addMethods(obj, named.NumMethods(), named.Method)
 			}
 
 		case *types.Func:
-			// Inspect the receiver, parameters, and result values.
-			fsig := obj.Type().(*types.Signature)
-			if recv := fsig.Recv(); recv != nil {
-				pi.owner[recv] = obj
-			}
-			if params := fsig.Params(); params != nil {
-				for i := 0; i < params.Len(); i++ {
-					pi.owner[params.At(i)] = obj
-				}
-			}
-			if res := fsig.Results(); res != nil {
-				for i := 0; i < res.Len(); i++ {
-					pi.owner[res.At(i)] = obj
-				}
-			}
+			addFunc(obj)
 		}
 	}
 }
