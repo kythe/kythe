@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.util;
 
+import com.google.auto.value.AutoValue;
 import com.google.devtools.kythe.proto.MarkedSource;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -31,24 +32,24 @@ public class QualifiedNameExtractor {
    * @param markedSource The {@link MarkedSource} tree to be evaluated.
    * @return The resolved qualified name if found.
    */
-  public static Optional<String> extractNameFromMarkedSource(MarkedSource markedSource) {
-    // extract the class name
+  public static Optional<NamePair> extractNameFromMarkedSource(MarkedSource markedSource) {
+    // extract the base name
     Optional<MarkedSource> identifier =
         retrieveFirstMarkedSourceByKind(
             markedSource, MarkedSource.Kind.IDENTIFIER, /* isPretextRequired */ true);
     if (!identifier.isPresent()) {
-      // if the current class node's marked source does not contain an identifier, skip it
+      // if the current node's marked source does not contain an identifier, skip it
       return Optional.empty();
     }
-    String className = identifier.get().getPreText();
+    String baseName = identifier.get().getPreText();
 
     // extract the class's package name
     Optional<MarkedSource> context =
         retrieveFirstMarkedSourceByKind(
             markedSource, MarkedSource.Kind.CONTEXT, /* isPretextRequired */ false);
     if (!context.isPresent()) {
-      // if the current class node's marked source does not contain a context, skip it
-      return Optional.empty();
+      // if no context is present, then only the baseName can be extracted
+      return Optional.of(NamePair.create(baseName, Optional.empty()));
     }
     String postChildText = context.get().getPostChildText();
     String packageDelim = !postChildText.isEmpty() ? postChildText : ".";
@@ -68,8 +69,11 @@ public class QualifiedNameExtractor {
 
     // emit the qualified class name
     return packageName.isEmpty()
-        ? Optional.of(className)
-        : Optional.of(String.format("%s%s%s", packageName, postChildText, className));
+        ? Optional.of(NamePair.create(baseName, Optional.empty()))
+        : Optional.of(
+            NamePair.create(
+                baseName,
+                Optional.of(String.format("%s%s%s", packageName, postChildText, baseName))));
   }
 
   /**
@@ -103,5 +107,17 @@ public class QualifiedNameExtractor {
     }
 
     return Optional.empty();
+  }
+
+  /** Stores both base and qualified name data. */
+  @AutoValue
+  public abstract static class NamePair {
+    static NamePair create(String baseName, Optional<String> qualifiedName) {
+      return new AutoValue_QualifiedNameExtractor_NamePair(baseName, qualifiedName);
+    }
+
+    public abstract String baseName();
+
+    public abstract Optional<String> qualifiedName();
   }
 }
