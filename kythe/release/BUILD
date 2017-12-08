@@ -27,11 +27,14 @@ genrule(
     srcs = [
         ":bazel_java_extractor",
         ":bazel_cxx_extractor",
+        ":bazel_go_extractor",
         ":javac_extractor",
         ":javac_wrapper",
         ":cxx_extractor",
+        ":go_extractor",
         ":java_indexer",
         ":cxx_indexer",
+        ":go_indexer",
         ":tools",
         ":misc",
         "//kythe/proto:public",
@@ -49,12 +52,14 @@ genrule(
         "$(locations misc)",
         "--cp $(location java_indexer) indexers/java_indexer.jar",
         "--cp $(location cxx_indexer) indexers/cxx_indexer",
+        "--cp $(location go_indexer) indexers/go_indexer",
         "--cp $(location javac_extractor) extractors/javac_extractor.jar",
         "--cp $(location bazel_cxx_extractor) extractors/bazel_cxx_extractor",
         "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
+        "--cp $(location bazel_go_extractor) extractors/bazel_go_extractor",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
-        "--exclude '.*.a$$'",  # Exclude go_binary archive files
+        "--cp $(location go_extractor) extractors/go_extractor",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
         "--relpaths kythe/web/ui/resources/public",
@@ -119,6 +124,16 @@ filegroup(
 )
 
 filegroup(
+    name = "go_extractor",
+    srcs = ["//kythe/go/extractors/cmd/gotool"],
+)
+
+filegroup(
+    name = "bazel_go_extractor",
+    srcs = ["//kythe/go/extractors/cmd/bazel:bazel_go_extractor"],
+)
+
+filegroup(
     name = "java_indexer",
     srcs = ["//kythe/java/com/google/devtools/kythe/analyzers/java:indexer_deploy.jar"],
 )
@@ -126,6 +141,11 @@ filegroup(
 filegroup(
     name = "cxx_indexer",
     srcs = ["//kythe/cxx/indexer/cxx:indexer"],
+)
+
+filegroup(
+    name = "go_indexer",
+    srcs = ["//kythe/go/indexer/cmd/go_indexer"],
 )
 
 filegroup(

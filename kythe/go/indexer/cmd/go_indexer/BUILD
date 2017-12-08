@@ -1,8 +1,8 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("//tools:build_rules/go.bzl", "go_release_binary")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_binary(
+go_release_binary(
     name = "go_indexer",
     srcs = ["go_indexer.go"],
     deps = [

@@ -9,13 +9,16 @@ extractors, and tools directly supported by the Kythe team.
 # Contents
  - indexers
    - cxx_indexer              :: C++ indexer
+   - go_indexer               :: Go indexer
    - java_indexer.jar         :: Java indexer
  - extractors
    - bazel_cxx_extractor      :: C++ extractor for Bazel extra_actions
+   - bazel_go_extractor       :: Bazel Go extractor
    - bazel_java_extractor.jar :: Java extractor for Bazel extra_actions
    - cxx_extractor            :: C++ extractor
-   - javac_extractor.jar      :: Java extractor
+   - go_extractor             :: Go extractor
    - javac-wrapper.sh         :: javac wrapper script for extractor
+   - javac_extractor.jar      :: Java extractor
  - proto                      :: Protocol buffer definitions of public APIs
  - tools
    - dedup_stream             :: Removes duplicates entries from a delimited stream
@@ -23,7 +26,6 @@ extractors, and tools directly supported by the Kythe team.
    - entrystream              :: Generic Kythe entry stream processor
    - http_server              :: HTTP server for Kythe service APIs (xrefs, filetree, graph)
    - indexpack                :: Converts between .kindex archives and indexpacks
-   - kwazthis                 :: Determine what Kythe node(s) are at a particular point in a file
    - kythe                    :: CLI for the service APIs exposed by http_server
    - read_entries             :: Dumps a GraphStore's contents as an entry stream
    - triples                  :: Converts an entry stream (or GraphStore) to N-Triples

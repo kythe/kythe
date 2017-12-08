@@ -8,6 +8,7 @@ Notable changes:
  - indexpack tool: replaced `--quiet` flag with `--verbose`
 
 Notable additions:
+ - First release of Go indexer and Go extractors
  - kythe tool: add `--filters` and `--node_definitions` to `xrefs` subcommand
 
 ## v0.0.26
