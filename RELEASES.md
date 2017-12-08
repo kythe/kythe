@@ -2,14 +2,70 @@
 
 ## Upcoming release
 
+Due to the period of time between this release and v0.0.26, many relevant
+changes and fixes may not appear in the following list.  For a complete list of
+changes, please check: https://github.com/google/kythe/commits/
+
 Notable changes:
- - Formats are being deprecated in favor of MarkedSource
- - C++ indexer: no longer generates formats
- - indexpack tool: replaced `--quiet` flag with `--verbose`
+ - remove GRPC server and client code
+ - Schema:
+   - anchors no longer have `childof` edges to their parent `file`
+   - anchor nodes must share their `path`, `root`, and `corpus` `VName`
+     components with their parent file
+   - format strings have been replaced by the `MarkedSource` proto
+ - C++ analysis:
+   - included files are referenced by the `ref/file` edge
+   - `code` facts (`MarkedSource` protos) are emitted
+   - better support for C++{11,14,17}
+   - CUDA support
+   - improvements to documentation indexing and rendering
+   - added a plugin for indexing proto fields in certain string literals
+   - type ranges for builtin structural types are no longer destructured (`T*`
+     is now `[T]*`, not `[[T]*]`)
+   - decoration of builtin types can be controlled with
+     `--emit_anchors_on_builtins`
+   - namespaces are never defined, only `ref`d
+   - old-style `name` nodes removed
+   - the extractor now captures more build state, enabling support for
+     `__has_include`
+   - `anchor`s involved in `completes` edges now contain their targets mixed
+     with their signatures, making each completion relationship unique
+   - support for indexing uses of `make_unique` et al as direct references to
+     the relevant constructor
+   - template instantiations can be aliased together with
+     `--experimental_alias_template_instantiations`, which significantly
+     decreases
+     output size at the expense of lower fidelity
+ - Java analysis:
+   - `name` nodes have become defined as JVM binary names
+   - `diagnostic` nodes are emitted on errors
+   - `code` facts (`MarkedSource` protos) are emitted
+   - add callgraph edges for constructors
+   - non-member classes are children of their enclosing method
+   - local variables are children of their enclosing method
+   - blame static calls on enclosing class
+   - emit references for all matching members of a static import
+   - reference `abs` nodes for generic classes (over their `record` nodes)
+   - emit data for annotation arguments
+   - emit package relations from `package-info.java` files
+ - Protocol Buffers:
+   - analysis.proto: add revision and build ids to AnalysisRequest
+   - analysis.proto: add AnalysisResult summary to AnalysisOutput
+   - analysis.proto: remove revision from CompilationUnit
+   - graph.proto: new location of the GraphService API
+   - xref.proto: remove DecorationsReply.Reference.source_ticket
+   - xref.proto: add Diagnostic messages to DecorationsReply
+   - xref.proto: replace Location.Point pairs with common.Span
+   - xref.proto: by default, elide snippets from xrefs/decor replies
+   - xref.proto: replace Printable formats with MarkedSource
+   - xref.proto: allow filtering related nodes in xrefs reply
+   - xref.proto: optionally return documentation children
+   - xref.proto: return target definitions with overrides
 
 Notable additions:
  - First release of Go indexer and Go extractors
- - kythe tool: add `--filters` and `--node_definitions` to `xrefs` subcommand
+ - identifier.proto: new IdentifierService API
+ - Runtime plugins can be added to the Java indexer
 
 ## v0.0.26
 
