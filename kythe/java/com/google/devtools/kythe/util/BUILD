@@ -63,8 +63,6 @@ java_library(
     name = "qualified_name_extractor",
     srcs = ["QualifiedNameExtractor.java"],
     deps = [
-        "//kythe/java/com/google/devtools/kythe/common",
-        "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/proto:common_proto_java",
     ],
 )
