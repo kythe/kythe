@@ -36,6 +36,7 @@ cc_library(
     ],
     hdrs = [
         "clang_builtin_headers.h",
+        "//third_party/llvm:clang_builtin_headers_resources.inc",
     ],
     copts = [
         "-Wno-non-virtual-dtor",

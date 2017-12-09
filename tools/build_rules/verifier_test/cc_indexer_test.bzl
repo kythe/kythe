@@ -88,8 +88,6 @@ def _cc_extract_kindex_impl(ctx):
         srcs = [src],
         opts = (ctx.fragments.cpp.compiler_options([]) +
                 ctx.fragments.cpp.unfiltered_compiler_options([]) +
-                ["-I{}".format(d)
-                 for d in ctx.fragments.cpp.built_in_include_directories] +
                 ctx.attr.opts),
         deps = ctx.files.deps + ctx.files.srcs,
     )
