@@ -38,9 +38,10 @@ import (
 
 // Schema represents the schema as a whole.
 type Schema struct {
-	Nodes []*Node `json:"nodes,omitempty"`
-	Edges []*Edge `json:"edges,omitempty"`
-	VName *Name   `json:"vname,omitempty"`
+	Common []*Fact `json:"common,omitempty"`
+	Nodes  []*Node `json:"nodes,omitempty"`
+	Edges  []*Edge `json:"edges,omitempty"`
+	VName  *Name   `json:"vname,omitempty"`
 }
 
 // findNodeKind returns the *Node representing nodes of the given kind, or nil
@@ -114,7 +115,14 @@ type Fact struct {
 	Label       string   `json:"label"`
 	Description string   `json:"description,omitempty"`
 	Values      []string `json:"values,omitempty"`
+	AttachTo    string   `json:"attachTo,omitempty"`
 }
+
+type factsByLabel []*Fact
+
+func (b factsByLabel) Len() int           { return len(b) }
+func (b factsByLabel) Less(i, j int) bool { return b[i].Label < b[j].Label }
+func (b factsByLabel) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 
 var (
 	schemaFile = flag.String("schema", "", "Schema file path (required)")
@@ -154,6 +162,11 @@ func main() {
 	if s, ok := sections["vname conventions"]; ok {
 		schema.VName = extractNameRules(s)
 	}
+
+	if s, ok := sections["common node facts"]; ok {
+		schema.Common = extractFacts(s)
+	}
+	sort.Sort(factsByLabel(schema.Common))
 
 	// Add the kind of each edge to the edges set of any node mentioned in the
 	// source or targets list for that edge.
@@ -237,6 +250,28 @@ func extractNodeKinds(s string) []*Node {
 		node.Related = nodeKinds.Elements()
 		node.Edges = edgeKinds.Elements()
 		out = append(out, node)
+	}
+	return out
+}
+
+func extractFacts(s string) []*Fact {
+	var out []*Fact
+
+	for label, text := range splitOnRegexp(kindHeader, s) {
+		labels := splitOnRegexp(mainLabel, text)
+		fact := &Fact{
+			Label:       label,
+			Description: cleanText(labels["brief description"]),
+		}
+		switch t := cleanText(labels["attached to"]); t {
+		case "all nodes":
+			fact.AttachTo = "all"
+		case "semantic nodes":
+			fact.AttachTo = "semantic"
+		default:
+			log.Printf("WARNING: Unknown attachment kind: %q", t)
+		}
+		out = append(out, fact)
 	}
 	return out
 }
