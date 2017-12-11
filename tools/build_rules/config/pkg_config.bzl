@@ -82,7 +82,13 @@ def _linkopts(repo_ctx, pc_args):
   if result.return_code != 0:
     return _fail(repo_ctx, "Unable to determine linkopts", result.stderr)
   stdout = result.stdout
-  return success([arg for arg in stdout.strip().split(" ") if arg])
+  args = []
+  for arg in [arg for arg in stdout.strip().split(" ") if arg]:
+    if arg[0] == "-" or len(args) == 0:
+      args += [arg]
+    else:
+      args[-1] += (" " + arg)
+  return success(args)
 
 def _extract_prefix(flags, prefix):
   stripped, remain = [], []
@@ -104,8 +110,15 @@ def _symlink_directories(repo_ctx, basename, pathnames):
   root = unwrap(repo_ctx).path("")
   base = root.get_child(basename)
   rootlen = len(str(base)) - len(basename)  # Include separator length.
+  deps = []
+  inc_id = 0
   for srcpath in [unwrap(repo_ctx).path(p) for p in pathnames]:
-    destpath = base.get_child(srcpath.basename)
+    basename = srcpath.basename
+    for basename in deps:
+      basename += "-" + str(inc_id)
+      inc_id += 1
+    deps += [basename]
+    destpath = base.get_child(basename)
     unwrap(repo_ctx).symlink(srcpath, destpath)
     result += [str(destpath)[rootlen:]]
   return result
