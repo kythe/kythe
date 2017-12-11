@@ -16,4 +16,10 @@
 
 package dagger;
 
-public @interface Provides {}
+public @interface Provides {
+  Type type() default Type.UNIQUE;
+
+  enum Type {
+    UNIQUE,
+  }
+}
