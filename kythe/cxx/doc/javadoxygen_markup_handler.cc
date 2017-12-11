@@ -56,7 +56,8 @@ namespace {
   v(Brief, "brief", true, false, NOT_TAG_BLOCK) \
   v(C, "c", false, false, NOT_TAG_BLOCK) \
   v(Return, "return", true, true, Returns) \
-  v(Returns, "returns", true, true, Returns)
+  v(Returns, "returns", true, true, Returns) \
+  v(Param, "param", true, false, NOT_TAG_BLOCK)
 // clang-format on
 enum class JavadocTag : int {
 #define ENUM_CASE(n, s, b, i) n,
@@ -152,6 +153,17 @@ size_t ParseJavadocDescription(const std::string& buffer, size_t begin,
         break;
       case '\n':
         at_line_start = true;
+        // End the description if there's a double newline (for compatibility
+        // with Doxygen).
+        for (size_t scan = end + 1; scan < limit; ++scan) {
+          c = buffer[scan];
+          if (c == '\n') {
+            // End the description before the first newline.
+            return end;
+          } else if (c != ' ' && c != '\t') {
+            break;
+          }
+        }
         break;
       case '@':
         if (at_line_start) {
@@ -221,7 +233,7 @@ size_t ParseDoxygenDescription(const std::string& buffer, size_t begin,
     char c = buffer[end];
     if (c == '{') {
       end = ParseJavadocBrace(buffer, end, limit, out_spans) - 1;
-    } else if (c == '\\') {
+    } else if (c == '\\' || c == '@') {
       if (const auto* tag =
               ParseTag(kDoxygenTagList, kDoxygenTagCount, buffer, end)) {
         if (tag->begins_section) {
@@ -384,7 +396,19 @@ void ParseJavadoxygen(const Printable& in_message, const PrintableSpans&,
             out_spans->Emplace(i, i + tag->name_length + 1,
                                PrintableSpan::Semantic::Markup);
             i = EvaluateJavadocTag(text, i, text.size(), tag, out_spans) - 1;
+          } else if (const auto* tag =
+                         ParseTag(kDoxygenTagList, kDoxygenTagCount, text, i)) {
+            // Fall back to trying to parse as a Doxygen tag.
+            out_spans->Emplace(i, i + tag->name_length + 1,
+                               PrintableSpan::Semantic::Markup);
+            i = EvaluateDoxygenTag(text, i, text.size(), tag, out_spans) - 1;
           }
+        } else if (const auto* tag =
+                       ParseTag(kDoxygenTagList, kDoxygenTagCount, text, i)) {
+          // Fall back to trying to parse as a Doxygen tag.
+          out_spans->Emplace(i, i + tag->name_length + 1,
+                             PrintableSpan::Semantic::Markup);
+          i = EvaluateDoxygenTag(text, i, text.size(), tag, out_spans) - 1;
         }
         break;
       case '\\':
