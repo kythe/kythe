@@ -21,7 +21,7 @@ def external_go_package(base_pkg=None, name=None, deps=[], exclude_srcs=[]):
   elif base_pkg:
     go_prefix(base_pkg)
 
-  exclude_srcs += ["*_test.go"]
+  exclude_srcs = exclude_srcs + ["*_test.go"]
   if name:
     srcs = [name + "/*.go", name + "/*.s", name + "/*.S"]
     exclude_srcs = [name + "/" + src for src in exclude_srcs]
