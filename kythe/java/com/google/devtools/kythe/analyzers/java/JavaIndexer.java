@@ -32,9 +32,11 @@ import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.ProtobufMetadataLoader;
 import java.io.BufferedOutputStream;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -50,8 +52,7 @@ public class JavaIndexer {
 
     List<Supplier<Plugin>> plugins = new ArrayList<>();
     if (!Strings.isNullOrEmpty(config.getPlugin())) {
-      URLClassLoader classLoader =
-          new URLClassLoader(new URL[] {new URL("file://" + config.getPlugin())});
+      URLClassLoader classLoader = new URLClassLoader(new URL[] {fileURL(config.getPlugin())});
       for (Plugin plugin : ServiceLoader.load(Plugin.class, classLoader)) {
         final Class<? extends Plugin> clazz = plugin.getClass();
         System.err.println("Registering plugin: " + clazz);
@@ -129,6 +130,10 @@ public class JavaIndexer {
     if (statistics != null) {
       statistics.printStatistics(System.err);
     }
+  }
+
+  private static URL fileURL(String path) throws MalformedURLException {
+    return new File(path).toURI().toURL();
   }
 
   private static void usage(int exitCode) {
