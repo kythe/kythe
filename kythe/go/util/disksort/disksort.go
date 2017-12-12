@@ -208,12 +208,9 @@ func (m *mergeSorter) Iterator() (iter Iterator, err error) {
 		}
 	}()
 
-	if len(m.buffer) != 0 {
-		// To make the merging algorithm simpler, dump the last shard to disk.
-		if err := m.dumpShard(); err != nil {
-			m.buffer = nil
-			return nil, fmt.Errorf("error dumping final shard: %v", err)
-		}
+	// Push all of the in-memory elements into the merger heap.
+	for _, el := range m.buffer {
+		heap.Push(merger, &mergeElement{el: el})
 	}
 	m.buffer = nil
 
@@ -270,23 +267,25 @@ func (i *mergeIterator) Next() (interface{}, error) {
 	x := heap.Pop(i.merger).(*mergeElement)
 	el := x.el
 
-	// Read and parse the next value on the same shard
-	rec, err := x.rd.Next()
-	if err != nil {
-		_ = x.f.Close()           // ignore errors (file is only open for reading)
-		_ = os.Remove(x.f.Name()) // ignore errors (os.RemoveAll used in Close)
-		if err != io.EOF {
-			return nil, fmt.Errorf("error reading shard: %v", err)
-		}
-	} else {
-		next, err := i.marshaler.Unmarshal(rec)
+	if x.rd != nil {
+		// Read and parse the next value on the same shard
+		rec, err := x.rd.Next()
 		if err != nil {
-			return nil, fmt.Errorf("error unmarshaling element: %v", err)
-		}
+			_ = x.f.Close()           // ignore errors (file is only open for reading)
+			_ = os.Remove(x.f.Name()) // ignore errors (os.RemoveAll used in Close)
+			if err != io.EOF {
+				return nil, fmt.Errorf("error reading shard: %v", err)
+			}
+		} else {
+			next, err := i.marshaler.Unmarshal(rec)
+			if err != nil {
+				return nil, fmt.Errorf("error unmarshaling element: %v", err)
+			}
 
-		// Reuse mergeElement, push it back onto the merger heap with the next value
-		x.el = next
-		heap.Push(i.merger, x)
+			// Reuse mergeElement, push it back onto the merger heap with the next value
+			x.el = next
+			heap.Push(i.merger, x)
+		}
 	}
 
 	return el, nil
