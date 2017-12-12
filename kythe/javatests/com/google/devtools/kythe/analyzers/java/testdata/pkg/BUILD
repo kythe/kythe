@@ -12,14 +12,11 @@ java_library(
             # Exclude meta-data tests
             "Metadata.java",
             "ProtobufMetadata.java",
-            # Exclude Dagger test stubs
-            "daggerstubs/*",
         ],
     ),
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
     deps = [
         "@com_google_code_findbugs_jsr305//jar",
-        "@com_google_dagger//java/dagger:core",
     ],
 )
 
@@ -274,15 +271,6 @@ java_verifier_test(
     srcs = ["PluginTests.java"],
     load_plugin = "//kythe/javatests/com/google/devtools/kythe/analyzers/java:test_plugin",
 )
-
-filegroup(
-    name = "dagger_stubs",
-    srcs = glob(["daggerstubs/*.java"]),
-)
-
-load(":dagger.bzl", "dagger_verifier_tests")
-
-dagger_verifier_tests(srcs = glob(["Dagger*.java"]))
 
 java_verifier_test(
     name = "static_variable_tests",

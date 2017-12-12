@@ -136,47 +136,10 @@ maven_jar(
     sha1 = "c6f7af0e57b9d69d81b05434ef9f3c5610d498c4",
 )
 
-http_archive(
-    name = "com_google_dagger",
-    # TODO(ronshapiro): Switch back to a versioned release of dagger
-    strip_prefix = "dagger-a6416fc2f5f7ef4f9389b8f12c96bfd77bd11014",
-    url = "https://github.com/google/dagger/archive/a6416fc2f5f7ef4f9389b8f12c96bfd77bd11014.zip",
-)
-
 maven_jar(
     name = "javax_annotation_jsr250_api",
     artifact = "javax.annotation:jsr250-api:1.0",
     sha1 = "5025422767732a1ab45d93abfea846513d742dcf",
-)
-
-maven_jar(
-    name = "javax_inject_javax_inject",
-    artifact = "javax.inject:javax.inject:1",
-    sha1 = "6975da39a7040257bd51d21a231b76c915872d38",
-)
-
-maven_jar(
-    name = "com_google_errorprone_javac",
-    artifact = "com.google.errorprone:javac-shaded:9-dev-r4023-3",
-    sha1 = "72b688efd290280a0afde5f9892b0fde6f362d1d",
-)
-
-maven_jar(
-    name = "com_google_googlejavaformat_google_java_format",
-    artifact = "com.google.googlejavaformat:google-java-format:1.4",
-    sha1 = "c2f8925850e17caa6da0ed1891a9e9de9414c062",
-)
-
-maven_jar(
-    name = "com_google_errorprone_error_prone_annotations",
-    artifact = "com.google.errorprone:error_prone_annotations:2.0.12",
-    sha1 = "8530d22d4ae8419e799d5a5234e0d2c0dcf15d4b",
-)
-
-maven_jar(
-    name = "com_squareup_javapoet",
-    artifact = "com.squareup:javapoet:1.8.0",
-    sha1 = "e858dc62ef484048540d27d36f3ec2177a3fa9b1",
 )
 
 maven_jar(
