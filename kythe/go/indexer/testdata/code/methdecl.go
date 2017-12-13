@@ -1,7 +1,7 @@
 // Package methdecl tests code facts for a method declaration.
 package methdecl
 
-type w int
+type w struct{}
 
 //- @LessThan defines/binding LT
 //- LT code LTCode
@@ -62,5 +62,5 @@ type w int
 //- XId.pre_text "x"
 //-
 func (rec *w) LessThan(x int) bool {
-	return int(*rec) < x
+	return x < 0
 }

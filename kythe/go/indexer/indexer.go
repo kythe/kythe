@@ -869,6 +869,8 @@ func (pi *PackageInfo) addOwners(pkg *types.Package) {
 						pi.owner[f] = obj
 					}
 				}
+				addMethods(obj, named.NumMethods(), named.Method)
+
 			case *types.Interface:
 				// Inspect the declared methods of an interface.
 				addMethods(obj, t.NumExplicitMethods(), t.ExplicitMethod)

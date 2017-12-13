@@ -14,7 +14,7 @@ func F() int { return 0 }
 
 type T struct{}
 
-//- @M defines/binding Meth = vname("method (*fun.T).M", "test", _, "fun", "go")
+//- @M defines/binding Meth=vname("method T.M", "test", _, "fun", "go")
 func (p *T) M() {}
 
 //- @F ref Fun
@@ -44,7 +44,7 @@ func imported() {
 	cmd := exec.Command("pwd")
 
 	//- @cmd ref Cmd
-	//- @Run ref CmdRun=vname("method (*exec.Cmd).Run","golang.org","","os/exec","go")
+	//- @Run ref CmdRun=vname("method Cmd.Run","golang.org","","os/exec","go")
 	//- @"cmd.Run()" ref/call CmdRun
 	cmd.Run()
 }
