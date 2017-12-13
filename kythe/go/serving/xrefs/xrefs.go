@@ -53,9 +53,6 @@ import (
 
 var (
 	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
-
-	// TODO(danielmoy): Remove this flag after rollout looks stable.
-	optionallyFilterSnippets = flag.Bool("optionally_filter_snippets", true, "Whether or not to support the SnippetsKind filtering on CrossReferencesRequest and DecorationsRequest")
 )
 
 type staticLookupTables interface {
@@ -387,7 +384,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		tracePrintf(ctx, "Diagnostics: %d", len(reply.Diagnostic))
 	}
 
-	if *optionallyFilterSnippets && req.Snippets == xpb.SnippetsKind_NONE {
+	if req.Snippets == xpb.SnippetsKind_NONE {
 		for _, anchor := range reply.DefinitionLocations {
 			clearSnippet(anchor)
 		}
@@ -624,7 +621,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		reply.NextPageToken = base64.StdEncoding.EncodeToString(snappy.Encode(nil, rec))
 	}
 
-	if *optionallyFilterSnippets && req.Snippets == xpb.SnippetsKind_NONE {
+	if req.Snippets == xpb.SnippetsKind_NONE {
 		for _, crs := range reply.CrossReferences {
 			for _, def := range crs.Definition {
 				clearRelatedSnippets(def)
