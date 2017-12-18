@@ -1526,9 +1526,9 @@ cc_indexer_test(
 cc_indexer_test(
     name = "rec_designated_initializer",
     srcs = ["rec/rec_designated_initializer.c"],
+    ignore_dups = True,  # clang visits these expressions multiple times.
     std = "c99",
     tags = ["rec"],
-    ignore_dups = True,  # clang visits these expressions multiple times.
 )
 
 cc_indexer_test(
@@ -1581,6 +1581,12 @@ cc_indexer_test(
     srcs = ["rec/rec_implicit_ctor_calls_extra.cc"],
     check_for_singletons = True,
     ignore_dups = True,
+    tags = ["rec"],
+)
+
+cc_indexer_test(
+    name = "rec_implicit_new",
+    srcs = ["rec/rec_implicit_new.cc"],
     tags = ["rec"],
 )
 

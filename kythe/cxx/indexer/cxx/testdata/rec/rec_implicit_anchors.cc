@@ -4,7 +4,6 @@
 //- !{ @Struct defines/binding OtherS
 //-    OtherS.node/kind variable }
 //- CtorC.node/kind anchor
-//- CtorC.subkind implicit
 //- CtorC defines/binding StructSCtor
 //- StructSCtor.node/kind function
 //- StructSCtor.complete definition

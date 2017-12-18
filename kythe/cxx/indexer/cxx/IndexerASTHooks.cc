@@ -2658,6 +2658,19 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
   Marks.set_name_range(NameRange);
   auto NameRangeInContext =
       RangeInCurrentContext(Decl->isImplicit(), OuterNode, NameRange);
+  if (const auto *MF = dyn_cast<CXXMethodDecl>(Decl)) {
+    // Use the record name token as the definition site for implicit member
+    // functions, including implicit constructors and destructors.
+    if (MF->isImplicit()) {
+      if (const auto *Record = MF->getParent()) {
+        if (!Record->isImplicit()) {
+          NameRangeInContext = RangeInCurrentContext(
+              false, OuterNode, RangeForNameOfDeclaration(MF));
+        }
+      }
+    }
+  }
+
   MaybeRecordDefinitionRange(NameRangeInContext, OuterNode,
                              BuildNodeIdForDefnOfDecl(Decl));
   bool IsFunctionDefinition = IsDefinition(Decl);
