@@ -500,6 +500,15 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			crs = &xpb.CrossReferencesReply_CrossReferenceSet{
 				Ticket: ticket,
 			}
+
+			// If visiting a non-merge node and facts are requested, add them to the result.
+			if ticket == cr.SourceTicket && len(patterns) > 0 && cr.SourceNode != nil {
+				if _, ok := reply.Nodes[ticket]; !ok {
+					if info := nodeToInfo(patterns, cr.SourceNode); info != nil {
+						reply.Nodes[ticket] = info
+					}
+				}
+			}
 		}
 		if crs.MarkedSource == nil {
 			crs.MarkedSource = cr.MarkedSource

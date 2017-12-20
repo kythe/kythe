@@ -141,7 +141,9 @@ func expectMapEqual(expected, got reflect.Value) error {
 	for _, key := range expected.MapKeys() {
 		ev, gv := expected.MapIndex(key), got.MapIndex(key)
 
-		if err := DeepEqual(ev.Interface(), gv.Interface()); err != nil {
+		if ev.IsValid() != gv.IsValid() {
+			return expectError(expected.Interface(), got.Interface(), "%#v key values not both valid", key.Interface())
+		} else if err := DeepEqual(ev.Interface(), gv.Interface()); err != nil {
 			return expectError(expected.Interface(), got.Interface(), "%#v key values differ: %s", key.Interface(), err)
 		}
 	}

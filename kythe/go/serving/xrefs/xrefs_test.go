@@ -155,6 +155,9 @@ var (
 			Fact: makeFactList(
 				"/kythe/node/kind", "record",
 			),
+		}, {
+			Ticket: "kythe://someCorpus?lang=otpl#withRelated",
+			Fact:   makeFactList("/kythe/node/kind", "testNode"),
 		},
 	}
 
@@ -231,6 +234,7 @@ var (
 
 		RefSets: []*srvpb.PagedCrossReferences{{
 			SourceTicket: "kythe://someCorpus?lang=otpl#signature",
+			SourceNode:   getNode("kythe://someCorpus?lang=otpl#signature"),
 
 			Group: []*srvpb.PagedCrossReferences_Group{{
 				Kind: "%/kythe/edge/defines/binding",
@@ -271,6 +275,7 @@ var (
 			}},
 		}, {
 			SourceTicket: "kythe://someCorpus?lang=otpl#withRelated",
+			SourceNode:   getNode("kythe://someCorpus?lang=otpl#withRelated"),
 			MarkedSource: &cpb.MarkedSource{
 				Kind:    cpb.MarkedSource_IDENTIFIER,
 				PreText: "id",
@@ -299,12 +304,14 @@ var (
 			}},
 		}, {
 			SourceTicket: "kythe://someCorpus?lang=otpl#withMerge",
+			SourceNode:   getNode("kythe://someCorpus?lang=otpl#withMerge"),
 			MergeWith: []string{
 				"kythe://someCorpus?lang=otpl#withCallers",
 				"kythe://someCorpus?lang=otpl#withRelated",
 			},
 		}, {
 			SourceTicket: "kythe://someCorpus?lang=otpl#withCallers",
+			SourceNode:   getNode("kythe://someCorpus?lang=otpl#withCallers"),
 
 			Group: []*srvpb.PagedCrossReferences_Group{{
 				Kind: "#internal/ref/call/direct",
@@ -810,6 +817,11 @@ func TestCrossReferencesRelatedNodes(t *testing.T) {
 			Ordinal:      1,
 		}},
 	}
+	expectedNodes := nodeInfos(getNodes(
+		ticket,
+		"kythe:#someRelatedNode",
+		"kythe:#someParameter0",
+		"kythe:#someParameter1"))
 
 	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
 		RelatedNodesByRelation: map[string]int64{
@@ -824,6 +836,8 @@ func TestCrossReferencesRelatedNodes(t *testing.T) {
 	if xr == nil {
 		t.Fatalf("Missing expected CrossReferences; found: %#v", reply)
 	} else if err := testutil.DeepEqual(expected, xr); err != nil {
+		t.Fatal(err)
+	} else if err := testutil.DeepEqual(expectedNodes, reply.Nodes); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -1057,7 +1071,9 @@ func nodeInfos(nss ...[]*srvpb.Node) map[string]*cpb.NodeInfo {
 	m := make(map[string]*cpb.NodeInfo)
 	for _, ns := range nss {
 		for _, n := range ns {
-			m[n.Ticket] = nodeInfo(n)
+			if ni := nodeInfo(n); ni != nil {
+				m[n.Ticket] = ni
+			}
 		}
 	}
 	return m
@@ -1191,6 +1207,9 @@ func nodeInfo(n *srvpb.Node) *cpb.NodeInfo {
 	ni := &cpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
 	for _, f := range n.Fact {
 		ni.Facts[f.Name] = f.Value
+	}
+	if len(ni.Facts) == 0 {
+		return nil
 	}
 	return ni
 }

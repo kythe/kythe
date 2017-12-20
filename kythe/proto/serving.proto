@@ -254,6 +254,7 @@ message PagedCrossReferences {
   }
 
   string source_ticket = 1;
+  Node source_node = 8;
   repeated Group group = 2;
   repeated PageIndex page_index = 3;
   int32 total_references = 4;
