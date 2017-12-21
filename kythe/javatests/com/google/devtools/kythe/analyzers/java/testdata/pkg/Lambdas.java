@@ -7,6 +7,13 @@ import java.util.function.Function;
 
 //- @Lambdas defines/binding LambdasClass
 public class Lambdas {
+  //- @Function ref FuncAbs
+  //- Func childof FuncAbs
+  //- @"x -> x" defines IdentLambda
+  //- IdentLambda.node/kind function
+  //- IdentLambda extends Func
+  private static final Function<Object, Object> IDENTITY = x -> x;
+
   //- @fieldName defines/binding Field
   //- Field childof LambdaClass
   Object fieldName;

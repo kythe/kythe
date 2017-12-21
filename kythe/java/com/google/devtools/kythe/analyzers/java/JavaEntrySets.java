@@ -164,6 +164,15 @@ public class JavaEntrySets extends KytheEntrySets {
     return node.getVName();
   }
 
+  /** Emits and returns a new {@link EntrySet} representing a lambda object. */
+  public EntrySet newLambdaAndEmit(Positions filePositions, JCTree.JCLambda lambda) {
+    VName fileVName = getFileVName(getDigest(filePositions.getSourceFile()));
+    return emitAndReturn(
+        newNode(NodeKind.FUNCTION)
+            .setCorpusPath(CorpusPath.fromVName(fileVName))
+            .addSignatureSalt("" + filePositions.getSpan(lambda)));
+  }
+
   /** Emits and returns a new {@link EntrySet} representing Javadoc. */
   public EntrySet newDocAndEmit(Positions filePositions, String text, Iterable<VName> params) {
     VName fileVName = getFileVName(getDigest(filePositions.getSourceFile()));

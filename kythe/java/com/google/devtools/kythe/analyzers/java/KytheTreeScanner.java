@@ -61,6 +61,7 @@ import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.tree.JCTree.JCImport;
+import com.sun.tools.javac.tree.JCTree.JCLambda;
 import com.sun.tools.javac.tree.JCTree.JCLiteral;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
@@ -558,6 +559,22 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     return node;
+  }
+
+  @Override
+  public JavaNode visitLambda(JCLambda lambda, TreeContext owner) {
+    TreeContext ctx = owner.down(lambda);
+    VName lambdaNode = entrySets.newLambdaAndEmit(filePositions, lambda).getVName();
+    emitAnchor(ctx, EdgeKind.DEFINES, lambdaNode);
+
+    for (Type target : lambda.targets) {
+      VName targetNode = getNode(target.asElement());
+      entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
+    }
+
+    scan(lambda.body, ctx);
+    scanList(lambda.params, ctx);
+    return new JavaNode(lambdaNode);
   }
 
   @Override
