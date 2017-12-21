@@ -847,6 +847,18 @@ func (e *emitter) callContext(stack stackFunc) *funcInfo {
 				e.pi.packageInit = &funcInfo{vname: vname}
 				e.writeFact(vname, facts.NodeKind, nodes.Function)
 				e.writeEdge(vname, e.pi.VName, edges.ChildOf)
+
+				// The callgraph requires we provide the caller with a
+				// definition (http://www.kythe.io/docs/schema/callgraph.html).
+				// Since there is no location, attach it to the beginning of
+				// the first package file.
+				anchor := e.pi.AnchorVName(e.pi.Files[0], 0, 0)
+				e.check(e.sink.writeAnchor(e.ctx, anchor, 0, 0))
+				e.writeEdge(anchor, vname, edges.Defines)
+
+				// TODO(fromberger): We might want to pretend each file has its
+				// own top-level initializer. That's not how it actually works,
+				// but if picking one file confuses users, we might try it.
 			}
 			return e.pi.packageInit
 		}
