@@ -45,11 +45,15 @@ drive_indexer_kindex() {
       analyzer() {
         "$INDEXERS/cxx_indexer" "$@"
       } ;;
+    go)
+      analyzer() {
+        "$INDEXERS/go_indexer" "$@"
+      } ;;
     *)
       if [[ -n "$IGNORE_UNHANDLED" ]]; then
         return 0
       fi
-      echo "ERROR: no indexer found for language $lang"
+      echo "ERROR: no indexer found for language $lang" >&2
       exit 1
   esac
   echo "Indexing $*" >&2

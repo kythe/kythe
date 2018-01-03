@@ -26,6 +26,8 @@ set -o pipefail
 : "${INDEXERS:=/opt/kythe/indexers}"
 : "${TOOLS:=/opt/kythe/tools}"
 
+SCRIPTS="$(realpath "$(dirname "$0")")"
+
 echo "TOOLS=$TOOLS"
 echo "INDEXERS=$INDEXERS"
 
@@ -54,7 +56,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-cd "$(dirname "$0")/../../../.."
+cd "$SCRIPTS/../../../.."
 
 if [[ -z "$GRAPHSTORE" ]]; then
   GRAPHSTORE="$(mktemp -d --suffix=.kythe_graphstore)"
@@ -75,7 +77,7 @@ if [[ -n "$(find "$GRAPHSTORE" -maxdepth 0 -empty)" ]]; then
   fi
 
   echo "Writing to GraphStore at $GRAPHSTORE" >&2
-  "$(dirname "$0")/run_indexers.sh" "$COMPILATIONS" | \
+  "$SCRIPTS/run_indexers.sh" "$COMPILATIONS" | \
     "$TOOLS/dedup_stream" | \
     "$TOOLS/write_entries" --graphstore "$GRAPHSTORE"
 
