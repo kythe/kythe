@@ -16,10 +16,7 @@
 
 package com.google.devtools.kythe.platform.indexpack;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
@@ -50,7 +47,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -122,14 +118,6 @@ public class Archive {
     return rootDir;
   }
 
-  /**
-   * Returns an {@link Iterator} of the {@link CompilationUnit}s stored in the index pack along with
-   * each unit's required inputs.
-   */
-  public Iterator<CompilationDescription> readDescriptions() throws IOException {
-    return Iterators.transform(readUnits(), this::completeDescription);
-  }
-
   /** Returns a complete {@link CompilationDescription} of the given {@link CompilationUnit}. */
   public CompilationDescription completeDescription(CompilationUnit unit) {
     return new CompilationDescription(
@@ -156,11 +144,6 @@ public class Archive {
     return completeDescription(readUnit(key));
   }
 
-  /** Returns an {@link Iterator} of the {@link CompilationUnit}s stored in the archive. */
-  public Iterator<CompilationUnit> readUnits() throws IOException {
-    return readUnits(KYTHE_FORMAT_KEY, CompilationUnit.class);
-  }
-
   /** Returns the {@link CompilationUnit} with the given digest key. */
   public CompilationUnit readUnit(String key) throws IOException {
     CompilationUnit unit = readUnit(key, KYTHE_FORMAT_KEY, CompilationUnit.class);
@@ -168,28 +151,6 @@ public class Archive {
       throw new IllegalArgumentException("Unit with key '" + key + "' is not a CompilationUnit");
     }
     return unit;
-  }
-
-  /** Returns an {@link Iterator} of the units stored in the archive with a given format key. */
-  @SuppressWarnings("StreamResourceLeak")
-  public <T> Iterator<T> readUnits(final String formatKey, final Class<T> cls) throws IOException {
-    Preconditions.checkNotNull(formatKey);
-    return Iterators.filter(
-        Iterators.transform(
-            Files.newDirectoryStream(unitDir, "*" + UNIT_SUFFIX).iterator(),
-            path -> {
-              try {
-                String name = path.getFileName().toString();
-                if (!name.endsWith(UNIT_SUFFIX)) {
-                  throw new IllegalStateException("Received path without unit suffix: " + path);
-                }
-                String key = name.substring(0, name.length() - UNIT_SUFFIX.length());
-                return readUnit(key, formatKey, cls);
-              } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-              }
-            }),
-        Predicates.notNull());
   }
 
   /**

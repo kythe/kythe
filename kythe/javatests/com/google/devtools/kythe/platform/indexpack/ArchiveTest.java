@@ -32,11 +32,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import junit.framework.TestCase;
 
 /** This class tests {@link Archive}. */
@@ -72,10 +69,6 @@ public class ArchiveTest extends TestCase {
 
   public void testCreation() throws IOException {
     assertThat(archive.getRoot().toFile().isDirectory()).isTrue();
-  }
-
-  public void testReadUnits_empty() throws IOException {
-    assertThat(archive.readUnits().hasNext()).isFalse();
   }
 
   public void testReadFile_missing() throws IOException {
@@ -121,58 +114,16 @@ public class ArchiveTest extends TestCase {
     }
   }
 
-  public void testReadUnits_single() throws IOException {
-    assertThat(archive.writeUnit("test", new Object())).isNotNull();
-    Iterator<Object> it = archive.readUnits("test", Object.class);
-    assertThat(it.hasNext()).isTrue();
-    assertThat(it.next()).isNotNull();
-    assertThat(it.hasNext()).isFalse();
-  }
-
   public void testWriteUnit_compilationUnit() throws IOException {
     for (CompilationDescription desc : TEST_COMPILATIONS) {
       assertThat(archive.writeUnit(desc.getCompilationUnit())).isNotNull();
     }
   }
 
-  public void testReadUnits_compilationUnit() throws IOException {
-    Set<CompilationUnit> toRead = new HashSet<>();
-    for (CompilationDescription desc : TEST_COMPILATIONS) {
-      archive.writeUnit(desc.getCompilationUnit());
-      toRead.add(desc.getCompilationUnit());
-    }
-
-    Iterator<CompilationUnit> it = archive.readUnits();
-    while (it.hasNext()) {
-      CompilationUnit unit = it.next();
-      assertThat(toRead).contains(unit);
-      toRead.remove(unit);
-    }
-
-    assertThat(toRead).isEmpty();
-  }
-
   public void testWriteDescription() throws IOException {
     for (CompilationDescription desc : TEST_COMPILATIONS) {
       assertThat(archive.writeDescription(desc)).isNotNull();
     }
-  }
-
-  public void testReadDescriptions() throws IOException {
-    Set<CompilationDescription> toRead = new HashSet<>();
-    for (CompilationDescription desc : TEST_COMPILATIONS) {
-      archive.writeDescription(desc);
-      toRead.add(desc);
-    }
-
-    Iterator<CompilationDescription> it = archive.readDescriptions();
-    while (it.hasNext()) {
-      CompilationDescription desc = it.next();
-      assertThat(toRead).contains(desc);
-      toRead.remove(desc);
-    }
-
-    assertThat(toRead).isEmpty();
   }
 
   private static byte[] createTestData(int i) {
