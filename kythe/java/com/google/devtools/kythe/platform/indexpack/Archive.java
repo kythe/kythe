@@ -171,6 +171,7 @@ public class Archive {
   }
 
   /** Returns an {@link Iterator} of the units stored in the archive with a given format key. */
+  @SuppressWarnings("StreamResourceLeak")
   public <T> Iterator<T> readUnits(final String formatKey, final Class<T> cls) throws IOException {
     Preconditions.checkNotNull(formatKey);
     return Iterators.filter(
