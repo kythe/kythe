@@ -38,19 +38,45 @@ import (
 
 // Server provides a Language Server for interacting with data in a Kythe index
 type Server struct {
-	workspaces   []Workspace
-	docs         map[LocalFile]*document
-	XRefs        xrefs.Service
-	newWorkspace func(lsp.DocumentURI) (Workspace, error)
+	workspaces []Workspace
+	docs       map[LocalFile]*document
+	XRefs      xrefs.Service
+	opts       *Options
 }
 
-// NewServer constructs a Server object
-func NewServer(x xrefs.Service, newWorkspace func(lsp.DocumentURI) (Workspace, error)) Server {
+// Options control optional behaviours of the language server implementation.
+type Options struct {
+	// The number of cross-references the server will request by default.
+	// If ≤ 0, a reasonable default will be chosen.
+	PageSize int
+
+	// If set, this function will be called to produce a workspace for the
+	// given LSP document. If unset, uses NewSettingsWorkspaceFromURI.
+	NewWorkspace func(lsp.DocumentURI) (Workspace, error)
+}
+
+func (o *Options) pageSize() int {
+	if o == nil || o.PageSize <= 0 {
+		return 500
+	}
+	return o.PageSize
+}
+
+func (o *Options) newWorkspace(u lsp.DocumentURI) (Workspace, error) {
+	if o == nil || o.NewWorkspace == nil {
+		return NewSettingsWorkspaceFromURI(u)
+	}
+	return o.NewWorkspace(u)
+}
+
+// NewServer constructs a server that delegates cross-reference requests to the
+// specified xrefs implementation. If opts == nil, sensible defaults are used.
+func NewServer(xrefs xrefs.Service, opts *Options) Server {
 	return Server{
-		docs:         make(map[LocalFile]*document),
-		workspaces:   nil,
-		XRefs:        x,
-		newWorkspace: newWorkspace,
+		docs:       make(map[LocalFile]*document),
+		workspaces: nil,
+		XRefs:      xrefs,
+		opts:       opts,
 	}
 }
 
@@ -203,7 +229,7 @@ func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Loca
 		DeclarationKind: xpb.CrossReferencesRequest_ALL_DECLARATIONS,
 		DefinitionKind:  xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
 		ReferenceKind:   xpb.CrossReferencesRequest_NON_CALL_REFERENCES,
-		PageSize:        50, // TODO(djrenren): make this configurable
+		PageSize:        int32(ls.opts.pageSize()),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to find xrefs for ticket %q:\n%v", ref.ticket, err)
@@ -351,7 +377,7 @@ func (ls *Server) localFromURI(u lsp.DocumentURI) (LocalFile, error) {
 		}
 	}
 
-	w, err := ls.newWorkspace(u)
+	w, err := ls.opts.newWorkspace(u)
 	if err != nil {
 		return LocalFile{}, err
 	}

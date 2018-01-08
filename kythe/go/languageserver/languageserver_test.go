@@ -136,17 +136,19 @@ func TestReferences(t *testing.T) {
 							PreText: "hi",
 						}}}}}}}}}
 
-	srv := NewServer(c, func(_ lsp.DocumentURI) (Workspace, error) {
-		return NewSettingsWorkspace(Settings{
-			Root: "/root/dir/",
-			Mappings: []MappingConfig{{
-				Local: ":path*",
-				VName: VNameConfig{
-					Path:   ":path*",
-					Corpus: "corpus",
-				}},
-			},
-		})
+	srv := NewServer(c, &Options{
+		NewWorkspace: func(_ lsp.DocumentURI) (Workspace, error) {
+			return NewSettingsWorkspace(Settings{
+				Root: "/root/dir/",
+				Mappings: []MappingConfig{{
+					Local: ":path*",
+					VName: VNameConfig{
+						Path:   ":path*",
+						Corpus: "corpus",
+					}},
+				},
+			})
+		},
 	})
 
 	srv.Initialize(lsp.InitializeParams{})
