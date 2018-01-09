@@ -625,6 +625,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
                        const GraphObserver::NodeId &Callee);
 
  private:
+  using Base = RecursiveASTVisitor;
+
   friend class PruneCheck;
 
   /// Whether we should stop on missing cases or continue on.

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <tuple>
+
 #include "IndexerASTHooks.h"
 #include "GraphObserver.h"
 
@@ -44,6 +46,7 @@
 #include "gflags/gflags.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "kythe/cxx/indexer/cxx/marked_source.h"
+#include "kythe/cxx/indexer/cxx/scope_guard.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -201,42 +204,6 @@ int64_t ComputeKeyFromQualType(const ASTContext &Context, const QualType &QT,
   return Key;
 }
 
-/// \brief Restores the type of a stacklike container of `ElementType` upon
-/// destruction.
-template <typename StackType>
-class StackSizeRestorer {
- public:
-  explicit StackSizeRestorer(StackType &Target)
-      : Target(&Target), Size(Target.size()) {}
-  StackSizeRestorer(StackSizeRestorer &O) = delete;
-  StackSizeRestorer(StackSizeRestorer &&O) {
-    Target = O.Target;
-    O.Target = nullptr;
-  }
-  ~StackSizeRestorer() {
-    if (Target) {
-      CHECK_LE(Size, Target->size());
-      while (Size < Target->size()) {
-        Target->pop_back();
-      }
-    }
-  }
-
- private:
-  StackType *Target;
-  decltype(Target->size()) Size;
-};
-
-/// \brief Handles the restoration of a stacklike container.
-///
-/// \example
-/// \code
-///   auto R = RestoreStack(SomeStack);
-/// \endcode
-template <typename StackType>
-StackSizeRestorer<StackType> RestoreStack(StackType &S) {
-  return StackSizeRestorer<StackType>(S);
-}
 
 /// \return true if `D` should not be visited because its name will never be
 /// uttered due to aliasing rules.
@@ -1007,7 +974,7 @@ bool IndexerASTVisitor::TraverseLambdaExpr(clang::LambdaExpr *Expr) {
   // Specifically, it only does so for lambdas defined at the top level,
   // which is a vanishingly small number of them.
   // TODO(shahms): Figure out *why* Clang behaves this way and fix that.
-  return RecursiveASTVisitor::TraverseLambdaExpr(Expr) && [this, Expr] {
+  return Base::TraverseLambdaExpr(Expr) && [this, Expr] {
     if (Expr->getLambdaClass()->getDeclContext()->isFunctionOrMethod()) {
       return TraverseDecl(Expr->getCallOperator());
     }
@@ -1022,13 +989,7 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
   if (Decl == nullptr) {
     return true;
   }
-  struct RestoreBool {
-    RestoreBool(bool *to_restore)
-        : to_restore_(to_restore), state_(*to_restore) {}
-    ~RestoreBool() { *to_restore_ = state_; }
-    bool *to_restore_;
-    bool state_;
-  } RB(&Job->PruneIncompleteFunctions);
+  auto Scope = RestoreValue(Job->PruneIncompleteFunctions);
   if (Job->PruneIncompleteFunctions) {
     if (auto *FD = llvm::dyn_cast<clang::FunctionDecl>(Decl)) {
       if (!FD->isThisDeclarationADefinition()) {
@@ -1074,8 +1035,8 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
         return true;
       }
     }
-    auto R = RestoreStack(Job->BlameStack);
-    auto S = RestoreStack(Job->RangeContext);
+    auto Scope = std::make_tuple(RestoreStack(Job->BlameStack),
+                                 RestoreStack(Job->RangeContext));
 
     if (FD->isTemplateInstantiation() &&
         FD->getTemplateSpecializationKind() !=
@@ -1096,7 +1057,7 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
 
     // Dispatch the remaining logic to the base class TraverseDecl() which will
     // call TraverseX(X*) for the most-derived X.
-    return RecursiveASTVisitor::TraverseDecl(FD);
+    return Base::TraverseDecl(FD);
   } else if (auto *ID = dyn_cast_or_null<clang::FieldDecl>(Decl)) {
     // This will also cover the case of clang::ObjCIVarDecl since it is a
     // subclass.
@@ -1138,14 +1099,14 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
           }
         }
       }
-      return RecursiveASTVisitor::TraverseDecl(ID);
+      return Base::TraverseDecl(ID);
     }
   } else if (auto *MD = dyn_cast_or_null<clang::ObjCMethodDecl>(Decl)) {
     // These variables (R and S) clean up the stacks (Job->BlameStack and
     // Job->RangeContext) when the local variables (R and S) are
     // destructed.
-    auto R = RestoreStack(Job->BlameStack);
-    auto S = RestoreStack(Job->RangeContext);
+    auto Scope = std::make_tuple(RestoreStack(Job->BlameStack),
+                                 RestoreStack(Job->RangeContext));
 
     if (const auto BlameId = BuildNodeIdForDeclContext(MD)) {
       Job->BlameStack.push_back(IndexJob::SomeNodes(1, BlameId.value()));
@@ -1155,10 +1116,10 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
 
     // Dispatch the remaining logic to the base class TraverseDecl() which will
     // call TraverseX(X*) for the most-derived X.
-    return RecursiveASTVisitor::TraverseDecl(MD);
+    return Base::TraverseDecl(MD);
   }
 
-  return RecursiveASTVisitor::TraverseDecl(Decl);
+  return Base::TraverseDecl(Decl);
 }
 
 bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
@@ -2104,11 +2065,8 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl *Decl) {
 // want to have the primary-template's type variables in context.
 bool IndexerASTVisitor::TraverseClassTemplateDecl(
     clang::ClassTemplateDecl *TD) {
-  Job->TypeContext.push_back(TD->getTemplateParameters());
-  bool Result =
-      RecursiveASTVisitor<IndexerASTVisitor>::TraverseClassTemplateDecl(TD);
-  Job->TypeContext.pop_back();
-  return Result;
+  auto Scope = PushScope(Job->TypeContext, TD->getTemplateParameters());
+  return Base::TraverseClassTemplateDecl(TD);
 }
 
 // NB: The Traverse* member that's called is based on the dynamic type of the
@@ -2116,8 +2074,9 @@ bool IndexerASTVisitor::TraverseClassTemplateDecl(
 // TraverseClassTemplate{Partial}SpecializationDecl will be called).
 bool IndexerASTVisitor::TraverseClassTemplateSpecializationDecl(
     clang::ClassTemplateSpecializationDecl *TD) {
-  auto R = RestoreStack(Job->RangeContext);
-  bool UITI = Job->UnderneathImplicitTemplateInstantiation;
+  auto Scope = std::make_tuple(
+      RestoreStack(Job->RangeContext),
+      RestoreValue(Job->UnderneathImplicitTemplateInstantiation));
   // If this specialization was spelled out in the file, it has
   // physical ranges.
   if (TD->getTemplateSpecializationKind() !=
@@ -2127,10 +2086,7 @@ bool IndexerASTVisitor::TraverseClassTemplateSpecializationDecl(
   if (!TD->isExplicitInstantiationOrSpecialization()) {
     Job->UnderneathImplicitTemplateInstantiation = true;
   }
-  bool Result = RecursiveASTVisitor<
-      IndexerASTVisitor>::TraverseClassTemplateSpecializationDecl(TD);
-  Job->UnderneathImplicitTemplateInstantiation = UITI;
-  return Result;
+  return Base::TraverseClassTemplateSpecializationDecl(TD);
 }
 
 bool IndexerASTVisitor::TraverseVarTemplateSpecializationDecl(
@@ -2146,8 +2102,9 @@ bool IndexerASTVisitor::TraverseVarTemplateSpecializationDecl(
 
 bool IndexerASTVisitor::ForceTraverseVarTemplateSpecializationDecl(
     clang::VarTemplateSpecializationDecl *TD) {
-  auto R = RestoreStack(Job->RangeContext);
-  bool UITI = Job->UnderneathImplicitTemplateInstantiation;
+  auto Scope = std::make_tuple(
+      RestoreStack(Job->RangeContext),
+      RestoreValue(Job->UnderneathImplicitTemplateInstantiation));
   // If this specialization was spelled out in the file, it has
   // physical ranges.
   if (TD->getTemplateSpecializationKind() !=
@@ -2157,27 +2114,20 @@ bool IndexerASTVisitor::ForceTraverseVarTemplateSpecializationDecl(
   if (!TD->isExplicitInstantiationOrSpecialization()) {
     Job->UnderneathImplicitTemplateInstantiation = true;
   }
-  bool Result = RecursiveASTVisitor<
-      IndexerASTVisitor>::TraverseVarTemplateSpecializationDecl(TD);
-  Job->UnderneathImplicitTemplateInstantiation = UITI;
-  return Result;
+  return Base::TraverseVarTemplateSpecializationDecl(TD);
 }
 
 bool IndexerASTVisitor::TraverseClassTemplatePartialSpecializationDecl(
     clang::ClassTemplatePartialSpecializationDecl *TD) {
   // Implicit partial specializations don't happen, so we don't need
   // to consider changing the Job->RangeContext stack.
-  Job->TypeContext.push_back(TD->getTemplateParameters());
-  bool Result = RecursiveASTVisitor<
-      IndexerASTVisitor>::TraverseClassTemplatePartialSpecializationDecl(TD);
-  Job->TypeContext.pop_back();
-  return Result;
+  auto Scope = PushScope(Job->TypeContext, TD->getTemplateParameters());
+  return Base::TraverseClassTemplatePartialSpecializationDecl(TD);
 }
 
 bool IndexerASTVisitor::TraverseVarTemplateDecl(clang::VarTemplateDecl *TD) {
-  Job->TypeContext.push_back(TD->getTemplateParameters());
+  auto Scope = PushScope(Job->TypeContext, TD->getTemplateParameters());
   if (!TraverseDecl(TD->getTemplatedDecl())) {
-    Job->TypeContext.pop_back();
     return false;
   }
   if (TD == TD->getCanonicalDecl()) {
@@ -2189,7 +2139,6 @@ bool IndexerASTVisitor::TraverseVarTemplateDecl(clang::VarTemplateDecl *TD) {
           case TSK_Undeclared:
           case TSK_ImplicitInstantiation:
             if (!ForceTraverseVarTemplateSpecializationDecl(VD)) {
-              Job->TypeContext.pop_back();
               return false;
             }
             break;
@@ -2205,7 +2154,6 @@ bool IndexerASTVisitor::TraverseVarTemplateDecl(clang::VarTemplateDecl *TD) {
       }
     }
   }
-  Job->TypeContext.pop_back();
   return true;
 }
 
@@ -2213,23 +2161,18 @@ bool IndexerASTVisitor::TraverseVarTemplatePartialSpecializationDecl(
     clang::VarTemplatePartialSpecializationDecl *TD) {
   // Implicit partial specializations don't happen, so we don't need
   // to consider changing the Job->RangeContext stack.
-  Job->TypeContext.push_back(TD->getTemplateParameters());
-  bool Result = RecursiveASTVisitor<
-      IndexerASTVisitor>::TraverseVarTemplatePartialSpecializationDecl(TD);
-  Job->TypeContext.pop_back();
-  return Result;
+  auto Scope = PushScope(Job->TypeContext, TD->getTemplateParameters());
+  return Base::TraverseVarTemplatePartialSpecializationDecl(TD);
 }
 
 bool IndexerASTVisitor::TraverseTypeAliasTemplateDecl(
     clang::TypeAliasTemplateDecl *TATD) {
-  Job->TypeContext.push_back(TATD->getTemplateParameters());
-  TraverseDecl(TATD->getTemplatedDecl());
-  Job->TypeContext.pop_back();
-  return true;
+  auto Scope = PushScope(Job->TypeContext, TATD->getTemplateParameters());
+  return TraverseDecl(TATD->getTemplatedDecl());
 }
 
 bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl *FD) {
-  bool UITI = Job->UnderneathImplicitTemplateInstantiation;
+  auto UITI = RestoreValue(Job->UnderneathImplicitTemplateInstantiation);
   if (const auto *MSI = FD->getMemberSpecializationInfo()) {
     // The definitions of class template member functions are not necessarily
     // dominated by the class template definition.
@@ -2241,17 +2184,16 @@ bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl *FD) {
       Job->UnderneathImplicitTemplateInstantiation = true;
     }
   }
-  bool Result = RecursiveASTVisitor::TraverseFunctionDecl(FD);
-  Job->UnderneathImplicitTemplateInstantiation = UITI;
-  return Result;
+  return Base::TraverseFunctionDecl(FD);
 }
 
 bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
     clang::FunctionTemplateDecl *FTD) {
-  Job->TypeContext.push_back(FTD->getTemplateParameters());
-  // We traverse the template parameter list when we visit the FunctionDecl.
-  TraverseDecl(FTD->getTemplatedDecl());
-  Job->TypeContext.pop_back();
+  {
+    auto Scope = PushScope(Job->TypeContext, FTD->getTemplateParameters());
+    // We traverse the template parameter list when we visit the FunctionDecl.
+    TraverseDecl(FTD->getTemplatedDecl());
+  }
   // See also RecursiveAstVisitor<T>::TraverseTemplateInstantiations.
   if (FTD == FTD->getCanonicalDecl()) {
     for (auto *FD : FTD->specializations()) {

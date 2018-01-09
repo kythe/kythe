@@ -99,6 +99,7 @@ cc_library(
         ":graph_observer",
         ":indexer_library_support",
         ":marked_source",
+        ":scope_guard",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",
         "//kythe/cxx/common/indexing:lib",
@@ -263,6 +264,11 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
     ],
+)
+
+cc_library(
+    name = "scope_guard",
+    hdrs = ["scope_guard.h"],
 )
 
 cc_library(
