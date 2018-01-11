@@ -9,7 +9,8 @@ exclude: ['README.adoc', 'Gemfile.lock', 'Gemfile', 'build.sh', 'sync_docs.sh', 
 collections:
   docs:
     output: true
-gems:
+    permalink: /:collection/:path:output_ext
+plugins:
   - jekyll-redirect-from
   - jekyll-asciidoc
 asciidoctor:
