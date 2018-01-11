@@ -4406,8 +4406,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     // Either the `TemplateTypeParm` will link directly to a relevant
     // `TemplateTypeParmDecl` or (particularly in the case of canonicalized
     // types) we will find the Decl in the `Job->TypeContext` according to the
-    // parameter's
-    // depth and index.
+    // parameter's depth and index.
     case TypeLoc::TemplateTypeParm: {  // Leaf.
       // Depths count from the outside-in; each Template*ParmDecl has only
       // one possible (depth, index).

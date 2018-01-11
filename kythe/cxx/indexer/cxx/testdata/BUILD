@@ -2308,6 +2308,18 @@ cc_indexer_test(
     ],
 )
 
+cc_indexer_test(
+    name = "template_class_ctor_deduction",
+    srcs = ["template/template_class_ctor_deduction.cc"],
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    std = "c++17",
+    tags = [
+        "c++17",
+        "template",
+    ],
+)
+
 test_suite(
     name = "indexer_template",
     tags = ["template"],
