@@ -105,7 +105,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
         ShouldStopIndexing(std::move(ShouldStopIndexing)) {}
 
   bool VisitDecl(const clang::Decl *Decl);
-  bool VisitDeclaratorDecl(const clang::DeclaratorDecl *Decl);
   bool VisitFieldDecl(const clang::FieldDecl *Decl);
   bool VisitVarDecl(const clang::VarDecl *Decl);
   bool VisitNamespaceDecl(const clang::NamespaceDecl *Decl);
@@ -124,6 +123,15 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitMemberExpr(const clang::MemberExpr *Expr);
   bool VisitCXXDependentScopeMemberExpr(
       const clang::CXXDependentScopeMemberExpr *Expr);
+
+  // Visitors for non-builtin leaf TypeLoc types.
+  bool VisitEnumTypeLoc(clang::EnumTypeLoc TL);
+  bool VisitRecordTypeLoc(clang::RecordTypeLoc TL);
+  bool VisitInjectedClassName(clang::InjectedClassNameTypeLoc TL);
+  bool VisitObjCInterfaceTypeLoc(clang::ObjCInterfaceTypeLoc TL);
+  bool VisitTemplateTypeParmTypeLoc(clang::TemplateTypeParmTypeLoc TL);
+
+  bool VisitTemplateSpecializationTypeLoc(clang::TemplateSpecializationTypeLoc TL);
 
   // Visit the subtypes of TypedefNameDecl individually because we want to do
   // something different with ObjCTypeParamDecl.
@@ -802,10 +810,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
                            const clang::Decl *Decl) const;
   void LogErrorWithASTDump(const std::string &msg,
                            const clang::Expr *Expr) const;
-
-  /// \brief Mark each node of `NNSL` as a reference.
-  /// \param NNSL the nested name specifier to visit.
-  void VisitNestedNameSpecifierLoc(clang::NestedNameSpecifierLoc NNSL);
 
   /// \brief This is used to handle the visitation of a clang::TypedefDecl
   /// or a clang::TypeAliasDecl.

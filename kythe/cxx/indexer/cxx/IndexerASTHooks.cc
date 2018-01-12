@@ -901,11 +901,6 @@ void IndexerASTVisitor::VisitComment(
   }
 }
 
-bool IndexerASTVisitor::VisitDeclaratorDecl(const clang::DeclaratorDecl *Decl) {
-  VisitNestedNameSpecifierLoc(Decl->getQualifierLoc());
-  return true;
-}
-
 bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   if (Job->UnderneathImplicitTemplateInstantiation || Decl == nullptr) {
     // Template instantiation can't add any documentation text.
@@ -1194,7 +1189,6 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr *E) {
       }
     }
   }
-  VisitNestedNameSpecifierLoc(E->getQualifierLoc());
   if (const auto *FieldDecl = E->getMemberDecl()) {
     auto Range = RangeForASTEntityFromSourceLocation(
         *Observer.getSourceManager(), *Observer.getLangOptions(),
@@ -1230,6 +1224,18 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr *E,
       if (const auto ETL =
               TSI->getTypeLoc().getAs<clang::ElaboratedTypeLoc>()) {
         RefLoc = ETL.getNamedTypeLoc().getBeginLoc();
+/* TODO(shahms): Figure out this conflic.
+=======
+    if (const auto *TE = dyn_cast<clang::CXXTemporaryObjectExpr>(E)) {
+      if (const auto *TSI = TE->getTypeSourceInfo()) {
+        if (const auto ETL =
+                TSI->getTypeLoc().getAs<clang::ElaboratedTypeLoc>()) {
+          BuildNodeIdForType(ETL.getNamedTypeLoc(), ETL.getType(),
+                             EmitRanges::Yes);
+          RefLoc = ETL.getNamedTypeLoc().getBeginLoc();
+        }
+>>>>>>> WIP - Remove VisitNestedNameSpecifier in favor of direct Visit*TypeLoc
+*/
       }
     }
 
@@ -1695,15 +1701,40 @@ bool IndexerASTVisitor::VisitUnaryExprOrTypeTraitExpr(
 }
 
 bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
-  if (!VisitDeclRefOrIvarRefExpr(DRE, DRE->getDecl(), DRE->getLocation())) {
-    return false;
-  }
-  if (DRE->hasQualifier()) {
-    VisitNestedNameSpecifierLoc(DRE->getQualifierLoc());
-  }
-  for (auto &ArgLoc : DRE->template_arguments()) {
-    BuildNodeIdForTemplateArgument(ArgLoc, EmitRanges::Yes);
-  }
+  return VisitDeclRefOrIvarRefExpr(DRE, DRE->getDecl(), DRE->getLocation());
+}
+
+bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
+  BuildNodeIdForType(TL, EmitRanges::Yes);
+  return true;
+}
+
+bool IndexerASTVisitor::VisitRecordTypeLoc(clang::RecordTypeLoc TL) {
+  BuildNodeIdForType(TL, EmitRanges::Yes);
+  return true;
+}
+
+bool IndexerASTVisitor::VisitInjectedClassName(
+    clang::InjectedClassNameTypeLoc TL) {
+  BuildNodeIdForType(TL, EmitRanges::Yes);
+  return true;
+}
+
+bool IndexerASTVisitor::VisitObjCInterfaceTypeLoc(
+    clang::ObjCInterfaceTypeLoc TL) {
+  BuildNodeIdForType(TL, EmitRanges::Yes);
+  return true;
+}
+
+bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
+    clang::TemplateTypeParmTypeLoc TL) {
+  BuildNodeIdForType(TL, EmitRanges::Yes);
+  return true;
+}
+
+bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
+    clang::TemplateSpecializationTypeLoc TL) {
+  BuildNodeIdForType(TL, EmitRanges::Yes);
   return true;
 }
 
@@ -1718,21 +1749,6 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
     }
   }
   return true;
-}
-
-void IndexerASTVisitor::VisitNestedNameSpecifierLoc(
-    clang::NestedNameSpecifierLoc NNSL) {
-  // TODO(shahms): Remove this and use Visit*TypeLoc directly, rather than
-  // ad-hoc calls to VisitNestedNameSpecifierLoc everywhere.
-  while (NNSL) {
-    NestedNameSpecifier *NNS = NNSL.getNestedNameSpecifier();
-    if (NNS->getKind() != NestedNameSpecifier::TypeSpec &&
-        NNS->getKind() != NestedNameSpecifier::TypeSpecWithTemplate)
-      break;
-    BuildNodeIdForType(NNSL.getTypeLoc(), NNS->getAsType(),
-                       IndexerASTVisitor::EmitRanges::Yes);
-    NNSL = NNSL.getPrefix();
-  }
 }
 
 // Use FoundDecl to get to template defs; use getDecl to get to template
@@ -4277,10 +4293,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                               DT ? DT->getNamedType().getTypePtr()
                                  : T.getNamedTypeLoc().getTypePtr(),
                               EmitRanges);
-      // Add anchors for parts of the NestedNameSpecifier.
-      if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
-        VisitNestedNameSpecifierLoc(T.getQualifierLoc());
-      }
       // Don't link 'struct'.
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
       // TODO(zarko): Add an anchor for all the Elaborated type; otherwise decls
@@ -4295,7 +4307,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       // one possible (depth, index).
       const auto *TypeParm = cast<TemplateTypeParmType>(TypeLoc.getTypePtr());
       const auto *TD = TypeParm->getDecl();
-      if (!IgnoreUnimplemented &&
+      if (!IgnoreUnimplemented && TD == nullptr &&
           TypeParm->getDepth() < Job->TypeContext.size() &&
           TypeParm->getIndex() <
               Job->TypeContext[TypeParm->getDepth()]->size()) {
