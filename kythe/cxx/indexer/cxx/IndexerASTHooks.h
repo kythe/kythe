@@ -123,7 +123,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitCXXDependentScopeMemberExpr(
       const clang::CXXDependentScopeMemberExpr *Expr);
 
-  // Visitors for non-builtin leaf TypeLoc types.
+  // Visitors for leaf TypeLoc types.
+  bool VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL);
   bool VisitEnumTypeLoc(clang::EnumTypeLoc TL);
   bool VisitRecordTypeLoc(clang::RecordTypeLoc TL);
   bool VisitInjectedClassName(clang::InjectedClassNameTypeLoc TL);
@@ -491,6 +492,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// RangeContext.
   absl::optional<GraphObserver::Range> ExplicitRangeInCurrentContext(
       const clang::SourceRange &SR);
+
+  /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
+  /// RangeContext. If SR is in a macro, the returned Range will be mapped
+  /// to a file first. If the range would be zero-width, it will be expanded
+  /// via RangeForASTEntityFromSourceLocation.
+  absl::optional<GraphObserver::Range> ExpandedRangeInCurrentContext(
+      clang::SourceRange SR);
 
   /// If `Implicit` is true, returns `Id` as an implicit Range; otherwise,
   /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current

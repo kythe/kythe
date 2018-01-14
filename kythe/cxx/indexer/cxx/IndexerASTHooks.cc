@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <tuple>
 
 #include "GraphObserver.h"
@@ -50,8 +51,6 @@
 #include "kythe/cxx/indexer/cxx/scope_guard.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
-
-#include <algorithm>
 
 DEFINE_bool(experimental_alias_template_instantiations, false,
             "Ignore template instantation information when generating IDs.");
@@ -1629,6 +1628,18 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
   return VisitDeclRefOrIvarRefExpr(DRE, DRE->getDecl(), DRE->getLocation());
 }
 
+bool IndexerASTVisitor::VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL) {
+  if (FLAGS_emit_anchors_on_builtins) {
+    if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+      if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
+        Observer.recordTypeSpellingLocation(
+            *RCC, *Id, GraphObserver::Claimability::Claimable);
+      }
+    }
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
   BuildNodeIdForType(TL, EmitRanges::Yes);
   return true;
@@ -2204,7 +2215,31 @@ bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl *FD) {
       Job->UnderneathImplicitTemplateInstantiation = true;
     }
   }
-  return Base::TraverseFunctionDecl(FD);
+  if (!Base::TraverseFunctionDecl(FD)) {
+    return false;
+  }
+  // RecursiveASTVisitor, mistakenly, does not visit these, likely
+  // due to the obscure case in which they occur:
+  // From Clang's documentation:
+  // "Since explicit function template specialization and instantiation
+  // declarations can only appear in namespace scope, and you can only
+  // specialize a member of a fully-specialized class, the only way to get
+  // one of these is in a friend declaration like the following:
+  //   template <typename T> void f(T t);
+  //   template <typename T> struct S {
+  //     friend void f<>(T t);
+  //   };
+  // TODO(shahms): Fix this upstream by getting TraverseFunctionHelper to
+  // do the right thing.
+  if (auto *DFTSI = FD->getDependentSpecializationInfo()) {
+    auto Count = DFTSI->getNumTemplateArgs();
+    for (int i = 0; i < Count; i++) {
+      if (!TraverseTemplateArgumentLoc(DFTSI->getTemplateArg(i))) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
@@ -2286,6 +2321,39 @@ IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange &SR) {
   } else {
     return GraphObserver::Range(SR, Observer.getClaimTokenForRange(SR));
   }
+}
+
+absl::optional<GraphObserver::Range>
+IndexerASTVisitor::ExpandedRangeInCurrentContext(clang::SourceRange SR) {
+  if (!SR.isValid()) {
+    return absl::nullopt;
+  }
+  // If this type reference came from a macro context, try to see whether we
+  // can attribute it back to a source file.
+  if (SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
+    auto NewSR = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(),
+        SR.getBegin());
+    if (SR.getBegin() != SR.getEnd()) {
+      auto EndSR = RangeForASTEntityFromSourceLocation(
+          *Observer.getSourceManager(), *Observer.getLangOptions(),
+          SR.getEnd());
+      NewSR.setEnd(EndSR.getEnd());
+    }
+    if (NewSR.isValid() && NewSR.getBegin() != NewSR.getEnd() &&
+        NewSR.getBegin().isFileID() && NewSR.getEnd().isFileID() &&
+        NewSR.getBegin() < NewSR.getEnd() &&
+        Observer.getSourceManager()->getFileID(NewSR.getBegin()) ==
+            Observer.getSourceManager()->getFileID(NewSR.getEnd())) {
+      SR = NewSR;
+    }
+  }
+  return ExplicitRangeInCurrentContext(
+      SR.getBegin() == SR.getEnd()
+          ? RangeForASTEntityFromSourceLocation(*Observer.getSourceManager(),
+                                                *Observer.getLangOptions(),
+                                                SR.getBegin())
+          : SR);
 }
 
 absl::optional<GraphObserver::Range> IndexerASTVisitor::RangeInCurrentContext(
@@ -3932,6 +4000,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                                 AT->getModifiedType().getTypePtr(), EmitRanges,
                                 SR);
     }
+
     if (const auto *DT = dyn_cast<DependentAddressSpaceType>(PT)) {
       const auto &DTL = TypeLoc.castAs<DependentAddressSpaceTypeLoc>();
       return BuildNodeIdForType(DTL.getPointeeTypeLoc(),
@@ -4003,10 +4072,9 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       }
     } break;
     case TypeLoc::Builtin: {  // Leaf.
+      // Nodes are emitted via VisitBuiltinTypeLoc.
+      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
       const auto &T = TypeLoc.castAs<BuiltinTypeLoc>();
-      if (!FLAGS_emit_anchors_on_builtins) {
-        InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      }
       if (TypeAlreadyBuilt) {
         break;
       }
