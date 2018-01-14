@@ -1641,8 +1641,6 @@ bool IndexerASTVisitor::VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL) {
 }
 
 bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
-  // TODO(shahms): Currently, BuildNodeIdForType does far more than that for
-  // EnumTypeLoc's which lack a visible definition. It should not.
   if (const auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
     auto Claimability = GraphObserver::Claimability::Unclaimable;
     if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
@@ -4409,7 +4407,8 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         } else {
           auto Marks = MarkedSources.Generate(Decl);
           auto DeclNameId = BuildNameIdForDecl(Decl);
-          // TODO(shahms): This should be done by VisitEnumTypeLoc not here.
+          // TODO(shahms): This should not be done here, but should only be
+          // recorded once (which complicates layering in VisitEnumTypeLoc).
           ID = Observer.recordNominalTypeNode(
               DeclNameId,
               Marks.GenerateMarkedSource(
