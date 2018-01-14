@@ -1716,7 +1716,22 @@ bool IndexerASTVisitor::VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL) {
 }
 
 bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
-  BuildNodeIdForType(TL, EmitRanges::Yes);
+  // TODO(shahms): Currently, BuildNodeIdForType does far more than that for
+  // EnumTypeLoc's which lack a visible definition. It should not.
+  if (const auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+    auto Claimability = GraphObserver::Claimability::Unclaimable;
+    if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
+      // If there is no visible definition, Id will be a tnominal node
+      // whereas it is more useful to decorate the span as a reference
+      // to the visible declaration.
+      // See https://phabricator-dot-kythe-repo.appspot.com/D1887
+      if (!TL.getDecl()->getDefinition()) {
+        Claimability = GraphObserver::Claimability::Claimable;
+        Id = BuildNodeIdForDecl(TL.getDecl());
+      }
+      Observer.recordTypeSpellingLocation(*RCC, *Id, Claimability);
+    }
+  }
   return true;
 }
 
@@ -4327,29 +4342,23 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       }
     } break;
     case TypeLoc::Enum: {  // Leaf.
+      // Emission is handled by VisitEnumTypeLoc.
+      InEmitRanges = EmitRanges::No;
       const auto &T = TypeLoc.castAs<EnumTypeLoc>();
       EnumDecl *Decl = T.getDecl();
       if (!TypeAlreadyBuilt) {
         if (EnumDecl *Defn = Decl->getDefinition()) {
-          Claimability = GraphObserver::Claimability::Unclaimable;
           ID = BuildNodeIdForDecl(Defn);
         } else {
           auto Marks = MarkedSources.Generate(Decl);
           auto DeclNameId = BuildNameIdForDecl(Decl);
+          // TODO(shahms): This should be done by VisitEnumTypeLoc not here.
           ID = Observer.recordNominalTypeNode(
               DeclNameId,
               Marks.GenerateMarkedSource(
                   Observer.nodeIdForNominalTypeNode(DeclNameId)),
               GetDeclChildOf(Decl));
         }
-      } else {
-        if (Decl->getDefinition()) {
-          Claimability = GraphObserver::Claimability::Unclaimable;
-        }
-      }
-      if (!Decl->getDefinition() &&
-          EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
-        SpanID = BuildNodeIdForDecl(Decl);
       }
     } break;
     case TypeLoc::Elaborated: {
