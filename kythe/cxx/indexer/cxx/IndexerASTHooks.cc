@@ -1677,7 +1677,12 @@ bool IndexerASTVisitor::VisitObjCInterfaceTypeLoc(
 
 bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
     clang::TemplateTypeParmTypeLoc TL) {
-  BuildNodeIdForType(TL, EmitRanges::Yes);
+  if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+    if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
+      Observer.recordTypeSpellingLocation(
+          *RCC, *Id, GraphObserver::Claimability::Claimable);
+    }
+  }
   return true;
 }
 
@@ -4436,6 +4441,8 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     // types) we will find the Decl in the `Job->TypeContext` according to the
     // parameter's depth and index.
     case TypeLoc::TemplateTypeParm: {  // Leaf.
+      // Emission is handled by VisitTemplateTypeParmTypeLoc.
+      InEmitRanges = EmitRanges::No;
       // Depths count from the outside-in; each Template*ParmDecl has only
       // one possible (depth, index).
       const auto *TypeParm = cast<TemplateTypeParmType>(TypeLoc.getTypePtr());
