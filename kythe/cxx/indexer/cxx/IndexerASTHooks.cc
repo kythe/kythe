@@ -1767,6 +1767,19 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
   return true;
 }
 
+bool IndexerASTVisitor::VisitSubstTemplateTypeParmTypeLoc(
+    clang::SubstTemplateTypeParmTypeLoc TL) {
+  // TODO(zarko): Record both the replaced parameter and the replacement
+  // type.
+  if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+    if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
+      Observer.recordTypeSpellingLocation(
+          *RCC, *Id, GraphObserver::Claimability::Claimable);
+    }
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::VisitDesignatedInitExpr(
     const clang::DesignatedInitExpr *DIE) {
   for (const auto &D : DIE->designators()) {
@@ -4408,10 +4421,10 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     // originally written as a template type parameter; therefore they are
     // never canonical."
     case TypeLoc::SubstTemplateTypeParm: {
+      // Emission handled by VisitSubstTemplateTypeParmTypeLoc.
+      InEmitRanges = EmitRanges::No;
       const auto &T = TypeLoc.castAs<SubstTemplateTypeParmTypeLoc>();
       const SubstTemplateTypeParmType *STTPT = T.getTypePtr();
-      // TODO(zarko): Record both the replaced parameter and the replacement
-      // type.
       CHECK(!STTPT->getReplacementType().isNull());
       ID = BuildNodeIdForType(STTPT->getReplacementType());
     } break;

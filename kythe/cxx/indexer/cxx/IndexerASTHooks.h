@@ -132,6 +132,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitObjCInterfaceTypeLoc(clang::ObjCInterfaceTypeLoc TL);
   bool VisitTemplateTypeParmTypeLoc(clang::TemplateTypeParmTypeLoc TL);
 
+  bool VisitSubstTemplateTypeParmTypeLoc(clang::SubstTemplateTypeParmTypeLoc TL);
+
   bool VisitTemplateSpecializationTypeLoc(clang::TemplateSpecializationTypeLoc TL);
 
   // Visit the subtypes of TypedefNameDecl individually because we want to do
