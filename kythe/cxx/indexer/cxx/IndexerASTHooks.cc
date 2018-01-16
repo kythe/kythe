@@ -327,7 +327,7 @@ class PruneCheck {
         if (parent == nullptr) {
           break;
         }
-        current_node = parent->Parent;
+        current_node = parent->parent;
         if (!current_decl) {
           continue;
         }
@@ -357,51 +357,26 @@ class PruneCheck {
   IndexerASTVisitor *visitor_;
 };
 
-void IndexerASTVisitor::deleteAllParents() {
-  if (!AllParents) {
-    return;
-  }
-  for (const auto &Entry : *AllParents) {
-    delete Entry.second.getPointer();
-  }
-  AllParents.reset(nullptr);
-}
-
 IndexedParent *IndexerASTVisitor::getIndexedParent(
     const ast_type_traits::DynTypedNode &Node) {
-  CHECK(Node.getMemoizationData() != nullptr)
-      << "Invariant broken: only nodes that support memoization may be "
-         "used in the parent map.";
   if (!AllParents) {
     // We always need to run over the whole translation unit, as
     // hasAncestor can escape any subtree.
     // TODO(zarko): Is this relavant for naming?
     ProfileBlock block(Observer.getProfilingCallback(), "build_parent_map");
-    AllParents =
-        IndexedParentASTVisitor::buildMap(*Context.getTranslationUnitDecl());
+    AllParents = absl::make_unique<IndexedParentMap>(
+        IndexedParentMap::Build(Context.getTranslationUnitDecl()));
   }
-  IndexedParentMap::const_iterator I =
-      AllParents->find(Node.getMemoizationData());
-  if (I == AllParents->end()) {
-    return nullptr;
-  }
-  return I->second.getPointer();
+  return AllParents->GetIndexedParent(Node);
 }
 
 bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl *Decl) {
-  const auto Node = clang::ast_type_traits::DynTypedNode::create(*Decl);
   if (!AllParents) {
     ProfileBlock block(Observer.getProfilingCallback(), "build_parent_map");
-    AllParents =
-        IndexedParentASTVisitor::buildMap(*Context.getTranslationUnitDecl());
+    AllParents = absl::make_unique<IndexedParentMap>(
+        IndexedParentMap::Build(Context.getTranslationUnitDecl()));
   }
-  IndexedParentMap::const_iterator I =
-      AllParents->find(Node.getMemoizationData());
-  if (I == AllParents->end()) {
-    // Safe default.
-    return false;
-  }
-  return I->second.getInt() == 0;
+  return AllParents->DeclDominatesPrunableSubtree(Decl);
 }
 
 bool IndexerASTVisitor::IsDefinition(const clang::VarDecl *VD) {
@@ -2965,7 +2940,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::GetDeclChildOf(
     // explicitly requested. Therefore:
     if (CurrentNodeAsDecl == Decl ||
         (CurrentNodeAsDecl && isa<ClassTemplateDecl>(CurrentNodeAsDecl))) {
-      CurrentNode = IP->Parent;
+      CurrentNode = IP->parent;
       continue;
     }
     if (CurrentNodeAsDecl) {
@@ -2973,7 +2948,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::GetDeclChildOf(
         return BuildNodeIdForDecl(ND);
       }
     }
-    CurrentNode = IP->Parent;
+    CurrentNode = IP->parent;
     if (CurrentNodeAsDecl) {
       if (const auto *DC = CurrentNodeAsDecl->getDeclContext()) {
         if (const TagDecl *TD = dyn_cast<TagDecl>(CurrentNodeAsDecl)) {
@@ -3123,7 +3098,7 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
     // explicitly requested. Therefore:
     if (MissingSeparator && CurrentNodeAsDecl &&
         isa<ClassTemplateDecl>(CurrentNodeAsDecl)) {
-      CurrentNode = IP->Parent;
+      CurrentNode = IP->parent;
       continue;
     }
     if (MissingSeparator &&
@@ -3138,7 +3113,7 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
       // At any rate, a hash cache might be a good idea.
       if (const NamedDecl *ND = dyn_cast<NamedDecl>(CurrentNodeAsDecl)) {
         if (!AddNameToStream(Ostream, ND)) {
-          Ostream << IP->Index;
+          Ostream << IP->index;
         }
       } else if (const auto *LSD =
                      dyn_cast<LinkageSpecDecl>(CurrentNodeAsDecl)) {
@@ -3147,13 +3122,13 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
       } else {
         // If there's no good name for this Decl, name it after its child
         // index wrt its parent node.
-        Ostream << IP->Index;
+        Ostream << IP->index;
       }
     } else if (auto *S = CurrentNode.get<clang::Stmt>()) {
       // This is a Stmt--we can name it by its index wrt its parent node.
-      Ostream << IP->Index;
+      Ostream << IP->index;
     }
-    CurrentNode = IP->Parent;
+    CurrentNode = IP->parent;
     if (CurrentNodeAsDecl) {
       if (const auto *DC = CurrentNodeAsDecl->getDeclContext()) {
         if (const TagDecl *TD = dyn_cast<TagDecl>(CurrentNodeAsDecl)) {
@@ -3354,8 +3329,8 @@ IndexerASTVisitor::BuildNodeIdForImplicitStmt(const clang::Stmt *Stmt) {
     if (IP == nullptr) {
       break;
     }
-    StmtPath.push_back(IP->Index);
-    CurrentNode = IP->Parent;
+    StmtPath.push_back(IP->index);
+    CurrentNode = IP->parent;
   }
   if (CurrentNodeAsDecl == nullptr) {
     // Out of luck.
@@ -3446,7 +3421,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     if (IP == nullptr) {
       break;
     }
-    CurrentNode = IP->Parent;
+    CurrentNode = IP->parent;
     if (!CurrentNodeAsDecl) {
       continue;
     }

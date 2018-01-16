@@ -36,125 +36,11 @@
 
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
+#include "indexed_parent_map.h"
 #include "indexer_worklist.h"
 #include "marked_source.h"
 
 namespace kythe {
-
-/// For a given node in the AST, this class keeps track of the node's
-/// parent (along some path from the AST root) and an integer index for that
-/// node in some arbitrary but consistent order defined by the parent.
-struct IndexedParent {
-  /// \brief The parent DynTypedNode associated with some key.
-  clang::ast_type_traits::DynTypedNode Parent;
-  /// \brief The index at which some associated key appears in `Parent`.
-  size_t Index;
-};
-
-inline bool operator==(const IndexedParent &L, const IndexedParent &R) {
-  // We compare IndexedParents for deduplicating memoizable DynTypedNodes
-  // below; semantically, this means that we keep the first child index
-  // we saw when following every path through a particular memoizable
-  // IndexedParent.
-  return L.Parent == R.Parent;
-}
-
-inline bool operator!=(const IndexedParent &L, const IndexedParent &R) {
-  return !(L == R);
-}
-
-using IndexedParentMap =
-    llvm::DenseMap<const void *,
-                   llvm::PointerIntPair<IndexedParent *, 1, bool>>;
-
-/// \return `true` if truncating tree traversal at `D` is safe, provided that
-/// `D` has been traversed previously.
-bool IsClaimableForTraverse(const clang::Decl *D);
-
-/// \return `true` if truncating tree traversal at `S` is safe, provided that
-/// `S` has been traversed previously.
-inline bool IsClaimableForTraverse(const clang::Stmt *S) { return false; }
-
-/// FIXME: Currently only builds up the map using \c Stmt and \c Decl nodes.
-/// TODO(zarko): Is this necessary to change for naming?
-class IndexedParentASTVisitor
-    : public clang::RecursiveASTVisitor<IndexedParentASTVisitor> {
- public:
-  /// \brief Builds and returns the translation unit's indexed parent map.
-  ///
-  /// The caller takes ownership of the returned `IndexedParentMap`.
-  static std::unique_ptr<IndexedParentMap> buildMap(
-      clang::TranslationUnitDecl &TU) {
-    std::unique_ptr<IndexedParentMap> ParentMap =
-        absl::make_unique<IndexedParentMap>();
-    IndexedParentASTVisitor Visitor(ParentMap.get());
-    Visitor.TraverseDecl(&TU);
-    return ParentMap;
-  }
-
- private:
-  typedef RecursiveASTVisitor<IndexedParentASTVisitor> VisitorBase;
-
-  explicit IndexedParentASTVisitor(IndexedParentMap *Parents)
-      : Parents(Parents) {}
-
-  bool shouldVisitTemplateInstantiations() const { return true; }
-  bool shouldVisitImplicitCode() const { return true; }
-  // Disables data recursion. We intercept Traverse* methods in the RAV, which
-  // are not triggered during data recursion.
-  bool shouldUseDataRecursionFor(clang::Stmt *S) const { return false; }
-
-  // Traverse an arbitrary AST node type and record the node used to get to
-  // it as that node's parent. `T` is the type of the node and
-  // `BaseTraverseFn` is the type of a function (or other value with
-  // an operator()) that invokes the base RecursiveASTVisitor traversal logic
-  // on values of type `T*` and returns a boolean traversal result.
-  template <typename T, typename BaseTraverseFn>
-  bool TraverseNode(T *Node, BaseTraverseFn traverse) {
-    if (!Node) return true;
-    if (!ParentStack.empty()) {
-      auto &NodeOrVector = (*Parents)[Node];
-      if (NodeOrVector.getPointer() == nullptr) {
-        // It's not useful to store more than one parent.
-        NodeOrVector.setPointer(new IndexedParent(ParentStack.back()));
-      }
-    }
-    ParentStack.push_back(
-        {clang::ast_type_traits::DynTypedNode::create(*Node), 0});
-    bool SavedClaimableAtThisDepth = ClaimableAtThisDepth;
-    ClaimableAtThisDepth = false;  // for depth + 1
-    bool Result = traverse(Node);
-    if (ClaimableAtThisDepth || IsClaimableForTraverse(Node)) {
-      ClaimableAtThisDepth = true;  // for depth
-      (*Parents)[Node].setInt(1);
-    } else {
-      ClaimableAtThisDepth = SavedClaimableAtThisDepth;  // restore depth
-    }
-    ParentStack.pop_back();
-    if (!ParentStack.empty()) {
-      ParentStack.back().Index++;
-    }
-    return Result;
-  }
-
-  bool TraverseDecl(clang::Decl *DeclNode) {
-    return TraverseNode(DeclNode, [this](clang::Decl *Node) {
-      return VisitorBase::TraverseDecl(Node);
-    });
-  }
-
-  bool TraverseStmt(clang::Stmt *StmtNode) {
-    return TraverseNode(StmtNode, [this](clang::Stmt *Node) {
-      return VisitorBase::TraverseStmt(Node);
-    });
-  }
-
-  IndexedParentMap *Parents;
-  llvm::SmallVector<IndexedParent, 16> ParentStack;
-  bool ClaimableAtThisDepth = false;
-
-  friend class RecursiveASTVisitor<IndexedParentASTVisitor>;
-};
 
 /// \brief Specifies whether uncommonly-used data should be dropped.
 enum Verbosity : bool {
@@ -208,8 +94,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
         Sema(Sema),
         MarkedSources(&Sema, &Observer),
         ShouldStopIndexing(std::move(ShouldStopIndexing)) {}
-
-  ~IndexerASTVisitor() { deleteAllParents(); }
 
   bool VisitDecl(const clang::Decl *Decl);
   bool VisitDeclaratorDecl(const clang::DeclaratorDecl *Decl);
@@ -787,13 +671,11 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   IndexedParent *getIndexedParent(
       const clang::ast_type_traits::DynTypedNode &Node);
+
   /// A map from memoizable DynTypedNodes to their parent nodes
   /// and their child indices with respect to those parents.
   /// Filled on the first call to `getIndexedParents`.
   std::unique_ptr<IndexedParentMap> AllParents;
-
-  /// \brief Deallocates `AllParents`.
-  void deleteAllParents();
 
   /// Records information about the template `Template` wrapping the node
   /// `BodyId`, including the edge linking the template and its body. Returns

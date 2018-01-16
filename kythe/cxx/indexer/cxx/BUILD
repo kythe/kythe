@@ -97,6 +97,7 @@ cc_library(
     ],
     deps = [
         ":graph_observer",
+        ":indexed_parent_map",
         ":indexer_library_support",
         ":marked_source",
         ":scope_guard",
@@ -107,6 +108,17 @@ cc_library(
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
+    ],
+)
+
+cc_library(
+    name = "indexed_parent_map",
+    srcs = ["indexed_parent_map.cc"],
+    hdrs = ["indexed_parent_map.h"],
+    deps = [
+        ":scope_guard",
+        "//third_party/llvm",
+        "@com_github_google_glog//:glog",
     ],
 )
 
