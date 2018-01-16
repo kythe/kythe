@@ -199,7 +199,11 @@ public final class MarkedSources {
     int lastTok = Math.max(lastDot, lastCash);
     String identToken = lastTok < 0 ? flatName : flatName.substring(lastTok + 1);
     if (!identToken.isEmpty() && Character.isDigit(identToken.charAt(0))) {
-      identToken = "(anon " + identToken + ")";
+      if (sym.name.isEmpty()) {
+        identToken = "(anon " + identToken + ")";
+      } else {
+        identToken = sym.name.toString();
+      }
     }
     return identToken;
   }

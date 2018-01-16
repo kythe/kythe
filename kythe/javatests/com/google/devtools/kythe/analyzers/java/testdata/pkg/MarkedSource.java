@@ -153,6 +153,27 @@ public class MarkedSource {
     };
   }
 
+  //- @func defines/binding Func
+  public static Object func() {
+    //- @LocalClass defines/binding LocalClass
+    //- LocalClass childof Func
+    //- LocalClass code LocalClassId
+    //- LocalClassId child.0 LocalClassCxt
+    //- LocalClassCxt child.0 LocalClassCxtPackage
+    //- LocalClassCxtPackage.pre_text "pkg"
+    //- LocalClassCtx child.1 LocalClassOuter
+    //- LocalClassOuter.kind "IDENTIFIER"
+    //- LocalClassOuter.pre_text "MarkedSource"
+    //- LocalClassCtx child.2 LocalClassFuncOuter
+    //- LocalClassFuncOuter.kind "IDENTIFIER"
+    //- LocalClassFuncOuter.pre_text "func"
+    //- LocalClassId child.1 LocalClassName
+    //- LocalClassName.kind "IDENTIFIER"
+    //- LocalClassName.pre_text "LocalClass"
+    class LocalClass {}
+    return new LocalClass();
+  }
+
   static Object referencesArrayMember(int[][] arry) {
     //- @clone ref ArrayCloneMethod
     //- ArrayCloneMethod.node/kind function
