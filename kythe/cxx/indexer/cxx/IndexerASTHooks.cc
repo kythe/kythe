@@ -2208,6 +2208,51 @@ bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
   return true;
 }
 
+clang::SourceRange IndexerASTVisitor::ExpandRangeIfEmptyFileID(
+    const clang::SourceRange &SR) {
+  // Clang frequently handes out zero-width ranges at the start of an identifier
+  // or other AST entity.  In this case, we use
+  // RangeForASTEntityFromSourceLocation to fill out the full SourceRange.
+  if (SR.isValid() && SR.getBegin().isFileID() &&
+      SR.getBegin() == SR.getEnd()) {
+    return RangeForASTEntityFromSourceLocation(*Observer.getSourceManager(),
+                                               *Observer.getLangOptions(),
+                                               SR.getBegin());
+  }
+  return SR;
+}
+
+clang::SourceRange IndexerASTVisitor::MapRangeToFileIfMacroID(const clang::SourceRange& SR) {
+  if (SR.isValid() && SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
+    auto NewSR = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(),
+        SR.getBegin());
+    if (SR.getBegin() != SR.getEnd()) {
+      auto EndSR = RangeForASTEntityFromSourceLocation(
+          *Observer.getSourceManager(), *Observer.getLangOptions(),
+          SR.getEnd());
+      NewSR.setEnd(EndSR.getEnd());
+    }
+    if (NewSR.isValid() && NewSR.getBegin() != NewSR.getEnd() &&
+        NewSR.getBegin().isFileID() && NewSR.getEnd().isFileID() &&
+        NewSR.getBegin() < NewSR.getEnd() &&
+        Observer.getSourceManager()->getFileID(NewSR.getBegin()) ==
+            Observer.getSourceManager()->getFileID(NewSR.getEnd())) {
+      return NewSR;
+    }
+  }
+  return SR;
+}
+
+absl::optional<GraphObserver::Range>
+IndexerASTVisitor::ExpandedFileRangeInCurrentContext(const clang::SourceRange &SR) {
+  if (!SR.isValid()) {
+    return absl::nullopt;
+  }
+  return ExplicitRangeInCurrentContext(
+      ExpandRangeIfEmptyFileID(MapRangeToFileIfMacroID(SR)));
+}
+
 absl::optional<GraphObserver::Range>
 IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange &SR) {
   if (!SR.getBegin().isValid()) {
@@ -3978,24 +4023,8 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   // can attribute it back to a source file. This will prevent us from
   // spuriously rejecting decorations when we test for the early termination
   // condition below.
-  if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes && SR.isValid() &&
-      SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
-    auto NewSR = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        SR.getBegin());
-    if (SR.getBegin() != SR.getEnd()) {
-      auto EndSR = RangeForASTEntityFromSourceLocation(
-          *Observer.getSourceManager(), *Observer.getLangOptions(),
-          SR.getEnd());
-      NewSR.setEnd(EndSR.getEnd());
-    }
-    if (NewSR.isValid() && NewSR.getBegin() != NewSR.getEnd() &&
-        NewSR.getBegin().isFileID() && NewSR.getEnd().isFileID() &&
-        NewSR.getBegin() < NewSR.getEnd() &&
-        Observer.getSourceManager()->getFileID(NewSR.getBegin()) ==
-            Observer.getSourceManager()->getFileID(NewSR.getEnd())) {
-      SR = NewSR;
-    }
+  if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
+    SR = MapRangeToFileIfMacroID(SR);
   }
   if (Prev != TypeNodes.end()) {
     // If we're not trying to emit edges for constituent types, or if there's
@@ -4726,13 +4755,8 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   }
   if (SR.isValid() && SR.getBegin().isFileID() &&
       InEmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
-    // If this is an empty SourceRange, try to expand it.
-    if (SR.getBegin() == SR.getEnd()) {
-      SR = RangeForASTEntityFromSourceLocation(*Observer.getSourceManager(),
-                                               *Observer.getLangOptions(),
-                                               SR.getBegin());
-    }
-    if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
+    if (auto RCC =
+            ExplicitRangeInCurrentContext(ExpandRangeIfEmptyFileID(SR))) {
       if (const auto &SpellID = (SpanID ? SpanID : ID)) {
         Observer.recordTypeSpellingLocation(*RCC, *SpellID, Claimability);
       }
