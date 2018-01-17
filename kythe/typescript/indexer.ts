@@ -89,6 +89,11 @@ class Vistor {
    */
   anonId = 0;
 
+  /**
+   * anonNames maps nodes to the anonymous names assigned to them.
+   */
+  anonNames = new Map<ts.Node, string>();
+
   typeChecker: ts.TypeChecker;
 
   /** A shorter name for the rootDir in the CompilerOptions. */
@@ -208,6 +213,19 @@ class Vistor {
   }
 
   /**
+   * anonName assigns a freshly generated name to a Node.
+   * It's used to give stable names to e.g. anonymous objects.
+   */
+  anonName(node: ts.Node): string {
+    let name = this.anonNames.get(node);
+    if (!name) {
+      name = `anon${this.anonId++}`;
+      this.anonNames.set(node, name);
+    }
+    return name;
+  }
+
+  /**
    * scopedSignature computes a scoped name for a ts.Node.
    * E.g. if you have a function `foo` containing a block containing a variable
    * `bar`, it might return a VName like
@@ -259,6 +277,7 @@ class Vistor {
         case ts.SyntaxKind.MethodDeclaration:
         case ts.SyntaxKind.MethodSignature:
         case ts.SyntaxKind.NamespaceImport:
+        case ts.SyntaxKind.ObjectLiteralExpression:
         case ts.SyntaxKind.Parameter:
         case ts.SyntaxKind.PropertyAssignment:
         case ts.SyntaxKind.PropertyDeclaration:
@@ -271,7 +290,7 @@ class Vistor {
             parts.push(decl.name.text);
           } else {
             // TODO: handle other declarations, e.g. binding patterns.
-            parts.push(`anon${this.anonId++}`);
+            parts.push(this.anonName(node));
           }
           break;
         case ts.SyntaxKind.Constructor:
@@ -900,6 +919,7 @@ class Vistor {
         return this.visitExportDeclaration(node as ts.ExportDeclaration);
       case ts.SyntaxKind.VariableStatement:
         return this.visitVariableStatement(node as ts.VariableStatement);
+      case ts.SyntaxKind.PropertyAssignment:  // property in object literal
       case ts.SyntaxKind.PropertyDeclaration:
       case ts.SyntaxKind.PropertySignature:
         const vname = this.visitVariableDeclaration(node as ts.PropertyDeclaration);

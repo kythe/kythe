@@ -4,6 +4,7 @@ export {}
 // the return type.
 //- @Num defines/binding Num
 interface Num {
+  //- @#0num defines/binding NumAttr
   num: number;
 }
 
@@ -15,7 +16,11 @@ interface Num {
 //- @#0Num ref Num
 //- @#1Num ref Num
 function test(a: number, num: Num): Num {
-  // Check indexing function body and indexing through "return" statements.
+  // TODO(evanm): it would be nice for @num ref NumAttr.  TypeScript seems to
+  // know they're linked, in that if you rename 'num' above it knows to rename
+  // this one.  However, it may be the case that they are not linked beyond
+  // renaming -- experimentally, I found that if you have some doc comment on
+  // the def'n of 'num' above, it doesn't show up when you hover 'num' below.
   //- @a ref ParamA
   return {num: a};
 }
