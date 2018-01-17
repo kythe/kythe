@@ -40,8 +40,8 @@ def build_example_sh():
       "VERIFIER_BIN": "//kythe/cxx/verifier",
   }
   fixes = [
-    "-e '/^export %s=/{i\\\n_p=($(locations %s))\ns#$$#\"$$PWD/$${_p[0]}\"#}'" % (key, target)
-    for (key, target) in tools.items()
+      "-e '/^export %s=/{i\\\n_p=($(locations %s))\ns#$$#\"$$PWD/$${_p[0]}\"#\n}'" % (key, target)
+      for (key, target) in tools.items()
   ]
   native.genrule(
       name = "example_sh",
