@@ -26,8 +26,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 
-	ianypb "github.com/golang/protobuf/ptypes/any"
-	anypb "kythe.io/third_party/proto/any_proto"
+	anypb "github.com/golang/protobuf/ptypes/any"
 )
 
 // MarshalAny converts pb to a google.protobuf.Any message, fixing the URLs of
@@ -53,12 +52,9 @@ func MarshalAny(pb proto.Message) (*anypb.Any, error) {
 }
 
 // UnmarshalAny unmarshals a google.protobuf.Any message into pb.
+// This is an alias for ptypes.UnmarshalAny to save an import.
 func UnmarshalAny(any *anypb.Any, pb proto.Message) error {
-	// As in MarshalAny, we have to work around the ptypes package vendoring.
-	return ptypes.UnmarshalAny(&ianypb.Any{
-		TypeUrl: any.TypeUrl,
-		Value:   any.Value,
-	}, pb)
+	return ptypes.UnmarshalAny(any, pb)
 }
 
 // SortByTypeURL orders a slice of Any messages by their type URL, modifying

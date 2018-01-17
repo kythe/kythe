@@ -8,8 +8,8 @@ go_binary(
     deps = [
         "//kythe/go/storage/leveldb",
         "//kythe/go/util/flagutil",
-        "//kythe/proto:serving_proto_go",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:serving_go_proto",
+        "//kythe/proto:storage_go_proto",
         "@go_protobuf//:proto",
     ],
 )

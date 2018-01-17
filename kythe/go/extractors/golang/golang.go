@@ -50,9 +50,9 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
-	gopb "kythe.io/kythe/proto/go_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
+	gopb "kythe.io/kythe/proto/go_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 var workingDir string

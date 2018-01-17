@@ -14,4 +14,4 @@
 # limitations under the License.
 
 # This file is expected to be unchanged.
-./kythe/cxx/tools/fyi/testdata/test_case.sh nothing.cc
+. ./kythe/cxx/tools/fyi/testdata/test_case.sh nothing.cc

@@ -28,8 +28,8 @@ import (
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/test/testutil"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 type mock struct {

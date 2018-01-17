@@ -1,8 +1,8 @@
-load("//tools:build_rules/go.bzl", "go_binary", "go_release_binary")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_release_binary(
+go_binary(
     name = "bazel_go_extractor",
     srcs = ["bazel_go_extractor.go"],
     deps = [
@@ -12,10 +12,10 @@ go_release_binary(
         "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kindex",
         "//kythe/go/util/vnameutil",
-        "//kythe/proto:analysis_proto_go",
-        "//kythe/proto:go_proto_go",
-        "//kythe/proto:storage_proto_go",
-        "//third_party/bazel:extra_actions_base_proto_go",
+        "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:go_go_proto",
+        "//kythe/proto:storage_go_proto",
+        "//third_party/bazel:extra_actions_base_go_proto",
         "@go_protobuf//:proto",
         "@go_shell//:shell",
         "@go_stringset//:stringset",
@@ -29,7 +29,7 @@ go_binary(
         "//kythe/go/extractors/bazel",
         "//kythe/go/platform/kindex",
         "//kythe/go/util/vnameutil",
-        "//third_party/bazel:extra_actions_base_proto_go",
+        "//third_party/bazel:extra_actions_base_go_proto",
         "@go_protobuf//:proto",
         "@go_stringset//:stringset",
     ],

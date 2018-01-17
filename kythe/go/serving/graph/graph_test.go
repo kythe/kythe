@@ -30,9 +30,9 @@ import (
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	gpb "kythe.io/kythe/proto/graph_proto"
-	srvpb "kythe.io/kythe/proto/serving_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
 )
 
 var (

@@ -40,7 +40,7 @@ import (
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/build"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
 const formatKey = "kythe"

@@ -13,4 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-./kythe/cxx/tools/fyi/testdata/test_case.sh basic.cc
+. ./kythe/cxx/tools/fyi/testdata/test_case.sh basic.cc

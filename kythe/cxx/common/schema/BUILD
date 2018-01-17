@@ -1,11 +1,11 @@
-licenses(["notice"])
-
 package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
 
 cc_library(
     name = "edges",
-    hdrs = ["edges.h"],
     srcs = ["edges.cc"],
+    hdrs = ["edges.h"],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
@@ -16,8 +16,8 @@ cc_library(
 
 cc_library(
     name = "facts",
-    hdrs = ["facts.h"],
     srcs = ["facts.cc"],
+    hdrs = ["facts.h"],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
@@ -25,4 +25,3 @@ cc_library(
     ],
     deps = [],
 )
-

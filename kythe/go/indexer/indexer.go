@@ -58,10 +58,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/gcexportdata"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
-	cpb "kythe.io/kythe/proto/common_proto"
-	gopb "kythe.io/kythe/proto/go_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	gopb "kythe.io/kythe/proto/go_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // A Fetcher retrieves the contents of a file given its path and/or hex-encoded

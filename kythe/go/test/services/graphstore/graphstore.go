@@ -27,7 +27,7 @@ import (
 	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/test/testutil"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // Service re-exports graphstore.Service for tests

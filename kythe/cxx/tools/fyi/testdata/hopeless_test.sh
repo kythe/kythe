@@ -14,4 +14,4 @@
 # limitations under the License.
 
 # This source file can't be repaired.
-./kythe/cxx/tools/fyi/testdata/test_case.sh hopeless.cc
+. ./kythe/cxx/tools/fyi/testdata/test_case.sh hopeless.cc

@@ -82,8 +82,8 @@ import (
 	"errors"
 	"io"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // New returns a proxy that reads requests from in and writes responses to out.

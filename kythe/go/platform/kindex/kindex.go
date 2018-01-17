@@ -53,8 +53,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // Extension is the standard file extension for Kythe compilation index files.

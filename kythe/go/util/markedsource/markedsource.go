@@ -22,7 +22,7 @@ import (
 	"io"
 	"strings"
 
-	cpb "kythe.io/kythe/proto/common_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
 )
 
 // maxRenderDepth cuts the render algorithm if it recurses too deeply into a

@@ -32,10 +32,10 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
-	bipb "kythe.io/kythe/proto/buildinfo_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
-	xapb "kythe.io/third_party/bazel/extra_actions_base_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
+	bipb "kythe.io/kythe/proto/buildinfo_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
+	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
 
 // The digest of an empty input, cf. openssl sha256 /dev/null

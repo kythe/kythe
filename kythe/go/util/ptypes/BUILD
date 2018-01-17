@@ -1,15 +1,14 @@
-load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "ptypes",
     srcs = ["ptypes.go"],
     deps = [
-        "//third_party/proto:any_proto_go",
+        "//kythe/proto:any_go_proto",
         "@go_protobuf//:proto",
         "@go_protobuf//:ptypes",
-        "@go_protobuf//:ptypes/any",
     ],
 )
 
@@ -19,4 +18,5 @@ go_test(
     srcs = ["ptypes_test.go"],
     library = "ptypes",
     visibility = ["//visibility:private"],
+    deps = ["//kythe/proto:any_go_proto"],
 )

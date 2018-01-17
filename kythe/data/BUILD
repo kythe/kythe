@@ -1,5 +1,7 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+load("//tools:build_rules/testing.bzl", "shell_tool_test")
+
 filegroup(
     name = "vnames_config",
     srcs = ["vnames.json"],
@@ -10,12 +12,11 @@ filegroup(
     srcs = ["empty_vnames.json"],
 )
 
-sh_test(
+shell_tool_test(
     name = "filevnames_config",
-    size = "small",
-    srcs = ["test_filevnames.sh"],
-    data = [
-        ":vnames_config",
-        "//kythe/go/storage/tools:directory_indexer",
-    ],
+    data = [":vnames_config"],
+    scriptfile = "test_filevnames.sh",
+    tools = {
+        "DIR_INDEXER": "//kythe/go/storage/tools:directory_indexer",
+    },
 )

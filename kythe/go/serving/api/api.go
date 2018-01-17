@@ -36,10 +36,10 @@ import (
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
 
-	ftpb "kythe.io/kythe/proto/filetree_proto"
-	gpb "kythe.io/kythe/proto/graph_proto"
-	ipb "kythe.io/kythe/proto/identifier_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
+	ftpb "kythe.io/kythe/proto/filetree_go_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
+	ipb "kythe.io/kythe/proto/identifier_go_proto"
+	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
 // Interface is a union of the xrefs and filetree interfaces.

@@ -25,10 +25,10 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
-	gopb "kythe.io/kythe/proto/go_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
-	anypb "kythe.io/third_party/proto/any_proto"
+	anypb "github.com/golang/protobuf/ptypes/any"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
+	gopb "kythe.io/kythe/proto/go_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // A fakeFetcher maps file "paths" to their contents.

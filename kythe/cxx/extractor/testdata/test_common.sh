@@ -16,13 +16,5 @@
 BASE_DIR="$PWD/kythe/cxx/extractor/testdata"
 OUT_DIR="$TEST_TMPDIR/out"
 mkdir -p "${OUT_DIR}"
-# This needs to be relative (or else it must be fixed up in the resulting
-# compilation units) because the extractor stores its invocation path in its
-# output.
-EXTRACTOR="./kythe/cxx/extractor/cxx_extractor"
-KINDEX_TOOL="${PWD}/kythe/cxx/tools/kindex_tool"
-VERIFIER="${PWD}/kythe/cxx/verifier/verifier"
-INDEXER="${PWD}/kythe/cxx/indexer/cxx/indexer"
-INDEXPACK="${PWD}/kythe/go/platform/tools/indexpack/indexpack"
 export KYTHE_EXCLUDE_EMPTY_DIRS=1
 export KYTHE_EXCLUDE_AUTOCONFIGURATION_FILES=1

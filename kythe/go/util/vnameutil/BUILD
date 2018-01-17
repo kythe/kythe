@@ -1,15 +1,14 @@
-load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "vnameutil",
     srcs = [
         "order.go",
         "rewrite.go",
     ],
-    deps = ["//kythe/proto:storage_proto_go"],
+    deps = ["//kythe/proto:storage_go_proto"],
 )
 
 go_test(
@@ -18,7 +17,7 @@ go_test(
     srcs = ["rewrite_test.go"],
     library = "vnameutil",
     deps = [
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:storage_go_proto",
         "@go_protobuf//:proto",
     ],
 )
@@ -28,7 +27,7 @@ go_test(
     size = "small",
     srcs = ["order_test.go"],
     library = "vnameutil",
-    deps = ["//kythe/proto:storage_proto_go"],
+    deps = ["//kythe/proto:storage_go_proto"],
 )
 
 # A driver program for testing vname rewrite rule sets.
@@ -38,7 +37,7 @@ go_binary(
     srcs = ["test/test_vname_rules.go"],
     deps = [
         ":vnameutil",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:storage_go_proto",
         "@go_protobuf//:proto",
     ],
 )

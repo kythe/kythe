@@ -25,7 +25,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	cpb "kythe.io/kythe/proto/common_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
 )
 
 func TestFilterRegexp(t *testing.T) {

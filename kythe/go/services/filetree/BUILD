@@ -1,8 +1,8 @@
-load("//tools:build_rules/go.bzl", "go_package_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "filetree",
     srcs = ["filetree.go"],
     deps = [
@@ -11,7 +11,7 @@ go_package_library(
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/nodes",
-        "//kythe/proto:filetree_proto_go",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:filetree_go_proto",
+        "//kythe/proto:storage_go_proto",
     ],
 )

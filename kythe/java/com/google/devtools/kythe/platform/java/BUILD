@@ -14,12 +14,12 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
-        "//kythe/proto:analysis_proto_java",
-        "//kythe/proto:storage_proto_java",
-        "//third_party/proto:protobuf_java",
+        "//kythe/proto:analysis_java_proto",
+        "//kythe/proto:storage_java_proto",
         "//third_party/javac",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )
 
@@ -27,12 +27,12 @@ java_library(
     name = "options",
     srcs = ["JavacOptionsUtils.java"],
     deps = [
-        "//kythe/proto:analysis_proto_java",
-        "//kythe/proto:java_proto_java",
-        "//third_party/proto:any_proto_java",
-        "//third_party/proto:protobuf_java",
+        "//kythe/proto:analysis_java_proto",
+        "//kythe/proto:java_java_proto",
         "//third_party/javac",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:any_proto",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )

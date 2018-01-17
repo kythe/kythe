@@ -16,11 +16,6 @@
 #
 # This script tests the indexpack binary. It requires the jq command (≥ 1.4).
 
-jq="third_party/jq/jq"
-indexpack="kythe/go/platform/tools/indexpack/indexpack"
-viewindex="kythe/go/platform/tools/viewindex/viewindex"
-test_kindex="$PWD/kythe/testdata/test.kindex"
-
 kindex_contents() {
   $viewindex --files "$1" | $jq -c -S .
 }
@@ -28,13 +23,13 @@ kindex_contents() {
 tmp="$(mktemp -d 2>/dev/null || mktemp -d -t 'kythetest')"
 trap 'rm -rf "$tmp"' EXIT ERR INT
 
-$indexpack --to_archive "$tmp/archive" "$test_kindex" >/dev/null
+$indexpack --to_archive "$tmp/archive" "$input" >/dev/null
 $indexpack --from_archive "$tmp/archive" "$tmp/idx"
 
 kindex_file="$(find "$tmp/idx" -name "*.kindex")"
 
 result="$(kindex_contents "$kindex_file")"
-expected="$(kindex_contents $test_kindex)"
+expected="$(kindex_contents $input)"
 
 if [[ ! "$result" == "$expected" ]]; then
   echo "ERROR: expected $expected; received $result" >&2

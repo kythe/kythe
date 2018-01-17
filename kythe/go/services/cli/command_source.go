@@ -25,8 +25,8 @@ import (
 	"strconv"
 	"strings"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
 var (

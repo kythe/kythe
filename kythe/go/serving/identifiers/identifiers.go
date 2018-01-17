@@ -30,8 +30,8 @@ import (
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
 
-	ipb "kythe.io/kythe/proto/identifier_proto"
-	srvpb "kythe.io/kythe/proto/serving_proto"
+	ipb "kythe.io/kythe/proto/identifier_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
 )
 
 // Service describes the interface for the identifier service which provides

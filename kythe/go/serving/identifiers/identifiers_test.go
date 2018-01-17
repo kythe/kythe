@@ -24,8 +24,9 @@ import (
 
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/test/testutil"
-	ipb "kythe.io/kythe/proto/identifier_proto"
-	srvpb "kythe.io/kythe/proto/serving_proto"
+
+	ipb "kythe.io/kythe/proto/identifier_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
 )
 
 var matchTable = Table{testProtoTable{

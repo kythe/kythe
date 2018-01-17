@@ -19,7 +19,7 @@ TEST_NAME="test_has_include"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
-    "${EXTRACTOR}" --with_executable "/usr/bin/clang++" \
+    "./${EXTRACTOR}" --with_executable "/usr/bin/clang++" \
     -I./kythe/cxx/extractor \
     ./kythe/cxx/extractor/testdata/has_include_test.cc
 [[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]

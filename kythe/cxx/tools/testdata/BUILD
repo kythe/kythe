@@ -1,5 +1,7 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+load("//tools:build_rules/testing.bzl", "shell_tool_test")
+
 sh_test(
     name = "test_kindex_tool",
     size = "small",
@@ -13,35 +15,33 @@ sh_test(
     ],
 )
 
-sh_test(
+shell_tool_test(
     name = "test_claim_tool_kindex",
-    size = "small",
-    srcs = [
-        "test_claim_tool_kindex.sh",
-    ],
     data = [
         "claim_test.expected",
         "claim_test_1.kindex_UNIT",
         "claim_test_2.kindex_UNIT",
-        "//kythe/cxx/tools:kindex_tool",
-        "//kythe/cxx/tools:static_claim",
     ],
+    scriptfile = "test_claim_tool_kindex.sh",
+    tools = {
+        "KINDEX_TOOL_BIN": "//kythe/cxx/tools:kindex_tool",
+        "CLAIM_TOOL_BIN": "//kythe/cxx/tools:static_claim",
+    },
 )
 
-sh_test(
+shell_tool_test(
     name = "test_claim_tool_index_pack",
-    size = "small",
-    srcs = [
-        "test_claim_tool_index_pack.sh",
-    ],
     data = [
         "claim_test.expected",
         "claim_test_1.kindex_UNIT",
         "claim_test_2.kindex_UNIT",
-        "//kythe/cxx/tools:kindex_tool",
-        "//kythe/cxx/tools:static_claim",
-        "//kythe/go/platform/tools/indexpack",
     ],
+    scriptfile = "test_claim_tool_index_pack.sh",
+    tools = {
+        "KINDEX_TOOL_BIN": "//kythe/cxx/tools:kindex_tool",
+        "CLAIM_TOOL_BIN": "//kythe/cxx/tools:static_claim",
+        "INDEX_PACK_BIN": "//kythe/go/platform/tools/indexpack",
+    },
 )
 
 # TODO(T270): requires declarations generated in pipeline

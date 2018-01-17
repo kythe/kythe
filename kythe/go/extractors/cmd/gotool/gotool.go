@@ -36,7 +36,7 @@ import (
 
 	"github.com/pborman/uuid"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
 var (

@@ -12,7 +12,6 @@ filegroup(
         "//third_party/leiningen:license",
         "//third_party/leveldb:license",
         "//third_party/llvm:license",
-        "//third_party/proto:license",
         "//third_party/rapidjson:license",
         "//third_party/snappy:license",
         "//third_party/zlib:license",

@@ -21,12 +21,12 @@ TEST_NAME="test_index_pack"
 rm -rf -- "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" KYTHE_INDEX_PACK="1" \
-    "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor/testdata \
     ./kythe/cxx/extractor/testdata/transcript_main.cc
 # Storing redundant extractions is OK.
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" KYTHE_INDEX_PACK="1" \
-    "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor/testdata \
     ./kythe/cxx/extractor/testdata/transcript_main.cc
 test -e "${OUT_DIR}/units" || exit 1

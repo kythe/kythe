@@ -32,15 +32,15 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/util:kythe_uri",
         "//kythe/java/com/google/devtools/kythe/util:position_mappings",
         "//kythe/java/com/google/devtools/kythe/util:span",
-        "//kythe/proto:analysis_proto_java",
-        "//kythe/proto:common_proto_java",
-        "//kythe/proto:storage_proto_java",
+        "//kythe/proto:analysis_java_proto",
+        "//kythe/proto:common_java_proto",
+        "//kythe/proto:storage_java_proto",
         "//third_party/javac",
-        "//third_party/proto:protobuf_java",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
         "@com_beust_jcommander//jar",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )
 
@@ -62,7 +62,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/util:span",
-        "//kythe/proto:storage_proto_java",
+        "//kythe/proto:storage_java_proto",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
     ],
 )
@@ -86,11 +86,11 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
-        "//kythe/proto:analysis_proto_java",
-        "//kythe/proto:storage_proto_java",
-        "//third_party/proto:protobuf_java",
+        "//kythe/proto:analysis_java_proto",
+        "//kythe/proto:storage_java_proto",
         "@com_beust_jcommander//jar",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )
 

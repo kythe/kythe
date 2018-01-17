@@ -7,7 +7,7 @@ java_test(
     test_class = "com.google.devtools.kythe.platform.java.filemanager.CompilationUnitFileTreeTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
-        "//kythe/proto:analysis_proto_java",
+        "//kythe/proto:analysis_java_proto",
         "@com_google_guava_guava//jar",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",

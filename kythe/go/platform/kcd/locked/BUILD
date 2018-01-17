@@ -1,11 +1,9 @@
-load("//tools:build_rules/go.bzl", "go_package_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "locked",
     srcs = ["locked.go"],
-    deps = [
-        "//kythe/go/platform/kcd",
-    ],
+    deps = ["//kythe/go/platform/kcd"],
 )

@@ -1,6 +1,8 @@
-load(":asciidoc_with_verifier.bzl", "asciidoc_with_verifier")
+load(":asciidoc_with_verifier.bzl", "asciidoc_with_verifier", "build_example_sh")
 
 package(default_visibility = ["//kythe:default_visibility"])
+
+build_example_sh()
 
 asciidoc_with_verifier(
     name = "schema",

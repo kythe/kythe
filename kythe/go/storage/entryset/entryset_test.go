@@ -28,9 +28,9 @@ import (
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/kytheuri"
 
-	espb "kythe.io/kythe/proto/entryset_proto"
-	intpb "kythe.io/kythe/proto/internal_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	espb "kythe.io/kythe/proto/entryset_go_proto"
+	intpb "kythe.io/kythe/proto/internal_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 func TestCanon(t *testing.T) {

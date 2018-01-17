@@ -28,8 +28,8 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
 type xrefsCommand struct {

@@ -1,8 +1,8 @@
-load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "cache",
     srcs = ["cache.go"],
     deps = ["//kythe/go/platform/analysis"],

@@ -28,7 +28,7 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 
 	protopb "github.com/golang/protobuf/protoc-gen-go/descriptor"
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 func TestParse(t *testing.T) {

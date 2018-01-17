@@ -31,7 +31,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	tspb "kythe.io/third_party/bazel/test_status_proto"
+	tspb "kythe.io/third_party/bazel/test_status_go_proto"
 )
 
 func main() {

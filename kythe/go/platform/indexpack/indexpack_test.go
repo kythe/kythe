@@ -34,8 +34,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	cpb "kythe.io/kythe/proto/analysis_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	cpb "kythe.io/kythe/proto/analysis_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 var (

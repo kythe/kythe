@@ -26,7 +26,7 @@ import (
 	"path"
 	"strings"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // Scheme is the URI scheme label for Kythe.

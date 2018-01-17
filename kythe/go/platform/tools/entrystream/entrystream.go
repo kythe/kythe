@@ -43,7 +43,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 type entrySet struct {

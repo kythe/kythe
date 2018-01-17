@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"strings"
 
-	ipb "kythe.io/kythe/proto/identifier_proto"
+	ipb "kythe.io/kythe/proto/identifier_go_proto"
 )
 
 type identCommand struct {

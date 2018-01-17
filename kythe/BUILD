@@ -8,6 +8,7 @@ package_group(
 package_group(
     name = "proto_visibility",
     includes = [":default_visibility"],
+    packages = ["//third_party/llvm/src"],
 )
 
 filegroup(

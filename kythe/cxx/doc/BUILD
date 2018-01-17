@@ -1,6 +1,6 @@
-licenses(["notice"])
-
 package(default_visibility = ["//kythe:default_visibility"])
+
+licenses(["notice"])
 
 cc_library(
     name = "markup_handler",
@@ -15,8 +15,8 @@ cc_library(
         "markup_handler.h",
     ],
     deps = [
-        "//kythe/proto:common_proto_cc",
-        "//kythe/proto:xref_proto_cc",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:xref_cc_proto",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -52,8 +52,8 @@ cc_library(
     deps = [
         ":markup_handler",
         "//kythe/cxx/common:lib",
-        "//kythe/proto:common_proto_cc",
-        "//kythe/proto:xref_proto_cc",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:xref_cc_proto",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -67,7 +67,7 @@ cc_library(
     deps = [
         ":html_renderer",
         ":markup_handler",
-        "//kythe/proto:common_proto_cc",
+        "//kythe/proto:common_cc_proto",
         "//third_party:gtest",
     ],
 )

@@ -1,16 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
-
-go_package_library(
+go_library(
     name = "entryset",
     srcs = ["entryset.go"],
     deps = [
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema/edges",
-        "//kythe/proto:entryset_proto_go",
-        "//kythe/proto:internal_proto_go",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:entryset_go_proto",
+        "//kythe/proto:internal_go_proto",
+        "//kythe/proto:storage_go_proto",
         "@go_protobuf//:proto",
     ],
 )

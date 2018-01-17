@@ -37,10 +37,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/trace"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	gpb "kythe.io/kythe/proto/graph_proto"
-	ipb "kythe.io/kythe/proto/internal_proto"
-	srvpb "kythe.io/kythe/proto/serving_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
+	ipb "kythe.io/kythe/proto/internal_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
 )
 
 func tracePrintf(ctx context.Context, msg string, args ...interface{}) {

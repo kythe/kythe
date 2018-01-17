@@ -28,7 +28,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"kythe.io/kythe/go/languageserver/languageserver"
+	"kythe.io/kythe/go/languageserver"
 	"kythe.io/kythe/go/services/xrefs"
 
 	"github.com/sourcegraph/jsonrpc2"

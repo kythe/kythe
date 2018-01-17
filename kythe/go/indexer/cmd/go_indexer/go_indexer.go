@@ -31,15 +31,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kythe.io/kythe/go/indexer/indexer"
+	"kythe.io/kythe/go/indexer"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/metadata"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 var (

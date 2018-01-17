@@ -1,13 +1,13 @@
-load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "metadata",
     srcs = ["metadata.go"],
     deps = [
         "//kythe/go/util/schema/edges",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:storage_go_proto",
         "@go_protobuf//:protoc-gen-go/descriptor",
     ],
 )

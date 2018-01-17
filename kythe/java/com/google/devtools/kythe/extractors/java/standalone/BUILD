@@ -20,11 +20,11 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
-        "//kythe/proto:analysis_proto_java",
-        "//kythe/proto:storage_proto_java",
+        "//kythe/proto:analysis_java_proto",
+        "//kythe/proto:storage_java_proto",
         "//third_party/javac",
-        "//third_party/proto:protobuf_java",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )
 

@@ -34,8 +34,8 @@ import (
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 
-	bipb "kythe.io/kythe/proto/buildinfo_proto"
-	xapb "kythe.io/third_party/bazel/extra_actions_base_proto"
+	bipb "kythe.io/kythe/proto/buildinfo_go_proto"
+	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
 
 // Write writes w to path, creating the path if necessary and replacing any

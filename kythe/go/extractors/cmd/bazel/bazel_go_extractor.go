@@ -37,9 +37,9 @@ import (
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 
-	gopb "kythe.io/kythe/proto/go_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
-	eapb "kythe.io/third_party/bazel/extra_actions_base_proto"
+	gopb "kythe.io/kythe/proto/go_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
+	eapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
 
 var (

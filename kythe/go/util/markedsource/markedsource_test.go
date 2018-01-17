@@ -27,7 +27,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	cpb "kythe.io/kythe/proto/common_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
 )
 
 var docPath = filepath.Join(os.Getenv("RUNFILES_DIR"), "io_kythe/kythe/cxx/doc/doc")

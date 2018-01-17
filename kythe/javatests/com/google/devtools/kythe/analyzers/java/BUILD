@@ -1,24 +1,24 @@
-sh_test(
+load("//tools:build_rules/testing.bzl", "shell_tool_test")
+
+shell_tool_test(
     name = "indexer_test",
-    size = "small",
-    srcs = ["indexer_test.sh"],
-    data = [
-        "//kythe/go/platform/tools/entrystream",
-        "//kythe/go/platform/tools/indexpack",
-        "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
-        "//kythe/testdata:test.kindex",
-    ],
+    data = ["//kythe/testdata:test.kindex"],
+    scriptfile = "indexer_test.sh",
+    tools = {
+        "entrystream": "//kythe/go/platform/tools/entrystream",
+        "indexpack": "//kythe/go/platform/tools/indexpack",
+        "indexer": "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
+    },
 )
 
-sh_test(
+shell_tool_test(
     name = "indexer_empty_cu_test",
-    size = "small",
-    srcs = ["indexer_empty_cu_test.sh"],
-    data = [
-        "//kythe/go/platform/tools/entrystream",
-        "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
-        "//kythe/testdata:java_empty.kindex",
-    ],
+    data = ["//kythe/testdata:java_empty.kindex"],
+    scriptfile = "indexer_empty_cu_test.sh",
+    tools = {
+        "entrystream": "//kythe/go/platform/tools/entrystream",
+        "indexer": "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
+    },
 )
 
 # See https://kythe.io/phabricator/T70
@@ -63,7 +63,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:plugin",
         "//kythe/java/com/google/devtools/kythe/common:autoservice",
-        "//kythe/proto:storage_proto_java",
+        "//kythe/proto:storage_java_proto",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
     ],
 )

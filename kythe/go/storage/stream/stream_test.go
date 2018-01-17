@@ -28,8 +28,8 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 func TestReader(t *testing.T) {

@@ -24,13 +24,13 @@ cc_library(
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
-        "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:common_proto_cc",
-        "//kythe/proto:storage_proto_cc",
-        "//third_party/proto:protobuf",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:storage_cc_proto",
         "@com_github_gflags_gflags//:gflags",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/types:optional",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -59,7 +59,7 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//kythe/proto:claim_proto_cc",
+        "//kythe/proto:claim_cc_proto",
         "@com_google_absl//absl/memory",
     ],
 )

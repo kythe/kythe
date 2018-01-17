@@ -19,7 +19,7 @@ package vnameutil
 import (
 	"strings"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // Compare reports the relative order of two vnames, returning -1 if a < b, 0

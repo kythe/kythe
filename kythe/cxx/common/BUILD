@@ -1,6 +1,6 @@
-licenses(["notice"])
-
 package(default_visibility = ["//kythe:default_visibility"])
+
+licenses(["notice"])
 
 cc_library(
     name = "json_proto",
@@ -16,12 +16,12 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//third_party/proto:cc_wkt_protos",
-        "//third_party/proto:protobuf",
         "//third_party/rapidjson",
         "@boringssl//:crypto",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:cc_wkt_protos",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -41,10 +41,10 @@ cc_library(
     deps = [
         ":lib",
         "//external:libuuid",
-        "//kythe/proto:analysis_proto_cc",
-        "//third_party/proto:protobuf",
+        "//kythe/proto:analysis_cc_proto",
         "//third_party/zlib",
         "@com_google_absl//absl/memory",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -82,17 +82,17 @@ cc_library(
     deps = [
         ":json_proto",
         "//kythe/cxx/common/schema:edges",
-        "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:cxx_proto_cc",
-        "//kythe/proto:storage_proto_cc",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:cxx_cc_proto",
+        "//kythe/proto:storage_cc_proto",
         "//third_party/llvm",
-        "//third_party/proto:cc_wkt_protos",
-        "//third_party/proto:protobuf",
         "//third_party/rapidjson",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
+        "@com_google_protobuf//:cc_wkt_protos",
+        "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -112,15 +112,15 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//kythe/proto:graph_proto_cc",
-        "//kythe/proto:storage_proto_cc",
-        "//kythe/proto:xref_proto_cc",
+        "//kythe/proto:graph_cc_proto",
+        "//kythe/proto:storage_cc_proto",
+        "//kythe/proto:xref_cc_proto",
         "//third_party:libcurl",
-        "//third_party/proto:protobuf",
         "//third_party/rapidjson",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -164,7 +164,7 @@ cc_library(
     deps = [
         ":lib",
         "//third_party:gtest",
-        "//third_party/proto:protobuf",
+        "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -206,9 +206,7 @@ cc_test(
 cc_library(
     name = "index_pack_testlib",
     testonly = 1,
-    srcs = [
-        "index_pack_test.cc",
-    ],
+    srcs = ["index_pack_test.cc"],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
@@ -218,21 +216,19 @@ cc_library(
         ":index_pack",
         "//third_party:gtest",
         "//third_party/llvm",
-        "//third_party/proto:protobuf",
         "//third_party/rapidjson",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
 cc_test(
     name = "index_pack_test",
     size = "small",
-    deps = [
-        ":index_pack_testlib",
-    ],
+    deps = [":index_pack_testlib"],
 )
 
 cc_library(
@@ -248,9 +244,9 @@ cc_library(
     ],
     deps = [
         ":json_proto",
-        "//kythe/proto:analysis_proto_cc",
+        "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest",
-        "//third_party/proto:protobuf",
+        "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -258,9 +254,7 @@ cc_library(
 cc_test(
     name = "json_proto_test",
     size = "small",
-    deps = [
-        ":json_proto_testlib",
-    ],
+    deps = [":json_proto_testlib"],
 )
 
 cc_library(
@@ -276,28 +270,24 @@ cc_library(
     ],
     deps = [
         ":net_client",
-        "//third_party/proto:protobuf",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
 cc_binary(
     name = "net_client_test",
     testonly = 1,
-    deps = [
-        ":net_client_testlib",
-    ],
+    deps = [":net_client_testlib"],
 )
 
 cc_library(
     name = "kythe_uri_testlib",
     testonly = 1,
-    srcs = [
-        "kythe_uri_test.cc",
-    ],
+    srcs = ["kythe_uri_test.cc"],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
@@ -306,29 +296,21 @@ cc_library(
     deps = [
         ":lib",
         "//third_party:gtest",
-        "//third_party/proto:protobuf",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
 cc_test(
     name = "kythe_uri_test",
     size = "small",
-    deps = [
-        ":kythe_uri_testlib",
-    ],
+    deps = [":kythe_uri_testlib"],
 )
 
 cc_library(
     name = "supported_language",
-    srcs = [
-        "language.cc",
-    ],
-    hdrs = [
-        "language.h",
-    ],
-    deps = [
-        "//third_party/llvm",
-    ],
+    srcs = ["language.cc"],
+    hdrs = ["language.h"],
+    deps = ["//third_party/llvm"],
 )

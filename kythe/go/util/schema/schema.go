@@ -20,7 +20,7 @@ package schema
 import (
 	"kythe.io/kythe/go/util/schema/facts"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // Prefix is the label prefix for the Kythe schema.

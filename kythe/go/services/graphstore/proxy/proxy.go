@@ -31,7 +31,7 @@ import (
 	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/storage/gsutil"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 func init() {

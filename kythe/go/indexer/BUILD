@@ -1,5 +1,4 @@
-load("//tools:build_rules/go.bzl", "go_test")
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -17,10 +16,10 @@ go_library(
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/nodes",
-        "//kythe/proto:analysis_proto_go",
-        "//kythe/proto:common_proto_go",
-        "//kythe/proto:go_proto_go",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:common_go_proto",
+        "//kythe/proto:go_go_proto",
+        "//kythe/proto:storage_go_proto",
         "@go_protobuf//:proto",
         "@go_stringset//:stringset",
         "@go_x_tools//:go/gcexportdata",

@@ -5,10 +5,10 @@ java_library(
     srcs = ["SourceBuilder.java"],
     deps = [
         ":kythe_uri",
-        "//kythe/proto:internal_proto_java",
-        "//kythe/proto:storage_proto_java",
-        "//third_party/proto:protobuf_java",
+        "//kythe/proto:internal_java_proto",
+        "//kythe/proto:storage_java_proto",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )
 
@@ -16,9 +16,9 @@ java_library(
     name = "normalizer",
     srcs = ["Normalizer.java"],
     deps = [
-        "//kythe/proto:common_proto_java",
-        "//kythe/proto:serving_proto_java",
-        "//third_party/proto:protobuf_java",
+        "//kythe/proto:common_java_proto",
+        "//kythe/proto:serving_java_proto",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )
 
@@ -26,9 +26,9 @@ java_library(
     name = "kythe_uri",
     srcs = ["KytheURI.java"],
     deps = [
-        "//kythe/proto:storage_proto_java",
-        "//third_party/proto:protobuf_java",
+        "//kythe/proto:storage_java_proto",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )
 
@@ -47,10 +47,10 @@ java_library(
     srcs = ["JsonUtil.java"],
     deps = [
         "//third_party/gson:proto",
-        "//third_party/proto:protobuf_java",
-        "//third_party/proto:protobuf_java_util",
         "@com_google_code_gson_gson//jar",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
+        "@com_google_protobuf//:protobuf_java_util",
     ],
 )
 
@@ -63,6 +63,6 @@ java_library(
     name = "qualified_name_extractor",
     srcs = ["QualifiedNameExtractor.java"],
     deps = [
-        "//kythe/proto:common_proto_java",
+        "//kythe/proto:common_java_proto",
     ],
 )

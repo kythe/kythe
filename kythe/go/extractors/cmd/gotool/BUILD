@@ -1,18 +1,16 @@
-load("//tools:build_rules/go.bzl", "go_release_binary")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_release_binary(
+go_binary(
     name = "gotool",
-    srcs = [
-        "gotool.go",
-    ],
+    srcs = ["gotool.go"],
     deps = [
         "//kythe/go/extractors/golang",
         "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/vfs",
-        "//kythe/proto:analysis_proto_go",
+        "//kythe/proto:analysis_go_proto",
         "@go_uuid//:uuid",
     ],
 )

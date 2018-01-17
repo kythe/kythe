@@ -23,9 +23,9 @@ import (
 
 	"kythe.io/kythe/go/test/testutil"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	gpb "kythe.io/kythe/proto/graph_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
+	xpb "kythe.io/kythe/proto/xref_go_proto"
 
 	"github.com/sourcegraph/go-langserver/pkg/lsp"
 )

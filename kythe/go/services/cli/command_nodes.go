@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"strings"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	gpb "kythe.io/kythe/proto/graph_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
 )
 
 type nodesCommand struct {

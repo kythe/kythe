@@ -1,17 +1,17 @@
-load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "stream",
     srcs = ["stream.go"],
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/util/schema/facts",
-        "//kythe/proto:storage_proto_go",
-        "//kythe/proto:common_proto_go",
-        "@go_protobuf//:proto",
+        "//kythe/proto:common_go_proto",
+        "//kythe/proto:storage_go_proto",
         "@go_protobuf//:jsonpb",
+        "@go_protobuf//:proto",
     ],
 )
 

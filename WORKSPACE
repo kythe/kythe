@@ -4,7 +4,7 @@ load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.6.0", "0.7.0")
+check_version("0.8.0", "0.9.0")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
@@ -30,6 +30,16 @@ new_http_archive(
 bind(
     name = "libmemcached",
     actual = "@org_libmemcached_libmemcached//:libmemcached",
+)
+
+bind(
+    name = "guava",  # required by @com_google_protobuf
+    actual = "@com_google_guava_guava//jar",
+)
+
+bind(
+    name = "gson",  # required by @com_google_protobuf
+    actual = "@com_google_code_gson_gson//jar",
 )
 
 http_archive(
@@ -148,17 +158,11 @@ maven_jar(
     sha1 = "7d4afac9f631a2c1adecc21350a4e88241185eb4",
 )
 
-#TODO(T276): Update Go rules to version 0.5.5 or later,
-#  along with external repositories.
-git_repository(
+http_archive(
     name = "io_bazel_rules_go",
-    remote = "https://github.com/bazelbuild/rules_go.git",
-    tag = "0.4.3",
+    sha256 = "90bb270d0a92ed5c83558b2797346917c46547f6f7103e648941ecdb6b9d0e72",
+    url = "https://github.com/bazelbuild/rules_go/releases/download/0.8.1/rules_go-0.8.1.tar.gz",
 )
-
-load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
-
-go_repositories(go_version = "1.8.1")
 
 new_git_repository(
     name = "go_grpc",
@@ -285,3 +289,39 @@ new_git_repository(
     commit = "f52d1811a62927559de87708c8913c1650ce4f26",
     remote = "https://github.com/golang/sync",
 )
+
+# proto_library, cc_proto_library, and java_proto_library rules implicitly
+# depend on @com_google_protobuf for protoc and proto runtimes.
+#
+# N.B. We have a near-clone of the protobuf BUILD file overriding upstream so
+# that we can set the unexported config variable to enable zlib. Without this,
+# protobuf silently yields link errors.
+new_http_archive(
+    name = "com_google_protobuf",
+    build_file = "third_party/protobuf.BUILD",
+    sha256 = "091d4263d9a55eccb6d3c8abde55c26eaaa933dea9ecabb185cdf3795f9b5ca2",
+    strip_prefix = "protobuf-3.5.1.1",
+    urls = ["https://github.com/google/protobuf/archive/v3.5.1.1.zip"],
+)
+
+# This is required by the proto_library implementation for its
+# :cc_toolchain rule.
+http_archive(
+    name = "com_google_protobuf_cc",
+    strip_prefix = "protobuf-106ffc04be1abf3ff3399f54ccf149815b287dd9",
+    urls = ["https://github.com/google/protobuf/archive/106ffc04be1abf3ff3399f54ccf149815b287dd9.zip"],
+)
+
+# This is required by the proto_library implementation for its
+# :java_toolchain rule.
+http_archive(
+    name = "com_google_protobuf_java",
+    strip_prefix = "protobuf-106ffc04be1abf3ff3399f54ccf149815b287dd9",
+    urls = ["https://github.com/google/protobuf/archive/106ffc04be1abf3ff3399f54ccf149815b287dd9.zip"],
+)
+
+load("@io_bazel_rules_go//go:def.bzl", "go_rules_dependencies", "go_register_toolchains")
+
+go_rules_dependencies()
+
+go_register_toolchains()

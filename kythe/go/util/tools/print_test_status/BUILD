@@ -7,7 +7,7 @@ go_binary(
     srcs = ["print_test_status.go"],
     deps = [
         "//kythe/go/platform/vfs",
-        "//third_party/bazel:test_status_proto_go",
+        "//third_party/bazel:test_status_go_proto",
         "@go_protobuf//:proto",
     ],
 )

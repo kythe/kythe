@@ -32,7 +32,7 @@ import (
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/kytheuri"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 var (

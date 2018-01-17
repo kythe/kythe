@@ -23,7 +23,7 @@ import (
 	"log"
 	"strings"
 
-	xpb "kythe.io/kythe/proto/xref_proto"
+	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
 type docsCommand struct {

@@ -30,8 +30,8 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // EntryReader functions read a stream of entries, passing each to a handler

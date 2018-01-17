@@ -1,11 +1,11 @@
-load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "compare",
     srcs = ["compare.go"],
-    deps = ["//kythe/proto:storage_proto_go"],
+    deps = ["//kythe/proto:storage_go_proto"],
 )
 
 go_test(
@@ -14,5 +14,5 @@ go_test(
     srcs = ["compare_test.go"],
     library = "compare",
     visibility = ["//visibility:private"],
-    deps = ["//kythe/proto:storage_proto_go"],
+    deps = ["//kythe/proto:storage_go_proto"],
 )

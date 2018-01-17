@@ -233,6 +233,7 @@ def _crosstool_content(repository_ctx, cc, cpu_value, darwin):
       "target_cpu": _get_env_var(repository_ctx, "BAZEL_TARGET_CPU", cpu_value, False),
       "target_system_name": _get_env_var(repository_ctx, "BAZEL_TARGET_SYSTEM", "local", False),
       "cxx_flag": [
+          "-DGOOGLE_PROTOBUF_NO_RTTI",
           "-std=c++11",
           "-fno-rtti",
       ] + _cplus_include_paths(repository_ctx),

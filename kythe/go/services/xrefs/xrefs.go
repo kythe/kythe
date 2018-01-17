@@ -39,8 +39,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
 // Service defines the interface for file based cross-references.  Informally,

@@ -30,12 +30,12 @@ import (
 	"path/filepath"
 
 	"kythe.io/kythe/go/extractors/golang"
-	"kythe.io/kythe/go/indexer/indexer"
+	"kythe.io/kythe/go/indexer"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 var (

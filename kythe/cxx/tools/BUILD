@@ -11,12 +11,12 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:filecontext_proto_cc",
-        "//third_party/proto:protobuf",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:filecontext_cc_proto",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -33,12 +33,12 @@ cc_library(
     deps = [
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:lib",
-        "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:claim_proto_cc",
-        "//third_party/proto:protobuf",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:claim_cc_proto",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -54,12 +54,12 @@ cc_library(
     ],
     deps = [
         "//kythe/cxx/common:index_pack",
-        "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:claim_proto_cc",
-        "//third_party/proto:protobuf",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:claim_cc_proto",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 

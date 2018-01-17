@@ -11,6 +11,6 @@ go_binary(
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/vfs",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:storage_go_proto",
     ],
 )

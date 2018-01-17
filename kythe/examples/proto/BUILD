@@ -1,12 +1,18 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("//tools:build_rules/proto.bzl", "proto_library")
+# TODO(fromberger): The baseline proto_library rule does not have a hook to
+# request metadata. That probably means these examples do not work at present,
+# though there are no tests to verify that.  Once we have unblocked Bazel
+# upgrades, revisit how this should work.
 
 proto_library(
     name = "example_proto",
     srcs = ["example.proto"],
-    cc_api_version = 2,
-    emit_metadata = True,
+)
+
+cc_proto_library(
+    name = "example_cc_proto",
+    deps = [":example_proto"],
 )
 
 cc_library(
@@ -17,12 +23,7 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    visibility = [
-        "//kythe:default_visibility",
-    ],
-    deps = [
-        ":example_proto_cc",
-    ],
+    deps = [":example_cc_proto"],
 )
 
 cc_binary(
@@ -33,13 +34,10 @@ cc_binary(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    visibility = [
-        "//kythe:default_visibility",
-    ],
     deps = [
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common/indexing:lib",
-        "//third_party/proto:cc_wkt_protos",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:cc_wkt_protos",
     ],
 )

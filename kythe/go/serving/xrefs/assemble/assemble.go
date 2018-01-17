@@ -38,10 +38,10 @@ import (
 	"kythe.io/kythe/go/util/schema/nodes"
 	"kythe.io/kythe/go/util/schema/tickets"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	ipb "kythe.io/kythe/proto/internal_proto"
-	srvpb "kythe.io/kythe/proto/serving_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	ipb "kythe.io/kythe/proto/internal_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // Node returns the Source as a srvpb.Node.

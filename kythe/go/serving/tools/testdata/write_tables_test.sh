@@ -14,14 +14,34 @@ set -o pipefail
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-jq=third_party/jq/jq
-root=kythe/go/serving/tools/testdata
+readonly TABLE="$TEST_TMPDIR/serving_table"
+
+scan() {
+  local out="$TABLE.${1%:}.json"
+  echo -n "$out: " >&2
+  "$scan_leveldb" --prefix $1 --proto_value $2 --json "$TABLE" | \
+    tee >(wc -l >&2) | \
+    "$jq" -S . > "$out"
+}
+
+entries2tables() {
+  local ENTRIES="$1"
+  local OUT="$2"
+
+  gunzip -c "$ENTRIES" | \
+    "$entrystream" --unique | \
+    "$write_tables" --max_page_size 75 --entries - --out "$OUT"
+}
 
 echo "Building new serving table"
-$root/entries2tables kythe/testdata/entries.gz "$TEST_TMPDIR/serving_table"
+entries2tables kythe/testdata/entries.gz "$TABLE"
 
 echo "Splitting serving data in JSON"
-$root/debug_serving.sh "$TEST_TMPDIR/serving_table"
+scan edgeSets:  kythe.proto.serving.PagedEdgeSet
+scan edgePages: kythe.proto.serving.EdgePage
+scan xrefs:     kythe.proto.serving.PagedCrossReferences
+scan xrefPages: kythe.proto.serving.PagedCrossReferences.Page
+scan decor:     kythe.proto.serving.FileDecorations
 
 check_diff() {
   local table="serving_table.$1.json"

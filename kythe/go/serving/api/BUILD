@@ -1,8 +1,8 @@
-load("//tools:build_rules/go.bzl", "go_package_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "api",
     srcs = ["api.go"],
     deps = [
@@ -15,9 +15,9 @@ go_package_library(
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",
-        "//kythe/proto:filetree_proto_go",
-        "//kythe/proto:graph_proto_go",
-        "//kythe/proto:identifier_proto_go",
-        "//kythe/proto:xref_proto_go",
+        "//kythe/proto:filetree_go_proto",
+        "//kythe/proto:graph_go_proto",
+        "//kythe/proto:identifier_go_proto",
+        "//kythe/proto:xref_go_proto",
     ],
 )

@@ -29,8 +29,8 @@ import (
 
 	"kythe.io/kythe/go/storage/table"
 
-	ftpb "kythe.io/kythe/proto/filetree_proto"
-	srvpb "kythe.io/kythe/proto/serving_proto"
+	ftpb "kythe.io/kythe/proto/filetree_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
 )
 
 const (

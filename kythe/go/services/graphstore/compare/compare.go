@@ -21,7 +21,7 @@ package compare
 import (
 	"bytes"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // ByEntries is a min-heap of entries, ordered by Entries.

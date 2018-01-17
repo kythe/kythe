@@ -24,7 +24,7 @@ import (
 
 	"kythe.io/kythe/go/test/testutil"
 
-	ipb "kythe.io/kythe/proto/internal_proto"
+	ipb "kythe.io/kythe/proto/internal_go_proto"
 )
 
 var ctx = context.Background()

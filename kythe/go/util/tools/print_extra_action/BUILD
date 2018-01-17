@@ -24,7 +24,7 @@ go_binary(
     srcs = ["print_extra_action.go"],
     deps = [
         "//kythe/go/platform/vfs",
-        "//third_party/bazel:extra_actions_base_proto_go",
+        "//third_party/bazel:extra_actions_base_go_proto",
         "@go_protobuf//:proto",
     ],
 )

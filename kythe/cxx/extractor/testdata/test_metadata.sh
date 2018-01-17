@@ -19,7 +19,7 @@ TEST_NAME="test_metadata"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
-    "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor \
     ./kythe/cxx/extractor/testdata/metadata.cc
 [[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]

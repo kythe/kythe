@@ -5,6 +5,7 @@ load(
     "cc_indexer_test",
     "objc_indexer_test",
 )
+load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 sh_test(
     name = "kindex",
@@ -28,12 +29,8 @@ sh_test(
     ],
 )
 
-sh_test(
+shell_tool_test(
     name = "index_pack",
-    size = "small",
-    srcs = [
-        "test_index_pack.sh",
-    ],
     data = [
         "kindex_repo_test.header",
         "kindex_repo_test.main",
@@ -43,11 +40,14 @@ sh_test(
         "kindex_test.main",
         "kindex_test.unit",
         "kindex_test.verify",
-        "//kythe/cxx/indexer/cxx:indexer",
-        "//kythe/cxx/tools:kindex_tool",
-        "//kythe/cxx/verifier",
-        "//kythe/go/platform/tools/indexpack",
     ],
+    scriptfile = "test_index_pack.sh",
+    tools = {
+        "INDEXER": "//kythe/cxx/indexer/cxx:indexer",
+        "INDEX_PACK_BIN": "//kythe/go/platform/tools/indexpack",
+        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
+        "VERIFIER": "//kythe/cxx/verifier",
+    },
 )
 
 cc_indexer_test(

@@ -26,7 +26,7 @@ import (
 	"kythe.io/kythe/go/services/filetree"
 	"kythe.io/kythe/go/util/kytheuri"
 
-	ftpb "kythe.io/kythe/proto/filetree_proto"
+	ftpb "kythe.io/kythe/proto/filetree_go_proto"
 )
 
 type lsCommand struct {

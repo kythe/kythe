@@ -36,8 +36,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	_ "kythe.io/kythe/proto/serving_proto"
-	_ "kythe.io/kythe/proto/storage_proto"
+	_ "kythe.io/kythe/proto/serving_go_proto"
+	_ "kythe.io/kythe/proto/storage_go_proto"
 )
 
 var (

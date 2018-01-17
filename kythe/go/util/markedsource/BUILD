@@ -1,11 +1,11 @@
-load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "markedsource",
     srcs = ["markedsource.go"],
-    deps = ["//kythe/proto:common_proto_go"],
+    deps = ["//kythe/proto:common_go_proto"],
 )
 
 go_test(
@@ -16,6 +16,7 @@ go_test(
     library = "markedsource",
     visibility = ["//visibility:private"],
     deps = [
+        "//kythe/proto:common_go_proto",
         "@go_protobuf//:proto",
     ],
 )

@@ -21,10 +21,10 @@ cc_library(
         "//kythe/cxx/common/schema:facts",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
-        "//third_party/proto:protobuf",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 

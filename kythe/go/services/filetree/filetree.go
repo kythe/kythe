@@ -34,8 +34,8 @@ import (
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 
-	ftpb "kythe.io/kythe/proto/filetree_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	ftpb "kythe.io/kythe/proto/filetree_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // Service provides an interface to explore a tree of VName files.

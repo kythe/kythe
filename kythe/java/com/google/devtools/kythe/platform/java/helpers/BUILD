@@ -14,8 +14,8 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/util:span",
         "//third_party/javac",
-        "//third_party/proto:protobuf_java",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )

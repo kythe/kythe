@@ -26,7 +26,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	ipb "kythe.io/kythe/proto/internal_proto"
+	ipb "kythe.io/kythe/proto/internal_go_proto"
 )
 
 // KeyValueSorter returns a disksort for arbitrary *ipb.SortedKeyValues.

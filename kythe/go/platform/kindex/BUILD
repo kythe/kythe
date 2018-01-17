@@ -1,8 +1,8 @@
-load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "kindex",
     srcs = ["kindex.go"],
     deps = [
@@ -10,8 +10,8 @@ go_package_library(
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/ptypes",
-        "//kythe/proto:analysis_proto_go",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:storage_go_proto",
         "@go_protobuf//:proto",
     ],
 )
@@ -23,10 +23,10 @@ go_test(
     library = "kindex",
     visibility = ["//visibility:private"],
     deps = [
-        "//kythe/proto:analysis_proto_go",
-        "//kythe/proto:go_proto_go",
-        "//kythe/proto:storage_proto_go",
-        "//third_party/proto:any_proto_go",
+        "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:any_go_proto",
+        "//kythe/proto:go_go_proto",
+        "//kythe/proto:storage_go_proto",
         "@go_protobuf//:proto",
     ],
 )

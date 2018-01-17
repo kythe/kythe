@@ -37,7 +37,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/types/typeutil"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // EmitOptions control the behaviour of the Emit function. A nil options

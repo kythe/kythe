@@ -53,10 +53,10 @@ import (
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/tickets"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	gpb "kythe.io/kythe/proto/graph_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
+	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
 func init() {

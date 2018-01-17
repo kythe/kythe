@@ -29,8 +29,8 @@ import (
 
 	"kythe.io/kythe/go/services/web"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	gpb "kythe.io/kythe/proto/graph_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
 )
 
 // Service exposes direct access to nodes and edges in a Kythe graph.

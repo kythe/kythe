@@ -21,7 +21,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	anypb "kythe.io/third_party/proto/any_proto"
+	anypb "github.com/golang/protobuf/ptypes/any"
 )
 
 // A dummy implementation of proto.Message for testing.

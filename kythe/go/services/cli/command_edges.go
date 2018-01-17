@@ -32,7 +32,7 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 
-	gpb "kythe.io/kythe/proto/graph_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
 )
 
 type edgesCommand struct {

@@ -18,6 +18,8 @@
 TEST_NAME="test_root_directory"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
+
+readonly REAL_KINDEX_TOOL="$PWD/$KINDEX_TOOL"
 cd kythe/cxx/extractor/testdata/altroot/altpath
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
 KYTHE_ROOT_DIRECTORY="${BASE_DIR}/altroot" \
@@ -25,7 +27,7 @@ KYTHE_ROOT_DIRECTORY="${BASE_DIR}/altroot" \
     file.cc
 [[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]
 INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
-"${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
+"${REAL_KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
 
 # Remove lines that will change depending on the machine the test is run on.
 skip_inplace "-target" 1 "${INDEX_PATH}_UNIT"

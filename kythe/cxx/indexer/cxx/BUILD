@@ -233,8 +233,8 @@ cc_library(
         ":indexer_library_support",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
-        "//third_party/proto:protobuf",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -266,10 +266,10 @@ cc_library(
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",
         "//kythe/cxx/common/indexing:lib",
-        "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:common_proto_cc",
-        "//kythe/proto:cxx_proto_cc",
-        "//kythe/proto:storage_proto_cc",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:cxx_cc_proto",
+        "//kythe/proto:storage_cc_proto",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_gflags_gflags//:gflags",
@@ -297,10 +297,10 @@ cc_library(
         ":lib",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common/indexing:frontend",
-        "//third_party/proto:protobuf",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -327,8 +327,8 @@ cc_library(
         "//kythe/cxx/common/indexing:testlib",
         "//third_party:gtest",
         "//third_party/llvm",
-        "//third_party/proto:protobuf",
         "@com_google_absl//absl/memory",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 

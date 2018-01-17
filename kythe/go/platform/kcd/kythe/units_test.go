@@ -24,10 +24,10 @@ import (
 
 	"kythe.io/kythe/go/util/ptypes"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
-	bipb "kythe.io/kythe/proto/buildinfo_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
-	anypb "kythe.io/third_party/proto/any_proto"
+	anypb "github.com/golang/protobuf/ptypes/any"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
+	bipb "kythe.io/kythe/proto/buildinfo_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 func TestIndexing(t *testing.T) {

@@ -67,9 +67,9 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
 
-	espb "kythe.io/kythe/proto/entryset_proto"
-	intpb "kythe.io/kythe/proto/internal_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
+	espb "kythe.io/kythe/proto/entryset_go_proto"
+	intpb "kythe.io/kythe/proto/internal_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // A Set represents a set of unique entries.

@@ -6,9 +6,9 @@ java_test(
     srcs = ["FileDataCacheTest.java"],
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
-        "//kythe/proto:analysis_proto_java",
-        "//third_party/proto:protobuf_java",
+        "//kythe/proto:analysis_java_proto",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],

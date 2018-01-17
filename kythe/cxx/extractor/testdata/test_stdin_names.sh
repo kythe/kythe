@@ -20,10 +20,14 @@ rm -rf -- "${OUT_DIR}"
 echo '#define STDIN_OK 1\n' | KYTHE_INDEX_PACK=1 \
     KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     KYTHE_VNAMES="${BASE_DIR}/stdin.vnames" "${EXTRACTOR}" -x c -
+
+# Before we chdir, we need the concrete path of the tool we're going to use.
+readonly REAL_INDEXPACK="$PWD/$INDEXPACK"
 pushd "${OUT_DIR}"
-OUT_INDEX=$("${INDEXPACK}" --verbose --from_archive "${OUT_DIR}" | \
+OUT_INDEX=$("${REAL_INDEXPACK}" --verbose --from_archive "${OUT_DIR}" | \
     awk '-F\t' '/Unpacked compilation/ { print $3 }')
 popd
+
 # Make sure that the indexer can handle <stdin:> paths.
 "${INDEXER}" --ignore_unimplemented=true "${OUT_DIR}/${OUT_INDEX}" | \
   "${VERIFIER}" "${BASE_DIR}/test_stdin_names_verify.cc"

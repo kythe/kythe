@@ -17,13 +17,13 @@ cc_library(
     ],
     deps = [
         "//kythe/cxx/common:lib",
-        "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:storage_proto_cc",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:storage_cc_proto",
         "//third_party/llvm",
-        "//third_party/proto:protobuf",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
 )

@@ -1,14 +1,14 @@
-load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package_library(
+go_library(
     name = "govname",
     srcs = ["govname.go"],
     deps = [
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/vnameutil",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:storage_go_proto",
         "@go_protobuf//:proto",
     ],
 )

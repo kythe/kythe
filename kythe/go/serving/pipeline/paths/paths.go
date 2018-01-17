@@ -33,9 +33,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	ipb "kythe.io/kythe/proto/internal_proto"
-	srvpb "kythe.io/kythe/proto/serving_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	ipb "kythe.io/kythe/proto/internal_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
 )
 
 // ReducerIO is a Path-specialized interface mirroring reduce.IO.

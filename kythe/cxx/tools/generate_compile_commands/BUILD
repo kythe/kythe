@@ -5,11 +5,11 @@ cc_binary(
     name = "extract_compile_command",
     srcs = ["extract_compile_command.cc"],
     deps = [
-        "//third_party/bazel:extra_actions_base_proto_cc",
-        "//third_party/proto:protobuf",
+        "//third_party/bazel:extra_actions_base_cc_proto",
         "//third_party/rapidjson",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 

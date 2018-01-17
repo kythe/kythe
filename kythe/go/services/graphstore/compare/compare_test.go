@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 func TestCompareVNames(t *testing.T) {

@@ -13,8 +13,8 @@ java_library(
         "ProtoTypeAdapter.java",
     ],
     deps = [
-        "//third_party/proto:protobuf_java",
         "@com_google_code_gson_gson//jar",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )

@@ -34,9 +34,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/errgroup"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
-	xapb "kythe.io/third_party/bazel/extra_actions_base_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
+	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
 
 // A Config carries settings that control the extraction process.

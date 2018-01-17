@@ -69,11 +69,11 @@ cc_library(
     deps = [
         ":lexparse",
         "//kythe/cxx/common:lib",
-        "//kythe/proto:common_proto_cc",
-        "//kythe/proto:storage_proto_cc",
-        "//third_party/proto:protobuf",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:storage_cc_proto",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -90,10 +90,10 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//kythe/proto:storage_proto_cc",
-        "//third_party/proto:protobuf",
+        "//kythe/proto:storage_cc_proto",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -120,11 +120,11 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//kythe/proto:common_proto_cc",
-        "//kythe/proto:storage_proto_cc",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:storage_cc_proto",
         "//third_party:gtest",
-        "//third_party/proto:protobuf",
         "@com_github_google_glog//:glog",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 

@@ -27,7 +27,7 @@ go_binary(
         "//kythe/go/serving/api",
         "//kythe/go/test/services/xrefs",
         "//kythe/go/util/schema/facts",
-        "//kythe/proto:storage_proto_go",
-        "//kythe/proto:xref_proto_go",
+        "//kythe/proto:storage_go_proto",
+        "//kythe/proto:xref_go_proto",
     ],
 )

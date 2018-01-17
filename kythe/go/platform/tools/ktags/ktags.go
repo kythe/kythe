@@ -36,8 +36,8 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 
-	gpb "kythe.io/kythe/proto/graph_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
+	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
 var (

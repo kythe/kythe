@@ -26,9 +26,9 @@ import (
 	"kythe.io/kythe/go/util/reduce"
 	"kythe.io/kythe/go/util/schema/facts"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	ipb "kythe.io/kythe/proto/internal_proto"
-	srvpb "kythe.io/kythe/proto/serving_proto"
+	cpb "kythe.io/kythe/proto/common_go_proto"
+	ipb "kythe.io/kythe/proto/internal_go_proto"
+	srvpb "kythe.io/kythe/proto/serving_go_proto"
 )
 
 var ctx = context.Background()

@@ -22,11 +22,11 @@
 #     will substitute "OUT_DIR" for the test output directory
 
 set -o pipefail
+: ${FYI?:missing fyi}
 TEST_NAME="$1"
 BASE_DIR="$PWD/kythe/cxx/tools/fyi/testdata"
 TEST_JSON="${BASE_DIR}/${TEST_NAME}.json"
 TEST_EXPECTED="${BASE_DIR}/${TEST_NAME}.expected"
-FYI="kythe/cxx/tools/fyi/fyi"
 OUT_DIR="$TEST_TMPDIR"
 TEST_FILE="${OUT_DIR}/${TEST_NAME}"
 HAD_ERRORS=0

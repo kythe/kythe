@@ -2,10 +2,10 @@
 # Tests whether the indexer will read from kindex files.
 BASE_DIR="$PWD/kythe/cxx/indexer/cxx/testdata"
 OUT_DIR="$TEST_TMPDIR"
-VERIFIER="kythe/cxx/verifier/verifier"
-INDEXER="kythe/cxx/indexer/cxx/indexer"
-INDEX_PACK_BIN="kythe/go/platform/tools/indexpack/indexpack"
-KINDEX_TOOL="kythe/cxx/tools/kindex_tool"
+: ${VERIFIER?:missing verifier}
+: ${INDEXER?:missing indexer}
+: ${INDEX_PACK_BIN?:missing indexpack}
+: ${KINDEX_TOOL?:missing kindex_tool}
 TEST_INDEX="${OUT_DIR}/test.kindex"
 REPO_TEST_INDEX="${OUT_DIR}/repo_test.kindex"
 mkdir -p "${OUT_DIR}"

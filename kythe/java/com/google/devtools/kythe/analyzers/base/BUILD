@@ -5,8 +5,8 @@ java_library(
     srcs = ["StreamFactEmitter.java"],
     deps = [
         ":entryset",
-        "//kythe/proto:storage_proto_java",
-        "//third_party/proto:protobuf_java",
+        "//kythe/proto:storage_java_proto",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )
 
@@ -42,12 +42,12 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/java/com/google/devtools/kythe/util:kythe_uri",
         "//kythe/java/com/google/devtools/kythe/util:span",
-        "//kythe/proto:analysis_proto_java",
-        "//kythe/proto:common_proto_java",
-        "//kythe/proto:storage_proto_java",
-        "//third_party/proto:protobuf_java",
+        "//kythe/proto:analysis_java_proto",
+        "//kythe/proto:common_java_proto",
+        "//kythe/proto:storage_java_proto",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )
 
@@ -62,10 +62,10 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
-        "//kythe/proto:analysis_proto_java",
-        "//kythe/proto:storage_proto_java",
-        "//third_party/proto:protobuf_java",
+        "//kythe/proto:analysis_java_proto",
+        "//kythe/proto:storage_java_proto",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )
 

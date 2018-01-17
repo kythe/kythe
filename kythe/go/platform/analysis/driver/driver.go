@@ -28,7 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	apb "kythe.io/kythe/proto/analysis_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
 // A Compilation represents a compilation and other metadata needed to analyze it.

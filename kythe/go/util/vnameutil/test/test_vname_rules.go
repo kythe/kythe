@@ -28,7 +28,7 @@ import (
 
 	"kythe.io/kythe/go/util/vnameutil"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 var (

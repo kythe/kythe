@@ -1,6 +1,7 @@
 package(default_visibility = ["//kythe:proto_visibility"])
 
-load("//tools:build_rules/proto.bzl", "proto_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load(":go.bzl", "go_kythe_proto")
 
 filegroup(
     name = "public",
@@ -27,32 +28,46 @@ filegroup(
 proto_library(
     name = "common_proto",
     srcs = ["common.proto"],
-    cc_api_version = 2,
-    go_api_version = 2,
-    java_api_version = 2,
+)
+
+cc_proto_library(
+    name = "common_cc_proto",
+    deps = [":common_proto"],
+)
+
+go_kythe_proto(proto = ":common_proto")
+
+java_proto_library(
+    name = "common_java_proto",
+    deps = [":common_proto"],
 )
 
 # Public Kythe GraphStore analyzer output format
 proto_library(
     name = "storage_proto",
     srcs = ["storage.proto"],
-    cc_api_version = 2,
-    go_api_version = 2,
-    java_api_version = 2,
     visibility = [
         "//kythe:proto_visibility",
         "//third_party/llvm/src:__pkg__",
     ],
 )
 
+cc_proto_library(
+    name = "storage_cc_proto",
+    deps = [":storage_proto"],
+)
+
+go_kythe_proto(proto = ":storage_proto")
+
+java_proto_library(
+    name = "storage_java_proto",
+    deps = [":storage_proto"],
+)
+
 # Public Kythe GraphStore service API
 proto_library(
     name = "storage_service_proto",
     srcs = ["storage_service.proto"],
-    has_services = 1,
-    cc_api_version = 2,
-    go_api_version = 2,
-    java_api_version = 2,
     visibility = [
         "//kythe:proto_visibility",
         "//third_party/llvm/src:__pkg__",
@@ -60,13 +75,25 @@ proto_library(
     deps = [":storage_proto"],
 )
 
+cc_proto_library(
+    name = "storage_service_cc_proto",
+    deps = [":storage_service_proto"],
+)
+
+go_kythe_proto(
+    proto = ":storage_service_proto",
+    deps = [":storage_go_proto"],
+)
+
+java_proto_library(
+    name = "storage_service_java_proto",
+    deps = [":storage_service_proto"],
+)
+
 # Public Kythe analyzer
 proto_library(
     name = "analysis_proto",
     srcs = ["analysis.proto"],
-    cc_api_version = 2,
-    go_api_version = 2,
-    java_api_version = 2,
     visibility = [
         "//kythe:proto_visibility",
         "//third_party/llvm/src:__pkg__",
@@ -74,18 +101,33 @@ proto_library(
     deps = [
         ":filecontext_proto",
         ":storage_proto",
-        "//third_party/proto:any_proto",
+        "@com_google_protobuf//:any_proto",
     ],
+)
+
+cc_proto_library(
+    name = "analysis_cc_proto",
+    deps = [":analysis_proto"],
+)
+
+go_kythe_proto(
+    proto = ":analysis_proto",
+    deps = [
+        ":any_go_proto",
+        ":filecontext_go_proto",
+        ":storage_go_proto",
+    ],
+)
+
+java_proto_library(
+    name = "analysis_java_proto",
+    deps = [":analysis_proto"],
 )
 
 # Public Kythe file data service APIs
 proto_library(
     name = "analysis_service_proto",
     srcs = ["analysis_service.proto"],
-    has_services = 1,
-    cc_api_version = 2,
-    go_api_version = 2,
-    java_api_version = 2,
     visibility = [
         "//kythe:proto_visibility",
         "//third_party/llvm/src:__pkg__",
@@ -94,117 +136,250 @@ proto_library(
         ":analysis_proto",
         ":filecontext_proto",
         ":storage_proto",
-        "//third_party/proto:any_proto",
+        "@com_google_protobuf//:any_proto",
     ],
+)
+
+cc_proto_library(
+    name = "analysis_service_cc_proto",
+    deps = [":analysis_service_proto"],
+)
+
+go_kythe_proto(
+    proto = ":analysis_service_proto",
+    deps = [
+        ":analysis_go_proto",
+        ":any_go_proto",
+        ":filecontext_go_proto",
+        ":storage_go_proto",
+    ],
+)
+
+java_proto_library(
+    name = "analysis_service_java_proto",
+    deps = [":analysis_service_proto"],
 )
 
 # Public Kythe status service API
 proto_library(
     name = "status_service_proto",
     srcs = ["status_service.proto"],
-    has_services = 1,
-    cc_api_version = 2,
-    go_api_version = 2,
-    java_api_version = 2,
+)
+
+cc_proto_library(
+    name = "status_service_cc_proto",
+    deps = [":status_service_proto"],
+)
+
+go_kythe_proto(proto = ":status_service_proto")
+
+java_proto_library(
+    name = "status_service_java_proto",
+    deps = [":status_service_proto"],
 )
 
 # Context-dependent version information, for claiming.
 proto_library(
     name = "filecontext_proto",
     srcs = ["filecontext.proto"],
-    cc_api_version = 2,
-    go_api_version = 2,
-    java_api_version = 2,
+)
+
+cc_proto_library(
+    name = "filecontext_cc_proto",
+    deps = [":filecontext_proto"],
+)
+
+go_kythe_proto(proto = ":filecontext_proto")
+
+java_proto_library(
+    name = "filecontext_java_proto",
+    deps = [":filecontext_proto"],
 )
 
 # Build tool details for compilation units
 proto_library(
     name = "buildinfo_proto",
     srcs = ["buildinfo.proto"],
-    cc_api_version = 2,
-    go_api_version = 2,
-    java_api_version = 2,
+)
+
+cc_proto_library(
+    name = "buildinfo_cc_proto",
+    deps = [":buildinfo_proto"],
+)
+
+go_kythe_proto(proto = ":buildinfo_proto")
+
+java_proto_library(
+    name = "buildinfo_java_proto",
+    deps = [":buildinfo_proto"],
 )
 
 # C++-specific protocol buffer definitions
 proto_library(
     name = "cxx_proto",
     srcs = ["cxx.proto"],
-    cc_api_version = 2,
-    go_api_version = 2,
+)
+
+cc_proto_library(
+    name = "cxx_cc_proto",
+    deps = [":cxx_proto"],
+)
+
+go_kythe_proto(proto = ":cxx_proto")
+
+java_proto_library(
+    name = "cxx_java_proto",
+    deps = [":cxx_proto"],
 )
 
 # Go-specific protocol buffer definitions
 proto_library(
     name = "go_proto",
     srcs = ["go.proto"],
-    go_api_version = 2,
+)
+
+cc_proto_library(
+    name = "go_cc_proto",
+    deps = [":go_proto"],
+)
+
+go_kythe_proto(proto = ":go_proto")
+
+java_proto_library(
+    name = "go_java_proto",
+    deps = [":go_proto"],
 )
 
 # Java-specific protocol buffer definitions
 proto_library(
     name = "java_proto",
     srcs = ["java.proto"],
-    go_api_version = 2,
-    java_api_version = 2,
+)
+
+cc_proto_library(
+    name = "java_cc_proto",
+    deps = [":java_proto"],
+)
+
+go_kythe_proto(proto = ":java_proto")
+
+java_proto_library(
+    name = "java_java_proto",
+    deps = [":java_proto"],
 )
 
 # Kythe claiming message definitions
 proto_library(
     name = "claim_proto",
     srcs = ["claim.proto"],
-    cc_api_version = 2,
     deps = [":storage_proto"],
+)
+
+cc_proto_library(
+    name = "claim_cc_proto",
+    deps = [":claim_proto"],
+)
+
+go_kythe_proto(
+    proto = ":claim_proto",
+    deps = [":storage_go_proto"],
+)
+
+java_proto_library(
+    name = "claim_java_proto",
+    deps = [":claim_proto"],
 )
 
 # Public Kythe filetree service API
 proto_library(
     name = "filetree_proto",
     srcs = ["filetree.proto"],
-    has_services = 1,
-    go_api_version = 2,
+)
+
+cc_proto_library(
+    name = "filetree_cc_proto",
+    deps = [":filetree_proto"],
+)
+
+go_kythe_proto(proto = ":filetree_proto")
+
+java_proto_library(
+    name = "filetree_java_proto",
+    deps = [":filetree_proto"],
 )
 
 # Public Kythe xref service API
 proto_library(
     name = "xref_proto",
     srcs = ["xref.proto"],
-    has_services = 1,
-    cc_api_version = 2,
-    go_api_version = 2,
-    java_api_version = 2,
     visibility = [
         # TODO(schroederc): prune once MarkedSource has migrated to common.proto
         "//kythe/cxx/common:__pkg__",
         "//kythe/cxx/doc:__pkg__",
-        "//kythe/java/com/google/devtools/kythe/doc:__subpackages__",
-        "//kythe/javatests/com/google/devtools/kythe/doc:__subpackages__",
         "//kythe/go/languageserver:__subpackages__",
         "//kythe/go/platform/tools:__subpackages__",
         "//kythe/go/services:__subpackages__",
         "//kythe/go/serving:__subpackages__",
         "//kythe/go/test:__subpackages__",
         "//kythe/go/util/markedsource:__pkg__",
+        "//kythe/java/com/google/devtools/kythe/doc:__subpackages__",
+        "//kythe/javatests/com/google/devtools/kythe/doc:__subpackages__",
     ],
     deps = [":common_proto"],
+)
+
+cc_proto_library(
+    name = "xref_cc_proto",
+    deps = [":xref_proto"],
+)
+
+go_kythe_proto(
+    proto = ":xref_proto",
+    deps = [":common_go_proto"],
+)
+
+java_proto_library(
+    name = "xref_java_proto",
+    deps = [":xref_proto"],
 )
 
 proto_library(
     name = "identifier_proto",
     srcs = ["identifier.proto"],
-    has_services = 1,
-    cc_api_version = 2,
-    go_api_version = 2,
+)
+
+cc_proto_library(
+    name = "identifier_cc_proto",
+    deps = [":identifier_proto"],
+)
+
+go_kythe_proto(proto = ":identifier_proto")
+
+java_proto_library(
+    name = "identifier_java_proto",
+    deps = [":identifier_proto"],
 )
 
 # Public Kythe graph service API
 proto_library(
     name = "graph_proto",
     srcs = ["graph.proto"],
-    has_services = 1,
-    cc_api_version = 2,
-    go_api_version = 2,
     deps = [":common_proto"],
+)
+
+go_kythe_proto(
+    proto = ":graph_proto",
+    deps = [":common_go_proto"],
+)
+
+cc_proto_library(
+    name = "graph_cc_proto",
+    deps = [":graph_proto"],
+)
+
+java_proto_library(
+    name = "graph_java_proto",
+    deps = [":graph_proto"],
 )
 
 # Protocol buffer definitions used to encode serving data
@@ -212,9 +387,6 @@ proto_library(
 proto_library(
     name = "serving_proto",
     srcs = ["serving.proto"],
-    cc_api_version = 2,
-    go_api_version = 2,
-    java_api_version = 2,
     visibility = [
         "//kythe/go/serving:__subpackages__",
         "//kythe/go/util/tools:__subpackages__",
@@ -224,17 +396,48 @@ proto_library(
     deps = [":common_proto"],
 )
 
+cc_proto_library(
+    name = "serving_cc_proto",
+    deps = [":serving_proto"],
+)
+
+go_kythe_proto(
+    proto = ":serving_proto",
+    deps = [":common_go_proto"],
+)
+
+java_proto_library(
+    name = "serving_java_proto",
+    deps = [":serving_proto"],
+)
+
 # Protocol buffer definitions internal only to the Kythe libraries and tools.
 # WARNING: These should not be exposed to clients.
 proto_library(
     name = "internal_proto",
     srcs = ["internal.proto"],
-    go_api_version = 2,
-    java_api_version = 2,
     deps = [
         ":common_proto",
         ":serving_proto",
     ],
+)
+
+cc_proto_library(
+    name = "internal_cc_proto",
+    deps = [":internal_proto"],
+)
+
+go_kythe_proto(
+    proto = ":internal_proto",
+    deps = [
+        ":common_go_proto",
+        ":serving_go_proto",
+    ],
+)
+
+java_proto_library(
+    name = "internal_java_proto",
+    deps = [":internal_proto"],
 )
 
 # Protocol buffer definitions used to record indexer outputs for storage.
@@ -242,6 +445,31 @@ proto_library(
 proto_library(
     name = "entryset_proto",
     srcs = ["entryset.proto"],
-    go_api_version = 2,
-    java_api_version = 2,
+)
+
+cc_proto_library(
+    name = "entryset_cc_proto",
+    deps = [":entryset_proto"],
+)
+
+go_kythe_proto(proto = ":entryset_proto")
+
+java_proto_library(
+    name = "entryset_java_proto",
+    deps = [":entryset_proto"],
+)
+
+# This is a wrapper for the "well-known" any.proto, since the protobuf
+# repository does not yet provide Go rules.
+# TODO(fromberger): Replace this with something upstream when possible.
+go_proto_library(
+    name = "any_go_proto",
+    importpath = "github.com/golang/protobuf/ptypes/any",
+    proto = "@com_google_protobuf//:any_proto",
+    visibility = [
+        "//kythe/go/platform/kcd:__subpackages__",
+        "//kythe/go/platform/kindex:__pkg__",
+        "//kythe/go/util/ptypes:__pkg__",
+        "//kythe/proto:__pkg__",
+    ],
 )
