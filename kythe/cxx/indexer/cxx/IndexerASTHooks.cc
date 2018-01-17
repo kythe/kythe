@@ -4279,7 +4279,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         if (SpecializedTemplateDecl->getTemplatedDecl()->getDefinition()) {
           Claimability = GraphObserver::Claimability::Unclaimable;
         }
-        auto Parent = GetDeclChildOf(SpecializedTemplateDecl);
         auto Marks = MarkedSources.Generate(SpecializedTemplateDecl);
         absl::optional<GraphObserver::NodeId> SpanTemplateName;
         GraphObserver::NodeId TemplateName =
@@ -4290,7 +4289,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                       Marks.GenerateMarkedSource(
                           Observer.nodeIdForNominalTypeNode(
                               BuildNameIdForDecl(SpecializedTemplateDecl))),
-                      Parent ? &Parent.value() : nullptr);
+                      GetDeclChildOf(SpecializedTemplateDecl));
         if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
           SpanTemplateName = BuildNodeIdForDecl(SpecializedTemplateDecl);
         }
@@ -4343,14 +4342,13 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
           // there may be only one definition bound to each name, and we
           // memoize the NodeIds we give to types.
           if (!TypeAlreadyBuilt) {
-            auto Parent = GetDeclChildOf(Decl);
             auto Marks = MarkedSources.Generate(Decl);
             auto DeclNameId = BuildNameIdForDecl(Decl);
             ID = Observer.recordNominalTypeNode(
                 DeclNameId,
                 Marks.GenerateMarkedSource(
                     Observer.nodeIdForNominalTypeNode(DeclNameId)),
-                Parent ? &Parent.value() : nullptr);
+                GetDeclChildOf(Decl));
           }
           if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes &&
               !Decl->isEmbeddedInDeclarator()) {
@@ -4370,14 +4368,13 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
           Claimability = GraphObserver::Claimability::Unclaimable;
           ID = BuildNodeIdForDecl(Defn);
         } else {
-          auto Parent = GetDeclChildOf(Decl);
           auto Marks = MarkedSources.Generate(Decl);
           auto DeclNameId = BuildNameIdForDecl(Decl);
           ID = Observer.recordNominalTypeNode(
               DeclNameId,
               Marks.GenerateMarkedSource(
                   Observer.nodeIdForNominalTypeNode(DeclNameId)),
-              Parent ? &Parent.value() : nullptr);
+              GetDeclChildOf(Decl));
         }
       } else {
         if (Decl->getDefinition()) {
@@ -4542,14 +4539,13 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
             ID = BuildNodeIdForDecl(Defn);
           }
         } else {
-          auto Parent = GetDeclChildOf(Decl);
           auto Marks = MarkedSources.Generate(Decl);
           auto DeclNameId = BuildNameIdForDecl(Decl);
           ID = Observer.recordNominalTypeNode(
               DeclNameId,
               Marks.GenerateMarkedSource(
                   Observer.nodeIdForNominalTypeNode(DeclNameId)),
-              Parent ? &Parent.value() : nullptr);
+              GetDeclChildOf(Decl));
           if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
             SpanID = BuildNodeIdForDecl(Decl);
           }
@@ -4629,14 +4625,13 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
           // for the same TU: given distinct names, NameIds will be distinct,
           // there may be only one definition bound to each name, and we
           // memoize the NodeIds we give to types.
-          auto Parent = GetDeclChildOf(IFace);
           auto Marks = MarkedSources.Generate(IFace);
           auto DeclNameId = BuildNameIdForDecl(IFace);
           ID = Observer.recordNominalTypeNode(
               DeclNameId,
               Marks.GenerateMarkedSource(
                   Observer.nodeIdForNominalTypeNode(DeclNameId)),
-              Parent ? &Parent.value() : nullptr);
+              GetDeclChildOf(IFace));
         }
       }
       if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes &&

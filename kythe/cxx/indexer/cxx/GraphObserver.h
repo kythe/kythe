@@ -309,14 +309,14 @@ class GraphObserver {
 
   /// \brief Returns a claim token for namespaces declared at `Loc`.
   /// \param Loc The declaration site of the namespace.
-  virtual const ClaimToken *getNamespaceClaimToken(clang::SourceLocation Loc) {
+  virtual const ClaimToken *getNamespaceClaimToken(clang::SourceLocation Loc) const {
     return getDefaultClaimToken();
   }
 
   /// \brief Returns a claim token for anonymous namespaces declared at `Loc`.
   /// \param Loc The declaration site of the anonymous namespace.
   virtual const ClaimToken *getAnonymousNamespaceClaimToken(
-      clang::SourceLocation Loc) {
+      clang::SourceLocation Loc) const {
     return getDefaultClaimToken();
   }
 
@@ -331,14 +331,14 @@ class GraphObserver {
   /// `clang::BuiltinType::getName(this->getLangOptions())` or the builtin
   /// type constructor.
   /// \return The `NodeId` for `Spelling`.
-  virtual NodeId getNodeIdForBuiltinType(const llvm::StringRef &Spelling) = 0;
+  virtual NodeId getNodeIdForBuiltinType(const llvm::StringRef &Spelling) const = 0;
 
   /// \brief Returns the ID for a type node aliasing another type node.
   /// \param AliasName a `NameId` for the alias name.
   /// \param AliasedType a `NodeId` corresponding to the aliased type.
   /// \return the `NodeId` for the type node corresponding to the alias.
   virtual NodeId nodeIdForTypeAliasNode(const NameId &AliasName,
-                                        const NodeId &AliasedType) = 0;
+                                        const NodeId &AliasedType) const = 0;
 
   /// \brief Records a type alias node (eg, from a `typedef` or
   /// `using Alias = ty` instance).
@@ -348,8 +348,23 @@ class GraphObserver {
   /// be AliasedType
   /// \param MarkedSource marked source for the alias.
   /// \return the `NodeId` for the type alias node this definition defines.
+  NodeId recordTypeAliasNode(const NameId &AliasName, const NodeId &AliasedType,
+                             const absl::optional<NodeId> &RootAliasedType,
+                             const absl::optional<MarkedSource> &MarkedSource) {
+    return recordTypeAliasNode(nodeIdForTypeAliasNode(AliasName, AliasedType),
+                               AliasedType, RootAliasedType, MarkedSource);
+  }
+
+  /// \brief Records a type alias node (eg, from a `typedef` or
+  /// `using Alias = ty` instance).
+  /// \param AliasName a `NodeId` for the alias.
+  /// \param AliasedType a `NodeId` corresponding to the aliased type.
+  /// \param RootAliasedType the non-alias at the root of the alias chain; may
+  /// be AliasedType
+  /// \param MarkedSource marked source for the alias.
+  /// \return the `NodeId` for the type alias node this definition defines.
   virtual NodeId recordTypeAliasNode(
-      const NameId &AliasName, const NodeId &AliasedType,
+      const NodeId &AliasId, const NodeId &AliasedType,
       const absl::optional<NodeId> &RootAliasedType,
       const absl::optional<MarkedSource> &MarkedSource) = 0;
 
@@ -357,7 +372,7 @@ class GraphObserver {
   /// typedef or enum).
   /// \param TypeName a `NameId` corresponding to a nominal type.
   /// \return the `NodeId` for the type node corresponding to `TypeName`.
-  virtual NodeId nodeIdForNominalTypeNode(const NameId &TypeName) = 0;
+  virtual NodeId nodeIdForNominalTypeNode(const NameId &TypeName) const = 0;
 
   /// \brief Records a type node for some nominal type (such as a struct,
   /// typedef or enum), returning its ID.
@@ -365,9 +380,47 @@ class GraphObserver {
   /// \param MarkedSource marked source for the type node.
   /// \param Parent if non-null, the parent node of this nominal type.
   /// \return the `NodeId` for the type node corresponding to `TypeName`.
+  NodeId recordNominalTypeNode(const NameId &TypeName,
+                               const absl::optional<MarkedSource> &MarkedSource,
+                               const absl::optional<NodeId> &Parent) {
+    return recordNominalTypeNode(nodeIdForNominalTypeNode(TypeName),
+                                 MarkedSource, Parent);
+  }
+
+  /// \brief Records a type node for some nominal type (such as a struct,
+  /// typedef or enum), returning its ID.
+  /// \param TypeNode a `NodeId` corresponding to a nominal type.
+  /// \param MarkedSource marked source for the type node.
+  /// \param Parent if non-null, the parent node of this nominal type.
+  /// \return the `NodeId` for the type node.
   virtual NodeId recordNominalTypeNode(
-      const NameId &TypeName, const absl::optional<MarkedSource> &MarkedSource,
-      const NodeId *Parent) = 0;
+      const NodeId &TypeNode, const absl::optional<MarkedSource> &MarkedSource,
+      const absl::optional<NodeId> &Parent) = 0;
+
+  /// \brief Returns a type application node ID.
+  /// \note This is the elimination form for the `abs` node.
+  /// \param TyconId The `NodeId` of the appropriate type constructor or
+  /// abstraction.
+  /// \param Params The `NodeId`s of the types to apply to the constructor or
+  /// abstraction.
+  /// \return The application's result's ID.
+  virtual NodeId nodeIdForTappNode(
+      const NodeId &TyconId,
+      const std::vector<const NodeId *> &Params) const = 0;
+
+  /// \brief Records a type application node, returning its ID.
+  /// \note This is the elimination form for the `abs` node.
+  /// \param TappId The `NodeId` of the tapp to record.
+  /// \param TyconId The `NodeId` of the appropriate type constructor or
+  /// abstraction.
+  /// \param Params The `NodeId`s of the types to apply to the constructor or
+  /// abstraction.
+  /// \param FirstDefaultParam The first type parameter to consider
+  /// assigned its default value (or Params.size() otherwise).
+  /// \return The application's result's ID.
+  virtual NodeId recordTappNode(const NodeId &TappId, const NodeId &TyconId,
+                                const std::vector<const NodeId *> &Params,
+                                unsigned FirstDefaultParam) = 0;
 
   /// \brief Records a type application node, returning its ID.
   /// \note This is the elimination form for the `abs` node.
@@ -378,15 +431,33 @@ class GraphObserver {
   /// \param FirstDefaultParam The first type parameter to consider
   /// assigned its default value (or Params.size() otherwise).
   /// \return The application's result's ID.
-  virtual NodeId recordTappNode(const NodeId &TyconId,
-                                const std::vector<const NodeId *> &Params,
-                                unsigned FirstDefaultParam) = 0;
+  NodeId recordTappNode(const NodeId &TyconId,
+                        const std::vector<const NodeId *> &Params,
+                        unsigned FirstDefaultParam) {
+    return recordTappNode(nodeIdForTappNode(TyconId, Params), TyconId, Params,
+                          FirstDefaultParam);
+  }
+
+  /// \brief Returns the ID for a tsigma type node (e.g. a C++ parameter pack
+  /// substitution).
+  /// \param Params The `NodeId`s of the types to include.
+  /// \return The result's ID.
+  virtual NodeId nodeIdForTsigmaNode(
+      const std::vector<const NodeId *> &Params) const = 0;
+
+  /// \brief Records a sigma node, returning its ID.
+  /// \param TsigmaId The `NodeId` to record.
+  /// \param Params The `NodeId`s of the types to include.
+  /// \return The result's ID.
+  virtual NodeId recordTsigmaNode(
+      const NodeId &TsigmaId, const std::vector<const NodeId *> &Params) = 0;
 
   /// \brief Records a sigma node, returning its ID.
   /// \param Params The `NodeId`s of the types to include.
   /// \return The result's ID.
-  virtual NodeId recordTsigmaNode(
-      const std::vector<const NodeId *> &Params) = 0;
+  NodeId recordTsigmaNode(const std::vector<const NodeId *> &Params) {
+    return recordTsigmaNode(nodeIdForTsigmaNode(Params), Params);
+  }
 
   enum class RecordKind { Struct, Class, Union, Category };
 
@@ -825,7 +896,7 @@ class GraphObserver {
   /// a textual include, but not a header include or a textual include from
   /// a header include).
   /// \pre Preprocessing is complete.
-  virtual bool isMainSourceFileRelatedLocation(clang::SourceLocation Location) {
+  virtual bool isMainSourceFileRelatedLocation(clang::SourceLocation Location) const {
     // Conservatively return true.
     return true;
   }
@@ -900,7 +971,7 @@ class GraphObserver {
   /// associate the builtin with any particular location and ensures that
   /// information for the builtin will be emitted when it is used in some
   /// relationship.
-  virtual const ClaimToken *getClaimTokenForBuiltin() {
+  virtual const ClaimToken *getClaimTokenForBuiltin() const {
     return getDefaultClaimToken();
   }
 
@@ -910,13 +981,13 @@ class GraphObserver {
   /// map from the FileId inside a SourceLocation to a (file, transcript)
   /// pair.
   virtual const ClaimToken *getClaimTokenForLocation(
-      const clang::SourceLocation L) {
+      const clang::SourceLocation L) const {
     return getDefaultClaimToken();
   }
 
   /// \brief Returns a `ClaimToken` covering a given source range.
   virtual const ClaimToken *getClaimTokenForRange(
-      const clang::SourceRange &SR) {
+      const clang::SourceRange &SR) const {
     return getDefaultClaimToken();
   }
 
@@ -934,19 +1005,21 @@ class GraphObserver {
 
   virtual ~GraphObserver() = 0;
 
-  clang::SourceManager *getSourceManager() { return SourceManager; }
+  clang::SourceManager *getSourceManager() const { return SourceManager; }
 
-  clang::LangOptions *getLangOptions() { return LangOptions; }
+  clang::LangOptions *getLangOptions() const { return LangOptions; }
 
-  clang::Preprocessor *getPreprocessor() { return Preprocessor; }
+  clang::Preprocessor *getPreprocessor() const { return Preprocessor; }
 
-  const ProfilingCallback &getProfilingCallback() { return ReportProfileEvent; }
+  const ProfilingCallback &getProfilingCallback() const {
+    return ReportProfileEvent;
+  }
 
   /// \brief Calls `iter` for each claimed FileID.
   ///
   /// If `iter` returns false, terminates iteration.
   virtual void iterateOverClaimedFiles(
-      std::function<bool(clang::FileID, const NodeId &)> iter) {}
+      std::function<bool(clang::FileID, const NodeId &)> iter) const {}
 
  protected:
   clang::SourceManager *SourceManager = nullptr;
@@ -978,37 +1051,48 @@ class NullGraphObserver : public GraphObserver {
     static void *NullClaimTokenClass;
   };
 
-  NodeId getNodeIdForBuiltinType(const llvm::StringRef &Spelling) override {
+  NodeId getNodeIdForBuiltinType(const llvm::StringRef &Spelling) const override {
     return NodeId(getDefaultClaimToken(), "");
   }
 
   NodeId nodeIdForTypeAliasNode(const NameId &AliasName,
-                                const NodeId &AliasedType) override {
+                                const NodeId &AliasedType) const override {
     return NodeId(getDefaultClaimToken(), "");
   }
 
   NodeId recordTypeAliasNode(
-      const NameId &AliasName, const NodeId &AliasedType,
+      const NodeId &AliasId, const NodeId &AliasedType,
       const absl::optional<NodeId> &RootAliasedType,
       const absl::optional<MarkedSource> &MarkedSource) override {
     return NodeId(getDefaultClaimToken(), "");
   }
 
-  NodeId nodeIdForNominalTypeNode(const NameId &type_name) override {
+  NodeId nodeIdForNominalTypeNode(const NameId &type_name) const override {
     return NodeId(getDefaultClaimToken(), "");
   }
 
-  NodeId recordNominalTypeNode(const NameId &TypeName,
+  NodeId recordNominalTypeNode(const NodeId &TypeNode,
                                const absl::optional<MarkedSource> &MarkedSource,
-                               const NodeId *Parent) override {
+                               const absl::optional<NodeId> &Parent) override {
     return NodeId(getDefaultClaimToken(), "");
   }
 
-  NodeId recordTsigmaNode(const std::vector<const NodeId *> &Params) override {
+  NodeId nodeIdForTsigmaNode(
+      const std::vector<const NodeId *> &Params) const override {
     return NodeId(getDefaultClaimToken(), "");
   }
 
-  NodeId recordTappNode(const NodeId &TyconId,
+  NodeId recordTsigmaNode(const NodeId &TsigmaId,
+                          const std::vector<const NodeId *> &Params) override {
+    return TsigmaId;
+  }
+
+  NodeId nodeIdForTappNode(const NodeId &TyconId,
+                        const std::vector<const NodeId *> &Params) const override {
+    return NodeId(getDefaultClaimToken(), "");
+  }
+
+  NodeId recordTappNode(const NodeId &TappId, const NodeId &TyconId,
                         const std::vector<const NodeId *> &Params,
                         unsigned FirstDefaultParam) override {
     return NodeId(getDefaultClaimToken(), "");
