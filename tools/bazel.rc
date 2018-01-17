@@ -1,3 +1,2 @@
 build --workspace_status_command tools/buildstamp/get_workspace_status
 build --auto_cpu_environment_group=//buildenv:cpu
-test --auto_cpu_environment_group=//buildenv:cpu
