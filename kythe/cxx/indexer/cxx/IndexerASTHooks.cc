@@ -2246,31 +2246,30 @@ bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl *FD) {
       Job->UnderneathImplicitTemplateInstantiation = true;
     }
   }
-  if (!Base::TraverseFunctionDecl(FD)) {
-    return false;
-  }
-  // RecursiveASTVisitor, mistakenly, does not visit these, likely
-  // due to the obscure case in which they occur:
-  // From Clang's documentation:
-  // "Since explicit function template specialization and instantiation
-  // declarations can only appear in namespace scope, and you can only
-  // specialize a member of a fully-specialized class, the only way to get
-  // one of these is in a friend declaration like the following:
-  //   template <typename T> void f(T t);
-  //   template <typename T> struct S {
-  //     friend void f<>(T t);
-  //   };
-  // TODO(shahms): Fix this upstream by getting TraverseFunctionHelper to
-  // do the right thing.
-  if (auto *DFTSI = FD->getDependentSpecializationInfo()) {
-    auto Count = DFTSI->getNumTemplateArgs();
-    for (int i = 0; i < Count; i++) {
-      if (!TraverseTemplateArgumentLoc(DFTSI->getTemplateArg(i))) {
-        return false;
+  return Base::TraverseFunctionDecl(FD) && [&] {
+    // RecursiveASTVisitor, mistakenly, does not visit these, likely
+    // due to the obscure case in which they occur:
+    // From Clang's documentation:
+    // "Since explicit function template specialization and instantiation
+    // declarations can only appear in namespace scope, and you can only
+    // specialize a member of a fully-specialized class, the only way to get
+    // one of these is in a friend declaration like the following:
+    //   template <typename T> void f(T t);
+    //   template <typename T> struct S {
+    //     friend void f<>(T t);
+    //   };
+    // TODO(shahms): Fix this upstream by getting TraverseFunctionHelper to
+    // do the right thing.
+    if (auto *DFTSI = FD->getDependentSpecializationInfo()) {
+      auto Count = DFTSI->getNumTemplateArgs();
+      for (int i = 0; i < Count; i++) {
+        if (!TraverseTemplateArgumentLoc(DFTSI->getTemplateArg(i))) {
+          return false;
+        }
       }
     }
-  }
-  return true;
+    return true;
+  }();
 }
 
 bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
