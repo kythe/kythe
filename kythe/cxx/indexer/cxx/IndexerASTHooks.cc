@@ -3939,14 +3939,37 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForEnumTypeLoc(
   }
   auto Marks = MarkedSources.Generate(Decl);
   auto DeclNameId = BuildNameIdForDecl(Decl);
-  // TODO(shahms): This should not be done here, but should only be
-  // recorded once (which complicates layering in VisitEnumTypeLoc).
-  // This should be:
+  // TODO(shahms): This should probably not be done here,
+  // but should only be recorded once (which complicates layering in
+  // VisitEnumTypeLoc). This should be:
   //   return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
   return Observer.recordNominalTypeNode(
       DeclNameId,
       Marks.GenerateMarkedSource(Observer.nodeIdForNominalTypeNode(DeclNameId)),
       GetDeclChildOf(Decl));
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForTemplateTypeParmTypeLoc(
+    clang::TemplateTypeParmTypeLoc TL) {
+  return BuildNodeIdForDecl(FindTemplateTypeParmTypeLocDecl(TL));
+}
+
+const clang::TemplateTypeParmDecl* IndexerASTVisitor::FindTemplateTypeParmTypeLocDecl(clang::TemplateTypeParmTypeLoc TL) {
+  if (auto* Decl = TL.getDecl()) {
+    return Decl;
+  }
+  // Either the `TemplateTypeParm` will link directly to a relevant
+  // `TemplateTypeParmDecl` or (particularly in the case of canonicalized
+  // types) we will find the Decl in the `Job->TypeContext` according to the
+  // parameter's depth and index.
+  // Depths count from the outside-in; each Template*ParmDecl has only
+  // one possible (depth, index).
+  CHECK(TL.getTypePtr() != nullptr);
+  auto* TypeParm = TL.getTypePtr();
+  CHECK(TypeParm->getDepth() < Job->TypeContext.size());
+  CHECK(TypeParm->getIndex() < Job->TypeContext[TypeParm->getDepth()]->size());
+  return cast<clang::TemplateTypeParmDecl>(
+      Job->TypeContext[TypeParm->getDepth()]->getParam(TypeParm->getIndex()));
 }
 
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
@@ -4046,6 +4069,11 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       return TypeAlreadyBuilt ? Prev->second
                               : (TypeNodes[Key] = BuildNodeIdForEnumTypeLoc(
                                      TypeLoc.castAs<EnumTypeLoc>()));
+    case TypeLoc::TemplateTypeParm:  // Leaf.
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] = BuildNodeIdForTemplateTypeParmTypeLoc(
+                        TypeLoc.castAs<TemplateTypeParmTypeLoc>()));
     case TypeLoc::Qualified: {
       const auto &T = TypeLoc.castAs<QualifiedTypeLoc>();
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
@@ -4388,30 +4416,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
       // TODO(zarko): Add an anchor for all the Elaborated type; otherwise decls
       // like `typedef B::C tdef;` will only anchor `C` instead of `B::C`.
-    } break;
-    // Either the `TemplateTypeParm` will link directly to a relevant
-    // `TemplateTypeParmDecl` or (particularly in the case of canonicalized
-    // types) we will find the Decl in the `Job->TypeContext` according to the
-    // parameter's depth and index.
-    case TypeLoc::TemplateTypeParm: {  // Leaf.
-      // Emission is handled by VisitTemplateTypeParmTypeLoc.
-      InEmitRanges = EmitRanges::No;
-      // Depths count from the outside-in; each Template*ParmDecl has only
-      // one possible (depth, index).
-      const auto *TypeParm = cast<TemplateTypeParmType>(TypeLoc.getTypePtr());
-      const auto *TD = TypeParm->getDecl();
-      if (!IgnoreUnimplemented && TD == nullptr &&
-          TypeParm->getDepth() < Job->TypeContext.size() &&
-          TypeParm->getIndex() <
-              Job->TypeContext[TypeParm->getDepth()]->size()) {
-        const auto *ND = Job->TypeContext[TypeParm->getDepth()]->getParam(
-            TypeParm->getIndex());
-        TD = cast<TemplateTypeParmDecl>(ND);
-        CHECK(TypeParm->getDecl() == nullptr || TypeParm->getDecl() == TD);
-      } else if (!TD) {
-        return absl::nullopt;
-      }
-      ID = BuildNodeIdForDecl(TD);
     } break;
     // "Within an instantiated template, all template type parameters have been
     // replaced with these. They are used solely to record that a type was
