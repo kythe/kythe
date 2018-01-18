@@ -1229,8 +1229,7 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr *E,
       if (const auto *TSI = TE->getTypeSourceInfo()) {
         if (const auto ETL =
                 TSI->getTypeLoc().getAs<clang::ElaboratedTypeLoc>()) {
-          BuildNodeIdForType(ETL.getNamedTypeLoc(), ETL.getType(),
-                             EmitRanges::Yes);
+          BuildNodeIdForType(ETL.getNamedTypeLoc(), EmitRanges::Yes);
           RefLoc = ETL.getNamedTypeLoc().getBeginLoc();
         }
 >>>>>>> WIP - Remove VisitNestedNameSpecifier in favor of direct Visit*TypeLoc
@@ -1385,6 +1384,8 @@ bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr *E) {
     }
   }
 
+  BuildNodeIdForType(E->getAllocatedTypeSourceInfo()->getTypeLoc(),
+                     EmitRanges::Yes);
   return true;
 }
 
@@ -1400,9 +1401,7 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
   absl::optional<GraphObserver::NodeId> TyId;
   clang::NestedNameSpecifierLoc NNSLoc;
   if (E->getDestroyedTypeInfo() != nullptr) {
-    TyId = BuildNodeIdForType(E->getDestroyedTypeInfo()->getTypeLoc(),
-                              E->getDestroyedTypeInfo()->getTypeLoc().getType(),
-                              EmitRanges::Yes);
+    TyId = BuildNodeIdForType(E->getDestroyedTypeInfo()->getTypeLoc(), EmitRanges::Yes);
   } else if (E->hasQualifier()) {
     NNSLoc = E->getQualifierLoc();
   }
@@ -1430,9 +1429,7 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
     return true;
   }
   CHECK(E->getTypeSourceInfo() != nullptr);
-  auto TyId = BuildNodeIdForType(E->getTypeSourceInfo()->getTypeLoc(),
-                                 E->getTypeSourceInfo()->getTypeLoc().getType(),
-                                 EmitRanges::Yes);
+  auto TyId = BuildNodeIdForType(E->getTypeSourceInfo()->getTypeLoc(), EmitRanges::Yes);
   if (!TyId) {
     return true;
   }
@@ -1693,7 +1690,7 @@ bool IndexerASTVisitor::VisitUnaryExprOrTypeTraitExpr(
     if (!TSI->getTypeLoc().isNull()) {
       // TODO(zarko): Possibly discern the Decl for TargetType and call
       // InspectDeclRef on it.
-      BuildNodeIdForType(TSI->getTypeLoc(), TSI->getType(), EmitRanges::Yes);
+      BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::Yes);
     }
   }
   return true;
@@ -3564,15 +3561,12 @@ bool IndexerASTVisitor::IsDefinition(const FunctionDecl *FunctionDecl) {
     }                                              \
     break
 
-absl::optional<GraphObserver::NodeId>
+GraphObserver::NodeId
 IndexerASTVisitor::ApplyBuiltinTypeConstructor(
     const char *BuiltinName,
-    const absl::optional<GraphObserver::NodeId> &Param) {
+    const GraphObserver::NodeId &Param) {
   GraphObserver::NodeId TyconID(Observer.getNodeIdForBuiltinType(BuiltinName));
-  if (Param.has_value()) {
-    return Observer.recordTappNode(TyconID, {&Param.value()}, 1);
-  }
-  return absl::nullopt;
+  return Observer.recordTappNode(TyconID, {&Param}, 1);
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -4025,6 +4019,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
       // TODO(zarko): ObjC tycons; embedded C tycons (address spaces).
       ID = BuildNodeIdForType(T.getUnqualifiedLoc(), PT, EmitRanges);
+      if (!ID) { return absl::nullopt; }
       if (TypeAlreadyBuilt) {
         break;
       }
@@ -4035,13 +4030,13 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       //   using ConstInt = const int;
       //   using CVInt1 = volatile ConstInt;
       if (T.getType().isLocalConstQualified()) {
-        ID = ApplyBuiltinTypeConstructor("const", ID);
+        ID = ApplyBuiltinTypeConstructor("const", *ID);
       }
       if (T.getType().isLocalRestrictQualified()) {
-        ID = ApplyBuiltinTypeConstructor("restrict", ID);
+        ID = ApplyBuiltinTypeConstructor("restrict", *ID);
       }
       if (T.getType().isLocalVolatileQualified()) {
-        ID = ApplyBuiltinTypeConstructor("volatile", ID);
+        ID = ApplyBuiltinTypeConstructor("volatile", *ID);
       }
     } break;
     case TypeLoc::Builtin: {  // Leaf.
@@ -4059,95 +4054,97 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       const auto &T = TypeLoc.castAs<PointerTypeLoc>();
       const auto *DT = dyn_cast<PointerType>(PT);
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto PointeeID(BuildNodeIdForType(T.getPointeeLoc(),
-                                        DT ? DT->getPointeeType().getTypePtr()
-                                           : T.getPointeeLoc().getTypePtr(),
-                                        EmitRanges));
+      auto PointeeID = BuildNodeIdForType(T.getPointeeLoc(),
+                                          DT ? DT->getPointeeType().getTypePtr()
+                                             : T.getPointeeLoc().getTypePtr(),
+                                          EmitRanges);
       if (!PointeeID) {
-        return PointeeID;
+        return absl::nullopt;
       }
       if (TypeAlreadyBuilt) {
         break;
       }
-      ID = ApplyBuiltinTypeConstructor("ptr", PointeeID);
+      ID = ApplyBuiltinTypeConstructor("ptr", *PointeeID);
     } break;
     case TypeLoc::LValueReference: {
       const auto &T = TypeLoc.castAs<LValueReferenceTypeLoc>();
       const auto *DT = dyn_cast<LValueReferenceType>(PT);
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto ReferentID(BuildNodeIdForType(T.getPointeeLoc(),
-                                         DT ? DT->getPointeeType().getTypePtr()
-                                            : T.getPointeeLoc().getTypePtr(),
-                                         EmitRanges));
+      auto ReferentID =
+          BuildNodeIdForType(T.getPointeeLoc(),
+                             DT ? DT->getPointeeType().getTypePtr()
+                                : T.getPointeeLoc().getTypePtr(),
+                             EmitRanges);
       if (!ReferentID) {
-        return ReferentID;
+        return absl::nullopt;
       }
       if (TypeAlreadyBuilt) {
         break;
       }
-      ID = ApplyBuiltinTypeConstructor("lvr", ReferentID);
+      ID = ApplyBuiltinTypeConstructor("lvr", *ReferentID);
     } break;
     case TypeLoc::RValueReference: {
       const auto &T = TypeLoc.castAs<RValueReferenceTypeLoc>();
       const auto *DT = dyn_cast<RValueReferenceType>(PT);
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto ReferentID(BuildNodeIdForType(T.getPointeeLoc(),
-                                         DT ? DT->getPointeeType().getTypePtr()
-                                            : T.getPointeeLoc().getTypePtr(),
-                                         EmitRanges));
+      auto ReferentID =
+          BuildNodeIdForType(T.getPointeeLoc(),
+                             DT ? DT->getPointeeType().getTypePtr()
+                                : T.getPointeeLoc().getTypePtr(),
+                             EmitRanges);
       if (!ReferentID) {
-        return ReferentID;
+        return absl::nullopt;
       }
       if (TypeAlreadyBuilt) {
         break;
       }
-      ID = ApplyBuiltinTypeConstructor("rvr", ReferentID);
+      ID = ApplyBuiltinTypeConstructor("rvr", *ReferentID);
     } break;
       UNSUPPORTED_CLANG_TYPE(MemberPointer);
     case TypeLoc::ConstantArray: {
       const auto &T = TypeLoc.castAs<ConstantArrayTypeLoc>();
       const auto *DT = dyn_cast<ConstantArrayType>(PT);
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto ElementID(BuildNodeIdForType(T.getElementLoc(),
-                                        DT ? DT->getElementType().getTypePtr()
-                                           : T.getElementLoc().getTypePtr(),
-                                        EmitRanges));
+      auto ElementID = BuildNodeIdForType(T.getElementLoc(),
+                                          DT ? DT->getElementType().getTypePtr()
+                                             : T.getElementLoc().getTypePtr(),
+                                          EmitRanges);
       if (!ElementID) {
-        return ElementID;
+        return absl::nullopt;
       }
       if (TypeAlreadyBuilt) {
         break;
       }
       // TODO(zarko): Record size expression.
-      ID = ApplyBuiltinTypeConstructor("carr", ElementID);
+      ID = ApplyBuiltinTypeConstructor("carr", *ElementID);
     } break;
     case TypeLoc::IncompleteArray: {
       const auto &T = TypeLoc.castAs<IncompleteArrayTypeLoc>();
       const auto *DT = dyn_cast<IncompleteArrayType>(PT);
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto ElementID(BuildNodeIdForType(T.getElementLoc(),
-                                        DT ? DT->getElementType().getTypePtr()
-                                           : T.getElementLoc().getTypePtr(),
-                                        EmitRanges));
+      auto ElementID = BuildNodeIdForType(T.getElementLoc(),
+                                          DT ? DT->getElementType().getTypePtr()
+                                             : T.getElementLoc().getTypePtr(),
+                                          EmitRanges);
       if (!ElementID) {
-        return ElementID;
+        return absl::nullopt;
       }
       if (TypeAlreadyBuilt) {
         break;
       }
-      ID = ApplyBuiltinTypeConstructor("iarr", ElementID);
+      ID = ApplyBuiltinTypeConstructor("iarr", *ElementID);
     } break;
       UNSUPPORTED_CLANG_TYPE(VariableArray);
     case TypeLoc::DependentSizedArray: {
       const auto &T = TypeLoc.castAs<DependentSizedArrayTypeLoc>();
       const auto *DT = dyn_cast<DependentSizedArrayType>(PT);
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto ElementID(BuildNodeIdForType(T.getElementLoc(),
-                                        DT ? DT->getElementType().getTypePtr()
-                                           : T.getElementLoc().getTypePtr(),
-                                        EmitRanges));
+      auto ElementID = BuildNodeIdForType(T.getElementLoc(),
+                                          DT ? DT->getElementType().getTypePtr()
+                                             : T.getElementLoc().getTypePtr(),
+                                          EmitRanges);
       if (!ElementID) {
-        return ElementID;
+        return absl::nullopt;
       }
       if (TypeAlreadyBuilt) {
         break;
@@ -4158,7 +4155,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
             Observer.getNodeIdForBuiltinType("darr"),
             {{&ElementID.value(), &ExpressionID.value()}}, 2);
       } else {
-        ID = ApplyBuiltinTypeConstructor("darr", ElementID);
+        ID = ApplyBuiltinTypeConstructor("darr", *ElementID);
       }
     } break;
       UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
@@ -4176,7 +4173,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
           DT ? DT->getReturnType().getTypePtr() : T.getReturnLoc().getTypePtr(),
           EmitRanges);
       if (!ReturnType) {
-        return ReturnType;
+        return absl::nullopt;
       }
       NodeIds.push_back(ReturnType.value());
       unsigned Params = T.getNumParams();
@@ -4196,7 +4193,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                                             : FT->getParamType(P));
         }
         if (!ParmType) {
-          return ParmType;
+          return absl::nullopt;
         }
         NodeIds.push_back(ParmType.value());
       }
@@ -4230,14 +4227,14 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       // TODO(zarko): Return canonicalized versions as non-primary elements of
       // the absl::optional.
       const auto &T = TypeLoc.castAs<TypedefTypeLoc>();
-      GraphObserver::NameId AliasID(BuildNameIdForDecl(T.getTypedefNameDecl()));
+      GraphObserver::NameId AliasID = BuildNameIdForDecl(T.getTypedefNameDecl());
       // We're retrieving the type of an alias here, so we shouldn't thread
       // through the deduced type.
-      auto AliasedTypeID(BuildNodeIdForType(
+      auto AliasedTypeID = BuildNodeIdForType(
           T.getTypedefNameDecl()->getTypeSourceInfo()->getTypeLoc(),
-          IndexerASTVisitor::EmitRanges::No));
+          IndexerASTVisitor::EmitRanges::No);
       if (!AliasedTypeID) {
-        return AliasedTypeID;
+        return absl::nullopt;
       }
       auto Marks = MarkedSources.Generate(T.getTypedefNameDecl());
       ID = TypeAlreadyBuilt
@@ -4449,7 +4446,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       auto TemplateName = BuildNodeIdForTemplateName(
           T.getTypePtr()->getTemplateName(), TNameLoc);
       if (!TemplateName) {
-        return TemplateName;
+        return absl::nullopt;
       }
       if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes &&
           TNameLoc.isFileID()) {
@@ -4480,7 +4477,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
           TemplateArgs.push_back(ArgA.value());
           TemplateArgsPtrs[A] = &TemplateArgs[A];
         } else {
-          return ArgA;
+          return absl::nullopt;
         }
       }
       if (!TypeAlreadyBuilt) {
@@ -4563,12 +4560,12 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     case TypeLoc::PackExpansion: {
       const auto &T = TypeLoc.castAs<PackExpansionTypeLoc>();
       const auto *DT = dyn_cast<PackExpansionType>(PT);
-      auto PatternID(BuildNodeIdForType(
+      auto PatternID = BuildNodeIdForType(
           T.getPatternLoc(),
           DT ? DT->getPattern().getTypePtr() : T.getPatternLoc().getTypePtr(),
-          EmitRanges));
+          EmitRanges);
       if (!PatternID) {
-        return PatternID;
+        return absl::nullopt;
       }
       if (TypeAlreadyBuilt) {
         break;
@@ -4581,12 +4578,13 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       const auto &OPTL = TypeLoc.castAs<ObjCObjectPointerTypeLoc>();
       const auto *DT = dyn_cast<ObjCObjectPointerType>(PT);
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto PointeeID(BuildNodeIdForType(OPTL.getPointeeLoc(),
-                                        DT ? DT->getPointeeType().getTypePtr()
-                                           : OPTL.getPointeeLoc().getTypePtr(),
-                                        EmitRanges));
+      auto PointeeID =
+          BuildNodeIdForType(OPTL.getPointeeLoc(),
+                             DT ? DT->getPointeeType().getTypePtr()
+                                : OPTL.getPointeeLoc().getTypePtr(),
+                             EmitRanges);
       if (!PointeeID) {
-        return PointeeID;
+        return absl::nullopt;
       }
       if (SR.isValid() && SR.getBegin().isFileID()) {
         SR.setEnd(clang::Lexer::getLocForEndOfToken(
@@ -4596,7 +4594,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       if (TypeAlreadyBuilt) {
         break;
       }
-      ID = ApplyBuiltinTypeConstructor("ptr", PointeeID);
+      ID = ApplyBuiltinTypeConstructor("ptr", *PointeeID);
     } break;
     case TypeLoc::ObjCInterface: {  // Leaf
       const auto &ITypeLoc = TypeLoc.castAs<ObjCInterfaceTypeLoc>();
@@ -4685,12 +4683,13 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       const auto &BPTL = TypeLoc.castAs<BlockPointerTypeLoc>();
       const auto &DT = dyn_cast<BlockPointerType>(PT);
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto PointeeID(BuildNodeIdForType(BPTL.getPointeeLoc(),
-                                        DT ? DT->getPointeeType().getTypePtr()
-                                           : BPTL.getPointeeLoc().getTypePtr(),
-                                        EmitRanges));
+      auto PointeeID =
+          BuildNodeIdForType(BPTL.getPointeeLoc(),
+                             DT ? DT->getPointeeType().getTypePtr()
+                                : BPTL.getPointeeLoc().getTypePtr(),
+                             EmitRanges);
       if (!PointeeID) {
-        return PointeeID;
+        return absl::nullopt;
       }
       if (SR.isValid() && SR.getBegin().isFileID()) {
         SR.setEnd(GetLocForEndOfToken(*Observer.getSourceManager(),
@@ -4700,7 +4699,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       if (TypeAlreadyBuilt) {
         break;
       }
-      ID = ApplyBuiltinTypeConstructor("ptr", PointeeID);
+      ID = ApplyBuiltinTypeConstructor("ptr", *PointeeID);
     } break;
       UNSUPPORTED_CLANG_TYPE(Atomic);
       UNSUPPORTED_CLANG_TYPE(Pipe);

@@ -629,9 +629,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool AddNameToStream(llvm::raw_string_ostream &Ostream,
                        const clang::NamedDecl *ND);
 
-  absl::optional<GraphObserver::NodeId> ApplyBuiltinTypeConstructor(
+  GraphObserver::NodeId ApplyBuiltinTypeConstructor(
       const char *BuiltinName,
-      const absl::optional<GraphObserver::NodeId> &Param);
+      const GraphObserver::NodeId &Param);
 
   /// \brief Ascribes a type to `AscribeTo`.
   /// \param Type The `TypeLoc` referring to the type
