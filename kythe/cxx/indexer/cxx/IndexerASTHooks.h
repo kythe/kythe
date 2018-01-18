@@ -234,6 +234,10 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateExpansion(
       clang::TemplateName Name, clang::SourceLocation L);
 
+  // TODO(shahms): Document these.
+  GraphObserver::NodeId BuildNodeIdForBuiltinTypeLoc(clang::BuiltinTypeLoc TL);
+  GraphObserver::NodeId BuildNodeIdForEnumTypeLoc(clang::EnumTypeLoc TL);
+
   /// \brief Builds a stable node ID for `Type`.
   /// \param TypeLoc The type that is being identified. If its location is valid
   /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
