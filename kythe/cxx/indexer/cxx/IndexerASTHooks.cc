@@ -3979,6 +3979,30 @@ void IndexerASTVisitor::DumpTypeContext(unsigned Depth, unsigned Index) {
   }
 }
 
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForBuiltinTypeLoc(
+    clang::BuiltinTypeLoc TL) {
+  return Observer.getNodeIdForBuiltinType(TL.getTypePtr()->getName(
+      clang::PrintingPolicy(*Observer.getLangOptions())));
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForEnumTypeLoc(
+    clang::EnumTypeLoc TL) {
+  EnumDecl *Decl = TL.getDecl();
+  if (EnumDecl *Defn = Decl->getDefinition()) {
+    return BuildNodeIdForDecl(Defn);
+  }
+  auto Marks = MarkedSources.Generate(Decl);
+  auto DeclNameId = BuildNameIdForDecl(Decl);
+  // TODO(shahms): This should not be done here, but should only be
+  // recorded once (which complicates layering in VisitEnumTypeLoc).
+  // This should be:
+  //   return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
+  return Observer.recordNominalTypeNode(
+      DeclNameId,
+      Marks.GenerateMarkedSource(Observer.nodeIdForNominalTypeNode(DeclNameId)),
+      GetDeclChildOf(Decl));
+}
+
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     const clang::TypeLoc &Type, EmitRanges EmitRanges) {
   return BuildNodeIdForType(Type, Type.getTypePtr(), EmitRanges);
@@ -4068,6 +4092,14 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   // We only care about leaves in the type hierarchy (eg, we shouldn't match
   // on Reference, but instead on LValueReference or RValueReference).
   switch (TypeLoc.getTypeLocClass()) {
+    case TypeLoc::Builtin:  // Leaf.
+      return TypeAlreadyBuilt ? Prev->second
+                              : (TypeNodes[Key] = BuildNodeIdForBuiltinTypeLoc(
+                                     TypeLoc.castAs<BuiltinTypeLoc>()));
+    case TypeLoc::Enum:  // Leaf.
+      return TypeAlreadyBuilt ? Prev->second
+                              : (TypeNodes[Key] = BuildNodeIdForEnumTypeLoc(
+                                     TypeLoc.castAs<EnumTypeLoc>()));
     case TypeLoc::Qualified: {
       const auto &T = TypeLoc.castAs<QualifiedTypeLoc>();
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
@@ -4092,16 +4124,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       if (T.getType().isLocalVolatileQualified()) {
         ID = ApplyBuiltinTypeConstructor("volatile", *ID);
       }
-    } break;
-    case TypeLoc::Builtin: {  // Leaf.
-      // Nodes are emitted via VisitBuiltinTypeLoc.
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      const auto &T = TypeLoc.castAs<BuiltinTypeLoc>();
-      if (TypeAlreadyBuilt) {
-        break;
-      }
-      ID = Observer.getNodeIdForBuiltinType(T.getTypePtr()->getName(
-          clang::PrintingPolicy(*Observer.getLangOptions())));
     } break;
       UNSUPPORTED_CLANG_TYPE(Complex);
     case TypeLoc::Pointer: {
@@ -4404,27 +4426,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
             // TODO(zarko): Add completions for these.
             SpanID = BuildNodeIdForDecl(Decl);
           }
-        }
-      }
-    } break;
-    case TypeLoc::Enum: {  // Leaf.
-      // Emission is handled by VisitEnumTypeLoc.
-      InEmitRanges = EmitRanges::No;
-      const auto &T = TypeLoc.castAs<EnumTypeLoc>();
-      EnumDecl *Decl = T.getDecl();
-      if (!TypeAlreadyBuilt) {
-        if (EnumDecl *Defn = Decl->getDefinition()) {
-          ID = BuildNodeIdForDecl(Defn);
-        } else {
-          auto Marks = MarkedSources.Generate(Decl);
-          auto DeclNameId = BuildNameIdForDecl(Decl);
-          // TODO(shahms): This should not be done here, but should only be
-          // recorded once (which complicates layering in VisitEnumTypeLoc).
-          ID = Observer.recordNominalTypeNode(
-              DeclNameId,
-              Marks.GenerateMarkedSource(
-                  Observer.nodeIdForNominalTypeNode(DeclNameId)),
-              GetDeclChildOf(Decl));
         }
       }
     } break;
