@@ -183,28 +183,6 @@ bool ConstructorOverridesInitializer(const clang::CXXConstructorDecl *Ctor,
   return false;
 }
 
-// Use the arithmetic sum of the pointer value of clang::Type and the numerical
-// value of CVR qualifiers as the unique key for a QualType.
-// The size of clang::Type is 24 (as of 2/22/2013), and the maximum of the
-// qualifiers (i.e., the return value of clang::Qualifiers::getCVRQualifiers() )
-// is clang::Qualifiers::CVRMask which is 7. Therefore, uniqueness is satisfied.
-int64_t ComputeKeyFromQualType(const ASTContext &Context, const QualType &QT,
-                               const Type *T) {
-  const clang::SplitQualType &Split = QT.split();
-  // split.Ty is of type "const clang::Type*" and uintptr_t is guaranteed
-  // to have the same size. Note that reinterpret_cast<int64_t> may fail.
-  int64_t Key;
-  if (isa<TemplateSpecializationType>(T)) {
-    Key = reinterpret_cast<uintptr_t>(Context.getCanonicalType(T));
-  } else {
-    // Don't collapse aliases if we can help it.
-    Key = reinterpret_cast<uintptr_t>(T);
-  }
-  Key += Split.Quals.getCVRQualifiers();
-  return Key;
-}
-
-
 /// \return true if `D` should not be visited because its name will never be
 /// uttered due to aliasing rules.
 bool SkipAliasedDecl(const clang::Decl *D) {
@@ -3989,7 +3967,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   // range instead of ID.
   absl::optional<GraphObserver::NodeId> SpanID;
   const QualType QT = TypeLoc.getType();
-  int64_t Key = ComputeKeyFromQualType(Context, QT, PT);
+  TypeKey Key(Context, QT, PT);
   const auto &Prev = TypeNodes.find(Key);
   bool TypeAlreadyBuilt = false;
   GraphObserver::Claimability Claimability =

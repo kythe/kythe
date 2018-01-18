@@ -101,6 +101,7 @@ cc_library(
         ":indexer_library_support",
         ":marked_source",
         ":scope_guard",
+        ":type_map",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",
         "//kythe/cxx/common/indexing:lib",
@@ -120,6 +121,13 @@ cc_library(
         "//third_party/llvm",
         "@com_github_google_glog//:glog",
     ],
+)
+
+cc_library(
+    name = "type_map",
+    srcs = ["type_map.cc"],
+    hdrs = ["type_map.h"],
+    deps = ["//third_party/llvm"],
 )
 
 cc_library(

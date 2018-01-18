@@ -39,6 +39,7 @@
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
 #include "marked_source.h"
+#include "type_map.h"
 
 namespace kythe {
 
@@ -726,7 +727,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// Avoid regenerating type node IDs and keep track of where we are while
   /// generating node IDs for recursive types. The key is opaque and
   /// makes sense only within the implementation of this class.
-  std::unordered_map<int64_t, absl::optional<GraphObserver::NodeId>> TypeNodes;
+  TypeMap<absl::optional<GraphObserver::NodeId>> TypeNodes;
 
   /// \brief Visit an Expr that refers to some NamedDecl.
   ///
