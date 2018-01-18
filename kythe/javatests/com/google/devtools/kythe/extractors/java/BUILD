@@ -19,6 +19,7 @@ java_test(
         "//kythe/proto:storage_java_proto",
         "//third_party/javac",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",
