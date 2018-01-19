@@ -1716,12 +1716,16 @@ bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
   if (const auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
     auto Claimability = GraphObserver::Claimability::Unclaimable;
     if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
-      // If there is no visible definition, Id will be a tnominal node
-      // whereas it is more useful to decorate the span as a reference
-      // to the visible declaration.
-      // See https://phabricator-dot-kythe-repo.appspot.com/D1887
       if (!TL.getDecl()->getDefinition()) {
+        // TODO(shahms): Only emit this once.
+        auto Marks = MarkedSources.Generate(TL.getDecl());
+        Observer.recordNominalTypeNode(*Id, Marks.GenerateMarkedSource(*Id),
+                                       GetDeclChildOf(TL.getDecl()));
         Claimability = GraphObserver::Claimability::Claimable;
+        // If there is no visible definition, Id will be a tnominal node
+        // whereas it is more useful to decorate the span as a reference
+        // to the visible declaration.
+        // See https://phabricator-dot-kythe-repo.appspot.com/D1887
         Id = BuildNodeIdForDecl(TL.getDecl());
       }
       Observer.recordTypeSpellingLocation(*RCC, *Id, Claimability);
@@ -3937,16 +3941,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForEnumTypeLoc(
   if (EnumDecl *Defn = Decl->getDefinition()) {
     return BuildNodeIdForDecl(Defn);
   }
-  auto Marks = MarkedSources.Generate(Decl);
-  auto DeclNameId = BuildNameIdForDecl(Decl);
-  // TODO(shahms): This should probably not be done here,
-  // but should only be recorded once (which complicates layering in
-  // VisitEnumTypeLoc). This should be:
-  //   return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
-  return Observer.recordNominalTypeNode(
-      DeclNameId,
-      Marks.GenerateMarkedSource(Observer.nodeIdForNominalTypeNode(DeclNameId)),
-      GetDeclChildOf(Decl));
+  return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
 }
 
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForTemplateTypeParmTypeLoc(
