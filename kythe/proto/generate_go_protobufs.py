@@ -19,6 +19,10 @@
 #
 # This script must be run with its current working directory inside a Bazel
 # workspace root.
+#
+# N.B.: This script depends on some conventions about how we name our proto
+# rules. Specifically, that the name of the go_proto_library rule for
+# "foo_proto" is "foo_go_proto".
 
 from subprocess import check_output
 from subprocess import call
@@ -31,30 +35,37 @@ import stat
 import sys
 
 # Find the locations of the workspace root and the generated files directory.
-workspace      = check_output(['bazel', 'info', 'workspace']).strip()
-bazel_genfiles = check_output(['bazel', 'info', 'bazel-genfiles']).strip()
-targets        = '//kythe/...'
+workspace   = check_output(['bazel', 'info', 'workspace']).strip()
+bazel_bin   = check_output(['bazel', 'info', 'bazel-bin']).strip()
+targets     = '//kythe/proto/... - //kythe/proto:any_go_proto'
+import_base = 'kythe.io/kythe/proto'
 
 go_protos = check_output([
-    'bazel', 'query', 'attr("gen_go", 1, %s)' % targets,
+    'bazel', 'query', 'kind("go_proto_library", %s)' % targets,
 ]).split()
 
 # Each rule has the form //foo/bar:baz_proto.
 # First build all the rules to ensure we have the output files.
 # Then strip off each :baz_proto, convert it to a filename "baz.proto",
 # and copy the generated output "baz.pb.go" into the source tree.
-if call(['bazel', 'build'] + [rule + '_go' for rule in go_protos]) != 0:
+if call(['bazel', 'build'] + go_protos) != 0:
   print 'Build failed'
   sys.exit(1)
 
 for rule in go_protos:
+  # Example: //kythe/proto:blah_go_proto -> kythe/proto, blah_go_proto
   rule_dir, proto = rule.lstrip('/').rsplit(':', 1)
-  output_dir = os.path.join(workspace, rule_dir, proto)
-  proto_file = re.sub('_proto$', '.proto', proto)
+  # Example: blah_go_proto -> blah_proto
+  base_proto = re.sub(r'_go_', '_', proto)
+  # Example: $ROOT/kythe/proto/blah_go_proto
+  output_dir = os.path.join(workspace, rule_dir, base_proto)
+  # Example: blah_go_proto -> blah.proto
+  proto_file = re.sub('_go_proto$', '.proto', proto)
 
   print 'Copying Go protobuf source for %s' % rule
   generated_file = re.sub('.proto$', '.pb.go', proto_file)
-  generated_path = os.path.join(bazel_genfiles, rule_dir, generated_file)
+  generated_path = os.path.join(bazel_bin, rule_dir, proto+'~',
+                                import_base, proto, generated_file)
 
   if os.path.isdir(output_dir):
     print 'Deleting and recreating old protobuf directory: %s' % output_dir
