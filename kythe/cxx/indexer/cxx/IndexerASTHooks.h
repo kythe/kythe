@@ -229,7 +229,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   // TODO(shahms): Document these.
   GraphObserver::NodeId BuildNodeIdForBuiltinTypeLoc(clang::BuiltinTypeLoc TL);
   GraphObserver::NodeId BuildNodeIdForEnumTypeLoc(clang::EnumTypeLoc TL);
-  GraphObserver::NodeId BuildNodeIdForTemplateTypeParmTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateTypeParmTypeLoc(
       clang::TemplateTypeParmTypeLoc TL);
 
   const clang::TemplateTypeParmDecl *FindTemplateTypeParmTypeLocDecl(
