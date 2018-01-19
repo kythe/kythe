@@ -3949,27 +3949,37 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForEnumTypeLoc(
       GetDeclChildOf(Decl));
 }
 
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForTemplateTypeParmTypeLoc(
+absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForTemplateTypeParmTypeLoc(
     clang::TemplateTypeParmTypeLoc TL) {
-  return BuildNodeIdForDecl(FindTemplateTypeParmTypeLocDecl(TL));
+  if (auto* Decl = FindTemplateTypeParmTypeLocDecl(TL)) {
+    return BuildNodeIdForDecl(Decl);
+  }
+  return absl::nullopt;
 }
 
 const clang::TemplateTypeParmDecl* IndexerASTVisitor::FindTemplateTypeParmTypeLocDecl(clang::TemplateTypeParmTypeLoc TL) {
-  if (auto* Decl = TL.getDecl()) {
-    return Decl;
-  }
   // Either the `TemplateTypeParm` will link directly to a relevant
   // `TemplateTypeParmDecl` or (particularly in the case of canonicalized
   // types) we will find the Decl in the `Job->TypeContext` according to the
   // parameter's depth and index.
   // Depths count from the outside-in; each Template*ParmDecl has only
   // one possible (depth, index).
-  CHECK(TL.getTypePtr() != nullptr);
-  auto* TypeParm = TL.getTypePtr();
-  CHECK(TypeParm->getDepth() < Job->TypeContext.size());
-  CHECK(TypeParm->getIndex() < Job->TypeContext[TypeParm->getDepth()]->size());
-  return cast<clang::TemplateTypeParmDecl>(
-      Job->TypeContext[TypeParm->getDepth()]->getParam(TypeParm->getIndex()));
+  if (auto *Decl = TL.getDecl()) {
+    return Decl;
+  }
+  LOG(INFO) << "Immediate TemplateTypeParmDecl not found, falling back to "
+               "TypeContext";
+  if (auto *TypeParm = TL.getTypePtr()) {
+    if (TypeParm->getDepth() < Job->TypeContext.size() &&
+        TypeParm->getIndex() < Job->TypeContext[TypeParm->getDepth()]->size()) {
+      return cast<clang::TemplateTypeParmDecl>(
+          Job->TypeContext[TypeParm->getDepth()]->getParam(
+              TypeParm->getIndex()));
+    }
+  }
+  LOG(ERROR)
+      << "Unable to find TemplateTypeParmDecl for TemplateTypeParmTypeLoc";
+  return nullptr;
 }
 
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
