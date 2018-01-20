@@ -3,6 +3,7 @@ package(default_visibility = ["//kythe:proto_visibility"])
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load(":go.bzl", "go_kythe_proto")
 
+# TODO(jrtom): add explore.proto to this once it's ready
 filegroup(
     name = "public",
     srcs = [
@@ -380,6 +381,36 @@ cc_proto_library(
 java_proto_library(
     name = "graph_java_proto",
     deps = [":graph_proto"],
+)
+
+# Public Kythe graph exploration API
+proto_library(
+    name = "explore_proto",
+    srcs = ["explore.proto"],
+    deps = [
+        ":common_proto",
+        ":storage_proto",
+        ":xref_proto",
+    ],
+)
+
+go_kythe_proto(
+    proto = ":explore_proto",
+    deps = [
+        ":common_go_proto",
+        ":storage_go_proto",
+        ":xref_go_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "explore_cc_proto",
+    deps = [":explore_proto"],
+)
+
+java_proto_library(
+    name = "explore_java_proto",
+    deps = [":explore_proto"],
 )
 
 # Protocol buffer definitions used to encode serving data

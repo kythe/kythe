@@ -1,0 +1,264 @@
+/*
+ * Copyright 2018 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+
+option java_package = "com.google.devtools.kythe.proto";
+option java_multiple_files = true;
+
+import "kythe/proto/common.proto";
+import "kythe/proto/storage.proto";
+import "kythe/proto/xref.proto";
+
+// This file defines code graph exploration interfaces, based on Kythe data.
+// Design doc: go/kythe-api-proposal
+//
+// Tickets are Kythe URIs (http://www.kythe.io/docs/kythe-uri-spec.html).
+
+// ExploreService provides read-only access to aspects of the Kythe code graph,
+// such as type hierarchies, call graphs, function parameters, and
+// context/contents information.  (Note: unlike XRefService, these calls are
+// not expected to be fast, especially for recursive queries such as Callers,
+// although requests should generally take time proportional to the size of the
+// response (in the absence of filtering, at least).
+
+// In cases where properties of a node are requested (e.g. callers of a function)
+// for which there are no such (e.g., the function has no callers), the response
+// will not include that node.
+
+// THIS API IS EXPERIMENTAL; IMPLEMENTATION IS IN PROGRESS, AND THE API AND
+// IMPLEMENTATION ARE SUBJECT TO CHANGE.  PLEASE DO NOT USE WITHOUT CONTACTING
+// THE KYTHE TEAM (kythe-dev@googlegroups.com).
+
+service ExploreService {
+  // Returns the hierarchy (supertypes and subtypes, including implementations)
+  // of a specified type, as a directed acyclic graph.
+  // NOT YET IMPLEMENTED
+  rpc TypeHierarchy(TypeHierarchyRequest) returns (TypeHierarchyReply) {}
+
+  // Returns the (recursive) callers of a specified function, as a directed
+  // graph.
+  // The Callers/Callees functions are distinct from XrefService.CrossReferences
+  // in that these functions capture the semantic relationships between methods,
+  // rather than the locations in the code base where a method is called.
+  // NOT YET IMPLEMENTED
+  rpc Callers(CallersRequest) returns (CallersReply) {}
+
+  // Returns the (recursive) callees of a specified function (that is, what
+  // functions this function calls), as a directed graph.
+  // NOT YET IMPLEMENTED
+  rpc Callees(CalleesRequest) returns (CalleesReply) {}
+
+  // Returns the parameters of a specified function.
+  // NOT YET IMPLEMENTED
+  rpc Parameters(ParametersRequest) returns (ParametersReply) {}
+
+  // Returns the container(s) in which a specified node is found (for example,
+  // the file for a class, or the class for a function).
+  // Note that in some cases a node may have more than one container.
+  // NOT YET IMPLEMENTED
+  rpc Containers(ContainersRequest) returns (ContainersReply) {}
+
+  // Returns the contents of a given container node (for example, the classes
+  // contained in a file, or the functions contained in a class).
+  // NOT YET IMPLEMENTED
+  rpc Contents(ContentsRequest) returns (ContentsReply) {}
+}
+
+// Shared/utility messages
+
+message NodeData {
+  // the "node/[sub]kind" node facts
+  string kind = 1;
+  string subkind = 2;
+
+  // the relevant locations in which this node is found
+  // TODO: do we want span-specific locations?
+  repeated Location locations = 3;
+
+  // anchor ticket
+  string definition_anchor = 4;
+
+  common.MarkedSource code = 5;
+}
+
+// If the RPC request does not specify otherwise, sucessors and predecessors
+// are both populated.
+message GraphNode {
+  NodeData node_data = 1;
+
+  // semantic tickets of nodes connected to this node by incoming edges
+  Tickets predecessors = 2;
+
+  // semantic tickets of nodes connected to this node by outgoing edges
+  Tickets successors = 3;
+}
+
+message Graph {
+  map<string, GraphNode> nodes = 1;  // semantic ticket -> node/topology data
+}
+
+// Imposes restrictions on the nodes returned for a query.
+// An unset NodeFilter is interpreted as "no restrictions on nodes returned".
+message NodeFilter {
+  // if set, only return nodes whose languages match any of these strings
+  // TODO: consider enabling VName-based filtering for nodes as well as files
+  repeated string included_languages = 1;
+
+  // if set, only return nodes whose files match any of these VNames
+  // Only the parts of the VName that relate to files are relevant here:
+  // https://kythe.io/docs/schema/#_vname_conventions
+  // TODO: consider also supplying exclusion specs as well as inclusion
+  repeated VName included_files = 2;
+}
+
+// Used where we need a collection of tickets (either because we need it for a
+// map or to be able to distinguish between "unset" and "empty".
+message Tickets {
+  repeated string tickets = 1;
+}
+
+
+// Type hierarchy
+// The type hierarchy is represented in the response as a graph, with the
+// input ticket marked.  The graph will be acyclic.
+// node types: "record" (class), "interface"
+// edge types: "extends", "satisfies" (any given response will likely only
+//     include one edge type unless the type hierarchy crosses a language
+//     boundary).
+
+message TypeHierarchyRequest {
+  string type_ticket = 1;
+
+  NodeFilter node_filter = 2;
+}
+
+// Edge types are implicit (see above)
+message TypeHierarchyReply {
+  // same as type_ticket in request
+  string type_ticket = 1;
+
+  Graph graph = 2;
+}
+
+
+// Call graph
+// These APIs are for capturing the graphs induced by the _semantic_ relations between
+// functions (that is, the functions that call, or are called by, this function).
+//
+// If you’re looking for a one-ply relationship between functions and the
+// _locations_ in the code at which they are called, Kythe XRefService's
+// CrossReferences API should do what you want.
+
+// Requests the functions that call the specified function, and their callers,
+// out to the specified maximum search depth.
+message CallersRequest {
+  string function_ticket = 1;
+
+  // Maximum number of calls (call edges) to traverse backwards from the input.
+  // If 0/default, interpreted as a max depth of 1.  Negative values are rejected.
+  int32 max_depth = 2;
+
+  NodeFilter node_filter = 3;
+}
+
+message CallersReply {
+  // same as function_ticket in request
+  string function_ticket = 1;
+
+  Graph graph = 2;
+}
+
+// Requests the functions called by the specified function, and their callees,
+// out to the specified maximum search depth.
+message CalleesRequest {
+  string function_ticket = 1;
+
+  // Maximum number of calls (call edges) to traverse forwards from the input.
+  // If 0/default, interpreted as a max depth of 1.  Negative values are rejected.
+  int32 max_depth = 2;
+
+  NodeFilter node_filter = 3;
+}
+
+// TODO: consider merging this and CallersReply into a single message
+// (CallgraphReply) unless we have reason to believe they need to be distinct
+message CalleesReply {
+  // same as function_ticket in request
+  string function_ticket = 1;
+
+  Graph graph = 2;
+}
+
+
+// Function parameters
+// node types: function
+// edge types: TBD
+
+// Requests the parameters and return value of the specified function
+message ParametersRequest {
+  repeated string function_tickets = 1;
+}
+
+
+message ParametersReply {
+  map<string, Tickets> function_to_parameters = 1;
+
+  map<string, string> function_to_return_value = 2;
+
+  // data for functions and parameters
+  map<string, NodeData> node_data = 3;
+}
+
+
+// Containers and contents
+// node types: package, record (class), interface, function, ...
+// edge type: childof
+
+// * what package is this file/class/interface in?
+// * what is the class/interface that this function is in?
+
+// Fetches the ticket for the enclosing context of the specified ticket
+// (e.g.: what package is this file in?  what class is this function in?)
+message ContainersRequest {
+  repeated string ticket = 1;
+}
+
+message ContainersReply {
+  // associates each input ticket with the set of tickets that contain it
+  map<string, Tickets> input_to_containers = 1;
+
+  map<string, NodeData> node_data = 2;
+}
+
+
+// Fetches the tickets for which the specified ticket is the enclosing context
+// (e.g. what files are in this package?  what functions are in this class?)
+message ContentsRequest {
+  repeated string ticket = 1;
+
+  NodeFilter node_filter = 2;
+}
+
+
+message ContentsReply {
+  // associates each input ticket with the set of tickets contained by it
+  map<string, Tickets> input_to_contents = 1;
+
+  map<string, NodeData> node_data = 2;
+}
