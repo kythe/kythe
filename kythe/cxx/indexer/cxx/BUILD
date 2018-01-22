@@ -97,6 +97,7 @@ cc_library(
     ],
     deps = [
         ":graph_observer",
+        ":indexed_parent_iterator",
         ":indexed_parent_map",
         ":indexer_library_support",
         ":marked_source",
@@ -120,6 +121,17 @@ cc_library(
         ":scope_guard",
         "//third_party/llvm",
         "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "indexed_parent_iterator",
+    srcs = ["indexed_parent_iterator.cc"],
+    hdrs = ["indexed_parent_iterator.h"],
+    deps = [
+        ":indexed_parent_map",
+        "//third_party/llvm",
+        "@com_google_absl//absl/types:optional",
     ],
 )
 

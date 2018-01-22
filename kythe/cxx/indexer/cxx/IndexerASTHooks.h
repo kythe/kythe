@@ -660,7 +660,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
   template <typename NodeT>
-  IndexedParent *getIndexedParent(const NodeT &Node) {
+  const IndexedParent *getIndexedParent(const NodeT &Node) {
     return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
   }
 
@@ -670,8 +670,11 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// This excludes, for example, certain template instantiations.
   bool declDominatesPrunableSubtree(const clang::Decl *Decl);
 
-  IndexedParent *getIndexedParent(
+  const IndexedParent *getIndexedParent(
       const clang::ast_type_traits::DynTypedNode &Node);
+
+  /// Initializes AllParents, if necessary, and then returns a pointer to it.
+  IndexedParentMap* getAllParents();
 
   /// A map from memoizable DynTypedNodes to their parent nodes
   /// and their child indices with respect to those parents.
