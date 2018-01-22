@@ -158,6 +158,12 @@ maven_jar(
     sha1 = "7d4afac9f631a2c1adecc21350a4e88241185eb4",
 )
 
+maven_jar(
+    name = "org_ow2_asm_asm",
+    artifact = "org.ow2.asm:asm:6.0",
+    sha1 = "bc6fa6b19424bb9592fe43bbc20178f92d403105",
+)
+
 http_archive(
     name = "io_bazel_rules_go",
     sha256 = "4d8d6244320dd751590f9100cf39fd7a4b75cd901e1f3ffdfd6f048328883695",

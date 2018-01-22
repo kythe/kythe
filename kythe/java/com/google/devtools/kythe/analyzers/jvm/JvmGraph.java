@@ -1,0 +1,245 @@
+/*
+ * Copyright 2018 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.devtools.kythe.analyzers.jvm;
+
+import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
+import com.google.devtools.kythe.analyzers.base.EntrySet;
+import com.google.devtools.kythe.analyzers.base.FactEmitter;
+import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
+import com.google.devtools.kythe.analyzers.base.NodeKind;
+import com.google.devtools.kythe.platform.shared.StatisticsCollector;
+import com.google.devtools.kythe.proto.Storage.VName;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Kythe JVM language graph. */
+public class JvmGraph {
+  /** The language component for all JVM Kythe node {@link VName}s. */
+  public static final String JVM_LANGUAGE = "jvm";
+
+  private final KytheEntrySets entrySets;
+
+  /** Constructs a new {@link JvmGraph} that emits Kythe facts to the given {@link FactEmitter}. */
+  public JvmGraph(StatisticsCollector statistics, FactEmitter emitter) {
+    entrySets =
+        new KytheEntrySets(
+            statistics,
+            emitter,
+            VName.newBuilder().setLanguage(JVM_LANGUAGE).build(),
+            new ArrayList<>());
+  }
+
+  /** Returns the underlying {@link KytheEntrySets} used to construct and emit the Kythe graph. */
+  public KytheEntrySets getKytheEntrySets() {
+    return entrySets;
+  }
+
+  /** Returns the {@link VName} corresponding to the given class/enum/interface type. */
+  public VName getReferenceVName(Type.ReferenceType referenceType) {
+    return VName.newBuilder()
+        .setSignature(referenceType.qualifiedName)
+        .setLanguage(JVM_LANGUAGE)
+        .build();
+  }
+
+  /** Emits and returns a Kythe {@code record} node for a JVM class. */
+  public VName emitClassNode(Type.ReferenceType referenceType) {
+    return emitNode(NodeKind.RECORD_CLASS, referenceType.qualifiedName);
+  }
+
+  /** Emits and returns a Kythe {@code interface} node for a JVM interface. */
+  public VName emitInterfaceNode(Type.ReferenceType referenceType) {
+    return emitNode(NodeKind.INTERFACE, referenceType.qualifiedName);
+  }
+
+  /** Emits and returns a Kythe {@code sum} node for a JVM enum class. */
+  public VName emitEnumNode(Type.ReferenceType referenceType) {
+    return emitNode(NodeKind.SUM_ENUM_CLASS, referenceType.qualifiedName);
+  }
+
+  /** Emits and returns a Kythe {@code variable} node for a JVM field. */
+  public VName emitFieldNode(Type.ReferenceType parentClass, String name) {
+    return emitNode(NodeKind.VARIABLE_FIELD, parentClass.qualifiedName + "." + name);
+  }
+
+  /** Emits and returns a Kythe {@code function} node for a JVM method. */
+  public VName emitMethodNode(Type.ReferenceType parentClass, String name, Type type) {
+    return emitNode(NodeKind.FUNCTION, parentClass.qualifiedName + "." + name + type);
+  }
+
+  private VName emitNode(NodeKind nodeKind, String signature) {
+    EntrySet es = entrySets.newNode(nodeKind).setSignature(signature).build();
+    es.emit(entrySets.getEmitter());
+    return es.getVName();
+  }
+
+  /**
+   * JVM {@link Type} descriptor including the {@code void} method return type.
+   *
+   * @see JvmGraph.Type
+   */
+  public static class VoidableType {
+    private static final VoidableType VOID =
+        new VoidableType() {
+          @Override
+          public String toString() {
+            return "V";
+          }
+        };
+
+    /** Returns the JVM {@code void} type descriptor. */
+    public static VoidableType voidType() {
+      return VOID;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      } else if (!(o instanceof Type)) {
+        return false;
+      }
+      return this.toString().equals(o.toString());
+    }
+  }
+
+  /**
+   * JVM type descriptor.
+   *
+   * @see https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.3
+   */
+  public static class Type extends VoidableType {
+    private static final PrimitiveType BOOL = new PrimitiveType("Z");
+    private static final PrimitiveType BYTE = new PrimitiveType("B");
+    private static final PrimitiveType CHAR = new PrimitiveType("C");
+    private static final PrimitiveType SHORT = new PrimitiveType("S");
+    private static final PrimitiveType INT = new PrimitiveType("I");
+    private static final PrimitiveType LONG = new PrimitiveType("J");
+    private static final PrimitiveType FLOAT = new PrimitiveType("F");
+    private static final PrimitiveType DOUBLE = new PrimitiveType("D");
+
+    protected final String signature;
+
+    private Type(String signature) {
+      this.signature = signature;
+    }
+
+    /** JVM primitive type descriptors. */
+    public static final class PrimitiveType extends Type {
+      private PrimitiveType(String signature) {
+        super(signature);
+      }
+    }
+
+    /** JVM class/enum/interface type descriptors. */
+    public static final class ReferenceType extends Type {
+      final String qualifiedName;
+
+      private ReferenceType(String qualifiedName) {
+        super("L" + qualifiedName.replace(".", "/") + ";");
+        this.qualifiedName = qualifiedName.replace("/", ".");
+      }
+    }
+
+    /** JVM method type descriptors. */
+    public static final class MethodType extends Type {
+      private MethodType(String signature) {
+        super(signature);
+      }
+    }
+
+    /** JVM array type descriptors. */
+    public static final class ArrayType extends Type {
+      private ArrayType(String signature) {
+        super(signature);
+      }
+    }
+
+    /** Returns the JVM {@code boolean} type descriptor. */
+    public static PrimitiveType booleanType() {
+      return BOOL;
+    }
+
+    /** Returns the JVM {@code byte} type descriptor. */
+    public static PrimitiveType byteType() {
+      return BYTE;
+    }
+
+    /** Returns the JVM {@code char} type descriptor. */
+    public static PrimitiveType charType() {
+      return CHAR;
+    }
+
+    /** Returns the JVM {@code int} type descriptor. */
+    public static PrimitiveType intType() {
+      return INT;
+    }
+
+    /** Returns the JVM {@code long} type descriptor. */
+    public static PrimitiveType longType() {
+      return LONG;
+    }
+
+    /** Returns the JVM {@code short} type descriptor. */
+    public static PrimitiveType shortType() {
+      return SHORT;
+    }
+
+    /** Returns the JVM {@code float} type descriptor. */
+    public static PrimitiveType floatType() {
+      return FLOAT;
+    }
+
+    /** Returns the JVM {@code double} type descriptor. */
+    public static PrimitiveType doubleType() {
+      return DOUBLE;
+    }
+
+    /** Returns a new JVM class/enum/interface type descriptor. */
+    public static ReferenceType referenceType(String qualifiedName) {
+      Preconditions.checkNotNull(qualifiedName);
+      return new ReferenceType(qualifiedName);
+    }
+
+    /** Returns a new JVM method type descriptor. */
+    public static MethodType methodType(List<Type> argTypes, VoidableType retType) {
+      Preconditions.checkNotNull(argTypes, "method argument types list must be non-null");
+      Preconditions.checkNotNull(retType, "method return type must be non-null");
+      return new MethodType("(" + Joiner.on("").join(argTypes) + ")" + retType);
+    }
+
+    /** Returns a new JVM array type descriptor. */
+    public static ArrayType arrayType(Type elementType) {
+      Preconditions.checkNotNull(elementType, "array element type must be non-null");
+      return new ArrayType("[" + elementType);
+    }
+
+    @Override
+    public String toString() {
+      return signature;
+    }
+
+    static MethodType rawMethodType(String descriptor) {
+      return new MethodType(descriptor);
+    }
+
+    static Type rawType(String signature) {
+      return new Type(signature);
+    }
+  }
+}
