@@ -205,7 +205,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	if err == table.ErrNoSuchKey {
 		return nil, xrefs.ErrDecorationsNotFound
 	} else if err != nil {
-		return nil, fmt.Errorf("lookup error for file decorations %q: %v", ticket, err)
+		return nil, canonicalError(err, "file decorations", ticket)
 	}
 
 	if decor.File == nil {
@@ -486,7 +486,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			log.Println("Missing CrossReferences:", ticket)
 			continue
 		} else if err != nil {
-			return nil, fmt.Errorf("error looking up cross-references for ticket %q: %v", ticket, err)
+			return nil, canonicalError(err, "cross-references", ticket)
 		}
 		foundCrossRefs = true
 
@@ -915,7 +915,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 			log.Printf("Missing Documentation for %s", ticket)
 			continue
 		} else if err != nil {
-			return nil, fmt.Errorf("error looking up documentation for ticket %q: %v", ticket, err)
+			return nil, canonicalError(err, "documentation", ticket)
 		}
 
 		doc := d2d(d, patterns, reply.Nodes, reply.DefinitionLocations)
@@ -927,7 +927,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 					log.Printf("Missing Documentation for child (of %s): %s", ticket, child)
 					continue
 				} else if err != nil {
-					return nil, fmt.Errorf("error looking up documentation child with ticket %q: %v", ticket, err)
+					return nil, canonicalError(err, "documentation child", ticket)
 				}
 
 				doc.Children = append(doc.Children, d2d(cd, patterns, reply.Nodes, reply.DefinitionLocations))
@@ -957,5 +957,21 @@ func clearSnippet(anchor *xpb.Anchor) {
 func tracePrintf(ctx context.Context, msg string, args ...interface{}) {
 	if t, ok := trace.FromContext(ctx); ok {
 		t.LazyPrintf(msg, args...)
+	}
+}
+
+// Wrap known error types with corresponding rpc status errors.
+// If no sensible parsing can be found, just return fmt.Errorf with some hints
+// about the calling code and ticket.
+// Follows util::error::Code from
+// http://google.github.io/google-api-cpp-client/latest/doxygen/namespacegoogleapis_1_1util_1_1error.html
+func canonicalError(err error, caller string, ticket string) error {
+	switch err {
+	case context.Canceled:
+		return xrefs.ErrCanceled
+	case context.DeadlineExceeded:
+		return xrefs.ErrDeadlineExceeded
+	default:
+		return status.Errorf(status.Code(err), "error looking up %s with ticket %q: %v", caller, ticket, err)
 	}
 }

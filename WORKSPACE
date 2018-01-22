@@ -173,7 +173,7 @@ http_archive(
 new_git_repository(
     name = "go_grpc",
     build_file = "third_party/go/grpc.BUILD",
-    commit = "61d37c5d657a47e4404fd6823bd598341a2595de",
+    commit = "95869d0274dc5f61cad15f9ef42e060b9c9e0a3a",
     remote = "https://github.com/grpc/grpc-go.git",
 )
 

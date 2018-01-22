@@ -59,9 +59,17 @@ type Service interface {
 	Documentation(context.Context, *xpb.DocumentationRequest) (*xpb.DocumentationReply, error)
 }
 
-// ErrDecorationsNotFound is returned by an implementation of the Decorations
-// method when decorations for the given file cannot be found.
-var ErrDecorationsNotFound = status.Error(codes.NotFound, "file decorations not found")
+var (
+	// ErrDecorationsNotFound is returned by an implementation of the Decorations
+	// method when decorations for the given file cannot be found.
+	ErrDecorationsNotFound = status.Error(codes.NotFound, "file decorations not found")
+
+	// ErrCanceled is returned by services when the caller cancels the RPC.
+	ErrCanceled = status.Error(codes.Canceled, "canceled")
+
+	// ErrDeadlineExceeded is returned by services when something times out.
+	ErrDeadlineExceeded = status.Error(codes.DeadlineExceeded, "deadline exceeded")
+)
 
 // FixTickets converts the specified tickets, which are expected to be Kythe
 // URIs, into canonical form. It is an error if len(tickets) == 0.
