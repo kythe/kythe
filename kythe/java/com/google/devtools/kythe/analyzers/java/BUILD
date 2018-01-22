@@ -22,6 +22,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
+        "//kythe/java/com/google/devtools/kythe/analyzers/jvm:jvm_graph",
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/platform/java",
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",

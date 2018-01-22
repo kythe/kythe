@@ -28,6 +28,7 @@ import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.java.SourceText.Comment;
 import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
+import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.filemanager.JavaFileStoreBasedFileManager;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
@@ -117,6 +118,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final Context javaContext;
   private final JavaFileStoreBasedFileManager fileManager;
   private final MetadataLoaders metadataLoaders;
+  private final JvmGraph jvmGraph;
   private List<Metadata> metadata;
 
   private KytheDocTreeScanner docScanner;
@@ -130,7 +132,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       BiConsumer<JCTree, VName> nodeConsumer,
       boolean verboseLogging,
       JavaFileStoreBasedFileManager fileManager,
-      MetadataLoaders metadataLoaders) {
+      MetadataLoaders metadataLoaders,
+      JvmGraph jvmGraph) {
     this.entrySets = entrySets;
     this.statistics = statistics;
     this.signatureGenerator = signatureGenerator;
@@ -140,6 +143,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     this.verboseLogging = verboseLogging;
     this.fileManager = fileManager;
     this.metadataLoaders = metadataLoaders;
+    this.jvmGraph = jvmGraph;
 
     for (Comment comment : src.getComments()) {
       for (int line = comment.lineSpan.getStart(); line <= comment.lineSpan.getEnd(); line++) {
@@ -162,7 +166,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       SourceText src,
       boolean verboseLogging,
       JavaFileStoreBasedFileManager fileManager,
-      MetadataLoaders metadataLoaders)
+      MetadataLoaders metadataLoaders,
+      JavaIndexerConfig.JvmMode jvmMode)
       throws IOException {
     new KytheTreeScanner(
             entrySets,
@@ -173,7 +178,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             nodeConsumer,
             verboseLogging,
             fileManager,
-            metadataLoaders)
+            metadataLoaders,
+            jvmMode == JavaIndexerConfig.JvmMode.SEMANTIC
+                ? new JvmGraph(statistics, entrySets.getEmitter())
+                : null)
         .scan(compilation, null);
   }
 
@@ -346,11 +354,19 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       entrySets.emitEdge(classNode, EdgeKind.CHILDOF, container.getNode().getVName());
     }
 
-    // Emit NAME nodes for the jvm binary name of classes (except for local and anonymous classes).
     NestingKind nestingKind = classDef.sym.getNestingKind();
     if (nestingKind != NestingKind.LOCAL && nestingKind != NestingKind.ANONYMOUS) {
-      VName nameNode = entrySets.getJvmNameAndEmit(classDef.sym.flatname.toString()).getVName();
-      entrySets.emitEdge(classNode, EdgeKind.NAMED, nameNode);
+      if (jvmGraph != null) {
+        // Emit corresponding JVM node
+        JvmGraph.Type.ReferenceType referenceType =
+            JvmGraph.Type.referenceType(classDef.sym.fullname.toString());
+        VName jvmNode = jvmGraph.emitClassNode(referenceType);
+        entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
+      } else {
+        // Emit NAME nodes for the jvm binary name of classes.
+        VName nameNode = entrySets.getJvmNameAndEmit(classDef.sym.flatname.toString()).getVName();
+        entrySets.emitEdge(classNode, EdgeKind.NAMED, nameNode);
+      }
     }
 
     Span classIdent = filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
@@ -489,6 +505,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
     boolean documented = visitDocComment(methodNode, absNode);
 
+    // Emit corresponding JVM node
+    if (jvmGraph != null) {
+      JvmGraph.Type.MethodType jvmType = toJvmType(methodDef.type.asMethodType());
+      VName jvmNode =
+          jvmGraph.emitMethodNode(
+              JvmGraph.Type.referenceType(owner.getTree().type.toString()),
+              methodDef.name.toString(),
+              jvmType);
+      entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
+    }
+
     VName ret = null;
     EntrySet bindingAnchor = null;
     if (methodDef.sym.isConstructor()) {
@@ -609,6 +636,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (varDef.sym.getKind().isField() && !documented) {
       // emit comments for fields and enumeration constants
       emitComment(varDef, varNode);
+    }
+
+    // Emit corresponding JVM node
+    if (jvmGraph != null && varDef.sym.getKind().isField()) {
+      VName jvmNode =
+          jvmGraph.emitFieldNode(
+              JvmGraph.Type.referenceType(owner.getTree().type.toString()), varDef.name.toString());
+      entrySets.emitEdge(varNode, EdgeKind.GENERATES, jvmNode);
     }
 
     TreeContext parentContext = ctx.getClassOrMethodParent();
@@ -943,6 +978,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return emitDiagnostic(ctx, "failed to resolve symbol reference", null, null);
     }
 
+    // TODO(schroederc): emit reference to JVM node if `sym.outermostClass()` is not defined in a
+    //                   .java source file
     emitAnchor(ctx, EdgeKind.REF, node.getVName());
     statistics.incrementCounter("symbol-usages-emitted");
     return node;
@@ -1192,5 +1229,52 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         }
       }
     }
+  }
+
+  private static JvmGraph.Type toJvmType(Type type) {
+    switch (type.getTag()) {
+      case TYPEVAR:
+        return JvmGraph.Type.referenceType("java.lang.Object");
+      case CLASS:
+        return JvmGraph.Type.referenceType(type.toString());
+      case ARRAY:
+        return JvmGraph.Type.arrayType(toJvmType(((Type.ArrayType) type).getComponentType()));
+      case METHOD:
+        return toJvmType(type.asMethodType());
+      case BOOLEAN:
+        return JvmGraph.Type.booleanType();
+      case CHAR:
+        return JvmGraph.Type.charType();
+      case INT:
+        return JvmGraph.Type.intType();
+      case SHORT:
+        return JvmGraph.Type.shortType();
+      case LONG:
+        return JvmGraph.Type.longType();
+      case DOUBLE:
+        return JvmGraph.Type.doubleType();
+      case FLOAT:
+        return JvmGraph.Type.floatType();
+      default:
+        throw new IllegalStateException("unhandled Java Type: " + type.getTag());
+    }
+  }
+
+  private static JvmGraph.VoidableType toJvmReturnType(Type type) {
+    switch (type.getTag()) {
+      case VOID:
+        return JvmGraph.Type.voidType();
+      default:
+        return toJvmType(type);
+    }
+  }
+
+  private static JvmGraph.Type.MethodType toJvmType(Type.MethodType type) {
+    return JvmGraph.Type.methodType(
+        type.getParameterTypes()
+            .stream()
+            .map(KytheTreeScanner::toJvmType)
+            .collect(Collectors.toList()),
+        toJvmReturnType(type.getReturnType()));
   }
 }

@@ -133,7 +133,8 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           src,
           config.getVerboseLogging(),
           details.getFileManager(),
-          metadataLoaders);
+          metadataLoaders,
+          config.getJvmMode());
     } catch (Throwable e) {
       throw new AnalysisException("Exception analyzing file: " + ast.getSourceFile().getName(), e);
     }

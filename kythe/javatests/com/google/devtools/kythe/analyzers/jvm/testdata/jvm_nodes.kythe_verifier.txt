@@ -1,0 +1,12 @@
+//- ClassJvm=vname("pkg.Jvm", "", "", "", "jvm").node/kind record
+//- ClassJvm.subkind class
+
+//- IntFieldJvm=vname("pkg.Jvm.intField", "", "", "", "jvm").node/kind variable
+//- IntFIeldJvm.subkind field
+
+//- InnerJvm=vname("pkg.Jvm.Inner", "", "", "", "jvm").node/kind record
+//- InnerJvm.subkind class
+
+//- FuncJvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V", "", "", "", "jvm").node/kind function
+
+//- NopeJvm=vname("pkg.Jvm.nope()Ljava/lang/Object;", "", "", "", "jvm").node/kind function

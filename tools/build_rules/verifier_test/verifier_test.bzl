@@ -123,14 +123,17 @@ atomize_entries = rule(
     implementation = _atomize_entries_impl,
 )
 
-def extract(ctx, kindex, extractor, vnames_config, srcs, opts, deps=[], mnemonic="ExtractKindex"):
+def extract(ctx, kindex, extractor, srcs, opts, deps=[], vnames_config=None, mnemonic="ExtractKindex"):
   env = {
       "KYTHE_ROOT_DIRECTORY": ".",
       "KYTHE_OUTPUT_FILE": kindex.path,
-      "KYTHE_VNAMES": vnames_config.path,
   }
+  inputs = [extractor] + srcs + deps
+  if vnames_config:
+    env["KYTHE_VNAMES"] = vnames_config.path
+    inputs += [vnames_config]
   ctx.actions.run(
-      inputs = [extractor, vnames_config] + srcs + deps,
+      inputs = inputs,
       outputs = [kindex],
       mnemonic = mnemonic,
       executable = extractor,
@@ -222,6 +225,37 @@ java_extract_kindex = rule(
     implementation = _java_extract_kindex_impl,
 )
 
+def _jvm_extract_kindex_impl(ctx):
+  jars = []
+  for dep in ctx.attr.deps:
+    jars += [dep[KytheJavaJar].jar]
+
+  extract(
+      ctx = ctx,
+      srcs = jars,
+      kindex = ctx.outputs.kindex,
+      extractor = ctx.executable.extractor,
+      opts = ctx.attr.opts,
+      mnemonic = "JvmExtractKindex",
+  )
+  return [KytheVerifierSources(files=[])]
+
+jvm_extract_kindex = rule(
+    attrs = {
+        "deps": attr.label_list(
+            providers = [KytheJavaJar],
+        ),
+        "extractor": attr.label(
+            default = Label("//kythe/java/com/google/devtools/kythe/extractors/jvm:jar_extractor"),
+            executable = True,
+            cfg = "host",
+        ),
+        "opts": attr.string_list(),
+    },
+    outputs = {"kindex": "%{name}.kindex"},
+    implementation = _jvm_extract_kindex_impl,
+)
+
 def _index_compilation_impl(ctx):
   sources = depset()
   intermediates = []
@@ -282,13 +316,15 @@ def _verifier_test_impl(ctx):
   entries_gz = depset()
   sources = depset()
   for src in ctx.attr.srcs:
-    # TODO(shahms): Allow specifiying files directly.
-    sources += src[KytheVerifierSources].files
-    if KytheEntries in src:
-      if src[KytheEntries].files:
-        entries += src[KytheEntries].files
-      else:
-        entries_gz += src[KytheEntries].compressed
+    if KytheVerifierSources in src:
+      sources += src[KytheVerifierSources].files
+      if KytheEntries in src:
+        if src[KytheEntries].files:
+          entries += src[KytheEntries].files
+        else:
+          entries_gz += src[KytheEntries].compressed
+    else:
+      sources += src.files
 
 
   for dep in ctx.attr.deps:
@@ -330,8 +366,7 @@ def _verifier_test_impl(ctx):
 verifier_test = rule(
     attrs = {
         "srcs": attr.label_list(
-            # TODO(shahms): Allow directly specifying sources/deps.
-            # allow_files = True,
+            allow_files = True,
             providers = [
                 [KytheVerifierSources],
                 [
@@ -373,7 +408,7 @@ def _invoke(rulefn, name, **kwargs):
 
 def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
                        indexer_opts=["--verbose"], verifier_opts=["--ignore_dups"],
-                       load_plugin=None,
+                       load_plugin=None, extra_goals=[],
                        vnames_config=None, visibility=None):
   kindex = _invoke(java_extract_kindex,
       name = name + "_kindex",
@@ -416,7 +451,38 @@ def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
       name = name,
       size = size,
       tags = tags,
-      srcs = [entries],
+      srcs = [entries] + extra_goals,
+      deps = [entries],
+      opts = verifier_opts,
+      visibility = visibility,
+  )
+
+def jvm_verifier_test(name, srcs, deps=[], size="small", tags=[],
+                      indexer_opts=[], verifier_opts=["--ignore_dups"],
+                      visibility=None):
+  kindex = _invoke(jvm_extract_kindex,
+      name = name + "_kindex",
+      # This is a hack to depend on the .jar producer.
+      deps = [d + "_kindex" for d in deps],
+      tags = tags,
+      visibility = visibility,
+      testonly = True,
+  )
+  indexer = "//kythe/java/com/google/devtools/kythe/analyzers/jvm:class_file_indexer"
+  entries = _invoke(index_compilation,
+      name = name + "_entries",
+      indexer = indexer,
+      deps = [kindex],
+      tags = tags,
+      opts = indexer_opts,
+      visibility = visibility,
+      testonly = True,
+  )
+  return _invoke(verifier_test,
+      name = name,
+      size = size,
+      tags = tags,
+      srcs = [entries] + srcs,
       deps = [entries],
       opts = verifier_opts,
       visibility = visibility,

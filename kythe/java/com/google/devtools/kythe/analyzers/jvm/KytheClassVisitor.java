@@ -41,11 +41,6 @@ public final class KytheClassVisitor extends ClassVisitor {
   }
 
   @Override
-  public void visitSource(String source, String debug) {
-    super.visitSource(source, debug);
-  }
-
-  @Override
   public void visit(
       int version,
       int access,
@@ -73,6 +68,15 @@ public final class KytheClassVisitor extends ClassVisitor {
           jvmGraph.emitInterfaceNode(JvmGraph.Type.referenceType(iface)));
     }
     super.visit(version, access, name, signature, superName, interfaces);
+  }
+
+  @Override
+  public void visitInnerClass(String name, String outerName, String innerName, int access) {
+    entrySets.emitEdge(
+        jvmGraph.getReferenceVName(JvmGraph.Type.referenceType(name)),
+        EdgeKind.CHILDOF,
+        jvmGraph.getReferenceVName(JvmGraph.Type.referenceType(outerName)));
+    super.visitInnerClass(name, outerName, innerName, access);
   }
 
   @Override

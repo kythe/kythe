@@ -213,7 +213,7 @@ public class JvmGraph {
     /** Returns a new JVM class/enum/interface type descriptor. */
     public static ReferenceType referenceType(String qualifiedName) {
       Preconditions.checkNotNull(qualifiedName);
-      return new ReferenceType(qualifiedName);
+      return new ReferenceType(qualifiedName.replace("$", "."));
     }
 
     /** Returns a new JVM method type descriptor. */

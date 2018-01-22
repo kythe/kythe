@@ -28,6 +28,8 @@ public final class JvmGraphTest extends TestCase {
     Type.ReferenceType objectType = Type.referenceType("java.lang.Object");
     assertThat(objectType.toString()).isEqualTo("Ljava/lang/Object;");
     assertThat(Type.referenceType("java/lang/Object")).isEqualTo(objectType);
+    assertThat(Type.referenceType("java.util.Map$Entry").toString())
+        .isEqualTo("Ljava/util/Map/Entry;");
     assertThat(Type.booleanType().toString()).isEqualTo("Z");
     assertThat(Type.byteType().toString()).isEqualTo("B");
     assertThat(Type.arrayType(objectType).toString()).isEqualTo("[Ljava/lang/Object;");
