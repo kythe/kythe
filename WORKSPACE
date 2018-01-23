@@ -42,6 +42,11 @@ bind(
     actual = "@com_google_code_gson_gson//jar",
 )
 
+bind(
+    name = "zlib",  # required by @com_google_protobuf
+    actual = "//third_party/zlib",
+)
+
 http_archive(
     name = "boringssl",  # Must match upstream workspace name.
     # Gitiles creates gzip files with an embedded timestamp, so we cannot use

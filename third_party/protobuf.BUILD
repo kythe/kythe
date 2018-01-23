@@ -20,7 +20,6 @@ COPTS = select({
     ":windows_msvc": WIN_COPTS,
     "//conditions:default": [
         "-DHAVE_PTHREAD",
-        "-DHAVE_ZLIB",
         "-Wall",
         "-Wwrite-strings",
         "-Woverloaded-virtual",
@@ -54,7 +53,6 @@ LINK_OPTS = select({
     "//conditions:default": [
         "-lpthread",
         "-lm",
-        "-lz",
     ],
 })
 
@@ -165,11 +163,14 @@ cc_library(
         "src/google/protobuf/wrappers.pb.cc",
     ],
     hdrs = glob(["src/**/*.h"]),
-    copts = COPTS,
+    copts = COPTS + ["-DHAVE_ZLIB"],
     includes = ["src/"],
     linkopts = LINK_OPTS,
     visibility = ["//visibility:public"],
-    deps = [":protobuf_lite"],
+    deps = [
+        ":protobuf_lite",
+        "//external:zlib",
+    ],
 )
 
 # This provides just the header files for use in projects that need to build
