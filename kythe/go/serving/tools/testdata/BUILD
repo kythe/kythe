@@ -1,4 +1,3 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_binary", "go_test")
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 sh_binary(
