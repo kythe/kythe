@@ -50,8 +50,8 @@ class RootTraversal {
    public:
     iterator() = default;
     reference operator*() const { return *current_; }
-    bool operator==(const iterator& other) const;
-    bool operator!=(const iterator& other) const;
+    bool operator==(const iterator& rhs) const;
+    bool operator!=(const iterator& rhs) const;
     iterator& operator++();
     iterator operator++(int);
 

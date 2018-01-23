@@ -23,7 +23,6 @@ namespace kythe {
 namespace {
 
 using ::clang::dyn_cast;
-using ::clang::isa;
 
 /// \return `true` if truncating tree traversal at `decl` is safe, provided that
 /// `decl` has been traversed previously.
