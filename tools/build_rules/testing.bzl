@@ -40,7 +40,7 @@ def shell_tool_test(name, script=[], scriptfile='', tools={}, data=[],
   lines = ["set -e", 'cat >$@ <<"EOF"'] + [
       'readonly %s="$${%d:?missing %s tool}"' % (base, i+1, base)
       for i, base in enumerate(bases)
-  ] + script + ["shift %d" % len(bases), "EOF"]
+  ] + ["shift %d" % len(bases)] + script + ["EOF"]
   if scriptfile:
     lines += [
         "# --- end generated section ---",
