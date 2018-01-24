@@ -14,7 +14,6 @@ filegroup(
         "//third_party/llvm:license",
         "//third_party/rapidjson:license",
         "//third_party/snappy:license",
-        "//third_party/zlib:license",
     ],
 )
 

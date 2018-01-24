@@ -78,7 +78,7 @@ cc_library(
     ],
     linkstatic = 1,
     deps = [
-        "//third_party/zlib",
+        "//external:zlib",
     ],
     alwayslink = 1,
 )

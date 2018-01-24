@@ -11,7 +11,7 @@ cc_library(
     ],
     copts = ["-Wno-unused-private-field"],
     deps = [
-        "//third_party/zlib",
+        "//external:zlib",
     ],
 )
 

@@ -315,9 +315,9 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//external:zlib",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common/indexing:frontend",
-        "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",

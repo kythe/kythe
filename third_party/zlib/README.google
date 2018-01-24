@@ -1,4 +1,0 @@
-URL: https://launchpad.net/ubuntu/+archive/primary/+files/zlib_1.2.8.dfsg.orig.tar.gz
-Version: 1:1.2.8.dfsg-1ubuntu1
-License: zlib license
-Local modifications: removed unused files. Added a BUILD file.
