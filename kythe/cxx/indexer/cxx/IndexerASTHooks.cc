@@ -18,7 +18,6 @@
 
 #include "IndexerASTHooks.h"
 #include "GraphObserver.h"
-#include "indexed_parent_iterator.h"
 
 #include "absl/types/optional.h"
 
@@ -194,25 +193,6 @@ bool SkipAliasedDecl(const clang::Decl *D) {
 bool IsObjCForwardDecl(const clang::ObjCInterfaceDecl *decl) {
   return !decl->isThisDeclarationADefinition();
 }
-
-const clang::Decl *FindImplicitDeclForStmt(
-    const IndexedParentMap *AllParents, const clang::Stmt *Stmt,
-    llvm::SmallVector<unsigned, 16> *StmtPath) {
-  for (const auto &Current : RootTraversal(AllParents, Stmt)) {
-    if (Current.decl && Current.decl->isImplicit() &&
-        !isa<VarDecl>(Current.decl)) {
-      // If this is an implicit variable declaration, we assume that it is one
-      // of the implicit declarations attached to a range for loop. We ignore
-      // its implicitness, which lets us associate a source location with the
-      // implicit references to 'begin', 'end' and operators.
-      return Current.decl;
-    }
-    if (Current.indexed_parent && StmtPath) {
-      StmtPath->push_back(Current.indexed_parent->index);
-    }
-  }
-  return nullptr;
-}
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl *decl) {
@@ -315,24 +295,33 @@ class PruneCheck {
     // here even if aliasing is turned on; otherwise we will drop data.
     // If aliasing is off, the NodeId already contains this information.
     if (FLAGS_experimental_alias_template_instantiations) {
+      clang::ast_type_traits::DynTypedNode current_node =
+          clang::ast_type_traits::DynTypedNode::create(*decl);
+      const clang::Decl *current_decl;
       llvm::raw_string_ostream ostream(cleanup_id_);
-      for (const auto &Current :
-           RootTraversal(visitor_->getAllParents(), decl)) {
-        if (!Current.decl || Current.decl == decl) continue;
-
+      while (!(current_decl = current_node.get<clang::Decl>()) ||
+             !isa<clang::TranslationUnitDecl>(current_decl)) {
+        IndexedParent *parent = visitor_->getIndexedParent(current_node);
+        if (parent == nullptr) {
+          break;
+        }
+        current_node = parent->parent;
+        if (!current_decl) {
+          continue;
+        }
         if (const auto *czdecl =
-                dyn_cast<ClassTemplateSpecializationDecl>(Current.decl)) {
+                dyn_cast<ClassTemplateSpecializationDecl>(current_decl)) {
           ostream << "#"
                   << HashToString(visitor_->SemanticHash(
                          &czdecl->getTemplateInstantiationArgs()));
-        } else if (const auto *fdecl = dyn_cast<FunctionDecl>(Current.decl)) {
+        } else if (const auto *fdecl = dyn_cast<FunctionDecl>(current_decl)) {
           if (const auto *template_args =
                   fdecl->getTemplateSpecializationArgs()) {
             ostream << "#"
                     << HashToString(visitor_->SemanticHash(template_args));
           }
         } else if (const auto *vdecl =
-                       dyn_cast<VarTemplateSpecializationDecl>(Current.decl)) {
+                       dyn_cast<VarTemplateSpecializationDecl>(current_decl)) {
           ostream << "#"
                   << HashToString(visitor_->SemanticHash(
                          &vdecl->getTemplateInstantiationArgs()));
@@ -346,7 +335,8 @@ class PruneCheck {
   IndexerASTVisitor *visitor_;
 };
 
-IndexedParentMap* IndexerASTVisitor::getAllParents() {
+IndexedParent *IndexerASTVisitor::getIndexedParent(
+    const ast_type_traits::DynTypedNode &Node) {
   if (!AllParents) {
     // We always need to run over the whole translation unit, as
     // hasAncestor can escape any subtree.
@@ -355,16 +345,16 @@ IndexedParentMap* IndexerASTVisitor::getAllParents() {
     AllParents = absl::make_unique<IndexedParentMap>(
         IndexedParentMap::Build(Context.getTranslationUnitDecl()));
   }
-  return AllParents.get();
-}
-
-const IndexedParent *IndexerASTVisitor::getIndexedParent(
-    const ast_type_traits::DynTypedNode &Node) {
-  return getAllParents()->GetIndexedParent(Node);
+  return AllParents->GetIndexedParent(Node);
 }
 
 bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl *Decl) {
-  return getAllParents()->DeclDominatesPrunableSubtree(Decl);
+  if (!AllParents) {
+    ProfileBlock block(Observer.getProfilingCallback(), "build_parent_map");
+    AllParents = absl::make_unique<IndexedParentMap>(
+        IndexedParentMap::Build(Context.getTranslationUnitDecl()));
+  }
+  return AllParents->DeclDominatesPrunableSubtree(Decl);
 }
 
 bool IndexerASTVisitor::IsDefinition(const clang::VarDecl *VD) {
@@ -2914,16 +2904,50 @@ GraphObserver::NameId::NameEqClass IndexerASTVisitor::BuildNameEqClassForDecl(
 // TODO(zarko): Can this logic be shared with BuildNameIdForDecl?
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::GetDeclChildOf(
     const clang::Decl *Decl) {
-  for (const auto& Node : RootTraversal(getAllParents(), Decl)) {
+  clang::ast_type_traits::DynTypedNode CurrentNode =
+      clang::ast_type_traits::DynTypedNode::create(*Decl);
+  const clang::Decl *CurrentNodeAsDecl;
+  while (!(CurrentNodeAsDecl = CurrentNode.get<clang::Decl>()) ||
+         !isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
+    IndexedParent *IP = getIndexedParent(CurrentNode);
+    if (IP == nullptr) {
+      break;
+    }
     // We would rather name 'template <etc> class C' as C, not C::C, but
     // we also want to be able to give useful names to templates when they're
     // explicitly requested. Therefore:
-    if (Node.decl == nullptr || Node.decl == Decl ||
-        isa<clang::ClassTemplateSpecializationDecl>(Node.decl)) {
+    if (CurrentNodeAsDecl == Decl ||
+        (CurrentNodeAsDecl && isa<ClassTemplateDecl>(CurrentNodeAsDecl))) {
+      CurrentNode = IP->parent;
       continue;
     }
-    if (const auto *ND = dyn_cast<clang::NamedDecl>(Node.decl)) {
-      return BuildNodeIdForDecl(ND);
+    if (CurrentNodeAsDecl) {
+      if (const NamedDecl *ND = dyn_cast<NamedDecl>(CurrentNodeAsDecl)) {
+        return BuildNodeIdForDecl(ND);
+      }
+    }
+    CurrentNode = IP->parent;
+    if (CurrentNodeAsDecl) {
+      if (const auto *DC = CurrentNodeAsDecl->getDeclContext()) {
+        if (const TagDecl *TD = dyn_cast<TagDecl>(CurrentNodeAsDecl)) {
+          const clang::Decl *DCD;
+          switch (DC->getDeclKind()) {
+            case Decl::Namespace:
+              DCD = dyn_cast<NamespaceDecl>(DC);
+              break;
+            case Decl::TranslationUnit:
+              DCD = dyn_cast<TranslationUnitDecl>(DC);
+              break;
+            default:
+              DCD = nullptr;
+          }
+          if (DCD && TD->isEmbeddedInDeclarator()) {
+            // Names for declarator-embedded decls should reflect lexical
+            // scope, not AST scope.
+            CurrentNode = clang::ast_type_traits::DynTypedNode::create(*DCD);
+          }
+        }
+      }
     }
   }
   return absl::nullopt;
@@ -3006,17 +3030,21 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
   // prefix search.
   llvm::raw_string_ostream Ostream(Id.Path);
   bool MissingSeparator = false;
-  for (const auto& Current : RootTraversal(getAllParents(), Decl)) {
+  clang::ast_type_traits::DynTypedNode CurrentNode =
+      clang::ast_type_traits::DynTypedNode::create(*Decl);
+  const clang::Decl *CurrentNodeAsDecl;
+  while (!(CurrentNodeAsDecl = CurrentNode.get<clang::Decl>()) ||
+         !isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
     // TODO(zarko): Do we need to deal with nodes with no memoization data?
     // According to ASTTypeTrates.h:205, only Stmt, Decl, Type and
     // NestedNameSpecifier return memoization data. Can we claim an invariant
     // that if we start at any Decl, we will always encounter nodes with
     // memoization data?
-    const IndexedParent *IP = Current.indexed_parent;
+    IndexedParent *IP = getIndexedParent(CurrentNode);
     if (IP == nullptr) {
       // Make sure that we don't miss out on implicit nodes.
-      if (Current.decl && Current.decl->isImplicit()) {
-        if (const NamedDecl *ND = dyn_cast<NamedDecl>(Current.decl)) {
+      if (CurrentNodeAsDecl && CurrentNodeAsDecl->isImplicit()) {
+        if (const NamedDecl *ND = dyn_cast<NamedDecl>(CurrentNodeAsDecl)) {
           if (!AddNameToStream(Ostream, ND)) {
             if (const DeclContext *DC = ND->getDeclContext()) {
               if (DC->isFunctionOrMethod()) {
@@ -3046,25 +3074,27 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
     // We would rather name 'template <etc> class C' as C, not C::C, but
     // we also want to be able to give useful names to templates when they're
     // explicitly requested. Therefore:
-    if (MissingSeparator && Current.decl &&
-        isa<ClassTemplateDecl>(Current.decl)) {
+    if (MissingSeparator && CurrentNodeAsDecl &&
+        isa<ClassTemplateDecl>(CurrentNodeAsDecl)) {
+      CurrentNode = IP->parent;
       continue;
     }
     if (MissingSeparator &&
-        !dyn_cast_or_null<LinkageSpecDecl>(Current.decl)) {
+        !dyn_cast_or_null<LinkageSpecDecl>(CurrentNodeAsDecl)) {
       Ostream << ":";
     } else {
       MissingSeparator = true;
     }
-    if (Current.decl) {
+    if (CurrentNodeAsDecl) {
       // TODO(zarko): check for other specializations and emit accordingly
       // Alternately, maybe it would be better to just always emit the hash?
       // At any rate, a hash cache might be a good idea.
-      if (const NamedDecl *ND = dyn_cast<NamedDecl>(Current.decl)) {
+      if (const NamedDecl *ND = dyn_cast<NamedDecl>(CurrentNodeAsDecl)) {
         if (!AddNameToStream(Ostream, ND)) {
           Ostream << IP->index;
         }
-      } else if (const auto *LSD = dyn_cast<LinkageSpecDecl>(Current.decl)) {
+      } else if (const auto *LSD =
+                     dyn_cast<LinkageSpecDecl>(CurrentNodeAsDecl)) {
         // Doing anything here breaks C headers that wrap extern "C" in
         // #ifdef __cplusplus.
       } else {
@@ -3072,9 +3102,32 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
         // index wrt its parent node.
         Ostream << IP->index;
       }
-    } else if (auto *S = Current.node.get<clang::Stmt>()) {
+    } else if (auto *S = CurrentNode.get<clang::Stmt>()) {
       // This is a Stmt--we can name it by its index wrt its parent node.
       Ostream << IP->index;
+    }
+    CurrentNode = IP->parent;
+    if (CurrentNodeAsDecl) {
+      if (const auto *DC = CurrentNodeAsDecl->getDeclContext()) {
+        if (const TagDecl *TD = dyn_cast<TagDecl>(CurrentNodeAsDecl)) {
+          const clang::Decl *DCD;
+          switch (DC->getDeclKind()) {
+            case Decl::Namespace:
+              DCD = dyn_cast<NamespaceDecl>(DC);
+              break;
+            case Decl::TranslationUnit:
+              DCD = dyn_cast<TranslationUnitDecl>(DC);
+              break;
+            default:
+              DCD = nullptr;
+          }
+          if (DCD && TD->isEmbeddedInDeclarator()) {
+            // Names for declarator-embedded decls should reflect lexical
+            // scope, not AST scope.
+            CurrentNode = clang::ast_type_traits::DynTypedNode::create(*DCD);
+          }
+        }
+      }
     }
   }
   Ostream.flush();
@@ -3232,20 +3285,44 @@ IndexerASTVisitor::BuildNodeIdForImplicitStmt(const clang::Stmt *Stmt) {
     return absl::nullopt;
   }
   // Do a quickish test to see if the Stmt is implicit.
+  clang::ast_type_traits::DynTypedNode CurrentNode =
+      clang::ast_type_traits::DynTypedNode::create(*Stmt);
+
   llvm::SmallVector<unsigned, 16> StmtPath;
-  if (const clang::Decl *Decl =
-          FindImplicitDeclForStmt(getAllParents(), Stmt, &StmtPath)) {
-    auto DeclId = BuildNodeIdForDecl(Decl);
-    std::string NewIdent = DeclId.getRawIdentity();
-    {
-      llvm::raw_string_ostream Ostream(NewIdent);
-      for (auto &node : StmtPath) {
-        Ostream << node << ".";
+  const clang::Decl *CurrentNodeAsDecl = nullptr;
+  for (;;) {
+    if ((CurrentNodeAsDecl = CurrentNode.get<clang::Decl>())) {
+      // If this is an implicit variable declaration, we assume that it is one
+      // of the implicit declarations attached to a range for loop. We ignore
+      // its implicitness, which lets us associate a source location with the
+      // implicit references to 'begin', 'end' and operators.
+      if (CurrentNodeAsDecl->isImplicit() && !isa<VarDecl>(CurrentNodeAsDecl)) {
+        break;
+      } else if (isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
+        CHECK(!CurrentNodeAsDecl->isImplicit());
+        return absl::nullopt;
       }
     }
-    return GraphObserver::NodeId(DeclId.getToken(), NewIdent);
+    IndexedParent *IP = getIndexedParent(CurrentNode);
+    if (IP == nullptr) {
+      break;
+    }
+    StmtPath.push_back(IP->index);
+    CurrentNode = IP->parent;
   }
-  return absl::nullopt;
+  if (CurrentNodeAsDecl == nullptr) {
+    // Out of luck.
+    return absl::nullopt;
+  }
+  auto DeclId = BuildNodeIdForDecl(CurrentNodeAsDecl);
+  std::string NewIdent = DeclId.getRawIdentity();
+  {
+    llvm::raw_string_ostream Ostream(NewIdent);
+    for (auto &node : StmtPath) {
+      Ostream << node << ".";
+    }
+  }
+  return GraphObserver::NodeId(DeclId.getToken(), NewIdent);
 }
 
 GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
@@ -3313,24 +3390,35 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   }
 
   // Disambiguate nodes underneath template instances.
-  for (const auto &Current : RootTraversal(getAllParents(), Decl)) {
-    if (!Current.decl) continue;
-    if (const auto *TD = dyn_cast<TemplateDecl>(Current.decl)) {
+  clang::ast_type_traits::DynTypedNode CurrentNode =
+      clang::ast_type_traits::DynTypedNode::create(*Decl);
+  const clang::Decl *CurrentNodeAsDecl;
+  while (!(CurrentNodeAsDecl = CurrentNode.get<clang::Decl>()) ||
+         !isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
+    IndexedParent *IP = getIndexedParent(CurrentNode);
+    if (IP == nullptr) {
+      break;
+    }
+    CurrentNode = IP->parent;
+    if (!CurrentNodeAsDecl) {
+      continue;
+    }
+    if (const auto *TD = dyn_cast<TemplateDecl>(CurrentNodeAsDecl)) {
       // Disambiguate type abstraction IDs from abstracted type IDs.
-      if (Current.decl != Decl) {
+      if (CurrentNodeAsDecl != Decl) {
         Ostream << "#";
       }
     }
     if (!FLAGS_experimental_alias_template_instantiations) {
       if (const auto *CTSD =
-              dyn_cast<ClassTemplateSpecializationDecl>(Current.decl)) {
+              dyn_cast<ClassTemplateSpecializationDecl>(CurrentNodeAsDecl)) {
         // Inductively, we can break after the first implicit instantiation*
         // (since its NodeId will contain its parent's first implicit
         // instantiation and so on). We still want to include hashes of
         // instantiation types.
         // * we assume that the first parent changing, if it does change, is not
         //   semantically important; we're generating stable internal IDs.
-        if (Current.decl != Decl) {
+        if (CurrentNodeAsDecl != Decl) {
           Ostream << "#" << BuildNodeIdForDecl(CTSD);
           if (CTSD->isImplicit()) {
             break;
@@ -3340,12 +3428,12 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
                   << HashToString(
                          SemanticHash(&CTSD->getTemplateInstantiationArgs()));
         }
-      } else if (const auto *FD = dyn_cast<FunctionDecl>(Current.decl)) {
+      } else if (const auto *FD = dyn_cast<FunctionDecl>(CurrentNodeAsDecl)) {
         Ostream << "#"
                 << HashToString(
                        SemanticHash(QualType(FD->getFunctionType(), 0)));
         if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
-          if (Current.decl != Decl) {
+          if (CurrentNodeAsDecl != Decl) {
             Ostream << "#" << BuildNodeIdForDecl(FD);
             break;
           } else {
@@ -3358,10 +3446,10 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
             break;
           }
         }
-      } else if (const auto *VD =
-                     dyn_cast<VarTemplateSpecializationDecl>(Current.decl)) {
+      } else if (const auto *VD = dyn_cast<VarTemplateSpecializationDecl>(
+                     CurrentNodeAsDecl)) {
         if (VD->isImplicit()) {
-          if (Current.decl != Decl) {
+          if (CurrentNodeAsDecl != Decl) {
             Ostream << "#" << BuildNodeIdForDecl(VD);
             break;
           } else {
@@ -3370,7 +3458,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
                            SemanticHash(&VD->getTemplateInstantiationArgs()));
           }
         }
-      } else if (const auto *VD = dyn_cast<VarDecl>(Current.decl)) {
+      } else if (const auto *VD = dyn_cast<VarDecl>(CurrentNodeAsDecl)) {
         if (const auto *MSI = VD->getMemberSpecializationInfo()) {
           if (const auto *DC =
                   dyn_cast<const class Decl>(VD->getDeclContext())) {
