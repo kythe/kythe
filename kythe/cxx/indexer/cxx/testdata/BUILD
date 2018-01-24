@@ -1456,6 +1456,12 @@ test_suite(
 )
 
 cc_indexer_test(
+    name = "rec_agg_init",
+    srcs = ["rec/rec_agg_init.cc"],
+    tags = ["rec"],
+)
+
+cc_indexer_test(
     name = "rec_ambiguous_struct",
     srcs = ["rec/rec_ambiguous_struct.cc"],
     tags = ["rec"],

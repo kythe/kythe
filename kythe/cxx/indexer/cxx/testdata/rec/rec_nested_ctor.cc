@@ -10,9 +10,18 @@ struct S {
 
     //- @U defines/binding StructU
     struct U { };
+
+    //- @V defines/binding StructVDecl
+    struct V;
   };
 
 };
+
+//- @S ref StructS
+//- @T ref StructT
+//- @V defines/binding StructV
+//- @V completes/uniquely StructVDecl
+struct S::T::V { };
 
 }  // namespace ns
 
@@ -47,4 +56,15 @@ void scope() {
   //- @u ref ConstructU
   //- @u ref/call ConstructU
   ns::S::T::U u;
+
+  //- @S ref StructS
+  //- @T ref StructT
+  //- @V ref StructV
+  ns::S::T::V v{};
+
+  //- @S ref StructS
+  //- @T ref StructT
+  //- @V ref StructV
+  //- !{ @ns ref StructV }
+  ns::S::T::V{};
 }

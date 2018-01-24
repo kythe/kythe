@@ -96,6 +96,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
         MarkedSources(&Sema, &Observer),
         ShouldStopIndexing(std::move(ShouldStopIndexing)) {}
 
+
   bool VisitDecl(const clang::Decl *Decl);
   bool VisitDeclaratorDecl(const clang::DeclaratorDecl *Decl);
   bool VisitFieldDecl(const clang::FieldDecl *Decl);
@@ -107,6 +108,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr *E);
   bool VisitCXXConstructExpr(const clang::CXXConstructExpr *E);
   bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
+  bool VisitCXXFunctionalCastExpr(const clang::CXXFunctionalCastExpr *E);
   bool VisitCXXNewExpr(const clang::CXXNewExpr *E);
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr *E);
   bool VisitCXXUnresolvedConstructExpr(

@@ -1239,6 +1239,13 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
   return true;
 }
 
+bool IndexerASTVisitor::VisitCXXFunctionalCastExpr(const clang::CXXFunctionalCastExpr *E) {
+  // TODO(shahms): Emit ref and ref/call edges to an implicit constructor for aggregate
+  // initialization.
+  BuildNodeIdForType(E->getTypeInfoAsWritten()->getTypeLoc(), EmitRanges::Yes);
+  return true;
+}
+
 bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr *E) {
   auto StmtId = BuildNodeIdForImplicitStmt(E);
   if (FunctionDecl *New = E->getOperatorNew()) {
@@ -1642,6 +1649,7 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
       // Mark implicit ranges by making them zero-length.
       Range.setEnd(Range.getBegin());
     }
+
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(TargetDecl);
@@ -2308,6 +2316,8 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
   if (Decl->isEmbeddedInDeclarator() && Decl->getDefinition() != Decl) {
     return true;
   }
+
+  VisitNestedNameSpecifierLoc(Decl->getQualifierLoc());
 
   auto Marks = MarkedSources.Generate(Decl);
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
