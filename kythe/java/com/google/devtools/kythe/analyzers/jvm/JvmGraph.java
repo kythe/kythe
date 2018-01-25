@@ -18,11 +18,14 @@ package com.google.devtools.kythe.analyzers.jvm;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
+import com.google.devtools.kythe.analyzers.base.KytheEntrySets.NodeBuilder;
 import com.google.devtools.kythe.analyzers.base.NodeKind;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
+import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,18 +61,18 @@ public class JvmGraph {
   }
 
   /** Emits and returns a Kythe {@code record} node for a JVM class. */
-  public VName emitClassNode(Type.ReferenceType referenceType) {
-    return emitNode(NodeKind.RECORD_CLASS, referenceType.qualifiedName);
+  public VName emitClassNode(Type.ReferenceType refType) {
+    return emitNode(NodeKind.RECORD_CLASS, refType.qualifiedName, markedSource(refType));
   }
 
   /** Emits and returns a Kythe {@code interface} node for a JVM interface. */
-  public VName emitInterfaceNode(Type.ReferenceType referenceType) {
-    return emitNode(NodeKind.INTERFACE, referenceType.qualifiedName);
+  public VName emitInterfaceNode(Type.ReferenceType refType) {
+    return emitNode(NodeKind.INTERFACE, refType.qualifiedName, markedSource(refType));
   }
 
   /** Emits and returns a Kythe {@code sum} node for a JVM enum class. */
-  public VName emitEnumNode(Type.ReferenceType referenceType) {
-    return emitNode(NodeKind.SUM_ENUM_CLASS, referenceType.qualifiedName);
+  public VName emitEnumNode(Type.ReferenceType refType) {
+    return emitNode(NodeKind.SUM_ENUM_CLASS, refType.qualifiedName, markedSource(refType));
   }
 
   /** Emits and returns a Kythe {@code variable} node for a JVM field. */
@@ -83,7 +86,15 @@ public class JvmGraph {
   }
 
   private VName emitNode(NodeKind nodeKind, String signature) {
-    EntrySet es = entrySets.newNode(nodeKind).setSignature(signature).build();
+    return emitNode(nodeKind, signature, null);
+  }
+
+  private VName emitNode(NodeKind nodeKind, String signature, MarkedSource markedSource) {
+    NodeBuilder builder = entrySets.newNode(nodeKind).setSignature(signature);
+    if (markedSource != null) {
+      builder.setProperty("code", markedSource);
+    }
+    EntrySet es = builder.build();
     es.emit(entrySets.getEmitter());
     return es.getVName();
   }
@@ -241,5 +252,26 @@ public class JvmGraph {
     static Type rawType(String signature) {
       return new Type(signature);
     }
+  }
+
+  private static MarkedSource markedSource(Type.ReferenceType referenceType) {
+    List<String> parts = Splitter.on('.').splitToList(referenceType.qualifiedName);
+    MarkedSource id =
+        MarkedSource.newBuilder()
+            .setKind(MarkedSource.Kind.IDENTIFIER)
+            .setPreText(parts.get(parts.size() - 1))
+            .build();
+    if (parts.size() == 1) {
+      return id;
+    }
+    MarkedSource.Builder ctx =
+        MarkedSource.newBuilder()
+            .setKind(MarkedSource.Kind.CONTEXT)
+            .setAddFinalListToken(true)
+            .setPostChildText(".");
+    for (int i = 0; i < parts.size() - 1; i++) {
+      ctx.addChildBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText(parts.get(i));
+    }
+    return MarkedSource.newBuilder().addChild(ctx.build()).addChild(id).build();
   }
 }

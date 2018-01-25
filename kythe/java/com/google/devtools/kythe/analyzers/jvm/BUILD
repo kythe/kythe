@@ -7,6 +7,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
+        "//kythe/proto:common_java_proto",
         "//kythe/proto:storage_java_proto",
         "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
@@ -29,6 +30,6 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
-        "@org_ow2_asm_asm//jar:jar",
+        "@org_ow2_asm_asm//jar",
     ],
 )

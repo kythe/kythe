@@ -11,5 +11,9 @@ jvm_verifier_test(
         "jvm_edges.kythe_verifier.txt",
         "jvm_nodes.kythe_verifier.txt",
     ],
+    verifier_opts = [
+        "--ignore_dups",
+        "--convert_marked_source",
+    ],
     deps = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg:jvm_tests"],
 )

@@ -10,3 +10,19 @@
 //- FuncJvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V", "", "", "", "jvm").node/kind function
 
 //- NopeJvm=vname("pkg.Jvm.nope()Ljava/lang/Object;", "", "", "", "jvm").node/kind function
+
+
+Marked Source tests:
+
+//- ClassJvm code ClassMS
+//- ClassMS.kind "BOX"
+//- ClassMS child.0 ClassCtx
+//- ClassCtx.kind "CONTEXT"
+//- ClassCtx.post_child_text "."
+//- ClassCtx.add_final_list_token "true"
+//- ClassCtx child.0 PkgId
+//- PkgId.kind "IDENTIFIER"
+//- PkgId.pre_text "pkg"
+//- ClassMS child.1 ClassId
+//- ClassId.kind "IDENTIFIER"
+//- ClassId.pre_text "Jvm"

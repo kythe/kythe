@@ -294,5 +294,9 @@ java_verifier_test(
     srcs = ["Jvm.java"],
     extra_goals = ["//kythe/javatests/com/google/devtools/kythe/analyzers/jvm/testdata:jvm_nodes.kythe_verifier.txt"],
     indexer_opts = ["--emit_jvm=semantic"],
+    verifier_opts = [
+        "--ignore_dups",
+        "--convert_marked_source",
+    ],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/jvm/testdata:__pkg__"],
 )
