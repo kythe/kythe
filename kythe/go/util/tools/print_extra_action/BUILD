@@ -6,9 +6,10 @@ action_listener(
     name = "print_extra_actions",
     extra_actions = [":printer"],
     mnemonics = [
-        "Javac",
         "CppCompile",
         "GoCompile",
+        "JavaIjar",
+        "Javac",
     ],
     visibility = ["//visibility:public"],
 )

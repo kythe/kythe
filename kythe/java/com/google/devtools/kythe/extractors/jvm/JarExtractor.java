@@ -19,25 +19,15 @@ package com.google.devtools.kythe.extractors.jvm;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
-import com.google.common.io.ByteStreams;
-import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
-import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.indexpack.Archive;
-import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
-import com.google.devtools.kythe.proto.Analysis.FileData;
-import com.google.devtools.kythe.proto.Storage.VName;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 /**
  * Kythe extractor for Java .jar files.
@@ -46,24 +36,11 @@ import java.util.jar.JarFile;
  */
 public class JarExtractor {
   public static void main(String[] args) throws IOException, ExtractionException {
-    CompilationUnit.Builder compilation =
-        CompilationUnit.newBuilder()
-            .setVName(VName.newBuilder().setLanguage(JvmGraph.JVM_LANGUAGE));
-    List<FileData> fileContents = new ArrayList<>();
-    List<String> classFiles = new ArrayList<>();
+    List<Path> paths = new ArrayList<>();
     for (String arg : args) {
-      compilation.addArgument(arg);
-      if (arg.endsWith(".jar")) {
-        fileContents.addAll(extractClassFiles(Paths.get(arg)));
-      } else {
-        classFiles.add(arg);
-      }
+      paths.add(Paths.get(arg));
     }
-    fileContents.addAll(ExtractorUtils.processRequiredInputs(classFiles));
-    compilation.addAllRequiredInput(ExtractorUtils.toFileInputs(fileContents));
-
-    CompilationDescription indexInfo =
-        new CompilationDescription(compilation.build(), fileContents);
+    CompilationDescription indexInfo = JvmExtractor.extract(paths);
 
     String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
     if (!Strings.isNullOrEmpty(outputFile)) {
@@ -82,23 +59,5 @@ public class JarExtractor {
         new Archive(outputDir).writeDescription(indexInfo);
       }
     }
-  }
-
-  private static List<FileData> extractClassFiles(Path jarPath) throws IOException {
-    List<FileData> files = new ArrayList<>();
-    try (JarFile jar = new JarFile(jarPath.toFile())) {
-      for (Enumeration<JarEntry> entries = jar.entries(); entries.hasMoreElements(); ) {
-        JarEntry entry = entries.nextElement();
-        if (!entry.getName().endsWith(".class")) {
-          continue;
-        }
-        try (InputStream input = jar.getInputStream(entry)) {
-          String path = jarPath.resolve(entry.getName()).toString();
-          byte[] contents = ByteStreams.toByteArray(input);
-          files.add(ExtractorUtils.createFileData(path, contents));
-        }
-      }
-    }
-    return files;
   }
 }
