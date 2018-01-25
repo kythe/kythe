@@ -40,7 +40,8 @@ public class JarExtractor {
     for (String arg : args) {
       paths.add(Paths.get(arg));
     }
-    CompilationDescription indexInfo = JvmExtractor.extract(paths);
+    String buildTarget = System.getenv("KYTHE_ANALYSIS_TARGET");
+    CompilationDescription indexInfo = JvmExtractor.extract(buildTarget, paths);
 
     String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
     if (!Strings.isNullOrEmpty(outputFile)) {

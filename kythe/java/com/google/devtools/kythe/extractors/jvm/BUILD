@@ -19,7 +19,9 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/analyzers/jvm:jvm_graph",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/proto:analysis_java_proto",
+        "//kythe/proto:buildinfo_java_proto",
         "//kythe/proto:storage_java_proto",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:protobuf_java",
     ],
 )

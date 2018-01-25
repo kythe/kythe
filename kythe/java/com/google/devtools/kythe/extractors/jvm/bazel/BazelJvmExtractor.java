@@ -70,7 +70,7 @@ public class BazelJvmExtractor {
     List<Path> paths = new ArrayList<>();
     paths.add(Paths.get(spawnInfo.getArgument(1)));
 
-    CompilationDescription indexInfo = JvmExtractor.extract(paths);
+    CompilationDescription indexInfo = JvmExtractor.extract(info.getOwner(), paths);
     IndexInfoUtils.writeIndexInfoToFile(indexInfo, outputPath);
   }
 }

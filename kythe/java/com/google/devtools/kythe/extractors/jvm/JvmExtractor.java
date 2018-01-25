@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.extractors.jvm;
 
+import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -23,7 +24,9 @@ import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
+import com.google.devtools.kythe.proto.Buildinfo.BuildDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.protobuf.Any;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -37,16 +40,26 @@ import java.util.jar.JarFile;
 public class JvmExtractor {
   public static final String JAR_FILE_EXTENSION = ".jar";
   public static final String CLASS_FILE_EXTENSION = ".class";
+  public static final String BUILD_DETAILS_URL = "kythe.io/proto/kythe.proto.BuildDetails";
 
   /**
    * Returns a JVM {@link CompilationDescription} for the given list of {@code .jar} and {@code
    * .class} file paths.
    */
-  public static CompilationDescription extract(List<Path> jarOrClassFiles)
+  public static CompilationDescription extract(String buildTarget, List<Path> jarOrClassFiles)
       throws IOException, ExtractionException {
     CompilationUnit.Builder compilation =
         CompilationUnit.newBuilder()
             .setVName(VName.newBuilder().setLanguage(JvmGraph.JVM_LANGUAGE));
+
+    if ((buildTarget = Strings.emptyToNull(buildTarget)) != null) {
+      compilation.addDetails(
+          Any.newBuilder()
+              .setTypeUrl(BUILD_DETAILS_URL)
+              .setValue(
+                  BuildDetails.newBuilder().setBuildTarget(buildTarget).build().toByteString()));
+    }
+
     List<FileData> fileContents = new ArrayList<>();
     List<String> classFiles = new ArrayList<>();
     for (Path path : jarOrClassFiles) {
