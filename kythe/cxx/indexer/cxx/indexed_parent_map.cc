@@ -16,16 +16,17 @@
 #include "indexed_parent_map.h"
 
 #include "clang/AST/RecursiveASTVisitor.h"
-#include "scope_guard.h"
 #include "glog/logging.h"
+#include "scope_guard.h"
 
 namespace kythe {
 namespace {
 
+using ::clang::dyn_cast;
+
 /// \return `true` if truncating tree traversal at `decl` is safe, provided that
 /// `decl` has been traversed previously.
 bool IsClaimableForTraverse(const clang::Decl* decl) {
-  using ::clang::dyn_cast;
   // Operationally, we'll define this as any decl that causes
   // Job->UnderneathImplicitTemplateInstantiation to be set.
   if (auto* vtsd = dyn_cast<const clang::VarTemplateSpecializationDecl>(decl)) {
@@ -135,7 +136,7 @@ IndexedParentMap IndexedParentMap::Build(clang::TranslationUnitDecl* unit) {
       IndexedParentASTVisitor<MappingType>::BuildIndexedParentMap(unit));
 }
 
-IndexedParent* IndexedParentMap::GetIndexedParent(
+const IndexedParent* IndexedParentMap::GetIndexedParent(
     const clang::ast_type_traits::DynTypedNode& node) const {
   CHECK(node.getMemoizationData() != nullptr)
       << "Invariant broken: only nodes that support memoization may be "

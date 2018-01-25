@@ -59,7 +59,7 @@ class IndexedParentMap {
 
   /// \brief Returns the parent of the given node, along with the index
   /// at which the node appears underneath each parent.
-  IndexedParent* GetIndexedParent(
+  const IndexedParent* GetIndexedParent(
       const clang::ast_type_traits::DynTypedNode& node) const;
 
   /// \brief Returns the parent of the given node, along with the index
@@ -67,7 +67,7 @@ class IndexedParentMap {
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename T> IndexedParent* GetIndexedParent(const T& node) const {
+  template <typename T> const IndexedParent* GetIndexedParent(const T& node) const {
     return GetIndexedParent(clang::ast_type_traits::DynTypedNode::create(node));
   }
 

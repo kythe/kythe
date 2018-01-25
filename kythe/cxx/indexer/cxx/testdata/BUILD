@@ -57,6 +57,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "embedded_tag_decl_childof",
+    srcs = ["basic/embedded_tag_decl_childof.c"],
+    std = "c99",
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "anonymous_namespace_header",
     srcs = ["basic/anonymous_namespace_header.cc"],
     bundled = True,
