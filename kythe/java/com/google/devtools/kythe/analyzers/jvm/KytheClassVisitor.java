@@ -72,10 +72,12 @@ public final class KytheClassVisitor extends ClassVisitor {
 
   @Override
   public void visitInnerClass(String name, String outerName, String innerName, int access) {
-    entrySets.emitEdge(
-        jvmGraph.getReferenceVName(JvmGraph.Type.referenceType(name)),
-        EdgeKind.CHILDOF,
-        jvmGraph.getReferenceVName(JvmGraph.Type.referenceType(outerName)));
+    if (outerName != null) { // avoid anonymous/local classes
+      entrySets.emitEdge(
+          jvmGraph.getReferenceVName(JvmGraph.Type.referenceType(name)),
+          EdgeKind.CHILDOF,
+          jvmGraph.getReferenceVName(JvmGraph.Type.referenceType(outerName)));
+    }
     super.visitInnerClass(name, outerName, innerName, access);
   }
 

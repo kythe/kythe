@@ -21,4 +21,12 @@ public class Jvm {
   public static <T> T nope() {
     return null;
   }
+
+  // Ensure anonymous classes do not crash the JVM analyzer.
+  static final Object OBJ = new Object() {};
+
+  static void f() {
+    // Ensure local classes do not crash the JVM analyzer.
+    class LocalClass{}
+  }
 }
