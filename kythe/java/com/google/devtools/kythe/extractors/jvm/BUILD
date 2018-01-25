@@ -22,6 +22,7 @@ java_library(
         "//kythe/proto:buildinfo_java_proto",
         "//kythe/proto:storage_java_proto",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
     ],
 )
