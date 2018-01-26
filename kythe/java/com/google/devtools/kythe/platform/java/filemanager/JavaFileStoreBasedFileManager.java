@@ -96,6 +96,12 @@ public class JavaFileStoreBasedFileManager
 
     List<JavaFileObject> matchedFiles = new ArrayList<>();
     matchedFiles.addAll(matchingFiles);
+
+    if (location == StandardLocation.SOURCE_PATH) {
+      // XXX(T70): do not search the underlying file manager (and the local fs) for source files
+      return matchedFiles;
+    }
+
     // Ask underlying file manager for its knowledge of files, e.g.
     // in case of JRE we use the files locally known to the compiler.
     for (JavaFileObject jfo : super.list(location, packageName, kinds, recurse)) {
