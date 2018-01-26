@@ -2552,8 +2552,6 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
     return true;
   }
 
-  VisitNestedNameSpecifierLoc(Decl->getQualifierLoc());
-
   auto Marks = MarkedSources.Generate(Decl);
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
