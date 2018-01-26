@@ -16,15 +16,18 @@ set -o pipefail
 #
 # This script checks for the existance of https://kythe.io/phabricator/T70
 
-indexer="kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
-entrystream="kythe/go/platform/tools/entrystream"
+: ${indexer?:missing indexer}
+: ${entrystream?:missing entrystream}
 test_kindex="$PWD/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/corner_case.kindex"
+
+# This line removes the precondition for T70 (allowing the test to pass).
+# find -L -name KytheEntrySets.java -delete
 
 # This will emit an error if https://kythe.io/phabricator/T70 is not solved.
 "$indexer" "$test_kindex" 2>"$TEST_TMPDIR/err.log" | \
   echo "INFO: entrystream read $("$entrystream" --count) entries"
 
-if grep -qE 'Exception|error' "$TEST_TMPDIR/err.log"; then
+if grep -qE 'Exception|error|KytheEntrySets not seen during extraction' "$TEST_TMPDIR/err.log"; then
   echo "ERROR while indexing $test_kindex" >&2
   cat "$TEST_TMPDIR/err.log" >&2
   exit 1

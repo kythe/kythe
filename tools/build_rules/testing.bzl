@@ -1,5 +1,5 @@
 def shell_tool_test(name, script=[], scriptfile='', tools={}, data=[],
-                    args=[], size='small'):
+                    args=[], size='small', tags=[]):
   """A macro to invoke a test script with access to specified tools.
 
   Each tool named by the tools attribute is available in the script via a
@@ -38,6 +38,7 @@ def shell_tool_test(name, script=[], scriptfile='', tools={}, data=[],
       srcs = [scriptfile] if scriptfile else [],
       testonly = True,
       cmd = "\n".join(lines),
+      tags = tags,
   )
   test_args = ["$(location %s)" % tools[base] for base in bases]
   native.sh_test(
@@ -46,4 +47,5 @@ def shell_tool_test(name, script=[], scriptfile='', tools={}, data=[],
       srcs = [genscript],
       args = test_args + args,
       size = size,
+      tags = tags,
   )
