@@ -1,7 +1,5 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-exports_files(["wrapped_indexer.sh"])
-
 java_library(
     name = "analyzer",
     srcs = [
@@ -92,19 +90,5 @@ java_binary(
         "@com_beust_jcommander//jar",
         "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
-    ],
-)
-
-# When run from within Bazel, we need to execute the Java indexer
-# from a different directory and remap the provided paths as it refuses
-# to run from the source directory and believes the execroot is one.
-# See https://kythe.io/phabricator/T70
-sh_binary(
-    name = "wrapped_indexer",
-    srcs = ["wrapped_indexer.sh"],
-    data = [
-        ":indexer",
-        "//tools/cdexec",
-        "//tools/modules:abspath",
     ],
 )

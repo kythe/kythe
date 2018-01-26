@@ -421,7 +421,7 @@ def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
       vnames_config = vnames_config,
       testonly = True,
   )
-  indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:wrapped_indexer"
+  indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer"
   tools = []
   if load_plugin:
     # If loaded plugins have deps, those must be included in the loaded jar

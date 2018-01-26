@@ -22,7 +22,6 @@ import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.tools.javac.api.JavacTool;
-import java.io.File;
 import java.util.List;
 import javax.annotation.processing.Processor;
 import javax.tools.JavaCompiler;
@@ -63,21 +62,7 @@ public class JavacAnalysisDriver {
       return;
     }
 
-    checkEnvironment(compilationUnit);
-
     analyzer.analyzeCompilationUnit(
         JavaCompilationDetails.createDetails(compilationUnit, fileDataProvider, processors));
-  }
-
-  private static void checkEnvironment(CompilationUnit compilation) throws AnalysisException {
-    String sourcePath = compilation.getSourceFileList().get(0);
-    if (new File(sourcePath).canRead()) {
-      throw new AnalysisException(
-          String.format(
-              "can read source file: '%s'; "
-                  + "indexer must be run outside of the compilation's source root "
-                  + "(see https://kythe.io/phabricator/T70 for more details)",
-              sourcePath));
-    }
   }
 }

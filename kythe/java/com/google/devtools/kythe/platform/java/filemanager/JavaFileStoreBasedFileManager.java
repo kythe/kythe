@@ -32,10 +32,7 @@ import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 
-/**
- * TODO(schroederc) Refactor this code to not use Forwarding to avoid picking up spurious files from
- * the local file system. We do this today as we need to pick up the JDK etc...
- */
+/** {@link StandardJavaFileManager} backed by a {@link JavaFileStore}. */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 public class JavaFileStoreBasedFileManager
     extends ForwardingJavaFileManager<StandardJavaFileManager> implements StandardJavaFileManager {

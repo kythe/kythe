@@ -62,6 +62,5 @@ drive_indexer_kindex() {
 export -f drive_indexer_kindex
 export SHELL=bash
 
-cd /tmp # TODO(T70): the java indexer cannot run in the repository root
 find "$COMPILATIONS" -name '*.kindex' | sort -R | \
     { parallel --gnu -L1 drive_indexer_kindex || echo "$? analysis failures" >&2; }
