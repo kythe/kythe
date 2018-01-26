@@ -27,6 +27,19 @@ public class Jvm {
 
   static void f() {
     // Ensure local classes do not crash the JVM analyzer.
-    class LocalClass{}
+    class LocalClass {}
   }
+
+  //- @g defines/binding GJava
+  //- GJava generates GJvm
+  static void g(
+      int[] arrayParam,
+      boolean booleanParam,
+      byte byteParam,
+      char charParam,
+      double doubleParam,
+      float floatParam,
+      int intParam,
+      long longParam,
+      short shortParam) {}
 }

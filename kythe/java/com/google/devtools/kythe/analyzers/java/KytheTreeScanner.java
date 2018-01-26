@@ -1233,28 +1233,32 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   private static JvmGraph.Type toJvmType(Type type) {
     switch (type.getTag()) {
-      case TYPEVAR:
-        return JvmGraph.Type.referenceType("java.lang.Object");
-      case CLASS:
-        return JvmGraph.Type.referenceType(type.toString());
       case ARRAY:
         return JvmGraph.Type.arrayType(toJvmType(((Type.ArrayType) type).getComponentType()));
+      case CLASS:
+        return JvmGraph.Type.referenceType(type.toString());
       case METHOD:
         return toJvmType(type.asMethodType());
+      case TYPEVAR:
+        return JvmGraph.Type.referenceType("java.lang.Object");
+
       case BOOLEAN:
         return JvmGraph.Type.booleanType();
+      case BYTE:
+        return JvmGraph.Type.byteType();
       case CHAR:
         return JvmGraph.Type.charType();
-      case INT:
-        return JvmGraph.Type.intType();
-      case SHORT:
-        return JvmGraph.Type.shortType();
-      case LONG:
-        return JvmGraph.Type.longType();
       case DOUBLE:
         return JvmGraph.Type.doubleType();
       case FLOAT:
         return JvmGraph.Type.floatType();
+      case INT:
+        return JvmGraph.Type.intType();
+      case LONG:
+        return JvmGraph.Type.longType();
+      case SHORT:
+        return JvmGraph.Type.shortType();
+
       default:
         throw new IllegalStateException("unhandled Java Type: " + type.getTag());
     }

@@ -11,6 +11,8 @@
 
 //- NopeJvm=vname("pkg.Jvm.nope()Ljava/lang/Object;", "", "", "", "jvm").node/kind function
 
+//- GJvm=vname("pkg.Jvm.g([IZBCDFIJS)V", "", "", "", "jvm").node/kind function
+
 
 Marked Source tests:
 
