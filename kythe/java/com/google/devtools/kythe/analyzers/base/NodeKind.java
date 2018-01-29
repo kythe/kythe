@@ -40,6 +40,7 @@ public enum NodeKind {
   TBUILTIN("tbuiltin"),
 
   // Sub-kinds
+  ANCHOR_IMPLICIT("anchor", "implicit"),
   FUNCTION_CONSTRUCTOR("function", "constructor"),
   RECORD_CLASS("record", "class"),
   SUM_ENUM_CLASS("sum", "enumClass"),

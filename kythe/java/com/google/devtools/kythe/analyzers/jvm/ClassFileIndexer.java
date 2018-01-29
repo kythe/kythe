@@ -28,6 +28,7 @@ import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
+import com.google.devtools.kythe.proto.Storage.VName;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -90,6 +91,14 @@ public class ClassFileIndexer {
     for (CompilationUnit.FileInput file : compilationUnit.getRequiredInputList()) {
       FileInfo info = file.getInfo();
       if (info.getPath().endsWith(CLASS_FILE_EXT)) {
+        VName jarFileVName = null;
+        int i = info.getPath().indexOf(JAR_FILE_EXT + "/");
+        if (i >= 0) {
+          // TODO(schroederc): add better extractor support (e.g. FileVNames)
+          String jarPath = info.getPath().substring(0, i + JAR_FILE_EXT.length());
+          jarFileVName = fileVName(compilationUnit, jarPath);
+        }
+        classVisitor = classVisitor.withEnclosingJarFile(jarFileVName);
         try {
           ListenableFuture<byte[]> contents = fileDataProvider.startLookup(info);
           classVisitor.visitClassFile(contents.get());
@@ -98,6 +107,16 @@ public class ClassFileIndexer {
         }
       }
     }
+  }
+
+  private static VName fileVName(CompilationUnit compilationUnit, String path) {
+    return compilationUnit
+        .getVName()
+        .toBuilder()
+        .clearSignature()
+        .clearLanguage()
+        .setPath(path)
+        .build();
   }
 
   private static void visitJarClassFiles(File jarFile, KytheClassVisitor visitor)

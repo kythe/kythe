@@ -33,14 +33,25 @@ import org.objectweb.asm.Opcodes;
 public final class KytheClassVisitor extends ClassVisitor {
   private final JvmGraph jvmGraph;
   private final KytheEntrySets entrySets;
+  private final VName enclosingJarFile;
 
   private JvmGraph.Type.ReferenceType classType;
   private VName classVName;
 
   public KytheClassVisitor(StatisticsCollector statistics, FactEmitter emitter) {
+    this(statistics, emitter, null);
+  }
+
+  public KytheClassVisitor(
+      StatisticsCollector statistics, FactEmitter emitter, VName enclosingJarFile) {
+    this(new JvmGraph(statistics, emitter), enclosingJarFile);
+  }
+
+  private KytheClassVisitor(JvmGraph jvmGraph, VName enclosingJarFile) {
     super(Opcodes.ASM6);
-    jvmGraph = new JvmGraph(statistics, emitter);
-    entrySets = jvmGraph.getKytheEntrySets();
+    this.jvmGraph = jvmGraph;
+    this.entrySets = jvmGraph.getKytheEntrySets();
+    this.enclosingJarFile = enclosingJarFile;
   }
 
   /** Parse and visit the class file represented by the given {@link InputStream}. */
@@ -51,6 +62,15 @@ public final class KytheClassVisitor extends ClassVisitor {
   /** Parse and visit the class file represented by the given {@code byte[]}. */
   public void visitClassFile(byte[] b) {
     new ClassReader(b).accept(this, 0);
+  }
+
+  /**
+   * Returns a new {@link KytheClassVisitor} for classes enclosed within the {@code .jar} file
+   * described by the given {@link VName}. If {@code null}, all further classes visited will not be
+   * related to a {@code .jar} file.
+   */
+  public KytheClassVisitor withEnclosingJarFile(VName enclosingJarFile) {
+    return new KytheClassVisitor(jvmGraph, enclosingJarFile);
   }
 
   @Override
@@ -68,6 +88,12 @@ public final class KytheClassVisitor extends ClassVisitor {
             : flagSet(access, Opcodes.ACC_INTERFACE)
                 ? jvmGraph.emitInterfaceNode(classType)
                 : jvmGraph.emitClassNode(classType);
+    if (enclosingJarFile != null) {
+      entrySets.emitEdge(
+          entrySets.newImplicitAnchorAndEmit(enclosingJarFile).getVName(),
+          EdgeKind.DEFINES,
+          classVName);
+    }
     if (superName != null) {
       entrySets.emitEdge(
           classVName,

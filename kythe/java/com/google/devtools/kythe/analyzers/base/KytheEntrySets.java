@@ -148,6 +148,15 @@ public class KytheEntrySets {
         .setLanguage(this.language)
         .build();
   }
+
+  /** Returns (and emits) a new implicit anchor node in the given file. */
+  public EntrySet newImplicitAnchorAndEmit(VName fileVName) {
+    return emitAndReturn(
+        newNode(NodeKind.ANCHOR_IMPLICIT)
+            .setCorpusPath(CorpusPath.fromVName(fileVName))
+            .addSignatureSalt(fileVName));
+  }
+
   /**
    * Returns (and emits) a new anchor node at the given location in the file with an optional
    * snippet span.

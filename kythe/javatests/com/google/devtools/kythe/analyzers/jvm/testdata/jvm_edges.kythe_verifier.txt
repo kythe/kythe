@@ -2,3 +2,7 @@
 //- InnerJvm childof ClassJvm
 //- FuncJvm childof ClassJvm
 //- NopeJvm childof ClassJvm
+
+//- JarFileAnchor=vname(_, _, _, _, "jvm") defines ClassJvm
+//- JarFileAnchor.node/kind anchor
+//- JarFileAnchor.subkind implicit
