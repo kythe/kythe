@@ -19,6 +19,7 @@ package com.google.devtools.kythe.util;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.devtools.kythe.proto.MarkedSource;
+import com.google.devtools.kythe.proto.SymbolInfo;
 import com.google.protobuf.TextFormat;
 import java.util.Optional;
 import org.junit.Test;
@@ -35,10 +36,15 @@ public class QualifiedNameExtractorTest {
         "child {\nkind: CONTEXT\nchild {\nkind: IDENTIFIER\npre_text: \"java\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"com\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"google\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"devtools\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"kythe\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"analyzers\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"java\"\n} \npost_child_text: \".\"\nadd_final_list_token: true\n} \nchild {\nkind: IDENTIFIER\npre_text: \"JavaEntrySets\"\n}",
         builder);
     MarkedSource testInput = builder.build();
-    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    Optional<SymbolInfo> resolvedName =
+        QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isTrue();
     assertThat(resolvedName.get())
-        .isEqualTo("java.com.google.devtools.kythe.analyzers.java.JavaEntrySets");
+        .isEqualTo(
+            SymbolInfo.newBuilder()
+                .setBaseName("JavaEntrySets")
+                .setQualifiedName("java.com.google.devtools.kythe.analyzers.java.JavaEntrySets")
+                .build());
   }
 
   @Test
@@ -48,9 +54,11 @@ public class QualifiedNameExtractorTest {
         "child {\nkind: CONTEXT \npost_child_text: \".\"\nadd_final_list_token: true\n} \nchild {\nkind: IDENTIFIER\npre_text: \"JavaEntrySets\"\n}",
         builder);
     MarkedSource testInput = builder.build();
-    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    Optional<SymbolInfo> resolvedName =
+        QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isTrue();
-    assertThat(resolvedName.get()).isEqualTo("JavaEntrySets");
+    assertThat(resolvedName.get())
+        .isEqualTo(SymbolInfo.newBuilder().setBaseName("JavaEntrySets").build());
   }
 
   @Test
@@ -59,8 +67,11 @@ public class QualifiedNameExtractorTest {
     TextFormat.merge(
         "child {\nchild {\nkind: IDENTIFIER\npre_text: \"JavaEntrySets\"\n}\n}", builder);
     MarkedSource testInput = builder.build();
-    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
-    assertThat(resolvedName.isPresent()).isFalse();
+    Optional<SymbolInfo> resolvedName =
+        QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    assertThat(resolvedName.isPresent()).isTrue();
+    assertThat(resolvedName.get())
+        .isEqualTo(SymbolInfo.newBuilder().setBaseName("JavaEntrySets").build());
   }
 
   @Test
@@ -68,7 +79,8 @@ public class QualifiedNameExtractorTest {
     MarkedSource.Builder builder = MarkedSource.newBuilder();
     TextFormat.merge("child {}", builder);
     MarkedSource testInput = builder.build();
-    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    Optional<SymbolInfo> resolvedName =
+        QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isFalse();
   }
 
@@ -79,9 +91,15 @@ public class QualifiedNameExtractorTest {
         "child { pre_text: \"type \" } child { child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"kythe/go/platform/kindex\" } post_child_text: \".\" add_final_list_token: true } child { kind: IDENTIFIER pre_text: \"Settings\" } } child { kind: TYPE pre_text: \" \" } child { kind: TYPE pre_text: \"struct {...}\" }",
         builder);
     MarkedSource testInput = builder.build();
-    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    Optional<SymbolInfo> resolvedName =
+        QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isTrue();
-    assertThat(resolvedName.get()).isEqualTo("kythe/go/platform/kindex.Settings");
+    assertThat(resolvedName.get())
+        .isEqualTo(
+            SymbolInfo.newBuilder()
+                .setBaseName("Settings")
+                .setQualifiedName("kythe/go/platform/kindex.Settings")
+                .build());
   }
 
   @Test
@@ -91,9 +109,15 @@ public class QualifiedNameExtractorTest {
         "child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"//kythe/proto\" } } child { kind: IDENTIFIER pre_text: \":analysis_go_proto\" }",
         builder);
     MarkedSource testInput = builder.build();
-    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    Optional<SymbolInfo> resolvedName =
+        QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isTrue();
-    assertThat(resolvedName.get()).isEqualTo("//kythe/proto:analysis_go_proto");
+    assertThat(resolvedName.get())
+        .isEqualTo(
+            SymbolInfo.newBuilder()
+                .setBaseName(":analysis_go_proto")
+                .setQualifiedName("//kythe/proto:analysis_go_proto")
+                .build());
   }
 
   @Test
@@ -103,8 +127,11 @@ public class QualifiedNameExtractorTest {
         "child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"a\" } child { kind: IDENTIFIER pre_text: \"b\" } } child { kind: IDENTIFIER pre_text: \"-tail\" }",
         builder);
     MarkedSource testInput = builder.build();
-    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    Optional<SymbolInfo> resolvedName =
+        QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isTrue();
-    assertThat(resolvedName.get()).isEqualTo("a.b-tail");
+    assertThat(resolvedName.get())
+        .isEqualTo(
+            SymbolInfo.newBuilder().setBaseName("-tail").setQualifiedName("a.b-tail").build());
   }
 }

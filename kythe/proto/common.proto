@@ -157,3 +157,11 @@ message MarkedSource {
   // Annotations covering this subtree's full span.
   repeated Link link = 11;
 }
+
+// Contains symbol information for Kythe graph nodes.
+message SymbolInfo {
+  // The base un-qualified name for a node.
+  string base_name = 1;
+  // The fully qualified name for a node.
+  string qualified_name = 2;
+}

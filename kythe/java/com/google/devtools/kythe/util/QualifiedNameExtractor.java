@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.util;
 
 import com.google.devtools.kythe.proto.MarkedSource;
+import com.google.devtools.kythe.proto.SymbolInfo;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -29,10 +30,10 @@ public class QualifiedNameExtractor {
    * Extracts a qualified name from the specified {@link MarkedSource} tree.
    *
    * @param markedSource The {@link MarkedSource} tree to be evaluated.
-   * @return The resolved qualified name if found.
+   * @return a {@link SymbolInfo} message containing the extracted name.
    */
-  public static Optional<String> extractNameFromMarkedSource(MarkedSource markedSource) {
-    // extract the class name
+  public static Optional<SymbolInfo> extractNameFromMarkedSource(MarkedSource markedSource) {
+    // extract the base name
     Optional<MarkedSource> identifier =
         retrieveFirstMarkedSourceByKind(
             markedSource, MarkedSource.Kind.IDENTIFIER, /* isPretextRequired */ true);
@@ -40,36 +41,43 @@ public class QualifiedNameExtractor {
       // if the current class node's marked source does not contain an identifier, skip it
       return Optional.empty();
     }
-    String className = identifier.get().getPreText();
+    String baseName = identifier.get().getPreText();
 
     // extract the class's package name
+    String qualifiedName = null;
     Optional<MarkedSource> context =
         retrieveFirstMarkedSourceByKind(
             markedSource, MarkedSource.Kind.CONTEXT, /* isPretextRequired */ false);
-    if (!context.isPresent()) {
-      // if the current class node's marked source does not contain a context, skip it
-      return Optional.empty();
-    }
-    String postChildText = context.get().getPostChildText();
-    String packageDelim = !postChildText.isEmpty() ? postChildText : ".";
-    String packageName =
-        String.join(
-            packageDelim,
-            context
-                .get()
-                .getChildList()
-                .stream()
-                .filter(
-                    child ->
-                        child.getKind().equals(MarkedSource.Kind.IDENTIFIER)
-                            && !child.getPreText().isEmpty())
-                .map(MarkedSource::getPreText)
-                .collect(Collectors.toList()));
+    if (context.isPresent()) {
+      String postChildText = context.get().getPostChildText();
+      String packageDelim = !postChildText.isEmpty() ? postChildText : ".";
+      String packageName =
+          String.join(
+              packageDelim,
+              context
+                  .get()
+                  .getChildList()
+                  .stream()
+                  .filter(
+                      child ->
+                          child.getKind().equals(MarkedSource.Kind.IDENTIFIER)
+                              && !child.getPreText().isEmpty())
+                  .map(MarkedSource::getPreText)
+                  .collect(Collectors.toList()));
 
-    // emit the qualified class name
-    return packageName.isEmpty()
-        ? Optional.of(className)
-        : Optional.of(String.format("%s%s%s", packageName, postChildText, className));
+      if (!packageName.isEmpty()) {
+        qualifiedName = String.format("%s%s%s", packageName, postChildText, baseName);
+      }
+    }
+
+    // emit the symbol info
+    SymbolInfo.Builder symbolInfo = SymbolInfo.newBuilder();
+    symbolInfo.setBaseName(baseName);
+    if (qualifiedName != null) {
+      symbolInfo.setQualifiedName(qualifiedName);
+    }
+
+    return Optional.of(symbolInfo.build());
   }
 
   /**
