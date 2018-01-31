@@ -14,13 +14,12 @@ java_library(
     ],
 )
 
-java_binary(
-    name = "class_file_indexer",
+java_library(
+    name = "analyzer",
     srcs = [
         "ClassFileIndexer.java",
         "KytheClassVisitor.java",
     ],
-    main_class = "com.google.devtools.kythe.analyzers.jvm.ClassFileIndexer",
     deps = [
         ":jvm_graph",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
@@ -35,4 +34,10 @@ java_binary(
         "@com_google_guava_guava//jar",
         "@org_ow2_asm_asm//jar",
     ],
+)
+
+java_binary(
+    name = "class_file_indexer",
+    main_class = "com.google.devtools.kythe.analyzers.jvm.ClassFileIndexer",
+    runtime_deps = [":analyzer"],
 )
