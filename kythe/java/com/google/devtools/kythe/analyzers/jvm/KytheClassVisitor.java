@@ -21,6 +21,9 @@ import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Storage.VName;
+import java.io.IOException;
+import java.io.InputStream;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -38,6 +41,16 @@ public final class KytheClassVisitor extends ClassVisitor {
     super(Opcodes.ASM6);
     jvmGraph = new JvmGraph(statistics, emitter);
     entrySets = jvmGraph.getKytheEntrySets();
+  }
+
+  /** Parse and visit the class file represented by the given {@link InputStream}. */
+  public void visitClassFile(InputStream classFile) throws IOException {
+    new ClassReader(classFile).accept(this, 0);
+  }
+
+  /** Parse and visit the class file represented by the given {@code byte[]}. */
+  public void visitClassFile(byte[] b) {
+    new ClassReader(b).accept(this, 0);
   }
 
   @Override

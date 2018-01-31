@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.devtools.kythe.proto.Analysis.FileInfo;
 
 /**
  * Arbitrary provider of file data that could be backed by local/networked filesystems, cloud
@@ -33,4 +34,14 @@ public interface FileDataProvider extends AutoCloseable {
    * IllegalArgumentException in the future.
    */
   ListenableFuture<byte[]> startLookup(String path, String digest);
+
+  /**
+   * Returns a {@link Future<byte[]>} for the contents of the file described by the given {@link
+   * FileInfo}.
+   *
+   * @see startLookup(String, String)
+   */
+  default ListenableFuture<byte[]> startLookup(FileInfo fileInfo) {
+    return startLookup(fileInfo.getPath(), fileInfo.getDigest());
+  }
 }
