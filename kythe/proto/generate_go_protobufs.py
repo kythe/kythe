@@ -27,6 +27,7 @@
 from subprocess import check_output
 from subprocess import call
 
+import glob
 import os
 import re
 import shlex
@@ -57,15 +58,16 @@ for rule in go_protos:
   rule_dir, proto = rule.lstrip('/').rsplit(':', 1)
   # Example: blah_go_proto -> blah_proto
   base_proto = re.sub(r'_go_', '_', proto)
-  # Example: $ROOT/kythe/proto/blah_go_proto
+  # Example: $ROOT/kythe/proto/blah_proto
   output_dir = os.path.join(workspace, rule_dir, base_proto)
   # Example: blah_go_proto -> blah.proto
   proto_file = re.sub('_go_proto$', '.proto', proto)
 
   print 'Copying Go protobuf source for %s' % rule
   generated_file = re.sub('.proto$', '.pb.go', proto_file)
-  generated_path = os.path.join(bazel_bin, rule_dir, proto+'~',
-                                import_base, proto, generated_file)
+  generated_path = glob.glob(
+      os.path.join(bazel_bin, rule_dir, '*', proto+'~',
+                   import_base, proto, generated_file)).pop()
 
   if os.path.isdir(output_dir):
     print 'Deleting and recreating old protobuf directory: %s' % output_dir
