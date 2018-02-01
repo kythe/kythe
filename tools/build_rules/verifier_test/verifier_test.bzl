@@ -214,7 +214,7 @@ java_extract_kindex = rule(
         ),
         "_host_javabase": attr.label(
             cfg = "host",
-            default = Label("@bazel_tools//tools/jdk:toolchain"),
+            default = Label("@bazel_tools//tools/jdk:current_java_runtime"),
         ),
     },
     fragments = ["java"],
