@@ -43,6 +43,7 @@ DEFINE_string(
     "The regex must match the entire line. Expects one capture group.");
 DEFINE_bool(convert_marked_source, false,
             "Convert MarkedSource-valued facts to subgraphs.");
+DEFINE_bool(show_anchors, false, "Show anchor locations instead of @s");
 
 int main(int argc, char **argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -84,6 +85,10 @@ Example:
 
   if (FLAGS_convert_marked_source) {
     v.ConvertMarkedSource();
+  }
+
+  if (FLAGS_show_anchors) {
+    v.ShowAnchors();
   }
 
   if (!FLAGS_graphviz) {

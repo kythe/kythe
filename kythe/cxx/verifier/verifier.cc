@@ -1458,7 +1458,7 @@ void Verifier::DumpAsDot() {
           }
         }
       }
-      if (is_anchor_node) {
+      if (is_anchor_node && !show_anchors_) {
         printer.Print(" [ shape=circle, label=\"@");
         printer.Print(label);
         if (!label.empty()) {

@@ -174,6 +174,9 @@ class Verifier {
   /// \brief Convert MarkedSource-valued facts to graphs.
   void ConvertMarkedSource() { convert_marked_source_ = true; }
 
+  /// \brief Show anchor locations in graph dumps (instead of @).
+  void ShowAnchors() { show_anchors_ = true; }
+
   /// \brief Check for singleton EVars.
   /// \return true if there were singletons.
   bool CheckForSingletonEVars() { return parser_.CheckForSingletonEVars(); }
@@ -306,6 +309,9 @@ class Verifier {
   /// MarkedSource-valued facts will be replaced with opaque but unique
   /// identifiers.
   bool convert_marked_source_ = false;
+
+  /// If true, show anchor locations in graph dumps (instead of @).
+  bool show_anchors_ = false;
 
   /// Identifier for MarkedSource child edges.
   AstNode *marked_source_child_id_;
