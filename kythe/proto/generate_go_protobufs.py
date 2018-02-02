@@ -56,10 +56,8 @@ if call(['bazel', 'build'] + go_protos) != 0:
 for rule in go_protos:
   # Example: //kythe/proto:blah_go_proto -> kythe/proto, blah_go_proto
   rule_dir, proto = rule.lstrip('/').rsplit(':', 1)
-  # Example: blah_go_proto -> blah_proto
-  base_proto = re.sub(r'_go_', '_', proto)
-  # Example: $ROOT/kythe/proto/blah_proto
-  output_dir = os.path.join(workspace, rule_dir, base_proto)
+  # Example: $ROOT/kythe/proto/blah_go_proto
+  output_dir = os.path.join(workspace, rule_dir, proto)
   # Example: blah_go_proto -> blah.proto
   proto_file = re.sub('_go_proto$', '.proto', proto)
 
