@@ -8,6 +8,7 @@ java_binary(
         ":jvm_extractor",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
+        "@com_beust_jcommander//jar",
         "@com_google_guava_guava//jar",
     ],
 )
@@ -21,6 +22,7 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:buildinfo_java_proto",
         "//kythe/proto:storage_java_proto",
+        "@com_beust_jcommander//jar",
         "@com_google_guava_guava//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",

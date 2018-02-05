@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.extractors.jvm;
 
+import com.beust.jcommander.JCommander;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
@@ -24,10 +25,6 @@ import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.indexpack.Archive;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Kythe extractor for Java .jar files.
@@ -36,12 +33,11 @@ import java.util.List;
  */
 public class JarExtractor {
   public static void main(String[] args) throws IOException, ExtractionException {
-    List<Path> paths = new ArrayList<>();
-    for (String arg : args) {
-      paths.add(Paths.get(arg));
-    }
-    String buildTarget = System.getenv("KYTHE_ANALYSIS_TARGET");
-    CompilationDescription indexInfo = JvmExtractor.extract(buildTarget, paths);
+    JvmExtractor.Options options = new JvmExtractor.Options();
+    JCommander jc = new JCommander(options, args);
+    jc.setProgramName("jar_extractor");
+
+    CompilationDescription indexInfo = JvmExtractor.extract(options);
 
     String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
     if (!Strings.isNullOrEmpty(outputFile)) {
