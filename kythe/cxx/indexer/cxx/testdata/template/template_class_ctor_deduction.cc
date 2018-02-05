@@ -23,7 +23,7 @@ struct C {
 //- @S ref StructS
 C() -> C<S>;
 
-//- @#1C ref TemplC
+//- @#1C ref/implicit TemplC
 template <typename U> C(U, U) -> C<U>;
 
 void f() {

@@ -309,7 +309,8 @@ class GraphObserver {
 
   /// \brief Returns a claim token for namespaces declared at `Loc`.
   /// \param Loc The declaration site of the namespace.
-  virtual const ClaimToken *getNamespaceClaimToken(clang::SourceLocation Loc) const {
+  virtual const ClaimToken *getNamespaceClaimToken(
+      clang::SourceLocation Loc) const {
     return getDefaultClaimToken();
   }
 
@@ -331,7 +332,8 @@ class GraphObserver {
   /// `clang::BuiltinType::getName(this->getLangOptions())` or the builtin
   /// type constructor.
   /// \return The `NodeId` for `Spelling`.
-  virtual NodeId getNodeIdForBuiltinType(const llvm::StringRef &Spelling) const = 0;
+  virtual NodeId getNodeIdForBuiltinType(
+      const llvm::StringRef &Spelling) const = 0;
 
   /// \brief Returns the ID for a type node aliasing another type node.
   /// \param AliasName a `NameId` for the alias name.
@@ -656,6 +658,15 @@ class GraphObserver {
   virtual void recordDocumentationRange(const Range &SourceRange,
                                         const NodeId &DocId) {}
 
+  /// \brief Determines whether a feature is explicit or implicit.
+  enum class Implicit {
+    /// This feature is explicit (e.g., it's written down in source).
+    No,
+    /// This feature is implicit (e.g., it's the result of macro expansion
+    /// or template instantiation).
+    Yes
+  };
+
   /// \brief Records a use site for a decl inside some documentation.
   virtual void recordDeclUseLocationInDocumentation(const Range &SourceRange,
                                                     const NodeId &DeclId) {}
@@ -757,8 +768,9 @@ class GraphObserver {
   /// \param CallerId The scope to be held responsible for making the call;
   /// for example, a function.
   /// \param CalleeId The node being called.
+  /// \param I Whether this call is implicit.
   virtual void recordCallEdge(const Range &SourceRange, const NodeId &CallerId,
-                              const NodeId &CalleeId) {}
+                              const NodeId &CalleeId, Implicit I) {}
 
   /// \brief Creates a node to represent a file-level initialization routine
   /// that can be blamed for a call at `CallSite`.
@@ -801,22 +813,22 @@ class GraphObserver {
                                      Completeness Compl) {}
 
   /// \brief Records a use site for some decl.
-  virtual void recordDeclUseLocation(
-      const Range &SourceRange, const NodeId &DeclId,
-      Claimability Cl = Claimability::Claimable) {}
+  virtual void recordDeclUseLocation(const Range &SourceRange,
+                                     const NodeId &DeclId, Claimability Cl,
+                                     Implicit I) {}
 
   /// \brief Records an init site for some decl.
   virtual void recordInitLocation(const Range &SourceRange,
-                                  const NodeId &DeclId,
-                                  Claimability Cl = Claimability::Claimable) {}
+                                  const NodeId &DeclId, Claimability Cl,
+                                  Implicit I) {}
 
   /// \brief Records that a type was spelled out at a particular location.
   /// \param SourceRange The source range covering the type spelling.
   /// \param TypeNode The identifier for the type being spelled out.
   /// \param Cr Whether this information can be dropped by claiming.
-  virtual void recordTypeSpellingLocation(
-      const Range &SourceRange, const NodeId &TypeId,
-      Claimability Cl = Claimability::Claimable) {}
+  virtual void recordTypeSpellingLocation(const Range &SourceRange,
+                                          const NodeId &TypeId, Claimability Cl,
+                                          Implicit I) {}
 
   /// \brief Records that a macro was defined.
   virtual void recordMacroNode(const NodeId &MacroNode) {}
@@ -896,7 +908,8 @@ class GraphObserver {
   /// a textual include, but not a header include or a textual include from
   /// a header include).
   /// \pre Preprocessing is complete.
-  virtual bool isMainSourceFileRelatedLocation(clang::SourceLocation Location) const {
+  virtual bool isMainSourceFileRelatedLocation(
+      clang::SourceLocation Location) const {
     // Conservatively return true.
     return true;
   }
@@ -1051,7 +1064,8 @@ class NullGraphObserver : public GraphObserver {
     static void *NullClaimTokenClass;
   };
 
-  NodeId getNodeIdForBuiltinType(const llvm::StringRef &Spelling) const override {
+  NodeId getNodeIdForBuiltinType(
+      const llvm::StringRef &Spelling) const override {
     return NodeId(getDefaultClaimToken(), "");
   }
 
@@ -1087,8 +1101,9 @@ class NullGraphObserver : public GraphObserver {
     return TsigmaId;
   }
 
-  NodeId nodeIdForTappNode(const NodeId &TyconId,
-                        const std::vector<const NodeId *> &Params) const override {
+  NodeId nodeIdForTappNode(
+      const NodeId &TyconId,
+      const std::vector<const NodeId *> &Params) const override {
     return NodeId(getDefaultClaimToken(), "");
   }
 

@@ -96,7 +96,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
         MarkedSources(&Sema, &Observer),
         ShouldStopIndexing(std::move(ShouldStopIndexing)) {}
 
-
   bool VisitDecl(const clang::Decl *Decl);
   bool VisitDeclaratorDecl(const clang::DeclaratorDecl *Decl);
   bool VisitFieldDecl(const clang::FieldDecl *Decl);
@@ -525,6 +524,10 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   void RecordCallEdges(const GraphObserver::Range &Range,
                        const GraphObserver::NodeId &Callee);
 
+  /// \return whether `range` should be considered to be implicit under the
+  /// current context.
+  GraphObserver::Implicit IsImplicit(const GraphObserver::Range &range);
+
  private:
   using Base = RecursiveASTVisitor;
 
@@ -676,7 +679,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       const clang::ast_type_traits::DynTypedNode &Node);
 
   /// Initializes AllParents, if necessary, and then returns a pointer to it.
-  IndexedParentMap* getAllParents();
+  IndexedParentMap *getAllParents();
 
   /// A map from memoizable DynTypedNodes to their parent nodes
   /// and their child indices with respect to those parents.

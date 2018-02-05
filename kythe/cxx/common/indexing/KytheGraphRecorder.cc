@@ -39,6 +39,7 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines"),
     new std::string("/kythe/edge/typed"),
     new std::string("/kythe/edge/ref"),
+    new std::string("/kythe/edge/ref/implicit"),
     new std::string("/kythe/edge/param"),
     new std::string("/kythe/edge/aliases"),
     new std::string("/kythe/edge/aliases/root"),
@@ -47,6 +48,7 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/childof"),
     new std::string("/kythe/edge/specializes"),
     new std::string("/kythe/edge/ref/call"),
+    new std::string("/kythe/edge/ref/call/implicit"),
     new std::string("/kythe/edge/ref/expands"),
     new std::string("/kythe/edge/undefines"),
     new std::string("/kythe/edge/ref/includes"),
@@ -73,6 +75,7 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/childof/context"),
     new std::string("/kythe/edge/bounded/upper"),
     new std::string("/kythe/edge/ref/init"),
+    new std::string("/kythe/edge/ref/init/implicit"),
 };
 
 bool of_spelling(llvm::StringRef str, EdgeKindID *edge_id) {

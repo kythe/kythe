@@ -13,7 +13,7 @@ template <typename T, typename S> struct C { bool f(T* t) { return g(); } };
 //- SpecF.code _
 //- @f defines/binding SpecF
 //- TsImp instantiates TAppUnarySpecF
-//- TsImpCall=@"g()" ref/call FnG
+//- TsImpCall=@"g()" ref/call/implicit FnG
 //- TsImpCall childof TsImp  // Aliasing is off by default
 template <typename T> struct C<T, int> { bool f(T* t) { return g(); } };
 

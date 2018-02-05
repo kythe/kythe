@@ -150,7 +150,8 @@ class KytheGraphObserver : public GraphObserver {
     EmitMetaNodes();
   }
 
-  NodeId getNodeIdForBuiltinType(const llvm::StringRef &spelling) const override;
+  NodeId getNodeIdForBuiltinType(
+      const llvm::StringRef &spelling) const override;
 
   const KytheClaimToken *getDefaultClaimToken() const override {
     return &default_token_;
@@ -170,7 +171,8 @@ class KytheGraphObserver : public GraphObserver {
                         const std::vector<const NodeId *> &Params,
                         unsigned FirstDefaultParam) override;
 
-  NodeId nodeIdForTsigmaNode(const std::vector<const NodeId *> &Params) const override;
+  NodeId nodeIdForTsigmaNode(
+      const std::vector<const NodeId *> &Params) const override;
   NodeId recordTsigmaNode(const NodeId &TsigmaId,
                           const std::vector<const NodeId *> &Params) override;
 
@@ -221,7 +223,7 @@ class KytheGraphObserver : public GraphObserver {
 
   NodeId recordNominalTypeNode(const NodeId &TypeName,
                                const absl::optional<MarkedSource> &MarkedSource,
-                               const absl::optional<NodeId>& Parent) override;
+                               const absl::optional<NodeId> &Parent) override;
 
   void recordCategoryExtendsEdge(const NodeId &InheritingNodeId,
                                  const NodeId &InheritedTypeId) override;
@@ -231,10 +233,12 @@ class KytheGraphObserver : public GraphObserver {
                          clang::AccessSpecifier AS) override;
 
   void recordDeclUseLocation(const Range &SourceRange, const NodeId &DeclId,
-                             GraphObserver::Claimability Cl) override;
+                             GraphObserver::Claimability Cl,
+                             GraphObserver::Implicit I) override;
 
   void recordInitLocation(const Range &SourceRange, const NodeId &DeclId,
-                          GraphObserver::Claimability Cl) override;
+                          GraphObserver::Claimability Cl,
+                          GraphObserver::Implicit I) override;
 
   void recordVariableNode(
       const NodeId &DeclNode, Completeness VarCompleteness,
@@ -273,8 +277,8 @@ class KytheGraphObserver : public GraphObserver {
                              const NodeId &CompletingNode) override;
 
   void recordTypeSpellingLocation(const Range &SourceRange,
-                                  const NodeId &TypeId,
-                                  Claimability Cl) override;
+                                  const NodeId &TypeId, Claimability Cl,
+                                  Implicit I) override;
 
   void recordChildOfEdge(const NodeId &ChildNodeId,
                          const NodeId &ParentNodeId) override;
@@ -300,7 +304,7 @@ class KytheGraphObserver : public GraphObserver {
                                const NodeId &RootBaseObject) override;
 
   void recordCallEdge(const Range &SourceRange, const NodeId &CallerId,
-                      const NodeId &CalleeId) override;
+                      const NodeId &CalleeId, Implicit i) override;
 
   absl::optional<NodeId> recordFileInitializer(const Range &CallSite) override;
 
@@ -328,7 +332,8 @@ class KytheGraphObserver : public GraphObserver {
 
   void popFile() override;
 
-  bool isMainSourceFileRelatedLocation(clang::SourceLocation Location) const override;
+  bool isMainSourceFileRelatedLocation(
+      clang::SourceLocation Location) const override;
 
   void AppendMainSourceFileIdentifierToStream(
       llvm::raw_ostream &Ostream) override;
@@ -370,9 +375,11 @@ class KytheGraphObserver : public GraphObserver {
   const KytheClaimToken *getClaimTokenForLocation(
       const clang::SourceLocation L) const override;
 
-  const KytheClaimToken *getClaimTokenForRange(const clang::SourceRange &SR) const override;
+  const KytheClaimToken *getClaimTokenForRange(
+      const clang::SourceRange &SR) const override;
 
-  const KytheClaimToken *getNamespaceClaimToken(clang::SourceLocation Loc) const override;
+  const KytheClaimToken *getNamespaceClaimToken(
+      clang::SourceLocation Loc) const override;
 
   const KytheClaimToken *getAnonymousNamespaceClaimToken(
       clang::SourceLocation Loc) const override;

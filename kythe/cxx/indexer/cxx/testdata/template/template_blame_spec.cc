@@ -6,7 +6,7 @@ bool g() { return false; }
 //- PtCall childof FnF  // We should collapse K in abs(K) into cluster abs(K)
 //- FnF childof AbsF
 //- FIntImp instantiates TAppAbsFInt
-//- FIntImpCall=@"g()" ref/call FnG  // Aliasing is turned off by default.
+//- FIntImpCall=@"g()" ref/call/implicit FnG  // Aliasing is off by default.
 //- FIntImpCall childof FIntImp
 template <typename T> bool f(T* t) { return g(); }
 //- TheCall=@"f(&i)" ref/call TAppAbsFInt

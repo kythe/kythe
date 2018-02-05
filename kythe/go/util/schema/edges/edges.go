@@ -56,8 +56,11 @@ const (
 	Documents         = Prefix + "documents"
 	Ref               = Prefix + "ref"
 	RefCall           = Prefix + "ref/call"
+	RefImplicit       = Prefix + "ref/implicit"
+	RefCallImplicit   = Prefix + "ref/call/implicit"
 	RefImports        = Prefix + "ref/imports"
 	RefInit           = Prefix + "ref/init"
+	RefInitImplicit   = Prefix + "ref/init/implicit"
 	Tagged            = Prefix + "tagged"
 )
 

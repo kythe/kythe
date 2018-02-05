@@ -490,11 +490,13 @@ void KytheGraphObserver::RecordAnchor(
 
 void KytheGraphObserver::recordCallEdge(
     const GraphObserver::Range &source_range, const NodeId &caller_id,
-    const NodeId &callee_id) {
+    const NodeId &callee_id, Implicit i) {
   RecordAnchor(source_range, caller_id, EdgeKindID::kChildOf,
                Claimability::Claimable);
-  RecordAnchor(source_range, callee_id, EdgeKindID::kRefCall,
-               Claimability::Unclaimable);
+  RecordAnchor(
+      source_range, callee_id,
+      i == Implicit::Yes ? EdgeKindID::kRefCallImplicit : EdgeKindID::kRefCall,
+      Claimability::Unclaimable);
 }
 
 absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
@@ -765,7 +767,7 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForTsigmaNode(
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordTsigmaNode(
-    const NodeId& tsigma_id, const std::vector<const NodeId *> &params) {
+    const NodeId &tsigma_id, const std::vector<const NodeId *> &params) {
   if (!deferring_nodes_ ||
       written_types_.insert(tsigma_id.ToClaimedString()).second) {
     VNameRef tsigma_vname(VNameRefFromNodeId(tsigma_id));
@@ -804,8 +806,8 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForTappNode(
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordTappNode(
-    const NodeId &tapp_id, const NodeId &tycon_id, const std::vector<const NodeId *> &params,
-    unsigned FirstDefaultParam) {
+    const NodeId &tapp_id, const NodeId &tycon_id,
+    const std::vector<const NodeId *> &params, unsigned FirstDefaultParam) {
   CHECK(FirstDefaultParam <= params.size());
   if (!deferring_nodes_ ||
       written_types_.insert(tapp_id.ToClaimedString()).second) {
@@ -928,8 +930,10 @@ void KytheGraphObserver::recordRecordNode(
 
 void KytheGraphObserver::recordTypeSpellingLocation(
     const GraphObserver::Range &type_source_range, const NodeId &type_id,
-    Claimability claimability) {
-  RecordAnchor(type_source_range, type_id, EdgeKindID::kRef, claimability);
+    Claimability claimability, Implicit i) {
+  RecordAnchor(type_source_range, type_id,
+               i == Implicit::Yes ? EdgeKindID::kRefImplicit : EdgeKindID::kRef,
+               claimability);
 }
 
 void KytheGraphObserver::recordCategoryExtendsEdge(const NodeId &from,
@@ -976,14 +980,19 @@ void KytheGraphObserver::recordDeclUseLocationInDocumentation(
 
 void KytheGraphObserver::recordDeclUseLocation(
     const GraphObserver::Range &source_range, const NodeId &node,
-    Claimability claimability) {
-  RecordAnchor(source_range, node, EdgeKindID::kRef, claimability);
+    Claimability claimability, Implicit i) {
+  RecordAnchor(source_range, node,
+               i == Implicit::Yes ? EdgeKindID::kRefImplicit : EdgeKindID::kRef,
+               claimability);
 }
 
 void KytheGraphObserver::recordInitLocation(
     const GraphObserver::Range &source_range, const NodeId &node,
-    Claimability claimability) {
-  RecordAnchor(source_range, node, EdgeKindID::kRefInit, claimability);
+    Claimability claimability, Implicit i) {
+  RecordAnchor(
+      source_range, node,
+      i == Implicit::Yes ? EdgeKindID::kRefInitImplicit : EdgeKindID::kRefInit,
+      claimability);
 }
 
 void KytheGraphObserver::recordStaticVariable(const NodeId &VarNodeId) {

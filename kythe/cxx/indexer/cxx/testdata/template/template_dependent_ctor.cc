@@ -13,8 +13,8 @@ struct S {
 template <typename T>
 //- @L defines/binding AbsL
 struct L : S<T> {
-  //- StCall=@"S<T>(M<T>())" ref/call St
-  //- MtCall=@"M<T>()" ref/call Mt
+  //- StCall=@"S<T>(M<T>())" ref/call/implicit St
+  //- MtCall=@"M<T>()" ref/call/implicit Mt
   //- @L defines/binding CtorL
   //- StCall childof CtorL
   //- MtCall childof CtorL

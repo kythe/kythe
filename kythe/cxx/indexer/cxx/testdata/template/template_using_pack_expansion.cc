@@ -12,8 +12,8 @@ struct B {
 
 template <typename... Ts>
 struct S : Ts... {
-  //- @Call ref ACallFn
-  //- @Call ref BCallFn
+  //- @Call ref/implicit ACallFn
+  //- @Call ref/implicit BCallFn
   using Ts::Call...;
 };
 

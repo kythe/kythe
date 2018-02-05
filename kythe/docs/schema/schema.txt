@@ -947,6 +947,32 @@ var x int
 var y = x
 --------------------------------------------------------------------------------
 
+[[refimplicit]]
+ref/implicit
+~~~~~~~~~~~~
+
+Brief description::
+  A *ref/implicit* B if A refers to some previously-defined B, and the
+  expression spanned by A is implicit (e.g., the result of a template
+  instantiation).
+Commonly arises from::
+  expressions, spelled-out types
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+
+[kythe,C++,"References inside template instantiations are implicit."]
+--------------------------------------------------------------------------------
+template <typename T> class C {
+  //- @foo ref/implicit SFoo
+  int x = T::foo;
+};
+//- @foo defines/binding SFoo
+struct S { static constexpr int foo = 1; };
+C<S> cs;
+--------------------------------------------------------------------------------
+
 [[refcall]]
 ref/call
 ~~~~~~~~
@@ -969,6 +995,32 @@ void A() { }
 //- ACall.node/kind anchor
 //- ACall ref/call FnA
 void B() { A(); }
+--------------------------------------------------------------------------------
+
+[[refcallimplicit]]
+ref/call/implicit
+~~~~~~~~~~~~~~~~~
+
+Brief description::
+  A *ref/call/implicit* F if A is an anchor that calls F, and the calling
+  expression spanned by A is implicit (e.g., the result of a template
+  instantiation).
+Points from::
+  anchors
+Points toward::
+  <<function,functions>>
+Ordinals are used::
+  never
+
+[kythe,C++,"Calls inside template instantiations are implicit."]
+--------------------------------------------------------------------------------
+template <typename T> class C {
+  //- @"T::foo()" ref/call/implicit SFoo
+  int x = T::foo();
+};
+//- @foo defines/binding SFoo
+struct S { static int foo(); };
+C<S> cs;
 --------------------------------------------------------------------------------
 
 [[refdoc]]
@@ -1155,6 +1207,32 @@ var _ = S{17}
 //- @F ref Field
 //- @"101" ref/init Field
 var _ = S{F: 101}
+--------------------------------------------------------------------------------
+
+[[refinitimplicit]]
+ref/init/implicit
+~~~~~~~~~~~~~~~~~
+
+Brief description::
+  A *ref/init/implicit* B if A is an anchor attached to an expression that
+  initializes B, typically a field or variable, and the expression spanned by A
+  is implicit (e.g., the result of a template instantiation).
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+
+[kythe,C++,"Initializers inside template instantiations are implicit."]
+--------------------------------------------------------------------------------
+template<typename T> class C {
+  //- @x ref/init/implicit MemberX
+  T t = {.x = 1};
+};
+//- @x defines/binding MemberX
+struct S { int x; };
+C<S> cs;
 --------------------------------------------------------------------------------
 
 [[refqueries]]

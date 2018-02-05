@@ -16,8 +16,8 @@
 
 #include <tuple>
 
-#include "IndexerASTHooks.h"
 #include "GraphObserver.h"
+#include "IndexerASTHooks.h"
 #include "indexed_parent_iterator.h"
 
 #include "absl/types/optional.h"
@@ -346,7 +346,7 @@ class PruneCheck {
   IndexerASTVisitor *visitor_;
 };
 
-IndexedParentMap* IndexerASTVisitor::getAllParents() {
+IndexedParentMap *IndexerASTVisitor::getAllParents() {
   if (!AllParents) {
     // We always need to run over the whole translation unit, as
     // hasAncestor can escape any subtree.
@@ -480,15 +480,23 @@ void IndexerASTVisitor::MaybeRecordDefinitionRange(
   }
 }
 
+GraphObserver::Implicit IndexerASTVisitor::IsImplicit(
+    const GraphObserver::Range &Range) {
+  return (Job->UnderneathImplicitTemplateInstantiation ||
+          Range.Kind != GraphObserver::Range::RangeKind::Physical)
+             ? GraphObserver::Implicit::Yes
+             : GraphObserver::Implicit::No;
+}
+
 void IndexerASTVisitor::RecordCallEdges(const GraphObserver::Range &Range,
                                         const GraphObserver::NodeId &Callee) {
   if (Job->BlameStack.empty()) {
     if (auto FileId = Observer.recordFileInitializer(Range)) {
-      Observer.recordCallEdge(Range, FileId.value(), Callee);
+      Observer.recordCallEdge(Range, FileId.value(), Callee, IsImplicit(Range));
     }
   } else {
     for (const auto &Caller : Job->BlameStack.back()) {
-      Observer.recordCallEdge(Range, Caller, Callee);
+      Observer.recordCallEdge(Range, Caller, Callee, IsImplicit(Range));
     }
   }
 }
@@ -1114,8 +1122,9 @@ bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
       auto Range = clang::SourceRange(E->getMemberLoc(),
                                       E->getLocEnd().getLocWithOffset(1));
       if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
-        Observer.recordDeclUseLocation(
-            RCC.value(), TappNodeId, GraphObserver::Claimability::Unclaimable);
+        Observer.recordDeclUseLocation(RCC.value(), TappNodeId,
+                                       GraphObserver::Claimability::Unclaimable,
+                                       IsImplicit(RCC.value()));
       }
     }
   }
@@ -1142,9 +1151,9 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr *E) {
         E->getMemberLoc());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
-      Observer.recordDeclUseLocation(RCC.value(),
-                                     BuildNodeIdForRefToDecl(FieldDecl),
-                                     GraphObserver::Claimability::Unclaimable);
+      Observer.recordDeclUseLocation(
+          RCC.value(), BuildNodeIdForRefToDecl(FieldDecl),
+          GraphObserver::Claimability::Unclaimable, IsImplicit(RCC.value()));
       if (E->hasExplicitTemplateArgs()) {
         // We still want to link the template args.
         std::vector<GraphObserver::NodeId> ArgIds;
@@ -1249,9 +1258,10 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
   return true;
 }
 
-bool IndexerASTVisitor::VisitCXXFunctionalCastExpr(const clang::CXXFunctionalCastExpr *E) {
-  // TODO(shahms): Emit ref and ref/call edges to an implicit constructor for aggregate
-  // initialization.
+bool IndexerASTVisitor::VisitCXXFunctionalCastExpr(
+    const clang::CXXFunctionalCastExpr *E) {
+  // TODO(shahms): Emit ref and ref/call edges to an implicit constructor for
+  // aggregate initialization.
   BuildNodeIdForType(E->getTypeInfoAsWritten()->getTypeLoc(), EmitRanges::Yes);
   return true;
 }
@@ -1266,8 +1276,9 @@ bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr *E) {
           NewLoc, GetLocForEndOfToken(*Observer.getSourceManager(),
                                       *Observer.getLangOptions(), NewLoc));
       if (auto RCC = RangeInCurrentContext(StmtId, NewRange)) {
-        Observer.recordDeclUseLocation(
-            RCC.value(), NewId, GraphObserver::Claimability::Unclaimable);
+        Observer.recordDeclUseLocation(RCC.value(), NewId,
+                                       GraphObserver::Claimability::Unclaimable,
+                                       IsImplicit(RCC.value()));
       }
     }
   }
@@ -1665,10 +1676,12 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(TargetDecl);
       if (IsInit) {
         Observer.recordInitLocation(RCC.value(), DeclId,
-                                    GraphObserver::Claimability::Unclaimable);
+                                    GraphObserver::Claimability::Unclaimable,
+                                    this->IsImplicit(RCC.value()));
       } else {
-        Observer.recordDeclUseLocation(
-            RCC.value(), DeclId, GraphObserver::Claimability::Unclaimable);
+        Observer.recordDeclUseLocation(RCC.value(), DeclId,
+                                       GraphObserver::Claimability::Unclaimable,
+                                       this->IsImplicit(RCC.value()));
       }
       for (const auto &S : Supports) {
         S->InspectDeclRef(*this, SL, RCC.value(), DeclId, TargetDecl);
@@ -1896,7 +1909,8 @@ bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl *Decl) {
   if (auto RCC =
           RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
     Observer.recordDeclUseLocation(RCC.value(), DeclNode,
-                                   GraphObserver::Claimability::Unclaimable);
+                                   GraphObserver::Claimability::Unclaimable,
+                                   IsImplicit(RCC.value()));
   }
   Observer.recordNamespaceNode(DeclNode, Marks.GenerateMarkedSource(DeclNode));
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
@@ -2193,7 +2207,8 @@ clang::SourceRange IndexerASTVisitor::ExpandRangeIfEmptyFileID(
   return SR;
 }
 
-clang::SourceRange IndexerASTVisitor::MapRangeToFileIfMacroID(const clang::SourceRange& SR) {
+clang::SourceRange IndexerASTVisitor::MapRangeToFileIfMacroID(
+    const clang::SourceRange &SR) {
   if (SR.isValid() && SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
     auto NewSR = RangeForASTEntityFromSourceLocation(
         *Observer.getSourceManager(), *Observer.getLangOptions(),
@@ -2216,7 +2231,8 @@ clang::SourceRange IndexerASTVisitor::MapRangeToFileIfMacroID(const clang::Sourc
 }
 
 absl::optional<GraphObserver::Range>
-IndexerASTVisitor::ExpandedFileRangeInCurrentContext(const clang::SourceRange &SR) {
+IndexerASTVisitor::ExpandedFileRangeInCurrentContext(
+    const clang::SourceRange &SR) {
   if (!SR.isValid()) {
     return absl::nullopt;
   }
@@ -2703,7 +2719,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
           if (auto RCC = ExplicitRangeInCurrentContext(MemberSR)) {
             const auto &ID = BuildNodeIdForRefToDecl(M);
             Observer.recordDeclUseLocation(
-                RCC.value(), ID, GraphObserver::Claimability::Claimable);
+                RCC.value(), ID, GraphObserver::Claimability::Claimable,
+                this->IsImplicit(RCC.value()));
           }
         }
       }
@@ -2878,9 +2895,9 @@ bool IndexerASTVisitor::VisitUsingShadowDecl(
     const clang::UsingShadowDecl *Decl) {
   if (auto RCC =
           ExplicitRangeInCurrentContext(RangeForNameOfDeclaration(Decl))) {
-    Observer.recordDeclUseLocation(RCC.value(),
-                                   BuildNodeIdForDecl(Decl->getTargetDecl()),
-                                   GraphObserver::Claimability::Claimable);
+    Observer.recordDeclUseLocation(
+        RCC.value(), BuildNodeIdForDecl(Decl->getTargetDecl()),
+        GraphObserver::Claimability::Claimable, IsImplicit(RCC.value()));
   }
   return true;
 }
@@ -2923,7 +2940,7 @@ GraphObserver::NameId::NameEqClass IndexerASTVisitor::BuildNameEqClassForDecl(
 
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::GetDeclChildOf(
     const clang::Decl *Decl) {
-  for (const auto& Node : RootTraversal(getAllParents(), Decl)) {
+  for (const auto &Node : RootTraversal(getAllParents(), Decl)) {
     if (Node.indexed_parent == nullptr) break;
 
     // We would rather name 'template <etc> class C' as C, not C::C, but
@@ -3017,7 +3034,7 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
   // prefix search.
   llvm::raw_string_ostream Ostream(Id.Path);
   bool MissingSeparator = false;
-  for (const auto& Current : RootTraversal(getAllParents(), Decl)) {
+  for (const auto &Current : RootTraversal(getAllParents(), Decl)) {
     // TODO(zarko): Do we need to deal with nodes with no memoization data?
     // According to ASTTypeTrates.h:205, only Stmt, Decl, Type and
     // NestedNameSpecifier return memoization data. Can we claim an invariant
@@ -3061,8 +3078,7 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
         isa<ClassTemplateDecl>(Current.decl)) {
       continue;
     }
-    if (MissingSeparator &&
-        !dyn_cast_or_null<LinkageSpecDecl>(Current.decl)) {
+    if (MissingSeparator && !dyn_cast_or_null<LinkageSpecDecl>(Current.decl)) {
       Ostream << ":";
     } else {
       MissingSeparator = true;
@@ -3460,8 +3476,8 @@ bool IndexerASTVisitor::IsDefinition(const FunctionDecl *FunctionDecl) {
   return FunctionDecl->isThisDeclarationADefinition();
 }
 
-// There aren't too many types in C++, as it turns out. See
-// clang/AST/TypeNodes.def.
+  // There aren't too many types in C++, as it turns out. See
+  // clang/AST/TypeNodes.def.
 
 #define UNSUPPORTED_CLANG_TYPE(t)                  \
   case TypeLoc::t:                                 \
@@ -3669,7 +3685,9 @@ IndexerASTVisitor::BuildNodeIdForDependentName(
             ExplicitRangeInCurrentContext(RangeForASTEntityFromSourceLocation(
                 *Observer.getSourceManager(), *Observer.getLangOptions(),
                 IdLoc))) {
-      Observer.recordDeclUseLocation(RCC.value(), IdOut);
+      Observer.recordDeclUseLocation(RCC.value(), IdOut,
+                                     GraphObserver::Claimability::Claimable,
+                                     IsImplicit(RCC.value()));
     }
   }
   return IdOut;
@@ -3731,7 +3749,8 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
       Observer.recordLookupNode(ResultId, TOstream.str());
     } else {
       Observer.recordDeclUseLocation(RCC.value(), ResultId,
-                                     GraphObserver::Claimability::Claimable);
+                                     GraphObserver::Claimability::Claimable,
+                                     IsImplicit(RCC.value()));
     }
   }
   return ResultId;
@@ -4377,7 +4396,9 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                 RangeForSingleTokenFromSourceLocation(
                     *Observer.getSourceManager(), *Observer.getLangOptions(),
                     TNameLoc))) {
-          Observer.recordDeclUseLocation(RCC.value(), DeclNode);
+          Observer.recordDeclUseLocation(RCC.value(), DeclNode,
+                                         GraphObserver::Claimability::Claimable,
+                                         IsImplicit(RCC.value()));
         }
       }
       std::vector<GraphObserver::NodeId> TemplateArgs;
@@ -4629,7 +4650,8 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     if (auto RCC =
             ExplicitRangeInCurrentContext(ExpandRangeIfEmptyFileID(SR))) {
       if (const auto &SpellID = (SpanID ? SpanID : ID)) {
-        Observer.recordTypeSpellingLocation(*RCC, *SpellID, Claimability);
+        Observer.recordTypeSpellingLocation(*RCC, *SpellID, Claimability,
+                                            IsImplicit(*RCC));
       }
     }
   }
@@ -4657,7 +4679,9 @@ IndexerASTVisitor::RecordObjCInterfaceType(
     auto SR = RangeForASTEntityFromSourceLocation(
         *Observer.getSourceManager(), *Observer.getLangOptions(), SL);
     if (auto ERCC = ExplicitRangeInCurrentContext(SR)) {
-      Observer.recordDeclUseLocation(ERCC.value(), PID);
+      Observer.recordDeclUseLocation(ERCC.value(), PID,
+                                     GraphObserver::Claimability::Claimable,
+                                     IsImplicit(ERCC.value()));
     }
     ProtocolNodes.insert(std::pair<std::string, GraphObserver::NodeId>(
         P->getNameAsString(), PID));
@@ -4736,7 +4760,9 @@ bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
   // Record a ref to the original type
   if (const auto &ERCC = ExplicitRangeInCurrentContext(OrgClassRange)) {
     const auto &ID = BuildNodeIdForDecl(Decl->getClassInterface());
-    Observer.recordDeclUseLocation(ERCC.value(), ID);
+    Observer.recordDeclUseLocation(ERCC.value(), ID,
+                                   GraphObserver::Claimability::Claimable,
+                                   IsImplicit(ERCC.value()));
   }
 
   // Record the type alias
@@ -4850,7 +4876,8 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
     if (auto RCC = ExplicitRangeInCurrentContext(Range)) {
       auto ID = BuildNodeIdForDecl(CategoryDecl);
       Observer.recordDeclUseLocation(RCC.value(), ID,
-                                     GraphObserver::Claimability::Unclaimable);
+                                     GraphObserver::Claimability::Unclaimable,
+                                     IsImplicit(RCC.value()));
     }
   } else {
     LogErrorWithASTDump("Missing category decl", ImplDecl);
@@ -4867,7 +4894,9 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
         *Observer.getSourceManager(), *Observer.getLangOptions(),
         ImplDecl->getLocation());
     if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
-      Observer.recordDeclUseLocation(RCC.value(), ClassInterfaceNode);
+      Observer.recordDeclUseLocation(RCC.value(), ClassInterfaceNode,
+                                     GraphObserver::Claimability::Claimable,
+                                     IsImplicit(RCC.value()));
     }
   } else {
     LogErrorWithASTDump("Missing category impl class interface", ImplDecl);
@@ -4914,7 +4943,8 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
     if (auto SCRCC = ExplicitRangeInCurrentContext(SuperRange)) {
       auto SCID = BuildNodeIdForDecl(SC);
       Observer.recordDeclUseLocation(SCRCC.value(), SCID,
-                                     GraphObserver::Claimability::Unclaimable);
+                                     GraphObserver::Claimability::Unclaimable,
+                                     IsImplicit(SCRCC.value()));
     }
   }
 
@@ -4946,7 +4976,8 @@ void IndexerASTVisitor::ConnectToProtocols(
     if (auto ERCC = ExplicitRangeInCurrentContext(Range)) {
       auto PID = BuildNodeIdForDecl(*PIt);
       Observer.recordDeclUseLocation(ERCC.value(), PID,
-                                     GraphObserver::Claimability::Unclaimable);
+                                     GraphObserver::Claimability::Unclaimable,
+                                     IsImplicit(ERCC.value()));
     }
   }
 }
@@ -5033,7 +5064,9 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
         *Observer.getSourceManager(), *Observer.getLangOptions(),
         Decl->getLocation());
     if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
-      Observer.recordDeclUseLocation(RCC.value(), ClassInterfaceNode);
+      Observer.recordDeclUseLocation(RCC.value(), ClassInterfaceNode,
+                                     GraphObserver::Claimability::Claimable,
+                                     IsImplicit(RCC.value()));
     }
   } else {
     LogErrorWithASTDump("Missing category decl class interface", Decl);
@@ -5342,7 +5375,8 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
             *Observer.getSourceManager(), *Observer.getLangOptions(), Loc));
         if (auto ERCC = ExplicitRangeInCurrentContext(SR)) {
           Observer.recordTypeSpellingLocation(
-              ERCC.value(), ID.value(), GraphObserver::Claimability::Claimable);
+              ERCC.value(), ID.value(), GraphObserver::Claimability::Claimable,
+              IsImplicit(ERCC.value()));
         }
       }
     }
@@ -5365,8 +5399,9 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
       // We only record a ref if we have successfully recorded a ref/call.
       // If we don't have any selectors, just use the same span as the ref/call.
       if (Expr->getNumSelectorLocs() == 0) {
-        Observer.recordDeclUseLocation(
-            RCC.value(), DeclId, GraphObserver::Claimability::Unclaimable);
+        Observer.recordDeclUseLocation(RCC.value(), DeclId,
+                                       GraphObserver::Claimability::Unclaimable,
+                                       IsImplicit(RCC.value()));
       } else {
         // TODO Record multiple ranges, one for each selector.
         // For now, just record the range for the first selector. This should
@@ -5377,7 +5412,8 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
               *Observer.getSourceManager(), *Observer.getLangOptions(), Loc);
           if (auto R = ExplicitRangeInCurrentContext(range)) {
             Observer.recordDeclUseLocation(
-                R.value(), DeclId, GraphObserver::Claimability::Unclaimable);
+                R.value(), DeclId, GraphObserver::Claimability::Unclaimable,
+                IsImplicit(R.value()));
           }
         }
       }
@@ -5433,8 +5469,9 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
       // Record the "field" access if this has an explicit property.
       if (PD != nullptr) {
         GraphObserver::NodeId DeclId = BuildNodeIdForDecl(PD);
-        Observer.recordDeclUseLocation(
-            RCC.value(), DeclId, GraphObserver::Claimability::Unclaimable);
+        Observer.recordDeclUseLocation(RCC.value(), DeclId,
+                                       GraphObserver::Claimability::Unclaimable,
+                                       IsImplicit(RCC.value()));
         for (const auto &S : Supports) {
           S->InspectDeclRef(*this, SL, RCC.value(), DeclId, PD);
         }

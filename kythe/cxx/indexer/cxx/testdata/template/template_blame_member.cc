@@ -8,7 +8,7 @@ bool g() { return false; }
 //- CBody childof AbsC
 //- @C defines/binding AbsC
 //- FImp instantiates TUnaryAppAbsF
-//- FImpCall=@"g()" ref/call FnG
+//- FImpCall=@"g()" ref/call/implicit FnG
 //- FImpCall childof FImp
 template <typename T> struct C { bool f(T* t) { return g(); } };
 //- TheCall=@"j->f(nullptr)" ref/call TUnaryAppAbsF

@@ -72,6 +72,7 @@ enum class EdgeKindID {
   kDefinesFull,
   kHasType,
   kRef,
+  kRefImplicit,
   kParam,
   kAliases,
   kAliasesRoot,
@@ -80,6 +81,7 @@ enum class EdgeKindID {
   kChildOf,
   kSpecializes,
   kRefCall,
+  kRefCallImplicit,
   kRefExpands,
   kUndefines,
   kRefIncludes,
@@ -105,7 +107,8 @@ enum class EdgeKindID {
   kOverridesRoot,
   kChildOfContext,
   kBoundedUpper,
-  kRefInit
+  kRefInit,
+  kRefInitImplicit
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`
