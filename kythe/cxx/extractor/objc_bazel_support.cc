@@ -78,7 +78,11 @@ void FillWithFixedArgs(std::vector<std::string> &args,
     RE2::GlobalReplace(&arg, "__BAZEL_XCODE_SDKROOT__", sdkroot);
     args.push_back(arg);
   }
-  args.push_back(ci.source_file());
+  // If the command-line did not specify "-c x.cc" specifically, include the
+  // primary source at the end of the argument list.
+  if (std::find(args.begin(), args.end(), "-c") == args.end()) {
+    args.push_back(ci.source_file());
+  }
 }
 
 void FillWithFixedArgs(std::vector<std::string> &args,

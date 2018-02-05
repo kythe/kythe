@@ -66,7 +66,12 @@ int main(int argc, char *argv[]) {
   args.push_back(cpp_info.tool());
   args.insert(args.end(), cpp_info.compiler_option().begin(),
               cpp_info.compiler_option().end());
-  args.push_back(cpp_info.source_file());
+
+  // If the command-line did not specify "-c x.cc" specifically, include the
+  // primary source at the end of the argument list.
+  if (std::find(args.begin(), args.end(), "-c") == args.end()) {
+    args.push_back(cpp_info.source_file());
+  }
   config.SetKindexOutputFile(output_file);
   config.SetArgs(args);
   config.SetVNameConfig(vname_config);

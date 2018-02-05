@@ -113,10 +113,14 @@ int main(int argc, char** argv) {
   args.push_back(cpp_info.tool());
   args.insert(args.end(), cpp_info.compiler_option().begin(),
               cpp_info.compiler_option().end());
-  args.push_back("-c");
-  args.push_back(cpp_info.source_file());
-  args.push_back("-o");
-  args.push_back(cpp_info.output_file());
+  if (std::find(args.begin(), args.end(), "-c") == args.end()) {
+    args.push_back("-c");
+    args.push_back(cpp_info.source_file());
+  }
+  if (std::find(args.begin(), args.end(), "-o") == args.end()) {
+    args.push_back("-o");
+    args.push_back(cpp_info.output_file());
+  }
 
   FILE* output = ::fopen(output_file.c_str(), "w");
   if (output == nullptr) {
