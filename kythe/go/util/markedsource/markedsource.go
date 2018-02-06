@@ -125,31 +125,38 @@ func renderParams(ms *cpb.MarkedSource, st state, params []string) []string {
 
 // RenderQualifiedName renders a language-appropriate qualified name from a
 // MarkedSource message.
-func RenderQualifiedName(ms *cpb.MarkedSource) string {
+func RenderQualifiedName(ms *cpb.MarkedSource) *cpb.SymbolInfo {
 	id := firstMatching(ms, func(ms *cpb.MarkedSource) bool {
 		return ms.Kind == cpb.MarkedSource_IDENTIFIER && ms.PreText != ""
 	})
+
+	if id == nil {
+		return new(cpb.SymbolInfo)
+	}
+
+	symbolInfo := &cpb.SymbolInfo{BaseName: id.PreText}
+
 	ctx := firstMatching(ms, func(ms *cpb.MarkedSource) bool {
 		return ms.Kind == cpb.MarkedSource_CONTEXT
 	})
-	if ctx == nil {
-		return ""
-	}
 
-	delim := ctx.PostChildText
-	if delim == "" {
-		delim = "."
-	}
-	var quals []string
-	for _, kid := range ctx.Child {
-		if kid.Kind == cpb.MarkedSource_IDENTIFIER && kid.PreText != "" {
-			quals = append(quals, kid.PreText)
+	if ctx != nil {
+		delim := ctx.PostChildText
+		if delim == "" {
+			delim = "."
+		}
+		var quals []string
+		for _, kid := range ctx.Child {
+			if kid.Kind == cpb.MarkedSource_IDENTIFIER && kid.PreText != "" {
+				quals = append(quals, kid.PreText)
+			}
+		}
+		if pkg := strings.Join(quals, delim); pkg != "" {
+			symbolInfo.QualifiedName = pkg + ctx.PostChildText + id.GetPreText()
 		}
 	}
-	if pkg := strings.Join(quals, delim); pkg != "" {
-		return pkg + ctx.PostChildText + id.GetPreText()
-	}
-	return id.GetPreText()
+
+	return symbolInfo
 }
 
 // firstMatching returns the first node in a breadth-first traversal of the
