@@ -23,8 +23,6 @@ import com.beust.jcommander.Parameters;
 /** Common configuration for Kythe indexers. */
 @Parameters(separators = "=")
 public class IndexerConfig {
-  private final String programName;
-
   @Parameter(
     names = {"--help", "-h"},
     description = "Help requested",
@@ -46,8 +44,11 @@ public class IndexerConfig {
   )
   private String defaultMetadataCorpus;
 
+  private final JCommander jc;
+
   public IndexerConfig(String programName) {
-    this.programName = programName;
+    jc = new JCommander(this);
+    jc.setProgramName(programName);
   }
 
   /**
@@ -55,12 +56,16 @@ public class IndexerConfig {
    * binary's usage message will be printed and the program will exit with non-zero code.
    */
   public final void parseCommandLine(String[] args) {
-    JCommander jc = new JCommander(this, args);
-    jc.setProgramName(programName);
+    jc.parse(args);
     if (getHelp()) {
-      jc.usage();
-      System.exit(1);
+      showHelpAndExit();
     }
+  }
+
+  /** Print the binary's usage message, and exit with a non-zero code. */
+  public void showHelpAndExit() {
+    jc.usage();
+    System.exit(1);
   }
 
   public final boolean getHelp() {

@@ -22,6 +22,7 @@ java_library(
     ],
     deps = [
         ":jvm_graph",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:stream_fact_emitter",
@@ -31,6 +32,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
+        "@com_beust_jcommander//jar",
         "@com_google_guava_guava//jar",
         "@org_ow2_asm_asm//jar",
     ],

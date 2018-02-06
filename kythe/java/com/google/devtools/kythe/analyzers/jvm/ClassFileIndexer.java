@@ -16,25 +16,33 @@
 
 package com.google.devtools.kythe.analyzers.jvm;
 
+import com.beust.jcommander.Parameter;
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
+import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataCache;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
+import com.google.devtools.kythe.platform.shared.MemoryStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Storage.VName;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -49,11 +57,20 @@ public class ClassFileIndexer {
   public static final String CLASS_FILE_EXT = ".class";
 
   public static void main(String[] args) throws AnalysisException {
-    try (OutputStream stream = System.out) {
+    StandaloneConfig config = new StandaloneConfig();
+    config.parseCommandLine(args);
+
+    try (OutputStream stream =
+        Strings.isNullOrEmpty(config.getOutputPath())
+            ? System.out
+            : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
       FactEmitter emitter = new StreamFactEmitter(stream);
-      StatisticsCollector statistics = NullStatisticsCollector.getInstance();
-      KytheClassVisitor classVisitor = new KytheClassVisitor(statistics, emitter);
-      for (String fileName : args) {
+      MemoryStatisticsCollector statistics =
+          config.getPrintStatistics() ? new MemoryStatisticsCollector() : null;
+      KytheClassVisitor classVisitor =
+          new KytheClassVisitor(
+              statistics == null ? NullStatisticsCollector.getInstance() : statistics, emitter);
+      for (String fileName : config.getFilesToIndex()) {
         File file = new File(fileName);
         if (fileName.endsWith(JAR_FILE_EXT)) {
           visitJarClassFiles(file, classVisitor);
@@ -66,6 +83,9 @@ public class ClassFileIndexer {
         } else {
           throw new IllegalArgumentException("unknown file path extension: " + fileName);
         }
+      }
+      if (statistics != null) {
+        statistics.printStatistics(System.err);
       }
     } catch (IOException ioe) {
       throw new AnalysisException("error writing output", ioe);
@@ -144,6 +164,39 @@ public class ClassFileIndexer {
       visitor.visitClassFile(input);
     } catch (IOException ioe) {
       throw new AnalysisException("error reading class file: " + classFile, ioe);
+    }
+  }
+
+  private static class StandaloneConfig extends IndexerConfig {
+    @Parameter(description = "<jar|class|kindex files to analyze>", required = true)
+    private List<String> filesToIndex = new ArrayList<>();
+
+    @Parameter(
+      names = "--print_statistics",
+      description = "Print final analyzer statistics to stderr"
+    )
+    private boolean printStatistics;
+
+    @Parameter(
+      names = {"--out", "-out"},
+      description = "Write the entries to this file (or stdout if unspecified)"
+    )
+    private String outputPath;
+
+    public StandaloneConfig() {
+      super("classfile-indexer");
+    }
+
+    public final boolean getPrintStatistics() {
+      return printStatistics;
+    }
+
+    public final String getOutputPath() {
+      return outputPath;
+    }
+
+    public final List<String> getFilesToIndex() {
+      return filesToIndex;
     }
   }
 }

@@ -44,7 +44,10 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
-/** Binary to run Kythe's Java index over a single .kindex file, emitting entries to STDOUT. */
+/**
+ * Binary to run Kythe's Java index over a single .kindex file, emitting entries to a file or
+ * STDOUT.
+ */
 public class JavaIndexer {
   public static void main(String[] args) throws AnalysisException, IOException {
     StandaloneConfig config = new StandaloneConfig();
@@ -78,7 +81,7 @@ public class JavaIndexer {
     List<String> compilation = config.getCompilation();
     if (compilation.size() > 1) {
       System.err.println("Java indexer received too many arguments; got " + compilation);
-      usage(1);
+      config.showHelpAndExit();
     }
 
     CompilationDescription desc = null;
@@ -134,13 +137,6 @@ public class JavaIndexer {
 
   private static URL fileURL(String path) throws MalformedURLException {
     return new File(path).toURI().toURL();
-  }
-
-  private static void usage(int exitCode) {
-    System.err.println(
-        "usage: java_indexer [--print_statistics] kindex-file\n"
-            + "       java_indexer [--print_statistics] --index_pack=archive-root unit-key");
-    System.exit(exitCode);
   }
 
   private static class StandaloneConfig extends JavaIndexerConfig {
