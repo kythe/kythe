@@ -35,29 +35,34 @@ import (
 )
 
 var (
-	host = flag.String("host", "localhost", "Host for the Kythe xref service")
-	port = flag.Int("port", 8080, "Host for the Kythe xref service")
+	serverAddr = flag.String("server", "localhost:8080",
+		"The address of the Kythe service to use")
 )
 
 func main() {
 	flag.Parse()
+	if *serverAddr == "" {
+		log.Fatal("You must provide a --server address")
+	}
+
 	// Set up the log file
-	file, err := os.OpenFile(filepath.Join(os.TempDir(), "kythe-ls-"+time.Now().Format("20060102-150405")+".log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
+	const openMode = os.O_CREATE | os.O_APPEND | os.O_WRONLY
+	logfile := fmt.Sprintf("kythe-ls-%s.log", time.Now().Format("20160102-150405"))
+	file, err := os.OpenFile(filepath.Join(os.TempDir(), logfile), openMode, os.ModePerm)
 	if err != nil {
 		log.Fatalf("Unable to create log file: %v", err)
 	}
 	log.SetOutput(file)
 
-	host := fmt.Sprintf("%s:%d", *host, *port)
-
-	// Check to see that xref service is reachable
-	conn, err := net.DialTimeout("tcp", host, 5*time.Second)
+	// Check to see that xref service is reachable. We won't hold open a
+	// connection to the server here, as the client manages the connection.
+	conn, err := net.DialTimeout("tcp", *serverAddr, 5*time.Second)
 	if err != nil {
-		log.Fatalf("XRef service unreachable")
+		log.Fatalf("Dialing Kythe service: %v", err)
 	}
 	conn.Close()
 
-	client := xrefs.WebClient("http://" + host)
+	client := xrefs.WebClient("http://" + *serverAddr)
 	server := languageserver.NewServer(client, nil)
 
 	<-jsonrpc2.NewConn(
