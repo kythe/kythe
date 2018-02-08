@@ -26,7 +26,10 @@ cc_library(
 cc_library(
     name = "libuuid",
     srcs = ["empty.cc"],
-    linkopts = ["-luuid"],
+    linkopts = select({
+        "//:darwin": [],
+        "//conditions:default": ["-luuid"],
+    }),
 )
 
 exports_files(["libmemcached.mem_config.h"])
