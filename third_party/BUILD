@@ -23,6 +23,12 @@ cc_library(
     linkopts = ["-lcurl"],
 )
 
+cc_library(
+    name = "libuuid",
+    srcs = ["empty.cc"],
+    linkopts = ["-luuid"],
+)
+
 exports_files(["libmemcached.mem_config.h"])
 
 alias(
