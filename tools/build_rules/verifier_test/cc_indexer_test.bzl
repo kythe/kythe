@@ -79,6 +79,11 @@ def _transitive_entries(deps):
   return KytheEntries(files=files, compressed=compressed)
 
 def _cc_extract_kindex_impl(ctx):
+  cpp = ctx.fragments.cpp
+  if ctx.attr.add_toolchain_include_directories:
+    toolchain_includes = ["-isystem" + d for d in cpp.built_in_include_directories]
+  else:
+    toolchain_includes = []
   outputs = depset([
     extract(
         ctx = ctx,
@@ -86,8 +91,9 @@ def _cc_extract_kindex_impl(ctx):
         extractor = ctx.executable.extractor,
         vnames_config = ctx.file.vnames_config,
         srcs = [src],
-        opts = (ctx.fragments.cpp.compiler_options([]) +
-                ctx.fragments.cpp.unfiltered_compiler_options([]) +
+        opts = (cpp.compiler_options([]) +
+                cpp.unfiltered_compiler_options([]) +
+                toolchain_includes +
                 ctx.attr.opts),
         deps = ctx.files.deps + ctx.files.srcs,
     )
@@ -141,6 +147,11 @@ cc_extract_kindex = rule(
         ),
         "opts": attr.string_list(
             doc = "Options which will be passed to the extractor as arguments.",
+        ),
+        "add_toolchain_include_directories": attr.bool(
+            doc = ("Whether or not to explicitly add the C++ toolchain " +
+                   "directories to the header search path."),
+            default = False,
         ),
         "copts": attr.string_list(
             doc = """Options which are required to compile/index the sources.
@@ -623,6 +634,10 @@ def cc_extractor_test(name, srcs, deps=[], data=[], size="small", std="c++11", t
       restricted_to = restricted_to,
       testonly = True,
       opts = args,
+      add_toolchain_include_directories = select({
+          "//:darwin": True,
+          "//conditions:default": False,
+      })
   )
   cc_index(
       name = name + "_entries",
