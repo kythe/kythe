@@ -34,7 +34,7 @@ import (
 )
 
 func TestCanon(t *testing.T) {
-	s := New()
+	s := New(nil)
 	if !s.canon {
 		t.Error("A New set should be canonical")
 	}
@@ -157,13 +157,46 @@ var testEntries = []*spb.Entry{
 }
 
 func testSet(t *testing.T) *Set {
-	s := New()
+	t.Helper()
+
+	s := New(nil)
 	for _, entry := range testEntries {
 		if err := s.Add(entry); err != nil {
 			t.Fatalf("Error adding entry: %v", err)
 		}
 	}
 	return s
+}
+
+func TestSplit(t *testing.T) {
+	// Verify that splitting for long symbols works correctly, and that the
+	// results are properly reconstituted.
+	big := F("//thing", "0123456", "0123456789abcdef0123456789abcdef0123456789abc")
+	s := New(&Options{
+		MaxSymbolBytes: 19,
+	})
+	if err := s.Add(big); err != nil {
+		t.Errorf("Add(%+v) failed: %v", big, err)
+	}
+	enc := s.Encode()
+	t.Logf("After encoding:\n%s", proto.MarshalTextString(enc))
+
+	dec, err := Decode(s.Encode())
+	if err != nil {
+		t.Fatalf("Decoding failed: %v", err)
+	}
+	var numEntries int
+	dec.Visit(func(ent *spb.Entry) bool {
+		numEntries++
+		if !proto.Equal(ent, big) {
+			t.Errorf("Visited entry:\ngot  %s\nwant %s",
+				proto.MarshalTextString(ent), proto.MarshalTextString(big))
+		}
+		return true
+	})
+	if numEntries != 1 {
+		t.Errorf("Wrong number of entries: got %d, want 1", numEntries)
+	}
 }
 
 func TestSources(t *testing.T) {

@@ -19,7 +19,7 @@
 //
 // Call New to construct an empty set, and use the Add method to add entries:
 //
-//   set := entryset.New()
+//   set := entryset.New(nil)
 //   for entry := range readEntries() {
 //      if err := set.Add(entry); err != nil {
 //         log.Exitf("Invalid entry: %v", err)
@@ -40,9 +40,9 @@
 // newly-created entry set is canonical; a call to Add may invalidate this
 // status. Call the Canonicalize method to canonicalize an entryset.
 //
-//    set := entryset.New()  // set is canonical
-//    set.Add(e)             // set is no longer canonical
-//    set.Canonicalize()     // set is (once again) canonical
+//    set := entryset.New(nil) // set is canonical
+//    set.Add(e)               // set is no longer canonical
+//    set.Canonicalize()       // set is (once again) canonical
 //
 // An entryset can be converted into a kythe.storage.EntrySet protobuf message
 // using the Encode method. This message is defined in entryset.proto. You can
@@ -82,18 +82,36 @@ type Set struct {
 	facts map[nid]map[fact]bool
 	edges map[nid]map[edge]bool
 	canon bool // true if this set is canonicalized
+	opts  *Options
 
 	addCalls  int
 	addErrors int
 }
 
+// Options provide configuration settings for a Set.
+// A nil *Options provides sensible default values.
+type Options struct {
+	// When encoding a set to wire format, any symbol longer than this number
+	// of bytes will be split into chunks of at most this length.
+	// If ≤ 0, no splitting is performed.
+	MaxSymbolBytes int
+}
+
+func (o *Options) maxSymbolBytes() int {
+	if o == nil || o.MaxSymbolBytes < 0 {
+		return 0
+	}
+	return o.MaxSymbolBytes
+}
+
 // New constructs a new Set containing no entries.
-func New() *Set {
+func New(opts *Options) *Set {
 	s := &Set{
 		symid: make(map[string]id),
 		nodes: make(map[node]nid),
 		facts: make(map[nid]map[fact]bool),
 		edges: make(map[nid]map[edge]bool),
+		opts:  opts,
 	}
 	s.enter("") // pre-assign "" as ID 0
 	s.canon = true
@@ -241,11 +259,11 @@ func (s *Set) Canonicalize() *Set {
 	smap := func(i id) id { return id(sinv[int(i)]) }
 
 	// Set up the new symbol table...
-	out := New()
+	out := New(s.opts)
 	out.addCalls = s.addCalls
 	out.addErrors = s.addErrors
 	for i, sym := range syms {
-		if id := out.enter(sym); int(id) != i {
+		if id := out.putsym(sym); int(id) != i {
 			panic("symbol table corrupted")
 		}
 	}
@@ -379,7 +397,7 @@ func Unmarshal(data []byte) (*Set, error) {
 // The resulting set will be canonical if the encoding was; if the message was
 // encoded by the Encode method of a *Set it will be so.
 func Decode(es *espb.EntrySet) (*Set, error) {
-	s := New()
+	s := New(nil)
 
 	// Sanity checks: There must be equal numbers of nodes, fact groups, and
 	// edge groups in the message. This simplifies the scanning logic below.
@@ -574,9 +592,7 @@ func sortedEdges(m map[edge]bool) []edge {
 	return edges
 }
 
-// enter adds a string to the symbol table and returns its ID.
-// Duplicate symbols are given the same ID each time.
-func (s *Set) enter(sym string) id {
+func (s *Set) putsym(sym string) id {
 	if id, ok := s.symid[sym]; ok {
 		return id
 	}
@@ -584,6 +600,42 @@ func (s *Set) enter(sym string) id {
 	s.canon = false // new data invalidates canonical form
 	next := id(len(s.symid))
 	s.symid[sym] = next
+	return next
+}
+
+// enter adds a string to the symbol table and returns its ID.
+// Duplicate symbols are given the same ID each time.
+func (s *Set) enter(sym string) id {
+	next := s.putsym(sym)
+	if int(next) < len(s.symid)-1 {
+		return next
+	}
+
+	// If the symbol exceeds the length cap, add prefixes of it to the table so
+	// that prefix compression will fall under the cap. For example, if sym is
+	//
+	//    01234566789abcdef01234566789abcdef01234566789abc
+	//    ^^^^^^^^^^^^^^^^^^^|
+	//                       cap
+	//
+	// then we will add prefixes at multiples of cap until the last one fits:
+	//
+	//    01234566789abcdef01234566789abcdef01234566789abc ← sym
+	//    01234566789abcdef01234566789abcdef012345
+	//    01234566789abcdef012                   △ 2*cap
+	//                       △ 1*cap
+	//
+	// When canonicalized and prefix-coded, these will collapse to:
+	//
+	//    01234566789abcdef012
+	//    <1*cap>34566789abcdef012345
+	//    <2*cap>566789abc
+	//
+	if cap := s.opts.maxSymbolBytes(); cap > 0 {
+		for n := len(sym) / cap; n > 0; n-- {
+			s.putsym(sym[:n*cap])
+		}
+	}
 	return next
 }
 
