@@ -1,4 +1,7 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    licenses = ["notice"],
+)
 
 java_library(
     name = "jvm_graph",
