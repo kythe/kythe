@@ -23,6 +23,7 @@ import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
+import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.proto.Buildinfo.BuildDetails;
@@ -31,9 +32,11 @@ import com.google.protobuf.Any;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -44,18 +47,6 @@ public class JvmExtractor {
   public static final String BUILD_DETAILS_URL = "kythe.io/proto/kythe.proto.BuildDetails";
 
   /**
-   * Returns a JVM {@link CompilationDescription} for the given list of {@code .jar} and {@code
-   * .class} file paths.
-   */
-  public static CompilationDescription extract(String buildTarget, List<Path> jarOrClassFiles)
-      throws IOException, ExtractionException {
-    Options opts = new Options();
-    opts.buildTarget = buildTarget;
-    opts.jarOrClassFiles.addAll(jarOrClassFiles);
-    return extract(opts);
-  }
-
-  /**
    * Returns a JVM {@link CompilationDescription} for the {@code .jar}/{@code .class} file paths
    * specified by the given {@link Options}.
    */
@@ -64,6 +55,13 @@ public class JvmExtractor {
     CompilationUnit.Builder compilation =
         CompilationUnit.newBuilder()
             .setVName(VName.newBuilder().setLanguage(JvmGraph.JVM_LANGUAGE));
+
+    FileVNames fileVNames;
+    if (options.vnamesConfigFile != null) {
+      fileVNames = FileVNames.fromFile(options.vnamesConfigFile);
+    } else {
+      fileVNames = FileVNames.staticCorpus(options.defaultCorpus);
+    }
 
     String buildTarget;
     if ((buildTarget = Strings.emptyToNull(options.buildTarget)) != null) {
@@ -86,7 +84,8 @@ public class JvmExtractor {
       }
     }
     fileContents.addAll(ExtractorUtils.processRequiredInputs(classFiles));
-    compilation.addAllRequiredInput(ExtractorUtils.toFileInputs(fileContents));
+    compilation.addAllRequiredInput(
+        ExtractorUtils.toFileInputs(fileVNames, options.rootDirectory, fileContents));
 
     if (fileContents.size() > options.maxRequiredInputs) {
       throw new ExtractionException(
@@ -135,6 +134,13 @@ public class JvmExtractor {
    */
   public static class Options {
     @Parameter(
+      names = {"--help", "-h"},
+      description = "Help requested",
+      help = true
+    )
+    public boolean help;
+
+    @Parameter(
       names = "--max_required_inputs",
       description = "Maximum allowed number of required_inputs per CompilationUnit"
     )
@@ -148,6 +154,17 @@ public class JvmExtractor {
 
     @Parameter(names = "--build_target", description = "Name of build target being extracted")
     public String buildTarget = System.getenv("KYTHE_ANALYSIS_TARGET");
+
+    @Parameter(names = "--default_corpus", description = "Default file VName corpus")
+    public String defaultCorpus = System.getenv("KYTHE_CORPUS");
+
+    @Parameter(names = "--root_directory", description = "Root directory for compilation")
+    public Path rootDirectory =
+        Paths.get(Optional.ofNullable(System.getenv("KYTHE_ROOT_DIRECTORY")).orElse(""));
+
+    @Parameter(names = "--vnames_config", description = "Path to JSON VNames configuration file")
+    public Path vnamesConfigFile =
+        Optional.ofNullable(System.getenv("KYTHE_VNAMES")).map(Paths::get).orElse(null);
 
     @Parameter(description = "<.jar file | .class file>", required = true)
     public List<Path> jarOrClassFiles = new ArrayList<>();

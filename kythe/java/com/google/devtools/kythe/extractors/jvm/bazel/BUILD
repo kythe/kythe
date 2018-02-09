@@ -9,7 +9,8 @@ action_listener(
 
 extra_action(
     name = "extra_action",
-    cmd = "$(location :bazel_jvm_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).jvm.kindex)",
+    cmd = "$(location :bazel_jvm_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).jvm.kindex) $(location //kythe/data:vnames_config)",
+    data = ["//kythe/data:vnames_config"],
     out_templates = ["$(ACTION_ID).jvm.kindex"],
     tools = [":bazel_jvm_extractor"],
 )

@@ -4,12 +4,12 @@ java_library(
     name = "shared",
     srcs = [
         "CompilationDescription.java",
-        "CompilationFileInputComparator.java",
         "ExtractionException.java",
         "ExtractorUtils.java",
         "IndexInfoUtils.java",
     ],
     deps = [
+        ":file_vnames",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "@com_google_guava_guava//jar",

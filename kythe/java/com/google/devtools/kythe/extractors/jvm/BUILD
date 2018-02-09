@@ -19,6 +19,7 @@ java_library(
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/jvm:jvm_graph",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
+        "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:buildinfo_java_proto",
         "//kythe/proto:storage_java_proto",

@@ -39,9 +39,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 /**
  * A class containing common utilities used by language extractors.
@@ -53,6 +55,8 @@ import java.util.concurrent.ExecutionException;
  */
 // TODO: Split this class by domain.
 public class ExtractorUtils {
+  public static final Comparator<FileInput> FILE_INPUT_COMPARATOR =
+      Comparator.comparing(FileInput::getInfo, Comparator.comparing(FileInfo::getPath));
 
   /**
    * Creates fully populated FileInput protocol buffers based on a provided set of files.
@@ -113,17 +117,27 @@ public class ExtractorUtils {
   }
 
   public static List<FileInput> toFileInputs(Iterable<FileData> fileDatas) {
+    return toFileInputs(FileVNames.staticCorpus(""), p -> p, fileDatas);
+  }
+
+  public static List<FileInput> toFileInputs(
+      FileVNames fileVNames, final Path rootDir, Iterable<FileData> fileDatas) {
+    return toFileInputs(fileVNames, p -> tryMakeRelative(rootDir, Paths.get(p)), fileDatas);
+  }
+
+  public static List<FileInput> toFileInputs(
+      FileVNames fileVNames, Function<String, String> relativize, Iterable<FileData> fileDatas) {
     return Streams.stream(fileDatas)
         .map(
-            fileData ->
-                FileInput.newBuilder()
-                    .setInfo(fileData.getInfo())
-                    .setVName(
-                        VName.newBuilder()
-                            // TODO(schroederc): VName path should be corpus+root relative
-                            .setPath(fileData.getInfo().getPath())
-                            .build())
-                    .build())
+            fileData -> {
+              String relativePath = relativize.apply(fileData.getInfo().getPath());
+              VName vname = fileVNames.lookupBaseVName(relativePath);
+              if (vname.getPath().isEmpty()) {
+                vname = vname.toBuilder().setPath(relativePath).build();
+              }
+              return FileInput.newBuilder().setInfo(fileData.getInfo()).setVName(vname).build();
+            })
+        .sorted(FILE_INPUT_COMPARATOR)
         .collect(toImmutableList());
   }
 
@@ -131,8 +145,15 @@ public class ExtractorUtils {
    * Tries to make a path relative based on the current working dir. Returns the fullpath otherwise.
    */
   public static String tryMakeRelative(String rootDir, String path) {
-    Path absPath = Paths.get(path).toAbsolutePath().normalize();
-    Path relPath = Paths.get(rootDir).toAbsolutePath().relativize(absPath).normalize();
+    return tryMakeRelative(Paths.get(rootDir), Paths.get(path));
+  }
+
+  /**
+   * Tries to make a path relative based on the current working dir. Returns the fullpath otherwise.
+   */
+  public static String tryMakeRelative(Path rootDir, Path path) {
+    Path absPath = path.toAbsolutePath().normalize();
+    Path relPath = rootDir.toAbsolutePath().relativize(absPath).normalize();
     if (relPath.toString().isEmpty()) {
       return ".";
     }
@@ -160,8 +181,7 @@ public class ExtractorUtils {
   public static CompilationUnit normalizeCompilationUnit(CompilationUnit existingCompilationUnit) {
     CompilationUnit.Builder builder = CompilationUnit.newBuilder(existingCompilationUnit);
     List<FileInput> oldRequiredInputs =
-        Ordering.from(CompilationFileInputComparator.getComparator())
-            .sortedCopy(builder.getRequiredInputList());
+        Ordering.from(FILE_INPUT_COMPARATOR).sortedCopy(builder.getRequiredInputList());
     builder.clearRequiredInput();
     builder.addAllRequiredInput(oldRequiredInputs);
     existingCompilationUnit = builder.build();

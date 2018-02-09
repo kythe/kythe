@@ -20,6 +20,7 @@ import com.google.devtools.build.lib.actions.extra.ExtraActionInfo;
 import com.google.devtools.build.lib.actions.extra.ExtraActionsBase;
 import com.google.devtools.build.lib.actions.extra.SpawnInfo;
 import com.google.devtools.kythe.extractors.jvm.JvmExtractor;
+import com.google.devtools.kythe.extractors.jvm.JvmExtractor.Options;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
@@ -28,10 +29,7 @@ import com.google.protobuf.ExtensionRegistry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Kythe extractor for Bazel JavaIjar actions.
@@ -40,8 +38,9 @@ import java.util.List;
  */
 public class BazelJvmExtractor {
   public static void main(String[] args) throws IOException, ExtractionException {
-    if (args.length != 2) {
-      System.err.println("Usage: bazel_jvm_extractor extra-action-file output-file");
+    if (args.length != 2 && args.length != 3) {
+      System.err.println(
+          "Usage: bazel_jvm_extractor extra-action-file output-file [vnames-config]");
       System.exit(1);
     }
 
@@ -67,10 +66,14 @@ public class BazelJvmExtractor {
       throw new IllegalArgumentException("given non-ijar SpawnInfo");
     }
 
-    List<Path> paths = new ArrayList<>();
-    paths.add(Paths.get(spawnInfo.getArgument(1)));
+    Options opts = new Options();
+    opts.buildTarget = info.getOwner();
+    opts.jarOrClassFiles.add(Paths.get(spawnInfo.getArgument(1)));
+    if (args.length == 3) {
+      opts.vnamesConfigFile = Paths.get(args[2]);
+    }
 
-    CompilationDescription indexInfo = JvmExtractor.extract(info.getOwner(), paths);
+    CompilationDescription indexInfo = JvmExtractor.extract(opts);
     IndexInfoUtils.writeIndexInfoToFile(indexInfo, outputPath);
   }
 }

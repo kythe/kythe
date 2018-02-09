@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.extractors.java;
 
 import static com.google.common.base.StandardSystemProperty.JAVA_HOME;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
 import com.google.common.base.Charsets;
@@ -32,7 +33,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
-import com.google.devtools.kythe.extractors.shared.CompilationFileInputComparator;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
@@ -74,7 +74,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -268,24 +267,23 @@ public class JavaCompilationUnitExtractor {
     }
 
     List<FileData> fileContents = ExtractorUtils.convertBytesToFileDatas(results.fileContents);
-    List<FileInput> compilationFileInputs = new ArrayList<>();
-    for (FileData data : fileContents) {
-      String relativePath = results.relativePaths.get(data.getInfo().getPath());
-      VName vname = fileVNames.lookupBaseVName(relativePath);
-      if (vname.getPath().isEmpty()) {
-        vname = vname.toBuilder().setPath(data.getInfo().getPath()).build();
-      }
-      String sourceBasename = results.sourceFileNames.get(data.getInfo().getPath());
-      if (sourceBasename != null
-          && vname.getPath().endsWith(".java")
-          && !vname.getPath().endsWith(sourceBasename)) {
-        Path fixedPath = Paths.get(vname.getPath()).resolveSibling(sourceBasename);
-        vname = vname.toBuilder().setPath(fixedPath.toString()).build();
-      }
-      compilationFileInputs.add(
-          FileInput.newBuilder().setInfo(data.getInfo()).setVName(vname).build());
-    }
-    Collections.sort(compilationFileInputs, CompilationFileInputComparator.getComparator());
+    List<FileInput> compilationFileInputs =
+        ExtractorUtils.toFileInputs(fileVNames, results.relativePaths::get, fileContents)
+            .stream()
+            .map(
+                input -> {
+                  String sourceBasename = results.sourceFileNames.get(input.getInfo().getPath());
+                  VName vname = input.getVName();
+                  if (sourceBasename != null
+                      && vname.getPath().endsWith(".java")
+                      && !vname.getPath().endsWith(sourceBasename)) {
+                    Path fixedPath = Paths.get(vname.getPath()).resolveSibling(sourceBasename);
+                    vname = vname.toBuilder().setPath(fixedPath.toString()).build();
+                    return input.toBuilder().setVName(vname).build();
+                  }
+                  return input;
+                })
+            .collect(toImmutableList());
 
     CompilationUnit compilationUnit =
         buildCompilationUnit(

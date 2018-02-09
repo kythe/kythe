@@ -36,6 +36,10 @@ public class JarExtractor {
     JvmExtractor.Options options = new JvmExtractor.Options();
     JCommander jc = new JCommander(options, args);
     jc.setProgramName("jar_extractor");
+    if (options.help) {
+      jc.usage();
+      System.exit(2);
+    }
 
     CompilationDescription indexInfo = JvmExtractor.extract(options);
 
@@ -46,7 +50,7 @@ public class JarExtractor {
       String outputDir = System.getenv("KYTHE_OUTPUT_DIRECTORY");
       if (Strings.isNullOrEmpty(outputDir)) {
         throw new IllegalArgumentException(
-            "required KYTHE_OUTPUT_DIRECTORY environment variable is unset");
+            "required KYTHE_OUTPUT_FILE or KYTHE_OUTPUT_DIRECTORY environment variable is unset");
       }
       if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
         String name = Hashing.sha256().hashUnencodedChars(Joiner.on(" ").join(args)).toString();

@@ -31,6 +31,7 @@ import com.google.re2j.Pattern;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -83,9 +84,13 @@ public class FileVNames {
   }
 
   public static FileVNames fromFile(String configFile) throws IOException {
+    return fromFile(Paths.get(configFile));
+  }
+
+  public static FileVNames fromFile(Path configFile) throws IOException {
     return new FileVNames(
         GSON.<List<BaseFileVName>>fromJson(
-            Files.newBufferedReader(Paths.get(configFile), UTF_8), CONFIG_TYPE));
+            Files.newBufferedReader(configFile, UTF_8), CONFIG_TYPE));
   }
 
   public static FileVNames fromJson(String json) {
