@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.2");
-  if (argc != 4 || argc != 6) {
+  if (argc != 4 && argc != 6) {
     fprintf(stderr,
             "Invalid number of arguments:\n\tCall as %s extra-action-file "
             "output-file vname-config [devdir-script sdkroot-script]\n",
