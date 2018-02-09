@@ -15,8 +15,9 @@
  */
 
 // objc_extractor_bazel is a Objective-C extractor meant to be run as a Bazel
-// extra_action. It should be used with third_party/bazel/get_devdir.sh and
-// third_party/bazel/get_sdkroot.sh.
+// extra_action. It may be used with third_party/bazel/get_devdir.sh and
+// third_party/bazel/get_sdkroot.sh to fix placeholders left in arguments by
+// Bazel.
 //
 // For example:
 //
@@ -104,12 +105,21 @@ static bool LoadSpawnInfo(const XAState &xa_state,
                           kythe::ExtractorConfiguration &config) {
   blaze::SpawnInfo spawn_info = info.GetExtension(blaze::SpawnInfo::spawn_info);
 
-  auto cmdPrefix = kythe::BuildEnvVarCommandPrefix(spawn_info.variable());
-  auto devdir = kythe::RunScript(cmdPrefix + xa_state.devdir_script);
-  auto sdkroot = kythe::RunScript(cmdPrefix + xa_state.sdkroot_script);
-
   std::vector<std::string> args;
-  kythe::FillWithFixedArgs(args, spawn_info, devdir, sdkroot);
+  // If the user didn't specify a script path, don't mutate the arguments in the
+  // extra action.
+  if (xa_state.devdir_script.empty() || xa_state.sdkroot_script.empty()) {
+    for (const auto &i : spawn_info.argument()) {
+      std::string arg = i;
+      args.push_back(arg);
+    }
+  } else {
+    auto cmdPrefix = kythe::BuildEnvVarCommandPrefix(spawn_info.variable());
+    auto devdir = kythe::RunScript(cmdPrefix + xa_state.devdir_script);
+    auto sdkroot = kythe::RunScript(cmdPrefix + xa_state.sdkroot_script);
+
+    kythe::FillWithFixedArgs(args, spawn_info, devdir, sdkroot);
+  }
 
   if (ContainsUnsupportedArg(args)) {
     LOG(INFO) << "Not extracting " << info.owner()
@@ -133,12 +143,22 @@ static bool LoadCppInfo(const XAState &xa_state,
   blaze::CppCompileInfo cpp_info =
       info.GetExtension(blaze::CppCompileInfo::cpp_compile_info);
 
-  auto cmdPrefix = kythe::BuildEnvVarCommandPrefix(cpp_info.variable());
-  auto devdir = kythe::RunScript(cmdPrefix + xa_state.devdir_script);
-  auto sdkroot = kythe::RunScript(cmdPrefix + xa_state.sdkroot_script);
-
   std::vector<std::string> args;
-  kythe::FillWithFixedArgs(args, cpp_info, devdir, sdkroot);
+  // If the user didn't specify a script path, don't mutate the arguments in the
+  // extra action.
+  if (xa_state.devdir_script.empty() || xa_state.sdkroot_script.empty()) {
+    args.push_back(cpp_info.tool());
+    for (const auto &i : cpp_info.compiler_option()) {
+      std::string arg = i;
+      args.push_back(arg);
+    }
+  } else {
+    auto cmdPrefix = kythe::BuildEnvVarCommandPrefix(cpp_info.variable());
+    auto devdir = kythe::RunScript(cmdPrefix + xa_state.devdir_script);
+    auto sdkroot = kythe::RunScript(cmdPrefix + xa_state.sdkroot_script);
+
+    kythe::FillWithFixedArgs(args, cpp_info, devdir, sdkroot);
+  }
 
   if (ContainsUnsupportedArg(args)) {
     LOG(INFO) << "Not extracting " << info.owner()
@@ -180,11 +200,11 @@ static bool LoadExtraAction(const XAState &xa_state,
 int main(int argc, char *argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.1");
-  if (argc != 6) {
+  gflags::SetVersionString("0.2");
+  if (argc != 4 || argc != 6) {
     fprintf(stderr,
             "Invalid number of arguments:\n\tCall as %s extra-action-file "
-            "output-file vname-config devdir-script sdkroot-script\n",
+            "output-file vname-config [devdir-script sdkroot-script]\n",
             argv[0]);
     return 1;
   }
@@ -192,8 +212,13 @@ int main(int argc, char *argv[]) {
   xa_state.extra_action_file = argv[1];
   xa_state.output_file = argv[2];
   xa_state.vname_config = argv[3];
-  xa_state.devdir_script = argv[4];
-  xa_state.sdkroot_script = argv[5];
+  if (argc == 6) {
+    xa_state.devdir_script = argv[4];
+    xa_state.sdkroot_script = argv[5];
+  } else {
+    xa_state.devdir_script = "";
+    xa_state.sdkroot_script = "";
+  }
 
   kythe::ExtractorConfiguration config;
   bool success = LoadExtraAction(xa_state, config);
