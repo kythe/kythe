@@ -191,7 +191,7 @@ new_git_repository(
 new_git_repository(
     name = "go_genproto",
     build_file = "third_party/go/genproto.BUILD",
-    commit = "f676e0f3ac6395ff1a529ae59a6670878a8371a6",
+    commit = "2b5a72b8730b0b16380010cfe5286c42108d88e7",
     remote = "https://github.com/google/go-genproto.git",
 )
 
@@ -200,13 +200,6 @@ new_git_repository(
     build_file = "third_party/go/errors.BUILD",
     commit = "ff09b135c25aae272398c51a07235b90a75aa4f0",
     remote = "https://github.com/pkg/errors.git",
-)
-
-new_git_repository(
-    name = "go_gogo_protobuf",
-    build_file = "third_party/go/gogo_protobuf.BUILD",
-    commit = "f9114dace7bd920b32f943b3c73fafbcbab2bf31",
-    remote = "https://github.com/gogo/protobuf.git",
 )
 
 new_git_repository(
@@ -219,14 +212,14 @@ new_git_repository(
 new_git_repository(
     name = "go_x_text",
     build_file = "third_party/go/x_text.BUILD",
-    commit = "d5d7737684e596dbabf914ecf946d2783f35bdc2",
+    commit = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1",
     remote = "https://github.com/golang/text.git",
 )
 
 new_git_repository(
     name = "go_x_tools",
     build_file = "third_party/go/x_tools.BUILD",
-    commit = "5682db0e919ed9cfc6f52ac32e170511a106eb3b",
+    commit = "5d2fd3ccab986d52112bf301d47a819783339d0e",
     remote = "https://go.googlesource.com/tools",
 )
 
@@ -247,28 +240,28 @@ new_git_repository(
 new_git_repository(
     name = "go_stringset",
     build_file = "third_party/go/stringset.BUILD",
-    commit = "8dd300fea9846aae64ee98456c61c2003a8941f8",
+    commit = "957758713e56ec879aec135dfab952ba5f774ee4",
     remote = "https://bitbucket.org/creachadair/stringset.git",
 )
 
 new_git_repository(
     name = "go_diff",
     build_file = "third_party/go/diff.BUILD",
-    commit = "ec7fdbb58eb3e300c8595ad5ac74a5aa50019cc7",
+    commit = "da645544ed44df016359bd4c0e3dc60ee3a0da43",
     remote = "https://github.com/sergi/go-diff.git",
 )
 
 new_git_repository(
     name = "go_uuid",
     build_file = "third_party/go/uuid.BUILD",
-    commit = "c55201b036063326c5b1b89ccfe45a184973d073",
+    commit = "c65b2f87fee37d1c7854c9164a450713c28d50cd",
     remote = "https://github.com/pborman/uuid.git",
 )
 
 new_git_repository(
     name = "go_snappy",
     build_file = "third_party/go/snappy.BUILD",
-    commit = "d9eb7a3d35ec988b8585d4a0068e462c27d28380",
+    commit = "553a641470496b2327abcac10b36396bd98e45c9",
     remote = "https://github.com/golang/snappy.git",
 )
 
@@ -303,7 +296,7 @@ new_git_repository(
 new_git_repository(
     name = "go_sync",
     build_file = "third_party/go/sync.BUILD",
-    commit = "f52d1811a62927559de87708c8913c1650ce4f26",
+    commit = "fd80eb99c8f653c847d294a001bdf2a3a6f768f5",
     remote = "https://github.com/golang/sync",
 )
 

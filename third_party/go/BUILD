@@ -8,7 +8,6 @@ filegroup(
         "@go_diff//:LICENSE.txt",
         "@go_errors//:LICENSE",
         "@go_genproto//:LICENSE",
-        "@go_gogo_protobuf//:LICENSE",
         "@go_grpc//:LICENSE",
         "@go_jsonrpc2//:LICENSE",
         "@go_langserver//:LICENSE",
