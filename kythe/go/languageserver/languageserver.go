@@ -339,31 +339,34 @@ func (ls *Server) TextDocumentHover(params lsp.TextDocumentPositionParams) (lsp.
 		return lsp.Hover{}, nil
 	}
 
-	docReply, err := ls.XRefs.Documentation(context.TODO(), &xpb.DocumentationRequest{
-		Ticket: []string{ref.ticket},
-	})
-	if err != nil {
-		log.Printf("Error fetching documentation for %q: %v", ref.ticket, err)
-		return lsp.Hover{}, nil
-	}
+	// The first time we hover over a reference, generate hover documentation for it.
+	if ref.markup == "" {
+		docReply, err := ls.XRefs.Documentation(context.TODO(), &xpb.DocumentationRequest{
+			Ticket: []string{ref.ticket},
+		})
+		if err != nil {
+			log.Printf("Error fetching documentation for %q: %v", ref.ticket, err)
+			return lsp.Hover{}, nil
+		}
 
-	if len(docReply.Document) < 1 || docReply.Document[0].MarkedSource == nil {
-		log.Printf("No Documentation found for %q", ref.ticket)
-		return lsp.Hover{}, nil
-	}
+		if len(docReply.Document) < 1 || docReply.Document[0].MarkedSource == nil {
+			log.Printf("No Documentation found for %q", ref.ticket)
+			return lsp.Hover{}, nil
+		}
 
-	kuri, err := kytheuri.Parse(docReply.Document[0].Ticket)
-	if err != nil {
-		log.Printf("Invalid ticket returned from documentation request: %v", err)
-		return lsp.Hover{}, nil
+		kuri, err := kytheuri.Parse(docReply.Document[0].Ticket)
+		if err != nil {
+			log.Printf("Invalid ticket returned from documentation request: %v", err)
+			return lsp.Hover{}, nil
+		}
+		ref.markup = markedsource.Render(docReply.Document[0].MarkedSource)
+		ref.lang = kuri.Language
 	}
-
-	sig := markedsource.Render(docReply.Document[0].MarkedSource)
 
 	return lsp.Hover{
 		Contents: []lsp.MarkedString{{
-			Language: kuri.Language,
-			Value:    sig,
+			Language: ref.lang,
+			Value:    ref.markup,
 		}},
 		Range: ref.newRange,
 	}, nil

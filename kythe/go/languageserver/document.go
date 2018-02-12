@@ -258,6 +258,8 @@ diffLoop:
 type RefResolution struct {
 	ticket   string
 	def      string
+	markup   string
+	lang     string
 	oldRange lsp.Range
 	newRange *lsp.Range
 }
