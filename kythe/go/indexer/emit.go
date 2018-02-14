@@ -37,6 +37,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/types/typeutil"
 
+	cpb "kythe.io/kythe/proto/common_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -97,6 +98,24 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 	e.writeFact(pi.VName, facts.NodeKind, nodes.Package)
 	if url := e.opts.docURL(pi); url != "" {
 		e.writeFact(pi.VName, facts.DocURI, url)
+	}
+	if opts != nil && opts.EmitMarkedSource && len(pi.Files) != 0 {
+		ipath := pi.ImportPath
+		ms := &cpb.MarkedSource{
+			Child: []*cpb.MarkedSource{{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: ipath,
+			}},
+			PostChildText: "/",
+		}
+		if p := strings.LastIndex(ipath, "/"); p > 0 {
+			ms.Child[0].PreText = ipath[p+1:]
+			ms.Child = append([]*cpb.MarkedSource{{
+				Kind:    cpb.MarkedSource_CONTEXT,
+				PreText: ipath[:p],
+			}}, ms.Child...)
+		}
+		e.emitCode(pi.VName, ms)
 	}
 
 	// Emit facts for all the source files claimed by this package.
@@ -663,6 +682,19 @@ func (e *emitter) emitOverrides(xmset, pxmset, ymset *types.MethodSet, cache ove
 	}
 }
 
+// emitCode emits a code fact for the specified marked source message on the
+// target, or logs a diagnostic.
+func (e *emitter) emitCode(target *spb.VName, ms *cpb.MarkedSource) {
+	if ms != nil {
+		bits, err := proto.Marshal(ms)
+		if err != nil {
+			log.Printf("ERROR: Unable to marshal marked source: %v", err)
+			return
+		}
+		e.writeFact(target, facts.Code, string(bits))
+	}
+}
+
 func isInterface(typ types.Type) bool { _, ok := typ.Underlying().(*types.Interface); return ok }
 
 func (e *emitter) check(err error) {
@@ -776,14 +808,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 		e.writeEdge(target, parent, edges.ChildOf)
 	}
 	if e.opts != nil && e.opts.EmitMarkedSource {
-		if ms := e.pi.MarkedSource(obj); ms != nil {
-			bits, err := proto.Marshal(ms)
-			if err != nil {
-				log.Printf("ERROR: Unable to marshal marked source: %v", err)
-			} else {
-				e.writeFact(target, facts.Code, string(bits))
-			}
-		}
+		e.emitCode(target, e.pi.MarkedSource(obj))
 	}
 	return target
 }
