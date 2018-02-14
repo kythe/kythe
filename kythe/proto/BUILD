@@ -442,6 +442,31 @@ java_proto_library(
     deps = [":serving_proto"],
 )
 
+proto_library(
+    name = "link_proto",
+    srcs = ["link.proto"],
+    deps = [":common_proto"],
+)
+
+cc_proto_library(
+    name = "link_cc_proto",
+    deps = [":link_proto"],
+)
+
+go_kythe_proto(
+    proto = ":link_proto",
+    deps = [
+        ":common_go_proto",
+        ":identifier_go_proto",
+        ":xref_go_proto",
+    ],
+)
+
+java_proto_library(
+    name = "link_java_proto",
+    deps = [":link_proto"],
+)
+
 # Protocol buffer definitions internal only to the Kythe libraries and tools.
 # WARNING: These should not be exposed to clients.
 proto_library(

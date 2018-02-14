@@ -12,3 +12,9 @@ external_go_package(
     base_pkg = "golang.org/x/sync",
     deps = ["@go_x_net//:context"],
 )
+
+external_go_package(
+    name = "semaphore",
+    base_pkg = "golang.org/x/sync",
+    deps = ["@go_x_net//:context"],
+)

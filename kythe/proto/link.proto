@@ -1,0 +1,112 @@
+/*
+ * Copyright 2018 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+
+import "kythe/proto/common.proto";
+
+// A LinkService resolves "links" based on qualified names.  Given a qualified
+// name, resolution consists of finding the entities that define that name and
+// returning the locations of their definition sites. This permits a client to
+// record a durable reference to an object whose definition may move within a
+// source file or even across source files over time.
+//
+// Because the mapping between qualified names and definitions is not unique in
+// general, the service permits the client to specify various constraints on a
+// query. The client records the effective constraints along with the qualified
+// name, e.g., as query parameters.
+//
+// Qualified names use the same format and have the same constraints as in the
+// IdentifierService defined by identifier.proto. This concurrence is intended,
+// so that a link service can be implemented using the same underlying data.
+service LinkService {
+  // Resolve returns the links matching the specified request.  The server is
+  // permitted to limit the size of the result set in order to ensure fast
+  // responses. The server will report an error if its limits are exceeded.
+  rpc Resolve(LinkRequest) returns (LinkReply) {
+  }
+}
+
+message LinkRequest {
+  // The qualified identifier to look for.
+  string identifier = 1;
+  // Restrict lookup to these corpus labels (optional).
+  repeated string corpus = 2;
+  // Restrict lookup to these languages (optional).
+  repeated string language = 3;
+  // Restrict lookup to these node kinds (optional).
+  repeated string node_kind = 4;
+
+  // Select definition locations matching these constraints.
+  //
+  // A file matches a constraint if its root, path, and corpus match the
+  // provided RE2 regular expressions.
+  //
+  // A file is selected iff some include constraint matches it, and no exclude
+  // constraint matches it.
+  //
+  // If include is empty, all files are included.
+  // If exclude is empty, no files are excluded.
+  message Location {
+    string path = 1;
+    string root = 2;
+    string corpus = 3;
+  }
+  repeated Location include = 5;
+  repeated Location exclude = 6;
+
+  // Select definition locations having this number of parameters, if set.
+  message Params {
+    int32 count = 1;
+  }
+  Params params = 7;
+
+  // Select what kinds of definitions to request, which determines which file
+  // spans are returned for matching locations.
+  enum DefinitionKind {
+    BINDING = 0;  // defines/binding: span encloses the binding identifier
+    FULL = 1;     // defines only: span encloses the full definition
+    ANY = 2;      // any definition
+  }
+  DefinitionKind definition_kind = 8;
+
+  // Include info about semantic nodes defined at each matching location.
+  bool include_nodes = 9;
+}
+
+// A Link represents a single location matched by a LinkRequest.
+message Link {
+  // The file ticket corresponding to the definition.
+  string file_ticket = 1;
+
+  // The physical span bounded by the defining anchor.
+  kythe.proto.common.Span span = 2;
+
+  // The semantic nodes defined at this location.  This field is only populated
+  // if include_nodes was true.
+  message Node {
+    string ticket = 1;
+    string base_name = 2;
+    string identifier = 3;
+  }
+  repeated Node nodes = 3;
+}
+
+message LinkReply {
+  repeated Link links = 1;
+}
