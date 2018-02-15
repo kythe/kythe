@@ -490,20 +490,14 @@ message DocumentationReply {
     string ticket = 1;
     // Documentation that can be displayed to the user.
     Printable text = 2;
-    // A signature that can be displayed to the user. For variables, this
-    // may just be the variable name; for functions, this may be some version
-    // of the function prototype.
-    Printable signature = 3;    // Will be deprecated.
-    Printable type = 4;         // Will be deprecated.
-    Printable initializer = 5;  // Will be deprecated.
-    Printable defined_by = 6;   // Will be deprecated.
+    // A structured summary of the (qualified) identity of the documented node.
     kythe.proto.common.MarkedSource marked_source = 8;
 
-    // The children of this Document. This relationship may be distinct from the
-    // `childof` relationship.
+    // The children of this Document. This relationship may be distinct from
+    // the `childof` relationship.
     repeated Document children = 9;
 
-    reserved 7;
+    reserved 3, 4, 5, 6, 7;
   }
   repeated Document document = 1;
   // The facts left from the requested filters of the documented node facts.
