@@ -257,11 +257,12 @@ diffLoop:
 // Kythe ticket
 type RefResolution struct {
 	ticket   string
-	def      string
-	markup   string
-	lang     string
-	oldRange lsp.Range
-	newRange *lsp.Range
+	def      string     // the target definition anchor ticket
+	markup   string     // a rendering of marked source
+	comment  string     // if available, a comment
+	lang     string     // a language label
+	oldRange lsp.Range  // the range indexed
+	newRange *lsp.Range // the range after patching (if viable)
 }
 
 func posLess(a, b lsp.Position) bool {

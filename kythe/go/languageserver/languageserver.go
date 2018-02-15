@@ -22,9 +22,11 @@
 package languageserver
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
@@ -360,15 +362,23 @@ func (ls *Server) TextDocumentHover(params lsp.TextDocumentPositionParams) (lsp.
 			return lsp.Hover{}, nil
 		}
 		ref.markup = markedsource.Render(docReply.Document[0].MarkedSource)
+		ref.comment = stripComment(docReply.Document[0].GetText().GetRawText())
 		ref.lang = kuri.Language
 	}
 
-	return lsp.Hover{
-		Contents: []lsp.MarkedString{{
+	contents := []lsp.MarkedString{{
+		Language: ref.lang,
+		Value:    ref.markup,
+	}}
+	if ref.comment != "" {
+		contents = append(contents, lsp.MarkedString{
 			Language: ref.lang,
-			Value:    ref.markup,
-		}},
-		Range: ref.newRange,
+			Value:    ref.comment,
+		})
+	}
+	return lsp.Hover{
+		Contents: contents,
+		Range:    ref.newRange,
 	}, nil
 }
 
@@ -475,4 +485,27 @@ func (ls *Server) refLocs(w Workspace, r *xpb.CrossReferencesReply_CrossReferenc
 	}
 
 	return locs
+}
+
+// stripComment removes linkage markup from documentation comments.  Kythe
+// indexers may insert bracketed spans into comments to carry links to other
+// places in the graph. This format is not generally supported, and we have no
+// way in the protocol to convey the link targets, so remove the markers if
+// they have been populated. This is a no-op if text contains no link markers.
+func stripComment(text string) string {
+	var buf bytes.Buffer
+	for text != "" {
+		i := strings.IndexAny(text, "\\[]")
+		if i < 0 {
+			buf.WriteString(text)
+			break
+		}
+		buf.WriteString(text[:i])
+		if text[i] == '\\' && i+1 < len(text) {
+			buf.WriteByte(text[i+1])
+			i++
+		}
+		text = text[i+1:]
+	}
+	return buf.String()
 }

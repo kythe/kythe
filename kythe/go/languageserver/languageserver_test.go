@@ -129,6 +129,9 @@ func TestReferences(t *testing.T) {
 			resp: xpb.DocumentationReply{
 				Document: []*xpb.DocumentationReply_Document{{
 					Ticket: "kythe://corpus?path=file.txt#hi",
+					Text: &xpb.Printable{
+						RawText: `a[b]c\[d\]e\\f`,
+					},
 					MarkedSource: &cpb.MarkedSource{
 						PreText:  "<",
 						PostText: ">",
@@ -227,6 +230,8 @@ func TestReferences(t *testing.T) {
 	hovExpected := lsp.Hover{
 		Contents: []lsp.MarkedString{{
 			Value: "<hi>",
+		}, {
+			Value: "abc[d]e\\f",
 		}},
 		Range: &lsp.Range{
 			Start: lsp.Position{Line: 0, Character: 0},
@@ -235,6 +240,6 @@ func TestReferences(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(hovExpected, hover) {
-		t.Errorf("Incorrect hover results\n  Expected: %#v\n  Found:    %#v", *hovExpected.Range, *hover.Range)
+		t.Errorf("Hover results:\ngot  %+v\nwant %+v", hovExpected, hover)
 	}
 }
