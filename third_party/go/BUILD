@@ -5,7 +5,7 @@ licenses(["notice"])
 filegroup(
     name = "licenses",
     srcs = [
-        "@go_diff//:LICENSE.txt",
+        "@go_diff//:LICENSE",
         "@go_errors//:LICENSE",
         "@go_genproto//:LICENSE",
         "@go_grpc//:LICENSE",
