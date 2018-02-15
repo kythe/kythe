@@ -21,7 +21,6 @@ package driver
 import (
 	"context"
 	goerrors "errors"
-	"io"
 	"log"
 
 	"kythe.io/kythe/go/platform/analysis"
@@ -45,8 +44,8 @@ type CompilationFunc func(context.Context, Compilation) error
 // A Queue represents an ordered sequence of compilation units.
 type Queue interface {
 	// Next invokes f with the next available compilation in the queue.  If no
-	// further values are available, Next must return io.EOF; otherwise, the
-	// return value from f is propagated to the caller of Next.
+	// further values are available, Next must return ErrEndOfQueue; otherwise,
+	// the return value from f is propagated to the caller of Next.
 	Next(_ context.Context, f CompilationFunc) error
 }
 
@@ -71,9 +70,15 @@ type Context interface {
 	AnalysisError(context.Context, Compilation, error) error
 }
 
-// ErrRetry can be returned from a Driver's AnalysisError function to signal
-// that the driver should retry the analysis immediately.
-var ErrRetry = goerrors.New("retry analysis")
+var (
+	// ErrRetry can be returned from a Driver's AnalysisError function to signal
+	// that the driver should retry the analysis immediately.
+	ErrRetry = goerrors.New("retry analysis")
+
+	// ErrEndOfQueue can be returned from a Queue to signal there are no
+	// compilations left to analyze.
+	ErrEndOfQueue = goerrors.New("end of queue")
+)
 
 // Driver sends compilations sequentially from a queue to an analyzer.
 type Driver struct {
@@ -140,7 +145,7 @@ func (d *Driver) Run(ctx context.Context, queue Queue) error {
 				log.Printf("WARNING: analysis teardown failed: %v (analysis error: %v)", terr, err)
 			}
 			return err
-		}); err == io.EOF {
+		}); err == ErrEndOfQueue {
 			return nil
 		} else if err != nil {
 			return err

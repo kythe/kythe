@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 	"testing"
 
@@ -84,7 +83,7 @@ func (m *mock) Analyze(ctx context.Context, req *apb.AnalysisRequest, out analys
 // Next implements the Queue interface.
 func (m *mock) Next(ctx context.Context, f CompilationFunc) error {
 	if m.idx >= len(m.Compilations) {
-		return io.EOF
+		return ErrEndOfQueue
 	}
 	err := f(ctx, m.Compilations[m.idx])
 	m.idx++
