@@ -111,7 +111,6 @@ cc_library(
     name = "objc_bazel_support_library",
     srcs = ["objc_bazel_support.cc"],
     hdrs = ["objc_bazel_support.h"],
-    visibility = ["//visibility:private"],
     deps = [
         "//third_party/bazel:extra_actions_base_cc_proto",
         "//third_party/llvm",
