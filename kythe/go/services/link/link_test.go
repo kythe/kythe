@@ -150,18 +150,18 @@ func TestResolve(t *testing.T) {
 				if err != nil {
 					t.Errorf("Resolve(baz): unexpected error: %v", err)
 					return
-					want := &linkpb.LinkReply{
-						Links: []*linkpb.Link{{
-							FileTicket: "kythe://test?path=foo",
-							Span: &cpb.Span{
-								Start: &cpb.Point{LineNumber: 10},
-								End:   &cpb.Point{LineNumber: 11},
-							},
-						}},
-					}
-					if !proto.Equal(rsp, want) {
-						t.Errorf("Resolve(baz):\ngot  %+v\nwant %+v", rsp, want)
-					}
+				}
+				want := &linkpb.LinkReply{
+					Links: []*linkpb.Link{{
+						FileTicket: "kythe://test?path=foo",
+						Span: &cpb.Span{
+							Start: &cpb.Point{LineNumber: 10},
+							End:   &cpb.Point{LineNumber: 11},
+						},
+					}},
+				}
+				if !proto.Equal(rsp, want) {
+					t.Errorf("Resolve(baz):\ngot  %+v\nwant %+v", rsp, want)
 				}
 			},
 		},
