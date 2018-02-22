@@ -102,8 +102,8 @@ type PackageInfo struct {
 	standardLib stringset.Set
 
 	// A dummy function representing the undeclared package initilization
-	// function.
-	packageInit *funcInfo
+	// functions, one per file in the package.
+	packageInit map[*ast.File]*funcInfo
 
 	// A cache of source file vnames.
 	fileVName map[*ast.File]*spb.VName
@@ -319,11 +319,12 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		PackageVName: make(map[*types.Package]*spb.VName),
 		Dependencies: make(map[string]*types.Package), // :: import path → package
 
-		function:  make(map[ast.Node]*funcInfo),
-		sigs:      make(map[types.Object]string),
-		fileVName: filev,
-		fileLoc:   floc,
-		details:   details,
+		function:    make(map[ast.Node]*funcInfo),
+		sigs:        make(map[types.Object]string),
+		packageInit: make(map[*ast.File]*funcInfo),
+		fileVName:   filev,
+		fileLoc:     floc,
+		details:     details,
 	}
 
 	// If mapping rules were found, populate the corresponding field.
@@ -918,6 +919,16 @@ func (pi *PackageInfo) importPath(pkg *types.Package) string {
 		return vnameToImport(v, pi.details.GetGoroot())
 	}
 	return pkg.Name()
+}
+
+// isPackageInit reports whether fi belongs to a package-level init function.
+func (pi *PackageInfo) isPackageInit(fi *funcInfo) bool {
+	for _, v := range pi.packageInit {
+		if fi == v {
+			return true
+		}
+	}
+	return false
 }
 
 // vnameToImport returns the putative Go import path corresponding to v.  The

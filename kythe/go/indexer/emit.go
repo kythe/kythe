@@ -864,31 +864,29 @@ func (e *emitter) callContext(stack stackFunc) *funcInfo {
 		switch p := stack(i).(type) {
 		case *ast.FuncDecl, *ast.FuncLit:
 			return e.pi.function[p]
-		case nil:
-			if e.pi.packageInit == nil {
+		case *ast.File:
+			fi := e.pi.packageInit[p]
+			if fi == nil {
 				// Lazily emit a virtual node to represent the static
-				// initializer for top-level expressions in the package.  We
-				// only do this if there are expressions that need to be
-				// initialized.
+				// initializer for top-level expressions in this file of the
+				// package.  We only do this if there are expressions that need
+				// to be initialized.
 				vname := proto.Clone(e.pi.VName).(*spb.VName)
-				vname.Signature += ".<init>"
-				e.pi.packageInit = &funcInfo{vname: vname}
+				vname.Signature += fmt.Sprintf(".<init>@%d", p.Package)
+				fi = &funcInfo{vname: vname}
+				e.pi.packageInit[p] = fi
 				e.writeFact(vname, facts.NodeKind, nodes.Function)
 				e.writeEdge(vname, e.pi.VName, edges.ChildOf)
 
 				// The callgraph requires we provide the caller with a
 				// definition (http://www.kythe.io/docs/schema/callgraph.html).
 				// Since there is no location, attach it to the beginning of
-				// the first package file.
-				anchor := e.pi.AnchorVName(e.pi.Files[0], 0, 0)
+				// the file itself.
+				anchor := e.pi.AnchorVName(p, 0, 0)
 				e.check(e.sink.writeAnchor(e.ctx, anchor, 0, 0))
 				e.writeEdge(anchor, vname, edges.Defines)
-
-				// TODO(fromberger): We might want to pretend each file has its
-				// own top-level initializer. That's not how it actually works,
-				// but if picking one file confuses users, we might try it.
 			}
-			return e.pi.packageInit
+			return fi
 		}
 	}
 }
@@ -897,7 +895,7 @@ func (e *emitter) callContext(stack stackFunc) *funcInfo {
 // including the node itself, or the enclosing package vname if the node is at
 // the top level.
 func (e *emitter) nameContext(stack stackFunc) *spb.VName {
-	if fi := e.callContext(stack); fi != e.pi.packageInit {
+	if fi := e.callContext(stack); !e.pi.isPackageInit(fi) {
 		return fi.vname
 	}
 	return e.pi.VName
