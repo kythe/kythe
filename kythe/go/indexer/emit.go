@@ -106,13 +106,16 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 				Kind:    cpb.MarkedSource_IDENTIFIER,
 				PreText: ipath,
 			}},
-			PostChildText: "/",
 		}
 		if p := strings.LastIndex(ipath, "/"); p > 0 {
 			ms.Child[0].PreText = ipath[p+1:]
 			ms.Child = append([]*cpb.MarkedSource{{
-				Kind:    cpb.MarkedSource_CONTEXT,
-				PreText: ipath[:p],
+				Kind: cpb.MarkedSource_CONTEXT,
+				Child: []*cpb.MarkedSource{{
+					Kind:    cpb.MarkedSource_IDENTIFIER,
+					PreText: ipath[:p],
+				}},
+				PostChildText: "/",
 			}}, ms.Child...)
 		}
 		e.emitCode(pi.VName, ms)
