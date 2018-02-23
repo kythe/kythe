@@ -111,13 +111,7 @@ public class ClassFileIndexer {
     for (CompilationUnit.FileInput file : compilationUnit.getRequiredInputList()) {
       FileInfo info = file.getInfo();
       if (info.getPath().endsWith(CLASS_FILE_EXT)) {
-        VName jarFileVName = null;
-        int i = info.getPath().indexOf(JAR_FILE_EXT + "/");
-        if (i >= 0) {
-          // TODO(schroederc): add better extractor support (e.g. FileVNames)
-          String jarPath = info.getPath().substring(0, i + JAR_FILE_EXT.length());
-          jarFileVName = fileVName(compilationUnit, jarPath);
-        }
+        VName jarFileVName = jarFileVName(compilationUnit, file);
         classVisitor = classVisitor.withEnclosingJarFile(jarFileVName);
         try {
           ListenableFuture<byte[]> contents = fileDataProvider.startLookup(info);
@@ -129,13 +123,26 @@ public class ClassFileIndexer {
     }
   }
 
-  private static VName fileVName(CompilationUnit compilationUnit, String path) {
+  private static VName jarFileVName(
+      CompilationUnit compilationUnit, CompilationUnit.FileInput file) {
+    String filePath = file.getVName().getPath();
+    if (filePath.isEmpty()) {
+      filePath = file.getInfo().getPath();
+    }
+
+    int i = filePath.indexOf(JAR_FILE_EXT + "/");
+    if (i <= 0) {
+      return null;
+    }
+
+    String jarPath = filePath.substring(0, i + JAR_FILE_EXT.length());
     return compilationUnit
         .getVName()
         .toBuilder()
+        .mergeFrom(file.getVName())
+        .setPath(jarPath)
         .clearSignature()
         .clearLanguage()
-        .setPath(path)
         .build();
   }
 
