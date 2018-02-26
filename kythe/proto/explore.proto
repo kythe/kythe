@@ -165,35 +165,27 @@ message TypeHierarchyReply {
 // _locations_ in the code at which they are called, Kythe XRefService's
 // CrossReferences API should do what you want.
 
-// Requests the functions that call the specified function, and their callers,
-// out to the specified maximum search depth.
+// Requests the functions that call the specified function.
 message CallersRequest {
   string function_ticket = 1;
 
-  // Maximum number of calls (call edges) to traverse backwards from the input.
-  // If 0/default, interpreted as a max depth of 1.  Negative values are rejected.
-  int32 max_depth = 2;
-
-  NodeFilter node_filter = 3;
+  NodeFilter node_filter = 2;
 }
 
 message CallersReply {
   // same as function_ticket in request
   string function_ticket = 1;
 
+  // This is a graph, rather than a simple list of callers, to allow for
+  // possible future expansion to recursive callers at depth > 1.
   Graph graph = 2;
 }
 
-// Requests the functions called by the specified function, and their callees,
-// out to the specified maximum search depth.
+// Requests the functions called by the specified function.
 message CalleesRequest {
   string function_ticket = 1;
 
-  // Maximum number of calls (call edges) to traverse forwards from the input.
-  // If 0/default, interpreted as a max depth of 1.  Negative values are rejected.
-  int32 max_depth = 2;
-
-  NodeFilter node_filter = 3;
+  NodeFilter node_filter = 2;
 }
 
 // TODO: consider merging this and CallersReply into a single message
@@ -202,6 +194,8 @@ message CalleesReply {
   // same as function_ticket in request
   string function_ticket = 1;
 
+  // This is a graph, rather than a simple list of callers, to allow for
+  // possible future expansion to recursive callees at depth > 1.
   Graph graph = 2;
 }
 
