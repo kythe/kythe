@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.extractors.jvm.bazel;
 
+import static com.google.common.io.Files.touch;
+
 import com.google.devtools.build.lib.actions.extra.ExtraActionInfo;
 import com.google.devtools.build.lib.actions.extra.ExtraActionsBase;
 import com.google.devtools.build.lib.actions.extra.SpawnInfo;
@@ -26,6 +28,7 @@ import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistry;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -74,6 +77,13 @@ public class BazelJvmExtractor {
     }
 
     CompilationDescription indexInfo = JvmExtractor.extract(opts);
+
+    if (indexInfo.getCompilationUnit().getRequiredInputCount() == 0) {
+      // Skip empty compilations; there is nothing to analyze.
+      touch(new File(outputPath));
+      return;
+    }
+
     IndexInfoUtils.writeIndexInfoToFile(indexInfo, outputPath);
   }
 }
