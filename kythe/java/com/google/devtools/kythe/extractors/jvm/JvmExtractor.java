@@ -27,6 +27,7 @@ import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.proto.Buildinfo.BuildDetails;
+import com.google.devtools.kythe.proto.Java.JarDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.Any;
 import java.io.IOException;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -45,6 +47,7 @@ public class JvmExtractor {
   public static final String JAR_FILE_EXTENSION = ".jar";
   public static final String CLASS_FILE_EXTENSION = ".class";
   public static final String BUILD_DETAILS_URL = "kythe.io/proto/kythe.proto.BuildDetails";
+  public static final String JAR_DETAILS_URL = "kythe.io/proto/kythe.proto.JarDetails";
 
   /**
    * Returns a JVM {@link CompilationDescription} for the {@code .jar}/{@code .class} file paths
@@ -72,20 +75,33 @@ public class JvmExtractor {
                   BuildDetails.newBuilder().setBuildTarget(buildTarget).build().toByteString()));
     }
 
+    Function<String, String> relativizer = ExtractorUtils.makeRelativizer(options.rootDirectory);
+
     List<FileData> fileContents = new ArrayList<>();
     List<String> classFiles = new ArrayList<>();
+    JarDetails.Builder jarDetails = JarDetails.newBuilder();
     for (Path path : options.jarOrClassFiles) {
       compilation.addArgument(path.toString());
       compilation.addSourceFile(path.toString());
       if (path.toString().endsWith(JAR_FILE_EXTENSION)) {
-        fileContents.addAll(extractClassFiles(path));
+        VName jarVName = ExtractorUtils.lookupVName(fileVNames, relativizer, path.toString());
+        JarDetails.Jar.Builder jar = jarDetails.addJarBuilder().setVName(jarVName);
+        for (FileData file : extractClassFiles(path)) {
+          jar.addEntry(file.getInfo());
+          fileContents.add(file);
+        }
       } else {
         classFiles.add(path.toString());
       }
     }
     fileContents.addAll(ExtractorUtils.processRequiredInputs(classFiles));
     compilation.addAllRequiredInput(
-        ExtractorUtils.toFileInputs(fileVNames, options.rootDirectory, fileContents));
+        ExtractorUtils.toFileInputs(fileVNames, relativizer, fileContents));
+
+    if (jarDetails.getJarCount() > 0) {
+      compilation.addDetails(
+          Any.newBuilder().setTypeUrl(JAR_DETAILS_URL).setValue(jarDetails.build().toByteString()));
+    }
 
     if (fileContents.size() > options.maxRequiredInputs) {
       throw new ExtractionException(
@@ -158,7 +174,10 @@ public class JvmExtractor {
     @Parameter(names = "--default_corpus", description = "Default file VName corpus")
     public String defaultCorpus = System.getenv("KYTHE_CORPUS");
 
-    @Parameter(names = "--root_directory", description = "Root directory for compilation")
+    @Parameter(
+      names = "--root_directory",
+      description = "Root directory for compilation (defaults to $PWD)"
+    )
     public Path rootDirectory =
         Paths.get(Optional.ofNullable(System.getenv("KYTHE_ROOT_DIRECTORY")).orElse(""));
 

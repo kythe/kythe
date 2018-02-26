@@ -120,9 +120,8 @@ public class ExtractorUtils {
     return toFileInputs(FileVNames.staticCorpus(""), p -> p, fileDatas);
   }
 
-  public static List<FileInput> toFileInputs(
-      FileVNames fileVNames, final Path rootDir, Iterable<FileData> fileDatas) {
-    return toFileInputs(fileVNames, p -> tryMakeRelative(rootDir, Paths.get(p)), fileDatas);
+  public static Function<String, String> makeRelativizer(final Path rootDir) {
+    return p -> tryMakeRelative(rootDir, Paths.get(p));
   }
 
   public static List<FileInput> toFileInputs(
@@ -130,30 +129,33 @@ public class ExtractorUtils {
     return Streams.stream(fileDatas)
         .map(
             fileData -> {
-              String relativePath = relativize.apply(fileData.getInfo().getPath());
-              VName vname = fileVNames.lookupBaseVName(relativePath);
-              if (vname.getPath().isEmpty()) {
-                vname = vname.toBuilder().setPath(relativePath).build();
-              }
+              VName vname = lookupVName(fileVNames, relativize, fileData.getInfo().getPath());
               return FileInput.newBuilder().setInfo(fileData.getInfo()).setVName(vname).build();
             })
         .sorted(FILE_INPUT_COMPARATOR)
         .collect(toImmutableList());
   }
 
-  /**
-   * Tries to make a path relative based on the current working dir. Returns the fullpath otherwise.
-   */
+  public static VName lookupVName(
+      FileVNames fileVNames, Function<String, String> relativize, String path) {
+    String relativePath = relativize.apply(path);
+    VName vname = fileVNames.lookupBaseVName(relativePath);
+    if (vname.getPath().isEmpty()) {
+      vname = vname.toBuilder().setPath(relativePath).build();
+    }
+    return vname;
+  }
+
+  /** Tries to make a path relative to a root directory. Returns the fullpath otherwise. */
   public static String tryMakeRelative(String rootDir, String path) {
     return tryMakeRelative(Paths.get(rootDir), Paths.get(path));
   }
 
-  /**
-   * Tries to make a path relative based on the current working dir. Returns the fullpath otherwise.
-   */
+  /** Tries to make a path relative to a root directory. Returns the fullpath otherwise. */
   public static String tryMakeRelative(Path rootDir, Path path) {
+    Path absRoot = rootDir.toAbsolutePath().normalize();
     Path absPath = path.toAbsolutePath().normalize();
-    Path relPath = rootDir.toAbsolutePath().relativize(absPath).normalize();
+    Path relPath = absRoot.relativize(absPath).normalize();
     if (relPath.toString().isEmpty()) {
       return ".";
     }

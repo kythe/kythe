@@ -22,6 +22,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:buildinfo_java_proto",
+        "//kythe/proto:java_java_proto",
         "//kythe/proto:storage_java_proto",
         "@com_beust_jcommander//jar",
         "@com_google_guava_guava//jar",

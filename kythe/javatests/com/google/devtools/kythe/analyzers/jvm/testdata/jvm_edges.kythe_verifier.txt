@@ -3,6 +3,6 @@
 //- FuncJvm childof ClassJvm
 //- NopeJvm childof ClassJvm
 
-//- JarFileAnchor=vname(_, _, _, _, "jvm") defines ClassJvm
+//- JarFileAnchor=vname(_, "kythe", "bazel-out/bin", "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/jvm_tests_kindex.kindex.jar", "jvm") defines ClassJvm
 //- JarFileAnchor.node/kind anchor
 //- JarFileAnchor.subkind implicit

@@ -255,6 +255,10 @@ java_proto_library(
 proto_library(
     name = "java_proto",
     srcs = ["java.proto"],
+    deps = [
+        ":analysis_proto",
+        ":storage_proto",
+    ],
 )
 
 cc_proto_library(
@@ -262,7 +266,13 @@ cc_proto_library(
     deps = [":java_proto"],
 )
 
-go_kythe_proto(proto = ":java_proto")
+go_kythe_proto(
+    proto = ":java_proto",
+    deps = [
+        ":analysis_go_proto",
+        ":storage_go_proto",
+    ],
+)
 
 java_proto_library(
     name = "java_java_proto",

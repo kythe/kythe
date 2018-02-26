@@ -235,6 +235,7 @@ def _jvm_extract_kindex_impl(ctx):
       srcs = jars,
       kindex = ctx.outputs.kindex,
       extractor = ctx.executable.extractor,
+      vnames_config = ctx.file.vnames_config,
       opts = ctx.attr.opts,
       mnemonic = "JvmExtractKindex",
   )
@@ -249,6 +250,10 @@ jvm_extract_kindex = rule(
             default = Label("//kythe/java/com/google/devtools/kythe/extractors/jvm:jar_extractor"),
             executable = True,
             cfg = "host",
+        ),
+        "vnames_config": attr.label(
+            default = Label("//kythe/data:vnames_config"),
+            allow_single_file = True,
         ),
         "opts": attr.string_list(),
     },
