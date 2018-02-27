@@ -20,7 +20,6 @@ package local
 import (
 	"context"
 	"fmt"
-	"io"
 	"path/filepath"
 
 	"kythe.io/kythe/go/platform/analysis"
@@ -61,7 +60,7 @@ func NewKIndexQueue(paths []string, opts ...Option) *KIndexQueue {
 // Next implements the driver.Queue interface.
 func (k *KIndexQueue) Next(ctx context.Context, f driver.CompilationFunc) error {
 	if k.index >= len(k.paths) {
-		return io.EOF
+		return driver.ErrEndOfQueue
 	}
 
 	path := k.paths[k.index]
