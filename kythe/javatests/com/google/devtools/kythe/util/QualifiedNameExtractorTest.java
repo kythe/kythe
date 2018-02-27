@@ -134,4 +134,16 @@ public class QualifiedNameExtractorTest {
         .isEqualTo(
             SymbolInfo.newBuilder().setBaseName("-tail").setQualifiedName("a.b-tail").build());
   }
+
+  @Test
+  public void testIdentifierAtRoot() throws Exception {
+    MarkedSource.Builder builder = MarkedSource.newBuilder();
+    TextFormat.merge("kind: IDENTIFIER pre_text: \"fizzlepug\"", builder);
+    MarkedSource testInput = builder.build();
+    Optional<SymbolInfo> resolvedName =
+        QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    assertThat(resolvedName.isPresent()).isTrue();
+    assertThat(resolvedName.get())
+        .isEqualTo(SymbolInfo.newBuilder().setBaseName("fizzlepug").build());
+  }
 }

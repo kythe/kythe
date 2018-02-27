@@ -33,10 +33,17 @@ public class QualifiedNameExtractor {
    * @return a {@link SymbolInfo} message containing the extracted name.
    */
   public static Optional<SymbolInfo> extractNameFromMarkedSource(MarkedSource markedSource) {
-    // extract the base name
-    Optional<MarkedSource> identifier =
-        retrieveFirstMarkedSourceByKind(
-            markedSource, MarkedSource.Kind.IDENTIFIER, /* isPretextRequired */ true);
+    // Extract the base name. Note that the base name may be at the root, so
+    // check for that case explicitly.
+    Optional<MarkedSource> identifier;
+    if (markedSourceMatches(
+        markedSource, MarkedSource.Kind.IDENTIFIER, /* isPretextRequired */ true)) {
+      identifier = Optional.of(markedSource);
+    } else {
+      identifier =
+          retrieveFirstMarkedSourceByKind(
+              markedSource, MarkedSource.Kind.IDENTIFIER, /* isPretextRequired */ true);
+    }
     if (!identifier.isPresent()) {
       // if the current class node's marked source does not contain an identifier, skip it
       return Optional.empty();
@@ -81,8 +88,8 @@ public class QualifiedNameExtractor {
   }
 
   /**
-   * Traverse the specified {@link MarkedSource} tree, returning the first node that matches the
-   * specified kind.
+   * Traverse the specified {@link MarkedSource} tree breadth-first, returning the first node that
+   * matches the specified kind.
    *
    * @param markedSource The root of the {@link MarkedSource} tree to be traversed.
    * @param kind The kind of the requested node.
@@ -90,26 +97,30 @@ public class QualifiedNameExtractor {
    */
   private static Optional<MarkedSource> retrieveFirstMarkedSourceByKind(
       MarkedSource markedSource, MarkedSource.Kind kind, boolean isPretextRequired) {
-    Optional<MarkedSource> result =
-        markedSource
-            .getChildList()
-            .stream()
-            .filter(
-                child ->
-                    child.getKind().equals(kind)
-                        && (isPretextRequired ? !child.getPreText().isEmpty() : true))
-            .findFirst();
-    if (result.isPresent()) {
-      return result;
+    // Check children explicitly before recurring; a match at this level should
+    // be preferred to a deeper match (breadth-first).
+    for (MarkedSource child : markedSource.getChildList()) {
+      if (markedSourceMatches(child, kind, isPretextRequired)) {
+        return Optional.of(child);
+      }
     }
 
+    // Recur into children.
     for (MarkedSource child : markedSource.getChildList()) {
-      result = retrieveFirstMarkedSourceByKind(child, kind, isPretextRequired);
+      Optional<MarkedSource> result =
+          retrieveFirstMarkedSourceByKind(child, kind, isPretextRequired);
       if (result.isPresent()) {
         return result;
       }
     }
 
     return Optional.empty();
+  }
+
+  /** Report whether markedSource has the specified kind and required pre-text. */
+  private static boolean markedSourceMatches(
+      MarkedSource markedSource, MarkedSource.Kind kind, boolean isPretextRequired) {
+    return markedSource.getKind().equals(kind)
+        && (!isPretextRequired || !markedSource.getPreText().isEmpty());
   }
 }
