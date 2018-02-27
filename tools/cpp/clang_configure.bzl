@@ -654,6 +654,7 @@ def _coverage_feature(darwin):
       flag_set {
         action: 'c++-link-interface-dynamic-library'
         action: 'c++-link-dynamic-library'
+        action: 'c++-link-nodeps-dynamic-library'
         action: 'c++-link-executable'
         """ + link_flags + """
       }
