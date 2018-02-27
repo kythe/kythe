@@ -50,15 +50,15 @@ func (s *Service) Parameters(ctx context.Context, req *epb.ParametersRequest) (*
 	return nil, nil
 }
 
-// Containers returns the container(s) in which a specified node is found
+// Parents returns the parents of a specified node
 // (for example, the file for a class, or the class for a function).
-// Note: in some cases a node may have more than one container.
-func (s *Service) Containers(ctx context.Context, req *epb.ContainersRequest) (*epb.ContainersReply, error) {
+// Note: in some cases a node may have more than one parent.
+func (s *Service) Parents(ctx context.Context, req *epb.ParentsRequest) (*epb.ParentsReply, error) {
 	return nil, nil
 }
 
-// Contents returns the contents of a given container node
+// Children returns the children of a specified node
 // (for example, the classes contained in a file, or the functions contained in a class).
-func (s *Service) Contents(ctx context.Context, req *epb.ContentsRequest) (*epb.ContentsReply, error) {
+func (s *Service) Children(ctx context.Context, req *epb.ChildrenRequest) (*epb.ChildrenReply, error) {
 	return nil, nil
 }

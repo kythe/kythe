@@ -68,16 +68,16 @@ service ExploreService {
   // NOT YET IMPLEMENTED
   rpc Parameters(ParametersRequest) returns (ParametersReply) {}
 
-  // Returns the container(s) in which a specified node is found (for example,
+  // Returns the parents of a specified node (for example,
   // the file for a class, or the class for a function).
-  // Note that in some cases a node may have more than one container.
+  // Note that in some cases a node may have more than one parent.
   // NOT YET IMPLEMENTED
-  rpc Containers(ContainersRequest) returns (ContainersReply) {}
+  rpc Parents(ParentsRequest) returns (ParentsReply) {}
 
-  // Returns the contents of a given container node (for example, the classes
-  // contained in a file, or the functions contained in a class).
+  // Returns the children of a specified node (for example,
+  // the classes contained in a file, or the functions contained in a class).
   // NOT YET IMPLEMENTED
-  rpc Contents(ContentsRequest) returns (ContentsReply) {}
+  rpc Children(ChildrenRequest) returns (ChildrenReply) {}
 }
 
 // Shared/utility messages
@@ -220,39 +220,39 @@ message ParametersReply {
 }
 
 
-// Containers and contents
+// Parents and children
 // node types: package, record (class), interface, function, ...
 // edge type: childof
 
 // * what package is this file/class/interface in?
 // * what is the class/interface that this function is in?
 
-// Fetches the ticket for the enclosing context of the specified ticket
-// (e.g.: what package is this file in?  what class is this function in?)
-message ContainersRequest {
+// Fetches the tickets for the enclosing contexts of the specified ticket
+// (e.g.: what package is this file in?  what class is this function in?).
+message ParentsRequest {
   repeated string ticket = 1;
 }
 
-message ContainersReply {
+message ParentsReply {
   // associates each input ticket with the set of tickets that contain it
-  map<string, Tickets> input_to_containers = 1;
+  map<string, Tickets> input_to_parents = 1;
 
   map<string, NodeData> node_data = 2;
 }
 
 
 // Fetches the tickets for which the specified ticket is the enclosing context
-// (e.g. what files are in this package?  what functions are in this class?)
-message ContentsRequest {
+// (e.g. what files are in this package?  what functions are in this class?).
+message ChildrenRequest {
   repeated string ticket = 1;
 
   NodeFilter node_filter = 2;
 }
 
 
-message ContentsReply {
+message ChildrenReply {
   // associates each input ticket with the set of tickets contained by it
-  map<string, Tickets> input_to_contents = 1;
+  map<string, Tickets> input_to_children = 1;
 
   map<string, NodeData> node_data = 2;
 }

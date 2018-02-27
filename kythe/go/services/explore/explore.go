@@ -47,14 +47,14 @@ type Service interface {
 	// NOT YET IMPLEMENTED
 	Parameters(context.Context, *epb.ParametersRequest) (*epb.ParametersReply, error)
 
-	// Returns the container(s) in which a specified node is found (for example,
-	// the file for a class, or the class for a function).
-	// Note that in some cases a node may have more than one container.
+	// Returns the parents of a specified node
+	// (for example, the file for a class, or the class for a function).
+	// Note that in some cases a node may have more than one parent.
 	// NOT YET IMPLEMENTED
-	Containers(context.Context, *epb.ContainersRequest) (*epb.ContainersReply, error)
+	Parents(context.Context, *epb.ParentsRequest) (*epb.ParentsReply, error)
 
-	// Returns the contents of a given container node (for example, the classes
-	// contained in a file, or the functions contained in a class).
+	// Returns the children of a specified node
+	// (for example, the classes contained in a file, or the functions contained in a class).
 	// NOT YET IMPLEMENTED
-	Contents(context.Context, *epb.ContentsRequest) (*epb.ContentsReply, error)
+	Children(context.Context, *epb.ChildrenRequest) (*epb.ChildrenReply, error)
 }
