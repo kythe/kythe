@@ -39,6 +39,7 @@ java_library(
         "//kythe/proto:storage_java_proto",
         "@com_beust_jcommander//jar",
         "@com_google_guava_guava//jar",
+        "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@org_ow2_asm_asm//jar",
     ],
