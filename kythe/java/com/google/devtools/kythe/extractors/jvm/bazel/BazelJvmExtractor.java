@@ -32,7 +32,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Kythe extractor for Bazel JavaIjar actions.
@@ -64,14 +67,20 @@ public class BazelJvmExtractor {
     }
 
     SpawnInfo spawnInfo = info.getExtension(SpawnInfo.spawnInfo);
-    if (spawnInfo.getArgumentCount() != 3
-        || !Paths.get(spawnInfo.getArgument(0)).endsWith("ijar")) {
+    if (!Paths.get(spawnInfo.getArgument(0)).endsWith("ijar")) {
       throw new IllegalArgumentException("given non-ijar SpawnInfo");
+    }
+
+    List<Path> jarFiles = new ArrayList<>();
+    for (String inputFile : spawnInfo.getInputFileList()) {
+      if (inputFile.endsWith(JvmExtractor.JAR_FILE_EXTENSION)) {
+        jarFiles.add(Paths.get(inputFile));
+      }
     }
 
     Options opts = new Options();
     opts.buildTarget = info.getOwner();
-    opts.jarOrClassFiles.add(Paths.get(spawnInfo.getArgument(1)));
+    opts.jarOrClassFiles.addAll(jarFiles);
     if (args.length == 3) {
       opts.vnamesConfigFile = Paths.get(args[2]);
     }
