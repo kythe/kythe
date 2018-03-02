@@ -849,13 +849,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       const clang::ObjCMethodDecl *MD, const clang::ObjCInterfaceDecl *I);
 
   void VisitObjCInterfaceDeclComment(
-      const clang::ObjCInterfaceDecl *D, const clang::RawComment *Comment,
-      const clang::DeclContext *Context,
+      const clang::ObjCInterfaceDecl *Decl, const clang::RawComment *Comment,
+      const clang::DeclContext *DCxt,
       absl::optional<GraphObserver::NodeId> DCID);
 
-  void VisitRecordDeclComment(const clang::RecordDecl *D,
+  void VisitRecordDeclComment(const clang::RecordDecl *Decl,
                               const clang::RawComment *Comment,
-                              const clang::DeclContext *Context,
+                              const clang::DeclContext *DCxt,
                               absl::optional<GraphObserver::NodeId> DCID);
 
   /// \brief Maps known Decls to their NodeIds.
