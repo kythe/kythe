@@ -168,6 +168,8 @@ std::string IndexCompilationUnit(
   Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
   Action->setTemplateMode(Options.TemplateBehavior);
   Action->setVerbosity(Options.Verbosity);
+  Action->setObjCFwdDeclEmitDocs(Options.ObjCFwdDocs);
+  Action->setCppFwdDeclEmitDocs(Options.CppFwdDocs);
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileManager(
       new clang::FileManager(FSO, Options.AllowFSAccess ? nullptr : VFS));
   std::vector<std::string> Args(Unit.argument().begin(), Unit.argument().end());

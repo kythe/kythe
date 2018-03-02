@@ -42,6 +42,10 @@ DEFINE_bool(report_profiling_events, false,
             "Write profiling events to standard error.");
 DEFINE_bool(experimental_index_lite, false,
             "Drop uncommonly-used data from the index.");
+DEFINE_bool(experimental_drop_objc_fwd_class_docs, false,
+            "Drop comments for Objective-C forward class declarations.");
+DEFINE_bool(experimental_drop_cpp_fwd_decl_docs, false,
+            "Drop comments for C++ forward declarations.");
 
 namespace kythe {
 
@@ -63,6 +67,12 @@ int main(int argc, char *argv[]) {
                                       : kythe::BehaviorOnUnimplemented::Abort;
   options.Verbosity = FLAGS_experimental_index_lite ? kythe::Verbosity::Lite
                                                     : kythe::Verbosity::Classic;
+  options.ObjCFwdDocs = FLAGS_experimental_drop_objc_fwd_class_docs
+                            ? kythe::BehaviorOnFwdDeclComments::Ignore
+                            : kythe::BehaviorOnFwdDeclComments::Emit;
+  options.CppFwdDocs = FLAGS_experimental_drop_cpp_fwd_decl_docs
+                           ? kythe::BehaviorOnFwdDeclComments::Ignore
+                           : kythe::BehaviorOnFwdDeclComments::Emit;
   options.DropInstantiationIndependentData =
       FLAGS_experimental_drop_instantiation_independent_data;
   options.AllowFSAccess = context.allow_filesystem_access();

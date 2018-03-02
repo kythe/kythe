@@ -62,6 +62,10 @@ enum BehaviorOnTemplates : bool {
   VisitInstantiations = true   ///< Visit template instantiations.
 };
 
+/// \brief Specifies if the indexer should emit documentation nodes for comments
+/// associated with forward declarations.
+enum BehaviorOnFwdDeclComments : bool { Emit = true, Ignore = false };
+
 /// \brief A byte range that links to some node.
 struct MiniAnchor {
   size_t Begin;
@@ -83,12 +87,15 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
  public:
   IndexerASTVisitor(clang::ASTContext &C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, Verbosity V,
-                    const LibrarySupports &S, clang::Sema &Sema,
-                    std::function<bool()> ShouldStopIndexing,
+                    BehaviorOnFwdDeclComments ObjC,
+                    BehaviorOnFwdDeclComments Cpp, const LibrarySupports &S,
+                    clang::Sema &Sema, std::function<bool()> ShouldStopIndexing,
                     GraphObserver *GO = nullptr)
       : IgnoreUnimplemented(B),
         TemplateMode(T),
         Verbosity(V),
+        ObjCFwdDocs(ObjC),
+        CppFwdDocs(Cpp),
         Observer(GO ? *GO : NullObserver),
         Context(C),
         Supports(S),
@@ -434,6 +441,12 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool shouldVisitTemplateInstantiations() const {
     return TemplateMode == BehaviorOnTemplates::VisitInstantiations;
   }
+  bool shouldEmitObjCForwardClassDeclDocumentation() const {
+    return ObjCFwdDocs == BehaviorOnFwdDeclComments::Emit;
+  }
+  bool shouldEmitCppForwardDeclDocumentation() const {
+    return CppFwdDocs == BehaviorOnFwdDeclComments::Emit;
+  }
   bool shouldVisitImplicitCode() const { return true; }
   // Disables data recursion. We intercept Traverse* methods in the RAV, which
   // are not triggered during data recursion.
@@ -541,6 +554,12 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// Should we emit all data?
   enum Verbosity Verbosity;
+
+  /// Should we emit documentation for forward class decls in ObjC?
+  BehaviorOnFwdDeclComments ObjCFwdDocs;
+
+  /// Should we emit documentation for forward decls in C++?
+  BehaviorOnFwdDeclComments CppFwdDocs;
 
   NullGraphObserver NullObserver;
   GraphObserver &Observer;
@@ -829,6 +848,16 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   const clang::ObjCMethodDecl *FindMethodDefn(
       const clang::ObjCMethodDecl *MD, const clang::ObjCInterfaceDecl *I);
 
+  void VisitObjCInterfaceDeclComment(
+      const clang::ObjCInterfaceDecl *D, const clang::RawComment *Comment,
+      const clang::DeclContext *Context,
+      absl::optional<GraphObserver::NodeId> DCID);
+
+  void VisitRecordDeclComment(const clang::RecordDecl *D,
+                              const clang::RawComment *Comment,
+                              const clang::DeclContext *Context,
+                              absl::optional<GraphObserver::NodeId> DCID);
+
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl *, GraphObserver::NodeId> DeclToNodeId;
 
@@ -862,7 +891,8 @@ class IndexerASTConsumer : public clang::SemaConsumer {
  public:
   explicit IndexerASTConsumer(
       GraphObserver *GO, BehaviorOnUnimplemented B, BehaviorOnTemplates T,
-      Verbosity V, const LibrarySupports &S,
+      Verbosity V, BehaviorOnFwdDeclComments ObjC,
+      BehaviorOnFwdDeclComments Cpp, const LibrarySupports &S,
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
           CreateWorklist)
@@ -870,6 +900,8 @@ class IndexerASTConsumer : public clang::SemaConsumer {
         IgnoreUnimplemented(B),
         TemplateMode(T),
         Verbosity(V),
+        ObjCFwdDocs(ObjC),
+        CppFwdDocs(Cpp),
         Supports(S),
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
         CreateWorklist(std::move(CreateWorklist)) {}
@@ -877,8 +909,8 @@ class IndexerASTConsumer : public clang::SemaConsumer {
   void HandleTranslationUnit(clang::ASTContext &Context) override {
     CHECK(Sema != nullptr);
     IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
-                              Verbosity, Supports, *Sema, ShouldStopIndexing,
-                              Observer);
+                              Verbosity, ObjCFwdDocs, CppFwdDocs, Supports,
+                              *Sema, ShouldStopIndexing, Observer);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
       Visitor.Work(Context.getTranslationUnitDecl(), CreateWorklist(&Visitor));
@@ -897,6 +929,10 @@ class IndexerASTConsumer : public clang::SemaConsumer {
   BehaviorOnTemplates TemplateMode;
   /// Whether we should emit all data.
   enum Verbosity Verbosity;
+  /// Should we emit documentation for forward class decls in ObjC?
+  BehaviorOnFwdDeclComments ObjCFwdDocs;
+  /// Should we emit documentation for forward decls in C++?
+  BehaviorOnFwdDeclComments CppFwdDocs;
   /// Which library supports are enabled.
   const LibrarySupports &Supports;
   /// The active Sema instance.

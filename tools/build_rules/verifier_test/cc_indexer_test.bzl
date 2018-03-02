@@ -42,6 +42,8 @@ _INDEXER_FLAGS = {
     "index_template_instantiations": True,
     "experimental_alias_template_instantiations": False,
     "experimental_drop_instantiation_independent_data": False,
+    "experimental_drop_objc_fwd_class_docs": False,
+    "experimental_drop_cpp_fwd_decl_docs": False,
 }
 
 def _flag(name, typename, value):

@@ -1199,6 +1199,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "docs_fwd",
+    srcs = ["docs/docs_fwd.cc"],
+    experimental_drop_cpp_fwd_decl_docs = True,
+    tags = ["docs"],
+)
+
+cc_indexer_test(
     name = "docs_implicit_block",
     srcs = ["docs/docs_implicit_block.cc"],
     tags = ["docs"],
@@ -2516,6 +2523,12 @@ objc_indexer_test(
 )
 
 objc_indexer_test(
+    name = "class_docs",
+    srcs = ["objc/docs/class_docs.m"],
+    tags = ["objc"],
+)
+
+objc_indexer_test(
     name = "class_instantiation",
     srcs = ["objc/class_instantiation.m"],
     tags = ["objc"],
@@ -2624,6 +2637,13 @@ objc_indexer_test(
     srcs = ["objc/forward_declare_not_necessary_2.m"],
     tags = ["objc"],
     deps = ["objc/FwdClass.h"],
+)
+
+objc_indexer_test(
+    name = "fwd_decl_docs",
+    srcs = ["objc/docs/fwd_decl_docs.m"],
+    experimental_drop_objc_fwd_class_docs = True,
+    tags = ["objc"],
 )
 
 objc_indexer_test(

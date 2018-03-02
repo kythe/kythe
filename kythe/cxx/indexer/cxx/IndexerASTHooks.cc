@@ -908,7 +908,13 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
 
   if (const auto *DC = dyn_cast_or_null<DeclContext>(Decl)) {
     if (auto DCID = BuildNodeIdForDeclContext(DC)) {
-      VisitComment(Comment, DCxt, DCID.value());
+      if (const auto *IFaceDecl = dyn_cast_or_null<ObjCInterfaceDecl>(DC)) {
+        VisitObjCInterfaceDeclComment(IFaceDecl, Comment, DCxt, DCID);
+      } else if (const auto *R = dyn_cast_or_null<RecordDecl>(DC)) {
+        VisitRecordDeclComment(R, Comment, DCxt, DCID);
+      } else {
+        VisitComment(Comment, DCxt, DCID.value());
+      }
     }
     if (const auto *CTPSD =
             dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
@@ -937,6 +943,32 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
     VisitComment(Comment, DCxt, NodeId);
   }
   return true;
+}
+
+void IndexerASTVisitor::VisitObjCInterfaceDeclComment(
+    const ObjCInterfaceDecl *Decl, const RawComment *Comment,
+    const DeclContext *DCxt, absl::optional<GraphObserver::NodeId> DCID) {
+  // Don't record comments for ObjC class forward declarations because
+  // their comments generally aren't useful documentation about the class,
+  // they are more likely to be about why a forward declaration was used
+  // or be totally unrelated to the class.
+  if (shouldEmitObjCForwardClassDeclDocumentation() ||
+      !IsObjCForwardDecl(Decl)) {
+    VisitComment(Comment, DCxt, DCID.value());
+  }
+}
+
+void IndexerASTVisitor::VisitRecordDeclComment(
+    const RecordDecl *Decl, const RawComment *Comment, const DeclContext *DCxt,
+    absl::optional<GraphObserver::NodeId> DCID) {
+  // Don't record comments for forward declarations because their comments
+  // generally aren't useful documentation about the class, they are more likely
+  // to be about why a forward declaration was used or be totally unrelated to
+  // the class.
+  if (shouldEmitCppForwardDeclDocumentation() ||
+      Decl->getDefinition() == Decl) {
+    VisitComment(Comment, DCxt, DCID.value());
+  }
 }
 
 bool IndexerASTVisitor::TraverseLambdaExpr(clang::LambdaExpr *Expr) {
@@ -3476,8 +3508,8 @@ bool IndexerASTVisitor::IsDefinition(const FunctionDecl *FunctionDecl) {
   return FunctionDecl->isThisDeclarationADefinition();
 }
 
-  // There aren't too many types in C++, as it turns out. See
-  // clang/AST/TypeNodes.def.
+// There aren't too many types in C++, as it turns out. See
+// clang/AST/TypeNodes.def.
 
 #define UNSUPPORTED_CLANG_TYPE(t)                  \
   case TypeLoc::t:                                 \

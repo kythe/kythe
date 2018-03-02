@@ -88,13 +88,21 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
     IgnoreUnimplemented = B;
   }
 
-  /// \param Visit template instantiations?
+  /// \brief Visit template instantiations?
   /// \param T The behavior to use for template instantiations.
   void setTemplateMode(BehaviorOnTemplates T) { TemplateMode = T; }
 
-  /// \param Emit all data?
+  /// \brief Emit all data?
   /// \param V Degree of verbosity.
   void setVerbosity(Verbosity V) { Verbosity = V; }
+
+  /// \brief Emit comments for forward declared classes as documentation?
+  /// \param B Behavior to use.
+  void setObjCFwdDeclEmitDocs(BehaviorOnFwdDeclComments B) { ObjCFwdDocs = B; }
+
+  /// \brief Emit comments for forward declarations as documentation?
+  /// \param B Behavior to use.
+  void setCppFwdDeclEmitDocs(BehaviorOnFwdDeclComments B) { CppFwdDocs = B; }
 
  private:
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
@@ -134,8 +142,8 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       Observer->setPreprocessor(&CI.getPreprocessor());
     }
     return llvm::make_unique<IndexerASTConsumer>(
-        Observer, IgnoreUnimplemented, TemplateMode, Verbosity, Supports,
-        ShouldStopIndexing, CreateWorklist);
+        Observer, IgnoreUnimplemented, TemplateMode, Verbosity, ObjCFwdDocs,
+        CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance &CI) override {
@@ -158,6 +166,10 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   BehaviorOnTemplates TemplateMode = BehaviorOnTemplates::VisitInstantiations;
   /// Whether to emit all data.
   enum Verbosity Verbosity = kythe::Verbosity::Classic;
+  /// Should we emit documentation for forward class decls in ObjC?
+  BehaviorOnFwdDeclComments ObjCFwdDocs = BehaviorOnFwdDeclComments::Emit;
+  /// Should we emit documentation for forward decls in C++?
+  BehaviorOnFwdDeclComments CppFwdDocs = BehaviorOnFwdDeclComments::Emit;
   /// Configuration information for header search.
   HeaderSearchInfo HeaderConfig;
   /// Whether to use HeaderConfig.
@@ -227,6 +239,10 @@ struct IndexerOptions {
       BehaviorOnUnimplemented::Abort;
   /// \brief Whether to emit all data.
   enum Verbosity Verbosity = kythe::Verbosity::Classic;
+  /// \brief Should we emit documentation for forward class decls in ObjC?
+  BehaviorOnFwdDeclComments ObjCFwdDocs;
+  /// \brief Should we emit documentation for forward decls in C++?
+  BehaviorOnFwdDeclComments CppFwdDocs;
   /// \brief Whether to allow access to the raw filesystem.
   bool AllowFSAccess = false;
   /// \brief Whether to drop data found to be template instantiation
