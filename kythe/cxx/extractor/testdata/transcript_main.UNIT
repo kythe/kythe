@@ -34,20 +34,6 @@ required_input {
 }
 required_input {
   v_name {
-    path: "kythe/cxx/extractor/testdata/transcript_b.h"
-  }
-  info {
-    path: "./kythe/cxx/extractor/testdata/transcript_b.h"
-    digest: "6904079b7b9d5d0586a08dbbdac2b08d35f00c1dbb4cc63721f22a347f52e2f7"
-  }
-  context {
-    row {
-      source_context: "hash2"
-    }
-  }
-}
-required_input {
-  v_name {
     path: "kythe/cxx/extractor/testdata/transcript_a.h"
   }
   info {
@@ -60,6 +46,20 @@ required_input {
     }
     row {
       source_context: "hash1"
+    }
+  }
+}
+required_input {
+  v_name {
+    path: "kythe/cxx/extractor/testdata/transcript_b.h"
+  }
+  info {
+    path: "./kythe/cxx/extractor/testdata/transcript_b.h"
+    digest: "6904079b7b9d5d0586a08dbbdac2b08d35f00c1dbb4cc63721f22a347f52e2f7"
+  }
+  context {
+    row {
+      source_context: "hash2"
     }
   }
 }

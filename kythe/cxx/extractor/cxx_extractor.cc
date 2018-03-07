@@ -16,6 +16,7 @@
 
 #include "cxx_extractor.h"
 
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -35,6 +36,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/CommandLineUtils.h"
@@ -74,6 +76,38 @@ std::string LowercaseStringHexEncodeSha(
   }
   return sha_text;
 }
+
+/// \brief Comparator for CompilationUnit::FileInput, ordering by VName.
+class OrderFileInputByVName {
+ public:
+  explicit OrderFileInputByVName(absl::string_view main_source_file)
+      : main_source_file_(main_source_file) {}
+
+  bool operator()(const kythe::proto::CompilationUnit::FileInput& lhs,
+                  const kythe::proto::CompilationUnit::FileInput& rhs) const {
+    return AsTuple(lhs) < AsTuple(rhs);
+  }
+
+ private:
+  std::tuple<int, absl::string_view, absl::string_view, absl::string_view,
+             absl::string_view, absl::string_view>
+  AsTuple(const kythe::proto::CompilationUnit::FileInput& file_input) const {
+    const auto& vname = file_input.v_name();
+    // The main source file should come before dependents, but otherwise
+    // delegate entirely to the vname.
+    return {(main_source_file_ == vname.path() ||
+             main_source_file_ == file_input.info().path())
+                ? 0
+                : 1,
+            vname.signature(),
+            vname.corpus(),
+            vname.root(),
+            vname.path(),
+            vname.language()};
+  }
+
+  absl::string_view main_source_file_;
+};
 
 /// \brief A SHA-256 hash accumulator.
 class RunningHash {
@@ -895,11 +929,11 @@ kythe::proto::VName IndexWriter::VNameForPath(const std::string& path) {
 
 void IndexWriter::FillFileInput(
     const std::string& clang_path, const SourceFile& source_file,
-    kythe::proto::CompilationUnit_FileInput* file_input) {
+    kythe::proto::CompilationUnit::FileInput* file_input) {
   extra_includes_.erase(clang_path);
   status_checked_paths_.erase(clang_path);
   CHECK(source_file.vname.language().empty());
-  file_input->mutable_v_name()->CopyFrom(source_file.vname);
+  *file_input->mutable_v_name() = source_file.vname;
   // This path is distinct from the VName path. It is used by analysis tools
   // to configure Clang's virtual filesystem.
   auto* file_info = file_input->mutable_info();
@@ -1057,7 +1091,7 @@ void IndexWriter::WriteIndex(
   auto* unit_vname = unit.mutable_v_name();
 
   kythe::proto::VName main_vname = VNameForPath(main_source_file);
-  unit_vname->CopyFrom(main_vname);
+  *unit_vname = main_vname;
   unit_vname->set_language(supported_language::ToString(lang));
   unit_vname->clear_path();
 
@@ -1071,6 +1105,9 @@ void IndexWriter::WriteIndex(
   for (const auto& file : source_files) {
     FillFileInput(file.first, file.second, unit.add_required_input());
   }
+  std::sort(unit.mutable_required_input()->begin(),
+            unit.mutable_required_input()->end(),
+            OrderFileInputByVName(main_source_file));
 
   kythe::proto::CxxCompilationUnitDetails cxx_details;
   if (header_search_info != nullptr) {
@@ -1093,13 +1130,14 @@ void IndexWriter::WriteIndex(
   }
   sink->OpenIndex(output_directory_, identifying_blob_digest);
   sink->WriteHeader(unit);
-  unsigned info_index = 0;
-  for (const auto& file : source_files) {
-    kythe::proto::FileData file_content;
-    file_content.set_content(file.second.file_content);
-    file_content.mutable_info()->CopyFrom(
-        unit.required_input(info_index++).info());
-    sink->WriteFileContent(file_content);
+  for (const auto& file_input : unit.required_input()) {
+    auto iter = source_files.find(file_input.info().path());
+    if (iter != source_files.end()) {
+      kythe::proto::FileData file_content;
+      file_content.set_content(iter->second.file_content);
+      *file_content.mutable_info() = file_input.info();
+      sink->WriteFileContent(file_content);
+    }
   }
   for (const auto& data : extra_data_) {
     sink->WriteFileContent(data);
