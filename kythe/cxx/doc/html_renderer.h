@@ -51,6 +51,14 @@ struct HtmlRendererOptions {
           [](const proto::Anchor&, const std::string& semantic_ticket) {
             return "";
           };
+  /// Used to provide additional markup after the signature for the provided
+  /// ticket with the given `MarkedSource`. The result is included directly in
+  /// the output without escaping.
+  std::function<std::string(const std::string&,
+                            const proto::common::MarkedSource&)>
+      make_post_signature_markup =
+          [](const std::string& semantic_ticket,
+             const proto::common::MarkedSource& marked_soure) { return ""; };
   /// Used to retrieve `NodeInfo` for the given semantic ticket.
   virtual const proto::common::NodeInfo* node_info(const std::string&) const {
     return nullptr;
@@ -132,9 +140,11 @@ std::string RenderSimpleQualifiedName(const proto::common::MarkedSource& sig,
 std::string RenderInitializer(const proto::common::MarkedSource& sig);
 
 /// \brief Render `sig` as a full signature.
+/// \param base_ticket if set and `linkify` is true, use this ticket to try
+/// and generate links over the bare `IDENTIFIER` nodes in `sig`.
 std::string RenderSignature(const HtmlRendererOptions& options,
                             const proto::common::MarkedSource& sig,
-                            bool linkify);
+                            bool linkify, const std::string& base_ticket);
 
 }  // namespace kythe
 

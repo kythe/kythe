@@ -241,25 +241,36 @@ struct RenderSimpleIdentifierState {
   bool in_type = false;
   bool in_initializer = false;
   bool linkify = false;
+  std::string base_ticket;
   std::string get_link(const proto::common::MarkedSource& sig) {
     if (options == nullptr || !linkify) {
       return "";
     }
     std::string link;
-    for (const auto& plink : sig.link()) {
-      for (const auto& ptick : plink.definition()) {
-        if (const auto* node_info = options->node_info(ptick)) {
-          if (const auto* anchor =
-                  options->anchor_for_ticket(node_info->definition())) {
-            link = options->make_semantic_link_uri(*anchor, ptick);
-            if (link.empty()) {
-              link = options->make_link_uri(*anchor);
-            }
+    auto try_link = [&](const std::string& ticket) {
+      if (const auto* node_info = options->node_info(ticket)) {
+        if (const auto* anchor =
+                options->anchor_for_ticket(node_info->definition())) {
+          link = options->make_semantic_link_uri(*anchor, ticket);
+          if (link.empty()) {
+            link = options->make_link_uri(*anchor);
           }
         }
       }
+    };
+    for (const auto& plink : sig.link()) {
+      for (const auto& ptick : plink.definition()) {
+        try_link(ptick);
+      }
+    }
+    if (link.empty() && should_infer_link()) {
+      try_link(base_ticket);
     }
     return link;
+  }
+  bool should_infer_link() const {
+    return (in_identifier && !base_ticket.empty() && !in_context &&
+            !in_parameter && !in_type && !in_initializer);
   }
   bool should_render() const {
     return (render_context && in_context) ||
@@ -394,7 +405,7 @@ const proto::Anchor* DocumentHtmlRendererOptions::anchor_for_ticket(
 
 std::string RenderSignature(const HtmlRendererOptions& options,
                             const proto::common::MarkedSource& sig,
-                            bool linkify) {
+                            bool linkify, const std::string& base_ticket) {
   RenderSimpleIdentifierTarget target;
   RenderSimpleIdentifierState state;
   state.render_identifier = true;
@@ -402,6 +413,7 @@ std::string RenderSignature(const HtmlRendererOptions& options,
   state.render_parameters = true;
   state.linkify = linkify;
   state.options = &options;
+  state.base_ticket = base_ticket;
   RenderSimpleIdentifier(sig, &target, state, 0);
   return target.buffer();
 }
@@ -621,9 +633,11 @@ std::string RenderDocument(
       {
         CssTag type_div(CssTag::Kind::Div, options.type_name_div, &text_out);
         CssTag type_name(CssTag::Kind::Span, options.name_span, &text_out);
-        text_out.append(
-            RenderSignature(options, document.marked_source(), true));
+        text_out.append(RenderSignature(options, document.marked_source(), true,
+                                        document.ticket()));
       }
+      text_out.append(options.make_post_signature_markup(
+          document.ticket(), document.marked_source()));
       {
         CssTag detail_div(CssTag::Kind::Div, options.sig_detail_div, &text_out);
         auto kind_name = options.kind_name(document.ticket());
