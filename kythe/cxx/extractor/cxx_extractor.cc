@@ -89,21 +89,20 @@ class OrderFileInputByVName {
   }
 
  private:
-  std::tuple<int, absl::string_view, absl::string_view, absl::string_view,
-             absl::string_view, absl::string_view>
-  AsTuple(const kythe::proto::CompilationUnit::FileInput& file_input) const {
+  using FileInputTuple =
+      std::tuple<int, absl::string_view, absl::string_view, absl::string_view,
+                 absl::string_view, absl::string_view>;
+  FileInputTuple AsTuple(
+      const kythe::proto::CompilationUnit::FileInput& file_input) const {
     const auto& vname = file_input.v_name();
     // The main source file should come before dependents, but otherwise
     // delegate entirely to the vname.
-    return {(main_source_file_ == vname.path() ||
-             main_source_file_ == file_input.info().path())
-                ? 0
-                : 1,
-            vname.signature(),
-            vname.corpus(),
-            vname.root(),
-            vname.path(),
-            vname.language()};
+    return FileInputTuple((main_source_file_ == vname.path() ||
+                           main_source_file_ == file_input.info().path())
+                              ? 0
+                              : 1,
+                          vname.signature(), vname.corpus(), vname.root(),
+                          vname.path(), vname.language());
   }
 
   absl::string_view main_source_file_;
