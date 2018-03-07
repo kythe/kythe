@@ -114,6 +114,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final SignatureGenerator signatureGenerator;
   private final Positions filePositions;
   private final Map<Integer, List<Comment>> comments = new HashMap<>();
+  private final Map<Integer, Integer> commentClaims = new HashMap<>();
   private final BiConsumer<JCTree, VName> nodeConsumer;
   private final Context javaContext;
   private final JavaFileStoreBasedFileManager fileManager;
@@ -890,20 +891,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return filePositions.charToLine(charPosition);
   }
 
-  boolean emitCommentsOnLine(int line, VName node) {
+  boolean emitCommentsOnLine(int line, VName node, int defLine) {
     List<Comment> lst = comments.get(line);
-    if (lst != null) {
-      for (Comment comment : lst) {
-        String bracketed =
-            MiniAnchor.bracket(
-                comment.text.replaceFirst("^(//|/\\*) ?", "").replaceFirst(" ?\\*/$", ""),
-                pos -> pos,
-                Lists.newArrayList());
-        emitDoc(bracketed, Lists.newArrayList(), node, null);
-      }
-      return !lst.isEmpty();
+    if (lst == null || commentClaims.computeIfAbsent(line, l -> defLine) != defLine) {
+      return false;
     }
-    return false;
+    for (Comment comment : lst) {
+      String bracketed =
+          MiniAnchor.bracket(
+              comment.text.replaceFirst("^(//|/\\*) ?", "").replaceFirst(" ?\\*/$", ""),
+              pos -> pos,
+              Lists.newArrayList());
+      emitDoc(bracketed, Lists.newArrayList(), node, null);
+    }
+    return !lst.isEmpty();
   }
 
   private static List<VName> toVNames(Iterable<JavaNode> nodes) {
@@ -1113,8 +1114,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private void emitComment(JCTree defTree, VName node) {
     int defPosition = defTree.getPreferredPosition();
     int defLine = filePositions.charToLine(defPosition);
-    emitCommentsOnLine(defLine, node);
-    emitCommentsOnLine(defLine - 1, node);
+    emitCommentsOnLine(defLine, node, defLine);
+    emitCommentsOnLine(defLine - 1, node, defLine);
   }
 
   void emitDoc(String bracketedText, Iterable<Symbol> params, VName node, VName absNode) {
