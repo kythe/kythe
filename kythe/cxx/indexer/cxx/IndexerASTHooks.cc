@@ -1627,7 +1627,8 @@ bool IndexerASTVisitor::VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL) {
     if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
       if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
         Observer.recordTypeSpellingLocation(
-            *RCC, *Id, GraphObserver::Claimability::Claimable);
+            *RCC, *Id, GraphObserver::Claimability::Claimable,
+            IsImplicit(*RCC));
       }
     }
   }
@@ -1650,7 +1651,8 @@ bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
         // See https://phabricator-dot-kythe-repo.appspot.com/D1887
         Id = BuildNodeIdForDecl(TL.getDecl());
       }
-      Observer.recordTypeSpellingLocation(*RCC, *Id, Claimability);
+      Observer.recordTypeSpellingLocation(*RCC, *Id, Claimability,
+                                          IsImplicit(*RCC));
     }
   }
   return true;
@@ -1678,7 +1680,7 @@ bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
   if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
     if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
       Observer.recordTypeSpellingLocation(
-          *RCC, *Id, GraphObserver::Claimability::Claimable);
+          *RCC, *Id, GraphObserver::Claimability::Claimable, IsImplicit(*RCC));
     }
   }
   return true;
@@ -1697,7 +1699,7 @@ bool IndexerASTVisitor::VisitSubstTemplateTypeParmTypeLoc(
   if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
     if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
       Observer.recordTypeSpellingLocation(
-          *RCC, *Id, GraphObserver::Claimability::Claimable);
+          *RCC, *Id, GraphObserver::Claimability::Claimable, IsImplicit(*RCC));
     }
   }
   return true;
