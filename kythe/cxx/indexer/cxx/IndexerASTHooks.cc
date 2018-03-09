@@ -1219,12 +1219,6 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr *E,
     // translation unit?
     clang::SourceLocation RPL = E->getParenOrBraceRange().getEnd();
     clang::SourceLocation RefLoc = E->getLocStart();
-    if (TSI != nullptr) {
-      if (const auto ETL =
-              TSI->getTypeLoc().getAs<clang::ElaboratedTypeLoc>()) {
-        RefLoc = ETL.getNamedTypeLoc().getBeginLoc();
-/* TODO(shahms): Figure out this conflic.
-=======
     if (const auto *TE = dyn_cast<clang::CXXTemporaryObjectExpr>(E)) {
       if (const auto *TSI = TE->getTypeSourceInfo()) {
         if (const auto ETL =
@@ -1232,8 +1226,6 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr *E,
           BuildNodeIdForType(ETL.getNamedTypeLoc(), EmitRanges::Yes);
           RefLoc = ETL.getNamedTypeLoc().getBeginLoc();
         }
->>>>>>> WIP - Remove VisitNestedNameSpecifier in favor of direct Visit*TypeLoc
-*/
       }
     }
 
