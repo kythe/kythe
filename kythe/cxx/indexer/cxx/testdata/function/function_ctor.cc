@@ -1,4 +1,6 @@
 // Constructors are indexed.
+
+namespace ns {
 //- @f defines/binding FnF
 void f() { }
 //- @C defines/binding ClassC
@@ -13,12 +15,22 @@ class C {
   C() { f(); }
   //- @C defines/binding CtorC2
   //- CtorC2 childof ClassC
-  C(int) { }
+  C(int, void* = nullptr) { }
 };
 void g() {
   //- @c ref/call CtorC
   C c;
+
   //- @"C(42)" ref/call CtorC2
   //- @C ref CtorC2
   C(42);
+
+  //- @"::ns::C(42)" ref/call CtorC2
+  //- @C ref CtorC2
+  ::ns::C(42);
+
+  //- @"::ns::C(42, nullptr)" ref/call CtorC2
+  //- @C ref CtorC2
+  ::ns::C(42, nullptr);
+}
 }
