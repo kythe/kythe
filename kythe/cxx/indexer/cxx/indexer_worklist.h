@@ -98,6 +98,9 @@ struct IndexJob {
 
   /// \brief A string to represent this job for claiming.
   std::string ClaimId;
+
+  /// \brief A stack of CXXConstructExprs we've already visited.
+  std::vector<const clang::CXXConstructExpr*> ConstructorStack;
 };
 
 class IndexerASTVisitor;

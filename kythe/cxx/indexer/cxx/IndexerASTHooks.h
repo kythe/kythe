@@ -113,8 +113,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitDesignatedInitExpr(const clang::DesignatedInitExpr *DIE);
   bool VisitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr *E);
   bool VisitCXXConstructExpr(const clang::CXXConstructExpr *E);
-  bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
   bool VisitCXXFunctionalCastExpr(const clang::CXXFunctionalCastExpr *E);
+  bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
   bool VisitCXXNewExpr(const clang::CXXNewExpr *E);
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr *E);
   bool VisitCXXUnresolvedConstructExpr(
@@ -138,6 +138,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool TraverseDecl(clang::Decl *Decl);
 
   bool TraverseLambdaExpr(clang::LambdaExpr *Expr);
+
+  bool TraverseConstructorInitializer(clang::CXXCtorInitializer* Init);
+  bool TraverseCXXNewExpr(clang::CXXNewExpr *E);
+  bool TraverseCXXFunctionalCastExpr(clang::CXXFunctionalCastExpr *E);
+
+  bool IndexConstructExpr(const clang::CXXConstructExpr *E,
+                          const clang::TypeSourceInfo *TSI);
 
   // Objective C specific nodes
   bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl *Decl);

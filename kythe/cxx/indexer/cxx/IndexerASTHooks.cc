@@ -88,6 +88,18 @@ bool TokenQuotesIdentifier(const clang::SourceManager &SM,
   }
 }
 
+/// \brief Finds the first CXXConstructExpr child of the given
+/// CXXFunctionalCastExpr.
+const clang::CXXConstructExpr *FindConstructExpr(
+    const clang::CXXFunctionalCastExpr *E) {
+  for (const auto *Child : E->children()) {
+    if (isa<clang::CXXConstructExpr>(Child)) {
+      return dyn_cast<clang::CXXConstructExpr>(Child);
+    }
+  }
+  return nullptr;
+}
+
 template <typename F>
 void MapOverrideRoots(const clang::CXXMethodDecl *M, const F &Fn) {
   if (M->size_overridden_methods() == 0) {
@@ -1199,29 +1211,19 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr *E) {
   return true;
 }
 
-bool IndexerASTVisitor::VisitCXXConstructExpr(
-    const clang::CXXConstructExpr *E) {
+bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr *E,
+                                           const clang::TypeSourceInfo *TSI) {
   if (const auto *Callee = E->getConstructor()) {
     // Clang doesn't invoke VisitDeclRefExpr on constructors, so we
     // must do so manually.
     // TODO(zarko): What about static initializers? Do we blame these on the
     // translation unit?
     clang::SourceLocation RPL = E->getParenOrBraceRange().getEnd();
-
-    // When a constructor is invoked directly, the result is a
-    // CXXTemporaryObjectExpr whose location points to the start of
-    // the nested name specifier (if any) rather than the start of the
-    // type.  Adjust this as necessary.
     clang::SourceLocation RefLoc = E->getLocStart();
-    if (const auto *TE = dyn_cast<clang::CXXTemporaryObjectExpr>(E)) {
-      if (const auto *TSI = TE->getTypeSourceInfo()) {
-        if (const auto ETL =
-                TSI->getTypeLoc().getAs<clang::ElaboratedTypeLoc>()) {
-          VisitNestedNameSpecifierLoc(ETL.getQualifierLoc());
-          BuildNodeIdForType(ETL.getNamedTypeLoc(), ETL.getType(),
-                             EmitRanges::Yes);
-          RefLoc = ETL.getNamedTypeLoc().getBeginLoc();
-        }
+    if (TSI != nullptr) {
+      if (const auto ETL =
+              TSI->getTypeLoc().getAs<clang::ElaboratedTypeLoc>()) {
+        RefLoc = ETL.getNamedTypeLoc().getBeginLoc();
       }
     }
 
@@ -1231,10 +1233,13 @@ bool IndexerASTVisitor::VisitCXXConstructExpr(
     // to write down.
     bool IsImplicit = !RPL.isValid() && E->getNumArgs() > 0;
     VisitDeclRefOrIvarRefExpr(E, Callee, RefLoc, IsImplicit);
+
     clang::SourceRange SR = E->getSourceRange();
     if (RPL.isValid()) {
       // This loses the right paren without the offset.
       SR.setEnd(RPL.getLocWithOffset(1));
+    } else if (TSI != nullptr) {
+      SR.setEnd(TSI->getTypeLoc().getLocEnd().getLocWithOffset(1));
     } else {
       SR.setEnd(SR.getEnd().getLocWithOffset(1));
     }
@@ -1244,6 +1249,39 @@ bool IndexerASTVisitor::VisitCXXConstructExpr(
     }
   }
   return true;
+}
+
+bool IndexerASTVisitor::TraverseConstructorInitializer(
+    clang::CXXCtorInitializer *Init) {
+  if (Init->isMemberInitializer()) {
+    return Base::TraverseConstructorInitializer(Init);
+  }
+  if (const auto *CE = dyn_cast<clang::CXXConstructExpr>(Init->getInit())) {
+    if (IndexConstructExpr(CE, Init->getTypeSourceInfo())) {
+      auto Scope = PushScope(Job->ConstructorStack, CE);
+      return Base::TraverseConstructorInitializer(Init);
+    }
+    return false;
+  }
+  return Base::TraverseConstructorInitializer(Init);
+}
+
+bool IndexerASTVisitor::VisitCXXConstructExpr(
+    const clang::CXXConstructExpr *E) {
+  // Skip Visiting CXXConstructExprs directly which were already
+  // visited by a parent.
+  auto iter = std::find(Job->ConstructorStack.crbegin(),
+                        Job->ConstructorStack.crend(), E);
+  if (iter != Job->ConstructorStack.crend()) {
+    return true;
+  }
+
+  clang::TypeSourceInfo *TSI = nullptr;
+  if (const auto *TE = dyn_cast<clang::CXXTemporaryObjectExpr>(E)) {
+    TSI = TE->getTypeSourceInfo();
+    BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::Yes);
+  }
+  return IndexConstructExpr(E, TSI);
 }
 
 bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
@@ -1290,12 +1328,33 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
   return true;
 }
 
+bool IndexerASTVisitor::TraverseCXXFunctionalCastExpr(
+    clang::CXXFunctionalCastExpr *E) {
+  if (const auto *CE = FindConstructExpr(E)) {
+    if (IndexConstructExpr(CE, E->getTypeInfoAsWritten())) {
+      auto Scope = PushScope(Job->ConstructorStack, CE);
+      return Base::TraverseCXXFunctionalCastExpr(E);
+    }
+    return false;
+  }
+  return Base::TraverseCXXFunctionalCastExpr(E);
+}
+
 bool IndexerASTVisitor::VisitCXXFunctionalCastExpr(
     const clang::CXXFunctionalCastExpr *E) {
-  // TODO(shahms): Emit ref and ref/call edges to an implicit constructor for
-  // aggregate initialization.
   BuildNodeIdForType(E->getTypeInfoAsWritten()->getTypeLoc(), EmitRanges::Yes);
   return true;
+}
+
+bool IndexerASTVisitor::TraverseCXXNewExpr(clang::CXXNewExpr *E) {
+  if (const auto *CE = E->getConstructExpr()) {
+    if (IndexConstructExpr(CE, E->getAllocatedTypeSourceInfo())) {
+      auto Scope = PushScope(Job->ConstructorStack, CE);
+      return Base::TraverseCXXNewExpr(E);
+    }
+    return false;
+  }
+  return Base::TraverseCXXNewExpr(E);
 }
 
 bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr *E) {
@@ -1315,9 +1374,6 @@ bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr *E) {
     }
   }
 
-  BuildNodeIdForType(E->getAllocatedTypeSourceInfo()->getTypeLoc(),
-                     E->getAllocatedTypeSourceInfo()->getTypeLoc().getType(),
-                     EmitRanges::Yes);
   return true;
 }
 
@@ -2786,8 +2842,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
             }
           }
         }
-        // TODO(shahms): Handle non-dependent types (delegated and base
-        // constructors).
       }
     }
   } else if (const auto *CD = dyn_cast<CXXDestructorDecl>(Decl)) {
