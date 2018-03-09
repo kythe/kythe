@@ -17,6 +17,7 @@
 #ifndef KYTHE_CXX_COMMON_INDEX_PACK_H_
 #define KYTHE_CXX_COMMON_INDEX_PACK_H_
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
