@@ -13,6 +13,7 @@ public class Comments
     implements Comparable<Comments> {
 
   //- DocNode.node/kind doc
+  //- DocNode.subkind "javadoc"
   //- DocNode documents CommentsClass
   //- DocNode param.0 StringClass
   //- DocNode param.1 IntegerClass
@@ -24,6 +25,7 @@ public class Comments
 
   //- FieldTwoDoc documents FieldTwo
   //- FieldTwoDoc.node/kind doc
+  //- !{ FieldTwoDoc.subkind AnySubkind }
   //- FieldTwoDoc.text "fieldTwo represents the universe"
   //- @+3fieldTwo defines/binding FieldTwo
 

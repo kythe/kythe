@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -173,8 +174,11 @@ public class JavaEntrySets extends KytheEntrySets {
             .addSignatureSalt("" + filePositions.getSpan(lambda)));
   }
 
-  /** Emits and returns a new {@link EntrySet} representing Javadoc. */
-  public EntrySet newDocAndEmit(Positions filePositions, String text, Iterable<VName> params) {
+  /**
+   * Emits and returns a new {@link EntrySet} representing a Java comment with an optional subkind.
+   */
+  public EntrySet newDocAndEmit(
+      Optional<String> subkind, Positions filePositions, String text, Iterable<VName> params) {
     VName fileVName = getFileVName(getDigest(filePositions.getSourceFile()));
     byte[] encodedText;
     try {
@@ -183,7 +187,7 @@ public class JavaEntrySets extends KytheEntrySets {
       encodedText = new byte[0];
     }
     NodeBuilder builder =
-        newNode(NodeKind.DOC)
+        newNode(NodeKind.DOC.getKind(), subkind)
             .setCorpusPath(CorpusPath.fromVName(fileVName))
             .setProperty("text", encodedText)
             .addSignatureSalt(text);

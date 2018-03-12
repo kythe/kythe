@@ -902,7 +902,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
               comment.text.replaceFirst("^(//|/\\*) ?", "").replaceFirst(" ?\\*/$", ""),
               pos -> pos,
               Lists.newArrayList());
-      emitDoc(bracketed, Lists.newArrayList(), node, null);
+      emitDoc(DocKind.LINE, bracketed, Lists.newArrayList(), node, null);
     }
     return !lst.isEmpty();
   }
@@ -1118,7 +1118,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitCommentsOnLine(defLine - 1, node, defLine);
   }
 
-  void emitDoc(String bracketedText, Iterable<Symbol> params, VName node, VName absNode) {
+  void emitDoc(
+      DocKind kind, String bracketedText, Iterable<Symbol> params, VName node, VName absNode) {
     List<VName> paramNodes = Lists.newArrayList();
     for (Symbol s : params) {
       VName paramNode = getNode(s);
@@ -1127,7 +1128,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       }
       paramNodes.add(paramNode);
     }
-    EntrySet doc = entrySets.newDocAndEmit(filePositions, bracketedText, paramNodes);
+    EntrySet doc =
+        entrySets.newDocAndEmit(kind.getDocSubkind(), filePositions, bracketedText, paramNodes);
     // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
     entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, node);
     if (absNode != null) {
@@ -1281,5 +1283,25 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             .map(KytheTreeScanner::toJvmType)
             .collect(Collectors.toList()),
         toJvmReturnType(type.getReturnType()));
+  }
+
+  static enum DocKind {
+    JAVADOC(Optional.of("javadoc")),
+    LINE;
+
+    private final Optional<String> subkind;
+
+    private DocKind(Optional<String> subkind) {
+      this.subkind = subkind;
+    }
+
+    private DocKind() {
+      this(Optional.empty());
+    }
+
+    /** Returns the Kythe subkind for this type of document. */
+    public Optional<String> getDocSubkind() {
+      return subkind;
+    }
   }
 }
