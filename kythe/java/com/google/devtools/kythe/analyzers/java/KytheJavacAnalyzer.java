@@ -131,10 +131,9 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           compilation,
           (t, v) -> nodes.put(t, new KytheNodeImpl(v)),
           src,
-          config.getVerboseLogging(),
           details.getFileManager(),
           metadataLoaders,
-          config.getJvmMode());
+          config);
     } catch (Throwable e) {
       throw new AnalysisException("Exception analyzing file: " + ast.getSourceFile().getName(), e);
     }

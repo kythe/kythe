@@ -62,6 +62,13 @@ public class JavaIndexerConfig extends IndexerConfig {
   )
   private JvmMode jvmMode = JvmMode.NAMES;
 
+  @Parameter(
+    names = "--emit_anchor_scopes",
+    description =
+        "Whether to emit childof edges from anchors to their lexical scope's semantic node"
+  )
+  private boolean emitAnchorScopes;
+
   public static enum JvmMode {
     NAMES,
     SEMANTIC;
@@ -91,6 +98,10 @@ public class JavaIndexerConfig extends IndexerConfig {
     return jvmMode;
   }
 
+  public boolean getEmitAnchorScopes() {
+    return emitAnchorScopes;
+  }
+
   public JavaIndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
     this.ignoreVNamePaths = ignoreVNamePaths;
     return this;
@@ -108,6 +119,11 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setJvmMode(JvmMode jvmMode) {
     this.jvmMode = jvmMode;
+    return this;
+  }
+
+  public JavaIndexerConfig setEmitAnchorScopes(boolean emitAnchorScopes) {
+    this.emitAnchorScopes = emitAnchorScopes;
     return this;
   }
 }

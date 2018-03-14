@@ -63,6 +63,13 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "scopes_tests",
+    size = "small",
+    srcs = ["Scopes.java"],
+    indexer_opts = ["--emit_anchor_scopes"],
+)
+
+java_verifier_test(
     name = "selectors_tests",
     size = "small",
     srcs = ["Selectors.java"],
