@@ -4,13 +4,33 @@ cc_library(
     name = "output",
     srcs = [
         "KytheGraphRecorder.cc",
-        "KytheOutputStream.cc",
     ],
     hdrs = [
         "KytheGraphRecorder.h",
         "KytheOutputStream.h",
     ],
     deps = [
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:storage_cc_proto",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "caching_output",
+    srcs = [
+        "KytheCachingOutput.cc",
+    ],
+    hdrs = [
+        "KytheCachingOutput.h",
+    ],
+    deps = [
+        ":output",
         "//external:libmemcached",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
@@ -40,7 +60,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        ":output",
+        ":caching_output",
         "//external:libmemcached",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",

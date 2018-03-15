@@ -273,7 +273,7 @@ struct IndexerOptions {
 /// \return empty if OK; otherwise, an error description.
 std::string IndexCompilationUnit(
     const proto::CompilationUnit &Unit, std::vector<proto::FileData> &Files,
-    KytheClaimClient &ClaimClient, HashCache *Cache, KytheOutputStream &Output,
+    KytheClaimClient &ClaimClient, HashCache *Cache, KytheCachingOutput &Output,
     const IndexerOptions &Options, const MetadataSupports *MetaSupports,
     const LibrarySupports *LibrarySupports,
     std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>

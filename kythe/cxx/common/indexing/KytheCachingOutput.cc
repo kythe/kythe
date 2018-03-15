@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "KytheOutputStream.h"
+#include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 
 #include <algorithm>
 

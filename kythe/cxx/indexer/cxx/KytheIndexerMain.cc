@@ -101,8 +101,8 @@ int main(int argc, char *argv[]) {
     std::string result = IndexCompilationUnit(
         job.unit, job.virtual_files, *context.claim_client(),
         context.hash_cache(),
-        job.silent ? static_cast<KytheOutputStream &>(null_stream)
-                   : static_cast<KytheOutputStream &>(*context.output()),
+        job.silent ? static_cast<KytheCachingOutput &>(null_stream)
+                   : static_cast<KytheCachingOutput &>(*context.output()),
         options, &meta_supports, &library_supports,
         [](IndexerASTVisitor *indexer) {
           return IndexerWorklist::CreateDefaultWorklist(indexer);

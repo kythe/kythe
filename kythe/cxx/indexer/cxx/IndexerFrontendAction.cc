@@ -98,7 +98,7 @@ std::string ConfigureSystemHeaders(const proto::CompilationUnit &Unit,
 
 std::string IndexCompilationUnit(
     const proto::CompilationUnit &Unit, std::vector<proto::FileData> &Files,
-    KytheClaimClient &Client, HashCache *Cache, KytheOutputStream &Output,
+    KytheClaimClient &Client, HashCache *Cache, KytheCachingOutput &Output,
     const IndexerOptions &Options, const MetadataSupports *MetaSupports,
     const LibrarySupports *LibrarySupports,
     std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
