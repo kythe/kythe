@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import static com.google.devtools.kythe.analyzers.java.KytheTreeScanner.DocKind.JAVADOC;
+
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.proto.Storage.VName;
@@ -71,7 +73,8 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     for (MiniAnchor<Symbol> miniAnchor : miniAnchors) {
       anchoredTo.add(miniAnchor.getAnchoredTo());
     }
-    treeScanner.emitDoc(bracketed, anchoredTo, node, absNode == null ? null : absNode.getVName());
+    treeScanner.emitDoc(
+        JAVADOC, bracketed, anchoredTo, node, absNode == null ? null : absNode.getVName());
     return true;
   }
 

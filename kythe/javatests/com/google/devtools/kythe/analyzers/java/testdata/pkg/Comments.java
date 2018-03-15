@@ -13,6 +13,7 @@ public class Comments
     implements Comparable<Comments> {
 
   //- DocNode.node/kind doc
+  //- DocNode.subkind "javadoc"
   //- DocNode documents CommentsClass
   //- DocNode param.0 StringClass
   //- DocNode param.1 IntegerClass
@@ -24,12 +25,43 @@ public class Comments
 
   //- FieldTwoDoc documents FieldTwo
   //- FieldTwoDoc.node/kind doc
+  //- !{ FieldTwoDoc.subkind AnySubkind }
   //- FieldTwoDoc.text "fieldTwo represents the universe"
   //- @+3fieldTwo defines/binding FieldTwo
 
   // fieldTwo represents the universe
   private static String fieldTwo;
 
+  //- @+3fieldThree defines/binding FieldThree
+  //- @+3fieldFour defines/binding FieldFour
+
+  private static int fieldThree; // EOL comment
+  private static int fieldFour;
+
+  //- FieldThreeDoc documents FieldThree
+  //- FieldThreeDoc.node/kind doc
+  //- FieldThreeDoc.text "EOL comment"
+  //- !{ FieldFourDoc documents FieldFour }
+
+  //- @+3fieldFive defines/binding FieldFive
+  //- @+2fieldSix defines/binding FieldSix
+
+  private static int fieldFive, fieldSix; // EOL comment both
+
+  //- FieldBothInlineDoc documents FieldFive
+  //- FieldBothInlineDoc documents FieldSix
+  //- FieldBothInlineDoc.text "EOL comment both"
+
+  //- @+4fieldSeven defines/binding FieldSeven
+  //- @+3fieldEight defines/binding FieldEight
+
+  // above comment both
+  private static int fieldSeven, fieldEight;
+
+  //- FieldBothAboveDoc documents FieldSeven
+  //- FieldBothAboveDoc documents FieldEight
+  //- FieldBothAboveDoc.text "above comment both"
+  
   //- InnerDoc documents InnerClass
   //- InnerDoc.node/kind doc
   //- InnerDoc.text "This comments the Inner class."

@@ -106,7 +106,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   /** Name for special source file containing package annotations and documentation. */
   private static final String PACKAGE_INFO_NAME = "package-info";
 
-  private final boolean verboseLogging;
+  private final JavaIndexerConfig config;
 
   private final JavaEntrySets entrySets;
   private final StatisticsCollector statistics;
@@ -114,6 +114,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final SignatureGenerator signatureGenerator;
   private final Positions filePositions;
   private final Map<Integer, List<Comment>> comments = new HashMap<>();
+  private final Map<Integer, Integer> commentClaims = new HashMap<>();
   private final BiConsumer<JCTree, VName> nodeConsumer;
   private final Context javaContext;
   private final JavaFileStoreBasedFileManager fileManager;
@@ -130,20 +131,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       SourceText src,
       Context javaContext,
       BiConsumer<JCTree, VName> nodeConsumer,
-      boolean verboseLogging,
       JavaFileStoreBasedFileManager fileManager,
       MetadataLoaders metadataLoaders,
-      JvmGraph jvmGraph) {
+      JvmGraph jvmGraph,
+      JavaIndexerConfig config) {
     this.entrySets = entrySets;
     this.statistics = statistics;
     this.signatureGenerator = signatureGenerator;
     this.filePositions = src.getPositions();
     this.javaContext = javaContext;
     this.nodeConsumer = nodeConsumer;
-    this.verboseLogging = verboseLogging;
     this.fileManager = fileManager;
     this.metadataLoaders = metadataLoaders;
     this.jvmGraph = jvmGraph;
+    this.config = config;
 
     for (Comment comment : src.getComments()) {
       for (int line = comment.lineSpan.getStart(); line <= comment.lineSpan.getEnd(); line++) {
@@ -164,10 +165,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JCCompilationUnit compilation,
       BiConsumer<JCTree, VName> nodeConsumer,
       SourceText src,
-      boolean verboseLogging,
       JavaFileStoreBasedFileManager fileManager,
       MetadataLoaders metadataLoaders,
-      JavaIndexerConfig.JvmMode jvmMode)
+      JavaIndexerConfig config)
       throws IOException {
     new KytheTreeScanner(
             entrySets,
@@ -176,12 +176,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             src,
             javaContext,
             nodeConsumer,
-            verboseLogging,
             fileManager,
             metadataLoaders,
-            jvmMode == JavaIndexerConfig.JvmMode.SEMANTIC
+            config.getJvmMode() == JavaIndexerConfig.JvmMode.SEMANTIC
                 ? new JvmGraph(statistics, entrySets.getEmitter())
-                : null)
+                : null,
+            config)
         .scan(compilation, null);
   }
 
@@ -342,17 +342,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     VName classNode =
         entrySets.getNode(signatureGenerator, classDef.sym, signature.get(), markedSource, null);
 
-    // Find the method or class in which this class is defined, if any.
-    TreeContext container = ctx.getClassOrMethodParent();
     // Emit the fact that the class is a child of its containing class or method.
     // Note that for a nested/inner class, we already emitted the fact that it's a
     // child of the containing class when we scanned the containing class's members.
     // However we can't restrict ourselves to just classes contained in methods here,
     // because that would miss the case of local/anonymous classes in static/member
     // initializers. But there's no harm in emitting the same fact twice!
-    if (container != null) {
-      entrySets.emitEdge(classNode, EdgeKind.CHILDOF, container.getNode().getVName());
-    }
+    getScope(ctx).ifPresent(scope -> entrySets.emitEdge(classNode, EdgeKind.CHILDOF, scope));
 
     NestingKind nestingKind = classDef.sym.getNestingKind();
     if (nestingKind != NestingKind.LOCAL && nestingKind != NestingKind.ANONYMOUS) {
@@ -394,7 +390,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (classIdent != null) {
         EntrySet absAnchor =
             entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
-        emitDefinesBindingEdge(classIdent, absAnchor, absNode.getVName());
+        emitDefinesBindingEdge(classIdent, absAnchor, absNode.getVName(), getScope(ctx));
       }
       if (!documented) {
         emitComment(classDef, absNode.getVName());
@@ -402,7 +398,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     if (absNode == null && classIdent != null) {
       EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
-      emitDefinesBindingEdge(classIdent, anchor, classNode);
+      emitDefinesBindingEdge(classIdent, anchor, classNode, getScope(ctx));
     }
     emitAnchor(ctx, EdgeKind.DEFINES, classNode);
     if (!documented) {
@@ -528,10 +524,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         // location because constructors are internally named "<init>".
         bindingAnchor =
             emitDefinesBindingAnchorEdge(
-                methodDef.sym.owner.name,
-                methodDef.getPreferredPosition(),
-                methodNode,
-                ctx.getSnippet());
+                ctx, methodDef.sym.owner.name, methodDef.getPreferredPosition(), methodNode);
       }
       // Likewise, constructors don't have return types in the Java AST, but
       // Kythe models all functions with return types.  As a solution, we use
@@ -540,7 +533,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     } else {
       bindingAnchor =
           emitDefinesBindingAnchorEdge(
-              methodDef.name, methodDef.getPreferredPosition(), methodNode, ctx.getSnippet());
+              ctx, methodDef.name, methodDef.getPreferredPosition(), methodNode);
       ret = returnType.getVName();
     }
 
@@ -549,7 +542,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         emitComment(methodDef, methodNode);
       }
       if (absNode != null) {
-        emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode.getVName());
+        emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode.getVName(), getScope(ctx));
         Span span = filePositions.findIdentifier(methodDef.name, methodDef.getPreferredPosition());
         if (span != null) {
           emitMetadata(span, absNode.getVName());
@@ -631,7 +624,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         entrySets.getNode(
             signatureGenerator, varDef.sym, signature.get(), null, markedSourceChildren);
     boolean documented = visitDocComment(varNode, null);
-    emitDefinesBindingAnchorEdge(varDef.name, varDef.getStartPosition(), varNode, ctx.getSnippet());
+    emitDefinesBindingAnchorEdge(ctx, varDef.name, varDef.getStartPosition(), varNode);
     emitAnchor(ctx, EdgeKind.DEFINES, varNode);
     if (varDef.sym.getKind().isField() && !documented) {
       // emit comments for fields and enumeration constants
@@ -646,10 +639,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       entrySets.emitEdge(varNode, EdgeKind.GENERATES, jvmNode);
     }
 
-    TreeContext parentContext = ctx.getClassOrMethodParent();
-    if (parentContext != null && parentContext.getNode() != null) {
-      entrySets.emitEdge(varNode, EdgeKind.CHILDOF, parentContext.getNode().getVName());
-    }
+    getScope(ctx).ifPresent(scope -> entrySets.emitEdge(varNode, EdgeKind.CHILDOF, scope));
     visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), ctx);
 
     if (varDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
@@ -729,11 +719,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return emitDiagnostic(ctx, "error analyzing method", null, null);
     }
 
-    EntrySet anchor = emitAnchor(ctx, EdgeKind.REF_CALL, method.getVName());
-    TreeContext parentContext = ctx.getClassOrMethodParent();
-    if (anchor != null && parentContext != null && parentContext.getNode() != null) {
-      emitEdge(anchor, EdgeKind.CHILDOF, parentContext.getNode());
-    }
+    emitAnchor(ctx, EdgeKind.REF_CALL, method.getVName());
     return method;
   }
 
@@ -764,14 +750,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, refSpan, ctx.getSnippet());
-    emitAnchor(anchor, EdgeKind.REF, ctorNode);
+    emitAnchor(anchor, EdgeKind.REF, ctorNode, getScope(ctx));
 
     EntrySet callAnchor = entrySets.newAnchorAndEmit(filePositions, callSpan, ctx.getSnippet());
-    emitAnchor(callAnchor, EdgeKind.REF_CALL, ctorNode);
-    TreeContext parentContext = owner.getClassOrMethodParent();
-    if (anchor != null && parentContext != null && parentContext.getNode() != null) {
-      emitEdge(callAnchor, EdgeKind.CHILDOF, parentContext.getNode());
-    }
+    emitAnchor(callAnchor, EdgeKind.REF_CALL, ctorNode, getScope(ctx));
 
     scanList(newClass.getTypeArguments(), ctx);
     scanList(newClass.getArguments(), ctx);
@@ -783,7 +765,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   @Override
   public JavaNode visitTypeIdent(JCPrimitiveTypeTree primitiveType, TreeContext owner) {
     TreeContext ctx = owner.down(primitiveType);
-    if (verboseLogging && primitiveType.typetag == TypeTag.ERROR) {
+    if (config.getVerboseLogging() && primitiveType.typetag == TypeTag.ERROR) {
       logger.warning("found primitive ERROR type: " + ctx);
     }
     String name = Ascii.toLowerCase(primitiveType.typetag.toString());
@@ -871,7 +853,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   void emitDocReference(Symbol sym, int startChar, int endChar) {
     VName node = getNode(sym);
     if (node == null) {
-      if (verboseLogging) {
+      if (config.getVerboseLogging()) {
         logger.warning("failed to emit documentation reference to " + sym);
       }
       return;
@@ -882,7 +864,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             filePositions.charToByteOffset(startChar), filePositions.charToByteOffset(endChar));
     EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, loc);
     if (anchor != null) {
-      emitAnchor(anchor, EdgeKind.REF_DOC, node);
+      emitAnchor(anchor, EdgeKind.REF_DOC, node, Optional.empty());
     }
   }
 
@@ -890,20 +872,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return filePositions.charToLine(charPosition);
   }
 
-  boolean emitCommentsOnLine(int line, VName node) {
+  boolean emitCommentsOnLine(int line, VName node, int defLine) {
     List<Comment> lst = comments.get(line);
-    if (lst != null) {
-      for (Comment comment : lst) {
-        String bracketed =
-            MiniAnchor.bracket(
-                comment.text.replaceFirst("^(//|/\\*) ?", "").replaceFirst(" ?\\*/$", ""),
-                pos -> pos,
-                Lists.newArrayList());
-        emitDoc(bracketed, Lists.newArrayList(), node, null);
-      }
-      return !lst.isEmpty();
+    if (lst == null || commentClaims.computeIfAbsent(line, l -> defLine) != defLine) {
+      return false;
     }
-    return false;
+    for (Comment comment : lst) {
+      String bracketed =
+          MiniAnchor.bracket(
+              comment.text.replaceFirst("^(//|/\\*) ?", "").replaceFirst(" ?\\*/$", ""),
+              pos -> pos,
+              Lists.newArrayList());
+      emitDoc(DocKind.LINE, bracketed, Lists.newArrayList(), node, null);
+    }
+    return !lst.isEmpty();
   }
 
   private static List<VName> toVNames(Iterable<JavaNode> nodes) {
@@ -929,7 +911,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     for (JCTypeParameter tParam : params) {
       TreeContext ctx = ownerContext.down(tParam);
       VName node = getNode(tParam.type.asElement());
-      emitDefinesBindingAnchorEdge(tParam.name, tParam.getStartPosition(), node, ctx.getSnippet());
+      emitDefinesBindingAnchorEdge(ctx, tParam.name, tParam.getStartPosition(), node);
       visitAnnotations(node, tParam.getAnnotations(), ctx);
       typeParams.add(node);
 
@@ -999,9 +981,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     emitAnchor(
-        name, ctx.getTree().getPreferredPosition(), edgeKind, node.getVName(), ctx.getSnippet());
+        name,
+        ctx.getTree().getPreferredPosition(),
+        edgeKind,
+        node.getVName(),
+        ctx.getSnippet(),
+        getScope(ctx));
     statistics.incrementCounter("name-usages-emitted");
     return node;
+  }
+
+  private static Optional<VName> getScope(TreeContext ctx) {
+    return Optional.ofNullable(ctx.getClassOrMethodParent())
+        .map(TreeContext::getNode)
+        .map(JavaNode::getVName);
   }
 
   // Returns the reference node for the given symbol.
@@ -1057,17 +1050,19 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         entrySets.newAnchorAndEmit(
             filePositions, anchorContext.getTreeSpan(), anchorContext.getSnippet()),
         kind,
-        node);
+        node,
+        getScope(anchorContext));
   }
 
   // Creates/emits an anchor (for an identifier) and an associated edge
-  private EntrySet emitAnchor(Name name, int startOffset, EdgeKind kind, VName node, Span snippet) {
+  private EntrySet emitAnchor(
+      Name name, int startOffset, EdgeKind kind, VName node, Span snippet, Optional<VName> scope) {
     EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, name, startOffset, snippet);
     if (anchor == null) {
       // TODO(schroederc): Special-case these anchors (most come from visitSelect)
       return null;
     }
-    return emitAnchor(anchor, kind, node);
+    return emitAnchor(anchor, kind, node, scope);
   }
 
   private void emitMetadata(Span span, VName node) {
@@ -1085,8 +1080,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private EntrySet emitDefinesBindingAnchorEdge(
-      Name name, int startOffset, VName node, Span snippet) {
-    EntrySet anchor = emitAnchor(name, startOffset, EdgeKind.DEFINES_BINDING, node, snippet);
+      TreeContext ctx, Name name, int startOffset, VName node) {
+    EntrySet anchor =
+        emitAnchor(
+            name, startOffset, EdgeKind.DEFINES_BINDING, node, ctx.getSnippet(), getScope(ctx));
     Span span = filePositions.findIdentifier(name, startOffset);
     if (span != null) {
       emitMetadata(span, node);
@@ -1094,30 +1091,35 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return anchor;
   }
 
-  private void emitDefinesBindingEdge(Span span, EntrySet anchor, VName node) {
+  private void emitDefinesBindingEdge(
+      Span span, EntrySet anchor, VName node, Optional<VName> scope) {
     emitMetadata(span, node);
-    emitAnchor(anchor, EdgeKind.DEFINES_BINDING, node);
+    emitAnchor(anchor, EdgeKind.DEFINES_BINDING, node, scope);
   }
 
   // Creates/emits an anchor and an associated edge
-  private EntrySet emitAnchor(EntrySet anchor, EdgeKind kind, VName node) {
+  private EntrySet emitAnchor(EntrySet anchor, EdgeKind kind, VName node, Optional<VName> scope) {
     Preconditions.checkArgument(
         kind.isAnchorEdge(), "EdgeKind was not intended for ANCHORs: %s", kind);
     if (anchor == null) {
       return null;
     }
     entrySets.emitEdge(anchor.getVName(), kind, node);
+    if (kind == EdgeKind.REF_CALL || config.getEmitAnchorScopes()) {
+      scope.ifPresent(s -> entrySets.emitEdge(anchor.getVName(), EdgeKind.CHILDOF, s));
+    }
     return anchor;
   }
 
   private void emitComment(JCTree defTree, VName node) {
     int defPosition = defTree.getPreferredPosition();
     int defLine = filePositions.charToLine(defPosition);
-    emitCommentsOnLine(defLine, node);
-    emitCommentsOnLine(defLine - 1, node);
+    emitCommentsOnLine(defLine, node, defLine);
+    emitCommentsOnLine(defLine - 1, node, defLine);
   }
 
-  void emitDoc(String bracketedText, Iterable<Symbol> params, VName node, VName absNode) {
+  void emitDoc(
+      DocKind kind, String bracketedText, Iterable<Symbol> params, VName node, VName absNode) {
     List<VName> paramNodes = Lists.newArrayList();
     for (Symbol s : params) {
       VName paramNode = getNode(s);
@@ -1126,7 +1128,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       }
       paramNodes.add(paramNode);
     }
-    EntrySet doc = entrySets.newDocAndEmit(filePositions, bracketedText, paramNodes);
+    EntrySet doc =
+        entrySets.newDocAndEmit(kind.getDocSubkind(), filePositions, bracketedText, paramNodes);
     // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
     entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, node);
     if (absNode != null) {
@@ -1280,5 +1283,25 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             .map(KytheTreeScanner::toJvmType)
             .collect(Collectors.toList()),
         toJvmReturnType(type.getReturnType()));
+  }
+
+  static enum DocKind {
+    JAVADOC(Optional.of("javadoc")),
+    LINE;
+
+    private final Optional<String> subkind;
+
+    private DocKind(Optional<String> subkind) {
+      this.subkind = subkind;
+    }
+
+    private DocKind() {
+      this(Optional.empty());
+    }
+
+    /** Returns the Kythe subkind for this type of document. */
+    public Optional<String> getDocSubkind() {
+      return subkind;
+    }
   }
 }
