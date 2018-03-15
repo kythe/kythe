@@ -9,6 +9,9 @@ cc_library(
         "KytheGraphRecorder.h",
         "KytheOutputStream.h",
     ],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
