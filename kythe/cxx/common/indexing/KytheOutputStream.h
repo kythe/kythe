@@ -21,12 +21,12 @@
 #include <memory>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
-#include "llvm/ADT/StringRef.h"
 
 extern "C" {
 struct memcached_st;
@@ -38,11 +38,11 @@ using MarkedSource = kythe::proto::common::MarkedSource;
 
 /// A collection of references to the components of a VName.
 struct VNameRef {
-  llvm::StringRef signature;
-  llvm::StringRef corpus;
-  llvm::StringRef root;
-  llvm::StringRef path;
-  llvm::StringRef language;
+  absl::string_view signature;
+  absl::string_view corpus;
+  absl::string_view root;
+  absl::string_view path;
+  absl::string_view language;
   explicit VNameRef(const proto::VName &vname)
       : signature(vname.signature().data(), vname.signature().size()),
         corpus(vname.corpus().data(), vname.corpus().size()),
@@ -61,8 +61,8 @@ struct VNameRef {
 /// A collection of references to the components of a single Kythe fact.
 struct FactRef {
   const VNameRef *source;
-  llvm::StringRef fact_name;
-  llvm::StringRef fact_value;
+  absl::string_view fact_name;
+  absl::string_view fact_value;
   /// Overwrites all of the fields in `entry` that can differ between single
   /// facts.
   void Expand(proto::Entry *entry) const {
@@ -74,7 +74,7 @@ struct FactRef {
 /// A collection of references to the components of a single Kythe edge.
 struct EdgeRef {
   const VNameRef *source;
-  llvm::StringRef edge_kind;
+  absl::string_view edge_kind;
   const VNameRef *target;
   /// Overwrites all of the fields in `entry` that can differ between edges
   /// without ordinals.
@@ -88,7 +88,7 @@ struct EdgeRef {
 /// ordinal.
 struct OrdinalEdgeRef {
   const VNameRef *source;
-  llvm::StringRef edge_kind;
+  absl::string_view edge_kind;
   const VNameRef *target;
   uint32_t ordinal;
   /// Overwrites all of the fields in `entry` that can differ between edges with

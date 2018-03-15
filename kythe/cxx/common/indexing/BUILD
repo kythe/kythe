@@ -1,17 +1,37 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 cc_library(
+    name = "output",
+    srcs = [
+        "KytheGraphRecorder.cc",
+        "KytheOutputStream.cc",
+    ],
+    hdrs = [
+        "KytheGraphRecorder.h",
+        "KytheOutputStream.h",
+    ],
+    deps = [
+        "//external:libmemcached",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:storage_cc_proto",
+        "//third_party/llvm",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
     name = "lib",
     srcs = [
         "KytheClaimClient.cc",
-        "KytheGraphRecorder.cc",
-        "KytheOutputStream.cc",
         "KytheVFS.cc",
     ],
     hdrs = [
         "KytheClaimClient.h",
-        "KytheGraphRecorder.h",
-        "KytheOutputStream.h",
         "KytheVFS.h",
     ],
     copts = [
@@ -20,6 +40,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":output",
         "//external:libmemcached",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",

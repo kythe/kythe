@@ -47,6 +47,11 @@ DEFINE_bool(fail_on_unimplemented_builtin, false,
             "Fail indexer if we encounter a builtin we do not handle");
 
 namespace kythe {
+namespace {
+absl::string_view ConvertRef(llvm::StringRef ref) {
+  return absl::string_view(ref.data(), ref.size());
+}
+}  // anonymous namespace
 
 using clang::SourceLocation;
 using llvm::StringRef;
@@ -310,7 +315,7 @@ void KytheGraphObserver::recordUserDefinedNode(const NodeId &node,
                                                const llvm::StringRef &kind,
                                                Completeness completeness) {
   VNameRef node_vname = VNameRefFromNodeId(node);
-  recorder_->AddProperty(node_vname, PropertyID::kNodeKind, kind);
+  recorder_->AddProperty(node_vname, PropertyID::kNodeKind, ConvertRef(kind));
   recorder_->AddProperty(node_vname, PropertyID::kComplete,
                          CompletenessToString(completeness));
 }
@@ -532,15 +537,15 @@ absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
 VNameRef KytheGraphObserver::VNameRefFromNodeId(
     const GraphObserver::NodeId &node_id) const {
   VNameRef out_ref;
-  out_ref.language = llvm::StringRef(supported_language::kIndexerLang);
+  out_ref.language = absl::string_view(supported_language::kIndexerLang);
   if (const auto *token =
           clang::dyn_cast<KytheClaimToken>(node_id.getToken())) {
     token->DecorateVName(&out_ref);
     if (token->language_independent()) {
-      out_ref.language = llvm::StringRef();
+      out_ref.language = absl::string_view();
     }
   }
-  out_ref.signature = node_id.IdentityRef();
+  out_ref.signature = ConvertRef(node_id.IdentityRef());
   return out_ref;
 }
 
@@ -881,7 +886,7 @@ void KytheGraphObserver::recordLookupNode(const NodeId &node_id,
                                           const llvm::StringRef &text) {
   VNameRef node_vname = VNameRefFromNodeId(node_id);
   recorder_->AddProperty(node_vname, NodeKindID::kLookup);
-  recorder_->AddProperty(node_vname, PropertyID::kText, text);
+  recorder_->AddProperty(node_vname, PropertyID::kText, ConvertRef(text));
   MarkedSource marked_source;
   marked_source.set_kind(MarkedSource::BOX);
   auto *lhs = marked_source.add_child();
@@ -1169,7 +1174,7 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
               // TODO(zarko): diagnostic logging.
             } else {
               recorder_->AddFileContent(VNameRef(state.base_vname),
-                                        buf->getBuffer());
+                                        ConvertRef(buf->getBuffer()));
             }
           }
         } else {
