@@ -34,6 +34,7 @@
 #include "clang/Sema/Template.h"
 #include "glog/logging.h"
 
+#include "kythe/cxx/indexer/cxx/semantic_hash.h"
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
 #include "indexed_parent_map.h"
@@ -628,44 +629,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
                     const clang::DeclContext *DC,
                     const GraphObserver::NodeId &DocumentedNode);
 
-  /// \brief Builds a semantic hash of the given `Decl`, which should look
-  /// like a `TemplateDecl` (eg, a `TemplateDecl` itself or a partial
-  /// specialization).
-  template <typename TemplateDeclish>
-  uint64_t SemanticHashTemplateDeclish(const TemplateDeclish *Decl);
-
-  /// \brief Builds a semantic hash of the given `TemplateArgumentList`.
-  uint64_t SemanticHash(const clang::TemplateArgumentList *TAL);
-
-  /// \brief Builds a semantic hash of the given `TemplateArgument`.
-  uint64_t SemanticHash(const clang::TemplateArgument &TA);
-
-  /// \brief Builds a semantic hash of the given `TemplateName`.
-  uint64_t SemanticHash(const clang::TemplateName &TN);
-
-  /// \brief Builds a semantic hash of the given `Type`, such that
-  /// if T and T' are similar types, SH(T) == SH(T'). Note that the type is
-  /// always canonicalized before its hash is taken.
-  uint64_t SemanticHash(const clang::QualType &T);
-
-  /// \brief Builds a semantic hash of the given `RecordDecl`, such that
-  /// if R and R' are similar records, SH(R) == SH(R'). This notion of
-  /// similarity is meant to join together definitions copied and pasted
-  /// across different translation units. As it is at best an approximation,
-  /// it should be paired with the spelled-out name of the object being declared
-  /// to form an identifying token.
-  uint64_t SemanticHash(const clang::RecordDecl *RD);
-
-  /// \brief Builds a semantic hash of the given `EnumDecl`, such that
-  /// if E and E' are similar records, SH(E) == SH(E'). This notion of
-  /// similarity is meant to join together definitions copied and pasted
-  /// across different translation units. As it is at best an approximation,
-  /// it should be paired with the spelled-out name of the object being declared
-  /// to form an identifying token.
-  uint64_t SemanticHash(const clang::EnumDecl *ED);
-
-  uint64_t SemanticHash(const clang::Selector &S);
-
   /// \brief Attempts to find the ID of the first parent of `Decl` for
   /// attaching a `childof` relationship.
   absl::optional<GraphObserver::NodeId> GetDeclChildOf(const clang::Decl *D);
@@ -891,8 +854,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl *, GraphObserver::NodeId> DeclToNodeId;
 
-  /// \brief Maps EnumDecls to semantic hashes.
-  llvm::DenseMap<const clang::EnumDecl *, uint64_t> EnumToHash;
+  /// \brief Used for calculating semantic hashes.
+  SemanticHash SemanticHash{
+      [this](const clang::Decl *Decl) {
+        return BuildNameIdForDecl(Decl).ToString();
+      },
+      // These enums are intentionally compatible.
+      static_cast<SemanticHash::OnUnimplemented>(IgnoreUnimplemented)};
 
   /// \brief Enabled library-specific callbacks.
   const LibrarySupports &Supports;

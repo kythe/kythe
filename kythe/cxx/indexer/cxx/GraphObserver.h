@@ -34,7 +34,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "kythe/cxx/common/indexing/KytheOutputStream.h"
+#include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "kythe/cxx/common/json_proto.h"  // for EncodeBase64
 
 namespace kythe {

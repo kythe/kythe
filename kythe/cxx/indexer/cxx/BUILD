@@ -1,6 +1,17 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 cc_library(
+    name = "semantic_hash",
+    srcs = ["semantic_hash.cc"],
+    hdrs = ["semantic_hash.h"],
+    deps = [
+        "//third_party/llvm",
+        "//third_party/llvm/src:clang_builtin_headers",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
     name = "clang_utils",
     srcs = [
         "clang_utils.cc",
@@ -102,6 +113,7 @@ cc_library(
         ":indexer_library_support",
         ":marked_source",
         ":scope_guard",
+        ":semantic_hash",
         ":type_map",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",

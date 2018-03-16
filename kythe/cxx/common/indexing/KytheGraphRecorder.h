@@ -17,7 +17,7 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_GRAPH_RECORDER_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_GRAPH_RECORDER_H_
 
-#include "llvm/ADT/StringRef.h"
+#include "absl/strings/string_view.h"
 
 #include "KytheOutputStream.h"
 
@@ -116,25 +116,25 @@ enum class EdgeKindID {
 /// ~~~
 /// spelling_of(kAnchor) == "/kythe/anchor"
 /// ~~~
-llvm::StringRef spelling_of(NodeKindID node_kind_id);
+absl::string_view spelling_of(NodeKindID node_kind_id);
 
 /// \brief Returns the Kythe spelling of `property_id`
 ///
 /// ~~~
 /// spelling_of(kLocationUri) == "/kythe/loc/uri"
 /// ~~~
-llvm::StringRef spelling_of(PropertyID property_id);
+absl::string_view spelling_of(PropertyID property_id);
 
 /// \brief Returns the Kythe spelling of `edge_kind_id`
 ///
 /// ~~~
 /// spelling_of(kDefines) == "/kythe/defines"
 /// ~~~
-llvm::StringRef spelling_of(EdgeKindID edge_kind_id);
+absl::string_view spelling_of(EdgeKindID edge_kind_id);
 
 /// Returns true and sets `out_edge` to the enumerator corresponding to
 /// `spelling` (or returns false if there is no such correspondence).
-bool of_spelling(llvm::StringRef spelling, EdgeKindID *out_edge);
+bool of_spelling(absl::string_view spelling, EdgeKindID *out_edge);
 
 /// \brief Records Kythe nodes and edges to a provided `KytheOutputStream`.
 class KytheGraphRecorder {
@@ -151,7 +151,7 @@ class KytheGraphRecorder {
   /// \param property_id The `PropertyID` of the property to record.
   /// \param property_value The value of the property to set.
   void AddProperty(const VNameRef &node_vname, PropertyID property_id,
-                   const std::string &property_value);
+                   absl::string_view property_value);
 
   /// \brief Record a node's marked source.
   ///
@@ -193,7 +193,7 @@ class KytheGraphRecorder {
   /// \param file_vname The file's vname.
   /// \param file_content The buffer of this file's content.
   void AddFileContent(const VNameRef &file_vname,
-                      const llvm::StringRef &file_content);
+                      absl::string_view file_content);
 
   /// \brief Stop using the last entry group pushed to the stack.
   void PopEntryGroup() { stream_->PopBuffer(); }
