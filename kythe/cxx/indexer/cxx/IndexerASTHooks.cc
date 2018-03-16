@@ -357,7 +357,7 @@ class PruneCheck {
   IndexerASTVisitor *visitor_;
 };
 
-IndexedParentMap *IndexerASTVisitor::getAllParents() {
+const IndexedParentMap *IndexerASTVisitor::getAllParents() {
   if (!AllParents) {
     // We always need to run over the whole translation unit, as
     // hasAncestor can escape any subtree.
@@ -3099,7 +3099,7 @@ void IndexerASTVisitor::AscribeSpelledType(
 }
 
 GraphObserver::NameId::NameEqClass IndexerASTVisitor::BuildNameEqClassForDecl(
-    const clang::Decl *D) {
+    const clang::Decl *D) const {
   CHECK(D != nullptr);
   if (const auto *T = dyn_cast<clang::TagDecl>(D)) {
     switch (T->getTagKind()) {
@@ -3903,7 +3903,7 @@ void IndexerASTVisitor::DumpTypeContext(unsigned Depth, unsigned Index) {
 }
 
 GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForBuiltinTypeLoc(
-    clang::BuiltinTypeLoc TL) {
+    clang::BuiltinTypeLoc TL) const {
   return Observer.getNodeIdForBuiltinType(TL.getTypePtr()->getName(
       clang::PrintingPolicy(*Observer.getLangOptions())));
 }
@@ -3925,7 +3925,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForTemplateT
   return absl::nullopt;
 }
 
-const clang::TemplateTypeParmDecl* IndexerASTVisitor::FindTemplateTypeParmTypeLocDecl(clang::TemplateTypeParmTypeLoc TL) {
+const clang::TemplateTypeParmDecl* IndexerASTVisitor::FindTemplateTypeParmTypeLocDecl(clang::TemplateTypeParmTypeLoc TL) const {
   // Either the `TemplateTypeParm` will link directly to a relevant
   // `TemplateTypeParmDecl` or (particularly in the case of canonicalized
   // types) we will find the Decl in the `Job->TypeContext` according to the

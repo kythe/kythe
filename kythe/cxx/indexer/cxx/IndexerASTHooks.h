@@ -235,13 +235,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       clang::TemplateName Name, clang::SourceLocation L);
 
   // TODO(shahms): Document these.
-  GraphObserver::NodeId BuildNodeIdForBuiltinTypeLoc(clang::BuiltinTypeLoc TL);
+  GraphObserver::NodeId BuildNodeIdForBuiltinTypeLoc(clang::BuiltinTypeLoc TL) const;
   GraphObserver::NodeId BuildNodeIdForEnumTypeLoc(clang::EnumTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateTypeParmTypeLoc(
       clang::TemplateTypeParmTypeLoc TL);
 
   const clang::TemplateTypeParmDecl *FindTemplateTypeParmTypeLocDecl(
-      clang::TemplateTypeParmTypeLoc TL);
+      clang::TemplateTypeParmTypeLoc TL) const;
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param TypeLoc The type that is being identified. If its location is valid
@@ -397,7 +397,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief Categorizes the name of `Decl` according to the equivalence classes
   /// defined by `GraphObserver::NameId::NameEqClass`.
   GraphObserver::NameId::NameEqClass BuildNameEqClassForDecl(
-      const clang::Decl *Decl);
+      const clang::Decl *Decl) const;
 
   /// \brief Builds a stable name ID for the name of `Decl`.
   ///
@@ -695,7 +695,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       const clang::ast_type_traits::DynTypedNode &Node);
 
   /// Initializes AllParents, if necessary, and then returns a pointer to it.
-  IndexedParentMap *getAllParents();
+  const IndexedParentMap *getAllParents();
 
   /// A map from memoizable DynTypedNodes to their parent nodes
   /// and their child indices with respect to those parents.
