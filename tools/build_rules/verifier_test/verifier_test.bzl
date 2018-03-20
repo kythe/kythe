@@ -409,7 +409,7 @@ verifier_test = rule(
 def _invoke(rulefn, name, **kwargs):
   """Invoke rulefn with name and kwargs, returning the label of the rule."""
   rulefn(name=name, **kwargs)
-  return "//{}:{}".format(PACKAGE_NAME, name)
+  return "//{}:{}".format(native.package_name(), name)
 
 def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
                        indexer_opts=["--verbose"], verifier_opts=["--ignore_dups"],
