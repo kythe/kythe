@@ -991,8 +991,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           node.getVName(),
           ctx.getSnippet(),
           getScope(ctx));
+      statistics.incrementCounter("name-usages-emitted");
     }
-    statistics.incrementCounter("name-usages-emitted");
     return node;
   }
 
