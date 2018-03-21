@@ -335,18 +335,17 @@ class PruneCheck {
         if (const auto *czdecl =
                 dyn_cast<ClassTemplateSpecializationDecl>(Current.decl)) {
           ostream << "#"
-                  << HashToString(visitor_->SemanticHash(
+                  << HashToString(visitor_->Hash(
                          &czdecl->getTemplateInstantiationArgs()));
         } else if (const auto *fdecl = dyn_cast<FunctionDecl>(Current.decl)) {
           if (const auto *template_args =
                   fdecl->getTemplateSpecializationArgs()) {
-            ostream << "#"
-                    << HashToString(visitor_->SemanticHash(template_args));
+            ostream << "#" << HashToString(visitor_->Hash(template_args));
           }
         } else if (const auto *vdecl =
                        dyn_cast<VarTemplateSpecializationDecl>(Current.decl)) {
           ostream << "#"
-                  << HashToString(visitor_->SemanticHash(
+                  << HashToString(visitor_->Hash(
                          &vdecl->getTemplateInstantiationArgs()));
         }
       }
@@ -3078,9 +3077,9 @@ bool IndexerASTVisitor::AddNameToStream(llvm::raw_string_ostream &Ostream,
           break;
       }
     } else if (const auto *RD = dyn_cast<clang::RecordDecl>(ND)) {
-      Ostream << HashToString(SemanticHash(RD));
+      Ostream << HashToString(Hash(RD));
     } else if (const auto *ED = dyn_cast<clang::EnumDecl>(ND)) {
-      Ostream << HashToString(SemanticHash(ED));
+      Ostream << HashToString(Hash(ED));
     } else if (const auto *MD = dyn_cast<clang::CXXMethodDecl>(ND)) {
       if (isa<clang::CXXConstructorDecl>(MD)) {
         return AddNameToStream(Ostream, MD->getParent());
@@ -3099,7 +3098,7 @@ bool IndexerASTVisitor::AddNameToStream(llvm::raw_string_ostream &Ostream,
         return true;
       }
     } else if (isObjCSelector(Name)) {
-      Ostream << HashToString(SemanticHash(Name.getObjCSelector()));
+      Ostream << HashToString(Hash(Name.getObjCSelector()));
     } else {
       // Other NamedDecls-sans-names are given parent-dependent names.
       return false;
@@ -3312,19 +3311,17 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
           }
         } else {
           Ostream << "#"
-                  << HashToString(
-                         SemanticHash(&CTSD->getTemplateInstantiationArgs()));
+                  << HashToString(Hash(&CTSD->getTemplateInstantiationArgs()));
         }
       } else if (const auto *FD = dyn_cast<FunctionDecl>(Current.decl)) {
         Ostream << "#"
-                << HashToString(
-                       SemanticHash(QualType(FD->getFunctionType(), 0)));
+                << HashToString(Hash(QualType(FD->getFunctionType(), 0)));
         if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
           if (Current.decl != Decl) {
             Ostream << "#" << BuildNodeIdForDecl(FD);
             break;
           } else {
-            Ostream << "#" << HashToString(SemanticHash(TemplateArgs));
+            Ostream << "#" << HashToString(Hash(TemplateArgs));
           }
         } else if (const auto *MSI = FD->getMemberSpecializationInfo()) {
           if (const auto *DC =
@@ -3341,8 +3338,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
             break;
           } else {
             Ostream << "#"
-                    << HashToString(
-                           SemanticHash(&VD->getTemplateInstantiationArgs()));
+                    << HashToString(Hash(&VD->getTemplateInstantiationArgs()));
           }
         }
       } else if (const auto *VD = dyn_cast<VarDecl>(Current.decl)) {
@@ -3361,14 +3357,14 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // translation units.
   if (const auto *Rec = dyn_cast<clang::RecordDecl>(Decl)) {
     if (Rec->getDefinition() == Rec && Rec->getDeclName()) {
-      Ostream << "#" << HashToString(SemanticHash(Rec));
+      Ostream << "#" << HashToString(Hash(Rec));
       GraphObserver::NodeId Id(Token, Ostream.str());
       DeclToNodeId.insert(std::make_pair(Decl, Id));
       return Id;
     }
   } else if (const auto *Enum = dyn_cast<clang::EnumDecl>(Decl)) {
     if (Enum->getDefinition() == Enum) {
-      Ostream << "#" << HashToString(SemanticHash(Enum));
+      Ostream << "#" << HashToString(Hash(Enum));
       GraphObserver::NodeId Id(Token, Ostream.str());
       DeclToNodeId.insert(std::make_pair(Decl, Id));
       return Id;
@@ -3376,7 +3372,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   } else if (const auto *ECD = dyn_cast<clang::EnumConstantDecl>(Decl)) {
     if (const auto *E = dyn_cast<clang::EnumDecl>(ECD->getDeclContext())) {
       if (E->getDefinition() == E) {
-        Ostream << "#" << HashToString(SemanticHash(E));
+        Ostream << "#" << HashToString(Hash(E));
         GraphObserver::NodeId Id(Token, Ostream.str());
         DeclToNodeId.insert(std::make_pair(Decl, Id));
         return Id;
