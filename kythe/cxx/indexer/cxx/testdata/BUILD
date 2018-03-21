@@ -2632,6 +2632,12 @@ objc_indexer_test(
 )
 
 objc_indexer_test(
+    name = "forward_declare_completes",
+    srcs = ["objc/forward_declare_completes.m"],
+    tags = ["objc"],
+)
+
+objc_indexer_test(
     name = "forward_declare_not_necessary",
     srcs = ["objc/forward_declare_not_necessary.m"],
     tags = ["objc"],

@@ -855,7 +855,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   llvm::DenseMap<const clang::Decl *, GraphObserver::NodeId> DeclToNodeId;
 
   /// \brief Used for calculating semantic hashes.
-  SemanticHash SemanticHash{
+  SemanticHash Hash{
       [this](const clang::Decl *Decl) {
         return BuildNameIdForDecl(Decl).ToString();
       },
