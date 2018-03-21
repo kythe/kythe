@@ -1161,7 +1161,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       d.setContextUrl(context);
     }
     Span s = ctx.getTreeSpan();
-    if (s.valid()) {
+    if (s.isValid()) {
       d.getSpanBuilder().getStartBuilder().setByteOffset(s.getStart());
       d.getSpanBuilder().getEndBuilder().setByteOffset(s.getEnd());
     } else if (s.getStart() >= 0) {

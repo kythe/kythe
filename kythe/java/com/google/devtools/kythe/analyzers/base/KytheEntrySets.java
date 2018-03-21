@@ -162,7 +162,7 @@ public class KytheEntrySets {
    * snippet span.
    */
   public EntrySet newAnchorAndEmit(VName fileVName, Span loc, Span snippet) {
-    if (loc == null || !loc.valid()) {
+    if (loc == null || !loc.isValid()) {
       // TODO(schroederc): reduce number of invalid anchors
       return null;
     }
@@ -172,7 +172,7 @@ public class KytheEntrySets {
             .addSignatureSalt(fileVName)
             .setProperty("loc/start", "" + loc.getStart())
             .setProperty("loc/end", "" + loc.getEnd());
-    if (snippet != null && snippet.valid()) {
+    if (snippet != null && snippet.isValid()) {
       builder
           .setProperty("snippet/start", "" + snippet.getStart())
           .setProperty("snippet/end", "" + snippet.getEnd());

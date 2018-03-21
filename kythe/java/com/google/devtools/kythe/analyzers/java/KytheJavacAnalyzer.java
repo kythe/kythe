@@ -199,7 +199,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     }
 
     private static Optional<Span> validSpan(Span s) {
-      return Optional.ofNullable(s).filter(Span::valid);
+      return Optional.ofNullable(s).filter(Span::isValid);
     }
   }
 
