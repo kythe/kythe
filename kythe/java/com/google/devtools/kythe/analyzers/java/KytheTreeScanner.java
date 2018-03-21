@@ -980,13 +980,18 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return emitDiagnostic(ctx, "failed to resolve symbol name", null, null);
     }
 
-    emitAnchor(
-        name,
-        ctx.getTree().getPreferredPosition(),
-        edgeKind,
-        node.getVName(),
-        ctx.getSnippet(),
-        getScope(ctx));
+    // Ensure the context has a valid source span before searching for the Name.  Otherwise, anchors
+    // may accidentily be emitted for Names that happen to appear after the tree context (e.g.
+    // lambdas with type-inferred parameters that use the parameter type in the lambda body).
+    if (filePositions.getSpan(ctx.getTree()).isValid()) {
+      emitAnchor(
+          name,
+          ctx.getTree().getPreferredPosition(),
+          edgeKind,
+          node.getVName(),
+          ctx.getSnippet(),
+          getScope(ctx));
+    }
     statistics.incrementCounter("name-usages-emitted");
     return node;
   }

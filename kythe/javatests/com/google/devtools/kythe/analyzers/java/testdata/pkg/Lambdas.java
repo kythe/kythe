@@ -47,4 +47,17 @@ public class Lambdas {
         //- @adderY ref AdderY
         -> adderX + adderY;
   }
+
+  //- @String defines/binding StrCopy
+  private static final class String { // purposefully clash with builtin class
+    public static String create() { return new String(); }
+  }
+
+  //- @#0String ref StrBuiltin
+  //- @#1String ref StrCopy
+  public Function<java.lang.String, String> checkParameterAnchors() {
+    //- @String ref StrCopy
+    //- !{ @String ref StrBuiltin }
+    return s -> String.create();
+  }
 }

@@ -36,7 +36,12 @@ public final class Span implements Comparable<Span> {
     return end;
   }
 
+  @Deprecated
   public boolean valid() {
+    return isValid();
+  }
+
+  public boolean isValid() {
     return start <= end && start >= 0;
   }
 
