@@ -179,11 +179,26 @@ func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) 
 		// Because the sync Kind is full text, each change notification
 		// contains exactly 1 change with the full text of the document
 		doc.updateSource(params.ContentChanges[0].Text)
-	} else {
-		return fmt.Errorf("change notification received for file that was never opened %q", local)
+		return nil
 	}
 
-	return nil
+	// If we get here, we were passed a change for a file that was never
+	// opened.  That might be true, or it might be that the server restarted
+	// and lost its context. Give the caller the benefit of the doubt and
+	// attempt to open the file.
+	log.Printf("No matching open document found for %q; attempting to open instead", params.TextDocument.URI)
+	if err := ls.TextDocumentDidOpen(lsp.DidOpenTextDocumentParams{
+		TextDocument: lsp.TextDocumentItem{URI: params.TextDocument.URI},
+	}); err != nil {
+		return err
+	}
+
+	// Assuming that worked, process the change.
+	if doc, ok := ls.docs[local]; ok {
+		doc.updateSource(params.ContentChanges[0].Text)
+		return nil
+	}
+	return fmt.Errorf("change notification received for file that was never opened %q", local)
 }
 
 // TextDocumentDidClose removes all cached information about the open document. Because
