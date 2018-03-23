@@ -18,6 +18,7 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Preconditions;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
+import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.JavaCompilationDetails;
 import com.google.devtools.kythe.platform.java.JavacAnalyzer;
@@ -31,6 +32,7 @@ import com.google.devtools.kythe.util.Span;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
@@ -186,6 +188,39 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     @Override
     public Optional<Plugin.KytheNode> getNode(Symbol sym) {
       return Optional.ofNullable(symNodes.get(sym));
+    }
+
+    @Override
+    public Optional<Plugin.KytheNode> getJvmNode(Symbol sym) {
+      switch (sym.getKind()) {
+        case CLASS:
+        case ENUM:
+        case INTERFACE:
+          return Optional.ofNullable(sym.asType())
+              .map(KytheTreeScanner::toJvmType)
+              .map(t -> (JvmGraph.Type.ReferenceType) t)
+              .map(JvmGraph::getReferenceVName)
+              .map(KytheNodeImpl::new);
+        case METHOD:
+          return Optional.ofNullable(sym.asType())
+              .map(Type::asMethodType)
+              .map(KytheTreeScanner::toMethodJvmType)
+              .flatMap(
+                  methodType ->
+                      Optional.ofNullable(sym.enclClass())
+                          .map(Symbol::asType)
+                          .map(KytheTreeScanner::toJvmType)
+                          .map(t -> (JvmGraph.Type.ReferenceType) t)
+                          .map(
+                              classType ->
+                                  JvmGraph.getMethodVName(
+                                      classType, sym.getSimpleName().toString(), methodType)))
+              .map(KytheNodeImpl::new);
+
+          // TODO(schroederc): other ElementKinds
+        default:
+          return Optional.empty();
+      }
     }
 
     @Override

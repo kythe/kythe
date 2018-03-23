@@ -277,6 +277,7 @@ java_verifier_test(
     name = "plugin_tests",
     size = "small",
     srcs = ["PluginTests.java"],
+    indexer_opts = ["--emit_jvm=semantic"],
     load_plugin = "//kythe/javatests/com/google/devtools/kythe/analyzers/java:test_plugin",
 )
 

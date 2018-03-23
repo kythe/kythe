@@ -1,5 +1,6 @@
 package pkg;
 
+//- @PluginTests defines/binding Class
 public class PluginTests {
 
   @SpecialAnnotation
@@ -10,6 +11,10 @@ public class PluginTests {
   //- SpecialMethod /specializing/edge Method
   //- @method /special/defines/binding SpecialMethod
   public static void method() {}
+
+  //- Class generates JVMClass
+  //- Method generates JVMMethod
+  //- JVMMethod /special/jvm/edge JVMClass
 
   /** A special annotation for special methods. */
   public @interface SpecialAnnotation {}

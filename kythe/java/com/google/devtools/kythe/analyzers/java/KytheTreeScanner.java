@@ -503,7 +503,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     // Emit corresponding JVM node
     if (jvmGraph != null) {
-      JvmGraph.Type.MethodType jvmType = toJvmType(methodDef.type.asMethodType());
+      JvmGraph.Type.MethodType jvmType = toMethodJvmType(methodDef.type.asMethodType());
       VName jvmNode =
           jvmGraph.emitMethodNode(
               JvmGraph.Type.referenceType(owner.getTree().type.toString()),
@@ -1239,14 +1239,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
-  private static JvmGraph.Type toJvmType(Type type) {
+  static JvmGraph.Type toJvmType(Type type) {
     switch (type.getTag()) {
       case ARRAY:
         return JvmGraph.Type.arrayType(toJvmType(((Type.ArrayType) type).getComponentType()));
       case CLASS:
         return JvmGraph.Type.referenceType(type.toString());
       case METHOD:
-        return toJvmType(type.asMethodType());
+        return toMethodJvmType(type.asMethodType());
       case TYPEVAR:
         return JvmGraph.Type.referenceType("java.lang.Object");
 
@@ -1281,7 +1281,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
-  private static JvmGraph.Type.MethodType toJvmType(Type.MethodType type) {
+  static JvmGraph.Type.MethodType toMethodJvmType(Type.MethodType type) {
     return JvmGraph.Type.methodType(
         type.getParameterTypes()
             .stream()

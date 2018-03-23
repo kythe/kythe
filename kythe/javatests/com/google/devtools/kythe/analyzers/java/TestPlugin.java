@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.java;
 import com.google.auto.service.AutoService;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.java.Plugin.KytheNode;
+import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.tree.JCTree.JCAnnotation;
@@ -95,6 +96,23 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
                                   specialNode.getVName());
                         });
               });
+
+      kytheGraph
+          .getJvmNode(methodDef.sym)
+          .map(KytheNode::getVName)
+          .ifPresent(
+              jvmMethod ->
+                  Optional.ofNullable(methodDef.sym)
+                      .map(Symbol::enclClass)
+                      .flatMap(kytheGraph::getJvmNode)
+                      .map(KytheNode::getVName)
+                      .ifPresent(
+                          jvmClass -> {
+                            // Add an extra edge to the enclosing Kythe JVM class.
+                            entrySets
+                                .getEmitter()
+                                .emitEdge(jvmMethod, "/special/jvm/edge", jvmClass);
+                          }));
 
       break;
     }

@@ -40,6 +40,9 @@ public interface Plugin {
     /** Returns the {@link KytheNode} associated with the given {@link Symbol}. */
     public Optional<KytheNode> getNode(Symbol sym);
 
+    /** Returns the JVM {@link KytheNode} associated with given {@link Symbol}. */
+    public Optional<KytheNode> getJvmNode(Symbol el);
+
     // TODO(schroederc): should there be a getNode(Type) method as well?
 
     /** Returns the {@link Span} for the given {@link JCTree}. */

@@ -53,9 +53,18 @@ public class JvmGraph {
   }
 
   /** Returns the {@link VName} corresponding to the given class/enum/interface type. */
-  public VName getReferenceVName(Type.ReferenceType referenceType) {
+  public static VName getReferenceVName(Type.ReferenceType referenceType) {
     return VName.newBuilder()
         .setSignature(referenceType.qualifiedName)
+        .setLanguage(JVM_LANGUAGE)
+        .build();
+  }
+
+  /** Returns the {@link VName} corresponding to the given method type. */
+  public static VName getMethodVName(
+      Type.ReferenceType parentClass, String name, Type.MethodType methodType) {
+    return VName.newBuilder()
+        .setSignature(parentClass.qualifiedName + "." + name + methodType)
         .setLanguage(JVM_LANGUAGE)
         .build();
   }
@@ -81,7 +90,7 @@ public class JvmGraph {
   }
 
   /** Emits and returns a Kythe {@code function} node for a JVM method. */
-  public VName emitMethodNode(Type.ReferenceType parentClass, String name, Type type) {
+  public VName emitMethodNode(Type.ReferenceType parentClass, String name, Type.MethodType type) {
     return emitNode(NodeKind.FUNCTION, parentClass.qualifiedName + "." + name + type);
   }
 
