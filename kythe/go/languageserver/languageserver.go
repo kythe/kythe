@@ -481,25 +481,45 @@ func (ls *Server) refLocs(w Workspace, r *xpb.CrossReferencesReply_CrossReferenc
 	for _, a := range r.Reference {
 		l := ls.anchorToLoc(w, a.Anchor)
 		if l != nil {
-			locs = append(locs, *l)
+			locs = append(locs, ls.locationInNewSource(*l))
 		}
 	}
 
 	for _, a := range r.Definition {
 		l := ls.anchorToLoc(w, a.Anchor)
 		if l != nil {
-			locs = append(locs, *l)
+			locs = append(locs, ls.locationInNewSource(*l))
 		}
 	}
 
 	for _, a := range r.Declaration {
 		l := ls.anchorToLoc(w, a.Anchor)
 		if l != nil {
-			locs = append(locs, *l)
+			locs = append(locs, ls.locationInNewSource(*l))
 		}
 	}
 
 	return locs
+}
+
+// locationInNewSource maps a target loc to a new location. For files that are
+// already open and indexed this will reflect any local patching; otherwise the
+// input location is returned intact.
+func (ls *Server) locationInNewSource(loc lsp.Location) lsp.Location {
+	local, err := ls.localFromURI(loc.URI)
+	if err != nil {
+		return loc
+	}
+
+	// If we already have references for this location, update the location
+	// through any patches we've discovered.
+	if locDoc, ok := ls.docs[local]; ok {
+		if newRange := locDoc.rangeInNewSource(loc.Range); newRange != nil {
+			loc.Range = *newRange
+		}
+	}
+
+	return loc
 }
 
 // stripComment removes linkage markup from documentation comments.  Kythe

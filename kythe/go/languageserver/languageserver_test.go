@@ -166,13 +166,28 @@ func TestReferences(t *testing.T) {
 		t.Errorf("Unexpected error opening document (%s): %v", u, err)
 	}
 
+	// Make some changes to the file to ensure that Kythe LS store changes correctly.
+	err = srv.TextDocumentDidChange(lsp.DidChangeTextDocumentParams{
+		TextDocument: lsp.VersionedTextDocumentIdentifier{
+			TextDocumentIdentifier: lsp.TextDocumentIdentifier{
+				URI: lsp.DocumentURI(u),
+			},
+		},
+		ContentChanges: []lsp.TextDocumentContentChangeEvent{{
+			Text: "\n\n\n\n" + sourceText,
+		}},
+	})
+	if err != nil {
+		t.Errorf("Unexpected error saving changes to document (%s): %v", u, err)
+	}
+
 	locs, err := srv.TextDocumentReferences(lsp.ReferenceParams{
 		TextDocumentPositionParams: lsp.TextDocumentPositionParams{
 			TextDocument: lsp.TextDocumentIdentifier{
 				URI: lsp.DocumentURI(u),
 			},
 			Position: lsp.Position{
-				Line:      0,
+				Line:      4,
 				Character: 2,
 			},
 		},
@@ -184,8 +199,8 @@ func TestReferences(t *testing.T) {
 	expected := []lsp.Location{lsp.Location{
 		URI: "file:///root/dir/file.txt",
 		Range: lsp.Range{
-			Start: lsp.Position{Line: 2, Character: 0},
-			End:   lsp.Position{Line: 2, Character: 2}}}}
+			Start: lsp.Position{Line: 6, Character: 0},
+			End:   lsp.Position{Line: 6, Character: 2}}}}
 
 	if err := testutil.DeepEqual(locs, expected); err != nil {
 		t.Errorf("Incorrect references returned\n  Expected: %#v\n  Found:    %#v", expected, locs)
@@ -196,7 +211,7 @@ func TestReferences(t *testing.T) {
 			URI: lsp.DocumentURI(u),
 		},
 		Position: lsp.Position{
-			Line:      0,
+			Line:      4,
 			Character: 2,
 		},
 	})
@@ -204,8 +219,8 @@ func TestReferences(t *testing.T) {
 	expected = []lsp.Location{{
 		URI: "file:///root/dir/file.txt",
 		Range: lsp.Range{
-			Start: lsp.Position{Line: 2, Character: 0},
-			End:   lsp.Position{Line: 2, Character: 2},
+			Start: lsp.Position{Line: 6, Character: 0},
+			End:   lsp.Position{Line: 6, Character: 2},
 		},
 	}}
 
@@ -218,7 +233,7 @@ func TestReferences(t *testing.T) {
 			URI: lsp.DocumentURI(u),
 		},
 		Position: lsp.Position{
-			Line:      0,
+			Line:      4,
 			Character: 2,
 		},
 	})
@@ -234,8 +249,8 @@ func TestReferences(t *testing.T) {
 			Value: "abc[d]e\\f",
 		}},
 		Range: &lsp.Range{
-			Start: lsp.Position{Line: 0, Character: 0},
-			End:   lsp.Position{Line: 0, Character: 2},
+			Start: lsp.Position{Line: 4, Character: 0},
+			End:   lsp.Position{Line: 4, Character: 2},
 		},
 	}
 
