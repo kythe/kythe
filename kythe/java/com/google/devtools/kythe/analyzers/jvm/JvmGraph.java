@@ -136,6 +136,11 @@ public class JvmGraph {
       }
       return this.toString().equals(o.toString());
     }
+
+    @Override
+    public int hashCode() {
+      return toString().hashCode();
+    }
   }
 
   /**
