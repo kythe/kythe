@@ -22,16 +22,19 @@ import com.google.devtools.kythe.analyzers.java.Plugin.KytheNode;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symtab;
+import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCAnnotation;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
+import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import java.util.Optional;
 
 @AutoService(Plugin.class)
 /**
- * Kythe {@link Plugin} that emits "special" Kythe nodes for Java methods annotated with
+ * Kythe {@link Plugin} that emits "special" Kythe nodes for Java methods and fields annotated with
  * {@code @pkg.PluginTests.SpecialAnnotation}.
  */
 public class TestPlugin extends Plugin.Scanner<Void, Void> {
@@ -56,15 +59,25 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
   }
 
   @Override
-  public Void visitMethodDef(JCMethodDecl methodDef, Void v) {
-    for (JCAnnotation ann : methodDef.getModifiers().getAnnotations()) {
+  public Void visitMethodDef(JCMethodDecl tree, Void v) {
+    visitMember(tree, tree.name, tree.sym, tree.getModifiers().getAnnotations());
+    return super.visitMethodDef(tree, v);
+  }
+
+  public Void visitVarDef(JCVariableDecl tree, Void v) {
+    visitMember(tree, tree.name, tree.sym, tree.getModifiers().getAnnotations());
+    return super.visitVarDef(tree, v);
+  }
+
+  private void visitMember(JCTree tree, Name name, Symbol sym, Iterable<JCAnnotation> annotations) {
+    for (JCAnnotation ann : annotations) {
       if (!specialAnnotationNode.equals(kytheGraph.getNode(ann.getAnnotationType()).orElse(null))) {
         continue;
       }
       // We're analyzing a method annotated by SpecialAnnotation.  Now we do special analysis.
 
       kytheGraph
-          .getNode(methodDef)
+          .getNode(tree)
           .map(KytheNode::getVName)
           .ifPresent(
               method -> {
@@ -83,7 +96,7 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
 
                 // Add anchor for the special node's definition.
                 kytheGraph
-                    .findIdentifier(methodDef.name, methodDef.getPreferredPosition())
+                    .findIdentifier(name, tree.getPreferredPosition())
                     .ifPresent(
                         bindingSpan -> {
                           EntrySet anchor =
@@ -98,11 +111,11 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
               });
 
       kytheGraph
-          .getJvmNode(methodDef.sym)
+          .getJvmNode(sym)
           .map(KytheNode::getVName)
           .ifPresent(
               jvmMethod ->
-                  Optional.ofNullable(methodDef.sym)
+                  Optional.ofNullable(sym)
                       .map(Symbol::enclClass)
                       .flatMap(kytheGraph::getJvmNode)
                       .map(KytheNode::getVName)
@@ -116,6 +129,6 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
 
       break;
     }
-    return super.visitMethodDef(methodDef, v);
+
   }
 }

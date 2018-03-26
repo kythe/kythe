@@ -202,6 +202,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
               .map(JvmGraph::getReferenceVName)
               .map(KytheNodeImpl::new);
         case METHOD:
+        case CONSTRUCTOR:
           return Optional.ofNullable(sym.asType())
               .map(Type::asMethodType)
               .map(KytheTreeScanner::toMethodJvmType)
@@ -215,6 +216,14 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
                               classType ->
                                   JvmGraph.getMethodVName(
                                       classType, sym.getSimpleName().toString(), methodType)))
+              .map(KytheNodeImpl::new);
+        case FIELD:
+          // TODO(ronshapiro): extract a method for common functions here
+          return Optional.ofNullable(sym.enclClass())
+              .map(Symbol::asType)
+              .map(KytheTreeScanner::toJvmType)
+              .map(t -> (JvmGraph.Type.ReferenceType) t)
+              .map(classType -> JvmGraph.getFieldVName(classType, sym.getSimpleName().toString()))
               .map(KytheNodeImpl::new);
 
           // TODO(schroederc): other ElementKinds

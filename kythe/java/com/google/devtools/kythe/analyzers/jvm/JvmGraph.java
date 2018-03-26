@@ -69,6 +69,15 @@ public class JvmGraph {
         .build();
   }
 
+  // TODO(schroederc): unify signature creation with the emit*() methods
+  /** Returns the {@link VName} corresponding to the given field type. */
+  public static VName getFieldVName(Type.ReferenceType parentClass, String name) {
+    return VName.newBuilder()
+        .setSignature(parentClass.qualifiedName + "." + name)
+        .setLanguage(JVM_LANGUAGE)
+        .build();
+  }
+
   /** Emits and returns a Kythe {@code record} node for a JVM class. */
   public VName emitClassNode(Type.ReferenceType refType) {
     return emitNode(NodeKind.RECORD_CLASS, refType.qualifiedName, markedSource(refType));

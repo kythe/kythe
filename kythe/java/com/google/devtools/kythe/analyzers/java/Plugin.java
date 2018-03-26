@@ -41,7 +41,7 @@ public interface Plugin {
     public Optional<KytheNode> getNode(Symbol sym);
 
     /** Returns the JVM {@link KytheNode} associated with given {@link Symbol}. */
-    public Optional<KytheNode> getJvmNode(Symbol el);
+    public Optional<KytheNode> getJvmNode(Symbol sym);
 
     // TODO(schroederc): should there be a getNode(Type) method as well?
 
