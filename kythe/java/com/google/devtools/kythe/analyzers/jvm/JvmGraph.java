@@ -24,6 +24,8 @@ import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets.NodeBuilder;
 import com.google.devtools.kythe.analyzers.base.NodeKind;
+import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.MethodType;
+import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.ReferenceType;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
@@ -64,18 +66,47 @@ public class JvmGraph {
   public static VName getMethodVName(
       Type.ReferenceType parentClass, String name, Type.MethodType methodType) {
     return VName.newBuilder()
-        .setSignature(parentClass.qualifiedName + "." + name + methodType)
+        .setSignature(methodSignature(parentClass, name, methodType))
         .setLanguage(JVM_LANGUAGE)
         .build();
   }
 
-  // TODO(schroederc): unify signature creation with the emit*() methods
+  /**
+   * Returns the {@link VName} corresponding to the given parameter of a method type.
+   *
+   * <p>Parameter indices are used because names are only optionally retained in class files and not
+   * required by the spec.
+   */
+  public static VName getParameterVName(
+      Type.ReferenceType parentClass,
+      String methodName,
+      Type.MethodType methodType,
+      int parameterIndex) {
+    return VName.newBuilder()
+        .setSignature(parameterSignature(parentClass, methodName, methodType, parameterIndex))
+        .setLanguage(JVM_LANGUAGE)
+        .build();
+  }
+
   /** Returns the {@link VName} corresponding to the given field type. */
   public static VName getFieldVName(Type.ReferenceType parentClass, String name) {
     return VName.newBuilder()
         .setSignature(parentClass.qualifiedName + "." + name)
         .setLanguage(JVM_LANGUAGE)
         .build();
+  }
+
+  private static String methodSignature(
+      Type.ReferenceType parentClass, String methodName, Type.MethodType methodType) {
+    return parentClass.qualifiedName + "." + methodName + methodType;
+  }
+
+  private static String parameterSignature(
+      Type.ReferenceType parentClass,
+      String methodName,
+      Type.MethodType methodType,
+      int parameterIndex) {
+    return methodSignature(parentClass, methodName, methodType) + ".param" + parameterIndex;
   }
 
   /** Emits and returns a Kythe {@code record} node for a JVM class. */
@@ -99,9 +130,27 @@ public class JvmGraph {
   }
 
   /** Emits and returns a Kythe {@code function} node for a JVM method. */
-  public VName emitMethodNode(Type.ReferenceType parentClass, String name, Type.MethodType type) {
-    NodeKind nodeKind = name.equals("<init>") ? NodeKind.FUNCTION_CONSTRUCTOR : NodeKind.FUNCTION;
-    return emitNode(nodeKind, parentClass.qualifiedName + "." + name + type);
+  public VName emitMethodNode(
+      Type.ReferenceType parentClass, String methodName, Type.MethodType type) {
+    return emitNode(
+        methodName.equals("<init>") ? NodeKind.FUNCTION_CONSTRUCTOR : NodeKind.FUNCTION,
+        methodSignature(parentClass, methodName, type));
+  }
+
+  /**
+   * Emits and returns a Kythe {@code variable/local/parameter} node for a JVM parameter to a
+   * method.
+   *
+   * @see #getParameterVName(ReferenceType, String, MethodType, int)
+   */
+  public VName emitParameterNode(
+      Type.ReferenceType parentClass,
+      String methodName,
+      Type.MethodType methodType,
+      int parameterIndex) {
+    return emitNode(
+        NodeKind.VARIABLE_PARAMETER,
+        parameterSignature(parentClass, methodName, methodType, parameterIndex));
   }
 
   private VName emitNode(NodeKind nodeKind, String signature) {

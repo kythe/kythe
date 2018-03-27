@@ -31,6 +31,8 @@ import org.objectweb.asm.Opcodes;
 
 /** JVM class visitor emitting Kythe graph facts. */
 public final class KytheClassVisitor extends ClassVisitor {
+  private static final int ASM_API_LEVEL = Opcodes.ASM6;
+
   private final JvmGraph jvmGraph;
   private final KytheEntrySets entrySets;
   private final VName enclosingJarFile;
@@ -48,7 +50,7 @@ public final class KytheClassVisitor extends ClassVisitor {
   }
 
   private KytheClassVisitor(JvmGraph jvmGraph, VName enclosingJarFile) {
-    super(Opcodes.ASM6);
+    super(ASM_API_LEVEL);
     this.jvmGraph = jvmGraph;
     this.entrySets = jvmGraph.getKytheEntrySets();
     this.enclosingJarFile = enclosingJarFile;
@@ -122,11 +124,25 @@ public final class KytheClassVisitor extends ClassVisitor {
 
   @Override
   public MethodVisitor visitMethod(
-      int access, String name, String desc, String signature, String[] exceptions) {
-    JvmGraph.Type.MethodType t = JvmGraph.Type.rawMethodType(desc);
-    VName methodVName = jvmGraph.emitMethodNode(classType, name, t);
+      int access, String methodName, String desc, String signature, String[] exceptions) {
+    JvmGraph.Type.MethodType methodType = JvmGraph.Type.rawMethodType(desc);
+    VName methodVName = jvmGraph.emitMethodNode(classType, methodName, methodType);
     entrySets.emitEdge(methodVName, EdgeKind.CHILDOF, classVName);
-    return super.visitMethod(access, name, desc, signature, exceptions);
+
+    return new MethodVisitor(ASM_API_LEVEL) {
+      private int parameterIndex = 0;
+
+      @Override
+      public void visitParameter(String parameterName, int access) {
+        VName parameterVName =
+            jvmGraph.emitParameterNode(classType, methodName, methodType, parameterIndex);
+        entrySets.emitEdge(parameterVName, EdgeKind.CHILDOF, methodVName);
+        entrySets.emitEdge(methodVName, EdgeKind.PARAM, parameterVName, parameterIndex);
+
+        parameterIndex++;
+        super.visitParameter(parameterName, access);
+      }
+    };
   }
 
   @Override

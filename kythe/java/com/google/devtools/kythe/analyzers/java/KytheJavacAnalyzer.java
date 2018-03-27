@@ -18,7 +18,10 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Preconditions;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
+import com.google.devtools.kythe.analyzers.java.Plugin.KytheNode;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
+import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.MethodType;
+import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.ReferenceType;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.JavaCompilationDetails;
 import com.google.devtools.kythe.platform.java.JavacAnalyzer;
@@ -32,6 +35,7 @@ import com.google.devtools.kythe.util.Span;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
@@ -43,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import javax.lang.model.element.Name;
 import javax.tools.Diagnostic;
@@ -196,40 +201,56 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
         case CLASS:
         case ENUM:
         case INTERFACE:
-          return Optional.ofNullable(sym.asType())
-              .map(KytheTreeScanner::toJvmType)
-              .map(t -> (JvmGraph.Type.ReferenceType) t)
-              .map(JvmGraph::getReferenceVName)
-              .map(KytheNodeImpl::new);
+          return referenceJvmType(sym).map(JvmGraph::getReferenceVName).map(KytheNodeImpl::new);
         case METHOD:
         case CONSTRUCTOR:
-          return Optional.ofNullable(sym.asType())
-              .map(Type::asMethodType)
-              .map(KytheTreeScanner::toMethodJvmType)
-              .flatMap(
-                  methodType ->
-                      Optional.ofNullable(sym.enclClass())
-                          .map(Symbol::asType)
-                          .map(KytheTreeScanner::toJvmType)
-                          .map(t -> (JvmGraph.Type.ReferenceType) t)
-                          .map(
-                              classType ->
-                                  JvmGraph.getMethodVName(
-                                      classType, sym.getSimpleName().toString(), methodType)))
-              .map(KytheNodeImpl::new);
+          return forMethodAndEnclosingClass(
+              sym,
+              (method, enclosingClass) ->
+                  JvmGraph.getMethodVName(enclosingClass, sym.getSimpleName().toString(), method));
         case FIELD:
-          // TODO(ronshapiro): extract a method for common functions here
-          return Optional.ofNullable(sym.enclClass())
-              .map(Symbol::asType)
-              .map(KytheTreeScanner::toJvmType)
-              .map(t -> (JvmGraph.Type.ReferenceType) t)
+          return referenceJvmType(sym.enclClass())
               .map(classType -> JvmGraph.getFieldVName(classType, sym.getSimpleName().toString()))
               .map(KytheNodeImpl::new);
+
+        case PARAMETER:
+          MethodSymbol enclosingMethod = (MethodSymbol) sym.getEnclosingElement();
+          return forMethodAndEnclosingClass(
+              enclosingMethod,
+              (methodType, enclosingClass) ->
+                  JvmGraph.getParameterVName(
+                      enclosingClass,
+                      enclosingMethod.getSimpleName().toString(),
+                      methodType,
+                      enclosingMethod.getParameters().indexOf(sym)));
 
           // TODO(schroederc): other ElementKinds
         default:
           return Optional.empty();
       }
+    }
+
+    private Optional<JvmGraph.Type.ReferenceType> referenceJvmType(Symbol symbol) {
+      return Optional.ofNullable(symbol)
+          .map(Symbol::asType)
+          .map(KytheTreeScanner::toJvmType)
+          .map(JvmGraph.Type.ReferenceType.class::cast);
+    }
+
+    private Optional<KytheNode> forMethodAndEnclosingClass(
+        Symbol methodSymbol,
+        BiFunction<JvmGraph.Type.MethodType, JvmGraph.Type.ReferenceType, VName>
+            methodAndEnclosingClassFunction) {
+      return Optional.ofNullable(methodSymbol.asType())
+          .map(Type::asMethodType)
+          .map(KytheTreeScanner::toMethodJvmType)
+          .flatMap(
+              methodType ->
+                  referenceJvmType(methodSymbol.enclClass())
+                      .map(
+                          enclosingClass ->
+                              methodAndEnclosingClassFunction.apply(methodType, enclosingClass)))
+          .map(KytheNodeImpl::new);
     }
 
     @Override

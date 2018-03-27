@@ -1,8 +1,12 @@
-//- ConstructorJvm childof ClassJvm
 //- IntFieldJvm childof ClassJvm
 //- InnerJvm childof ClassJvm
 //- FuncJvm childof ClassJvm
+//- Param0Jvm childof FuncJvm
+//- Param1Jvm childof FuncJvm
 //- NopeJvm childof ClassJvm
+
+//- FuncJvm param.0 Param0Jvm
+//- FuncJvm param.1 Param1Jvm
 
 //- JarFileAnchor=vname(_, "kythe", "bazel-out/bin", "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/jvm_tests_kindex.kindex.jar", "jvm") defines ClassJvm
 //- JarFileAnchor.node/kind anchor

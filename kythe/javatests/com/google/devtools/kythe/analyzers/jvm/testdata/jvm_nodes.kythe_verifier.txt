@@ -11,11 +11,17 @@
 //- InnerJvm.subkind class
 
 //- FuncJvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V", "", "", "", "jvm").node/kind function
+//- Param0Jvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V.param0", "", "", "", "jvm").node/kind variable
+//- Param1Jvm=vname("pkg.Jvm.func(ILjava/lang/Object;)V.param1", "", "", "", "jvm").node/kind variable
+//- Param0Jvm.subkind local/parameter
+//- Param1Jvm.subkind local/parameter
 
 //- NopeJvm=vname("pkg.Jvm.nope()Ljava/lang/Object;", "", "", "", "jvm").node/kind function
 
 //- GJvm=vname("pkg.Jvm.g([IZBCDFIJS)V", "", "", "", "jvm").node/kind function
 
+//- VarArgsParamJvm=vname("pkg.Jvm.varargs([I)V.param0", "", "", "", "jvm").node/kind variable
+//- VarArgsParamJvm.subkind local/parameter
 
 Marked Source tests:
 

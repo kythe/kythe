@@ -29,6 +29,7 @@ import com.google.devtools.kythe.analyzers.java.SourceText.Comment;
 import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
+import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.ReferenceType;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.filemanager.JavaFileStoreBasedFileManager;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
@@ -503,13 +504,18 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     // Emit corresponding JVM node
     if (jvmGraph != null) {
-      JvmGraph.Type.MethodType jvmType = toMethodJvmType(methodDef.type.asMethodType());
-      VName jvmNode =
-          jvmGraph.emitMethodNode(
-              JvmGraph.Type.referenceType(owner.getTree().type.toString()),
-              methodDef.name.toString(),
-              jvmType);
+      JvmGraph.Type.MethodType methodJvmType = toMethodJvmType(methodDef.type.asMethodType());
+      ReferenceType parentClass = JvmGraph.Type.referenceType(owner.getTree().type.toString());
+      String methodName = methodDef.name.toString();
+      VName jvmNode = jvmGraph.emitMethodNode(parentClass, methodName, methodJvmType);
       entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
+
+      for (int i = 0; i < params.size(); i++) {
+        JavaNode param = params.get(i);
+        VName paramJvmNode = jvmGraph.emitParameterNode(parentClass, methodName, methodJvmType, i);
+        entrySets.emitEdge(param.getVName(), EdgeKind.GENERATES, paramJvmNode);
+        entrySets.emitEdge(jvmNode, EdgeKind.PARAM, paramJvmNode, i);
+      }
     }
 
     VName ret = null;

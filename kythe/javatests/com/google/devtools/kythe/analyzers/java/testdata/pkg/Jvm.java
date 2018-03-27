@@ -4,10 +4,6 @@ package pkg;
 //- ClassJava generates ClassJvm
 public class Jvm {
 
-  //- @Jvm defines/binding ConstructorJava
-  //- ConstructorJava generates ConstructorJvm
-  Jvm() {}
-
   //- @intField defines/binding IntFieldJava
   //- IntFieldJava generates IntFieldJvm
   int intField;
@@ -18,7 +14,11 @@ public class Jvm {
 
   //- @func defines/binding FuncJava
   //- FuncJava generates FuncJvm
-  public static void func(int i, Object o) {}
+  //- @intParam defines/binding Param0Java
+  //- @objectParam defines/binding Param1Java
+  //- Param0Java generates Param0Jvm
+  //- Param1Java generates Param1Jvm
+  public static void func(int intParam, Object objectParam) {}
 
   //- @nope defines/binding NopeJava
   //- NopeJava generates NopeJvm
@@ -46,4 +46,8 @@ public class Jvm {
       int intParam,
       long longParam,
       short shortParam) {}
+
+  //- @ints defines/binding VarArgsParamJava
+  //- VarArgsParamJava generates VarArgsParamJvm
+  static void varargs(int... ints) {}
 }
