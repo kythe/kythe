@@ -4,6 +4,10 @@ package pkg;
 //- ClassJava generates ClassJvm
 public class Jvm {
 
+  //- @Jvm defines/binding ConstructorJava
+  //- ConstructorJava generates ConstructorJvm
+  Jvm() {}
+
   //- @intField defines/binding IntFieldJava
   //- IntFieldJava generates IntFieldJvm
   int intField;

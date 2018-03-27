@@ -100,7 +100,8 @@ public class JvmGraph {
 
   /** Emits and returns a Kythe {@code function} node for a JVM method. */
   public VName emitMethodNode(Type.ReferenceType parentClass, String name, Type.MethodType type) {
-    return emitNode(NodeKind.FUNCTION, parentClass.qualifiedName + "." + name + type);
+    NodeKind nodeKind = name.equals("<init>") ? NodeKind.FUNCTION_CONSTRUCTOR : NodeKind.FUNCTION;
+    return emitNode(nodeKind, parentClass.qualifiedName + "." + name + type);
   }
 
   private VName emitNode(NodeKind nodeKind, String signature) {

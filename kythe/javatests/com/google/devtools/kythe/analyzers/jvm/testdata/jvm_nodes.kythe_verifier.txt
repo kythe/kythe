@@ -1,6 +1,9 @@
 //- ClassJvm=vname("pkg.Jvm", "", "", "", "jvm").node/kind record
 //- ClassJvm.subkind class
 
+//- ConstructorJvm=vname("pkg.Jvm.<init>()V", "", "", "", "jvm").node/kind function
+//- ConstructorJvm.subkind constructor
+
 //- IntFieldJvm=vname("pkg.Jvm.intField", "", "", "", "jvm").node/kind variable
 //- IntFIeldJvm.subkind field
 

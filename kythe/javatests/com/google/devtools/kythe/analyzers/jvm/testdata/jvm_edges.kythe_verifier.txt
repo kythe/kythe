@@ -1,3 +1,4 @@
+//- ConstructorJvm childof ClassJvm
 //- IntFieldJvm childof ClassJvm
 //- InnerJvm childof ClassJvm
 //- FuncJvm childof ClassJvm
