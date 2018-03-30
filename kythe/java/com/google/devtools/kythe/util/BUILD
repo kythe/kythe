@@ -22,9 +22,12 @@ java_library(
     ],
 )
 
+# N.B. This package is given proto visibility although it is not a proto,
+# because it is impractical to use the Kythe protos without ticket support.
 java_library(
     name = "kythe_uri",
     srcs = ["KytheURI.java"],
+    visibility = ["//kythe:proto_visibility"],
     deps = [
         "//kythe/proto:storage_java_proto",
         "@com_google_guava_guava//jar",
