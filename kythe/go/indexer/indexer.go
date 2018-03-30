@@ -542,7 +542,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 			Kind: cpb.MarkedSource_BOX,
 			Child: []*cpb.MarkedSource{
 				ms,
-				{Kind: cpb.MarkedSource_TYPE, PreText: " "},
+				{Kind: cpb.MarkedSource_BOX, PreText: " "},
 				{Kind: cpb.MarkedSource_TYPE, PreText: typeName(t.Type())},
 			},
 		}

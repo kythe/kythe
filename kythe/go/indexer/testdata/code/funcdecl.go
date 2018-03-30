@@ -22,7 +22,7 @@ package funcdecl
 //- XId.kind "IDENTIFIER"
 //- XId.pre_text "x"
 //-
-//- XSp.kind "TYPE"
+//- XSp.kind "BOX"
 //- XSp.pre_text " "
 //- XType.kind "TYPE"
 //- XType.pre_text "int"
