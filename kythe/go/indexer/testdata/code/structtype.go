@@ -16,8 +16,10 @@ package structtype
 //- TName child.1 TIdent
 //-
 //- TSpace.pre_text " "
+//- TSpace.kind "BOX"
 //-
 //- TStruct.pre_text "struct {...}"
+//- TStruct.kind "TYPE"
 //-
 //- TContext.kind "CONTEXT"
 //- TContext child.0 TPkg
