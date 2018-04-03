@@ -5,18 +5,15 @@ package structtype
 //- Type code TypeCode
 //-
 //- TypeCode.kind "BOX"
+//- TypeCode.post_child_text " "
 //- TypeCode child.0 TType
 //- TypeCode child.1 TName
-//- TypeCode child.2 TSpace
-//- TypeCode child.3 TStruct
+//- TypeCode child.2 TStruct
 //-
 //- TType.pre_text "type "
 //-
 //- TName child.0 TContext
 //- TName child.1 TIdent
-//-
-//- TSpace.pre_text " "
-//- TSpace.kind "BOX"
 //-
 //- TStruct.pre_text "struct {...}"
 //- TStruct.kind "TYPE"
@@ -31,14 +28,12 @@ type T struct {
 	//- Field code FieldCode
 	//-
 	//- FieldCode.kind "BOX"
+	//- FieldCode.post_child_text " "
 	//- FieldCode child.0 FName
-	//- FieldCode child.1 FSpace
-	//- FieldCode child.2 FType
+	//- FieldCode child.1 FType
 	//-
 	//- FName child.0 FContext
 	//- FName child.1 FIdent
-	//-
-	//- FSpace.pre_text " "
 	//-
 	//- FType.pre_text "byte"
 	//- FType.kind "TYPE"

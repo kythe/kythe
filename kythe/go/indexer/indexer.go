@@ -539,10 +539,10 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	case *types.Var:
 		// For variables and fields, include the type.
 		repl := &cpb.MarkedSource{
-			Kind: cpb.MarkedSource_BOX,
+			Kind:          cpb.MarkedSource_BOX,
+			PostChildText: " ",
 			Child: []*cpb.MarkedSource{
 				ms,
-				{Kind: cpb.MarkedSource_BOX, PreText: " "},
 				{Kind: cpb.MarkedSource_TYPE, PreText: typeName(t.Type())},
 			},
 		}
@@ -551,11 +551,11 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	case *types.TypeName:
 		// For named types, include the underlying type.
 		repl := &cpb.MarkedSource{
-			Kind: cpb.MarkedSource_BOX,
+			Kind:          cpb.MarkedSource_BOX,
+			PostChildText: " ",
 			Child: []*cpb.MarkedSource{
-				{PreText: "type "},
+				{PreText: "type"},
 				ms,
-				{Kind: cpb.MarkedSource_BOX, PreText: " "},
 				{Kind: cpb.MarkedSource_TYPE, PreText: typeName(t.Type().Underlying())},
 			},
 		}

@@ -5,13 +5,12 @@ package pkgvar
 //- Var code VarCode
 //-
 //- VarCode child.0 VName
-//- VarCode child.1 VSpace
-//- VarCode child.2 VType
+//- VarCode child.1 VType
+//- VarCode.post_child_text " "
 //-
 //- VName child.0 VContext
 //- VName child.1 VIdent
 //-
-//- VSpace.pre_text " "
 //- VType.pre_text "int"
 //-
 //- VContext.kind "CONTEXT"

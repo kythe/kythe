@@ -6,9 +6,9 @@ package funcdecl
 //-
 //- @x defines/binding Param  // see Note [1].
 //- Param code XCode
+//- XCode.post_child_text " "
 //- XCode child.0 XName
-//- XCode child.1 XSp
-//- XCode child.2 XType
+//- XCode child.1 XType
 //-
 //- XName child.0 XCtx
 //- XName child.1 XId
@@ -22,8 +22,6 @@ package funcdecl
 //- XId.kind "IDENTIFIER"
 //- XId.pre_text "x"
 //-
-//- XSp.kind "BOX"
-//- XSp.pre_text " "
 //- XType.kind "TYPE"
 //- XType.pre_text "int"
 //-
