@@ -23,7 +23,7 @@ genrule(
     name = "copy_public_headers",
     srcs = _ZLIB_HEADERS,
     outs = ["zlib/include/" + hdr for hdr in _ZLIB_HEADERS],
-    cmd = "cp $(SRCS) $D",
+    cmd = "cp $(SRCS) $(@D)/zlib/include/",
     visibility = ["//visibility:private"],
 )
 

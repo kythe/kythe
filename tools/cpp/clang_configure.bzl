@@ -164,9 +164,9 @@ def _cxx_inc_convert(path):
     path = path[:-_OSX_FRAMEWORK_SUFFIX_LEN].strip()
   return path
 
-def _get_cxx_inc_directories(repository_ctx, cc):
+def _get_cxx_inc_directories(repository_ctx, cc, lang="c++"):
   """Compute the list of default C++ include directories."""
-  result = repository_ctx.execute([cc, "-E", "-xc++", "-", "-v"])
+  result = repository_ctx.execute([cc, "-E", "-x" + lang, "-", "-v"])
   index1 = result.stderr.find(_INC_DIR_MARKER_BEGIN)
   if index1 == -1:
     return []
@@ -268,7 +268,12 @@ def _crosstool_content(repository_ctx, cc, cpu_value, darwin):
           )
       ),
       "ar_flag": ["-static", "-s", "-o"] if darwin else [],
-      "cxx_builtin_include_directory": _get_cxx_inc_directories(repository_ctx, cc),
+      "cxx_builtin_include_directory": (
+          # Bazel uses the same list of directories for both compiler modes,
+          # but Clang doesn't list the same directories so we have to combine them.
+          _get_cxx_inc_directories(repository_ctx, cc, "c++") +
+          _get_cxx_inc_directories(repository_ctx, cc, "c")
+      ),
       "objcopy_embed_flag": ["-I", "binary"],
       "unfiltered_cxx_flag":
           # If the compiler sometimes rewrites paths in the .d files without symlinks
