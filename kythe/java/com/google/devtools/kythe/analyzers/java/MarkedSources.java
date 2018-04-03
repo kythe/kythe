@@ -18,7 +18,6 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
-import com.google.devtools.kythe.proto.Link;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
@@ -146,36 +145,58 @@ public final class MarkedSources {
     if (type == null || sym == type.tsym) {
       return null;
     }
-    boolean wasArray = false;
     if (type.getReturnType() != null) {
       type = type.getReturnType();
     }
+    String postTypeIdText = "";
     if (type.hasTag(TypeTag.ARRAY) && ((Type.ArrayType) type).elemtype != null) {
-      wasArray = true;
+      postTypeIdText = "[]";
       type = ((Type.ArrayType) type).elemtype;
     }
-    MarkedSource.Builder builder = MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
+    MarkedSource.Builder builder =
+        MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE).setPostText(" ");
     if (type.hasTag(TypeTag.CLASS)) {
-      MarkedSource.Builder context = MarkedSource.newBuilder();
-      String identToken = buildContext(context, type.tsym, signatureGenerator);
-      builder.addChild(context.build());
-      builder.addChild(
-          MarkedSource.newBuilder()
-              .setKind(MarkedSource.Kind.IDENTIFIER)
-              .setPreText(identToken + (wasArray ? "[] " : " "))
-              .build());
-      symNames
-          .apply(type.tsym)
-          .map(KytheURI::asString)
-          .ifPresent(ticket -> builder.addLink(Link.newBuilder().addDefinition(ticket)));
+      addClassIdentifier(type, builder, signatureGenerator, symNames);
     } else {
-      builder.addChild(
-          MarkedSource.newBuilder()
-              .setKind(MarkedSource.Kind.IDENTIFIER)
-              .setPreText(type + (wasArray ? "[] " : " "))
-              .build());
+      builder
+          .addChildBuilder()
+          .setKind(MarkedSource.Kind.IDENTIFIER)
+          .setPreText(type.toString())
+          .setPostText(postTypeIdText);
     }
     return builder.build();
+  }
+
+  private static void addClassIdentifier(
+      Type type,
+      MarkedSource.Builder parent,
+      SignatureGenerator signatureGenerator,
+      Function<Symbol, Optional<VName>> symNames) {
+    // Add the class CONTEXT (i.e. package) and class IDENTIFIER (i.e. simple name).
+    String identToken = buildContext(parent.addChildBuilder(), type.tsym, signatureGenerator);
+    parent.addChildBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText(identToken);
+
+    // Possibly add a PARAMETER node for the class type arguments.
+    if (!type.getTypeArguments().isEmpty()) {
+      MarkedSource.Builder typeArgs =
+          parent
+              .addChildBuilder()
+              .setKind(MarkedSource.Kind.PARAMETER)
+              .setPreText("<")
+              .setPostChildText(", ")
+              .setPostText(">");
+      type.getTypeArguments()
+          .forEach(
+              arg ->
+                  addClassIdentifier(
+                      arg, typeArgs.addChildBuilder(), signatureGenerator, symNames));
+    }
+
+    // Add a link to the Kythe semantic node for the class.
+    symNames
+        .apply(type.tsym)
+        .map(KytheURI::asString)
+        .ifPresent(ticket -> parent.addLinkBuilder().addDefinition(ticket));
   }
 
   /**

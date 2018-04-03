@@ -4,6 +4,8 @@
 //- PackageId.pre_text "pkg"
 package pkg;
 
+import java.util.List;
+
 //- @MarkedSource defines/binding Class
 //- Class childof Package
 //- Class code ClassId
@@ -36,8 +38,9 @@ public class MarkedSource {
   //- FieldTypeId child.1 FieldCxt
   //- FieldTypeId child.2 FieldId
   //- FieldType.kind "TYPE"
+  //- FieldType.post_text " "
   //- FieldType child.0 FieldTypeIdent
-  //- FieldTypeIdent.pre_text "int "
+  //- FieldTypeIdent.pre_text "int"
   //- FieldCxt child.1 FieldCxtClass
   //- FieldCxtClass.pre_text "MarkedSource"
   //- FieldId.kind "IDENTIFIER"
@@ -54,7 +57,7 @@ public class MarkedSource {
   //- CtorTypeCxtId child.2 CtorTok
   //- CtorTypeCxtId child.3 CtorParams
   //- CtorType child.0 CtorVoid
-  //- CtorVoid.pre_text "void "
+  //- CtorVoid.pre_text "void"
   //- CtorCxt child.1 CtorCxtClass
   //- CtorCxtClass.pre_text "MarkedSource"
   //- CtorTok.pre_text "MarkedSource"
@@ -73,8 +76,9 @@ public class MarkedSource {
   //- MethodTypeCxtId child.1 MethodCxt
   //- MethodTypeCxtId child.2 MethodTok
   //- MethodTypeCxtId child.3 MethodParams
+  //- MethodType.post_text " "
   //- MethodType child.0 MethodVoid
-  //- MethodVoid.pre_text "void "
+  //- MethodVoid.pre_text "void"
   //- MethodCxt child.1 MethodCxtClass
   //- MethodCxtClass.pre_text "MarkedSource"
   //- MethodTok.pre_text "methodName"
@@ -90,6 +94,27 @@ public class MarkedSource {
   //- MPType param.2 String
   //- MPType param.3 Int
   void methodWithParams(String a, int b) {}
+
+  //- @lst defines/binding ListArg
+  //- ListArg code ListBox
+  //- ListBox child.0 ListType
+  //- ListType.kind "TYPE"
+  //- ListType.post_text " "
+  //- ListType child.1 ListId
+  //- ListId.kind "IDENTIFIER"
+  //- ListId.pre_text "List"
+  //- ListType child.2 ListArgs 
+  //- ListArgs.kind "PARAMETER"
+  //- ListArgs.pre_text "<"
+  //- ListArgs.post_child_text ", "
+  //- ListArgs.post_text ">"
+  //- ListArgs child.0 ObjBox
+  //- ObjBox child.0 ObjCtx
+  //- ObjCtx.kind "CONTEXT"
+  //- ObjBox child.1 ObjId
+  //- ObjId.kind "IDENTIFIER"
+  //- ObjId.pre_text "Object"
+  void methodWithGeneric(List<Object> lst) {}
 
   //- @Inner defines/binding InnerClass
   //- InnerClass code _
