@@ -95,6 +95,54 @@ public class MarkedSource {
   //- MPType param.3 Int
   void methodWithParams(String a, int b) {}
 
+  //- @pa defines/binding AParam
+  //- @pb defines/binding BParam
+  //- @pc defines/binding CParam
+  //- @pd defines/binding DParam
+  void m(String pa, int pb, int[] pc, Object[] pd) {}
+
+  //- AParam code AParamCode
+  //- AParamCode child.0 APType
+  //- APType.kind "TYPE"
+  //- APType child.0 APTypeCtx
+  //- APTypeCtx.kind "CONTEXT"
+  //- APType child.1 APTypeId
+  //- APTypeId.kind "IDENTIFIER"
+  //- APTypeId.pre_text "String"
+  //- APType.post_text " "
+  //- AParamCode child.1 APCtx
+  //- APCtx.kind "CONTEXT"
+  //- AParamCode child.2 APId
+  //- APId.kind "IDENTIFIER"
+  //- APId.pre_text "pa"
+
+  //- BParam code BParamCode
+  //- BParamCode child.0 BPType
+  //- BPType.kind "TYPE"
+  //- BPType child.0 BPTypeId
+  //- BPTypeId.kind "IDENTIFIER"
+  //- BPTypeId.pre_text "int"
+  //- BPType.post_text " "
+  //- BParamCode child.1 BPCtx
+  //- BPCtx.kind "CONTEXT"
+  //- BParamCode child.2 BPId
+  //- BPId.kind "IDENTIFIER"
+  //- BPId.pre_text "pb"
+
+  //- CParam code CParamCode
+  //- CParamCode child.0 CPType
+  //- CPType.kind "TYPE"
+  //- CPType child.0 CPTypeId
+  //- CPTypeId.kind "IDENTIFIER"
+  //- CPTypeId.pre_text "int"
+  //- CPTypeId.post_text "[]"
+  //- CPType.post_text " "
+  //- CParamCode child.1 CPCtx
+  //- CPCtx.kind "CONTEXT"
+  //- CParamCPode child.2 CPId
+  //- CPId.kind "IDENTIFIER"
+  //- CPId.pre_text "pc"
+
   //- @lst defines/binding ListArg
   //- ListArg code ListBox
   //- ListBox child.0 ListType
@@ -214,9 +262,11 @@ public class MarkedSource {
   //- Void code VoidId
   //- VoidId.kind "IDENTIFIER"
   //- VoidId.pre_text void
+
   //- Int code IntId
   //- IntId.kind "IDENTIFIER"
   //- IntId.pre_text int
+
   //- String code StringId
   //- StringId.kind "BOX"
   //- StringId child.0 StringCxt

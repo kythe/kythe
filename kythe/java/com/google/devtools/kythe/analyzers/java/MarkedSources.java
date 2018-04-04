@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
-import com.google.common.collect.Lists;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
@@ -25,6 +24,7 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.TypeTag;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -56,16 +56,13 @@ public final class MarkedSources {
     if (markedType != null) {
       markedSource.addChild(markedType);
     }
-    MarkedSource.Builder context = MarkedSource.newBuilder();
-    String identToken = buildContext(context, sym, signatureGenerator);
-    markedSource.addChild(context.build());
+    String identToken = buildContext(markedSource.addChildBuilder(), sym, signatureGenerator);
     switch (sym.getKind()) {
       case TYPE_PARAMETER:
-        markedSource.addChild(
-            MarkedSource.newBuilder()
-                .setKind(MarkedSource.Kind.IDENTIFIER)
-                .setPreText("<" + sym.getSimpleName() + ">")
-                .build());
+        markedSource
+            .addChildBuilder()
+            .setKind(MarkedSource.Kind.IDENTIFIER)
+            .setPreText("<" + sym.getSimpleName() + ">");
         break;
       case CONSTRUCTOR:
       case METHOD:
@@ -76,25 +73,16 @@ public final class MarkedSources {
         } else {
           methodName = sym.getSimpleName().toString();
         }
-        markedSource.addChild(
-            MarkedSource.newBuilder()
-                .setKind(MarkedSource.Kind.IDENTIFIER)
-                .setPreText(methodName)
-                .build());
-        markedSource.addChild(
-            MarkedSource.newBuilder()
-                .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
-                .setPreText("(")
-                .setPostChildText(", ")
-                .setPostText(")")
-                .build());
+        markedSource.addChildBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText(methodName);
+        markedSource
+            .addChildBuilder()
+            .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
+            .setPreText("(")
+            .setPostChildText(", ")
+            .setPostText(")");
         break;
       default:
-        markedSource.addChild(
-            MarkedSource.newBuilder()
-                .setKind(MarkedSource.Kind.IDENTIFIER)
-                .setPreText(identToken)
-                .build());
+        markedSource.addChildBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText(identToken);
         break;
     }
     if (postChildren != null) {
@@ -112,7 +100,7 @@ public final class MarkedSources {
     context.setKind(MarkedSource.Kind.CONTEXT).setPostChildText(".").setAddFinalListToken(true);
     String identToken = getIdentToken(sym, signatureGenerator);
     Symbol parent = getQualifiedNameParent(sym);
-    List<MarkedSource> parents = Lists.newArrayList();
+    List<MarkedSource> parents = new ArrayList<>();
     while (parent != null) {
       String parentName = getIdentToken(parent, signatureGenerator);
       if (!parentName.isEmpty()) {
@@ -132,8 +120,8 @@ public final class MarkedSources {
 
   /**
    * Returns a {@link MarkedSource} instance for sym's type (or its return type, if sym is a
-   * method). If there is no appropriate type for sym, returns null. Generates links with
-   * signatureGenerator.
+   * method). If there is no appropriate type for sym, returns {@code null}. Generates links with
+   * {@code signatureGenerator}.
    */
   @Nullable
   private static MarkedSource markType(
