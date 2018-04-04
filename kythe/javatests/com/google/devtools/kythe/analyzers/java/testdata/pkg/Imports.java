@@ -16,6 +16,10 @@ import static pkg.StaticMethods.staticMethod;
 import java.util.List;
 //- @"java.util" ref UtilPackage
 import java.util.LinkedList;
+//- @Entry ref/imports MapEntryClass
+//- @Map ref MapClass
+//- @"java.util" ref UtilPackage
+import java.util.Map.Entry;
 
 public class Imports {
   //- ListI childof ListAbs
@@ -24,6 +28,12 @@ public class Imports {
     //- @String ref String
     //- @CASE_INSENSITIVE_ORDER ref StringConst
     System.err.println(String.CASE_INSENSITIVE_ORDER);
+    //- @Entry ref MapEntryClass
+    //- @Map ref MapClass
+    //- @"java.util" ref UtilPackage
+    System.err.println(java.util.Map.Entry.class);
+    //- @Entry ref MapEntryClass
+    System.err.println(Entry.class);
   }
 }
 

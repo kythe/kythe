@@ -245,82 +245,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   @Override
   public JavaNode visitImport(JCImport imprt, TreeContext owner) {
-    TreeContext ctx = owner.downAsSnippet(imprt);
-
-    if (imprt.qualid instanceof JCFieldAccess) {
-      JCFieldAccess imprtField = (JCFieldAccess) imprt.qualid;
-
-      if (imprt.staticImport) {
-        // In static imports, the "field access" is of the form "import static <class>.<method>;".
-        // This branch tries to discover the class symbol for "<class>" and emit a reference for it.
-
-        ClassSymbol cls = JavacUtil.getClassSymbol(javaContext, imprtField.selected.toString());
-        if (cls != null) {
-          com.sun.tools.javac.util.Name className = cls.fullname;
-          if (className != null) {
-            int dotIdx = cls.fullname.lastIndexOf((byte) '.');
-            if (dotIdx >= 0) {
-              className = className.subName(dotIdx + 1, className.length());
-            }
-            emitNameUsage(ctx.down(imprtField.selected), cls, className);
-          }
-        }
-      } else {
-        // In non-static imports, the "field access" is of the form "import <package>.<class>;".
-        // This branch emits a node for the referenced package.
-        emitAnchor(
-            ctx.down(imprtField.selected),
-            EdgeKind.REF,
-            entrySets.newPackageNodeAndEmit(imprtField.selected.toString()).getVName());
-      }
-
-      if (imprtField.name.contentEquals("*")) {
-        return null;
-      }
-
-      Symbol sym = imprtField.sym;
-      if (sym == null && imprt.isStatic()) {
-        // Static imports don't have their symbol populated so we search for the symbol.
-
-        ClassSymbol cls =
-            JavacUtil.getClassSymbol(javaContext, imprtField.selected + "." + imprtField.name);
-        if (cls != null) {
-          // Import was a inner class import
-          sym = cls;
-        } else {
-          cls = JavacUtil.getClassSymbol(javaContext, imprtField.selected.toString());
-          if (cls != null) {
-            // Import is a class member; emit usages for all matching (by name) class members.
-            ctx = ctx.down(imprtField);
-            JavaNode lastMember = null;
-            for (Symbol member : cls.members().getSymbolsByName(imprtField.name)) {
-              try {
-                // Ensure member symbol's type is complete.  If the extractor finds that a static
-                // member isn't used (due to overloads), the symbol's dependent type classes won't
-                // be saved in the CompilationUnit and this will throw an exception.
-                if (member.type != null) {
-                  member.type.tsym.complete();
-                  member.type.getParameterTypes().forEach(t -> t.tsym.complete());
-                  Type returnType = member.type.getReturnType();
-                  if (returnType != null) {
-                    returnType.tsym.complete();
-                  }
-                }
-
-                lastMember = emitNameUsage(ctx, member, imprtField.name, EdgeKind.REF_IMPORTS);
-              } catch (Symbol.CompletionFailure e) {
-                // Symbol resolution failed (see above comment).  Ignore and continue with other
-                // class members matching static import.
-              }
-            }
-            return lastMember;
-          }
-        }
-      }
-
-      return emitNameUsage(ctx.down(imprtField), sym, imprtField.name, EdgeKind.REF_IMPORTS);
-    }
-    return scan(imprt.qualid, ctx);
+    return scan(imprt.qualid, owner.downAsSnippet(imprt));
   }
 
   @Override
@@ -689,17 +614,70 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   @Override
   public JavaNode visitSelect(JCFieldAccess field, TreeContext owner) {
     TreeContext ctx = owner.down(field);
-    if (field.sym == null) {
-      // TODO(schroederc): determine exactly why this occurs
+
+    JCImport imprt = null;
+    if (owner.getTree() instanceof JCImport) {
+      imprt = (JCImport) owner.getTree();
+    }
+
+    Symbol sym = field.sym;
+    if (sym == null && imprt != null && imprt.isStatic()) {
+      // Static imports don't have their symbol populated so we search for the symbol.
+
+      ClassSymbol cls = JavacUtil.getClassSymbol(javaContext, field.selected + "." + field.name);
+      if (cls != null) {
+        // Import was a inner class import
+        sym = cls;
+      } else {
+        cls = JavacUtil.getClassSymbol(javaContext, field.selected.toString());
+        if (cls != null) {
+          // Import is a class member; emit usages for all matching (by name) class members.
+          ctx = ctx.down(field);
+          JavaNode lastMember = null;
+          for (Symbol member : cls.members().getSymbolsByName(field.name)) {
+            try {
+              // Ensure member symbol's type is complete.  If the extractor finds that a static
+              // member isn't used (due to overloads), the symbol's dependent type classes won't
+              // be saved in the CompilationUnit and this will throw an exception.
+              if (member.type != null) {
+                member.type.tsym.complete();
+                member.type.getParameterTypes().forEach(t -> t.tsym.complete());
+                Type returnType = member.type.getReturnType();
+                if (returnType != null) {
+                  returnType.tsym.complete();
+                }
+              }
+
+              lastMember = emitNameUsage(ctx, member, field.name, EdgeKind.REF_IMPORTS);
+            } catch (Symbol.CompletionFailure e) {
+              // Symbol resolution failed (see above comment).  Ignore and continue with other
+              // class members matching static import.
+            }
+          }
+          scan(field.getExpression(), ctx);
+          return lastMember;
+        }
+      }
+    }
+
+    if (sym == null) {
       scan(field.getExpression(), ctx);
+      if (!field.name.toString().equals("*")) {
+        String msg = "Could not determine selected Symbol for " + field;
+        if (config.getVerboseLogging()) {
+          logger.warning(msg);
+        }
+        return emitDiagnostic(ctx, msg, null, null);
+      }
       return null;
-    } else if (field.sym.getKind() == ElementKind.PACKAGE) {
-      EntrySet pkgNode = entrySets.newPackageNodeAndEmit((PackageSymbol) field.sym);
+    } else if (sym.getKind() == ElementKind.PACKAGE) {
+      EntrySet pkgNode = entrySets.newPackageNodeAndEmit((PackageSymbol) sym);
       emitAnchor(ctx, EdgeKind.REF, pkgNode.getVName());
       return new JavaNode(pkgNode);
     } else {
       scan(field.getExpression(), ctx);
-      return emitNameUsage(ctx, field.sym, field.name);
+      return emitNameUsage(
+          ctx, sym, field.name, imprt != null ? EdgeKind.REF_IMPORTS : EdgeKind.REF);
     }
   }
 
