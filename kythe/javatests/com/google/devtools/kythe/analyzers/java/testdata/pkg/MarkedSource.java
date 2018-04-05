@@ -104,9 +104,10 @@ public class MarkedSource {
   //- AParam code AParamCode
   //- AParamCode child.0 APType
   //- APType.kind "TYPE"
-  //- APType child.0 APTypeCtx
+  //- APType child.0 APTypeBox
+  //- APTypeBox child.0 APTypeCtx
   //- APTypeCtx.kind "CONTEXT"
-  //- APType child.1 APTypeId
+  //- APTypeBox child.1 APTypeId
   //- APTypeId.kind "IDENTIFIER"
   //- APTypeId.pre_text "String"
   //- APType.post_text " "
@@ -148,15 +149,17 @@ public class MarkedSource {
   //- ListBox child.0 ListType
   //- ListType.kind "TYPE"
   //- ListType.post_text " "
-  //- ListType child.1 ListId
+  //- ListType child.0 ListBoxId
+  //- ListBoxId child.1 ListId
   //- ListId.kind "IDENTIFIER"
   //- ListId.pre_text "List"
-  //- ListType child.2 ListArgs 
+  //- ListType child.1 ListArgs
   //- ListArgs.kind "PARAMETER"
   //- ListArgs.pre_text "<"
   //- ListArgs.post_child_text ", "
   //- ListArgs.post_text ">"
-  //- ListArgs child.0 ObjBox
+  //- ListArgs child.0 ObjBoxId
+  //- ObjBoxId child.0 ObjBox
   //- ObjBox child.0 ObjCtx
   //- ObjCtx.kind "CONTEXT"
   //- ObjBox child.1 ObjId

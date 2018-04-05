@@ -161,8 +161,17 @@ public final class MarkedSources {
       SignatureGenerator signatureGenerator,
       Function<Symbol, Optional<VName>> symNames) {
     // Add the class CONTEXT (i.e. package) and class IDENTIFIER (i.e. simple name).
-    String identToken = buildContext(parent.addChildBuilder(), type.tsym, signatureGenerator);
-    parent.addChildBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText(identToken);
+    // The qualifiedName BOX is used to restrict the Link added below.
+    MarkedSource.Builder qualifiedName = parent.addChildBuilder();
+    String identToken =
+        buildContext(qualifiedName.addChildBuilder(), type.tsym, signatureGenerator);
+    qualifiedName.addChildBuilder().setKind(MarkedSource.Kind.IDENTIFIER).setPreText(identToken);
+
+    // Add a link to the Kythe semantic node for the class.
+    symNames
+        .apply(type.tsym)
+        .map(KytheURI::asString)
+        .ifPresent(ticket -> qualifiedName.addLinkBuilder().addDefinition(ticket));
 
     // Possibly add a PARAMETER node for the class type arguments.
     if (!type.getTypeArguments().isEmpty()) {
@@ -179,12 +188,6 @@ public final class MarkedSources {
                   addClassIdentifier(
                       arg, typeArgs.addChildBuilder(), signatureGenerator, symNames));
     }
-
-    // Add a link to the Kythe semantic node for the class.
-    symNames
-        .apply(type.tsym)
-        .map(KytheURI::asString)
-        .ifPresent(ticket -> parent.addLinkBuilder().addDefinition(ticket));
   }
 
   /**
