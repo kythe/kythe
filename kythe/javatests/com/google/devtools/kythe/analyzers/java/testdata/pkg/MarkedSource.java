@@ -144,6 +144,22 @@ public class MarkedSource {
   //- CPId.kind "IDENTIFIER"
   //- CPId.pre_text "pc"
 
+  //- DParam code DParamCode
+  //- DParamCode child.0 DPType
+  //- DPType.kind "TYPE"
+  //- DPType child.0 DPTypeBoxArray
+  //- DPTypeBoxArray.post_text "[]"
+  //- DPTypeBoxArray child.0 DPTypeBoxId
+  //- DPTypeBoxId child.1 DPTypeId
+  //- DPTypeId.kind "IDENTIFIER"
+  //- DPTypeId.pre_text "Object"
+  //- DPType.post_text " "
+  //- DParamCode child.1 DPCtx
+  //- DPCtx.kind "CONTEXT"
+  //- DParamDPode child.2 DPId
+  //- DPId.kind "IDENTIFIER"
+  //- DPId.pre_text "pd"
+
   //- @lst defines/binding ListArg
   //- ListArg code ListBox
   //- ListBox child.0 ListType

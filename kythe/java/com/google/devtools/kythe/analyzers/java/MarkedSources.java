@@ -144,7 +144,11 @@ public final class MarkedSources {
     MarkedSource.Builder builder =
         MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE).setPostText(" ");
     if (type.hasTag(TypeTag.CLASS)) {
-      addClassIdentifier(type, builder, signatureGenerator, symNames);
+      MarkedSource.Builder classIdentParent = builder;
+      if (!postTypeIdText.isEmpty()) {
+        classIdentParent = builder.addChildBuilder().setPostText(postTypeIdText);
+      }
+      addClassIdentifier(type, classIdentParent, signatureGenerator, symNames);
     } else {
       builder
           .addChildBuilder()
