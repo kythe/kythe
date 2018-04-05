@@ -600,6 +600,8 @@ Points toward::
   semantic nodes
 Ordinals are used::
   never
+See also::
+  <<imputes>>
 
 Tools like RPC interface generators read specification languages and emit
 code in one or more target languages. Although the specification language
@@ -754,6 +756,30 @@ template <typename T> struct S {
   long f<int, short>(T t) { return 1; }
 };
 --------------------------------------------------------------------------------
+
+[[imputes]]
+imputes
+~~~~~~~
+
+Brief description::
+  A *imputes* B if the syntactic span at A is related to the semantic node B
+  through some extralingual process.
+Commonly arises from::
+  code generation
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+See also::
+  <<generates>>
+
+Mechanically, if A *defines/binding* A' and A *imputes* B, where A is an anchor
+and both A' and B are semantic nodes, the *imputes* edge has the same effect as
+though the edge A' *generates* B were produced. This edge is useful in cases
+where it isn't otherwise possible to produce the VName for A' and where the
+span A in source text can uniquely identify A' by the *defines/binding* edge.
 
 [[named]]
 named
