@@ -62,7 +62,10 @@ external_go_package(
 external_go_package(
     name = "jsonpb",
     base_pkg = "github.com/golang/protobuf",
-    deps = [":proto"],
+    deps = [
+        ":proto",
+        ":ptypes/struct",
+    ],
 )
 
 external_go_package(
@@ -78,6 +81,12 @@ external_go_package(
 
 external_go_package(
     name = "ptypes/any",
+    base_pkg = "github.com/golang/protobuf",
+    deps = [":proto"],
+)
+
+external_go_package(
+    name = "ptypes/struct",
     base_pkg = "github.com/golang/protobuf",
     deps = [":proto"],
 )

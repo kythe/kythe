@@ -268,7 +268,7 @@ new_git_repository(
 new_git_repository(
     name = "go_protobuf",
     build_file = "third_party/go/protobuf.BUILD",
-    commit = "8ee79997227bf9b34611aee7946ae64735e6fd93",
+    commit = "925541529c1fa6821df4e44ce2723319eb2be768",
     remote = "https://github.com/golang/protobuf.git",
 )
 
@@ -330,7 +330,7 @@ http_archive(
     urls = ["https://github.com/google/protobuf/archive/106ffc04be1abf3ff3399f54ccf149815b287dd9.zip"],
 )
 
-load("@io_bazel_rules_go//go:def.bzl", "go_rules_dependencies", "go_register_toolchains")
+load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 go_rules_dependencies()
 
