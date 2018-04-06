@@ -25,7 +25,7 @@ go_test(
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/proto:analysis_go_proto",
-        "//kythe/proto:any_go_proto",
+        "@go_protobuf//:ptypes/any",
         "//kythe/proto:go_go_proto",
         "//kythe/proto:storage_go_proto",
         "@go_protobuf//:proto",

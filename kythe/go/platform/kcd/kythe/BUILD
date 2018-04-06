@@ -22,5 +22,5 @@ go_test(
     srcs = ["units_test.go"],
     library = "kythe",
     visibility = ["//visibility:private"],
-    deps = ["//kythe/proto:any_go_proto"],
+    deps = ["@go_protobuf//:ptypes/any"],
 )

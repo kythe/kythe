@@ -296,9 +296,7 @@ func (m *Path_Node) String() string            { return proto.CompactTextString(
 func (*Path_Node) ProtoMessage()               {}
 func (*Path_Node) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4, 0} }
 
-type isPath_Node_Specialization interface {
-	isPath_Node_Specialization()
-}
+type isPath_Node_Specialization interface{ isPath_Node_Specialization() }
 
 type Path_Node_RawAnchor struct {
 	RawAnchor *kythe_proto_serving.RawAnchor `protobuf:"bytes,10,opt,name=raw_anchor,json=rawAnchor,oneof"`

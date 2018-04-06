@@ -38,7 +38,7 @@ import sys
 # Find the locations of the workspace root and the generated files directory.
 workspace   = check_output(['bazel', 'info', 'workspace']).strip()
 bazel_bin   = check_output(['bazel', 'info', 'bazel-bin']).strip()
-targets     = '//kythe/proto/... - //kythe/proto:any_go_proto'
+targets     = '//kythe/proto/...'
 import_base = 'kythe.io/kythe/proto'
 
 go_protos = check_output([

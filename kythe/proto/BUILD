@@ -114,7 +114,7 @@ cc_proto_library(
 go_kythe_proto(
     proto = ":analysis_proto",
     deps = [
-        ":any_go_proto",
+        "@go_protobuf//:ptypes/any",
         ":filecontext_go_proto",
         ":storage_go_proto",
     ],
@@ -150,7 +150,7 @@ go_kythe_proto(
     proto = ":analysis_service_proto",
     deps = [
         ":analysis_go_proto",
-        ":any_go_proto",
+        "@go_protobuf//:ptypes/any",
         ":filecontext_go_proto",
         ":storage_go_proto",
     ],
@@ -523,19 +523,4 @@ go_kythe_proto(proto = ":entryset_proto")
 java_proto_library(
     name = "entryset_java_proto",
     deps = [":entryset_proto"],
-)
-
-# This is a wrapper for the "well-known" any.proto, since the protobuf
-# repository does not yet provide Go rules.
-# TODO(fromberger): Replace this with something upstream when possible.
-go_proto_library(
-    name = "any_go_proto",
-    importpath = "github.com/golang/protobuf/ptypes/any",
-    proto = "@com_google_protobuf//:any_proto",
-    visibility = [
-        "//kythe/go/platform/kcd:__subpackages__",
-        "//kythe/go/platform/kindex:__pkg__",
-        "//kythe/go/util/ptypes:__pkg__",
-        "//kythe/proto:__pkg__",
-    ],
 )

@@ -7,7 +7,7 @@ go_library(
     name = "ptypes",
     srcs = ["ptypes.go"],
     deps = [
-        "//kythe/proto:any_go_proto",
+        "@go_protobuf//:ptypes/any",
         "@go_protobuf//:proto",
         "@go_protobuf//:ptypes",
     ],
@@ -19,5 +19,5 @@ go_test(
     srcs = ["ptypes_test.go"],
     library = "ptypes",
     visibility = ["//visibility:private"],
-    deps = ["//kythe/proto:any_go_proto"],
+    deps = ["@go_protobuf//:ptypes/any"],
 )
