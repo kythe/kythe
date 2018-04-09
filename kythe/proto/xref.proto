@@ -231,8 +231,10 @@ message DecorationsReply {
 }
 
 message CrossReferencesRequest {
-  // Set of nodes for which to return their cross-references.  Must be
-  // non-empty.
+  // The tickets of nodes for which to return cross-references.
+  // The server must report an error if this field is empty.
+  // The server may limit the number of tickets per request to ensure an
+  // efficient implementation.
   repeated string ticket = 1;
 
   enum DefinitionKind {
@@ -318,6 +320,9 @@ message CrossReferencesRequest {
   //
   // Importantly, this is not a list of node kinds; this is a list of edge kinds
   // (i.e. values for RelatedNode.relation_kind field).
+  //
+  // N.B.: When requesting related nodes, you must also set the filter,
+  // otherwise no data will be returned for the relationships requested.
   repeated string related_node_kind = 14;
 
   // Determines whether each Anchor in the response should have its text field
@@ -325,7 +330,7 @@ message CrossReferencesRequest {
   bool anchor_text = 6;
 
   // Determines whether each NodeInfo matching the above filters will have its
-  // definition location populated, if known.
+  // definition location populated (assuming it has one).
   bool node_definitions = 8;
 
   // The cross-references matching a request are organized into logical pages.
@@ -451,20 +456,22 @@ message CrossReferencesReply {
   // Total number of cross-references on all pages matching requested filters.
   Total total = 5;
 
-  // Sets of cross-references for each requested node
+  // A map from ticket to cross-references for each ticket specified in the
+  // request message.
   map<string, CrossReferenceSet> cross_references = 1;
 
-  // The facts left from the requested filters of the related node facts
+  // A map from ticket to the facts provided based on the requested filters,
+  // for each of the tickets provided in the request and their related nodes.
   map<string, common.NodeInfo> nodes = 2;
 
-  // Map from the definition tickets referred to in each NodeInfo to their
-  // Anchor.  This map will only be returned if the
-  // CrossReferencesRequest.node_definitions switch is true.
+  // A map from the ticket of each definition mentioned in the nodes map, to
+  // its corresponding anchor. This map is only populated if the request set
+  // the node_definitions field true.
   map<string, Anchor> definition_locations = 3;
 
   // If there are additional pages of cross-references after the ones returned
   // in this reply, next_page_token is the page token that may be passed to
-  // fetch the next page in sequence after this one.  If there are no additional
+  // fetch the next page in sequence after this one.  If there are no further
   // cross-references, this field will be empty.
   string next_page_token = 10;
 }
