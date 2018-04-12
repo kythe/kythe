@@ -1,0 +1,77 @@
+{
+  "required_factor_image": [
+    {
+      "uri": "openjdk:8",
+      "name": "java",
+      "copy_spec": [
+        {
+          "source": "/docker-java-home"
+        }
+      ],
+      "env_var": [
+        {
+          "name": "JAVA_HOME",
+          "value": "/docker-java-home"
+        },
+        {
+          "name": "PATH",
+          "value": "$JAVA_HOME/bin:$PATH"
+        }
+      ]
+    },
+    {
+      "uri": "gcr.io/kythe_repo/kythe-javac-extractor",
+      "name": "javac-extractor",
+      "copy_spec": [
+        {
+          "source": "/opt/kythe/extractors/javac-wrapper.sh"
+        },
+        {
+          "source": "/opt/kythe/extractors/javac_extractor.jar"
+        }
+      ],
+      "env_var": [
+        {
+          "name": "REAL_JAVAC",
+          "value": "$JAVA_HOME/bin/javac"
+        },
+        {
+          "name": "JAVAC_EXTRACTOR_JAR",
+          "value": "/opt/kythe/extractors/javac_extractor.jar"
+        },
+        {
+          "name": "JAVAC_WRAPPER",
+          "value": "/opt/kythe/extractors/javac-wrapper.sh"
+        }
+      ]
+    },
+    {
+      "uri": "maven:latest",
+      "name": "maven",
+      "copy_spec": [
+        {
+          "source": "/usr/share/maven"
+        }
+      ],
+      "env_var": [
+        {
+          "name": "MAVEN_HOME",
+          "value": "/usr/share/maven"
+        },
+        {
+          "name": "PATH",
+          "value": "$MAVEN_HOME/bin:$PATH"
+        },
+        {
+          "name": "MAVEN_OPTS",
+          "value": "\"-Dmaven.compiler.forceJavacCompilerUse=true -Dmaven.compiler.fork=true -Dmaven.compiler.executable=$JAVAC_WRAPPER\""
+        }
+      ],
+      "image_entry_point": [
+        "mvn",
+        "clean",
+        "compile"
+      ]
+    }
+  ]
+}

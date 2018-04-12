@@ -300,6 +300,20 @@ new_git_repository(
     remote = "https://github.com/golang/sync",
 )
 
+new_git_repository(
+    name = "go_cmp",
+    build_file = "third_party/go/cmp.BUILD",
+    commit = "3af367b6b30c263d47e8895973edcca9a49cf029",
+    remote = "https://github.com/google/go-cmp.git",
+)
+
+new_git_repository(
+    name = "go_cmp_internal",
+    build_file = "third_party/go/cmp_internal.BUILD",
+    commit = "3af367b6b30c263d47e8895973edcca9a49cf029",
+    remote = "https://github.com/google/go-cmp.git",
+)
+
 # proto_library, cc_proto_library, and java_proto_library rules implicitly
 # depend on @com_google_protobuf for protoc and proto runtimes.
 #

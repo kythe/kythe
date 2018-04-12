@@ -1,0 +1,80 @@
+/*
+ * Copyright 2018 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+
+// Represents configuration data necessary to construct an extraction image.
+// Dockerfile reference: https://docs.docker.com/engine/reference/builder/
+message ExtractionConfiguration {
+  // A list of the required images to be included in
+  // the composite extraction image.
+  repeated Image required_image = 1;
+  // A list of the custom docker RUN commands to be executed during construction
+  // of the composite extraction image. These can be used to install required
+  // SDKs which have no existing base image.
+  repeated RunCommand run_command = 2;
+
+  // Represents the information required for utilizing an image to be composed
+  // into a composite extraction image. The data within this message will be
+  // utilized as follows:
+  // FROM <image_uri> as <image_name>
+  // # repeated:
+  // COPY <image_copy_artifact.source> <image_copy_artifact.dest>
+  message Image {
+    // the image's URI to be utilized in the docker FROM command.
+    string uri = 1;
+    // A human readable name for the image, should be unique within the composite
+    // image and distinct from the uri.
+    string name = 2;
+    // A list of copy specs to be utilize in the docker COPY command.
+    repeated CopySpec copy_spec = 3;
+    // A list of environment variables to be setup in concert with this
+    // image.
+    repeated EnvVar env_var = 4;
+    // A list of parameters to configure as the entry point for the image. This
+    // is specific to build system images, only the last entry point in an image
+    // will be observed.
+    repeated string entry_point = 5;
+  }
+
+  // Represents information required for copying resources from images to
+  // composite images.
+  message CopySpec {
+    // The path to the source resource to be copied.
+    string source = 1;
+    // The destination path for the resource on the composite image.
+    // If not specified assumed same as source.
+    string destination = 2;
+  }
+
+  // Represents an image's corresonding environment variable to be incorporated into
+  // the composite image. The data within this message will be utilized as follows:
+  // ENV <name> <value>
+  message EnvVar {
+    string name = 1;
+    string value = 2;
+  }
+
+  // Represents an image's corresponding run command to be incorporated into the
+  // composite image. The data within this message will be utilized as follows:
+  // RUN <command> "<arg[0]>" "<arg[1]>" ...
+  message RunCommand {
+    string command = 1;
+    repeated string arg = 2;
+  }
+}

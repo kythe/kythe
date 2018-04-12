@@ -12,6 +12,7 @@ filegroup(
         "buildinfo.proto",
         "common.proto",
         "cxx.proto",
+        "extraction_config.proto",
         "filecontext.proto",
         "filetree.proto",
         "go.proto",
@@ -523,4 +524,18 @@ go_kythe_proto(proto = ":entryset_proto")
 java_proto_library(
     name = "entryset_java_proto",
     deps = [":entryset_proto"],
+)
+
+proto_library(
+    name = "extraction_config_proto",
+    srcs = ["extraction_config.proto"],
+    visibility = [
+        "//kythe:proto_visibility",
+    ],
+)
+
+go_proto_library(
+    name = "extraction_config_go_proto",
+    proto = ":extraction_config_proto",
+    importpath = "kythe.io/kythe/proto/extraction_config_go_proto",
 )
