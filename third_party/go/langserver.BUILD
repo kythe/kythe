@@ -9,5 +9,5 @@ exports_files(["LICENSE"])
 
 external_go_package(
     name = "pkg/lsp",
-    base_pkg = "github.com/sourcegraph/go-langserver"
+    base_pkg = "github.com/sourcegraph/go-langserver",
 )

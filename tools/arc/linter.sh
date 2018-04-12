@@ -31,14 +31,21 @@ readonly dir="$(dirname "$1")"
 case $file in
   AUTHORS|CONTRIBUTORS|WORKSPACE|third_party/*|tools/*|*.md|BUILD|*/BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
     ;; # skip copyright checks
+  *)
+    if ! grep -q 'Copyright 201[4-9] Google Inc. All rights reserved.' "$file"; then
+      echo 'copyright header::error:1 File missing copyright header'
+    fi ;;
+esac
+
+case $name in
+  BUILD|*.BUILD)
+    if command -v buildifier &>/dev/null; then
+      buildifier --mode=check "$file" | sed 's/^/buildifier::error:1 /'
+    fi ;;
   *.sh|*.bash)
     if command -v shellcheck &>/dev/null && command -v jq &>/dev/null; then
       shellcheck -f json "$file" | \
         jq -r '.[] | "shellcheck::" + (if .level == "info" then "advice" else .level end) + ":" + (.line | tostring) + " " + .message'
-    fi ;;
-  *)
-    if ! grep -q 'Copyright 201[4-9] Google Inc. All rights reserved.' "$file"; then
-      echo 'copyright header::error:1 File missing copyright header'
     fi ;;
 esac
 

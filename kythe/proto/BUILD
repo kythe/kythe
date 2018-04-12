@@ -114,9 +114,9 @@ cc_proto_library(
 go_kythe_proto(
     proto = ":analysis_proto",
     deps = [
-        "@go_protobuf//:ptypes/any",
         ":filecontext_go_proto",
         ":storage_go_proto",
+        "@go_protobuf//:ptypes/any",
     ],
 )
 
@@ -150,9 +150,9 @@ go_kythe_proto(
     proto = ":analysis_service_proto",
     deps = [
         ":analysis_go_proto",
-        "@go_protobuf//:ptypes/any",
         ":filecontext_go_proto",
         ":storage_go_proto",
+        "@go_protobuf//:ptypes/any",
     ],
 )
 

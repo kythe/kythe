@@ -35,8 +35,8 @@ sh_test(
         "singleton_expected_error.txt",
     ],
     data = [
-        "singleton_input.txt",
         "singleton_expected_error.txt",
+        "singleton_input.txt",
         "//kythe/cxx/verifier",
     ],
 )
@@ -52,8 +52,8 @@ sh_test(
         "singleton_inspect_expected_error.txt",
     ],
     data = [
-        "singleton_inspect_input.txt",
         "singleton_inspect_expected_error.txt",
+        "singleton_inspect_input.txt",
         "//kythe/cxx/verifier",
     ],
 )

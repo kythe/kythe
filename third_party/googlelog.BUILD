@@ -41,11 +41,11 @@ cc_library(
         "-D_XOPEN_SOURCE",
         "-Ithird_party/googlelog/src",
     ],
-    linkopts = [
-        "-lpthread",
-    ],
     includes = [
         "include",
+    ],
+    linkopts = [
+        "-lpthread",
     ],
     deps = [
         "@//third_party/googlelog:config_h",

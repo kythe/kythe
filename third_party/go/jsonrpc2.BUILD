@@ -8,5 +8,5 @@ licenses(["notice"])
 exports_files(["LICENSE"])
 
 external_go_package(
-    base_pkg = "github.com/sourcegraph/jsonrpc2"
+    base_pkg = "github.com/sourcegraph/jsonrpc2",
 )

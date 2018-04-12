@@ -7,9 +7,9 @@ go_library(
     name = "ptypes",
     srcs = ["ptypes.go"],
     deps = [
-        "@go_protobuf//:ptypes/any",
         "@go_protobuf//:proto",
         "@go_protobuf//:ptypes",
+        "@go_protobuf//:ptypes/any",
     ],
 )
 
