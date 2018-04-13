@@ -733,6 +733,7 @@ class Vistor {
   }
 
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
+    this.visitDecorators(decl.decorators || []);
     let kFunc: VName|undefined = undefined;
     if (decl.name) {
       let sym = this.getSymbolAtLocation(decl.name);
@@ -786,6 +787,7 @@ class Vistor {
     }
 
     for (const [index, param] of toArray(decl.parameters.entries())) {
+      this.visitDecorators(param.decorators || []);
       let sym = this.getSymbolAtLocation(param.name);
       if (!sym) {
         this.todo(param.name, `param ${param.name.getText()} has no symbol`);
@@ -812,7 +814,14 @@ class Vistor {
     }
   }
 
+  visitDecorators(decors: ts.Decorator[]) {
+    for (const decor of decors) {
+      this.visit(decor);
+    }
+  }
+
   visitClassDeclaration(decl: ts.ClassDeclaration) {
+    this.visitDecorators(decl.decorators || []);
     if (decl.name) {
       let sym = this.getSymbolAtLocation(decl.name);
       if (!sym) {

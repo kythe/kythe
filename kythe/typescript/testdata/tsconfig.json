@@ -10,6 +10,7 @@
         // used for developing the indexer.
         "noImplicitAny": false,
         "strictNullChecks": false,
+        "experimentalDecorators": true,
 
         // Set up an alternative "root dir", which are roots from which
         // relative paths are looked up.  This models the way that you
