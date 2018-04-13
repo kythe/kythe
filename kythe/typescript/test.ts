@@ -41,12 +41,12 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
   let compilerHost = ts.createCompilerHost(options);
 
   let libPath = compilerHost.getDefaultLibFileName(options);
-  let libSource = compilerHost.getSourceFile(libPath, ts.ScriptTarget.ES2015);
+  let libSource = compilerHost.getSourceFile(libPath, ts.ScriptTarget.ES2015)!;
 
   let hostGetSourceFile = compilerHost.getSourceFile;
   compilerHost.getSourceFile =
       (fileName: string, languageVersion: ts.ScriptTarget,
-       onError?: (message: string) => void): ts.SourceFile => {
+       onError?: (message: string) => void): ts.SourceFile|undefined => {
         if (fileName === libPath) return libSource;
         return hostGetSourceFile(fileName, languageVersion, onError);
       };

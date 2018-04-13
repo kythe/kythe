@@ -814,7 +814,7 @@ class Vistor {
     }
   }
 
-  visitDecorators(decors: ts.Decorator[]) {
+  visitDecorators(decors: ReadonlyArray<ts.Decorator>) {
     for (const decor of decors) {
       this.visit(decor);
     }
