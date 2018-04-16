@@ -24,7 +24,7 @@ import (
 
 	"bitbucket.org/creachadair/shell"
 
-	ecp "kythe.io/kythe/proto/extraction_config_go_proto"
+	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
 const (
@@ -60,7 +60,7 @@ WORKDIR %[2]s
 // the configuration's corresponding repository. Returns the contents of the
 // Dockerfile for the generated composite image. The Dockerfile format is
 // defined here: https://docs.docker.com/engine/reference/builder/
-func NewExtractionImage(config *ecp.ExtractionConfiguration) ([]byte, error) {
+func NewExtractionImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
 	var buf bytes.Buffer
 
 	// Format the FROM statements for the required images.

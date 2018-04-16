@@ -35,7 +35,7 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 
-	ecp "kythe.io/kythe/proto/extraction_config_go_proto"
+	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
 var (
@@ -83,7 +83,7 @@ func main() {
 	defer configFile.Close()
 
 	// attempt to deserialize the extraction config
-	config := ecp.ExtractionConfiguration{}
+	config := ecpb.ExtractionConfiguration{}
 	if err := jsonpb.Unmarshal(configFile, &config); err != nil {
 		log.Fatalf("Error parsing -config: %v", err)
 	}

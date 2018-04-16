@@ -29,7 +29,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp"
 
-	ecp "kythe.io/kythe/proto/extraction_config_go_proto"
+	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
 const testDataDir = "$TEST_SRCDIR/testdata"
@@ -38,13 +38,13 @@ func openTestDataFile(fileName string) (*os.File, error) {
 	return os.Open(os.ExpandEnv(filepath.Join(testDataDir, fileName)))
 }
 
-func mustLoadConfig(fileName string) *ecp.ExtractionConfiguration {
+func mustLoadConfig(fileName string) *ecpb.ExtractionConfiguration {
 	testConfigFile, err := openTestDataFile(fileName)
 	if err != nil {
 		log.Panicf("Failed to load test config file: %v", err)
 	}
 
-	testConfig := ecp.ExtractionConfiguration{}
+	testConfig := ecpb.ExtractionConfiguration{}
 	if err := jsonpb.Unmarshal(testConfigFile, &testConfig); err != nil {
 		log.Panicf("Failed to unmarshal test config: %v", err)
 	}
