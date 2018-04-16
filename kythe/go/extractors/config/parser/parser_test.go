@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package config
+package parser
 
 import (
 	"fmt"
@@ -29,7 +29,6 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp"
 
-	cp "kythe.io/kythe/go/extractors/config/config_parser"
 	ecp "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
@@ -80,7 +79,7 @@ func TestNewExtractionImageGeneratesExpectedDockerFiles(t *testing.T) {
 	for _, testConfigFile := range testConfigFiles {
 		testConfig := mustLoadConfig(filepath.Base(testConfigFile))
 
-		extractionImageContent, err := cp.NewExtractionImage(testConfig)
+		extractionImageContent, err := NewExtractionImage(testConfig)
 		if err != nil {
 			t.Fatalf("\nFailed to parse test config: %v\n", err)
 		}

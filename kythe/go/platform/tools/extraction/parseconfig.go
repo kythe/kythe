@@ -31,9 +31,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"kythe.io/kythe/go/extractors/config/parser"
+
 	"github.com/golang/protobuf/jsonpb"
 
-	cp "kythe.io/kythe/go/extractors/config/config_parser"
 	ecp "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
@@ -88,7 +89,7 @@ func main() {
 	}
 
 	// attempt to generate a docker image from the specified config
-	image, err := cp.NewExtractionImage(&config)
+	image, err := parser.NewExtractionImage(&config)
 	if err != nil {
 		log.Fatalf("Error generating extraction image: %v", err)
 	}
