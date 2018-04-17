@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package parser
+package config
 
 import (
 	"fmt"
@@ -78,7 +78,6 @@ func TestNewExtractionImageGeneratesExpectedDockerFiles(t *testing.T) {
 
 	for _, testConfigFile := range testConfigFiles {
 		testConfig := mustLoadConfig(filepath.Base(testConfigFile))
-
 		extractionImageContent, err := NewExtractionImage(testConfig)
 		if err != nil {
 			t.Fatalf("\nFailed to parse test config: %v\n", err)

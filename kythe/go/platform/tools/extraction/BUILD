@@ -6,7 +6,7 @@ go_binary(
     name = "parseconfig",
     srcs = ["parseconfig.go"],
     deps = [
-        "//kythe/go/extractors/config/parser",
+        "//kythe/go/extractors/config",
         "//kythe/proto:extraction_config_go_proto",
         "@go_protobuf//:jsonpb",
         "@go_protobuf//:proto",

@@ -31,11 +31,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"kythe.io/kythe/go/extractors/config/parser"
+	"kythe.io/kythe/go/extractors/config"
+	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 
 	"github.com/golang/protobuf/jsonpb"
-
-	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
 var (
@@ -83,13 +82,13 @@ func main() {
 	defer configFile.Close()
 
 	// attempt to deserialize the extraction config
-	config := ecpb.ExtractionConfiguration{}
-	if err := jsonpb.Unmarshal(configFile, &config); err != nil {
+	extractionConfig := ecpb.ExtractionConfiguration{}
+	if err := jsonpb.Unmarshal(configFile, &extractionConfig); err != nil {
 		log.Fatalf("Error parsing -config: %v", err)
 	}
 
 	// attempt to generate a docker image from the specified config
-	image, err := parser.NewExtractionImage(&config)
+	image, err := config.NewExtractionImage(&extractionConfig)
 	if err != nil {
 		log.Fatalf("Error generating extraction image: %v", err)
 	}

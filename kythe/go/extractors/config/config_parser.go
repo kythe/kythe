@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-// Package parser parses configuration settings for extracting compilation records from
+// Package config defines configuration settings for extracting compilation records from
 // a repository using a non-bazel build system.
-package parser
+package config
 
 import (
 	"bytes"

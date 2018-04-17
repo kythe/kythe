@@ -4,8 +4,8 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
-    name = "parser",
-    srcs = ["parser.go"],
+    name = "config",
+    srcs = ["config_parser.go"],
     deps = [
         "//kythe/proto:extraction_config_go_proto",
         "@go_shell//:shell",
@@ -13,10 +13,10 @@ go_library(
 )
 
 go_test(
-    name = "parser_test",
-    srcs = ["parser_test.go"],
+    name = "config_test",
+    srcs = ["config_parser_test.go"],
     data = glob(["testdata/**"]),
-    library = ":parser",
+    library = ":config",
     deps = [
         "//kythe/proto:extraction_config_go_proto",
         "@go_cmp//:cmp",
