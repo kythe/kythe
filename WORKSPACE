@@ -175,6 +175,12 @@ maven_jar(
     sha1 = "bc6fa6b19424bb9592fe43bbc20178f92d403105",
 )
 
+maven_jar(
+    name = "com_google_errorprone_error_prone_annotations",
+    artifact = "com.google.errorprone:error_prone_annotations:2.2.0",
+    sha1 = "88e3c593e9b3586e1c6177f89267da6fc6986f0c",
+)
+
 http_archive(
     name = "io_bazel_rules_go",
     sha256 = "feba3278c13cde8d67e341a837f69a029f698d7a27ddbb2a202be7a10b22142a",
@@ -342,6 +348,18 @@ http_archive(
     name = "com_google_protobuf_java",
     strip_prefix = "protobuf-106ffc04be1abf3ff3399f54ccf149815b287dd9",
     urls = ["https://github.com/google/protobuf/archive/106ffc04be1abf3ff3399f54ccf149815b287dd9.zip"],
+)
+
+http_archive(
+    name = "google_bazel_common",
+    strip_prefix = "bazel-common-370b397507d9bab9d9cdad8dfe7e6ccc8c2d0c67",
+    urls = ["https://github.com/google/bazel-common/archive/370b397507d9bab9d9cdad8dfe7e6ccc8c2d0c67.zip"],
+)
+
+git_repository(
+    name = "com_google_common_flogger",
+    commit = "b08ed99eb6dcd62afe81fd0fafd97299b1870fbf",
+    remote = "https://github.com/google/flogger",
 )
 
 load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")

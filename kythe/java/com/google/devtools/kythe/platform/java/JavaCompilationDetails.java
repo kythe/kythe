@@ -23,7 +23,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitBasedJavaFileManager;
 import com.google.devtools.kythe.platform.java.filemanager.JavaFileStoreBasedFileManager;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
@@ -51,8 +51,7 @@ public class JavaCompilationDetails {
   private final Charset encoding;
   private final JavaFileStoreBasedFileManager fileManager;
 
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(JavaCompilationDetails.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private static final Charset DEFAULT_ENCODING = UTF_8;
 
@@ -100,7 +99,8 @@ public class JavaCompilationDetails {
       compilationUnits = javacTask.parse();
       javacTask.analyze();
     } catch (Throwable e) {
-      logger.severefmt(e, "Unexpected error in javac analysis of {%s}", compilationUnit.getVName());
+      logger.atSevere().withCause(e).log(
+          "Unexpected error in javac analysis of {%s}", compilationUnit.getVName());
       analysisCrash = e;
     }
 

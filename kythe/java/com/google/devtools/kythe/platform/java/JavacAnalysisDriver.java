@@ -17,7 +17,7 @@
 package com.google.devtools.kythe.platform.java;
 
 import com.google.common.collect.ImmutableList;
-import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -31,8 +31,7 @@ import javax.tools.JavaCompiler;
  * compilations that are retrieved from various locations.
  */
 public class JavacAnalysisDriver {
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(JavacAnalysisDriver.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
   private final List<Processor> processors;
 
   public JavacAnalysisDriver() {
@@ -58,7 +57,7 @@ public class JavacAnalysisDriver {
 
     // If there are no source files, then there is nothing for us to do.
     if (compilationUnit.getSourceFileList().isEmpty()) {
-      logger.warning("CompilationUnit has no source files");
+      logger.atWarning().log("CompilationUnit has no source files");
       return;
     }
 

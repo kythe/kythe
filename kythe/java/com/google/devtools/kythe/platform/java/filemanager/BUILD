@@ -12,7 +12,7 @@ java_library(
         "JavaFileStoreBasedFileManager.java",
     ],
     deps = [
-        "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/proto:analysis_java_proto",

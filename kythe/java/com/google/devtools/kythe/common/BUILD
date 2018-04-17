@@ -1,10 +1,9 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-# TODO(jrtom): rename this to "logger" or something less generic
 java_library(
-    name = "common",
-    srcs = ["FormattingLogger.java"],
-    deps = ["@com_google_guava_guava//jar"],
+    name = "flogger",
+    exports = ["@com_google_common_flogger//api"],
+    runtime_deps = ["@com_google_common_flogger//api:system_backend"],
 )
 
 java_plugin(

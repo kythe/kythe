@@ -21,10 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.flogger.FluentLogger;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.nio.charset.Charset;
@@ -39,7 +39,7 @@ import java.util.Objects;
  * properties in the {@link EntrySet} along with a set of salts.
  */
 public final class EntrySet {
-  private static final FormattingLogger logger = FormattingLogger.getLogger(EntrySet.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   /** {@link Charset} used to encode {@link String} property values. */
   static final Charset PROPERTY_VALUE_CHARSET = StandardCharsets.UTF_8;
@@ -94,7 +94,7 @@ public final class EntrySet {
   /** Emits each entry in the {@link EntrySet} using the given {@link FactEmitter}. */
   public void emit(FactEmitter emitter) {
     if (emitted) {
-      logger.warningfmt("EntrySet already emitted: %s", this);
+      logger.atWarning().log("EntrySet already emitted: %s", this);
     }
     for (Map.Entry<String, byte[]> entry : properties.entrySet()) {
       emitter.emit(source, edgeKind, target, entry.getKey(), entry.getValue());
@@ -136,7 +136,7 @@ public final class EntrySet {
   @Override
   public void finalize() {
     if (!emitted) {
-      logger.severefmt("EntrySet finalized before being emitted: " + this);
+      logger.atSevere().log("EntrySet finalized before being emitted: %s", this);
     }
   }
 
@@ -281,22 +281,22 @@ public final class EntrySet {
   protected static String buildSignature(
       ImmutableList<String> salts, ImmutableSortedMap<String, byte[]> properties) {
     Hasher signature = SIGNATURE_HASH_FUNCTION.newHasher();
-    logger.finest(">>>>>>>> Building signature");
+    logger.atFinest().log(">>>>>>>> Building signature");
     for (String salt : salts) {
-      logger.finestfmt("    Salt: %s", salt);
+      logger.atFinest().log("    Salt: %s", salt);
       signature.putString(salt, PROPERTY_VALUE_CHARSET);
     }
     for (Map.Entry<String, byte[]> property : properties.entrySet()) {
       if (SALT_IGNORED_FACT_VALUES.contains(property.getKey())) {
-        logger.finestfmt("    %s [SKIPPED]", property.getKey());
+        logger.atFinest().log("    %s [SKIPPED]", property.getKey());
         continue;
       }
       String propertyValue = new String(property.getValue(), PROPERTY_VALUE_CHARSET);
-      logger.finestfmt("    %s: %s", property.getKey(), propertyValue);
+      logger.atFinest().log("    %s: %s", property.getKey(), propertyValue);
       signature.putString(property.getKey(), PROPERTY_VALUE_CHARSET).putBytes(property.getValue());
     }
     String ret = signature.hash().toString();
-    logger.finestfmt("<<<<<<<< Built signature: %s", ret);
+    logger.atFinest().log("<<<<<<<< Built signature: %s", ret);
     return ret;
   }
 }

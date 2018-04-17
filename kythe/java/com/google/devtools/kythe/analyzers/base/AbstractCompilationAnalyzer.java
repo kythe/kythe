@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
-import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
@@ -36,8 +36,7 @@ import java.util.Optional;
 
 /** Abstract CompilationAnalyzer that handles common boilerplate code. */
 public abstract class AbstractCompilationAnalyzer {
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(AbstractCompilationAnalyzer.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final StatisticsCollector statistics;
 
@@ -62,17 +61,17 @@ public abstract class AbstractCompilationAnalyzer {
       if (revision.isEmpty()) {
         revision = null;
       }
-      logger.infofmt(
+      logger.atInfo().log(
           "Analyzing compilation: {%s}",
           TextFormat.shortDebugString(req.getCompilation().getVName()));
       analyzeCompilation(req.getCompilation(), Optional.ofNullable(revision), fileData, emitter);
     } catch (Throwable t) {
-      logger.warningfmt("Uncaught exception: %s", t);
+      logger.atWarning().log("Uncaught exception: %s", t);
       t.printStackTrace();
       Throwables.propagateIfInstanceOf(t, AnalysisException.class);
       throw new AnalysisException(t);
     } finally {
-      logger.infofmt("Analysis completed in %s", timer.stop());
+      logger.atInfo().log("Analysis completed in %s", timer.stop());
     }
   }
 

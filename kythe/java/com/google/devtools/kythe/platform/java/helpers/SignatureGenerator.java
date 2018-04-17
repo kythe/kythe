@@ -17,7 +17,7 @@
 package com.google.devtools.kythe.platform.java.helpers;
 
 import com.google.common.base.Charsets;
-import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.common.flogger.FluentLogger;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.BoundKind;
@@ -84,8 +84,7 @@ public class SignatureGenerator
     return type.tsym.getQualifiedName().contentEquals(Object.class.getName());
   }
 
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(SignatureGenerator.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   static final String ANONYMOUS = "/anonymous";
 
@@ -199,7 +198,7 @@ public class SignatureGenerator
       return Optional.of(sb.toString());
     } catch (Throwable e) {
       // In case something unexpected happened during signature generation we do not want to fail.
-      logger.warningfmt(e, "Failure generating signature for %s", symbol);
+      logger.atWarning().withCause(e).log("Failure generating signature for %s", symbol);
       return Optional.empty();
     }
   }

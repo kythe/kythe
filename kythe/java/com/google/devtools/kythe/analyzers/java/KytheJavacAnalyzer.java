@@ -17,12 +17,10 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Preconditions;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.java.Plugin.KytheNode;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
-import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.MethodType;
-import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.ReferenceType;
-import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.JavaCompilationDetails;
 import com.google.devtools.kythe.platform.java.JavacAnalyzer;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
@@ -56,8 +54,7 @@ import javax.tools.Diagnostic;
 public class KytheJavacAnalyzer extends JavacAnalyzer {
   private static final long serialVersionUID = 7458181626939870354L;
 
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(KytheJavacAnalyzer.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final FactEmitter emitter;
   private final JavaIndexerConfig config;
@@ -97,7 +94,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
         "JavaEntrySets is non-null (analyzeCompilationUnit was called concurrently?)");
     if (config.getVerboseLogging()) {
       for (Diagnostic<?> err : details.getCompileErrors()) {
-        logger.warningfmt("javac compilation error: %s", err);
+        logger.atWarning().log("javac compilation error: %s", err);
       }
     }
     CompilationUnit compilation = details.getCompilationUnit();
@@ -157,7 +154,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           Plugin plugin = p.get();
           plugin.run(compilation, entrySets, graph);
         } catch (Throwable e) {
-          logger.warningfmt(e, "Error running plugin: %s", e.getMessage());
+          logger.atWarning().withCause(e).log("Error running plugin: %s", e.getMessage());
         }
       }
     }

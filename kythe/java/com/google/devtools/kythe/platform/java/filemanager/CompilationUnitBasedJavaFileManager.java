@@ -16,7 +16,7 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
-import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -38,8 +38,7 @@ import javax.tools.StandardLocation;
  */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileManager {
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(CompilationUnitBasedJavaFileManager.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   /**
    * paths searched for .class files, can be relative or absolute, but must match path as named by
@@ -68,7 +67,7 @@ public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileM
       sourcepath.addAll(details.getSourcepathList());
       bootclasspath.addAll(details.getBootclasspathList());
     } else {
-      logger.warningfmt("Compilation missing JavaDetails; falling back to flag parsing");
+      logger.atWarning().log("Compilation missing JavaDetails; falling back to flag parsing");
       classpath.add("");
       classpath.addAll(getPathSet(unit.getArgumentList(), "-cp"));
       classpath.addAll(getPathSet(unit.getArgumentList(), "-classpath"));

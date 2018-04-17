@@ -16,8 +16,8 @@
 
 package com.google.devtools.kythe.platform.shared;
 
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
-import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo;
@@ -29,8 +29,7 @@ import javax.annotation.Nullable;
 
 /** Loads protobuf metadata (stored as GeneratedCodeInfo messages). */
 public class ProtobufMetadataLoader implements MetadataLoader {
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(ProtobufMetadataLoader.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   /**
    * Interface to support different ways of extracting GeneratedCodeInfo from a file. For example
@@ -96,7 +95,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
     }
     VName contextVName = vnameLookup.apply(fileName);
     if (contextVName == null) {
-      logger.warning("Failed getting VName for metadata: " + fileName);
+      logger.atWarning().log("Failed getting VName for metadata: %s", fileName);
       if (defaultCorpus == null) {
         return null;
       }
@@ -146,7 +145,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
     try (ByteArrayInputStream stream = new ByteArrayInputStream(data)) {
       info = GeneratedCodeInfo.parseFrom(stream);
     } catch (IOException ex) {
-      logger.warning("IOException on " + fileName);
+      logger.atWarning().log("IOException on %s", fileName);
       return null;
     }
     return info;

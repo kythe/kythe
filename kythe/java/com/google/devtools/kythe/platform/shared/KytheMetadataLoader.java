@@ -17,8 +17,8 @@
 package com.google.devtools.kythe.platform.shared;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
-import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.JsonUtil;
 import com.google.gson.Gson;
@@ -36,8 +36,7 @@ import javax.annotation.Nullable;
 
 /** Loads Kythe JSON-formatted metadata (with the .meta extension). */
 public class KytheMetadataLoader implements MetadataLoader {
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(KytheMetadataLoader.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   /** This extension signifies a Kythe JSON metadata file. */
   private static final String META_SUFFIX = ".meta";
@@ -150,6 +149,6 @@ public class KytheMetadataLoader implements MetadataLoader {
   }
 
   private static void emitWarning(String warning, String fileName) {
-    logger.warningfmt("Error in parsing rule: %s\nfrom file: %s", warning, fileName);
+    logger.atWarning().log("Error in parsing rule: %s\nfrom file: %s", warning, fileName);
   }
 }

@@ -16,7 +16,7 @@
 
 package com.google.devtools.kythe.extractors.java;
 
-import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.shared.Metadata;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
@@ -43,8 +43,7 @@ import javax.tools.StandardLocation;
 @SupportedAnnotationTypes(value = {"*"})
 public class ProcessAnnotation extends AbstractProcessor {
 
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(ProcessAnnotation.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   UsageAsInputReportingFileManager fileManager;
 
@@ -79,7 +78,7 @@ public class ProcessAnnotation extends AbstractProcessor {
       } catch (IOException ex) {
         // We only log any IO exception here and do not cancel the whole processing because of an
         // exception in this stage.
-        logger.severefmt("Error in annotation processing: %s", ex.getMessage());
+        logger.atSevere().withCause(ex).log("Error in annotation processing");
       }
     }
     for (Element ae : roundEnv.getElementsAnnotatedWith(Generated.class)) {
@@ -100,7 +99,7 @@ public class ProcessAnnotation extends AbstractProcessor {
             ((UsageAsInputReportingJavaFileObject) file).markUsed();
           }
         } catch (IllegalArgumentException ex) {
-          logger.warningfmt("Bad annotationFile (%s): %s", ex.getMessage(), annotationFile);
+          logger.atWarning().withCause(ex).log("Bad annotationFile: %s", annotationFile);
         }
       }
     }

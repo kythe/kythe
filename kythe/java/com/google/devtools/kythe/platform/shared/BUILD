@@ -24,7 +24,7 @@ java_library(
         "FileDataProvider.java",
     ],
     deps = [
-        "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/proto:analysis_java_proto",
         "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
@@ -42,8 +42,8 @@ java_library(
     ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
-        "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",

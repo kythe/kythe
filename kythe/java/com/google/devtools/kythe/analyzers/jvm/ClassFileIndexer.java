@@ -18,11 +18,11 @@ package com.google.devtools.kythe.analyzers.jvm;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
+import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
-import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
@@ -63,7 +63,7 @@ public class ClassFileIndexer {
   public static final String CLASS_FILE_EXT = ".class";
   public static final String JAR_DETAILS_URL = "kythe.io/proto/kythe.proto.JarDetails";
 
-  private static final FormattingLogger logger = FormattingLogger.getLogger(ClassFileIndexer.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   public static void main(String[] args) throws AnalysisException {
     StandaloneConfig config = new StandaloneConfig();
@@ -139,7 +139,7 @@ public class ClassFileIndexer {
         try {
           jarDetails = JarDetails.parseFrom(details.getValue());
         } catch (InvalidProtocolBufferException ipbe) {
-          logger.warning(ipbe, "Error unpacking JarDetails");
+          logger.atWarning().withCause(ipbe).log("Error unpacking JarDetails");
         }
       }
     }

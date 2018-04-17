@@ -18,6 +18,7 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
@@ -25,7 +26,6 @@ import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
 import com.google.devtools.kythe.analyzers.base.NodeKind;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
-import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
@@ -53,7 +53,7 @@ import javax.tools.JavaFileObject;
 
 /** Specialization of {@link KytheEntrySets} for Java. */
 public class JavaEntrySets extends KytheEntrySets {
-  private static final FormattingLogger logger = FormattingLogger.getLogger(JavaEntrySets.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final Map<Symbol, VName> symbolNodes = new HashMap<>();
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
@@ -137,7 +137,7 @@ public class JavaEntrySets extends KytheEntrySets {
           String.format(
               "Couldn't generate vname for symbol %s.  Input file for enclosing class %s not seen during extraction.",
               sym, enclClass);
-      logger.warning(msg);
+      logger.atWarning().log(msg);
       Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(msg);
       return emitDiagnostic(d.build()).getVName();
     } else {

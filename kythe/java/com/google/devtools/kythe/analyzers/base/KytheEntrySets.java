@@ -17,7 +17,7 @@
 package com.google.devtools.kythe.analyzers.base;
 
 import com.google.common.base.Preconditions;
-import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Diagnostic;
@@ -46,7 +46,7 @@ import javax.annotation.Nullable;
  * <p>This class is meant to be subclassed to build indexer-specific nodes and edges.
  */
 public class KytheEntrySets {
-  private static final FormattingLogger logger = FormattingLogger.getLogger(KytheEntrySets.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   public static final String NODE_PREFIX = "/kythe/";
 
@@ -79,7 +79,7 @@ public class KytheEntrySets {
       }
       if (inputVNames.containsKey(digest)) {
         statistics.incrementCounter("file-digest-collision");
-        logger.warningfmt(
+        logger.atWarning().log(
             "Found two files with the same digest [%s]: %s and %s",
             digest, name, inputVNames.get(digest));
       }

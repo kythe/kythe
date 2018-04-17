@@ -38,7 +38,7 @@ java_library(
     ],
     deps = [
         ":schema",
-        "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/java/com/google/devtools/kythe/util:kythe_uri",
         "//kythe/java/com/google/devtools/kythe/util:span",
@@ -58,7 +58,7 @@ java_library(
     ],
     deps = [
         ":entryset",
-        "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",

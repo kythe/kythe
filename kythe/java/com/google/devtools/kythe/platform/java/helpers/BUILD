@@ -11,7 +11,7 @@ java_library(
         "SyntaxPreservingScanner.java",
     ],
     deps = [
-        "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/util:span",
         "//third_party/javac",
         "@com_google_code_findbugs_jsr305//jar",

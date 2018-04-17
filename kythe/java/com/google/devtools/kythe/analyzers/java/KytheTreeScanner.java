@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
+import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
@@ -30,7 +31,6 @@ import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.ReferenceType;
-import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.filemanager.JavaFileStoreBasedFileManager;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
@@ -99,7 +99,7 @@ import javax.tools.JavaFileObject;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
-  private static final FormattingLogger logger = FormattingLogger.getLogger(KytheTreeScanner.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   /** Maximum allowed text size for variable {@link MarkedSource.Kind.INITIALIZER}s */
   private static final int MAX_INITIALIZER_LENGTH = 80;
@@ -293,7 +293,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     Span classIdent = filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
     if (!classDef.name.isEmpty() && classIdent == null) {
-      logger.warning("Missing span for class identifier: " + classDef.sym);
+      logger.atWarning().log("Missing span for class identifier: %s", classDef.sym);
     }
 
     // Generic classes record the source range of the class name for the abs node, regular
@@ -349,7 +349,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         case INTERFACE:
           break; // Interfaces have no implicit superclass.
         default:
-          logger.warningfmt("Unexpected JCClassDecl kind: %s", classDef.getKind());
+          logger.atWarning().log("Unexpected JCClassDecl kind: %s", classDef.getKind());
           break;
       }
     }
@@ -362,7 +362,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JavaNode implNode = scan(implClass, ctx);
       if (implNode == null) {
         statistics.incrementCounter("warning-missing-implements-node");
-        logger.warning("Missing 'implements' node for " + implClass.getClass() + ": " + implClass);
+        logger.atWarning().log(
+            "Missing 'implements' node for %s: %s", implClass.getClass(), implClass);
         continue;
       }
       entrySets.emitEdge(classNode, EdgeKind.EXTENDS, implNode.getVName());
@@ -399,7 +400,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
       JavaNode typeNode = n.getType();
       if (typeNode == null) {
-        logger.warningfmt(
+        logger.atWarning().log(
             "Missing parameter type (method: %s; parameter: %s)", methodDef.getName(), param);
         wildcards.addAll(n.childWildcards);
         continue;
@@ -592,7 +593,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     JavaNode typeCtorNode = scan(tApply.getType(), ctx);
     if (typeCtorNode == null) {
-      logger.warning("Missing type constructor: " + tApply.getType());
+      logger.atWarning().log("Missing type constructor: %s", tApply.getType());
       return emitDiagnostic(ctx, "missing type constructor", null, null);
     }
 
@@ -665,7 +666,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (!field.name.toString().equals("*")) {
         String msg = "Could not determine selected Symbol for " + field;
         if (config.getVerboseLogging()) {
-          logger.warning(msg);
+          logger.atWarning().log(msg);
         }
         return emitDiagnostic(ctx, msg, null, null);
       }
@@ -750,7 +751,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   public JavaNode visitTypeIdent(JCPrimitiveTypeTree primitiveType, TreeContext owner) {
     TreeContext ctx = owner.down(primitiveType);
     if (config.getVerboseLogging() && primitiveType.typetag == TypeTag.ERROR) {
-      logger.warning("found primitive ERROR type: " + ctx);
+      logger.atWarning().log("found primitive ERROR type: %s", ctx);
     }
     String name = Ascii.toLowerCase(primitiveType.typetag.toString());
     EntrySet node = entrySets.newBuiltinAndEmit(name);
@@ -838,7 +839,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     VName node = getNode(sym);
     if (node == null) {
       if (config.getVerboseLogging()) {
-        logger.warning("failed to emit documentation reference to " + sym);
+        logger.atWarning().log("failed to emit documentation reference to %s", sym);
       }
       return;
     }
@@ -1175,18 +1176,18 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       }
       FileObject file = fileManager.getJavaFileFromPath(fullPath, JavaFileObject.Kind.OTHER);
       if (file == null) {
-        logger.warning("Can't find metadata " + path + " for " + uri + " at " + fullPath);
+        logger.atWarning().log("Can't find metadata %s for %s at %s", path, uri, fullPath);
         return;
       }
       InputStream stream = file.openInputStream();
       Metadata newMetadata = metadataLoaders.parseFile(fullPath, ByteStreams.toByteArray(stream));
       if (newMetadata == null) {
-        logger.warning("Can't load metadata " + path + " for " + uri);
+        logger.atWarning().log("Can't load metadata %s for %s", path, uri);
         return;
       }
       metadata.add(newMetadata);
     } catch (IOException | IllegalArgumentException ex) {
-      logger.warning("Can't read metadata " + path + " for " + uri);
+      logger.atWarning().log("Can't read metadata %s for %s", path, uri);
     }
   }
 

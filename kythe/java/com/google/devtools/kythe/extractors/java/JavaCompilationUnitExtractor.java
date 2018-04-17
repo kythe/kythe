@@ -30,8 +30,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteStreams;
-import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
@@ -107,8 +107,7 @@ public class JavaCompilationUnitExtractor {
   public static final String JAVA_DETAILS_URL = "kythe.io/proto/kythe.proto.JavaDetails";
   public static final String BUILD_DETAILS_URL = "kythe.io/proto/kythe.proto.BuildDetails";
 
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(JavaCompilationUnitExtractor.class);
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private static final String MODULE_INFO_NAME = "module-info";
   private static final String SOURCE_JAR_ROOT = "!SOURCE_JAR!";
@@ -556,7 +555,7 @@ public class JavaCompilationUnitExtractor {
         }
         byte[] data = ByteStreams.toByteArray(stream);
         if (data.length == 0) {
-          logger.warningfmt("Empty java source file: %s", strippedPath);
+          logger.atWarning().log("Empty java source file: %s", strippedPath);
         }
         results.fileContents.put(strippedPath, data);
         results.relativePaths.put(strippedPath, relativePath);
@@ -758,7 +757,8 @@ public class JavaCompilationUnitExtractor {
         for (Diagnostic<? extends JavaFileObject> diagnostic :
             diagnosticsCollector.getDiagnostics()) {
           if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
-            logger.severefmt("Fatal error in compiler: %s", diagnostic.getMessage(Locale.ENGLISH));
+            logger.atSevere().log(
+                "Fatal error in compiler: %s", diagnostic.getMessage(Locale.ENGLISH));
           }
         }
         throw new ExtractionException("Fatal error while running javac compiler.", e, false);
@@ -767,7 +767,7 @@ public class JavaCompilationUnitExtractor {
       try {
         DeleteRecursively.delete(tempDir);
       } catch (IOException ioe) {
-        logger.severefmt(ioe, "Failed to delete temporary directory " + tempDir);
+        logger.atSevere().withCause(ioe).log("Failed to delete temporary directory %s", tempDir);
       }
     }
     // If we encountered any compilation errors, we report them even though we
@@ -776,11 +776,11 @@ public class JavaCompilationUnitExtractor {
       if (diag.getKind() == Diagnostic.Kind.ERROR) {
         results.hasErrors = true;
         if (diag.getSource() != null) {
-          logger.severefmt(
+          logger.atSevere().log(
               "compiler error: %s(%d): %s",
               diag.getSource().getName(), diag.getLineNumber(), diag.getMessage(Locale.ENGLISH));
         } else {
-          logger.severefmt("compiler error: %s", diag.getMessage(Locale.ENGLISH));
+          logger.atSevere().log("compiler error: %s", diag.getMessage(Locale.ENGLISH));
         }
       }
     }
@@ -927,7 +927,7 @@ public class JavaCompilationUnitExtractor {
         if (path != null) {
           String basename = Paths.get(path).getFileName().toString();
           if (!basename.endsWith(".java")) {
-            logger.warning("Invalid sourcefile name: '" + basename + "'");
+            logger.atWarning().log("Invalid sourcefile name: '%s'", basename);
           }
           sourceBaseNames.put(sym.classfile.toUri(), basename);
         }
