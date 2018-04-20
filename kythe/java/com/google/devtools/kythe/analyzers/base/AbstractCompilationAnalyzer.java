@@ -66,7 +66,7 @@ public abstract class AbstractCompilationAnalyzer {
           TextFormat.shortDebugString(req.getCompilation().getVName()));
       analyzeCompilation(req.getCompilation(), Optional.ofNullable(revision), fileData, emitter);
     } catch (Throwable t) {
-      logger.atWarning().log("Uncaught exception: %s", t);
+      logger.atWarning().withCause(t).log("Uncaught exception");
       t.printStackTrace();
       Throwables.propagateIfInstanceOf(t, AnalysisException.class);
       throw new AnalysisException(t);
