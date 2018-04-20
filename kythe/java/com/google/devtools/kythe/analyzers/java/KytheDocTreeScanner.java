@@ -56,7 +56,6 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
 
     miniAnchors.clear();
     scan(new DocTreePath(treePath, doc), doc);
-    int startChar = (int) doc.getSourcePosition(doc);
 
     String bracketed =
         MiniAnchor.bracket(
