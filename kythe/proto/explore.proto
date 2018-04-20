@@ -230,7 +230,7 @@ message ParametersReply {
 // Fetches the tickets for the enclosing contexts of the specified ticket
 // (e.g.: what package is this file in?  what class is this function in?).
 message ParentsRequest {
-  repeated string ticket = 1;
+  repeated string tickets = 1;
 }
 
 message ParentsReply {
@@ -244,7 +244,7 @@ message ParentsReply {
 // Fetches the tickets for which the specified ticket is the enclosing context
 // (e.g. what files are in this package?  what functions are in this class?).
 message ChildrenRequest {
-  repeated string ticket = 1;
+  repeated string tickets = 1;
 
   NodeFilter node_filter = 2;
 }

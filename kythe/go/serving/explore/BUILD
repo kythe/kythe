@@ -11,7 +11,9 @@ go_library(
     srcs = ["explore.go"],
     deps = [
         "//kythe/go/services/explore",
+        "//kythe/go/storage/table",
         "//kythe/proto:explore_go_proto",
+        "//kythe/proto:serving_go_proto",
         "@go_grpc//:codes",
         "@go_grpc//:status",
         "@go_protobuf//:proto",

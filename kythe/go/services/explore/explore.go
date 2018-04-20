@@ -50,11 +50,9 @@ type Service interface {
 	// Returns the parents of a specified node
 	// (for example, the file for a class, or the class for a function).
 	// Note that in some cases a node may have more than one parent.
-	// NOT YET IMPLEMENTED
 	Parents(context.Context, *epb.ParentsRequest) (*epb.ParentsReply, error)
 
 	// Returns the children of a specified node
 	// (for example, the classes contained in a file, or the functions contained in a class).
-	// NOT YET IMPLEMENTED
 	Children(context.Context, *epb.ChildrenRequest) (*epb.ChildrenReply, error)
 }
