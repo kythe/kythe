@@ -31,6 +31,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
@@ -966,12 +967,19 @@ func tracePrintf(ctx context.Context, msg string, args ...interface{}) {
 // Follows util::error::Code from
 // http://google.github.io/google-api-cpp-client/latest/doxygen/namespacegoogleapis_1_1util_1_1error.html
 func canonicalError(err error, caller string, ticket string) error {
-	switch err {
-	case context.Canceled:
+	switch code := status.Code(err); code {
+	case codes.Canceled:
 		return xrefs.ErrCanceled
-	case context.DeadlineExceeded:
+	case codes.DeadlineExceeded:
 		return xrefs.ErrDeadlineExceeded
 	default:
-		return status.Errorf(status.Code(err), "error looking up %s with ticket %q: %v", caller, ticket, err)
+		st := err.Error()
+		if strings.Contains(st, "RPC::CANCELLED") || strings.Contains(st, "context canceled") {
+			return xrefs.ErrCanceled
+		}
+		if strings.Contains(st, "RPC::DEADLINE_EXCEEDED") || strings.Contains(st, "context deadline exceeded") {
+			return xrefs.ErrDeadlineExceeded
+		}
+		return status.Error(code, st)
 	}
 }
