@@ -90,8 +90,11 @@ func (t *Tables) Parents(ctx context.Context, req *epb.ParentsRequest) (*epb.Par
 		var relatives srvpb.Relatives
 		err := t.ChildToParents.Lookup(ctx, []byte(ticket), &relatives)
 
-		if err != nil && err != table.ErrNoSuchKey {
-			return nil, fmt.Errorf("error looking up parents with ticket %q: %v", ticket, err)
+		if err != nil {
+			if err != table.ErrNoSuchKey {
+				return nil, fmt.Errorf("error looking up parents with ticket %q: %v", ticket, err)
+			}
+			continue // skip tickets with no mappings
 		}
 
 		if relatives.Type != srvpb.Relatives_PARENTS {
@@ -129,8 +132,11 @@ func (t *Tables) Children(ctx context.Context, req *epb.ChildrenRequest) (*epb.C
 		var relatives srvpb.Relatives
 		err := t.ParentToChildren.Lookup(ctx, []byte(ticket), &relatives)
 
-		if err != nil && err != table.ErrNoSuchKey {
-			return nil, fmt.Errorf("error looking up children with ticket %q: %v", ticket, err)
+		if err != nil {
+			if err != table.ErrNoSuchKey {
+				return nil, fmt.Errorf("error looking up children with ticket %q: %v", ticket, err)
+			}
+			continue // skip tickets with no mappings
 		}
 
 		if relatives.Type != srvpb.Relatives_CHILDREN {
