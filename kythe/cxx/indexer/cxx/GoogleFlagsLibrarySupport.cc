@@ -102,7 +102,7 @@ GetVarDeclFlagDeclLoc(const clang::LangOptions &LO, const clang::VarDecl *Decl,
   if (!SRBegin.isValid() ||
       (!IsDefinedInGflagsHeader(SRBegin) &&
        !IsDefinedInGflagsHeader(
-           SM.getImmediateExpansionRange(SRBegin).first))) {
+           SM.getImmediateExpansionRange(SRBegin).getBegin()))) {
     return clang::SourceLocation();
   }
   // This VarDecl's name (which starts with FLAGS_) came from a token paste

@@ -636,10 +636,7 @@ def cc_extractor_test(name, srcs, deps=[], data=[], size="small", std="c++11", t
       restricted_to = restricted_to,
       testonly = True,
       opts = args,
-      add_toolchain_include_directories = select({
-          "//:darwin": True,
-          "//conditions:default": False,
-      })
+      add_toolchain_include_directories = True,
   )
   cc_index(
       name = name + "_entries",

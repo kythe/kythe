@@ -2248,6 +2248,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_var_implicit_spec",
     srcs = ["template/template_var_implicit_spec.cc"],
+    ignore_dups = True,
     tags = ["template"],
 )
 
