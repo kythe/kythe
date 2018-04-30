@@ -30,7 +30,7 @@ bind(
 
 bind(
     name = "guava",  # required by @com_google_protobuf
-    actual = "@com_google_guava_guava//jar",
+    actual = "//third_party/guava",
 )
 
 bind(
