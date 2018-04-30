@@ -319,20 +319,18 @@ message IdentifierMatch {
 }
 
 // Relatives stores the nodes connected to a reference node via childOf edges:
-// "parents" (nodes that a reference node is a childOf)
-// or "children" (nodes that are each a childOf of a reference node).
+// "parents" (nodes that the reference node is a childOf)
+// or "children" (nodes that are each a childOf of the reference node).
 // Used by ExploreService for the Parents and Children APIs.
 message Relatives {
   enum Type {
-    PARENTS = 0;
-    CHILDREN = 1;
+    UNKNOWN = 0;  // never a valid value
+    PARENTS = 1;  // the reference node is a childOf each element of 'tickets'
+    CHILDREN = 2; // each element of 'tickets' is a childOf the reference node
   }
 
   // Nodes connected to a reference node via childOf edges.
   repeated string tickets = 1;
 
-  // The type of data:
-  // if PARENTS, the reference node is a childOf each element of 'tickets';
-  // if CHILDREN, each element of 'tickets' is a childOf the reference node.
   Type type = 2;
 }
