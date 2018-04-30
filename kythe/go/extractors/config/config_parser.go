@@ -21,27 +21,30 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
 
 	"bitbucket.org/creachadair/shell"
+	"github.com/golang/protobuf/jsonpb"
 
 	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
 const (
-	// DefaultBaseImage The default base image for extraction.
-	defaultBaseImage = "debian:jessie"
-
 	// DefaultRepoVolume The default volume name containing the repo.
-	defaultRepoVolume = "/repo"
-
-	// RepoVolumeEnv The EnvVar which will be configured pointing to the repo.
-	repoVolumeEnv = "KYTHE_ROOT_DIRECTORY"
+	DefaultRepoVolume = "/repo"
 
 	// DefaultOutputVolume The default volume name containing the extraction output.
-	defaultOutputVolume = "/out"
+	DefaultOutputVolume = "/out"
 
-	// OutputVolumeEnv The EnvVar which will be configured pointing to the output.
+	// defaultBaseImage The default base image for extraction.
+	defaultBaseImage = "debian:jessie"
+
+	// outputVolumeEnv The EnvVar which will be configured pointing to the output.
 	outputVolumeEnv = "KYTHE_OUTPUT_DIRECTORY"
+
+	// repoVolumeEnv The EnvVar which will be configured pointing to the repo.
+	repoVolumeEnv = "KYTHE_ROOT_DIRECTORY"
 )
 
 // Format the base configuration including the base image, volume hooks, and working dir.
@@ -52,15 +55,15 @@ ENV %[3]s=%[2]s
 VOLUME %[4]s
 ENV %[5]s=%[4]s
 WORKDIR %[2]s
-`, defaultBaseImage, defaultRepoVolume, repoVolumeEnv, defaultOutputVolume, outputVolumeEnv)
+`, defaultBaseImage, DefaultRepoVolume, repoVolumeEnv, DefaultOutputVolume, outputVolumeEnv)
 
-// NewExtractionImage consumes the configuration data specified in
+// NewImage consumes the configuration data specified in
 // extractionConfig utilizing it to generate a composite extraction Docker
 // image tailored for the requirements necessary for successful extraction of
 // the configuration's corresponding repository. Returns the contents of the
 // Dockerfile for the generated composite image. The Dockerfile format is
 // defined here: https://docs.docker.com/engine/reference/builder/
-func NewExtractionImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
+func NewImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
 	var buf bytes.Buffer
 
 	// Format the FROM statements for the required images.
@@ -117,17 +120,42 @@ func NewExtractionImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
 	// iterate over the required RUN commands for the configuration
 	for _, cmd := range config.RunCommand {
 		fmt.Fprintf(&buf, "RUN %s ", cmd.Command)
-		if len(cmd.Arg) == 0 {
-			return nil, fmt.Errorf("missing Image.RunCommand.Arg")
-		}
-
 		for i, arg := range cmd.Arg {
 			fmt.Fprintf(&buf, shell.Quote(arg))
 			if i < len(cmd.Arg)-1 {
 				fmt.Fprintf(&buf, " ")
 			}
 		}
+		fmt.Fprintln(&buf)
 	}
 
 	return buf.Bytes(), nil
+}
+
+// Load parses an extraction configuration from the specified reader.
+func Load(r io.Reader) (*ecpb.ExtractionConfiguration, error) {
+	// attempt to deserialize the extraction config
+	extractionConfig := &ecpb.ExtractionConfiguration{}
+	if err := jsonpb.Unmarshal(r, extractionConfig); err != nil {
+		return nil, err
+	}
+
+	return extractionConfig, nil
+}
+
+// CreateImage uses the specified extraction configuration to generate a
+// new extraction image, which is written to the specified output path.
+func CreateImage(outputPath string, config *ecpb.ExtractionConfiguration) error {
+	// attempt to generate a docker image from the specified config
+	image, err := NewImage(config)
+	if err != nil {
+		return fmt.Errorf("generating extraction image: %v", err)
+	}
+
+	// write the generated extraction image to the specified output file
+	if err = ioutil.WriteFile(outputPath, image, 0444); err != nil {
+		return fmt.Errorf("writing output: %v", err)
+	}
+
+	return nil
 }

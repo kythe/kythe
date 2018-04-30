@@ -8,6 +8,8 @@ go_library(
     srcs = ["config_parser.go"],
     deps = [
         "//kythe/proto:extraction_config_go_proto",
+        "@go_protobuf//:jsonpb",
+        "@go_protobuf//:proto",
         "@go_shell//:shell",
     ],
 )
@@ -21,5 +23,6 @@ go_test(
         "//kythe/proto:extraction_config_go_proto",
         "@go_cmp//:cmp",
         "@go_protobuf//:jsonpb",
+        "@go_protobuf//:proto",
     ],
 )

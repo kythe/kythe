@@ -19,7 +19,6 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -27,30 +26,13 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
 
 	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
-const testDataDir = "$TEST_SRCDIR/testdata"
-
-func openTestDataFile(fileName string) (*os.File, error) {
-	return os.Open(os.ExpandEnv(filepath.Join(testDataDir, fileName)))
-}
-
-func mustLoadConfig(fileName string) *ecpb.ExtractionConfiguration {
-	testConfigFile, err := openTestDataFile(fileName)
-	if err != nil {
-		log.Panicf("Failed to load test config file: %v", err)
-	}
-
-	testConfig := ecpb.ExtractionConfiguration{}
-	if err := jsonpb.Unmarshal(testConfigFile, &testConfig); err != nil {
-		log.Panicf("Failed to unmarshal test config: %v", err)
-	}
-
-	return &testConfig
-}
+const testDataDir = "testdata"
 
 var multipleNewLines = regexp.MustCompile("\n{2,}")
 
@@ -70,33 +52,132 @@ func imagesEqual(got, want []byte) (bool, string) {
 	return true, ""
 }
 
-func TestNewExtractionImageGeneratesExpectedDockerFiles(t *testing.T) {
-	testConfigFiles, err := filepath.Glob(fmt.Sprintf("%s/*.json", testDataDir))
+func mustLoadDockerFile(t *testing.T, testConfigFile string) []byte {
+	t.Helper()
+	fileName := fmt.Sprintf("expected_%s.Dockerfile", strings.Replace(filepath.Base(testConfigFile), ".json", "", 1))
+	content, err := ioutil.ReadFile(os.ExpandEnv(filepath.Join(testDataDir, fileName)))
 	if err != nil {
-		t.Fatalf("\nFailed to glob for test config files: %v\n", err)
+		t.Fatalf("Failed to open test docker file: %v\n", err)
 	}
 
-	for _, testConfigFile := range testConfigFiles {
-		testConfig := mustLoadConfig(filepath.Base(testConfigFile))
-		extractionImageContent, err := NewExtractionImage(testConfig)
+	return content
+}
+
+type testFiles []*os.File
+
+func (t testFiles) Close() error {
+	var err error
+	for _, f := range t {
+		if cerr := f.Close(); err == nil {
+			err = cerr
+		}
+	}
+	return err
+}
+
+func mustOpenTestData(t *testing.T) testFiles {
+	t.Helper()
+	fileNames, err := filepath.Glob(os.ExpandEnv(fmt.Sprintf("%s/%s", testDataDir, "*.json")))
+	if err != nil {
+		t.Fatalf("Failed to glob for test data files: %v\n", err)
+	}
+
+	if len(fileNames) == 0 {
+		t.Fatal("No test config data found!\n")
+	}
+
+	var files []*os.File
+	for _, fileName := range fileNames {
+		file, err := os.Open(os.ExpandEnv(fileName))
 		if err != nil {
-			t.Fatalf("\nFailed to parse test config: %v\n", err)
+			t.Fatalf("Failed to load test data: %v", err)
 		}
 
-		expectedDockerFileName := fmt.Sprintf("expected_%s.Dockerfile", strings.Replace(filepath.Base(testConfigFile), ".json", "", 1))
-		expectedImageFile, err := openTestDataFile(expectedDockerFileName)
+		files = append(files, file)
+	}
+
+	return files
+}
+
+func TestNewImageGeneratesExpectedDockerFiles(t *testing.T) {
+	testData := mustOpenTestData(t)
+	defer testData.Close()
+	for _, file := range testData {
+		config, err := Load(file)
 		if err != nil {
-			t.Fatalf("\nFailed to open expected test data file: %v\n", err)
+			t.Fatalf("Failed to load extraction config: %v", err)
 		}
 
-		expectedImageContent, err := ioutil.ReadAll(expectedImageFile)
+		got, err := NewImage(config)
 		if err != nil {
-			t.Fatalf("\nFailed to load test expected data: %v\n", err)
+			t.Fatalf("Failed to parse test config: %v\n", err)
 		}
 
-		if eq, diff := imagesEqual(extractionImageContent, expectedImageContent); !eq {
+		want := mustLoadDockerFile(t, file.Name())
+		if eq, diff := imagesEqual(want, got); !eq {
 
-			t.Fatalf("[Failed]: Images were not equal, diff:\n%s", diff)
+			t.Fatalf("Images were not equal, diff:\n%s", diff)
+		}
+	}
+}
+
+func TestLoadReturnsProperData(t *testing.T) {
+	testData := mustOpenTestData(t)
+	defer testData.Close()
+	for _, file := range testData {
+		got, err := Load(file)
+		if err != nil {
+			t.Fatalf("Failed to load extraction config: %v", err)
+		}
+
+		_, err = file.Seek(0, os.SEEK_SET)
+		if err != nil {
+			t.Fatalf("Failed to seek test data: %v", err)
+		}
+		want := &ecpb.ExtractionConfiguration{}
+		if err := jsonpb.Unmarshal(file, want); err != nil {
+			t.Fatalf("Failed to unmarshal test data: %v", err)
+		}
+
+		if !proto.Equal(got, want) {
+			t.Fatal("Expected: %v\nGot: %v\n", want, got)
+		}
+	}
+}
+
+func TestCreateImageWritesProperData(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "tempOutputDir")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	testData := mustOpenTestData(t)
+	defer testData.Close()
+	for _, file := range testData {
+		config, err := Load(file)
+		if err != nil {
+			t.Fatalf("Failed to load extraction config: %v", err)
+		}
+
+		tmpImageFile, err := ioutil.TempFile(tempDir, "tmpExtractionImage.Docker")
+		if err != nil {
+			t.Fatalf("Failed to create temp image file: %v", err)
+		}
+
+		err = CreateImage(tmpImageFile.Name(), config)
+		if err != nil {
+			t.Fatalf("Failed to create image: %v", err)
+		}
+
+		got, err := ioutil.ReadAll(tmpImageFile)
+		if err != nil {
+			t.Fatalf("Failed to read created image: %v", err)
+		}
+
+		want := mustLoadDockerFile(t, file.Name())
+		if eq, diff := imagesEqual(got, want); !eq {
+			t.Fatalf("Images were not equal, diff:\n%s\n", diff)
 		}
 	}
 }

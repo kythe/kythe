@@ -1,11 +1,14 @@
 {
-  "required_factor_image": [
+  "required_image": [
     {
       "uri": "openjdk:8",
       "name": "java",
       "copy_spec": [
         {
           "source": "/docker-java-home"
+        },
+        {
+          "source": "/etc/java-8-openjdk"
         }
       ],
       "env_var": [
@@ -20,14 +23,17 @@
       ]
     },
     {
-      "uri": "gcr.io/kythe_repo/kythe-javac-extractor",
-      "name": "javac-extractor",
+      "uri": "gcr.io/kythe_repo/kythe-javac-extractor-artifacts",
+      "name": "javac-extractor-artifacts",
       "copy_spec": [
         {
           "source": "/opt/kythe/extractors/javac-wrapper.sh"
         },
         {
           "source": "/opt/kythe/extractors/javac_extractor.jar"
+        },
+        {
+          "source": "/opt/kythe/extractors/mvn-extract.sh"
         }
       ],
       "env_var": [
@@ -51,6 +57,9 @@
       "copy_spec": [
         {
           "source": "/usr/share/maven"
+        },
+        {
+          "source": "/etc/ssl"
         }
       ],
       "env_var": [
@@ -61,17 +70,23 @@
         {
           "name": "PATH",
           "value": "$MAVEN_HOME/bin:$PATH"
-        },
-        {
-          "name": "MAVEN_OPTS",
-          "value": "\"-Dmaven.compiler.forceJavacCompilerUse=true -Dmaven.compiler.fork=true -Dmaven.compiler.executable=$JAVAC_WRAPPER\""
         }
       ],
-      "image_entry_point": [
-        "mvn",
-        "clean",
-        "compile"
-      ]
+      "entry_point": ["/opt/kythe/extractors/mvn-extract.sh"]
     }
-  ]
+  ],
+  "run_command": [
+      {
+          "command": "echo 'deb http://http.debian.net/debian jessie-backports main' >> '/etc/apt/sources.list'"
+      },
+      {
+          "command": "apt-get update"
+      },
+      {
+          "command": "apt-get install -y",
+          "arg": [
+              "xmlstarlet"
+          ]
+      }
+    ]
 }
