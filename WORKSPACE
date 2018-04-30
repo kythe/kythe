@@ -105,7 +105,7 @@ maven_jar(
 
 maven_jar(
     name = "com_google_guava_guava",
-    artifact = "com.google.guava:guava:23.6-jre",
+    artifact = "com.google.guava:guava:25.0-jre",
     sha1 = "c0b638df79e7b2e1ed98f8d68ac62538a715ab1d",
 )
 

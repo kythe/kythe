@@ -9,8 +9,8 @@ java_test(
     test_class = "com.google.devtools.kythe.platform.java.OptionsTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/java:options",
+        "//third_party/guava",
         "//third_party/javac",
-        "@com_google_guava_guava//jar",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],

@@ -22,8 +22,8 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
         "//third_party/javac",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
     ],
 )

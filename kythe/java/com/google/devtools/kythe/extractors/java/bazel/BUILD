@@ -26,8 +26,8 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//third_party/bazel:extra_actions_base_java_proto",
+        "//third_party/guava",
         "//third_party/javac",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
     ],
 )

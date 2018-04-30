@@ -11,7 +11,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/util:delete_recursively",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",

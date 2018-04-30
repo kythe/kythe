@@ -7,7 +7,7 @@ java_library(
         ":kythe_uri",
         "//kythe/proto:internal_java_proto",
         "//kythe/proto:storage_java_proto",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
     ],
 )
@@ -30,7 +30,7 @@ java_library(
     visibility = ["//kythe:proto_visibility"],
     deps = [
         "//kythe/proto:storage_java_proto",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
     ],
 )
@@ -50,8 +50,8 @@ java_library(
     srcs = ["JsonUtil.java"],
     deps = [
         "//third_party/gson:proto",
+        "//third_party/guava",
         "@com_google_code_gson_gson//jar",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_protobuf//:protobuf_java_util",
     ],

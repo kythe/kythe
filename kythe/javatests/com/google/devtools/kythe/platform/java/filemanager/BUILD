@@ -8,7 +8,7 @@ java_test(
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
         "//kythe/proto:analysis_java_proto",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],

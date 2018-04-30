@@ -24,7 +24,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/util:normalizer",
         "//kythe/proto:common_java_proto",
         "//kythe/proto:serving_java_proto",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",
@@ -52,7 +52,7 @@ java_test(
     test_class = "com.google.devtools.kythe.util.PositionMappingsTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/util:position_mappings",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
@@ -66,7 +66,7 @@ java_test(
     deps = [
         "//kythe/java/com/google/devtools/kythe/util:qualified_name_extractor",
         "//kythe/proto:common_java_proto",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",

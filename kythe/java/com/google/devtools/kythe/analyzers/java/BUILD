@@ -34,11 +34,11 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:common_java_proto",
         "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
         "//third_party/javac",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
         "@com_beust_jcommander//jar",
         "@com_google_code_findbugs_jsr305//jar",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
     ],
 )
@@ -87,8 +87,8 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
         "@com_beust_jcommander//jar",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
     ],
 )

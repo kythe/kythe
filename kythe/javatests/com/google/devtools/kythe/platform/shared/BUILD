@@ -7,7 +7,7 @@ java_test(
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/proto:analysis_java_proto",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",
@@ -20,7 +20,7 @@ java_test(
     srcs = ["FileDataDirectoryTest.java"],
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],

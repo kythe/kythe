@@ -88,8 +88,8 @@ sh_test(
         ":release",
         "//kythe/testdata:entries",
         "//kythe/testdata:test.kindex",
+        "//third_party/guava",
         "//third_party/jq",
-        "@com_google_guava_guava//jar",
     ],
     tags = [
         "local",

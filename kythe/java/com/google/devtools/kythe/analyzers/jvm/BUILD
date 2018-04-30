@@ -12,7 +12,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:common_java_proto",
         "//kythe/proto:storage_java_proto",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
     ],
 )
@@ -37,8 +37,8 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:java_java_proto",
         "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
         "@com_beust_jcommander//jar",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@org_ow2_asm_asm//jar",

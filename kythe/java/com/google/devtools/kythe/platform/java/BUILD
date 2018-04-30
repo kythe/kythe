@@ -16,9 +16,9 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
         "//third_party/javac",
         "@com_google_code_findbugs_jsr305//jar",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
     ],
 )
@@ -29,9 +29,9 @@ java_library(
     deps = [
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:java_java_proto",
+        "//third_party/guava",
         "//third_party/javac",
         "@com_google_code_findbugs_jsr305//jar",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
     ],

@@ -23,8 +23,8 @@ java_library(
         "NodeKind.java",
     ],
     deps = [
+        "//third_party/guava",
         "@com_google_code_findbugs_jsr305//jar",
-        "@com_google_guava_guava//jar",
     ],
 )
 
@@ -45,8 +45,8 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:common_java_proto",
         "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
         "@com_google_code_findbugs_jsr305//jar",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
     ],
 )
@@ -64,7 +64,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
     ],
 )

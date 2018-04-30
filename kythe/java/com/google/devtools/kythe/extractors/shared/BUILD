@@ -12,7 +12,7 @@ java_library(
         ":file_vnames",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_protobuf//:protobuf_java",
     ],
 )
@@ -24,8 +24,8 @@ java_library(
     ],
     deps = [
         "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
         "@com_google_code_gson_gson//jar",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_re2j_re2j//jar",
     ],
