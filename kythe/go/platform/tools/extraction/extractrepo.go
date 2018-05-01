@@ -103,7 +103,7 @@ func mustCleanUpImage(tmpImageTag string) {
 	cmd := exec.Command("docker", "image", "rm", tmpImageTag)
 	err := cmd.Run()
 	if err != nil {
-		log.Println("Failed to clean up docker image: %v", err)
+		log.Printf("Failed to clean up docker image: %v", err)
 	}
 }
 

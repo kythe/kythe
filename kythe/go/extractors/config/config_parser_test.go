@@ -140,7 +140,7 @@ func TestLoadReturnsProperData(t *testing.T) {
 		}
 
 		if !proto.Equal(got, want) {
-			t.Fatal("Expected: %v\nGot: %v\n", want, got)
+			t.Fatalf("Expected: %v\nGot: %v", want, got)
 		}
 	}
 }
