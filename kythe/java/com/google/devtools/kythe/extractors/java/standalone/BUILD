@@ -1,7 +1,5 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("//tools:build_rules/docker.bzl", "docker_build")
-
 exports_files(["javac-wrapper.sh"])
 
 java_binary(
@@ -26,16 +24,4 @@ java_binary(
         "//third_party/javac",
         "@com_google_protobuf//:protobuf_java",
     ],
-)
-
-docker_build(
-    name = "docker",
-    src = "Dockerfile",
-    data = [
-        "javac-wrapper.sh",
-        ":javac_extractor_deploy.jar",
-    ],
-    image_name = "gcr.io/kythe_repo/kythe-javac-extractor",
-    tags = ["manual"],
-    use_cache = True,
 )
