@@ -56,3 +56,11 @@ type Service interface {
 	// (for example, the classes contained in a file, or the functions contained in a class).
 	Children(context.Context, *epb.ChildrenRequest) (*epb.ChildrenReply, error)
 }
+
+// BoundedRequests guards against requests that include so many input tickets that they
+// threaten the functioning of the service (in the absence of server-side throttling of
+// individual requests).
+type BoundedRequests struct {
+	MaxTickets int
+	Service
+}
