@@ -331,7 +331,7 @@ class Vistor {
           if ('name' in node) {
             this.todo(
                 node,
-                `scopedSignature: ${ts.SyntaxKind[node.kind]} ` +
+                `scopedSignature: ${ts.SyntaxKind[(node as any).kind]} ` +
                     `has unused 'name' property`);
           }
       }
@@ -1057,7 +1057,9 @@ export function index(
     if (emit != null) {
       visitor.emit = emit;
     }
-    visitor.indexFile(sourceFile);
+    // N.B. The assertion here is redundant for TS 2.6, but will be
+    // required with TS 2.7.
+    visitor.indexFile(sourceFile!);
   }
 }
 
