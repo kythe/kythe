@@ -1,5 +1,4 @@
 #!/bin/bash -e
-set -x
 # Copyright 2014 Google Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +25,7 @@ set -x
 #               test-label is the (potentially space-containing) short text
 #                          label describing the test.
 
+export ROOT="$PWD"
 export SCHEMA_ROOT="$PWD/kythe/docs/schema"
 cd "$OUTDIR"
 

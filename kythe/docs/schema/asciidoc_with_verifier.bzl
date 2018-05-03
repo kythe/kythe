@@ -8,13 +8,7 @@ def asciidoc_with_verifier(name, src):
     name = name,
     src = src,
     confs = ["kythe-filter.conf"],
-    attrs = {
-        # We define the filter here rather than in kythe-filter.conf, so that
-        # we have access to the path of the script it wants to invoke.
-        "filter": ('"$$PWD/$(location :example_sh) {backend} {style} ' +
-                   '{language} {label} {graph=1} {divstyle=\'\'} ' +
-                   '{verifierargs=\'\\}"'),
-    },
+    attrs = {"example_script": '"$$PWD/$(location :example_sh)"'},
     data = [
         ":example_sh",
         "example-clike.sh",
@@ -40,7 +34,7 @@ def build_example_sh():
       "VERIFIER_BIN": "//kythe/cxx/verifier",
   }
   fixes = [
-      "-e '/^export %s=/{i\\\n_p=($(locations %s))\ns#$$#\"$$PWD/$${_p[0]}\"#\n}'" % (key, target)
+      "-e '/^export %s=/{i\\\n_p=($(locations %s))\ns#$$#\"$$ROOT/$${_p[0]}\"#\n}'" % (key, target)
       for (key, target) in tools.items()
   ]
   native.genrule(
