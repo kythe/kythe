@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// Package extractor provides a library for running kythe extraction on a single
-// repository.
 package config
 
 import (
