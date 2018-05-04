@@ -14,12 +14,29 @@
 # limitations under the License.
 #
 
+"""This module provides rules for kindex extraction."""
+
 def kindex_extractor(name, corpus, language, rules='', mnemonics=None,
                      include='', exclude='', sources='', source_args='',
                      scoped=True):
-  """This macro expands to an extra action listener that invokes extract_kindex
+  """This macro creates extra_action and action_listener for kindex.
+
+  This macro expands to an extra action listener that invokes extract_kindex
   on matching spawn actions to produce a Kythe compilation record in .kindex
   format.
+
+  Args:
+    name: name of the build rule ("_extra_action" is appended in output)
+    corpus: the required corpus passed to the kindex extractor
+    language: the required language passed to the kindex extractor
+    rules: the rules passed to the kindex extractor
+    mnemonics: the required mnemonics passed to the action listener
+    include: optional RE2 matching files to include in the kindex extractor
+    exclude: optional RE2 matching files to exclude in the kindex extractor
+    sources: optional RE2 matching source files for the kindex extractor
+    source_args: optional RE2 matching arguments to consider source files in
+      kindex extractor
+    scoped: optional boolean whether to match source paths only in target pkg
   """
 
   if not mnemonics:

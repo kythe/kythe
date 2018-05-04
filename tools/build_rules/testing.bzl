@@ -1,3 +1,5 @@
+"""This module contains a tool for making shell tests."""
+
 def shell_tool_test(name, script=[], scriptfile='', tools={}, data=[],
                     args=[], size='small', tags=[]):
   """A macro to invoke a test script with access to specified tools.
@@ -16,6 +18,18 @@ def shell_tool_test(name, script=[], scriptfile='', tools={}, data=[],
 
   Any targets specified in "data" are included as data dependencies for the
   resulting sh_test rule without further interpretation.
+
+  Args:
+    name: the name for the sh_test to create
+    script: the script to use.
+      Either script or scriptfile must be set, but not both.
+    scriptfile: the file containing the script to use.
+      Either scriptfile or script must be set, but not both.
+    tools: tools to use, passed in to test_args and data
+    data: additional data to pass in to the sh_test
+    args: additinoal args to pass in to the sh_test
+    size: size of the test ("small", "medium", etc)
+    tags: tags for the sh_test
   """
   if (len(script) == 0) == (scriptfile == ''):
     fail('You must set exactly one of "script" or "scriptfile"')
