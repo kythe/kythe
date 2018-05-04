@@ -29,7 +29,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"kythe.io/kythe/go/extractors/config/extractor"
+	"kythe.io/kythe/go/extractors/config"
 )
 
 var (
@@ -86,7 +86,7 @@ func main() {
 	flag.Parse()
 	verifyFlags()
 
-	err := extractor.ExtractRepo(*repoURI, *outputPath, *configPath)
+	err := config.ExtractRepo(*repoURI, *outputPath, *configPath)
 	if err != nil {
 		log.Fatalf("Failed to extract repo: %v", err)
 	}

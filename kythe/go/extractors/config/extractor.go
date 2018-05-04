@@ -16,7 +16,7 @@
 
 // Package extractor provides a library for running kythe extraction on a single
 // repository.
-package extractor
+package config
 
 import (
 	"fmt"
@@ -26,8 +26,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"kythe.io/kythe/go/extractors/config"
 )
 
 // kytheConfigFileName The name of the Kythe extraction config
@@ -88,12 +86,12 @@ func ExtractRepo(repoURI, outputPath, configPath string) error {
 		return fmt.Errorf("opening config file: %v", err)
 	}
 
-	extractionConfig, err := config.Load(configFile)
+	extractionConfig, err := Load(configFile)
 	if err != nil {
 		return fmt.Errorf("loading extraction config: %v", err)
 	}
 
-	err = config.CreateImage(extractionDockerFile.Name(), extractionConfig)
+	err = CreateImage(extractionDockerFile.Name(), extractionConfig)
 	if err != nil {
 		return fmt.Errorf("creating extraction image: %v", err)
 	}
@@ -107,7 +105,7 @@ func ExtractRepo(repoURI, outputPath, configPath string) error {
 	}
 
 	// run the extraction
-	output, err = exec.Command("docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, config.DefaultRepoVolume), "-v", fmt.Sprintf("%s:%s", outputPath, config.DefaultOutputVolume), "-t", imageTag).CombinedOutput()
+	output, err = exec.Command("docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, DefaultRepoVolume), "-v", fmt.Sprintf("%s:%s", outputPath, DefaultOutputVolume), "-t", imageTag).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("extracting repo: %v\nCommand output: %s", err, string(output))
 	}

@@ -5,7 +5,10 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "config",
-    srcs = ["config_parser.go"],
+    srcs = [
+        "config_parser.go",
+        "extractor.go",
+    ],
     deps = [
         "//kythe/proto:extraction_config_go_proto",
         "@go_protobuf//:jsonpb",
@@ -24,13 +27,5 @@ go_test(
         "@go_cmp//:cmp",
         "@go_protobuf//:jsonpb",
         "@go_protobuf//:proto",
-    ],
-)
-
-go_library(
-    name = "extractor",
-    srcs = ["extractor.go"],
-    deps = [
-        ":config",
     ],
 )
