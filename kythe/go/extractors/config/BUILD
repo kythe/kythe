@@ -26,3 +26,11 @@ go_test(
         "@go_protobuf//:proto",
     ],
 )
+
+go_library(
+    name = "extractor",
+    srcs = ["extractor.go"],
+    deps = [
+        ":config",
+    ],
+)

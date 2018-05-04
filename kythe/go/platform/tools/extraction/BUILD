@@ -6,6 +6,6 @@ go_binary(
     name = "extractrepo",
     srcs = ["extractrepo.go"],
     deps = [
-        "//kythe/go/extractors/config",
+        "//kythe/go/extractors/config:extractor",
     ],
 )
