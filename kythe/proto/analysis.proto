@@ -125,7 +125,11 @@ message CompilationUnit {
     FileInfo info = 2;
 
     // The file's context-dependent version table.
-    ContextDependentVersion context = 3;
+    // TODO(schroederc): add as a details message
+    ContextDependentVersion context = 3 [deprecated = true];
+
+    // Per-language or per-tool details.
+    repeated google.protobuf.Any details = 4;
   }
 
   // The absolute path of the current working directory where the build tool

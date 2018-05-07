@@ -27,10 +27,16 @@ import "kythe/proto/storage.proto";
 message JarDetails {
   message Jar {
     VName v_name = 1;
-    repeated FileInfo entry = 2;
+    repeated FileInfo entry = 2 [deprecated = true];
   }
 
   repeated Jar jar = 1;
+}
+
+// CompilationUnit.FileInput details connecting a file to its enclosing jar.
+message JarEntryDetails {
+  // Index into JarDetails for this file's jar container.
+  int32 jar_container = 1;
 }
 
 // Java-specific details used in a CompilationUnit.
