@@ -24,7 +24,6 @@ const (
 	Constant   = "constant"
 	Diagnostic = "diagnostic"
 	Doc        = "doc"
-	EnumK      = "enum"
 	File       = "file"
 	Function   = "function"
 	Interface  = "interface"

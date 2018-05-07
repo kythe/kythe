@@ -20,6 +20,9 @@ package schema
 import (
 	"kythe.io/kythe/go/util/schema/facts"
 
+	"github.com/golang/protobuf/proto"
+
+	scpb "kythe.io/kythe/proto/schema_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -96,3 +99,74 @@ func (n *Node) ToEntries() []*spb.Entry {
 	}
 	return entries
 }
+
+var (
+	nodeKinds = make(map[string]scpb.NodeKind)
+	subkinds  = make(map[string]scpb.Subkind)
+	factNames = make(map[string]scpb.FactName)
+	edgeKinds = make(map[string]scpb.EdgeKind)
+
+	nodeKindsRev = make(map[scpb.NodeKind]string)
+	subkindsRev  = make(map[scpb.Subkind]string)
+	factNamesRev = make(map[scpb.FactName]string)
+	edgeKindsRev = make(map[scpb.EdgeKind]string)
+)
+
+func init() {
+	var index scpb.Index
+	if err := proto.UnmarshalText(indexTextPB, &index); err != nil {
+		panic(err)
+	}
+	for _, kinds := range index.NodeKinds {
+		for name, enum := range kinds.NodeKind {
+			name = kinds.Prefix + name
+			nodeKinds[name] = enum
+			nodeKindsRev[enum] = name
+		}
+	}
+	for _, kinds := range index.Subkinds {
+		for name, enum := range kinds.Subkind {
+			name = kinds.Prefix + name
+			subkinds[name] = enum
+			subkindsRev[enum] = name
+		}
+	}
+	for _, kinds := range index.FactNames {
+		for name, enum := range kinds.FactName {
+			name = kinds.Prefix + name
+			factNames[name] = enum
+			factNamesRev[enum] = name
+		}
+	}
+	for _, kinds := range index.EdgeKinds {
+		for name, enum := range kinds.EdgeKind {
+			name = kinds.Prefix + name
+			edgeKinds[name] = enum
+			edgeKindsRev[enum] = name
+		}
+	}
+}
+
+// NodeKind returns the schema enum for the given node kind.
+func NodeKind(k string) scpb.NodeKind { return nodeKinds[k] }
+
+// EdgeKind returns the schema enum for the given edge kind.
+func EdgeKind(k string) scpb.EdgeKind { return edgeKinds[k] }
+
+// FactName returns the schema enum for the given fact name.
+func FactName(f string) scpb.FactName { return factNames[f] }
+
+// Subkind returns the schema enum for the given subkind.
+func Subkind(k string) scpb.Subkind { return subkinds[k] }
+
+// NodeKindString returns the string representation of the given node kind.
+func NodeKindString(k scpb.NodeKind) string { return nodeKindsRev[k] }
+
+// EdgeKindString returns the string representation of the given edge kind.
+func EdgeKindString(k scpb.EdgeKind) string { return edgeKindsRev[k] }
+
+// FactNameString returns the string representation of the given fact name.
+func FactNameString(f scpb.FactName) string { return factNamesRev[f] }
+
+// SubkindString returns the string representation of the given subkind.
+func SubkindString(k scpb.Subkind) string { return subkindsRev[k] }

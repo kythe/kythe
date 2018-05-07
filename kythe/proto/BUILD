@@ -26,6 +26,13 @@ filegroup(
     ],
 )
 
+proto_library(
+    name = "schema_proto",
+    srcs = ["schema.proto"],
+)
+
+go_kythe_proto(proto = ":schema_proto")
+
 # Common Kythe protocol buffer definitions shared among other libraries
 proto_library(
     name = "common_proto",
@@ -536,6 +543,6 @@ proto_library(
 
 go_proto_library(
     name = "extraction_config_go_proto",
-    proto = ":extraction_config_proto",
     importpath = "kythe.io/kythe/proto/extraction_config_go_proto",
+    proto = ":extraction_config_proto",
 )

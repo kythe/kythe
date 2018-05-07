@@ -2,6 +2,8 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
+exports_files(["schema_index.textproto"])
+
 filegroup(
     name = "vnames_config",
     srcs = ["vnames.json"],
