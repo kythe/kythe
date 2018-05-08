@@ -320,6 +320,13 @@ new_git_repository(
     remote = "https://github.com/google/go-cmp.git",
 )
 
+new_git_repository(
+    name = "go_github",
+    build_file = "third_party/go/github.BUILD",
+    commit = "e48060a28fac52d0f1cb758bc8b87c07bac4a87d",
+    remote = "https://github.com/google/go-github.git",
+)
+
 # proto_library, cc_proto_library, and java_proto_library rules implicitly
 # depend on @com_google_protobuf for protoc and proto runtimes.
 #
