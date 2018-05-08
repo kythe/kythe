@@ -12,6 +12,7 @@ docker_build(
         "//kythe/java/com/google/devtools/kythe/extractors/java/maven:mvn-extract.sh",
         "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac-wrapper.sh",
         "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar",
+        "//kythe/java/com/google/devtools/kythe/platform/tools:mvn_pom_preprocessor_deploy.jar",
     ],
     image_name = "gcr.io/kythe_repo/kythe-javac-extractor-artifacts",
     tags = ["manual"],

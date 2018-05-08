@@ -34,7 +34,10 @@
         },
         {
           "source": "/opt/kythe/extractors/mvn-extract.sh"
-        }
+        },
+        {
+          "source": "/opt/kythe/extractors/mvn_pom_preprocessor.jar"
+        }      
       ],
       "env_var": [
         {
@@ -48,6 +51,10 @@
         {
           "name": "JAVAC_WRAPPER",
           "value": "/opt/kythe/extractors/javac-wrapper.sh"
+        },
+        {
+          "name": "MVN_POM_PREPROCESSOR",
+          "value": "/opt/kythe/extractors/mvn_pom_preprocessor.jar"
         }
       ]
     },
@@ -74,19 +81,5 @@
       ],
       "entry_point": ["/opt/kythe/extractors/mvn-extract.sh"]
     }
-  ],
-  "run_command": [
-      {
-          "command": "echo 'deb http://http.debian.net/debian jessie-backports main' >> '/etc/apt/sources.list'"
-      },
-      {
-          "command": "apt-get update"
-      },
-      {
-          "command": "apt-get install -y",
-          "arg": [
-              "xmlstarlet"
-          ]
-      }
-    ]
+  ]
 }
