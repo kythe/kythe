@@ -16,7 +16,7 @@ go_library(
         "//kythe/proto:common_go_proto",
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:serving_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )
 

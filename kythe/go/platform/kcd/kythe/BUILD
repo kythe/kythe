@@ -12,7 +12,7 @@ go_library(
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )
 
@@ -22,5 +22,5 @@ go_test(
     srcs = ["units_test.go"],
     library = "kythe",
     visibility = ["//visibility:private"],
-    deps = ["@go_protobuf//:ptypes/any"],
+    deps = ["@io_bazel_rules_go//proto/wkt:any_go_proto"],
 )

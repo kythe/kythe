@@ -11,8 +11,8 @@ go_library(
     ],
     deps = [
         "//kythe/proto:extraction_config_go_proto",
-        "@go_protobuf//:jsonpb",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//jsonpb:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
         "@go_shell//:shell",
     ],
 )
@@ -24,8 +24,8 @@ go_test(
     library = ":config",
     deps = [
         "//kythe/proto:extraction_config_go_proto",
+        "@com_github_golang_protobuf//jsonpb:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
         "@go_cmp//:cmp",
-        "@go_protobuf//:jsonpb",
-        "@go_protobuf//:proto",
     ],
 )

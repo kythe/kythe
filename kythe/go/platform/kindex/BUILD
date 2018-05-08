@@ -13,7 +13,7 @@ go_library(
         "//kythe/go/util/ptypes",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )
 
@@ -27,7 +27,7 @@ go_test(
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:go_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
-        "@go_protobuf//:ptypes/any",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )

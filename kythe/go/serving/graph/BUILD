@@ -13,7 +13,7 @@ go_library(
         "//kythe/proto:graph_go_proto",
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:serving_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
         "@go_stringset//:stringset",
         "@go_x_net//:trace",
     ],

@@ -19,7 +19,7 @@ go_test(
     library = "vnameutil",
     deps = [
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )
 
@@ -39,6 +39,6 @@ go_binary(
     deps = [
         ":vnameutil",
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

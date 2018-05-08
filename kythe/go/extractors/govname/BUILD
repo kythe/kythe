@@ -10,7 +10,7 @@ go_library(
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )
 

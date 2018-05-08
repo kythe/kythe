@@ -11,8 +11,8 @@ go_library(
     srcs = ["explore.go"],
     deps = [
         "//kythe/proto:explore_go_proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
         "@go_grpc//:codes",
         "@go_grpc//:status",
-        "@go_protobuf//:proto",
     ],
 )

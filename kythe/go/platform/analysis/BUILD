@@ -9,6 +9,6 @@ go_library(
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:analysis_service_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

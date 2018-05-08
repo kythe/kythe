@@ -21,7 +21,7 @@ go_library(
         "//kythe/proto:common_go_proto",
         "//kythe/proto:go_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
         "@go_stringset//:stringset",
         "@go_x_tools//:go/gcexportdata",
         "@go_x_tools//:go/types/typeutil",
@@ -37,7 +37,7 @@ go_test(
     library = ":indexer",
     deps = [
         "//kythe/go/test/testutil",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )
 

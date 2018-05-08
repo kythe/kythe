@@ -14,8 +14,8 @@ go_library(
         "//kythe/go/storage/table",
         "//kythe/proto:explore_go_proto",
         "//kythe/proto:serving_go_proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
         "@go_grpc//:codes",
         "@go_grpc//:status",
-        "@go_protobuf//:proto",
     ],
 )

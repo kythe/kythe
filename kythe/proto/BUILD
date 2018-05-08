@@ -124,7 +124,7 @@ go_kythe_proto(
     deps = [
         ":filecontext_go_proto",
         ":storage_go_proto",
-        "@go_protobuf//:ptypes/any",
+        "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )
 
@@ -160,7 +160,7 @@ go_kythe_proto(
         ":analysis_go_proto",
         ":filecontext_go_proto",
         ":storage_go_proto",
-        "@go_protobuf//:ptypes/any",
+        "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )
 

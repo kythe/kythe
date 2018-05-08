@@ -12,6 +12,6 @@ go_binary(
         "//kythe/go/util/disksort",
         "//kythe/go/util/flagutil",
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

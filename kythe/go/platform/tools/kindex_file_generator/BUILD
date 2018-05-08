@@ -10,7 +10,7 @@ go_binary(
         "//kythe/go/platform/kindex",
         "//kythe/go/util/kytheuri",
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )
 

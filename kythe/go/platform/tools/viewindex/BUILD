@@ -12,6 +12,6 @@ go_binary(
         "//kythe/proto:cxx_go_proto",
         "//kythe/proto:go_go_proto",
         "//kythe/proto:java_go_proto",
-        "@go_protobuf//:jsonpb",
+        "@com_github_golang_protobuf//jsonpb:go_default_library",
     ],
 )

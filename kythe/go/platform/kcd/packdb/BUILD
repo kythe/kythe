@@ -9,7 +9,7 @@ go_library(
     deps = [
         "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kcd",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )
 

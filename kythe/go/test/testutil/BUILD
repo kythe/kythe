@@ -5,5 +5,5 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "testutil",
     srcs = ["testutil.go"],
-    deps = ["@go_protobuf//:proto"],
+    deps = ["@com_github_golang_protobuf//proto:go_default_library"],
 )

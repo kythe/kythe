@@ -32,11 +32,11 @@ go_library(
         "//kythe/proto:common_go_proto",
         "//kythe/proto:graph_go_proto",
         "//kythe/proto:xref_go_proto",
+        "@com_github_golang_protobuf//jsonpb:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
         "@go_diff//:diffmatchpatch",
         "@go_jsonrpc2//:go_default_library",
         "@go_langserver//:pkg/lsp",
-        "@go_protobuf//:jsonpb",
-        "@go_protobuf//:proto",
     ],
 )
 

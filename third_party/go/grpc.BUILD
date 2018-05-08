@@ -11,9 +11,9 @@ external_go_package(
     base_pkg = "google.golang.org/grpc",
     deps = [
         ":codes",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//ptypes:go_default_library",
         "@go_genproto//:googleapis/rpc/status",
-        "@go_protobuf//:proto",
-        "@go_protobuf//:ptypes",
     ],
 )
 

@@ -10,7 +10,7 @@ external_go_package(
     name = "googleapis/rpc/status",
     base_pkg = "google.golang.org/genproto",
     deps = [
-        "@go_protobuf//:proto",
-        "@go_protobuf//:ptypes/any",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )

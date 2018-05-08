@@ -21,6 +21,6 @@ go_test(
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

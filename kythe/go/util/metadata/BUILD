@@ -9,7 +9,7 @@ go_library(
     deps = [
         "//kythe/go/util/schema/edges",
         "//kythe/proto:storage_go_proto",
-        "@go_protobuf//:protoc-gen-go/descriptor",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
     ],
 )
 
@@ -20,6 +20,6 @@ go_test(
     library = ":metadata",
     deps = [
         "//kythe/go/test/testutil",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

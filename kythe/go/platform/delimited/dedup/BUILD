@@ -8,6 +8,6 @@ go_library(
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/util/dedup",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

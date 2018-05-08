@@ -7,9 +7,9 @@ go_library(
     name = "ptypes",
     srcs = ["ptypes.go"],
     deps = [
-        "@go_protobuf//:proto",
-        "@go_protobuf//:ptypes",
-        "@go_protobuf//:ptypes/any",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//ptypes:go_default_library",
+        "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )
 
@@ -19,5 +19,5 @@ go_test(
     srcs = ["ptypes_test.go"],
     library = "ptypes",
     visibility = ["//visibility:private"],
-    deps = ["@go_protobuf//:ptypes/any"],
+    deps = ["@io_bazel_rules_go//proto/wkt:any_go_proto"],
 )

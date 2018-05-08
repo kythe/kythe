@@ -7,6 +7,6 @@ go_library(
     srcs = ["table.go"],
     deps = [
         "//kythe/go/storage/keyvalue",
-        "@go_protobuf//:proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

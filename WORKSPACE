@@ -4,7 +4,7 @@ load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.9.0", "0.13.0")
+check_version("0.10.0", "0.13.0")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
@@ -183,8 +183,8 @@ maven_jar(
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "feba3278c13cde8d67e341a837f69a029f698d7a27ddbb2a202be7a10b22142a",
-    url = "https://github.com/bazelbuild/rules_go/releases/download/0.10.3/rules_go-0.10.3.tar.gz",
+    sha256 = "c1f52b8789218bb1542ed362c4f7de7052abcf254d865d96fb7ba6d44bc15ee3",
+    url = "https://github.com/bazelbuild/rules_go/releases/download/0.12.0/rules_go-0.12.0.tar.gz",
 )
 
 new_git_repository(
@@ -369,8 +369,22 @@ git_repository(
     remote = "https://github.com/google/flogger",
 )
 
+http_archive(
+    name = "bazel_gazelle",
+    sha256 = "ddedc7aaeb61f2654d7d7d4fd7940052ea992ccdb031b8f9797ed143ac7e8d43",
+    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.12.0/bazel-gazelle-0.12.0.tar.gz",
+)
+
 load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 go_rules_dependencies()
 
 go_register_toolchains()
+
+load("@bazel_gazelle//:deps.bzl", "go_repository")
+
+go_repository(
+    name = "com_github_golang_protobuf",
+    commit = "b4deda0973fb4c70b50d226b1af49f3da59f5265",
+    importpath = "github.com/golang/protobuf",
+)
