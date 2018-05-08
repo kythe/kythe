@@ -11,7 +11,7 @@ java_test(
     test_class = "com.google.devtools.kythe.platform.tools.MvnPomPreprocessorTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/tools:mvn_pom_preprocessor",
-        "@com_google_guava_guava//jar",
+        "//third_party/guava",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],

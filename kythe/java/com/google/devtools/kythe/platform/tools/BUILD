@@ -8,7 +8,7 @@ java_binary(
     main_class = "com.google.devtools.kythe.platform.tools.MvnPomPreprocessor",
     resources = ["pom_compiler_plugin_fragment.xml"],
     deps = [
+        "//third_party/guava",
         "@com_beust_jcommander//jar",
-        "@com_google_guava_guava//jar",
     ],
 )
