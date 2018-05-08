@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("//tools:build_rules/shims.bzl", "go_binary")
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 package(default_visibility = ["//kythe:default_visibility"])

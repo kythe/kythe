@@ -1,5 +1,4 @@
-load("//tools:build_rules/shims.bzl", "go_test")
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//tools:build_rules/shims.bzl", "go_test", "go_library")
 
 # N.B. This package is given proto visibility although it is not a proto,
 # because it is impractical to use the Kythe protos without ticket support.

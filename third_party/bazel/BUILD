@@ -21,6 +21,7 @@ cc_proto_library(
 
 go_proto_library(
     name = "extra_actions_base_go_proto",
+    importpath = "kythe.io/third_party/bazel/extra_actions_base_go_proto",
     proto = ":extra_actions_base_proto",
 )
 
@@ -41,6 +42,7 @@ cc_proto_library(
 
 go_proto_library(
     name = "test_status_go_proto",
+    importpath = "kythe.io/third_party/bazel/test_status_go_proto",
     proto = ":test_status_proto",
 )
 
