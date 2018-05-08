@@ -123,8 +123,8 @@ maven_jar(
 
 maven_jar(
     name = "com_beust_jcommander",
-    artifact = "com.beust:jcommander:1.72",
-    sha1 = "6375e521c1e11d6563d4f25a07ce124ccf8cd171",
+    artifact = "com.beust:jcommander:1.48",
+    sha1 = "bfcb96281ea3b59d626704f74bc6d625ff51cbce",
 )
 
 maven_jar(

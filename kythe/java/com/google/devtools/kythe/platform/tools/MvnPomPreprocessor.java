@@ -60,7 +60,8 @@ public class MvnPomPreprocessor {
 
   public static void main(String[] args) {
     MvnPomPreprocessor mvnPomPreprocessor = new MvnPomPreprocessor();
-    JCommander.newBuilder().addObject(mvnPomPreprocessor).build().parse(args);
+    JCommander jc = new JCommander(mvnPomPreprocessor);
+    jc.parse(args);
     mvnPomPreprocessor.run();
   }
 
