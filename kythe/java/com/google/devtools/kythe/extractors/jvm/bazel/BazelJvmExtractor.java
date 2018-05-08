@@ -73,7 +73,7 @@ public class BazelJvmExtractor {
 
     List<Path> jarFiles = new ArrayList<>();
     for (String inputFile : spawnInfo.getInputFileList()) {
-      if (inputFile.endsWith(JvmExtractor.JAR_FILE_EXTENSION)) {
+      if (inputFile.endsWith(JvmExtractor.JAR_FILE_EXT)) {
         jarFiles.add(Paths.get(inputFile));
       }
     }

@@ -28,6 +28,7 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.proto.Buildinfo.BuildDetails;
 import com.google.devtools.kythe.proto.Java.JarDetails;
+import com.google.devtools.kythe.proto.Java.JarEntryDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.Any;
 import java.io.IOException;
@@ -41,13 +42,15 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 /** Kythe extractor for Java .jar/.class files. */
 public class JvmExtractor {
-  public static final String JAR_FILE_EXTENSION = ".jar";
-  public static final String CLASS_FILE_EXTENSION = ".class";
+  public static final String JAR_FILE_EXT = ".jar";
+  public static final String CLASS_FILE_EXT = ".class";
   public static final String BUILD_DETAILS_URL = "kythe.io/proto/kythe.proto.BuildDetails";
   public static final String JAR_DETAILS_URL = "kythe.io/proto/kythe.proto.JarDetails";
+  public static final String JAR_ENTRY_DETAILS_URL = "kythe.io/proto/kythe.proto.JarEntryDetails";
 
   /**
    * Returns a JVM {@link CompilationDescription} for the {@code .jar}/{@code .class} file paths
@@ -83,31 +86,47 @@ public class JvmExtractor {
     for (Path path : options.jarOrClassFiles) {
       compilation.addArgument(path.toString());
       compilation.addSourceFile(path.toString());
-      if (path.toString().endsWith(JAR_FILE_EXTENSION)) {
+      if (path.toString().endsWith(JAR_FILE_EXT)) {
         VName jarVName = ExtractorUtils.lookupVName(fileVNames, relativizer, path.toString());
+        int jarIndex = jarDetails.getJarCount();
         JarDetails.Jar.Builder jar = jarDetails.addJarBuilder().setVName(jarVName);
+        List<FileData> jarContents = new ArrayList<>();
         for (FileData file : extractClassFiles(path)) {
-          jar.addEntry(file.getInfo());
-          fileContents.add(file);
+          jar.addEntry(file.getInfo()); // TODO(schroederc): remove
+          jarContents.add(file);
         }
+        fileContents.addAll(jarContents);
+        Any jarEntryDetails =
+            Any.newBuilder()
+                .setTypeUrl(JAR_ENTRY_DETAILS_URL)
+                .setValue(
+                    JarEntryDetails.newBuilder().setJarContainer(jarIndex).build().toByteString())
+                .build();
+        compilation.addAllRequiredInput(
+            ExtractorUtils.toFileInputs(fileVNames, relativizer, jarContents)
+                .stream()
+                .map(i -> i.toBuilder().addDetails(jarEntryDetails).build())
+                .collect(Collectors.toList()));
       } else {
         classFiles.add(path.toString());
       }
     }
-    fileContents.addAll(ExtractorUtils.processRequiredInputs(classFiles));
+
+    List<FileData> classFilesData = ExtractorUtils.processRequiredInputs(classFiles);
     compilation.addAllRequiredInput(
-        ExtractorUtils.toFileInputs(fileVNames, relativizer, fileContents));
+        ExtractorUtils.toFileInputs(fileVNames, relativizer, classFilesData));
+    fileContents.addAll(classFilesData);
 
     if (jarDetails.getJarCount() > 0) {
       compilation.addDetails(
           Any.newBuilder().setTypeUrl(JAR_DETAILS_URL).setValue(jarDetails.build().toByteString()));
     }
 
-    if (fileContents.size() > options.maxRequiredInputs) {
+    if (compilation.getRequiredInputCount() > options.maxRequiredInputs) {
       throw new ExtractionException(
           String.format(
               "number of required inputs (%d) exceeded maximum (%d)",
-              fileContents.size(), options.maxRequiredInputs),
+              compilation.getRequiredInputCount(), options.maxRequiredInputs),
           false);
     }
 
@@ -131,11 +150,11 @@ public class JvmExtractor {
     try (JarFile jar = new JarFile(jarPath.toFile())) {
       for (Enumeration<JarEntry> entries = jar.entries(); entries.hasMoreElements(); ) {
         JarEntry entry = entries.nextElement();
-        if (!entry.getName().endsWith(CLASS_FILE_EXTENSION)) {
+        if (!entry.getName().endsWith(CLASS_FILE_EXT)) {
           continue;
         }
         try (InputStream input = jar.getInputStream(entry)) {
-          String path = jarPath.resolve(entry.getName()).toString();
+          String path = entry.getName();
           byte[] contents = ByteStreams.toByteArray(input);
           files.add(ExtractorUtils.createFileData(path, contents));
         }

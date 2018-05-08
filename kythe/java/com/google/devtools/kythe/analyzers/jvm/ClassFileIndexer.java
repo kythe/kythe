@@ -16,8 +16,14 @@
 
 package com.google.devtools.kythe.analyzers.jvm;
 
+import static com.google.devtools.kythe.extractors.jvm.JvmExtractor.CLASS_FILE_EXT;
+import static com.google.devtools.kythe.extractors.jvm.JvmExtractor.JAR_DETAILS_URL;
+import static com.google.devtools.kythe.extractors.jvm.JvmExtractor.JAR_ENTRY_DETAILS_URL;
+import static com.google.devtools.kythe.extractors.jvm.JvmExtractor.JAR_FILE_EXT;
+
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
@@ -34,6 +40,7 @@ import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Java.JarDetails;
+import com.google.devtools.kythe.proto.Java.JarEntryDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -46,9 +53,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -59,10 +64,6 @@ import java.util.jar.JarFile;
  * <p>Usage: class_file_indexer <class_file | jar_file | kindex_file> ...
  */
 public class ClassFileIndexer {
-  public static final String JAR_FILE_EXT = ".jar";
-  public static final String CLASS_FILE_EXT = ".class";
-  public static final String JAR_DETAILS_URL = "kythe.io/proto/kythe.proto.JarDetails";
-
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   public static void main(String[] args) throws AnalysisException {
@@ -117,11 +118,11 @@ public class ClassFileIndexer {
       FileDataProvider fileDataProvider,
       KytheClassVisitor classVisitor)
       throws AnalysisException {
-    Map<FileInfo, VName> enclosingJars = createJarMap(compilationUnit);
+    ImmutableList<VName> enclosingJars = createJarIndex(compilationUnit);
     for (CompilationUnit.FileInput file : compilationUnit.getRequiredInputList()) {
       FileInfo info = file.getInfo();
       if (info.getPath().endsWith(CLASS_FILE_EXT)) {
-        classVisitor = classVisitor.withEnclosingJarFile(enclosingJars.get(info));
+        classVisitor = classVisitor.withEnclosingJarFile(getEnclosingJar(enclosingJars, file));
         try {
           ListenableFuture<byte[]> contents = fileDataProvider.startLookup(info);
           classVisitor.visitClassFile(contents.get());
@@ -132,7 +133,7 @@ public class ClassFileIndexer {
     }
   }
 
-  private static Map<FileInfo, VName> createJarMap(CompilationUnit compilationUnit) {
+  private static ImmutableList<VName> createJarIndex(CompilationUnit compilationUnit) {
     JarDetails jarDetails = null;
     for (Any details : compilationUnit.getDetailsList()) {
       if (details.getTypeUrl().equals(JAR_DETAILS_URL)) {
@@ -143,16 +144,35 @@ public class ClassFileIndexer {
         }
       }
     }
-    Map<FileInfo, VName> map = new HashMap<>();
-    if (jarDetails == null) {
-      return map;
-    }
-    for (JarDetails.Jar jar : jarDetails.getJarList()) {
-      for (FileInfo entry : jar.getEntryList()) {
-        map.put(entry, jar.getVName());
+    return jarDetails
+        .getJarList()
+        .stream()
+        .map(JarDetails.Jar::getVName)
+        .collect(ImmutableList.toImmutableList());
+  }
+
+  private static VName getEnclosingJar(
+      ImmutableList<VName> enclosingJars, CompilationUnit.FileInput file) {
+    JarEntryDetails jarEntryDetails = null;
+    for (Any details : file.getDetailsList()) {
+      if (details.getTypeUrl().equals(JAR_ENTRY_DETAILS_URL)) {
+        try {
+          jarEntryDetails = JarEntryDetails.parseFrom(details.getValue());
+        } catch (InvalidProtocolBufferException ipbe) {
+          logger.atWarning().withCause(ipbe).log("Error unpacking JarEntryDetails");
+        }
       }
     }
-    return map;
+    if (jarEntryDetails == null) {
+      return null;
+    }
+    int idx = jarEntryDetails.getJarContainer();
+    if (idx < 0 || idx >= enclosingJars.size()) {
+      logger.atWarning().log(
+          "JarEntryDetails index out of range: %s (jars: %s)", jarEntryDetails, enclosingJars);
+      return null;
+    }
+    return enclosingJars.get(idx);
   }
 
   private static void visitJarClassFiles(File jarFile, KytheClassVisitor visitor)
