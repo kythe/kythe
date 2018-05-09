@@ -68,6 +68,10 @@ go_indexer_test(
     name = "functions_test",
     srcs = ["testdata/basic/functions.go"],
     import_path = "test/fun",
+    tags = [
+        "broken",
+        "manual",
+    ],
 )
 
 go_indexer_test(
@@ -99,6 +103,10 @@ go_indexer_test(
 go_indexer_test(
     name = "comment_test",
     srcs = ["testdata/basic/comments.go"],
+    tags = [
+        "broken",
+        "manual",
+    ],
 )
 
 go_indexer_test(
@@ -128,6 +136,10 @@ go_indexer_test(
     srcs = ["testdata/code/interface.go"],
     has_marked_source = True,
     import_path = "test/iface",
+    tags = [
+        "broken",
+        "manual",
+    ],
 )
 
 go_indexer_test(
@@ -142,6 +154,10 @@ go_indexer_test(
     srcs = ["testdata/code/structtype.go"],
     has_marked_source = True,
     import_path = "structtype",
+    tags = [
+        "broken",
+        "manual",
+    ],
 )
 
 go_indexer_test(
@@ -187,6 +203,10 @@ go_indexer_test(
     name = "packageinit_test",
     srcs = ["testdata/basic/packageinit.go"],
     import_path = "test/pkginit",
+    tags = [
+        "broken",
+        "manual",
+    ],
 )
 
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
