@@ -2,19 +2,19 @@
 package functions
 
 //- Pkg=vname("package", "test", _, "fun", "go").node/kind package
-//- Init=vname("package.<init>", "test", _, "fun", "go").node/kind function
+//- Init=vname("package.<init>@59", "test", _, "fun", "go").node/kind function
 //- Init childof Pkg
 
 // Anonymous functions do not get binding anchors.
 //
 //- @"func(b bool) {}" defines
-//-   Anon1 = vname("package.<init>$1", "test", _, "fun", "go")
+//-   Anon1 = vname("package.<init>@59$1", "test", _, "fun", "go")
 //- Anon1 param.0 AnonPB
 //- Anon1.node/kind function
 var _ = func(b bool) {}
 
 //- @"func(z int) {}" defines
-//-   Anon2 = vname("package.<init>$2", "test", _, "fun", "go")
+//-   Anon2 = vname("package.<init>@59$2", "test", _, "fun", "go")
 //- Anon2 param.0 AnonPZ
 //- Anon2.node/kind function
 var _ = func(z int) {}

@@ -2,7 +2,7 @@
 package comment
 
 //- Pkg.node/kind package
-//- Pkg.doc/uri "http://godoc.org/test/comments"
+//- Pkg.doc/uri "http://godoc.org/kythe/go/indexer/comment_test"
 //- PkgDoc.node/kind doc
 //- PkgDoc documents Pkg
 //- PkgDoc.text "Package comment contains comments."

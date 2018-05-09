@@ -9,7 +9,7 @@ import "fmt"
 // definition anchor per http://www.kythe.io/docs/schema/callgraph.html
 
 //- A=@"fmt.Sprint(27)" ref/call _FmtSprint
-//- A childof PkgInit=vname("package.<init>", "test", _, "pkginit", "go")
+//- A childof PkgInit=vname("package.<init>@107", "test", _, "pkginit", "go")
 //- PkgInit.node/kind function
 //-
 //- InitDef=vname(_, _, "", "src/test/pkginit/packageinit.go", "go")
