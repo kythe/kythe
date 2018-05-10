@@ -25,27 +25,20 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"time"
 
 	"kythe.io/kythe/go/extractors/bazel"
 )
 
 var (
-	corpus       = flag.String("corpus", "", "Corpus label to assign (required)")
-	language     = flag.String("language", "", "Language label to assign (required)")
-	extraAction  = flag.String("extra_action", "", "Path of blaze.ExtraActionInfo file (required)")
-	outputPath   = flag.String("output", "", "Path of output index file (required)")
-	vnameRules   = flag.String("rules", "", "Path of vnames.json file (optional)")
-	matchFiles   = flag.String("include", "", `RE2 matching files to include (if "", include all files)`)
-	excludeFiles = flag.String("exclude", "", `RE2 matching files to exclude (if "", exclude none)`)
-	sourceFiles  = flag.String("source", "", `RE2 matching source files (if "", select none)`)
-	sourceArgs   = flag.String("args", "", `RE2 matching arguments to consider source files (if "", select none)`)
-	scopedSource = flag.Bool("scoped", false, "Only match source paths within the target package")
-	verboseLog   = flag.Bool("v", false, "Enable verbose (per-file) logging")
+	outputPath = flag.String("output", "", "Path of output index file (required)")
+
+	settings bazel.Settings
 )
 
 func init() {
+	settings.SetFlags(nil, "")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: %s [options] -corpus C -language L -extra_action f.xa -output f.kindex
 
@@ -82,78 +75,13 @@ func main() {
 	flag.Parse()
 
 	// Verify that required flags are set.
-	switch {
-	case *corpus == "":
-		log.Fatal("You must provide a non-empty --corpus label")
-	case *language == "":
-		log.Fatal("You must provide a non-empty --language label")
-	case *extraAction == "":
-		log.Fatal("You must provide a non-empty --extra_action file path")
-	case *outputPath == "":
+	if *outputPath == "" {
 		log.Fatal("You must provide a non-empty --output file path")
-	case *sourceFiles == "" && *sourceArgs == "":
-		log.Fatal("You must set at least one of --source and --args")
 	}
 
-	// Ensure the extra action can be loaded.
-	info, err := bazel.LoadAction(*extraAction)
+	config, info, err := bazel.NewFromSettings(settings)
 	if err != nil {
-		log.Fatalf("Loading extra action: %v", err)
-	}
-	pkg := bazel.PackageName(info.GetOwner())
-	log.Printf("Extra action for target %q (package %q)", info.GetOwner(), pkg)
-
-	rules, err := bazel.LoadRules(*vnameRules)
-	if err != nil {
-		log.Fatalf("Loading rules: %v", err)
-	}
-	config := &bazel.Config{
-		Corpus:     *corpus,
-		Language:   *language,
-		Rules:      rules,
-		Verbose:    *verboseLog,
-		CheckInput: func(path string) (string, bool) { return path, true },
-	}
-
-	// If there is a file inclusion regexp, replace the input filter with it.
-	if *matchFiles != "" {
-		r := mustRegexp(*matchFiles, "inclusion")
-		config.CheckInput = func(path string) (string, bool) {
-			return path, r.MatchString(path)
-		}
-	}
-
-	// If there is a file exclusion regexp, add it to the input filter.  We
-	// know there is already a callback in place (either a match or the trivial
-	// default).
-	if *excludeFiles != "" {
-		r := mustRegexp(*excludeFiles, "exclusion")
-
-		base := config.CheckInput
-		config.CheckInput = func(path string) (string, bool) {
-			if path, ok := base(path); ok {
-				return path, !r.MatchString(path)
-			}
-			return "", false
-		}
-	}
-
-	// If there is a source matching regexp, set a filter for it.
-	if *sourceFiles != "" {
-		r := mustRegexp(*sourceFiles, "source file")
-		if *scopedSource {
-			config.IsSource = func(path string) bool {
-				return r.MatchString(path) && bazel.PathInPackage(path, pkg)
-			}
-		} else {
-			config.IsSource = r.MatchString
-		}
-	}
-
-	// If we have been asked to include source files from the argument list,
-	// add a fixup to do that at the end.
-	if *sourceArgs != "" {
-		config.Fixup = bazel.FindSourceArgs(mustRegexp(*sourceArgs, "source argument"))
+		log.Fatalf("Invalid config settings: %v", err)
 	}
 
 	start := time.Now()
@@ -169,14 +97,4 @@ func main() {
 	if err := bazel.Write(cu, *outputPath); err != nil {
 		log.Fatalf("Writing index: %v", err)
 	}
-}
-
-// mustRegexp parses the given regular expression or exits the program with a
-// log containing description.
-func mustRegexp(expr, description string) *regexp.Regexp {
-	r, err := regexp.Compile(expr)
-	if err != nil {
-		log.Fatalf("Invalid %s regexp: %v", description, err)
-	}
-	return r
 }

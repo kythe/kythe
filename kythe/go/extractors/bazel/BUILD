@@ -6,6 +6,7 @@ go_library(
     name = "bazel",
     srcs = [
         "extractor.go",
+        "settings.go",
         "utils.go",
     ],
     deps = [
@@ -30,6 +31,9 @@ go_library(
 go_test(
     name = "bazel_test",
     size = "small",
-    srcs = ["extractor_test.go"],
+    srcs = [
+        "extractor_test.go",
+        "settings_test.go",
+    ],
     library = ":bazel",
 )
