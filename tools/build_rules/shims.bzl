@@ -1,3 +1,24 @@
+load("@bazel_gazelle//:deps.bzl", _go_repository = "go_repository", _git_repository = "git_repository")
+
+def go_repository(name, commit, importpath, custom=None, **kwargs):
+  """Macro wrapping the Gazelle go_repository rule.  Works identically, except
+  if custom is provided, an extra git_repository of that name is declared with
+  an overlay built using the "third_party/go:<custom>.BUILD" file.
+  """
+  _go_repository(
+    name=name,
+    commit=commit,
+    importpath=importpath,
+    **kwargs
+  )
+  if custom != None:
+    _git_repository(
+      name="go_"+custom,
+      commit=commit,
+      remote='https://'+importpath+'.git',
+      overlay={"//third_party/go:"+custom+".BUILD": "BUILD"},
+    )
+
 load("@io_bazel_rules_go//go:def.bzl", _go_binary = "go_binary", _go_library = "go_library", _go_test = "go_test")
 
 # Go importpath prefix shared by all Kythe libraries
@@ -13,7 +34,8 @@ def _infer_importpath(name):
 def go_binary(name, importpath=None, **kwargs):
   """This macro wraps the go_binary rule provided by the Bazel Go rules to
   automatically infer the binary's importpath.  It is otherwise equivalent in
-  function to a go_binary. """
+  function to a go_binary.
+  """
   if importpath == None:
     importpath = _infer_importpath(name)
   _go_binary(
@@ -25,7 +47,8 @@ def go_binary(name, importpath=None, **kwargs):
 def go_library(name, importpath=None, **kwargs):
   """This macro wraps the go_library rule provided by the Bazel Go rules to
   automatically infer the library's importpath.  It is otherwise equivalent in
-  function to a go_library. """
+  function to a go_library.
+  """
   if importpath == None:
     importpath = _infer_importpath(name)
   _go_library(

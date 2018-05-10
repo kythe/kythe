@@ -272,13 +272,6 @@ new_git_repository(
 )
 
 new_git_repository(
-    name = "go_protobuf",
-    build_file = "third_party/go/protobuf.BUILD",
-    commit = "925541529c1fa6821df4e44ce2723319eb2be768",
-    remote = "https://github.com/golang/protobuf.git",
-)
-
-new_git_repository(
     name = "go_langserver",
     build_file = "third_party/go/langserver.BUILD",
     commit = "d354d3b84b3a1ef4a38679290e4fb4d32ffe3567",
@@ -381,10 +374,11 @@ go_rules_dependencies()
 
 go_register_toolchains()
 
-load("@bazel_gazelle//:deps.bzl", "go_repository")
+load("//tools:build_rules/shims.bzl", "go_repository")
 
 go_repository(
     name = "com_github_golang_protobuf",
     commit = "b4deda0973fb4c70b50d226b1af49f3da59f5265",
+    custom = "protobuf",
     importpath = "github.com/golang/protobuf",
 )
