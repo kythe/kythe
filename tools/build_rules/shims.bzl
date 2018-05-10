@@ -1,6 +1,6 @@
 load("@bazel_gazelle//:deps.bzl", _go_repository = "go_repository", _git_repository = "git_repository")
 
-def go_repository(name, commit, importpath, custom=None, **kwargs):
+def go_repository(name, commit, importpath, custom=None, custom_git=None, **kwargs):
   """Macro wrapping the Gazelle go_repository rule.  Works identically, except
   if custom is provided, an extra git_repository of that name is declared with
   an overlay built using the "third_party/go:<custom>.BUILD" file.
@@ -12,10 +12,12 @@ def go_repository(name, commit, importpath, custom=None, **kwargs):
     **kwargs
   )
   if custom != None:
+    if custom_git == None:
+      custom_git = 'https://'+importpath+'.git'
     _git_repository(
       name="go_"+custom,
       commit=commit,
-      remote='https://'+importpath+'.git',
+      remote=custom_git,
       overlay={"//third_party/go:"+custom+".BUILD": "BUILD"},
     )
 

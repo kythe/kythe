@@ -8,7 +8,7 @@ go_library(
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/util/sortutil",
-        "@go_snappy//:snappy",
+        "@com_github_golang_snappy//:go_default_library",
     ],
 )
 

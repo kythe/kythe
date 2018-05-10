@@ -5,7 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "html",
     srcs = ["html.go"],
-    deps = ["@go_x_net//:html"],
+    deps = ["@org_golang_x_net//html:go_default_library"],
 )
 
 go_test(
@@ -14,5 +14,5 @@ go_test(
     srcs = ["html_test.go"],
     library = "html",
     visibility = ["//visibility:private"],
-    deps = ["@go_x_net//:html"],
+    deps = ["@org_golang_x_net//html:go_default_library"],
 )

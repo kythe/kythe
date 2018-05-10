@@ -2,12 +2,15 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+exports_files(glob(["*.BUILD"]))
+
 filegroup(
     name = "licenses",
     srcs = [
+        "@go_cmp//:LICENSE",
         "@go_diff//:LICENSE",
         "@go_errors//:LICENSE",
-        "@go_genproto//:LICENSE",
+        "@go_github//:LICENSE",
         "@go_grpc//:LICENSE",
         "@go_jsonrpc2//:LICENSE",
         "@go_langserver//:LICENSE",

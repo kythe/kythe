@@ -14,11 +14,11 @@ go_library(
         "//kythe/proto:link_go_proto",
         "//kythe/proto:xref_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@go_grpc//:codes",
-        "@go_grpc//:status",
-        "@go_stringset//:stringset",
-        "@go_sync//:errgroup",
-        "@go_sync//:semaphore",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
+        "@org_golang_x_sync//errgroup:go_default_library",
+        "@org_golang_x_sync//semaphore:go_default_library",
     ],
 )
 

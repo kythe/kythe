@@ -9,7 +9,7 @@ go_library(
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/keyvalue",
-        "@go_levigo//:levigo",
+        "@com_github_jmhodges_levigo//:go_default_library",
     ],
 )
 

@@ -28,8 +28,8 @@ go_test(
     deps = [
         "//kythe/go/test/testutil",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@go_x_text//:encoding",
-        "@go_x_text//:encoding/unicode",
-        "@go_x_text//:transform",
+        "@org_golang_x_text//encoding:go_default_library",
+        "@org_golang_x_text//encoding/unicode:go_default_library",
+        "@org_golang_x_text//transform:go_default_library",
     ],
 )

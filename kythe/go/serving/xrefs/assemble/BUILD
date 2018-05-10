@@ -21,7 +21,7 @@ go_library(
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:serving_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@go_stringset//:stringset",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
     ],
 )
 

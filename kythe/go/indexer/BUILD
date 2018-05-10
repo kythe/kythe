@@ -21,9 +21,9 @@ go_library(
         "//kythe/proto:go_go_proto",
         "//kythe/proto:storage_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@go_stringset//:stringset",
-        "@go_x_tools//:go/gcexportdata",
-        "@go_x_tools//:go/types/typeutil",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@org_golang_x_tools//go/gcexportdata:go_default_library",
+        "@org_golang_x_tools//go/types/typeutil:go_default_library",
     ],
 )
 
