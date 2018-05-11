@@ -9,3 +9,15 @@ go_binary(
         "//kythe/go/extractors/config",
     ],
 )
+
+go_binary(
+    name = "repotester",
+    srcs = ["repotester.go"],
+    deps = [
+        "//kythe/go/extractors/config",
+        "//kythe/go/platform/kindex",
+        "@go_github//:github",
+        # TODO(danielmoy): auth using a token!
+        # "@go_x_oauth2//:oauth2",
+    ],
+)

@@ -313,11 +313,27 @@ new_git_repository(
     remote = "https://github.com/google/go-cmp.git",
 )
 
+# Bazel docs recommend not using new_git_repository:
+# https://docs.bazel.build/versions/master/be/workspace.html#new_git_repository
 new_git_repository(
     name = "go_github",
     build_file = "third_party/go/github.BUILD",
     commit = "e48060a28fac52d0f1cb758bc8b87c07bac4a87d",
     remote = "https://github.com/google/go-github.git",
+)
+
+new_git_repository(
+    name = "go_querystring",
+    build_file = "third_party/go/querystring.BUILD",
+    commit = "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
+    remote = "https://github.com/google/go-querystring.git",
+)
+
+new_git_repository(
+    name = "go_x_oauth2",
+    build_file = "third_party/go/x_oauth2.BUILD",
+    commit = "cdc340f7c179dbbfa4afd43b7614e8fcadde4269",
+    remote = "https://github.com/golang/oauth2.git",
 )
 
 # proto_library, cc_proto_library, and java_proto_library rules implicitly

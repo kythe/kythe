@@ -1,9 +1,19 @@
 package(default_visibility = ["@//visibility:public"])
 
-load("@//third_party:go/build.bzl", "external_go_package")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 licenses(["notice"])
 
 exports_files(["LICENSE"])
 
-external_go_package(base_pkg = "github.com/google/go-github")
+go_library(
+    name = "github",
+    srcs = glob(
+        ["github/*.go"],
+        exclude = ["github/*_test.go"],
+    ),
+    importpath = "github.com/google/go-github/github",
+    deps = [
+        "@go_querystring//:query",
+    ],
+)
