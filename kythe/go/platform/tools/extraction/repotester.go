@@ -59,6 +59,7 @@ var (
 
 func init() {
 	flag.Usage = func() {
+		binary := filepath.Base(os.Args[0])
 		fmt.Fprintf(os.Stderr, `Usage: %s -repos <comma_delimited,repo_urls>
 %s -repo_list_file <file_containing_line_delimited_repo_urls>
 
@@ -73,7 +74,7 @@ as a binary flag.
 This binary requires both Git and Docker to be on the $PATH during execution.
 
 Options:
-`, filepath.Base(os.Args[0]))
+`, binary, binary)
 		flag.PrintDefaults()
 	}
 }
