@@ -70,7 +70,7 @@ func (s *Settings) SetFlags(f *flag.FlagSet, prefix string) func() {
 		`RE2 matching arguments to consider source files (if "", select none)`)
 	f.BoolVar(&s.Scoped, p("scoped"), false,
 		"Only match source paths within the target package")
-	f.BoolVar(&s.Verbose, p("v"), false,
+	f.BoolVar(&s.Verbose, p("verbose"), false,
 		"Enable verbose (per-file) logging")
 
 	// A default usage message the caller may use to populate flag.Usage.
