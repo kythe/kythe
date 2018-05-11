@@ -229,7 +229,6 @@ func filenamesFromRepo(repoURL string) (map[string]bool, error) {
 		contents, err := readTree(client, owner, repoName, tree.sha)
 		if err != nil {
 			return nil, err
-			continue
 		}
 		if contents == nil {
 			return nil, fmt.Errorf("failed to read repo %s/%s tree %s", owner, repoName, tree.sha)
