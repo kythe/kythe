@@ -21,10 +21,7 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"time"
 
 	"kythe.io/kythe/go/extractors/bazel"
@@ -37,38 +34,7 @@ var (
 )
 
 func init() {
-	settings.SetFlags(nil, "")
-
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, `Usage: %s [options] -corpus C -language L -extra_action f.xa -output f.kindex
-
-Read an ExtraActionInput protobuf message from the designated -extra_action
-file[*] and generate a Kythe compilation record in the specified -output file.
-The -corpus and -language labels are required to be non-empty.  This only works
-for "spawn" actions; any other action will cause the extraction to fail.
-
-By default, all input files listed in the XA are captured in the output.
-To capture only files matching a RE2 regexp, use -include.
-To explicitly exclude otherwise-matched files, use -exclude.
-If both are given, -exclude applies to files selected by -include.
-
-To designate paths as source inputs, set -source to a RE2 regexp matching them,
-or set -args to a RE2 regexp matching command-line arguments that should be
-considered source paths.  At least one of these must be set, and it is safe to
-set both; the results will be merged.
-
-If -scoped is true, a file selected by matching the -source regexp will only be
-considered as a source input if it also contains the Bazel package name as a
-substring. For example, when building //foo/bar/baz:quux with -source '\.go$'
-and -scoped set, a source file like "workdir/blah/foo/bar/baz/my/file.go" will
-be a source input, but "workdir/blah/zip/zip/my/file.go" will not.
-
-[*] https://bazel.build/versions/master/docs/be/extra-actions.html
-
-Options:
-`, filepath.Base(os.Args[0]))
-		flag.PrintDefaults()
-	}
+	flag.Usage = settings.SetFlags(nil, "")
 }
 
 func main() {

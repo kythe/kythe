@@ -21,6 +21,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"regexp"
 
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
@@ -44,7 +46,10 @@ type Settings struct {
 
 // SetFlags adds flags to f for each of the fields of s.  The specified prefix
 // is prepended to each base flag name. If f == nil, flag.CommandLine is used.
-func (s *Settings) SetFlags(f *flag.FlagSet, prefix string) {
+//
+// The returned function provides a default usage message that can be used to
+// populate flag.Usage or discarded at the caller's discretion.
+func (s *Settings) SetFlags(f *flag.FlagSet, prefix string) func() {
 	if f == nil {
 		f = flag.CommandLine
 	}
@@ -67,6 +72,33 @@ func (s *Settings) SetFlags(f *flag.FlagSet, prefix string) {
 		"Only match source paths within the target package")
 	f.BoolVar(&s.Verbose, p("v"), false,
 		"Enable verbose (per-file) logging")
+
+	// A default usage message the caller may use to populate flag.Usage.
+	return func() {
+		fmt.Fprintf(f.Output(),
+			`Usage: %s [options] -corpus C -language L -extra_action f.xa -output f.kindex
+
+Read an ExtraActionInput protobuf message from the designated -extra_action
+file[*] and generate a Kythe compilation record in the specified -output file.
+The -corpus and -language labels are required to be non-empty.  This only works
+for "spawn" actions; any other action will cause the extraction to fail.
+
+By default, all input files listed in the XA are captured in the output.
+To capture only files matching a RE2 regexp, use -include.
+To explicitly exclude otherwise-matched files, use -exclude.
+If both are given, -exclude applies to files selected by -include.
+
+To designate paths as source inputs, set -source to a RE2 regexp matching them,
+or set -args to a RE2 regexp matching command-line arguments that should be
+considered source paths.  At least one of these must be set, and it is safe to
+set both; the results will be merged.
+
+[*] https://bazel.build/versions/master/docs/be/extra-actions.html
+
+Options:
+`, filepath.Base(os.Args[0]))
+		f.PrintDefaults()
+	}
 }
 
 func (s *Settings) validate() error {
