@@ -8,7 +8,7 @@ go_library(
     deps = [
         "//kythe/go/platform/analysis",
         "//kythe/proto:analysis_go_proto",
-        "@com_github_pkg_errors//:go_default_library",
+        "@go_errors//:errors",
     ],
 )
 

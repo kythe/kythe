@@ -9,8 +9,8 @@ go_binary(
         ":languageserver",
         "//kythe/go/services/xrefs",
         "//kythe/proto:xref_go_proto",
-        "@com_github_sourcegraph_go_langserver//pkg/lsp:go_default_library",
-        "@com_github_sourcegraph_jsonrpc2//:go_default_library",
+        "@go_jsonrpc2//:go_default_library",
+        "@go_langserver//:pkg/lsp",
     ],
 )
 
@@ -33,9 +33,9 @@ go_library(
         "//kythe/proto:xref_go_proto",
         "@com_github_golang_protobuf//jsonpb:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_sergi_go_diff//diffmatchpatch:go_default_library",
-        "@com_github_sourcegraph_go_langserver//pkg/lsp:go_default_library",
-        "@com_github_sourcegraph_jsonrpc2//:go_default_library",
+        "@go_diff//:diffmatchpatch",
+        "@go_jsonrpc2//:go_default_library",
+        "@go_langserver//:pkg/lsp",
     ],
 )
 

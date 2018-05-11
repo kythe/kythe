@@ -17,8 +17,8 @@ go_binary(
         "//kythe/proto:storage_go_proto",
         "//third_party/bazel:extra_actions_base_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@org_bitbucket_creachadair_shell//:go_default_library",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@go_shell//:shell",
+        "@go_stringset//:stringset",
     ],
 )
 
@@ -31,7 +31,7 @@ go_binary(
         "//kythe/go/util/vnameutil",
         "//third_party/bazel:extra_actions_base_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@go_stringset//:stringset",
     ],
 )
 

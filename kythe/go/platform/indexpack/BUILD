@@ -9,7 +9,7 @@ go_library(
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/vfs",
         "//kythe/go/platform/vfs/zip",
-        "@com_github_pborman_uuid//:go_default_library",
+        "@go_uuid//:uuid",
     ],
 )
 

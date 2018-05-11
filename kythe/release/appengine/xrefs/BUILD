@@ -12,6 +12,6 @@ go_binary(
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",
-        "@org_golang_x_net//context:go_default_library",
+        "@go_x_net//:context",
     ],
 )
