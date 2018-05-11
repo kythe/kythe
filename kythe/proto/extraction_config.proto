@@ -28,6 +28,10 @@ message ExtractionConfiguration {
   // of the composite extraction image. These can be used to install required
   // SDKs which have no existing base image.
   repeated RunCommand run_command = 2;
+  // A list of parameters to configure as the entry point for the image. This
+  // is specific to build system images, only the last entry point in an image
+  // will be observed.
+  repeated string entry_point = 3;
 
   // Represents the information required for utilizing an image to be composed
   // into a composite extraction image. The data within this message will be
@@ -46,10 +50,6 @@ message ExtractionConfiguration {
     // A list of environment variables to be setup in concert with this
     // image.
     repeated EnvVar env_var = 4;
-    // A list of parameters to configure as the entry point for the image. This
-    // is specific to build system images, only the last entry point in an image
-    // will be observed.
-    repeated string entry_point = 5;
   }
 
   // Represents information required for copying resources from images to

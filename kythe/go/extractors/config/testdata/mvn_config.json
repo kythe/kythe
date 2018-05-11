@@ -78,8 +78,8 @@
           "name": "PATH",
           "value": "$MAVEN_HOME/bin:$PATH"
         }
-      ],
-      "entry_point": ["/opt/kythe/extractors/mvn-extract.sh"]
+      ]
     }
-  ]
+  ],
+  "entry_point": ["/opt/kythe/extractors/mvn-extract.sh"]
 }

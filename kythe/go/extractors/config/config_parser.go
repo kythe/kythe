@@ -103,18 +103,6 @@ func NewImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
 
 			fmt.Fprintf(&buf, "ENV %s=%s\n", env.Name, env.Value)
 		}
-
-		// process the required entry point for the image
-		if len(image.EntryPoint) > 0 {
-			fmt.Fprintf(&buf, "ENTRYPOINT [")
-			for i, entryPointComponent := range image.EntryPoint {
-				fmt.Fprintf(&buf, "\"%s\"", entryPointComponent)
-				if i < len(image.EntryPoint)-1 {
-					fmt.Fprintf(&buf, ", ")
-				}
-			}
-			fmt.Fprintf(&buf, "]\n")
-		}
 	}
 
 	// iterate over the required RUN commands for the configuration
@@ -127,6 +115,18 @@ func NewImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
 			}
 		}
 		fmt.Fprintln(&buf)
+	}
+
+	// process the required entry point for the configuration
+	if len(config.EntryPoint) > 0 {
+		fmt.Fprintf(&buf, "ENTRYPOINT [")
+		for i, entryPointComponent := range config.EntryPoint {
+			fmt.Fprintf(&buf, "\"%s\"", entryPointComponent)
+			if i < len(config.EntryPoint)-1 {
+				fmt.Fprintf(&buf, ", ")
+			}
+		}
+		fmt.Fprintf(&buf, "]\n")
 	}
 
 	return buf.Bytes(), nil
