@@ -24,9 +24,14 @@
 // An extraction config can be optionally read from a specified file.  The
 // format follows kythe.proto.ExtractionConfiguration.
 //
+// You can also specify an optional github api token for increased quota. To
+// obtain one, follow these instructions for obtaining a personal api token:
+// https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
+// Note that this tool only needs the public_repo permission bit from step 7.
+//
 // Usage:
-//   repotester -repos <comma_delimited,repo_urls> [-config <config_file_path>]
-//   repotester -repo_list_file <file> [-config <config_file_path>]
+//   repotester -repos <comma_delimited,repo_urls> [-config <config_file_path>] [-github_token <github_token>]
+//   repotester -repo_list_file <file> [-config <config_file_path>] [-github_token <github_token>]
 package main
 
 import (
@@ -36,6 +41,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -43,18 +49,16 @@ import (
 	"strings"
 
 	"github.com/google/go-github/github"
-	// TODO(danielmoy): auth!
-	// "golang.org/x/oauth2"
+	"golang.org/x/oauth2"
 	"kythe.io/kythe/go/extractors/config"
 	"kythe.io/kythe/go/platform/kindex"
 )
 
 var (
-	repos     = flag.String("repos", "", "A comma delimited list of repos to test.")
-	reposFile = flag.String("repo_list_file", "", "A file that contains a newline delimited list of repos to test.")
-	// TODO(danielmoy): auth!
-	// githubToken = flag.String("github_token", "", "An oauth2 token to contact github with. https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/ to generate.")
-	configPath = flag.String("config", "", "An optional config to specify for every repo.")
+	repos       = flag.String("repos", "", "A comma delimited list of repos to test.")
+	reposFile   = flag.String("repo_list_file", "", "A file that contains a newline delimited list of repos to test.")
+	githubToken = flag.String("github_token", "", "An oauth2 token to contact github with. https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/ to generate.")
+	configPath  = flag.String("config", "", "An optional config to specify for every repo.")
 )
 
 func init() {
@@ -108,7 +112,7 @@ func verifyFlags() {
 	if (*repos == "" && *reposFile == "") || (*repos != "" && *reposFile != "") {
 		log.Fatalf("Must specify one of -repos or -repo_list_file, but no both.")
 	}
-	// TODO(danielmoy): auth!
+	// TODO(danielmoy): consider making auth mandatory
 	// if *githubToken == "" {
 	// 	log.Fatalf("Must specify -github_token.")
 	// }
@@ -195,16 +199,12 @@ type gitpath struct {
 }
 
 func filenamesFromRepo(repoURL string) (map[string]bool, error) {
-	// TODO(danielmoy): auth!
-	// src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *githubToken})
-	// httpClient := oauth.NewClient(context.Background(), src)
-
 	owner, repoName, err := getNames(repoURL)
 	if err != nil {
 		return nil, err
 	}
 
-	client := github.NewClient(nil)
+	client := github.NewClient(getHTTPClient())
 	rootTree, err := getRootTree(client, owner, repoName)
 	if err != nil {
 		return nil, err
@@ -252,6 +252,16 @@ func filenamesFromRepo(repoURL string) (map[string]bool, error) {
 	}
 
 	return ret, nil
+}
+
+// getHTTPClient checks to see if auth is enabled, and if so returns a valid
+// oauth-wrapped client.  Otherwise returns nil.
+func getHTTPClient() *http.Client {
+	if *githubToken == "" {
+		return nil
+	}
+	src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *githubToken})
+	return oauth2.NewClient(context.Background(), src)
 }
 
 func getRootTree(client *github.Client, owner, repo string) (*github.Tree, error) {
