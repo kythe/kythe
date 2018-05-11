@@ -69,7 +69,8 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
                           const clang::FileEntry *FileEntry,
                           llvm::StringRef SearchPath,
                           llvm::StringRef RelativePath,
-                          const clang::Module *Imported) override;
+                          const clang::Module *Imported,
+                          clang::SrcMgr::CharacteristicKind FileType) override;
 
   /// \brief Run by a `clang::PragmaHandler` to handle the `kythe_metadata`
   /// pragma.

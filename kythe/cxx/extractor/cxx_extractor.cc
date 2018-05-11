@@ -287,7 +287,8 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
       clang::SourceLocation HashLoc, const clang::Token& IncludeTok,
       llvm::StringRef FileName, bool IsAngled, clang::CharSourceRange Range,
       const clang::FileEntry* File, llvm::StringRef SearchPath,
-      llvm::StringRef RelativePath, const clang::Module* Imported) override;
+      llvm::StringRef RelativePath, const clang::Module* Imported,
+      clang::SrcMgr::CharacteristicKind FileType) override;
 
   /// \brief Run by a `clang::PragmaHandler` to handle the `kythe_claim` pragma.
   ///
@@ -676,7 +677,8 @@ void ExtractorPPCallbacks::InclusionDirective(
     clang::SourceLocation HashLoc, const clang::Token& IncludeTok,
     llvm::StringRef FileName, bool IsAngled, clang::CharSourceRange Range,
     const clang::FileEntry* File, llvm::StringRef SearchPath,
-    llvm::StringRef RelativePath, const clang::Module* Imported) {
+    llvm::StringRef RelativePath, const clang::Module* Imported,
+    clang::SrcMgr::CharacteristicKind FileType) {
   if (File == nullptr) {
     LOG(WARNING) << "Found null file: " << FileName.str();
     LOG(WARNING) << "Search path was " << SearchPath.str();

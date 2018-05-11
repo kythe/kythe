@@ -281,7 +281,8 @@ class PreprocessorHooks : public clang::PPCallbacks {
                           const clang::FileEntry *include_file,
                           llvm::StringRef search_path,
                           llvm::StringRef relative_path,
-                          const clang::Module *imported) override;
+                          const clang::Module *imported,
+                          clang::SrcMgr::CharacteristicKind FileType) override;
 
  private:
   friend class Action;
@@ -489,7 +490,8 @@ void PreprocessorHooks::InclusionDirective(
     llvm::StringRef file_name, bool is_angled,
     clang::CharSourceRange file_name_range,
     const clang::FileEntry *include_file, llvm::StringRef search_path,
-    llvm::StringRef relative_path, const clang::Module *imported) {
+    llvm::StringRef relative_path, const clang::Module *imported,
+    clang::SrcMgr::CharacteristicKind FileType) {
   if (!enclosing_pass_ || !enclosing_pass_->tracker()) {
     return;
   }
