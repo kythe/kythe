@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.platform.tools;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.google.common.annotations.VisibleForTesting;
@@ -23,9 +25,11 @@ import com.google.common.base.Splitter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.xml.parsers.DocumentBuilder;
@@ -85,9 +89,8 @@ public class MvnPomPreprocessor {
     appendPomCompilerPluginFragment(pomDom);
 
     // write the modified POM file
-    try {
+    try (Writer writer = Files.newBufferedWriter(Paths.get(pomFilePath), UTF_8)) {
       DOMSource source = new DOMSource(pomDom);
-      FileWriter writer = new FileWriter(new File(pomFilePath));
       StreamResult result = new StreamResult(writer);
       TransformerFactory transformerFactory = TransformerFactory.newInstance();
       Transformer transformer = transformerFactory.newTransformer();
