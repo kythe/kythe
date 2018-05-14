@@ -23,7 +23,7 @@ go_library(
         "//kythe/proto:identifier_go_proto",
         "//kythe/proto:xref_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@go_stringset//:stringset",
-        "@go_subcommands//:subcommands",
+        "@com_github_google_subcommands//:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
     ],
 )

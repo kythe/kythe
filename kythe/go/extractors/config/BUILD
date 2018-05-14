@@ -12,7 +12,7 @@ go_library(
         "//kythe/proto:extraction_config_go_proto",
         "@com_github_golang_protobuf//jsonpb:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@go_shell//:shell",
+        "@org_bitbucket_creachadair_shell//:go_default_library",
     ],
 )
 
@@ -25,6 +25,6 @@ go_test(
         "//kythe/proto:extraction_config_go_proto",
         "@com_github_golang_protobuf//jsonpb:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@go_cmp//:cmp",
+        "@com_github_google_go_cmp//cmp:go_default_library",
     ],
 )

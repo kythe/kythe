@@ -5,5 +5,5 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_binary(
     name = "extractschema",
     srcs = ["extractschema.go"],
-    deps = ["@go_stringset//:stringset"],
+    deps = ["@org_bitbucket_creachadair_stringset//:go_default_library"],
 )

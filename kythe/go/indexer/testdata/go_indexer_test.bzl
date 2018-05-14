@@ -149,7 +149,7 @@ def _go_entries(ctx):
 
   cmds = ['set -e', 'set -o pipefail', ' '.join(iargs), '']
   ctx.action(
-      mnemonic = 'GoIndexPack',
+      mnemonic = 'GoIndexer',
       command  = '\n'.join(cmds),
       outputs  = [output],
       inputs   = [kindex] + ctx.files._indexer,

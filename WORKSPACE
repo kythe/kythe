@@ -187,155 +187,6 @@ http_archive(
     url = "https://github.com/bazelbuild/rules_go/releases/download/0.12.0/rules_go-0.12.0.tar.gz",
 )
 
-new_git_repository(
-    name = "go_grpc",
-    build_file = "third_party/go/grpc.BUILD",
-    commit = "95869d0274dc5f61cad15f9ef42e060b9c9e0a3a",
-    remote = "https://github.com/grpc/grpc-go.git",
-)
-
-new_git_repository(
-    name = "go_genproto",
-    build_file = "third_party/go/genproto.BUILD",
-    commit = "2b5a72b8730b0b16380010cfe5286c42108d88e7",
-    remote = "https://github.com/google/go-genproto.git",
-)
-
-new_git_repository(
-    name = "go_errors",
-    build_file = "third_party/go/errors.BUILD",
-    commit = "ff09b135c25aae272398c51a07235b90a75aa4f0",
-    remote = "https://github.com/pkg/errors.git",
-)
-
-new_git_repository(
-    name = "go_x_net",
-    build_file = "third_party/go/x_net.BUILD",
-    commit = "de35ec43e7a9aabd6a9c54d2898220ea7e44de7d",
-    remote = "https://github.com/golang/net.git",
-)
-
-new_git_repository(
-    name = "go_x_text",
-    build_file = "third_party/go/x_text.BUILD",
-    commit = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1",
-    remote = "https://github.com/golang/text.git",
-)
-
-new_git_repository(
-    name = "go_x_tools",
-    build_file = "third_party/go/x_tools.BUILD",
-    commit = "5d2fd3ccab986d52112bf301d47a819783339d0e",
-    remote = "https://go.googlesource.com/tools",
-)
-
-new_git_repository(
-    name = "go_subcommands",
-    build_file = "third_party/go/subcommands.BUILD",
-    commit = "ce3d4cfc062faac7115d44e5befec8b5a08c3faa",
-    remote = "https://github.com/google/subcommands.git",
-)
-
-new_git_repository(
-    name = "go_shell",
-    build_file = "third_party/go/shell.BUILD",
-    commit = "3dcd505a7ca5845388111724cc2e094581e92cc6",
-    remote = "https://bitbucket.org/creachadair/shell.git",
-)
-
-new_git_repository(
-    name = "go_stringset",
-    build_file = "third_party/go/stringset.BUILD",
-    commit = "e974a3c1694da0d5a14216ce46dbceef6a680978",
-    remote = "https://bitbucket.org/creachadair/stringset.git",
-)
-
-new_git_repository(
-    name = "go_diff",
-    build_file = "third_party/go/diff.BUILD",
-    commit = "da645544ed44df016359bd4c0e3dc60ee3a0da43",
-    remote = "https://github.com/sergi/go-diff.git",
-)
-
-new_git_repository(
-    name = "go_uuid",
-    build_file = "third_party/go/uuid.BUILD",
-    commit = "c65b2f87fee37d1c7854c9164a450713c28d50cd",
-    remote = "https://github.com/pborman/uuid.git",
-)
-
-new_git_repository(
-    name = "go_snappy",
-    build_file = "third_party/go/snappy.BUILD",
-    commit = "553a641470496b2327abcac10b36396bd98e45c9",
-    remote = "https://github.com/golang/snappy.git",
-)
-
-new_git_repository(
-    name = "go_langserver",
-    build_file = "third_party/go/langserver.BUILD",
-    commit = "d354d3b84b3a1ef4a38679290e4fb4d32ffe3567",
-    remote = "https://github.com/sourcegraph/go-langserver.git",
-)
-
-new_git_repository(
-    name = "go_jsonrpc2",
-    build_file = "third_party/go/jsonrpc2.BUILD",
-    commit = "3a7c446248199a2abc2dff3cf97bb4f3c0028e5f",
-    remote = "https://github.com/sourcegraph/jsonrpc2.git",
-)
-
-new_git_repository(
-    name = "go_levigo",
-    build_file = "third_party/go/levigo.BUILD",
-    commit = "1ddad808d437abb2b8a55a950ec2616caa88969b",
-    remote = "https://github.com/jmhodges/levigo.git",
-)
-
-new_git_repository(
-    name = "go_sync",
-    build_file = "third_party/go/sync.BUILD",
-    commit = "fd80eb99c8f653c847d294a001bdf2a3a6f768f5",
-    remote = "https://github.com/golang/sync",
-)
-
-new_git_repository(
-    name = "go_cmp",
-    build_file = "third_party/go/cmp.BUILD",
-    commit = "3af367b6b30c263d47e8895973edcca9a49cf029",
-    remote = "https://github.com/google/go-cmp.git",
-)
-
-new_git_repository(
-    name = "go_cmp_internal",
-    build_file = "third_party/go/cmp_internal.BUILD",
-    commit = "3af367b6b30c263d47e8895973edcca9a49cf029",
-    remote = "https://github.com/google/go-cmp.git",
-)
-
-# Bazel docs recommend not using new_git_repository:
-# https://docs.bazel.build/versions/master/be/workspace.html#new_git_repository
-new_git_repository(
-    name = "go_github",
-    build_file = "third_party/go/github.BUILD",
-    commit = "e48060a28fac52d0f1cb758bc8b87c07bac4a87d",
-    remote = "https://github.com/google/go-github.git",
-)
-
-new_git_repository(
-    name = "go_querystring",
-    build_file = "third_party/go/querystring.BUILD",
-    commit = "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
-    remote = "https://github.com/google/go-querystring.git",
-)
-
-new_git_repository(
-    name = "go_x_oauth2",
-    build_file = "third_party/go/x_oauth2.BUILD",
-    commit = "cdc340f7c179dbbfa4afd43b7614e8fcadde4269",
-    remote = "https://github.com/golang/oauth2.git",
-)
-
 # proto_library, cc_proto_library, and java_proto_library rules implicitly
 # depend on @com_google_protobuf for protoc and proto runtimes.
 #
@@ -390,6 +241,14 @@ go_rules_dependencies()
 
 go_register_toolchains()
 
+# Go imports are managed by Gazelle:
+# https://github.com/bazelbuild/bazel-gazelle.  Use the
+# `gazelle update-repos <go_import_path>` command to add or update any
+# third_party Go library.
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+
+gazelle_dependencies()
+
 load("//tools:build_rules/shims.bzl", "go_repository")
 
 go_repository(
@@ -397,4 +256,145 @@ go_repository(
     commit = "b4deda0973fb4c70b50d226b1af49f3da59f5265",
     custom = "protobuf",
     importpath = "github.com/golang/protobuf",
+)
+
+go_repository(
+    name = "com_github_jmhodges_levigo",
+    commit = "c42d9e0ca023e2198120196f842701bb4c55d7b9",
+    custom = "levigo",
+    importpath = "github.com/jmhodges/levigo",
+)
+
+go_repository(
+    name = "com_github_google_go_cmp",
+    commit = "5411ab924f9ffa6566244a9e504bc347edacffd3",
+    custom = "cmp",
+    importpath = "github.com/google/go-cmp",
+)
+
+go_repository(
+    name = "org_golang_x_sync",
+    commit = "1d60e4601c6fd243af51cc01ddf169918a5407ca",
+    custom = "sync",
+    custom_git = "https://github.com/golang/sync.git",
+    importpath = "golang.org/x/sync",
+)
+
+go_repository(
+    name = "com_github_sourcegraph_jsonrpc2",
+    commit = "a3d86c792f0f5a0c0c2c4ed9157125e914cb5534",
+    custom = "jsonrpc2",
+    importpath = "github.com/sourcegraph/jsonrpc2",
+)
+
+go_repository(
+    name = "com_github_golang_snappy",
+    commit = "553a641470496b2327abcac10b36396bd98e45c9",
+    custom = "snappy",
+    importpath = "github.com/golang/snappy",
+)
+
+go_repository(
+    name = "com_github_sourcegraph_go_langserver",
+    commit = "d354d3b84b3a1ef4a38679290e4fb4d32ffe3567",
+    custom = "langserver",
+    importpath = "github.com/sourcegraph/go-langserver",
+)
+
+go_repository(
+    name = "com_github_pborman_uuid",
+    commit = "c65b2f87fee37d1c7854c9164a450713c28d50cd",
+    custom = "uuid",
+    importpath = "github.com/pborman/uuid",
+)
+
+go_repository(
+    name = "com_github_sergi_go_diff",
+    commit = "da645544ed44df016359bd4c0e3dc60ee3a0da43",
+    custom = "diff",
+    importpath = "github.com/sergi/go-diff",
+)
+
+go_repository(
+    name = "com_github_google_subcommands",
+    commit = "a3682377147edf596d303faabd89f81977b3f678",
+    custom = "subcommands",
+    importpath = "github.com/google/subcommands",
+)
+
+go_repository(
+    name = "org_golang_x_tools",
+    commit = "48418e5732e1b1e2a10207c8007a5f959e422f20",
+    custom = "x_tools",
+    custom_git = "https://github.com/golang/tools.git",
+    importpath = "golang.org/x/tools",
+)
+
+go_repository(
+    name = "org_golang_x_text",
+    commit = "7922cc490dd5a7dbaa7fd5d6196b49db59ac042f",
+    custom = "x_text",
+    custom_git = "https://github.com/golang/text.git",
+    importpath = "golang.org/x/text",
+)
+
+go_repository(
+    name = "org_golang_x_net",
+    commit = "f73e4c9ed3b7ebdd5f699a16a880c2b1994e50dd",
+    custom = "x_net",
+    custom_git = "https://github.com/golang/net.git",
+    importpath = "golang.org/x/net",
+)
+
+go_repository(
+    name = "com_github_pkg_errors",
+    commit = "816c9085562cd7ee03e7f8188a1cfd942858cded",
+    custom = "errors",
+    importpath = "github.com/pkg/errors",
+)
+
+go_repository(
+    name = "org_bitbucket_creachadair_stringset",
+    commit = "e974a3c1694da0d5a14216ce46dbceef6a680978",
+    custom = "stringset",
+    custom_git = "https://bitbucket.org/creachadair/stringset.git",
+    importpath = "bitbucket.org/creachadair/stringset",
+)
+
+go_repository(
+    name = "org_bitbucket_creachadair_shell",
+    commit = "3dcd505a7ca5845388111724cc2e094581e92cc6",
+    custom = "shell",
+    custom_git = "https://bitbucket.org/creachadair/shell.git",
+    importpath = "bitbucket.org/creachadair/shell",
+)
+
+go_repository(
+    name = "com_github_google_go_github",
+    commit = "8ea2e2657df890db8fb434a9274799d641bd698c",
+    custom = "github",
+    importpath = "github.com/google/go-github",
+)
+
+go_repository(
+    name = "org_golang_google_grpc",
+    commit = "d07538b1475ec5b0ac85319e4a6706b2d2d8cab7",
+    custom = "grpc",
+    custom_git = "https://github.com/grpc/grpc-go.git",
+    importpath = "google.golang.org/grpc",
+)
+
+go_repository(
+    name = "org_golang_x_oauth2",
+    commit = "cdc340f7c179dbbfa4afd43b7614e8fcadde4269",
+    custom = "x_oauth2",
+    custom_git = "https://github.com/golang/oauth2.git",
+    importpath = "golang.org/x/oauth2",
+)
+
+go_repository(
+    name = "com_github_google_go_querystring",
+    commit = "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
+    custom = "querystring",
+    importpath = "github.com/google/go-querystring",
 )

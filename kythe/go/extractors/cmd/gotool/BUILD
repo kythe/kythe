@@ -11,6 +11,6 @@ go_binary(
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/vfs",
         "//kythe/proto:analysis_go_proto",
-        "@go_uuid//:uuid",
+        "@com_github_pborman_uuid//:go_default_library",
     ],
 )

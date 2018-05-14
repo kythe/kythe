@@ -16,7 +16,7 @@ go_binary(
     deps = [
         "//kythe/go/extractors/config",
         "//kythe/go/platform/kindex",
-        "@go_github//:github",
-        "@go_x_oauth2//:oauth2",
+        "@com_github_google_go_github//github:go_default_library",
+        "@org_golang_x_oauth2//:go_default_library",
     ],
 )
