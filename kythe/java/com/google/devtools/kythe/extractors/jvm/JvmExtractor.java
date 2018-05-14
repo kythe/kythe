@@ -92,7 +92,6 @@ public class JvmExtractor {
         JarDetails.Jar.Builder jar = jarDetails.addJarBuilder().setVName(jarVName);
         List<FileData> jarContents = new ArrayList<>();
         for (FileData file : extractClassFiles(path)) {
-          jar.addEntry(file.getInfo()); // TODO(schroederc): remove
           jarContents.add(file);
         }
         fileContents.addAll(jarContents);

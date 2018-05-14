@@ -27,7 +27,8 @@ import "kythe/proto/storage.proto";
 message JarDetails {
   message Jar {
     VName v_name = 1;
-    repeated FileInfo entry = 2 [deprecated = true];
+
+    reserved 2;
   }
 
   repeated Jar jar = 1;
