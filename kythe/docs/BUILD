@@ -51,3 +51,8 @@ asciidoc(
     name = "modeling-libraries",
     src = "modeling-libraries.txt",
 )
+
+asciidoc(
+    name = "kythe-configurable-extraction",
+    src = "kythe-configurable-extraction.txt",
+)
