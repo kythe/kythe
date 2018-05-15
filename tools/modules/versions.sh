@@ -23,6 +23,8 @@
 MIN_LLVM_SHA="5dc9b6a1fdf6a90ac6440ea2fae4eec2a2151759"
 MIN_LLVM_REV="332025"
 # clang
+# NOTE: when updating Clang, make sure to adjust the path in
+# //third_party/llvm/BUILD:clang_builtin_headers_resources
 MIN_CLANG_SHA="1a597eeed3579b4320b62ff55150195482545992"
 MIN_CLANG_REV="332021"
 
