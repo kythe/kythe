@@ -24,14 +24,9 @@
 // An extraction config can be optionally read from a specified file.  The
 // format follows kythe.proto.ExtractionConfiguration.
 //
-// You can also specify an optional github api token for increased quota. To
-// obtain one, follow these instructions for obtaining a personal api token:
-// https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
-// Note that this tool only needs the public_repo permission bit from step 7.
-//
 // Usage:
-//   repotester -repos <comma_delimited,repo_urls> [-config <config_file_path>] [-github_token <github_token>]
-//   repotester -repo_list_file <file> [-config <config_file_path>] [-github_token <github_token>]
+//   repotester -repos <comma_delimited,repo_urls> [-config <config_file_path>]
+//   repotester -repo_list_file <file> [-config <config_file_path>]
 package main
 
 import (
@@ -41,24 +36,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
-	"path"
+	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 
-	"github.com/google/go-github/github"
-	"golang.org/x/oauth2"
 	"kythe.io/kythe/go/extractors/config"
 	"kythe.io/kythe/go/platform/kindex"
 )
 
 var (
-	repos       = flag.String("repos", "", "A comma delimited list of repos to test.")
-	reposFile   = flag.String("repo_list_file", "", "A file that contains a newline delimited list of repos to test.")
-	githubToken = flag.String("github_token", "", "An oauth2 token to contact github with. https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/ to generate.")
-	configPath  = flag.String("config", "", "An optional config to specify for every repo.")
+	repos      = flag.String("repos", "", "A comma delimited list of repos to test")
+	reposFile  = flag.String("repo_list_file", "", "A file that contains a newline delimited list of repos to test")
+	configPath = flag.String("config", "", "An optional config file to specify kythe.proto.ExtractionConfiguration logic")
 )
 
 func init() {
@@ -67,13 +57,8 @@ func init() {
 		fmt.Fprintf(os.Stderr, `Usage: %s -repos <comma_delimited,repo_urls>
 %s -repo_list_file <file_containing_line_delimited_repo_urls>
 
-This tool tests repo extraction. If specifying file list format, you can also
-specify a config file comma separated after the repo:
-
-https://repo.url, /file/path/to/config
-
-Any config specified in this way overwrites the default top-level -config passed
-as a binary flag.
+This tool tests repo extraction by comparing extractrepo results with the
+contents of the actual repository itself.
 
 This binary requires both Git and Docker to be on the $PATH during execution.
 
@@ -112,10 +97,6 @@ func verifyFlags() {
 	if (*repos == "" && *reposFile == "") || (*repos != "" && *reposFile != "") {
 		log.Fatalf("Must specify one of -repos or -repo_list_file, but no both.")
 	}
-	// TODO(danielmoy): consider making auth mandatory
-	// if *githubToken == "" {
-	// 	log.Fatalf("Must specify -github_token.")
-	// }
 }
 
 func getRepos() ([]string, error) {
@@ -138,6 +119,8 @@ func getReposFromFile() ([]string, error) {
 
 	ret := []string{}
 	scanner := bufio.NewScanner(file)
+	// TODO(danielmoy): consider supporting separate configs per repo. This
+	// will become more necessary once we have more customzied configs.
 	for scanner.Scan() {
 		ret = append(ret, scanner.Text())
 	}
@@ -199,145 +182,47 @@ type gitpath struct {
 }
 
 func filenamesFromRepo(repoURL string) (map[string]bool, error) {
-	owner, repoName, err := getNames(repoURL)
-	if err != nil {
-		return nil, err
-	}
+	repoName := pathTail(repoURL)
 
-	client := github.NewClient(getHTTPClient())
-	rootTree, err := getRootTree(client, owner, repoName)
+	// Make a temp dir.
+	repoDir, err := ioutil.TempDir("", repoName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create temp dir for repo %s: %v", repoURL, err)
 	}
-	if rootTree == nil {
-		return nil, fmt.Errorf("Failed to get commit tree for repo %s/%s", owner, repoName)
-	}
+	defer os.RemoveAll(repoDir)
 
-	// The tree will recursively contain stuff, so build up a queue-like thingy
-	// and go to work.
-	if rootTree.SHA == nil {
-		return nil, fmt.Errorf("Failed to get any tree data for repo %s/%s", owner, repoName)
+	// TODO(danielmoy): strongly consider go-git instead of os.exec
+	if err = exec.Command("git", "clone", repoURL, repoDir).Run(); err != nil {
+		return nil, fmt.Errorf("cloning repo: %v", err)
 	}
-	trees := []gitpath{gitpath{*rootTree.SHA, ""}}
 
 	ret := map[string]bool{}
-	// TODO(danielmoy): consider parallelism in here, within reasonable
-	// bounds given rate limiting.
-	for len(trees) > 0 {
-		tree := trees[0]
-		trees = trees[1:]
-		contents, err := readTree(client, owner, repoName, tree.sha)
-		if err != nil {
-			return nil, err
+	err = filepath.Walk(repoDir, func(path string, info os.FileInfo, err error) error {
+		// TODO(danielmoy): make this parameterized based on the
+		// extractor, e.g. supporting other languages.
+		if err == nil && filepath.Ext(path) == ".java" {
+			ret[path] = true
 		}
-		if contents == nil {
-			return nil, fmt.Errorf("failed to read repo %s/%s tree %s", owner, repoName, tree.sha)
-		}
-		for _, entry := range contents.Entries {
-			if entry.SHA == nil || entry.Path == nil {
-				return nil, fmt.Errorf("failed to read repo %s/%s tree %s", owner, repoName, tree.sha)
-			}
-			newpath := path.Join(tree.path, *entry.Path)
-			switch *entry.Type {
-			case "blob":
-				appendFile(ret, newpath)
-			case "tree":
-				if entry.SHA != nil {
-					trees = append(trees, gitpath{*entry.SHA, newpath})
-				}
-			default:
-				log.Printf("Unknown tree entry %s", entry.Type)
-			}
-		}
-	}
-
-	return ret, nil
+		return err
+	})
+	return ret, err
 }
 
-// getHTTPClient checks to see if auth is enabled, and if so returns a valid
-// oauth-wrapped client.  Otherwise returns nil.
-func getHTTPClient() *http.Client {
-	if *githubToken == "" {
-		return nil
-	}
-	src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *githubToken})
-	return oauth2.NewClient(context.Background(), src)
-}
-
-func getRootTree(client *github.Client, owner, repo string) (*github.Tree, error) {
-	opt := &github.CommitsListOptions{ListOptions: github.ListOptions{PerPage: 1}}
-	repos, _, err := client.Repositories.ListCommits(context.Background(), owner, repo, opt)
-
-	if err != nil {
-		return nil, err
-	}
-	if len(repos) == 0 {
-		return nil, fmt.Errorf("failed to find latest commit for repo %s/%s", owner, repo)
-	}
-	if len(repos) > 1 {
-		log.Fatalf("Somehow got more than one commit for repo %s/%s", owner, repo)
-	}
-	sha := repos[0].SHA
-	if sha == nil {
-		return nil, fmt.Errorf("failed to get commit hash for repo %s/%s commit %v", owner, repo, repos[0])
-	}
-	commit, _, err := client.Git.GetCommit(context.Background(), owner, repo, *sha)
-	if commit == nil || err != nil {
-		return nil, fmt.Errorf("failed to get commit data for repo %s/%s commit %v", owner, repo, repos[0])
-	}
-	return commit.Tree, nil
-}
-
-// getNames tries to extract the owner/repo from a github repo url.  If the
-// passed string is not supported, returns an error to that effect.
-func getNames(repo string) (string, string, error) {
-	re := regexp.MustCompile(`https://github.com/(?P<Owner>\w+)/(?P<Repo>[\w-_]+)`)
-	n := re.FindStringSubmatch(repo)
-	// Recall that regex libraries like returning the whole matched thing as
-	// the first bit, because... reasons.  Anyways just ignore it.
-	if n == nil || len(n) != 3 {
-		return "", "", fmt.Errorf("failed to parse repo %s", repo)
-	}
-	return n[1], n[2], nil
-}
-
-func readTree(client *github.Client, owner, repo, treeSHA string) (*github.Tree, error) {
-	// Note we don't read recursively (, false), because it only supports
-	// max of 200 files.
-	tree, _, err := client.Git.GetTree(context.Background(), owner, repo, treeSHA, false)
-	if tree == nil || err != nil {
-		return nil, err
-	}
-	return tree, nil
-}
-
-// appendFile sees if this is a supported file type, and then wappends it to the
-// list of known files.
-func appendFile(ret map[string]bool, path string) {
-	if strings.HasSuffix(path, ".java") {
-		ret[path] = true
-	}
-	return
-}
-
-func filenamesFromExtraction(repo string) (map[string]bool, error) {
-	_, repoName, err := getNames(repo)
+func filenamesFromExtraction(repoURL string) (map[string]bool, error) {
+	repoName := pathTail(repoURL)
 	tmpOutDir, err := ioutil.TempDir("", repoName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create temp dir for repo %s: %v", repo, err)
+		return nil, fmt.Errorf("failed to create temp dir for repo %s: %v", repoURL, err)
 	}
 	defer os.RemoveAll(tmpOutDir)
 
-	err = config.ExtractRepo(repo, tmpOutDir, *configPath)
+	err = config.ExtractRepo(repoURL, tmpOutDir, *configPath)
 	ret := map[string]bool{}
 	if err != nil {
 		return ret, err
 	}
-	walkFunc := func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if strings.HasSuffix(path, ".kindex") {
+	err = filepath.Walk(tmpOutDir, func(path string, info os.FileInfo, err error) error {
+		if err == nil && filepath.Ext(path) == ".kindex" {
 			cu, err := kindex.Open(context.Background(), path)
 			if err != nil {
 				return err
@@ -350,9 +235,12 @@ func filenamesFromExtraction(repo string) (map[string]bool, error) {
 				}
 			}
 		}
-		return nil
-	}
+		return err
+	})
 
-	err = filepath.Walk(tmpOutDir, walkFunc)
 	return ret, err
+}
+
+func pathTail(path string) string {
+	return path[strings.LastIndex(path, "/")+1:]
 }
