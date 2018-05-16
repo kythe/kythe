@@ -28,7 +28,7 @@ again.
 Once your CLA is submitted (or if you already submitted one for
 another Google project), make a commit adding yourself to the
 [AUTHORS][] and [CONTRIBUTORS][] files. This commit can be part
-of your first [Differential][] code review.
+of your first [Pull Request][].
 
 [AUTHORS]: AUTHORS
 [CONTRIBUTORS]: CONTRIBUTORS
@@ -36,7 +36,7 @@ of your first [Differential][] code review.
 
 ## Submitting a patch ##
 
-  1. It's generally best to start by opening a new issue in [Maniphest][]
+  1. It's generally best to start by opening a new [Issue][]
      describing the bug or feature you're intending to fix.  Even if you think
      it's relatively minor, it's helpful to know what people are working on.
      Mention in the initial issue that you are planning to work on that bug or
@@ -44,25 +44,21 @@ of your first [Differential][] code review.
 
   1. Follow the normal process of [forking][] the project, and setup a new
      branch to work in.  It's important that each group of changes be done in
-     separate branches in order to ensure that a [Differential][] code review
-     only includes the commits related to that bug or feature.
+     separate branches in order to ensure that a [Pull Request][] only includes
+     the commits related to that bug or feature.
 
   1. Do your best to have [well-formed commit messages][] for each change.
      This provides consistency throughout the project, and ensures that commit
      messages are able to be formatted properly by various git tools.
 
-  1. Use [arcanist][] to create a code review, request it to be reviewed by
-     those familiar with code being changed (you may want to use `arc cover`),
-     commit any necessary changes to your branch based on their feedback, and
-     get your change approved.
-
-  1. Land the change with [arcanist][] to push it to the Kythe repository.
+  1. Use a [Pull Request][] to create a code review, request it to be reviewed by
+     those familiar with code being changed, commit any necessary changes to your
+     branch based on their feedback, and get your change approved.
 
 For more information on contributing, see
 [https://kythe.io/contributing](https://kythe.io/contributing).
 
-[Maniphest]: https://kythe.io/phabricator/maniphest
-[Differential]: https://kythe.io/phabricator/differential
-[arcanist]: https://secure.phabricator.com/book/phabricator/article/arcanist/
+[Issue]: https://github.com/google/kythe/issues
+[Pull Request]: https://github.com/google/kythe/pulls
 [forking]: https://help.github.com/articles/fork-a-repo
 [well-formed commit messages]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
