@@ -326,12 +326,13 @@ class Vistor {
           // by default.
           // TODO: namespace {}, etc.
 
-          // If the node has a 'name' attribute it's likely this function should
-          // have handled it.  Warn if not.
-          if ('name' in node) {
+          // If the node is actually some subtype that has a 'name' attribute
+          // it's likely this function should have handled it.  Dynamically
+          // probe for this case and warn if we missed one.
+          if ('name' in (node as any)) {
             this.todo(
                 node,
-                `scopedSignature: ${ts.SyntaxKind[(node as any).kind]} ` +
+                `scopedSignature: ${ts.SyntaxKind[node.kind]} ` +
                     `has unused 'name' property`);
           }
       }
