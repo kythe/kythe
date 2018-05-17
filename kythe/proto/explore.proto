@@ -237,6 +237,7 @@ message ParentsReply {
   // associates each input ticket with the set of tickets that contain it
   map<string, Tickets> input_to_parents = 1;
 
+  // associates each input ticket with the associated node data
   map<string, NodeData> node_data = 2;
 }
 
@@ -245,8 +246,6 @@ message ParentsReply {
 // (e.g. what files are in this package?  what functions are in this class?).
 message ChildrenRequest {
   repeated string tickets = 1;
-
-  NodeFilter node_filter = 2;
 }
 
 
@@ -254,5 +253,6 @@ message ChildrenReply {
   // associates each input ticket with the set of tickets contained by it
   map<string, Tickets> input_to_children = 1;
 
+  // associates each input ticket with the associated node data
   map<string, NodeData> node_data = 2;
 }
