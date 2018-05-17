@@ -29,6 +29,23 @@ import (
 // kytheConfigFileName The name of the Kythe extraction config
 const kytheExtractionConfigFile = ".kythe-extraction-config"
 
+// Extractor is the interface for handling kindex generation on repos.
+//
+// ExtractRepo takes an input repo, output path to a directory, and optional
+// kythe.proto.ExtractionConfiguration file path, and performs kythe extraction
+// on the repo, depositing results in the output directory path.
+type Extractor interface {
+	ExtractRepo(repoURI, outputPath, configPath string) error
+}
+
+// DefaultExtractor provides an extractor that can perform extraction on
+// remote git repos using git commandline tool.
+//
+// By default, it uses a top level extraction config file
+// .kythe-extraction-config, though this can be overridden by passing a specific
+// configPath to ExtractRepo.
+type DefaultExtractor struct{}
+
 // ExtractRepo extracts a given code repository and outputs kindex files.
 //
 // It makes a local clone of the repository. It optionally uses a passed
@@ -40,7 +57,7 @@ const kytheExtractionConfigFile = ".kythe-extraction-config"
 // http://kythe.io/docs/kythe-index-pack.html).
 //
 // This function requires both Git and Docker to be in $PATH during execution.
-func ExtractRepo(repoURI, outputPath, configPath string) error {
+func (d DefaultExtractor) ExtractRepo(repoURI, outputPath, configPath string) error {
 	if err := verifyRequiredTools(); err != nil {
 		return fmt.Errorf("ExtractRepo requires git and docker to be in $PATH: %v", err)
 	}

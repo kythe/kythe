@@ -14,7 +14,6 @@ go_binary(
     name = "repotester",
     srcs = ["repotester.go"],
     deps = [
-        "//kythe/go/extractors/config",
-        "//kythe/go/platform/kindex",
+        "//kythe/go/extractors/config/smoke",
     ],
 )

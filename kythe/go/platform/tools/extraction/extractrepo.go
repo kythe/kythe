@@ -86,7 +86,8 @@ func main() {
 	flag.Parse()
 	verifyFlags()
 
-	err := config.ExtractRepo(*repoURI, *outputPath, *configPath)
+	extractor := config.DefaultExtractor{}
+	err := extractor.ExtractRepo(*repoURI, *outputPath, *configPath)
 	if err != nil {
 		log.Fatalf("Failed to extract repo: %v", err)
 	}

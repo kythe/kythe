@@ -18,9 +18,6 @@
 // to run similar logic to sibling binary extractrepo on a specified target
 // repositories, and reports results.
 //
-// For simple extraction, the results are merely based on the fraction of java
-// files in the repo that end up in the kindex files.
-//
 // An extraction config can be optionally read from a specified file.  The
 // format follows kythe.proto.ExtractionConfiguration.
 //
@@ -31,18 +28,14 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"kythe.io/kythe/go/extractors/config"
-	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/extractors/config/smoke"
 )
 
 var (
@@ -80,12 +73,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get repos to read: %v", err)
 	}
+
+	tester := smoke.NewGitTestingHarness(*configPath)
 	for _, repo := range repos {
-		res, err := testRepo(repo)
+		res, err := tester.TestRepo(repo)
 		if err != nil {
 			log.Printf("Failed to test repo: %s", err)
 		} else {
-			fmt.Printf("|%9t |%9t |      %2.0f%% | %s\n", res.downloaded, res.extracted, 100*res.fileCoverage, repo)
+			fmt.Printf("|%9t |%9t |      %2.0f%% | %s\n", res.Downloaded, res.Extracted, 100*res.FileCoverage, repo)
 		}
 	}
 }
@@ -128,119 +123,4 @@ func getReposFromFile() ([]string, error) {
 		return nil, fmt.Errorf("error reading repo file: %v", err)
 	}
 	return ret, nil
-}
-
-// result is a simple container for the results of a single repo test.  It may
-// contain useful information about whether or not the repo was accessible,
-// extracted at all, or the extent to which we got good file coverage from the
-// extraction.
-type result struct {
-	// Whether the repo was successfully downloaded or extracted.
-	downloaded, extracted bool
-	// Should be in range [0.0, 1.0]
-	fileCoverage float32
-}
-
-func testRepo(repo string) (result, error) {
-	fromExtraction, err := filenamesFromExtraction(repo)
-	if err != nil {
-		log.Printf("Failed to extract repo: %v", err)
-		// TODO(danielmoy): consider handling errors independently and
-		// returning separate false results if either err != nil.
-		return result{false, false, 0.0}, nil
-	}
-	fromRepo, err := filenamesFromRepo(repo)
-	if err != nil {
-		log.Printf("Failed to read repo from remote: %v", err)
-		return result{false, true, 0.0}, nil
-	}
-
-	var coverageTotal int32
-	var coverageCount int32
-	// TODO(danielmoy): the repos won't necessarily line up properly. This
-	// needs to be fixed to be more extensible. Potentially with a suffix
-	// trie on successive path elements (basename and then directory
-	// backwards).
-	for k := range fromRepo {
-		coverageTotal = coverageTotal + 1
-		if _, ok := fromExtraction[k]; ok {
-			coverageCount = coverageCount + 1
-		}
-	}
-
-	return result{
-		downloaded:   true,
-		extracted:    true,
-		fileCoverage: float32(coverageCount) / float32(coverageTotal),
-	}, nil
-}
-
-// gitpath is a container for storing actual paths, since what github API calls
-// "path" is actually just a basename, and we need the full path.
-type gitpath struct {
-	sha, path string
-}
-
-func filenamesFromRepo(repoURL string) (map[string]bool, error) {
-	repoName := pathTail(repoURL)
-
-	// Make a temp dir.
-	repoDir, err := ioutil.TempDir("", repoName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp dir for repo %s: %v", repoURL, err)
-	}
-	defer os.RemoveAll(repoDir)
-
-	// TODO(danielmoy): strongly consider go-git instead of os.exec
-	if err = exec.Command("git", "clone", repoURL, repoDir).Run(); err != nil {
-		return nil, fmt.Errorf("cloning repo: %v", err)
-	}
-
-	ret := map[string]bool{}
-	err = filepath.Walk(repoDir, func(path string, info os.FileInfo, err error) error {
-		// TODO(danielmoy): make this parameterized based on the
-		// extractor, e.g. supporting other languages.
-		if err == nil && filepath.Ext(path) == ".java" {
-			ret[path] = true
-		}
-		return err
-	})
-	return ret, err
-}
-
-func filenamesFromExtraction(repoURL string) (map[string]bool, error) {
-	repoName := pathTail(repoURL)
-	tmpOutDir, err := ioutil.TempDir("", repoName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp dir for repo %s: %v", repoURL, err)
-	}
-	defer os.RemoveAll(tmpOutDir)
-
-	err = config.ExtractRepo(repoURL, tmpOutDir, *configPath)
-	ret := map[string]bool{}
-	if err != nil {
-		return ret, err
-	}
-	err = filepath.Walk(tmpOutDir, func(path string, info os.FileInfo, err error) error {
-		if err == nil && filepath.Ext(path) == ".kindex" {
-			cu, err := kindex.Open(context.Background(), path)
-			if err != nil {
-				return err
-			}
-			if cu.Proto != nil {
-				for _, v := range cu.Proto.SourceFile {
-					if strings.HasSuffix(v, ".java") {
-						ret[v] = true
-					}
-				}
-			}
-		}
-		return err
-	})
-
-	return ret, err
-}
-
-func pathTail(path string) string {
-	return path[strings.LastIndex(path, "/")+1:]
 }
