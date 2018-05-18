@@ -18,7 +18,6 @@
 package kythe
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"sort"
@@ -27,12 +26,15 @@ import (
 	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/util/ptypes"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	bipb "kythe.io/kythe/proto/buildinfo_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
+
+var toJSON = &jsonpb.Marshaler{OrigName: true}
 
 // Format is the format key used to denote Kythe compilations, stored
 // as kythe.proto.CompilationUnit messages.
@@ -45,7 +47,13 @@ type Unit struct{ Proto *apb.CompilationUnit }
 func (u Unit) MarshalBinary() ([]byte, error) { return proto.Marshal(u.Proto) }
 
 // MarshalJSON satisfies the json.Marshaler interface.
-func (u Unit) MarshalJSON() ([]byte, error) { return json.Marshal(u.Proto) }
+func (u Unit) MarshalJSON() ([]byte, error) {
+	s, err := toJSON.MarshalToString(u.Proto)
+	if err != nil {
+		return nil, err
+	}
+	return []byte(s), nil
+}
 
 // Index satisfies part of the kcd.Unit interface.
 func (u Unit) Index() kcd.Index {
