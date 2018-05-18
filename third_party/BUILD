@@ -12,8 +12,8 @@ filegroup(
         "//third_party/leiningen:license",
         "//third_party/leveldb:license",
         "//third_party/llvm:license",
-        "//third_party/rapidjson:license",
         "//third_party/snappy:license",
+        "@com_github_tencent_rapidjson//:license",
     ],
 )
 

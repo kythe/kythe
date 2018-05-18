@@ -6,9 +6,9 @@ cc_binary(
     srcs = ["extract_compile_command.cc"],
     deps = [
         "//third_party/bazel:extra_actions_base_cc_proto",
-        "//third_party/rapidjson",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_protobuf//:protobuf",
     ],
 )
