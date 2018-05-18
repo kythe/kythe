@@ -334,3 +334,19 @@ message Relatives {
 
   Type type = 2;
 }
+
+// Callgraph stores the tickets for semantic nodes of functions that call, or
+// are called by, a reference function semantic node.
+// Used by ExploreService for the Caller and Callee APIs.
+message Callgraph {
+  enum Type {
+    UNKNOWN = 0;  // never a valid value
+    CALLER = 1;   // each element of 'tickets' is a caller of the reference node
+    CALLEE = 2;   // each element of 'tickets' is called by the reference node
+  }
+
+  // Nodes connected to a reference node via the call relationship.
+  repeated string tickets = 1;
+
+  Type type = 2;
+}
