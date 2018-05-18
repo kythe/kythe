@@ -46,10 +46,23 @@ type Tester interface {
 	TestRepo(repo string) (Result, error)
 }
 
+// Fetcher is a thin wrapper over something which fetches a given repo and
+// writes it to an output directory.
+type Fetcher interface {
+	Fetch(repoURL, outputPath string) error
+}
+
+type gitCommandlineFetcher struct{}
+
+func (g gitCommandlineFetcher) Fetch(repoURL, outputPath string) error {
+	// TODO(danielmoy): strongly consider go-git instead of os.exec
+	return exec.Command("git", "clone", repoURL, outputPath).Run()
+}
+
 type harness struct {
 	extractor   config.Extractor
 	configPath  string
-	repoFetcher func(repoURL, outputPath string) error
+	repoFetcher Fetcher
 }
 
 // NewGitTestingHarness creates a simple Tester which uses
@@ -60,12 +73,9 @@ type harness struct {
 // format follows kythe.proto.ExtractionConfiguration.
 func NewGitTestingHarness(configPath string) Tester {
 	return harness{
-		extractor:  config.DefaultExtractor{},
-		configPath: configPath,
-		repoFetcher: func(repoURL, outputPath string) error {
-			// TODO(danielmoy): strongly consider go-git instead of os.exec
-			return exec.Command("git", "clone", repoURL, outputPath).Run()
-		},
+		extractor:   config.DefaultExtractor{},
+		configPath:  configPath,
+		repoFetcher: gitCommandlineFetcher{},
 	}
 }
 
@@ -81,14 +91,14 @@ type Result struct {
 	// Whether the repo was successfully downloaded or extracted.
 	Downloaded, Extracted bool
 	// Should be in range [0.0, 1.0]
-	FileCoverage float32
+	FileCoverage float64
 }
 
 func (g harness) TestRepo(repo string) (Result, error) {
 	fromRepo, err := g.filenamesFromRepo(repo)
 	if err != nil {
 		log.Printf("Failed to read repo from remote: %v", err)
-		return Result{false, true, 0.0}, nil
+		return Result{false, false, 0.0}, nil
 	}
 
 	fromExtraction, err := g.filenamesFromExtraction(repo)
@@ -96,7 +106,7 @@ func (g harness) TestRepo(repo string) (Result, error) {
 		log.Printf("Failed to extract repo: %v", err)
 		// TODO(danielmoy): consider handling errors independently and
 		// returning separate false results if either err != nil.
-		return Result{false, false, 0.0}, nil
+		return Result{true, false, 0.0}, nil
 	}
 
 	var coverageTotal int32
@@ -112,9 +122,9 @@ func (g harness) TestRepo(repo string) (Result, error) {
 		}
 	}
 
-	var coverage float32
+	var coverage float64
 	if coverageTotal > 0 {
-		coverage = float32(coverageCount) / float32(coverageTotal)
+		coverage = float64(coverageCount) / float64(coverageTotal)
 	}
 	return Result{
 		Downloaded:   true,
@@ -132,7 +142,7 @@ func (g harness) filenamesFromRepo(repoURL string) (map[string]bool, error) {
 	}
 	defer os.RemoveAll(repoDir)
 
-	if err = g.repoFetcher(repoURL, repoDir); err != nil {
+	if err = g.repoFetcher.Fetch(repoURL, repoDir); err != nil {
 		return nil, err
 	}
 
