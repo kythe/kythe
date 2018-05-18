@@ -9,6 +9,8 @@ go_library(
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/vfs",
         "//kythe/go/platform/vfs/zip",
+        "@com_github_golang_protobuf//jsonpb:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_pborman_uuid//:go_default_library",
     ],
 )
@@ -22,6 +24,5 @@ go_test(
     deps = [
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

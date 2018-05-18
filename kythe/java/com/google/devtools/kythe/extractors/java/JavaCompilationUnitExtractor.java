@@ -45,6 +45,7 @@ import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.DeleteRecursively;
 import com.google.protobuf.Any;
+import com.google.protobuf.util.JsonFormat;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.ImportTree;
@@ -106,6 +107,12 @@ import javax.tools.ToolProvider;
 public class JavaCompilationUnitExtractor {
   public static final String JAVA_DETAILS_URL = "kythe.io/proto/kythe.proto.JavaDetails";
   public static final String BUILD_DETAILS_URL = "kythe.io/proto/kythe.proto.BuildDetails";
+
+  public static final JsonFormat.TypeRegistry JSON_TYPE_REGISTRY =
+      JsonFormat.TypeRegistry.newBuilder()
+          .add(JavaDetails.getDescriptor())
+          .add(BuildDetails.getDescriptor())
+          .build();
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 

@@ -11,5 +11,9 @@ go_binary(
         "//kythe/go/platform/vfs",
         "//kythe/go/util/build",
         "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:buildinfo_go_proto",
+        "//kythe/proto:cxx_go_proto",
+        "//kythe/proto:go_go_proto",
+        "//kythe/proto:java_go_proto",
     ],
 )

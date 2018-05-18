@@ -84,7 +84,11 @@ bool JsonOfValue(const google::protobuf::FieldDescriptor *field,
                  const google::protobuf::Reflection *reflection, W *writer) {
   using namespace google::protobuf;
   int count = field->is_repeated() ? reflection->FieldSize(message, field) : 1;
-  if (field->is_repeated()) {
+  auto *descriptor = message.GetDescriptor();
+  if (field->name() == "type_url" && descriptor->name() == "Any" &&
+      descriptor->file()->name() == "google/protobuf/any.proto") {
+    writer->Key("@type");
+  } else if (field->is_repeated()) {
     if (count == 0) {
       return true;  // Do not emit anything for empty repeated fields.
     }

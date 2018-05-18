@@ -44,7 +44,10 @@ public class JsonUtil {
 
   /** Use the given {@link JsonFormat.TypeRegistry} when parsing proto3 Any messages. */
   public static void usingTypeRegistry(JsonFormat.TypeRegistry registry) {
-    GeneratedMessageV3TypeAdapter.PARSER.usingTypeRegistry(registry);
+    GeneratedMessageV3TypeAdapter.PARSER =
+        GeneratedMessageV3TypeAdapter.PARSER.usingTypeRegistry(registry);
+    GeneratedMessageV3TypeAdapter.PRINTER =
+        GeneratedMessageV3TypeAdapter.PRINTER.usingTypeRegistry(registry);
   }
 
   /**
@@ -63,8 +66,8 @@ public class JsonUtil {
 
   private static class GeneratedMessageV3TypeAdapter
       implements JsonSerializer<GeneratedMessageV3>, JsonDeserializer<GeneratedMessageV3> {
-    private static final JsonFormat.Parser PARSER = JsonFormat.parser();
-    private static final JsonFormat.Printer PRINTER =
+    private static JsonFormat.Parser PARSER = JsonFormat.parser();
+    private static JsonFormat.Printer PRINTER =
         JsonFormat.printer().preservingProtoFieldNames().omittingInsignificantWhitespace();
 
     @Override

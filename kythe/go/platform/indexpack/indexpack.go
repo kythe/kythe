@@ -65,6 +65,7 @@ package indexpack
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
@@ -83,6 +84,8 @@ import (
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/platform/vfs/zip"
 
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/pborman/uuid"
 )
 
@@ -336,7 +339,13 @@ func (a *Archive) ReadUnit(ctx context.Context, formatKey, digest string, f func
 
 	// Parse the content into the receiver's type.
 	cu := reflect.New(a.unitType).Interface()
-	if err := json.Unmarshal(unit.Content, cu); err != nil {
+	if msg, ok := cu.(proto.Message); ok {
+		buf := bytes.NewBuffer([]byte(unit.Content))
+		err = jsonpbUnmarshaler.Unmarshal(buf, msg)
+	} else {
+		err = json.Unmarshal(unit.Content, cu)
+	}
+	if err != nil {
 		return fmt.Errorf("error parsing content: %v", err)
 	}
 	if err := f(cu); err != nil {
@@ -351,13 +360,26 @@ func (a *Archive) ReadFile(ctx context.Context, digest string) ([]byte, error) {
 	return a.readFile(ctx, filepath.Join(a.root, dataDir), digest+dataSuffix)
 }
 
+var (
+	jsonpbMarshaler   = &jsonpb.Marshaler{OrigName: true}
+	jsonpbUnmarshaler = &jsonpb.Unmarshaler{AllowUnknownFields: true}
+)
+
 // WriteUnit writes the specified compilation unit to the units/ subdirectory
 // of the index pack, using the specified format key.  Returns the resulting
 // filename, whether or not there is an error in writing the file, as long as
 // marshaling succeeded.
 func (a *Archive) WriteUnit(ctx context.Context, formatKey string, cu interface{}) (string, error) {
 	// Convert the compilation unit into JSON.
-	content, err := json.Marshal(cu)
+	var content []byte
+	var err error
+	if msg, ok := cu.(proto.Message); ok {
+		var buf bytes.Buffer
+		err = jsonpbMarshaler.Marshal(&buf, msg)
+		content = buf.Bytes()
+	} else {
+		content, err = json.Marshal(cu)
+	}
 	if err != nil {
 		return "", fmt.Errorf("error marshaling content: %v", err)
 	}

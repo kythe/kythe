@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.java;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
+import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.indexpack.Archive;
@@ -30,6 +31,7 @@ import com.google.devtools.kythe.platform.shared.MemoryStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.MetadataLoaders;
 import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.ProtobufMetadataLoader;
+import com.google.devtools.kythe.util.JsonUtil;
 import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.File;
@@ -50,6 +52,8 @@ import java.util.function.Supplier;
  */
 public class JavaIndexer {
   public static void main(String[] args) throws AnalysisException, IOException {
+    JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
+
     StandaloneConfig config = new StandaloneConfig();
     config.parseCommandLine(args);
 
@@ -144,39 +148,33 @@ public class JavaIndexer {
     private List<String> compilation = new ArrayList<>();
 
     @Parameter(
-      names = "--load_plugin",
-      description = "Load and execute each Kythe Plugin in the given .jar"
-    )
+        names = "--load_plugin",
+        description = "Load and execute each Kythe Plugin in the given .jar")
     private String pluginJar;
 
     @Parameter(
-      names = "--print_vnames",
-      description = "Print Kythe node VNames associated to each JCTree to stderr"
-    )
+        names = "--print_vnames",
+        description = "Print Kythe node VNames associated to each JCTree to stderr")
     private boolean printVNames;
 
     @Parameter(
-      names = "--print_statistics",
-      description = "Print final analyzer statistics to stderr"
-    )
+        names = "--print_statistics",
+        description = "Print final analyzer statistics to stderr")
     private boolean printStatistics;
 
     @Parameter(
-      names = {"--index_pack", "-index_pack"},
-      description = "Retrieve the specified compilation from the given index pack"
-    )
+        names = {"--index_pack", "-index_pack"},
+        description = "Retrieve the specified compilation from the given index pack")
     private String indexPackRoot;
 
     @Parameter(
-      names = "--ignore_empty_kindex",
-      description = "Ignore empty .kindex files; exit successfully with no output"
-    )
+        names = "--ignore_empty_kindex",
+        description = "Ignore empty .kindex files; exit successfully with no output")
     private boolean ignoreEmptyKIndex;
 
     @Parameter(
-      names = {"--out", "-out"},
-      description = "Write the entries to this file (or stdout if unspecified)"
-    )
+        names = {"--out", "-out"},
+        description = "Write the entries to this file (or stdout if unspecified)")
     private String outputPath;
 
     public StandaloneConfig() {

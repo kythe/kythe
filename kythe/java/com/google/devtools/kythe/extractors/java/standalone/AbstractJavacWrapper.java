@@ -30,6 +30,7 @@ import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
+import com.google.devtools.kythe.util.JsonUtil;
 import com.sun.tools.javac.main.CommandLine;
 import java.io.File;
 import java.io.IOException;
@@ -43,8 +44,8 @@ import java.util.List;
  *
  * <p>Environment Variables Used (note that these can also be set as JVM system properties):
  *
- * <p>KYTHE_VNAMES: optional path to a JSON configuration file for {@link FileVNames} to populate the
- * {@link CompilationUnit}'s required input {@link VName}s
+ * <p>KYTHE_VNAMES: optional path to a JSON configuration file for {@link FileVNames} to populate
+ * the {@link CompilationUnit}'s required input {@link VName}s
  *
  * <p>KYTHE_CORPUS: if KYTHE_VNAMES is not given, all {@link VName}s will be populated with this
  * corpus (default {@link DEFAULT_CORPUS})
@@ -75,6 +76,7 @@ public abstract class AbstractJavacWrapper {
    * variables (see class comment).
    */
   public void process(String[] args) {
+    JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
     try {
       if (!passThroughIfAnalysisOnly(args)) {
         String vnamesConfig = System.getenv("KYTHE_VNAMES");

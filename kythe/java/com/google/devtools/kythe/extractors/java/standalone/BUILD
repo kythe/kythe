@@ -18,6 +18,7 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
+        "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",

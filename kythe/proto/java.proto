@@ -20,7 +20,6 @@ package kythe.proto;
 
 option java_package = "com.google.devtools.kythe.proto";
 
-import "kythe/proto/analysis.proto";
 import "kythe/proto/storage.proto";
 
 // CompilationUnit details enumerating the contents of each extracted .jar file.
