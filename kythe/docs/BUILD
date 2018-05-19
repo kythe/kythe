@@ -56,3 +56,8 @@ asciidoc(
     name = "kythe-configurable-extraction",
     src = "kythe-configurable-extraction.txt",
 )
+
+asciidoc(
+    name = "kythe-kzip",
+    src = "kythe-kzip.txt",
+)

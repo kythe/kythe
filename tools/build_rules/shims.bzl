@@ -64,11 +64,12 @@ def go_test(name, library=None, **kwargs):
   to silence a deprecation warning for use of the "library" attribute.
   It is otherwise equivalent in function to a go_test.
   """
-  if not library:
-    fail('Missing required "library" attribute')
+  # For internal tests (defined in the same package), we need to embed
+  # the library under test, but this is not needed for external tests.
+  embed = [library] if library else []
 
   _go_test(
       name = name,
-      embed = [library],
+      embed = embed,
       **kwargs
   )

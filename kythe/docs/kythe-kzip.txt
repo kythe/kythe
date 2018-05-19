@@ -1,0 +1,112 @@
+// Copyright 2018 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Kythe Compilation ZIP Format (.kzip)
+====================================
+Michael J. Fromberger <fromberger@google.com>
+v.0.1.0, 18-May-2018: Draft
+:toc:
+:toclevels: 3
+:priority: 500
+
+== Summary
+
+This document specifies a compact persistent storage representation for
+compilation records, suitable for use by Kythe to generate cross-reference data
+and to apply other static analysis tools to source files.
+
+The format described below replaces the storage formats described in the
+link:http://www.kythe.io/docs/kythe-index-pack.html[Kythe index pack format]
+specification. Unlike an indexpack, the kzip format does not directly support
+concurrent writers. As far as we know, no one has made any use of this feature.
+If necessary, the directory structure of a kzip is such that writers may
+construct the tree concurrently using the same strategy, and then pack the
+results into a ZIP file after the fact. The only differences are that the
+stored files are not compressed individually, and the filename suffixes used by
+the indexpack format are dropped.
+
+== Background
+
+To generate cross-references, Kythe captures a record of each compilation that
+is to be indexed (_e.g.,_ a library or binary) with enough information to
+enable us to replay the compilation to the front-end of the compiler.  This
+record consists of a
+`CompilationUnit` link:https://developers.google.com/protocol-buffers[protobuf]
+message, together with the content of all the source files and other inputs the
+compiler needs to process the compilation (_e.g.,_ header files or type
+snapshots from dependencies).
+
+== Kythe ZIP Format (.kzip)
+
+To store compilation records compactly, we use a specially formatted ZIP
+archive that we call a *kzip* file, conventionally given the file extension
+`.kzip`. A kzip file consists of the following directory structure:
+
+[literal]
+root/           # Any valid non-empty directory name
+   units/
+     abcd1234   # Compilation unit (see below for format)
+     …          # (name is hex-coded SHA256 of record content)
+   files/
+     1a2b3c4e   # File contents, compressed
+     …          # (name is hex-coded SHA256 of uncompressed file content)
+
+
+This organization separates the compilation unit descriptions from their file
+data, which are shared among multiple compilations.
+
+=== Directory and File Layout
+
+A kzip is a ZIP file containing a top-level root directory that contains two
+subdirectories, one named `units` and one named `files`.
+
+ * The `units` subdirectory may contain only unit files.
+
+ * The `files` subdirectory may contain only data files.
+
+ * Other files or directories inside the `units` or `files` subdirectories
+   should cause a tool to consider the kzip file invalid.
+
+ * Other files or subdirectories in the root or other subdirectories should be
+   ignored by a tool processing the kzip file.
+
+A *unit file* is a file containing a compilation unit description.  The name of
+a unit file is computed by digesting the compilation unit with SHA256, and
+encoding the resulting hash as a string of lowercase ASCII hexadecimal
+digits. This string becomes the filename of the unit file.
+
+A *data file* is a file containing an unstructured blob of raw (uncompressed)
+file data.  The name name of a data file is computed by hashing the file
+contents with SHA256, and encoding the resulting hash as a string of lowercase
+ASCII hexadecimal digits. This string becomes the filename of the data file.
+
+The *root directory* must be the first entry in the ZIP file, and its name must
+not be empty.
+
+=== Compilation Unit Description Format
+
+The content of a unit file is the canonical JSON encoding of a
+`kythe.proto.IndexedCompilation` protobuf message.
+
+[source,javascript]
+{
+   "unit": <encoded kythe.proto.CompilationUnit>,
+   "index": {
+      "revision": ["123", "456", "789"]
+   }
+}
+
+The `"unit"` key is required, and must contain the canonical JSON encoding of a
+`kythe.proto.CompilatinUnit` protobuf message.  The `"index"` key is optional,
+but if set must contain the canonical JSON encoding of an `Index` message.

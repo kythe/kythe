@@ -211,3 +211,14 @@ message CompilationBundle {
   // File data for the CompilationUnit's required_input.
   repeated FileData files = 2;
 }
+
+// A compilation unit combined with index terms.
+message IndexedCompilation {
+  CompilationUnit unit = 1;
+  Index index = 2;
+
+  message Index {
+    // Revision markers at which this compilation record is indexed.
+    repeated string revisions = 1;
+  }
+}
