@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"kythe.io/kythe/go/extractors/config"
 	"kythe.io/kythe/go/platform/kindex"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -41,7 +42,7 @@ type container struct {
 	kindexName    string
 }
 
-func (e testExtractor) ExtractRepo(repoURI, outputPath, configPath string) error {
+func (e testExtractor) ExtractRepo(repo config.Repo) error {
 	af := []container{}
 	if e.separateKindex {
 		for i, f := range e.extractionFiles {
@@ -57,7 +58,7 @@ func (e testExtractor) ExtractRepo(repoURI, outputPath, configPath string) error
 		})
 
 	}
-	return writeKindex(af, outputPath)
+	return writeKindex(af, repo.OutputPath)
 }
 
 func writeKindex(allFiles []container, outputPath string) error {
@@ -91,9 +92,9 @@ func writeSingleKindex(path string, unit *kindex.Compilation) error {
 	return f.Close()
 }
 
-func (e testExtractor) Fetch(repoURL, outputPath string) error {
+func (e testExtractor) Fetch(repo config.Repo) error {
 	for k, v := range e.repoFiles {
-		if err := ioutil.WriteFile(filepath.Join(outputPath, k), v, 0444); err != nil {
+		if err := ioutil.WriteFile(filepath.Join(repo.OutputPath, k), v, 0444); err != nil {
 			return err
 		}
 	}
