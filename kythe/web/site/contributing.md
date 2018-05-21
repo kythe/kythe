@@ -45,7 +45,7 @@ git commit --amend
 
 Along with working off of our [tasks
 list]({{site.data.development.issue_tracker}}) (and, in particular, the
-[Wishlist]({{site.data.development.issue_tracker}}/wishlist)),
+[Wishlist]({{site.data.development.github}}/labels/wishlist)),
 there are many ways to contribute to Kythe.
 
 ### New Extractors and Indexers
