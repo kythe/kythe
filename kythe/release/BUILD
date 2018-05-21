@@ -12,6 +12,7 @@ docker_build(
         "//kythe/go/storage/tools:directory_indexer",
         "//kythe/go/storage/tools:write_entries",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer_deploy.jar",
+        "//kythe/java/com/google/devtools/kythe/analyzers/jvm:class_file_indexer_deploy.jar",
         "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar",
     ],
     image_name = "google/kythe",
@@ -33,6 +34,7 @@ genrule(
         ":cxx_extractor",
         ":go_extractor",
         ":java_indexer",
+        ":jvm_indexer",
         ":cxx_indexer",
         ":go_indexer",
         ":tools",
@@ -51,6 +53,7 @@ genrule(
         "$(location package_release.sh) $(location kythe-" + release_version + ".tar.gz)",
         "$(locations misc)",
         "--cp $(location java_indexer) indexers/java_indexer.jar",
+        "--cp $(location jvm_indexer) indexers/jvm_indexer.jar",
         "--cp $(location cxx_indexer) indexers/cxx_indexer",
         "--cp $(location go_indexer) indexers/go_indexer",
         "--cp $(location javac_extractor) extractors/javac_extractor.jar",
@@ -135,6 +138,11 @@ filegroup(
 filegroup(
     name = "java_indexer",
     srcs = ["//kythe/java/com/google/devtools/kythe/analyzers/java:indexer_deploy.jar"],
+)
+
+filegroup(
+    name = "jvm_indexer",
+    srcs = ["//kythe/java/com/google/devtools/kythe/analyzers/jvm:class_file_indexer_deploy.jar"],
 )
 
 filegroup(
