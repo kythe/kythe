@@ -18,7 +18,8 @@ go_test(
     srcs = ["smoke_test.go"],
     library = ":smoke",
     deps = [
-        "//kythe/go/extractors/config",
         "//kythe/go/platform/kindex",
+        "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:storage_go_proto",
     ],
 )

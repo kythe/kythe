@@ -151,7 +151,12 @@ func (g harness) filenamesFromRepo(repoURL string) (map[string]bool, error) {
 		// TODO(danielmoy): make this parameterized based on the
 		// extractor, e.g. supporting other languages.
 		if err == nil && filepath.Ext(path) == ".java" {
-			ret[path] = true
+			// We are only interested in the repo-relative path.
+			rp, err := filepath.Rel(repoDir, path)
+			if err != nil {
+				return err
+			}
+			ret[rp] = true
 		}
 		return err
 	})
