@@ -48,7 +48,7 @@ https://kythe.io/contributing
 
 == Issue Tracker
 
-https://kythe.io/phabricator/maniphest
+https://github.com/google/kythe/issues
 
 == Documentation
 
