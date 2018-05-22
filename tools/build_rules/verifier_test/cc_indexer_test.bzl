@@ -46,6 +46,31 @@ _INDEXER_FLAGS = {
     "experimental_drop_cpp_fwd_decl_docs": False,
 }
 
+def _compiler_options(cpp):
+  """Returns the combined list of compiler_options from the cpp fragment."""
+  options = []
+  if hasattr(cpp, "compiler_options"):
+    options += cpp.compiler_options([])
+  if hasattr(cpp, "unfiltered_compiler_options"):
+    options += cpp.unfiltered_compiler_options([])
+  return options
+
+def _find_cpp_toolchain(ctx):
+  """
+  If the c++ toolchain is in use, returns it.  Otherwise, returns a c++
+  toolchain derived from legacy toolchain selection.
+
+  Args:
+    ctx: The rule context for which to find a toolchain.
+
+  Returns:
+    A CcToolchainProvider.
+  """
+  if Label("@bazel_tools//tools/cpp:toolchain_type") in ctx.fragments.platform.enabled_toolchain_types:
+    return ctx.toolchains["@bazel_tools//tools/cpp:toolchain_type"]
+  else:
+    return ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
+
 def _flag(name, typename, value):
   if value == None:  # Omit None flags.
     return None
@@ -81,9 +106,9 @@ def _transitive_entries(deps):
   return KytheEntries(files=files, compressed=compressed)
 
 def _cc_extract_kindex_impl(ctx):
-  cpp = ctx.fragments.cpp
+  cpp = _find_cpp_toolchain(ctx)
   if ctx.attr.add_toolchain_include_directories:
-    toolchain_includes = ["-isystem" + d for d in cpp.built_in_include_directories]
+    toolchain_includes = ["-isystem%s" % d for d in cpp.built_in_include_directories]
   else:
     toolchain_includes = []
   outputs = depset([
@@ -93,10 +118,7 @@ def _cc_extract_kindex_impl(ctx):
         extractor = ctx.executable.extractor,
         vnames_config = ctx.file.vnames_config,
         srcs = [src],
-        opts = (cpp.compiler_options([]) +
-                cpp.unfiltered_compiler_options([]) +
-                toolchain_includes +
-                ctx.attr.opts),
+        opts = (_compiler_options(cpp) + toolchain_includes + ctx.attr.opts),
         deps = ctx.files.deps + ctx.files.srcs,
     )
     for src in ctx.files.srcs])
@@ -166,13 +188,17 @@ cc_extract_kindex = rule(
             executable = True,
             cfg = "host",
         ),
+        # Do not add references, temporary attribute for find_cpp_toolchain.
+        "_cc_toolchain": attr.label(
+            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+        ),
     },
     doc = """cc_extract_kindex extracts srcs into CompilationUnits.
 
     Each file in srcs will be extracted into a separate .kindex file, based on the name
     of the source.
     """,
-    fragments = ["cpp"],
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     outputs = _cc_extract_kindex_outs,
     implementation = _cc_extract_kindex_impl,
 )
