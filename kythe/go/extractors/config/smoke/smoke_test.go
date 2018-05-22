@@ -113,7 +113,7 @@ func TestBasicExtraction(t *testing.T) {
 		extractionFiles: ef,
 	}
 
-	verifyRepoCoverage(t, te, 1.0)
+	verifyRepoCoverage(t, te, 2, 2, 1.0)
 }
 
 func TestMissingRepoFiles(t *testing.T) {
@@ -128,7 +128,7 @@ func TestMissingRepoFiles(t *testing.T) {
 		extractionFiles: ef,
 	}
 
-	verifyRepoCoverage(t, te, 0.5)
+	verifyRepoCoverage(t, te, 2, 1, 0.5)
 }
 
 func TestMultipleKindexFiles(t *testing.T) {
@@ -144,13 +144,14 @@ func TestMultipleKindexFiles(t *testing.T) {
 		separateKindex:  true,
 	}
 
-	verifyRepoCoverage(t, te, 1.0)
+	verifyRepoCoverage(t, te, 2, 2, 1.0)
 }
 
 // verifyRepoCoverage tests that a given testExtractor yields a specific
-// percentage coverage. The passed testExtractor should be set up with all of
-// the relevant input repo and extraction files.
-func verifyRepoCoverage(t *testing.T, te testExtractor, expectedCoverage float64) {
+// number of files downloaded, extracted, and percentage coverage. The passed
+// testExtractor should be set up with all of the relevant input repo and
+// extraction files.
+func verifyRepoCoverage(t *testing.T, te testExtractor, expectedDownloadCount, expectedExtractCount int, expectedCoverage float64) {
 	t.Helper()
 	h := harness{
 		extractor:   te,
@@ -167,6 +168,12 @@ func verifyRepoCoverage(t *testing.T, te testExtractor, expectedCoverage float64
 	}
 	if !r.Extracted {
 		t.Error("failed to extract")
+	}
+	if expectedDownloadCount != r.DownloadCount {
+		t.Errorf("expected %d downloaded files, got %d", expectedDownloadCount, r.DownloadCount)
+	}
+	if expectedExtractCount != r.ExtractCount {
+		t.Errorf("expected %d extracted files, got %d", expectedExtractCount, r.ExtractCount)
 	}
 	if !floatEquals(r.FileCoverage, expectedCoverage) {
 		t.Errorf("expected %.3f expectedCoverage, got %.3f", expectedCoverage, r.FileCoverage)

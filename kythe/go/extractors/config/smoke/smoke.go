@@ -85,12 +85,16 @@ func NewGitTestingHarness(configPath string) Tester {
 // extracted at all, or the extent to which we got good file coverage from the
 // extraction.
 //
-// TODO(danielmoy): consider better metrics here. For example instead of a
-// single bit representing extraction/download success, consider file count (or
-// if we've done indexing, symbolc ount).
+// TODO(danielmoy): consider better metrics here. For example consider having
+// the smoke test harness try to run a kythe indexer in addition to an
+// extraction and see how much symbol coverage we have.  This might be out of
+// scope for a simple smoke test harness though.
 type Result struct {
 	// Whether the repo was successfully downloaded or extracted.
 	Downloaded, Extracted bool
+	// The number of downloaded and extracted files.
+	DownloadCount, ExtractCount int
+	// The percentage of files in the repo that are covered by extraction.
 	// Should be in range [0.0, 1.0]
 	FileCoverage float64
 }
@@ -99,7 +103,7 @@ func (g harness) TestRepo(repo string) (Result, error) {
 	fromRepo, err := g.filenamesFromRepo(repo)
 	if err != nil {
 		log.Printf("Failed to read repo from remote: %v", err)
-		return Result{false, false, 0.0}, nil
+		return Result{false, false, len(fromRepo), 0, 0.0}, nil
 	}
 
 	fromExtraction, err := g.filenamesFromExtraction(repo)
@@ -107,15 +111,11 @@ func (g harness) TestRepo(repo string) (Result, error) {
 		log.Printf("Failed to extract repo: %v", err)
 		// TODO(danielmoy): consider handling errors independently and
 		// returning separate false results if either err != nil.
-		return Result{true, false, 0.0}, nil
+		return Result{true, false, len(fromRepo), len(fromExtraction), 0.0}, nil
 	}
 
 	var coverageTotal int32
 	var coverageCount int32
-	// TODO(danielmoy): the repos won't necessarily line up properly. This
-	// needs to be fixed to be more extensible. Potentially with a suffix
-	// trie on successive path elements (basename and then directory
-	// backwards).
 	for k := range fromRepo {
 		coverageTotal = coverageTotal + 1
 		if _, ok := fromExtraction[k]; ok {
@@ -128,9 +128,11 @@ func (g harness) TestRepo(repo string) (Result, error) {
 		coverage = float64(coverageCount) / float64(coverageTotal)
 	}
 	return Result{
-		Downloaded:   true,
-		Extracted:    true,
-		FileCoverage: coverage,
+		Downloaded:    true,
+		Extracted:     true,
+		DownloadCount: len(fromRepo),
+		ExtractCount:  len(fromExtraction),
+		FileCoverage:  coverage,
 	}, nil
 }
 
