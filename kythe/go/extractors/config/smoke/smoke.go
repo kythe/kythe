@@ -175,12 +175,11 @@ func (g harness) filenamesFromExtraction(repoURI string) (map[string]bool, error
 	}
 	defer os.RemoveAll(tmpOutDir)
 
-	err = g.extractor.ExtractRepo(config.Repo{
+	if err := g.extractor.ExtractRepo(config.Repo{
 		URI:        repoURI,
 		OutputPath: tmpOutDir,
 		ConfigPath: g.configPath,
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 	ret := map[string]bool{}
