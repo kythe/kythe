@@ -39,6 +39,7 @@ cc_library(
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "//third_party/llvm",
+        "@boringssl//:crypto",
         "@com_github_gflags_gflags//:gflags",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",

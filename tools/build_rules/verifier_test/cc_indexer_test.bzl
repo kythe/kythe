@@ -22,6 +22,8 @@ load(
     "KytheVerifierSources",
 )
 
+load(":toolchain_utils.bzl", "find_cpp_toolchain")
+
 CxxCompilationUnits = provider(
     doc = "A bundle of pre-extracted Kythe CompilationUnits for C++.",
     fields = {
@@ -54,22 +56,6 @@ def _compiler_options(cpp):
   if hasattr(cpp, "unfiltered_compiler_options"):
     options += cpp.unfiltered_compiler_options([])
   return options
-
-def _find_cpp_toolchain(ctx):
-  """
-  If the c++ toolchain is in use, returns it.  Otherwise, returns a c++
-  toolchain derived from legacy toolchain selection.
-
-  Args:
-    ctx: The rule context for which to find a toolchain.
-
-  Returns:
-    A CcToolchainProvider.
-  """
-  if Label("@bazel_tools//tools/cpp:toolchain_type") in ctx.fragments.platform.enabled_toolchain_types:
-    return ctx.toolchains["@bazel_tools//tools/cpp:toolchain_type"]
-  else:
-    return ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
 
 def _flag(name, typename, value):
   if value == None:  # Omit None flags.
@@ -106,7 +92,7 @@ def _transitive_entries(deps):
   return KytheEntries(files=files, compressed=compressed)
 
 def _cc_extract_kindex_impl(ctx):
-  cpp = _find_cpp_toolchain(ctx)
+  cpp = find_cpp_toolchain(ctx)
   if ctx.attr.add_toolchain_include_directories:
     toolchain_includes = ["-isystem%s" % d for d in cpp.built_in_include_directories]
   else:
@@ -198,6 +184,7 @@ cc_extract_kindex = rule(
     Each file in srcs will be extracted into a separate .kindex file, based on the name
     of the source.
     """,
+    fragments = ["cpp"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     outputs = _cc_extract_kindex_outs,
     implementation = _cc_extract_kindex_impl,
