@@ -14,20 +14,11 @@
 # limitations under the License.
 #
 
-def _find_cpp_toolchain(ctx):
-    if Label("@bazel_tools//tools/cpp:toolchain_type") in ctx.fragments.platform.enabled_toolchain_types:
-        return ctx.toolchains["@bazel_tools//tools/cpp:toolchain_type"]
-    else:
-        return ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
-
 def find_cpp_toolchain(ctx):
     """Returns the appropriate C++ toolchain.
 
     If the c++ toolchain is in use, returns it.  Otherwise, returns a c++
     toolchain derived from legacy toolchain selection.
-
-    If neither of those have "compiler_options" falls back to
-    ctx.fragments.cpp.
 
     Args:
       ctx: The rule context for which to find a toolchain.
@@ -35,8 +26,7 @@ def find_cpp_toolchain(ctx):
     Returns:
       A CcToolchainProvider.
     """
-    cpp = _find_cpp_toolchain(ctx)
-    if hasattr(cpp, "compiler_options"):
-        return cpp
+    if Label("@bazel_tools//tools/cpp:toolchain_type") in ctx.fragments.platform.enabled_toolchain_types:
+        return ctx.toolchains["@bazel_tools//tools/cpp:toolchain_type"]
     else:
-        return ctx.fragments.cpp
+        return ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]

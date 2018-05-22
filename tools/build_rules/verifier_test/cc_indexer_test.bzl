@@ -184,7 +184,6 @@ cc_extract_kindex = rule(
     Each file in srcs will be extracted into a separate .kindex file, based on the name
     of the source.
     """,
-    fragments = ["cpp"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     outputs = _cc_extract_kindex_outs,
     implementation = _cc_extract_kindex_impl,
