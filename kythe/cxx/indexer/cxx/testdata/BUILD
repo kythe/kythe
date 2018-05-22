@@ -242,6 +242,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "alias_root_transitive",
+    srcs = ["basic/alias_root_transitive.cc"],
+    check_for_singletons = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "alias_root_quals",
     srcs = ["basic/alias_root_quals.cc"],
     check_for_singletons = True,

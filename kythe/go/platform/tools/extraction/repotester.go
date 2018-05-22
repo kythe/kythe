@@ -80,7 +80,7 @@ func main() {
 		if err != nil {
 			log.Printf("Failed to test repo: %s", err)
 		} else {
-			fmt.Printf("|%9t |%9t |      %2.0f%% | %s\n", res.Downloaded, res.Extracted, 100*res.FileCoverage, repo)
+			fmt.Printf("|%9t |%9t |     %3.0f%% | %s\n", res.Downloaded, res.Extracted, 100*res.FileCoverage, repo)
 		}
 	}
 }

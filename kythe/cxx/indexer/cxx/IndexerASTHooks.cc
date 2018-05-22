@@ -135,6 +135,13 @@ clang::QualType FollowAliasChain(const clang::TypedefNameDecl *TND) {
     Qs.addQualifiers(QT.getQualifiers());
     if (auto *TTD = dyn_cast<TypedefType>(QT.getTypePtr())) {
       TND = TTD->getDecl();
+    } else if (auto *ET = dyn_cast<ElaboratedType>(QT.getTypePtr())) {
+      if (auto* TDT = dyn_cast<TypedefType>(ET->getNamedType().getTypePtr())) {
+        TND = TDT->getDecl();
+        Qs.addQualifiers(ET->getNamedType().getQualifiers());
+      } else {
+        return QualType(QT.getTypePtr(), Qs.getFastQualifiers());
+      }
     } else {
       // We lose fidelity with getFastQualifiers.
       return QualType(QT.getTypePtr(), Qs.getFastQualifiers());

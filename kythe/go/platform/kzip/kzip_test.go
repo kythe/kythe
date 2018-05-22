@@ -176,3 +176,49 @@ func TestErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestScanHelper(t *testing.T) {
+	buf := bytes.NewBuffer(nil)
+	w, err := kzip.NewWriter(buf)
+	if err != nil {
+		t.Fatalf("Creating kzip writer: %v", err)
+	}
+
+	const fileData = "fweep"
+	fdigest, err := w.AddFile(strings.NewReader(fileData))
+	if err != nil {
+		t.Fatalf("AddFile failed: %v", err)
+	}
+
+	udigest, err := w.AddUnit(&apb.CompilationUnit{
+		OutputKey: fdigest,
+	}, &apb.IndexedCompilation_Index{
+		Revisions: []string{"alphawozzle"},
+	})
+	if err != nil {
+		t.Fatalf("AddUnit failed: %v", err)
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("Closing kzip: %v", err)
+	}
+
+	var numUnits int
+	if err := kzip.Scan(bytes.NewReader(buf.Bytes()), func(r *kzip.Reader, unit *kzip.Unit) error {
+		numUnits++
+		if unit.Digest != udigest {
+			t.Errorf("Unit digest: got %q, want %q", unit.Digest, udigest)
+		}
+		if bits, err := r.ReadAll(unit.Proto.GetOutputKey()); err != nil {
+			t.Errorf("ReadAll %q failed: %v", unit.Proto.GetOutputKey(), err)
+		} else if got := string(bits); got != fileData {
+			t.Errorf("ReadAll %q: got %q, want %q", unit.Proto.GetOutputKey(), got, fileData)
+		}
+		return nil
+	}); err != nil {
+		t.Errorf("Scan failed: %v", err)
+	}
+	if numUnits != 1 {
+		t.Errorf("Scan found %d units, want 1", numUnits)
+	}
+}
