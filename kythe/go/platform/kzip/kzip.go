@@ -219,11 +219,11 @@ func NewWriter(w io.Writer) (*Writer, error) {
 	archive := zip.NewWriter(w)
 	// Create an entry for the root directory, which must be first.
 	root := &zip.FileHeader{
-		Name:     "root/",
-		Comment:  "kzip root directory",
-		Modified: time.Now(),
+		Name:    "root/",
+		Comment: "kzip root directory",
 	}
 	root.SetMode(os.ModeDir | 0755)
+	root.SetModTime(time.Now())
 	if _, err := archive.CreateHeader(root); err != nil {
 		return nil, err
 	}
@@ -258,13 +258,8 @@ func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_
 	if _, ok := w.ud[digest]; ok {
 		return digest, ErrUnitExists
 	}
-	fh := &zip.FileHeader{
-		Name:     path.Join("root", "units", digest),
-		Method:   zip.Deflate,
-		Modified: time.Now(),
-	}
-	fh.SetMode(0600)
-	f, err := w.zip.CreateHeader(fh)
+
+	f, err := w.zip.CreateHeader(newFileHeader("root", "units", digest))
 	if err != nil {
 		return "", err
 	}
@@ -297,13 +292,7 @@ func (w *Writer) AddFile(r io.Reader) (string, error) {
 		return digest, nil // already written
 	}
 
-	fh := &zip.FileHeader{
-		Name:     path.Join("root", "files", digest),
-		Method:   zip.Deflate,
-		Modified: time.Now(),
-	}
-	fh.SetMode(0600)
-	f, err := w.zip.CreateHeader(fh)
+	f, err := w.zip.CreateHeader(newFileHeader("root", "files", digest))
 	if err != nil {
 		return "", err
 	}
@@ -326,4 +315,11 @@ func (w *Writer) Close() error {
 		return err
 	}
 	return nil
+}
+
+func newFileHeader(parts ...string) *zip.FileHeader {
+	fh := &zip.FileHeader{Name: path.Join(parts...), Method: zip.Deflate}
+	fh.SetMode(0600)
+	fh.SetModTime(time.Now())
+	return fh
 }
