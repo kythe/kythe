@@ -143,12 +143,10 @@ func (g harness) filenamesFromRepo(repoURI string) (map[string]bool, error) {
 	}
 	defer os.RemoveAll(repoDir)
 
-	repo := config.Repo{
+	if err = g.repoFetcher.Fetch(config.Repo{
 		URI:        repoURI,
 		OutputPath: repoDir,
-	}
-
-	if err = g.repoFetcher.Fetch(repo); err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
@@ -177,15 +175,15 @@ func (g harness) filenamesFromExtraction(repoURI string) (map[string]bool, error
 	}
 	defer os.RemoveAll(tmpOutDir)
 
-	ret := map[string]bool{}
 	err = g.extractor.ExtractRepo(config.Repo{
 		URI:        repoURI,
 		OutputPath: tmpOutDir,
 		ConfigPath: g.configPath,
 	})
 	if err != nil {
-		return ret, err
+		return nil, err
 	}
+	ret := map[string]bool{}
 	err = filepath.Walk(tmpOutDir, func(path string, info os.FileInfo, err error) error {
 		if err == nil && filepath.Ext(path) == ".kindex" {
 			cu, err := kindex.Open(context.Background(), path)

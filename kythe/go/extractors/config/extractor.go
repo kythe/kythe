@@ -29,17 +29,16 @@ import (
 // kytheConfigFileName The name of the Kythe extraction config
 const kytheExtractionConfigFile = ".kythe-extraction-config"
 
-// Repo is a loose container of input/output parameters for doing extraction on
-// remote repositories.
+// Repo is a container of input/output parameters for doing extraction on remote
+// repositories.
 type Repo struct {
-	// URI is the remote location of the repo itself.
+	// The remote location of the repo itself.
 	URI string
-	// OutputPath is where to write any relevant output from an extraction
-	// call.
+	// Where to write from an extraction.
 	OutputPath string
-	// ConfigPath is an optional path to a
-	// kythe.proto.ExtractionConfiguration object that will detail how
-	// extraction is performed.
+	// An optional path to a file containing a
+	// kythe.proto.ExtractionConfiguration encoded as JSON that details how
+	// to perform extraction.
 	ConfigPath string
 }
 
