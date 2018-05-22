@@ -67,6 +67,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -322,4 +323,27 @@ func newFileHeader(parts ...string) *zip.FileHeader {
 	fh.SetMode(0600)
 	fh.SetModTime(time.Now())
 	return fh
+}
+
+// Scan is a convenience function that creates a *Reader from f and invokes its
+// Scan method with the given callback. Each invocation of scan is passed the
+// reader associated with f, along with the current compilation unit.
+func Scan(f File, scan func(*Reader, *Unit) error) error {
+	size, err := f.Seek(0, io.SeekEnd)
+	if err != nil {
+		return fmt.Errorf("getting file size: %v", err)
+	}
+	r, err := NewReader(f, size)
+	if err != nil {
+		return err
+	}
+	return r.Scan(func(unit *Unit) error {
+		return scan(r, unit)
+	})
+}
+
+// A File represents the file capabilities needed to scan a kzip file.
+type File interface {
+	io.ReaderAt
+	io.Seeker
 }
