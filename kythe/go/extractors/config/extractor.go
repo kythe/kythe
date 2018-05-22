@@ -32,7 +32,7 @@ const kytheExtractionConfigFile = ".kythe-extraction-config"
 // Repo is a container of input/output parameters for doing extraction on remote
 // repositories.
 type Repo struct {
-	// The remote location of the repo itself.
+	// The location of the repo itself.
 	URI string
 	// Where to write from an extraction.
 	OutputPath string
