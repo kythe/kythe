@@ -213,29 +213,18 @@ type Writer struct {
 	ud  map[string]bool // unit digests already written
 }
 
-// A dirInfo is a dummy implementation of os.FileInfo used to create empty
-// directories in a zip archive.
-type dirInfo string
-
-func (d dirInfo) Name() string       { return string(d) }
-func (d dirInfo) Size() int64        { return 0 }
-func (d dirInfo) Mode() os.FileMode  { return os.ModeDir | 0644 }
-func (d dirInfo) ModTime() time.Time { return time.Now() }
-func (d dirInfo) IsDir() bool        { return true }
-func (d dirInfo) Sys() interface{}   { return nil }
-
 // NewWriter constructs a new empty Writer that delivers output to w.  The
 // AddUnit and AddFile methods are safe for use by concurrent goroutines.
 func NewWriter(w io.Writer) (*Writer, error) {
-	// Create an entry for the root directory, which must be first.
-	fh, err := zip.FileInfoHeader(dirInfo("root/"))
-	if err != nil {
-		return nil, err
-	}
-	fh.Comment = "kzip root directory"
-
 	archive := zip.NewWriter(w)
-	if _, err := archive.CreateHeader(fh); err != nil {
+	// Create an entry for the root directory, which must be first.
+	root := &zip.FileHeader{
+		Name:     "root/",
+		Comment:  "kzip root directory",
+		Modified: time.Now(),
+	}
+	root.SetMode(os.ModeDir | 0755)
+	if _, err := archive.CreateHeader(root); err != nil {
 		return nil, err
 	}
 	archive.SetComment("Kythe kzip archive")
@@ -269,7 +258,13 @@ func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_
 	if _, ok := w.ud[digest]; ok {
 		return digest, ErrUnitExists
 	}
-	f, err := w.zip.Create(path.Join("root", "units", digest))
+	fh := &zip.FileHeader{
+		Name:     path.Join("root", "units", digest),
+		Method:   zip.Deflate,
+		Modified: time.Now(),
+	}
+	fh.SetMode(0600)
+	f, err := w.zip.CreateHeader(fh)
 	if err != nil {
 		return "", err
 	}
@@ -302,7 +297,13 @@ func (w *Writer) AddFile(r io.Reader) (string, error) {
 		return digest, nil // already written
 	}
 
-	f, err := w.zip.Create(path.Join("root", "files", digest))
+	fh := &zip.FileHeader{
+		Name:     path.Join("root", "files", digest),
+		Method:   zip.Deflate,
+		Modified: time.Now(),
+	}
+	fh.SetMode(0600)
+	f, err := w.zip.CreateHeader(fh)
 	if err != nil {
 		return "", err
 	}
