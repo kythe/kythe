@@ -47,16 +47,17 @@ type Tester interface {
 }
 
 // Fetcher is a thin wrapper over something which fetches a given repo and
-// writes it to an output directory.
+// writes it to an output directory. Note that the ConfigPath parameter from
+// config.Repo does not affect Fetch at all.
 type Fetcher interface {
-	Fetch(repoURL, outputPath string) error
+	Fetch(repo config.Repo) error
 }
 
 type gitCommandlineFetcher struct{}
 
-func (g gitCommandlineFetcher) Fetch(repoURL, outputPath string) error {
+func (g gitCommandlineFetcher) Fetch(repo config.Repo) error {
 	// TODO(danielmoy): strongly consider go-git instead of os.exec
-	return exec.Command("git", "clone", repoURL, outputPath).Run()
+	return exec.Command("git", "clone", repo.URI, repo.OutputPath).Run()
 }
 
 type harness struct {
@@ -133,16 +134,19 @@ func (g harness) TestRepo(repo string) (Result, error) {
 	}, nil
 }
 
-func (g harness) filenamesFromRepo(repoURL string) (map[string]bool, error) {
-	repoName := pathTail(repoURL)
+func (g harness) filenamesFromRepo(repoURI string) (map[string]bool, error) {
+	repoName := pathTail(repoURI)
 
 	repoDir, err := ioutil.TempDir("", repoName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create temp dir for repo %s: %v", repoURL, err)
+		return nil, fmt.Errorf("failed to create temp dir for repo %s: %v", repoURI, err)
 	}
 	defer os.RemoveAll(repoDir)
 
-	if err = g.repoFetcher.Fetch(repoURL, repoDir); err != nil {
+	if err = g.repoFetcher.Fetch(config.Repo{
+		URI:        repoURI,
+		OutputPath: repoDir,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -163,19 +167,22 @@ func (g harness) filenamesFromRepo(repoURL string) (map[string]bool, error) {
 	return ret, err
 }
 
-func (g harness) filenamesFromExtraction(repoURL string) (map[string]bool, error) {
-	repoName := pathTail(repoURL)
+func (g harness) filenamesFromExtraction(repoURI string) (map[string]bool, error) {
+	repoName := pathTail(repoURI)
 	tmpOutDir, err := ioutil.TempDir("", repoName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create temp dir for repo %s: %v", repoURL, err)
+		return nil, fmt.Errorf("failed to create temp dir for repo %s: %v", repoURI, err)
 	}
 	defer os.RemoveAll(tmpOutDir)
 
-	err = g.extractor.ExtractRepo(repoURL, tmpOutDir, g.configPath)
-	ret := map[string]bool{}
-	if err != nil {
-		return ret, err
+	if err := g.extractor.ExtractRepo(config.Repo{
+		URI:        repoURI,
+		OutputPath: tmpOutDir,
+		ConfigPath: g.configPath,
+	}); err != nil {
+		return nil, err
 	}
+	ret := map[string]bool{}
 	err = filepath.Walk(tmpOutDir, func(path string, info os.FileInfo, err error) error {
 		if err == nil && filepath.Ext(path) == ".kindex" {
 			cu, err := kindex.Open(context.Background(), path)

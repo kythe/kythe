@@ -29,13 +29,26 @@ import (
 // kytheConfigFileName The name of the Kythe extraction config
 const kytheExtractionConfigFile = ".kythe-extraction-config"
 
+// Repo is a container of input/output parameters for doing extraction on remote
+// repositories.
+type Repo struct {
+	// The location of the repo itself.
+	URI string
+	// Where to write from an extraction.
+	OutputPath string
+	// An optional path to a file containing a
+	// kythe.proto.ExtractionConfiguration encoded as JSON that details how
+	// to perform extraction.
+	ConfigPath string
+}
+
 // Extractor is the interface for handling kindex generation on repos.
 //
 // ExtractRepo takes an input repo, output path to a directory, and optional
 // kythe.proto.ExtractionConfiguration file path, and performs kythe extraction
 // on the repo, depositing results in the output directory path.
 type Extractor interface {
-	ExtractRepo(repoURI, outputPath, configPath string) error
+	ExtractRepo(repo Repo) error
 }
 
 // DefaultExtractor provides an extractor that can perform extraction on
@@ -43,7 +56,7 @@ type Extractor interface {
 //
 // By default, it uses a top level extraction config file
 // .kythe-extraction-config, though this can be overridden by passing a specific
-// configPath to ExtractRepo.
+// ConfigPath to ExtractRepo.
 type DefaultExtractor struct{}
 
 // ExtractRepo extracts a given code repository and outputs kindex files.
@@ -57,7 +70,7 @@ type DefaultExtractor struct{}
 // http://kythe.io/docs/kythe-index-pack.html).
 //
 // This function requires both Git and Docker to be in $PATH during execution.
-func (d DefaultExtractor) ExtractRepo(repoURI, outputPath, configPath string) error {
+func (d DefaultExtractor) ExtractRepo(repo Repo) error {
 	if err := verifyRequiredTools(); err != nil {
 		return fmt.Errorf("ExtractRepo requires git and docker to be in $PATH: %v", err)
 	}
@@ -77,26 +90,26 @@ func (d DefaultExtractor) ExtractRepo(repoURI, outputPath, configPath string) er
 	defer os.RemoveAll(tmpOutDir)
 
 	// clone the repo
-	cmd := exec.Command("git", "clone", repoURI, repoDir)
+	cmd := exec.Command("git", "clone", repo.URI, repoDir)
 	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("cloning repo: %v", err)
 	}
 
 	// if a config was passed as a arg, use the specified config
-	if configPath == "" {
+	if repo.ConfigPath == "" {
 		// otherwise, use a Kythe config within the repo (if it exists)
-		configPath = filepath.Join(repoDir, kytheExtractionConfigFile)
+		repo.ConfigPath = filepath.Join(repoDir, kytheExtractionConfigFile)
 	}
 
-	log.Printf("Using configuration file: %q\n", configPath)
+	log.Printf("Using configuration file: %q\n", repo.ConfigPath)
 	extractionDockerFile, err := ioutil.TempFile(tmpOutDir, "extractionDockerFile")
 	if err != nil {
 		return fmt.Errorf("creating tmp Dockerfile: %v", err)
 	}
 
 	// generate an extraction image from the config
-	configFile, err := os.Open(configPath)
+	configFile, err := os.Open(repo.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("opening config file: %v", err)
 	}
@@ -120,7 +133,7 @@ func (d DefaultExtractor) ExtractRepo(repoURI, outputPath, configPath string) er
 	}
 
 	// run the extraction
-	output, err = exec.Command("docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, DefaultRepoVolume), "-v", fmt.Sprintf("%s:%s", outputPath, DefaultOutputVolume), "-t", imageTag).CombinedOutput()
+	output, err = exec.Command("docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, DefaultRepoVolume), "-v", fmt.Sprintf("%s:%s", repo.OutputPath, DefaultOutputVolume), "-t", imageTag).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("extracting repo: %v\nCommand output: %s", err, string(output))
 	}
