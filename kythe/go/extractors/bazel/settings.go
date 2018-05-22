@@ -75,7 +75,7 @@ func (s *Settings) SetFlags(f *flag.FlagSet, prefix string) func() {
 
 	// A default usage message the caller may use to populate flag.Usage.
 	return func() {
-		fmt.Fprintf(os.Stderr,
+		fmt.Fprintf(f.Output(),
 			`Usage: %s [options] -corpus C -language L -extra_action f.xa -output f.kindex
 
 Read an ExtraActionInput protobuf message from the designated -extra_action
