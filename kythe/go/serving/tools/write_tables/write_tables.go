@@ -58,7 +58,7 @@ var (
 
 	verbose = flag.Bool("verbose", false, "Whether to emit extra, and possibly excessive, log messages")
 
-	experimentalNewPipeline = flag.Bool("experimental_new_pipeline", false, "Whether to use the new experimental pipeline implementation")
+	experimentalBeamPipeline = flag.Bool("experimental_beam_pipeline", false, "Whether to use the Beam experimental pipeline implementation")
 )
 
 func init() {
@@ -71,8 +71,8 @@ func init() {
 func main() {
 	flag.Parse()
 	ctx := context.Background()
-	if *experimentalNewPipeline {
-		if err := runExperimentalPipeline(ctx); err != nil {
+	if *experimentalBeamPipeline {
+		if err := runExperimentalBeamPipeline(ctx); err != nil {
 			log.Fatalf("Pipeline error: %v", err)
 		}
 		return
@@ -123,7 +123,7 @@ func main() {
 	}
 }
 
-func runExperimentalPipeline(ctx context.Context) error {
+func runExperimentalBeamPipeline(ctx context.Context) error {
 	beam.Init()
 	p, s := beam.NewPipelineWithRoot()
 	beam.Impulse(s)
