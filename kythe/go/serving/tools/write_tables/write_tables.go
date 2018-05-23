@@ -20,12 +20,15 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
+	"reflect"
 
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/serving/pipeline"
+	"kythe.io/kythe/go/serving/pipeline/beamio"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/stream"
@@ -123,9 +126,20 @@ func main() {
 	}
 }
 
+func init() {
+	beam.RegisterType(reflect.TypeOf((*spb.Entry)(nil)).Elem())
+}
+
 func runExperimentalBeamPipeline(ctx context.Context) error {
 	beam.Init()
+
+	if gs != nil {
+		return errors.New("--graphstore input not supported with --experimental_beam_pipeline")
+	} else if *entriesFile == "" {
+		return errors.New("--entries file path required")
+	}
+
 	p, s := beam.NewPipelineWithRoot()
-	beam.Impulse(s)
+	beamio.ReadEntries(s, *entriesFile)
 	return beamx.Run(ctx, p)
 }

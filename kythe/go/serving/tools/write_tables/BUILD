@@ -10,6 +10,7 @@ go_binary(
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/proxy",
         "//kythe/go/serving/pipeline",
+        "//kythe/go/serving/pipeline/beamio",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/stream",
