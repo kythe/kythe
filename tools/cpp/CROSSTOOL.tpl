@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# Imported from https://github.com/bazelbuild/bazel/blob/master/tools/cpp/CROSSTOOL.tpl
+# with local modifications to integrate with LLVM.
 
 major_version: "local"
 minor_version: ""
