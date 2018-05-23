@@ -729,6 +729,8 @@ def _impl(repository_ctx):
         "%{content}": _get_windows_msys_crosstool_content(repository_ctx),
         "%{opt_content}": "",
         "%{dbg_content}": "",
+        "%{compilation_mode_content}": "",
+        "%{msys_x64_mingw_content}": "",
         "%{cxx_builtin_include_directory}": "\n".join(cxx_include_directories),
         "%{coverage}": "",
     })
@@ -759,6 +761,8 @@ def _impl(repository_ctx):
                       ("" if darwin else "linking_mode_flags { mode: DYNAMIC }\n"),
         "%{opt_content}": _build_crosstool(opt_content, "    "),
         "%{dbg_content}": _build_crosstool(dbg_content, "    "),
+        "%{compilation_mode_content}": "",
+        "%{msys_x64_mingw_content}": "",
         "%{cxx_builtin_include_directory}": "",
         "%{coverage}": _coverage_feature(darwin),
         "%{msvc_env_tmp}": "",
@@ -802,3 +806,4 @@ def clang_configure():
   """A C++ configuration rules that generate the crosstool file."""
   cc_autoconf(name="local_config_cc")
   native.bind(name="cc_toolchain", actual="@local_config_cc//:toolchain")
+  native.register_toolchains("@local_config_cc//:all")
