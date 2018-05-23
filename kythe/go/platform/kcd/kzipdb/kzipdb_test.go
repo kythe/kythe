@@ -63,7 +63,7 @@ func setup(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		w, err := kzip.NewWriter(buf)
 		if err != nil {
-			t.Fatal("NewWriter: %v", err)
+			t.Fatalf("NewWriter: %v", err)
 		}
 		for _, ic := range []*apb.IndexedCompilation{
 			{Unit: newUnit("A", "go", "kythe"), Index: newIndex("123")},
