@@ -66,8 +66,8 @@ func main() {
 	verifyFlags()
 
 	// Print some header
-	fmt.Printf("|%9s |%9s |%9s | %s\n", "download", "extract", "coverage", "repo")
-	fmt.Printf("|%9s |%9s |%9s |%s\n", " ----", " ----", " ----", " ----")
+	fmt.Printf("| %8s | %8s | %8s | %8s | %8s | %s\n", "download", "extracts", "dfilecnt", "efilecnt", "coverage", "repo")
+	fmt.Printf("| %8s | %8s | %8s | %8s | %8s | %s\n", "----", "----", "----", "----", "----", "----")
 
 	repos, err := getRepos()
 	if err != nil {
@@ -80,7 +80,7 @@ func main() {
 		if err != nil {
 			log.Printf("Failed to test repo: %s", err)
 		} else {
-			fmt.Printf("|%9t |%9t |     %3.0f%% | %s\n", res.Downloaded, res.Extracted, 100*res.FileCoverage, repo)
+			fmt.Printf("| %8t | %8t | %8d | %8d |     %3.0f%% | %s\n", res.Downloaded, res.Extracted, res.DownloadCount, res.ExtractCount, 100*res.FileCoverage, repo)
 		}
 	}
 }
