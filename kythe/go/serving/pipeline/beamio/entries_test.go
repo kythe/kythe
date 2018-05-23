@@ -18,6 +18,7 @@ package beamio
 
 import (
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -51,6 +52,7 @@ func TestReadEntries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer os.Remove(f.Name())
 	wr := delimited.NewWriter(f)
 
 	for _, e := range entries {
