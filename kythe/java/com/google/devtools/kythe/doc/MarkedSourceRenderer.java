@@ -85,6 +85,24 @@ public class MarkedSourceRenderer {
   }
 
   /**
+   * Extract and render the simple qualified name from {@link signature} as plaintext.
+   *
+   * @param signature the {@link MarkedSource} to render from.
+   * @param includeIdentifier if true, include the identifier on the qualified name.
+   * @return "" if there is no such name.
+   */
+  public static String renderSimpleQualifiedNameText(
+      MarkedSource signature, boolean includeIdentifier) {
+    return new RenderSimpleIdentifierState(null)
+        .renderText(
+            signature,
+            includeIdentifier
+                ? Sets.immutableEnumSet(MarkedSource.Kind.IDENTIFIER, MarkedSource.Kind.CONTEXT)
+                : Sets.immutableEnumSet(MarkedSource.Kind.CONTEXT),
+            0);
+  }
+
+  /**
    * Extract and render a the simple identifier from {@link signature}.
    *
    * @param makeLink if provided, this function will be used to generate link URIs from semantic
@@ -96,6 +114,17 @@ public class MarkedSourceRenderer {
       Function<String, SafeUrl> makeLink, MarkedSource signature) {
     return new RenderSimpleIdentifierState(makeLink)
         .render(signature, Sets.immutableEnumSet(MarkedSource.Kind.IDENTIFIER), 0);
+  }
+
+  /**
+   * Extract and render a the simple identifier from {@link signature} as plaintext.
+   *
+   * @param signature the {@link MarkedSource} to render from.
+   * @return "" if there is no such identifier.
+   */
+  public static String renderSimpleIdentifierText(MarkedSource signature) {
+    return new RenderSimpleIdentifierState(null)
+        .renderText(signature, Sets.immutableEnumSet(MarkedSource.Kind.IDENTIFIER), 0);
   }
 
   /**
@@ -116,12 +145,21 @@ public class MarkedSourceRenderer {
   private static class RenderSimpleIdentifierState {
     RenderSimpleIdentifierState(Function<String, SafeUrl> makeLink) {
       this.makeLink = makeLink;
-      this.buffer = new SafeHtmlBuilder("span");
     }
 
     public SafeHtml render(MarkedSource node, ImmutableSet<MarkedSource.Kind> enabled, int level) {
+      htmlBuffer = new SafeHtmlBuilder("span");
+      textBuffer = null;
       renderChild(node, enabled, ImmutableSet.of(), level);
-      return bufferIsNonempty ? buffer.build() : SafeHtml.EMPTY;
+      return bufferIsNonempty ? htmlBuffer.build() : SafeHtml.EMPTY;
+    }
+
+    public String renderText(
+        MarkedSource node, ImmutableSet<MarkedSource.Kind> enabled, int level) {
+      textBuffer = new StringBuilder();
+      htmlBuffer = null;
+      renderChild(node, enabled, ImmutableSet.of(), level);
+      return bufferIsNonempty ? textBuffer.toString() : "";
     }
 
     private static void renderSimpleParams(
@@ -168,9 +206,9 @@ public class MarkedSourceRenderer {
       SafeHtmlBuilder savedBuilder = null;
       if (shouldRender(enabled, under)) {
         SafeUrl link = makeLinkForSource(node);
-        if (link != null) {
-          savedBuilder = buffer;
-          buffer = new SafeHtmlBuilder("a").setHref(link);
+        if (link != null && htmlBuffer != null) {
+          savedBuilder = htmlBuffer;
+          htmlBuffer = new SafeHtmlBuilder("a").setHref(link);
         }
         append(node.getPreText());
       }
@@ -187,7 +225,7 @@ public class MarkedSourceRenderer {
       if (shouldRender(enabled, under)) {
         append(node.getPostText());
         if (savedBuilder != null) {
-          buffer = savedBuilder.appendContent(buffer.build());
+          htmlBuffer = savedBuilder.appendContent(htmlBuffer.build());
         }
         if (node.getKind() == MarkedSource.Kind.TYPE) {
           appendHeuristicSpace();
@@ -223,12 +261,20 @@ public class MarkedSourceRenderer {
     private void append(String text) {
       if (prependBuffer != null && prependBuffer.length() > 0 && !text.isEmpty()) {
         String prependString = prependBuffer.toString();
-        buffer = buffer.escapeAndAppendContent(prependString);
+        if (htmlBuffer != null) {
+          htmlBuffer = htmlBuffer.escapeAndAppendContent(prependString);
+        } else {
+          textBuffer.append(prependString);
+        }
         bufferEndsInSpace = prependString.endsWith(" ");
         prependBuffer.setLength(0);
         bufferIsNonempty = true;
       }
-      buffer = buffer.escapeAndAppendContent(text);
+      if (htmlBuffer != null) {
+        htmlBuffer = htmlBuffer.escapeAndAppendContent(text);
+      } else {
+        textBuffer.append(text);
+      }
       if (!text.isEmpty()) {
         bufferEndsInSpace = text.endsWith(" ");
         bufferIsNonempty = true;
@@ -253,8 +299,10 @@ public class MarkedSourceRenderer {
         appendFinalListToken(" ");
       }
     }
-    /** The buffer used to hold escaped data. */
-    private SafeHtmlBuilder buffer;
+    /** The buffer used to hold escaped HTML data. */
+    private SafeHtmlBuilder htmlBuffer;
+    /** The buffer used to hold text data. */
+    private StringBuilder textBuffer;
     /** True if the last character in buffer is a space. */
     private boolean bufferEndsInSpace;
     /** True if the buffer is non-empty. */

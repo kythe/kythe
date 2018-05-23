@@ -66,6 +66,7 @@ java_library(
     name = "qualified_name_extractor",
     srcs = ["QualifiedNameExtractor.java"],
     deps = [
+        "//kythe/java/com/google/devtools/kythe/doc:marked_source_renderer",
         "//kythe/proto:common_java_proto",
     ],
 )

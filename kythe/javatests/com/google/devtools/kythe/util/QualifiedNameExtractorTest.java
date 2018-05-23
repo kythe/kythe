@@ -30,6 +30,19 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class QualifiedNameExtractorTest {
   @Test
+  public void testCStyleMarkedSource() throws Exception {
+    MarkedSource.Builder builder = MarkedSource.newBuilder();
+    TextFormat.merge(
+        "child {\n    kind: TYPE\n    pre_text: \"Output*\"\n}\nchild {\n    pre_text: \" \"\n}\nchild {\n    kind: IDENTIFIER\n    pre_text: \"parse\"\n}\nchild {\n    kind: PARAMETER\n    pre_text: \"(\"\n    child: {\n        pre_text: \"const \"\n        child: {\n            kind: TYPE\n            pre_text: \"char*\"\n        }\n        child {\n            pre_text: \" \"\n        }\n        child {\n            child: {\n                kind: CONTEXT\n                child: [\n                  {\n                    kind: IDENTIFIER\n                    pre_text: \"parse\"\n                  }\n                ]\n                post_child_text: \"::\"\n                add_final_list_token: true\n            }\n            child: {\n                kind: IDENTIFIER\n                pre_text: \"buffer\"\n            }\n        }\n    }\n    post_child_text: \", \"\n    post_text: \")\"\n}\n",
+        builder);
+    MarkedSource testInput = builder.build();
+    Optional<SymbolInfo> resolvedName =
+        QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    assertThat(resolvedName.isPresent()).isTrue();
+    assertThat(resolvedName.get()).isEqualTo(SymbolInfo.newBuilder().setBaseName("parse").build());
+  }
+
+  @Test
   public void testExtractNameFromMarkedSourceReturnsProperly() throws Exception {
     MarkedSource.Builder builder = MarkedSource.newBuilder();
     TextFormat.merge(
@@ -118,21 +131,6 @@ public class QualifiedNameExtractorTest {
                 .setBaseName(":analysis_go_proto")
                 .setQualifiedName("//kythe/proto:analysis_go_proto")
                 .build());
-  }
-
-  @Test
-  public void testDefaultSeparator() throws Exception {
-    MarkedSource.Builder builder = MarkedSource.newBuilder();
-    TextFormat.merge(
-        "child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"a\" } child { kind: IDENTIFIER pre_text: \"b\" } } child { kind: IDENTIFIER pre_text: \"-tail\" }",
-        builder);
-    MarkedSource testInput = builder.build();
-    Optional<SymbolInfo> resolvedName =
-        QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
-    assertThat(resolvedName.isPresent()).isTrue();
-    assertThat(resolvedName.get())
-        .isEqualTo(
-            SymbolInfo.newBuilder().setBaseName("-tail").setQualifiedName("a.b-tail").build());
   }
 
   @Test
