@@ -51,6 +51,8 @@ _INDEXER_FLAGS = {
 def _compiler_options(cpp):
   """Returns the combined list of compiler_options from the cpp fragment."""
   options = []
+  # The bazel toolchain provider is missing these attributes until 0.14.0,
+  # but we still want to use them when/if they are present.
   if hasattr(cpp, "compiler_options"):
     options += cpp.compiler_options([])
   if hasattr(cpp, "unfiltered_compiler_options"):
