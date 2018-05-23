@@ -28,11 +28,13 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"kythe.io/kythe/go/extractors/config/smoke"
@@ -65,7 +67,9 @@ func main() {
 	flag.Parse()
 	verifyFlags()
 
-	fmt.Println("downloads,extracts,downloadfilecount,extractfilecount,coverage,repo")
+	w := csv.NewWriter(os.Stdout)
+	w.Write([]string{"downloads", "extracts", "downloadfilecount", "extractfilecount", "coverage", "repo"})
+	w.Flush()
 
 	repos, err := getRepos()
 	if err != nil {
@@ -78,7 +82,15 @@ func main() {
 		if err != nil {
 			log.Printf("Failed to test repo: %s", err)
 		} else {
-			fmt.Printf("%t,%t,%d,%d,%.2f,%s\n", res.Downloaded, res.Extracted, res.DownloadCount, res.ExtractCount, res.FileCoverage, repo)
+			w.Write([]string{
+				strconv.FormatBool(res.Downloaded),
+				strconv.FormatBool(res.Extracted),
+				strconv.Itoa(res.DownloadCount),
+				strconv.Itoa(res.ExtractCount),
+				strconv.FormatFloat(res.FileCoverage, 'f', 2, 64),
+				repo,
+			})
+			w.Flush()
 		}
 	}
 }
