@@ -35,6 +35,9 @@ import (
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 
+	"github.com/apache/beam/sdks/go/pkg/beam"
+	"github.com/apache/beam/sdks/go/pkg/beam/x/beamx"
+
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
 )
 
@@ -54,6 +57,8 @@ var (
 		"Size of the reading/writing buffers for the intermediary data shards.")
 
 	verbose = flag.Bool("verbose", false, "Whether to emit extra, and possibly excessive, log messages")
+
+	experimentalBeamPipeline = flag.Bool("experimental_beam_pipeline", false, "Whether to use the Beam experimental pipeline implementation")
 )
 
 func init() {
@@ -62,8 +67,17 @@ func init() {
 		"Creates a combined xrefs/filetree/search serving table based on a given GraphStore or stream of GraphStore-ordered entries",
 		"(--graphstore spec | --entries path) --out path")
 }
+
 func main() {
 	flag.Parse()
+	ctx := context.Background()
+	if *experimentalBeamPipeline {
+		if err := runExperimentalBeamPipeline(ctx); err != nil {
+			log.Fatalf("Pipeline error: %v", err)
+		}
+		return
+	}
+
 	if gs == nil && *entriesFile == "" {
 		flagutil.UsageError("missing --graphstore or --entries")
 	} else if gs != nil && *entriesFile != "" {
@@ -77,8 +91,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
-
-	ctx := context.Background()
 
 	if err := profile.Start(ctx); err != nil {
 		log.Fatal(err)
@@ -109,4 +121,11 @@ func main() {
 	}); err != nil {
 		log.Fatal("FATAL ERROR: ", err)
 	}
+}
+
+func runExperimentalBeamPipeline(ctx context.Context) error {
+	beam.Init()
+	p, s := beam.NewPipelineWithRoot()
+	beam.Impulse(s)
+	return beamx.Run(ctx, p)
 }

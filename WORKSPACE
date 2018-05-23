@@ -406,3 +406,34 @@ go_repository(
     custom = "querystring",
     importpath = "github.com/google/go-querystring",
 )
+
+go_repository(
+    name = "com_github_apache_beam",
+    commit = "ff33e4c567460cf39a13b0c544b23da139571df1",
+    custom = "beam",
+    importpath = "github.com/apache/beam",
+)
+
+go_repository(
+    name = "org_golang_google_api",
+    commit = "3097bf831ede4a24e08a3316254e29ca726383e3",
+    custom = "google_api",
+    custom_git = "https://github.com/google/google-api-go-client.git",
+    importpath = "google.golang.org/api",
+)
+
+go_repository(
+    name = "com_google_cloud_go",
+    commit = "01301d1df8060594708d76bda9062b0205b77e8b",
+    custom = "google_cloud",
+    custom_git = "https://github.com/GoogleCloudPlatform/google-cloud-go.git",
+    importpath = "cloud.google.com/go",
+)
+
+go_repository(
+    name = "io_opencensus_go",
+    commit = "c40611a83b49d279ee5203c85e4fe169dcb158b6",
+    custom = "opencensus",
+    custom_git = "https://github.com/census-instrumentation/opencensus-go.git",
+    importpath = "go.opencensus.io",
+)
