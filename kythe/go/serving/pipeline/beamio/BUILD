@@ -4,10 +4,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "beamio",
-    srcs = glob(
-        ["*.go"],
-        exclude = ["*_test.go"],
-    ),
+    srcs = ["entries.go"],
     deps = [
         "//kythe/go/storage/stream",
         "//kythe/proto:storage_go_proto",

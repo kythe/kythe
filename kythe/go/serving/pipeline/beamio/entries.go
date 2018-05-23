@@ -21,10 +21,10 @@ import (
 
 	"kythe.io/kythe/go/storage/stream"
 
-	spb "kythe.io/kythe/proto/storage_go_proto"
-
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/io/filesystem"
+
+	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 func init() {

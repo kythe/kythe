@@ -24,11 +24,11 @@ import (
 
 	"kythe.io/kythe/go/platform/delimited"
 
-	spb "kythe.io/kythe/proto/storage_go_proto"
-
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
 	"github.com/google/go-cmp/cmp"
+
+	spb "kythe.io/kythe/proto/storage_go_proto"
 
 	_ "github.com/apache/beam/sdks/go/pkg/beam/io/filesystem/local"
 )
