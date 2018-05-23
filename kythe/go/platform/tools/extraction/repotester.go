@@ -16,7 +16,7 @@
 
 // Binary repotester tests the high level validity of repo extraction. It tries
 // to run similar logic to sibling binary extractrepo on a specified target
-// repositories, and reports results.
+// repositories, and reports results in csv format.
 //
 // An extraction config can be optionally read from a specified file.  The
 // format follows kythe.proto.ExtractionConfiguration.
@@ -28,11 +28,13 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"kythe.io/kythe/go/extractors/config/smoke"
@@ -65,9 +67,9 @@ func main() {
 	flag.Parse()
 	verifyFlags()
 
-	// Print some header
-	fmt.Printf("| %8s | %8s | %8s | %8s | %8s | %s\n", "download", "extracts", "dfilecnt", "efilecnt", "coverage", "repo")
-	fmt.Printf("| %8s | %8s | %8s | %8s | %8s | %s\n", "----", "----", "----", "----", "----", "----")
+	w := csv.NewWriter(os.Stdout)
+	w.Write([]string{"downloads", "extracts", "downloadfilecount", "extractfilecount", "coverage", "repo"})
+	w.Flush()
 
 	repos, err := getRepos()
 	if err != nil {
@@ -80,7 +82,15 @@ func main() {
 		if err != nil {
 			log.Printf("Failed to test repo: %s", err)
 		} else {
-			fmt.Printf("| %8t | %8t | %8d | %8d |     %3.0f%% | %s\n", res.Downloaded, res.Extracted, res.DownloadCount, res.ExtractCount, 100*res.FileCoverage, repo)
+			w.Write([]string{
+				strconv.FormatBool(res.Downloaded),
+				strconv.FormatBool(res.Extracted),
+				strconv.Itoa(res.DownloadCount),
+				strconv.Itoa(res.ExtractCount),
+				strconv.FormatFloat(res.FileCoverage, 'f', 2, 64),
+				repo,
+			})
+			w.Flush()
 		}
 	}
 }
