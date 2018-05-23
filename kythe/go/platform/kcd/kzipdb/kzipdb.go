@@ -41,7 +41,7 @@ func (db DB) Revisions(ctx context.Context, want *kcd.RevisionsFilter, f func(kc
 	seen := make(map[kcd.Revision]bool)
 	return db.Reader.Scan(func(unit *kzip.Unit) error {
 		corpus := unit.Proto.GetVName().GetCorpus()
-		for _, revision := range unit.Index.Revisions {
+		for _, revision := range unit.Index.GetRevisions() {
 			rev := kcd.Revision{Revision: revision, Corpus: corpus}
 			if !seen[rev] && revisionMatches(rev) {
 				if err := f(rev); err != nil {
@@ -66,7 +66,7 @@ func (db DB) Find(ctx context.Context, filter *kcd.FindFilter, f func(string) er
 	return db.Reader.Scan(func(unit *kzip.Unit) error {
 		idx := kythe.Unit{unit.Proto}.Index()
 
-		if cf.RevisionMatches(unit.Index.Revisions...) &&
+		if cf.RevisionMatches(unit.Index.GetRevisions()...) &&
 			cf.LanguageMatches(idx.Language) &&
 			cf.TargetMatches(idx.Target) &&
 			cf.OutputMatches(idx.Output) &&

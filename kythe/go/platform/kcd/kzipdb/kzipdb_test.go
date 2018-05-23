@@ -71,6 +71,7 @@ func setup(t *testing.T) {
 			{Unit: newUnit("C", "go", "chromium"), Index: newIndex("123")},
 			{Unit: newUnit("D", "protobuf", "kythe"), Index: newIndex("789")},
 			{Unit: newUnit("E", "java", "boiler.plate"), Index: newIndex("666")},
+			{Unit: newUnit("F", "java", "kythe")},
 		} {
 			digest, err := w.AddUnit(ic.Unit, ic.Index)
 			if err != nil {
