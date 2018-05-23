@@ -39,7 +39,8 @@ public class QualifiedNameExtractorTest {
     Optional<SymbolInfo> resolvedName =
         QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isTrue();
-    assertThat(resolvedName.get()).isEqualTo(SymbolInfo.newBuilder().setBaseName("parse").build());
+    assertThat(resolvedName.get())
+        .isEqualTo(SymbolInfo.newBuilder().setBaseName("parse").setQualifiedName("parse").build());
   }
 
   @Test
@@ -71,7 +72,11 @@ public class QualifiedNameExtractorTest {
         QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isTrue();
     assertThat(resolvedName.get())
-        .isEqualTo(SymbolInfo.newBuilder().setBaseName("JavaEntrySets").build());
+        .isEqualTo(
+            SymbolInfo.newBuilder()
+                .setBaseName("JavaEntrySets")
+                .setQualifiedName("JavaEntrySets")
+                .build());
   }
 
   @Test
@@ -84,7 +89,11 @@ public class QualifiedNameExtractorTest {
         QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isTrue();
     assertThat(resolvedName.get())
-        .isEqualTo(SymbolInfo.newBuilder().setBaseName("JavaEntrySets").build());
+        .isEqualTo(
+            SymbolInfo.newBuilder()
+                .setBaseName("JavaEntrySets")
+                .setQualifiedName("JavaEntrySets")
+                .build());
   }
 
   @Test
@@ -142,6 +151,7 @@ public class QualifiedNameExtractorTest {
         QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
     assertThat(resolvedName.isPresent()).isTrue();
     assertThat(resolvedName.get())
-        .isEqualTo(SymbolInfo.newBuilder().setBaseName("fizzlepug").build());
+        .isEqualTo(
+            SymbolInfo.newBuilder().setBaseName("fizzlepug").setQualifiedName("fizzlepug").build());
   }
 }

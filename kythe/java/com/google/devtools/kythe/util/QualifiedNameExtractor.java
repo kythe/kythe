@@ -40,7 +40,7 @@ public class QualifiedNameExtractor {
     String qualifiedName = MarkedSourceRenderer.renderSimpleQualifiedNameText(markedSource, true);
     SymbolInfo.Builder symbolInfo = SymbolInfo.newBuilder();
     symbolInfo.setBaseName(identifier);
-    symbolInfo.setQualifiedName(qualifiedName.equals(identifier) ? "" : qualifiedName);
+    symbolInfo.setQualifiedName(qualifiedName);
     return Optional.of(symbolInfo.build());
   }
 }
