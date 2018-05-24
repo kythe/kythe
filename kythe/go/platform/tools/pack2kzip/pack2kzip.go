@@ -128,6 +128,8 @@ func main() {
 	}
 	log.Printf("Copied %d files [%d bytes total]", len(fileDigests), totalBytes)
 	if err := kw.Close(); err != nil {
+		log.Fatalf("Closing kzip writer: %v", err)
+	} else if err := f.Close(); err != nil {
 		log.Fatalf("Closing kzip file: %v", err)
 	}
 	log.Printf("Conversion finished [%v elapsed]", time.Since(start))
