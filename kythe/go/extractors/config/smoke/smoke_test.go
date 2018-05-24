@@ -160,7 +160,7 @@ func verifyRepoCoverage(t *testing.T, te testExtractor, expectedDownloadCount, e
 		repoFetcher: te,
 	}
 
-	r, err := h.TestRepo(context.TODO(), "foo")
+	r, err := h.TestRepo(context.Background(), "foo")
 	if err != nil {
 		t.Fatalf("failed to test repo: %v", err)
 	}
