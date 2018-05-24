@@ -20,6 +20,8 @@ package compare
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -42,6 +44,16 @@ func (s *ByEntries) Pop() interface{} {
 	return out
 }
 
+// ToOrder returns LT if c < 0, EQ if c == 0, or GT if c > 0.
+func ToOrder(c int) Order {
+	if c < 0 {
+		return LT
+	} else if c > 0 {
+		return GT
+	}
+	return EQ
+}
+
 // An Order represents an ordering relationship between values.
 type Order int
 
@@ -52,17 +64,27 @@ const (
 	GT Order = 1  // lhs > rhs
 )
 
-// Strings returns LT if s < t, EQ if s == t, or GT if s > t.
-func Strings(s, t string) Order {
-	switch {
-	case s < t:
-		return LT
-	case s > t:
-		return GT
+func (o Order) String() string {
+	switch o {
+	case LT:
+		return "LT"
+	case GT:
+		return "GT"
+	case EQ:
+		return "EQ"
 	default:
-		return EQ
+		return fmt.Sprintf("Order(%d)", o)
 	}
 }
+
+// Strings returns LT if s < t, EQ if s == t, or GT if s > t.
+func Strings(s, t string) Order { return Order(strings.Compare(s, t)) }
+
+// Bytes returns LT if s < t, EQ if s == t, or GT if s > t.
+func Bytes(s, t []byte) Order { return Order(bytes.Compare(s, t)) }
+
+// Ints returns LT if a < b, EQ if a == b, or GT if a > b.
+func Ints(a, b int) Order { return ToOrder(b - a) }
 
 var (
 	emptyVName = new(spb.VName)
@@ -127,7 +149,7 @@ func ValueEntries(e1, e2 *spb.Entry) Order {
 	if c := Entries(e1, e2); c != EQ {
 		return c
 	}
-	return Order(bytes.Compare(e1.FactValue, e2.FactValue))
+	return Bytes(e1.FactValue, e2.FactValue)
 }
 
 // EntriesEqual reports whether e1 and e2 are equivalent, including their fact

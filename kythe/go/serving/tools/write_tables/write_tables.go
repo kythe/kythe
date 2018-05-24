@@ -140,6 +140,7 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 	}
 
 	p, s := beam.NewPipelineWithRoot()
-	beamio.ReadEntries(s, *entriesFile)
+	entries := beamio.ReadEntries(s, *entriesFile)
+	pipeline.FromEntries(s, entries)
 	return beamx.Run(ctx, p)
 }

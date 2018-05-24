@@ -4,13 +4,17 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "pipeline",
-    srcs = ["pipeline.go"],
+    srcs = [
+        "beam.go",
+        "pipeline.go",
+    ],
     deps = [
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
         "//kythe/go/serving/graph",
+        "//kythe/go/serving/pipeline/nodes",
         "//kythe/go/serving/xrefs",
         "//kythe/go/serving/xrefs/assemble",
         "//kythe/go/storage/keyvalue",
@@ -25,6 +29,7 @@ go_library(
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:serving_go_proto",
         "//kythe/proto:storage_go_proto",
+        "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

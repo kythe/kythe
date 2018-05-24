@@ -1,0 +1,65 @@
+/*
+ * Copyright 2018 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto.pipeline;
+
+option java_package = "com.google.devtools.kythe.proto";
+
+import "kythe/proto/schema.proto";
+import "kythe/proto/storage.proto";
+
+// A Node represents a Kythe graph node with all its known facts and edges.
+message Node {
+  kythe.proto.VName source = 1;
+
+  repeated Fact fact = 2;
+  repeated Edge edge = 3;
+
+  oneof kind {
+    kythe.proto.schema.NodeKind kythe_kind = 4;
+    string generic_kind = 5;
+  }
+  oneof subkind {
+    kythe.proto.schema.Subkind kythe_subkind = 6;
+    string generic_subkind = 7;
+  }
+}
+
+// A Fact represents a single Kythe graph node fact.
+message Fact {
+  kythe.proto.VName source = 1;
+
+  oneof name {
+    kythe.proto.schema.FactName kythe_name = 2;
+    string generic_name = 3;
+  }
+
+  bytes value = 4;
+}
+
+// An Edge represents a single Kythe graph edge.
+message Edge {
+  kythe.proto.VName source = 1;
+  kythe.proto.VName target = 2;
+
+  oneof kind {
+    kythe.proto.schema.EdgeKind kythe_kind = 3;
+    string generic_kind = 4;
+  }
+  int32 ordinal = 5;
+}
