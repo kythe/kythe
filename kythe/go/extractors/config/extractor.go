@@ -17,6 +17,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -48,7 +49,7 @@ type Repo struct {
 // kythe.proto.ExtractionConfiguration file path, and performs kythe extraction
 // on the repo, depositing results in the output directory path.
 type Extractor interface {
-	ExtractRepo(repo Repo) error
+	ExtractRepo(ctx context.Context, repo Repo) error
 }
 
 // DefaultExtractor provides an extractor that can perform extraction on
@@ -70,7 +71,7 @@ type DefaultExtractor struct{}
 // http://kythe.io/docs/kythe-index-pack.html).
 //
 // This function requires both Git and Docker to be in $PATH during execution.
-func (d DefaultExtractor) ExtractRepo(repo Repo) error {
+func (d DefaultExtractor) ExtractRepo(ctx context.Context, repo Repo) error {
 	if err := verifyRequiredTools(); err != nil {
 		return fmt.Errorf("ExtractRepo requires git and docker to be in $PATH: %v", err)
 	}
@@ -90,7 +91,7 @@ func (d DefaultExtractor) ExtractRepo(repo Repo) error {
 	defer os.RemoveAll(tmpOutDir)
 
 	// clone the repo
-	cmd := exec.Command("git", "clone", repo.URI, repoDir)
+	cmd := exec.CommandContext(ctx, "git", "clone", repo.URI, repoDir)
 	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("cloning repo: %v", err)
@@ -126,14 +127,14 @@ func (d DefaultExtractor) ExtractRepo(repo Repo) error {
 
 	// use Docker to build the extraction image
 	imageTag := strings.ToLower(filepath.Base(extractionDockerFile.Name()))
-	output, err := exec.Command("docker", "build", "-f", extractionDockerFile.Name(), "-t", imageTag, tmpOutDir).CombinedOutput()
-	defer mustCleanUpImage(imageTag)
+	output, err := exec.CommandContext(ctx, "docker", "build", "-f", extractionDockerFile.Name(), "-t", imageTag, tmpOutDir).CombinedOutput()
+	defer mustCleanUpImage(ctx, imageTag)
 	if err != nil {
 		return fmt.Errorf("building docker image: %v\nCommand output %s", err, string(output))
 	}
 
 	// run the extraction
-	output, err = exec.Command("docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, DefaultRepoVolume), "-v", fmt.Sprintf("%s:%s", repo.OutputPath, DefaultOutputVolume), "-t", imageTag).CombinedOutput()
+	output, err = exec.CommandContext(ctx, "docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, DefaultRepoVolume), "-v", fmt.Sprintf("%s:%s", repo.OutputPath, DefaultOutputVolume), "-t", imageTag).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("extracting repo: %v\nCommand output: %s", err, string(output))
 	}
@@ -152,8 +153,8 @@ func verifyRequiredTools() error {
 	return nil
 }
 
-func mustCleanUpImage(tmpImageTag string) {
-	cmd := exec.Command("docker", "image", "rm", tmpImageTag)
+func mustCleanUpImage(ctx context.Context, tmpImageTag string) {
+	cmd := exec.CommandContext(ctx, "docker", "image", "rm", tmpImageTag)
 	err := cmd.Run()
 	if err != nil {
 		log.Printf("Failed to clean up docker image: %v", err)
