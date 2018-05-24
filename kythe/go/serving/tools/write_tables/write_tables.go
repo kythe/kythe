@@ -36,6 +36,7 @@ import (
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/profile"
 
+	ppb "kythe.io/kythe/proto/pipeline_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
@@ -127,7 +128,11 @@ func main() {
 }
 
 func init() {
+	beam.RegisterFunction(keyNodes)
+
+	beam.RegisterType(reflect.TypeOf((*ppb.Node)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.Entry)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*spb.VName)(nil)).Elem())
 }
 
 func runExperimentalBeamPipeline(ctx context.Context) error {
@@ -137,10 +142,17 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 		return errors.New("--graphstore input not supported with --experimental_beam_pipeline")
 	} else if *entriesFile == "" {
 		return errors.New("--entries file path required")
+	} else if *tablePath == "" {
+		return errors.New("--out table path required")
 	}
 
 	p, s := beam.NewPipelineWithRoot()
 	entries := beamio.ReadEntries(s, *entriesFile)
-	pipeline.FromEntries(s, entries)
+	k := pipeline.FromEntries(s, entries)
+	nodesTable := beam.ParDo(s, keyNodes, k.Nodes())
+	shards := 8 // TODO(schroederc): better determine number of shards
+	beamio.WriteLevelDB(s, *tablePath, shards, nodesTable)
 	return beamx.Run(ctx, p)
 }
+
+func keyNodes(n *ppb.Node) (*spb.VName, *ppb.Node) { return n.Source, n }
