@@ -46,7 +46,6 @@ var (
 	repos      = flag.String("repos", "", "A comma delimited list of repos to test")
 	reposFile  = flag.String("repo_list_file", "", "A file that contains a newline delimited list of repos to test")
 	configPath = flag.String("config", "", "An optional config file to specify kythe.proto.ExtractionConfiguration logic")
-	index      = flag.Bool("index", false, "Whether to attempt to index a repo after successful extraction")
 	timeout    = flag.Duration("timeout", 2*time.Minute, "Timeout for testing an individual repo.")
 )
 
