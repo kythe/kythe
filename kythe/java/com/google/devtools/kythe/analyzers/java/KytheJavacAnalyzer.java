@@ -154,7 +154,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           Plugin plugin = p.get();
           plugin.run(compilation, entrySets, graph);
         } catch (Throwable e) {
-          logger.atWarning().withCause(e).log("Error running plugin: %s", e.getMessage());
+          logger.atWarning().withCause(e).log("Error running plugins");
         }
       }
     }
