@@ -455,10 +455,12 @@ public class SignatureGenerator
       sbout.append(t.tsym.name);
     } else {
       if (!visitedTypes.containsKey(t)) {
+        boundedVars.add(t);
         StringBuilder sb = new StringBuilder();
         t.tsym.owner.accept(this, sb);
         sb.append("~").append(t.tsym.name);
         visitedTypes.put(t, sb.toString());
+        boundedVars.remove(t);
       }
       sbout.append(visitedTypes.get(t));
     }
