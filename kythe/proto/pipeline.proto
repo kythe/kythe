@@ -27,13 +27,22 @@ import "kythe/proto/storage.proto";
 message Node {
   kythe.proto.VName source = 1;
 
+  // Facts associated with the source VName (making exception for a small number
+  // of special-cases below).
   repeated Fact fact = 2;
+
+  // Edges associated with the source VName.
   repeated Edge edge = 3;
 
+  // Special-case for the ubiquitous /kythe/node/kind fact.  This fact will not
+  // appear in the fact list above.
   oneof kind {
     kythe.proto.schema.NodeKind kythe_kind = 4;
     string generic_kind = 5;
   }
+
+  // Special-case for the ubiquitous /kythe/subkind fact.  This fact will not
+  // appear in the fact list above.
   oneof subkind {
     kythe.proto.schema.Subkind kythe_subkind = 6;
     string generic_subkind = 7;
