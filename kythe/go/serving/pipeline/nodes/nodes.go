@@ -18,6 +18,7 @@
 package nodes
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 
@@ -47,9 +48,17 @@ func FromEntries(s beam.Scope, entries beam.PCollection) beam.PCollection {
 			beam.ParDo(s, entryToNode, entries)))
 }
 
-func entryToNode(e *spb.Entry) (*spb.VName, *ppb.Node) {
+func entryToNode(e *spb.Entry, emit func(*spb.VName, *ppb.Node)) error {
+	if e.Source == nil {
+		return fmt.Errorf("invalid Entry: source is missing: %+v", e)
+	}
+
 	n := &ppb.Node{}
 	if e.EdgeKind == "" {
+		if e.FactName == "" || e.Target != nil {
+			return fmt.Errorf("invalid fact Entry: {%v}", e)
+		}
+
 		switch e.FactName {
 		case facts.NodeKind:
 			kind := string(e.FactValue)
@@ -69,9 +78,15 @@ func entryToNode(e *spb.Entry) (*spb.VName, *ppb.Node) {
 			n.Fact = append(n.Fact, entryToFact(e))
 		}
 	} else {
+		if (e.FactName != "/" && e.FactName != "") || len(e.FactValue) != 0 || e.Target == nil {
+			return fmt.Errorf("invalid edge Entry: {%v}", e)
+		}
+
 		n.Edge = append(n.Edge, entryToEdge(e))
 	}
-	return e.Source, n
+
+	emit(e.Source, n)
+	return nil
 }
 
 func entryToEdge(e *spb.Entry) *ppb.Edge {
