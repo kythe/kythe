@@ -29,11 +29,6 @@ genrule(
     visibility = ["//visibility:private"],
 )
 
-# This rule verifies that the checked-in version of indexdata.go matches the
-# generated version used by the Bazel rule. It will fail to build if the two
-# differ.
-#
-# To fix it when it fails, run: update_data.sh
 genrule(
     name = "schema_index_sync",
     testonly = True,
@@ -42,12 +37,23 @@ genrule(
         ":schema_index",
     ],
     outs = ["schema_index_sync.sh"],
-    cmd = " ".join([
-        "diff -q '$(location :schema_index)' '$(location :indexdata.go)';",
+    cmd = "\n".join([
+        "set +o pipefail",
+        "diff -q '$(location :schema_index)' '$(location :indexdata.go)'",
         "echo \"exit $$?\" > $@",
     ]),
     executable = True,
     visibility = ["//visibility:private"],
+)
+
+# This test verifies that the checked-in version of indexdata.go matches the
+# generated version used by the Bazel rule. It will fail to build if the two
+# differ.
+#
+# To fix it when it fails, run update_data.sh
+sh_test(
+    name = "schema_index_test",
+    srcs = [":schema_index_sync"],
 )
 
 go_binary(
