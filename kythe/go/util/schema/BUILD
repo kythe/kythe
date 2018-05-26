@@ -1,4 +1,5 @@
 load("//tools:build_rules/shims.bzl", "go_binary", "go_library", "go_test")
+load("//tools:build_rules/testing.bzl", "file_diff_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -29,31 +30,14 @@ genrule(
     visibility = ["//visibility:private"],
 )
 
-genrule(
-    name = "schema_index_sync",
-    testonly = True,
-    srcs = [
-        "indexdata.go",
-        ":schema_index",
-    ],
-    outs = ["schema_index_sync.sh"],
-    cmd = "\n".join([
-        "set +o pipefail",
-        "diff -q '$(location :schema_index)' '$(location :indexdata.go)'",
-        "echo \"exit $$?\" > $@",
-    ]),
-    executable = True,
-    visibility = ["//visibility:private"],
-)
-
 # This test verifies that the checked-in version of indexdata.go matches the
 # generated version used by the Bazel rule. It will fail to build if the two
 # differ.
-#
-# To fix it when it fails, run update_data.sh
-sh_test(
+file_diff_test(
     name = "schema_index_test",
-    srcs = [":schema_index_sync"],
+    file1 = "indexdata.go",
+    file2 = ":schema_index",
+    message = "Run update_data.sh to sync indexdata.go with changes",
 )
 
 go_binary(
