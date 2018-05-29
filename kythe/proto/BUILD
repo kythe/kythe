@@ -540,3 +540,20 @@ go_proto_library(
     importpath = "kythe.io/kythe/proto/extraction_config_go_proto",
     proto = ":extraction_config_proto",
 )
+
+proto_library(
+    name = "pipeline_proto",
+    srcs = ["pipeline.proto"],
+    deps = [
+        ":schema_proto",
+        ":storage_proto",
+    ],
+)
+
+go_kythe_proto(
+    proto = ":pipeline_proto",
+    deps = [
+        ":schema_go_proto",
+        ":storage_go_proto",
+    ],
+)
