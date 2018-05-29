@@ -546,6 +546,7 @@ proto_library(
     srcs = ["pipeline.proto"],
     deps = [
         ":schema_proto",
+        ":serving_proto",
         ":storage_proto",
     ],
 )
@@ -554,6 +555,7 @@ go_kythe_proto(
     proto = ":pipeline_proto",
     deps = [
         ":schema_go_proto",
+        ":serving_go_proto",
         ":storage_go_proto",
     ],
 )
