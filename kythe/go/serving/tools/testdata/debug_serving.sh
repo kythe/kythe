@@ -27,7 +27,7 @@ if [[ ! -d "$TABLE" ]]; then
 fi
 
 scan_leveldb=kythe/go/util/tools/scan_leveldb/scan_leveldb
-jq=third_party/jq/jq
+jq=external/com_github_stedolan_jq/jq
 
 if [[ ! -x "$scan_leveldb" || -d "$scan_leveldb" ]]; then
   scan_leveldb="$(which scan_leveldb)"

@@ -15,6 +15,6 @@ sh_test(
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/extractor/testdata:skip",
         "//kythe/cxx/tools:kindex_tool",
-        "//third_party/jq",
+        "@com_github_stedolan_jq//:jq",
     ],
 )

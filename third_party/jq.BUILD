@@ -7,6 +7,13 @@ filegroup(
     srcs = ["COPYING"],
 )
 
+genrule(
+    name = "version",
+    outs = ["version.h"],
+    cmd = "echo '#define JQ_VERSION \"1.4\"' > $@",
+    visibility = ["//visibility:private"],
+)
+
 cc_library(
     name = "libjq",
     srcs = [
@@ -44,27 +51,17 @@ cc_library(
     hdrs = [
         "jq.h",
         "jv.h",
-        "version.h",
+        ":version",
     ],
-    copts = [
-        "-Ithird_party/jq",
-        "-Wno-unused-function",
-    ],
+    copts = ["-Wno-unused-function"],
+    includes = ["."],
     visibility = ["//visibility:private"],
 )
 
 cc_binary(
     name = "jq",
-    srcs = [
-        "main.c",
-    ],
-    copts = [
-        "-Ithird_party/jq",
-    ],
-    linkopts = [
-        "-lm",
-    ],
-    deps = [
-        ":libjq",
-    ],
+    srcs = ["main.c"],
+    copts = ["-Wno-unused-function"],
+    linkopts = ["-lm"],
+    deps = [":libjq"],
 )
