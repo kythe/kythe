@@ -315,8 +315,10 @@ func (e *encodeKeyValue) ProcessElement(key beam.T, val beam.U) (keyValue, error
 	return keyValue{Key: keyBuf.Bytes(), Value: valBuf.Bytes()}, nil
 }
 
+// A keyValue is a concrete form of a Beam KV.
 type keyValue struct {
-	Key, Value []byte
+	Key   []byte `json:"k"`
+	Value []byte `json:"v"`
 }
 
 // makeLevelDBKey constructs an internal LevelDB key from a user key.  seq is
@@ -338,8 +340,10 @@ func parseLevelDBKey(key []byte) (ukey []byte, seqNum uint64) {
 // keyComparer compares internal (ukey, seqNum) LevelDB keys.
 type keyComparer struct{}
 
+// Name implements part of the comparer.Comparer interface.
 func (keyComparer) Name() string { return "leveldb.BytewiseComparator" }
 
+// Compare implements part of the comparer.Comparer interface.
 func (keyComparer) Compare(a, b []byte) int {
 	ak, an := parseLevelDBKey(a)
 	bk, bn := parseLevelDBKey(b)
