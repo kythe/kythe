@@ -10,9 +10,9 @@ filegroup(
         "//third_party/gson:license",
         "//third_party/javac:license",
         "//third_party/leiningen:license",
-        "//third_party/leveldb:license",
         "//third_party/llvm:license",
-        "//third_party/snappy:license",
+        "@com_github_google_leveldb//:license",
+        "@com_github_google_snappy//:license",
         "@com_github_tencent_rapidjson//:license",
     ],
 )
