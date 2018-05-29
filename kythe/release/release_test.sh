@@ -23,7 +23,7 @@ TEST_PORT=9898
 ADDR=localhost:$TEST_PORT
 TEST_REPOSRCDIR="$PWD"
 
-jq() { "$TEST_REPOSRCDIR/third_party/jq/jq" "$@"; }
+jq() { "$TEST_REPOSRCDIR/external/com_github_stedolan_jq/jq" "$@"; }
 
 if ! command -v curl >/dev/null; then
   echo "Test requires curl command" >&2

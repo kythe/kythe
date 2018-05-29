@@ -9,6 +9,6 @@ shell_tool_test(
         "indexpack": "//kythe/go/platform/tools/indexpack",
         "viewindex": "//kythe/go/platform/tools/viewindex",
         "input": "//kythe/testdata:test.kindex",
-        "jq": "//third_party/jq",
+        "jq": "@com_github_stedolan_jq//:jq",
     },
 )

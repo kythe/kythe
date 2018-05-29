@@ -27,7 +27,7 @@ KINDEX_TOOL="$PWD/kythe/cxx/tools/kindex_tool"
 export KYTHE_EXTRACTOR="$PWD/kythe/cxx/extractor/cxx_extractor"
 export KYTHE_EXCLUDE_EMPTY_DIRS=1
 export KYTHE_EXCLUDE_AUTOCONFIGURATION_FILES=1
-export JQ="$PWD/third_party/jq/jq"
+export JQ="$PWD/external/com_github_stedolan_jq/jq"
 cd "${BASE_DIR}/testdata"
 KYTHE_CORPUS=test_corpus KYTHE_ROOT_DIRECTORY="${BASE_DIR}" \
     KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
