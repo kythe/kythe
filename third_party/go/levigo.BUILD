@@ -20,7 +20,7 @@ go_library(
             "doc.go",
         ],
     ),
-    cdeps = ["@//third_party/leveldb"],
+    cdeps = ["@com_github_google_leveldb//:leveldb"],
     cgo = True,
     importpath = "github.com/jmhodges/levigo",
 )

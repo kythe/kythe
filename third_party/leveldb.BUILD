@@ -26,6 +26,7 @@ cc_library(
         "db/write_batch.cc",
         "helpers/memenv/memenv.cc",
         "port/port_posix.cc",
+        "port/port_posix_sse.cc",
         "table/block.cc",
         "table/block_builder.cc",
         "table/filter_block.cc",
@@ -96,6 +97,7 @@ cc_library(
         "util/arena.h",
         "util/coding.h",
         "util/crc32c.h",
+        "util/env_posix_test_helper.h",
         "util/hash.h",
         "util/histogram.h",
         "util/logging.h",
@@ -111,7 +113,6 @@ cc_library(
         "-O2",
         "-DNDEBUG",
         "-DSNAPPY",
-        "-Ithird_party/leveldb",
     ],
     defines = [
         "LEVELDB_PLATFORM_POSIX",
