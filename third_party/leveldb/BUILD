@@ -124,7 +124,7 @@ cc_library(
         "-lstdc++",
         "-lpthread",
     ],
-    deps = ["//third_party/snappy"],
+    deps = ["@com_github_google_snappy//:snappy"],
 )
 
 config_setting(
