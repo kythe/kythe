@@ -18,6 +18,8 @@
 package nodes
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
@@ -112,19 +114,29 @@ func entryToFact(e *spb.Entry) *ppb.Fact {
 	return f
 }
 
+var conflictingFactsCounter = beam.NewCounter("kythe.nodes", "conflicting-facts")
+
 // combineNodes is a Beam combiner for *ppb.Nodes.  All facts and edges are
-// merged into a single *ppb.Node.  If a fact has multiple values, a single is
-// chosen (this includes special-case facts like node kinds).  Duplicate edges
-// will be removed.
+// merged into a single *ppb.Node.  If a fact has multiple values, an arbitrary
+// value is chosen (this includes special-case facts like node kinds).
+// Duplicate edges are removed.
 type combineNodes struct{}
 
 func (combineNodes) CreateAccumulator() *ppb.Node { return &ppb.Node{} }
 
-func (c *combineNodes) MergeAccumulators(accum, n *ppb.Node) *ppb.Node {
+func (c *combineNodes) MergeAccumulators(ctx context.Context, accum, n *ppb.Node) *ppb.Node {
 	if n.Kind != nil {
+		if accum.Kind != nil &&
+			(accum.GetKytheKind() != n.GetKytheKind() || accum.GetGenericKind() != n.GetGenericKind()) {
+			conflictingFactsCounter.Inc(ctx, 1)
+		}
 		accum.Kind = n.Kind
 	}
 	if n.Subkind != nil {
+		if accum.Subkind != nil &&
+			(accum.GetKytheSubkind() != n.GetKytheSubkind() || accum.GetGenericSubkind() != n.GetGenericSubkind()) {
+			conflictingFactsCounter.Inc(ctx, 1)
+		}
 		accum.Subkind = n.Subkind
 	}
 	for _, f := range n.Fact {
@@ -136,9 +148,11 @@ func (c *combineNodes) MergeAccumulators(accum, n *ppb.Node) *ppb.Node {
 	return accum
 }
 
-func (c *combineNodes) AddInput(accum, n *ppb.Node) *ppb.Node { return c.MergeAccumulators(accum, n) }
+func (c *combineNodes) AddInput(ctx context.Context, accum, n *ppb.Node) *ppb.Node {
+	return c.MergeAccumulators(ctx, accum, n)
+}
 
-func (c *combineNodes) ExtractOutput(n *ppb.Node) *ppb.Node {
+func (c *combineNodes) ExtractOutput(ctx context.Context, n *ppb.Node) *ppb.Node {
 	// TODO(schroederc): deduplicate earlier during combine
 	if len(n.Fact) > 1 {
 		sort.Slice(n.Fact, func(a, b int) bool { return compareFacts(n.Fact[a], n.Fact[b]) == compare.LT })
@@ -148,6 +162,8 @@ func (c *combineNodes) ExtractOutput(n *ppb.Node) *ppb.Node {
 				n.Fact[j] = n.Fact[i]
 				j++
 				i++
+			} else if !bytes.Equal(n.Fact[j-1].Value, n.Fact[i].Value) {
+				conflictingFactsCounter.Inc(ctx, 1)
 			}
 		}
 		n.Fact = n.Fact[:j]
