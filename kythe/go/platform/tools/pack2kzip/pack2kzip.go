@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"bitbucket.org/creachadair/stringset"
+	"golang.org/x/sync/errgroup"
 
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kcd/kythe"
@@ -89,6 +90,7 @@ func main() {
 
 	// Copy all the compilation records, and gather the digests of all the
 	// unique files that need to be copied.
+	var g errgroup.Group
 
 	fileDigests := stringset.New()
 	numUnits := 0
@@ -97,36 +99,47 @@ func main() {
 		for _, ri := range cu.RequiredInput {
 			fileDigests.Add(ri.Info.GetDigest())
 		}
-		if _, err := kw.AddUnit(cu, index); err != nil {
-			return fmt.Errorf("storing compilation for digest %q: %v", digest, err)
-		}
+		g.Go(func() error {
+			if _, err := kw.AddUnit(cu, index); err != nil {
+				return fmt.Errorf("storing compilation for digest %q: %v", digest, err)
+			}
+			return nil
+		})
 		numUnits++
 		if numUnits%500 == 0 {
-			log.Printf("[progress] copied %d compilations so far [%v]", numUnits, time.Since(start))
+			log.Printf("[...] scanned %d compilations so far [%v]", numUnits, time.Since(start))
 		}
 		return nil
 	}); err != nil {
 		log.Fatalf("Scanning indexpack: %v", err)
 	}
+	if err := g.Wait(); err != nil {
+		log.Fatalf("Copying units failed: %v", err)
+	}
 	log.Printf("Copied %d compilation records [%v elapsed]", numUnits, time.Since(start))
 	log.Printf("Found %d unique file digests", len(fileDigests))
 
 	// Copy all the file contents...
-	var totalBytes int64
 	for fd := range fileDigests {
-		data, err := pack.ReadFile(ctx, fd)
-		if err != nil {
-			log.Fatalf("Reading file: %v", err)
-		}
-		totalBytes += int64(len(data))
-		got, err := kw.AddFile(bytes.NewReader(data))
-		if err != nil {
-			log.Fatalf("Adding file %q: %v", fd, err)
-		} else if got != fd {
-			log.Printf("WARNING: Input file digest %q written as %q", fd, got)
-		}
+		fd := fd
+		g.Go(func() error {
+			data, err := pack.ReadFile(ctx, fd)
+			if err != nil {
+				return err
+			}
+			got, err := kw.AddFile(bytes.NewReader(data))
+			if err != nil {
+				return fmt.Errorf("adding file %q: %v", fd, err)
+			} else if got != fd {
+				log.Printf("WARNING: Input file digest %q written as %q", fd, got)
+			}
+			return nil
+		})
 	}
-	log.Printf("Copied %d files [%d bytes total]", len(fileDigests), totalBytes)
+	if err := g.Wait(); err != nil {
+		log.Fatalf("Copying files failed: %v", err)
+	}
+	log.Printf("Copied %d files [%v elapsed]", len(fileDigests), time.Since(start))
 	if err := kw.Close(); err != nil {
 		log.Fatalf("Closing kzip writer: %v", err)
 	} else if err := f.Close(); err != nil {
