@@ -40,6 +40,9 @@ class MetadataFile {
     proto::VName vname;    ///< VName to create edge to or from.
     bool reverse_edge;     ///< If false, draw edge to vname; if true, draw
                            ///< from.
+    bool generate_anchor;  ///< If this rule should generate an anchor.
+    unsigned anchor_begin;  ///< The beginning of the anchor.
+    unsigned anchor_end;    ///< The end of the anchor.
   };
 
   /// Creates a new MetadataFile from a list of rules ranging from `begin` to
@@ -106,6 +109,10 @@ class MetadataSupport {
 /// characters must be 7-bit ASCII. The character set used for base64 encoding
 /// is A-Za-z0-9+/ in that order, possibly followed by = or == for padding.
 ///
+/// If search_string is set, `buffer` will be scaned for a comment marker
+/// followed by a space followed by search_string. Should this comment be
+/// found, it will be decoded as above.
+///
 /// If the comment is a //-style comment, the base64 string must be unbroken.
 /// If the comment is a /* */-style comment, newlines (\n) are permitted.
 class MetadataSupports {
@@ -115,7 +122,8 @@ class MetadataSupports {
   }
 
   std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string &filename, const llvm::MemoryBuffer *buffer) const;
+      const std::string &filename, const llvm::MemoryBuffer *buffer,
+      const std::string &search_string) const;
 
   void UseVNameLookup(VNameLookup lookup) const;
 

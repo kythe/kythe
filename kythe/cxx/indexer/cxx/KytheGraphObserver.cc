@@ -383,12 +383,26 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile &meta,
     if (rule->second.begin == range_begin && rule->second.end == range_end &&
         (rule->second.edge_in == kythe::common::schema::kDefines ||
          rule->second.edge_in == kythe::common::schema::kDefinesBinding)) {
+      VNameRef remote(rule->second.vname);
       EdgeKindID edge_kind;
+      std::string new_signature;
+      if (rule->second.generate_anchor) {
+        new_signature = "@@m";
+        new_signature.append(std::to_string(rule->second.anchor_begin));
+        new_signature.append("-");
+        new_signature.append(std::to_string(rule->second.anchor_end));
+        remote.signature = new_signature;
+        recorder_->AddProperty(remote, NodeKindID::kAnchor);
+        recorder_->AddProperty(remote, PropertyID::kLocationStartOffset,
+                               rule->second.anchor_begin);
+        recorder_->AddProperty(remote, PropertyID::kLocationEndOffset,
+                               rule->second.anchor_end);
+      }
       if (of_spelling(rule->second.edge_out, &edge_kind)) {
         if (rule->second.reverse_edge) {
-          recorder_->AddEdge(VNameRef(rule->second.vname), edge_kind, decl);
+          recorder_->AddEdge(remote, edge_kind, decl);
         } else {
-          recorder_->AddEdge(decl, edge_kind, VNameRef(rule->second.vname));
+          recorder_->AddEdge(decl, edge_kind, remote);
         }
       } else {
         fprintf(stderr, "Unknown edge kind %s from metadata\n",
@@ -1031,7 +1045,8 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
 }
 
 void KytheGraphObserver::applyMetadataFile(clang::FileID id,
-                                           const clang::FileEntry *file) {
+                                           const clang::FileEntry *file,
+                                           const std::string &search_string) {
   const llvm::MemoryBuffer *buffer =
       SourceManager->getMemoryBufferForFile(file);
   if (!buffer) {
@@ -1039,7 +1054,8 @@ void KytheGraphObserver::applyMetadataFile(clang::FileID id,
             file->getName().str().c_str());
     return;
   }
-  if (auto metadata = meta_supports_->ParseFile(file->getName(), buffer)) {
+  if (auto metadata =
+          meta_supports_->ParseFile(file->getName(), buffer, search_string)) {
     meta_.emplace(id, std::move(metadata));
   }
 }
