@@ -105,6 +105,14 @@ new_http_archive(
     url = "https://github.com/Tencent/rapidjson/archive/v1.1.0.zip",
 )
 
+new_http_archive(
+    name = "com_github_stedolan_jq",
+    build_file = "third_party/jq.BUILD",
+    sha256 = "998c41babeb57b4304e65b4eb73094279b3ab1e63801b6b4bddd487ce009b39d",
+    strip_prefix = "jq-1.4",
+    url = "https://github.com/stedolan/jq/releases/download/jq-1.4/jq-1.4.tar.gz",
+)
+
 maven_jar(
     name = "com_google_code_gson_gson",
     artifact = "com.google.code.gson:gson:2.8.2",

@@ -43,21 +43,21 @@ import (
 //
 // TODO(danielmoy): support more than just java.
 type Tester interface {
-	TestRepo(repo string) (Result, error)
+	TestRepo(ctx context.Context, repo string) (Result, error)
 }
 
 // Fetcher is a thin wrapper over something which fetches a given repo and
 // writes it to an output directory. Note that the ConfigPath parameter from
 // config.Repo does not affect Fetch at all.
 type Fetcher interface {
-	Fetch(repo config.Repo) error
+	Fetch(ctx context.Context, repo config.Repo) error
 }
 
 type gitCommandlineFetcher struct{}
 
-func (g gitCommandlineFetcher) Fetch(repo config.Repo) error {
+func (g gitCommandlineFetcher) Fetch(ctx context.Context, repo config.Repo) error {
 	// TODO(danielmoy): strongly consider go-git instead of os.exec
-	return exec.Command("git", "clone", repo.URI, repo.OutputPath).Run()
+	return exec.CommandContext(ctx, "git", "clone", repo.URI, repo.OutputPath).Run()
 }
 
 type harness struct {
@@ -99,14 +99,14 @@ type Result struct {
 	FileCoverage float64
 }
 
-func (g harness) TestRepo(repo string) (Result, error) {
-	fromRepo, err := g.filenamesFromRepo(repo)
+func (g harness) TestRepo(ctx context.Context, repo string) (Result, error) {
+	fromRepo, err := g.filenamesFromRepo(ctx, repo)
 	if err != nil {
 		log.Printf("Failed to read repo from remote: %v", err)
 		return Result{false, false, len(fromRepo), 0, 0.0}, nil
 	}
 
-	fromExtraction, err := g.filenamesFromExtraction(repo)
+	fromExtraction, err := g.filenamesFromExtraction(ctx, repo)
 	if err != nil {
 		log.Printf("Failed to extract repo: %v", err)
 		// TODO(danielmoy): consider handling errors independently and
@@ -136,7 +136,7 @@ func (g harness) TestRepo(repo string) (Result, error) {
 	}, nil
 }
 
-func (g harness) filenamesFromRepo(repoURI string) (map[string]bool, error) {
+func (g harness) filenamesFromRepo(ctx context.Context, repoURI string) (map[string]bool, error) {
 	repoName := pathTail(repoURI)
 
 	repoDir, err := ioutil.TempDir("", repoName)
@@ -145,7 +145,7 @@ func (g harness) filenamesFromRepo(repoURI string) (map[string]bool, error) {
 	}
 	defer os.RemoveAll(repoDir)
 
-	if err = g.repoFetcher.Fetch(config.Repo{
+	if err = g.repoFetcher.Fetch(ctx, config.Repo{
 		URI:        repoURI,
 		OutputPath: repoDir,
 	}); err != nil {
@@ -169,7 +169,7 @@ func (g harness) filenamesFromRepo(repoURI string) (map[string]bool, error) {
 	return ret, err
 }
 
-func (g harness) filenamesFromExtraction(repoURI string) (map[string]bool, error) {
+func (g harness) filenamesFromExtraction(ctx context.Context, repoURI string) (map[string]bool, error) {
 	repoName := pathTail(repoURI)
 	tmpOutDir, err := ioutil.TempDir("", repoName)
 	if err != nil {
@@ -177,7 +177,7 @@ func (g harness) filenamesFromExtraction(repoURI string) (map[string]bool, error
 	}
 	defer os.RemoveAll(tmpOutDir)
 
-	if err := g.extractor.ExtractRepo(config.Repo{
+	if err := g.extractor.ExtractRepo(ctx, config.Repo{
 		URI:        repoURI,
 		OutputPath: tmpOutDir,
 		ConfigPath: g.configPath,
@@ -187,7 +187,7 @@ func (g harness) filenamesFromExtraction(repoURI string) (map[string]bool, error
 	ret := map[string]bool{}
 	err = filepath.Walk(tmpOutDir, func(path string, info os.FileInfo, err error) error {
 		if err == nil && filepath.Ext(path) == ".kindex" {
-			cu, err := kindex.Open(context.Background(), path)
+			cu, err := kindex.Open(ctx, path)
 			if err != nil {
 				return err
 			}

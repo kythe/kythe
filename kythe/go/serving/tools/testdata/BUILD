@@ -5,7 +5,7 @@ sh_binary(
     srcs = ["debug_serving.sh"],
     data = [
         "//kythe/go/util/tools/scan_leveldb",
-        "//third_party/jq",
+        "@com_github_stedolan_jq//:jq",
     ],
 )
 
@@ -31,7 +31,7 @@ shell_tool_test(
     scriptfile = "write_tables_test.sh",
     tools = {
         "entrystream": "//kythe/go/platform/tools/entrystream",
-        "jq": "//third_party/jq",
+        "jq": "@com_github_stedolan_jq//:jq",
         "scan_leveldb": "//kythe/go/util/tools/scan_leveldb",
         "write_tables": "//kythe/go/serving/tools:write_tables",
     },
@@ -45,7 +45,7 @@ shell_tool_test(
     ],
     scriptfile = "kwazthis_test.sh",
     tools = {
-        "JQ": "//third_party/jq",
+        "JQ": "@com_github_stedolan_jq//:jq",
         "KWAZTHIS": "//kythe/go/serving/tools:kwazthis",
         "KYTHE_ENTRYSTREAM": "//kythe/go/platform/tools/entrystream",
         "KYTHE_WRITE_TABLES": "//kythe/go/serving/tools:write_tables",

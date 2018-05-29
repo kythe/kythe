@@ -28,6 +28,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/csv"
 	"flag"
 	"fmt"
@@ -36,6 +37,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"kythe.io/kythe/go/extractors/config/smoke"
 )
@@ -44,6 +46,7 @@ var (
 	repos      = flag.String("repos", "", "A comma delimited list of repos to test")
 	reposFile  = flag.String("repo_list_file", "", "A file that contains a newline delimited list of repos to test")
 	configPath = flag.String("config", "", "An optional config file to specify kythe.proto.ExtractionConfiguration logic")
+	timeout    = flag.Duration("timeout", 2*time.Minute, "Timeout for testing an individual repo.")
 )
 
 func init() {
@@ -78,7 +81,9 @@ func main() {
 
 	tester := smoke.NewGitTestingHarness(*configPath)
 	for _, repo := range repos {
-		res, err := tester.TestRepo(repo)
+		ctx, cancel := context.WithTimeout(context.Background(), *timeout)
+		defer cancel()
+		res, err := tester.TestRepo(ctx, repo)
 		if err != nil {
 			log.Printf("Failed to test repo: %s", err)
 		} else {

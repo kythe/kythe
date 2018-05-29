@@ -92,7 +92,7 @@ sh_test(
         "//kythe/testdata:entries",
         "//kythe/testdata:test.kindex",
         "//third_party/guava",
-        "//third_party/jq",
+        "@com_github_stedolan_jq//:jq",
     ],
     tags = [
         "local",

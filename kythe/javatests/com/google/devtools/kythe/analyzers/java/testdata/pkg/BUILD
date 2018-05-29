@@ -15,9 +15,8 @@ java_library(
         ],
     ),
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
-    deps = [
-        "@com_google_code_findbugs_jsr305//jar",
-    ],
+    exports = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/regression"],
+    deps = ["@com_google_code_findbugs_jsr305//jar"],
 )
 
 # TODO(schroederc): requires related nodes generated in pipeline

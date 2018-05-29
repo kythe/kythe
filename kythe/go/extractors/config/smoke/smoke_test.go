@@ -17,6 +17,7 @@
 package smoke
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -42,7 +43,7 @@ type container struct {
 	kindexName    string
 }
 
-func (e testExtractor) ExtractRepo(repo config.Repo) error {
+func (e testExtractor) ExtractRepo(ctx context.Context, repo config.Repo) error {
 	af := []container{}
 	if e.separateKindex {
 		for i, f := range e.extractionFiles {
@@ -92,7 +93,7 @@ func writeSingleKindex(path string, unit *kindex.Compilation) error {
 	return f.Close()
 }
 
-func (e testExtractor) Fetch(repo config.Repo) error {
+func (e testExtractor) Fetch(ctx context.Context, repo config.Repo) error {
 	for k, v := range e.repoFiles {
 		if err := ioutil.WriteFile(filepath.Join(repo.OutputPath, k), v, 0444); err != nil {
 			return err
@@ -159,7 +160,7 @@ func verifyRepoCoverage(t *testing.T, te testExtractor, expectedDownloadCount, e
 		repoFetcher: te,
 	}
 
-	r, err := h.TestRepo("foo")
+	r, err := h.TestRepo(context.Background(), "foo")
 	if err != nil {
 		t.Fatalf("failed to test repo: %v", err)
 	}

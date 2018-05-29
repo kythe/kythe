@@ -23,11 +23,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"kythe.io/kythe/go/extractors/config"
 )
@@ -36,6 +38,7 @@ var (
 	repoURI    = flag.String("repo", "", "URI of the repository containing the project to be extracted")
 	outputPath = flag.String("output", "", "Path for output kindex file")
 	configPath = flag.String("config", "", "Path for the JSON extraction configuration file")
+	timeout    = flag.Duration("timeout", 2*time.Minute, "Timeout for extraction")
 )
 
 func init() {
@@ -87,7 +90,9 @@ func main() {
 	verifyFlags()
 
 	extractor := config.DefaultExtractor{}
-	if err := extractor.ExtractRepo(config.Repo{
+	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
+	defer cancel()
+	if err := extractor.ExtractRepo(ctx, config.Repo{
 		URI:        *repoURI,
 		OutputPath: *outputPath,
 		ConfigPath: *configPath,
