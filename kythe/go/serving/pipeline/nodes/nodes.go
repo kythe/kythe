@@ -18,6 +18,7 @@
 package nodes
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 
@@ -47,9 +48,17 @@ func FromEntries(s beam.Scope, entries beam.PCollection) beam.PCollection {
 			beam.ParDo(s, entryToNode, entries)))
 }
 
-func entryToNode(e *spb.Entry) (*spb.VName, *ppb.Node) {
+func entryToNode(e *spb.Entry, emit func(*spb.VName, *ppb.Node)) error {
+	if e.Source == nil {
+		return fmt.Errorf("invalid Entry: source is missing: %+v", e)
+	}
+
 	n := &ppb.Node{}
 	if e.EdgeKind == "" {
+		if e.FactName == "" || e.Target != nil {
+			return fmt.Errorf("invalid fact Entry: {%v}", e)
+		}
+
 		switch e.FactName {
 		case facts.NodeKind:
 			kind := string(e.FactValue)
@@ -69,9 +78,15 @@ func entryToNode(e *spb.Entry) (*spb.VName, *ppb.Node) {
 			n.Fact = append(n.Fact, entryToFact(e))
 		}
 	} else {
+		if (e.FactName != "/" && e.FactName != "") || len(e.FactValue) != 0 || e.Target == nil {
+			return fmt.Errorf("invalid edge Entry: {%v}", e)
+		}
+
 		n.Edge = append(n.Edge, entryToEdge(e))
 	}
-	return e.Source, n
+
+	emit(e.Source, n)
+	return nil
 }
 
 func entryToEdge(e *spb.Entry) *ppb.Edge {
@@ -97,6 +112,10 @@ func entryToFact(e *spb.Entry) *ppb.Fact {
 	return f
 }
 
+// combineNodes is a Beam combiner for *ppb.Nodes.  All facts and edges are
+// merged into a single *ppb.Node.  If a fact has multiple values, a single is
+// chosen (this includes special-case facts like node kinds).  Duplicate edges
+// will be removed.
 type combineNodes struct{}
 
 func (combineNodes) CreateAccumulator() *ppb.Node { return &ppb.Node{} }
@@ -122,7 +141,7 @@ func (c *combineNodes) AddInput(accum, n *ppb.Node) *ppb.Node { return c.MergeAc
 func (c *combineNodes) ExtractOutput(n *ppb.Node) *ppb.Node {
 	// TODO(schroederc): deduplicate earlier during combine
 	if len(n.Fact) > 1 {
-		sort.Slice(n.Fact, func(i, j int) bool { return compareFacts(n.Fact[i], n.Fact[j]) == compare.LT })
+		sort.Slice(n.Fact, func(a, b int) bool { return compareFacts(n.Fact[a], n.Fact[b]) == compare.LT })
 		j := 1
 		for i := 1; i < len(n.Fact); i++ {
 			if compareFacts(n.Fact[j-1], n.Fact[i]) != compare.EQ {
@@ -134,7 +153,7 @@ func (c *combineNodes) ExtractOutput(n *ppb.Node) *ppb.Node {
 		n.Fact = n.Fact[:j]
 	}
 	if len(n.Edge) > 1 {
-		sort.Slice(n.Edge, func(i, j int) bool { return compareEdges(n.Edge[i], n.Edge[j]) == compare.LT })
+		sort.Slice(n.Edge, func(a, b int) bool { return compareEdges(n.Edge[a], n.Edge[b]) == compare.LT })
 		j := 1
 		for i := 1; i < len(n.Edge); i++ {
 			if compareEdges(n.Edge[j-1], n.Edge[i]) != compare.EQ {
