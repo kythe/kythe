@@ -38,8 +38,7 @@ import (
 // automatically. The current implementation is to simply check the fraction of
 // files covered by extractor output.
 //
-// TODO(danielmoy): hook up an indexing step and check actual semantic output
-// instead of simple files.
+// Also optionally supports indexing the extractors output.
 //
 // TODO(danielmoy): support more than just java.
 type Tester interface {
@@ -60,10 +59,26 @@ func (g gitCommandlineFetcher) Fetch(ctx context.Context, repo config.Repo) erro
 	return exec.CommandContext(ctx, "git", "clone", repo.URI, repo.OutputPath).Run()
 }
 
+// Indexer is a thin wrapper over some kythe indexer which looks for .kindex
+// files in a given inputDir, indexes them, and deposits in outputDir.
+//
+// TODO(danielmoy): kzip?  This is generally a thing that needs supporting in
+// smoke.go and related files now that I think about it.
+type Indexer interface {
+	Index(ctx context.Context, inputDir, outputDir string) error
+}
+
+type javaIndexWrapper struct{}
+
+func (j javaIndexWrapper) Index(ctx context.Context, inputDir, outputDir string) error {
+	return nil
+}
+
 type harness struct {
 	extractor   config.Extractor
 	configPath  string
 	repoFetcher Fetcher
+	indexer     Indexer
 }
 
 // NewGitTestingHarness creates a simple Tester which uses
@@ -72,12 +87,20 @@ type harness struct {
 //
 // An extraction config can be optionally read from a specified file.  The
 // format follows kythe.proto.ExtractionConfiguration.
-func NewGitTestingHarness(configPath string) Tester {
-	return harness{
+//
+// Finally, the testing harness can optionally try to index the extraction
+// output.
+func NewGitTestingHarness(configPath string, doIndex bool) Tester {
+	h := harness{
 		extractor:   config.DefaultExtractor{},
 		configPath:  configPath,
 		repoFetcher: gitCommandlineFetcher{},
+		indexer:     nil,
 	}
+	if doIndex {
+		h.indexer = javaIndexWrapper{}
+	}
+	return h
 }
 
 // Result is a simple container for the results of a single repo test.  It may
@@ -90,10 +113,11 @@ func NewGitTestingHarness(configPath string) Tester {
 // extraction and see how much symbol coverage we have.  This might be out of
 // scope for a simple smoke test harness though.
 type Result struct {
-	// Whether the repo was successfully downloaded or extracted.
-	Downloaded, Extracted bool
-	// The number of downloaded and extracted files.
-	DownloadCount, ExtractCount int
+	// Whether the repo was successfully downloaded, extracted, or indexed.
+	Downloaded, Extracted, Indexed bool
+	// The number of downloaded and extracted files, and the number of
+	// indexed symbols.
+	DownloadCount, ExtractCount, IndexCount int
 	// The percentage of files in the repo that are covered by extraction.
 	// Should be in range [0.0, 1.0]
 	FileCoverage float64
@@ -103,7 +127,15 @@ func (g harness) TestRepo(ctx context.Context, repo string) (Result, error) {
 	fromRepo, err := g.filenamesFromRepo(ctx, repo)
 	if err != nil {
 		log.Printf("Failed to read repo from remote: %v", err)
-		return Result{false, false, len(fromRepo), 0, 0.0}, nil
+		return Result{
+			Downloaded:    false,
+			Extracted:     false,
+			Indexed:       false,
+			DownloadCount: len(fromRepo),
+			ExtractCount:  0,
+			IndexCount:    0,
+			FileCoverage:  0.0,
+		}, nil
 	}
 
 	fromExtraction, err := g.filenamesFromExtraction(ctx, repo)
@@ -111,7 +143,15 @@ func (g harness) TestRepo(ctx context.Context, repo string) (Result, error) {
 		log.Printf("Failed to extract repo: %v", err)
 		// TODO(danielmoy): consider handling errors independently and
 		// returning separate false results if either err != nil.
-		return Result{true, false, len(fromRepo), len(fromExtraction), 0.0}, nil
+		return Result{
+			Downloaded:    true,
+			Extracted:     false,
+			Indexed:       false,
+			DownloadCount: len(fromRepo),
+			ExtractCount:  len(fromExtraction),
+			IndexCount:    0,
+			FileCoverage:  0.0,
+		}, nil
 	}
 
 	var coverageTotal int32

@@ -158,6 +158,7 @@ func verifyRepoCoverage(t *testing.T, te testExtractor, expectedDownloadCount, e
 		extractor:   te,
 		configPath:  "",
 		repoFetcher: te,
+		indexer:     nil,
 	}
 
 	r, err := h.TestRepo(context.Background(), "foo")
