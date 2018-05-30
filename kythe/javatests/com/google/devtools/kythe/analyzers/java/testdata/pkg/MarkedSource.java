@@ -198,6 +198,42 @@ public class MarkedSource {
     int field;
   }
 
+  static class InnerStatic<T extends Object> {
+    //- @wildcardList defines/binding WildcardList
+    //- WildcardList code WildBox
+    //- WildBox child.0 WildListType
+    //- WildListType.kind "TYPE"
+    //- WildListType child.1 WildListTypeArgs
+    //- WildListTypeArgs.kind "PARAMETER"
+    //- WildListTypeArgs child.0 WildcardTypeArg
+    //- WildcardTypeArg.pre_text "?"
+    List<?> wildcardList;
+
+    //- @genericList defines/binding GenericList
+    //- GenericList code TBox
+    //- TBox child.0 TListType
+    //- TListType.kind "TYPE"
+    //- TListType child.1 TListTypeArgs
+    //- TListTypeArgs.kind "PARAMETER"
+    //- TListTypeArgs child.0 GenericTypeArg
+    //- GenericTypeArg.pre_text "T"
+    List<T> genericList;
+
+    //- @boundedList defines/binding BoundedList
+    //- BoundedList code BoundedBox
+    //- BoundedBox child.0 BoundListType
+    //- BoundListType.kind "TYPE"
+    //- BoundListType child.1 BoundListTypeArgs
+    //- BoundListTypeArgs.kind "PARAMETER"
+    //- BoundListTypeArgs child.0 BoundedTypeArgBox
+    //- BoundedTypeArgBox child.0 BoundedTypeArg
+    //- BoundedTypeArg.pre_text "? extends "
+    //- BoundedTypeArgBox child.1 TypeBound
+    //- TypeBound child.1 ObjTypeBound
+    //- ObjTypeBound.pre_text "Object"
+    List<? extends Object> boundedList;
+  }
+
   Object o = new Object() {
     //- @field defines/binding AnonField
     //- AnonField childof AnonClass

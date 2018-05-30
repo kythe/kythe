@@ -186,11 +186,25 @@ public final class MarkedSources {
               .setPreText("<")
               .setPostChildText(", ")
               .setPostText(">");
-      type.getTypeArguments()
-          .forEach(
-              arg ->
-                  addClassIdentifier(
-                      arg, typeArgs.addChildBuilder(), signatureGenerator, symNames));
+      for (Type arg : type.getTypeArguments()) {
+        switch (arg.getTag()) {
+          case CLASS:
+            addClassIdentifier(arg, typeArgs.addChildBuilder(), signatureGenerator, symNames);
+            break;
+          case WILDCARD:
+            Type.WildcardType wild = (Type.WildcardType) arg;
+            if (wild.isUnbound()) {
+              typeArgs.addChildBuilder().setPreText(wild.kind.toString());
+            } else {
+              MarkedSource.Builder boundedWild = typeArgs.addChildBuilder();
+              boundedWild.addChildBuilder().setPreText(wild.kind.toString());
+              addClassIdentifier(wild.type, boundedWild, signatureGenerator, symNames);
+            }
+            break;
+          default:
+            typeArgs.addChildBuilder().setPreText(arg.toString());
+        }
+      }
     }
   }
 
