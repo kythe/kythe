@@ -62,7 +62,7 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
   cmds.append(' '.join([
       ctx.files._extractor[-1].path,
       '-kindex',
-      '-output_dir', outdir,
+      '-output', outdir,
       '-goroot', goroot,
       '-gopath', tmpdir,
       '-extra_files', "'%s'" % ','.join(extras),
@@ -156,7 +156,7 @@ def _go_entries(ctx):
   )
   return [KytheEntries(files=depset(), compressed=depset([output]))]
 
-# Run the Kythe indexer on the output that results from a go_indexpack rule.
+# Run the Kythe indexer on the output that results from a go_extract rule.
 go_entries = rule(
     _go_entries,
     attrs = {
