@@ -39,6 +39,8 @@ def file_diff_test(name, file1, file2, message='', size='small', tags=[]):
   native.sh_test(
       name = name,
       srcs = [':'+gen],
+      size = size,
+      tags = tags,
   )
 
 def shell_tool_test(name, script=[], scriptfile='', tools={}, data=[],
