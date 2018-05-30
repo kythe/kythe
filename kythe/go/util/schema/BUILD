@@ -1,4 +1,5 @@
-load("//tools:build_rules/shims.bzl", "go_test", "go_library")
+load("//tools:build_rules/shims.bzl", "go_binary", "go_library", "go_test")
+load("//tools:build_rules/testing.bzl", "file_diff_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -20,13 +21,34 @@ genrule(
     name = "schema_index",
     srcs = ["//kythe/data:schema_index.textproto"],
     outs = ["schema_index.go"],
-    cmd = "{ " + "\n".join([
-        "echo 'package schema'",
-        "echo -n 'const indexTextPB = `'",
-        "cat $(location //kythe/data:schema_index.textproto)",
-        "echo '`'",
-    ]) + "\n }  > $@",
+    cmd = " ".join([
+        "$(location :mkdata) -package schema",
+        "-input '$(location //kythe/data:schema_index.textproto)'",
+        "-output '$@'",
+    ]),
+    tools = [":mkdata"],
     visibility = ["//visibility:private"],
+)
+
+# This test verifies that the checked-in version of indexdata.go matches the
+# generated version used by the Bazel rule. It will fail to build if the two
+# differ.
+file_diff_test(
+    name = "schema_index_test",
+    file1 = "indexdata.go",
+    file2 = ":schema_index",
+    message = "Run update_data.sh to sync indexdata.go with changes",
+)
+
+go_binary(
+    name = "mkdata",
+    srcs = ["mkdata/mkdata.go"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//kythe/proto:schema_go_proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
+    ],
 )
 
 go_test(
