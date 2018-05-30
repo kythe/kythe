@@ -989,6 +989,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   // Returns the reference node for the given symbol.
   private JavaNode getRefNode(TreeContext ctx, Symbol sym) {
+    if (sym.getKind() == ElementKind.PACKAGE) {
+      return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
+    }
+
     // If referencing a generic class, distinguish between generic vs. raw use
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
     boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
