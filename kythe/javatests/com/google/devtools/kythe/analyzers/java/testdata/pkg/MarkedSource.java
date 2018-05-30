@@ -219,19 +219,33 @@ public class MarkedSource {
     //- GenericTypeArg.pre_text "T"
     List<T> genericList;
 
-    //- @boundedList defines/binding BoundedList
-    //- BoundedList code BoundedBox
-    //- BoundedBox child.0 BoundListType
-    //- BoundListType.kind "TYPE"
-    //- BoundListType child.1 BoundListTypeArgs
-    //- BoundListTypeArgs.kind "PARAMETER"
-    //- BoundListTypeArgs child.0 BoundedTypeArgBox
-    //- BoundedTypeArgBox child.0 BoundedTypeArg
-    //- BoundedTypeArg.pre_text "? extends "
-    //- BoundedTypeArgBox child.1 TypeBound
-    //- TypeBound child.1 ObjTypeBound
-    //- ObjTypeBound.pre_text "Object"
-    List<? extends Object> boundedList;
+    //- @extendsBoundedList defines/binding ExtendsBoundedList
+    //- ExtendsBoundedList code ExtendsBoundedBox
+    //- ExtendsBoundedBox child.0 ExtendsBoundListType
+    //- ExtendsBoundListType.kind "TYPE"
+    //- ExtendsBoundListType child.1 ExtendsBoundListTypeArgs
+    //- ExtendsBoundListTypeArgs.kind "PARAMETER"
+    //- ExtendsBoundListTypeArgs child.0 ExtendsBoundedTypeArgBox
+    //- ExtendsBoundedTypeArgBox child.0 ExtendsBoundedTypeArg
+    //- ExtendsBoundedTypeArg.pre_text "? extends "
+    //- ExtendsBoundedTypeArgBox child.1 TypeExtendsBound
+    //- TypeExtendsBound child.1 ObjTypeExtendsBound
+    //- ObjTypeExtendsBound.pre_text "Object"
+    List<? extends Object> extendsBoundedList;
+
+    //- @superBoundedList defines/binding SuperBoundedList
+    //- SuperBoundedList code SuperBoundedBox
+    //- SuperBoundedBox child.0 SuperBoundListType
+    //- SuperBoundListType.kind "TYPE"
+    //- SuperBoundListType child.1 SuperBoundListTypeArgs
+    //- SuperBoundListTypeArgs.kind "PARAMETER"
+    //- SuperBoundListTypeArgs child.0 SuperBoundedTypeArgBox
+    //- SuperBoundedTypeArgBox child.0 SuperBoundedTypeArg
+    //- SuperBoundedTypeArg.pre_text "? super "
+    //- SuperBoundedTypeArgBox child.1 TypeSuperBound
+    //- TypeSuperBound child.1 ObjTypeSuperBound
+    //- ObjTypeSuperBound.pre_text "Object"
+    List<? super Object> superBoundedList;
   }
 
   Object o = new Object() {
