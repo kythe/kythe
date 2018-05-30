@@ -4,6 +4,7 @@ package pkg;
 //- @String ref String
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
 //- @hashCode ref/imports HashCodeMethod
+//- @"java.util" ref UtilPackage
 import static java.util.Objects.hashCode;
 
 //- @staticMethod ref/imports StaticBool
