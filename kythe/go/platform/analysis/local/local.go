@@ -20,64 +20,112 @@ package local
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"path/filepath"
 
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/analysis/driver"
 	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/vfs"
+
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
-// An Option controls the behaviour of a KIndexQueue.
-type Option func(*KIndexQueue)
-
-// KIndexQueue is a driver.Queue reading each compilation from a .kindex file.
-// On each call to the driver.CompilationFunc, KIndexQueue's analysis.Fetcher
-// interface exposes the .kindex archive's file contents.
-type KIndexQueue struct {
-	analysis.Fetcher
-
-	index    int      // the next index to consume from paths
-	paths    []string // the paths of kindex files to read
-	revision string   // the revision marker to attribute to each compilation
+// Options control the behaviour of a FileQueue.
+type Options struct {
+	// The revision marker to attribute to each compilation.
+	Revision string
 }
 
-// Revision returns an option that sets the revision marker on compilations
-// delivered by a KIndexQueue.
-func Revision(rev string) Option {
-	return func(k *KIndexQueue) { k.revision = rev }
-}
-
-// NewKIndexQueue returns a new KIndexQueue over the given paths to .kindex
-// files.
-func NewKIndexQueue(paths []string, opts ...Option) *KIndexQueue {
-	q := &KIndexQueue{paths: paths}
-	for _, opt := range opts {
-		opt(q)
+func (o *Options) revision() string {
+	if o == nil {
+		return ""
 	}
-	return q
+	return o.Revision
+}
+
+// A FileQueue is a driver.Queue reading each compilation from a sequence of
+// .kzip and .kindex files.  On each call to the driver.CompilationFunc, the
+// FileQueue's analysis.Fetcher interface exposes the current file's contents.
+type FileQueue struct {
+	index    int                    // the next index to consume from paths
+	paths    []string               // the paths of kindex files to read
+	units    []*apb.CompilationUnit // units waiting to be delivered
+	revision string                 // revision marker for each compilation
+
+	fetcher analysis.Fetcher
+	closer  io.Closer
+}
+
+// NewFileQueue returns a new FileQueue over the given paths to .kzip or
+// .kindex files.
+func NewFileQueue(paths []string, opts *Options) *FileQueue {
+	return &FileQueue{
+		paths:    paths,
+		revision: opts.revision(),
+	}
 }
 
 // Next implements the driver.Queue interface.
-func (k *KIndexQueue) Next(ctx context.Context, f driver.CompilationFunc) error {
-	if k.index >= len(k.paths) {
-		return driver.ErrEndOfQueue
+func (q *FileQueue) Next(ctx context.Context, f driver.CompilationFunc) error {
+	for len(q.units) == 0 {
+		if q.closer != nil {
+			q.closer.Close()
+			q.closer = nil
+		}
+		if q.index >= len(q.paths) {
+			return driver.ErrEndOfQueue
+		}
+
+		path := q.paths[q.index]
+		q.index++
+		switch filepath.Ext(path) {
+		case ".kindex":
+			cu, err := kindex.Open(ctx, path)
+			if err != nil {
+				return fmt.Errorf("opening kindex file %q: %v", path, err)
+			}
+			q.fetcher = cu
+			q.closer = nil // nothing to close in this case
+			q.units = append(q.units, cu.Proto)
+		case ".kzip":
+			f, err := vfs.Open(ctx, path)
+			if err != nil {
+				return fmt.Errorf("opening kzip file %q: %v", path, err)
+			}
+			rc, ok := f.(kzip.File)
+			if !ok {
+				f.Close()
+				return fmt.Errorf("reader %T does not implement kzip.File", rc)
+			}
+			if err := kzip.Scan(rc, func(r *kzip.Reader, unit *kzip.Unit) error {
+				q.fetcher = kzipFetcher{r}
+				q.units = append(q.units, unit.Proto)
+				return nil
+			}); err != nil {
+				f.Close()
+				return fmt.Errorf("scanning kzip %q: %v", path, err)
+			}
+			q.closer = f
+
+		default:
+			log.Printf("Warning: Skipped unknown file kind: %q", path)
+			continue
+		}
 	}
 
-	path := k.paths[k.index]
-	k.index++
-
-	cu, err := kindex.Open(ctx, path)
-	if err != nil {
-		return fmt.Errorf("error opening kindex file at %q: %v", path, err)
-	}
-
-	k.Fetcher = cu
-	err = f(ctx, driver.Compilation{
-		Unit:       cu.Proto,
-		Revision:   k.revision,
-		UnitDigest: filepath.Base(path),
+	// If we get here, we have at least one more compilation in the queue.
+	next := q.units[0]
+	q.units = q.units[1:]
+	return f(ctx, driver.Compilation{
+		Unit:     next,
+		Revision: q.revision,
 	})
-	k.Fetcher = nil
-
-	return err
 }
+
+type kzipFetcher struct{ r *kzip.Reader }
+
+// Fetch implements the required method of analysis.Fetcher.
+func (k kzipFetcher) Fetch(_, digest string) ([]byte, error) { return k.r.ReadAll(digest) }
