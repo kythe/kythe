@@ -198,6 +198,56 @@ public class MarkedSource {
     int field;
   }
 
+  static class InnerStatic<T extends Object> {
+    //- @wildcardList defines/binding WildcardList
+    //- WildcardList code WildBox
+    //- WildBox child.0 WildListType
+    //- WildListType.kind "TYPE"
+    //- WildListType child.1 WildListTypeArgs
+    //- WildListTypeArgs.kind "PARAMETER"
+    //- WildListTypeArgs child.0 WildcardTypeArg
+    //- WildcardTypeArg.pre_text "?"
+    List<?> wildcardList;
+
+    //- @genericList defines/binding GenericList
+    //- GenericList code TBox
+    //- TBox child.0 TListType
+    //- TListType.kind "TYPE"
+    //- TListType child.1 TListTypeArgs
+    //- TListTypeArgs.kind "PARAMETER"
+    //- TListTypeArgs child.0 GenericTypeArg
+    //- GenericTypeArg.pre_text "T"
+    List<T> genericList;
+
+    //- @extendsBoundedList defines/binding ExtendsBoundedList
+    //- ExtendsBoundedList code ExtendsBoundedBox
+    //- ExtendsBoundedBox child.0 ExtendsBoundListType
+    //- ExtendsBoundListType.kind "TYPE"
+    //- ExtendsBoundListType child.1 ExtendsBoundListTypeArgs
+    //- ExtendsBoundListTypeArgs.kind "PARAMETER"
+    //- ExtendsBoundListTypeArgs child.0 ExtendsBoundedTypeArgBox
+    //- ExtendsBoundedTypeArgBox child.0 ExtendsBoundedTypeArg
+    //- ExtendsBoundedTypeArg.pre_text "? extends "
+    //- ExtendsBoundedTypeArgBox child.1 TypeExtendsBound
+    //- TypeExtendsBound child.1 ObjTypeExtendsBound
+    //- ObjTypeExtendsBound.pre_text "Object"
+    List<? extends Object> extendsBoundedList;
+
+    //- @superBoundedList defines/binding SuperBoundedList
+    //- SuperBoundedList code SuperBoundedBox
+    //- SuperBoundedBox child.0 SuperBoundListType
+    //- SuperBoundListType.kind "TYPE"
+    //- SuperBoundListType child.1 SuperBoundListTypeArgs
+    //- SuperBoundListTypeArgs.kind "PARAMETER"
+    //- SuperBoundListTypeArgs child.0 SuperBoundedTypeArgBox
+    //- SuperBoundedTypeArgBox child.0 SuperBoundedTypeArg
+    //- SuperBoundedTypeArg.pre_text "? super "
+    //- SuperBoundedTypeArgBox child.1 TypeSuperBound
+    //- TypeSuperBound child.1 ObjTypeSuperBound
+    //- ObjTypeSuperBound.pre_text "Object"
+    List<? super Object> superBoundedList;
+  }
+
   Object o = new Object() {
     //- @field defines/binding AnonField
     //- AnonField childof AnonClass
