@@ -1,4 +1,4 @@
-load("//tools:build_rules/shims.bzl", "go_binary", "go_library", "go_test")
+load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 load("//tools:build_rules/testing.bzl", "file_diff_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -22,11 +22,11 @@ genrule(
     srcs = ["//kythe/data:schema_index.textproto"],
     outs = ["schema_index.go"],
     cmd = " ".join([
-        "$(location :mkdata) -package schema",
+        "$(location //kythe/go/util/schema/mkdata) -package schema",
         "-input '$(location //kythe/data:schema_index.textproto)'",
         "-output '$@'",
     ]),
-    tools = [":mkdata"],
+    tools = ["//kythe/go/util/schema/mkdata"],
     visibility = ["//visibility:private"],
 )
 
@@ -38,17 +38,6 @@ file_diff_test(
     file1 = "indexdata.go",
     file2 = ":schema_index",
     message = "Run update_data.sh to sync indexdata.go with changes",
-)
-
-go_binary(
-    name = "mkdata",
-    srcs = ["mkdata/mkdata.go"],
-    visibility = ["//visibility:private"],
-    deps = [
-        "//kythe/proto:schema_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
-    ],
 )
 
 go_test(
