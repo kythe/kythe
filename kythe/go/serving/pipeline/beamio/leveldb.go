@@ -209,10 +209,17 @@ type writeTable struct{ Path string }
 // written by the LevelDB sink is a level-0 table (meaning that its key ranges
 // can overlap with another SSTable's).
 type tableMetadata struct {
-	Shard       int
+	// Shard is the table's identifying number.
+	Shard int
+
+	// First/Last are the first and last keys in the table.
 	First, Last []byte
-	Size        int
-	Seq         int
+
+	// Size is the byte size of the encoded table.
+	Size int
+
+	// Seq is the last used sequence number in the table.
+	Seq int
 }
 
 var duplicateLevelDBKeysCounter = beam.NewCounter("kythe.beamio.leveldb", "duplicate-keys")
@@ -220,7 +227,7 @@ var duplicateLevelDBKeysCounter = beam.NewCounter("kythe.beamio.leveldb", "dupli
 // ProcessElement writes a set of keyValues to the an SSTable per shard.  Shards
 // should be small enough to fit into memory so that they can be sorted.
 // TODO(BEAM-4405): use SortValues extension to remove in-memory requirement
-func (w *writeTable) ProcessElement(ctx context.Context, shard int, e func(*keyValue) bool, emit func(tableMetadata)) error {
+func (w *writeTable) ProcessElement(ctx context.Context, shard int, kvIter func(*keyValue) bool, emit func(tableMetadata)) error {
 	opts := &opt.Options{
 		BlockSize: 5 * opt.MiB,
 		Comparer:  keyComparer{},
@@ -234,7 +241,7 @@ func (w *writeTable) ProcessElement(ctx context.Context, shard int, e func(*keyV
 
 	var els []keyValue
 	var kv keyValue
-	for e(&kv) {
+	for kvIter(&kv) {
 		els = append(els, kv)
 	}
 	sort.Slice(els, func(i, j int) bool {
