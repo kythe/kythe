@@ -25,9 +25,11 @@ import (
 	"log"
 	"os"
 	"sort"
+	"sync"
 	"time"
 
 	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	"bitbucket.org/creachadair/stringset"
@@ -98,7 +100,15 @@ type Config struct {
 	// If set, this function is called with the completed compilation prior to
 	// returning it, and may edit the result. If the function reports an error,
 	// that error is propagated along with the compilation.
+	//
+	// TODO(fromberger): Migrate all existing use to FixUnit, and remove this.
+	// If both are set, FixUnit is used and Fixup is ignored.
 	Fixup func(*kindex.Compilation) error
+
+	// If set, this function is called with the updated compilation prior to
+	// returning it, and may edit the result. If the function reports an error,
+	// that error is propagated along with the compilation.
+	FixUnit func(*apb.CompilationUnit) error
 
 	// If set, this function is used to open files for reading.  If nil,
 	// os.Open is used.
@@ -133,9 +143,11 @@ func (c *Config) isSource(path string) bool {
 	return false
 }
 
-func (c *Config) fixup(cu *kindex.Compilation) error {
-	if fix := c.Fixup; fix != nil {
+func (c *Config) fixup(cu *apb.CompilationUnit) error {
+	if fix := c.FixUnit; fix != nil {
 		return fix(cu)
+	} else if fix := c.Fixup; fix != nil {
+		return fix(&kindex.Compilation{Proto: cu})
 	}
 	return nil
 }
@@ -153,35 +165,71 @@ func (c *Config) logPrintf(msg string, args ...interface{}) {
 	}
 }
 
+// ExtractToFile extracts a compilation from the specified extra action info,
+// and writes it along with its required inputs to w. The unit digest of the
+// stored compilation is returned.
+func (c *Config) ExtractToFile(ctx context.Context, info *ActionInfo, w *kzip.Writer) (string, error) {
+	cu, err := c.extract(ctx, info, func(ri *apb.CompilationUnit_FileInput, r io.Reader) error {
+		digest, err := w.AddFile(r)
+		if err == nil {
+			ri.Info.Digest = digest
+		}
+		return err
+	})
+	if err != nil {
+		return "", err
+	} else if err := c.fixup(cu); err != nil {
+		return "", err
+	}
+	return w.AddUnit(cu, nil)
+}
+
 // Extract extracts a compilation from the specified extra action info.
 func (c *Config) Extract(ctx context.Context, info *ActionInfo) (*kindex.Compilation, error) {
+	var files []*apb.FileData
+	cu, err := c.extract(ctx, info, func(ri *apb.CompilationUnit_FileInput, r io.Reader) error {
+		fd, err := kindex.FileData(ri.Info.Path, r)
+		if err == nil {
+			ri.Info.Digest = fd.Info.Digest
+			files = append(files, fd)
+		}
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &kindex.Compilation{Proto: cu, Files: files}, nil
+}
+
+type fileReader func(*apb.CompilationUnit_FileInput, io.Reader) error
+
+// extract extracts a compilation from the specified extra action info.
+func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader) (*apb.CompilationUnit, error) {
 	log.Printf("Extracting XA for %q with %d inputs", info.Target, len(info.Inputs))
 	if err := c.checkAction(ctx, info); err != nil {
 		return nil, err
 	}
 
 	// Construct the basic compilation.
-	cu := &kindex.Compilation{
-		Proto: &apb.CompilationUnit{
-			VName: &spb.VName{
-				Language: c.Language,
-				Corpus:   c.Corpus,
-			},
-			Argument: info.Arguments,
+	cu := &apb.CompilationUnit{
+		VName: &spb.VName{
+			Language: c.Language,
+			Corpus:   c.Corpus,
 		},
+		Argument: info.Arguments,
 	}
 
 	// Capture the primary output path.  Although the action has room for
 	// multiple outputs, we expect only one to be set in practice.  It's
 	// harmless if there are more, though, so don't fail for that.
 	if len(info.Outputs) > 0 {
-		cu.Proto.OutputKey = info.Outputs[0]
+		cu.OutputKey = info.Outputs[0]
 	}
 
 	// Capture environment variables.
 	for name, value := range info.Environment {
 		if c.checkEnv(name, value) {
-			cu.Proto.Environment = append(cu.Proto.Environment, &apb.CompilationUnit_Env{
+			cu.Environment = append(cu.Environment, &apb.CompilationUnit_Env{
 				Name:  name,
 				Value: value,
 			})
@@ -197,66 +245,52 @@ func (c *Config) Extract(ctx context.Context, info *ActionInfo) (*kindex.Compila
 	// inputs and filter out which ones we actually want to keep by path
 	// inspection; then load the contents concurrently.
 	sort.Strings(info.Inputs) // ensure a consistent order
-	inputs := c.ClassifyInputs(info, cu)
+	inputs := c.classifyInputs(info, cu)
 
 	start := time.Now()
-	fileData, err := c.FetchInputs(ctx, inputs)
-	if err != nil {
-		log.Fatalf("Reading input files failed: %v", err)
+	if err := c.fetchInputs(ctx, inputs, func(i int, r io.Reader) error {
+		return file(cu.RequiredInput[i], r)
+	}); err != nil {
+		return nil, fmt.Errorf("reading input files failed: %v", err)
 	}
 	log.Printf("Finished reading required inputs [%v elapsed]", time.Since(start))
-
-	// Update the required inputs with file info.
-	for i, fd := range fileData {
-		cu.Proto.RequiredInput[i].Info = fd.Info
-	}
-	cu.Files = fileData
 	return cu, c.fixup(cu)
 }
 
-// readFileData fetches the contents of the file at path and returns a FileData
-// message populated with its content and digest.
-func (c *Config) readFileData(ctx context.Context, path string) (*apb.FileData, error) {
-	f, err := c.openRead(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	return kindex.FileData(path, f)
-}
-
-// FetchInputs concurrently fetches the contents of all the specified file
-// paths.  All files are attempted regardless of error, but nil is only
-// returned if all fetches were successful.
-func (c *Config) FetchInputs(ctx context.Context, paths []string) ([]*apb.FileData, error) {
+// fetchInputs concurrently fetches the contents of all the specified file
+// paths. An open reader for each file is passed to the file callback along
+// with its path's offset in the input slice. If the callback returns an error,
+// that error is propagated.
+func (c *Config) fetchInputs(ctx context.Context, paths []string, file func(int, io.Reader) error) error {
 	// Fetch concurrently. Each element of the proto slices is accessed by a
 	// single goroutine corresponding to its index.
 
 	throttle := make(chan struct{}, 256)
-	fileData := make([]*apb.FileData, len(paths))
 	var g errgroup.Group
+	var fmu sync.Mutex // coordinates access into the file callback
 	for i, path := range paths {
 		i, path := i, path
 		g.Go(func() error {
 			throttle <- struct{}{}
 			defer func() { <-throttle }()
-
-			fd, err := c.readFileData(ctx, path)
+			rc, err := c.openRead(ctx, path)
 			if err != nil {
 				log.Printf("ERROR: Reading input file: %v", err)
-			} else {
-				fileData[i] = fd
+				return err
 			}
-			return err
+			defer rc.Close()
+			fmu.Lock()
+			defer fmu.Unlock()
+			return file(i, rc)
 		})
 	}
-	return fileData, g.Wait()
+	return g.Wait()
 }
 
-// ClassifyInputs updates unit to add required inputs for each matching path
+// classifyInputs updates unit to add required inputs for each matching path
 // and to identify source inputs according to the rules of c. The filtered
 // complete list of inputs paths is returned.
-func (c *Config) ClassifyInputs(info *ActionInfo, unit *kindex.Compilation) []string {
+func (c *Config) classifyInputs(info *ActionInfo, unit *apb.CompilationUnit) []string {
 	var inputs, sourceFiles stringset.Set
 	for _, in := range info.Inputs {
 		path, ok := c.checkInput(in)
@@ -273,8 +307,9 @@ func (c *Config) ClassifyInputs(info *ActionInfo, unit *kindex.Compilation) []st
 
 			// Add the skeleton of a required input carrying the vname.
 			// File info (path, digest) are populated during fetch.
-			unit.Proto.RequiredInput = append(unit.Proto.RequiredInput, &apb.CompilationUnit_FileInput{
+			unit.RequiredInput = append(unit.RequiredInput, &apb.CompilationUnit_FileInput{
 				VName: vname,
+				Info:  &apb.FileInfo{Path: path},
 			})
 		} else {
 			c.logPrintf("Excluding input file: %q", in)
@@ -286,7 +321,7 @@ func (c *Config) ClassifyInputs(info *ActionInfo, unit *kindex.Compilation) []st
 			sourceFiles.Add(src)
 		}
 	}
-	unit.Proto.SourceFile = sourceFiles.Elements()
+	unit.SourceFile = sourceFiles.Elements()
 	log.Printf("Found %d required inputs, %d source files", len(inputs), len(sourceFiles))
 	return inputs.Elements()
 }
