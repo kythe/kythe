@@ -64,51 +64,35 @@ func EmptyIndexer(ctx context.Context, inputDir, outputDir string) error {
 	return nil
 }
 
-type HarnessOptions struct {
-	Fetcher    Fetcher
-	Extractor  config.Extractor
-	Indexer    Indexer
-	ConfigPath string
+// A Harness contains all the settings necessary to test a repository.
+// All fields are optional and use defaults as specified.  Note that a default
+// ConfigPath tries to use per-repository configuration files.
+type Harness struct {
+	Fetcher    Fetcher          // defaults to GitFetch
+	Extractor  config.Extractor // defaults to config.ExtractRepo
+	Indexer    Indexer          // defaults to EmptyIndexer
+	ConfigPath string           // defaults to ""
 }
 
-func (o *HarnessOptions) fetcher() Fetcher {
+func (o *Harness) fetcher() Fetcher {
 	if o == nil || o.Fetcher == nil {
 		return GitFetch
 	}
 	return o.Fetcher
 }
 
-func (o *HarnessOptions) extractor() config.Extractor {
+func (o *Harness) extractor() config.Extractor {
 	if o == nil || o.Extractor == nil {
 		return config.ExtractRepo
 	}
 	return o.Extractor
 }
 
-func (o *HarnessOptions) indexer() Indexer {
+func (o *Harness) indexer() Indexer {
 	if o == nil || o.Indexer == nil {
 		return EmptyIndexer
 	}
 	return o.Indexer
-}
-
-// NewTestingHarness creates a simple Tester which uses
-// config.DefaultExtractor to perform repo extraction, and a simple git clone
-// command to fetch files used to determine expected output.
-//
-// An extraction config can be optionally read from a specified file.  The
-// format follows kythe.proto.ExtractionConfiguration.
-//
-// Finally, the testing harness can optionally try to index the extraction
-// output.
-func NewTestingHarness(configPath string, opts *HarnessOptions) Tester {
-	h := &HarnessOptions{
-		Fetcher:    opts.fetcher(),
-		Extractor:  opts.extractor(),
-		ConfigPath: configPath,
-		Indexer:    opts.indexer(),
-	}
-	return h.TestRepo
 }
 
 // Result is a simple container for the results of a single repo test.  It may
@@ -131,7 +115,7 @@ type Result struct {
 	FileCoverage float64
 }
 
-func (g HarnessOptions) TestRepo(ctx context.Context, repo string) (Result, error) {
+func (g Harness) TestRepo(ctx context.Context, repo string) (Result, error) {
 	fromRepo, err := g.filenamesFromRepo(ctx, repo)
 	if err != nil {
 		log.Printf("Failed to read repo from remote: %v", err)
@@ -179,7 +163,7 @@ func (g HarnessOptions) TestRepo(ctx context.Context, repo string) (Result, erro
 	}, nil
 }
 
-func (g HarnessOptions) filenamesFromRepo(ctx context.Context, repoURI string) (map[string]bool, error) {
+func (g Harness) filenamesFromRepo(ctx context.Context, repoURI string) (map[string]bool, error) {
 	repoName := pathTail(repoURI)
 
 	repoDir, err := ioutil.TempDir("", repoName)
@@ -188,7 +172,7 @@ func (g HarnessOptions) filenamesFromRepo(ctx context.Context, repoURI string) (
 	}
 	defer os.RemoveAll(repoDir)
 
-	if err = g.Fetcher(ctx, config.Repo{
+	if err = g.fetcher()(ctx, config.Repo{
 		URI:        repoURI,
 		OutputPath: repoDir,
 	}); err != nil {
@@ -212,7 +196,7 @@ func (g HarnessOptions) filenamesFromRepo(ctx context.Context, repoURI string) (
 	return ret, err
 }
 
-func (g HarnessOptions) filenamesFromExtraction(ctx context.Context, repoURI string) (map[string]bool, error) {
+func (g Harness) filenamesFromExtraction(ctx context.Context, repoURI string) (map[string]bool, error) {
 	repoName := pathTail(repoURI)
 	tmpOutDir, err := ioutil.TempDir("", repoName)
 	if err != nil {
@@ -220,7 +204,7 @@ func (g HarnessOptions) filenamesFromExtraction(ctx context.Context, repoURI str
 	}
 	defer os.RemoveAll(tmpOutDir)
 
-	if err := g.Extractor(ctx, config.Repo{
+	if err := g.extractor()(ctx, config.Repo{
 		URI:        repoURI,
 		OutputPath: tmpOutDir,
 		ConfigPath: g.ConfigPath,

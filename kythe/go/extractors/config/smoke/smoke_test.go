@@ -154,7 +154,7 @@ func TestMultipleKindexFiles(t *testing.T) {
 // extraction files.
 func verifyRepoCoverage(t *testing.T, te testExtractor, expectedDownloadCount, expectedExtractCount int, expectedCoverage float64) {
 	t.Helper()
-	h := HarnessOptions{
+	h := Harness{
 		Fetcher:    te.Fetch,
 		Extractor:  te.ExtractRepo,
 		ConfigPath: "",

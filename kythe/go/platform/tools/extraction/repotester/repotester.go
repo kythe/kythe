@@ -80,19 +80,18 @@ func main() {
 		log.Fatalf("Failed to get repos to read: %v", err)
 	}
 
-	opts := &smoke.HarnessOptions{
+	h := &smoke.Harness{
 		ConfigPath: *configPath,
 	}
 
 	if *index {
-		opts.Indexer = smoke.EmptyIndexer
+		h.Indexer = smoke.EmptyIndexer
 	}
 
-	tester := smoke.NewTestingHarness(*configPath, opts)
 	for _, repo := range repos {
 		ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 		defer cancel()
-		res, err := tester(ctx, repo)
+		res, err := h.TestRepo(ctx, repo)
 		if err != nil {
 			log.Printf("Failed to test repo: %s", err)
 		} else {
