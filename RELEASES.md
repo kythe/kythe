@@ -5,7 +5,7 @@
 Due to the period of time between this release and v0.0.26, many relevant
 changes and fixes may not appear in the following list.  For a complete list of
 changes, please check the commit logs:
-https://github.com/google/kythe/search?q=committer-date%3A2016-11-01..2018-05-31&type=Commits
+https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 
 Notable additions:
 
