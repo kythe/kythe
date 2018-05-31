@@ -322,20 +322,22 @@ type keyValue struct {
 	Value []byte `json:"v"`
 }
 
+const keySuffixSize = 8
+
 // makeLevelDBKey constructs an internal LevelDB key from a user key.  seq is
 // the sequence number for the key-value entry within the LevelDB.
 func makeLevelDBKey(seq uint64, key []byte) []byte {
 	const typ = 1 // value (vs. deletion)
-	k := make([]byte, len(key)+8)
+	k := make([]byte, len(key)+keySuffixSize)
 	copy(k, key)
-	binary.LittleEndian.PutUint64(k[len(key):], (seq<<8)|typ)
+	binary.LittleEndian.PutUint64(k[len(key):], (seq<<keySuffixSize)|typ)
 	return k
 }
 
 // parseLevelDBKey returns the user key and the sequence number (and value type)
 // from an internal LevelDB key.
 func parseLevelDBKey(key []byte) (ukey []byte, seqNum uint64) {
-	return key[:len(key)-8], binary.LittleEndian.Uint64(key[len(key)-8:])
+	return key[:len(key)-keySuffixSize], binary.LittleEndian.Uint64(key[len(key)-keySuffixSize:])
 }
 
 // keyComparer compares internal (ukey, seqNum) LevelDB keys.
@@ -378,4 +380,4 @@ func (keyComparer) Successor(dst, k []byte) []byte {
 
 // maxKeyNumSuffix is maximum possible sequence number (and value type) for an
 // internal LevelDB key.
-var maxKeyNumSuffix = bytes.Repeat([]byte{0xFF}, 8)
+var maxKeyNumSuffix = bytes.Repeat([]byte{0xFF}, keySuffixSize)
