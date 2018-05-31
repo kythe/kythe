@@ -60,8 +60,22 @@ IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor &PP,
    private:
     IndexerPPCallbacks *context_;
   };
+  class InlineMetadataPragmaHandlerWrapper : public clang::PragmaHandler {
+   public:
+    InlineMetadataPragmaHandlerWrapper(IndexerPPCallbacks *context)
+        : PragmaHandler("kythe_inline_metadata"), context_(context) {}
+    void HandlePragma(clang::Preprocessor &Preprocessor,
+                      clang::PragmaIntroducerKind Introducer,
+                      clang::Token &FirstToken) override {
+      context_->HandleKytheInlineMetadataPragma(Preprocessor, Introducer, FirstToken);
+    }
+
+   private:
+    IndexerPPCallbacks *context_;
+  };
   // Clang takes ownership.
   PP.AddPragmaHandler(new MetadataPragmaHandlerWrapper(this));
+  PP.AddPragmaHandler(new InlineMetadataPragmaHandlerWrapper(this));
 }
 
 IndexerPPCallbacks::~IndexerPPCallbacks() {}
@@ -318,10 +332,38 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
   clang::FileID pragma_file_id =
       Observer.getSourceManager()->getFileID(first_token.getLocation());
   if (!pragma_file_id.isInvalid()) {
-    Observer.applyMetadataFile(pragma_file_id, file);
+    Observer.applyMetadataFile(pragma_file_id, file, "");
   } else {
     fprintf(stderr, "Metadata pragma was in an impossible place\n");
   }
+}
+
+void IndexerPPCallbacks::HandleKytheInlineMetadataPragma(
+    clang::Preprocessor &preprocessor, clang::PragmaIntroducerKind introducer,
+    clang::Token &first_token) {
+  std::string search_string;
+  clang::Token tok;
+  if (!preprocessor.LexStringLiteral(tok, search_string,
+                                     "pragma kythe_inline_metadata",
+                                     /*MacroExpansion=*/true)) {
+    return;
+  }
+  if (search_string.empty()) {
+    return;
+  }
+  clang::FileID pragma_file_id =
+      Observer.getSourceManager()->getFileID(first_token.getLocation());
+  if (pragma_file_id.isInvalid()) {
+    LOG(WARNING) << "Invalid file ID for kythe_inline_metadata";
+    return;
+  }
+  const clang::FileEntry *pragma_file_entry =
+      Observer.getSourceManager()->getFileEntryForID(pragma_file_id);
+  if (pragma_file_entry == nullptr) {
+    LOG(WARNING) << "Missing file entry for kythe_inline_metadata";
+    return;
+  }
+  Observer.applyMetadataFile(pragma_file_id, pragma_file_entry, search_string);
 }
 
 }  // namespace kythe
