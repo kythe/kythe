@@ -7,7 +7,7 @@ changes and fixes may not appear in the following list.  For a complete list of
 changes, please check the commit logs:
 https://github.com/google/kythe/search?q=committer-date%3A2016-11-01..2018-05-31&type=Commits
 
-### Notable additions
+Notable additions:
 
  - First release of Go indexer and Go extractors.
  - Objective C is now supported in the C++ indexer.
@@ -15,7 +15,7 @@ https://github.com/google/kythe/search?q=committer-date%3A2016-11-01..2018-05-31
  - identifier.proto: adds a new `IdentifierService` API.
  - Runtime plugins can be added to the Java indexer.
 
-### Notable changes
+Notable changes:
 
  - Remove gRPC server and client code.
  - Schema:
