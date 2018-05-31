@@ -159,7 +159,8 @@ class KytheGraphObserver : public GraphObserver {
     return &default_token_;
   }
 
-  void applyMetadataFile(clang::FileID ID, const clang::FileEntry *FE) override;
+  void applyMetadataFile(clang::FileID ID, const clang::FileEntry *FE,
+                         const std::string &SearchString) override;
   void StopDeferringNodes() { deferring_nodes_ = false; }
   void DropRedundantWraiths() { drop_redundant_wraiths_ = true; }
   void Delimit() override { recorder_->PushEntryGroup(); }
