@@ -387,6 +387,7 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile &meta,
       EdgeKindID edge_kind;
       std::string new_signature;
       if (rule->second.generate_anchor) {
+        // Distinguish these anchors from ordinary ones for easier debugging.
         new_signature = "@@m";
         new_signature.append(std::to_string(rule->second.anchor_begin));
         new_signature.append("-");

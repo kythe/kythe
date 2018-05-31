@@ -109,7 +109,7 @@ class MetadataSupport {
 /// characters must be 7-bit ASCII. The character set used for base64 encoding
 /// is A-Za-z0-9+/ in that order, possibly followed by = or == for padding.
 ///
-/// If search_string is set, `buffer` will be scaned for a comment marker
+/// If search_string is set, `buffer` will be scanned for a comment marker
 /// followed by a space followed by search_string. Should this comment be
 /// found, it will be decoded as above.
 ///

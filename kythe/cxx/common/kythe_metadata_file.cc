@@ -56,6 +56,12 @@ bool LoadVName(const rapidjson::Value &value, proto::VName *vname_out) {
   return true;
 }
 
+/// \brief Reads the contents of a C or C++ comment.
+/// \param buf_string a buffer containing the text to read.
+/// \param comment_slash_pos the offset of the first / starting the comment
+/// in buf_string
+/// \param data_start_pos the offset of the first byte of payload in
+/// buf_string
 std::unique_ptr<llvm::MemoryBuffer> LoadCommentMetadata(
     llvm::StringRef buf_string, size_t comment_slash_pos,
     size_t data_start_pos) {
@@ -102,6 +108,7 @@ std::unique_ptr<llvm::MemoryBuffer> LoadHeaderMetadata(
     return nullptr;
   }
   auto buf_string = buffer->getBuffer();
+  // If the header doesn't start with a comment, it's invalid.
   if (buf_string[0] != '/' || !(buf_string[1] == '*' || buf_string[1] == '/')) {
     return nullptr;
   }
@@ -122,6 +129,8 @@ std::unique_ptr<llvm::MemoryBuffer> FindCommentMetadata(
       return nullptr;
     }
   }
+  // Data starts after the comment token, a space, and the user-provided
+  // marker.
   return LoadCommentMetadata(buf_string, comment_start,
                              comment_start + 3 + search_string.size());
 }
@@ -191,7 +200,8 @@ bool KytheMetadataSupport::LoadMetaElement(const rapidjson::Value &value,
                                source_end_int};
     return true;
   } else {
-    LOG(WARNING) << "When loading metadata: unknown meta type.";
+    LOG(WARNING) << "When loading metadata: unknown meta type "
+                 << type.GetString();
     return false;
   }
 }

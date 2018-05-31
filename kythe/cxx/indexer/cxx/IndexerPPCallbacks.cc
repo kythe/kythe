@@ -354,11 +354,13 @@ void IndexerPPCallbacks::HandleKytheInlineMetadataPragma(
   clang::FileID pragma_file_id =
       Observer.getSourceManager()->getFileID(first_token.getLocation());
   if (pragma_file_id.isInvalid()) {
+    LOG(WARNING) << "Invalid file ID for kythe_inline_metadata";
     return;
   }
   const clang::FileEntry *pragma_file_entry =
       Observer.getSourceManager()->getFileEntryForID(pragma_file_id);
   if (pragma_file_entry == nullptr) {
+    LOG(WARNING) << "Missing file entry for kythe_inline_metadata";
     return;
   }
   Observer.applyMetadataFile(pragma_file_id, pragma_file_entry, search_string);
