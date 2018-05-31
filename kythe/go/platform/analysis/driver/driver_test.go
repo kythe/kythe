@@ -119,8 +119,6 @@ func (t testContext) AnalysisError(ctx context.Context, unit Compilation, err er
 	return nil
 }
 
-const fdsAddr = "TEST FDS ADDR"
-
 func TestDriverInvalid(t *testing.T) {
 	m := &mock{t: t}
 	test := new(Driver)

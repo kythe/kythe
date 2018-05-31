@@ -571,7 +571,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 // the object has its own non-blank name, that is used; otherwise if the object
 // is of a named type, that type's name is used. Otherwise the result is "_".
 func objectName(obj types.Object) string {
-	if name := obj.Name(); name != "" && name != "" {
+	if name := obj.Name(); name != "" {
 		return name // the object's given name
 	} else if name := typeName(obj.Type()); name != "" {
 		return name // the object's type's name

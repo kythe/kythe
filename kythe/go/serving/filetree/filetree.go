@@ -92,7 +92,7 @@ func (t *Table) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (
 	}
 
 	reply := &ftpb.CorpusRootsReply{
-		Corpus: make([]*ftpb.CorpusRootsReply_Corpus, len(cr.Corpus), len(cr.Corpus)),
+		Corpus: make([]*ftpb.CorpusRootsReply_Corpus, len(cr.Corpus)),
 	}
 
 	for i, corpus := range cr.Corpus {

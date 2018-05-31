@@ -24,7 +24,7 @@ import (
 
 func TestOrder(t *testing.T) {
 	tests := []struct {
-		a, b V
+		a, b VString
 		want int
 	}{
 		{"_____", "_____", 0},
@@ -45,14 +45,14 @@ func TestOrder(t *testing.T) {
 	}
 }
 
-// V is a compact representation of a vname for test construction.
+// VString is a compact representation of a vname for test construction.
 //
 // Valid values have 1 character per vname field: corpus, lang, path, root,
 // sig.  The field value is that character, except underscore (_) which is
 // turned into an empty string. Missing letters on the right are blanks.
-type V string
+type VString string
 
-func (v V) vname() *spb.VName {
+func (v VString) vname() *spb.VName {
 	var out spb.VName
 	ptrs := [...]*string{&out.Corpus, &out.Language, &out.Path, &out.Root, &out.Signature}
 

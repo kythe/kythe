@@ -302,7 +302,7 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 // visitTypeSpec handles type declarations, including the bindings for fields
 // of struct types and methods of interfaces.
 func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
-	obj, _ := e.pi.Info.Defs[spec.Name]
+	obj := e.pi.Info.Defs[spec.Name]
 	if obj == nil {
 		return // type error
 	}
