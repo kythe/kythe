@@ -89,10 +89,9 @@ func main() {
 	flag.Parse()
 	verifyFlags()
 
-	extractor := config.DefaultExtractor{}
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
-	if err := extractor.ExtractRepo(ctx, config.Repo{
+	if err := config.ExtractRepo(ctx, config.Repo{
 		URI:        *repoURI,
 		OutputPath: *outputPath,
 		ConfigPath: *configPath,
