@@ -183,9 +183,4 @@ func verifyRepoCoverage(t *testing.T, te testExtractor, expectedDownloadCount, e
 
 const eps float64 = 0.0001
 
-func floatEquals(a, b float64) bool {
-	if math.Abs(a-b) < eps {
-		return true
-	}
-	return false
-}
+func floatEquals(a, b float64) bool { return math.Abs(a-b) < eps }
