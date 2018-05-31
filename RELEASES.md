@@ -11,7 +11,6 @@ Notable additions:
 
  - First release of Go indexer and Go extractors.
  - Objective C is now supported in the C++ indexer.
- - First release of TypeScript indexer.
  - identifier.proto: adds a new `IdentifierService` API.
  - Runtime plugins can be added to the Java indexer.
 
