@@ -39,13 +39,9 @@ import (
 // files covered by extractor output.
 //
 // Also optionally supports indexing the extractors output.
-//
-// TODO(danielmoy): support more than just java.
 type Tester func(ctx context.Context, repo string) (Result, error)
 
-// Fetcher is a thin wrapper over something which fetches a given repo and
-// writes it to an output directory. Note that the ConfigPath parameter from
-// config.Repo does not affect Fetch at all.
+// Fetcher is fetches a given repo and writes it to an output directory.
 type Fetcher func(ctx context.Context, repo config.Repo) error
 
 func GitFetch(ctx context.Context, repo config.Repo) error {
@@ -53,8 +49,8 @@ func GitFetch(ctx context.Context, repo config.Repo) error {
 	return exec.CommandContext(ctx, "git", "clone", repo.URI, repo.OutputPath).Run()
 }
 
-// Indexer is a thin wrapper over some kythe indexer which looks for .kindex
-// files in a given inputDir, indexes them, and deposits in outputDir.
+// Indexer takes .kindex files in a given inputDir, indexes them, and deposits
+// in outputDir.
 //
 // TODO(danielmoy): kzip?  This is generally a thing that needs supporting in
 // smoke.go and related files now that I think about it.
