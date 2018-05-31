@@ -19,6 +19,7 @@ package local
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -123,6 +124,16 @@ func (q *FileQueue) Next(ctx context.Context, f driver.CompilationFunc) error {
 		Unit:     next,
 		Revision: q.revision,
 	})
+}
+
+// Fetch implements the analysis.Fetcher interface by delegating to the
+// currently-active input file. Only files in the current archive will be
+// accessible for a given invocation of Fetch.
+func (q *FileQueue) Fetch(path, digest string) ([]byte, error) {
+	if q.fetcher == nil {
+		return nil, errors.New("no data source available")
+	}
+	return q.fetcher.Fetch(path, digest)
 }
 
 type kzipFetcher struct{ r *kzip.Reader }
