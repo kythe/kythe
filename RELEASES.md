@@ -4,68 +4,72 @@
 
 Due to the period of time between this release and v0.0.26, many relevant
 changes and fixes may not appear in the following list.  For a complete list of
-changes, please check: https://github.com/google/kythe/commits/
+changes, please check the commit logs:
+https://github.com/google/kythe/search?q=committer-date%3A2016-11-01..2018-05-31&type=Commits
 
-Notable changes:
- - remove GRPC server and client code
+### Notable additions
+
+ - First release of Go indexer and Go extractors.
+ - Objective C is now supported in the C++ indexer.
+ - First release of TypeScript indexer.
+ - identifier.proto: adds a new `IdentifierService` API.
+ - Runtime plugins can be added to the Java indexer.
+
+### Notable changes
+
+ - Remove gRPC server and client code.
  - Schema:
-   - anchors no longer have `childof` edges to their parent `file`
-   - anchor nodes must share their `path`, `root`, and `corpus` `VName`
-     components with their parent file
-   - format strings have been replaced by the `MarkedSource` proto
+   - Anchors no longer have `childof` edges to their parent `file`.
+   - Anchor nodes must share their `path`, `root`, and `corpus` `VName`
+     components with their parent `file`.
+  - Format strings have been replaced by the `MarkedSource` protobuf message.
  - C++ analysis:
-   - included files are referenced by the `ref/file` edge
-   - `code` facts (`MarkedSource` protos) are emitted
-   - better support for C++{11,14,17}
-   - CUDA support
-   - improvements to documentation indexing and rendering
-   - added a plugin for indexing proto fields in certain string literals
-   - type ranges for builtin structural types are no longer destructured (`T*`
-     is now `[T]*`, not `[[T]*]`)
-   - decoration of builtin types can be controlled with
-     `--emit_anchors_on_builtins`
-   - namespaces are never defined, only `ref`d
-   - old-style `name` nodes removed
-   - the extractor now captures more build state, enabling support for
+   - Included files are referenced by the `ref/file` edge.
+   - `code` facts (containing `MarkedSource` protos) are emitted.
+   - Better support for C++11, 14, and 17.
+   - Limited CUDA support.
+   - Improvements to indexing and rendering of documentation.
+   - Added a plugin for indexing proto fields in certain string literals.
+   - Type ranges for builtin structural types are no longer destructured (`T*`
+     is now `[T]*`, not `[[T]*]`).
+   - Decoration of builtin types can be controlled with
+     `--emit_anchors_on_builtins`.
+   - Namespaces are never `define`d, only `ref`d.
+   - Old-style `name` nodes removed.
+   - The extractor now captures more build state, enabling support for
      `__has_include`
    - `anchor`s involved in `completes` edges now contain their targets mixed
-     with their signatures, making each completion relationship unique
-   - support for indexing uses of `make_unique` et al as direct references to
-     the relevant constructor
-   - template instantiations can be aliased together with
+     with their signatures, making each completion relationship unique.
+   - Support for indexing uses of `make_unique` et al as direct references to
+     the relevant constructor.
+   - Template instantiations can be aliased together with
      `--experimental_alias_template_instantiations`, which significantly
-     decreases
-     output size at the expense of lower fidelity
+     decreases output size at the expense of lower fidelity.
  - Java analysis:
-   - `name` nodes have become defined as JVM binary names
-   - `diagnostic` nodes are emitted on errors
-   - `code` facts (`MarkedSource` protos) are emitted
-   - add callgraph edges for constructors
-   - non-member classes are children of their enclosing method
-   - local variables are children of their enclosing method
-   - blame static calls on enclosing class
-   - emit references for all matching members of a static import
-   - reference `abs` nodes for generic classes (over their `record` nodes)
-   - emit data for annotation arguments
-   - emit package relations from `package-info.java` files
+   - `name` nodes are now defined as JVM binary names.
+   - `diagnostic` nodes are emitted on errors.
+   - `code` facts (`MarkedSource` protos) are emitted.
+   - Add callgraph edges for constructors.
+   - Non-member classes are now `childof` their enclosing method.
+   - Local variables are now `childof` their enclosing method.
+   - Blame calls in static initializers on the enclosing class.
+   - Emit references for all matching members of a static import.
+   - Reference `abs` nodes for generic classes instead of their `record` nodes.
+   - Emit data for annotation arguments.
+   - Emit package relations from `package-info.java` files.
  - Protocol Buffers:
-   - analysis.proto: add revision and build ids to AnalysisRequest
-   - analysis.proto: add AnalysisResult summary to AnalysisOutput
-   - analysis.proto: remove revision from CompilationUnit
+   - analysis.proto: add revision and build ID to AnalysisRequest.
+   - analysis.proto: add AnalysisResult summary to AnalysisOutput.
+   - analysis.proto: remove `revision` from CompilationUnit.
    - graph.proto: new location of the GraphService API
-   - xref.proto: remove DecorationsReply.Reference.source_ticket
-   - xref.proto: add Diagnostic messages to DecorationsReply
-   - xref.proto: replace Location.Point pairs with common.Span
-   - xref.proto: by default, elide snippets from xrefs/decor replies
-   - xref.proto: replace Printable formats with MarkedSource
-   - xref.proto: allow filtering related nodes in xrefs reply
-   - xref.proto: optionally return documentation children
-   - xref.proto: return target definitions with overrides
-
-Notable additions:
- - First release of Go indexer and Go extractors
- - identifier.proto: new IdentifierService API
- - Runtime plugins can be added to the Java indexer
+   - xref.proto: remove `DecorationsReply.Reference.source_ticket`.
+   - xref.proto: add `Diagnostic` messages to `DecorationsReply`.
+   - xref.proto: replace `Location.Point` pairs with `common.Span`.
+   - xref.proto: by default, elide snippets from xrefs/decor replies.
+   - xref.proto: replace `Printable` formats with `MarkedSource`.
+   - xref.proto: allow filtering related nodes in the xrefs reply.
+   - xref.proto: optionally return documentation children.
+   - xref.proto: return target definitions with overrides.
 
 ## v0.0.26
 
