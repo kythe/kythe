@@ -113,7 +113,8 @@ const (
 )
 
 // ProcessElement combines all tableMetadata into LevelDB's journal format and
-// writes the database's CURRENT manifest file.
+// writes the database's CURRENT manifest file.  It returns the maximum shard
+// number processed.
 func (w *writeManifest) ProcessElement(ctx context.Context, _ beam.T, e func(*tableMetadata) bool) (int, error) {
 	const manifestName = "MANIFEST-000000"
 	defer func(start time.Time) { log.Printf("Manifest written in %s", time.Since(start)) }(time.Now())
@@ -327,7 +328,7 @@ func makeLevelDBKey(seq uint64, key []byte) []byte {
 	const typ = 1 // value (vs. deletion)
 	k := make([]byte, len(key)+8)
 	copy(k, key)
-	binary.LittleEndian.PutUint64(k[len(key):], (seq<<8)|uint64(typ))
+	binary.LittleEndian.PutUint64(k[len(key):], (seq<<8)|typ)
 	return k
 }
 
