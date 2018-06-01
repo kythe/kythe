@@ -1,5 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-licenses(["restricted"])
+licenses(["notice"])
 
 exports_files(["COPYING"])
