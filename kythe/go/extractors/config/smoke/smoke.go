@@ -72,21 +72,21 @@ type Harness struct {
 	ConfigPath string           // defaults to ""
 }
 
-func (h *Harness) fetcher() Fetcher {
+func (h Harness) fetcher() Fetcher {
 	if h == nil || h.Fetcher == nil {
 		return GitFetch
 	}
 	return h.Fetcher
 }
 
-func (h *Harness) extractor() config.Extractor {
+func (h Harness) extractor() config.Extractor {
 	if h == nil || h.Extractor == nil {
 		return config.ExtractRepo
 	}
 	return h.Extractor
 }
 
-func (h *Harness) indexer() Indexer {
+func (h Harness) indexer() Indexer {
 	if h == nil || h.Indexer == nil {
 		return EmptyIndexer
 	}
