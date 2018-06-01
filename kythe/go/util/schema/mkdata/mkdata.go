@@ -169,7 +169,7 @@ func main() {
 	fmt.Fprintln(src, "}")
 	fmt.Fprintln(src, ")")
 
-	fmt.Fprintln(src, `
+	fmt.Fprint(src, `
 // NodeKind returns the schema enum for the given node kind.
 func NodeKind(k string) scpb.NodeKind { return nodeKinds[k] }
 
@@ -193,6 +193,7 @@ func FactNameString(f scpb.FactName) string { return factNamesRev[f] }
 
 // SubkindString returns the string representation of the given subkind.
 func SubkindString(k scpb.Subkind) string { return subkindsRev[k] }
+
 `)
 
 	// Format and write out the resulting program.
