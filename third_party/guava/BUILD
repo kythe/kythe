@@ -2,6 +2,8 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+exports_files(["COPYING"])
+
 java_library(
     name = "guava",
     exports = [
