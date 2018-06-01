@@ -1,3 +1,3 @@
-licenses(["notice"])
+licenses(["reciprocal"])
 
 exports_files(["LICENSE"])
