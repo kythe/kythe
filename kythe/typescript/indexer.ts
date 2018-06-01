@@ -694,8 +694,7 @@ class Vistor {
   visitVariableDeclaration(decl: {
     name: ts.BindingName|ts.PropertyName,
     type?: ts.TypeNode,
-    initializer?: ts.Expression,
-    kind: ts.SyntaxKind
+    initializer?: ts.Expression, kind: ts.SyntaxKind,
   }): VName|undefined {
     let vname: VName|undefined;
     switch (decl.name.kind) {
@@ -727,7 +726,7 @@ class Vistor {
     if (vname && decl.kind === ts.SyntaxKind.PropertyDeclaration) {
       let declNode = decl as ts.PropertyDeclaration;
       if (ts.getCombinedModifierFlags(declNode) & ts.ModifierFlags.Static) {
-         this.emitFact(vname, 'tag/static', '');
+        this.emitFact(vname, 'tag/static', '');
       }
     }
     return vname;
@@ -932,7 +931,8 @@ class Vistor {
       case ts.SyntaxKind.PropertyAssignment:  // property in object literal
       case ts.SyntaxKind.PropertyDeclaration:
       case ts.SyntaxKind.PropertySignature:
-        const vname = this.visitVariableDeclaration(node as ts.PropertyDeclaration);
+        const vname =
+            this.visitVariableDeclaration(node as ts.PropertyDeclaration);
         if (vname) this.visitJSDoc(node, vname);
         return;
       case ts.SyntaxKind.ArrowFunction:
