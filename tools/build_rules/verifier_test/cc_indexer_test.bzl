@@ -21,7 +21,6 @@ load(
     "KytheEntries",
     "KytheVerifierSources",
 )
-
 load(":toolchain_utils.bzl", "find_cpp_toolchain")
 
 CxxCompilationUnits = provider(
@@ -54,7 +53,7 @@ def _compiler_options(cpp):
   # The bazel toolchain provider is missing these attributes until 0.14.0,
   # but we still want to use them when/if they are present.
   if hasattr(cpp, "compiler_options"):
-    options += cpp.compiler_options([])
+    options += cpp.compiler_options()
   if hasattr(cpp, "unfiltered_compiler_options"):
     options += cpp.unfiltered_compiler_options([])
   return options
@@ -186,8 +185,8 @@ cc_extract_kindex = rule(
     Each file in srcs will be extracted into a separate .kindex file, based on the name
     of the source.
     """,
-    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     outputs = _cc_extract_kindex_outs,
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     implementation = _cc_extract_kindex_impl,
 )
 
