@@ -84,6 +84,8 @@ func runOracle(t *testing.T, ms *cpb.MarkedSource) *oracleResults {
 // results with the native Go implementations.
 func TestInteropt(t *testing.T) {
 	if os.Getenv("TEST_WORKSPACE") != "io_kythe" {
+		// Skip test since it requires the C++ oracle program to be put inside this
+		// test's Bazel RUNFILES_DIR.
 		t.Skip("Skipping test outside of Bazel build")
 	}
 	tests := []*cpb.MarkedSource{{
