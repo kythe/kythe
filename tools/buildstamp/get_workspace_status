@@ -7,7 +7,7 @@
 # KEY1 VALUE1
 # KEY2 VALUE2
 
-echo "_BUILD_SCM_REVISION $(git rev-parse HEAD)"
+echo "STABLE_BUILD_SCM_REVISION $(git rev-parse HEAD)"
 
 # Check whether there are any uncommited changes
 if git diff-index --quiet HEAD; then
@@ -15,6 +15,6 @@ if git diff-index --quiet HEAD; then
 else
   tree_status="Modified"
 fi
-echo "_BUILD_SCM_STATUS ${tree_status}"
+echo "STABLE_BUILD_SCM_STATUS ${tree_status}"
 
-echo "_KYTHE_RELEASE_VERSION $(awk '/^release_version =/ { print substr($3, 2, length($3)-2) }' kythe/release/BUILD)"
+echo "STABLE_KYTHE_RELEASE_VERSION $(awk '/^release_version =/ { print substr($3, 2, length($3)-2) }' kythe/release/BUILD)"
