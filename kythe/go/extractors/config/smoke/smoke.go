@@ -73,21 +73,21 @@ type Harness struct {
 }
 
 func (h Harness) fetcher() Fetcher {
-	if h == nil || h.Fetcher == nil {
+	if h.Fetcher == nil {
 		return GitFetch
 	}
 	return h.Fetcher
 }
 
 func (h Harness) extractor() config.Extractor {
-	if h == nil || h.Extractor == nil {
+	if h.Extractor == nil {
 		return config.ExtractRepo
 	}
 	return h.Extractor
 }
 
 func (h Harness) indexer() Indexer {
-	if h == nil || h.Indexer == nil {
+	if h.Indexer == nil {
 		return EmptyIndexer
 	}
 	return h.Indexer
