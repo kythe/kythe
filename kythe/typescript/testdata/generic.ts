@@ -32,3 +32,14 @@ let box: Container<IFace>;
 function generic<T>(x: T, y: IFace) {
   return x;
 }
+
+//- @Container ref Container
+//- @IFace ref Iface
+interface ExtendsGeneric extends Container<IFace> {}
+
+//- @Container ref Container
+//- @IFace ref Iface
+class ImplementsGeneric implements Container<IFace> {
+  //- @IFace ref Iface
+  contained: IFace;
+}

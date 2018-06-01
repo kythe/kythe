@@ -14,6 +14,9 @@ interface IFace {
     member: number;
 }
 
+//- @IFace ref IFace
+interface IExtended extends IFace {}
+
 //- @Class defines/binding Class
 //- Class.node/kind record
 //- @Class defines/binding ClassCtor
@@ -57,6 +60,14 @@ class Class implements IFace {
 }
 
 //- @Class ref ClassCtor
+class Subclass extends Class {
+    method() {
+        //- @member ref Member
+        this.member;
+    }
+}
+
+//- @Class ref ClassCtor
 let instance = new Class(3, 'a');
 //- @otherMember ref OtherMember
 instance.otherMember;
@@ -64,5 +75,3 @@ instance.otherMember;
 // Using Class in type position should still create a link to the class.
 //- @Class ref Class
 let useAsType: Class = instance;
-
-// TODO: subclass, extends/implements, generics, etc.
