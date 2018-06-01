@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -130,7 +131,7 @@ func TestLoadReturnsProperData(t *testing.T) {
 			t.Fatalf("Failed to load extraction config: %v", err)
 		}
 
-		_, err = file.Seek(0, os.SEEK_SET)
+		_, err = file.Seek(0, io.SeekStart)
 		if err != nil {
 			t.Fatalf("Failed to seek test data: %v", err)
 		}

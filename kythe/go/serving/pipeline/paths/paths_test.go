@@ -216,6 +216,9 @@ func TestReducer_Output(t *testing.T) {
 			}
 		},
 	})
+	if err != nil {
+		t.Error(err)
+	}
 
 	expectedPivot := testNode("blah", "test", "subkind", "input")
 
@@ -346,6 +349,9 @@ func BenchmarkReducer_Output(b *testing.B) {
 			}
 		},
 	})
+	if err != nil {
+		b.Error(err)
+	}
 
 	if s, err := empty.NextSplit(); err != io.EOF {
 		b.Fatalf("Unexpected output/err: %v / %v", s, err)

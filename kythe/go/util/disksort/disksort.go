@@ -353,7 +353,7 @@ func (m *mergeSorter) dumpShard() (err error) {
 
 	w := io.Writer(file)
 	if m.opts.CompressShards {
-		w = snappy.NewWriter(w)
+		w = snappy.NewBufferedWriter(w)
 	}
 
 	// Buffer writing to the shard

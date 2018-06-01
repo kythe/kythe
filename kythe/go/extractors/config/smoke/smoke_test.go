@@ -154,10 +154,11 @@ func TestMultipleKindexFiles(t *testing.T) {
 // extraction files.
 func verifyRepoCoverage(t *testing.T, te testExtractor, expectedDownloadCount, expectedExtractCount int, expectedCoverage float64) {
 	t.Helper()
-	h := harness{
-		extractor:   te,
-		configPath:  "",
-		repoFetcher: te,
+	h := Harness{
+		Fetcher:    te.Fetch,
+		Extractor:  te.ExtractRepo,
+		ConfigPath: "",
+		Indexer:    nil,
 	}
 
 	r, err := h.TestRepo(context.Background(), "foo")
@@ -183,9 +184,4 @@ func verifyRepoCoverage(t *testing.T, te testExtractor, expectedDownloadCount, e
 
 const eps float64 = 0.0001
 
-func floatEquals(a, b float64) bool {
-	if math.Abs(a-b) < eps {
-		return true
-	}
-	return false
-}
+func floatEquals(a, b float64) bool { return math.Abs(a-b) < eps }

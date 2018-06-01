@@ -470,14 +470,6 @@ func (p *Package) addInput(cu *apb.CompilationUnit, bp *build.Package) {
 	}
 }
 
-// addEnv adds an environment variable to cu.
-func (*Package) addEnv(cu *apb.CompilationUnit, name, value string) {
-	cu.Environment = append(cu.Environment, &apb.CompilationUnit_Env{
-		Name:  name,
-		Value: value,
-	})
-}
-
 // addFlag adds a flag and its arguments to the command line, if len(values) != 0.
 func (*Package) addFlag(cu *apb.CompilationUnit, name string, values ...string) {
 	if len(values) != 0 {

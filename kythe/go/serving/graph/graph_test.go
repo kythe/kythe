@@ -232,11 +232,6 @@ var (
 			},
 		},
 	}
-
-	arbitrarySpan = &cpb.Span{
-		Start: &cpb.Point{LineNumber: 1},
-		End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
-	}
 )
 
 func getEdgeTargets(tickets ...string) []*srvpb.EdgeGroup_Edge {
@@ -248,14 +243,6 @@ func getEdgeTargets(tickets ...string) []*srvpb.EdgeGroup_Edge {
 		}
 	}
 	return es
-}
-
-func getNodes(ts ...string) []*srvpb.Node {
-	var res []*srvpb.Node
-	for _, t := range ts {
-		res = append(res, getNode(t))
-	}
-	return res
 }
 
 func getNode(t string) *srvpb.Node {
@@ -462,16 +449,6 @@ func TestEdgesMissing(t *testing.T) {
 	}
 }
 
-func nodeInfos(nss ...[]*srvpb.Node) map[string]*cpb.NodeInfo {
-	m := make(map[string]*cpb.NodeInfo)
-	for _, ns := range nss {
-		for _, n := range ns {
-			m[n.Ticket] = nodeInfo(n)
-		}
-	}
-	return m
-}
-
 func nodeInfo(n *srvpb.Node) *cpb.NodeInfo {
 	ni := &cpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
 	for _, f := range n.Fact {
@@ -492,14 +469,6 @@ func makeFactList(keyVals ...string) []*cpb.Fact {
 		})
 	}
 	return facts
-}
-
-func mapFacts(n *cpb.NodeInfo, facts map[string]string) {
-	for name := range n.Facts {
-		if val, ok := facts[name]; ok {
-			n.Facts[name] = []byte(val)
-		}
-	}
 }
 
 func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *gpb.EdgeSet {

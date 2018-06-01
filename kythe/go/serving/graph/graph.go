@@ -114,7 +114,7 @@ func lookupPagedEdgeSets(ctx context.Context, tbl table.Proto, keys [][]byte) (<
 }
 
 func toKeys(ss []string) [][]byte {
-	keys := make([][]byte, len(ss), len(ss))
+	keys := make([][]byte, len(ss))
 	for i, s := range ss {
 		keys[i] = []byte(s)
 	}
@@ -450,7 +450,7 @@ func EdgePageKey(key string) []byte {
 type combinedTable struct{ table.Proto }
 
 func (c *combinedTable) pagedEdgeSets(ctx context.Context, tickets []string) (<-chan edgeSetResult, error) {
-	keys := make([][]byte, len(tickets), len(tickets))
+	keys := make([][]byte, len(tickets))
 	for i, ticket := range tickets {
 		keys[i] = EdgeSetKey(ticket)
 	}

@@ -57,7 +57,7 @@ Options:
 
 func verifyFlags() {
 	if len(flag.Args()) > 0 {
-		log.Fatal("Unknown arguments: %v", flag.Args())
+		log.Fatalf("Unknown arguments: %v", flag.Args())
 	}
 
 	switch {

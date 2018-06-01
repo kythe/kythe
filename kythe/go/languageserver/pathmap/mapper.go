@@ -35,9 +35,6 @@ type Mapper struct {
 	seg []segment
 }
 
-// This regex searches for named path segments of the form :mySeg or :mySeg*
-var namedSeg = regexp.MustCompile("(^|/):([^*/]*)(\\*?)")
-
 // NewMapper produces a Mapper object from a pattern string.
 // Patterns strings are paths that have named segments that are extracted during
 // parsing and populated during generation.

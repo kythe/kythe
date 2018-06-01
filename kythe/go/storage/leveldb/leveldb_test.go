@@ -49,8 +49,6 @@ func tempGS() (graphstore.Service, graphstore.DestroyFunc, error) {
 	return keyvalue.NewGraphStore(db), graphstore.DestroyFunc(destroy), err
 }
 
-func destroy(i interface{}) error { return os.RemoveAll(i.(string)) }
-
 func BenchmarkWriteSingle(b *testing.B) { keyvalue.BatchWriteBenchmark(b, tempDB, 1) }
 func BenchmarkWriteBatchSml(b *testing.B) {
 	keyvalue.BatchWriteBenchmark(b, tempDB, smallBatchSize)

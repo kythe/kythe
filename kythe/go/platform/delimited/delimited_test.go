@@ -68,7 +68,7 @@ func TestGoodWriter(t *testing.T) {
 			t.Errorf("Put %q: unexpected error: %v", record, err)
 		}
 	}
-	if got := string(w.Bytes()); got != testData {
+	if got := w.String(); got != testData {
 		t.Errorf("Writer result: got %q, want %q", got, testData)
 	}
 }

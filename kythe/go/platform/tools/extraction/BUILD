@@ -4,16 +4,12 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_binary(
     name = "extractrepo",
-    srcs = ["extractrepo.go"],
-    deps = [
-        "//kythe/go/extractors/config",
-    ],
+    srcs = ["extractrepo/extractrepo.go"],
+    deps = ["//kythe/go/extractors/config"],
 )
 
 go_binary(
     name = "repotester",
-    srcs = ["repotester.go"],
-    deps = [
-        "//kythe/go/extractors/config/smoke",
-    ],
+    srcs = ["repotester/repotester.go"],
+    deps = ["//kythe/go/extractors/config/smoke"],
 )
