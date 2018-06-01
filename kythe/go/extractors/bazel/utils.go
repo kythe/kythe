@@ -28,7 +28,6 @@ import (
 	"strings"
 	"time"
 
-	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/ptypes"
 	"kythe.io/kythe/go/util/vnameutil"
 
@@ -124,20 +123,20 @@ func AddDetail(unit *apb.CompilationUnit, msg proto.Message) error {
 // FindSourceArgs returns a fixup that scans the argument list of a compilation
 // unit for strings matching r. Any that are found, and which also match the
 // names of required input files, are added to the source files of the unit.
-func FindSourceArgs(r *regexp.Regexp) func(*kindex.Compilation) error {
-	return func(cu *kindex.Compilation) error {
+func FindSourceArgs(r *regexp.Regexp) func(*apb.CompilationUnit) error {
+	return func(cu *apb.CompilationUnit) error {
 		var inputs stringset.Set
-		for _, ri := range cu.Proto.RequiredInput {
+		for _, ri := range cu.RequiredInput {
 			inputs.Add(ri.Info.GetPath())
 		}
 
-		srcs := stringset.New(cu.Proto.SourceFile...)
-		for _, arg := range cu.Proto.Argument {
+		srcs := stringset.New(cu.SourceFile...)
+		for _, arg := range cu.Argument {
 			if r.MatchString(arg) && inputs.Contains(arg) {
 				srcs.Add(arg)
 			}
 		}
-		cu.Proto.SourceFile = srcs.Elements()
+		cu.SourceFile = srcs.Elements()
 		return nil
 	}
 }
