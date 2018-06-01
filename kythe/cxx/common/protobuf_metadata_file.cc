@@ -62,6 +62,9 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     rule.edge_in = kythe::common::schema::kDefinesBinding;
     rule.edge_out = kythe::common::schema::kGenerates;
     rule.reverse_edge = true;
+    rule.generate_anchor = false;
+    rule.anchor_begin = 0;
+    rule.anchor_end = 0;
     rules.push_back(rule);
   }
   return MetadataFile::LoadFromRules(rules.begin(), rules.end());
