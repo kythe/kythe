@@ -67,7 +67,8 @@ IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor &PP,
     void HandlePragma(clang::Preprocessor &Preprocessor,
                       clang::PragmaIntroducerKind Introducer,
                       clang::Token &FirstToken) override {
-      context_->HandleKytheInlineMetadataPragma(Preprocessor, Introducer, FirstToken);
+      context_->HandleKytheInlineMetadataPragma(Preprocessor, Introducer,
+                                                FirstToken);
     }
 
    private:
@@ -158,7 +159,7 @@ void IndexerPPCallbacks::MacroDefined(const clang::Token &Token,
 
 void IndexerPPCallbacks::MacroUndefined(const clang::Token &MacroName,
                                         const clang::MacroDefinition &Macro,
-                                        const clang::MacroDirective* Undef) {
+                                        const clang::MacroDirective *Undef) {
   if (!Macro) {
     return;
   }
@@ -230,8 +231,7 @@ void IndexerPPCallbacks::InclusionDirective(
     llvm::StringRef Filename, bool IsAngled,
     clang::CharSourceRange FilenameRange, const clang::FileEntry *FileEntry,
     llvm::StringRef SearchPath, llvm::StringRef RelativePath,
-    const clang::Module *Imported,
-    clang::SrcMgr::CharacteristicKind FileType) {
+    const clang::Module *Imported, clang::SrcMgr::CharacteristicKind FileType) {
   // TODO(zarko) (Modules): Check if `Imported` is non-null; if so, this
   // was transformed to a module import.
   if (FileEntry != nullptr) {
@@ -318,19 +318,19 @@ GraphObserver::NodeId IndexerPPCallbacks::BuildNodeIdForMacro(
 }
 
 void IndexerPPCallbacks::HandleKytheMetadataPragma(
-    clang::Preprocessor &preprocessor, clang::PragmaIntroducerKind introducer,
-    clang::Token &first_token) {
+    clang::Preprocessor &Preprocessor, clang::PragmaIntroducerKind Introducer,
+    clang::Token &FirstToken) {
   llvm::SmallString<1024> search_path;
   llvm::SmallString<1024> relative_path;
   llvm::SmallString<1024> filename;
-  const auto *file = LookupFileForIncludePragma(&preprocessor, &search_path,
+  const auto *file = LookupFileForIncludePragma(&Preprocessor, &search_path,
                                                 &relative_path, &filename);
   if (!file) {
     fprintf(stderr, "Missing metadata file: %s\n", filename.c_str());
     return;
   }
   clang::FileID pragma_file_id =
-      Observer.getSourceManager()->getFileID(first_token.getLocation());
+      Observer.getSourceManager()->getFileID(FirstToken.getLocation());
   if (!pragma_file_id.isInvalid()) {
     Observer.applyMetadataFile(pragma_file_id, file, "");
   } else {
@@ -339,11 +339,11 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
 }
 
 void IndexerPPCallbacks::HandleKytheInlineMetadataPragma(
-    clang::Preprocessor &preprocessor, clang::PragmaIntroducerKind introducer,
-    clang::Token &first_token) {
+    clang::Preprocessor &Preprocessor, clang::PragmaIntroducerKind Introducer,
+    clang::Token &FirstToken) {
   std::string search_string;
   clang::Token tok;
-  if (!preprocessor.LexStringLiteral(tok, search_string,
+  if (!Preprocessor.LexStringLiteral(tok, search_string,
                                      "pragma kythe_inline_metadata",
                                      /*MacroExpansion=*/true)) {
     return;
@@ -352,7 +352,7 @@ void IndexerPPCallbacks::HandleKytheInlineMetadataPragma(
     return;
   }
   clang::FileID pragma_file_id =
-      Observer.getSourceManager()->getFileID(first_token.getLocation());
+      Observer.getSourceManager()->getFileID(FirstToken.getLocation());
   if (pragma_file_id.isInvalid()) {
     LOG(WARNING) << "Invalid file ID for kythe_inline_metadata";
     return;
