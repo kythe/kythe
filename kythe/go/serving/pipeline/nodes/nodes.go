@@ -139,12 +139,8 @@ func (c *combineNodes) MergeAccumulators(ctx context.Context, accum, n *ppb.Node
 		}
 		accum.Subkind = n.Subkind
 	}
-	for _, f := range n.Fact {
-		accum.Fact = append(accum.Fact, f)
-	}
-	for _, e := range n.Edge {
-		accum.Edge = append(accum.Edge, e)
-	}
+	accum.Fact = append(accum.Fact, n.Fact...)
+	accum.Edge = append(accum.Edge, n.Edge...)
 	return accum
 }
 

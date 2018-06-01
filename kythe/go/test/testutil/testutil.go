@@ -178,7 +178,7 @@ func Errorf(t *testing.T, msg string, err error, args ...interface{}) {
 // RandStr returns a random string of the given length
 func RandStr(size int) string {
 	const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	buf := make([]byte, size, size)
+	buf := make([]byte, size)
 	RandBytes(buf)
 	for i, b := range buf {
 		buf[i] = chars[b%byte(len(chars))]

@@ -1,8 +1,37 @@
 """This module provides rules for building protos for golang."""
 
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("@io_bazel_rules_go//go:def.bzl", _GoSource = "GoSource")
+load("//tools:build_rules/testing.bzl", "file_diff_test")
 
 KYTHE_IMPORT_BASE = "kythe.io/kythe/proto"
+
+def _go_proto_src_impl(ctx):
+  """Copy the generated source of a go_proto_library."""
+  lib = ctx.attr.library
+  for src in lib.actions[0].outputs:
+    out = ctx.outputs.generated
+    ctx.actions.run_shell(
+        outputs = [out],
+        inputs = [src],
+        arguments = [src.path, out.path],
+        command = "cp $1 $2",
+    )
+    break
+
+_go_proto_src = rule(
+    _go_proto_src_impl,
+    attrs = {
+      "library": attr.label(
+          providers = [_GoSource],
+          allow_single_file = True,
+          mandatory = True,
+      ),
+    },
+    outputs = {
+        "generated": "%{name}.cmp",
+    },
+)
 
 def go_kythe_proto(proto=None, deps=[]):
   """Helper for go_proto_library for kythe project.
@@ -29,6 +58,7 @@ def go_kythe_proto(proto=None, deps=[]):
     deps: the deps for the proto lib
   """
   base = proto.rsplit(":", 2)[-1]
+  filename = base.split("_", 2)[0] + ".pb.go"
   if base.endswith("_proto"):
     name = base[:-len("proto")] + "go_proto"
   else:
@@ -40,3 +70,21 @@ def go_kythe_proto(proto=None, deps=[]):
       importpath = KYTHE_IMPORT_BASE + "/" + name,
       proto = proto,
   )
+
+  # Copy the generated source from the proto library so we can compare it to
+  # what we checked in. Nothing useful is ever easy in Skylark.
+  _go_proto_src(
+      name = name + "_src",
+      library = ":"+name,
+  )
+  # Fail if the generated source differs from the checked-in version.  Prompt
+  # the user to re-generate if necessary. This assumes the checked-in source
+  # for kythe/proto:foo_go_proto is in kythe/proto/foo_go_proto/foo.pb.go.
+  file_diff_test(
+      name = name + "_sync_test",
+      file1 = ":%s_src" % name,
+      file2 = ":%s/%s" % (name, filename),
+      message = ("The checked in proto for '%s' is out of sync;" +
+                 " please run kythe/proto/generate_go_protobufs.py") % name,
+  )
+

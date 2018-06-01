@@ -124,6 +124,9 @@ func TestScanZIP(t *testing.T) {
 		got := make(map[string]string)
 
 		err := Scan(file, path, func(name string, err error, r io.Reader) error {
+			if err != nil {
+				return err
+			}
 			data, err := ioutil.ReadAll(r)
 			if err != nil {
 				return err
@@ -166,6 +169,9 @@ func TestScanTar(t *testing.T) {
 		got := make(map[string]string)
 
 		err := Scan(file, test.path, func(name string, err error, r io.Reader) error {
+			if err != nil {
+				return err
+			}
 			data, err := ioutil.ReadAll(r)
 			if err != nil {
 				return err

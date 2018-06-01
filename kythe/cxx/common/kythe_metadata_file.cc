@@ -56,28 +56,28 @@ bool LoadVName(const rapidjson::Value &value, proto::VName *vname_out) {
   return true;
 }
 
-/// \brief Attempts to load buffer as a header-style metadata file.
-/// \param buffer data to try and parse.
-/// \return the decoded metadata on success or null on failure.
-std::unique_ptr<llvm::MemoryBuffer> LoadHeaderMetadata(
-    const llvm::MemoryBuffer *buffer) {
-  if (buffer->getBufferSize() < 2) {
-    return nullptr;
-  }
+/// \brief Reads the contents of a C or C++ comment.
+/// \param buf_string a buffer containing the text to read.
+/// \param comment_slash_pos the offset of the first / starting the comment
+/// in buf_string
+/// \param data_start_pos the offset of the first byte of payload in
+/// buf_string
+std::unique_ptr<llvm::MemoryBuffer> LoadCommentMetadata(
+    llvm::StringRef buf_string, size_t comment_slash_pos,
+    size_t data_start_pos) {
   google::protobuf::string raw_data;
-  raw_data.reserve(buffer->getBufferSize());
-  auto buf_string = buffer->getBuffer();
-  if (buf_string[0] != '/') {
-    return nullptr;
-  }
-  size_t pos = 2;
+  // Over-reserves--though we expect the comment to be the only thing in the
+  // file or the last thing in the file, so this approximation is reasonable.
+  raw_data.reserve(buf_string.size() - comment_slash_pos);
+  size_t pos = data_start_pos;
   // Tolerate single-line comments as well as multi-line comments.
   // If there's a single-line comment, it should be the only thing in the
   // file.
-  bool single_line = buf_string[1] == '/';
+  bool single_line = buf_string[comment_slash_pos + 1] == '/';
   auto next_term =
       single_line ? llvm::StringRef::npos : buf_string.find("*/", pos);
-  for (size_t pos = 2; pos < buffer->getBufferSize();) {
+  for (; pos < buf_string.size();) {
+    while (pos < buf_string.size() && isspace(buf_string[pos])) ++pos;
     auto next_newline = buf_string.find("\n", pos);
     if (next_term != llvm::StringRef::npos &&
         (next_newline == llvm::StringRef::npos || next_term < next_newline)) {
@@ -98,6 +98,42 @@ std::unique_ptr<llvm::MemoryBuffer> LoadHeaderMetadata(
              ? llvm::MemoryBuffer::getMemBufferCopy(ToStringRef(decoded))
              : nullptr;
 }
+
+/// \brief Attempts to load buffer as a header-style metadata file.
+/// \param buffer data to try and parse.
+/// \return the decoded metadata on success or null on failure.
+std::unique_ptr<llvm::MemoryBuffer> LoadHeaderMetadata(
+    const llvm::MemoryBuffer *buffer) {
+  if (buffer->getBufferSize() < 2) {
+    return nullptr;
+  }
+  auto buf_string = buffer->getBuffer();
+  // If the header doesn't start with a comment, it's invalid.
+  if (buf_string[0] != '/' || !(buf_string[1] == '*' || buf_string[1] == '/')) {
+    return nullptr;
+  }
+  return LoadCommentMetadata(buf_string, 0, 2);
+}
+
+/// \brief Attempts to load buffer as an inline metadata file
+/// \param buffer data to try and parse.
+/// \param search_string the string identifying the data.
+/// \return the decoded metadata on success or null on failure.
+std::unique_ptr<llvm::MemoryBuffer> FindCommentMetadata(
+    const llvm::MemoryBuffer *buffer, const std::string &search_string) {
+  auto buf_string = buffer->getBuffer();
+  auto comment_start = buf_string.find("/* " + search_string);
+  if (comment_start == llvm::StringRef::npos) {
+    comment_start = buf_string.find("// " + search_string);
+    if (comment_start == llvm::StringRef::npos) {
+      return nullptr;
+    }
+  }
+  // Data starts after the comment token, a space, and the user-provided
+  // marker.
+  return LoadCommentMetadata(buf_string, comment_start,
+                             comment_start + 3 + search_string.size());
+}
 }  // anonymous namespace
 
 bool KytheMetadataSupport::LoadMetaElement(const rapidjson::Value &value,
@@ -106,23 +142,7 @@ bool KytheMetadataSupport::LoadMetaElement(const rapidjson::Value &value,
   if (type == "nop") {
     return true;
   }
-  if (type != "anchor_defines") {
-    LOG(WARNING) << "When loading metadata: unknown meta type.";
-    return false;
-  }
-  JSON_SAFE_LOAD(begin, Number);
-  JSON_SAFE_LOAD(end, Number);
   JSON_SAFE_LOAD(edge, String);
-  JSON_SAFE_LOAD(vname, Object);
-  proto::VName vname_out;
-  if (!LoadVName(vname, &vname_out)) {
-    return false;
-  }
-  if (!begin.IsUint() || !end.IsUint()) {
-    return false;
-  }
-  unsigned begin_int = begin.GetUint();
-  unsigned end_int = end.GetUint();
   llvm::StringRef edge_string = edge.GetString();
   if (edge_string.empty()) {
     LOG(WARNING) << "When loading metadata: empty edge.";
@@ -133,10 +153,57 @@ bool KytheMetadataSupport::LoadMetaElement(const rapidjson::Value &value,
     edge_string = edge_string.drop_front(1);
     reverse_edge = true;
   }
-  *rule = MetadataFile::Rule{
-      begin_int,   end_int,   kythe::common::schema::kDefinesBinding,
-      edge_string, vname_out, reverse_edge};
-  return true;
+  if (type == "anchor_defines") {
+    JSON_SAFE_LOAD(begin, Number);
+    JSON_SAFE_LOAD(end, Number);
+    JSON_SAFE_LOAD(vname, Object);
+    proto::VName vname_out;
+    if (!LoadVName(vname, &vname_out)) {
+      return false;
+    }
+    if (!begin.IsUint() || !end.IsUint()) {
+      return false;
+    }
+    unsigned begin_int = begin.GetUint();
+    unsigned end_int = end.GetUint();
+    *rule = MetadataFile::Rule{
+        begin_int,   end_int,   kythe::common::schema::kDefinesBinding,
+        edge_string, vname_out, reverse_edge,
+        false,       0,         0};
+    return true;
+  } else if (type == "anchor_anchor") {
+    JSON_SAFE_LOAD(source_begin, Number);
+    JSON_SAFE_LOAD(source_end, Number);
+    JSON_SAFE_LOAD(target_begin, Number);
+    JSON_SAFE_LOAD(target_end, Number);
+    JSON_SAFE_LOAD(source_vname, Object);
+    proto::VName vname_out;
+    if (!LoadVName(source_vname, &vname_out)) {
+      return false;
+    }
+    if (!source_begin.IsUint() || !source_end.IsUint() ||
+        !target_begin.IsUint() || !target_end.IsUint()) {
+      return false;
+    }
+    unsigned source_begin_int = source_begin.GetUint();
+    unsigned source_end_int = source_end.GetUint();
+    unsigned target_begin_int = target_begin.GetUint();
+    unsigned target_end_int = target_end.GetUint();
+    *rule = MetadataFile::Rule{target_begin_int,
+                               target_end_int,
+                               kythe::common::schema::kDefinesBinding,
+                               edge_string,
+                               vname_out,
+                               !reverse_edge,
+                               true,
+                               source_begin_int,
+                               source_end_int};
+    return true;
+  } else {
+    LOG(WARNING) << "When loading metadata: unknown meta type "
+                 << type.GetString();
+    return false;
+  }
 }
 
 #undef JSON_SAFE_LOAD
@@ -206,11 +273,19 @@ void MetadataSupports::UseVNameLookup(VNameLookup lookup) const {
 }
 
 std::unique_ptr<kythe::MetadataFile> MetadataSupports::ParseFile(
-    const std::string &filename, const llvm::MemoryBuffer *buffer) const {
+    const std::string &filename, const llvm::MemoryBuffer *buffer,
+    const std::string &search_string) const {
   std::string modified_filename = filename;
   std::unique_ptr<llvm::MemoryBuffer> decoded_buffer_storage;
   const llvm::MemoryBuffer *decoded_buffer = buffer;
-  if (filename.size() >= 2 &&
+  if (!search_string.empty()) {
+    decoded_buffer_storage = FindCommentMetadata(buffer, search_string);
+    if (decoded_buffer_storage == nullptr) {
+      return nullptr;
+    }
+    decoded_buffer = decoded_buffer_storage.get();
+  }
+  if (decoded_buffer_storage == nullptr && filename.size() >= 2 &&
       filename.find(".h", filename.size() - 2) != std::string::npos) {
     decoded_buffer_storage = LoadHeaderMetadata(buffer);
     if (decoded_buffer_storage != nullptr) {

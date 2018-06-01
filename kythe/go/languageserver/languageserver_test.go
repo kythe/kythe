@@ -215,6 +215,9 @@ func TestReferences(t *testing.T) {
 			Character: 2,
 		},
 	})
+	if err != nil {
+		t.Error(err)
+	}
 
 	expected = []lsp.Location{{
 		URI: "file:///root/dir/file.txt",

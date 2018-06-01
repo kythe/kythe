@@ -490,9 +490,9 @@ func EncodeKey(source *spb.VName, factName string, edgeKind string, target *spb.
 		return nil, errors.New("invalid Entry: missing source VName for key encoding")
 	} else if (edgeKind == "" || target == nil) && (edgeKind != "" || target != nil) {
 		return nil, errors.New("invalid Entry: edgeKind and target Ticket must be both non-empty or empty")
-	} else if strings.Index(edgeKind, entryKeySepStr) != -1 {
+	} else if strings.Contains(edgeKind, entryKeySepStr) {
 		return nil, errors.New("invalid Entry: edgeKind contains key separator")
-	} else if strings.Index(factName, entryKeySepStr) != -1 {
+	} else if strings.Contains(factName, entryKeySepStr) {
 		return nil, errors.New("invalid Entry: factName contains key separator")
 	}
 
@@ -501,13 +501,13 @@ func EncodeKey(source *spb.VName, factName string, edgeKind string, target *spb.
 	srcEncoding, err := encodeVName(source)
 	if err != nil {
 		return nil, fmt.Errorf("error encoding source VName: %v", err)
-	} else if bytes.Index(srcEncoding, entryKeySepBytes) != -1 {
+	} else if bytes.Contains(srcEncoding, entryKeySepBytes) {
 		return nil, fmt.Errorf("invalid Entry: source VName contains key separator (%q) %v", entryKeySepBytes, source)
 	}
 	targetEncoding, err := encodeVName(target)
 	if err != nil {
 		return nil, fmt.Errorf("error encoding target VName: %v", err)
-	} else if bytes.Index(targetEncoding, entryKeySepBytes) != -1 {
+	} else if bytes.Contains(targetEncoding, entryKeySepBytes) {
 		return nil, errors.New("invalid Entry: target VName contains key separator")
 	}
 

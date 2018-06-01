@@ -4,7 +4,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_binary(
     name = "bazel_go_extractor",
-    srcs = ["bazel_go_extractor.go"],
+    srcs = ["bazel_go_extractor/bazel_go_extractor.go"],
     deps = [
         "//kythe/go/extractors/bazel",
         "//kythe/go/extractors/golang",
@@ -24,7 +24,7 @@ go_binary(
 
 go_binary(
     name = "extract_kindex",
-    srcs = ["extract_kindex.go"],
+    srcs = ["extract_kindex/extract_kindex.go"],
     deps = [
         "//kythe/go/extractors/bazel",
         "//kythe/go/platform/kindex",

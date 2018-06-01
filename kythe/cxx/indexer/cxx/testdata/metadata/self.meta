@@ -1,0 +1,18 @@
+{
+  "type": "kythe0",
+  "meta": [
+    {
+      "type": "anchor_anchor",
+      "source_begin": 184,
+      "source_end": 187,
+      "target_begin": 517,
+      "target_end": 518,
+      "edge": "/kythe/edge/imputes",
+      "source_vname": {
+        "corpus": "sourcecorpus",
+        "path": "sourcepath",
+        "root": "sourceroot"
+      }
+    }
+  ]
+}

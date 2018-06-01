@@ -295,8 +295,10 @@ class GraphObserver {
   }
 
   /// \brief Loads and applies the metadata file `FE` to the given FileId.
-  virtual void applyMetadataFile(clang::FileID ID, const clang::FileEntry *FE) {
-  }
+  /// \param SearchString if non-empty, is used to locate a C-style comment
+  /// inside `FE` that contains metadata.
+  virtual void applyMetadataFile(clang::FileID ID, const clang::FileEntry *FE,
+                                 const std::string &SearchString) {}
 
   /// \param LO the language options in use.
   virtual void setLangOptions(clang::LangOptions *LO) { LangOptions = LO; }

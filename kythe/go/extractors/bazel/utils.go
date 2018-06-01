@@ -29,11 +29,13 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/util/ptypes"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 	bipb "kythe.io/kythe/proto/buildinfo_go_proto"
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
@@ -100,14 +102,23 @@ func PathInPackage(path, pkg string) bool {
 
 // SetTarget adds a details message to unit with the specified build target
 // name and rule type.
-func SetTarget(target, rule string, unit *kindex.Compilation) error {
+func SetTarget(target, rule string, unit *apb.CompilationUnit) error {
 	if target != "" || rule != "" {
-		return unit.AddDetails(&bipb.BuildDetails{
+		return AddDetail(unit, &bipb.BuildDetails{
 			BuildTarget: target,
 			RuleType:    rule,
 		})
 	}
 	return nil
+}
+
+// AddDetail adds the specified message to the details field of unit.
+func AddDetail(unit *apb.CompilationUnit, msg proto.Message) error {
+	det, err := ptypes.MarshalAny(msg)
+	if err == nil {
+		unit.Details = append(unit.Details, det)
+	}
+	return err
 }
 
 // FindSourceArgs returns a fixup that scans the argument list of a compilation

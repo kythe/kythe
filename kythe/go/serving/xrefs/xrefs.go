@@ -82,14 +82,6 @@ type SplitTable struct {
 	Documentation table.Proto
 }
 
-func toKeys(ss []string) [][]byte {
-	keys := make([][]byte, len(ss), len(ss))
-	for i, s := range ss {
-		keys[i] = []byte(s)
-	}
-	return keys
-}
-
 func (s *SplitTable) fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error) {
 	tracePrintf(ctx, "Reading FileDecorations: %s", ticket)
 	var fd srvpb.FileDecorations
@@ -780,30 +772,6 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp
 	return s.total == s.max
 }
 
-func (s *refStats) addRelatedAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as []*xpb.CrossReferencesReply_RelatedAnchor, anchorText bool) int {
-	if s.total == s.max {
-		return 0
-	} else if s.skip > len(as) {
-		s.skip -= len(as)
-		return 0
-	} else if s.skip > 0 {
-		as = as[s.skip:]
-		s.skip = 0
-	}
-
-	if s.total+len(as) > s.max {
-		as = as[:(s.max - s.total)]
-	}
-	s.total += len(as)
-	for _, a := range as {
-		if !anchorText {
-			a.Anchor.Text = ""
-		}
-		*to = append(*to, a)
-	}
-	return len(as)
-}
-
 func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_RelatedAnchor {
 	var text string
 	if anchorText {
@@ -822,18 +790,6 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 		Snippet:     a.Snippet,
 		SnippetSpan: a.SnippetSpan,
 	}}
-}
-
-func addLinkNodes(ms *cpb.MarkedSource, nodes stringset.Set) {
-	if ms == nil {
-		return
-	}
-	for _, l := range ms.Link {
-		nodes.Add(l.Definition...)
-	}
-	for _, child := range ms.Child {
-		addLinkNodes(child, nodes)
-	}
 }
 
 func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.NodeInfo, defs map[string]*xpb.Anchor) *xpb.DocumentationReply_Document {

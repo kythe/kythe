@@ -1107,6 +1107,18 @@ test_suite(
 )
 
 cc_indexer_test(
+    name = "metadata_inline_cppstyle",
+    srcs = ["metadata/metadata_inline_cppstyle.cc"],
+    tags = ["metadata"],
+)
+
+cc_indexer_test(
+    name = "metadata_inline_cstyle",
+    srcs = ["metadata/metadata_inline_cstyle.cc"],
+    tags = ["metadata"],
+)
+
+cc_indexer_test(
     name = "metadata_generates_rule",
     srcs = ["metadata/metadata_generates_rule.cc"],
     tags = ["metadata"],
@@ -1139,6 +1151,13 @@ cc_indexer_test(
     srcs = ["metadata/metadata_pragma.cc"],
     tags = ["metadata"],
     deps = ["metadata/empty.meta"],
+)
+
+cc_indexer_test(
+    name = "metadata_self",
+    srcs = ["metadata/metadata_self.cc"],
+    tags = ["metadata"],
+    deps = ["metadata/metadata_self.h"],
 )
 
 test_suite(

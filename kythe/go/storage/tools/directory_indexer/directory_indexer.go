@@ -96,6 +96,9 @@ var (
 )
 
 func emitPath(path string, info os.FileInfo, err error) error {
+	if err != nil {
+		return err
+	}
 	if info.IsDir() || !(*emitIrregular || info.Mode().IsRegular()) {
 		return nil
 	}

@@ -84,6 +84,18 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
                                  clang::PragmaIntroducerKind Introducer,
                                  clang::Token &FirstToken);
 
+  /// \brief Run by a `clang::PragmaHandler` to handle the
+  /// `kythe_inline_metadata` pragma.
+  ///
+  /// This has the same semantics as `clang::PragmaHandler::HandlePragma`.
+  /// We pass Clang a throwaway `PragmaHandler` instance that delegates to
+  /// this member function.
+  ///
+  /// \sa clang::PragmaHandler::HandlePragma
+  void HandleKytheInlineMetadataPragma(clang::Preprocessor &Preprocessor,
+                                       clang::PragmaIntroducerKind Introducer,
+                                       clang::Token &FirstToken);
+
   void EndOfMainFile() override;
 
  private:

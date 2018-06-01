@@ -445,17 +445,6 @@ var (
 	}
 )
 
-func getEdgeTargets(tickets ...string) []*srvpb.EdgeGroup_Edge {
-	es := make([]*srvpb.EdgeGroup_Edge, len(tickets))
-	for i, t := range tickets {
-		es[i] = &srvpb.EdgeGroup_Edge{
-			Target:  getNode(t),
-			Ordinal: int32(i),
-		}
-	}
-	return es
-}
-
 func getNodes(ts ...string) []*srvpb.Node {
 	var res []*srvpb.Node
 	for _, t := range ts {
@@ -1226,14 +1215,6 @@ func makeFactList(keyVals ...string) []*cpb.Fact {
 		})
 	}
 	return facts
-}
-
-func mapFacts(n *cpb.NodeInfo, facts map[string]string) {
-	for name := range n.Facts {
-		if val, ok := facts[name]; ok {
-			n.Facts[name] = []byte(val)
-		}
-	}
 }
 
 func refs(norm *xrefs.Normalizer, ds []*srvpb.FileDecorations_Decoration) (refs []*xpb.DecorationsReply_Reference) {
