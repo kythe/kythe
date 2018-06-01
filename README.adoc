@@ -21,7 +21,7 @@ limitations under the License.
 == Features
 
 * Extensive documentation of the Kythe schema
-* Indexer implementations for C++ and Java
+* Indexer implementations for C++, Go, and Java
 * Compilation extractors for javac, Maven, cmake, Go, and link:http://bazel.io/[Bazel]
 * Generic verifier for indexers
 * Sample cross-reference service and accompanying web UI
