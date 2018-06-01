@@ -38,6 +38,7 @@ public enum EdgeKind {
   EXPORTS("exports"),
   EXTENDS("extends"),
   GENERATES("generates"),
+  IMPUTES("imputes"),
   NAMED("named"),
   OVERRIDES("overrides"),
   OVERRIDES_TRANSITIVE("overrides/transitive"),
