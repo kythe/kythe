@@ -12,7 +12,7 @@
   "dependencies": {
     "@types/node": "^7.0.4",
     "source-map-support": "^0.4.11",
-    "typescript": "~2.7.2"
+    "typescript": "~2.8.3"
   },
   "license": "Apache-2.0"
 }
