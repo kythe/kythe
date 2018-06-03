@@ -138,7 +138,7 @@ func getReposFromFile() ([]string, error) {
 	ret := []string{}
 	scanner := bufio.NewScanner(file)
 	// TODO(danielmoy): consider supporting separate configs per repo. This
-	// will become more necessary once we have more customzied configs.
+	// will become more necessary once we have more customized configs.
 	for scanner.Scan() {
 		ret = append(ret, scanner.Text())
 	}
