@@ -129,7 +129,7 @@ func TestResolve(t *testing.T) {
 				},
 				xrefs: &xpb.CrossReferencesReply{
 					CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
-						"kythe://test?lang=qq#X": &xpb.CrossReferencesReply_CrossReferenceSet{
+						"kythe://test?lang=qq#X": {
 							Ticket: "kythe://test?lang=qq#X",
 							Definition: []*xpb.CrossReferencesReply_RelatedAnchor{{
 								Anchor: &xpb.Anchor{
@@ -174,7 +174,7 @@ func TestResolve(t *testing.T) {
 				},
 				xrefs: &xpb.CrossReferencesReply{
 					CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
-						"kythe://test?lang=qq#X": &xpb.CrossReferencesReply_CrossReferenceSet{
+						"kythe://test?lang=qq#X": {
 							Ticket: "kythe://test?lang=qq#X",
 							Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{
 								Anchor: new(xpb.Anchor),

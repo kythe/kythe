@@ -1,15 +1,11 @@
-load("//tools:build_rules/shims.bzl", "go_binary")
-
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_binary(
+filegroup(
     name = "extractrepo",
-    srcs = ["extractrepo/extractrepo.go"],
-    deps = ["//kythe/go/extractors/config"],
+    srcs = ["//kythe/go/platform/tools/extraction/extractrepo"],
 )
 
-go_binary(
+filegroup(
     name = "repotester",
-    srcs = ["repotester/repotester.go"],
-    deps = ["//kythe/go/extractors/config/smoke"],
+    srcs = ["//kythe/go/platform/tools/extraction/repotester"],
 )

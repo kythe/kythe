@@ -253,7 +253,7 @@ func Parse(s string) (*URI, error) {
 }
 
 // decode decodes u in-place using buf as an intermediate buffer.  The caller
-// must ensure len(buf) is sufficent to hold the longest field.  Preallocation
+// must ensure len(buf) is sufficient to hold the longest field.  Preallocation
 // reduces allocation for unescaping and saves ~200 ns/op in benchmarks.
 func decode(u *URI, buf []byte) (*URI, error) {
 	if err := unescape(&u.Signature, buf); err != nil {

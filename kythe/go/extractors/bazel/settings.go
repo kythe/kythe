@@ -197,7 +197,7 @@ func NewFromSettings(s Settings) (*Config, *xapb.ExtraActionInfo, error) {
 		if err != nil {
 			return nil, nil, fmt.Errorf("invalid source args regexp: %v", err)
 		}
-		config.Fixup = FindSourceArgs(r)
+		config.FixUnit = FindSourceArgs(r)
 	}
 
 	return config, info, nil

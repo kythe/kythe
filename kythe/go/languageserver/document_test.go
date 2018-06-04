@@ -26,21 +26,21 @@ import (
 func TestRangeMatching(t *testing.T) {
 	text := "abcdefg"
 	doc := newDocument([]*RefResolution{
-		&RefResolution{
+		{
 			ticket: "longest",
 			oldRange: lsp.Range{
 				Start: lsp.Position{Line: 0, Character: 0},
 				End:   lsp.Position{Line: 0, Character: 5},
 			},
 		},
-		&RefResolution{
+		{
 			ticket: "shortest",
 			oldRange: lsp.Range{
 				Start: lsp.Position{Line: 0, Character: 2},
 				End:   lsp.Position{Line: 0, Character: 3},
 			},
 		},
-		&RefResolution{
+		{
 			ticket: "medium",
 			oldRange: lsp.Range{
 				Start: lsp.Position{Line: 0, Character: 2},
