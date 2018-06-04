@@ -214,8 +214,8 @@ func embedSourceKey(src *spb.VName, n *ppb.Node) *ppb.Node {
 // desired set.
 //
 // The semantics of the Filter are such that a "zero"-value Filter will pass all
-// Nodes through unaltered.  Part of the filter only applies if set to a non-nil
-// value and all parts are applied independently.
+// Nodes through unaltered.  Each part of the filter only applies if set to a
+// non-nil value and all parts are applied independently.
 //
 // Examples:
 //
@@ -251,10 +251,10 @@ type Filter struct {
 	// nodes that match one of the given subkinds.
 	FilterBySubkind []string
 
-	// IncludeFacts, if non-nil, configures the filter remove all facts not
+	// IncludeFacts, if non-nil, configures the filter to remove all facts not
 	// explicitly contained with the slice.
 	IncludeFacts []string
-	// IncludeEdges, if non-nil, configures the filter remove all edges with a
+	// IncludeEdges, if non-nil, configures the filter to remove all edges with a
 	// kind not explicitly contained with the slice.
 	IncludeEdges []string
 }
