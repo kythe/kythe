@@ -72,6 +72,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -109,11 +110,17 @@ func NewReader(r io.ReaderAt, size int64) (*Reader, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Order the files in the archive by path, so we can binary search.
+	sort.Slice(archive.File, func(i, j int) bool {
+		return archive.File[i].Name < archive.File[j].Name
+	})
+
 	if len(archive.File) == 0 {
 		return nil, errors.New("archive is empty")
 	} else if fi := archive.File[0].FileInfo(); !fi.IsDir() {
 		return nil, errors.New("archive root is not a directory")
 	}
+
 	return &Reader{
 		zip:  archive,
 		root: archive.File[0].Name,
@@ -149,12 +156,25 @@ func readUnit(digest string, f *zip.File) (*Unit, error) {
 	}, nil
 }
 
+// firstIndex returns the first index in the archive's file list whose path is
+// greater than or equal to with prefix, or -1 if no such index exists.
+func (r *Reader) findPrefix(prefix string) int {
+	fs := r.zip.File
+	n := sort.Search(len(fs), func(i int) bool {
+		return fs[i].Name >= prefix
+	})
+	if n >= len(fs) {
+		return -1
+	}
+	return n
+}
+
 // Lookup returns the specified compilation from the archive, if it exists.  If
 // the requested digest is not in the archive, ErrDigestNotFound is returned.
 func (r *Reader) Lookup(unitDigest string) (*Unit, error) {
 	needle := r.unitPath(unitDigest)
-	for _, f := range r.zip.File {
-		if f.Name == needle {
+	if pos := r.findPrefix(needle); pos >= 0 {
+		if f := r.zip.File[pos]; f.Name == needle {
 			return readUnit(unitDigest, f)
 		}
 	}
@@ -166,9 +186,13 @@ func (r *Reader) Lookup(unitDigest string) (*Unit, error) {
 // that error is propagated to the caller of Scan.
 func (r *Reader) Scan(f func(*Unit) error) error {
 	prefix := r.unitPath("") + "/"
-	for _, file := range r.zip.File {
+	pos := r.findPrefix(prefix)
+	if pos < 0 {
+		return nil
+	}
+	for _, file := range r.zip.File[pos:] {
 		if !strings.HasPrefix(file.Name, prefix) {
-			continue // skip root, files
+			break
 		}
 		digest := strings.TrimPrefix(file.Name, prefix)
 		unit, err := readUnit(digest, file)
@@ -187,8 +211,8 @@ func (r *Reader) Scan(f func(*Unit) error) error {
 // caller must close the reader when it is no longer needed.
 func (r *Reader) Open(fileDigest string) (io.ReadCloser, error) {
 	needle := r.filePath(fileDigest)
-	for _, f := range r.zip.File {
-		if f.Name == needle {
+	if pos := r.findPrefix(needle); pos >= 0 {
+		if f := r.zip.File[pos]; f.Name == needle {
 			return f.Open()
 		}
 	}
