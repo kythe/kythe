@@ -63,24 +63,26 @@ func (k *KytheBeam) Nodes() beam.PCollection { return k.nodes }
 
 // References returns all derived *ppb.References from the Kythe input graph.
 func (k *KytheBeam) References() beam.PCollection {
-	if !k.refs.IsValid() {
-		s := k.s.Scope("References")
-		anchors := beam.ParDo(s, keyByPath, beam.ParDo(s,
-			&nodes.Filter{
-				FilterByKind: []string{kinds.Anchor},
-				IncludeFacts: []string{
-					facts.AnchorStart, facts.AnchorEnd,
-					facts.SnippetStart, facts.SnippetEnd,
-				},
-			}, k.nodes))
-		files := beam.ParDo(s, keyByPath, beam.ParDo(s,
-			&nodes.Filter{
-				FilterByKind: []string{kinds.File},
-				IncludeFacts: []string{facts.Text},
-			}, k.nodes))
-
-		k.refs = beam.ParDo(s, toRefs, beam.CoGroupByKey(s, files, anchors))
+	if k.refs.IsValid() {
+		return k.refs
 	}
+
+	s := k.s.Scope("References")
+	anchors := beam.ParDo(s, keyByPath, beam.ParDo(s,
+		&nodes.Filter{
+			FilterByKind: []string{kinds.Anchor},
+			IncludeFacts: []string{
+				facts.AnchorStart, facts.AnchorEnd,
+				facts.SnippetStart, facts.SnippetEnd,
+			},
+		}, k.nodes))
+	files := beam.ParDo(s, keyByPath, beam.ParDo(s,
+		&nodes.Filter{
+			FilterByKind: []string{kinds.File},
+			IncludeFacts: []string{facts.Text},
+		}, k.nodes))
+
+	k.refs = beam.ParDo(s, toRefs, beam.CoGroupByKey(s, files, anchors))
 	return k.refs
 }
 
@@ -133,10 +135,10 @@ func normalizeAnchors(file *srvpb.File, anchor func(**ppb.Node) bool, emit func(
 				Anchor: a,
 				Scope:  parent,
 			}
-			if k := e.GetKytheKind(); k != scpb.EdgeKind_UNKNOWN_EDGE_KIND {
-				ref.Kind = &ppb.Reference_KytheKind{k}
-			} else {
+			if k := e.GetKytheKind(); k == scpb.EdgeKind_UNKNOWN_EDGE_KIND {
 				ref.Kind = &ppb.Reference_GenericKind{e.GetGenericKind()}
+			} else {
+				ref.Kind = &ppb.Reference_KytheKind{k}
 			}
 			emit(ref)
 		}
