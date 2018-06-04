@@ -9,8 +9,6 @@ go_binary(
         "//kythe/go/extractors/bazel",
         "//kythe/go/extractors/golang",
         "//kythe/go/extractors/govname",
-        "//kythe/go/platform/indexpack",
-        "//kythe/go/platform/kindex",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:go_go_proto",

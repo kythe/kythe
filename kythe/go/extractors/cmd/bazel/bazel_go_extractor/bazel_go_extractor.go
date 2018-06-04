@@ -30,13 +30,13 @@ import (
 
 	"kythe.io/kythe/go/extractors/bazel"
 	"kythe.io/kythe/go/extractors/govname"
-	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	"bitbucket.org/creachadair/shell"
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 	gopb "kythe.io/kythe/proto/go_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 	eapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
@@ -97,7 +97,7 @@ func main() {
 		CheckAction: ext.checkAction,
 		CheckInput:  ext.checkInput,
 		CheckEnv:    ext.checkEnv,
-		Fixup:       ext.fixup,
+		FixUnit:     ext.fixup,
 	}
 	ai, err := bazel.SpawnAction(info)
 	if err != nil {
@@ -191,17 +191,15 @@ func (*extractor) checkEnv(name, _ string) bool {
 	return true
 }
 
-func (e *extractor) fixup(cu *kindex.Compilation) error {
-	unit := cu.Proto
+func (e *extractor) fixup(unit *apb.CompilationUnit) error {
 	unit.Argument = e.toolArgs.compile
 	unit.SourceFile = e.toolArgs.sources
 	unit.WorkingDirectory = e.toolArgs.workDir
 	unit.VName.Path = e.toolArgs.importPath
 
 	// Adjust the paths through the symlink forest.
-	for i, fi := range cu.Files {
-		path := fi.Info.Path
-		fixed := e.toolArgs.fixPath(path)
+	for i, fi := range unit.RequiredInput {
+		fixed := e.toolArgs.fixPath(fi.Info.GetPath())
 		fi.Info.Path = fixed
 		unit.RequiredInput[i].VName = e.rules.ApplyDefault(fixed, &spb.VName{
 			Corpus: *corpus,
@@ -209,7 +207,7 @@ func (e *extractor) fixup(cu *kindex.Compilation) error {
 		})
 
 	}
-	return cu.AddDetails(&gopb.GoDetails{
+	return bazel.AddDetail(unit, &gopb.GoDetails{
 		Goroot:     e.toolArgs.goRoot,
 		Goos:       e.goos,
 		Goarch:     e.goarch,
