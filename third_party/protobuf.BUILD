@@ -25,6 +25,7 @@ COPTS = select({
         "-Woverloaded-virtual",
         "-Wno-sign-compare",
         "-Wno-unused-function",
+        "-Wno-unused-const-variable",
     ],
 })
 

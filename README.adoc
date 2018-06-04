@@ -16,7 +16,10 @@ limitations under the License.
 
 = Kythe
 19-May-2015
-:toc2:
+
+
+image:https://img.shields.io/github/release/google/kythe/all.svg[link=https://github.com/google/kythe/releases]
+image:https://img.shields.io/github/license/google/kythe.svg[link=https://github.com/google/kythe/blob/master/LICENSE]
 
 == Features
 

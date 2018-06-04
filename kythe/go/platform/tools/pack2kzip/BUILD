@@ -13,5 +13,6 @@ go_binary(
         "@com_github_golang_protobuf//jsonpb:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
         "@org_golang_x_sync//errgroup:go_default_library",
+        "@org_golang_x_sync//semaphore:go_default_library",
     ],
 )
