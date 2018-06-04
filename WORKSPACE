@@ -461,3 +461,9 @@ go_repository(
     custom_git = "https://github.com/census-instrumentation/opencensus-go.git",
     importpath = "go.opencensus.io",
 )
+
+go_repository(
+    name = "com_github_syndtr_goleveldb",
+    commit = "5d6fca44a948d2be89a9702de7717f0168403d3d",
+    importpath = "github.com/syndtr/goleveldb",
+)
