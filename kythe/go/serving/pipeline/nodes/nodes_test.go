@@ -26,6 +26,7 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/passert"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
+	"github.com/apache/beam/sdks/go/pkg/beam/x/debug"
 
 	ppb "kythe.io/kythe/proto/pipeline_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
@@ -75,6 +76,26 @@ func TestFromEntries(t *testing.T) {
 		Source:   &spb.VName{Signature: "node2"},
 		EdgeKind: "/unknown/edge/kind",
 		Target:   &spb.VName{Signature: "node2"},
+	}, {
+		Source:    &spb.VName{Signature: "anchor"},
+		FactName:  facts.NodeKind,
+		FactValue: []byte(nodes.Anchor),
+	}, {
+		Source:    &spb.VName{Signature: "anchor"},
+		FactName:  facts.AnchorStart,
+		FactValue: []byte("1"),
+	}, {
+		Source:    &spb.VName{Signature: "anchor"},
+		FactName:  facts.SnippetEnd,
+		FactValue: []byte("5"),
+	}, {
+		Source:    &spb.VName{Signature: "anchor"},
+		FactName:  facts.SnippetStart,
+		FactValue: []byte("0"),
+	}, {
+		Source:    &spb.VName{Signature: "anchor"},
+		FactName:  facts.AnchorEnd,
+		FactValue: []byte("2"),
 	}}
 	expected := []*ppb.Node{{
 		Source:  &spb.VName{Signature: "node1"},
@@ -85,23 +106,40 @@ func TestFromEntries(t *testing.T) {
 		Kind:    &ppb.Node_GenericKind{"unknown_nodekind"},
 		Subkind: &ppb.Node_GenericSubkind{"unknown_subkind"},
 		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
-			Value: []byte("text"),
-		}, {
 			Name:  &ppb.Fact_GenericName{"/unknown/fact/name"},
 			Value: []byte("blah"),
+		}, {
+			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("text"),
 		}},
 		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_TYPED},
-			Target: &spb.VName{Signature: "node1"},
-		}, {
 			Kind:   &ppb.Edge_GenericKind{"/unknown/edge/kind"},
 			Target: &spb.VName{Signature: "node2"},
+		}, {
+			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_TYPED},
+			Target: &spb.VName{Signature: "node1"},
+		}},
+	}, {
+		Source: &spb.VName{Signature: "anchor"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("2"),
+		}, {
+			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("1"),
+		}, {
+			Name:  &ppb.Fact_KytheName{scpb.FactName_SNIPPET_END},
+			Value: []byte("5"),
+		}, {
+			Name:  &ppb.Fact_KytheName{scpb.FactName_SNIPPET_START},
+			Value: []byte("0"),
 		}},
 	}}
 
 	p, s := beam.NewPipelineWithRoot()
 	nodes := FromEntries(s, beam.CreateList(s, entries))
+	debug.Print(s, nodes)
 	passert.Equals(s, nodes, beam.CreateList(s, expected))
 
 	if err := ptest.Run(p); err != nil {
@@ -224,6 +262,7 @@ func TestFilter(t *testing.T) {
 	for _, test := range tests {
 		p, s, coll := ptest.CreateList(nodes)
 		filtered := beam.ParDo(s, &test.filter, coll)
+		debug.Print(s, filtered)
 		passert.Equals(s, filtered, beam.CreateList(s, test.expected))
 
 		if err := ptest.Run(p); err != nil {

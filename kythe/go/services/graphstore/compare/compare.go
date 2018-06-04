@@ -84,7 +84,7 @@ func Strings(s, t string) Order { return Order(strings.Compare(s, t)) }
 func Bytes(s, t []byte) Order { return Order(bytes.Compare(s, t)) }
 
 // Ints returns LT if a < b, EQ if a == b, or GT if a > b.
-func Ints(a, b int) Order { return ToOrder(b - a) }
+func Ints(a, b int) Order { return ToOrder(a - b) }
 
 var (
 	emptyVName = new(spb.VName)

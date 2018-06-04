@@ -18,6 +18,7 @@ go_binary(
         "//kythe/go/util/flagutil",
         "//kythe/go/util/profile",
         "//kythe/proto:pipeline_go_proto",
+        "//kythe/proto:serving_go_proto",
         "//kythe/proto:storage_go_proto",
         "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/x/beamx:go_default_library",

@@ -25,6 +25,7 @@ go_test(
         "//kythe/go/util/schema/nodes",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
+        "@com_github_apache_beam//sdks/go/pkg/beam/x/debug:go_default_library",
         "@com_github_google_go_cmp//cmp:go_default_library",
     ],
 )
