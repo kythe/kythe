@@ -210,7 +210,7 @@ func embedSourceKey(src *spb.VName, n *ppb.Node) *ppb.Node {
 }
 
 // Filter is a beam DoFn that emits *ppb.Nodes matching a set of kinds/subkinds.
-// Optionally, each processed node's facts/edges will also be filtered to
+// Optionally, each processed node's facts/edges will also be filtered to the
 // desired set.
 type Filter struct {
 	FilterByKind, FilterBySubkind []string
@@ -218,7 +218,7 @@ type Filter struct {
 	IncludeFacts, IncludeEdges []string
 }
 
-// ProcessElement emit the given Node if it matches the given Filter.
+// ProcessElement emits the given Node if it matches the given Filter.
 func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
 	if f.FilterByKind != nil && !contains(nodeKind(n), f.FilterByKind) {
 		return nil
