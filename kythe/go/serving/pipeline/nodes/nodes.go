@@ -40,6 +40,7 @@ func init() {
 	beam.RegisterFunction(embedSourceKey)
 	beam.RegisterFunction(entryToNode)
 
+	beam.RegisterType(reflect.TypeOf((*Filter)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*combineNodes)(nil)).Elem())
 }
 
@@ -206,4 +207,143 @@ func embedSourceKey(src *spb.VName, n *ppb.Node) *ppb.Node {
 		Fact:    n.Fact,
 		Edge:    n.Edge,
 	}
+}
+
+// Filter is a beam DoFn that emits *ppb.Nodes matching a set of kinds/subkinds.
+// Optionally, each processed node's facts/edges will also be filtered to the
+// desired set.
+//
+// The semantics of the Filter are such that a "zero"-value Filter will pass all
+// Nodes through unaltered.  Each part of the filter only applies if set to a
+// non-nil value and all parts are applied independently.
+//
+// Examples:
+//
+//   Emit only "record" nodes with the "class" subkind with all their facts/edges:
+//     &Filter {
+//       FilterByKind:    []string{"record"},
+//       FilterBySubkind: []string{"class"},
+//     }
+//
+//   Emit only "anchor" nodes (any subkind) with all their facts/edges:
+//     &Filter {FilterByKind: []string{"anchor"}}
+//
+//   Emit only "anchor" nodes with only the loc/{start,end} facts and no edges:
+//     &Filter {
+//       FilterByKind: []string{"anchor"},
+//       IncludeFacts: []string{"/kythe/loc/start", "/kythe/loc/end"},
+//       IncludeEdges: []string{},
+//     }
+//
+//   Emit only "anchor" nodes with their "childof" edges (but all their facts):
+//     &Filter {
+//       FilterByKind: []string{"anchor"},
+//       IncludeEdges: []string{"/kythe/edge/childof"},
+//     }
+//
+//   Emit all nodes without any of their edges (but all their facts):
+//     &Filter {IncludeEdges: []string{}}
+type Filter struct {
+	// FilterByKind, if non-nil, configures the filter to only pass through nodes
+	// that match one of the given kinds.
+	FilterByKind []string
+	// FilterBySubkind, if non-nil, configures the filter to only pass through
+	// nodes that match one of the given subkinds.
+	FilterBySubkind []string
+
+	// IncludeFacts, if non-nil, configures the filter to remove all facts not
+	// explicitly contained with the slice.
+	IncludeFacts []string
+	// IncludeEdges, if non-nil, configures the filter to remove all edges with a
+	// kind not explicitly contained with the slice.
+	IncludeEdges []string
+}
+
+// ProcessElement emits the given Node if it matches the given Filter.
+func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
+	if f.FilterByKind != nil && !contains(nodeKind(n), f.FilterByKind) {
+		return nil
+	} else if f.FilterBySubkind != nil && !contains(subkind(n), f.FilterBySubkind) {
+		return nil
+	}
+
+	// Shortcut case for when no fact/edge filters are given.
+	if f.IncludeFacts == nil && f.IncludeEdges == nil {
+		emit(n)
+		return nil
+	}
+
+	facts := n.Fact
+	if f.IncludeFacts != nil {
+		if len(f.IncludeFacts) == 0 {
+			facts = nil
+		} else {
+			facts = make([]*ppb.Fact, 0, len(n.Fact))
+			for _, fact := range n.Fact {
+				if contains(factName(fact), f.IncludeFacts) {
+					facts = append(facts, fact)
+				}
+			}
+		}
+	}
+
+	edges := n.Edge
+	if f.IncludeEdges != nil {
+		if len(f.IncludeEdges) == 0 {
+			edges = nil
+		} else {
+			edges = make([]*ppb.Edge, 0, len(n.Edge))
+			for _, edge := range n.Edge {
+				if contains(edgeKind(edge), f.IncludeEdges) {
+					edges = append(edges, edge)
+				}
+			}
+		}
+	}
+
+	emit(&ppb.Node{
+		Source:  n.Source,
+		Kind:    n.Kind,
+		Subkind: n.Subkind,
+		Fact:    facts,
+		Edge:    edges,
+	})
+	return nil
+}
+
+func nodeKind(n *ppb.Node) string {
+	if k := n.GetGenericKind(); k != "" {
+		return k
+	}
+	return schema.NodeKindString(n.GetKytheKind())
+}
+
+func subkind(n *ppb.Node) string {
+	if k := n.GetGenericSubkind(); k != "" {
+		return k
+	}
+	return schema.SubkindString(n.GetKytheSubkind())
+}
+
+func factName(f *ppb.Fact) string {
+	if k := f.GetGenericName(); k != "" {
+		return k
+	}
+	return schema.FactNameString(f.GetKytheName())
+}
+
+func edgeKind(e *ppb.Edge) string {
+	if k := e.GetGenericKind(); k != "" {
+		return k
+	}
+	return schema.EdgeKindString(e.GetKytheKind())
+}
+
+func contains(s string, lst []string) bool {
+	for _, ss := range lst {
+		if s == ss {
+			return true
+		}
+	}
+	return false
 }

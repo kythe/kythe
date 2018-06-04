@@ -108,3 +108,126 @@ func TestFromEntries(t *testing.T) {
 		t.Fatalf("Pipeline error: %+v", err)
 	}
 }
+
+func TestFilter(t *testing.T) {
+	nodes := []*ppb.Node{{
+		Source:  &spb.VName{Signature: "node1"},
+		Kind:    &ppb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Subkind: &ppb.Node_KytheSubkind{scpb.Subkind_CLASS},
+	}, {
+		Source:  &spb.VName{Signature: "node2"},
+		Kind:    &ppb.Node_GenericKind{"unknown_nodekind"},
+		Subkind: &ppb.Node_GenericSubkind{"unknown_subkind"},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("text"),
+		}, {
+			Name:  &ppb.Fact_GenericName{"/unknown/fact/name"},
+			Value: []byte("blah"),
+		}},
+		Edge: []*ppb.Edge{{
+			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_TYPED},
+			Target: &spb.VName{Signature: "node1"},
+		}, {
+			Kind:   &ppb.Edge_GenericKind{"/unknown/edge/kind"},
+			Target: &spb.VName{Signature: "node2"},
+		}},
+	}}
+
+	tests := []struct {
+		filter   Filter
+		expected []*ppb.Node
+	}{
+		{Filter{}, nodes},
+		{Filter{FilterByKind: []string{"record", "unknown_nodekind"}}, nodes},
+		{Filter{FilterBySubkind: []string{"class", "unknown_subkind"}}, nodes},
+
+		{Filter{FilterByKind: []string{"record"}}, []*ppb.Node{nodes[0]}},
+		{Filter{FilterByKind: []string{"unknown_nodekind"}}, []*ppb.Node{nodes[1]}},
+		{Filter{FilterBySubkind: []string{"class"}}, []*ppb.Node{nodes[0]}},
+		{Filter{FilterBySubkind: []string{"unknown_subkind"}}, []*ppb.Node{nodes[1]}},
+
+		{Filter{
+			FilterByKind: []string{"unknown_nodekind"},
+			IncludeFacts: []string{}, // exclude all facts
+		}, []*ppb.Node{&ppb.Node{
+			Source:  nodes[1].Source,
+			Kind:    nodes[1].Kind,
+			Subkind: nodes[1].Subkind,
+			Edge:    nodes[1].Edge,
+		}}},
+		{Filter{
+			FilterByKind: []string{"unknown_nodekind"},
+			IncludeEdges: []string{}, // exclude all edges
+		}, []*ppb.Node{&ppb.Node{
+			Source:  nodes[1].Source,
+			Kind:    nodes[1].Kind,
+			Subkind: nodes[1].Subkind,
+			Fact:    nodes[1].Fact,
+		}}},
+
+		{Filter{
+			FilterByKind: []string{"unknown_nodekind"},
+			IncludeFacts: []string{"/kythe/text"},
+			IncludeEdges: []string{},
+		}, []*ppb.Node{&ppb.Node{
+			Source:  nodes[1].Source,
+			Kind:    nodes[1].Kind,
+			Subkind: nodes[1].Subkind,
+			Fact: []*ppb.Fact{{
+				Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+				Value: []byte("text"),
+			}},
+		}}},
+		{Filter{
+			FilterByKind: []string{"unknown_nodekind"},
+			IncludeFacts: []string{"/unknown/fact/name"},
+			IncludeEdges: []string{},
+		}, []*ppb.Node{&ppb.Node{
+			Source:  nodes[1].Source,
+			Kind:    nodes[1].Kind,
+			Subkind: nodes[1].Subkind,
+			Fact: []*ppb.Fact{{
+				Name:  &ppb.Fact_GenericName{"/unknown/fact/name"},
+				Value: []byte("blah"),
+			}},
+		}}},
+
+		{Filter{
+			FilterByKind: []string{"unknown_nodekind"},
+			IncludeFacts: []string{},
+			IncludeEdges: []string{"/kythe/edge/typed"},
+		}, []*ppb.Node{&ppb.Node{
+			Source:  nodes[1].Source,
+			Kind:    nodes[1].Kind,
+			Subkind: nodes[1].Subkind,
+			Edge: []*ppb.Edge{{
+				Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_TYPED},
+				Target: &spb.VName{Signature: "node1"},
+			}},
+		}}},
+		{Filter{
+			FilterByKind: []string{"unknown_nodekind"},
+			IncludeFacts: []string{},
+			IncludeEdges: []string{"/unknown/edge/kind"},
+		}, []*ppb.Node{&ppb.Node{
+			Source:  nodes[1].Source,
+			Kind:    nodes[1].Kind,
+			Subkind: nodes[1].Subkind,
+			Edge: []*ppb.Edge{{
+				Kind:   &ppb.Edge_GenericKind{"/unknown/edge/kind"},
+				Target: &spb.VName{Signature: "node2"},
+			}},
+		}}},
+	}
+
+	for _, test := range tests {
+		p, s, coll := ptest.CreateList(nodes)
+		filtered := beam.ParDo(s, &test.filter, coll)
+		passert.Equals(s, filtered, beam.CreateList(s, test.expected))
+
+		if err := ptest.Run(p); err != nil {
+			t.Fatalf("Pipeline error: %+v", err)
+		}
+	}
+}

@@ -21,6 +21,7 @@ package kythe.proto.pipeline;
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/schema.proto";
+import "kythe/proto/serving.proto";
 import "kythe/proto/storage.proto";
 
 // A Node represents a Kythe graph node with all its known facts and edges.
@@ -71,4 +72,15 @@ message Edge {
     string generic_kind = 4;
   }
   int32 ordinal = 5;
+}
+
+message Reference {
+  kythe.proto.VName source = 1;
+  oneof kind {
+    kythe.proto.schema.EdgeKind kythe_kind = 2;
+    string generic_kind = 3;
+  }
+  kythe.proto.serving.ExpandedAnchor anchor = 4;
+
+  kythe.proto.VName scope = 5; // anchor scope
 }
