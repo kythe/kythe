@@ -30,6 +30,7 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kcd/kythe"
@@ -120,9 +121,15 @@ func main() {
 	log.Printf("Found %d unique file digests", len(fileDigests))
 
 	// Copy all the file contents...
+	sem := semaphore.NewWeighted(128)
 	for fd := range fileDigests {
 		fd := fd
 		g.Go(func() error {
+			if err := sem.Acquire(ctx, 1); err != nil {
+				return err
+			}
+			defer sem.Release(1)
+
 			data, err := pack.ReadFile(ctx, fd)
 			if err != nil {
 				return err
