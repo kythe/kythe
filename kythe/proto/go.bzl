@@ -22,11 +22,11 @@ def _go_proto_src_impl(ctx):
 _go_proto_src = rule(
     _go_proto_src_impl,
     attrs = {
-      "library": attr.label(
-          providers = [_GoSource],
-          allow_single_file = True,
-          mandatory = True,
-      ),
+        "library": attr.label(
+            providers = [_GoSource],
+            allow_single_file = True,
+            mandatory = True,
+        ),
     },
     outputs = {
         "generated": "%{name}.cmp",
@@ -58,7 +58,7 @@ def go_kythe_proto(proto=None, deps=[]):
     deps: the deps for the proto lib
   """
   base = proto.rsplit(":", 2)[-1]
-  filename = base.split("_", 2)[0] + ".pb.go"
+  filename = '_'.join(base.split("_")[:-1]) + ".pb.go"
   if base.endswith("_proto"):
     name = base[:-len("proto")] + "go_proto"
   else:
@@ -87,4 +87,3 @@ def go_kythe_proto(proto=None, deps=[]):
       message = ("The checked in proto for '%s' is out of sync;" +
                  " please run kythe/proto/generate_go_protobufs.py") % name,
   )
-

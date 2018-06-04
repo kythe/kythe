@@ -11,6 +11,7 @@ extractors, and tools directly supported by the Kythe team.
    - cxx_indexer              :: C++ indexer
    - go_indexer               :: Go indexer
    - java_indexer.jar         :: Java indexer
+   - jvm_indexer.jar          :: JVM jar indexer
  - extractors
    - bazel_cxx_extractor      :: C++ extractor for Bazel extra_actions
    - bazel_go_extractor       :: Bazel Go extractor
@@ -129,11 +130,7 @@ this script and setting the following Maven options:
     -Dmaven.compiler.fork=true
     -Dmaven.compiler.executable=$JAVA_HOME/bin/javac
 
-Read `extractors/javac-wrapper.sh` for more details on its usage and see
-examples usages in the Docker images defined at
-https://kythe.io/repo/kythe/java/com/google/devtools/kythe/extractors/java/standalone/Dockerfile
-and
-https://kythe.io/repo/kythe/java/com/google/devtools/kythe/extractors/java/maven/Dockerfile.
+Read `extractors/javac-wrapper.sh` for more details on its usage.
 
 ### Examples:
 
@@ -151,10 +148,11 @@ https://kythe.io/repo/kythe/java/com/google/devtools/kythe/extractors/java/maven
 
 ## Indexers
 
-`indexers/cxx_indexer` and `indexers/java_indexer.jar` analyze the .kindex files
-produced by the extractors and emit a stream of protobuf wire-encoded facts
-(entries) that conform to https://kythe.io/schema.  The output stream can be
-processed by many of the accompanying binaries in the tools/ directory.
+`indexers/cxx_indexer`, `indexers/go_indexer`, and `indexers/java_indexer.jar`
+analyze the .kindex files produced by the extractors and emit a stream of
+protobuf wire-encoded facts (entries) that conform to https://kythe.io/schema.
+The output stream can be processed by many of the accompanying binaries in the
+`tools/` directory.
 
 ### Examples
 

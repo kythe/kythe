@@ -34,38 +34,38 @@ type testcase struct {
 }
 
 var cases = map[string]testcase{
-	"": testcase{
+	"": {
 		successes{
 			{"", values{}},
 		},
 		failures{"fail"},
 	},
-	"hello": testcase{
+	"hello": {
 		successes{
 			{"hello", values{}},
 		},
 		failures{"", "notHello"},
 	},
-	":file": testcase{
+	":file": {
 		successes{
 			{"hello", values{"file": "hello"}},
 		},
 		failures{"dir/file"},
 	},
-	"/dir/:file": testcase{
+	"/dir/:file": {
 		successes{
 			{"/dir/test", values{"file": "test"}},
 		},
 		failures{"", "dir/", "dir/test", "/dir/trailing/", "/dir/too/long"},
 	},
-	"/dir/:files*": testcase{
+	"/dir/:files*": {
 		successes{
 			{"/dir/test", values{"files": "test"}},
 			{"/dir/test/nested", values{"files": "test/nested"}},
 		},
 		failures{"/dir/test/", "/dir/"},
 	},
-	"/dir/:splat*/sep/:file": testcase{
+	"/dir/:splat*/sep/:file": {
 		successes{
 			{"/dir/deeply/nested/sep/img.png", values{"splat": "deeply/nested", "file": "img.png"}},
 		},

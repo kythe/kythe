@@ -2,6 +2,10 @@
 
 ## Upcoming release
 
+Nothing to report yet.
+
+## v0.0.27
+
 Due to the period of time between this release and v0.0.26, many relevant
 changes and fixes may not appear in the following list.  For a complete list of
 changes, please check the commit logs:

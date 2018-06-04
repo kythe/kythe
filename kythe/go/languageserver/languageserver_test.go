@@ -87,7 +87,7 @@ func TestReferences(t *testing.T) {
 				resp: xpb.DecorationsReply{
 					SourceText: []byte(sourceText),
 					DefinitionLocations: map[string]*xpb.Anchor{
-						"kythe://corpus?path=file.txt#def": &xpb.Anchor{
+						"kythe://corpus?path=file.txt#def": {
 							Ticket: "kythe://corpus?path=file.txt#def",
 							Parent: "kythe://corpus?path=file.txt",
 							Span: &cpb.Span{
@@ -196,7 +196,7 @@ func TestReferences(t *testing.T) {
 		t.Errorf("Unexpected error finding references: %v", err)
 	}
 
-	expected := []lsp.Location{lsp.Location{
+	expected := []lsp.Location{{
 		URI: "file:///root/dir/file.txt",
 		Range: lsp.Range{
 			Start: lsp.Position{Line: 6, Character: 0},

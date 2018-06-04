@@ -24,7 +24,7 @@ import (
 
 const (
 	phabricatorURL = "https://phabricator-dot-kythe-repo.appspot.com"
-	repoURL        = phabricatorURL + "/diffusion/K/browse/master"
+	repoURL        = "https://github.com/google/kythe/tree/master"
 	staticRoot     = "site"
 
 	goGetHTML = `<html>
