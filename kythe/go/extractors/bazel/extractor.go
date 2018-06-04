@@ -97,14 +97,6 @@ type Config struct {
 	// given to this function reflects any modifications made by CheckInput.
 	IsSource func(string) bool
 
-	// If set, this function is called with the completed compilation prior to
-	// returning it, and may edit the result. If the function reports an error,
-	// that error is propagated along with the compilation.
-	//
-	// TODO(fromberger): Migrate all existing use to FixUnit, and remove this.
-	// If both are set, FixUnit is used and Fixup is ignored.
-	Fixup func(*kindex.Compilation) error
-
 	// If set, this function is called with the updated compilation prior to
 	// returning it, and may edit the result. If the function reports an error,
 	// that error is propagated along with the compilation.
@@ -146,8 +138,6 @@ func (c *Config) isSource(path string) bool {
 func (c *Config) fixup(cu *apb.CompilationUnit) error {
 	if fix := c.FixUnit; fix != nil {
 		return fix(cu)
-	} else if fix := c.Fixup; fix != nil {
-		return fix(&kindex.Compilation{Proto: cu})
 	}
 	return nil
 }
