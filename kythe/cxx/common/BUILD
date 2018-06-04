@@ -51,7 +51,6 @@ cc_library(
 cc_library(
     name = "lib",
     srcs = [
-        "CommandLineUtils.cc",
         "cxx_details.cc",
         "file_vname_generator.cc",
         "kythe_metadata_file.cc",
@@ -60,7 +59,6 @@ cc_library(
         "protobuf_metadata_file.cc",
     ],
     hdrs = [
-        "CommandLineUtils.h",
         "cxx_details.h",
         "file_vname_generator.h",
         "kythe_metadata_file.h",
@@ -121,32 +119,6 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_library(
-    name = "commandline_testlib",
-    testonly = 1,
-    srcs = [
-        "CommandLineUtilsTest.cc",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":lib",
-        "//third_party:gtest",
-        "//third_party/llvm",
-    ],
-)
-
-cc_test(
-    name = "commandline_test",
-    size = "small",
-    deps = [
-        ":commandline_testlib",
     ],
 )
 
