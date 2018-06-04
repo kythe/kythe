@@ -158,7 +158,7 @@ func readUnit(digest string, f *zip.File) (*Unit, error) {
 
 // firstIndex returns the first index in the archive's file list whose path is
 // greater than or equal to with prefix, or -1 if no such index exists.
-func (r *Reader) findPrefix(prefix string) int {
+func (r *Reader) firstIndex(prefix string) int {
 	fs := r.zip.File
 	n := sort.Search(len(fs), func(i int) bool {
 		return fs[i].Name >= prefix
@@ -173,7 +173,7 @@ func (r *Reader) findPrefix(prefix string) int {
 // the requested digest is not in the archive, ErrDigestNotFound is returned.
 func (r *Reader) Lookup(unitDigest string) (*Unit, error) {
 	needle := r.unitPath(unitDigest)
-	if pos := r.findPrefix(needle); pos >= 0 {
+	if pos := r.firstIndex(needle); pos >= 0 {
 		if f := r.zip.File[pos]; f.Name == needle {
 			return readUnit(unitDigest, f)
 		}
@@ -186,7 +186,7 @@ func (r *Reader) Lookup(unitDigest string) (*Unit, error) {
 // that error is propagated to the caller of Scan.
 func (r *Reader) Scan(f func(*Unit) error) error {
 	prefix := r.unitPath("") + "/"
-	pos := r.findPrefix(prefix)
+	pos := r.firstIndex(prefix)
 	if pos < 0 {
 		return nil
 	}
@@ -211,7 +211,7 @@ func (r *Reader) Scan(f func(*Unit) error) error {
 // caller must close the reader when it is no longer needed.
 func (r *Reader) Open(fileDigest string) (io.ReadCloser, error) {
 	needle := r.filePath(fileDigest)
-	if pos := r.findPrefix(needle); pos >= 0 {
+	if pos := r.firstIndex(needle); pos >= 0 {
 		if f := r.zip.File[pos]; f.Name == needle {
 			return f.Open()
 		}
