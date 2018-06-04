@@ -17,6 +17,7 @@
 package pipeline
 
 import (
+	"fmt"
 	"strconv"
 
 	"kythe.io/kythe/go/services/xrefs"
@@ -146,31 +147,23 @@ func normalizeAnchors(file *srvpb.File, anchor func(**ppb.Node) bool, emit func(
 func toRawAnchor(n *ppb.Node) (*srvpb.RawAnchor, error) {
 	var a srvpb.RawAnchor
 	for _, f := range n.Fact {
+		i, err := strconv.Atoi(string(f.Value))
+		if err != nil {
+			return nil, fmt.Errorf("invalid integer fact value for %q: %v", f.GetKytheName(), err)
+		}
+		n := int32(i)
+
 		switch f.GetKytheName() {
 		case scpb.FactName_LOC_START:
-			n, err := strconv.Atoi(string(f.Value))
-			if err != nil {
-				return nil, err
-			}
-			a.StartOffset = int32(n)
+			a.StartOffset = n
 		case scpb.FactName_LOC_END:
-			n, err := strconv.Atoi(string(f.Value))
-			if err != nil {
-				return nil, err
-			}
-			a.EndOffset = int32(n)
+			a.EndOffset = n
 		case scpb.FactName_SNIPPET_START:
-			n, err := strconv.Atoi(string(f.Value))
-			if err != nil {
-				return nil, err
-			}
-			a.SnippetStart = int32(n)
+			a.SnippetStart = n
 		case scpb.FactName_SNIPPET_END:
-			n, err := strconv.Atoi(string(f.Value))
-			if err != nil {
-				return nil, err
-			}
-			a.SnippetEnd = int32(n)
+			a.SnippetEnd = n
+		default:
+			return nil, fmt.Errorf("unhandled fact: %v", f)
 		}
 	}
 	return &a, nil
