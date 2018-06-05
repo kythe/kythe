@@ -7,8 +7,8 @@ go_binary(
     srcs = ["entrystream.go"],
     deps = [
         "//kythe/go/platform/delimited",
-        "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/stream",
+        "//kythe/go/util/compare",
         "//kythe/go/util/disksort",
         "//kythe/go/util/flagutil",
         "//kythe/proto:storage_go_proto",

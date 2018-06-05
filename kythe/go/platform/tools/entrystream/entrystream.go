@@ -36,8 +36,8 @@ import (
 	"os"
 
 	"kythe.io/kythe/go/platform/delimited"
-	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/storage/stream"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/disksort"
 	"kythe.io/kythe/go/util/flagutil"
 
