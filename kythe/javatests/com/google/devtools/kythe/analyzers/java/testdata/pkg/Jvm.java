@@ -20,6 +20,23 @@ public class Jvm {
   //- Param1Java generates Param1Jvm
   public static void func(int intParam, Object objectParam) {}
 
+  //- @Generic defines/binding GenericAbs
+  //- GenericAbs.node/kind abs
+  //- GenericClass childof GenericAbs
+  //- GenericClass.node/kind record
+  //- GenericClass generates GenericJvm
+  public static class Generic<T> {
+    //- @tfield defines/binding TFieldJava
+    //- TFieldJava.node/kind variable
+    //- TFieldJava generates TFieldJvm
+    private T tfield;
+
+    //- @tmethod defines/binding TMethodJava
+    //- TMethodJava.node/kind function
+    //- TMethodJava generates TMethodJvm
+    private void tmethod(T targ) {}
+  }
+
   //- @nope defines/binding NopeJava
   //- NopeJava generates NopeJvm
   public static <T> T nope() {
