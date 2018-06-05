@@ -52,11 +52,9 @@ cc_library(
     name = "lib",
     srcs = [
         "KytheClaimClient.cc",
-        "KytheVFS.cc",
     ],
     hdrs = [
         "KytheClaimClient.h",
-        "KytheVFS.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
