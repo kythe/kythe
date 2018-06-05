@@ -42,12 +42,25 @@ import java.util.ArrayList;
 /** Utility class for working with JSON/{@link Gson}. */
 public class JsonUtil {
 
+  /***
+   * The registry currently in use.
+   */
+  private static JsonFormat.TypeRegistry registry;
+
   /** Use the given {@link JsonFormat.TypeRegistry} when parsing proto3 Any messages. */
   public static void usingTypeRegistry(JsonFormat.TypeRegistry registry) {
+    // usingTypeRegistry() throws IllegalArgumentException if called a second time.
+    // However we may need to call it multiple times, e.g., if running main() multiple
+    // times in a nailgun server.
+    // We support this, as long as it's called with the same registry every time.
+    if (registry.equals(JsonUtil.registry)) {
+      return;
+    }
     GeneratedMessageV3TypeAdapter.PARSER =
         GeneratedMessageV3TypeAdapter.PARSER.usingTypeRegistry(registry);
     GeneratedMessageV3TypeAdapter.PRINTER =
         GeneratedMessageV3TypeAdapter.PRINTER.usingTypeRegistry(registry);
+    JsonUtil.registry = registry;
   }
 
   /**
