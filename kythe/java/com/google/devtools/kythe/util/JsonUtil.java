@@ -42,9 +42,7 @@ import java.util.ArrayList;
 /** Utility class for working with JSON/{@link Gson}. */
 public class JsonUtil {
 
-  /***
-   * The registry currently in use.
-   */
+  /** The registry currently in use. */
   private static JsonFormat.TypeRegistry registry;
 
   /** Use the given {@link JsonFormat.TypeRegistry} when parsing proto3 Any messages. */
