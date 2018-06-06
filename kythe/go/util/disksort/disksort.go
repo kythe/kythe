@@ -94,10 +94,6 @@ type mergeSorter struct {
 // a merge sort.
 const DefaultMaxInMemory = 32000
 
-// DefaultIOBufferSize is the default size of the reading/writing buffers for
-// the temporary file shards.
-const DefaultIOBufferSize = 2 << 13
-
 // MergeOptions specifies how to sort elements.
 type MergeOptions struct {
 	// Lesser is the comparison function for sorting the given elements.
@@ -117,10 +113,6 @@ type MergeOptions struct {
 	// CompressShards determines whether the temporary file shards should be
 	// compressed.
 	CompressShards bool
-
-	// IOBufferSize is the size of the reading/writing buffers for the temporary
-	// file shards.  If non-positive, DefaultIOBufferSize is used.
-	IOBufferSize int
 }
 
 // NewMergeSorter returns a new disk sorter using a mergesort algorithm.
@@ -138,9 +130,6 @@ func NewMergeSorter(opts MergeOptions) (Interface, error) {
 
 	if opts.MaxInMemory <= 0 {
 		opts.MaxInMemory = DefaultMaxInMemory
-	}
-	if opts.IOBufferSize <= 0 {
-		opts.IOBufferSize = DefaultIOBufferSize
 	}
 
 	return &mergeSorter{
@@ -176,6 +165,8 @@ type mergeIterator struct {
 	marshaler Marshaler
 	workDir   string
 }
+
+const ioBufferSize = 2 << 15
 
 // Iterator implements part of the Interface interface.
 func (m *mergeSorter) Iterator() (iter Iterator, err error) {
@@ -221,12 +212,14 @@ func (m *mergeSorter) Iterator() (iter Iterator, err error) {
 			return nil, fmt.Errorf("error opening shard %q: %v", shard, err)
 		}
 
-		r := io.Reader(f)
+		var r io.Reader
 		if m.opts.CompressShards {
-			r = snappy.NewReader(r)
+			r = snappy.NewReader(f)
+		} else {
+			r = bufio.NewReaderSize(f, ioBufferSize)
 		}
 
-		rd := delimited.NewReader(bufio.NewReaderSize(r, m.opts.IOBufferSize))
+		rd := delimited.NewReader(r)
 		first, err := rd.Next()
 		if err != nil {
 			f.Close()
@@ -351,13 +344,17 @@ func (m *mergeSorter) dumpShard() (err error) {
 		replaceErrIfNil(&err, "error closing shard: %v", file.Close())
 	}()
 
-	w := io.Writer(file)
+	// Buffer writing to the shard
+	var buf interface {
+		io.Writer
+		Flush() error
+	}
 	if m.opts.CompressShards {
-		w = snappy.NewBufferedWriter(w)
+		buf = snappy.NewBufferedWriter(file)
+	} else {
+		buf = bufio.NewWriterSize(file, ioBufferSize)
 	}
 
-	// Buffer writing to the shard
-	buf := bufio.NewWriterSize(w, m.opts.IOBufferSize)
 	defer func() {
 		replaceErrIfNil(&err, "error flushing shard: %v", buf.Flush())
 	}()

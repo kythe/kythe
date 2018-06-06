@@ -68,10 +68,6 @@ type Options struct {
 	// MaxShardSize is the maximum number of elements to keep in-memory before
 	// flushing an intermediary data shard to disk.
 	MaxShardSize int
-
-	// IOBufferSize is the size of the reading/writing buffers for the temporary
-	// file shards.
-	IOBufferSize int
 }
 
 func (o *Options) diskSorter(l sortutil.Lesser, m disksort.Marshaler) (disksort.Interface, error) {
@@ -80,7 +76,6 @@ func (o *Options) diskSorter(l sortutil.Lesser, m disksort.Marshaler) (disksort.
 		Marshaler:      m,
 		MaxInMemory:    o.MaxShardSize,
 		CompressShards: o.CompressShards,
-		IOBufferSize:   o.IOBufferSize,
 	})
 }
 
