@@ -59,7 +59,7 @@ root/           # Any valid non-empty directory name
      abcd1234   # Compilation unit (see below for format)
      …          # (name is hex-coded SHA256 of record content)
    files/
-     1a2b3c4e   # File contents, compressed
+     1a2b3c4e   # File contents, uncompressed
      …          # (name is hex-coded SHA256 of uncompressed file content)
 
 
@@ -108,5 +108,5 @@ The content of a unit file is the canonical JSON encoding of a
 }
 
 The `"unit"` key is required, and must contain the canonical JSON encoding of a
-`kythe.proto.CompilatinUnit` protobuf message.  The `"index"` key is optional,
+`kythe.proto.CompilationUnit` protobuf message.  The `"index"` key is optional,
 but if set must contain the canonical JSON encoding of an `Index` message.
