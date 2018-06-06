@@ -8,7 +8,8 @@ load("//tools:build_rules/shims.bzl", "go_library")
 
 go_library(
     name = "runner_disksort",
-    srcs = glob(["sdks/go/pkg/beam/runners/direct/*.go"]),
+    srcs = glob(["sdks/go/pkg/beam/runners/disksort/*.go"]),
+    importpath = "github.com/apache/beam/sdks/go/pkg/beam/runners/disksort",
     deps = [
         "//kythe/go/util/disksort",
         "//kythe/go/util/sortutil",

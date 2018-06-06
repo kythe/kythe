@@ -13,9 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package direct contains the direct runner for running single-bundle
-// pipelines in the current process. Useful for testing.
-package direct
+// Package disksort contains a modified direct runner for running single-bundle
+// pipelines in the current process. Uses a disksort to implement CoGBK
+// operations.
+package disksort
 
 import (
 	"context"
@@ -32,7 +33,7 @@ import (
 )
 
 func init() {
-	beam.RegisterRunner("direct", Execute)
+	beam.RegisterRunner("disksort", Execute)
 }
 
 // Execute runs the pipeline in-process.
