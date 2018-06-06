@@ -28,6 +28,7 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/core/runtime/exec"
 	"github.com/apache/beam/sdks/go/pkg/beam/core/typex"
 	"github.com/apache/beam/sdks/go/pkg/beam/log"
+	"github.com/apache/beam/sdks/go/pkg/beam/runners/direct"
 )
 
 func init() {
@@ -102,7 +103,7 @@ func Compile(edges []*graph.MultiEdge) (*exec.Plan, error) {
 				return nil, err
 			}
 
-			u := &Impulse{UID: b.idgen.New(), Value: edge.Value, Out: out}
+			u := &direct.Impulse{UID: b.idgen.New(), Value: edge.Value, Out: out}
 			roots = append(roots, u)
 
 		default:
@@ -258,7 +259,7 @@ func (b *builder) makeLink(id linkID) (exec.Node, error) {
 		}
 
 		for i := 0; i < len(edge.Input); i++ {
-			n := &Inject{UID: b.idgen.New(), N: i, Out: u}
+			n := &direct.Inject{UID: b.idgen.New(), N: i, Out: u}
 
 			b.units = append(b.units, n)
 			b.links[linkID{edge.ID(), i}] = n
