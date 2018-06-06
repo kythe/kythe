@@ -36,7 +36,8 @@ type and []Option
 func (and) isOption() {}
 
 // With is an Option that provides a custom comparison function for the final
-// values being compared.
+// values being compared.  Only the last With Option passed to Compare will be
+// honored.
 type With func(a, b interface{}) Order
 
 func (With) isOption() {}
