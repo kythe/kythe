@@ -41,8 +41,8 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/x/beamx"
 
-	_ "github.com/apache/beam/sdks/go/pkg/beam/runners/disksort"
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
+	_ "kythe.io/third_party/beam/sdks/go/pkg/beam/runners/disksort"
 )
 
 var (
@@ -135,8 +135,7 @@ func init() {
 func runExperimentalBeamPipeline(ctx context.Context) error {
 	beam.Init()
 
-	runnerFlag := flag.Lookup("runner")
-	if runnerFlag.Value.String() == "direct" {
+	if runnerFlag := flag.Lookup("runner"); runnerFlag.Value.String() == "direct" {
 		runnerFlag.Value.Set("disksort")
 	}
 
