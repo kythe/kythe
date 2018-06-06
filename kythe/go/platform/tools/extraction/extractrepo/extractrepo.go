@@ -19,7 +19,7 @@
 // $PATH during execution.
 //
 // Usage:
-//   extractrepo -repo <repo_uri> -output <output_file_path> -config [config_file_path]
+//   extractrepo -repo <repo-url> -output <output-file-path> -config [config-file-path]
 package main
 
 import (
@@ -49,8 +49,8 @@ func init() {
 This tool extracts compilation records from a repository utilizing a JSON
 extraction configuration encoding a kythe.proto.ExtractionConfiguration.
 
-The originating repo to extract is specified either by -remote <repo_uri> and
-done via a git clone, or -local <repo_path> and simply copying the repo over.
+The originating repo to extract is specified either by -remote <repo-url> and
+done via a git clone, or -local <repo-path> and simply copying the repo over.
 Specifying both -remote and -local is invalid input.
 
 The configuration is specified either via the -config flag, or else within

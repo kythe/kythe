@@ -43,7 +43,7 @@ type Repo struct {
 	ConfigPath string
 }
 
-// GitCopier creates a Repo.Clone that fetches repos via git commandline.
+// GitCopier returns a function that clones a repository via git command line.
 func GitCopier(repoURI string) func(ctx context.Context, outputDir string) error {
 	return func(ctx context.Context, outputDir string) error {
 		// TODO(danielmoy): strongly consider go-git instead of os.exec
