@@ -93,9 +93,9 @@ func writeSingleKindex(path string, unit *kindex.Compilation) error {
 	return f.Close()
 }
 
-func (e testExtractor) Fetch(ctx context.Context, repo config.Repo) error {
+func (e testExtractor) Fetch(ctx context.Context, _, outputPath string) error {
 	for k, v := range e.repoFiles {
-		if err := ioutil.WriteFile(filepath.Join(repo.OutputPath, k), v, 0444); err != nil {
+		if err := ioutil.WriteFile(filepath.Join(outputPath, k), v, 0444); err != nil {
 			return err
 		}
 	}
