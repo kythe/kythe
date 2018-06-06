@@ -1240,7 +1240,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       case METHOD:
         return toMethodJvmType(type.asMethodType());
       case TYPEVAR:
-        return JvmGraph.Type.referenceType("java.lang.Object");
+        Type boundType = type.getUpperBound();
+        Type erasure =
+            (boundType instanceof Type.IntersectionClassType)
+                ? ((Type.IntersectionClassType) boundType).getComponents().get(0)
+                : boundType;
+        return JvmGraph.Type.referenceType(erasure.toString());
 
       case BOOLEAN:
         return JvmGraph.Type.booleanType();

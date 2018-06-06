@@ -18,7 +18,10 @@
 
 //- GenericJvm=vname("pkg.Jvm.Generic", "", "", "", "jvm").node/kind record
 //- TFieldJvm=vname("pkg.Jvm.Generic.tfield", "", "", "", "jvm").node/kind variable
-//- TMethodJvm=vname("pkg.Jvm.Generic.tmethod(Ljava/lang/Object;)V", "", "", "", "jvm").node/kind function
+//- TMethodJvm=vname("pkg.Jvm.Generic.tmethod(Ljava/lang/Integer;)V", "", "", "", "jvm").node/kind function
+
+//- MBGenericJvm=vname("pkg.Jvm.MultipleBoundGeneric", "", "", "", "jvm").node/kind record
+//- MBTMethodJvm=vname("pkg.Jvm.MultipleBoundGeneric.mbtmethod(Ljava/lang/Integer;)V", "", "", "", "jvm").node/kind function
 
 //- NopeJvm=vname("pkg.Jvm.nope()Ljava/lang/Object;", "", "", "", "jvm").node/kind function
 
