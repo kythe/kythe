@@ -23,7 +23,7 @@ import (
 	"errors"
 	"strings"
 
-	"kythe.io/kythe/go/services/graphstore/compare"
+	"kythe.io/kythe/go/util/compare"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )

@@ -24,7 +24,7 @@ import (
 	"sync"
 
 	"kythe.io/kythe/go/services/graphstore"
-	"kythe.io/kythe/go/services/graphstore/compare"
+	"kythe.io/kythe/go/util/compare"
 
 	"github.com/golang/protobuf/proto"
 

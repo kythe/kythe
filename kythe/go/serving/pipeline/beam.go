@@ -22,10 +22,10 @@ import (
 	"sort"
 	"strconv"
 
-	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/pipeline/nodes"
 	"kythe.io/kythe/go/serving/xrefs/assemble"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/schema/facts"

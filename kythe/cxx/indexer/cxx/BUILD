@@ -214,6 +214,7 @@ cc_library(
     deps = [
         ":graph_observer",
         ":indexer_ast_hooks",
+        ":vfs",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",
         "//kythe/cxx/common/indexing:lib",
@@ -271,6 +272,31 @@ cc_library(
 )
 
 cc_library(
+    name = "vfs",
+    srcs = [
+        "KytheVFS.cc",
+    ],
+    hdrs = [
+        "KytheVFS.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        "//kythe/cxx/common:index_pack",
+        "//kythe/cxx/common:json_proto",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:storage_cc_proto",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
     name = "lib",
     srcs = [
         "IndexerFrontendAction.cc",
@@ -292,6 +318,7 @@ cc_library(
         ":kythe_graph_observer",
         ":marked_source",
         ":proto_library_support",
+        ":vfs",
         "//external:libmemcached",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",

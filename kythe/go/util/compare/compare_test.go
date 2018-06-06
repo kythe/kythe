@@ -23,6 +23,52 @@ import (
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
+func TestCompare(t *testing.T) {
+	tests := []struct {
+		a, b     interface{}
+		opts     []Option
+		expected Order
+	}{
+		{1, 3, nil, LT},
+		{3, 3, nil, EQ},
+		{3, 1, nil, GT},
+		{1, 3, []Option{Reversed()}, GT},
+		{3, 3, []Option{Reversed()}, EQ},
+		{3, 1, []Option{Reversed()}, LT},
+		{"a", "b", nil, LT},
+		{[]byte("a"), []byte("b"), nil, LT},
+		{&spb.VName{Signature: "abc"}, &spb.VName{Signature: "bcd"}, []Option{ByVNameSignature}, LT},
+		{&spb.VName{Signature: "abc"}, &spb.VName{}, []Option{ByVNameSignature}, GT},
+		{&spb.VName{}, &spb.VName{}, []Option{ByVNameSignature}, EQ},
+	}
+
+	for _, test := range tests {
+		if found := Compare(test.a, test.b, test.opts...); found != test.expected {
+			t.Errorf("Compare(%#v, %#v) == %v; expected %v", test.a, test.b, found, test.expected)
+		}
+	}
+}
+
+func TestSeq(t *testing.T) {
+	tests := []struct {
+		a, b     *spb.VName
+		opts     []Option
+		expected Order
+	}{
+		{nil, nil, []Option{ByVNameSignature, ByVNameCorpus, ByVNameRoot}, EQ},
+		{&spb.VName{Signature: "abc"}, &spb.VName{Signature: "bcd"}, []Option{ByVNameCorpus, ByVNameRoot}, EQ},
+		{&spb.VName{Signature: "abc"}, &spb.VName{Signature: "bcd"}, []Option{ByVNameCorpus, ByVNameRoot, ByVNameSignature}, LT},
+		{&spb.VName{Corpus: "a", Root: "b"}, &spb.VName{Corpus: "b", Root: "a"}, []Option{ByVNameCorpus, ByVNameRoot}, LT},
+		{&spb.VName{Corpus: "a", Root: "b"}, &spb.VName{Corpus: "b", Root: "a"}, []Option{ByVNameSignature, ByVNameRoot, ByVNameCorpus}, GT},
+	}
+
+	for _, test := range tests {
+		if found := Seq(test.a, test.b, test.opts...); found != test.expected {
+			t.Errorf("Seq(%#v, %#v, %+v) == %v; expected %v", test.a, test.b, test.opts, found, test.expected)
+		}
+	}
+}
+
 func TestCompareVNames(t *testing.T) {
 	var ordered []*spb.VName
 	for i := 0; i < 100000; i += 307 {

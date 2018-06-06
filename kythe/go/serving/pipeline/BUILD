@@ -11,7 +11,6 @@ go_library(
     deps = [
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
-        "//kythe/go/services/graphstore/compare",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
         "//kythe/go/serving/graph",
@@ -21,6 +20,7 @@ go_library(
         "//kythe/go/storage/keyvalue",
         "//kythe/go/storage/stream",
         "//kythe/go/storage/table",
+        "//kythe/go/util/compare",
         "//kythe/go/util/disksort",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",

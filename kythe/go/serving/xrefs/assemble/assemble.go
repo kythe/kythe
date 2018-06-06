@@ -27,9 +27,9 @@ import (
 	"strconv"
 
 	"kythe.io/kythe/go/services/graphstore"
-	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/stream"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/encoding/text"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/pager"

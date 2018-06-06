@@ -10,9 +10,6 @@ go_library(
 
 go_test(
     name = "compare_test",
-    size = "small",
     srcs = ["compare_test.go"],
     library = "compare",
-    visibility = ["//visibility:private"],
-    deps = ["//kythe/proto:storage_go_proto"],
 )

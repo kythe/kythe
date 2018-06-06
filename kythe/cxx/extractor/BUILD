@@ -1,6 +1,51 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 cc_library(
+    name = "command_line_utils",
+    srcs = [
+        "CommandLineUtils.cc",
+    ],
+    hdrs = [
+        "CommandLineUtils.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        "//third_party/llvm",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "commandline_testlib",
+    testonly = 1,
+    srcs = [
+        "CommandLineUtilsTest.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":command_line_utils",
+        "//third_party:gtest",
+        "//third_party/llvm",
+    ],
+)
+
+cc_test(
+    name = "commandline_test",
+    size = "small",
+    deps = [
+        ":commandline_testlib",
+    ],
+)
+
+cc_library(
     name = "lib",
     srcs = [
         "cxx_extractor.cc",
@@ -14,6 +59,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":command_line_utils",
         "//external:zlib",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",

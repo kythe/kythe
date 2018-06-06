@@ -7,8 +7,8 @@ go_library(
     srcs = ["graphstore.go"],
     deps = [
         "//kythe/go/services/graphstore",
-        "//kythe/go/services/graphstore/compare",
         "//kythe/go/test/testutil",
+        "//kythe/go/util/compare",
         "//kythe/proto:storage_go_proto",
     ],
 )

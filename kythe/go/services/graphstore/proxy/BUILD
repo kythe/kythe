@@ -7,8 +7,8 @@ go_library(
     srcs = ["proxy.go"],
     deps = [
         "//kythe/go/services/graphstore",
-        "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/gsutil",
+        "//kythe/go/util/compare",
         "//kythe/proto:storage_go_proto",
     ],
 )

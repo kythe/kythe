@@ -24,7 +24,7 @@ import (
 	"reflect"
 	"sort"
 
-	"kythe.io/kythe/go/services/graphstore/compare"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
@@ -180,22 +180,18 @@ func (c *combineNodes) ExtractOutput(ctx context.Context, n *ppb.Node) *ppb.Node
 }
 
 func compareFacts(a, b *ppb.Fact) compare.Order {
-	c := compare.Ints(int(a.GetKytheName()), int(b.GetKytheName()))
-	if c != compare.EQ {
-		return c
-	}
-	return compare.Strings(a.GetGenericName(), b.GetGenericName())
+	return compare.Ints(int(a.GetKytheName()), int(b.GetKytheName())).
+		AndThen(a.GetGenericName(), b.GetGenericName())
 }
 
 func compareEdges(a, b *ppb.Edge) compare.Order {
-	if c := compare.Ints(int(a.GetKytheKind()), int(b.GetKytheKind())); c != compare.EQ {
-		return c
-	} else if c := compare.Strings(a.GetGenericKind(), b.GetGenericKind()); c != compare.EQ {
-		return c
-	} else if c := compare.Ints(int(a.Ordinal), int(b.Ordinal)); c != compare.EQ {
-		return c
-	}
-	return compare.VNames(a.Target, b.Target)
+	return compare.Ints(int(a.GetKytheKind()), int(b.GetKytheKind())).
+		AndThen(a.GetGenericKind(), b.GetGenericKind()).
+		AndThen(int(a.Ordinal), int(b.Ordinal)).
+		AndThen(a.Target, b.Target,
+			compare.With(func(a, b interface{}) compare.Order {
+				return compare.VNames(a.(*spb.VName), b.(*spb.VName))
+			}))
 }
 
 func embedSourceKey(src *spb.VName, n *ppb.Node) *ppb.Node {

@@ -188,7 +188,7 @@ func TestFilter(t *testing.T) {
 		{Filter{
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeFacts: []string{}, // exclude all facts
-		}, []*ppb.Node{&ppb.Node{
+		}, []*ppb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
@@ -197,7 +197,7 @@ func TestFilter(t *testing.T) {
 		{Filter{
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeEdges: []string{}, // exclude all edges
-		}, []*ppb.Node{&ppb.Node{
+		}, []*ppb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
@@ -208,7 +208,7 @@ func TestFilter(t *testing.T) {
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeFacts: []string{"/kythe/text"},
 			IncludeEdges: []string{},
-		}, []*ppb.Node{&ppb.Node{
+		}, []*ppb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
@@ -221,7 +221,7 @@ func TestFilter(t *testing.T) {
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeFacts: []string{"/unknown/fact/name"},
 			IncludeEdges: []string{},
-		}, []*ppb.Node{&ppb.Node{
+		}, []*ppb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
@@ -235,7 +235,7 @@ func TestFilter(t *testing.T) {
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeFacts: []string{},
 			IncludeEdges: []string{"/kythe/edge/typed"},
-		}, []*ppb.Node{&ppb.Node{
+		}, []*ppb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
@@ -248,7 +248,7 @@ func TestFilter(t *testing.T) {
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeFacts: []string{},
 			IncludeEdges: []string{"/unknown/edge/kind"},
-		}, []*ppb.Node{&ppb.Node{
+		}, []*ppb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,

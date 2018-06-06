@@ -6,7 +6,7 @@ go_library(
     name = "nodes",
     srcs = ["nodes.go"],
     deps = [
-        "//kythe/go/services/graphstore/compare",
+        "//kythe/go/util/compare",
         "//kythe/go/util/schema",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",

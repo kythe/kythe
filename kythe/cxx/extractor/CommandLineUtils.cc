@@ -18,8 +18,8 @@
 #include "CommandLineUtils.h"
 
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Regex.h"
+#include "llvm/ADT/StringRef.h"
 
 #include <stddef.h>
 #include <stdio.h>
