@@ -41,6 +41,7 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/x/beamx"
 
+	_ "github.com/apache/beam/sdks/go/pkg/beam/runners/disksort"
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
 )
 
@@ -133,6 +134,11 @@ func init() {
 
 func runExperimentalBeamPipeline(ctx context.Context) error {
 	beam.Init()
+
+	runnerFlag := flag.Lookup("runner")
+	if runnerFlag.Value.String() == "direct" {
+		runnerFlag.Value.Set("disksort")
+	}
 
 	if gs != nil {
 		return errors.New("--graphstore input not supported with --experimental_beam_pipeline")
