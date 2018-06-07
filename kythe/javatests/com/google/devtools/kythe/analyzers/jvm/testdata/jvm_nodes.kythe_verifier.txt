@@ -19,6 +19,8 @@
 //- GenericJvm=vname("pkg.Jvm.Generic", "", "", "", "jvm").node/kind record
 //- TFieldJvm=vname("pkg.Jvm.Generic.tfield", "", "", "", "jvm").node/kind variable
 //- TMethodJvm=vname("pkg.Jvm.Generic.tmethod(Ljava/lang/Integer;)V", "", "", "", "jvm").node/kind function
+//- TListMethodJvm=vname("pkg.Jvm.Generic.tlistmethod(Ljava/util/List;)V", "", "", "", "jvm").node/kind function
+//- TListRetMethodJvm=vname("pkg.Jvm.Generic.tlistretmethod()Ljava/util/List;", "", "", "", "jvm").node/kind function
 
 //- MBGenericJvm=vname("pkg.Jvm.MultipleBoundGeneric", "", "", "", "jvm").node/kind record
 //- MBTMethodJvm=vname("pkg.Jvm.MultipleBoundGeneric.mbtmethod(Ljava/lang/Integer;)V", "", "", "", "jvm").node/kind function

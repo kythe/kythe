@@ -1,6 +1,7 @@
 package pkg;
 
 import java.util.Formattable;
+import java.util.List;
 
 //- @Jvm defines/binding ClassJava
 //- ClassJava generates ClassJvm
@@ -37,6 +38,18 @@ public class Jvm {
     //- TMethodJava.node/kind function
     //- TMethodJava generates TMethodJvm
     private void tmethod(T targ) {}
+
+    //- @tlistmethod defines/binding TListMethodJava
+    //- TListMethodJava.node/kind function
+    //- TListMethodJava generates TListMethodJvm
+    private void tlistmethod(List<T> targ) {}
+
+    //- @tlistretmethod defines/binding TListRetMethodJava
+    //- TListRetMethodJava.node/kind function
+    //- TListRetMethodJava generates TListRetMethodJvm
+    private List<T> tlistretmethod() {
+      return null;
+    }
   }
 
   //- @MultipleBoundGeneric defines/binding MBGenericAbs
