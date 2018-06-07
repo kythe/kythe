@@ -110,7 +110,7 @@ func toEnclosingFile(r *ppb.Reference) (*spb.VName, *spb.VName, error) {
 	return r.Source, file, nil
 }
 
-// combineDecorPieces :: *ppb.DecorationPiece -> *srvpb.FileDecorations
+// combineDecorPieces combines *ppb.DecorationPieces into a single *srvpb.FileDecorations.
 type combineDecorPieces struct{}
 
 func (c *combineDecorPieces) CreateAccumulator() *srvpb.FileDecorations {
