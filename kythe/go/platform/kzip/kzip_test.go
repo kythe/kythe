@@ -138,6 +138,53 @@ func TestRoundTrip(t *testing.T) {
 	}
 }
 
+// bufferStub implements io.WriteCloser and records when it has been closed to
+// verify that closes are propagated correctly.
+type bufferStub struct {
+	writeErr error
+	closeErr error
+	closed   bool
+}
+
+func (b *bufferStub) Write(data []byte) (int, error) {
+	if b.writeErr != nil {
+		return 0, b.writeErr
+	}
+	return len(data), nil
+}
+
+func (b *bufferStub) Close() error {
+	b.closed = true
+	return b.closeErr
+}
+
+func TestWriteCloser(t *testing.T) {
+	wbad := errors.New("the bad thing happened while writing")
+	cbad := errors.New("the bad thing happened while closing")
+	tests := []struct {
+		write, close, want error
+	}{
+		{nil, nil, nil},    // no harm, no foul
+		{wbad, nil, wbad},  // write errors propagate even if close is OK
+		{nil, cbad, cbad},  // a close error doesn't get swallowed
+		{wbad, cbad, wbad}, // write errors are preferred (primacy)
+	}
+	for _, test := range tests {
+		stub := &bufferStub{writeErr: test.write, closeErr: test.close}
+		w, err := kzip.NewWriteCloser(stub)
+		if err != nil {
+			t.Errorf("NewWriteCloser(%+v) failed: %v", test, err)
+			continue
+		}
+		if got := w.Close(); got != test.want {
+			t.Errorf("w.Close(): got %v, want %v", got, test.want)
+		}
+		if !stub.closed {
+			t.Error("Stub was not correctly closed")
+		}
+	}
+}
+
 func TestErrors(t *testing.T) {
 	// A structurally invalid zip stream should complain suitably.
 	if r, err := kzip.NewReader(bytes.NewReader(nil), 0); err == nil {
