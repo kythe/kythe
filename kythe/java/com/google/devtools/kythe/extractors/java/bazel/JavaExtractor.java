@@ -163,9 +163,16 @@ public class JavaExtractor {
     List<String> files = Lists.newArrayList();
     try {
       Enumeration<? extends ZipEntry> entries = zipFile.entries();
+      // Zip Slip fix courtesy of snyk.io/research/zip-slip-vulnerability.
+      String canonicalDirPath = targetDirectory.getCanonicalPath() + File.separator;
       while (entries.hasMoreElements()) {
         final ZipEntry entry = entries.nextElement();
         File targetFile = new File(targetDirectory, entry.getName());
+        String canonicalFilePath = targetFile.getCanonicalPath();
+        if (!canonicalFilePath.startsWith(canonicalDirPath)) {
+          throw new IOException(
+              "Zip archive trying to write file outside of target dir: " + canonicalFilePath);
+        }
         if (entry.isDirectory()) {
           if (!targetFile.isDirectory() && !targetFile.mkdirs()) {
             throw new IOException("Failed to create directory: " + targetFile.getAbsolutePath());
