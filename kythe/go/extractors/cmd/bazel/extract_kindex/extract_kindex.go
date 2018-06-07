@@ -78,6 +78,9 @@ func main() {
 		if _, err := config.ExtractToFile(ctx, ai, w); err != nil {
 			log.Fatalf("Extraction failed: %v", err)
 		}
+		if err := w.Close(); err != nil {
+			log.Fatalf("Closing output: %v", err)
+		}
 
 	default:
 		log.Fatalf("Unknown output extension %q", ext)
