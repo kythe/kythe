@@ -328,7 +328,7 @@ go_repository(
 
 go_repository(
     name = "com_github_sourcegraph_go_langserver",
-    commit = "d354d3b84b3a1ef4a38679290e4fb4d32ffe3567",
+    commit = "e526744fd766a8f42e55bd92a3843c2afcdbf08c",
     custom = "langserver",
     importpath = "github.com/sourcegraph/go-langserver",
 )
