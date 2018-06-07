@@ -110,8 +110,7 @@ func main() {
 	if *repoURI != "" {
 		repo.Clone = config.GitCopier(*repoURI)
 	} else if *repoPath != "" {
-		// TODO(danielmoy): implement local copy
-		log.Fatal("-local not yet supported, sorry.")
+		repo.Clone = config.LocalCopier(*repoPath)
 	} else {
 		// I know I checked it earlier but I don't trust myself to not
 		// break this in the future.
