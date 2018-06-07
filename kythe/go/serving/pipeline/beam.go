@@ -122,7 +122,9 @@ func (c *combineDecorPieces) MergeAccumulators(accum, n *srvpb.FileDecorations) 
 }
 
 func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.DecorationPiece) *srvpb.FileDecorations {
-	if ref := p.GetReference(); ref != nil {
+	switch p := p.Piece.(type) {
+	case *ppb.DecorationPiece_Reference:
+		ref := p.Reference
 		var kind string
 		if k := ref.GetKytheKind(); k == scpb.EdgeKind_UNKNOWN_EDGE_KIND {
 			kind = ref.GetGenericKind()
@@ -137,9 +139,10 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 			Kind:   kind,
 			Target: kytheuri.ToString(ref.Source),
 		})
-	} else if file := p.GetFile(); file != nil {
-		accum.File = file
-	} else if node := p.GetNode(); node != nil {
+	case *ppb.DecorationPiece_File:
+		accum.File = p.File
+	case *ppb.DecorationPiece_Node:
+		node := p.Node
 		n := &srvpb.Node{Ticket: kytheuri.ToString(node.Source)}
 		if kind := nodes.Kind(node); kind != "" {
 			n.Fact = append(n.Fact, &cpb.Fact{
