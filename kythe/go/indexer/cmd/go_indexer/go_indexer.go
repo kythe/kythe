@@ -212,7 +212,7 @@ func openPack(ctx context.Context, path string) (*indexpack.Archive, error) {
 type kzipFetcher struct{ r *kzip.Reader }
 
 // Fetch implements the analysis.Fetcher interface. Only the digest is used in
-// this implementation,, the path is ignored.
+// this implementation, the path is ignored.
 func (k kzipFetcher) Fetch(_, digest string) ([]byte, error) {
 	return k.r.ReadAll(digest)
 }
