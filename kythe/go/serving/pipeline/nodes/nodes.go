@@ -158,7 +158,6 @@ func (c *combineNodes) ExtractOutput(ctx context.Context, n *ppb.Node) *ppb.Node
 			if compareFacts(n.Fact[j-1], n.Fact[i]) != compare.EQ {
 				n.Fact[j] = n.Fact[i]
 				j++
-				i++
 			} else if !bytes.Equal(n.Fact[j-1].Value, n.Fact[i].Value) {
 				conflictingFactsCounter.Inc(ctx, 1)
 			}
@@ -257,9 +256,9 @@ type Filter struct {
 
 // ProcessElement emits the given Node if it matches the given Filter.
 func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
-	if f.FilterByKind != nil && !contains(nodeKind(n), f.FilterByKind) {
+	if f.FilterByKind != nil && !contains(Kind(n), f.FilterByKind) {
 		return nil
-	} else if f.FilterBySubkind != nil && !contains(subkind(n), f.FilterBySubkind) {
+	} else if f.FilterBySubkind != nil && !contains(Subkind(n), f.FilterBySubkind) {
 		return nil
 	}
 
@@ -276,7 +275,7 @@ func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
 		} else {
 			facts = make([]*ppb.Fact, 0, len(n.Fact))
 			for _, fact := range n.Fact {
-				if contains(factName(fact), f.IncludeFacts) {
+				if contains(FactName(fact), f.IncludeFacts) {
 					facts = append(facts, fact)
 				}
 			}
@@ -307,21 +306,24 @@ func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
 	return nil
 }
 
-func nodeKind(n *ppb.Node) string {
+// Kind returns the string representation of the node's kind.
+func Kind(n *ppb.Node) string {
 	if k := n.GetGenericKind(); k != "" {
 		return k
 	}
 	return schema.NodeKindString(n.GetKytheKind())
 }
 
-func subkind(n *ppb.Node) string {
+// Subkind returns the string representation of the node's subkind.
+func Subkind(n *ppb.Node) string {
 	if k := n.GetGenericSubkind(); k != "" {
 		return k
 	}
 	return schema.SubkindString(n.GetKytheSubkind())
 }
 
-func factName(f *ppb.Fact) string {
+// FactName returns the string representation of the fact's name.
+func FactName(f *ppb.Fact) string {
 	if k := f.GetGenericName(); k != "" {
 		return k
 	}

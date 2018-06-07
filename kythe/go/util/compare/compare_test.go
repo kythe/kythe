@@ -151,3 +151,25 @@ func TestCompareEntries(t *testing.T) {
 		}
 	}
 }
+
+func TestInts(t *testing.T) {
+	tests := []struct {
+		a, b     int
+		expected Order
+	}{
+		{1, 1, EQ},
+		{1, 2, LT},
+		{2, 1, GT},
+		{10, 1, GT},
+		{1, 10, LT},
+		{42, 42, EQ},
+		{-5, 5, LT},
+		{5, -5, GT},
+	}
+
+	for _, test := range tests {
+		if found := Ints(test.a, test.b); found != test.expected {
+			t.Errorf("Ints(%d, %d) == %v; expected %v", test.a, test.b, found, test.expected)
+		}
+	}
+}

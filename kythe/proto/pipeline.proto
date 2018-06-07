@@ -84,3 +84,24 @@ message Reference {
 
   kythe.proto.VName scope = 5; // anchor scope
 }
+
+// A DecorationPiece is an independent component of a larger
+// kythe.proto.serving.FileDecorations message.  Each FileDecorations field is
+// one choice for the piece oneof field.
+message DecorationPiece {
+  kythe.proto.VName file_v_name = 1;
+
+  message Definition {
+    kythe.proto.VName node = 1;
+    kythe.proto.serving.ExpandedAnchor definition = 2;
+  }
+
+  oneof piece {
+    kythe.proto.serving.File file = 2;
+    Reference reference = 3;
+    Node node = 4;
+    Definition definition = 5;
+    // TODO(schroederc): diagnostics
+    // TODO(schroederc): overrides
+  }
+}

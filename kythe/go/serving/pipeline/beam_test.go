@@ -76,7 +76,8 @@ func TestReferences(t *testing.T) {
 		Source: &spb.VName{Signature: "node1"},
 		Kind:   &ppb.Reference_KytheKind{scpb.EdgeKind_REF},
 		Anchor: &srvpb.ExpandedAnchor{
-			Text: "some",
+			Ticket: "kythe:?path=path#anchor1",
+			Text:   "some",
 			Span: &cpb.Span{
 				Start: &cpb.Point{
 					LineNumber: 1,
@@ -104,7 +105,8 @@ func TestReferences(t *testing.T) {
 		Kind:   &ppb.Reference_KytheKind{scpb.EdgeKind_REF_CALL},
 		Scope:  &spb.VName{Path: "path", Signature: "anchor2_parent"},
 		Anchor: &srvpb.ExpandedAnchor{
-			Text: "text",
+			Ticket: "kythe:?path=path#anchor2",
+			Text:   "text",
 			Span: &cpb.Span{
 				Start: &cpb.Point{
 					ByteOffset:   5,
@@ -135,6 +137,71 @@ func TestReferences(t *testing.T) {
 	refs := FromNodes(s, nodes).References()
 	debug.Print(s, refs)
 	passert.Equals(s, refs, beam.CreateList(s, expected))
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	}
+}
+
+func TestDecorations(t *testing.T) {
+	testNodes := []*ppb.Node{{
+		Source: &spb.VName{Path: "path", Signature: "anchor1"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("5"),
+		}, {
+			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("9"),
+		}},
+		Edge: []*ppb.Edge{{
+			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_REF},
+			Target: &spb.VName{Signature: "node1"},
+		}},
+	}, {
+		Source: &spb.VName{Path: "path"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("some text\n"),
+		}},
+	}, {
+		Source: &spb.VName{Signature: "node1"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_GenericName{"/unknown/fact/name"},
+			Value: []byte("something"),
+		}},
+	}}
+
+	expected := []*srvpb.FileDecorations{{
+		File: &srvpb.File{
+			Text: []byte("some text\n"),
+		},
+		Decoration: []*srvpb.FileDecorations_Decoration{{
+			Anchor: &srvpb.RawAnchor{
+				StartOffset: 5,
+				EndOffset:   9,
+			},
+			Kind:   "/kythe/edge/ref",
+			Target: "kythe:#node1",
+		}},
+		Target: []*srvpb.Node{{
+			Ticket: "kythe:#node1",
+			Fact: []*cpb.Fact{{
+				Name:  "/kythe/node/kind",
+				Value: []byte("record"),
+			}, {
+				Name:  "/unknown/fact/name",
+				Value: []byte("something"),
+			}},
+		}},
+	}}
+
+	p, s, nodes := ptest.CreateList(testNodes)
+	decor := FromNodes(s, nodes).Decorations()
+	debug.Print(s, decor)
+	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
 
 	if err := ptest.Run(p); err != nil {
 		t.Fatalf("Pipeline error: %+v", err)
