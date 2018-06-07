@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/ptypes"
 	"kythe.io/kythe/go/util/vnameutil"
 
@@ -54,6 +55,21 @@ func Write(w io.WriterTo, path string) error {
 	}
 	log.Printf("Finished writing output [%v elapsed]", time.Since(start))
 	return nil
+}
+
+// NewKZIP creates a kzip writer at path, replacing any existing file at that
+// location. Closing the returned writer also closes the underlying file.
+func NewKZIP(path string) (*kzip.Writer, error) {
+	f, err := os.Create(path)
+	if err != nil {
+		return nil, fmt.Errorf("creating output file: %v", err)
+	}
+	w, err := kzip.NewWriteCloser(f)
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+	return w, nil
 }
 
 // LoadAction loads and parses a wire-format ExtraActionInfo message from the
