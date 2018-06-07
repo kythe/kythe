@@ -172,7 +172,6 @@ func (i *iterStream) Read() (exec.FullValue, error) {
 
 func (i *iterStream) next() (*iterValue, error) {
 	if i.prev != nil {
-		var prevItems int
 		for {
 			_, err := i.prev.next()
 			if err == io.EOF {
@@ -180,7 +179,6 @@ func (i *iterStream) next() (*iterValue, error) {
 			} else if err != nil {
 				return nil, fmt.Errorf("previous iterator error: %v", err)
 			}
-			prevItems++
 		}
 		i.buffer = i.prev.buffer
 		i.prev = nil
