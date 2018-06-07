@@ -34,7 +34,6 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
   tmpdir  = output.dirname + '/tmp'
   srcdir  = tmpdir + '/src/' + ipath
   pkgdir  = tmpdir + '/pkg/%s_%s' % (mode.goos, mode.goarch)
-  outdir  = output.path + '_dir'
   extras  = []
   cmds    = ['set -e', 'mkdir -p ' + pkgdir, 'mkdir -p ' + srcdir]
 
@@ -61,19 +60,12 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
   goroot = '/'.join(ctx.files._sdk_files[0].path.split('/')[:-2])
   cmds.append(' '.join([
       ctx.files._extractor[-1].path,
-      '-kindex',
-      '-output', outdir,
+      '-output', output.path,
       '-goroot', goroot,
       '-gopath', tmpdir,
       '-extra_files', "'%s'" % ','.join(extras),
       ipath,
   ]))
-
-  # Pack the results into a ZIP archive, so we have a single output.
-  cmds += [
-      'cd ' + output.dirname,
-      "mv '%s'/*.kindex '%s'" % (output.basename+'_dir', output.basename),
-  ]
 
   f = ctx.new_file(ctx.configuration.bin_dir, script)
   ctx.file_action(output=f, content='\n'.join(cmds), executable=True)
@@ -86,7 +78,7 @@ def _go_extract(ctx):
   deps = {} # TODO(schroederc): support dependencies
   ipath = gosrc.library.importpath
   data = ctx.attr.data
-  output = ctx.outputs.kindex
+  output = ctx.outputs.kzip
   script = _emit_extractor_script(ctx, mode, ctx.label.name+'-extract.sh',
                                   output, srcs, deps, ipath, data)
 
@@ -101,10 +93,10 @@ def _go_extract(ctx):
     outputs    = [output],
     inputs     = srcs + extras + [] + tools,
   )
-  return struct(kindex = output)
+  return struct(kzip = output)
 
-# Generate a kindex with the compilations captured from a single Go
-# library or binary rule.
+# Generate a kzip with the compilations captured from a single Go library or
+# binary rule.
 go_extract = rule(
     _go_extract,
     attrs = {
@@ -127,15 +119,15 @@ go_extract = rule(
             default = "@go_sdk//:files",
         ),
     },
-    outputs = {"kindex": "%{name}.kindex"},
+    outputs = {"kzip": "%{name}.kzip"},
     toolchains = ["@io_bazel_rules_go//go:toolchain"],
 )
 
 def _go_entries(ctx):
-  kindex   = ctx.attr.kindex.kindex
-  indexer  = ctx.files._indexer[-1]
-  iargs    = [indexer.path]
-  output   = ctx.outputs.entries
+  kzip    = ctx.attr.kzip.kzip
+  indexer = ctx.files._indexer[-1]
+  iargs   = [indexer.path]
+  output  = ctx.outputs.entries
 
   # If the test wants marked source, enable support for it in the indexer.
   if ctx.attr.has_marked_source:
@@ -145,14 +137,14 @@ def _go_entries(ctx):
   if ctx.attr.metadata_suffix:
     iargs += ['-meta', ctx.attr.metadata_suffix]
 
-  iargs += [kindex.path, '| gzip >'+output.path]
+  iargs += [kzip.path, '| gzip >'+output.path]
 
   cmds = ['set -e', 'set -o pipefail', ' '.join(iargs), '']
   ctx.action(
       mnemonic = 'GoIndexer',
       command  = '\n'.join(cmds),
       outputs  = [output],
-      inputs   = [kindex] + ctx.files._indexer,
+      inputs   = [kzip] + ctx.files._indexer,
   )
   return [KytheEntries(files=depset(), compressed=depset([output]))]
 
@@ -160,9 +152,9 @@ def _go_entries(ctx):
 go_entries = rule(
     _go_entries,
     attrs = {
-        # The go_indexpack output to pass to the indexer.
-        "kindex": attr.label(
-            providers = ["kindex"],
+        # The go_extract output to pass to the indexer.
+        "kzip": attr.label(
+            providers = ["kzip"],
             mandatory = True,
         ),
 
@@ -244,16 +236,16 @@ def _go_indexer(name, srcs, deps=[], importpath=None,
     deps = deps,
     importpath = importpath,
   )
-  kindex = name + '_kindex'
+  kzip = name + '_units'
   go_extract(
-    name = kindex,
+    name = kzip,
     data = data,
     library = lib,
   )
   entries = name+'_entries'
   go_entries(
     name = entries,
-    kindex = ':'+kindex,
+    kzip = ':'+kzip,
     has_marked_source = has_marked_source,
     metadata_suffix = metadata_suffix,
   )
