@@ -170,7 +170,7 @@ public class JavaExtractor {
         File targetFile = new File(targetDirectory, entry.getName());
         String canonicalFilePath = targetFile.getCanonicalPath();
         if (!canonicalFilePath.startsWith(canonicalDirPath)) {
-          throw new IOException(
+          throw new IllegalArgumentException(
               "Zip archive trying to write file outside of target dir: " + canonicalFilePath);
         }
         if (entry.isDirectory()) {
