@@ -19,6 +19,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -48,6 +49,59 @@ func GitCopier(repoURI string) func(ctx context.Context, outputDir string) error
 	return func(ctx context.Context, outputDir string) error {
 		// TODO(danielmoy): strongly consider go-git instead of os.exec
 		return exec.CommandContext(ctx, "git", "clone", repoURI, outputDir).Run()
+	}
+}
+
+// LocalCopier returns a function that copys a local repository.
+func LocalCopier(repoPath string) func(ctx context.Context, outputDir string) error {
+	return func(ctx context.Context, outputDir string) error {
+		gitDir := filepath.Join(repoPath, ".git")
+		// TODO(danielmoy): consider extracting all or part of this
+		// to a more common place.
+		return filepath.Walk(repoPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if repoPath == path {
+				// Intentionally do nothing for base dir.
+				return nil
+			}
+			if filepath.HasPrefix(path, gitDir) {
+				// Also skip all that .git stuff.
+				return nil
+			}
+			rel, err := filepath.Rel(repoPath, path)
+			if err != nil {
+				return err
+			}
+			outPath := filepath.Join(outputDir, rel)
+			if info.IsDir() {
+				if _, err := os.Stat(outPath); err != nil {
+					if err := os.Mkdir(outPath, 0777); err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+			if !info.Mode().IsRegular() {
+				// Notably in here are any links or other odd things.
+				return fmt.Errorf("Can't handle the truth")
+			}
+			inf, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer inf.Close()
+			of, err := os.Create(outPath)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(of, inf); err != nil {
+				of.Close()
+				return err
+			}
+			return of.Close()
+		})
 	}
 }
 
