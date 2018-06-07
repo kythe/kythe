@@ -243,6 +243,7 @@ type Writer struct {
 	zip *zip.Writer
 	fd  map[string]bool // file digests already written
 	ud  map[string]bool // unit digests already written
+	c   io.Closer       // a closer for the underlying writer (may be nil)
 }
 
 // NewWriter constructs a new empty Writer that delivers output to w.  The
@@ -266,6 +267,16 @@ func NewWriter(w io.Writer) (*Writer, error) {
 		fd:  make(map[string]bool),
 		ud:  make(map[string]bool),
 	}, nil
+}
+
+// NewWriteCloser behaves as NewWriter, but arranges that when the *Writer is
+// closed it also closes wc.
+func NewWriteCloser(wc io.WriteCloser) (*Writer, error) {
+	w, err := NewWriter(wc)
+	if err == nil {
+		w.c = wc
+	}
+	return w, err
 }
 
 // toJSON defines the encoding format for compilation messages.
@@ -344,6 +355,11 @@ func (w *Writer) Close() error {
 	if w.zip != nil {
 		err := w.zip.Close()
 		w.zip = nil
+		if w.c != nil {
+			if cerr := w.c.Close(); err == nil {
+				return cerr
+			}
+		}
 		return err
 	}
 	return nil

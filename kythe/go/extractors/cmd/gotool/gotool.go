@@ -160,7 +160,7 @@ func writeToKZip(ctx context.Context, path string) packageWriter {
 	if err != nil {
 		log.Fatalf("Unable to create output file: %v", err)
 	}
-	w, err := kzip.NewWriter(f)
+	w, err := kzip.NewWriteCloser(f)
 	if err != nil {
 		log.Fatalf("Unable to create kzip writer: %v", err)
 	}
