@@ -28,6 +28,7 @@ import (
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	kinds "kythe.io/kythe/go/util/schema/nodes"
 
@@ -88,10 +89,12 @@ func (k *KytheBeam) Decorations() beam.PCollection {
 	files := beam.ParDo(s, fileToDecorPiece, k.getFiles())
 	nodes := beam.ParDo(s, nodeToDecorPiece,
 		beam.CoGroupByKey(s, beam.ParDo(s, moveSourceToKey, bareNodes), targets))
-	// TODO(schroederc): definitions
+	defs := beam.ParDo(s, defToDecorPiece,
+		beam.CoGroupByKey(s, k.directDefinitions(), targets))
 	// TODO(schroederc): overrides
+	// TODO(schroederc): diagnostics
 
-	pieces := beam.Flatten(s, decor, files, nodes)
+	pieces := beam.Flatten(s, decor, files, nodes, defs)
 	return beam.ParDo(s, &ticketKey{"decor:"}, beam.CombinePerKey(s, &combineDecorPieces{}, pieces))
 }
 
@@ -125,18 +128,12 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 	switch p := p.Piece.(type) {
 	case *ppb.DecorationPiece_Reference:
 		ref := p.Reference
-		var kind string
-		if k := ref.GetKytheKind(); k == scpb.EdgeKind_UNKNOWN_EDGE_KIND {
-			kind = ref.GetGenericKind()
-		} else {
-			kind = schema.EdgeKindString(k)
-		}
 		accum.Decoration = append(accum.Decoration, &srvpb.FileDecorations_Decoration{
 			Anchor: &srvpb.RawAnchor{
 				StartOffset: ref.Anchor.Span.Start.ByteOffset,
 				EndOffset:   ref.Anchor.Span.End.ByteOffset,
 			},
-			Kind:   kind,
+			Kind:   refKind(ref),
 			Target: kytheuri.ToString(ref.Source),
 		})
 	case *ppb.DecorationPiece_File:
@@ -164,11 +161,44 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 		}
 		sort.Slice(n.Fact, func(i, j int) bool { return n.Fact[i].Name < n.Fact[j].Name })
 		accum.Target = append(accum.Target, n)
+	case *ppb.DecorationPiece_Definition_:
+		// TODO(schroederc): redesign *srvpb.FileDecorations to not need invasive
+		// changes to add a node's definition
+		def := p.Definition
+		accum.TargetDefinitions = append(accum.TargetDefinitions, def.Definition)
+		// Add a marker to associate the definition and node.  ExtractOutput will
+		// later embed the definition within accum.Target/accum.TargetOverride.
+		accum.Target = append(accum.Target, &srvpb.Node{
+			Ticket:             kytheuri.ToString(def.Node),
+			DefinitionLocation: &srvpb.ExpandedAnchor{Ticket: def.Definition.Ticket},
+		})
+	default:
+		panic(fmt.Errorf("unhandled DecorationPiece: %T", p))
 	}
 	return accum
 }
 
 func (c *combineDecorPieces) ExtractOutput(fd *srvpb.FileDecorations) *srvpb.FileDecorations {
+	// Embed definitions for Decorations and Overrides
+	for i := len(fd.Target) - 1; i >= 0; i-- {
+		if fd.Target[i].DefinitionLocation == nil {
+			continue
+		}
+		node, def := fd.Target[i].Ticket, fd.Target[i].DefinitionLocation.Ticket
+		fd.Target = append(fd.Target[:i], fd.Target[i+1:]...)
+
+		for _, d := range fd.Decoration {
+			if d.Target == node {
+				d.TargetDefinition = def
+			}
+		}
+		for _, o := range fd.TargetOverride {
+			if o.Overridden == node {
+				o.OverriddenDefinition = def
+			}
+		}
+	}
+
 	sort.Slice(fd.Decoration, func(i, j int) bool {
 		if c := compare.Ints(int(fd.Decoration[i].Anchor.StartOffset), int(fd.Decoration[j].Anchor.StartOffset)); c != compare.EQ {
 			return c == compare.LT
@@ -228,6 +258,27 @@ func nodeToDecorPiece(key *spb.VName, node func(**ppb.Node) bool, file func(**sp
 		}},
 	}
 
+	var f *spb.VName
+	for file(&f) {
+		emit(f, piece)
+	}
+}
+
+func defToDecorPiece(node *spb.VName, defs func(**srvpb.ExpandedAnchor) bool, file func(**spb.VName) bool, emit func(*spb.VName, *ppb.DecorationPiece)) {
+	var def *srvpb.ExpandedAnchor
+	for defs(&def) {
+		// TODO(schroederc): select ambiguous definition better
+		break // pick first known definition
+	}
+	if def == nil {
+		return
+	}
+	piece := &ppb.DecorationPiece{
+		Piece: &ppb.DecorationPiece_Definition_{&ppb.DecorationPiece_Definition{
+			Node:       node,
+			Definition: def,
+		}},
+	}
 	var f *spb.VName
 	for file(&f) {
 		emit(f, piece)
@@ -366,4 +417,24 @@ func moveSourceToKey(n *ppb.Node) (*spb.VName, *ppb.Node) {
 		Fact:    n.Fact,
 		Edge:    n.Edge,
 	}
+}
+
+func (k *KytheBeam) directDefinitions() beam.PCollection {
+	s := k.s.Scope("DirectDefinitions")
+	return beam.ParDo(s, toDefinition, k.References())
+}
+
+func toDefinition(r *ppb.Reference, emit func(*spb.VName, *srvpb.ExpandedAnchor)) error {
+	if !edges.IsVariant(refKind(r), edges.Defines) {
+		return nil
+	}
+	emit(r.Source, r.Anchor)
+	return nil
+}
+
+func refKind(r *ppb.Reference) string {
+	if k := r.GetKytheKind(); k != scpb.EdgeKind_UNKNOWN_EDGE_KIND {
+		return schema.EdgeKindString(k)
+	}
+	return r.GetGenericKind()
 }
