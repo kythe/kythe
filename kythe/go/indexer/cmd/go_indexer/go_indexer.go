@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-// Program go_indexer implements a Kythe indexer for the Go language.
-// Input is read from one or more index pack or .kindex paths.
+// Program go_indexer implements a Kythe indexer for the Go language.  Input is
+// read from one or more .kzip, .kindex, or index pack paths.
 package main
 
 import (
@@ -35,6 +35,7 @@ import (
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/metadata"
 
@@ -59,12 +60,12 @@ func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: %s [options] <path>...
 
-Generate Kythe graph data for the compilations stored in the index pack or
-.kindex files named by the path arguments. Output is written to stdout.
+Generate Kythe graph data for the compilations stored in .kzip, .kindex, or
+index packs named by the path arguments. Output is written to stdout.
 
-By default, paths are assumed to denote .kindex files; if --indexpack is set,
-the paths are treated as index packs instead.  If --zip is set, the index packs
-are treated as ZIP files; otherwise they must be directories.
+If --indexpack is set, the paths are treated as index packs. If --zip is set,
+the index packs are treaed as ZIP files. Otherwise, the paths must end in .kzip
+or .kindex and will be decoded accordingly.
 
 By default, the output is a delimited stream of wire-format Kythe Entry
 protobuf messages. With the --json flag, output is instead a stream of
@@ -156,11 +157,26 @@ func visitPath(ctx context.Context, path string, visit visitFunc) error {
 	if *doIndexPack || *doZipPack {
 		return visitIndexPack(ctx, path, visit)
 	}
-	idx, err := kindex.Open(ctx, path)
+	f, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("opening kindex file: %v", err)
+		return err
 	}
-	return visit(ctx, idx.Proto, idx)
+	defer f.Close()
+	switch ext := filepath.Ext(path); ext {
+	case ".kindex":
+		idx, err := kindex.New(f)
+		if err != nil {
+			return fmt.Errorf("reading .kindex: %v", err)
+		}
+		return visit(ctx, idx.Proto, idx)
+	case ".kzip":
+		return kzip.Scan(f, func(r *kzip.Reader, unit *kzip.Unit) error {
+			return visit(ctx, unit.Proto, kzipFetcher{r})
+		})
+
+	default:
+		return fmt.Errorf("unknown file extension %q", ext)
+	}
 }
 
 // visitIndexPack invokes visit for each Kythe compilation in the index pack at
@@ -191,4 +207,12 @@ func openPack(ctx context.Context, path string) (*indexpack.Archive, error) {
 		return indexpack.OpenZip(ctx, f.(io.ReaderAt), fi.Size(), utype)
 	}
 	return indexpack.Open(ctx, path, utype)
+}
+
+type kzipFetcher struct{ r *kzip.Reader }
+
+// Fetch implements the analysis.Fetcher interface. Only the digest is used in
+// this implementation,, the path is ignored.
+func (k kzipFetcher) Fetch(_, digest string) ([]byte, error) {
+	return k.r.ReadAll(digest)
 }
