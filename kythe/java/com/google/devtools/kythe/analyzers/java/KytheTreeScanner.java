@@ -362,9 +362,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JavaNode implNode = scan(implClass, ctx);
       if (implNode == null) {
         statistics.incrementCounter("warning-missing-implements-node");
-        logger
-            .atWarning()
-            .log("Missing 'implements' node for %s: %s", implClass.getClass(), implClass);
+        logger.atWarning().log(
+            "Missing 'implements' node for %s: %s", implClass.getClass(), implClass);
         continue;
       }
       entrySets.emitEdge(classNode, EdgeKind.EXTENDS, implNode.getVName());
@@ -401,9 +400,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
       JavaNode typeNode = n.getType();
       if (typeNode == null) {
-        logger
-            .atWarning()
-            .log("Missing parameter type (method: %s; parameter: %s)", methodDef.getName(), param);
+        logger.atWarning().log(
+            "Missing parameter type (method: %s; parameter: %s)", methodDef.getName(), param);
         wildcards.addAll(n.childWildcards);
         continue;
       }
@@ -433,7 +431,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // Emit corresponding JVM node
     if (jvmGraph != null) {
       JvmGraph.Type.MethodType methodJvmType = toMethodJvmType(methodDef.type.asMethodType());
-      ReferenceType parentClass = JvmGraph.Type.referenceType(owner.getTree().type.tsym.toString());
+      ReferenceType parentClass = JvmGraph.Type.referenceType(owner.getTree().type.toString());
       String methodName = methodDef.name.toString();
       VName jvmNode = jvmGraph.emitMethodNode(parentClass, methodName, methodJvmType);
       entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
@@ -569,8 +567,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (jvmGraph != null && varDef.sym.getKind().isField()) {
       VName jvmNode =
           jvmGraph.emitFieldNode(
-              JvmGraph.Type.referenceType(owner.getTree().type.tsym.toString()),
-              varDef.name.toString());
+              JvmGraph.Type.referenceType(owner.getTree().type.toString()), varDef.name.toString());
       entrySets.emitEdge(varNode, EdgeKind.GENERATES, jvmNode);
     }
 
@@ -1240,7 +1237,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       case METHOD:
         return toMethodJvmType(type.asMethodType());
       case TYPEVAR:
-        return JvmGraph.Type.referenceType("java.lang.Object");
+        Type boundType = type.getUpperBound();
+        Type erasure =
+            (boundType instanceof Type.IntersectionClassType)
+                ? ((Type.IntersectionClassType) boundType).getComponents().get(0)
+                : boundType;
+        return JvmGraph.Type.referenceType(erasure.toString());
 
       case BOOLEAN:
         return JvmGraph.Type.booleanType();

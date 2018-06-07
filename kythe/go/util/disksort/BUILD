@@ -5,6 +5,10 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "disksort",
     srcs = ["disksort.go"],
+    visibility = [
+        "//kythe:default_visibility",
+        "//third_party/beam:__pkg__",
+    ],
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/util/sortutil",

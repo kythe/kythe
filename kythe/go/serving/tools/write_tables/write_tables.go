@@ -32,7 +32,6 @@ import (
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/stream"
-	"kythe.io/kythe/go/util/datasize"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/profile"
 
@@ -44,6 +43,7 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/x/beamx"
 
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
+	_ "kythe.io/third_party/beam/sdks/go/pkg/beam/runners/disksort"
 )
 
 var (
@@ -58,8 +58,6 @@ var (
 		"Determines whether intermediate data written to disk should be compressed.")
 	maxShardSize = flag.Int("max_shard_size", 32000,
 		"Maximum number of elements (edges, decoration fragments, etc.) to keep in-memory before flushing an intermediary data shard to disk.")
-	shardIOBufferSize = datasize.Flag("shard_io_buffer", "16KiB",
-		"Size of the reading/writing buffers for the intermediary data shards.")
 
 	verbose = flag.Bool("verbose", false, "Whether to emit extra, and possibly excessive, log messages")
 
@@ -122,7 +120,6 @@ func main() {
 		MaxPageSize:    *maxPageSize,
 		CompressShards: *compressShards,
 		MaxShardSize:   *maxShardSize,
-		IOBufferSize:   int(shardIOBufferSize.Bytes()),
 	}); err != nil {
 		log.Fatal("FATAL ERROR: ", err)
 	}
@@ -137,6 +134,10 @@ func init() {
 
 func runExperimentalBeamPipeline(ctx context.Context) error {
 	beam.Init()
+
+	if runnerFlag := flag.Lookup("runner"); runnerFlag.Value.String() == "direct" {
+		runnerFlag.Value.Set("disksort")
+	}
 
 	if gs != nil {
 		return errors.New("--graphstore input not supported with --experimental_beam_pipeline")

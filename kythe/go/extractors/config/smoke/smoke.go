@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -42,12 +41,11 @@ import (
 type Tester func(ctx context.Context, repo string) (Result, error)
 
 // Fetcher is fetches a given repo and writes it to an output directory.
-type Fetcher func(ctx context.Context, repo config.Repo) error
+type Fetcher func(ctx context.Context, repo, outputPath string) error
 
 // GitFetch fetches repos using git commandline.
-func GitFetch(ctx context.Context, repo config.Repo) error {
-	// TODO(danielmoy): strongly consider go-git instead of os.exec
-	return exec.CommandContext(ctx, "git", "clone", repo.URI, repo.OutputPath).Run()
+func GitFetch(ctx context.Context, repo, outputPath string) error {
+	return config.GitCopier(repo)(ctx, outputPath)
 }
 
 // Indexer takes .kindex files in a given inputDir, indexes them, and deposits
@@ -172,10 +170,7 @@ func (h Harness) filenamesFromRepo(ctx context.Context, repoURI string) (map[str
 	}
 	defer os.RemoveAll(repoDir)
 
-	if err = h.fetcher()(ctx, config.Repo{
-		URI:        repoURI,
-		OutputPath: repoDir,
-	}); err != nil {
+	if err = h.fetcher()(ctx, repoURI, repoDir); err != nil {
 		return nil, err
 	}
 
@@ -205,7 +200,7 @@ func (h Harness) filenamesFromExtraction(ctx context.Context, repoURI string) (m
 	defer os.RemoveAll(tmpOutDir)
 
 	if err := h.extractor()(ctx, config.Repo{
-		URI:        repoURI,
+		Clone:      config.GitCopier(repoURI),
 		OutputPath: tmpOutDir,
 		ConfigPath: h.ConfigPath,
 	}); err != nil {

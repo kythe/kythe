@@ -90,7 +90,7 @@ func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult
 	fullSync := lsp.TDSKFull
 	return &lsp.InitializeResult{
 		Capabilities: lsp.ServerCapabilities{
-			TextDocumentSync: lsp.TextDocumentSyncOptionsOrKind{
+			TextDocumentSync: &lsp.TextDocumentSyncOptionsOrKind{
 				Kind:    &fullSync,
 				Options: nil,
 			},

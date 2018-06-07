@@ -1,0 +1,7 @@
+URL: https://github.com/apache/beam
+Version: 72cbd99d6b62bc7ed16dbd1288cd61d54e8bda37
+License: Apache License 2.0: https://opensource.org/licenses/Apache-2.0
+Local Modifications:
+  - Narrow checkout of sdks/go/pkg/beam/runners/direct
+  - Modified package to use disksort for CoGBK implementation
+  - Added BUILD file

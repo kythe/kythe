@@ -33,14 +33,22 @@ const kytheExtractionConfigFile = ".kythe-extraction-config"
 // Repo is a container of input/output parameters for doing extraction on remote
 // repositories.
 type Repo struct {
-	// The location of the repo itself.
-	URI string
+	// Clone extracts a copy of the repo to the specified output Directory.
+	Clone func(ctx context.Context, outputDir string) error
 	// Where to write from an extraction.
 	OutputPath string
 	// An optional path to a file containing a
 	// kythe.proto.ExtractionConfiguration encoded as JSON that details how
 	// to perform extraction.
 	ConfigPath string
+}
+
+// GitCopier returns a function that clones a repository via git command line.
+func GitCopier(repoURI string) func(ctx context.Context, outputDir string) error {
+	return func(ctx context.Context, outputDir string) error {
+		// TODO(danielmoy): strongly consider go-git instead of os.exec
+		return exec.CommandContext(ctx, "git", "clone", repoURI, outputDir).Run()
+	}
 }
 
 // Extractor is the interface for handling kindex generation on repos.
@@ -80,11 +88,10 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 	}
 	defer os.RemoveAll(tmpOutDir)
 
-	// clone the repo
-	cmd := exec.CommandContext(ctx, "git", "clone", repo.URI, repoDir)
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("cloning repo: %v", err)
+	// copy the repo into our temp directory, so we can mutate its
+	// build config without affecting the original source.
+	if err := repo.Clone(ctx, repoDir); err != nil {
+		return fmt.Errorf("copying repo: %v", err)
 	}
 
 	// if a config was passed as a arg, use the specified config

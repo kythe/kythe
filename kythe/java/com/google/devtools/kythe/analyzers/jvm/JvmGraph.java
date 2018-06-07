@@ -297,7 +297,9 @@ public class JvmGraph {
     /** Returns a new JVM class/enum/interface type descriptor. */
     public static ReferenceType referenceType(String qualifiedName) {
       Preconditions.checkNotNull(qualifiedName);
-      return new ReferenceType(qualifiedName.replace("$", "."));
+      // Normalized qualified name (e.g. java.util.Map$Entry<K, V> -> java.util.Map.Entry)
+      String normalized = qualifiedName.replace("$", ".").replaceAll("<[^\\]]+>", "");
+      return new ReferenceType(normalized);
     }
 
     /** Returns a new JVM method type descriptor. */

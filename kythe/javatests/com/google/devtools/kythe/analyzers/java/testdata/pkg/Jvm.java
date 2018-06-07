@@ -1,5 +1,7 @@
 package pkg;
 
+import java.util.Formattable;
+
 //- @Jvm defines/binding ClassJava
 //- ClassJava generates ClassJvm
 public class Jvm {
@@ -25,7 +27,7 @@ public class Jvm {
   //- GenericClass childof GenericAbs
   //- GenericClass.node/kind record
   //- GenericClass generates GenericJvm
-  public static class Generic<T> {
+  public static class Generic<T extends Integer> {
     //- @tfield defines/binding TFieldJava
     //- TFieldJava.node/kind variable
     //- TFieldJava generates TFieldJvm
@@ -35,6 +37,18 @@ public class Jvm {
     //- TMethodJava.node/kind function
     //- TMethodJava generates TMethodJvm
     private void tmethod(T targ) {}
+  }
+
+  //- @MultipleBoundGeneric defines/binding MBGenericAbs
+  //- MBGenericAbs.node/kind abs
+  //- MBGenericClass childof MBGenericAbs
+  //- MBGenericClass.node/kind record
+  //- MBGenericClass generates MBGenericJvm
+  public static class MultipleBoundGeneric<T extends Integer & Formattable> {
+    //- @mbtmethod defines/binding MBTMethodJava
+    //- MBTMethodJava.node/kind function
+    //- MBTMethodJava generates MBTMethodJvm
+    private void mbtmethod(T targ) {}
   }
 
   //- @nope defines/binding NopeJava
