@@ -52,7 +52,8 @@ func GitCopier(repoURI string) func(ctx context.Context, outputDir string) error
 	}
 }
 
-// LocalCopier returns a function that copys a local repository.
+// LocalCopier returns a function that copies a local repository.
+// This function assumes the eventual output directory is already created.
 func LocalCopier(repoPath string) func(ctx context.Context, outputDir string) error {
 	return func(ctx context.Context, outputDir string) error {
 		gitDir := filepath.Join(repoPath, ".git")
@@ -67,8 +68,7 @@ func LocalCopier(repoPath string) func(ctx context.Context, outputDir string) er
 				return nil
 			}
 			if filepath.HasPrefix(path, gitDir) {
-				// Also skip all that .git stuff.
-				return nil
+				return filepath.SkipDir
 			}
 			rel, err := filepath.Rel(repoPath, path)
 			if err != nil {
@@ -76,16 +76,15 @@ func LocalCopier(repoPath string) func(ctx context.Context, outputDir string) er
 			}
 			outPath := filepath.Join(outputDir, rel)
 			if info.IsDir() {
-				if _, err := os.Stat(outPath); err != nil {
-					if err := os.Mkdir(outPath, 0777); err != nil {
-						return err
-					}
+				if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+					return err
 				}
 				return nil
 			}
 			if !info.Mode().IsRegular() {
 				// Notably in here are any links or other odd things.
-				return fmt.Errorf("Can't handle the truth")
+				log.Printf("Unsupported file %s with mode %s\n", path, info.Mode())
+				return nil
 			}
 			inf, err := os.Open(path)
 			if err != nil {
