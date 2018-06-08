@@ -75,31 +75,30 @@ func LocalCopier(repoPath string) func(ctx context.Context, outputDir string) er
 				return err
 			}
 			outPath := filepath.Join(outputDir, rel)
-			if info.IsDir() {
+			if info.Mode().IsRegular() {
 				if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-					return err
+					return fmt.Errorf("failed to make dir: %v", err)
 				}
-				return nil
-			}
-			if !info.Mode().IsRegular() {
+				inf, err := os.Open(path)
+				if err != nil {
+					return fmt.Errorf("failed to open input file from repo: %v", err)
+				}
+				defer inf.Close()
+				of, err := os.Create(outPath)
+				if err != nil {
+					return fmt.Errorf("failed to open output file for repo copy: %v", err)
+				}
+				if _, err := io.Copy(of, inf); err != nil {
+					of.Close()
+					return fmt.Errorf("failed to copy repo file: %v", err)
+				}
+				return of.Close()
+			} else if !info.IsDir() {
 				// Notably in here are any links or other odd things.
 				log.Printf("Unsupported file %s with mode %s\n", path, info.Mode())
 				return nil
 			}
-			inf, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer inf.Close()
-			of, err := os.Create(outPath)
-			if err != nil {
-				return err
-			}
-			if _, err := io.Copy(of, inf); err != nil {
-				of.Close()
-				return err
-			}
-			return of.Close()
+			return nil
 		})
 	}
 }
