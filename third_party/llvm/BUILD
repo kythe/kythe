@@ -25,6 +25,7 @@ cc_library(
     # Do not sort; srcs are link-order dependent.
     srcs = [
         "llvm/build/lib/libclangFormat.a",
+        "llvm/build/lib/libclangToolingInclusions.a",
         "llvm/build/lib/libclangToolingCore.a",
         "llvm/build/lib/libclangTooling.a",
         "llvm/build/lib/libclangFrontend.a",

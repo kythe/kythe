@@ -125,7 +125,7 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
       cores="$(nproc)"
     fi
     cmake --build . -- "-j${cores}" \
-        clangAnalysis clangAST clangBasic clangDriver clangEdit \
+        clangAnalysis clangAST clangBasic clangDriver clangEdit clangToolingInclusions \
         clangFrontend clang-headers clangLex clangParse clangRewrite clangSema \
         clangSerialization clangTooling LLVMAArch64Info LLVMARMInfo \
         LLVMBitReader LLVMCore LLVMMC LLVMMCParser LLVMMipsInfo LLVMOption \

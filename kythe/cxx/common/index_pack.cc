@@ -151,8 +151,8 @@ static bool OpenUniqueTempFileIn(const std::string &abs_root_directory,
     llvm::sys::path::append(
         path, new_uuid.payload() + IndexPackFilesystem::kTempFileSuffix);
     if (auto err = llvm::sys::fs::openFileForWrite(
-            llvm::Twine(path), *fd_out,
-            llvm::sys::fs::F_RW | llvm::sys::fs::F_Excl,
+            llvm::Twine(path), *fd_out, llvm::sys::fs::CD_CreateNew,
+            llvm::sys::fs::OF_None,
             llvm::sys::fs::all_read | llvm::sys::fs::all_write)) {
       if (err != std::errc::file_exists) {
         *error_text = err.message();

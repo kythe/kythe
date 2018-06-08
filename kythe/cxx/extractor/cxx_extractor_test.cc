@@ -101,7 +101,8 @@ class CxxExtractorTest : public testing::Test {
     UndoableCreateDirectories(path);
     ASSERT_EQ(0, llvm::sys::fs::remove(path).value());
     ASSERT_EQ(0, llvm::sys::fs::openFileForWrite(path, write_fd,
-                                                 llvm::sys::fs::F_Text)
+                                                 llvm::sys::fs::CD_CreateAlways,
+                                                 llvm::sys::fs::OF_Text)
                      .value());
     ASSERT_EQ(code.size(), ::write(write_fd, code.c_str(), code.size()));
     ASSERT_EQ(0, ::close(write_fd));
