@@ -25,7 +25,8 @@ def _bound_size(tup, size, padding=0):
 def check_version(min_required, max_supported):
   found = native.bazel_version
   found_version = _parse_version(found)
-  if _bound_size(_parse_version(min_required), len(found_version)) > found_version:
+  min = _parse_version(min_required)
+  if min > _bound_size(found_version, len(min)):
     fail("You need to update bazel. Required version {} of bazel, found {}".format(min_required, found))
   max = _parse_version(max_supported)
   if max < _bound_size(found_version, len(max)):
