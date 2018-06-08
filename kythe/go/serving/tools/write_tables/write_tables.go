@@ -151,6 +151,10 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 	entries := beamio.ReadEntries(s, *entriesFile)
 	k := pipeline.FromEntries(s, entries)
 	shards := 8 // TODO(schroederc): better determine number of shards
-	beamio.WriteLevelDB(s, *tablePath, shards, k.Decorations())
+	beamio.WriteLevelDB(s, *tablePath, shards,
+		k.CorpusRoots(),
+		k.Directories(),
+		k.Decorations(),
+	)
 	return beamx.Run(ctx, p)
 }

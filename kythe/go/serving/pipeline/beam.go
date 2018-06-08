@@ -61,9 +61,10 @@ func init() {
 type KytheBeam struct {
 	s beam.Scope
 
-	nodes beam.PCollection // *ppb.Node
-	files beam.PCollection // *srvpb.File
-	refs  beam.PCollection // *ppb.Reference
+	fileVNames beam.PCollection // *spb.VName
+	nodes      beam.PCollection // *ppb.Node
+	files      beam.PCollection // *srvpb.File
+	refs       beam.PCollection // *ppb.Reference
 }
 
 // FromNodes creates a KytheBeam pipeline from an input collection of

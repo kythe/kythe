@@ -6,6 +6,7 @@ go_library(
     name = "pipeline",
     srcs = [
         "beam.go",
+        "filetree.go",
         "pipeline.go",
     ],
     deps = [
@@ -46,6 +47,17 @@ go_test(
     library = ":pipeline",
     deps = [
         "//kythe/proto:common_go_proto",
+        "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
+        "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
+        "@com_github_apache_beam//sdks/go/pkg/beam/x/debug:go_default_library",
+    ],
+)
+
+go_test(
+    name = "filetree_test",
+    srcs = ["filetree_test.go"],
+    library = ":pipeline",
+    deps = [
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/x/debug:go_default_library",
