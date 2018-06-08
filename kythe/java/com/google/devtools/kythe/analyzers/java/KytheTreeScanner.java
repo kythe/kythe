@@ -361,9 +361,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JavaNode implNode = scan(implClass, ctx);
       if (implNode == null) {
         statistics.incrementCounter("warning-missing-implements-node");
-        logger
-            .atWarning()
-            .log("Missing 'implements' node for %s: %s", implClass.getClass(), implClass);
+        logger.atWarning().log(
+            "Missing 'implements' node for %s: %s", implClass.getClass(), implClass);
         continue;
       }
       entrySets.emitEdge(classNode, EdgeKind.EXTENDS, implNode.getVName());
@@ -400,9 +399,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
       JavaNode typeNode = n.getType();
       if (typeNode == null) {
-        logger
-            .atWarning()
-            .log("Missing parameter type (method: %s; parameter: %s)", methodDef.getName(), param);
+        logger.atWarning().log(
+            "Missing parameter type (method: %s; parameter: %s)", methodDef.getName(), param);
         wildcards.addAll(n.childWildcards);
         continue;
       }
