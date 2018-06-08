@@ -326,7 +326,8 @@ class TemporaryFilesystem {
     llvm::sys::path::append(full_path, file_dir, file_name);
     int write_fd;
     if (llvm::sys::fs::openFileForWrite(llvm::Twine(full_path), write_fd,
-                                        llvm::sys::fs::F_Text))
+                                        llvm::sys::fs::CD_CreateAlways,
+                                        llvm::sys::fs::OF_Text))
       return false;
     files_to_remove_.insert(full_path.str());
     google::protobuf::io::FileOutputStream file_stream(write_fd);
