@@ -22,6 +22,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"path/filepath"
 	"time"
 
 	"kythe.io/kythe/go/extractors/bazel"
@@ -50,17 +51,39 @@ func main() {
 		log.Fatalf("Invalid config settings: %v", err)
 	}
 
+	ctx := context.Background()
 	start := time.Now()
 	ai, err := bazel.SpawnAction(info)
 	if err != nil {
 		log.Fatalf("Invalid extra action: %v", err)
 	}
-	cu, err := config.Extract(context.Background(), ai)
-	if err != nil {
-		log.Fatalf("Extraction failed: %v", err)
+	switch ext := filepath.Ext(*outputPath); ext {
+	case ".kindex":
+		// Write a .kindex file.
+		// TODO(fromberger): Remove this once everything is using kzip.
+		cu, err := config.Extract(context.Background(), ai)
+		if err != nil {
+			log.Fatalf("Extraction failed: %v", err)
+		}
+		if err := bazel.Write(cu, *outputPath); err != nil {
+			log.Fatalf("Writing index output: %v", err)
+		}
+
+	case ".kzip":
+		// Write a .kzip file.
+		w, err := bazel.NewKZIP(*outputPath)
+		if err != nil {
+			log.Fatalf("Creating kzip writer: %v", err)
+		}
+		if _, err := config.ExtractToFile(ctx, ai, w); err != nil {
+			log.Fatalf("Extraction failed: %v", err)
+		}
+		if err := w.Close(); err != nil {
+			log.Fatalf("Closing output: %v", err)
+		}
+
+	default:
+		log.Fatalf("Unknown output extension %q", ext)
 	}
 	log.Printf("Finished extracting [%v elapsed]", time.Since(start))
-	if err := bazel.Write(cu, *outputPath); err != nil {
-		log.Fatalf("Writing index: %v", err)
-	}
 }

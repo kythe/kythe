@@ -31,14 +31,9 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/golang"
-	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
-
-	"github.com/pborman/uuid"
-
-	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
 var (
@@ -48,7 +43,6 @@ var (
 	localPath  = flag.String("local_path", "", "Directory where relative imports are resolved")
 	outputPath = flag.String("output", "", "Output path (indexpack directory or .kzip filename)")
 	extraFiles = flag.String("extra_files", "", "Additional files to include in each compilation (CSV)")
-	indexFiles = flag.Bool("kindex", false, "Write outputs to .kindex files")
 	byDir      = flag.Bool("bydir", false, "Import by directory rather than import path")
 	keepGoing  = flag.Bool("continue", false, "Continue past errors")
 	verbose    = flag.Bool("v", false, "Enable verbose logging")
@@ -125,34 +119,33 @@ func main() {
 		maybeFatal("Error in extraction: %v", err)
 	}
 
-	var writer packageWriter
-	if *indexFiles {
-		writer = writeToIndex(ctx, *outputPath)
-	} else if filepath.Ext(*outputPath) == ".kzip" {
-		writer = writeToKZip(ctx, *outputPath)
-	} else {
-		writer = writeToPack(ctx, *outputPath)
-	}
 	maybeLog("Writing %d package(s) to %q", len(ext.Packages), *outputPath)
+	w, err := kzipWriter(ctx, *outputPath)
+	if err != nil {
+		maybeFatal("Error creating kzip writer: %v", err)
+	}
 	for _, pkg := range ext.Packages {
 		maybeLog("Package %q:\n\t// %s", pkg.Path, pkg.BuildPackage.Doc)
-		if err := writer.writePackage(ctx, pkg); err != nil {
+		if err := pkg.EachUnit(ctx, func(cu *kindex.Compilation) error {
+			if _, err := w.AddUnit(cu.Proto, nil); err != nil {
+				return err
+			}
+			for _, fd := range cu.Files {
+				if _, err := w.AddFile(bytes.NewReader(fd.Content)); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
 			maybeFatal("Error writing %q: %v", pkg.Path, err)
 		}
 	}
-	if err := writer.close(); err != nil {
+	if err := w.Close(); err != nil {
 		maybeFatal("Error closing output: %v", err)
 	}
 }
 
-type packageWriter interface {
-	writePackage(context.Context, *golang.Package) error
-	close() error
-}
-
-// writeToKZip returns a packageWriter that stores compilations into a kzip
-// file at the specified path.
-func writeToKZip(ctx context.Context, path string) packageWriter {
+func kzipWriter(ctx context.Context, path string) (*kzip.Writer, error) {
 	if err := vfs.MkdirAll(ctx, filepath.Dir(path), 0755); err != nil {
 		log.Fatalf("Unable to create output directory: %v", err)
 	}
@@ -160,77 +153,5 @@ func writeToKZip(ctx context.Context, path string) packageWriter {
 	if err != nil {
 		log.Fatalf("Unable to create output file: %v", err)
 	}
-	w, err := kzip.NewWriteCloser(f)
-	if err != nil {
-		log.Fatalf("Unable to create kzip writer: %v", err)
-	}
-	return kzipWriter{w}
+	return kzip.NewWriteCloser(f)
 }
-
-type kzipWriter struct{ w *kzip.Writer }
-
-func (k kzipWriter) writePackage(ctx context.Context, pkg *golang.Package) error {
-	return pkg.EachUnit(ctx, func(cu *kindex.Compilation) error {
-		if _, err := k.w.AddUnit(cu.Proto, nil); err != nil {
-			return err
-		}
-		for _, fd := range cu.Files {
-			if _, err := k.w.AddFile(bytes.NewReader(fd.Content)); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-func (k kzipWriter) close() error { return k.w.Close() }
-
-// writeToIndex returns a packageWriter that stores compilations as kindex
-// files under the specified directory path.
-func writeToIndex(ctx context.Context, path string) packageWriter {
-	if err := vfs.MkdirAll(ctx, path, 0755); err != nil {
-		log.Fatalf("Unable to create output directory: %v", err)
-	}
-	return kindexWriter(func(ctx context.Context, pkg *golang.Package) error {
-		return pkg.EachUnit(ctx, func(cu *kindex.Compilation) error {
-			path := filepath.Join(path, uuid.New()+".kindex")
-			f, err := vfs.Create(ctx, path)
-			if err != nil {
-				return err
-			}
-			_, err = cu.WriteTo(f)
-			cerr := f.Close()
-			if err != nil {
-				return err
-			}
-			return cerr
-		})
-	})
-}
-
-type kindexWriter func(context.Context, *golang.Package) error
-
-func (k kindexWriter) writePackage(ctx context.Context, pkg *golang.Package) error {
-	return k(ctx, pkg)
-}
-
-func (kindexWriter) close() error { return nil }
-
-// writeToPack returns a packageWriter that stores compilations to an index
-// pack under the specified directory path.
-func writeToPack(ctx context.Context, path string) packageWriter {
-	pack, err := indexpack.CreateOrOpen(ctx, path, indexpack.UnitType((*apb.CompilationUnit)(nil)))
-	if err != nil {
-		log.Fatalf("Unable to open %q: %v", path, err)
-	}
-	return packWriter{pack}
-}
-
-type packWriter struct{ w *indexpack.Archive }
-
-func (p packWriter) writePackage(ctx context.Context, pkg *golang.Package) error {
-	_, err := pkg.Store(ctx, p.w)
-	return err
-}
-
-func (packWriter) close() error { return nil }
