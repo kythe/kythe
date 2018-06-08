@@ -143,7 +143,7 @@ func TestReferences(t *testing.T) {
 	}
 }
 
-func TestDecorations(t *testing.T) {
+func TestDecorations_targetNode(t *testing.T) {
 	testNodes := []*ppb.Node{{
 		Source: &spb.VName{Path: "path", Signature: "anchor1"},
 		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
@@ -196,6 +196,164 @@ func TestDecorations(t *testing.T) {
 				Value: []byte("something"),
 			}},
 		}},
+	}}
+
+	p, s, nodes := ptest.CreateList(testNodes)
+	decor := FromNodes(s, nodes).Decorations()
+	debug.Print(s, decor)
+	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	}
+}
+
+func TestDecorations_decoration(t *testing.T) {
+	testNodes := []*ppb.Node{{
+		Source: &spb.VName{Path: "path", Signature: "anchor1"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("5"),
+		}, {
+			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("9"),
+		}},
+		Edge: []*ppb.Edge{{
+			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_REF},
+			Target: &spb.VName{Signature: "node1"},
+		}},
+	}, {
+		Source: &spb.VName{Path: "path"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("some text\n"),
+		}},
+	}}
+
+	expected := []*srvpb.FileDecorations{{
+		File: &srvpb.File{
+			Text: []byte("some text\n"),
+		},
+		Decoration: []*srvpb.FileDecorations_Decoration{{
+			Anchor: &srvpb.RawAnchor{
+				StartOffset: 5,
+				EndOffset:   9,
+			},
+			Kind:   "/kythe/edge/ref",
+			Target: "kythe:#node1",
+		}},
+	}}
+
+	p, s, nodes := ptest.CreateList(testNodes)
+	decor := FromNodes(s, nodes).Decorations()
+	debug.Print(s, decor)
+	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	}
+}
+
+func TestDecorations_targetDefinition(t *testing.T) {
+	testNodes := []*ppb.Node{{
+		Source: &spb.VName{Path: "path", Signature: "anchor1"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("5"),
+		}, {
+			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("9"),
+		}},
+		Edge: []*ppb.Edge{{
+			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_REF},
+			Target: &spb.VName{Signature: "node1"},
+		}},
+	}, {
+		Source: &spb.VName{Path: "path"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("some text\n"),
+		}},
+	}, {
+		Source: &spb.VName{Path: "path2", Signature: "def1"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("5"),
+		}, {
+			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("8"),
+		}},
+		Edge: []*ppb.Edge{{
+			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+			Target: &spb.VName{Signature: "node1"},
+		}},
+	}, {
+		Source: &spb.VName{Path: "path2"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*ppb.Fact{{
+			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("some def\n"),
+		}},
+	}}
+
+	def := &srvpb.ExpandedAnchor{
+		Ticket: "kythe:?path=path2#def1",
+		Text:   "def",
+		Span: &cpb.Span{
+			Start: &cpb.Point{
+				ByteOffset:   5,
+				LineNumber:   1,
+				ColumnOffset: 5,
+			},
+			End: &cpb.Point{
+				ByteOffset:   8,
+				LineNumber:   1,
+				ColumnOffset: 8,
+			},
+		},
+		Snippet: "some def",
+		SnippetSpan: &cpb.Span{
+			Start: &cpb.Point{
+				LineNumber: 1,
+			},
+			End: &cpb.Point{
+				ByteOffset:   8,
+				LineNumber:   1,
+				ColumnOffset: 8,
+			},
+		},
+	}
+	expected := []*srvpb.FileDecorations{{
+		File: &srvpb.File{Text: []byte("some text\n")},
+		Decoration: []*srvpb.FileDecorations_Decoration{{
+			Anchor: &srvpb.RawAnchor{
+				StartOffset: 5,
+				EndOffset:   9,
+			},
+			Kind:             "/kythe/edge/ref",
+			Target:           "kythe:#node1",
+			TargetDefinition: "kythe:?path=path2#def1",
+		}},
+		TargetDefinitions: []*srvpb.ExpandedAnchor{def},
+	}, {
+		File: &srvpb.File{Text: []byte("some def\n")},
+		Decoration: []*srvpb.FileDecorations_Decoration{{
+			Anchor: &srvpb.RawAnchor{
+				StartOffset: 5,
+				EndOffset:   8,
+			},
+			Kind:   "/kythe/edge/defines/binding",
+			Target: "kythe:#node1",
+
+			// TODO(schroederc): ellide TargetDefinition for actual definitions
+			TargetDefinition: "kythe:?path=path2#def1",
+		}},
+		TargetDefinitions: []*srvpb.ExpandedAnchor{def},
 	}}
 
 	p, s, nodes := ptest.CreateList(testNodes)
