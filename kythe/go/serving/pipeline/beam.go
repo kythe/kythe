@@ -425,10 +425,9 @@ func (k *KytheBeam) directDefinitions() beam.PCollection {
 }
 
 func toDefinition(r *ppb.Reference, emit func(*spb.VName, *srvpb.ExpandedAnchor)) error {
-	if !edges.IsVariant(refKind(r), edges.Defines) {
-		return nil
+	if edges.IsVariant(refKind(r), edges.Defines) {
+		emit(r.Source, r.Anchor)
 	}
-	emit(r.Source, r.Anchor)
 	return nil
 }
 
