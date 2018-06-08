@@ -19,6 +19,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -48,6 +49,56 @@ func GitCopier(repoURI string) func(ctx context.Context, outputDir string) error
 	return func(ctx context.Context, outputDir string) error {
 		// TODO(danielmoy): strongly consider go-git instead of os.exec
 		return exec.CommandContext(ctx, "git", "clone", repoURI, outputDir).Run()
+	}
+}
+
+// LocalCopier returns a function that copies a local repository.
+// This function assumes the eventual output directory is already created.
+func LocalCopier(repoPath string) func(ctx context.Context, outputDir string) error {
+	return func(ctx context.Context, outputDir string) error {
+		gitDir := filepath.Join(repoPath, ".git")
+		// TODO(danielmoy): consider extracting all or part of this
+		// to a more common place.
+		return filepath.Walk(repoPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if repoPath == path {
+				// Intentionally do nothing for base dir.
+				return nil
+			}
+			if filepath.HasPrefix(path, gitDir) {
+				return filepath.SkipDir
+			}
+			rel, err := filepath.Rel(repoPath, path)
+			if err != nil {
+				return err
+			}
+			outPath := filepath.Join(outputDir, rel)
+			if info.Mode().IsRegular() {
+				if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+					return fmt.Errorf("failed to make dir: %v", err)
+				}
+				inf, err := os.Open(path)
+				if err != nil {
+					return fmt.Errorf("failed to open input file from repo: %v", err)
+				}
+				defer inf.Close()
+				of, err := os.Create(outPath)
+				if err != nil {
+					return fmt.Errorf("failed to open output file for repo copy: %v", err)
+				}
+				if _, err := io.Copy(of, inf); err != nil {
+					of.Close()
+					return fmt.Errorf("failed to copy repo file: %v", err)
+				}
+				return of.Close()
+			} else if !info.IsDir() {
+				// Notably in here are any links or other odd things.
+				log.Printf("Unsupported file %s with mode %s\n", path, info.Mode())
+			}
+			return nil
+		})
 	}
 }
 
