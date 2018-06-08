@@ -96,7 +96,6 @@ func LocalCopier(repoPath string) func(ctx context.Context, outputDir string) er
 			} else if !info.IsDir() {
 				// Notably in here are any links or other odd things.
 				log.Printf("Unsupported file %s with mode %s\n", path, info.Mode())
-				return nil
 			}
 			return nil
 		})
