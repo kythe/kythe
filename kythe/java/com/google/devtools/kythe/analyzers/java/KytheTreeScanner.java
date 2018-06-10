@@ -50,6 +50,7 @@ import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.TypeTag;
+import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCAnnotation;
 import com.sun.tools.javac.tree.JCTree.JCArrayTypeTree;
@@ -430,8 +431,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     // Emit corresponding JVM node
     if (jvmGraph != null) {
-      JvmGraph.Type.MethodType methodJvmType = toMethodJvmType(methodDef.type.asMethodType());
-      ReferenceType parentClass = JvmGraph.Type.referenceType(owner.getTree().type.toString());
+      JvmGraph.Type.MethodType methodJvmType =
+          toMethodJvmType((Type.MethodType) externalType(methodDef.sym));
+      ReferenceType parentClass =
+          JvmGraph.Type.referenceType(externalType(owner.getTree().type.tsym).toString());
       String methodName = methodDef.name.toString();
       VName jvmNode = jvmGraph.emitMethodNode(parentClass, methodName, methodJvmType);
       entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
@@ -567,7 +570,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (jvmGraph != null && varDef.sym.getKind().isField()) {
       VName jvmNode =
           jvmGraph.emitFieldNode(
-              JvmGraph.Type.referenceType(owner.getTree().type.toString()), varDef.name.toString());
+              JvmGraph.Type.referenceType(externalType(owner.getTree().type.tsym).toString()),
+              varDef.name.toString());
       entrySets.emitEdge(varNode, EdgeKind.GENERATES, jvmNode);
     }
 
@@ -1228,6 +1232,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
+  private Type externalType(Symbol sym) {
+    return sym.externalType(Types.instance(javaContext));
+  }
+
   static JvmGraph.Type toJvmType(Type type) {
     switch (type.getTag()) {
       case ARRAY:
@@ -1237,12 +1245,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       case METHOD:
         return toMethodJvmType(type.asMethodType());
       case TYPEVAR:
-        Type boundType = type.getUpperBound();
-        Type erasure =
-            (boundType instanceof Type.IntersectionClassType)
-                ? ((Type.IntersectionClassType) boundType).getComponents().get(0)
-                : boundType;
-        return JvmGraph.Type.referenceType(erasure.toString());
+        return JvmGraph.Type.referenceType(type.toString());
 
       case BOOLEAN:
         return JvmGraph.Type.booleanType();

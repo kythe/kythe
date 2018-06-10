@@ -1,6 +1,7 @@
 package pkg;
 
 import java.util.Formattable;
+import java.util.List;
 
 //- @Jvm defines/binding ClassJava
 //- ClassJava generates ClassJvm
@@ -10,9 +11,21 @@ public class Jvm {
   //- IntFieldJava generates IntFieldJvm
   int intField;
 
+  //- @Nested defines/binding NestedJava
+  //- NestedJava generates NestedJvm
+  public static class Nested {
+    //- @Nested defines/binding NestedCtorJava
+    //- NestedCtorJava generates NestedCtorJvm
+    public Nested() {}
+  }
+
   //- @Inner defines/binding InnerJava
   //- InnerJava generates InnerJvm
-  public static class Inner {}
+  public class Inner {
+    //- @Inner defines/binding InnerCtorJava
+    //- InnerCtorJava generates InnerCtorJvm
+    public Inner() {}
+  }
 
   //- @func defines/binding FuncJava
   //- FuncJava generates FuncJvm
@@ -37,6 +50,18 @@ public class Jvm {
     //- TMethodJava.node/kind function
     //- TMethodJava generates TMethodJvm
     private void tmethod(T targ) {}
+
+    //- @tlistmethod defines/binding TListMethodJava
+    //- TListMethodJava.node/kind function
+    //- TListMethodJava generates TListMethodJvm
+    private void tlistmethod(List<T> targ) {}
+
+    //- @tlistretmethod defines/binding TListRetMethodJava
+    //- TListRetMethodJava.node/kind function
+    //- TListRetMethodJava generates TListRetMethodJvm
+    private List<T> tlistretmethod() {
+      return null;
+    }
   }
 
   //- @MultipleBoundGeneric defines/binding MBGenericAbs
