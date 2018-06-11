@@ -25,7 +25,20 @@ public class Jvm {
     //- @Inner defines/binding InnerCtorJava
     //- InnerCtorJava generates InnerCtorJvm
     public Inner() {}
+
+    //- @InnerInner defines/binding InnerInnerJava
+    //- InnerInnerJava generates InnerInnerJvm
+    public class InnerInner {
+      //- @InnerInner defines/binding InnerInnerCtorJava
+      //- InnerInnerCtorJava generates InnerInnerCtorJvm
+      public InnerInner() {}
+    }
   }
+
+  //- @methodWithInnerParam defines/binding MethodWithInnerParamJava
+  //- MethodWithInnerParamJava.node/kind function
+  //- MethodWithInnerParamJava generates MethodWithInnerParamJvm
+  private void methodWithInnerParam(Inner inner) {}
 
   //- @func defines/binding FuncJava
   //- FuncJava generates FuncJvm
