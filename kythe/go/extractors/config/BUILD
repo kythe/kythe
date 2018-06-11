@@ -8,8 +8,8 @@ go_library(
         "config_parser.go",
         "extractor.go",
     ],
-    data = ["default/mvn_config.json"],
     deps = [
+        "//kythe/go/extractors/config/default/mvn",
         "//kythe/proto:extraction_config_go_proto",
         "@com_github_golang_protobuf//jsonpb:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
@@ -20,10 +20,7 @@ go_library(
 go_test(
     name = "config_test",
     srcs = ["config_parser_test.go"],
-    data = glob([
-        "testdata/*.Dockerfile",
-        "default/*.json",
-    ]),
+    data = glob(["testdata/**"]),
     library = ":config",
     deps = [
         "//kythe/proto:extraction_config_go_proto",

@@ -27,12 +27,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"kythe.io/kythe/go/extractors/config/default/mvn"
+
 	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
 // kytheConfigFileName The name of the Kythe extraction config
 const kytheExtractionConfigFile = ".kythe-extraction-config"
-const defaultConfigDir = "kythe/go/extractors/config/default"
 
 // Repo is a container of input/output parameters for doing extraction on remote
 // repositories.
@@ -150,7 +151,7 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		return fmt.Errorf("copying repo: %v", err)
 	}
 
-	log.Printf("Using configuration file: %q\n", repo.ConfigPath)
+	log.Printf("Using configuration file: %q", repo.ConfigPath)
 	extractionDockerFile, err := ioutil.TempFile(tmpOutDir, "extractionDockerFile")
 	if err != nil {
 		return fmt.Errorf("creating tmp Dockerfile: %v", err)
@@ -196,6 +197,7 @@ func verifyRequiredTools() error {
 }
 
 func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, error) {
+	var configReader io.Reader
 	// if a config was passed in, use the specified config, otherwise go
 	// hunt for one in the repository.
 	if configPath == "" {
@@ -203,17 +205,14 @@ func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, erro
 		configPath = filepath.Join(repoDir, kytheExtractionConfigFile)
 	}
 
-	configFile, err := os.Open(configPath)
+	configReader, err := os.Open(configPath)
 	if err != nil {
 		log.Printf("Failure opening config file: %v, attempting to use default", err)
 		// TODO(danielmoy): This needs to be configurable by builder, language, etc.
-		configFile, err = os.Open(os.ExpandEnv(filepath.Join(defaultConfigDir, "mvn_config.json")))
-		if err != nil {
-			return nil, fmt.Errorf("finding default config file: %v", err)
-		}
+		configReader = mvn.DefaultConfig()
 	}
 
-	extractionConfig, err := Load(configFile)
+	extractionConfig, err := Load(configReader)
 	if err != nil {
 		return nil, fmt.Errorf("creating valid config from file: %v", err)
 	}
