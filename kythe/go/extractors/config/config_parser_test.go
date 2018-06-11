@@ -34,6 +34,7 @@ import (
 )
 
 const testDataDir = "testdata"
+const testDefaultConfigDir = "default"
 
 var multipleNewLines = regexp.MustCompile("\n{2,}")
 
@@ -78,7 +79,7 @@ func (t testFiles) Close() error {
 
 func mustOpenTestData(t *testing.T) testFiles {
 	t.Helper()
-	fileNames, err := filepath.Glob(os.ExpandEnv(fmt.Sprintf("%s/%s", testDataDir, "*.json")))
+	fileNames, err := filepath.Glob(os.ExpandEnv(fmt.Sprintf("%s/%s", testDefaultConfigDir, "*.json")))
 	if err != nil {
 		t.Fatalf("Failed to glob for test data files: %v\n", err)
 	}
