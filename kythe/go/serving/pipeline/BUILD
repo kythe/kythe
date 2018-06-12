@@ -46,6 +46,7 @@ go_test(
     srcs = ["beam_test.go"],
     library = ":pipeline",
     deps = [
+        "//kythe/go/serving/pipeline/beamtest",
         "//kythe/proto:common_go_proto",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",

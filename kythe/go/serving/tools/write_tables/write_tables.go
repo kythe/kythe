@@ -23,7 +23,6 @@ import (
 	"errors"
 	"flag"
 	"log"
-	"reflect"
 
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graphstore"
@@ -35,8 +34,6 @@ import (
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/profile"
 
-	ppb "kythe.io/kythe/proto/pipeline_go_proto"
-	srvpb "kythe.io/kythe/proto/serving_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
@@ -123,17 +120,6 @@ func main() {
 	}); err != nil {
 		log.Fatal("FATAL ERROR: ", err)
 	}
-}
-
-func init() {
-	beam.RegisterType(reflect.TypeOf((*ppb.Node)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*spb.Entry)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*spb.VName)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*srvpb.CorpusRoots)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*srvpb.FileDecorations)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*srvpb.FileDirectory)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*srvpb.PagedCrossReferences)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*srvpb.PagedCrossReferences_Page)(nil)).Elem())
 }
 
 func runExperimentalBeamPipeline(ctx context.Context) error {

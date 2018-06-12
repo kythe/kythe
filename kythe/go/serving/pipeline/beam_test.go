@@ -19,6 +19,8 @@ package pipeline
 import (
 	"testing"
 
+	"kythe.io/kythe/go/serving/pipeline/beamtest"
+
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/passert"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
@@ -519,5 +521,34 @@ func TestCrossReferences(t *testing.T) {
 
 	if err := ptest.Run(p); err != nil {
 		t.Fatalf("Pipeline error: %+v", err)
+	}
+}
+
+func TestFileTree_registrations(t *testing.T) {
+	testNodes := []*ppb.Node{{}}
+	p, s, nodes := ptest.CreateList(testNodes)
+	k := FromNodes(s, nodes)
+	k.CorpusRoots()
+	k.Directories()
+	if err := beamtest.CheckRegistrations(p); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDecorations_registrations(t *testing.T) {
+	testNodes := []*ppb.Node{{}}
+	p, s, nodes := ptest.CreateList(testNodes)
+	FromNodes(s, nodes).Decorations()
+	if err := beamtest.CheckRegistrations(p); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCrossReferences_registrations(t *testing.T) {
+	testNodes := []*ppb.Node{{}}
+	p, s, nodes := ptest.CreateList(testNodes)
+	FromNodes(s, nodes).CrossReferences()
+	if err := beamtest.CheckRegistrations(p); err != nil {
+		t.Fatal(err)
 	}
 }

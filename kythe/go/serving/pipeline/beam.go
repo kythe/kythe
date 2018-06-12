@@ -42,25 +42,34 @@ import (
 )
 
 func init() {
+	beam.RegisterFunction(defToDecorPiece)
+	beam.RegisterFunction(fileToDecorPiece)
 	beam.RegisterFunction(groupCrossRefs)
 	beam.RegisterFunction(keyByPath)
 	beam.RegisterFunction(keyRef)
 	beam.RegisterFunction(moveSourceToKey)
+	beam.RegisterFunction(nodeToDecorPiece)
+	beam.RegisterFunction(refToDecorPiece)
+	beam.RegisterFunction(toDefinition)
 	beam.RegisterFunction(toEnclosingFile)
 	beam.RegisterFunction(toFiles)
 	beam.RegisterFunction(toRefs)
-
-	beam.RegisterFunction(fileToDecorPiece)
-	beam.RegisterFunction(nodeToDecorPiece)
-	beam.RegisterFunction(refToDecorPiece)
 
 	beam.RegisterType(reflect.TypeOf((*combineDecorPieces)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ticketKey)(nil)).Elem())
 
 	beam.RegisterType(reflect.TypeOf((*ppb.DecorationPiece)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*ppb.Node)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.Reference)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*spb.Entry)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*spb.VName)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.CorpusRoots)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.ExpandedAnchor)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.File)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.FileDecorations)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.FileDirectory)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.PagedCrossReferences)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.PagedCrossReferences_Page)(nil)).Elem())
 }
 
 // KytheBeam controls the lifetime and generation of PCollections in the Kythe
