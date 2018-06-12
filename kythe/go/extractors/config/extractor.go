@@ -208,7 +208,7 @@ func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, erro
 	if os.IsNotExist(err) {
 		// TODO(danielmoy): This needs to be configurable by builder, language, etc.
 		return Load(mvn.DefaultConfig())
-	} else {
+	} else if err != nil {
 		return nil, fmt.Errorf("opening config file: %v", err)
 	}
 
