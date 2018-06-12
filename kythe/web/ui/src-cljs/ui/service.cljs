@@ -77,7 +77,7 @@
    (POST "xrefs"
      {:params (merge {:definition_kind    "BINDING_DEFINITIONS"
                       :declaration_kind   "ALL_DECLARATIONS"
-                      :reference_kind     "ALL_REFERENCES"
+                      :reference_kind     "NON_CALL_REFERENCES"
                       :snippets           "DEFAULT"
                       :filter [schema/node-kind-fact]
                       :anchor_text true

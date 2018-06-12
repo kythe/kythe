@@ -42,7 +42,9 @@ import (
 )
 
 func init() {
+	beam.RegisterFunction(groupCrossRefs)
 	beam.RegisterFunction(keyByPath)
+	beam.RegisterFunction(keyRef)
 	beam.RegisterFunction(moveSourceToKey)
 	beam.RegisterFunction(toEnclosingFile)
 	beam.RegisterFunction(toFiles)
@@ -75,6 +77,54 @@ func FromNodes(s beam.Scope, nodes beam.PCollection) *KytheBeam { return &KytheB
 // *spb.Entry messages.
 func FromEntries(s beam.Scope, entries beam.PCollection) *KytheBeam {
 	return FromNodes(s, nodes.FromEntries(s, entries))
+}
+
+// CrossReferences returns a Kythe file decorations table derived from the Kythe
+// input graph.  The beam.PCollections haves elements of type
+// KV<string, *srvpb.PagedCrossReferences> and
+// KV<string, *srvpb.PagedCrossReferences_Page>, respectively.
+func (k *KytheBeam) CrossReferences() (sets, pages beam.PCollection) {
+	s := k.s.Scope("CrossReferences")
+	refs := beam.GroupByKey(s, beam.ParDo(s, keyRef, k.References()))
+	// TODO(schroederc): related nodes
+	// TODO(schroederc): callers
+	// TODO(schroederc): MarkedSource
+	// TODO(schroederc): source_node
+	return beam.ParDo2(s, groupCrossRefs, refs)
+}
+
+func groupCrossRefs(key *spb.VName, refStream func(**ppb.Reference) bool, emitSet func(string, *srvpb.PagedCrossReferences), emitPage func(string, *srvpb.PagedCrossReferences_Page)) {
+	set := &srvpb.PagedCrossReferences{SourceTicket: kytheuri.ToString(key)}
+	// TODO(schroederc): add paging
+
+	groups := make(map[string]*srvpb.PagedCrossReferences_Group)
+
+	var ref *ppb.Reference
+	for refStream(&ref) {
+		kind := refKind(ref)
+		g, ok := groups[kind]
+		if !ok {
+			g = &srvpb.PagedCrossReferences_Group{Kind: kind}
+			groups[kind] = g
+			set.Group = append(set.Group, g)
+		}
+		g.Anchor = append(g.Anchor, ref.Anchor)
+		set.TotalReferences++
+	}
+
+	sort.Slice(set.Group, func(i, j int) bool { return set.Group[i].Kind < set.Group[j].Kind })
+	for _, g := range set.Group {
+		sort.Slice(g.Anchor, func(i, j int) bool { return g.Anchor[i].Ticket < g.Anchor[j].Ticket })
+	}
+
+	emitSet("xrefs:"+set.SourceTicket, set)
+}
+
+func keyRef(r *ppb.Reference) (*spb.VName, *ppb.Reference) {
+	return r.Source, &ppb.Reference{
+		Kind:   r.Kind,
+		Anchor: r.Anchor,
+	}
 }
 
 // Decorations returns a Kythe file decorations table derived from the Kythe
