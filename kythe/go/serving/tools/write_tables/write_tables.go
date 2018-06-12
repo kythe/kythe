@@ -129,7 +129,11 @@ func init() {
 	beam.RegisterType(reflect.TypeOf((*ppb.Node)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.Entry)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.VName)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.CorpusRoots)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.FileDecorations)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.FileDirectory)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.PagedCrossReferences)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.PagedCrossReferences_Page)(nil)).Elem())
 }
 
 func runExperimentalBeamPipeline(ctx context.Context) error {

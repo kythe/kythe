@@ -56,6 +56,9 @@ func init() {
 
 	beam.RegisterType(reflect.TypeOf((*combineDecorPieces)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ticketKey)(nil)).Elem())
+
+	beam.RegisterType(reflect.TypeOf((*ppb.DecorationPiece)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*ppb.Reference)(nil)).Elem())
 }
 
 // KytheBeam controls the lifetime and generation of PCollections in the Kythe
