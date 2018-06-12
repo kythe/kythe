@@ -82,10 +82,7 @@ func fileToDirectories(file *spb.VName, emit func(string, *srvpb.FileDirectory))
 	dir := &spb.VName{
 		Corpus: file.Corpus,
 		Root:   file.Root,
-		Path:   filepath.Dir(path),
-	}
-	if dir.Path == "." {
-		dir.Path = ""
+		Path:   currentAsEmpty(filepath.Dir(path)),
 	}
 	dirTicket := func() string { return fmt.Sprintf("dirs:%s\n%s\n%s", dir.Corpus, dir.Root, dir.Path) }
 	emit(dirTicket(), &srvpb.FileDirectory{
@@ -93,14 +90,18 @@ func fileToDirectories(file *spb.VName, emit func(string, *srvpb.FileDirectory))
 	})
 	for dir.Path != "" {
 		ticket := kytheuri.ToString(dir)
-		dir.Path = filepath.Dir(dir.Path)
-		if dir.Path == "." {
-			dir.Path = ""
-		}
+		dir.Path = currentAsEmpty(filepath.Dir(dir.Path))
 		emit(dirTicket(), &srvpb.FileDirectory{
 			Subdirectory: []string{ticket},
 		})
 	}
+}
+
+func currentAsEmpty(p string) string {
+	if p == "." {
+		return ""
+	}
+	return p
 }
 
 // fileToCorpusRoot returns a CorpusRoots for the given file VName.
