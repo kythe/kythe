@@ -83,7 +83,7 @@ func FromEntries(s beam.Scope, entries beam.PCollection) *KytheBeam {
 }
 
 // CrossReferences returns a Kythe file decorations table derived from the Kythe
-// input graph.  The beam.PCollections haves elements of type
+// input graph.  The beam.PCollections have elements of type
 // KV<string, *srvpb.PagedCrossReferences> and
 // KV<string, *srvpb.PagedCrossReferences_Page>, respectively.
 func (k *KytheBeam) CrossReferences() (sets, pages beam.PCollection) {
