@@ -281,8 +281,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (nestingKind != NestingKind.LOCAL && nestingKind != NestingKind.ANONYMOUS) {
       if (jvmGraph != null) {
         // Emit corresponding JVM node
-        JvmGraph.Type.ReferenceType referenceType =
-            JvmGraph.Type.referenceType(classDef.sym.fullname.toString());
+        JvmGraph.Type.ReferenceType referenceType = referenceType(classDef.sym.type);
         VName jvmNode = jvmGraph.emitClassNode(referenceType);
         entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
       } else {
@@ -433,8 +432,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (jvmGraph != null) {
       JvmGraph.Type.MethodType methodJvmType =
           toMethodJvmType((Type.MethodType) externalType(methodDef.sym));
-      ReferenceType parentClass =
-          JvmGraph.Type.referenceType(externalType(owner.getTree().type.tsym).toString());
+      ReferenceType parentClass = referenceType(externalType(owner.getTree().type.tsym));
       String methodName = methodDef.name.toString();
       VName jvmNode = jvmGraph.emitMethodNode(parentClass, methodName, methodJvmType);
       entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
@@ -570,8 +568,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (jvmGraph != null && varDef.sym.getKind().isField()) {
       VName jvmNode =
           jvmGraph.emitFieldNode(
-              JvmGraph.Type.referenceType(externalType(owner.getTree().type.tsym).toString()),
-              varDef.name.toString());
+              referenceType(externalType(owner.getTree().type.tsym)), varDef.name.toString());
       entrySets.emitEdge(varNode, EdgeKind.GENERATES, jvmNode);
     }
 
@@ -1241,11 +1238,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       case ARRAY:
         return JvmGraph.Type.arrayType(toJvmType(((Type.ArrayType) type).getComponentType()));
       case CLASS:
-        return JvmGraph.Type.referenceType(type.toString());
+        return referenceType(type);
       case METHOD:
         return toMethodJvmType(type.asMethodType());
       case TYPEVAR:
-        return JvmGraph.Type.referenceType(type.toString());
+        return referenceType(type);
 
       case BOOLEAN:
         return JvmGraph.Type.booleanType();
@@ -1267,6 +1264,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       default:
         throw new IllegalStateException("unhandled Java Type: " + type.getTag());
     }
+  }
+
+  /** Returns a new JVM class/enum/interface type descriptor to the specified source type. */
+  private static ReferenceType referenceType(Type referent) {
+    String qualifiedName = referent.tsym.flatName().toString();
+    return JvmGraph.Type.referenceType(qualifiedName);
   }
 
   private static JvmGraph.VoidableType toJvmReturnType(Type type) {
