@@ -26,6 +26,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"kythe.io/kythe/go/extractors/config/default/mvn"
+
+	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
 // kytheConfigFileName The name of the Kythe extraction config
@@ -40,7 +44,9 @@ type Repo struct {
 	OutputPath string
 	// An optional path to a file containing a
 	// kythe.proto.ExtractionConfiguration encoded as JSON that details how
-	// to perform extraction.
+	// to perform extraction. If this is unset, the extractor will first try
+	// to find a config defined in the repo, or finally use a hard coded
+	// default config.
 	ConfigPath string
 }
 
@@ -145,27 +151,16 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		return fmt.Errorf("copying repo: %v", err)
 	}
 
-	// if a config was passed as a arg, use the specified config
-	if repo.ConfigPath == "" {
-		// otherwise, use a Kythe config within the repo (if it exists)
-		repo.ConfigPath = filepath.Join(repoDir, kytheExtractionConfigFile)
-	}
-
-	log.Printf("Using configuration file: %q\n", repo.ConfigPath)
+	log.Printf("Using configuration file: %q", repo.ConfigPath)
 	extractionDockerFile, err := ioutil.TempFile(tmpOutDir, "extractionDockerFile")
 	if err != nil {
 		return fmt.Errorf("creating tmp Dockerfile: %v", err)
 	}
 
 	// generate an extraction image from the config
-	configFile, err := os.Open(repo.ConfigPath)
+	extractionConfig, err := findConfig(repo.ConfigPath, repoDir)
 	if err != nil {
-		return fmt.Errorf("opening config file: %v", err)
-	}
-
-	extractionConfig, err := Load(configFile)
-	if err != nil {
-		return fmt.Errorf("loading extraction config: %v", err)
+		return fmt.Errorf("reading config file: %v", err)
 	}
 
 	err = CreateImage(extractionDockerFile.Name(), extractionConfig)
@@ -199,6 +194,26 @@ func verifyRequiredTools() error {
 		return err
 	}
 	return nil
+}
+
+func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, error) {
+	// if a config was passed in, use the specified config, otherwise go
+	// hunt for one in the repository.
+	if configPath == "" {
+		// otherwise, use a Kythe config within the repo (if it exists)
+		configPath = filepath.Join(repoDir, kytheExtractionConfigFile)
+	}
+
+	f, err := os.Open(configPath)
+	if os.IsNotExist(err) {
+		// TODO(danielmoy): This needs to be configurable by builder, language, etc.
+		return Load(mvn.DefaultConfig())
+	} else {
+		return nil, fmt.Errorf("opening config file: %v", err)
+	}
+
+	defer f.Close()
+	return Load(f)
 }
 
 func mustCleanUpImage(ctx context.Context, tmpImageTag string) {
