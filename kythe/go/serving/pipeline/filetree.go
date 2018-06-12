@@ -71,10 +71,14 @@ func (k *KytheBeam) Directories() beam.PCollection {
 	return beam.CombinePerKey(s, &combineDirectories{}, beam.ParDo(s, fileToDirectories, files))
 }
 
+// addCorpusRootsKey returns the given value with the Kythe corpus roots key constant.
 func addCorpusRootsKey(val beam.T) (string, beam.T) { return "dirs:corpusRoots", val }
 
+// fileToDirectories emits a FileDirectory for each path component in the given file VName.
 func fileToDirectories(file *spb.VName, emit func(string, *srvpb.FileDirectory)) {
+	// Clean the file path and remove any leading slash.
 	path := filepath.Clean(filepath.Join("/", file.GetPath()))[1:]
+
 	dir := &spb.VName{
 		Corpus: file.Corpus,
 		Root:   file.Root,
@@ -99,6 +103,7 @@ func fileToDirectories(file *spb.VName, emit func(string, *srvpb.FileDirectory))
 	}
 }
 
+// fileToCorpusRoot returns a CorpusRoots for the given file VName.
 func fileToCorpusRoot(file *spb.VName) *srvpb.CorpusRoots {
 	return &srvpb.CorpusRoots{
 		Corpus: []*srvpb.CorpusRoots_Corpus{{
