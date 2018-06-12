@@ -197,7 +197,6 @@ func verifyRequiredTools() error {
 }
 
 func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, error) {
-	var configReader io.Reader
 	// if a config was passed in, use the specified config, otherwise go
 	// hunt for one in the repository.
 	if configPath == "" {
@@ -205,18 +204,17 @@ func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, erro
 		configPath = filepath.Join(repoDir, kytheExtractionConfigFile)
 	}
 
-	configReader, err := os.Open(configPath)
-	if err != nil {
-		log.Printf("Failure opening config file: %v, attempting to use default", err)
+	f, err := os.Open(configPath)
+	if err == nil {
+		defer f.Close()
+	} else if os.IsNotExist(err) {
 		// TODO(danielmoy): This needs to be configurable by builder, language, etc.
-		configReader = mvn.DefaultConfig()
+		return Load(mvn.DefaultConfig())
+	} else {
+		return nil, fmt.Errorf("opening config file: %v", err)
 	}
 
-	extractionConfig, err := Load(configReader)
-	if err != nil {
-		return nil, fmt.Errorf("creating valid config from file: %v", err)
-	}
-	return extractionConfig, nil
+	return Load(f)
 }
 
 func mustCleanUpImage(ctx context.Context, tmpImageTag string) {

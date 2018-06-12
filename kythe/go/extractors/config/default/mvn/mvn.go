@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package mvn defines a default kythe.proto.ExtractionConfiguration for java
+// Package mvn defines a default kythe.proto.ExtractionConfiguration for Java
 // using Maven.
 package mvn
 
@@ -23,7 +23,7 @@ import (
 	"strings"
 )
 
-const defaultMvnConfig = `{
+const defaultConfig = `{
   "required_image": [
     {
       "uri": "openjdk:8",
@@ -112,5 +112,5 @@ const defaultMvnConfig = `{
 // DefaultConfig returns a reader for a valid
 // kythe.proto.ExtractionConfiguration object that works for many repos.
 func DefaultConfig() io.Reader {
-	return strings.NewReader(defaultMvnConfig)
+	return strings.NewReader(defaultConfig)
 }
