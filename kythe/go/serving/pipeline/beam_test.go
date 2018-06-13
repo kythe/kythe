@@ -368,6 +368,158 @@ func TestDecorations_targetDefinition(t *testing.T) {
 	}
 }
 
+func TestCrossReferences(t *testing.T) {
+	testRefs := []*ppb.Reference{{
+		Source: &spb.VName{Signature: "node1"},
+		Kind:   &ppb.Reference_KytheKind{scpb.EdgeKind_REF},
+		Anchor: &srvpb.ExpandedAnchor{
+			Ticket: "kythe:?path=path#anchor1",
+			Text:   "some",
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					LineNumber: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   4,
+					LineNumber:   1,
+					ColumnOffset: 4,
+				},
+			},
+			Snippet: "some text",
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					LineNumber: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+		},
+	}, {
+		Source: &spb.VName{Signature: "node1"},
+		Kind:   &ppb.Reference_KytheKind{scpb.EdgeKind_REF},
+		Anchor: &srvpb.ExpandedAnchor{
+			Ticket: "kythe:?path=path2#anchor3",
+			Span: &cpb.Span{
+				Start: &cpb.Point{ByteOffset: 42},
+				End:   &cpb.Point{ByteOffset: 45},
+			},
+		},
+	}, {
+		Source: &spb.VName{Signature: "node2"},
+		Kind:   &ppb.Reference_KytheKind{scpb.EdgeKind_REF_CALL},
+		Scope:  &spb.VName{Path: "path", Signature: "anchor2_parent"},
+		Anchor: &srvpb.ExpandedAnchor{
+			Ticket: "kythe:?path=path#anchor2",
+			Text:   "text",
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   5,
+					LineNumber:   1,
+					ColumnOffset: 5,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+			Snippet: "some text",
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					LineNumber: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+		},
+	}}
+	expectedSets := []*srvpb.PagedCrossReferences{{
+		SourceTicket: "kythe:#node1",
+		Group: []*srvpb.PagedCrossReferences_Group{{
+			Kind: "/kythe/edge/ref",
+			Anchor: []*srvpb.ExpandedAnchor{{
+				Ticket: "kythe:?path=path#anchor1",
+				Text:   "some",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						LineNumber: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   4,
+						LineNumber:   1,
+						ColumnOffset: 4,
+					},
+				},
+				Snippet: "some text",
+				SnippetSpan: &cpb.Span{
+					Start: &cpb.Point{
+						LineNumber: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						LineNumber:   1,
+						ColumnOffset: 9,
+					},
+				},
+			}, {
+				Ticket: "kythe:?path=path2#anchor3",
+				Span: &cpb.Span{
+					Start: &cpb.Point{ByteOffset: 42},
+					End:   &cpb.Point{ByteOffset: 45},
+				},
+			}},
+		}},
+	}, {
+		SourceTicket: "kythe:#node2",
+		Group: []*srvpb.PagedCrossReferences_Group{{
+			Kind: "/kythe/edge/ref/call",
+			Anchor: []*srvpb.ExpandedAnchor{{
+				Ticket: "kythe:?path=path#anchor2",
+				Text:   "text",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   5,
+						LineNumber:   1,
+						ColumnOffset: 5,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						LineNumber:   1,
+						ColumnOffset: 9,
+					},
+				},
+				Snippet: "some text",
+				SnippetSpan: &cpb.Span{
+					Start: &cpb.Point{
+						LineNumber: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						LineNumber:   1,
+						ColumnOffset: 9,
+					},
+				},
+			}},
+		}},
+	}}
+
+	p, s, refs := ptest.CreateList(testRefs)
+	k := &KytheBeam{s: s, refs: refs}
+	sets, _ := k.CrossReferences()
+	debug.Print(s, sets)
+	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	}
+}
+
 func TestFileTree_registrations(t *testing.T) {
 	testNodes := []*ppb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
@@ -383,6 +535,15 @@ func TestDecorations_registrations(t *testing.T) {
 	testNodes := []*ppb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
 	FromNodes(s, nodes).Decorations()
+	if err := beamtest.CheckRegistrations(p); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCrossReferences_registrations(t *testing.T) {
+	testNodes := []*ppb.Node{{}}
+	p, s, nodes := ptest.CreateList(testNodes)
+	FromNodes(s, nodes).CrossReferences()
 	if err := beamtest.CheckRegistrations(p); err != nil {
 		t.Fatal(err)
 	}
