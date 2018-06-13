@@ -123,7 +123,6 @@ func groupCrossRefs(key *spb.VName, refStream func(**ppb.Reference) bool, emitSe
 			set.Group = append(set.Group, g)
 		}
 		g.Anchor = append(g.Anchor, ref.Anchor)
-		set.TotalReferences++
 	}
 
 	sort.Slice(set.Group, func(i, j int) bool { return set.Group[i].Kind < set.Group[j].Kind })

@@ -441,8 +441,6 @@ func TestCrossReferences(t *testing.T) {
 	}}
 	expectedSets := []*srvpb.PagedCrossReferences{{
 		SourceTicket: "kythe:#node1",
-
-		TotalReferences: 2,
 		Group: []*srvpb.PagedCrossReferences_Group{{
 			Kind: "/kythe/edge/ref",
 			Anchor: []*srvpb.ExpandedAnchor{{
@@ -479,8 +477,6 @@ func TestCrossReferences(t *testing.T) {
 		}},
 	}, {
 		SourceTicket: "kythe:#node2",
-
-		TotalReferences: 1,
 		Group: []*srvpb.PagedCrossReferences_Group{{
 			Kind: "/kythe/edge/ref/call",
 			Anchor: []*srvpb.ExpandedAnchor{{
