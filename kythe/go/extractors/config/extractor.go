@@ -41,6 +41,7 @@ type Repo struct {
 	// Either GitRepo or LocalRepo should be set, not both.
 	// A remote git repo, e.g. https://github.com/google/kythe.
 	Git string
+
 	// A local copy of a repository.
 	Local string
 
@@ -55,9 +56,9 @@ type Repo struct {
 	ConfigPath string
 }
 
-func (r Repo) gitClone(ctx context.Context) error {
-	// TODO(danielmoy): strongly consider go-git instead of os.exec
-	return GitClone(ctx, r.Git, r.OutputPath)
+func (r Repo) gitClone(ctx context.Context, tmpDir string) error {
+	// TODO(#154): strongly consider go-git instead of os.exec
+	return GitClone(ctx, r.Git, tmpDir)
 }
 
 // GitClone is a convenience wrapper around a commandline git clone call.
@@ -65,7 +66,7 @@ func GitClone(ctx context.Context, repo, outputPath string) error {
 	return exec.CommandContext(ctx, "git", "clone", repo, outputPath).Run()
 }
 
-func (r Repo) localClone(ctx context.Context) error {
+func (r Repo) localClone(ctx context.Context, tmpDir string) error {
 	gitDir := filepath.Join(r.Local, ".git")
 	// TODO(danielmoy): consider extracting all or part of this
 	// to a more common place.
@@ -84,7 +85,7 @@ func (r Repo) localClone(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		outPath := filepath.Join(r.OutputPath, rel)
+		outPath := filepath.Join(tmpDir, rel)
 		if info.Mode().IsRegular() {
 			if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
 				return fmt.Errorf("failed to make dir: %v", err)
@@ -118,13 +119,12 @@ func (r Repo) localClone(ctx context.Context) error {
 // on the repo, depositing results in the output directory path.
 type Extractor func(ctx context.Context, repo Repo) error
 
-// Clone takes either the Git or Local repo and makes a copy of it into
-// OutputPath.
-func (r Repo) Clone(ctx context.Context) error {
+// Clone takes either the Git or Local repo and makes a copy of it.
+func (r Repo) Clone(ctx context.Context, tmpDir string) error {
 	if r.Git != "" {
-		return r.gitClone(ctx)
+		return r.gitClone(ctx, tmpDir)
 	}
-	return r.localClone(ctx)
+	return r.localClone(ctx, tmpDir)
 }
 
 // ExtractRepo extracts a given code repository and outputs kindex files.
@@ -162,7 +162,7 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 
 	// copy the repo into our temp directory, so we can mutate its
 	// build config without affecting the original source.
-	if err := repo.Clone(ctx); err != nil {
+	if err := repo.Clone(ctx, repoDir); err != nil {
 		return fmt.Errorf("copying repo: %v", err)
 	}
 
