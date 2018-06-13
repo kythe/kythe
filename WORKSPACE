@@ -473,3 +473,18 @@ go_repository(
     commit = "5d6fca44a948d2be89a9702de7717f0168403d3d",
     importpath = "github.com/syndtr/goleveldb",
 )
+
+go_repository(
+    name = "com_github_minio_highwayhash",
+    commit = "85fc8a2dacad36a6beb2865793cd81363a496696",
+    custom = "highwayhash",
+    importpath = "github.com/minio/highwayhash",
+)
+
+go_repository(
+    name = "org_golang_x_sys",
+    commit = "6c888cc515d3ed83fc103cf1d84468aad274b0a7",
+    custom = "x_sys",
+    custom_git = "https://github.com/golang/sys.git",
+    importpath = "golang.org/x/sys",
+)
