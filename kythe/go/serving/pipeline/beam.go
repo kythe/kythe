@@ -107,6 +107,8 @@ func (k *KytheBeam) CrossReferences() (sets, pages beam.PCollection) {
 	return beam.ParDo2(s, groupCrossRefs, refs)
 }
 
+// groupCrossRefs emits *srvpb.PagedCrossReferences and *srvpb.PagedCrossReferences_Pages for a
+// single node's collection of *ppb.References.
 func groupCrossRefs(key *spb.VName, refStream func(**ppb.Reference) bool, emitSet func(string, *srvpb.PagedCrossReferences), emitPage func(string, *srvpb.PagedCrossReferences_Page)) {
 	set := &srvpb.PagedCrossReferences{SourceTicket: kytheuri.ToString(key)}
 	// TODO(schroederc): add paging
