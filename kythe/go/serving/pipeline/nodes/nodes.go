@@ -289,7 +289,7 @@ func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
 		} else {
 			edges = make([]*ppb.Edge, 0, len(n.Edge))
 			for _, edge := range n.Edge {
-				if contains(edgeKind(edge), f.IncludeEdges) {
+				if contains(EdgeKind(edge), f.IncludeEdges) {
 					edges = append(edges, edge)
 				}
 			}
@@ -330,7 +330,8 @@ func FactName(f *ppb.Fact) string {
 	return schema.FactNameString(f.GetKytheName())
 }
 
-func edgeKind(e *ppb.Edge) string {
+// EdgeKind returns the string representation of the edge's kind.
+func EdgeKind(e *ppb.Edge) string {
 	if k := e.GetGenericKind(); k != "" {
 		return k
 	}

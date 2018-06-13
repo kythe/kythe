@@ -45,11 +45,15 @@ func init() {
 	beam.RegisterFunction(defToDecorPiece)
 	beam.RegisterFunction(fileToDecorPiece)
 	beam.RegisterFunction(groupCrossRefs)
+	beam.RegisterFunction(groupEdges)
 	beam.RegisterFunction(keyByPath)
 	beam.RegisterFunction(keyRef)
 	beam.RegisterFunction(moveSourceToKey)
 	beam.RegisterFunction(nodeToDecorPiece)
+	beam.RegisterFunction(nodeToEdges)
+	beam.RegisterFunction(nodeToReverseEdges)
 	beam.RegisterFunction(refToDecorPiece)
+	beam.RegisterFunction(reverseEdge)
 	beam.RegisterFunction(toDefinition)
 	beam.RegisterFunction(toEnclosingFile)
 	beam.RegisterFunction(toFiles)
@@ -59,17 +63,20 @@ func init() {
 	beam.RegisterType(reflect.TypeOf((*ticketKey)(nil)).Elem())
 
 	beam.RegisterType(reflect.TypeOf((*ppb.DecorationPiece)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*ppb.Edge)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.Node)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.Reference)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.Entry)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.VName)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.CorpusRoots)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.EdgePage)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.ExpandedAnchor)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.File)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.FileDecorations)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.FileDirectory)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.PagedCrossReferences)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.PagedCrossReferences_Page)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.PagedEdgeSet)(nil)).Elem())
 }
 
 // KytheBeam controls the lifetime and generation of PCollections in the Kythe
@@ -205,28 +212,7 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 	case *ppb.DecorationPiece_File:
 		accum.File = p.File
 	case *ppb.DecorationPiece_Node:
-		node := p.Node
-		n := &srvpb.Node{Ticket: kytheuri.ToString(node.Source)}
-		if kind := nodes.Kind(node); kind != "" {
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  facts.NodeKind,
-				Value: []byte(kind),
-			})
-		}
-		if subkind := nodes.Subkind(node); subkind != "" {
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  facts.Subkind,
-				Value: []byte(subkind),
-			})
-		}
-		for _, f := range node.Fact {
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  nodes.FactName(f),
-				Value: f.Value,
-			})
-		}
-		sort.Slice(n.Fact, func(i, j int) bool { return n.Fact[i].Name < n.Fact[j].Name })
-		accum.Target = append(accum.Target, n)
+		accum.Target = append(accum.Target, convertPipelineNode(p.Node))
 	case *ppb.DecorationPiece_Definition_:
 		// TODO(schroederc): redesign *srvpb.FileDecorations to not need invasive
 		// changes to add a node's definition
@@ -242,6 +228,30 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 		panic(fmt.Errorf("unhandled DecorationPiece: %T", p))
 	}
 	return accum
+}
+
+func convertPipelineNode(node *ppb.Node) *srvpb.Node {
+	n := &srvpb.Node{Ticket: kytheuri.ToString(node.Source)}
+	if kind := nodes.Kind(node); kind != "" {
+		n.Fact = append(n.Fact, &cpb.Fact{
+			Name:  facts.NodeKind,
+			Value: []byte(kind),
+		})
+	}
+	if subkind := nodes.Subkind(node); subkind != "" {
+		n.Fact = append(n.Fact, &cpb.Fact{
+			Name:  facts.Subkind,
+			Value: []byte(subkind),
+		})
+	}
+	for _, f := range node.Fact {
+		n.Fact = append(n.Fact, &cpb.Fact{
+			Name:  nodes.FactName(f),
+			Value: f.Value,
+		})
+	}
+	sort.Slice(n.Fact, func(i, j int) bool { return n.Fact[i].Name < n.Fact[j].Name })
+	return n
 }
 
 func (c *combineDecorPieces) ExtractOutput(fd *srvpb.FileDecorations) *srvpb.FileDecorations {
@@ -502,4 +512,119 @@ func refKind(r *ppb.Reference) string {
 		return schema.EdgeKindString(k)
 	}
 	return r.GetGenericKind()
+}
+
+// Edges returns a Kythe edges table derived from the Kythe input graph.  The beam.PCollections have
+// elements of type KV<string, *srvpb.PagedEdgeSet> and KV<string, *srvpb.EdgePage>, respectively.
+func (k *KytheBeam) Edges() (beam.PCollection, beam.PCollection) {
+	s := k.s.Scope("Edges")
+
+	nodes := beam.ParDo(s, moveSourceToKey, k.nodes)
+	edges := beam.ParDo(s, reverseEdge, beam.CoGroupByKey(s, nodes, beam.ParDo(s, nodeToEdges, k.nodes)))
+	rev := beam.ParDo(s, nodeToReverseEdges, k.nodes)
+
+	return beam.ParDo2(s, groupEdges, beam.CoGroupByKey(s, nodes, edges, rev))
+}
+
+// nodeToReverseEdges emits an *ppb.Edge with its SourceNode populated for each of n's edges.  The
+// key for each *ppb.Edge is its Target VName.
+func nodeToReverseEdges(n *ppb.Node, emit func(*spb.VName, *ppb.Edge)) {
+	for _, e := range n.Edge {
+		emit(e.Target, &ppb.Edge{
+			SourceNode: n,
+			Target:     e.Target,
+			Kind:       e.Kind,
+			Ordinal:    e.Ordinal,
+		})
+	}
+}
+
+// nodeToEdges emits an *ppb.Edge for each of n's edges.  The key for each *ppb.Edge is its Target
+// VName.
+func nodeToEdges(n *ppb.Node, emit func(*spb.VName, *ppb.Edge)) {
+	for _, e := range n.Edge {
+		emit(e.Target, &ppb.Edge{
+			Source:  n.Source,
+			Target:  e.Target,
+			Kind:    e.Kind,
+			Ordinal: e.Ordinal,
+		})
+	}
+}
+
+// reverseEdge emits the reverse of each *ppb.Edge, embedding the associated TargetNode.
+func reverseEdge(src *spb.VName, nodeStream func(**ppb.Node) bool, edgeStream func(**ppb.Edge) bool, emit func(*spb.VName, *ppb.Edge)) {
+	var node *ppb.Node
+	for nodeStream(&node) {
+		break
+	}
+	if node == nil {
+		node = &ppb.Node{Source: src}
+	}
+
+	var e *ppb.Edge
+	for edgeStream(&e) {
+		emit(e.Source, &ppb.Edge{
+			Source:     e.Source,
+			TargetNode: node,
+			Kind:       e.Kind,
+			Ordinal:    e.Ordinal,
+		})
+	}
+}
+
+// groupEdges emits *srvpb.PagedEdgeSets and *srvpb.EdgePages for a node and its forward/reverse
+// edges.
+func groupEdges(src *spb.VName, nodeStream func(**ppb.Node) bool, edgeStream, revStream func(**ppb.Edge) bool, emitSet func(string, *srvpb.PagedEdgeSet), emitPage func(string, *srvpb.EdgePage)) {
+	set := &srvpb.PagedEdgeSet{}
+	// TODO(schroederc): paging
+
+	var node *ppb.Node
+	for nodeStream(&node) {
+		node.Source = src
+		set.Source = convertPipelineNode(node)
+	}
+	if set.Source == nil {
+		set.Source = &srvpb.Node{Ticket: kytheuri.ToString(src)}
+	}
+
+	groups := make(map[string]*srvpb.EdgeGroup)
+
+	var edge *ppb.Edge
+	for edgeStream(&edge) {
+		kind := nodes.EdgeKind(edge)
+		g, ok := groups[kind]
+		if !ok {
+			g = &srvpb.EdgeGroup{Kind: kind}
+			groups[kind] = g
+			set.Group = append(set.Group, g)
+		}
+		g.Edge = append(g.Edge, &srvpb.EdgeGroup_Edge{
+			Target:  convertPipelineNode(edge.TargetNode),
+			Ordinal: edge.Ordinal,
+		})
+	}
+	for revStream(&edge) {
+		kind := "%" + nodes.EdgeKind(edge) // encode reverse edge kind
+		g, ok := groups[kind]
+		if !ok {
+			g = &srvpb.EdgeGroup{Kind: kind}
+			groups[kind] = g
+			set.Group = append(set.Group, g)
+		}
+		g.Edge = append(g.Edge, &srvpb.EdgeGroup_Edge{
+			Target:  convertPipelineNode(edge.SourceNode),
+			Ordinal: edge.Ordinal,
+		})
+	}
+
+	sort.Slice(set.Group, func(i, j int) bool { return set.Group[i].Kind < set.Group[j].Kind })
+	for _, g := range set.Group {
+		sort.Slice(g.Edge, func(i, j int) bool {
+			return compare.Compare(g.Edge[i].Ordinal, g.Edge[j].Ordinal).
+				AndThen(g.Edge[i].Target.Ticket, g.Edge[j].Target.Ticket) == compare.LT
+		})
+	}
+
+	emitSet("edgeSets:"+set.Source.Ticket, set)
 }

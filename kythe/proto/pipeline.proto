@@ -72,6 +72,9 @@ message Edge {
     string generic_kind = 4;
   }
   int32 ordinal = 5;
+
+  Node source_node = 6;
+  Node target_node = 7;
 }
 
 message Reference {
