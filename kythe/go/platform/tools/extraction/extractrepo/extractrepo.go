@@ -104,17 +104,10 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 	repo := config.Repo{
+		Git:        *repoURI,
+		Local:      *repoPath,
 		OutputPath: *outputPath,
 		ConfigPath: *configPath,
-	}
-	if *repoURI != "" {
-		repo.Clone = config.GitCopier(*repoURI)
-	} else if *repoPath != "" {
-		repo.Clone = config.LocalCopier(*repoPath)
-	} else {
-		// I know I checked it earlier but I don't trust myself to not
-		// break this in the future.
-		log.Fatal("Invalid state - no repo to read from.")
 	}
 	if err := config.ExtractRepo(ctx, repo); err != nil {
 		log.Fatalf("Failed to extract repo: %v", err)

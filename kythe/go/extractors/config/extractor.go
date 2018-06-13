@@ -38,10 +38,15 @@ const kytheExtractionConfigFile = ".kythe-extraction-config"
 // Repo is a container of input/output parameters for doing extraction on remote
 // repositories.
 type Repo struct {
-	// Clone extracts a copy of the repo to the specified output Directory.
-	Clone func(ctx context.Context, outputDir string) error
+	// Either GitRepo or LocalRepo should be set, not both.
+	// A remote git repo, e.g. https://github.com/google/kythe.
+	Git string
+	// A local copy of a repository.
+	Local string
+
 	// Where to write from an extraction.
 	OutputPath string
+
 	// An optional path to a file containing a
 	// kythe.proto.ExtractionConfiguration encoded as JSON that details how
 	// to perform extraction. If this is unset, the extractor will first try
@@ -50,62 +55,60 @@ type Repo struct {
 	ConfigPath string
 }
 
-// GitCopier returns a function that clones a repository via git command line.
-func GitCopier(repoURI string) func(ctx context.Context, outputDir string) error {
-	return func(ctx context.Context, outputDir string) error {
-		// TODO(danielmoy): strongly consider go-git instead of os.exec
-		return exec.CommandContext(ctx, "git", "clone", repoURI, outputDir).Run()
-	}
+func (r Repo) gitClone(ctx context.Context) error {
+	// TODO(danielmoy): strongly consider go-git instead of os.exec
+	return GitClone(ctx, r.Git, r.OutputPath)
 }
 
-// LocalCopier returns a function that copies a local repository.
-// This function assumes the eventual output directory is already created.
-func LocalCopier(repoPath string) func(ctx context.Context, outputDir string) error {
-	return func(ctx context.Context, outputDir string) error {
-		gitDir := filepath.Join(repoPath, ".git")
-		// TODO(danielmoy): consider extracting all or part of this
-		// to a more common place.
-		return filepath.Walk(repoPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if repoPath == path {
-				// Intentionally do nothing for base dir.
-				return nil
-			}
-			if filepath.HasPrefix(path, gitDir) {
-				return filepath.SkipDir
-			}
-			rel, err := filepath.Rel(repoPath, path)
-			if err != nil {
-				return err
-			}
-			outPath := filepath.Join(outputDir, rel)
-			if info.Mode().IsRegular() {
-				if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-					return fmt.Errorf("failed to make dir: %v", err)
-				}
-				inf, err := os.Open(path)
-				if err != nil {
-					return fmt.Errorf("failed to open input file from repo: %v", err)
-				}
-				defer inf.Close()
-				of, err := os.Create(outPath)
-				if err != nil {
-					return fmt.Errorf("failed to open output file for repo copy: %v", err)
-				}
-				if _, err := io.Copy(of, inf); err != nil {
-					of.Close()
-					return fmt.Errorf("failed to copy repo file: %v", err)
-				}
-				return of.Close()
-			} else if !info.IsDir() {
-				// Notably in here are any links or other odd things.
-				log.Printf("Unsupported file %s with mode %s\n", path, info.Mode())
-			}
+// GitClone is a convenience wrapper around a commandline git clone call.
+func GitClone(ctx context.Context, repo, outputPath string) error {
+	return exec.CommandContext(ctx, "git", "clone", repo, outputPath).Run()
+}
+
+func (r Repo) localClone(ctx context.Context) error {
+	gitDir := filepath.Join(r.Local, ".git")
+	// TODO(danielmoy): consider extracting all or part of this
+	// to a more common place.
+	return filepath.Walk(r.Local, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if r.Local == path {
+			// Intentionally do nothing for base dir.
 			return nil
-		})
-	}
+		}
+		if filepath.HasPrefix(path, gitDir) {
+			return filepath.SkipDir
+		}
+		rel, err := filepath.Rel(r.Local, path)
+		if err != nil {
+			return err
+		}
+		outPath := filepath.Join(r.OutputPath, rel)
+		if info.Mode().IsRegular() {
+			if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+				return fmt.Errorf("failed to make dir: %v", err)
+			}
+			inf, err := os.Open(path)
+			if err != nil {
+				return fmt.Errorf("failed to open input file from repo: %v", err)
+			}
+			defer inf.Close()
+			of, err := os.Create(outPath)
+			if err != nil {
+				return fmt.Errorf("failed to open output file for repo copy: %v", err)
+			}
+			if _, err := io.Copy(of, inf); err != nil {
+				of.Close()
+				return fmt.Errorf("failed to copy repo file: %v", err)
+			}
+			return of.Close()
+		} else if !info.IsDir() {
+			// Notably in here are any links or other odd things.
+			log.Printf("Unsupported file %s with mode %s\n", path, info.Mode())
+		}
+		return nil
+	})
 }
 
 // Extractor is the interface for handling kindex generation on repos.
@@ -114,6 +117,15 @@ func LocalCopier(repoPath string) func(ctx context.Context, outputDir string) er
 // kythe.proto.ExtractionConfiguration file path, and performs kythe extraction
 // on the repo, depositing results in the output directory path.
 type Extractor func(ctx context.Context, repo Repo) error
+
+// Clone takes either the Git or Local repo and makes a copy of it into
+// OutputPath.
+func (r Repo) Clone(ctx context.Context) error {
+	if r.Git != "" {
+		return r.gitClone(ctx)
+	}
+	return r.localClone(ctx)
+}
 
 // ExtractRepo extracts a given code repository and outputs kindex files.
 //
@@ -127,7 +139,10 @@ type Extractor func(ctx context.Context, repo Repo) error
 //
 // This function requires both Git and Docker to be in $PATH during execution.
 func ExtractRepo(ctx context.Context, repo Repo) error {
-	if err := verifyRequiredTools(); err != nil {
+	if (repo.Git != "" && repo.Local != "") || (repo.Git == "" && repo.Local == "") {
+		return fmt.Errorf("ExtractRepo requries either Git or Local repo, but not both")
+	}
+	if err := verifyRequiredTools(repo); err != nil {
 		return fmt.Errorf("ExtractRepo requires git and docker to be in $PATH: %v", err)
 	}
 
@@ -147,7 +162,7 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 
 	// copy the repo into our temp directory, so we can mutate its
 	// build config without affecting the original source.
-	if err := repo.Clone(ctx, repoDir); err != nil {
+	if err := repo.Clone(ctx); err != nil {
 		return fmt.Errorf("copying repo: %v", err)
 	}
 
@@ -185,9 +200,11 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 	return nil
 }
 
-func verifyRequiredTools() error {
-	if _, err := exec.LookPath("git"); err != nil {
-		return err
+func verifyRequiredTools(repo Repo) error {
+	if repo.Git != "" {
+		if _, err := exec.LookPath("git"); err != nil {
+			return err
+		}
 	}
 
 	if _, err := exec.LookPath("docker"); err != nil {
