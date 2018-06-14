@@ -64,7 +64,7 @@ message PagedEdgeSet {
   repeated EdgeGroup group = 2;
 
   // Total number of edges in all of the EdgePages, including this one.
-  int32 total_edges = 3;
+  int32 total_edges = 3 [deprecated=true];
 
   // Page indices for other EdgePages, sorted by edge kind.
   repeated PageIndex page_index = 4;

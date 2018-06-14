@@ -58,7 +58,7 @@ func (By) isOption() {}
 
 // Compare returns the Order between two arbitrary values of the same type.
 //
-// Only the following types are currently supported: {string, int, []byte}.
+// Only the following types are currently supported: {string, int, int32, []byte}.
 //
 // Options may be provided to change the semantics of the comparison.  Other
 // types may be compared if an appropriate By Option transforms the values into
@@ -100,6 +100,8 @@ func Compare(a, b interface{}, opts ...Option) (o Order) {
 	switch a := a.(type) {
 	case int:
 		return Ints(a, b.(int))
+	case int32:
+		return Ints(int(a), int(b.(int32)))
 	case string:
 		return Strings(a, b.(string))
 	case []byte:

@@ -520,6 +520,100 @@ func TestCrossReferences(t *testing.T) {
 	}
 }
 
+func TestEdges_grouping(t *testing.T) {
+	testNodes := []*ppb.Node{{
+		Source: &spb.VName{Signature: "node1"},
+		Edge: []*ppb.Edge{{
+			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_PARAM},
+			Target: &spb.VName{Signature: "node1"},
+		}, {
+			Kind:    &ppb.Edge_KytheKind{scpb.EdgeKind_PARAM},
+			Ordinal: 1,
+			Target:  &spb.VName{Signature: "node1"},
+		}},
+	}}
+	expectedSets := []*srvpb.PagedEdgeSet{{
+		Source: &srvpb.Node{Ticket: "kythe:#node1"},
+		Group: []*srvpb.EdgeGroup{{
+			Kind: "%/kythe/edge/param",
+			Edge: []*srvpb.EdgeGroup_Edge{{
+				Target: &srvpb.Node{Ticket: "kythe:#node1"},
+			}, {
+				Target:  &srvpb.Node{Ticket: "kythe:#node1"},
+				Ordinal: 1,
+			}},
+		}, {
+			Kind: "/kythe/edge/param",
+			Edge: []*srvpb.EdgeGroup_Edge{{
+				Target: &srvpb.Node{Ticket: "kythe:#node1"},
+			}, {
+				Target:  &srvpb.Node{Ticket: "kythe:#node1"},
+				Ordinal: 1,
+			}},
+		}},
+	}}
+
+	p, s, nodes := ptest.CreateList(testNodes)
+	k := FromNodes(s, nodes)
+	sets, _ := k.Edges()
+	debug.Print(s, sets)
+	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	}
+}
+
+func TestEdges_reverses(t *testing.T) {
+	testNodes := []*ppb.Node{{
+		Source: &spb.VName{Signature: "node1"},
+		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Edge: []*ppb.Edge{{
+			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
+			Target: &spb.VName{Signature: "node2"},
+		}},
+	}}
+	expectedSets := []*srvpb.PagedEdgeSet{{
+		Source: &srvpb.Node{
+			Ticket: "kythe:#node1",
+			Fact: []*cpb.Fact{{
+				Name:  "/kythe/node/kind",
+				Value: []byte("record"),
+			}},
+		},
+		Group: []*srvpb.EdgeGroup{{
+			Kind: "/kythe/edge/childof",
+			Edge: []*srvpb.EdgeGroup_Edge{{
+				Target: &srvpb.Node{Ticket: "kythe:#node2"},
+			}},
+		}},
+	}, {
+		Source: &srvpb.Node{Ticket: "kythe:#node2"},
+		Group: []*srvpb.EdgeGroup{{
+			Kind: "%/kythe/edge/childof",
+			Edge: []*srvpb.EdgeGroup_Edge{{
+				Target: &srvpb.Node{
+					Ticket: "kythe:#node1",
+					Fact: []*cpb.Fact{{
+						Name:  "/kythe/node/kind",
+						Value: []byte("record"),
+					}},
+				},
+			}},
+		}},
+	}}
+
+	p, s, nodes := ptest.CreateList(testNodes)
+	k := FromNodes(s, nodes)
+	sets, _ := k.Edges()
+	debug.Print(s, sets)
+	passert.Equals(s, beam.DropKey(s, sets), beam.CreateList(s, expectedSets))
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	}
+}
+
 func TestFileTree_registrations(t *testing.T) {
 	testNodes := []*ppb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
@@ -544,6 +638,15 @@ func TestCrossReferences_registrations(t *testing.T) {
 	testNodes := []*ppb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
 	FromNodes(s, nodes).CrossReferences()
+	if err := beamtest.CheckRegistrations(p); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestEdges_registrations(t *testing.T) {
+	testNodes := []*ppb.Node{{}}
+	p, s, nodes := ptest.CreateList(testNodes)
+	FromNodes(s, nodes).Edges()
 	if err := beamtest.CheckRegistrations(p); err != nil {
 		t.Fatal(err)
 	}
