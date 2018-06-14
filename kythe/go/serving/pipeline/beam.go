@@ -555,10 +555,7 @@ func nodeToEdges(n *ppb.Node, emit func(*spb.VName, *ppb.Edge)) {
 // reverseEdge emits the reverse of each *ppb.Edge, embedding the associated TargetNode.
 func reverseEdge(src *spb.VName, nodeStream func(**ppb.Node) bool, edgeStream func(**ppb.Edge) bool, emit func(*spb.VName, *ppb.Edge)) {
 	var node *ppb.Node
-	for nodeStream(&node) {
-		break
-	}
-	if node == nil {
+	if !nodeStream(&node) {
 		node = &ppb.Node{Source: src}
 	}
 
@@ -580,11 +577,10 @@ func groupEdges(src *spb.VName, nodeStream func(**ppb.Node) bool, edgeStream, re
 	// TODO(schroederc): paging
 
 	var node *ppb.Node
-	for nodeStream(&node) {
+	if nodeStream(&node) {
 		node.Source = src
 		set.Source = convertPipelineNode(node)
-	}
-	if set.Source == nil {
+	} else {
 		set.Source = &srvpb.Node{Ticket: kytheuri.ToString(src)}
 	}
 
