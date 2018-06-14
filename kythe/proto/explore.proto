@@ -71,12 +71,10 @@ service ExploreService {
   // Returns the parents of a specified node (for example,
   // the file for a class, or the class for a function).
   // Note that in some cases a node may have more than one parent.
-  // NOT YET IMPLEMENTED
   rpc Parents(ParentsRequest) returns (ParentsReply) {}
 
   // Returns the children of a specified node (for example,
   // the classes contained in a file, or the functions contained in a class).
-  // NOT YET IMPLEMENTED
   rpc Children(ChildrenRequest) returns (ChildrenReply) {}
 }
 
@@ -167,36 +165,28 @@ message TypeHierarchyReply {
 
 // Requests the functions that call the specified function.
 message CallersRequest {
-  string function_ticket = 1;
-
-  NodeFilter node_filter = 2;
+  repeated string function_ticket = 1;
 }
 
 message CallersReply {
-  // same as function_ticket in request
-  string function_ticket = 1;
-
+  // Maps each input function ticket to the corresponding call graph.
   // This is a graph, rather than a simple list of callers, to allow for
   // possible future expansion to recursive callers at depth > 1.
-  Graph graph = 2;
+  map<string, Graph> function_to_graph = 1;
 }
 
 // Requests the functions called by the specified function.
 message CalleesRequest {
   string function_ticket = 1;
-
-  NodeFilter node_filter = 2;
 }
 
 // TODO: consider merging this and CallersReply into a single message
 // (CallgraphReply) unless we have reason to believe they need to be distinct
 message CalleesReply {
-  // same as function_ticket in request
-  string function_ticket = 1;
-
+  // Maps each input function ticket to the corresponding call graph.
   // This is a graph, rather than a simple list of callers, to allow for
-  // possible future expansion to recursive callees at depth > 1.
-  Graph graph = 2;
+  // possible future expansion to recursive callers at depth > 1.
+  map<string, Graph> function_to_graph = 1;
 }
 
 
