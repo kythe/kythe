@@ -185,7 +185,7 @@ message CalleesRequest {
 message CalleesReply {
   // Maps each input function ticket to the corresponding call graph.
   // This is a graph, rather than a simple list of callers, to allow for
-  // possible future expansion to recursive callers at depth > 1.
+  // possible future expansion to recursive callees at depth > 1.
   map<string, Graph> function_to_graph = 1;
 }
 
