@@ -149,6 +149,7 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 		k.Decorations(),
 		xrefSets, xrefPages,
 		edgeSets, edgePages,
+		// TODO(schroederc): documentation
 	)
 	return beamx.Run(ctx, p)
 }
