@@ -52,6 +52,7 @@ func init() {
 // PCollections.
 func WriteLevelDB(s beam.Scope, path string, numShards int, tables ...beam.PCollection) {
 	filesystem.ValidateScheme(path)
+	s = s.Scope("WriteLevelDB")
 
 	// Encode each PCollection of KVs into ([]byte, []byte) key-values (*keyValue)
 	// and flatten all entries into a single PCollection.

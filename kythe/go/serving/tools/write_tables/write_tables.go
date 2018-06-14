@@ -70,6 +70,7 @@ func init() {
 
 func main() {
 	flag.Parse()
+	beam.Init()
 	ctx := context.Background()
 	if *experimentalBeamPipeline {
 		if err := runExperimentalBeamPipeline(ctx); err != nil {
@@ -123,8 +124,6 @@ func main() {
 }
 
 func runExperimentalBeamPipeline(ctx context.Context) error {
-	beam.Init()
-
 	if runnerFlag := flag.Lookup("runner"); runnerFlag.Value.String() == "direct" {
 		runnerFlag.Value.Set("disksort")
 	}
