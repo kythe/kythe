@@ -157,36 +157,37 @@ message TypeHierarchyReply {
 
 // Call graph
 // These APIs are for capturing the graphs induced by the _semantic_ relations between
-// functions (that is, the functions that call, or are called by, this function).
+// calling/callable nodes (for example, the functions that call, or are called by,
+// this function node).
 //
 // If you’re looking for a one-ply relationship between functions and the
 // _locations_ in the code at which they are called, Kythe XRefService's
 // CrossReferences API should do what you want.
 
-// Requests the functions that call the specified function.
+// Requests the incoming callgraphs for each of the specified nodes.
 message CallersRequest {
-  repeated string function_tickets = 1;
+  repeated string tickets = 1;
 }
 
 message CallersReply {
-  // Maps each input function ticket to the corresponding call graph.
+  // Maps each input ticket to the corresponding call graph.
   // This is a graph, rather than a simple list of callers, to allow for
   // possible future expansion to recursive callers at depth > 1.
-  map<string, Graph> function_to_graph = 1;
+  map<string, Graph> ticket_to_graph = 1;
 }
 
-// Requests the functions called by the specified function.
+// Requests the outgoing callgraphs for each of the specified nodes.
 message CalleesRequest {
-  repeated string function_tickets = 1;
+  repeated string tickets = 1;
 }
 
 // TODO: consider merging this and CallersReply into a single message
 // (CallgraphReply) unless we have reason to believe they need to be distinct
 message CalleesReply {
-  // Maps each input function ticket to the corresponding call graph.
+  // Maps each input ticket to the corresponding call graph.
   // This is a graph, rather than a simple list of callees, to allow for
   // possible future expansion to recursive callees at depth > 1.
-  map<string, Graph> function_to_graph = 1;
+  map<string, Graph> ticket_to_graph = 1;
 }
 
 
