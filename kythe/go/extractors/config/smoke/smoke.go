@@ -45,7 +45,7 @@ type Fetcher func(ctx context.Context, repo, outputPath string) error
 
 // GitFetch fetches repos using git commandline.
 func GitFetch(ctx context.Context, repo, outputPath string) error {
-	return config.GitCopier(repo)(ctx, outputPath)
+	return config.GitClone(ctx, repo, outputPath)
 }
 
 // Indexer takes .kindex files in a given inputDir, indexes them, and deposits
@@ -200,7 +200,7 @@ func (h Harness) filenamesFromExtraction(ctx context.Context, repoURI string) (m
 	defer os.RemoveAll(tmpOutDir)
 
 	if err := h.extractor()(ctx, config.Repo{
-		Clone:      config.GitCopier(repoURI),
+		Git:        repoURI,
 		OutputPath: tmpOutDir,
 		ConfigPath: h.ConfigPath,
 	}); err != nil {
