@@ -165,7 +165,7 @@ message TypeHierarchyReply {
 
 // Requests the functions that call the specified function.
 message CallersRequest {
-  repeated string function_ticket = 1;
+  repeated string function_tickets = 1;
 }
 
 message CallersReply {
@@ -177,14 +177,14 @@ message CallersReply {
 
 // Requests the functions called by the specified function.
 message CalleesRequest {
-  string function_ticket = 1;
+  repeated string function_tickets = 1;
 }
 
 // TODO: consider merging this and CallersReply into a single message
 // (CallgraphReply) unless we have reason to believe they need to be distinct
 message CalleesReply {
   // Maps each input function ticket to the corresponding call graph.
-  // This is a graph, rather than a simple list of callers, to allow for
+  // This is a graph, rather than a simple list of callees, to allow for
   // possible future expansion to recursive callees at depth > 1.
   map<string, Graph> function_to_graph = 1;
 }
