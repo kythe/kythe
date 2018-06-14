@@ -195,6 +195,9 @@ func (r *Reader) Scan(f func(*Unit) error) error {
 			break
 		}
 		digest := strings.TrimPrefix(file.Name, prefix)
+		if digest == "" {
+			continue // tolerate an empty units directory entry
+		}
 		unit, err := readUnit(digest, file)
 		if err != nil {
 			return err
