@@ -192,7 +192,10 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		return fmt.Errorf("reading config file: %v", err)
 	}
 
-	err = CreateImage(extractionDockerFile.Name(), extractionConfig, repo.TempRepoDir, repo.OutputPath)
+	err = CreateImage(extractionConfig, imageSettings{
+		RepoDir:   repo.TempRepoDir,
+		OutputDir: repo.OutputPath,
+	}, extractionDockerFile.Name())
 	if err != nil {
 		return fmt.Errorf("creating extraction image: %v", err)
 	}

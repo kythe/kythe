@@ -109,7 +109,7 @@ func TestNewImageGeneratesExpectedDockerFiles(t *testing.T) {
 			t.Fatalf("Failed to load extraction config: %v", err)
 		}
 
-		got, err := NewImage(config, "", "")
+		got, err := newImage(config, imageSettings{})
 		if err != nil {
 			t.Fatalf("Failed to parse test config: %v\n", err)
 		}
@@ -166,7 +166,7 @@ func TestCreateImageWritesProperData(t *testing.T) {
 			t.Fatalf("Failed to create temp image file: %v", err)
 		}
 
-		err = CreateImage(tmpImageFile.Name(), config, "", "")
+		err = CreateImage(config, imageSettings{}, tmpImageFile.Name())
 		if err != nil {
 			t.Fatalf("Failed to create image: %v", err)
 		}
