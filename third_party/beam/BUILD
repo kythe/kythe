@@ -34,10 +34,12 @@ go_library(
 
 go_test(
     name = "gbk_test",
+    size = "small",
     srcs = ["sdks/go/pkg/beam/runners/disksort/gbk_test.go"],
     library = ":runner_disksort",
     deps = [
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/passert:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/testing/ptest:go_default_library",
+        "@com_github_apache_beam//sdks/go/pkg/beam/x/debug:go_default_library",
     ],
 )
