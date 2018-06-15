@@ -652,20 +652,18 @@ func (k *KytheBeam) Documents() beam.PCollection {
 		IncludeEdges: []string{edges.ChildOf},
 	}, nodeToChildren)
 
-	return beam.ParDo(s, completeDocument, beam.CoGroupByKey(s, markedSources, docs, children))
+	return beam.ParDo(s, completeDocument, beam.CoGroupByKey(s, docs, markedSources, children))
 }
 
 // completeDocument emits a single *srvpb.Document per *spb.VName source.
-func completeDocument(key *spb.VName, msStream func(**cpb.MarkedSource) bool, docStream func(**srvpb.Document) bool, childStream func(**spb.VName) bool, emit func(string, *srvpb.Document)) {
-	var ms *cpb.MarkedSource
-	msStream(&ms)
-
+func completeDocument(key *spb.VName, docStream func(**srvpb.Document) bool, msStream func(**cpb.MarkedSource) bool, childStream func(**spb.VName) bool, emit func(string, *srvpb.Document)) {
 	var doc *srvpb.Document
 	if !docStream(&doc) {
 		return
 	}
 	doc.Ticket = kytheuri.ToString(key)
-	doc.MarkedSource = ms
+
+	msStream(&doc.MarkedSource) // embed MarkedSource, if available
 
 	var child *spb.VName
 	for childStream(&child) {
