@@ -22,13 +22,18 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/passert"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
+	"github.com/apache/beam/sdks/go/pkg/beam/x/debug"
 )
+
+// Disable parallelism to work with order-dependent passert checks.
+func init() { *gbkConcurrency = 1 }
 
 func TestGBK(t *testing.T) {
 	p, s, nums := ptest.CreateList([]int{1, 2, 3, 4, 2, 3, 3})
 
 	kv := beam.ParDo(s, extendToKey, nums)
 	sums := beam.DropKey(s, beam.ParDo(s, sum, beam.GroupByKey(s, kv)))
+	debug.Print(s, sums)
 
 	expected := []int{1, 4, 9, 4}
 	passert.Equals(s, sums, beam.CreateList(s, expected))
@@ -55,6 +60,7 @@ func TestCoGBK(t *testing.T) {
 	threes := beam.ParDo(s, &multBy{3}, nums)
 
 	sums := beam.DropKey(s, beam.ParDo(s, sum2, beam.CoGroupByKey(s, twos, threes)))
+	debug.Print(s, sums)
 
 	expected := []int{5, 10, 15, 20}
 	passert.Equals(s, sums, beam.CreateList(s, expected))
@@ -84,6 +90,7 @@ func TestCombinePerKey(t *testing.T) {
 
 	kv := beam.ParDo(s, extendToKey, nums)
 	sums := beam.DropKey(s, beam.CombinePerKey(s, &sumCombine{}, kv))
+	debug.Print(s, sums)
 
 	expected := []int{1, 4, 9, 4}
 	passert.Equals(s, sums, beam.CreateList(s, expected))
@@ -101,6 +108,7 @@ func TestCombine(t *testing.T) {
 	p, s, nums := ptest.CreateList([]int{1, 2, 3, 4})
 
 	sum := beam.Combine(s, &sumCombine{}, nums)
+	debug.Print(s, sum)
 
 	expected := []int{10}
 	passert.Equals(s, sum, beam.CreateList(s, expected))
