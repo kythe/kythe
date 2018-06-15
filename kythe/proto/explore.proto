@@ -95,7 +95,7 @@ message NodeData {
   common.MarkedSource code = 5;
 }
 
-// If the RPC request does not specify otherwise, sucessors and predecessors
+// If the RPC request does not specify otherwise, successors and predecessors
 // are both populated.
 message GraphNode {
   NodeData node_data = 1;
@@ -126,7 +126,10 @@ message NodeFilter {
 }
 
 // Used where we need a collection of tickets (either because we need it for a
-// map or to be able to distinguish between "unset" and "empty".
+// map or to be able to distinguish between "unset" and "empty").
+// If a Tickets field is unset, that means that it has not been populated;
+// if it is set but there are no tickets in the list, then there are no tickets
+// of the designated variety in the containing message.
 message Tickets {
   repeated string tickets = 1;
 }
