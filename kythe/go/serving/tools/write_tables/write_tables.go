@@ -144,11 +144,11 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 	xrefSets, xrefPages := k.CrossReferences()
 	beamio.WriteLevelDB(s, *tablePath, shards,
 		k.CorpusRoots(),
-		k.Decorations(),
 		k.Directories(),
-		k.Documents(),
+		k.Decorations(),
 		xrefSets, xrefPages,
 		edgeSets, edgePages,
+		// TODO(schroederc): documentation
 	)
 	return beamx.Run(ctx, p)
 }

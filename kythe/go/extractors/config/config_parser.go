@@ -153,8 +153,8 @@ WORKDIR %[2]s
 	return buf.Bytes(), nil
 }
 
-// Load parses an extraction configuration from the specified reader.
-func Load(r io.Reader) (*ecpb.ExtractionConfiguration, error) {
+// load parses an extraction configuration from the specified reader.
+func load(r io.Reader) (*ecpb.ExtractionConfiguration, error) {
 	// attempt to deserialize the extraction config
 	extractionConfig := &ecpb.ExtractionConfiguration{}
 	if err := jsonpb.Unmarshal(r, extractionConfig); err != nil {
@@ -164,9 +164,9 @@ func Load(r io.Reader) (*ecpb.ExtractionConfiguration, error) {
 	return extractionConfig, nil
 }
 
-// CreateImage uses the specified extraction configuration to generate a
+// createImage uses the specified extraction configuration to generate a
 // new extraction image, which is written to the specified output path.
-func CreateImage(config *ecpb.ExtractionConfiguration, settings imageSettings, outputPath string) error {
+func createImage(config *ecpb.ExtractionConfiguration, settings imageSettings, outputPath string) error {
 	// attempt to generate a docker image from the specified config
 	image, err := newImage(config, settings)
 	if err != nil {

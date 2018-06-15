@@ -192,7 +192,7 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		return fmt.Errorf("reading config file: %v", err)
 	}
 
-	err = CreateImage(extractionConfig, imageSettings{
+	err = createImage(extractionConfig, imageSettings{
 		RepoDir:   repo.TempRepoDir,
 		OutputDir: repo.OutputPath,
 	}, extractionDockerFile.Name())
@@ -252,13 +252,13 @@ func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, erro
 	f, err := os.Open(configPath)
 	if os.IsNotExist(err) {
 		// TODO(danielmoy): This needs to be configurable by builder, language, etc.
-		return Load(mvn.DefaultConfig())
+		return load(mvn.DefaultConfig())
 	} else if err != nil {
 		return nil, fmt.Errorf("opening config file: %v", err)
 	}
 
 	defer f.Close()
-	return Load(f)
+	return load(f)
 }
 
 func mustCleanUpImage(ctx context.Context, tmpImageTag string) {

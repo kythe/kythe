@@ -25,7 +25,6 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/passert"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
 	"github.com/apache/beam/sdks/go/pkg/beam/x/debug"
-	"github.com/golang/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	ppb "kythe.io/kythe/proto/pipeline_go_proto"
@@ -626,103 +625,6 @@ func TestFileTree_registrations(t *testing.T) {
 	}
 }
 
-func TestDocuments_text(t *testing.T) {
-	testNodes := []*ppb.Node{{
-		Source: &spb.VName{Signature: "doc1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_DOC},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
-			Value: []byte("raw document text"),
-		}},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_DOCUMENTS},
-			Target: &spb.VName{Signature: "node1"},
-		}},
-	}}
-	expectedDocs := []*srvpb.Document{{
-		Ticket:  "kythe:#node1",
-		RawText: "raw document text",
-	}}
-
-	p, s, nodes := ptest.CreateList(testNodes)
-	docs := FromNodes(s, nodes).Documents()
-	debug.Print(s, docs)
-	passert.Equals(s, beam.DropKey(s, docs), beam.CreateList(s, expectedDocs))
-
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
-}
-
-func TestDocuments_children(t *testing.T) {
-	testNodes := []*ppb.Node{{
-		Source: &spb.VName{Signature: "child1"},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
-			Target: &spb.VName{Signature: "node1"},
-		}},
-	}, {
-		Source: &spb.VName{Signature: "doc1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_DOC},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_DOCUMENTS},
-			Target: &spb.VName{Signature: "node1"},
-		}},
-	}}
-	expectedDocs := []*srvpb.Document{{
-		Ticket:      "kythe:#node1",
-		ChildTicket: []string{"kythe:#child1"},
-	}}
-
-	p, s, nodes := ptest.CreateList(testNodes)
-	docs := FromNodes(s, nodes).Documents()
-	debug.Print(s, docs)
-	passert.Equals(s, beam.DropKey(s, docs), beam.CreateList(s, expectedDocs))
-
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
-}
-
-func TestDocuments_markedSource(t *testing.T) {
-	ms := &cpb.MarkedSource{
-		Kind:    cpb.MarkedSource_IDENTIFIER,
-		PreText: "Some_MarkedSource_identifier",
-	}
-	rec, err := proto.Marshal(ms)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	testNodes := []*ppb.Node{{
-		Source: &spb.VName{Signature: "node1"},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_CODE},
-			Value: rec,
-		}},
-	}, {
-		Source: &spb.VName{Signature: "doc1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_DOC},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_DOCUMENTS},
-			Target: &spb.VName{Signature: "node1"},
-		}},
-	}}
-	expectedDocs := []*srvpb.Document{{
-		Ticket:       "kythe:#node1",
-		MarkedSource: ms,
-	}}
-
-	p, s, nodes := ptest.CreateList(testNodes)
-	docs := FromNodes(s, nodes).Documents()
-	debug.Print(s, docs)
-	passert.Equals(s, beam.DropKey(s, docs), beam.CreateList(s, expectedDocs))
-
-	if err := ptest.Run(p); err != nil {
-		t.Fatalf("Pipeline error: %+v", err)
-	}
-}
-
 func TestDecorations_registrations(t *testing.T) {
 	testNodes := []*ppb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
@@ -745,15 +647,6 @@ func TestEdges_registrations(t *testing.T) {
 	testNodes := []*ppb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
 	FromNodes(s, nodes).Edges()
-	if err := beamtest.CheckRegistrations(p); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestDocuments_registrations(t *testing.T) {
-	testNodes := []*ppb.Node{{}}
-	p, s, nodes := ptest.CreateList(testNodes)
-	FromNodes(s, nodes).Documents()
 	if err := beamtest.CheckRegistrations(p); err != nil {
 		t.Fatal(err)
 	}
