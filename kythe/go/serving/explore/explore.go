@@ -40,6 +40,14 @@ type Tables struct {
 
 	// ChildToParents is a table of srvpb.Relatives keyed by child ticket.
 	ChildToParents table.Proto
+
+	// FunctionToCallers is a table of srvpb.Callgraph keyed by function ticket
+	// that points to the callers of the specified function.
+	FunctionToCallers table.Proto
+
+	// FunctionToCallees is a table of srvpb.Callgraph keyed by function ticket
+	// that points to the callees of the specified function.
+	FunctionToCallees table.Proto
 }
 
 // TypeHierarchy returns the hierarchy (supertypes and subtypes, including implementations)
@@ -49,17 +57,111 @@ func (t *Tables) TypeHierarchy(ctx context.Context, req *epb.TypeHierarchyReques
 	return nil, nil
 }
 
-// Callers returns the (recursive) callers of a specified function, as a directed graph.
-// TODO: not yet implemented
+// Callers returns the callers of a specified function, as a directed graph.
 func (t *Tables) Callers(ctx context.Context, req *epb.CallersRequest) (*epb.CallersReply, error) {
-	return nil, nil
+	tickets := req.Tickets
+	if len(tickets) == 0 {
+		return nil, fmt.Errorf("missing input tickets: %v", &req)
+	}
+
+	reply := &epb.CallersReply{
+		TicketToGraph: make(map[string]*epb.Graph),
+	}
+
+	// At the moment, this is our policy for missing data: if an input ticket has
+	// (a) no record in the table, we don't include a mapping for that ticket in the response.
+	// (b) no callers in the table, we include a mapping from that ticket to nil
+	// Other table access errors result in returning an error.
+	for _, ticket := range tickets {
+		var callgraph srvpb.Callgraph
+		err := t.FunctionToCallers.Lookup(ctx, []byte(ticket), &callgraph)
+
+		if err != nil {
+			if err != table.ErrNoSuchKey {
+				return nil, fmt.Errorf("error looking up callers with ticket %q: %v", ticket, err)
+			}
+			continue // skip tickets with no mappings
+		}
+
+		if callgraph.Type != srvpb.Callgraph_CALLER {
+			return nil, fmt.Errorf("type of callgraph is not 'CALLER': %v", callgraph)
+		}
+
+		// TODO: consider logging a warning if len(callgraph.Tickets) == 0
+		// (postprocessing should disallow this)
+		if len(callgraph.Tickets) != 0 {
+			graph := &epb.Graph{
+				Nodes: make(map[string]*epb.GraphNode),
+			}
+			reply.TicketToGraph[ticket] = graph
+			graph.Nodes[ticket] = &epb.GraphNode{
+				Predecessors: &epb.Tickets{Tickets: callgraph.Tickets},
+				Successors:   &epb.Tickets{},
+			}
+			for _, predTicket := range callgraph.Tickets {
+				graph.Nodes[predTicket] = &epb.GraphNode{
+					Predecessors: &epb.Tickets{},
+					Successors:   &epb.Tickets{Tickets: []string{ticket}},
+				}
+			}
+		}
+	}
+
+	return reply, nil
 }
 
-// Callees returns the (recursive) callees of a specified function
+// Callees returns the callees of a specified function
 // (that is, what functions this function calls), as a directed graph.
-// TODO: not yet implemented
 func (t *Tables) Callees(ctx context.Context, req *epb.CalleesRequest) (*epb.CalleesReply, error) {
-	return nil, nil
+	tickets := req.Tickets
+	if len(tickets) == 0 {
+		return nil, fmt.Errorf("missing input tickets: %v", &req)
+	}
+
+	reply := &epb.CalleesReply{
+		TicketToGraph: make(map[string]*epb.Graph),
+	}
+
+	// At the moment, this is our policy for missing data: if an input ticket has
+	// (a) no record in the table, we don't include a mapping for that ticket in the response.
+	// (b) no callers in the table, we include a mapping from that ticket to nil
+	// Other table access errors result in returning an error.
+	for _, ticket := range tickets {
+		var callgraph srvpb.Callgraph
+		err := t.FunctionToCallees.Lookup(ctx, []byte(ticket), &callgraph)
+
+		if err != nil {
+			if err != table.ErrNoSuchKey {
+				return nil, fmt.Errorf("error looking up callees with ticket %q: %v", ticket, err)
+			}
+			continue // skip tickets with no mappings
+		}
+
+		if callgraph.Type != srvpb.Callgraph_CALLEE {
+			return nil, fmt.Errorf("type of callgraph is not 'CALLEE': %v", callgraph)
+		}
+
+		// TODO: consider logging a warning if len(callgraph.Tickets) == 0
+		// (postprocessing should disallow this)
+		if len(callgraph.Tickets) != 0 {
+			graph := &epb.Graph{
+				Nodes: make(map[string]*epb.GraphNode),
+			}
+			reply.TicketToGraph[ticket] = graph
+			graph.Nodes[ticket] = &epb.GraphNode{
+				Predecessors: &epb.Tickets{},
+				Successors:   &epb.Tickets{Tickets: callgraph.Tickets},
+			}
+			for _, predTicket := range callgraph.Tickets {
+				graph.Nodes[predTicket] = &epb.GraphNode{
+					Predecessors: &epb.Tickets{Tickets: []string{ticket}},
+					Successors:   &epb.Tickets{},
+				}
+			}
+		}
+	}
+
+	return reply, nil
 }
 
 // Parameters returns the parameters of a specified function.
