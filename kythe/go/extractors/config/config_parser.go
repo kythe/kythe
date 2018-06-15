@@ -63,7 +63,13 @@ WORKDIR %[2]s
 // the configuration's corresponding repository. Returns the contents of the
 // Dockerfile for the generated composite image. The Dockerfile format is
 // defined here: https://docs.docker.com/engine/reference/builder/
-func NewImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
+func NewImage(config *ecpb.ExtractionConfiguration, repoDir, outputDir string) ([]byte, error) {
+	if repoDir == "" {
+		repoDir = DefaultRepoVolume
+	}
+	if outputDir == "" {
+		outputDir = DefaultOutputVolume
+	}
 	var buf bytes.Buffer
 
 	// Format the FROM statements for the required images.
@@ -72,7 +78,14 @@ func NewImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
 	}
 
 	// Format the base configuration into the current config.
-	fmt.Fprintf(&buf, baseConfig)
+	fmt.Fprintf(&buf, `
+FROM %[1]s
+VOLUME %[2]s
+ENV %[3]s=%[2]s
+VOLUME %[4]s
+ENV %[5]s=%[4]s
+WORKDIR %[2]s
+`, defaultBaseImage, repoDir, repoVolumeEnv, outputDir, outputVolumeEnv)
 
 	// Format the COPY statements for the required images, (these must come after
 	// the last FROM statement due to the way docker's multi-stage builds work).
@@ -145,9 +158,9 @@ func Load(r io.Reader) (*ecpb.ExtractionConfiguration, error) {
 
 // CreateImage uses the specified extraction configuration to generate a
 // new extraction image, which is written to the specified output path.
-func CreateImage(outputPath string, config *ecpb.ExtractionConfiguration) error {
+func CreateImage(outputPath string, config *ecpb.ExtractionConfiguration, repoDir, extractionOutDir string) error {
 	// attempt to generate a docker image from the specified config
-	image, err := NewImage(config)
+	image, err := NewImage(config, repoDir, extractionOutDir)
 	if err != nil {
 		return fmt.Errorf("generating extraction image: %v", err)
 	}

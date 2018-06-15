@@ -192,7 +192,7 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		return fmt.Errorf("reading config file: %v", err)
 	}
 
-	err = CreateImage(extractionDockerFile.Name(), extractionConfig)
+	err = CreateImage(extractionDockerFile.Name(), extractionConfig, repo.TempRepoDir, repo.OutputPath)
 	if err != nil {
 		return fmt.Errorf("creating extraction image: %v", err)
 	}
@@ -205,8 +205,21 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		return fmt.Errorf("building docker image: %v\nCommand output %s", err, string(output))
 	}
 
+	targetRepoDir := repo.TempRepoDir
+	if targetRepoDir == "" {
+		targetRepoDir = DefaultRepoVolume
+	}
 	// run the extraction
-	output, err = exec.CommandContext(ctx, "docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, DefaultRepoVolume), "-v", fmt.Sprintf("%s:%s", repo.OutputPath, DefaultOutputVolume), "-t", imageTag).CombinedOutput()
+	commandArgs := []string{"run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, targetRepoDir), "-v", fmt.Sprintf("%s:%s", repo.OutputPath, repo.OutputPath), "-t", imageTag}
+	// Check and see if we're living inside a docker image.
+	// TODO(#156): This is an undesireable smell from docker-in-docker which
+	// should be removed when we refactor the inner docker away.
+	output, err = exec.CommandContext(ctx, "cat", "/proc/self/cgroup", "|", "grep", "'docker/'", "|", "tail", "-1", "|", "cut", "-d/", "-f", "3", "|", "cut", "-c", "1-12").CombinedOutput()
+	if err == nil && string(output) != "" {
+		commandArgs = append(commandArgs, "--volumes-from")
+		commandArgs = append(commandArgs, string(output))
+	}
+	output, err = exec.CommandContext(ctx, "docker", commandArgs...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("extracting repo: %v\nCommand output: %s", err, string(output))
 	}
