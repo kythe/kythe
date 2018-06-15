@@ -92,11 +92,9 @@ func verifyFlags() {
 		log.Println("You must provide a non-empty -output")
 	}
 
-	if *tempRepoDir != "" {
-		if !isEmptyDir(*tempRepoDir) {
-			hasError = true
-			log.Println("-tmp_repo_dir must be an empty directory.")
-		}
+	if *tempRepoDir != "" && !isEmptyDir(*tempRepoDir) {
+		hasError = true
+		log.Printf("Error: -tmp_repo_dir %q should be an empty directory", *tempRepoDir)
 	}
 
 	if hasError {
