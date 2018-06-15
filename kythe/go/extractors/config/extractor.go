@@ -217,10 +217,8 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 	// Check and see if we're living inside a docker image.
 	// TODO(#156): This is an undesireable smell from docker-in-docker which
 	// should be removed when we refactor the inner docker away.
-	output, err = exec.CommandContext(ctx, "cat", "/proc/self/cgroup", "|", "grep", "'docker/'", "|", "tail", "-1", "|", "cut", "-d/", "-f", "3", "|", "cut", "-c", "1-12").CombinedOutput()
-	if err == nil && string(output) != "" {
-		commandArgs = append(commandArgs, "--volumes-from")
-		commandArgs = append(commandArgs, string(output))
+	if id, ok := inDockerImage(ctx); ok {
+		commandArgs = append(commandArgs, "--volumes-from", id)
 	}
 	output, err = exec.CommandContext(ctx, "docker", commandArgs...).CombinedOutput()
 	if err != nil {
@@ -269,4 +267,9 @@ func mustCleanUpImage(ctx context.Context, tmpImageTag string) {
 	if err != nil {
 		log.Printf("Failed to clean up docker image: %v", err)
 	}
+}
+
+func inDockerImage(ctx context.Context) (string, bool) {
+	output, err := exec.CommandContext(ctx, "cat", "/proc/self/cgroup", "|", "grep", "'docker/'", "|", "tail", "-1", "|", "cut", "-d/", "-f", "3", "|", "cut", "-c", "1-12").CombinedOutput()
+	return string(output), err == nil && len(output) != 0
 }
