@@ -26,6 +26,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -40,6 +41,8 @@ var (
 	outputPath = flag.String("output", "", "Path for output kindex file")
 	configPath = flag.String("config", "", "Path for the JSON extraction configuration file")
 	timeout    = flag.Duration("timeout", 2*time.Minute, "Timeout for extraction")
+	// TODO(#156): Remove this flag after we get rid of docker-in-docker.
+	tempRepoDir = flag.String("tmp_repo_dir", "", "Path for inner docker copy of input repo. Should be an empty directory.")
 )
 
 func init() {
@@ -89,9 +92,42 @@ func verifyFlags() {
 		log.Println("You must provide a non-empty -output")
 	}
 
+	if *tempRepoDir != "" {
+		if !empty(*tempRepoDir) {
+			hasError = true
+			log.Println("-tmp_repo_dir must be an empty directory.")
+		}
+	}
+
 	if hasError {
 		os.Exit(1)
 	}
+}
+
+func empty(dir string) bool {
+	stat, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		return os.MkdirAll(dir, 0755) == nil
+	}
+	if err != nil {
+		log.Printf("Unexpected stat problem: %v", err)
+		return false
+	}
+	if !stat.IsDir() {
+		return false
+	}
+	f, err := os.Open(dir)
+	if err != nil {
+		log.Printf("Failed to open dir: %v", err)
+		return false
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true
+	}
+	return false
 }
 
 // kytheConfigFileName The name of the Kythe extraction config
@@ -104,10 +140,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 	repo := config.Repo{
-		Git:        *repoURI,
-		Local:      *repoPath,
-		OutputPath: *outputPath,
-		ConfigPath: *configPath,
+		Git:         *repoURI,
+		Local:       *repoPath,
+		OutputPath:  *outputPath,
+		ConfigPath:  *configPath,
+		TempRepoDir: *tempRepoDir,
 	}
 	if err := config.ExtractRepo(ctx, repo); err != nil {
 		log.Fatalf("Failed to extract repo: %v", err)
