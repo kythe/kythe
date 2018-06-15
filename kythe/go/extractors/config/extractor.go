@@ -54,6 +54,11 @@ type Repo struct {
 	// to find a config defined in the repo, or finally use a hard coded
 	// default config.
 	ConfigPath string
+
+	// An optional path that dictates where temporary repo copies should go.
+	// TODO(#156): this should be removed as soon as we refactor code to no
+	// longer use docker-in-docker.
+	TempRepoDir string
 }
 
 func (r Repo) gitClone(ctx context.Context, tmpDir string) error {
@@ -146,12 +151,21 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		return fmt.Errorf("ExtractRepo requires git and docker to be in $PATH: %v", err)
 	}
 
-	// create a temporary directory for the repo clone
-	repoDir, err := ioutil.TempDir("", "repoDir")
-	if err != nil {
-		return fmt.Errorf("creating tmp repo dir: %v", err)
+	repoDir := repo.TempRepoDir
+	if repoDir == "" {
+		// create a temporary directory for the repo clone
+		var err error
+		repoDir, err = ioutil.TempDir("", "repoDir")
+		if err != nil {
+			return fmt.Errorf("creating tmp repo dir: %v", err)
+		}
+		// TODO(#156): intentionally not cleaning up repo dir when passed
+		// in might be a mistake.  Long term this doesn't matter after
+		// refactor, but would be good to confirm no disk leak here.
+		// Because it should be inside container I think this doesn't
+		// matter.
+		defer os.RemoveAll(repoDir)
 	}
-	defer os.RemoveAll(repoDir)
 
 	// create a temporary directory for the extraction output
 	tmpOutDir, err := ioutil.TempDir("", "tmpOutDir")
