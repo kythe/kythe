@@ -146,7 +146,7 @@ func TestLoadReturnsProperData(t *testing.T) {
 	}
 }
 
-func TestcreateImageWritesProperData(t *testing.T) {
+func TestCreateImageWritesProperData(t *testing.T) {
 	tempDir, err := ioutil.TempDir("", "tempOutputDir")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
