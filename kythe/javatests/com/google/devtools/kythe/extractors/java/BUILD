@@ -19,9 +19,9 @@ java_test(
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "//third_party/javac",
+        "//third_party/truth",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )
