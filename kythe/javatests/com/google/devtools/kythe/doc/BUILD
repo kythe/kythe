@@ -10,9 +10,9 @@ java_test(
         "//kythe/proto:common_java_proto",
         "//kythe/proto:xref_java_proto",
         "//third_party/guava",
+        "//third_party/truth",
         "@com_google_common_html_types//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )
@@ -30,9 +30,9 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/doc:marked_source_renderer",
         "//kythe/proto:common_java_proto",
         "//third_party/guava",
+        "//third_party/truth",
         "@com_google_common_html_types//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )
