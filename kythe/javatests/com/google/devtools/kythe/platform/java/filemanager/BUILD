@@ -9,7 +9,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
-        "@com_google_truth_truth//jar",
+        "//third_party/truth",
         "@junit_junit//jar",
     ],
 )
