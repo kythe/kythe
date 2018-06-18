@@ -47,7 +47,7 @@ java_test(
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
         "//third_party/guava",
-        "@com_google_truth_truth//jar",
+        "//third_party/truth",
         "@junit_junit//jar",
     ],
 )
