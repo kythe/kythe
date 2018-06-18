@@ -20,6 +20,9 @@
 # $ bazel build kythe/go/platforms/tools/extraction/extractrepo:extractrepo
 # $ cp bazel-bin/kythe/go/platform/tools/extraction/extractrepo/linux_amd64_stripped/extractrepo kythe/go/platform/tools/extraction/extractrepo
 # $ docker build --tag test-extract kythe/go/platform/tools/extraction/extractrepo/.
+# $ docker run -i --volume /tmp/input --volume /tmp/output -v ~/some/mvn/repo:/tmp/repo -v /tmp/output:/tmp/output -v /var/run/docker.sock:/var/run/docker.sock -t test-extract
+#
+# It will deposit .kindex files into /tmp/output.
 
 FROM docker:dind
 
