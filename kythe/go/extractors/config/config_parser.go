@@ -57,13 +57,27 @@ ENV %[5]s=%[4]s
 WORKDIR %[2]s
 `, defaultBaseImage, DefaultRepoVolume, repoVolumeEnv, DefaultOutputVolume, outputVolumeEnv)
 
-// NewImage consumes the configuration data specified in
+// imageSettings allows for optionally controlling a known input repo and
+// output dir.  Leaving these unset just defaults to /repo and /out for use in
+// an ephemeral Docker container.
+type imageSettings struct {
+	RepoDir   string
+	OutputDir string
+}
+
+// newImage consumes the configuration data specified in
 // extractionConfig utilizing it to generate a composite extraction Docker
 // image tailored for the requirements necessary for successful extraction of
 // the configuration's corresponding repository. Returns the contents of the
 // Dockerfile for the generated composite image. The Dockerfile format is
 // defined here: https://docs.docker.com/engine/reference/builder/
-func NewImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
+func newImage(config *ecpb.ExtractionConfiguration, settings imageSettings) ([]byte, error) {
+	if settings.RepoDir == "" {
+		settings.RepoDir = DefaultRepoVolume
+	}
+	if settings.OutputDir == "" {
+		settings.OutputDir = DefaultOutputVolume
+	}
 	var buf bytes.Buffer
 
 	// Format the FROM statements for the required images.
@@ -72,7 +86,14 @@ func NewImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
 	}
 
 	// Format the base configuration into the current config.
-	fmt.Fprintf(&buf, baseConfig)
+	fmt.Fprintf(&buf, `
+FROM %[1]s
+VOLUME %[2]s
+ENV %[3]s=%[2]s
+VOLUME %[4]s
+ENV %[5]s=%[4]s
+WORKDIR %[2]s
+`, defaultBaseImage, settings.RepoDir, repoVolumeEnv, settings.OutputDir, outputVolumeEnv)
 
 	// Format the COPY statements for the required images, (these must come after
 	// the last FROM statement due to the way docker's multi-stage builds work).
@@ -132,8 +153,8 @@ func NewImage(config *ecpb.ExtractionConfiguration) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Load parses an extraction configuration from the specified reader.
-func Load(r io.Reader) (*ecpb.ExtractionConfiguration, error) {
+// load parses an extraction configuration from the specified reader.
+func load(r io.Reader) (*ecpb.ExtractionConfiguration, error) {
 	// attempt to deserialize the extraction config
 	extractionConfig := &ecpb.ExtractionConfiguration{}
 	if err := jsonpb.Unmarshal(r, extractionConfig); err != nil {
@@ -143,11 +164,11 @@ func Load(r io.Reader) (*ecpb.ExtractionConfiguration, error) {
 	return extractionConfig, nil
 }
 
-// CreateImage uses the specified extraction configuration to generate a
+// createImage uses the specified extraction configuration to generate a
 // new extraction image, which is written to the specified output path.
-func CreateImage(outputPath string, config *ecpb.ExtractionConfiguration) error {
+func createImage(config *ecpb.ExtractionConfiguration, settings imageSettings, outputPath string) error {
 	// attempt to generate a docker image from the specified config
-	image, err := NewImage(config)
+	image, err := newImage(config, settings)
 	if err != nil {
 		return fmt.Errorf("generating extraction image: %v", err)
 	}

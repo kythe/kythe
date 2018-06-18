@@ -8,8 +8,8 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
+        "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )
@@ -21,7 +21,7 @@ java_test(
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//third_party/guava",
-        "@com_google_truth_truth//jar",
+        "//third_party/truth",
         "@junit_junit//jar",
     ],
 )
