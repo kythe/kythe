@@ -131,14 +131,14 @@ new_http_archive(
 
 maven_jar(
     name = "com_google_code_gson_gson",
-    artifact = "com.google.code.gson:gson:2.8.2",
-    sha1 = "3edcfe49d2c6053a70a2a47e4e1c2f94998a49cf",
+    artifact = "com.google.code.gson:gson:2.8.5",
+    sha1 = "f645ed69d595b24d4cf8b3fbb64cc505bede8829",
 )
 
 maven_jar(
     name = "com_google_guava_guava",
-    artifact = "com.google.guava:guava:25.0-jre",
-    sha1 = "7319c34fa5866a85b6bad445adad69d402323129",
+    artifact = "com.google.guava:guava:25.1-jre",
+    sha1 = "6c57e4b22b44e89e548b5c9f70f0c45fe10fb0b4",
 )
 
 maven_jar(
@@ -149,8 +149,8 @@ maven_jar(
 
 maven_jar(
     name = "com_google_re2j_re2j",
-    artifact = "com.google.re2j:re2j:1.1",
-    sha1 = "d716952ab58aa4369ea15126505a36544d50a333",
+    artifact = "com.google.re2j:re2j:1.2",
+    sha1 = "4361eed4abe6f84d982cbb26749825f285996dd2",
 )
 
 maven_jar(
@@ -161,8 +161,8 @@ maven_jar(
 
 maven_jar(
     name = "com_google_truth_truth",
-    artifact = "com.google.truth:truth:0.36",
-    sha1 = "7485219d2c1d341097a19382c02bde07e69ff5d2",
+    artifact = "com.google.truth:truth:0.41",
+    sha1 = "846cd094934911f635ba2dadc016d538b8c30927",
 )
 
 maven_jar(
@@ -173,20 +173,20 @@ maven_jar(
 
 maven_jar(
     name = "com_google_auto_value_auto_value",
-    artifact = "com.google.auto.value:auto-value:1.5.2",
-    sha1 = "1b94ab7ec707e2220a0d1a7517488d1843236345",
+    artifact = "com.google.auto.value:auto-value:1.5.4",
+    sha1 = "65183ddd1e9542d69d8f613fdae91540d04e1476",
 )
 
 maven_jar(
     name = "com_google_auto_service_auto_service",
-    artifact = "com.google.auto.service:auto-service:1.0-rc3",
-    sha1 = "35c5d43b0332b8f94d473f9fee5fb1d74b5e0056",
+    artifact = "com.google.auto.service:auto-service:1.0-rc4",
+    sha1 = "44954d465f3b9065388bbd2fc08a3eb8fd07917c",
 )
 
 maven_jar(
     name = "com_google_auto_auto_common",
-    artifact = "com.google.auto:auto-common:0.8",
-    sha1 = "c6f7af0e57b9d69d81b05434ef9f3c5610d498c4",
+    artifact = "com.google.auto:auto-common:0.10",
+    sha1 = "c8f153ebe04a17183480ab4016098055fb474364",
 )
 
 maven_jar(
@@ -197,8 +197,8 @@ maven_jar(
 
 maven_jar(
     name = "com_google_common_html_types",
-    artifact = "com.google.common.html.types:types:1.0.7",
-    sha1 = "7d4afac9f631a2c1adecc21350a4e88241185eb4",
+    artifact = "com.google.common.html.types:types:1.0.8",
+    sha1 = "9e9cf7bc4b2a60efeb5f5581fe46d17c068e0777",
 )
 
 maven_jar(
@@ -209,8 +209,8 @@ maven_jar(
 
 maven_jar(
     name = "com_google_errorprone_error_prone_annotations",
-    artifact = "com.google.errorprone:error_prone_annotations:2.2.0",
-    sha1 = "88e3c593e9b3586e1c6177f89267da6fc6986f0c",
+    artifact = "com.google.errorprone:error_prone_annotations:2.3.1",
+    sha1 = "a6a2b2df72fd13ec466216049b303f206bd66c5d",
 )
 
 http_archive(
