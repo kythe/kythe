@@ -101,10 +101,10 @@ message GraphNode {
   NodeData node_data = 1;
 
   // semantic tickets of nodes connected to this node by incoming edges
-  Tickets predecessors = 2;
+  repeated string predecessors = 2;
 
   // semantic tickets of nodes connected to this node by outgoing edges
-  Tickets successors = 3;
+  repeated string successors = 3;
 }
 
 message Graph {
@@ -173,10 +173,9 @@ message CallersRequest {
 }
 
 message CallersReply {
-  // Maps each input ticket to the corresponding call graph.
-  // This is a graph, rather than a simple list of callers, to allow for
-  // possible future expansion to recursive callers at depth > 1.
-  map<string, Graph> ticket_to_graph = 1;
+  // Represents the call relationships to each of the input tickets, from
+  // all callers of those tickets, as a single graph.
+  Graph graph = 1;
 }
 
 // Requests the outgoing callgraphs for each of the specified nodes.
@@ -187,10 +186,9 @@ message CalleesRequest {
 // TODO: consider merging this and CallersReply into a single message
 // (CallgraphReply) unless we have reason to believe they need to be distinct
 message CalleesReply {
-  // Maps each input ticket to the corresponding call graph.
-  // This is a graph, rather than a simple list of callees, to allow for
-  // possible future expansion to recursive callees at depth > 1.
-  map<string, Graph> ticket_to_graph = 1;
+  // Represents the call relationships from each of the input tickets, to
+  // all callees of those tickets, as a single graph.
+  Graph graph = 1;
 }
 
 

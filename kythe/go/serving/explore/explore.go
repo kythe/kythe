@@ -64,15 +64,14 @@ func (t *Tables) Callers(ctx context.Context, req *epb.CallersRequest) (*epb.Cal
 		return nil, fmt.Errorf("missing input tickets: %v", &req)
 	}
 
-	reply := &epb.CallersReply{
-		TicketToGraph: make(map[string]*epb.Graph),
-	}
+	// succMap maps nodes onto sets of successor nodes
+	succMap := make(map[string]map[string]bool)
 
 	// At the moment, this is our policy for missing data: if an input ticket has
-	// (a) no record in the table, we don't include a mapping for that ticket in the response.
-	// (b) no callers in the table, we include a mapping from that ticket to nil
+	// no record in the table, we don't include data for that ticket in the response.
 	// Other table access errors result in returning an error.
 	for _, ticket := range tickets {
+		succMap[ticket] = make(map[string]bool)
 		var callgraph srvpb.Callgraph
 		err := t.FunctionToCallers.Lookup(ctx, []byte(ticket), &callgraph)
 
@@ -87,27 +86,39 @@ func (t *Tables) Callers(ctx context.Context, req *epb.CallersRequest) (*epb.Cal
 			return nil, fmt.Errorf("type of callgraph is not 'CALLER': %v", callgraph)
 		}
 
-		// TODO: consider logging a warning if len(callgraph.Tickets) == 0
+		// TODO(jrtom): consider logging a warning if len(callgraph.Tickets) == 0
 		// (postprocessing should disallow this)
-		if len(callgraph.Tickets) != 0 {
-			graph := &epb.Graph{
-				Nodes: make(map[string]*epb.GraphNode),
-			}
-			reply.TicketToGraph[ticket] = graph
-			graph.Nodes[ticket] = &epb.GraphNode{
-				Predecessors: &epb.Tickets{Tickets: callgraph.Tickets},
-				Successors:   &epb.Tickets{},
-			}
-			for _, predTicket := range callgraph.Tickets {
-				graph.Nodes[predTicket] = &epb.GraphNode{
-					Predecessors: &epb.Tickets{},
-					Successors:   &epb.Tickets{Tickets: []string{ticket}},
-				}
-			}
+		for _, predTicket := range callgraph.Tickets {
+			succMap[predTicket][ticket] = true
 		}
 	}
 
-	return reply, nil
+	return &epb.CallersReply{Graph: convertSuccMapToGraph(succMap)}, nil
+}
+
+func convertSuccMapToGraph(succMap map[string]map[string]bool) *epb.Graph {
+	graph := &epb.Graph{
+		Nodes: make(map[string]*epb.GraphNode),
+	}
+
+	for ticket, succs := range succMap {
+		node := getGraphNode(graph, ticket)
+		for s, _ := range succs {
+			node.Successors = append(node.Successors, s)
+			succ := getGraphNode(graph, s)
+			succ.Predecessors = append(succ.Predecessors, ticket)
+		}
+	}
+
+	return graph
+}
+
+func getGraphNode(graph *epb.Graph, ticket string) *epb.GraphNode {
+	node, ok := graph.Nodes[ticket]
+	if !ok {
+		node = &epb.GraphNode{}
+	}
+	return node
 }
 
 // Callees returns the callees of a specified function
@@ -118,15 +129,14 @@ func (t *Tables) Callees(ctx context.Context, req *epb.CalleesRequest) (*epb.Cal
 		return nil, fmt.Errorf("missing input tickets: %v", &req)
 	}
 
-	reply := &epb.CalleesReply{
-		TicketToGraph: make(map[string]*epb.Graph),
-	}
+	// succMap maps nodes onto sets of successor nodes
+	succMap := make(map[string]map[string]bool)
 
 	// At the moment, this is our policy for missing data: if an input ticket has
-	// (a) no record in the table, we don't include a mapping for that ticket in the response.
-	// (b) no callers in the table, we include a mapping from that ticket to nil
+	// no record in the table, we don't include data for that ticket in the response.
 	// Other table access errors result in returning an error.
 	for _, ticket := range tickets {
+		succMap[ticket] = make(map[string]bool)
 		var callgraph srvpb.Callgraph
 		err := t.FunctionToCallees.Lookup(ctx, []byte(ticket), &callgraph)
 
@@ -141,27 +151,14 @@ func (t *Tables) Callees(ctx context.Context, req *epb.CalleesRequest) (*epb.Cal
 			return nil, fmt.Errorf("type of callgraph is not 'CALLEE': %v", callgraph)
 		}
 
-		// TODO: consider logging a warning if len(callgraph.Tickets) == 0
+		// TODO(jrtom): consider logging a warning if len(callgraph.Tickets) == 0
 		// (postprocessing should disallow this)
-		if len(callgraph.Tickets) != 0 {
-			graph := &epb.Graph{
-				Nodes: make(map[string]*epb.GraphNode),
-			}
-			reply.TicketToGraph[ticket] = graph
-			graph.Nodes[ticket] = &epb.GraphNode{
-				Predecessors: &epb.Tickets{},
-				Successors:   &epb.Tickets{Tickets: callgraph.Tickets},
-			}
-			for _, predTicket := range callgraph.Tickets {
-				graph.Nodes[predTicket] = &epb.GraphNode{
-					Predecessors: &epb.Tickets{Tickets: []string{ticket}},
-					Successors:   &epb.Tickets{},
-				}
-			}
+		for _, succTicket := range callgraph.Tickets {
+			succMap[ticket][succTicket] = true
 		}
 	}
 
-	return reply, nil
+	return &epb.CalleesReply{Graph: convertSuccMapToGraph(succMap)}, nil
 }
 
 // Parameters returns the parameters of a specified function.
