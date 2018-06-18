@@ -104,12 +104,12 @@ func TestNewImageGeneratesExpectedDockerFiles(t *testing.T) {
 	testData := mustOpenTestData(t)
 	defer testData.Close()
 	for _, file := range testData {
-		config, err := Load(file)
+		config, err := load(file)
 		if err != nil {
 			t.Fatalf("Failed to load extraction config: %v", err)
 		}
 
-		got, err := NewImage(config)
+		got, err := newImage(config, imageSettings{})
 		if err != nil {
 			t.Fatalf("Failed to parse test config: %v\n", err)
 		}
@@ -126,7 +126,7 @@ func TestLoadReturnsProperData(t *testing.T) {
 	testData := mustOpenTestData(t)
 	defer testData.Close()
 	for _, file := range testData {
-		got, err := Load(file)
+		got, err := load(file)
 		if err != nil {
 			t.Fatalf("Failed to load extraction config: %v", err)
 		}
@@ -146,7 +146,7 @@ func TestLoadReturnsProperData(t *testing.T) {
 	}
 }
 
-func TestCreateImageWritesProperData(t *testing.T) {
+func TestcreateImageWritesProperData(t *testing.T) {
 	tempDir, err := ioutil.TempDir("", "tempOutputDir")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
@@ -156,7 +156,7 @@ func TestCreateImageWritesProperData(t *testing.T) {
 	testData := mustOpenTestData(t)
 	defer testData.Close()
 	for _, file := range testData {
-		config, err := Load(file)
+		config, err := load(file)
 		if err != nil {
 			t.Fatalf("Failed to load extraction config: %v", err)
 		}
@@ -166,7 +166,7 @@ func TestCreateImageWritesProperData(t *testing.T) {
 			t.Fatalf("Failed to create temp image file: %v", err)
 		}
 
-		err = CreateImage(tmpImageFile.Name(), config)
+		err = createImage(config, imageSettings{}, tmpImageFile.Name())
 		if err != nil {
 			t.Fatalf("Failed to create image: %v", err)
 		}
