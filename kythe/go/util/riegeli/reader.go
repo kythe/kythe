@@ -91,6 +91,12 @@ func (b *blockReader) Next() ([]byte, error) {
 		return nil, io.EOF
 	} else if err != nil && err != io.ErrUnexpectedEOF {
 		return nil, err
+	} else if n < blockHeaderSize {
+		return nil, fmt.Errorf("short read for block header: %d", n)
+	} else if _, err := decodeBlockHeader(bytes.NewReader(block[:blockHeaderSize])); err != nil {
+		// Throw away the block header; we're only validating it exists.
+		// TODO(schroederc): recover to next block on failure here
+		return nil, fmt.Errorf("decoding block header: %v", err)
 	} else {
 		return block[blockHeaderSize:n], nil
 	}
