@@ -88,7 +88,7 @@ func (r Repo) localClone(ctx context.Context, tmpDir string) error {
 		skipDir: gitDir,
 	})
 	if err != nil {
-		return fmt.Errorf("copying repo: %v")
+		return fmt.Errorf("copying repo: %v", err)
 	}
 	return nil
 }
