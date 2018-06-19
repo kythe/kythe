@@ -41,8 +41,9 @@ var (
 	outputPath = flag.String("output", "", "Path for output kindex file")
 	configPath = flag.String("config", "", "Path for the JSON extraction configuration file")
 	timeout    = flag.Duration("timeout", 2*time.Minute, "Timeout for extraction")
-	// TODO(#156): Remove this flag after we get rid of docker-in-docker.
+	// TODO(#156): Remove these flags after we get rid of docker-in-docker.
 	tempRepoDir = flag.String("tmp_repo_dir", "", "Path for inner docker copy of input repo. Should be an empty directory.")
+	tempOutDir  = flag.String("tmp_out_dir", "", "Path for inner docker copy of output. Should be an empty directory.")
 )
 
 func init() {
@@ -97,6 +98,11 @@ func verifyFlags() {
 		log.Printf("Error: -tmp_repo_dir %q should be an empty directory", *tempRepoDir)
 	}
 
+	if *tempOutDir != "" && !isEmptyDir(*tempOutDir) {
+		hasError = true
+		log.Printf("Error: -tmp_out_dir %q should be an empty directory", *tempOutDir)
+	}
+
 	if hasError {
 		os.Exit(1)
 	}
@@ -129,6 +135,7 @@ func main() {
 		OutputPath:  *outputPath,
 		ConfigPath:  *configPath,
 		TempRepoDir: *tempRepoDir,
+		TempOutDir:  *tempOutDir,
 	}
 	if err := config.ExtractRepo(ctx, repo); err != nil {
 		log.Fatalf("Failed to extract repo: %v", err)

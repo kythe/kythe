@@ -20,15 +20,17 @@
 # $ bazel build kythe/go/platforms/tools/extraction/extractrepo:extractrepo
 # $ cp bazel-bin/kythe/go/platform/tools/extraction/extractrepo/linux_amd64_stripped/extractrepo kythe/go/platform/tools/extraction/extractrepo
 # $ docker build --tag test-extract kythe/go/platform/tools/extraction/extractrepo/.
-# $ docker run -i --volume /tmp/input --volume /tmp/output -v ~/some/mvn/repo:/tmp/repo -v /tmp/output:/tmp/output -v /var/run/docker.sock:/var/run/docker.sock -t test-extract
+# $ docker run -i -v /some/mvn/repo:/repo -v /some/output/dir:/output -v /var/run/docker.sock:/var/run/docker.sock -t kythe-mvn-extract-0.2
 #
 # It will deposit .kindex files into /tmp/output.
 
 FROM docker:dind
 
+# TODO(#156): These volumes are only necessary for docker-in-docker, remove
+# them in the future.
 VOLUME /tmp/input
-VOLUME /tmp/output
+VOLUME /tmp/out
 
 ADD extractrepo extractrepo
 
-ENTRYPOINT ["/extractrepo", "-local", "/tmp/repo", "-output", "/tmp/output", "-tmp_repo_dir", "/tmp/input"]
+ENTRYPOINT ["/extractrepo", "-local", "/repo", "-output", "/output", "-tmp_repo_dir", "/tmp/input", "-tmp_out_dir", "/tmp/out"]
