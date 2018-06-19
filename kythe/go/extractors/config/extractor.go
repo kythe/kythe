@@ -56,15 +56,23 @@ type Repo struct {
 	// default config.
 	ConfigPath string
 
-	// An optional path that dictates where temporary repo copies should go.
-	// TODO(#156): this should be removed as soon as we refactor code to no
-	// longer use docker-in-docker.
+	// TODO(#156): these two should be remoevd when docker-in-docker is
+	// removed.  Currently necessary for docker-in-docker because regular volume
+	// mapping uses the outermost context instead of correctly pushing the
+	// first layer docker container's empeheral volume into the innermost
+	// layer.
+	//
+	// When running inside a docker container, these should be set to match
+	// their corresponding volumes.
+	// When not running inside a docker cotnainer, these can be left unset,
+	// in which case an ephemeral temp directory is used for TempRepoDir, and
+	// output is written directly into OutputPath from mvn-extract.sh.
+
+	// An optional temporary repo path to copy the input repo to.
 	TempRepoDir string
 
-	// An optional path that dicates where temporary output should go before
-	// being copied to the real OutputPath.
-	// TODO(#156): this is another code smell that exists only to make
-	// docker-in-docker less kludgy to use.
+	// An optional temporary directory path to write output before copying to
+	// OutputPath.
 	TempOutDir string
 }
 
