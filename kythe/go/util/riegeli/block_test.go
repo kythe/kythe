@@ -30,7 +30,7 @@ func TestBlockWriter_fullBlock(t *testing.T) {
 
 	// Write a full block
 	chunk := bytes.Repeat([]byte{0}, usableBlockSize)
-	n, err := w.Write(chunk)
+	n, err := w.WriteChunk(chunk)
 	if err != nil {
 		t.Fatal(err)
 	} else if expected := blockSize; n != expected {
@@ -63,7 +63,7 @@ func TestBlockWriter_crossBlock(t *testing.T) {
 
 	// Write almost a full block
 	chunk := bytes.Repeat([]byte{0}, usableBlockSize-10)
-	n, err := w.Write(chunk)
+	n, err := w.WriteChunk(chunk)
 	if err != nil {
 		t.Fatal(err)
 	} else if expected := blockHeaderSize + len(chunk); n != expected {
@@ -73,7 +73,7 @@ func TestBlockWriter_crossBlock(t *testing.T) {
 	}
 
 	// Write another chunk that crosses a block header boundary
-	n, err = w.Write(chunk)
+	n, err = w.WriteChunk(chunk)
 	if err != nil {
 		t.Fatal(err)
 	} else if expected := blockHeaderSize + len(chunk); n != expected {
@@ -130,7 +130,7 @@ func TestBlockWriter_singleChunk(t *testing.T) {
 
 	// Write a small chunk
 	chunk := bytes.Repeat([]byte{0}, 1024)
-	n, err := w.Write(chunk)
+	n, err := w.WriteChunk(chunk)
 	if err != nil {
 		t.Fatal(err)
 	} else if expected := blockHeaderSize + len(chunk); n != expected {
@@ -164,7 +164,7 @@ func TestBlockWriter_multipleChunks(t *testing.T) {
 	// Write multiple chunks
 	chunk := bytes.Repeat([]byte{0}, 1024)
 	numChunks := usableBlockSize / len(chunk)
-	n, err := w.Write(chunk)
+	n, err := w.WriteChunk(chunk)
 	if err != nil {
 		t.Fatal(err)
 	} else if expected := blockHeaderSize + len(chunk); n != expected {
@@ -173,7 +173,7 @@ func TestBlockWriter_multipleChunks(t *testing.T) {
 		t.Fatalf("Unexpected output size: found: %d; expected: %d", buf.Len(), expected)
 	}
 	for i := 1; i < numChunks; i++ {
-		n, err := w.Write(chunk)
+		n, err := w.WriteChunk(chunk)
 		if err != nil {
 			t.Fatal(err)
 		} else if expected := len(chunk); n != expected { // doesn't include blockHeaderSize overhead
@@ -201,7 +201,7 @@ func TestBlockReader_sequential(t *testing.T) {
 	const chunkSize = usableBlockSize / 10
 	for i := 0; i < numChunks; i++ {
 		chunk := bytes.Repeat([]byte{byte(i)}, chunkSize)
-		if _, err := w.Write(chunk); err != nil {
+		if _, err := w.WriteChunk(chunk); err != nil {
 			t.Fatal(err)
 		}
 	}

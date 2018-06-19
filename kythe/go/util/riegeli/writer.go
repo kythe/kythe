@@ -30,7 +30,10 @@ func (w *Writer) ensureFileHeader() error {
 	}
 
 	// https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md#file-signature
-	_, err := (&chunk{Header: chunkHeader{ChunkType: fileSignatureChunkType}}).WriteTo(w.w, w.w.pos)
+	fileSignature := &chunk{
+		Header: chunkHeader{ChunkType: fileSignatureChunkType},
+	}
+	_, err := fileSignature.WriteTo(w.w, w.w.pos)
 	// TODO(schroederc): encode RecordsMetadata chunk
 	return err
 }
@@ -64,10 +67,9 @@ type blockWriter struct {
 	pos int
 }
 
-// Write implements the io.Writer interface.  The given []byte must be a single
-// non-empty chunk of data.  Interleaving blockHeaders will be written at every
-// 64KiB boundary of the underlying io.Writer.
-func (b *blockWriter) Write(chunk []byte) (n int, err error) {
+// WriteChunk writes a single chunk with interleaving blockHeaders written at
+// every 64KiB boundary of the underlying io.Writer.
+func (b *blockWriter) WriteChunk(chunk []byte) (n int, err error) {
 	if len(chunk) == 0 {
 		return 0, errors.New("zero-sized chunk")
 	}
@@ -156,6 +158,7 @@ func (r *recordChunk) put(rec []byte) error {
 // encode returns the binary-encoding of the Riegeli record chunk.
 func (r *recordChunk) encode() []byte {
 	// TODO(schroederc): compression
+	// TODO(schroederc): reuse buffers
 	buf := bytes.NewBuffer(make([]byte, 0, 1+binary.MaxVarintLen64+len(r.CompressedSizes)+len(r.CompressedValues)))
 
 	buf.WriteByte(byte(r.CompressionType))
@@ -172,10 +175,19 @@ func (r *recordChunk) encode() []byte {
 
 // WriteTo implements the io.WriterTo interface for chunkHeaders.
 func (h *chunkHeader) WriteTo(w io.Writer) (int, error) {
+	// header_hash       (8 bytes) — hash of the rest of the header
+	// data_size         (8 bytes) — size of data
+	// data_hash         (8 bytes) — hash of data
+	// chunk_type        (1 byte)  — determines how to interpret data
+	// num_records       (7 bytes) — number of records after decoding
+	// decoded_data_size (8 bytes) — sum of record sizes after decoding
 	var buf [chunkHeaderSize]byte
 	binary.LittleEndian.PutUint64(buf[8:16], h.DataSize)
 	copy(buf[16:], h.DataHash[:])
 	buf[24] = byte(h.ChunkType)
+	// NumRecords is only 7 bytes, but the binary package requires an 8 byte
+	// buffer.  Pass the 8 bytes and overwrite the last byte when encoding
+	// decoded_data_size.
 	binary.LittleEndian.PutUint64(buf[25:33], h.NumRecords) // overwrite buf[32] below
 	binary.LittleEndian.PutUint64(buf[32:40], h.DecodedDataSize)
 	hash := hashBytes(buf[8:])
@@ -184,8 +196,9 @@ func (h *chunkHeader) WriteTo(w io.Writer) (int, error) {
 }
 
 // WriteTo writes the chunk to w, given its starting position within w.
-func (c *chunk) WriteTo(w io.Writer, pos int) (int, error) {
+func (c *chunk) WriteTo(w *blockWriter, pos int) (int, error) {
 	binary.LittleEndian.PutUint64(c.Header.DataHash[:], hashBytes(c.Data))
+	// TODO(schroederc): reuse buffers
 	var buf bytes.Buffer
 	if _, err := c.Header.WriteTo(&buf); err != nil {
 		return 0, err
@@ -198,5 +211,5 @@ func (c *chunk) WriteTo(w io.Writer, pos int) (int, error) {
 	if buf.Len() != chunkHeaderSize+len(c.Data)+padding {
 		return 0, fmt.Errorf("bad chunk size: %v", buf.Len())
 	}
-	return w.Write(buf.Bytes())
+	return w.WriteChunk(buf.Bytes())
 }
