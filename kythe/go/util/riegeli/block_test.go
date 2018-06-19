@@ -34,9 +34,9 @@ func TestBlockWriter_fullBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	} else if expected := blockSize; n != expected {
-		t.Fatalf("Unexpected write size: expected: %d; found: %d", expected, n)
+		t.Fatalf("Unexpected write size: found: %d; expected: %d", n, expected)
 	} else if buf.Len() != expected {
-		t.Fatalf("Unexpected output size: expected: %d; found: %d", expected, buf.Len())
+		t.Fatalf("Unexpected output size: found: %d; expected: %d", buf.Len(), expected)
 	}
 
 	r := bytes.NewReader(buf.Bytes())
@@ -44,16 +44,16 @@ func TestBlockWriter_fullBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error decoding block header: %v", err)
 	} else if expected := 0; h.PreviousChunk != uint64(expected) {
-		t.Fatalf("Unexpected PreviousChunk offset: expected: %d; found: %d", expected, h.PreviousChunk)
+		t.Fatalf("Unexpected PreviousChunk offset: found: %d; expected: %d", h.PreviousChunk, expected)
 	} else if expected := blockSize; h.NextChunk != uint64(expected) {
-		t.Fatalf("Unexpected NextChunk offset: expected: %d; found: %d", expected, h.NextChunk)
+		t.Fatalf("Unexpected NextChunk offset: found: %d; expected: %d", h.NextChunk, expected)
 	}
 
 	rest, err := ioutil.ReadAll(r)
 	if err != nil {
 		t.Fatalf("Error reading chunk: %v", err)
 	} else if !bytes.Equal(rest, chunk) {
-		t.Fatalf("Unexpected chunk bytes: expected: %d; found: %d", chunk, rest)
+		t.Fatalf("Unexpected chunk bytes: found: %d; expected: %d", rest, chunk)
 	}
 }
 
@@ -67,9 +67,9 @@ func TestBlockWriter_crossBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	} else if expected := blockHeaderSize + len(chunk); n != expected {
-		t.Fatalf("Unexpected write size: expected: %d; found: %d", expected, n)
+		t.Fatalf("Unexpected write size: found: %d; expected: %d", n, expected)
 	} else if buf.Len() != expected {
-		t.Fatalf("Unexpected output size: expected: %d; found: %d", expected, buf.Len())
+		t.Fatalf("Unexpected output size: found: %d; expected: %d", buf.Len(), expected)
 	}
 
 	// Write another chunk that crosses a block header boundary
@@ -77,9 +77,9 @@ func TestBlockWriter_crossBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	} else if expected := blockHeaderSize + len(chunk); n != expected {
-		t.Fatalf("Unexpected write size: expected: %d; found: %d", expected, n)
+		t.Fatalf("Unexpected write size: found: %d; expected: %d", n, expected)
 	} else if buf.Len() != expected*2 {
-		t.Fatalf("Unexpected output size: expected: %d; found: %d", expected*2, buf.Len())
+		t.Fatalf("Unexpected output size: found: %d; expected: %d", buf.Len(), expected*2)
 	}
 
 	r := bytes.NewReader(buf.Bytes())
@@ -88,9 +88,9 @@ func TestBlockWriter_crossBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error decoding block header: %v", err)
 	} else if expected := 0; h.PreviousChunk != uint64(expected) {
-		t.Fatalf("Unexpected PreviousChunk offset: expected: %d; found: %d", expected, h.PreviousChunk)
+		t.Fatalf("Unexpected PreviousChunk offset: found: %d; expected: %d", h.PreviousChunk, expected)
 	} else if expected := blockHeaderSize + len(chunk); h.NextChunk != uint64(expected) {
-		t.Fatalf("Unexpected NextChunk offset: expected: %d; found: %d", expected, h.NextChunk)
+		t.Fatalf("Unexpected NextChunk offset: found: %d; expected: %d", h.NextChunk, expected)
 	}
 
 	// Read first chunk
@@ -98,7 +98,7 @@ func TestBlockWriter_crossBlock(t *testing.T) {
 	if _, err := io.ReadFull(r, chunkRead); err != nil {
 		t.Fatalf("Error reading chunk: %v", err)
 	} else if !bytes.Equal(chunkRead, chunk) {
-		t.Fatalf("Unexpected chunk bytes: expected: %d; found: %d", chunk, chunkRead)
+		t.Fatalf("Unexpected chunk bytes: found: %d; expected: %d", chunkRead, chunk)
 	}
 
 	// Read part of second chunk
@@ -111,16 +111,16 @@ func TestBlockWriter_crossBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error decoding block header: %v", err)
 	} else if expected := 10; h.PreviousChunk != uint64(expected) {
-		t.Fatalf("Unexpected PreviousChunk offset: expected: %d; found: %d", expected, h.PreviousChunk)
+		t.Fatalf("Unexpected PreviousChunk offset: found: %d; expected: %d", h.PreviousChunk, expected)
 	} else if expected := blockHeaderSize + len(chunk) - 10; h.NextChunk != uint64(expected) {
-		t.Fatalf("Unexpected NextChunk offset: expected: %d; found: %d", expected, h.NextChunk)
+		t.Fatalf("Unexpected NextChunk offset: found: %d; expected: %d", h.NextChunk, expected)
 	}
 
 	// Read rest of second chunk
 	if _, err := io.ReadFull(r, chunkRead[10:]); err != nil {
 		t.Fatalf("Error reading chunk: %v", err)
 	} else if !bytes.Equal(chunkRead, chunk) {
-		t.Fatalf("Unexpected chunk bytes: expected: %d; found: %d", chunk, chunkRead)
+		t.Fatalf("Unexpected chunk bytes: found: %d; expected: %d", chunkRead, chunk)
 	}
 }
 
@@ -134,9 +134,9 @@ func TestBlockWriter_singleChunk(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	} else if expected := blockHeaderSize + len(chunk); n != expected {
-		t.Fatalf("Unexpected write size: expected: %d; found: %d", expected, n)
+		t.Fatalf("Unexpected write size: found: %d; expected: %d", n, expected)
 	} else if buf.Len() != expected {
-		t.Fatalf("Unexpected output size: expected: %d; found: %d", expected, buf.Len())
+		t.Fatalf("Unexpected output size: found: %d; expected: %d", buf.Len(), expected)
 	}
 
 	r := bytes.NewReader(buf.Bytes())
@@ -144,16 +144,16 @@ func TestBlockWriter_singleChunk(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error decoding block header: %v", err)
 	} else if expected := 0; h.PreviousChunk != uint64(expected) {
-		t.Fatalf("Unexpected PreviousChunk offset: expected: %d; found: %d", expected, h.PreviousChunk)
+		t.Fatalf("Unexpected PreviousChunk offset: found: %d; expected: %d", h.PreviousChunk, expected)
 	} else if expected := blockHeaderSize + len(chunk); h.NextChunk != uint64(expected) {
-		t.Fatalf("Unexpected NextChunk offset: expected: %d; found: %d", expected, h.NextChunk)
+		t.Fatalf("Unexpected NextChunk offset: found: %d; expected: %d", h.NextChunk, expected)
 	}
 
 	rest, err := ioutil.ReadAll(r)
 	if err != nil {
 		t.Fatalf("Error reading chunk: %v", err)
 	} else if !bytes.Equal(rest, chunk) {
-		t.Fatalf("Unexpected chunk bytes: expected: %d; found: %d", chunk, rest)
+		t.Fatalf("Unexpected chunk bytes: found: %d; expected: %d", rest, chunk)
 	}
 }
 
@@ -168,16 +168,16 @@ func TestBlockWriter_multipleChunks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	} else if expected := blockHeaderSize + len(chunk); n != expected {
-		t.Fatalf("Unexpected write size: expected: %d; found: %d", expected, n)
+		t.Fatalf("Unexpected write size: found: %d; expected: %d", n, expected)
 	} else if buf.Len() != expected {
-		t.Fatalf("Unexpected output size: expected: %d; found: %d", expected, buf.Len())
+		t.Fatalf("Unexpected output size: found: %d; expected: %d", buf.Len(), expected)
 	}
 	for i := 1; i < numChunks; i++ {
 		n, err := w.Write(chunk)
 		if err != nil {
 			t.Fatal(err)
 		} else if expected := len(chunk); n != expected { // doesn't include blockHeaderSize overhead
-			t.Fatalf("Unexpected write size: expected: %d; found: %d", expected, n)
+			t.Fatalf("Unexpected write size: found: %d; expected: %d", n, expected)
 		}
 	}
 
@@ -186,9 +186,9 @@ func TestBlockWriter_multipleChunks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error decoding block header: %v", err)
 	} else if expected := 0; h.PreviousChunk != uint64(expected) {
-		t.Fatalf("Unexpected PreviousChunk offset: expected: %d; found: %d", expected, h.PreviousChunk)
+		t.Fatalf("Unexpected PreviousChunk offset: found: %d; expected: %d", h.PreviousChunk, expected)
 	} else if expected := blockHeaderSize + len(chunk); h.NextChunk != uint64(expected) {
-		t.Fatalf("Unexpected NextChunk offset: expected: %d; found: %d", expected, h.NextChunk)
+		t.Fatalf("Unexpected NextChunk offset: found: %d; expected: %d", h.NextChunk, expected)
 	}
 }
 
@@ -213,7 +213,7 @@ func TestBlockReader_sequential(t *testing.T) {
 		if _, err := io.ReadFull(r, found); err != nil {
 			t.Fatal(err)
 		} else if !bytes.Equal(expected, found) {
-			t.Fatalf("Unexpected chunk bytes: expected: %d; found: %d", expected, found)
+			t.Fatalf("Unexpected chunk bytes: found: %d; expected: %d", found, expected)
 		}
 	}
 

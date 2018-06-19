@@ -77,7 +77,7 @@ func TestGoldenTestData(t *testing.T) {
 		}
 
 		if !proto.Equal(expected, found) {
-			t.Errorf("Unexpected record: expected: {%+v}; found: {%+v}", expected, found)
+			t.Errorf("Unexpected record: found: {%+v}; expected: {%+v}", found, expected)
 		}
 	}
 }

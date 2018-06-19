@@ -65,7 +65,7 @@ func TestReadWriteStrings(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Read error: %v", err)
 		} else if string(rec) != fmt.Sprintf("%d", i) {
-			t.Errorf("Expected: %d; found: %s", i, hex.EncodeToString(rec))
+			t.Errorf("Found: %s; expected: %d;", hex.EncodeToString(rec), i)
 		}
 	}
 	rec, err := rd.Next()
