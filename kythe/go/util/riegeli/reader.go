@@ -52,7 +52,7 @@ func (r *Reader) readNextRecordChunk() error {
 
 		rec, err := decodeRecordChunk(c)
 		if err != nil {
-			return fmt.Errorf("error decoding record chunk: %v", err)
+			return fmt.Errorf("decoding record chunk: %v", err)
 		} else if rec.CompressionType != noCompression {
 			// TODO(schroederc): compression
 			return fmt.Errorf("unsupported compression type: %s", []byte{byte(rec.CompressionType)})
