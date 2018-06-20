@@ -62,7 +62,14 @@ func benchWrite(b *testing.B, out io.Writer, pos int, opts *WriterOptions, gen f
 }
 
 func BenchmarkWriteNullUncompressed(b *testing.B) { benchWrite(b, ioutil.Discard, 0, nil, genNulls) }
+func BenchmarkWriteNullBrotli(b *testing.B) {
+	benchWrite(b, ioutil.Discard, 0, &WriterOptions{Compression: BrotliCompression(-1)}, genNulls)
+}
+
 func BenchmarkWriteRandUncompressed(b *testing.B) { benchWrite(b, ioutil.Discard, 0, nil, genRand(0)) }
+func BenchmarkWriteRandBrotli(b *testing.B) {
+	benchWrite(b, ioutil.Discard, 0, &WriterOptions{Compression: BrotliCompression(-1)}, genRand(0))
+}
 
 func benchRead(b *testing.B, opts *WriterOptions, gen func(*testing.B) []byte) {
 	buf := bytes.NewBuffer(nil)
@@ -80,4 +87,11 @@ func benchRead(b *testing.B, opts *WriterOptions, gen func(*testing.B) []byte) {
 }
 
 func BenchmarkReadNullUncompressed(b *testing.B) { benchRead(b, nil, genNulls) }
+func BenchmarkReadNullBrotli(b *testing.B) {
+	benchRead(b, &WriterOptions{Compression: BrotliCompression(-1)}, genNulls)
+}
+
 func BenchmarkReadRandUncompressed(b *testing.B) { benchRead(b, nil, genRand(0)) }
+func BenchmarkReadRandBrotli(b *testing.B) {
+	benchRead(b, &WriterOptions{Compression: BrotliCompression(-1)}, genRand(0))
+}

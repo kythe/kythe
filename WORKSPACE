@@ -89,6 +89,20 @@ http_archive(
     url = "https://code.googlesource.com/re2/+archive/2c220e7df3c10d42d74cb66290ec89116bb5e6be.tar.gz",
 )
 
+http_archive(
+    name = "org_brotli",
+    sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
+    strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9",
+    url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+)
+
+http_archive(
+    name = "org_brotli_go",
+    sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
+    strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9/go",
+    url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+)
+
 new_http_archive(
     name = "com_github_google_glog",
     build_file = "third_party/googlelog.BUILD",

@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "riegeli",
     srcs = [
+        "compression.go",
         "reader.go",
         "riegeli.go",
         "util.go",
@@ -13,6 +14,7 @@ go_library(
     deps = [
         "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_minio_highwayhash//:go_default_library",
+        "@org_brotli_go//cbrotli",
     ],
 )
 
@@ -26,8 +28,9 @@ go_test(
     name = "golden_test",
     srcs = ["golden_test.go"],
     data = [
+        "testdata/golden.entries.brotli.riegeli",
         "testdata/golden.entries.json",
-        "testdata/golden.entries.riegeli",
+        "testdata/golden.entries.uncompressed.riegeli",
     ],
     library = ":riegeli",
     deps = [
