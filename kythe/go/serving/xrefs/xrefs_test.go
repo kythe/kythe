@@ -27,7 +27,6 @@ import (
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/kytheuri"
 
-	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
@@ -1234,10 +1233,6 @@ type testTable struct {
 
 func (tbl *testTable) Construct(t *testing.T) *Table {
 	p := make(testProtoTable)
-	var tickets stringset.Set
-	for _, n := range tbl.Nodes {
-		tickets.Add(n.Ticket)
-	}
 	for _, d := range tbl.Decorations {
 		testutil.FatalOnErrT(t, "Error writing file decorations: %v", p.Put(ctx, DecorationsKey(mustFix(t, d.File.Ticket)), d))
 	}
