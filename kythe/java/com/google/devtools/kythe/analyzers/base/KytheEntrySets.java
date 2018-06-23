@@ -169,6 +169,7 @@ public class KytheEntrySets {
     EntrySet.Builder builder =
         newNode(NodeKind.ANCHOR)
             .setCorpusPath(CorpusPath.fromVName(fileVName))
+            .setLanguage(fileVName.getLanguage())
             .addSignatureSalt(fileVName)
             .setProperty("loc/start", "" + loc.getStart())
             .setProperty("loc/end", "" + loc.getEnd());
@@ -436,6 +437,11 @@ public class KytheEntrySets {
     @Override
     public NodeBuilder setProperty(String name, String value) {
       return (NodeBuilder) super.setProperty(name, value);
+    }
+
+    public NodeBuilder setLanguage(String language) {
+      sourceBuilder.setLanguage(language);
+      return this;
     }
   }
 
