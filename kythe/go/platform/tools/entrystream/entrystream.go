@@ -25,6 +25,8 @@
 //   $ ... | entrystream --entrysets          # Prints combined entry sets as JSON
 //   $ ... | entrystream --count              # Prints the number of entries in the incoming stream
 //   $ ... | entrystream --read_json          # Reads entry stream as JSON and prints a proto stream
+//   $ ... | entrystream --write_riegeli      # Writes entry stream as a Riegeli file
+//   $ ... | entrystream --read_riegeli       # Reads the entry stream from a Riegeli file
 package main
 
 import (
@@ -32,6 +34,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -40,6 +43,7 @@ import (
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/disksort"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/riegeli"
 
 	"github.com/golang/protobuf/proto"
 
@@ -55,8 +59,11 @@ type entrySet struct {
 }
 
 var (
-	readJSON        = flag.Bool("read_json", false, "Assume stdin is a stream of JSON entries instead of protobufs")
-	writeJSON       = flag.Bool("write_json", false, "Print JSON stream as output")
+	readJSON     = flag.Bool("read_json", false, "Assume stdin is a stream of JSON entries instead of protobufs")
+	writeJSON    = flag.Bool("write_json", false, "Print JSON stream as output")
+	readRiegeli  = flag.Bool("read_riegeli", false, "Assume stdin is a stream of Riegeli records")
+	writeRiegeli = flag.Bool("write_riegeli", false, "Write Entry protos as Riegeli file")
+
 	sortStream      = flag.Bool("sort", false, "Sort entry stream into GraphStore order")
 	uniqEntries     = flag.Bool("unique", false, "Print only unique entries (implies --sort)")
 	entrySets       = flag.Bool("entrysets", false, "Print Entry protos as JSON EntrySets (implies --sort and --write_json)")
@@ -84,6 +91,24 @@ func main() {
 			rd = stream.NewStructuredJSONReader(in)
 		} else {
 			rd = stream.NewJSONReader(in)
+		}
+	} else if *readRiegeli {
+		rd = func(emit func(*spb.Entry) error) error {
+			r := riegeli.NewReader(in)
+			for {
+				rec, err := r.Next()
+				if err == io.EOF {
+					return nil
+				} else if err != nil {
+					return err
+				}
+				var e spb.Entry
+				if err := proto.Unmarshal(rec, &e); err != nil {
+					return err
+				} else if err := emit(&e); err != nil {
+					return err
+				}
+			}
 		}
 	} else {
 		rd = stream.NewReader(in)
@@ -141,6 +166,16 @@ func main() {
 			}
 			return encoder.Encode(entry)
 		}))
+	case *writeRiegeli:
+		wr := riegeli.NewWriter(out, nil)
+		failOnErr(rd(func(entry *spb.Entry) error {
+			rec, err := proto.Marshal(entry)
+			if err != nil {
+				return err
+			}
+			return wr.Put(rec)
+		}))
+		failOnErr(wr.Flush())
 	default:
 		wr := delimited.NewWriter(out)
 		failOnErr(rd(func(entry *spb.Entry) error {
