@@ -5,7 +5,7 @@ public class Files {
 
   //- @"錨" defines/binding UV
   int 錨;
-  //- Anchor defines/binding UV
+  //- Anchor=vname(_,"kythe","","kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Files.java","java") defines/binding UV
   //- Anchor.node/kind anchor
   //- Anchor.loc/start 112
   //- Anchor.loc/end 115
