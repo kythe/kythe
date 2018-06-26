@@ -1,0 +1,246 @@
+record_type_name: "kythe.proto.Entry"
+file_descriptor {
+  name: "kythe/proto/storage.proto"
+  package: "kythe.proto"
+  message_type {
+    name: "VName"
+    field {
+      name: "signature"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+    }
+    field {
+      name: "corpus"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+    }
+    field {
+      name: "root"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+    }
+    field {
+      name: "path"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+    }
+    field {
+      name: "language"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+    }
+  }
+  message_type {
+    name: "VNameMask"
+    field {
+      name: "signature"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+    }
+    field {
+      name: "corpus"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+    }
+    field {
+      name: "root"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+    }
+    field {
+      name: "path"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+    }
+    field {
+      name: "language"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+    }
+  }
+  message_type {
+    name: "Entry"
+    field {
+      name: "source"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".kythe.proto.VName"
+    }
+    field {
+      name: "edge_kind"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+    }
+    field {
+      name: "target"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".kythe.proto.VName"
+    }
+    field {
+      name: "fact_name"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+    }
+    field {
+      name: "fact_value"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_BYTES
+    }
+  }
+  message_type {
+    name: "Entries"
+    field {
+      name: "entries"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".kythe.proto.Entry"
+    }
+  }
+  message_type {
+    name: "ReadRequest"
+    field {
+      name: "source"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".kythe.proto.VName"
+    }
+    field {
+      name: "edge_kind"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+    }
+  }
+  message_type {
+    name: "WriteRequest"
+    field {
+      name: "source"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".kythe.proto.VName"
+    }
+    field {
+      name: "update"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".kythe.proto.WriteRequest.Update"
+    }
+    nested_type {
+      name: "Update"
+      field {
+        name: "edge_kind"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+      }
+      field {
+        name: "target"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_MESSAGE
+        type_name: ".kythe.proto.VName"
+      }
+      field {
+        name: "fact_name"
+        number: 3
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+      }
+      field {
+        name: "fact_value"
+        number: 4
+        label: LABEL_OPTIONAL
+        type: TYPE_BYTES
+      }
+    }
+  }
+  message_type {
+    name: "WriteReply"
+  }
+  message_type {
+    name: "ScanRequest"
+    field {
+      name: "target"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".kythe.proto.VName"
+    }
+    field {
+      name: "edge_kind"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+    }
+    field {
+      name: "fact_prefix"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+    }
+  }
+  message_type {
+    name: "CountRequest"
+    field {
+      name: "index"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT64
+    }
+    field {
+      name: "shards"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT64
+    }
+  }
+  message_type {
+    name: "CountReply"
+    field {
+      name: "entries"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT64
+    }
+  }
+  message_type {
+    name: "ShardRequest"
+    field {
+      name: "index"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT64
+    }
+    field {
+      name: "shards"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT64
+    }
+  }
+  options {
+    java_package: "com.google.devtools.kythe.proto"
+  }
+  syntax: "proto3"
+}
+record_writer_options: "uncompressed"

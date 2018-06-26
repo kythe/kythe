@@ -22,36 +22,73 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+
+	"github.com/golang/protobuf/proto"
+
+	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )
 
 func (r *Reader) nextRecord() ([]byte, error) {
-	if err := r.readNextRecordChunk(); err != nil {
+	if err := r.ensureRecordReader(); err != nil {
 		return nil, err
 	}
 	return r.recordReader.Next()
 }
 
-func (r *Reader) readNextRecordChunk() error {
+func (r *Reader) ensureRecordReader() error {
 	if r.recordReader != nil && r.recordReader.Len() == 0 {
 		if err := r.recordReader.Close(); err != nil {
 			return fmt.Errorf("error closing record reader: %v", err)
 		}
 		r.recordReader = nil
 	}
+
 	for r.recordReader == nil {
 		c, err := r.r.Next()
 		if err != nil {
 			return err
-		} else if c.Header.NumRecords == 0 {
-			// Skip all chunks with 0 records (even if chunk_type is unknown)
-			continue
-		} else if c.Header.ChunkType != recordChunkType {
-			// TODO(schroederc): support non-record chunk types (especially RecordsMetadata)
+		} else if c.Header.NumRecords == 0 && c.Header.ChunkType != fileMetadataChunkType {
+			// ignore chunks with no records; even for unknown chunk types
 			continue
 		}
-		r.recordReader, err = newRecordChunkReader(c)
-		if err != nil {
-			return fmt.Errorf("bad record chunk: %v", err)
+
+		switch c.Header.ChunkType {
+		case fileSignatureChunkType:
+			// TODO (schroederc): verify
+		case fileMetadataChunkType:
+			rd, err := newTransposedRecordReader(c)
+			if err != nil {
+				return fmt.Errorf("bad transpose chunk: %v", err)
+			} else if rd.Len() != 1 {
+				return fmt.Errorf("didn't find single RecordsMetadata record: found %d", rd.Len())
+			}
+			rec, err := rd.Next()
+			cErr := rd.Close()
+			if err != nil {
+				return fmt.Errorf("reading RecordsMetadata: %v", err)
+			} else if cErr != nil {
+				return fmt.Errorf("closing RecordsMetadata reader: %v", err)
+			}
+			r.metadata = new(rmpb.RecordsMetadata)
+			if err := proto.Unmarshal(rec, r.metadata); err != nil {
+				return fmt.Errorf("bad RecordsMetadata: %v", err)
+			}
+		case transposedChunkType:
+			r.recordReader, err = newTransposedRecordReader(c)
+			if err != nil {
+				return fmt.Errorf("bad transpose chunk: %v", err)
+			} else if r.recordReader.Len() != c.Header.NumRecords {
+				return fmt.Errorf("mismatching number of transposed records: found: %d; expected: %d", r.recordReader.Len(), c.Header.NumRecords)
+			}
+		case recordChunkType:
+			r.recordReader, err = newRecordChunkReader(c)
+			if err != nil {
+				return fmt.Errorf("bad record chunk: %v", err)
+			} else if r.recordReader.Len() != c.Header.NumRecords {
+				return fmt.Errorf("mismatching number of records: found: %d; expected: %d", r.recordReader.Len(), c.Header.NumRecords)
+			}
+		default:
+			return fmt.Errorf("unsupported read of chunk_type: '%s'", []byte{byte(c.Header.ChunkType)})
 		}
 	}
 	return nil
