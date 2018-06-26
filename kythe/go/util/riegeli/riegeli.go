@@ -22,7 +22,6 @@
 package riegeli
 
 import (
-	"bytes"
 	"io"
 
 	"github.com/golang/protobuf/proto"
@@ -30,20 +29,39 @@ import (
 
 // Defaults for the WriterOptions.
 const (
-	DefaultChunkSize   = 1 << 20
-	DefaultCompression = NoCompression // TODO(schroederc): default to brotli/zstd
+	DefaultChunkSize = 1 << 20
+
+	DefaultBrotliLevel = 9
 )
+
+// DefaultCompression is the default Compression for the WriterOptions.
+var DefaultCompression = BrotliCompression(DefaultBrotliLevel)
 
 // CompressionType is the type of compression used for encoding Riegeli chunks.
-type CompressionType compressionType
+type CompressionType interface{ isCompressionType() }
 
-const (
+type compressionLevel struct {
+	compressionType
+	level int
+}
+
+func (*compressionLevel) isCompressionType() {}
+
+var (
 	// NoCompression indicates that no compression will be used to encode chunks.
-	NoCompression compressionType = noCompression
-
-	// TODO(schroederc): add brotli compression
+	NoCompression CompressionType = &compressionLevel{noCompression, 0}
 	// TODO(schroederc): add zstd compression
 )
+
+// BrotliCompression returns a CompressionType for Brotli compression with the
+// given quality level.  If level < 0 || level > 11, then the DefaultBrotliLevel
+// will be used.
+func BrotliCompression(level int) CompressionType {
+	if level < 0 || level > 11 {
+		level = DefaultBrotliLevel
+	}
+	return &compressionLevel{brotliCompression, level}
+}
 
 // WriterOptions customizes the behavior of a Riegeli Writer.
 type WriterOptions struct {
@@ -51,16 +69,25 @@ type WriterOptions struct {
 	ChunkSize uint64
 
 	// Compression is the type of compression used for encoding chunks.
-	Compression *CompressionType
+	Compression CompressionType
 }
 
 // TODO(schroederc): encode/decode options as a string for RecordsMetadata
 
 func (o *WriterOptions) compressionType() compressionType {
-	if o == nil || o.Compression == nil {
-		return compressionType(DefaultCompression)
+	c := DefaultCompression
+	if o != nil && o.Compression != nil {
+		c = o.Compression
 	}
-	return compressionType(*o.Compression)
+	return c.(*compressionLevel).compressionType
+}
+
+func (o *WriterOptions) compressionLevel() int {
+	c := DefaultCompression
+	if o != nil && o.Compression != nil {
+		c = o.Compression
+	}
+	return c.(*compressionLevel).level
 }
 
 func (o *WriterOptions) chunkSize() uint64 {
@@ -83,9 +110,10 @@ func NewWriterAt(w io.Writer, pos int, opts *WriterOptions) *Writer {
 // TODO(schroederc): add support for writing RecordsMetadata
 // TODO(schroederc): add support for tranposed records
 type Writer struct {
-	opts   *WriterOptions
-	w      *blockWriter
-	record *recordChunk
+	opts *WriterOptions
+	w    *blockWriter
+
+	recordWriter *recordChunkWriter
 
 	fileHeaderWritten bool
 }
@@ -94,13 +122,13 @@ type Writer struct {
 func (w *Writer) Put(rec []byte) error {
 	if err := w.ensureFileHeader(); err != nil {
 		return err
-	} else if w.record == nil {
-		w.record = newRecordChunk(w.opts)
+	} else if w.recordWriter == nil {
+		w.recordWriter = newRecordChunkWriter(w.opts)
 	}
 
-	if err := w.record.put(rec); err != nil {
+	if err := w.recordWriter.put(rec); err != nil {
 		return err
-	} else if w.record.decodedSize > w.opts.chunkSize() {
+	} else if w.recordWriter.decodedSize >= w.opts.chunkSize() {
 		return w.Flush()
 	}
 	return nil
@@ -136,9 +164,7 @@ func NewReader(r io.Reader) *Reader { return &Reader{r: &chunkReader{&blockReade
 type Reader struct {
 	r *chunkReader
 
-	numRecords  uint64
-	sizesReader *bytes.Reader
-	valsReader  *bytes.Reader
+	recordReader recordReader
 }
 
 // Next reads and returns the next Riegeli record from the underlying io.Reader.

@@ -39,23 +39,26 @@ func (w *Writer) ensureFileHeader() error {
 }
 
 func (w *Writer) flushRecord() error {
-	if w.record == nil || w.record.numRecords == 0 {
+	if w.recordWriter == nil || w.recordWriter.numRecords == 0 {
 		// Skip writing empty record chunk.
 		return nil
 	}
 
-	data := w.record.encode()
+	data, err := w.recordWriter.encode()
+	if err != nil {
+		return fmt.Errorf("encoding record chunk: %v", err)
+	}
 	chunk := &chunk{
 		Header: chunkHeader{
 			ChunkType:       recordChunkType,
 			DataSize:        uint64(len(data)),
-			DecodedDataSize: w.record.decodedSize,
-			NumRecords:      w.record.numRecords,
+			DecodedDataSize: w.recordWriter.decodedSize,
+			NumRecords:      w.recordWriter.numRecords,
 		},
 		Data: data,
 	}
-	_, err := chunk.WriteTo(w.w, w.w.pos)
-	w.record = newRecordChunk(w.opts)
+	_, err = chunk.WriteTo(w.w, w.w.pos)
+	w.recordWriter = newRecordChunkWriter(w.opts)
 	return err
 }
 
@@ -135,20 +138,24 @@ func (b *blockHeader) WriteTo(w io.Writer) (int, error) {
 	return w.Write(buf[:])
 }
 
-func newRecordChunk(opts *WriterOptions) *recordChunk {
-	return &recordChunk{CompressionType: opts.compressionType()}
+type recordChunkWriter struct {
+	compressionType         compressionType
+	numRecords, decodedSize uint64
+
+	sizesCompressor, valsCompressor compressor
 }
 
-// put adds a single record to the Riegeli record chunk.
-func (r *recordChunk) put(rec []byte) error {
-	// TODO(schroederc): compression
+func (r *recordChunkWriter) put(rec []byte) error {
 	size := uint64(len(rec))
 
 	var buf [binary.MaxVarintLen64]byte
 	n := binary.PutUvarint(buf[:], size)
 
-	r.CompressedSizes = append(r.CompressedSizes, buf[:n]...)
-	r.CompressedValues = append(r.CompressedValues, rec...)
+	if _, err := r.sizesCompressor.Write(buf[:n]); err != nil {
+		return fmt.Errorf("compressing record size: %v", err)
+	} else if _, err := r.valsCompressor.Write(rec); err != nil {
+		return fmt.Errorf("compressing record: %v", err)
+	}
 
 	r.decodedSize += size
 	r.numRecords++
@@ -156,21 +163,34 @@ func (r *recordChunk) put(rec []byte) error {
 }
 
 // encode returns the binary-encoding of the Riegeli record chunk.
-func (r *recordChunk) encode() []byte {
-	// TODO(schroederc): compression
+func (r *recordChunkWriter) encode() ([]byte, error) {
+	if err := r.sizesCompressor.Close(); err != nil {
+		return nil, fmt.Errorf("closing record size compressor: %v", err)
+	} else if err := r.valsCompressor.Close(); err != nil {
+		return nil, fmt.Errorf("closing record value compressor: %v", err)
+	}
+
+	sizesSizePrefix := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutUvarint(sizesSizePrefix[:], uint64(r.sizesCompressor.Len()))
+	sizesSizePrefix = sizesSizePrefix[:n]
+
 	// TODO(schroederc): reuse buffers
-	buf := bytes.NewBuffer(make([]byte, 0, 1+binary.MaxVarintLen64+len(r.CompressedSizes)+len(r.CompressedValues)))
+	buf := bytes.NewBuffer(make([]byte, 0, 1+len(sizesSizePrefix)+r.sizesCompressor.Len()+r.valsCompressor.Len()))
 
-	buf.WriteByte(byte(r.CompressionType))
+	buf.WriteByte(byte(r.compressionType))
+	buf.Write(sizesSizePrefix)
+	r.sizesCompressor.WriteTo(buf)
+	r.valsCompressor.WriteTo(buf)
 
-	var vBuf [binary.MaxVarintLen64]byte
-	n := binary.PutUvarint(vBuf[:], uint64(len(r.CompressedSizes)))
-	buf.Write(vBuf[:n])
+	return buf.Bytes(), nil
+}
 
-	buf.Write(r.CompressedSizes)
-	buf.Write(r.CompressedValues)
-
-	return buf.Bytes()
+func newRecordChunkWriter(opts *WriterOptions) *recordChunkWriter {
+	return &recordChunkWriter{
+		compressionType: opts.compressionType(),
+		valsCompressor:  newCompressor(opts),
+		sizesCompressor: newCompressor(opts),
+	}
 }
 
 // WriteTo implements the io.WriterTo interface for chunkHeaders.
@@ -213,3 +233,9 @@ func (c *chunk) WriteTo(w *blockWriter, pos int) (int, error) {
 	}
 	return w.WriteChunk(buf.Bytes())
 }
+
+// A nopWriteCloser trivially implements io.Closer for a io.Writer.
+type nopWriteCloser struct{ io.Writer }
+
+// Close implements the io.Closer interface.
+func (nopWriteCloser) Close() error { return nil }

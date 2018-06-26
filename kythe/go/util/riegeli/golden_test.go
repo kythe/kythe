@@ -31,8 +31,10 @@ import (
 )
 
 var (
-	goldenJSONFile    = "testdata/golden.entries.json"
-	goldenRiegeliFile = "testdata/golden.entries.riegeli"
+	goldenJSONFile = "testdata/golden.entries.json"
+
+	goldenUncompressedRiegeliFile = "testdata/golden.entries.uncompressed.riegeli"
+	goldenBrotliRiegeliFile       = "testdata/golden.entries.brotli.riegeli"
 )
 
 type jsonReader struct{ ch <-chan *spb.Entry }
@@ -45,7 +47,10 @@ func (j *jsonReader) Next() (*spb.Entry, error) {
 	return e, nil
 }
 
-func TestGoldenTestData(t *testing.T) {
+func TestUncompressedGoldenTestData(t *testing.T) { checkGoldenData(t, goldenUncompressedRiegeliFile) }
+func TestBrotliGoldenTestData(t *testing.T)       { checkGoldenData(t, goldenBrotliRiegeliFile) }
+
+func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 	jsonFile, err := os.Open(goldenJSONFile)
 	if err != nil {
 		t.Fatal(err)

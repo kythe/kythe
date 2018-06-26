@@ -44,11 +44,21 @@ func TestWriteEmpty(t *testing.T) {
 	}
 }
 
-func TestReadWriteStrings(t *testing.T) {
+func TestReadWriteStringsDefaults(t *testing.T) { testReadWriteStrings(t, nil) }
+
+func TestReadWriteStringsUncompressed(t *testing.T) {
+	testReadWriteStrings(t, &WriterOptions{Compression: NoCompression})
+}
+
+func TestReadWriteStringsBrotli(t *testing.T) {
+	testReadWriteStrings(t, &WriterOptions{Compression: BrotliCompression(-1)})
+}
+
+func testReadWriteStrings(t *testing.T, opts *WriterOptions) {
 	const N = 1e6
 
 	var buf bytes.Buffer
-	wr := NewWriter(&buf, nil)
+	wr := NewWriter(&buf, opts)
 
 	for i := 0; i < N; i++ {
 		if err := wr.Put([]byte(fmt.Sprintf("%d", i))); err != nil {
@@ -74,7 +84,28 @@ func TestReadWriteStrings(t *testing.T) {
 	}
 }
 
-// TODO(schroederc): test compression
+func TestEmptyRecord(t *testing.T) {
+	var buf bytes.Buffer
+	wr := NewWriter(&buf, nil)
+
+	if err := wr.Put([]byte{}); err != nil {
+		t.Fatalf("Error writing empty record: %v", err)
+	} else if err := wr.Flush(); err != nil {
+		t.Fatalf("Flush error: %v", err)
+	}
+
+	rd := NewReader(bytes.NewReader(buf.Bytes()))
+	if rec, err := rd.Next(); err != nil {
+		t.Fatalf("Error reading empty record: %v", err)
+	} else if len(rec) != 0 {
+		t.Fatalf("Found non-empty record: %v", rec)
+	}
+
+	if rec, err := rd.Next(); err != io.EOF {
+		t.Fatalf("Unexpected Next record/error: %v %v", rec, err)
+	}
+}
+
 // TODO(schroederc): test transposed chunks
 // TODO(schroederc): test RecordsMetadata
 // TODO(schroederc): test padding

@@ -60,10 +60,10 @@ type chunkType byte
 
 const (
 	fileSignatureChunkType chunkType = 0x73
-	fileMetadataChunkType            = 0x6d
-	paddingChunkType                 = 0x70
-	recordChunkType                  = 0x72
-	transposedChunkType              = 0x74
+	fileMetadataChunkType  chunkType = 0x6d
+	paddingChunkType       chunkType = 0x70
+	recordChunkType        chunkType = 0x72
+	transposedChunkType    chunkType = 0x74
 )
 
 // compressionType is the compression format for a chunk
@@ -72,8 +72,8 @@ type compressionType byte
 
 const (
 	noCompression     compressionType = 0
-	brotliCompression                 = 0x62
-	zstdCompression                   = 0x7a
+	brotliCompression compressionType = 0x62
+	zstdCompression   compressionType = 0x7a
 )
 
 // A recordChunk is the standard chunk type for user records in a Riegeli file.
@@ -83,9 +83,6 @@ type recordChunk struct { // 1 + len(varint(CompressedSizesSize)) + len(Compress
 	// CompressedSizesSize uint64 == len(CompressedSizes)
 	CompressedSizes  []byte // len([]varint64) == NumRecords
 	CompressedValues []byte
-
-	// These fields are stored in the chunkHeader, but relate to recordChunk data.
-	numRecords, decodedSize uint64
 }
 
 // https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md#implementation-notes
