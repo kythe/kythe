@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strings"
 	"testing"
@@ -105,7 +106,7 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 	defer riegeliFile.Close()
 
 	jsonReader := &jsonReader{stream.ReadJSONEntries(jsonFile)}
-	riegeliReader := riegeli.NewReader(riegeliFile)
+	riegeliReader := riegeli.NewReadSeeker(riegeliFile)
 
 	mdTextProto, err := ioutil.ReadFile(goldenMetadataFile)
 	if err != nil {
@@ -123,6 +124,8 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 		t.Errorf("Bad RecordsMetadata: (-: found; +: expected)\n%s", diff)
 	}
 
+	var records []*spb.Entry
+	var positions []riegeli.RecordPosition
 	for {
 		expected, err := jsonReader.Next()
 		if err == io.EOF {
@@ -134,13 +137,44 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 			t.Fatalf("Error reading JSON golden data: %v", err)
 		}
 
+		pos, err := riegeliReader.Position()
+		if err != nil {
+			t.Fatalf("Error getting Riegeli position: %v", err)
+		}
+		records = append(records, expected)
+		positions = append(positions, pos)
+
 		found := &spb.Entry{}
 		if err := riegeliReader.NextProto(found); err != nil {
 			t.Fatalf("Error reading Riegeli golden data: %v", err)
 		}
 
-		if !proto.Equal(expected, found) {
-			t.Errorf("Unexpected record: found: {%+v}; expected: {%+v}", found, expected)
+		if diff := cmp.Diff(expected, found, ignoreProtoXXXFields, ignoreOptionsField); diff != "" {
+			t.Errorf("Unexpected record:  (-: found; +: expected)\n%s", diff)
+		}
+	}
+
+	if rec, err := riegeliReader.Next(); err != io.EOF {
+		t.Errorf("Found extra Riegeli record/error: %v %v", rec, err)
+	}
+
+	rand.New(rand.NewSource(0)).Shuffle(len(records), func(i, j int) {
+		records[i], records[j] = records[j], records[i]
+		positions[i], positions[j] = positions[j], positions[i]
+	})
+
+	// Seek by RecordPosition
+	for i, expected := range records {
+		pos := positions[i]
+
+		if err := riegeliReader.SeekToRecord(pos); err != nil {
+			t.Fatalf("Error seeking to %v: %v", pos, err)
+		}
+		var found spb.Entry
+		if err := riegeliReader.NextProto(&found); err != nil {
+			t.Fatalf("Error reading record at %v: %v", pos, err)
+		} else if diff := cmp.Diff(expected, &found, ignoreProtoXXXFields, ignoreOptionsField); diff != "" {
+			t.Errorf("Unexpected record:  (-: found; +: expected)\n%s", diff)
 		}
 	}
 }

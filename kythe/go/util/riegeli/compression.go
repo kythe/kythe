@@ -48,6 +48,16 @@ func newDecompressor(r byteReader, c compressionType) (decompressor, error) {
 	}
 }
 
+// A byteReadCloser trivially implements io.ByteReader for a io.ReadCloser.
+type byteReadCloser struct{ io.ReadCloser }
+
+// ReadByte implements the io.ByteReader interface.
+func (b byteReadCloser) ReadByte() (byte, error) {
+	var buf [1]byte
+	_, err := b.Read(buf[:])
+	return buf[0], err
+}
+
 // A compressor builds a Riegeli compressed block.
 type compressor interface {
 	writerTo

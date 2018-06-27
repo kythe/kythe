@@ -22,6 +22,7 @@
 package riegeli
 
 import (
+	"errors"
 	"io"
 
 	"github.com/golang/protobuf/proto"
@@ -104,7 +105,12 @@ func NewWriter(w io.Writer, opts *WriterOptions) *Writer { return NewWriterAt(w,
 
 // NewWriterAt returns a Riegeli Writer at the given byte offset within w.
 func NewWriterAt(w io.Writer, pos int, opts *WriterOptions) *Writer {
-	return &Writer{opts: opts, w: &blockWriter{w: w, pos: pos}}
+	return &Writer{
+		opts: opts,
+		w:    &blockWriter{w: w, pos: pos},
+
+		fileHeaderWritten: pos != 0,
+	}
 }
 
 // Writer is a Riegeli records file writer.
@@ -154,39 +160,61 @@ func (w *Writer) Flush() error {
 }
 
 // TODO(schroederc): add concatenation function
+// TODO(schroederc): return positions from Writer
 
-// NewReader returns a Riegeli Reader for r.
-func NewReader(r io.Reader) *Reader { return &Reader{r: &chunkReader{&blockReader{r: r}}} }
+// A RecordPosition is a pointer to the starting offset of a record within a
+// Riegeli file.
+type RecordPosition struct {
+	// ChunkBegin is the starting offset of a chunk within a Riegeli file.
+	ChunkBegin int64
+
+	// RecordIndex is the index of a record within the chunk starting at
+	// ChunkBegin.
+	RecordIndex int64
+}
+
+// index returns an integer index corresponding to the given RecordPosition.
+func (r RecordPosition) index() int64 { return r.ChunkBegin + r.RecordIndex }
 
 // Reader is a sequential Riegeli records file reader.
-//
-// TODO(schroederc): add support for seeking
-type Reader struct {
-	r *chunkReader
+type Reader interface {
+	// RecordsMetadata returns the optional metadata from the underlying Riegeli
+	// file.  If not found, an empty RecordsMetadata is returned and err == nil.
+	RecordsMetadata() (*rmpb.RecordsMetadata, error)
 
-	metadata *rmpb.RecordsMetadata
+	// Next reads and returns the next Riegeli record from the underlying io.Reader.
+	Next() ([]byte, error)
 
-	recordReader recordReader
+	// NextProto reads, unmarshals, and returns the next proto.Message from the
+	// underlying io.Reader.
+	NextProto(msg proto.Message) error
+
+	// Position returns the current position of the Reader.
+	Position() (RecordPosition, error)
 }
 
-// RecordsMetadata returns the optional metadata from the underlying Riegeli
-// file.  If not found, nil is returned for both the metadata and the error.
-func (r *Reader) RecordsMetadata() (*rmpb.RecordsMetadata, error) {
-	if err := r.ensureRecordReader(); err != nil && err != io.EOF {
-		return nil, err
-	}
-	return r.metadata, nil
+// ReadSeeker is a Riegeli records file reader able to seek to arbitrary positions.
+type ReadSeeker interface {
+	Reader
+
+	// Seek interprets pos as an offset to a record within the Riegeli file.  pos
+	// must be between 0 and the file's size.  If pos is between records, Seek will
+	// position the reader to the next record in the file.
+	Seek(pos int64) error
+
+	// SeekToRecord seeks to the given RecordPosition.
+	SeekToRecord(pos RecordPosition) error
 }
 
-// Next reads and returns the next Riegeli record from the underlying io.Reader.
-func (r *Reader) Next() ([]byte, error) { return r.nextRecord() }
+type errSeeker struct{ io.Reader }
 
-// NextProto reads, unmarshals, and returns the next proto.Message from the
-// underlying io.Reader.
-func (r *Reader) NextProto(msg proto.Message) error {
-	rec, err := r.Next()
-	if err != nil {
-		return err
-	}
-	return proto.Unmarshal(rec, msg)
+// Seek implements the io.Seeker interface.
+func (errSeeker) Seek(offset int64, whence int) (int64, error) {
+	return 0, errors.New("Seek should not be called on a Reader")
 }
+
+// NewReader returns a Riegeli Reader for r.
+func NewReader(r io.Reader) Reader { return NewReadSeeker(&errSeeker{r}) }
+
+// NewReadSeeker returns a Riegeli ReadSeeker for r.
+func NewReadSeeker(r io.ReadSeeker) ReadSeeker { return &reader{r: &chunkReader{r: &blockReader{r: r}}} }
