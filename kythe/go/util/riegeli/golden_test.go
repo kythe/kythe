@@ -19,23 +19,61 @@ package riegeli_test
 import (
 	"encoding/hex"
 	"io"
+	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/riegeli"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
+	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )
 
 var (
-	goldenJSONFile = "testdata/golden.entries.json"
-
-	goldenUncompressedRiegeliFile = "testdata/golden.entries.uncompressed.riegeli"
-	goldenBrotliRiegeliFile       = "testdata/golden.entries.brotli.riegeli"
+	goldenJSONFile            = "testdata/golden.entries.json"
+	goldenMetadataFile        = "testdata/golden.records_metadata.textproto"
+	goldenRiegeliFilePrefix   = "testdata/golden.entries"
+	goldenRiegeliFileVariants = []string{
+		"uncompressed",
+		"uncompressed_transpose",
+		"brotli",
+		"brotli_transpose",
+	}
 )
+
+func BenchmarkGoldenTestData(b *testing.B) {
+	for _, variant := range goldenRiegeliFileVariants {
+		file := strings.Join([]string{goldenRiegeliFilePrefix, variant, "riegeli"}, ".")
+		b.Run(variant, func(b *testing.B) { benchGoldenData(b, file) })
+	}
+}
+
+// benchGoldenData benchmarks the sequential reading of a Riegeli file.  MB/s is
+// measured by the size of each record read.
+func benchGoldenData(b *testing.B, goldenRiegeliFile string) {
+	f, err := os.Open(goldenRiegeliFile)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer f.Close()
+
+	b.ReportAllocs()
+	rd := riegeli.NewReader(f)
+	for {
+		rec, err := rd.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			b.Fatal(err)
+		}
+		b.SetBytes(int64(len(rec)))
+	}
+}
 
 type jsonReader struct{ ch <-chan *spb.Entry }
 
@@ -47,8 +85,12 @@ func (j *jsonReader) Next() (*spb.Entry, error) {
 	return e, nil
 }
 
-func TestUncompressedGoldenTestData(t *testing.T) { checkGoldenData(t, goldenUncompressedRiegeliFile) }
-func TestBrotliGoldenTestData(t *testing.T)       { checkGoldenData(t, goldenBrotliRiegeliFile) }
+func TestGoldenTestData(t *testing.T) {
+	for _, variant := range goldenRiegeliFileVariants {
+		file := strings.Join([]string{goldenRiegeliFilePrefix, variant, "riegeli"}, ".")
+		t.Run(variant, func(t *testing.T) { checkGoldenData(t, file) })
+	}
+}
 
 func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 	jsonFile, err := os.Open(goldenJSONFile)
@@ -64,6 +106,22 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 
 	jsonReader := &jsonReader{stream.ReadJSONEntries(jsonFile)}
 	riegeliReader := riegeli.NewReader(riegeliFile)
+
+	mdTextProto, err := ioutil.ReadFile(goldenMetadataFile)
+	if err != nil {
+		t.Fatalf("Error reading %s: %v", goldenMetadataFile, err)
+	}
+	var expectedMetadata rmpb.RecordsMetadata
+	if err := proto.UnmarshalText(string(mdTextProto), &expectedMetadata); err != nil {
+		t.Fatalf("Error unmarshaling %s: %v", goldenMetadataFile, err)
+	}
+
+	md, err := riegeliReader.RecordsMetadata()
+	if err != nil {
+		t.Fatalf("Error reading RecordsMetadata: %v", err)
+	} else if diff := cmp.Diff(md, &expectedMetadata, ignoreProtoXXXFields, ignoreOptionsField); diff != "" {
+		t.Errorf("Bad RecordsMetadata: (-: found; +: expected)\n%s", diff)
+	}
 
 	for {
 		expected, err := jsonReader.Next()
@@ -86,3 +144,21 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 		}
 	}
 }
+
+var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
+	for _, s := range p {
+		if strings.HasPrefix(s.String(), ".XXX_") {
+			return true
+		}
+	}
+	return false
+}, cmp.Ignore())
+
+var ignoreOptionsField = cmp.FilterPath(func(p cmp.Path) bool {
+	for _, s := range p {
+		if s.String() == ".RecordWriterOptions" {
+			return true
+		}
+	}
+	return false
+}, cmp.Ignore())

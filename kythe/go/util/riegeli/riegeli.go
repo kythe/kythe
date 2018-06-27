@@ -25,6 +25,8 @@ import (
 	"io"
 
 	"github.com/golang/protobuf/proto"
+
+	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )
 
 // Defaults for the WriterOptions.
@@ -159,12 +161,21 @@ func NewReader(r io.Reader) *Reader { return &Reader{r: &chunkReader{&blockReade
 // Reader is a sequential Riegeli records file reader.
 //
 // TODO(schroederc): add support for seeking
-// TODO(schroederc): add support for reading RecordsMetadata
-// TODO(schroederc): add support for tranposed records
 type Reader struct {
 	r *chunkReader
 
+	metadata *rmpb.RecordsMetadata
+
 	recordReader recordReader
+}
+
+// RecordsMetadata returns the optional metadata from the underlying Riegeli
+// file.  If not found, nil is returned for both the metadata and the error.
+func (r *Reader) RecordsMetadata() (*rmpb.RecordsMetadata, error) {
+	if err := r.ensureRecordReader(); err != nil && err != io.EOF {
+		return nil, err
+	}
+	return r.metadata, nil
 }
 
 // Next reads and returns the next Riegeli record from the underlying io.Reader.

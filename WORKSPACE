@@ -103,6 +103,13 @@ http_archive(
     url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
 )
 
+http_archive(
+    name = "com_google_riegeli",
+    sha256 = "6b05427c3fab111af052d166d195052f5336b8517b26a11dbc4fee10cfc75b4e",
+    strip_prefix = "riegeli-bd99099abd41abbe35a10f3bfa35e15b6b2d893a",
+    url = "https://github.com/google/riegeli/archive/bd99099abd41abbe35a10f3bfa35e15b6b2d893a.zip",
+)
+
 new_http_archive(
     name = "com_github_google_glog",
     build_file = "third_party/googlelog.BUILD",
@@ -247,6 +254,15 @@ http_archive(
 # protobuf silently yields link errors.
 new_http_archive(
     name = "com_google_protobuf",
+    build_file = "third_party/protobuf.BUILD",
+    sha256 = "091d4263d9a55eccb6d3c8abde55c26eaaa933dea9ecabb185cdf3795f9b5ca2",
+    strip_prefix = "protobuf-3.5.1.1",
+    urls = ["https://github.com/google/protobuf/archive/v3.5.1.1.zip"],
+)
+
+# A copy of the above archive because com_google_riegeli uses a non-standard name... (╯°□°)╯︵ ┻━┻
+new_http_archive(
+    name = "protobuf_archive",
     build_file = "third_party/protobuf.BUILD",
     sha256 = "091d4263d9a55eccb6d3c8abde55c26eaaa933dea9ecabb185cdf3795f9b5ca2",
     strip_prefix = "protobuf-3.5.1.1",

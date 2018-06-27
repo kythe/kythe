@@ -24,15 +24,15 @@ import (
 	"io"
 )
 
+// https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md#file-signature
+var fileSignatureChunkHeader = chunkHeader{ChunkType: fileSignatureChunkType}
+
 func (w *Writer) ensureFileHeader() error {
 	if w.fileHeaderWritten {
 		return nil
 	}
 
-	// https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md#file-signature
-	fileSignature := &chunk{
-		Header: chunkHeader{ChunkType: fileSignatureChunkType},
-	}
+	fileSignature := &chunk{Header: fileSignatureChunkHeader}
 	_, err := fileSignature.WriteTo(w.w, w.w.pos)
 	// TODO(schroederc): encode RecordsMetadata chunk
 	return err

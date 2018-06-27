@@ -16,7 +16,9 @@
 
 package riegeli
 
-import "github.com/minio/highwayhash"
+import (
+	"github.com/minio/highwayhash"
+)
 
 func hashBytes(b []byte) uint64 {
 	h, _ := highwayhash.New64(hashKey[:])
