@@ -44,6 +44,14 @@ type Proto interface {
 	Close(context.Context) error
 }
 
+// ProtoRO is a read-only key-value direct lookup table with protobuf values.
+// It duplicates the "Lookup" method from the Proto interface, above.
+type ProtoRO interface {
+	// Lookup unmarshals the value for the given key into msg, returning any
+	// error.  If the key was not found, ErrNoSuchKey is returned.
+	Lookup(ctx context.Context, key []byte, msg proto.Message) error
+}
+
 // BufferedProto buffers calls to Put to provide a high throughput write
 // interface to a Proto table.
 type BufferedProto interface {
