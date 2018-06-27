@@ -17,6 +17,7 @@
 package config
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -192,7 +193,10 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		return fmt.Errorf("reading config file: %v", err)
 	}
 
-	err = CreateImage(extractionDockerFile.Name(), extractionConfig)
+	err = createImage(extractionConfig, imageSettings{
+		RepoDir:   repo.TempRepoDir,
+		OutputDir: repo.OutputPath,
+	}, extractionDockerFile.Name())
 	if err != nil {
 		return fmt.Errorf("creating extraction image: %v", err)
 	}
@@ -205,8 +209,26 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		return fmt.Errorf("building docker image: %v\nCommand output %s", err, string(output))
 	}
 
+	targetRepoDir := repo.TempRepoDir
+	if targetRepoDir == "" {
+		targetRepoDir = DefaultRepoVolume
+	}
 	// run the extraction
-	output, err = exec.CommandContext(ctx, "docker", "run", "--rm", "-v", fmt.Sprintf("%s:%s", repoDir, DefaultRepoVolume), "-v", fmt.Sprintf("%s:%s", repo.OutputPath, DefaultOutputVolume), "-t", imageTag).CombinedOutput()
+	commandArgs := []string{"run", "--rm", "-v", fmt.Sprintf("%s:%s", repo.OutputPath, repo.OutputPath)}
+	// Check and see if we're living inside a docker image.
+	// TODO(#156): This is an undesireable smell from docker-in-docker which
+	// should be removed when we refactor the inner docker away.
+	if id, ok := inDockerImage(ctx); ok {
+		// Because we're inside an inner docker image, if we set
+		// -v /input/repo:/input, it actually takes /input/repo from the
+		// *outermost* docker container, which is not what we want! Instead rely
+		// on --volumes-from to copy in all the correct volumes.
+		commandArgs = append(commandArgs, "--volumes-from", id)
+	} else {
+		commandArgs = append(commandArgs, fmt.Sprintf("%s:%s", repoDir, targetRepoDir), "-v")
+	}
+	commandArgs = append(commandArgs, "-t", imageTag)
+	output, err = exec.CommandContext(ctx, "docker", commandArgs...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("extracting repo: %v\nCommand output: %s", err, string(output))
 	}
@@ -238,13 +260,13 @@ func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, erro
 	f, err := os.Open(configPath)
 	if os.IsNotExist(err) {
 		// TODO(danielmoy): This needs to be configurable by builder, language, etc.
-		return Load(mvn.DefaultConfig())
+		return load(mvn.DefaultConfig())
 	} else if err != nil {
 		return nil, fmt.Errorf("opening config file: %v", err)
 	}
 
 	defer f.Close()
-	return Load(f)
+	return load(f)
 }
 
 func mustCleanUpImage(ctx context.Context, tmpImageTag string) {
@@ -253,4 +275,31 @@ func mustCleanUpImage(ctx context.Context, tmpImageTag string) {
 	if err != nil {
 		log.Printf("Failed to clean up docker image: %v", err)
 	}
+}
+
+func inDockerImage(ctx context.Context) (string, bool) {
+	f, err := os.Open("/proc/self/cgroup")
+	if err != nil {
+		log.Printf("Failed to open /proc/self/cgroup to check for docker: %v", err)
+		return "", false
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		// Example line for this file is:
+		// 10:cpuset:/docker/5e24d567c9846f5209af443612ca2e53f7291afe6cfb31510121f82f1ac93472
+		gr := strings.Split(scanner.Text(), ":")
+		if len(gr) == 3 {
+			res := strings.Split(gr[2], "/")
+			if len(res) == 3 && res[1] == "docker" && len(res[2]) >= 12 {
+				return res[2][0:12], true
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Printf("Failed reading /rpoc/self/cgroup: %v", err)
+	}
+	return "", false
 }

@@ -9,8 +9,8 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/util:source_builder",
         "//kythe/proto:internal_java_proto",
         "//kythe/proto:storage_java_proto",
+        "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )
@@ -25,8 +25,8 @@ java_test(
         "//kythe/proto:common_java_proto",
         "//kythe/proto:serving_java_proto",
         "//third_party/guava",
+        "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )
@@ -39,8 +39,8 @@ java_test(
     deps = [
         "//kythe/java/com/google/devtools/kythe/util:kythe_uri",
         "//kythe/proto:storage_java_proto",
+        "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )
@@ -53,7 +53,7 @@ java_test(
     deps = [
         "//kythe/java/com/google/devtools/kythe/util:position_mappings",
         "//third_party/guava",
-        "@com_google_truth_truth//jar",
+        "//third_party/truth",
         "@junit_junit//jar",
     ],
 )
@@ -67,8 +67,8 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/util:qualified_name_extractor",
         "//kythe/proto:common_java_proto",
         "//third_party/guava",
+        "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )

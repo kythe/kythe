@@ -95,8 +95,9 @@ public class JavacUtil {
     char[] nameChars = name.toCharArray();
     int dotIndex = len;
     while (true) {
-      ClassSymbol s = symtab.getClass(symtab.java_base, names.fromChars(nameChars, 0, len));
-      if (s != null) {
+      for (ClassSymbol s : symtab.getClassesForName(names.fromChars(nameChars, 0, len))) {
+        // Return first candidate found.
+        // TODO(schroederc): filter by module or return all candidates
         return s;
       }
       dotIndex = name.substring(0, dotIndex).lastIndexOf('.');

@@ -11,7 +11,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/platform/java:options",
         "//third_party/guava",
         "//third_party/javac",
-        "@com_google_truth_truth//jar",
+        "//third_party/truth",
         "@junit_junit//jar",
     ],
 )

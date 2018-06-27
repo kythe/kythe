@@ -9,8 +9,8 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
+        "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )
@@ -26,8 +26,8 @@ java_test(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
+        "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )

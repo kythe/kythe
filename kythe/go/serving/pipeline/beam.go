@@ -33,6 +33,7 @@ import (
 	kinds "kythe.io/kythe/go/util/schema/nodes"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
+	"github.com/golang/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	ppb "kythe.io/kythe/proto/pipeline_go_proto"
@@ -42,6 +43,7 @@ import (
 )
 
 func init() {
+	beam.RegisterFunction(completeDocument)
 	beam.RegisterFunction(defToDecorPiece)
 	beam.RegisterFunction(fileToDecorPiece)
 	beam.RegisterFunction(groupCrossRefs)
@@ -49,9 +51,12 @@ func init() {
 	beam.RegisterFunction(keyByPath)
 	beam.RegisterFunction(keyRef)
 	beam.RegisterFunction(moveSourceToKey)
+	beam.RegisterFunction(nodeToChildren)
 	beam.RegisterFunction(nodeToDecorPiece)
+	beam.RegisterFunction(nodeToDocs)
 	beam.RegisterFunction(nodeToEdges)
 	beam.RegisterFunction(nodeToReverseEdges)
+	beam.RegisterFunction(parseMarkedSource)
 	beam.RegisterFunction(refToDecorPiece)
 	beam.RegisterFunction(reverseEdge)
 	beam.RegisterFunction(toDefinition)
@@ -62,6 +67,7 @@ func init() {
 	beam.RegisterType(reflect.TypeOf((*combineDecorPieces)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ticketKey)(nil)).Elem())
 
+	beam.RegisterType(reflect.TypeOf((*cpb.MarkedSource)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.DecorationPiece)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.Edge)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.Node)(nil)).Elem())
@@ -69,6 +75,7 @@ func init() {
 	beam.RegisterType(reflect.TypeOf((*spb.Entry)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.VName)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.CorpusRoots)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*srvpb.Document)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.EdgePage)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.ExpandedAnchor)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.File)(nil)).Elem())
@@ -623,4 +630,90 @@ func groupEdges(src *spb.VName, nodeStream func(**ppb.Node) bool, edgeStream, re
 	}
 
 	emitSet("edgeSets:"+set.Source.Ticket, set)
+}
+
+// Documents returns a Kythe documentation table derived from the Kythe input
+// graph.  The beam.PCollection has elements of type KV<string,
+// *srvpb.Document>.
+func (k *KytheBeam) Documents() beam.PCollection {
+	s := k.s.Scope("Documents")
+
+	docs := beam.Seq(s, k.nodes, &nodes.Filter{
+		FilterByKind: []string{kinds.Doc},
+		IncludeFacts: []string{facts.Text},
+		IncludeEdges: []string{edges.Documents},
+	}, nodeToDocs)
+	markedSources := beam.Seq(s, k.nodes, &nodes.Filter{
+		IncludeFacts: []string{facts.Code},
+		IncludeEdges: []string{},
+	}, parseMarkedSource)
+	children := beam.Seq(s, k.nodes, &nodes.Filter{
+		IncludeFacts: []string{},
+		IncludeEdges: []string{edges.ChildOf},
+	}, nodeToChildren)
+
+	return beam.ParDo(s, completeDocument, beam.CoGroupByKey(s, docs, markedSources, children))
+}
+
+// completeDocument emits a single *srvpb.Document per *spb.VName source.
+func completeDocument(key *spb.VName, docStream func(**srvpb.Document) bool, msStream func(**cpb.MarkedSource) bool, childStream func(**spb.VName) bool, emit func(string, *srvpb.Document)) {
+	var doc *srvpb.Document
+	if !docStream(&doc) {
+		return
+	}
+	doc.Ticket = kytheuri.ToString(key)
+
+	msStream(&doc.MarkedSource) // embed MarkedSource, if available
+
+	var child *spb.VName
+	for childStream(&child) {
+		doc.ChildTicket = append(doc.ChildTicket, kytheuri.ToString(child))
+	}
+	sort.Strings(doc.ChildTicket)
+
+	// TODO(schroederc): add definition Links
+	emit("docs:"+doc.Ticket, doc)
+}
+
+// nodeToDocs emits a (*spb.VName, *srvpb.Document) pair for each
+// /kythe/edge/documents edges from the given `doc` *ppb.Node.
+func nodeToDocs(n *ppb.Node, emit func(*spb.VName, *srvpb.Document)) {
+	d := &srvpb.Document{}
+	for _, f := range n.Fact {
+		if f.GetKytheName() == scpb.FactName_TEXT {
+			d.RawText = string(f.Value)
+			break
+		}
+	}
+
+	for _, e := range n.Edge {
+		if e.GetKytheKind() == scpb.EdgeKind_DOCUMENTS {
+			emit(e.Target, d)
+		}
+	}
+}
+
+// parseMarkedSource parses the /kythe/code fact for each *ppb.Node.
+func parseMarkedSource(n *ppb.Node, emit func(*spb.VName, *cpb.MarkedSource)) error {
+	for _, f := range n.Fact {
+		if f.GetKytheName() == scpb.FactName_CODE {
+			var ms cpb.MarkedSource
+			if err := proto.Unmarshal(f.Value, &ms); err != nil {
+				return err
+			}
+			emit(n.Source, &ms)
+			break
+		}
+	}
+	return nil
+}
+
+// nodeToChildren emits a (parent, child) pair for each /kythe/edge/childof edge
+// per *ppb.Node.
+func nodeToChildren(n *ppb.Node, emit func(*spb.VName, *spb.VName)) {
+	for _, e := range n.Edge {
+		if e.GetKytheKind() == scpb.EdgeKind_CHILD_OF {
+			emit(e.Target, n.Source) // parent -> child
+		}
+	}
 }
