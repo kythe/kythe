@@ -54,7 +54,9 @@ func (r *Reader) ensureRecordReader() error {
 
 		switch c.Header.ChunkType {
 		case fileSignatureChunkType:
-			// TODO (schroederc): verify
+			if err := verifySignature(c); err != nil {
+				return err
+			}
 		case fileMetadataChunkType:
 			rd, err := newTransposedRecordReader(c)
 			if err != nil {
@@ -90,6 +92,15 @@ func (r *Reader) ensureRecordReader() error {
 		default:
 			return fmt.Errorf("unsupported read of chunk_type: '%s'", []byte{byte(c.Header.ChunkType)})
 		}
+	}
+	return nil
+}
+
+func verifySignature(c *chunk) error {
+	if c.Header != fileSignatureChunkHeader {
+		return fmt.Errorf("invalid file signature header: %+v", c.Header)
+	} else if len(c.Data) != 0 {
+		return fmt.Errorf("extraneous data with file signature: %q", c.Data)
 	}
 	return nil
 }
