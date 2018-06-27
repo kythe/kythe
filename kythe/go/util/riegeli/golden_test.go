@@ -53,6 +53,8 @@ func BenchmarkGoldenTestData(b *testing.B) {
 	}
 }
 
+// benchGoldenData benchmarks the sequential reading of a Riegeli file.  MB/s is
+// measured by the size of each record read.
 func benchGoldenData(b *testing.B, goldenRiegeliFile string) {
 	f, err := os.Open(goldenRiegeliFile)
 	if err != nil {
