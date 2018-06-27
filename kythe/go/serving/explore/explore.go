@@ -18,8 +18,10 @@
 // ExploreService defined in kythe/proto/explore.proto.
 //
 // Table format:
-//   <parent ticket>   -> epb.Relatives
-//   <ticket>          -> epb.Relatives
+//   <parent ticket>   -> srvpb.Relatives (children)
+//   <child ticket>    -> srvpb.Relatives (parents)
+//   <called ticket>   -> srvpb.Callgraph (callers)
+//   <calling ticket>  -> srvpb.Callgraph (callees)
 package explore
 
 import (
@@ -36,18 +38,18 @@ import (
 // for each API component.
 type Tables struct {
 	// ParentToChildren is a table of srvpb.Relatives keyed by parent ticket.
-	ParentToChildren table.Proto
+	ParentToChildren table.ProtoRO
 
 	// ChildToParents is a table of srvpb.Relatives keyed by child ticket.
-	ChildToParents table.Proto
+	ChildToParents table.ProtoRO
 
 	// FunctionToCallers is a table of srvpb.Callgraph keyed by function ticket
 	// that points to the callers of the specified function.
-	FunctionToCallers table.Proto
+	FunctionToCallers table.ProtoRO
 
 	// FunctionToCallees is a table of srvpb.Callgraph keyed by function ticket
 	// that points to the callees of the specified function.
-	FunctionToCallees table.Proto
+	FunctionToCallees table.ProtoRO
 }
 
 // TypeHierarchy returns the hierarchy (supertypes and subtypes, including implementations)
@@ -61,7 +63,7 @@ func (t *Tables) TypeHierarchy(ctx context.Context, req *epb.TypeHierarchyReques
 func (t *Tables) Callers(ctx context.Context, req *epb.CallersRequest) (*epb.CallersReply, error) {
 	tickets := req.Tickets
 	if len(tickets) == 0 {
-		return nil, fmt.Errorf("missing input tickets: %v", &req)
+		return nil, fmt.Errorf("missing input tickets: %v", req)
 	}
 
 	// succMap maps nodes onto sets of successor nodes
@@ -71,17 +73,14 @@ func (t *Tables) Callers(ctx context.Context, req *epb.CallersRequest) (*epb.Cal
 	// no record in the table, we don't include data for that ticket in the response.
 	// Other table access errors result in returning an error.
 	for _, ticket := range tickets {
-		succMap[ticket] = make(map[string]bool)
 		var callgraph srvpb.Callgraph
-		err := t.FunctionToCallers.Lookup(ctx, []byte(ticket), &callgraph)
-
-		if err != nil {
-			if err != table.ErrNoSuchKey {
-				return nil, fmt.Errorf("error looking up callers with ticket %q: %v", ticket, err)
-			}
+		if err := t.FunctionToCallers.Lookup(ctx, []byte(ticket), &callgraph); err == table.ErrNoSuchKey {
 			continue // skip tickets with no mappings
+		} else if err != nil {
+			return nil, fmt.Errorf("error looking up callers with ticket %q: %v", ticket, err)
 		}
 
+		// This can only happen in the context of a postprocessor bug.
 		if callgraph.Type != srvpb.Callgraph_CALLER {
 			return nil, fmt.Errorf("type of callgraph is not 'CALLER': %v", callgraph)
 		}
@@ -89,6 +88,9 @@ func (t *Tables) Callers(ctx context.Context, req *epb.CallersRequest) (*epb.Cal
 		// TODO(jrtom): consider logging a warning if len(callgraph.Tickets) == 0
 		// (postprocessing should disallow this)
 		for _, predTicket := range callgraph.Tickets {
+			if succMap[predTicket] == nil {
+				succMap[predTicket] = make(map[string]bool)
+			}
 			succMap[predTicket][ticket] = true
 		}
 	}
@@ -98,12 +100,12 @@ func (t *Tables) Callers(ctx context.Context, req *epb.CallersRequest) (*epb.Cal
 
 func convertSuccMapToGraph(succMap map[string]map[string]bool) *epb.Graph {
 	graph := &epb.Graph{
-		Nodes: make(map[string]*epb.GraphNode),
+		Nodes: make(map[string]*epb.GraphNode, len(succMap)),
 	}
 
 	for ticket, succs := range succMap {
 		node := getGraphNode(graph, ticket)
-		for s, _ := range succs {
+		for s := range succs {
 			node.Successors = append(node.Successors, s)
 			succ := getGraphNode(graph, s)
 			succ.Predecessors = append(succ.Predecessors, ticket)
@@ -117,6 +119,7 @@ func getGraphNode(graph *epb.Graph, ticket string) *epb.GraphNode {
 	node, ok := graph.Nodes[ticket]
 	if !ok {
 		node = &epb.GraphNode{}
+		graph.Nodes[ticket] = node
 	}
 	return node
 }
@@ -126,7 +129,7 @@ func getGraphNode(graph *epb.Graph, ticket string) *epb.GraphNode {
 func (t *Tables) Callees(ctx context.Context, req *epb.CalleesRequest) (*epb.CalleesReply, error) {
 	tickets := req.Tickets
 	if len(tickets) == 0 {
-		return nil, fmt.Errorf("missing input tickets: %v", &req)
+		return nil, fmt.Errorf("missing input tickets: %v", req)
 	}
 
 	// succMap maps nodes onto sets of successor nodes
@@ -136,23 +139,21 @@ func (t *Tables) Callees(ctx context.Context, req *epb.CalleesRequest) (*epb.Cal
 	// no record in the table, we don't include data for that ticket in the response.
 	// Other table access errors result in returning an error.
 	for _, ticket := range tickets {
-		succMap[ticket] = make(map[string]bool)
 		var callgraph srvpb.Callgraph
-		err := t.FunctionToCallees.Lookup(ctx, []byte(ticket), &callgraph)
-
-		if err != nil {
-			if err != table.ErrNoSuchKey {
-				return nil, fmt.Errorf("error looking up callees with ticket %q: %v", ticket, err)
-			}
+		if err := t.FunctionToCallees.Lookup(ctx, []byte(ticket), &callgraph); err == table.ErrNoSuchKey {
 			continue // skip tickets with no mappings
+		} else if err != nil {
+			return nil, fmt.Errorf("error looking up callees with ticket %q: %v", ticket, err)
 		}
 
+		// This can only happen in the context of a postprocessor bug.
 		if callgraph.Type != srvpb.Callgraph_CALLEE {
 			return nil, fmt.Errorf("type of callgraph is not 'CALLEE': %v", callgraph)
 		}
 
 		// TODO(jrtom): consider logging a warning if len(callgraph.Tickets) == 0
 		// (postprocessing should disallow this)
+		succMap[ticket] = make(map[string]bool)
 		for _, succTicket := range callgraph.Tickets {
 			succMap[ticket][succTicket] = true
 		}
@@ -174,7 +175,7 @@ func (t *Tables) Parameters(ctx context.Context, req *epb.ParametersRequest) (*e
 func (t *Tables) Parents(ctx context.Context, req *epb.ParentsRequest) (*epb.ParentsReply, error) {
 	childTickets := req.Tickets
 	if len(childTickets) == 0 {
-		return nil, fmt.Errorf("missing input tickets: %v", &req)
+		return nil, fmt.Errorf("missing input tickets: %v", req)
 	}
 
 	reply := &epb.ParentsReply{
@@ -216,7 +217,7 @@ func (t *Tables) Parents(ctx context.Context, req *epb.ParentsRequest) (*epb.Par
 func (t *Tables) Children(ctx context.Context, req *epb.ChildrenRequest) (*epb.ChildrenReply, error) {
 	parentTickets := req.Tickets
 	if len(parentTickets) == 0 {
-		return nil, fmt.Errorf("missing input tickets: %v", &req)
+		return nil, fmt.Errorf("missing input tickets: %v", req)
 	}
 
 	reply := &epb.ChildrenReply{
