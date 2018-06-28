@@ -44,7 +44,8 @@ func init() {
 }
 
 var (
-	printFiles = flag.Bool("files", false, "Print file contents as well as the compilation")
+	printFiles = flag.Bool("files", false, "Print all file contents as well as the compilation")
+	printFile  = flag.String("file", "", "Only print the file contents for the given digest")
 
 	m = &jsonpb.Marshaler{
 		OrigName: true,
@@ -70,6 +71,16 @@ func main() {
 		if err := json.NewEncoder(out).Encode(idx); err != nil {
 			log.Fatalf("Error encoding JSON: %v", err)
 		}
+	} else if *printFile != "" {
+		for _, f := range idx.Files {
+			if f.Info.GetDigest() == *printFile {
+				if _, err := os.Stdout.Write(f.Content); err != nil {
+					log.Fatal(err)
+				}
+				return
+			}
+		}
+		log.Fatalf("File digest %q not found", *printFile)
 	} else {
 		if err := m.Marshal(out, idx.Proto); err != nil {
 			log.Fatalf("Error encoding JSON compilation: %v", err)
