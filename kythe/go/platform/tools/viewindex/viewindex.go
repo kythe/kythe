@@ -24,7 +24,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 
@@ -81,8 +80,7 @@ func main() {
 				return
 			}
 		}
-		fmt.Fprintf(os.Stderr, "File digest %q not found\n", *printFile)
-		os.Exit(1)
+		log.Fatalf("File digest %q not found", *printFile)
 	} else {
 		if err := m.Marshal(out, idx.Proto); err != nil {
 			log.Fatalf("Error encoding JSON compilation: %v", err)
