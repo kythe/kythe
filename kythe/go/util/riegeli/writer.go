@@ -233,9 +233,3 @@ func (c *chunk) WriteTo(w *blockWriter, pos int) (int, error) {
 	}
 	return w.WriteChunk(buf.Bytes())
 }
-
-// A nopWriteCloser trivially implements io.Closer for a io.Writer.
-type nopWriteCloser struct{ io.Writer }
-
-// Close implements the io.Closer interface.
-func (nopWriteCloser) Close() error { return nil }

@@ -337,7 +337,7 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 	// Decompress the transition bytes from the tail of `src`.
 	machine.transitions, err = newDecompressor(&trivialByteReader{src}, compressionType)
 	if err != nil {
-		return nil, fmt.Errorf("decompressing transitions: %v")
+		return nil, fmt.Errorf("decompressing transitions: %v", err)
 	}
 
 	return machine, nil
