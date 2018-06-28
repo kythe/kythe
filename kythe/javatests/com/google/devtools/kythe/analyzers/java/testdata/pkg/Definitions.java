@@ -7,7 +7,7 @@ package pkg;
 public class Definitions {
 
   //- @HELLO defines/binding HelloConstant
-  //- HelloDef defines HelloConstant
+  //- HelloDef=vname(_,_,_,_,"java") defines HelloConstant
   //- HelloDef.node/kind anchor
   //- HelloDef.loc/start @^private
   //- HelloDef.loc/end @$";"

@@ -137,7 +137,7 @@ class Vistor {
     const file = path.relative(this.sourceRoot, sourceFile.fileName);
     const {line, character} =
         ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-    console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
+    console.log(`TODO: ${file}:${line}:${character}: ${message}`);
   }
 
   /**

@@ -56,19 +56,33 @@ type Repo struct {
 	// default config.
 	ConfigPath string
 
-	// An optional path that dictates where temporary repo copies should go.
-	// TODO(#156): this should be removed as soon as we refactor code to no
-	// longer use docker-in-docker.
+	// TODO(#156): these two should be remoevd when docker-in-docker is
+	// removed.  Currently necessary for docker-in-docker because regular volume
+	// mapping uses the outermost context instead of correctly pushing the
+	// first layer docker container's empeheral volume into the innermost
+	// layer.
+	//
+	// When running inside a docker container, these should be set to match
+	// their corresponding volumes.
+	// When not running inside a docker cotnainer, these can be left unset,
+	// in which case an ephemeral temp directory is used for TempRepoDir, and
+	// output is written directly into OutputPath from mvn-extract.sh.
+
+	// An optional temporary repo path to copy the input repo to.
 	TempRepoDir string
+
+	// An optional temporary directory path to write output before copying to
+	// OutputPath.
+	TempOutDir string
 }
 
 func (r Repo) gitClone(ctx context.Context, tmpDir string) error {
-	// TODO(#154): strongly consider go-git instead of os.exec
 	return GitClone(ctx, r.Git, tmpDir)
 }
 
 // GitClone is a convenience wrapper around a commandline git clone call.
 func GitClone(ctx context.Context, repo, outputPath string) error {
+	// TODO(#154): strongly consider go-git instead of os.exec
 	return exec.CommandContext(ctx, "git", "clone", repo, outputPath).Run()
 }
 
@@ -76,34 +90,54 @@ func (r Repo) localClone(ctx context.Context, tmpDir string) error {
 	gitDir := filepath.Join(r.Local, ".git")
 	// TODO(danielmoy): consider extracting all or part of this
 	// to a more common place.
-	return filepath.Walk(r.Local, func(path string, info os.FileInfo, err error) error {
+	err := copyDir(copyArgs{
+		out:     tmpDir,
+		in:      r.Local,
+		skipDir: gitDir,
+	})
+	if err != nil {
+		return fmt.Errorf("copying repo: %v", err)
+	}
+	return nil
+}
+
+type copyArgs struct {
+	out     string
+	in      string
+	skipDir string
+}
+
+// copyDir copies files from in to out. If skipDir is not empty, it skips any
+// directories matching that prefix.
+func copyDir(args copyArgs) error {
+	return filepath.Walk(args.in, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if r.Local == path {
+		if args.in == path {
 			// Intentionally do nothing for base dir.
 			return nil
 		}
-		if filepath.HasPrefix(path, gitDir) {
+		if args.skipDir != "" && filepath.HasPrefix(path, args.skipDir) {
 			return filepath.SkipDir
 		}
-		rel, err := filepath.Rel(r.Local, path)
+		rel, err := filepath.Rel(args.in, path)
 		if err != nil {
 			return err
 		}
-		outPath := filepath.Join(tmpDir, rel)
+		outPath := filepath.Join(args.out, rel)
 		if info.Mode().IsRegular() {
 			if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
 				return fmt.Errorf("failed to make dir: %v", err)
 			}
 			inf, err := os.Open(path)
 			if err != nil {
-				return fmt.Errorf("failed to open input file from repo: %v", err)
+				return fmt.Errorf("failed to open input file: %v", err)
 			}
 			defer inf.Close()
 			of, err := os.Create(outPath)
 			if err != nil {
-				return fmt.Errorf("failed to open output file for repo copy: %v", err)
+				return fmt.Errorf("failed to open output file for copy: %v", err)
 			}
 			if _, err := io.Copy(of, inf); err != nil {
 				of.Close()
@@ -193,9 +227,13 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		return fmt.Errorf("reading config file: %v", err)
 	}
 
+	outPath := repo.OutputPath
+	if repo.TempOutDir != "" {
+		outPath = repo.TempOutDir
+	}
 	err = createImage(extractionConfig, imageSettings{
 		RepoDir:   repo.TempRepoDir,
-		OutputDir: repo.OutputPath,
+		OutputDir: outPath,
 	}, extractionDockerFile.Name())
 	if err != nil {
 		return fmt.Errorf("creating extraction image: %v", err)
@@ -214,7 +252,7 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		targetRepoDir = DefaultRepoVolume
 	}
 	// run the extraction
-	commandArgs := []string{"run", "--rm", "-v", fmt.Sprintf("%s:%s", repo.OutputPath, repo.OutputPath)}
+	commandArgs := []string{"run", "--rm"}
 	// Check and see if we're living inside a docker image.
 	// TODO(#156): This is an undesireable smell from docker-in-docker which
 	// should be removed when we refactor the inner docker away.
@@ -223,16 +261,26 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		// -v /input/repo:/input, it actually takes /input/repo from the
 		// *outermost* docker container, which is not what we want! Instead rely
 		// on --volumes-from to copy in all the correct volumes.
+		// Similar logic holds for output directory mapping.
 		commandArgs = append(commandArgs, "--volumes-from", id)
 	} else {
-		commandArgs = append(commandArgs, fmt.Sprintf("%s:%s", repoDir, targetRepoDir), "-v")
+		commandArgs = append(commandArgs, "-v", fmt.Sprintf("%s:%s", repo.OutputPath, outPath), "-v", fmt.Sprintf("%s:%s", repoDir, targetRepoDir))
 	}
 	commandArgs = append(commandArgs, "-t", imageTag)
 	output, err = exec.CommandContext(ctx, "docker", commandArgs...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("extracting repo: %v\nCommand output: %s", err, string(output))
 	}
-
+	if repo.TempOutDir != "" {
+		// TODO(#156): after removing docker-in-docker we can ax this copy.
+		err := copyDir(copyArgs{
+			out: repo.OutputPath,
+			in:  repo.TempOutDir,
+		})
+		if err != nil {
+			return fmt.Errorf("copying output: %v", err)
+		}
+	}
 	return nil
 }
 

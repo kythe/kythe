@@ -47,16 +47,6 @@ const (
 	repoVolumeEnv = "KYTHE_ROOT_DIRECTORY"
 )
 
-// Format the base configuration including the base image, volume hooks, and working dir.
-var baseConfig = fmt.Sprintf(`
-FROM %[1]s
-VOLUME %[2]s
-ENV %[3]s=%[2]s
-VOLUME %[4]s
-ENV %[5]s=%[4]s
-WORKDIR %[2]s
-`, defaultBaseImage, DefaultRepoVolume, repoVolumeEnv, DefaultOutputVolume, outputVolumeEnv)
-
 // imageSettings allows for optionally controlling a known input repo and
 // output dir.  Leaving these unset just defaults to /repo and /out for use in
 // an ephemeral Docker container.
@@ -85,7 +75,8 @@ func newImage(config *ecpb.ExtractionConfiguration, settings imageSettings) ([]b
 		fmt.Fprintf(&buf, "FROM %s as %s\n", image.Uri, image.Name)
 	}
 
-	// Format the base configuration into the current config.
+	// Format the base configuration including the base image, volume hooks, and
+	// working dir.
 	fmt.Fprintf(&buf, `
 FROM %[1]s
 VOLUME %[2]s
