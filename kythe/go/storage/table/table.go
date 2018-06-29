@@ -42,7 +42,7 @@ type Proto interface {
 	Close(context.Context) error
 }
 
-// ProtoRO is a read-only key-value direct lookup table with protobuf values.
+// ProtoLookup is a read-only key-value direct lookup table with protobuf values.
 type ProtoLookup interface {
 	// Lookup unmarshals the value for the given key into msg, returning any
 	// error.  If the key was not found, ErrNoSuchKey is returned.
