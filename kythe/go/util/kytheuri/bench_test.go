@@ -28,3 +28,14 @@ func BenchmarkParse(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkString(b *testing.B) {
+	p, err := Parse(benchURI)
+	if err != nil {
+		panic(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = p.Encode().String()
+	}
+}
