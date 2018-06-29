@@ -30,9 +30,7 @@ import (
 
 // Proto is a key-value direct lookup table with protobuf values.
 type Proto interface {
-	// Lookup unmarshals the value for the given key into msg, returning any
-	// error.  If the key was not found, ErrNoSuchKey is returned.
-	Lookup(ctx context.Context, key []byte, msg proto.Message) error
+	ProtoLookup
 
 	// Put marshals msg and writes it as the value for the given key.
 	Put(ctx context.Context, key []byte, msg proto.Message) error
@@ -45,8 +43,7 @@ type Proto interface {
 }
 
 // ProtoRO is a read-only key-value direct lookup table with protobuf values.
-// It duplicates the "Lookup" method from the Proto interface, above.
-type ProtoRO interface {
+type ProtoLookup interface {
 	// Lookup unmarshals the value for the given key into msg, returning any
 	// error.  If the key was not found, ErrNoSuchKey is returned.
 	Lookup(ctx context.Context, key []byte, msg proto.Message) error
