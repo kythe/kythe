@@ -104,6 +104,13 @@ func (r *Raw) String() string {
 		return Scheme
 	}
 	var buf strings.Builder
+	buf.Grow(len(Scheme) +
+		2 + len(r.URI.Corpus) + // "//" + corpus
+		6 + len(r.URI.Language) + // "?lang=" + string
+		6 + len(r.URI.Path) + // "?path=" + string
+		6 + len(r.URI.Root) + // "?root=" + string
+		1 + len(r.URI.Signature), // "#" + string
+	)
 	buf.WriteString(Scheme)
 	if c := r.URI.Corpus; c != "" {
 		buf.WriteString("//")
