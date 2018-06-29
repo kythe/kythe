@@ -89,6 +89,27 @@ http_archive(
     url = "https://code.googlesource.com/re2/+archive/2c220e7df3c10d42d74cb66290ec89116bb5e6be.tar.gz",
 )
 
+http_archive(
+    name = "org_brotli",
+    sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
+    strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9",
+    url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+)
+
+http_archive(
+    name = "org_brotli_go",
+    sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
+    strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9/go",
+    url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+)
+
+http_archive(
+    name = "com_google_riegeli",
+    sha256 = "6b05427c3fab111af052d166d195052f5336b8517b26a11dbc4fee10cfc75b4e",
+    strip_prefix = "riegeli-bd99099abd41abbe35a10f3bfa35e15b6b2d893a",
+    url = "https://github.com/google/riegeli/archive/bd99099abd41abbe35a10f3bfa35e15b6b2d893a.zip",
+)
+
 new_http_archive(
     name = "com_github_google_glog",
     build_file = "third_party/googlelog.BUILD",
@@ -233,6 +254,15 @@ http_archive(
 # protobuf silently yields link errors.
 new_http_archive(
     name = "com_google_protobuf",
+    build_file = "third_party/protobuf.BUILD",
+    sha256 = "091d4263d9a55eccb6d3c8abde55c26eaaa933dea9ecabb185cdf3795f9b5ca2",
+    strip_prefix = "protobuf-3.5.1.1",
+    urls = ["https://github.com/google/protobuf/archive/v3.5.1.1.zip"],
+)
+
+# A copy of the above archive because com_google_riegeli uses a non-standard name... (╯°□°)╯︵ ┻━┻
+new_http_archive(
+    name = "protobuf_archive",
     build_file = "third_party/protobuf.BUILD",
     sha256 = "091d4263d9a55eccb6d3c8abde55c26eaaa933dea9ecabb185cdf3795f9b5ca2",
     strip_prefix = "protobuf-3.5.1.1",
@@ -472,4 +502,19 @@ go_repository(
     name = "com_github_syndtr_goleveldb",
     commit = "5d6fca44a948d2be89a9702de7717f0168403d3d",
     importpath = "github.com/syndtr/goleveldb",
+)
+
+go_repository(
+    name = "com_github_minio_highwayhash",
+    commit = "85fc8a2dacad36a6beb2865793cd81363a496696",
+    custom = "highwayhash",
+    importpath = "github.com/minio/highwayhash",
+)
+
+go_repository(
+    name = "org_golang_x_sys",
+    commit = "6c888cc515d3ed83fc103cf1d84468aad274b0a7",
+    custom = "x_sys",
+    custom_git = "https://github.com/golang/sys.git",
+    importpath = "golang.org/x/sys",
 )
