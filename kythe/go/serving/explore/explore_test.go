@@ -1,22 +1,37 @@
+/*
+ * Copyright 2018 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package explore
 
 import (
 	"context"
-	"reflect"
+	"fmt"
 	"testing"
 
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/test/testutil"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 
 	epb "kythe.io/kythe/proto/explore_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
 )
 
-var (
-	ctx = context.Background()
-
+const (
 	p1       = "kythe:#parent1"
 	p2       = "kythe:#parent2"
 	p1c1     = "kythe:#p1child1"
@@ -29,7 +44,11 @@ var (
 	fr       = "kythe:#fcaller"
 	f2r1     = "kythe:#f2caller1"
 	f3       = "kythe:#function3_recursive"
+	dne      = "kythe:#does_not_exist"
+)
 
+var (
+	ctx              = context.Background()
 	parentToChildren = &protoTable{
 		p1: &srvpb.Relatives{
 			Tickets: []string{p1c1, p1c2},
@@ -112,7 +131,7 @@ var (
 )
 
 func TestChildren_badData(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 
 	reply, err := svc.Children(ctx, &epb.ChildrenRequest{
 		Tickets: []string{badType},
@@ -123,21 +142,19 @@ func TestChildren_badData(t *testing.T) {
 }
 
 func TestChildren_noData(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 
 	reply, err := svc.Children(ctx, &epb.ChildrenRequest{
-		Tickets: []string{"key with no data"},
+		Tickets: []string{dne},
 	})
-	if err != nil {
-		testutil.FatalOnErrT(t, "Children error: %v", err)
-	}
+	testutil.FatalOnErrT(t, "Children error: %v", err)
 	if len(reply.InputToChildren) != 0 {
 		t.Errorf("Expected empty response for missing key, got: %v", reply)
 	}
 }
 
 func TestChildren(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 	request := &epb.ChildrenRequest{
 		Tickets: []string{p1},
 	}
@@ -151,22 +168,21 @@ func TestChildren(t *testing.T) {
 		},
 	}
 
-	if !equalTicketsKeys(reply.InputToChildren, expectedInputToChildren) {
+	expectedInputKeys := stringset.FromKeys(expectedInputToChildren)
+	actualInputKeys := stringset.FromKeys(reply.InputToChildren)
+	if !expectedInputKeys.Equals(actualInputKeys) {
 		t.Errorf("Expected results and actual results have different ticket key sets:\n"+
-			"expected map: %v\n actual map: %v", expectedInputToChildren, reply.InputToChildren)
+			"expected: %v\n actual: %v", expectedInputKeys, actualInputKeys)
 	}
 
 	for ticket, expectedChildren := range expectedInputToChildren {
 		children := reply.InputToChildren[ticket]
-		if !reflect.DeepEqual(listToSet(expectedChildren.Tickets), listToSet(children.Tickets)) {
-			t.Errorf("Mismatch for children of ticket %s; expected:\n%v actual:\n%v",
-				ticket, expectedChildren, children)
-		}
+		checkEquivalentLists(t, expectedChildren.Tickets, children.Tickets, "children")
 	}
 }
 
 func TestParents_badData(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 
 	reply, err := svc.Parents(ctx, &epb.ParentsRequest{
 		Tickets: []string{badType},
@@ -177,21 +193,19 @@ func TestParents_badData(t *testing.T) {
 }
 
 func TestParents_noData(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 
 	reply, err := svc.Parents(ctx, &epb.ParentsRequest{
-		Tickets: []string{"key with no data"},
+		Tickets: []string{dne},
 	})
-	if err != nil {
-		testutil.FatalOnErrT(t, "Parents error: %v", err)
-	}
+	testutil.FatalOnErrT(t, "Parents error: %v", err)
 	if len(reply.InputToParents) != 0 {
 		t.Errorf("Expected empty response for missing key, got: %v", reply)
 	}
 }
 
 func TestParents(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 	request := &epb.ParentsRequest{
 		Tickets: []string{p1c1},
 	}
@@ -205,40 +219,22 @@ func TestParents(t *testing.T) {
 		},
 	}
 
-	if !equalTicketsKeys(reply.InputToParents, expectedInputToParents) {
+	expectedInputKeys := stringset.FromKeys(expectedInputToParents)
+	actualInputKeys := stringset.FromKeys(reply.InputToParents)
+	if !expectedInputKeys.Equals(actualInputKeys) {
 		t.Errorf("Expected results and actual results have different ticket key sets:\n"+
-			"expected map: %v\n actual map: %v", expectedInputToParents, reply.InputToParents)
+			"expected: %v\n actual: %v", expectedInputKeys, actualInputKeys)
 	}
 
 	for ticket, expectedParents := range expectedInputToParents {
 		parents := reply.InputToParents[ticket]
-		if !reflect.DeepEqual(listToSet(expectedParents.Tickets), listToSet(parents.Tickets)) {
-			t.Errorf("Mismatch for children of ticket %s; expected:\n%v actual:\n%v",
-				ticket, expectedParents, parents)
-		}
+		checkEquivalentLists(t, expectedParents.Tickets, parents.Tickets,
+			fmt.Sprintf("children of %s", ticket))
 	}
-}
-
-// Returns true iff the two maps have the same key sets.
-// FIXME: Is there any way to make this function more generic, so that it will work for any value type?
-func equalTicketsKeys(m1, m2 map[string]*epb.Tickets) bool {
-	if len(m1) != len(m2) {
-		return false
-	}
-	return reflect.DeepEqual(ticketsMapAsSet(m1), ticketsMapAsSet(m2))
-}
-
-// Returns the map keys as a "set" (map of keys to booleans).
-func ticketsMapAsSet(m map[string]*epb.Tickets) map[string]bool {
-	s := make(map[string]bool, len(m))
-	for k := range m {
-		s[k] = true
-	}
-	return s
 }
 
 func TestCallers_badData(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 
 	reply, err := svc.Callers(ctx, &epb.CallersRequest{
 		Tickets: []string{badType},
@@ -249,21 +245,19 @@ func TestCallers_badData(t *testing.T) {
 }
 
 func TestCallers_noData(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 
 	reply, err := svc.Callers(ctx, &epb.CallersRequest{
-		Tickets: []string{"key with no data"},
+		Tickets: []string{dne},
 	})
-	if err != nil {
-		testutil.FatalOnErrT(t, "CallersRequest error: %v", err)
-	}
+	testutil.FatalOnErrT(t, "CallersRequest error: %v", err)
 	if len(reply.Graph.Nodes) != 0 {
 		t.Errorf("Expected empty response for missing key, got: %v", reply)
 	}
 }
 
 func TestCallers(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 	request := &epb.CallersRequest{
 		Tickets: []string{f1},
 	}
@@ -289,7 +283,7 @@ func TestCallers(t *testing.T) {
 }
 
 func TestCallers_multipleInputs(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 	request := &epb.CallersRequest{
 		Tickets: []string{f1, f2, f3},
 	}
@@ -328,7 +322,7 @@ func TestCallers_multipleInputs(t *testing.T) {
 }
 
 func TestCallees_badData(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 
 	reply, err := svc.Callees(ctx, &epb.CalleesRequest{
 		Tickets: []string{badType},
@@ -339,21 +333,19 @@ func TestCallees_badData(t *testing.T) {
 }
 
 func TestCallees_noData(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 
 	reply, err := svc.Callees(ctx, &epb.CalleesRequest{
-		Tickets: []string{"key with no data"},
+		Tickets: []string{dne},
 	})
-	if err != nil {
-		testutil.FatalOnErrT(t, "CalleesRequest error: %v", err)
-	}
+	testutil.FatalOnErrT(t, "CalleesRequest error: %v", err)
 	if len(reply.Graph.Nodes) != 0 {
 		t.Errorf("Expected empty response for missing key, got: %v", reply)
 	}
 }
 
 func TestCallees(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 	request := &epb.CalleesRequest{
 		Tickets: []string{fr},
 	}
@@ -382,7 +374,7 @@ func TestCallees(t *testing.T) {
 }
 
 func TestCallees_multipleInputs(t *testing.T) {
-	svc := Construct(t)
+	svc := construct(t)
 	request := &epb.CalleesRequest{
 		Tickets: []string{f1, f2, f3},
 	}
@@ -417,44 +409,37 @@ func TestCallees_multipleInputs(t *testing.T) {
 
 func checkEqualGraphs(t *testing.T, expected, actual *epb.Graph) {
 	if len(expected.Nodes) != len(actual.Nodes) {
-		t.Errorf("Unexpected mismatch in graph node counts: expected: %d, actual: %d",
+		t.Errorf("Mismatch in graph node counts: expected: %d, actual: %d",
 			len(expected.Nodes), len(actual.Nodes))
 	}
 
-	if !reflect.DeepEqual(nodeMapAsSet(expected.Nodes), nodeMapAsSet(actual.Nodes)) {
+	expectedNodeSet := stringset.FromKeys(expected.Nodes)
+	actualNodeSet := stringset.FromKeys(actual.Nodes)
+	if !expectedNodeSet.Equals(actualNodeSet) {
 		t.Errorf("Unexpected mismatch in graph node sets:\n expected:\n%v\n actual:\n%v\n",
-			nodeMapAsSet(expected.Nodes), nodeMapAsSet(actual.Nodes))
+			expectedNodeSet, actualNodeSet)
 	}
 
 	for ticket, expectedNode := range expected.Nodes {
 		node := actual.Nodes[ticket]
-		if !reflect.DeepEqual(listToSet(expectedNode.Predecessors), listToSet(node.Predecessors)) {
-			t.Errorf("Mismatch in graph node predecessors for %s:\n expected:\n%v\n actual:\n%v\n",
-				ticket, expectedNode.Predecessors, node.Predecessors)
-		}
-		if !reflect.DeepEqual(listToSet(expectedNode.Successors), listToSet(node.Successors)) {
-			t.Errorf("Mismatch in graph node successors for %s:\n expected:\n%v\n actual:\n%v\n",
-				ticket, expectedNode.Successors, node.Successors)
-		}
+		checkEquivalentLists(t, expectedNode.Predecessors, node.Predecessors,
+			fmt.Sprintf("predecessors for %s", ticket))
+		checkEquivalentLists(t, expectedNode.Successors, node.Successors,
+			fmt.Sprintf("successors for %s", ticket))
 	}
 }
 
-// Returns the map keys as a "set" (map of keys to booleans).
-func nodeMapAsSet(m map[string]*epb.GraphNode) map[string]bool {
-	s := make(map[string]bool, len(m))
-	for k := range m {
-		s[k] = true
+// Checks whether the lists are equivalent.
+func checkEquivalentLists(t *testing.T, expected, actual []string, tag string) {
+	if len(expected) != len(actual) {
+		t.Errorf("Mismatch in counts for %s; expected:\n%v actual:\n%v",
+			tag, expected, actual)
 	}
-	return s
-}
 
-// Returns the list as a "set" (map of list to booleans).
-func listToSet(l []string) map[string]bool {
-	s := make(map[string]bool, len(l))
-	for _, elt := range l {
-		s[elt] = true
+	if !stringset.FromKeys(expected).Equals(stringset.FromKeys(actual)) {
+		t.Errorf("Mismatch for %s; expected:\n%v actual:\n%v",
+			tag, expected, actual)
 	}
-	return s
 }
 
 type protoTable map[string]proto.Message
@@ -468,7 +453,7 @@ func (t protoTable) Lookup(_ context.Context, key []byte, msg proto.Message) err
 	return nil
 }
 
-func Construct(t *testing.T) *Tables {
+func construct(t *testing.T) *Tables {
 	return &Tables{
 		ParentToChildren:  parentToChildren,
 		ChildToParents:    childToParents,

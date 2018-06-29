@@ -38,18 +38,18 @@ import (
 // for each API component.
 type Tables struct {
 	// ParentToChildren is a table of srvpb.Relatives keyed by parent ticket.
-	ParentToChildren table.ProtoRO
+	ParentToChildren table.ProtoLookup
 
 	// ChildToParents is a table of srvpb.Relatives keyed by child ticket.
-	ChildToParents table.ProtoRO
+	ChildToParents table.ProtoLookup
 
 	// FunctionToCallers is a table of srvpb.Callgraph keyed by function ticket
 	// that points to the callers of the specified function.
-	FunctionToCallers table.ProtoRO
+	FunctionToCallers table.ProtoLookup
 
 	// FunctionToCallees is a table of srvpb.Callgraph keyed by function ticket
 	// that points to the callees of the specified function.
-	FunctionToCallees table.ProtoRO
+	FunctionToCallees table.ProtoLookup
 }
 
 // TypeHierarchy returns the hierarchy (supertypes and subtypes, including implementations)
