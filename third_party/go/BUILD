@@ -33,5 +33,7 @@ filegroup(
         "@go_x_sys//:LICENSE",
         "@go_x_text//:LICENSE",
         "@go_x_tools//:LICENSE",
+        "@go_zstd//:LICENSE",
+        "@go_zstd//:ZSTD_LICENSE",
     ],
 )

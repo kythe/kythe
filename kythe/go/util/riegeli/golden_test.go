@@ -44,6 +44,7 @@ var (
 		"uncompressed_transpose",
 		"brotli",
 		"brotli_transpose",
+		"zstd",
 	}
 )
 
@@ -89,11 +90,17 @@ func (j *jsonReader) Next() (*spb.Entry, error) {
 func TestGoldenTestData(t *testing.T) {
 	for _, variant := range goldenRiegeliFileVariants {
 		file := strings.Join([]string{goldenRiegeliFilePrefix, variant, "riegeli"}, ".")
-		t.Run(variant, func(t *testing.T) { checkGoldenData(t, file) })
+		opts := strings.Replace(variant, "_", ",", -1)
+		t.Run(variant, func(t *testing.T) { checkGoldenData(t, file, opts) })
 	}
 }
 
-func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
+// checkGoldenData ensures that the given Riegeli file contains the exact
+// same records as the goldenJSONFile.  It also checks the RecordsMetadata
+// against goldenMetadataFile and the given expectedOptions.  RecordsMetadata
+// options are the same format as the C++ strings options defined at:
+// https://github.com/google/riegeli/blob/87a0fd66ffde99aaef4e6171029943d5a3a3ce41/riegeli/records/record_writer.h#L110
+func checkGoldenData(t *testing.T, goldenRiegeliFile, expectedOptions string) {
 	jsonFile, err := os.Open(goldenJSONFile)
 	if err != nil {
 		t.Fatal(err)
@@ -116,11 +123,12 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 	if err := proto.UnmarshalText(string(mdTextProto), &expectedMetadata); err != nil {
 		t.Fatalf("Error unmarshaling %s: %v", goldenMetadataFile, err)
 	}
+	expectedMetadata.RecordWriterOptions = proto.String(expectedOptions)
 
 	md, err := riegeliReader.RecordsMetadata()
 	if err != nil {
 		t.Fatalf("Error reading RecordsMetadata: %v", err)
-	} else if diff := cmp.Diff(md, &expectedMetadata, ignoreProtoXXXFields, ignoreOptionsField); diff != "" {
+	} else if diff := cmp.Diff(md, &expectedMetadata, ignoreProtoXXXFields); diff != "" {
 		t.Errorf("Bad RecordsMetadata: (-: found; +: expected)\n%s", diff)
 	}
 
@@ -149,7 +157,7 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 			t.Fatalf("Error reading Riegeli golden data: %v", err)
 		}
 
-		if diff := cmp.Diff(expected, found, ignoreProtoXXXFields, ignoreOptionsField); diff != "" {
+		if diff := cmp.Diff(expected, found, ignoreProtoXXXFields); diff != "" {
 			t.Errorf("Unexpected record:  (-: found; +: expected)\n%s", diff)
 		}
 	}
@@ -173,7 +181,7 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 		var found spb.Entry
 		if err := riegeliReader.NextProto(&found); err != nil {
 			t.Fatalf("Error reading record at %v: %v", pos, err)
-		} else if diff := cmp.Diff(expected, &found, ignoreProtoXXXFields, ignoreOptionsField); diff != "" {
+		} else if diff := cmp.Diff(expected, &found, ignoreProtoXXXFields); diff != "" {
 			t.Errorf("Unexpected record:  (-: found; +: expected)\n%s", diff)
 		}
 	}
@@ -182,15 +190,6 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile string) {
 var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
 	for _, s := range p {
 		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
-		}
-	}
-	return false
-}, cmp.Ignore())
-
-var ignoreOptionsField = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if s.String() == ".RecordWriterOptions" {
 			return true
 		}
 	}

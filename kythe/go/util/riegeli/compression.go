@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/DataDog/zstd"
 	"github.com/google/brotli/go/cbrotli"
 )
 
@@ -42,7 +43,8 @@ func newDecompressor(r byteReader, c compressionType) (decompressor, error) {
 	switch c {
 	case brotliCompression:
 		return &byteReadCloser{cbrotli.NewReader(r)}, nil
-		// TODO(schroederc): zstd support
+	case zstdCompression:
+		return &byteReadCloser{zstd.NewReader(r)}, nil
 	default:
 		return nil, fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(c)})
 	}
@@ -73,7 +75,9 @@ func newCompressor(opts *WriterOptions) compressor {
 		brotliOpts := cbrotli.WriterOptions{Quality: opts.compressionLevel()}
 		w := cbrotli.NewWriter(buf, brotliOpts)
 		return &sizePrefixedWriterTo{buf: buf, WriteCloser: w}
-		// TODO(schroederc): zstd support
+	case zstdCompression:
+		w := zstd.NewWriterLevel(buf, opts.compressionLevel())
+		return &sizePrefixedWriterTo{buf: buf, WriteCloser: w}
 	default:
 		panic(fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(opts.compressionType())}))
 	}
