@@ -56,7 +56,7 @@ type byteReadCloser struct{ io.ReadCloser }
 // ReadByte implements the io.ByteReader interface.
 func (b byteReadCloser) ReadByte() (byte, error) {
 	var buf [1]byte
-	_, err := b.Read(buf[:])
+	_, err := io.ReadFull(b.ReadCloser, buf[:])
 	return buf[0], err
 }
 
