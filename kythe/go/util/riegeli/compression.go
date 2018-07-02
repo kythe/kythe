@@ -56,13 +56,8 @@ type byteReadCloser struct{ io.ReadCloser }
 // ReadByte implements the io.ByteReader interface.
 func (b byteReadCloser) ReadByte() (byte, error) {
 	var buf [1]byte
-	for {
-		n, err := b.Read(buf[:])
-		if n == 0 && err == nil {
-			continue
-		}
-		return buf[0], err
-	}
+	_, err := io.ReadFull(b.ReadCloser, buf[:])
+	return buf[0], err
 }
 
 // A compressor builds a Riegeli compressed block.
