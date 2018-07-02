@@ -23,6 +23,7 @@ package riegeli
 
 import (
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/golang/protobuf/proto"
@@ -138,10 +139,16 @@ type Writer struct {
 
 // Put writes/buffers the given []byte as a Riegili record.
 func (w *Writer) Put(rec []byte) error {
-	if err := w.ensureFileHeader(); err != nil {
+	err := w.ensureFileHeader()
+	if err != nil {
 		return err
-	} else if w.recordWriter == nil {
-		w.recordWriter = newRecordChunkWriter(w.opts)
+	}
+
+	if w.recordWriter == nil {
+		w.recordWriter, err = newRecordChunkWriter(w.opts)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := w.recordWriter.put(rec); err != nil {
@@ -167,6 +174,18 @@ func (w *Writer) Flush() error {
 		return err
 	}
 	return w.flushRecord()
+}
+
+// Close releases all resources associated with Writer.  Any buffered records
+// will be flushed before releasing any resources.
+func (w *Writer) Close() error {
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("error flushing writer: %v", err)
+	} else if w.recordWriter != nil {
+		// Ensure the recordWriter is closed even if it is empty.
+		return w.recordWriter.Close()
+	}
+	return nil
 }
 
 // TODO(schroederc): add concatenation function
