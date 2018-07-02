@@ -219,7 +219,7 @@ func TestReaderSeekAllPositions(t *testing.T) {
 	}
 
 	if expected != N-1 {
-		t.Fatalf("Failed to read all known records: %d != %d", expected, N)
+		t.Fatalf("Failed to read all known records: %d != %d", expected, int(N)-1)
 	}
 }
 
