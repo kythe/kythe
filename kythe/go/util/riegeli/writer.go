@@ -25,16 +25,20 @@ import (
 )
 
 // https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md#file-signature
-var fileSignatureChunkHeader = chunkHeader{ChunkType: fileSignatureChunkType}
+var fileSignatureChunk = &chunk{Header: chunkHeader{ChunkType: fileSignatureChunkType}}
+
+func init() {
+	binary.LittleEndian.PutUint64(fileSignatureChunk.Header.DataHash[:], hashBytes(fileSignatureChunk.Data))
+}
 
 func (w *Writer) ensureFileHeader() error {
 	if w.fileHeaderWritten {
 		return nil
 	}
 
-	fileSignature := &chunk{Header: fileSignatureChunkHeader}
-	_, err := fileSignature.WriteTo(w.w, w.w.pos)
+	_, err := fileSignatureChunk.WriteTo(w.w, w.w.pos)
 	// TODO(schroederc): encode RecordsMetadata chunk
+	w.fileHeaderWritten = true
 	return err
 }
 

@@ -66,33 +66,17 @@ func newTransposedRecordReader(c *chunk) (recordReader, error) {
 		return nil, err
 	}
 
+	machine.numRecords = int(c.Header.NumRecords)
+	if c.Header.ChunkType == fileMetadataChunkType {
+		machine.numRecords = 1
+	}
+
 	records, err := machine.execute()
 	if err != nil {
 		return nil, fmt.Errorf("transpose state machine error: %v", err)
 	}
 
-	return &transposedRecordReader{records}, nil
-}
-
-type transposedRecordReader struct{ records [][]byte }
-
-// Close implements part of the recordReader interface.
-func (t *transposedRecordReader) Close() error { return nil }
-
-// Len implements part of the recordReader interface.
-func (t *transposedRecordReader) Len() uint64 { return uint64(len(t.records)) }
-
-// Next implements part of the recordReader interface.
-func (t *transposedRecordReader) Next() ([]byte, error) {
-	if len(t.records) == 0 {
-		return nil, io.EOF
-	}
-
-	i := len(t.records) - 1
-	rec := t.records[i]
-	t.records[i] = nil
-	t.records = t.records[:i]
-	return rec, nil
+	return &fixedRecordReader{records: records}, nil
 }
 
 // A stateMachine is the decoded structure of a Riegeli transposed chunk.  The
@@ -116,6 +100,7 @@ type stateMachine struct {
 	states      []stateNode
 	buffers     []byteReader
 	transitions byteReader
+	numRecords  int
 }
 
 type stateNode struct {
@@ -358,8 +343,10 @@ func (m *stateMachine) execute() ([][]byte, error) {
 		// submessageStackData is the associated data for each submessage start
 		submessageStackData [][]byte
 
-		writer  = &backwardWriter{} // currently open record being written
-		records [][]byte            // all finished output records
+		writer = &backwardWriter{} // currently open record being written
+
+		records   = make([][]byte, m.numRecords) // all finished output records
+		recordIdx = m.numRecords - 1
 	)
 
 	if currentState.implicit {
@@ -384,7 +371,8 @@ func (m *stateMachine) execute() ([][]byte, error) {
 			}
 			rec := make([]byte, writer.Len())
 			io.ReadFull(writer, rec)
-			records = append(records, rec)
+			records[recordIdx] = rec
+			recordIdx--
 			writer.Reset()
 		case startOfSubmessageTag:
 			// We've finished a submessage.  Pop the submessageStack and write both
