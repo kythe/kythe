@@ -54,6 +54,10 @@ func TestReadWriteStringsBrotli(t *testing.T) {
 	testReadWriteStrings(t, &WriterOptions{Compression: BrotliCompression(-1)})
 }
 
+func TestReadWriteStringsZSTD(t *testing.T) {
+	testReadWriteStrings(t, &WriterOptions{Compression: ZSTDCompression(-1)})
+}
+
 func writeStrings(t *testing.T, opts *WriterOptions, n int) *bytes.Buffer {
 	var buf bytes.Buffer
 	wr := NewWriter(&buf, opts)

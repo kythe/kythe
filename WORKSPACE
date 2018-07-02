@@ -518,3 +518,10 @@ go_repository(
     custom_git = "https://github.com/golang/sys.git",
     importpath = "golang.org/x/sys",
 )
+
+go_repository(
+    name = "com_github_datadog_zstd",
+    commit = "aebefd9fcb99f22cd691ef778a12ed68f0e6a1ab",
+    custom = "zstd",
+    importpath = "github.com/DataDog/zstd",
+)

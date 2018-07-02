@@ -35,6 +35,7 @@ const (
 	DefaultChunkSize = 1 << 20
 
 	DefaultBrotliLevel = 9
+	DefaultZSTDLevel   = 9
 )
 
 // DefaultCompression is the default Compression for the WriterOptions.
@@ -53,7 +54,6 @@ func (*compressionLevel) isCompressionType() {}
 var (
 	// NoCompression indicates that no compression will be used to encode chunks.
 	NoCompression CompressionType = &compressionLevel{noCompression, 0}
-	// TODO(schroederc): add zstd compression
 )
 
 // BrotliCompression returns a CompressionType for Brotli compression with the
@@ -64,6 +64,16 @@ func BrotliCompression(level int) CompressionType {
 		level = DefaultBrotliLevel
 	}
 	return &compressionLevel{brotliCompression, level}
+}
+
+// ZSTDCompression returns a CompressionType for zstd compression with the
+// given compression level.  If level < 0 || level > 22, then the DefaultZSTDLevel
+// will be used.
+func ZSTDCompression(level int) CompressionType {
+	if level < 0 || level > 22 {
+		level = DefaultZSTDLevel
+	}
+	return &compressionLevel{zstdCompression, level}
 }
 
 // WriterOptions customizes the behavior of a Riegeli Writer.
