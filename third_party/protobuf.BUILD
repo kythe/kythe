@@ -25,7 +25,6 @@ COPTS = select({
         "-Woverloaded-virtual",
         "-Wno-sign-compare",
         "-Wno-unused-function",
-        "-Wno-unused-const-variable",
     ],
 })
 
@@ -306,6 +305,7 @@ internal_copied_filegroup(
 cc_binary(
     name = "js_embed",
     srcs = ["src/google/protobuf/compiler/js/embed.cc"],
+    copts = ["-Wno-unused-const-variable"],
     visibility = ["//visibility:public"],
 )
 
