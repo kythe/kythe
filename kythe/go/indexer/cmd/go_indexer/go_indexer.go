@@ -51,6 +51,7 @@ var (
 	doCodeFacts = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
 	metaSuffix  = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
 	docBase     = flag.String("docbase", "http://godoc.org", "If set, use as the base URL for godoc links")
+	verbose     = flag.Bool("verbose", false, "Emit verbose log information")
 
 	writeEntry func(context.Context, *spb.Entry) error
 	docURL     *url.URL
@@ -140,7 +141,9 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 	if err != nil {
 		return err
 	}
-	log.Printf("Finished resolving compilation: %s", pi.String())
+	if *verbose {
+		log.Printf("Finished resolving compilation: %s", pi.String())
+	}
 	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
 		EmitStandardLibs: *doLibNodes,
 		EmitMarkedSource: *doCodeFacts,
