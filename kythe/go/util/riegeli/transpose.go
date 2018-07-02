@@ -99,7 +99,7 @@ type stateMachine struct {
 	initial     int
 	states      []stateNode
 	buffers     []byteReader
-	transitions byteReader
+	transitions decompressor
 	numRecords  int
 }
 
@@ -207,6 +207,8 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 	for bucket, rd := range buckets {
 		if _, err := rd.ReadByte(); err != io.EOF {
 			return nil, fmt.Errorf("trailing bucket data: bucket=%d/%d", bucket, numBuckets)
+		} else if err := rd.Close(); err != nil {
+			return nil, fmt.Errorf("closing bucket decompressor: %v", err)
 		}
 	}
 
@@ -466,6 +468,9 @@ func (m *stateMachine) execute() ([][]byte, error) {
 			// Read a byte transition to move by an additional offset
 			trans, err := m.transitions.ReadByte()
 			if err == io.EOF {
+				if err := m.transitions.Close(); err != nil {
+					return nil, fmt.Errorf("closing transitions decompressor: %v", err)
+				}
 				// Successful end of currentState machine
 				break
 			} else if err != nil {
