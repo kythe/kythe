@@ -1,0 +1,6 @@
+The benchmark numbers in the final merge commit omitted the original value of
+3446 ns/op. The 40% figure is correct: the first commit got us to 2331 ns/op,
+the second commit to 2064 ns/op, (3446 - 2064)/3446 = 0.401.
+
+    BenchmarkOldString-8      500000              3446 ns/op
+    BenchmarkString-8        1000000              2064 ns/op
