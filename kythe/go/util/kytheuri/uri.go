@@ -120,13 +120,16 @@ func (r *Raw) String() string {
 	// Pack up the query arguments. Order matters here, so that we can preserve
 	// a canonical string format.
 	if s := r.URI.Language; s != "" {
-		buf.WriteString("?lang=" + s)
+		buf.WriteString("?lang=")
+		buf.WriteString(s)
 	}
 	if s := r.URI.Path; s != "" {
-		buf.WriteString("?path=" + s)
+		buf.WriteString("?path=")
+		buf.WriteString(s)
 	}
 	if s := r.URI.Root; s != "" {
-		buf.WriteString("?root=" + s)
+		buf.WriteString("?root=")
+		buf.WriteString(s)
 	}
 
 	// If there is a signature, add that in as well.
