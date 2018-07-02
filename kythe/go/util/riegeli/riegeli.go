@@ -66,9 +66,9 @@ func BrotliCompression(level int) CompressionType {
 	return &compressionLevel{brotliCompression, level}
 }
 
-// ZSTDCompression returns a CompressionType for zstd compression with the
-// given compression level.  If level < 0 || level > 22, then the DefaultZSTDLevel
-// will be used.
+// ZSTDCompression returns a CompressionType for zstd compression with the given
+// compression level.  If level < 0 || level > 22 (outside of the levels
+// specified by the zstdlib spec), then the DefaultZSTDLevel will be used.
 func ZSTDCompression(level int) CompressionType {
 	if level < 0 || level > 22 {
 		level = DefaultZSTDLevel
