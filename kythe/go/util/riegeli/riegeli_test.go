@@ -26,7 +26,9 @@ import (
 
 func TestWriteEmpty(t *testing.T) {
 	var buf bytes.Buffer
-	NewWriter(&buf, nil).Flush()
+	if err := NewWriter(&buf, nil).Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	// The standard Riegeli file header
 	expected := []byte{
@@ -67,8 +69,8 @@ func writeStrings(t *testing.T, opts *WriterOptions, n int) *bytes.Buffer {
 			t.Fatalf("Error Put(%d): %v", i, err)
 		}
 	}
-	if err := wr.Flush(); err != nil {
-		t.Fatalf("Flush error: %v", err)
+	if err := wr.Close(); err != nil {
+		t.Fatalf("Close error: %v", err)
 	}
 	return &buf
 }
@@ -97,8 +99,8 @@ func TestEmptyRecord(t *testing.T) {
 
 	if err := wr.Put([]byte{}); err != nil {
 		t.Fatalf("Error writing empty record: %v", err)
-	} else if err := wr.Flush(); err != nil {
-		t.Fatalf("Flush error: %v", err)
+	} else if err := wr.Close(); err != nil {
+		t.Fatalf("Close error: %v", err)
 	}
 
 	rd := NewReader(bytes.NewReader(buf.Bytes()))

@@ -140,7 +140,7 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile, expectedOptions string) {
 			if rec, err := riegeliReader.Next(); err != io.EOF {
 				t.Fatalf("Unexpected error/record at end of Riegeli file: %q %v", hex.EncodeToString(rec), err)
 			}
-			return
+			break
 		} else if err != nil {
 			t.Fatalf("Error reading JSON golden data: %v", err)
 		}
