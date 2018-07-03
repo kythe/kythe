@@ -23,6 +23,9 @@ import (
 
 // TODO(schroederc): add more tests once an encoder is available
 
+// TODO(schroederc): test non-proto records support
+// TODO(schroederc): test deprecated protobuf "groups" support
+
 func TestBackwardWriter(t *testing.T) {
 	pieces := []string{"a", "b", "ccc", "dd", "eee"}
 

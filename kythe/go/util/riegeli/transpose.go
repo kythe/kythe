@@ -101,6 +101,10 @@ type stateMachine struct {
 	buffers     []byteReader
 	transitions decompressor
 	numRecords  int
+
+	// Sequence of varints for non-proto record sizes (only set when at least 1
+	// record isn't tag-encoded.)
+	nonProtoLengths byteReader
 }
 
 type stateNode struct {
@@ -260,6 +264,7 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 	//   - Optionally associate each state tag with its subtype
 	//   - Optionally associate each state with a data buffer
 	var subtypeIdx int
+	var hasNonProto bool
 	for state := 0; state < int(numStates); state++ {
 		tag := tags[state]
 		switch tagID(tag) {
@@ -271,6 +276,7 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 				return nil, fmt.Errorf("reading state[%d].buffer_index: %v", state, err)
 			}
 			machine.states[state].buffer = machine.buffers[bufferIdx]
+			hasNonProto = true
 		case startOfMessageTag:
 		case startOfSubmessageTag:
 		default:
@@ -307,6 +313,10 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 	}
 	if subtypeIdx != len(subtypes) {
 		return nil, fmt.Errorf("not all subtypes used: %d/%d", subtypeIdx, len(subtypes))
+	}
+
+	if hasNonProto {
+		machine.nonProtoLengths = machine.buffers[len(machine.buffers)-1]
 	}
 
 	// Read the state index for the initial stateMachine state.
@@ -364,7 +374,16 @@ func (m *stateMachine) execute() ([][]byte, error) {
 		case noOpTag:
 			// do nothing
 		case nonProtoTag:
-			panic("TODO nonProtoTag")
+			size, err := binary.ReadUvarint(m.nonProtoLengths)
+			if err != nil {
+				return nil, fmt.Errorf("reading non-proto length: %v", err)
+			}
+			rec := make([]byte, size)
+			if _, err := io.ReadFull(currentState.buffer, rec); err != nil {
+				return nil, fmt.Errorf("reading non-proto: %v", err)
+			}
+			records[recordIdx] = rec
+			recordIdx--
 		case startOfMessageTag:
 			// We've finished a full record.  Add it to the output records and reset
 			// the writer for the next record.
@@ -452,12 +471,10 @@ func (m *stateMachine) execute() ([][]byte, error) {
 				default:
 					return nil, fmt.Errorf("unknown protoBytesType: %s", []byte{byte(currentState.subtype)})
 				}
-			case protoStartGroupType:
-				panic("TODO protoStartGroupType")
-			case protoEndGroupType:
-				panic("TODO protoEndGroupType")
+			case protoStartGroupType, protoEndGroupType:
+				writer.Push(currentState.data)
 			default:
-				panic("TODO UNKNOWN proto type")
+				return nil, fmt.Errorf("unknown proto type: 0x%x", currentState.subtype)
 			}
 		}
 
