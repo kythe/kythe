@@ -19,8 +19,10 @@ package riegeli
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
+	"io/ioutil"
 )
 
 // Encoding format documentation:
@@ -327,8 +329,9 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 	machine.initial = int(initState)
 
 	// Ensure the full header has been read.
-	if b, err := hdr.ReadByte(); err != io.EOF {
-		return nil, fmt.Errorf("leftover header byte: 0x%x", b)
+	leftover, err := ioutil.ReadAll(hdr)
+	if len(leftover) != 0 || err != nil {
+		return nil, fmt.Errorf("leftover header bytes (err: %v): %s", err, hex.EncodeToString(leftover))
 	}
 
 	// Decompress the transition bytes from the tail of `src`.
@@ -504,10 +507,14 @@ func (m *stateMachine) execute() ([][]byte, error) {
 		}
 	}
 
+	if writer.Len() != 0 {
+		return nil, fmt.Errorf("unexpected leftover record bytes: %d", writer.Len())
+	}
+
 	// Ensure we read all data from the buffers.
 	for i, b := range m.buffers {
-		if _, err := b.Read(make([]byte, 1)); err != io.EOF {
-			return nil, fmt.Errorf("buffer[%d] leftover", i)
+		if leftover, err := ioutil.ReadAll(b); len(leftover) != 0 || err != nil {
+			return nil, fmt.Errorf("buffer[%d] leftover (err: %v): %s", i, err, hex.EncodeToString(leftover))
 		}
 	}
 

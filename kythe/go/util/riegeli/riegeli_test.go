@@ -21,7 +21,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
+	"strings"
 	"testing"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
+
+	rtpb "kythe.io/kythe/go/util/riegeli/riegeli_test_go_proto"
 )
 
 func TestWriteEmpty(t *testing.T) {
@@ -46,18 +53,31 @@ func TestWriteEmpty(t *testing.T) {
 	}
 }
 
-func TestReadWriteStringsDefaults(t *testing.T) { testReadWriteStrings(t, nil) }
+// TODO(schroederc): replace name with string encoding of options (ala C++)
+var testedOptions = []struct {
+	Name string
+	*WriterOptions
+}{
+	{"defaults", nil},
+	{"uncompressed", &WriterOptions{Compression: NoCompression}},
+	{"brotli", &WriterOptions{Compression: BrotliCompression(-1)}},
+	{"zstd", &WriterOptions{Compression: ZSTDCompression(-1)}},
 
-func TestReadWriteStringsUncompressed(t *testing.T) {
-	testReadWriteStrings(t, &WriterOptions{Compression: NoCompression})
+	{"transpose", &WriterOptions{Transpose: true}},
+	{"uncompressed,transpose", &WriterOptions{Compression: NoCompression, Transpose: true}},
+	{"brotli,transpose", &WriterOptions{Compression: BrotliCompression(-1), Transpose: true}},
 }
 
-func TestReadWriteStringsBrotli(t *testing.T) {
-	testReadWriteStrings(t, &WriterOptions{Compression: BrotliCompression(-1)})
+func TestReadWriteNonProto(t *testing.T) {
+	for _, test := range testedOptions {
+		t.Run(test.Name, func(t *testing.T) { testReadWriteStrings(t, test.WriterOptions) })
+	}
 }
 
-func TestReadWriteStringsZSTD(t *testing.T) {
-	testReadWriteStrings(t, &WriterOptions{Compression: ZSTDCompression(-1)})
+func TestReadWriteProto(t *testing.T) {
+	for _, test := range testedOptions {
+		t.Run(test.Name, func(t *testing.T) { testReadWriteProtos(t, test.WriterOptions) })
+	}
 }
 
 func writeStrings(t *testing.T, opts *WriterOptions, n int) *bytes.Buffer {
@@ -90,6 +110,60 @@ func testReadWriteStrings(t *testing.T, opts *WriterOptions) {
 	rec, err := rd.Next()
 	if err != io.EOF {
 		t.Errorf("Unexpected final Read: %q %v", hex.EncodeToString(rec), err)
+	}
+}
+
+func writeProtos(t *testing.T, opts *WriterOptions, n int) *bytes.Buffer {
+	var buf bytes.Buffer
+	wr := NewWriter(&buf, opts)
+
+	for i := 0; i < n; i++ {
+		if err := wr.PutProto(numToProto(i)); err != nil {
+			t.Fatalf("Error PutProto(%d): %v", i, err)
+		}
+	}
+	if err := wr.Close(); err != nil {
+		t.Fatalf("Close error: %v", err)
+	}
+	return &buf
+}
+
+func numToProto(i int) *rtpb.Complex {
+	msg := &rtpb.Complex{
+		Str:  proto.String(fmt.Sprintf("s%d", i)),
+		I32:  proto.Int32(int32(i)),
+		I64:  proto.Int64(int64(i)),
+		Bits: []byte(fmt.Sprintf("b%d", i)),
+		SimpleNested: &rtpb.Simple{
+			Name: proto.String(fmt.Sprintf("name%d", i)),
+		},
+	}
+	for j := 0; j < i%8; j++ {
+		msg.Rep = append(msg.Rep, fmt.Sprintf("rep%d_%d", i, j))
+		msg.Group = append(msg.Group, &rtpb.Complex_Group{
+			GrpStr: proto.String(fmt.Sprintf("gs%d_%d", i, j)),
+		})
+	}
+	for j, complexNested := 0, msg; j < i%100; j++ {
+		nextLevel := &rtpb.Complex{Str: proto.String(fmt.Sprintf("cn%d_%d", i, j))}
+		complexNested.ComplexNested, complexNested = nextLevel, nextLevel
+	}
+	return msg
+}
+
+func testReadWriteProtos(t *testing.T, opts *WriterOptions) {
+	const N = 1e3
+	buf := writeProtos(t, opts, N)
+	log.Printf("Compressed size of %q: %d bytes", t.Name(), buf.Len())
+	rd := NewReader(bytes.NewReader(buf.Bytes()))
+	for i := 0; i < N; i++ {
+		expected := numToProto(i)
+		var found rtpb.Complex
+		if err := rd.NextProto(&found); err != nil {
+			t.Fatalf("Read error: %v", err)
+		} else if diff := cmp.Diff(&found, expected, ignoreProtoXXXFields); diff != "" {
+			t.Errorf("Unexpected record:  (-: found; +: expected)\n%s", diff)
+		}
 	}
 }
 
@@ -232,3 +306,12 @@ func TestReaderSeekAllPositions(t *testing.T) {
 // TODO(schroederc): test transposed chunks
 // TODO(schroederc): test RecordsMetadata
 // TODO(schroederc): test padding
+
+var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
+	for _, s := range p {
+		if strings.HasPrefix(s.String(), ".XXX_") {
+			return true
+		}
+	}
+	return false
+}, cmp.Ignore())
