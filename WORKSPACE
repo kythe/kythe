@@ -53,6 +53,21 @@ bind(
     actual = "@net_zlib//:zlib",
 )
 
+new_http_archive(
+    name = "org_libzip",
+    build_file = "third_party/libzip.BUILD",
+    sha256 = "a5d22f0c87a2625450eaa5e10db18b8ee4ef17042102d04c62e311993a2ba363",
+    # sha256sum for the libzip.org packages (which Bazel refuses to download).
+    #sha256 = "47eaa45faa448c72bd6906e5a096846c469a185f293cafd8456abb165841b3f2",
+    strip_prefix = "libzip-rel-1-5-1",
+    urls = [
+        # This is the official download link, but causes Bazel to throw
+        # `java.lang.RuntimeException: Could not generate DH keypair`
+        #"https://libzip.org/download/libzip-1.5.1.tar.gz",
+        "https://github.com/nih-at/libzip/archive/rel-1-5-1.zip",
+    ],
+)
+
 http_archive(
     name = "boringssl",  # Must match upstream workspace name.
     # Gitiles creates gzip files with an embedded timestamp, so we cannot use
