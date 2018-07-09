@@ -64,8 +64,9 @@ http_archive(
 # Make sure to update regularly in accordance with Abseil's principle of live at HEAD
 http_archive(
     name = "com_google_absl",
-    strip_prefix = "abseil-cpp-da336a84e9c1f86409b21996164ae9602b37f9ca",
-    url = "https://github.com/abseil/abseil-cpp/archive/da336a84e9c1f86409b21996164ae9602b37f9ca.zip",
+    sha256 = "84c749757edd12da6188a0629a5d26bff8bba72a123b3aa571f4f5d9a03eaee6",
+    strip_prefix = "abseil-cpp-8f612ebb152fb7e05643a2bcf78cb89a8c0641ad",
+    url = "https://github.com/abseil/abseil-cpp/archive/8f612ebb152fb7e05643a2bcf78cb89a8c0641ad.zip",
 )
 
 http_archive(
