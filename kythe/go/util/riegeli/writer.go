@@ -25,16 +25,20 @@ import (
 )
 
 // https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md#file-signature
-var fileSignatureChunkHeader = chunkHeader{ChunkType: fileSignatureChunkType}
+var fileSignatureChunk = &chunk{Header: chunkHeader{ChunkType: fileSignatureChunkType}}
+
+func init() {
+	binary.LittleEndian.PutUint64(fileSignatureChunk.Header.DataHash[:], hashBytes(fileSignatureChunk.Data))
+}
 
 func (w *Writer) ensureFileHeader() error {
 	if w.fileHeaderWritten {
 		return nil
 	}
 
-	fileSignature := &chunk{Header: fileSignatureChunkHeader}
-	_, err := fileSignature.WriteTo(w.w, w.w.pos)
+	_, err := fileSignatureChunk.WriteTo(w.w, w.w.pos)
 	// TODO(schroederc): encode RecordsMetadata chunk
+	w.fileHeaderWritten = true
 	return err
 }
 
@@ -57,8 +61,10 @@ func (w *Writer) flushRecord() error {
 		},
 		Data: data,
 	}
-	_, err = chunk.WriteTo(w.w, w.w.pos)
-	w.recordWriter = newRecordChunkWriter(w.opts)
+	if _, err := chunk.WriteTo(w.w, w.w.pos); err != nil {
+		return err
+	}
+	w.recordWriter, err = newRecordChunkWriter(w.opts)
 	return err
 }
 
@@ -162,12 +168,20 @@ func (r *recordChunkWriter) put(rec []byte) error {
 	return nil
 }
 
+// Close implements the io.Closer interface.
+func (r *recordChunkWriter) Close() error {
+	if err := r.sizesCompressor.Close(); err != nil {
+		return fmt.Errorf("closing record size compressor: %v", err)
+	} else if err := r.valsCompressor.Close(); err != nil {
+		return fmt.Errorf("closing record value compressor: %v", err)
+	}
+	return nil
+}
+
 // encode returns the binary-encoding of the Riegeli record chunk.
 func (r *recordChunkWriter) encode() ([]byte, error) {
-	if err := r.sizesCompressor.Close(); err != nil {
-		return nil, fmt.Errorf("closing record size compressor: %v", err)
-	} else if err := r.valsCompressor.Close(); err != nil {
-		return nil, fmt.Errorf("closing record value compressor: %v", err)
+	if err := r.Close(); err != nil {
+		return nil, err
 	}
 
 	sizesSizePrefix := make([]byte, binary.MaxVarintLen64)
@@ -185,12 +199,20 @@ func (r *recordChunkWriter) encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func newRecordChunkWriter(opts *WriterOptions) *recordChunkWriter {
+func newRecordChunkWriter(opts *WriterOptions) (*recordChunkWriter, error) {
+	vals, err := newCompressor(opts)
+	if err != nil {
+		return nil, err
+	}
+	sizes, err := newCompressor(opts)
+	if err != nil {
+		return nil, err
+	}
 	return &recordChunkWriter{
 		compressionType: opts.compressionType(),
-		valsCompressor:  newCompressor(opts),
-		sizesCompressor: newCompressor(opts),
-	}
+		valsCompressor:  vals,
+		sizesCompressor: sizes,
+	}, nil
 }
 
 // WriteTo implements the io.WriterTo interface for chunkHeaders.

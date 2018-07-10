@@ -7,7 +7,9 @@ go_binary(
     srcs = ["viewindex.go"],
     deps = [
         "//kythe/go/platform/kindex",
+        "//kythe/go/platform/kzip",
         "//kythe/go/util/flagutil",
+        "//kythe/proto:analysis_go_proto",
         "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:cxx_go_proto",
         "//kythe/proto:go_go_proto",

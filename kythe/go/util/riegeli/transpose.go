@@ -66,33 +66,17 @@ func newTransposedRecordReader(c *chunk) (recordReader, error) {
 		return nil, err
 	}
 
+	machine.numRecords = int(c.Header.NumRecords)
+	if c.Header.ChunkType == fileMetadataChunkType {
+		machine.numRecords = 1
+	}
+
 	records, err := machine.execute()
 	if err != nil {
 		return nil, fmt.Errorf("transpose state machine error: %v", err)
 	}
 
-	return &transposedRecordReader{records}, nil
-}
-
-type transposedRecordReader struct{ records [][]byte }
-
-// Close implements part of the recordReader interface.
-func (t *transposedRecordReader) Close() error { return nil }
-
-// Len implements part of the recordReader interface.
-func (t *transposedRecordReader) Len() uint64 { return uint64(len(t.records)) }
-
-// Next implements part of the recordReader interface.
-func (t *transposedRecordReader) Next() ([]byte, error) {
-	if len(t.records) == 0 {
-		return nil, io.EOF
-	}
-
-	i := len(t.records) - 1
-	rec := t.records[i]
-	t.records[i] = nil
-	t.records = t.records[:i]
-	return rec, nil
+	return &fixedRecordReader{records: records}, nil
 }
 
 // A stateMachine is the decoded structure of a Riegeli transposed chunk.  The
@@ -115,7 +99,12 @@ type stateMachine struct {
 	initial     int
 	states      []stateNode
 	buffers     []byteReader
-	transitions byteReader
+	transitions decompressor
+	numRecords  int
+
+	// Sequence of varints for non-proto record sizes (only set when at least 1
+	// record isn't tag-encoded.)
+	nonProtoLengths byteReader
 }
 
 type stateNode struct {
@@ -222,6 +211,8 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 	for bucket, rd := range buckets {
 		if _, err := rd.ReadByte(); err != io.EOF {
 			return nil, fmt.Errorf("trailing bucket data: bucket=%d/%d", bucket, numBuckets)
+		} else if err := rd.Close(); err != nil {
+			return nil, fmt.Errorf("closing bucket decompressor: %v", err)
 		}
 	}
 
@@ -273,6 +264,7 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 	//   - Optionally associate each state tag with its subtype
 	//   - Optionally associate each state with a data buffer
 	var subtypeIdx int
+	var hasNonProto bool
 	for state := 0; state < int(numStates); state++ {
 		tag := tags[state]
 		switch tagID(tag) {
@@ -284,6 +276,7 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 				return nil, fmt.Errorf("reading state[%d].buffer_index: %v", state, err)
 			}
 			machine.states[state].buffer = machine.buffers[bufferIdx]
+			hasNonProto = true
 		case startOfMessageTag:
 		case startOfSubmessageTag:
 		default:
@@ -322,6 +315,10 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 		return nil, fmt.Errorf("not all subtypes used: %d/%d", subtypeIdx, len(subtypes))
 	}
 
+	if hasNonProto {
+		machine.nonProtoLengths = machine.buffers[len(machine.buffers)-1]
+	}
+
 	// Read the state index for the initial stateMachine state.
 	initState, err := binary.ReadUvarint(hdr)
 	if err != nil {
@@ -358,8 +355,10 @@ func (m *stateMachine) execute() ([][]byte, error) {
 		// submessageStackData is the associated data for each submessage start
 		submessageStackData [][]byte
 
-		writer  = &backwardWriter{} // currently open record being written
-		records [][]byte            // all finished output records
+		writer = &backwardWriter{} // currently open record being written
+
+		records   = make([][]byte, m.numRecords) // all finished output records
+		recordIdx = m.numRecords - 1
 	)
 
 	if currentState.implicit {
@@ -375,7 +374,16 @@ func (m *stateMachine) execute() ([][]byte, error) {
 		case noOpTag:
 			// do nothing
 		case nonProtoTag:
-			panic("TODO nonProtoTag")
+			size, err := binary.ReadUvarint(m.nonProtoLengths)
+			if err != nil {
+				return nil, fmt.Errorf("reading non-proto length: %v", err)
+			}
+			rec := make([]byte, size)
+			if _, err := io.ReadFull(currentState.buffer, rec); err != nil {
+				return nil, fmt.Errorf("reading non-proto: %v", err)
+			}
+			records[recordIdx] = rec
+			recordIdx--
 		case startOfMessageTag:
 			// We've finished a full record.  Add it to the output records and reset
 			// the writer for the next record.
@@ -384,7 +392,8 @@ func (m *stateMachine) execute() ([][]byte, error) {
 			}
 			rec := make([]byte, writer.Len())
 			io.ReadFull(writer, rec)
-			records = append(records, rec)
+			records[recordIdx] = rec
+			recordIdx--
 			writer.Reset()
 		case startOfSubmessageTag:
 			// We've finished a submessage.  Pop the submessageStack and write both
@@ -462,12 +471,10 @@ func (m *stateMachine) execute() ([][]byte, error) {
 				default:
 					return nil, fmt.Errorf("unknown protoBytesType: %s", []byte{byte(currentState.subtype)})
 				}
-			case protoStartGroupType:
-				panic("TODO protoStartGroupType")
-			case protoEndGroupType:
-				panic("TODO protoEndGroupType")
+			case protoStartGroupType, protoEndGroupType:
+				writer.Push(currentState.data)
 			default:
-				panic("TODO UNKNOWN proto type")
+				return nil, fmt.Errorf("unknown proto type: 0x%x", currentState.subtype)
 			}
 		}
 
@@ -478,6 +485,9 @@ func (m *stateMachine) execute() ([][]byte, error) {
 			// Read a byte transition to move by an additional offset
 			trans, err := m.transitions.ReadByte()
 			if err == io.EOF {
+				if err := m.transitions.Close(); err != nil {
+					return nil, fmt.Errorf("closing transitions decompressor: %v", err)
+				}
 				// Successful end of currentState machine
 				break
 			} else if err != nil {

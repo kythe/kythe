@@ -4,7 +4,7 @@ load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.13", "0.15")
+check_version("0.14", "0.15")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
@@ -79,8 +79,9 @@ http_archive(
 # Make sure to update regularly in accordance with Abseil's principle of live at HEAD
 http_archive(
     name = "com_google_absl",
-    strip_prefix = "abseil-cpp-da336a84e9c1f86409b21996164ae9602b37f9ca",
-    url = "https://github.com/abseil/abseil-cpp/archive/da336a84e9c1f86409b21996164ae9602b37f9ca.zip",
+    sha256 = "84c749757edd12da6188a0629a5d26bff8bba72a123b3aa571f4f5d9a03eaee6",
+    strip_prefix = "abseil-cpp-8f612ebb152fb7e05643a2bcf78cb89a8c0641ad",
+    url = "https://github.com/abseil/abseil-cpp/archive/8f612ebb152fb7e05643a2bcf78cb89a8c0641ad.zip",
 )
 
 http_archive(
@@ -484,7 +485,7 @@ go_repository(
 
 go_repository(
     name = "com_github_apache_beam",
-    commit = "0ea97a562f82e98ff5cbe5a0825d298663112cdb",
+    commit = "625bfb536df1b34a21a87a9a350b0dc7c351997f",
     custom = "beam",
     importpath = "github.com/apache/beam",
 )
@@ -532,4 +533,11 @@ go_repository(
     custom = "x_sys",
     custom_git = "https://github.com/golang/sys.git",
     importpath = "golang.org/x/sys",
+)
+
+go_repository(
+    name = "com_github_datadog_zstd",
+    commit = "aebefd9fcb99f22cd691ef778a12ed68f0e6a1ab",
+    custom = "zstd",
+    importpath = "github.com/DataDog/zstd",
 )

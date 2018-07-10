@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/DataDog/zstd"
 	"github.com/google/brotli/go/cbrotli"
 )
 
@@ -42,10 +43,21 @@ func newDecompressor(r byteReader, c compressionType) (decompressor, error) {
 	switch c {
 	case brotliCompression:
 		return &byteReadCloser{cbrotli.NewReader(r)}, nil
-		// TODO(schroederc): zstd support
+	case zstdCompression:
+		return &byteReadCloser{zstd.NewReader(r)}, nil
 	default:
 		return nil, fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(c)})
 	}
+}
+
+// A byteReadCloser trivially implements io.ByteReader for a io.ReadCloser.
+type byteReadCloser struct{ io.ReadCloser }
+
+// ReadByte implements the io.ByteReader interface.
+func (b byteReadCloser) ReadByte() (byte, error) {
+	var buf [1]byte
+	_, err := io.ReadFull(b.ReadCloser, buf[:])
+	return buf[0], err
 }
 
 // A compressor builds a Riegeli compressed block.
@@ -54,18 +66,20 @@ type compressor interface {
 	io.Closer
 }
 
-func newCompressor(opts *WriterOptions) compressor {
+func newCompressor(opts *WriterOptions) (compressor, error) {
 	buf := bytes.NewBuffer(nil)
 	switch opts.compressionType() {
 	case noCompression:
-		return &nopCompressorClose{buf}
+		return &nopCompressorClose{buf}, nil
 	case brotliCompression:
 		brotliOpts := cbrotli.WriterOptions{Quality: opts.compressionLevel()}
 		w := cbrotli.NewWriter(buf, brotliOpts)
-		return &sizePrefixedWriterTo{buf: buf, WriteCloser: w}
-		// TODO(schroederc): zstd support
+		return &sizePrefixedWriterTo{buf: buf, WriteCloser: w}, nil
+	case zstdCompression:
+		w := zstd.NewWriterLevel(buf, opts.compressionLevel())
+		return &sizePrefixedWriterTo{buf: buf, WriteCloser: w}, nil
 	default:
-		panic(fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(opts.compressionType())}))
+		return nil, fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(opts.compressionType())})
 	}
 }
 

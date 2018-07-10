@@ -22,6 +22,8 @@
 package riegeli
 
 import (
+	"errors"
+	"fmt"
 	"io"
 
 	"github.com/golang/protobuf/proto"
@@ -34,6 +36,7 @@ const (
 	DefaultChunkSize = 1 << 20
 
 	DefaultBrotliLevel = 9
+	DefaultZSTDLevel   = 9
 )
 
 // DefaultCompression is the default Compression for the WriterOptions.
@@ -52,7 +55,6 @@ func (*compressionLevel) isCompressionType() {}
 var (
 	// NoCompression indicates that no compression will be used to encode chunks.
 	NoCompression CompressionType = &compressionLevel{noCompression, 0}
-	// TODO(schroederc): add zstd compression
 )
 
 // BrotliCompression returns a CompressionType for Brotli compression with the
@@ -63,6 +65,16 @@ func BrotliCompression(level int) CompressionType {
 		level = DefaultBrotliLevel
 	}
 	return &compressionLevel{brotliCompression, level}
+}
+
+// ZSTDCompression returns a CompressionType for zstd compression with the given
+// compression level.  If level < 0 || level > 22 (outside of the levels
+// specified by the zstdlib spec), then the DefaultZSTDLevel will be used.
+func ZSTDCompression(level int) CompressionType {
+	if level < 0 || level > 22 {
+		level = DefaultZSTDLevel
+	}
+	return &compressionLevel{zstdCompression, level}
 }
 
 // WriterOptions customizes the behavior of a Riegeli Writer.
@@ -104,7 +116,12 @@ func NewWriter(w io.Writer, opts *WriterOptions) *Writer { return NewWriterAt(w,
 
 // NewWriterAt returns a Riegeli Writer at the given byte offset within w.
 func NewWriterAt(w io.Writer, pos int, opts *WriterOptions) *Writer {
-	return &Writer{opts: opts, w: &blockWriter{w: w, pos: pos}}
+	return &Writer{
+		opts: opts,
+		w:    &blockWriter{w: w, pos: pos},
+
+		fileHeaderWritten: pos != 0,
+	}
 }
 
 // Writer is a Riegeli records file writer.
@@ -122,10 +139,16 @@ type Writer struct {
 
 // Put writes/buffers the given []byte as a Riegili record.
 func (w *Writer) Put(rec []byte) error {
-	if err := w.ensureFileHeader(); err != nil {
+	err := w.ensureFileHeader()
+	if err != nil {
 		return err
-	} else if w.recordWriter == nil {
-		w.recordWriter = newRecordChunkWriter(w.opts)
+	}
+
+	if w.recordWriter == nil {
+		w.recordWriter, err = newRecordChunkWriter(w.opts)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := w.recordWriter.put(rec); err != nil {
@@ -153,40 +176,74 @@ func (w *Writer) Flush() error {
 	return w.flushRecord()
 }
 
-// TODO(schroederc): add concatenation function
+// Close releases all resources associated with Writer.  Any buffered records
+// will be flushed before releasing any resources.
+func (w *Writer) Close() error {
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("error flushing writer: %v", err)
+	} else if w.recordWriter != nil {
+		// Ensure the recordWriter is closed even if it is empty.
+		return w.recordWriter.Close()
+	}
+	return nil
+}
 
-// NewReader returns a Riegeli Reader for r.
-func NewReader(r io.Reader) *Reader { return &Reader{r: &chunkReader{&blockReader{r: r}}} }
+// TODO(schroederc): add concatenation function
+// TODO(schroederc): return positions from Writer
+
+// A RecordPosition is a pointer to the starting offset of a record within a
+// Riegeli file.
+type RecordPosition struct {
+	// ChunkBegin is the starting offset of a chunk within a Riegeli file.
+	ChunkBegin int64
+
+	// RecordIndex is the index of a record within the chunk starting at
+	// ChunkBegin.
+	RecordIndex int64
+}
+
+// index returns an integer index corresponding to the given RecordPosition.
+func (r RecordPosition) index() int64 { return r.ChunkBegin + r.RecordIndex }
 
 // Reader is a sequential Riegeli records file reader.
-//
-// TODO(schroederc): add support for seeking
-type Reader struct {
-	r *chunkReader
+type Reader interface {
+	// RecordsMetadata returns the optional metadata from the underlying Riegeli
+	// file.  If not found, an empty RecordsMetadata is returned and err == nil.
+	RecordsMetadata() (*rmpb.RecordsMetadata, error)
 
-	metadata *rmpb.RecordsMetadata
+	// Next reads and returns the next Riegeli record from the underlying io.Reader.
+	Next() ([]byte, error)
 
-	recordReader recordReader
+	// NextProto reads, unmarshals, and returns the next proto.Message from the
+	// underlying io.Reader.
+	NextProto(msg proto.Message) error
+
+	// Position returns the current position of the Reader.
+	Position() (RecordPosition, error)
 }
 
-// RecordsMetadata returns the optional metadata from the underlying Riegeli
-// file.  If not found, nil is returned for both the metadata and the error.
-func (r *Reader) RecordsMetadata() (*rmpb.RecordsMetadata, error) {
-	if err := r.ensureRecordReader(); err != nil && err != io.EOF {
-		return nil, err
-	}
-	return r.metadata, nil
+// ReadSeeker is a Riegeli records file reader able to seek to arbitrary positions.
+type ReadSeeker interface {
+	Reader
+
+	// Seek interprets pos as an offset to a record within the Riegeli file.  pos
+	// must be between 0 and the file's size.  If pos is between records, Seek will
+	// position the reader to the next record in the file.
+	Seek(pos int64) error
+
+	// SeekToRecord seeks to the given RecordPosition.
+	SeekToRecord(pos RecordPosition) error
 }
 
-// Next reads and returns the next Riegeli record from the underlying io.Reader.
-func (r *Reader) Next() ([]byte, error) { return r.nextRecord() }
+type errSeeker struct{ io.Reader }
 
-// NextProto reads, unmarshals, and returns the next proto.Message from the
-// underlying io.Reader.
-func (r *Reader) NextProto(msg proto.Message) error {
-	rec, err := r.Next()
-	if err != nil {
-		return err
-	}
-	return proto.Unmarshal(rec, msg)
+// Seek implements the io.Seeker interface.
+func (errSeeker) Seek(offset int64, whence int) (int64, error) {
+	return 0, errors.New("Seek should not be called on a Reader")
 }
+
+// NewReader returns a Riegeli Reader for r.
+func NewReader(r io.Reader) Reader { return NewReadSeeker(&errSeeker{r}) }
+
+// NewReadSeeker returns a Riegeli ReadSeeker for r.
+func NewReadSeeker(r io.ReadSeeker) ReadSeeker { return &reader{r: &chunkReader{r: &blockReader{r: r}}} }

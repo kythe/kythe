@@ -46,6 +46,7 @@ func init() {
 
 // FromEntries transforms a PCollection of *ppb.Entry protos into *ppb.Nodes.
 func FromEntries(s beam.Scope, entries beam.PCollection) beam.PCollection {
+	s = s.Scope("FromEntries")
 	return beam.ParDo(s, embedSourceKey,
 		beam.CombinePerKey(s, &combineNodes{},
 			beam.ParDo(s, entryToNode, entries)))

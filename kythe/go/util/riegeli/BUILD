@@ -15,6 +15,7 @@ go_library(
     ],
     deps = [
         "//third_party/riegeli:records_metadata_go_proto",
+        "@com_github_datadog_zstd//:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_minio_highwayhash//:go_default_library",
         "@org_brotli_go//cbrotli",
@@ -36,6 +37,7 @@ go_test(
         "testdata/golden.entries.json",
         "testdata/golden.entries.uncompressed.riegeli",
         "testdata/golden.entries.uncompressed_transpose.riegeli",
+        "testdata/golden.entries.zstd.riegeli",
         "testdata/golden.records_metadata.textproto",
     ],
     library = ":riegeli",

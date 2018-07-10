@@ -26,7 +26,9 @@ import (
 
 func TestWriteEmpty(t *testing.T) {
 	var buf bytes.Buffer
-	NewWriter(&buf, nil).Flush()
+	if err := NewWriter(&buf, nil).Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	// The standard Riegeli file header
 	expected := []byte{
@@ -54,21 +56,28 @@ func TestReadWriteStringsBrotli(t *testing.T) {
 	testReadWriteStrings(t, &WriterOptions{Compression: BrotliCompression(-1)})
 }
 
-func testReadWriteStrings(t *testing.T, opts *WriterOptions) {
-	const N = 1e6
+func TestReadWriteStringsZSTD(t *testing.T) {
+	testReadWriteStrings(t, &WriterOptions{Compression: ZSTDCompression(-1)})
+}
 
+func writeStrings(t *testing.T, opts *WriterOptions, n int) *bytes.Buffer {
 	var buf bytes.Buffer
 	wr := NewWriter(&buf, opts)
 
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		if err := wr.Put([]byte(fmt.Sprintf("%d", i))); err != nil {
 			t.Fatalf("Error Put(%d): %v", i, err)
 		}
 	}
-	if err := wr.Flush(); err != nil {
-		t.Fatalf("Flush error: %v", err)
+	if err := wr.Close(); err != nil {
+		t.Fatalf("Close error: %v", err)
 	}
+	return &buf
+}
 
+func testReadWriteStrings(t *testing.T, opts *WriterOptions) {
+	const N = 1e5
+	buf := writeStrings(t, opts, N)
 	rd := NewReader(bytes.NewReader(buf.Bytes()))
 	for i := 0; i < N; i++ {
 		rec, err := rd.Next()
@@ -90,8 +99,8 @@ func TestEmptyRecord(t *testing.T) {
 
 	if err := wr.Put([]byte{}); err != nil {
 		t.Fatalf("Error writing empty record: %v", err)
-	} else if err := wr.Flush(); err != nil {
-		t.Fatalf("Flush error: %v", err)
+	} else if err := wr.Close(); err != nil {
+		t.Fatalf("Close error: %v", err)
 	}
 
 	rd := NewReader(bytes.NewReader(buf.Bytes()))
@@ -103,6 +112,120 @@ func TestEmptyRecord(t *testing.T) {
 
 	if rec, err := rd.Next(); err != io.EOF {
 		t.Fatalf("Unexpected Next record/error: %v %v", rec, err)
+	}
+}
+
+func TestReaderSeekRecords(t *testing.T) {
+	const N = 1e4
+	buf := writeStrings(t, nil, N)
+
+	rd := NewReadSeeker(bytes.NewReader(buf.Bytes()))
+	lastIndex := int64(-1)
+	var positions []RecordPosition
+	for i := 0; i < N; i++ {
+		pos, err := rd.Position()
+		if err != nil {
+			t.Fatalf("Error getting position: %v", err)
+		} else if _, err := rd.Next(); err != nil {
+			t.Fatalf("Error reading sequentially: %v", err)
+		}
+		positions = append(positions, pos)
+		idx := pos.index()
+		if lastIndex >= idx {
+			t.Errorf("Position not monotonically increasing: %d >= %d", lastIndex, idx)
+		}
+		lastIndex = idx
+	}
+	if rec, err := rd.Next(); err != io.EOF {
+		t.Fatalf("Unexpected Next record/error: %v %v", rec, err)
+	}
+
+	// Read all records by seeking to each position in reverse order
+	for i := int(N - 1); i >= 0; i-- {
+		p := positions[i]
+		if err := rd.SeekToRecord(p); err != nil {
+			t.Fatalf("Error seeking to record %d at %v: %v", i, p, err)
+		}
+		rec, err := rd.Next()
+		if err != nil {
+			t.Fatalf("Read error at %v: %v", p, err)
+		} else if string(rec) != fmt.Sprintf("%d", i) {
+			t.Errorf("At %v found: %s; expected: %d;", p, hex.EncodeToString(rec), i)
+		}
+	}
+}
+
+func TestReaderSeekKnownPositions(t *testing.T) {
+	const N = 1e4
+	buf := writeStrings(t, nil, N)
+
+	rd := NewReadSeeker(bytes.NewReader(buf.Bytes()))
+	lastIndex := int64(-1)
+	var positions []RecordPosition
+	for i := 0; i < N; i++ {
+		pos, err := rd.Position()
+		if err != nil {
+			t.Fatalf("Error getting position: %v", err)
+		} else if _, err := rd.Next(); err != nil {
+			t.Fatalf("Error reading sequentially: %v", err)
+		}
+		positions = append(positions, pos)
+		idx := pos.index()
+		if lastIndex >= idx {
+			t.Errorf("Position not monotonically increasing: %d >= %d", lastIndex, idx)
+		}
+		lastIndex = idx
+	}
+	if rec, err := rd.Next(); err != io.EOF {
+		t.Fatalf("Unexpected Next record/error: %v %v", rec, err)
+	}
+
+	// Read all records by seeking to each position in reverse order
+	for i := int(N - 1); i >= 0; i-- {
+		p := positions[i]
+		if err := rd.Seek(p.index()); err != nil {
+			t.Fatalf("Error seeking to record %d at %v (%d): %v", i, p, p.index(), err)
+		}
+		rec, err := rd.Next()
+		if err != nil {
+			t.Fatalf("Read error at %v: %v", p, err)
+		} else if string(rec) != fmt.Sprintf("%d", i) {
+			t.Errorf("At %v found: %s; expected: %d;", p, hex.EncodeToString(rec), i)
+		}
+	}
+}
+
+func TestReaderSeekAllPositions(t *testing.T) {
+	const N = 1e4
+	buf := writeStrings(t, nil, N)
+
+	rd := NewReadSeeker(bytes.NewReader(buf.Bytes()))
+
+	// Ensure every byte position is seekable
+	var expected int
+	for i := 0; i < buf.Len(); i++ {
+		if err := rd.Seek(int64(i)); err != nil {
+			t.Fatalf("Error seeking to %d/%d: %v", i, buf.Len(), err)
+		}
+		rec, err := rd.Next()
+		if expected == N-1 {
+			if err != io.EOF {
+				t.Fatalf("Read past end of file at %d: %v %v", i, rec, err)
+			}
+		} else if err != nil {
+			t.Fatalf("Read error at %d/%d: %v; expected: %d", i, buf.Len(), err, expected)
+		}
+
+		if expected != N-1 && string(rec) != fmt.Sprintf("%d", expected) {
+			expected++
+			if string(rec) != fmt.Sprintf("%d", expected) {
+				t.Fatalf("At %d/%d found: %s; expected: %d;", i, buf.Len(), hex.EncodeToString(rec), expected)
+			}
+		}
+	}
+
+	if expected != N-1 {
+		t.Fatalf("Failed to read all known records: %d != %d", expected, int(N)-1)
 	}
 }
 
