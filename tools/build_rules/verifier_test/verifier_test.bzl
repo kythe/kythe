@@ -159,10 +159,7 @@ def _java_extract_kindex_impl(ctx):
     host_javabase = ctx.attr._host_javabase,
     source_files = ctx.files.srcs,
     output = jar,
-    deps = [java_common.create_provider(
-      compile_time_jars = jars,
-      use_ijar = False,
-    )],
+    deps = [JavaInfo(output_jar = curr_jar, compile_jar = curr_jar) for curr_jar in jars],
   )
 
   args = ctx.attr.opts + [
