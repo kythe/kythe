@@ -28,24 +28,36 @@
 class Scanner {
   constructor(private buf: Buffer, public ofs = 0) {}
 
-  /** Scans forward one codepoint. */
-  scan(): void {
-    let byte = this.buf[this.ofs++];
+  /** Scans forward one codepoint and returns the delta in UTF-16 offset. */
+  scan(): number {
+    const byte = this.buf[this.ofs++];
+
+    // This code interprets the bytes following the bit patterns found in
+    //   https://en.wikipedia.org/wiki/UTF-8#Description
+    // to scan forward by one code point.
 
     if ((byte & 0b10000000) === 0) {
       // Common case: ASCII.
-      return;
+      return 1;
     }
 
-    if ((byte & 0b11100000) == 0b11000000) {
+    if ((byte & 0b11100000) === 0b11000000) {
       this.ofs += 1;
-    } else if ((byte & 0b11110000) == 0b11100000) {
-      this.ofs += 2;
-    } else if ((byte & 0b11111000) == 0b11110000) {
-      this.ofs += 3;
-    } else {
-      throw new Error(`unhandled UTF-8 byte 0x${byte.toString(16)}`)
+      return 1;
     }
+
+    if ((byte & 0b11110000) === 0b11100000) {
+      this.ofs += 2;
+      return 1;
+    }
+
+    if ((byte & 0b11111000) === 0b11110000) {
+      this.ofs += 3;
+      // A surrogate pair is length 2 in Node.js.
+      return 2;
+    }
+
+    throw new Error(`unhandled UTF-8 byte 0x${byte.toString(16)}`);
   }
 }
 
@@ -67,6 +79,11 @@ export class OffsetTable {
    * so the first entry after zero is [spanSize, ...] and the second is
    * [spanSize*2, ...].
    *
+   * There is an exception when the input UTF-16 offset is a surrogate pair.
+   * Assume the UTF-16 offset is x. Since the length of a surrogate pair in
+   * Node.js in 2, x+1 is still within the surrogate pair so we will skip x+1.
+   * If x+1 is spanSize*n use x+2 as the start of the span instead.
+   *
    * To look up the byte offset of an input UTF-16 offset, we find the first
    * span occurring before the queried offset (which we can compute using simple
    * math using spanSize) and then repeat the scan forwards to find the offset
@@ -78,21 +95,20 @@ export class OffsetTable {
    * small, but the table is at least nice to prevent an O(1) scan from the
    * beginning of the file for every requested offset.
    */
-  offsets: Array<[number, number]>;
+  offsets: Array<[number, number]> = [];
 
-  constructor(private buf: Buffer, private spanSize: number = 128) {
+  constructor(public buf: Buffer, private spanSize = 128) {
     this.build(buf);
   }
 
   private build(bytes: Buffer) {
     this.offsets = [];
-    let scanner = new Scanner(bytes);
+    const scanner = new Scanner(bytes);
     let ofs = 0;
     let lastEntry = 0;
     this.offsets.push([ofs, scanner.ofs]);
     while (scanner.ofs < bytes.length) {
-      scanner.scan();
-      ofs++;
+      ofs += scanner.scan();
       if (ofs - lastEntry >= this.spanSize) {
         this.offsets.push([ofs, scanner.ofs]);
         lastEntry += this.spanSize;
@@ -101,11 +117,20 @@ export class OffsetTable {
   }
 
   lookup(findOfs: number): number {
-    let [u16, byte] = this.offsets[Math.floor(findOfs / this.spanSize)];
-    let scanner = new Scanner(this.buf, byte);
+    const offset = this.offsets[Math.floor(findOfs / this.spanSize)];
+    let u16 = offset[0];
+    const byte = offset[1];
+    // u16 and byte is a pair of UTF-16 and UTF-8 offsets. Scan forward to find
+    // the offset to lookup for.
+    const scanner = new Scanner(this.buf, byte);
     while (u16 < findOfs) {
-      scanner.scan();
-      u16++;
+      u16 += scanner.scan();
+    }
+    // We are scanning UTF-16 offsets one by one. If it skips findOfs it means
+    // that the findOfs is in the middle of a surrogate pair, which is invalid
+    // to lookup for.
+    if (u16 > findOfs) {
+      throw new Error(`The lookup offset is invalid`);
     }
     return scanner.ofs;
   }
