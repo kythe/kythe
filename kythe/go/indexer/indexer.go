@@ -931,6 +931,14 @@ func (pi *PackageInfo) isPackageInit(fi *funcInfo) bool {
 	return false
 }
 
+func trimVendorPrefix(path string) string {
+	const v = "vendor/"
+	if i := strings.Index(path, v); i >= 0 && (i == 0 || path[i-1] == '/') {
+		return path[i+len(v):]
+	}
+	return path
+}
+
 // vnameToImport returns the putative Go import path corresponding to v.  The
 // resulting string corresponds to the string literal appearing in source at
 // the import site for the package so named.
@@ -944,6 +952,9 @@ func vnameToImport(v *spb.VName, goRoot string) string {
 		return strings.TrimSuffix(tail, filepath.Ext(tail))
 	}
 	trimmed := strings.TrimSuffix(v.Path, filepath.Ext(v.Path))
+	if path := trimVendorPrefix(trimmed); path != trimmed {
+		return path
+	}
 	return filepath.Join(v.Corpus, trimmed)
 }
 
