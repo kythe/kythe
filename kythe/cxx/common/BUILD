@@ -286,3 +286,48 @@ cc_library(
     hdrs = ["language.h"],
     deps = ["//third_party/llvm"],
 )
+
+cc_library(
+    name = "index_writer",
+    srcs = ["index_writer.cc"],
+    hdrs = ["index_writer.h"],
+    deps = [
+        ":status",
+        "//kythe/proto:analysis_cc_proto",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "index_reader",
+    srcs = ["index_reader.cc"],
+    hdrs = ["index_reader.h"],
+    deps = [
+        ":status_or",
+        "//kythe/proto:analysis_cc_proto",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "status",
+    srcs = ["status.cc"],
+    hdrs = ["status.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "status_or",
+    hdrs = ["status_or.h"],
+    deps = [
+        ":status",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+    ],
+)
