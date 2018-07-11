@@ -105,19 +105,9 @@ func main() {
 		docURL = u
 	}
 
-	visit := indexGo
-	if *contOnErr {
-		visit = func(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
-			if err := indexGo(ctx, unit, f); err != nil {
-				log.Printf("Continuing after error: %v", err)
-			}
-			return nil
-		}
-	}
-
 	ctx := context.Background()
 	for _, path := range flag.Args() {
-		if err := visitPath(ctx, path, visit); err != nil {
+		if err := visitPath(ctx, path, indexGo); err != nil {
 			log.Fatalf("Error indexing %q: %v", path, err)
 		}
 	}
@@ -143,14 +133,18 @@ func checkMetadata(ri *apb.CompilationUnit_FileInput, f indexer.Fetcher) (*index
 	}, nil
 }
 
-// indexGo is a visitFunct that invokes the Kythe Go indexer on unit.
+// indexGo is a visitFunc that invokes the Kythe Go indexer on unit.
 func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
 	pi, err := indexer.Resolve(unit, f, &indexer.ResolveOptions{
 		Info:       indexer.XRefTypeInfo(),
 		CheckRules: checkMetadata,
 	})
 	if err != nil {
-		return err
+		if !*contOnErr {
+			return err
+		}
+		log.Printf("Continuing after error: %v", err)
+		return nil
 	}
 	if *verbose {
 		log.Printf("Finished resolving compilation: %s", pi.String())
