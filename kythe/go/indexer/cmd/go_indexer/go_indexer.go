@@ -52,6 +52,7 @@ var (
 	metaSuffix  = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
 	docBase     = flag.String("docbase", "http://godoc.org", "If set, use as the base URL for godoc links")
 	verbose     = flag.Bool("verbose", false, "Emit verbose log information")
+	contOnErr   = flag.Bool("continue", false, "Log errors encountered during analysis but do not exit unsuccessfully")
 
 	writeEntry func(context.Context, *spb.Entry) error
 	docURL     *url.URL
@@ -104,9 +105,19 @@ func main() {
 		docURL = u
 	}
 
+	visit := indexGo
+	if *contOnErr {
+		visit = func(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
+			if err := indexGo(ctx, unit, f); err != nil {
+				log.Printf("Continuing after error: %v", err)
+			}
+			return nil
+		}
+	}
+
 	ctx := context.Background()
 	for _, path := range flag.Args() {
-		if err := visitPath(ctx, path, indexGo); err != nil {
+		if err := visitPath(ctx, path, visit); err != nil {
 			log.Fatalf("Error indexing %q: %v", path, err)
 		}
 	}
