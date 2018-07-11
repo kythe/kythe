@@ -20,7 +20,7 @@
             [ui.schema :as schema]
             [ui.service :as service]
             [ui.src :refer [src-view construct-decorations line-in-string]]
-            [ui.util :refer [handle-ch parse-url-state set-url-state ticket->vname vname->ticket]]
+            [ui.util :refer [handle-ch parse-url-state update-url-state! ticket->vname vname->ticket]]
             [ui.xrefs :refer [xrefs-view]]))
 
 (defn- replace-state! [state key]
@@ -38,11 +38,14 @@
 
       ;; Restore page state based on URL initially given
       (let [state (parse-url-state)
-            file (select-keys state [:path :corpus :root])]
+            file (select-keys state [:path :corpus :root])
+            xrefs (:xrefs state)]
         (when-not (empty? file)
           (put! (om/get-state owner :file-to-view)
             (assoc (select-keys state [:offset :line])
-              :ticket (vname->ticket file)))))
+              :ticket (vname->ticket file))))
+        (when-not (empty? xrefs)
+          (put! (om/get-state owner :xrefs-to-view) xrefs)))
 
       ;; Handle all jump requests to files and anchors within a file
       (handle-ch (om/get-state owner :file-to-view) nil
@@ -62,7 +65,7 @@
                           scroll-to-line (cond
                                            line line
                                            offset (line-in-string (:source-text decorations) offset))]
-                      (set-url-state
+                      (update-url-state!
                         (assoc (ticket->vname ticket)
                           :line scroll-to-line
                           :offset offset))
@@ -73,7 +76,7 @@
                   #(om/transact! state :current-file (constantly (assoc % :requested-file ticket)))))
               (or line offset)
               (do
-                (set-url-state
+                (update-url-state!
                   (assoc (ticket->vname ticket) :offset offset :line line))
                 (om/transact! state :current-file
                   (fn [file]
@@ -84,11 +87,14 @@
       ;; Handle all requests for the xrefs pane
       (handle-ch (om/get-state owner :xrefs-to-view)
         (fn [target]
-          (let [target (if (:ticket target) target {:ticket target})
-                page-token (:page_token target)]
-            (om/transact! state :current-xrefs #(assoc % :loading (:ticket target)))
-            (service/get-xrefs (:ticket target) target
+          (let [request (when (map? target) (dissoc target :ticket :line))
+                line (:line target)
+                target (or (:ticket target) target)
+                page-token (:page_token request)]
+            (om/transact! state :current-xrefs #(assoc % :loading target))
+            (service/get-xrefs target request
               (fn [xrefs]
+                (update-url-state! {:line line :xrefs target})
                 (om/transact! state :current-xrefs
                   (fn [prev]
                     (let [prev-pages (if (= (:ticket (:cross-references prev)) (:ticket (:cross-references xrefs)))

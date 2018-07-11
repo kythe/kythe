@@ -22,7 +22,7 @@
             [om.dom :as dom :include-macros true]
             [ui.schema :as schema]
             [ui.service :as service]
-            [ui.util :refer [ticket->vname]]))
+            [ui.util :refer [ticket->vname update-url-state!]]))
 
 (defn- page-navigation [xrefs-to-view pages current-page-token ticket]
   (let [current-page (first (first (filter #(= (second %) current-page-token) (map-indexed (fn [i t] [i t]) pages))))
@@ -111,7 +111,9 @@
                                    #js {:display "none"})}
         (dom/button #js {:id "close-xrefs"
                          :className "close btn btn-danger btn-xs"
-                         :onClick #(om/transact! state :hidden (constantly true))}
+                         :onClick (fn [_]
+                                    (om/transact! state :hidden (constantly true))
+                                    (update-url-state! {:xrefs nil}))}
           (dom/span #js {:className "glyphicon glyphicon-remove"}))
         (cond
           (:hidden state) nil

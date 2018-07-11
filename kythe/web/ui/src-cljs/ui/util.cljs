@@ -88,10 +88,12 @@
       state
       (assoc state :path (.getPath uri)))))
 
-(defn set-url-state [state]
-  (let [path (:path state)
-        q (Uri.QueryData.)]
-    (doseq [[k v] (dissoc state :path)
-            :when v]
-      (.add q (name k) v))
-    (set! (.-hash js/location) (str "#" path "?" q))))
+(defn update-url-state! [state]
+  (let [new-path (:path state)
+        uri (Uri. (subs (.-hash js/location) 1))
+        q (.getQueryData uri)]
+    (doseq [[k v] (dissoc state :path)]
+      (if (and v (or (not (string? v)) (not (empty? v))))
+        (.set q (name k) v)
+        (.remove q (name k))))
+    (set! (.-hash js/location) (str "#" (or new-path (.getPath uri)) "?" q))))

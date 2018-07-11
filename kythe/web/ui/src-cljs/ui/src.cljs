@@ -94,6 +94,7 @@
                                                (get definitions (keyword target_definition)))]
                                      {:start (:byte_offset (:start span))
                                       :end (:byte_offset (:end span))
+                                      :line (:line_number (:start span))
                                       :target-definition def
                                       :kind (schema/trim-edge-prefix kind)
                                       :anchor-ticket target_ticket
@@ -123,7 +124,7 @@
   (reify
     om/IRenderState
     (render-state [_ {:keys [file-to-view xrefs-to-view hover]}]
-      (let [{:keys [start end anchor-ticket target-ticket target-definition kind text background]} state]
+      (let [{:keys [start end line anchor-ticket target-ticket target-definition kind text background]} state]
         (if anchor-ticket
           (dom/a #js {:title (str kind " => " target-ticket)
                       :href "#"
@@ -138,7 +139,7 @@
                                             :anchor (:ticket target-definition)
                                             :line   (:line_number (:start (:span target-definition)))}))
                                    ;; Open cross-references panel
-                                   (put! xrefs-to-view target-ticket)))
+                                   (put! xrefs-to-view {:ticket target-ticket :line line})))
                       :style #js {:backgroundColor background}
                       :onMouseEnter #(put! hover
                                        {:ticket anchor-ticket :target target-ticket})
