@@ -107,7 +107,14 @@ func main() {
 
 	ctx := context.Background()
 	for _, path := range flag.Args() {
-		if err := visitPath(ctx, path, indexGo); err != nil {
+		if err := visitPath(ctx, path, func(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
+			err := indexGo(ctx, unit, f)
+			if err != nil && *contOnErr {
+				log.Printf("Continuing after error: %v", err)
+				return nil
+			}
+			return err
+		}); err != nil {
 			log.Fatalf("Error indexing %q: %v", path, err)
 		}
 	}
@@ -140,11 +147,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		CheckRules: checkMetadata,
 	})
 	if err != nil {
-		if !*contOnErr {
-			return err
-		}
-		log.Printf("Continuing after error: %v", err)
-		return nil
+		return err
 	}
 	if *verbose {
 		log.Printf("Finished resolving compilation: %s", pi.String())
