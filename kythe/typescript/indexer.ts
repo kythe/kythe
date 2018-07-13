@@ -538,7 +538,8 @@ class Vistor {
     // so start by linking that.
     let moduleSym = this.getSymbolAtLocation(decl.moduleSpecifier);
     if (!moduleSym) {
-      this.todo(decl.moduleSpecifier, `import ${decl.getText()} has no symbol`);
+      // This can occur when the module failed to resolve to anything.
+      // See testdata/import_missing.ts for more on how that could happen.
       return;
     }
     let kModule = this.newVName(
