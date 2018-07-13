@@ -6,6 +6,17 @@ licenses(["notice"])
 exports_files(["LICENSE"])
 
 ################################################################################
+# Java 9 configuration
+################################################################################
+
+config_setting(
+    name = "jdk9",
+    values = {
+        "java_toolchain": "@bazel_tools//tools/jdk:toolchain_jdk9",
+    },
+)
+
+################################################################################
 # Protobuf Runtime Library
 ################################################################################
 
@@ -25,7 +36,6 @@ COPTS = select({
         "-Woverloaded-virtual",
         "-Wno-sign-compare",
         "-Wno-unused-function",
-        "-Wno-unused-const-variable",
     ],
 })
 
@@ -306,6 +316,7 @@ internal_copied_filegroup(
 cc_binary(
     name = "js_embed",
     srcs = ["src/google/protobuf/compiler/js/embed.cc"],
+    copts = ["-Wno-unused-const-variable"],
     visibility = ["//visibility:public"],
 )
 
@@ -658,10 +669,10 @@ java_library(
     ]) + [
         ":gen_well_known_protos_java",
     ],
-    javacopts = [
-        "-source 6",
-        "-target 6",
-    ],
+    javacopts = select({
+       "//:jdk9": ["--add-modules=jdk.unsupported"],
+       "//conditions:default": ["-source 7", "-target 7"],
+    }),
     visibility = ["//visibility:public"],
 )
 
@@ -670,10 +681,7 @@ java_library(
     srcs = glob([
         "java/util/src/main/java/com/google/protobuf/util/*.java",
     ]),
-    javacopts = [
-        "-source 6",
-        "-target 6",
-    ],
+    javacopts = ["-source 7", "-target 7"],
     visibility = ["//visibility:public"],
     deps = [
         "protobuf_java",

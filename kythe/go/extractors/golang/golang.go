@@ -102,11 +102,11 @@ type Extractor struct {
 
 // addPackage imports the specified package, if it has not already been
 // imported, and returns its package value.
-func (e *Extractor) addPackage(importPath string) (*build.Package, error) {
+func (e *Extractor) addPackage(importPath, localPath string) (*build.Package, error) {
 	if bp := e.pmap[importPath]; bp != nil {
 		return bp, nil
 	}
-	bp, err := e.BuildContext.Import(importPath, e.LocalPath, build.AllowBinary)
+	bp, err := e.BuildContext.Import(importPath, localPath, build.AllowBinary)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (e *Extractor) Locate(importPath string) (*Package, error) {
 	if pkg := e.findPackage(importPath); pkg != nil {
 		return pkg, nil
 	}
-	bp, err := e.addPackage(importPath)
+	bp, err := e.addPackage(importPath, e.LocalPath)
 	if err != nil {
 		return nil, err
 	}
@@ -309,14 +309,14 @@ func (p *Package) Extract() error {
 	// TODO(fromberger): Treat tests that are not in the same package as a
 	// separate compilation, e.g.,
 	// p.addSource(cu, bp.Root, srcBase, bp.XTestGoFiles)
-	// missing = append(missing, p.addDeps(cu, bp.XTestImports)...)
+	// missing = append(missing, p.addDeps(cu, bp.XTestImports, bp.Dir)...)
 
 	// Add the outputs of all the dependencies as required inputs.
 	//
 	// TODO(fromberger): Consider making a transitive option, to flatten out
 	// the source requirements for tools like the oracle.
-	missing := p.addDeps(cu, bp.Imports)
-	missing = append(missing, p.addDeps(cu, bp.TestImports)...)
+	missing := p.addDeps(cu, bp.Imports, bp.Dir)
+	missing = append(missing, p.addDeps(cu, bp.TestImports, bp.Dir)...)
 
 	// Add command-line arguments.
 	// TODO(fromberger): Figure out whether we should emit separate
@@ -480,12 +480,12 @@ func (*Package) addFlag(cu *apb.CompilationUnit, name string, values ...string) 
 
 // addDeps adds required inputs for the import paths given, returning the paths
 // of any packages that could not be imported successfully.
-func (p *Package) addDeps(cu *apb.CompilationUnit, importPaths []string) []string {
+func (p *Package) addDeps(cu *apb.CompilationUnit, importPaths []string, localPath string) []string {
 	var missing []string
 	for _, ip := range importPaths {
 		if ip == "unsafe" {
 			// package unsafe is intrinsic; nothing to do
-		} else if dep, err := p.ext.addPackage(ip); err != nil {
+		} else if dep, err := p.ext.addPackage(ip, localPath); err != nil {
 			missing = append(missing, ip)
 		} else {
 			p.addInput(cu, dep)

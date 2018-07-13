@@ -83,6 +83,7 @@ type PackageInfo struct {
 	Files        []*ast.File                   // The parsed ASTs of the source files
 	SourceText   map[*ast.File]string          // The text of the source files
 	Rules        map[*ast.File]metadata.Rules  // Mapping metadata for each source file
+	Vendored     map[string]string             // Mapping from package to its vendor path
 
 	Info   *types.Info // If non-nil, contains type-checker results
 	Errors []error     // All errors reported by the type checker
@@ -135,6 +136,9 @@ type packageImporter struct {
 	fileSet *token.FileSet            // source location information
 	fileMap map[string]*apb.FileInfo  // :: import path → required input location
 	fetcher Fetcher                   // access to required input contents
+
+	pkgPath  string
+	vendored map[string]string // map of package paths to their vendor paths
 }
 
 // Import satisfies the types.Importer interface using the captured data from
@@ -151,18 +155,37 @@ func (pi *packageImporter) Import(importPath string) (*types.Package, error) {
 
 	// Fetch the required input holding the package for this import path, and
 	// load its export data for use by the type resolver.
-	if fi := pi.fileMap[importPath]; fi != nil {
-		data, err := pi.fetcher.Fetch(fi.Path, fi.Digest)
-		if err != nil {
-			return nil, fmt.Errorf("fetching %q (%s): %v", fi.Path, fi.Digest, err)
+	fi := pi.fileMap[importPath]
+
+	// Check all possible vendor/ paths for missing package file
+	if fi == nil {
+		// Starting at the current package's path, look upwards for a vendor/ root
+		// with the imported package.
+		vendorRoot := pi.pkgPath
+		for {
+			vPath := filepath.Join(vendorRoot, "vendor", importPath)
+			fi = pi.fileMap[vPath]
+			if fi != nil {
+				pi.vendored[importPath] = vPath
+				importPath = vPath
+				break
+			} else if vendorRoot == "" {
+				return nil, fmt.Errorf("package %q not found", importPath)
+			}
+			vendorRoot, _ = filepath.Split(vendorRoot)
+			vendorRoot = strings.TrimRight(vendorRoot, "/")
 		}
-		r, err := gcexportdata.NewReader(bytes.NewReader(data))
-		if err != nil {
-			return nil, fmt.Errorf("reading export data in %q (%s): %v", fi.Path, fi.Digest, err)
-		}
-		return gcexportdata.Read(r, pi.fileSet, pi.deps, importPath)
 	}
-	return nil, fmt.Errorf("package %q not found", importPath)
+
+	data, err := pi.fetcher.Fetch(fi.Path, fi.Digest)
+	if err != nil {
+		return nil, fmt.Errorf("fetching %q (%s): %v", fi.Path, fi.Digest, err)
+	}
+	r, err := gcexportdata.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("reading export data in %q (%s): %v", fi.Path, fi.Digest, err)
+	}
+	return gcexportdata.Read(r, pi.fileSet, pi.deps, importPath)
 }
 
 // ResolveOptions control the behaviour of the Resolve function. A nil options
@@ -318,6 +341,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		SourceText:   srcs,
 		PackageVName: make(map[*types.Package]*spb.VName),
 		Dependencies: make(map[string]*types.Package), // :: import path → package
+		Vendored:     make(map[string]string),
 
 		function:    make(map[ast.Node]*funcInfo),
 		sigs:        make(map[types.Object]string),
@@ -349,6 +373,9 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 			fileSet: pi.FileSet,
 			fileMap: fmap,
 			fetcher: f,
+
+			pkgPath:  pi.ImportPath,
+			vendored: pi.Vendored,
 		},
 		Error: func(err error) { pi.Errors = append(pi.Errors, err) },
 	}
@@ -937,13 +964,15 @@ func (pi *PackageInfo) isPackageInit(fi *funcInfo) bool {
 func vnameToImport(v *spb.VName, goRoot string) string {
 	if govname.IsStandardLibrary(v) || (goRoot != "" && v.Root == goRoot) {
 		return v.Path
-	} else if tail, ok := rootRelative(goRoot, v.Path); ok {
+	}
+
+	trimmed := strings.TrimSuffix(v.Path, filepath.Ext(v.Path))
+	if tail, ok := rootRelative(goRoot, trimmed); ok {
 		// Paths under a nonempty GOROOT are treated as if they were standard
 		// library packages even if they are not labelled as "golang.org", so
 		// that nonstandard install locations will work sensibly.
-		return strings.TrimSuffix(tail, filepath.Ext(tail))
+		return tail
 	}
-	trimmed := strings.TrimSuffix(v.Path, filepath.Ext(v.Path))
 	return filepath.Join(v.Corpus, trimmed)
 }
 

@@ -3,7 +3,6 @@ package(default_visibility = ["//kythe:proto_visibility"])
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load(":go.bzl", "go_kythe_proto")
 
-# TODO(jrtom): add explore.proto to this once it's ready
 filegroup(
     name = "public",
     srcs = [
@@ -12,6 +11,7 @@ filegroup(
         "buildinfo.proto",
         "common.proto",
         "cxx.proto",
+        "explore.proto",
         "extraction_config.proto",
         "filecontext.proto",
         "filetree.proto",

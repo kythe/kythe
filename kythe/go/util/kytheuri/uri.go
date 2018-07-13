@@ -20,7 +20,6 @@
 package kytheuri
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"path"
@@ -104,7 +103,15 @@ func (r *Raw) String() string {
 	if r == nil {
 		return Scheme
 	}
-	buf := bytes.NewBufferString(Scheme)
+	var buf strings.Builder
+	buf.Grow(len(Scheme) +
+		2 + len(r.URI.Corpus) + // "//" + corpus
+		6 + len(r.URI.Language) + // "?lang=" + string
+		6 + len(r.URI.Path) + // "?path=" + string
+		6 + len(r.URI.Root) + // "?root=" + string
+		1 + len(r.URI.Signature), // "#" + string
+	)
+	buf.WriteString(Scheme)
 	if c := r.URI.Corpus; c != "" {
 		buf.WriteString("//")
 		buf.WriteString(c)
@@ -112,19 +119,17 @@ func (r *Raw) String() string {
 
 	// Pack up the query arguments. Order matters here, so that we can preserve
 	// a canonical string format.
-	var query []string
 	if s := r.URI.Language; s != "" {
-		query = append(query, "lang="+s)
+		buf.WriteString("?lang=")
+		buf.WriteString(s)
 	}
 	if s := r.URI.Path; s != "" {
-		query = append(query, "path="+s)
+		buf.WriteString("?path=")
+		buf.WriteString(s)
 	}
 	if s := r.URI.Root; s != "" {
-		query = append(query, "root="+s)
-	}
-	if len(query) != 0 {
-		buf.WriteByte('?')
-		buf.WriteString(strings.Join(query, "?"))
+		buf.WriteString("?root=")
+		buf.WriteString(s)
 	}
 
 	// If there is a signature, add that in as well.

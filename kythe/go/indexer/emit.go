@@ -384,11 +384,13 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 
 // visitImportSpec handles references to imported packages.
 func (e *emitter) visitImportSpec(spec *ast.ImportSpec, stack stackFunc) {
-	var (
-		ipath, _ = strconv.Unquote(spec.Path.Value)
-		pkg      = e.pi.Dependencies[ipath]
-		target   = e.pi.PackageVName[pkg]
-	)
+	ipath, _ := strconv.Unquote(spec.Path.Value)
+	if vPath, ok := e.pi.Vendored[ipath]; ok {
+		ipath = vPath
+	}
+
+	pkg := e.pi.Dependencies[ipath]
+	target := e.pi.PackageVName[pkg]
 	if target == nil {
 		log.Printf("Unable to resolve import path %q", ipath)
 		return

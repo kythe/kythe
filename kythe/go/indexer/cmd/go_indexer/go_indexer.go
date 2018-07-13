@@ -51,6 +51,8 @@ var (
 	doCodeFacts = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
 	metaSuffix  = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
 	docBase     = flag.String("docbase", "http://godoc.org", "If set, use as the base URL for godoc links")
+	verbose     = flag.Bool("verbose", false, "Emit verbose log information")
+	contOnErr   = flag.Bool("continue", false, "Log errors encountered during analysis but do not exit unsuccessfully")
 
 	writeEntry func(context.Context, *spb.Entry) error
 	docURL     *url.URL
@@ -105,7 +107,14 @@ func main() {
 
 	ctx := context.Background()
 	for _, path := range flag.Args() {
-		if err := visitPath(ctx, path, indexGo); err != nil {
+		if err := visitPath(ctx, path, func(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
+			err := indexGo(ctx, unit, f)
+			if err != nil && *contOnErr {
+				log.Printf("Continuing after error: %v", err)
+				return nil
+			}
+			return err
+		}); err != nil {
 			log.Fatalf("Error indexing %q: %v", path, err)
 		}
 	}
@@ -131,7 +140,7 @@ func checkMetadata(ri *apb.CompilationUnit_FileInput, f indexer.Fetcher) (*index
 	}, nil
 }
 
-// indexGo is a visitFunct that invokes the Kythe Go indexer on unit.
+// indexGo is a visitFunc that invokes the Kythe Go indexer on unit.
 func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
 	pi, err := indexer.Resolve(unit, f, &indexer.ResolveOptions{
 		Info:       indexer.XRefTypeInfo(),
@@ -140,7 +149,9 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 	if err != nil {
 		return err
 	}
-	log.Printf("Finished resolving compilation: %s", pi.String())
+	if *verbose {
+		log.Printf("Finished resolving compilation: %s", pi.String())
+	}
 	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
 		EmitStandardLibs: *doLibNodes,
 		EmitMarkedSource: *doCodeFacts,

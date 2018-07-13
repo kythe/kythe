@@ -15,6 +15,7 @@ filegroup(
         "@go_google_api//:LICENSE",
         "@go_google_cloud//:LICENSE",
         "@go_grpc//:LICENSE",
+        "@go_highwayhash//:LICENSE",
         "@go_jsonrpc2//:LICENSE",
         "@go_langserver//:LICENSE",
         "@go_levigo//:LICENSE",
@@ -29,7 +30,10 @@ filegroup(
         "@go_uuid//:LICENSE",
         "@go_x_net//:LICENSE",
         "@go_x_oauth2//:LICENSE",
+        "@go_x_sys//:LICENSE",
         "@go_x_text//:LICENSE",
         "@go_x_tools//:LICENSE",
+        "@go_zstd//:LICENSE",
+        "@go_zstd//:ZSTD_LICENSE",
     ],
 )

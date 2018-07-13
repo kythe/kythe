@@ -26,6 +26,7 @@ filegroup(
         "//third_party/ow2-asm:LICENSE.txt",
         "//third_party/re2:LICENSE",
         "//third_party/re2j:LICENSE",
+        "//third_party/riegeli:LICENSE",
         "//third_party/safe_html_types:LICENSE",
         "//third_party/truth:LICENSE",
         "//third_party/zlib:README",
@@ -34,6 +35,7 @@ filegroup(
         "@com_github_tencent_rapidjson//:license",
         "@com_google_common_flogger//:LICENSE",
         "@com_google_protobuf//:LICENSE",
+        "@org_brotli//:LICENSE",
     ],
 )
 
