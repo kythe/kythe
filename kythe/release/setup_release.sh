@@ -22,8 +22,7 @@
 #      This creates a new release branch with a single commit for the new
 #      release $VERSION
 #      $ ./kythe/release/setup_release.sh
-#   2) Send the commit to Phabricator for review
-#      $ arc diff
+#   2) Open a Pull Request for review
 #   3) Build/test Kythe release archive w/ optimizations:
 #      $ bazel test -c opt //kythe/release:release_test
 #   4) "Draft a new release" at https://github.com/google/kythe/releases
@@ -32,8 +31,8 @@
 #   7) Upload bazel-genfiles/kythe/release/kythe-$VERSION.tar.gz{,.md5}
 #      These files were generated in step 3.
 #   8) Mark as "pre-release" and "Save draft"
-#   9) Send draft release URL to Phabricator review
-#   10) Push release commit once Phabricator review has been accepted
+#   9) Add draft release URL to Pull Request
+#   10) Merge Pull Request once it has been accepted
 #   11) Edit Github release draft to set the tag's commit as the freshly pushed
 #       release commit
 #   12) "Publish release"
@@ -65,7 +64,13 @@ join() { local IFS="$1"; shift; echo "$*"; }
 version="v$(join . "${components[@]}")"
 echo "Marking release $version"
 
-sed -i "s/Upcoming release/$version/" RELEASES.md
+sed -i "s/\[Unreleased\]/[$version] - $(date +%Y-%m-%d)/
+s/HEAD/$version/
+3i [Unreleased]
+3i Nothing to report yet.
+3i
+/^\[$version\]/i \
+[Unreleased] https://github.com/google/kythe/compare/${version}...HEAD" RELEASES.md
 sed -ri "s/^release_version = .+/release_version = \"$version\"/" kythe/release/BUILD
 
 if ! diff -q <(git diff --name-only) <(echo RELEASES.md; echo kythe/release/BUILD) >/dev/null; then
