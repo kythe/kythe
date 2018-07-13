@@ -64,7 +64,7 @@ function verify(
   let program = ts.createProgram([test], options, host);
 
   let verifier = child_process.spawn(
-      `${KYTHE_PATH}/tools/entrystream --read_json |` +
+      `${KYTHE_PATH}/tools/entrystream --read_format=json |` +
           `${KYTHE_PATH}/tools/verifier ${test}`,
       [], {
         stdio: ['pipe', process.stdout, process.stderr],

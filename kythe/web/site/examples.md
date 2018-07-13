@@ -113,7 +113,7 @@ java -Xbootclasspath/p:/opt/kythe/indexers/java_indexer.jar \
 #       the KYTHE_ROOT_DIRECTORY used during extraction
 
 # View indexer's output entry stream as JSON
-/opt/kythe/tools/entrystream --write_json < entries
+/opt/kythe/tools/entrystream --write_format=json < entries
 
 # Write entry stream into a GraphStore
 /opt/kythe/tools/write_entries --graphstore leveldb:/tmp/gs < entries

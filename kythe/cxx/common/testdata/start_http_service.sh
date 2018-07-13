@@ -51,7 +51,7 @@ PORT_FILE="${OUT_DIR:?no output directory for test}/service_port"
 ENTRYSTREAM_ARGS=
 if [[ -z "$TEST_ENTRIES" ]]; then
   TEST_ENTRIES="$TEST_JSON"
-  ENTRYSTREAM_ARGS=-read_json=true
+  ENTRYSTREAM_ARGS=-read_format=json
 fi
 CAT=cat
 if [[ "$TEST_ENTRIES" == *.gz ]]; then
