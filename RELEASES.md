@@ -21,7 +21,7 @@
 [Apache Beam]: https://beam.apache.org/
 [Riegeli]: https://github.com/google/riegeli
 
-## [v0.0.27]
+## [v0.0.27] - 2018-07-01
 
 Due to the period of time between this release and v0.0.26, many relevant
 changes and fixes may not appear in the following list.  For a complete list of
@@ -89,23 +89,23 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
    - xref.proto: optionally return documentation children.
    - xref.proto: return target definitions with overrides.
 
-## [v0.0.26]
+## [v0.0.26] - 2016-11-11
 
 ### Changed
  - Nodes and Edges API calls have been moved from XRefService to GraphService.
 
-## [v0.0.25]
+## [v0.0.25] - 2016-10-28
 
 ### Changed
  - Replace google.golang.org/cloud dependencies with cloud.google.com/go
  - Update required version of Go from 1.6 to 1.7
 
-## [v0.0.24]
+## [v0.0.24] - 2016-08-16
 
 ### Fixed
  - write_tables now tolerates nodes with no facts. Previously it could sometimes crash if this occurred.
 
-## [v0.0.23]
+## [v0.0.23] - 2016-07-28
 
 ### Changed
  - CrossReferences API: hide signature generation behind feature flag
@@ -114,14 +114,14 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 ### Added
  - Java indexer: emit basic `format` facts
 
-## [v0.0.22]
+## [v0.0.22] - 2016-07-20
 
 ### Changed
  - Schema: `callable` nodes and `callableas` edges have been removed.
  - `xrefs.CrossReferences`: change Anchors in the reply to RelatedAnchors
  - Removed search API
 
-## [v0.0.21]
+## [v0.0.21] - 2016-05-12
 
 ### Changed
  - xrefs service: replace most repeated fields with maps
@@ -139,12 +139,12 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
  - Javac extractor: add processors registered in META-INF/services
  - javac-wrapper.sh: prepend bootclasspath jar to use packaged javac tools
 
-## [v0.0.20]
+## [v0.0.20] - 2016-03-03
 
 ### Fixed
  - Java indexer: reduce redundant AST traversals causing large slowdowns
 
-## [v0.0.19]
+## [v0.0.19] - 2016-02-26
 
 ### Changed
  - C++ extractor: `KYTHE_ROOT_DIRECTORY` no longer changes the working
@@ -158,7 +158,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
  - `entrystream`: add `--unique` flag
  - `write_tables`: add `--entries` flag
 
-## [v0.0.18]
+## [v0.0.18] - 2016-02-11
 
 ### Changed
  - C++ indexer: `--ignore_unimplemented` now defaults to `true`
@@ -168,7 +168,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
  - Java indexer: add callgraph edges
  - Java indexer: add Java 8 member reference support
 
-## [v0.0.17]
+## [v0.0.17] - 2015-12-16
 
 ### Added
  - `write_tables`: produce serving data for xrefs.CrossReferences method
@@ -181,7 +181,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
      - `--shard_io_buffer`: size of the reading/writing buffers for the
        intermediary data shards
 
-## [v0.0.16]
+## [v0.0.16] - 2015-12-08
 
 ### Changed
  - Denormalize the serving table format
@@ -201,7 +201,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
  - Java extractor: correctly parse/load -processor classes
  - xrefs.Edges: correctly return empty page_token on last page (when filtering by edge kinds)
 
-## [v0.0.15]
+## [v0.0.15] - 2015-10-13
 
 ### Changed
  - Java 8 is required for the Java extractor/indexer
@@ -210,19 +210,19 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
  - `write_tables`: don't crash when given a node without any edges
  - Java extractor: ensure output directory exists before writing kindex
 
-## [v0.0.14]
+## [v0.0.14] - 2015-10-08
 
 ### Fixed
  - Bazel Java extractor: filter out Bazel-specific flags
  - Java extractor/indexer: filter all unsupported options before yielding to the compiler
 
-## [v0.0.13]
+## [v0.0.13] - 2015-09-17
 
 ### Added
  - Java indexer: add `ref/doc` anchors for simple class references in JavaDoc
  - Java indexer: emit JavaDoc comments more consistently; emit enum documentation
 
-## [v0.0.12]
+## [v0.0.12] - 2015-09-10
 
 ### Changed
  - C++ indexer: rename `/kythe/edge/defines` to `/kythe/edge/defines/binding`
@@ -237,7 +237,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
                   behavior to previous `defines` anchors)
  - `http_server`: add `--http_allow_origin` flag that adds the `Access-Control-Allow-Origin` header to each HTTP response
 
-## [v0.0.11]
+## [v0.0.11] - 2015-09-01
 
 ### Added
  - Java indexer: name node support for array types, builtins, files, and generics
@@ -245,7 +245,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 ### Fixed
  - Java indexer: stop an exception from being thrown when a line contains multiple comments
 
-## [v0.0.10]
+## [v0.0.10] - 2015-08-31
 
 ### Added
  - `http_server`: support TLS HTTP2 server interface
@@ -257,7 +257,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 ### Fixed
  - `entrystream`: prevent panic when given `--entrysets` flag
 
-## [v0.0.9]
+## [v0.0.9] - 2015-08-25
 
 ### Changed
  - xrefs.Decorations: nodes will not be populated unless given a fact filter
@@ -271,7 +271,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 ### Fixed
  - write_tables: avoid deadlock in case of errors
 
-## [v0.0.8]
+## [v0.0.8] - 2015-07-27
 
 ### Added
  - Java extractor: add JavaDetails to each CompilationUnit
@@ -281,7 +281,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
  - write_tables: ensure that all edges are scanned for FileDecorations
  - kythe refs command: normalize locations within dirty buffer, if given one
 
-## [v0.0.7]
+## [v0.0.7] - 2015-07-16
 
 ### Changed
  - Dependencies: updated minimum LLVM revision. Run tools/modules/update.sh.
@@ -292,7 +292,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
  - kwazthis: if found, automatically send local file as `--dirty_buffer`
  - kwazthis: return `/kythe/edge/typed` target ticket for each node
 
-## [v0.0.6]
+## [v0.0.6] - 2015-07-09
 
 ### Added
  - kwazthis: allow `--line` and `--column` info in place of a byte `--offset`
@@ -301,13 +301,13 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 ### Fixed
  - Java indexer: don't generate anchors for implicit constructors
 
-## [v0.0.5]
+## [v0.0.5] - 2015-07-01
 
 ### Added
  - Bazel `extra_action` extractors for C++ and Java
  - Implementation of DecorationsRequest.dirty_buffer in xrefs serving table
 
-## [v0.0.4]
+## [v0.0.4] - 2015-07-24
 
 ### Changed
  - `kythe` tool: merge `--serving_table` flag into `--api` flag
@@ -316,14 +316,14 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
  - Allow empty requests in `http_server`'s `/corpusRoots` handler
  - Java extractor: correctly handle symlinks in KYTHE_ROOT_DIRECTORY
 
-## [v0.0.3]
+## [v0.0.3] - 2015-07-16
 
 ### Changed
  - Go binaries no longer require shared libraries for libsnappy or libleveldb
  - kythe tool: `--log_requests` global flag
  - Java indexer: `--print_statistics` flag
 
-## [v0.0.2]
+## [v0.0.2] - 2015-06-05
 
 ### Changed
  - optimized binaries
@@ -332,7 +332,7 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
  - kwazthis: list known definition locations for each node
  - Java indexer: emit actual nodes for JDK classes
 
-## [v0.0.1]
+## [v0.0.1] - 2015-05-20
 
 Initial release
 
