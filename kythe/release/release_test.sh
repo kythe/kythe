@@ -46,8 +46,8 @@ tools/viewindex "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" | \
   jq . >/dev/null
 tools/indexpack --to_archive indexpack.test "$TEST_REPOSRCDIR/kythe/testdata/test.kindex"
 tools/entrystream < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" | \
-  tools/entrystream --write_json | \
-  tools/entrystream --read_json --entrysets >/dev/null
+  tools/entrystream --write_format=json | \
+  tools/entrystream --read_format=json --entrysets >/dev/null
 tools/triples < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" >/dev/null
 
 # TODO(zarko): add cxx extractor tests

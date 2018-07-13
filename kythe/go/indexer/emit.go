@@ -292,9 +292,13 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 	}
 
 	// Handle fields of anonymous struct types declared in situ.
-	for _, v := range spec.Values {
-		if lit, ok := v.(*ast.CompositeLit); ok {
-			e.emitAnonFields(lit.Type)
+	if spec.Type != nil {
+		e.emitAnonFields(spec.Type)
+	} else {
+		for _, v := range spec.Values {
+			if lit, ok := v.(*ast.CompositeLit); ok {
+				e.emitAnonFields(lit.Type)
+			}
 		}
 	}
 }

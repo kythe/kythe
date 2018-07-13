@@ -62,7 +62,7 @@ fn index(kythe_dir: &Path) {
     let stdout = stdio_from_child(&indexer);
 
     let entry_stream = Command::new(kythe_dir.join("tools/entrystream"))
-        .arg("--read_json")
+        .arg("--read_format=json")
         .stdin(stdout)
         .stdout(Stdio::piped())
         .spawn()
