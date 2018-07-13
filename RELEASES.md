@@ -9,6 +9,7 @@
  - `go_indexer`: add `--continue` flag to log errors without halting analysis
  - `viewindex`: add --file flag to print a single file's contents
  - `entrystream`: support for reading/writing [Riegeli] record files
+ - First release of the [ExploreService] APIs
 
 ### Deprecated
  - `entrystream`: `--read_json`/`--write_json` are marked to be replaced by
@@ -19,6 +20,7 @@
  - Java/JVM indexers: obtain JVM (a.k.a. "external") names in a principled way
 
 [Apache Beam]: https://beam.apache.org/
+[ExploreService]: https://github.com/google/kythe/blob/master/kythe/proto/explore.proto
 [Riegeli]: https://github.com/google/riegeli
 
 ## [v0.0.27] - 2018-07-01
