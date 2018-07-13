@@ -32,10 +32,8 @@ import "kythe/proto/xref.proto";
 
 // ExploreService provides read-only access to aspects of the Kythe code graph,
 // such as type hierarchies, call graphs, function parameters, and
-// context/contents information.  (Note: unlike XRefService, these calls are
-// not expected to be fast, especially for recursive queries such as Callers,
-// although requests should generally take time proportional to the size of the
-// response (in the absence of filtering, at least).
+// parents/children relationships.  Requests should generally take time proportional
+// to the size of the response (in the absence of filtering, at least).
 
 // In cases where properties of a node are requested (e.g. callers of a function)
 // for which there are no such (e.g., the function has no callers), the response
@@ -46,27 +44,16 @@ import "kythe/proto/xref.proto";
 // THE KYTHE TEAM (kythe-dev@googlegroups.com).
 
 service ExploreService {
-  // Returns the hierarchy (supertypes and subtypes, including implementations)
-  // of a specified type, as a directed acyclic graph.
-  // NOT YET IMPLEMENTED
-  rpc TypeHierarchy(TypeHierarchyRequest) returns (TypeHierarchyReply) {}
-
   // Returns the (recursive) callers of a specified function, as a directed
   // graph.
   // The Callers/Callees functions are distinct from XrefService.CrossReferences
   // in that these functions capture the semantic relationships between methods,
   // rather than the locations in the code base where a method is called.
-  // NOT YET IMPLEMENTED
   rpc Callers(CallersRequest) returns (CallersReply) {}
 
   // Returns the (recursive) callees of a specified function (that is, what
   // functions this function calls), as a directed graph.
-  // NOT YET IMPLEMENTED
   rpc Callees(CalleesRequest) returns (CalleesReply) {}
-
-  // Returns the parameters of a specified function.
-  // NOT YET IMPLEMENTED
-  rpc Parameters(ParametersRequest) returns (ParametersReply) {}
 
   // Returns the parents of a specified node (for example,
   // the file for a class, or the class for a function).
@@ -76,6 +63,15 @@ service ExploreService {
   // Returns the children of a specified node (for example,
   // the classes contained in a file, or the functions contained in a class).
   rpc Children(ChildrenRequest) returns (ChildrenReply) {}
+
+  // Returns the hierarchy (supertypes and subtypes, including implementations)
+  // of a specified type, as a directed acyclic graph.
+  // NOT YET IMPLEMENTED
+  rpc TypeHierarchy(TypeHierarchyRequest) returns (TypeHierarchyReply) {}
+
+  // Returns the parameters of a specified function.
+  // NOT YET IMPLEMENTED
+  rpc Parameters(ParametersRequest) returns (ParametersReply) {}
 }
 
 // Shared/utility messages
@@ -228,9 +224,6 @@ message ParentsRequest {
 message ParentsReply {
   // associates each input ticket with the set of tickets that contain it
   map<string, Tickets> input_to_parents = 1;
-
-  // associates each input ticket with the associated node data
-  map<string, NodeData> node_data = 2;
 }
 
 
@@ -244,7 +237,4 @@ message ChildrenRequest {
 message ChildrenReply {
   // associates each input ticket with the set of tickets contained by it
   map<string, Tickets> input_to_children = 1;
-
-  // associates each input ticket with the associated node data
-  map<string, NodeData> node_data = 2;
 }
