@@ -268,6 +268,7 @@ class Vistor {
           break;
         case ts.SyntaxKind.BindingElement:
         case ts.SyntaxKind.ClassDeclaration:
+        case ts.SyntaxKind.ClassExpression:
         case ts.SyntaxKind.EnumDeclaration:
         case ts.SyntaxKind.EnumMember:
         case ts.SyntaxKind.FunctionDeclaration:
