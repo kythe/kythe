@@ -4590,6 +4590,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       // it is impossible for the typeloc to be TypeLoc::Attributed.
       UNSUPPORTED_CLANG_TYPE(Attributed);
       UNSUPPORTED_CLANG_TYPE(DependentAddressSpace);
+      UNSUPPORTED_CLANG_TYPE(DependentVector);
   }
   if (TypeAlreadyBuilt) {
     ID = Prev->second;
