@@ -57,7 +57,7 @@ go_test(
 
 go_test(
     name = "riegeli_bench_test",
-    srcs = ["riegeli_bench.go"],
+    srcs = ["riegeli_bench_test.go"],
     library = ":riegeli",
 )
 
