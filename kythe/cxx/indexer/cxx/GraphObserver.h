@@ -22,6 +22,7 @@
 
 #include <openssl/sha.h>  // for SHA256
 
+#include "absl/strings/escaping.h"
 #include "absl/types/optional.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
@@ -35,7 +36,6 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
-#include "kythe/cxx/common/json_proto.h"  // for EncodeBase64
 
 namespace kythe {
 
@@ -57,7 +57,9 @@ String CompressString(const String &InString, bool Force = false) {
                   InString.size());
   String Hash(SHA256_DIGEST_LENGTH, '\0');
   ::SHA256_Final(reinterpret_cast<unsigned char *>(&Hash[0]), &Sha);
-  return EncodeBase64(Hash);
+  String Result;
+  absl::Base64Escape(Hash, &Result);
+  return Result;
 }
 
 enum class ProfilingEvent {
