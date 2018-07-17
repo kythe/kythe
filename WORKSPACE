@@ -256,34 +256,18 @@ http_archive(
 new_http_archive(
     name = "com_google_protobuf",
     build_file = "third_party/protobuf.BUILD",
-    sha256 = "091d4263d9a55eccb6d3c8abde55c26eaaa933dea9ecabb185cdf3795f9b5ca2",
-    strip_prefix = "protobuf-3.5.1.1",
-    urls = ["https://github.com/google/protobuf/archive/v3.5.1.1.zip"],
+    sha256 = "e514c2e613dc47c062ea8df480efeec368ffbef98af0437ac00cdaadcb0d80d2",
+    strip_prefix = "protobuf-3.6.0",
+    urls = ["https://github.com/google/protobuf/archive/v3.6.0.zip"],
 )
 
 # A copy of the above archive because com_google_riegeli uses a non-standard name... (╯°□°)╯︵ ┻━┻
 new_http_archive(
     name = "protobuf_archive",
     build_file = "third_party/protobuf.BUILD",
-    sha256 = "091d4263d9a55eccb6d3c8abde55c26eaaa933dea9ecabb185cdf3795f9b5ca2",
-    strip_prefix = "protobuf-3.5.1.1",
-    urls = ["https://github.com/google/protobuf/archive/v3.5.1.1.zip"],
-)
-
-# This is required by the proto_library implementation for its
-# :cc_toolchain rule.
-http_archive(
-    name = "com_google_protobuf_cc",
-    strip_prefix = "protobuf-106ffc04be1abf3ff3399f54ccf149815b287dd9",
-    urls = ["https://github.com/google/protobuf/archive/106ffc04be1abf3ff3399f54ccf149815b287dd9.zip"],
-)
-
-# This is required by the proto_library implementation for its
-# :java_toolchain rule.
-http_archive(
-    name = "com_google_protobuf_java",
-    strip_prefix = "protobuf-106ffc04be1abf3ff3399f54ccf149815b287dd9",
-    urls = ["https://github.com/google/protobuf/archive/106ffc04be1abf3ff3399f54ccf149815b287dd9.zip"],
+    sha256 = "e514c2e613dc47c062ea8df480efeec368ffbef98af0437ac00cdaadcb0d80d2",
+    strip_prefix = "protobuf-3.6.0",
+    urls = ["https://github.com/google/protobuf/archive/v3.6.0.zip"],
 )
 
 http_archive(
