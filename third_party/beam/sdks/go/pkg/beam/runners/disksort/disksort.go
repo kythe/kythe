@@ -20,6 +20,7 @@ package disksort
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"path"
 
@@ -32,14 +33,18 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/runners/direct"
 )
 
+var verbose = flag.Bool("verbose_disksort_runner", false, "Log verbose info from the disksort runner")
+
 func init() {
 	beam.RegisterRunner("disksort", Execute)
 }
 
 // Execute runs the pipeline in-process.
 func Execute(ctx context.Context, p *beam.Pipeline) error {
-	log.Info(ctx, "Pipeline:")
-	log.Info(ctx, p)
+	if *verbose {
+		log.Info(ctx, "Pipeline:")
+		log.Info(ctx, p)
+	}
 
 	edges, _, err := p.Build()
 	if err != nil {
@@ -49,7 +54,11 @@ func Execute(ctx context.Context, p *beam.Pipeline) error {
 	if err != nil {
 		return fmt.Errorf("translation failed: %v", err)
 	}
-	log.Info(ctx, plan)
+
+	if *verbose {
+		log.Info(ctx, "Plan:")
+		log.Info(ctx, plan)
+	}
 
 	if err = plan.Execute(ctx, "", nil); err != nil {
 		plan.Down(ctx) // ignore any teardown errors
