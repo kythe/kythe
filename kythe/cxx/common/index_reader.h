@@ -2,7 +2,7 @@
 #define KYTHE_CXX_COMMON_INDEX_READER_H_
 
 #include <functional>
-#include <memory>
+#include <string>
 
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/common/status_or.h"
@@ -17,6 +17,7 @@ class IndexReaderInterface {
   /// \brief Callback invoked for each available unit digest.
   using ScanCallback = std::function<bool(absl::string_view)>;
 
+  IndexReaderInterface() = default;
   // IndexReaderInterface is neither copyable nor movable.
   IndexReaderInterface(const IndexReaderInterface&) = delete;
   IndexReaderInterface& operator=(const IndexReaderInterface&) = delete;
@@ -31,10 +32,9 @@ class IndexReaderInterface {
   virtual StatusOr<kythe::proto::IndexedCompilation> ReadUnit(
       absl::string_view digest) = 0;
 
-  /// \brief Reads and returns the request file data.
+  /// \brief Reads and returns the requested file data.
   ///  Returns kNotFound if the digest isn't present.
-  virtual StatusOr<std::unique_ptr<char[]>> ReadFile(
-      absl::string_view digest) = 0;
+  virtual StatusOr<std::string> ReadFile(absl::string_view digest) = 0;
 };
 
 }  // namespace kythe

@@ -310,6 +310,34 @@ cc_library(
 )
 
 cc_library(
+    name = "kzip_reader",
+    srcs = ["kzip_reader.cc"],
+    hdrs = ["kzip_reader.h"],
+    deps = [
+        ":index_reader",
+        ":status_or",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@org_libzip//:zip",
+    ],
+)
+
+cc_test(
+    name = "kzip_reader_test",
+    srcs = ["kzip_reader_test.cc"],
+    data = [
+        "//kythe/cxx/common/testdata:empty.kzip",
+        "//kythe/cxx/common/testdata:malformed.kzip",
+        "//kythe/cxx/common/testdata:stringset.kzip",
+    ],
+    deps = [
+        ":kzip_reader",
+        "//third_party:gtest_main",
+    ],
+)
+
+cc_library(
     name = "status",
     srcs = ["status.cc"],
     hdrs = ["status.h"],

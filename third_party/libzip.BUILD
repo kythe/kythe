@@ -168,7 +168,6 @@ cc_library(
     copts = [
         "-DHAVE_CONFIG_H",
     ],
-    defines = ["ZIP_DISABLE_DEPRECATED"],
     includes = ["lib"],
     deps = [
         "//external:zlib",

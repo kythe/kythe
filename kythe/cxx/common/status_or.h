@@ -57,6 +57,9 @@ class ABSL_MUST_USE_RESULT StatusOr final {
   T&& operator*() && { return *std::move(this->value_); }
 
  private:
+  template <typename U>
+  friend class StatusOr;
+
   // As we always have to have a Status reference for the accessor,
   // unconditionally include such a member.
   Status status_ = OkStatus();

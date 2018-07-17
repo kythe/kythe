@@ -2,6 +2,12 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
+exports_files([
+    "empty.kzip",
+    "malformed.kzip",
+    "stringset.kzip",
+])
+
 filegroup(
     name = "start_http_service",
     srcs = ["start_http_service.sh"],

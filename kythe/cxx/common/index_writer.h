@@ -12,6 +12,7 @@ namespace kythe {
 /// to an underlying data store.
 class IndexWriterInterface {
  public:
+  IndexWriterInterface() = default;
   // IndexWriterInterface is neither copyable nor movable.
   IndexWriterInterface(const IndexWriterInterface&) = delete;
   IndexWriterInterface& operator=(const IndexWriterInterface&) = delete;
