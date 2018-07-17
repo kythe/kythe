@@ -21,7 +21,6 @@
 
 #include "google/protobuf/any.pb.h"
 #include "google/protobuf/message.h"
-#include "rapidjson/document.h"
 
 namespace kythe {
 
@@ -32,14 +31,6 @@ namespace kythe {
 /// \param message Merged with the JSON data.
 /// \return true on success; false on failure.
 bool MergeJsonWithMessage(const std::string &in, std::string *format_key,
-                          google::protobuf::Message *message);
-
-/// \brief Deserializes a protobuf from its JSON form without expecting a
-/// wrapper.
-/// \param document The document to deserialize.
-/// \param message Merged with the JSON data.
-/// \return true on success; false on failure.
-bool MergeJsonWithMessage(const rapidjson::Document &document,
                           google::protobuf::Message *message);
 
 /// \brief Serializes a protobuf to JSON form, including the format wrapper.
@@ -71,18 +62,6 @@ void PackAny(const google::protobuf::Message &message, const char *type_uri,
 /// \return false if unpacking failed
 bool UnpackAny(const google::protobuf::Any &any,
                google::protobuf::Message *result);
-
-/// \brief Decodes a base64-encoded string.
-/// \param data The string to decode.
-/// \param decoded Set to the decoded value.
-/// \return false on failure.
-bool DecodeBase64(const google::protobuf::string &data,
-                  google::protobuf::string *decoded);
-
-/// \brief Encodes a string as base64.
-/// \param data The string to encode.
-/// \param encoded Set to the encoded value.
-google::protobuf::string EncodeBase64(const google::protobuf::string &data);
 
 }  // namespace kythe
 

@@ -71,6 +71,7 @@ cc_library(
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/llvm/src:preprocessor_util_lib",
+        "@boringssl//:crypto",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
