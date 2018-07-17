@@ -41,15 +41,15 @@ TEST(KzipReaderTest, OpenAndReadSimpleKzip) {
   StatusOr<std::unique_ptr<IndexReaderInterface>> reader =
       KzipReader::Open(TestFile("stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
-  EXPECT_TRUE((*reader)->Scan([&](absl::string_view digest) {
-    if(auto unit = (*reader)->ReadUnit(digest)) {
-    } else {
-      EXPECT_TRUE(unit.ok())
-          << "Failed to read compilation unit: " << unit.status().ToString();
-    }
-    return true;
-  }).ok());
-  ASSERT_TRUE(false);
+  EXPECT_TRUE((*reader)
+                  ->Scan([&](absl::string_view digest) {
+                    auto unit = (*reader)->ReadUnit(digest);
+                    EXPECT_TRUE(unit.ok())
+                        << "Failed to read compilation unit: "
+                        << unit.status().ToString();
+                    return unit.ok();
+                  })
+                  .ok());
 }
 
 }  // namespace

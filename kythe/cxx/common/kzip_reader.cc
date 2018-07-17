@@ -11,7 +11,7 @@
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "google/protobuf/util/json_util.h"
+#include "kythe/cxx/common/json_proto.h"
 
 namespace kythe {
 namespace {
@@ -24,9 +24,9 @@ struct ZipFileClose {
 };
 using ZipFile = std::unique_ptr<zip_file_t, ZipFileClose>;
 
-class ZipFileStream : public google::protobuf::io::ZeroCopyInputStream {
+class ZipFileInputStream : public google::protobuf::io::ZeroCopyInputStream {
  public:
-  explicit ZipFileStream(zip_file_t* file) : input_(file) {}
+  explicit ZipFileInputStream(zip_file_t* file) : input_(file) {}
 
   bool Next(const void** data, int* size) override {
     return impl_.Next(data, size);
@@ -341,18 +341,19 @@ KzipReader::KzipReader(ZipHandle archive, absl::string_view root)
 StatusOr<proto::IndexedCompilation> KzipReader::ReadUnit(
     absl::string_view digest) {
   std::string path = absl::StrCat(root_, "/units/", digest);
-  if (auto data = ReadTextFile(archive(), path)) {
-    proto::IndexedCompilation result;
-    auto pbstatus = google::protobuf::util::JsonStringToMessage(*data, &result);
-    if (!pbstatus.ok()) {
-      // Then, convert the protobuf status.
-      // The codes share a common origin and are compatible.
-      return Status(static_cast<StatusCode>(pbstatus.error_code()),
-                    pbstatus.error_message().ToString());
+  if (auto file = ZipFile(zip_fopen(archive(), path.c_str(), 0))) {
+    proto::IndexedCompilation unit;
+    ZipFileInputStream input(file.get());
+    Status status = ParseFromJsonStream(&input, &unit);
+    if (!status.ok()) {
+      Status zip_status = ToStatus(zip_file_get_error(file.get()));
+      if (!zip_status.ok()) {
+        // Prefer the underlying zip error, if present.
+        return zip_status;
+      }
+      return status;
     }
-    return result;
-  } else {
-    return data.status();
+    return unit;
   }
   Status status = ToStatus(zip_get_error(archive()));
   if (!status.ok()) {

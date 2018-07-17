@@ -16,6 +16,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":status",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
@@ -317,6 +318,7 @@ cc_library(
     hdrs = ["kzip_reader.h"],
     deps = [
         ":index_reader",
+        ":json_proto",
         ":status_or",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -336,6 +338,8 @@ cc_test(
     deps = [
         ":kzip_reader",
         "//third_party:gtest_main",
+        # TODO(shahms): Should this go in `kzip_reader`?
+        "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
     ],
 )
 
