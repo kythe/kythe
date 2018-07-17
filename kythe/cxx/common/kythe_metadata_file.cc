@@ -16,8 +16,8 @@
 
 #include "kythe/cxx/common/kythe_metadata_file.h"
 
+#include "absl/strings/escaping.h"
 #include "glog/logging.h"
-#include "kythe/cxx/common/json_proto.h"  // DecodeBase64
 #include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/cxx/common/schema/edges.h"
 #include "kythe/proto/storage.pb.h"
@@ -94,7 +94,7 @@ std::unique_ptr<llvm::MemoryBuffer> LoadCommentMetadata(
     break;
   }
   google::protobuf::string decoded;
-  return DecodeBase64(raw_data, &decoded)
+  return absl::Base64Unescape(raw_data, &decoded)
              ? llvm::MemoryBuffer::getMemBufferCopy(ToStringRef(decoded))
              : nullptr;
 }
