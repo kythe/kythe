@@ -340,7 +340,9 @@ func (n *CoGBK) FinishBundle(ctx context.Context) error {
 	for _, cnt := range keyCounts {
 		totalKeys += cnt
 	}
-	log.Printf("CoGBK Σ%v = %d", keyCounts, totalKeys)
+	if *verbose {
+		log.Printf("CoGBK Σ%v = %d", keyCounts, totalKeys)
+	}
 	return n.Out.FinishBundle(ctx)
 }
 

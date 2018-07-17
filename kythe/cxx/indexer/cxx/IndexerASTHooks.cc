@@ -3257,6 +3257,17 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // pick up weird declaration locations that aren't stable enough for us.
   if (const auto *FD = dyn_cast<FunctionDecl>(Decl)) {
     if (unsigned BuiltinID = FD->getBuiltinID()) {
+      if (FD->hasAttr<GNUInlineAttr>()) {
+        // If _FORTIFY_SOURCE is enabled, some builtin functions will grow
+        // additional definitions (like fread in bits/stdio2.h). These
+        // definitions have declarations that differ from their non-fortified
+        // versions (in the sense that they're different sequences of tokens),
+        // which leads us to generate different code facts for the same node.
+        // This upsets our testing infrastructure. Fortunately, we're able to
+        // use the presence of GNUInlineAttr to distinguish between the
+        // different flavors of decl.
+        Ostream << "#gnuinl";
+      }
       Ostream << "#builtin";
       GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(),
                                Ostream.str());
@@ -4590,6 +4601,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       // it is impossible for the typeloc to be TypeLoc::Attributed.
       UNSUPPORTED_CLANG_TYPE(Attributed);
       UNSUPPORTED_CLANG_TYPE(DependentAddressSpace);
+      UNSUPPORTED_CLANG_TYPE(DependentVector);
   }
   if (TypeAlreadyBuilt) {
     ID = Prev->second;
