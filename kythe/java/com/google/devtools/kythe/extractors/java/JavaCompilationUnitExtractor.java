@@ -710,8 +710,9 @@ public class JavaCompilationUnitExtractor {
           compiler.getTask(
               null, fileManager, diagnosticsCollector, completeOptions, null, sourceFiles);
 
-      List<Processor> procs = Lists.<Processor>newArrayList(new ProcessAnnotation(fileManager));
       ClassLoader loader = processingClassloader(classpath, processorpath);
+
+      List<Processor> procs = Lists.newArrayList();
 
       // Add any processors passed as flags.
       for (String processor : processors) {
@@ -734,6 +735,8 @@ public class JavaCompilationUnitExtractor {
           procs.add(proc);
         }
       }
+
+      procs.add(new ProcessAnnotation(fileManager));
 
       JavacTask javacTask = (JavacTask) task;
       javacTask.setProcessors(procs);
