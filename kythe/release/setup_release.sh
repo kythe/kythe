@@ -64,9 +64,10 @@ join() { local IFS="$1"; shift; echo "$*"; }
 version="v$(join . "${components[@]}")"
 echo "Marking release $version"
 
-sed -i "s/\[Unreleased\]/[$version] - $(date +%Y-%m-%d)/
+sed -i "s/## \[Unreleased\]/## [$version] - $(date +%Y-%m-%d)/
+s/\[Unreleased\]/[$version]/
 s/HEAD/$version/
-3i [Unreleased]
+3i ## [Unreleased]
 3i Nothing to report yet.
 3i
 /^\[$version\]/i \
