@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteSource;
 import com.google.common.io.MoreFiles;
 import com.google.devtools.build.lib.actions.extra.ExtraActionInfo;
@@ -48,6 +49,8 @@ import java.util.zip.ZipFile;
 
 /** Java CompilationUnit extractor using Bazel's extra_action feature. */
 public class JavaExtractor {
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
   public static void main(String[] args) throws IOException, ExtractionException {
     if (args.length != 3) {
       System.err.println("Usage: java_extractor extra-action-file output-file vname-config");
@@ -117,7 +120,12 @@ public class JavaExtractor {
     // Add the generated sources directory if any processors could be invoked.
     Optional<Path> genSrcDir = Optional.absent();
     if (!jInfo.getProcessorList().isEmpty()) {
-      genSrcDir = readGeneratedSourceDirParam(jInfo);
+      try {
+        genSrcDir = readGeneratedSourceDirParam(jInfo);
+      } catch (IOException ioe) {
+        logger.atWarning().withCause(ioe).log(
+            "Failed to find generated sources directory from javac parameters");
+      }
       if (genSrcDir.isPresent()) {
         javacOpts.add("-s");
         javacOpts.add(genSrcDir.get().toString());
@@ -200,16 +208,25 @@ public class JavaExtractor {
     return files;
   }
 
-  /** Reads Bazel's compilation params file and returns the value of the --sourcegendir flag. */
+  private static final String SOURCEGENDIR_FLAG = "--sourcegendir";
+
+  /** Reads Bazel's compilation parameters and returns the value of the --sourcegendir flag. */
   private static Optional<Path> readGeneratedSourceDirParam(JavaCompileInfo jInfo)
       throws IOException {
+    for (int i = 0; i < jInfo.getArgumentCount() - 1; i++) {
+      if (jInfo.getArgument(i).equals(SOURCEGENDIR_FLAG)) {
+        return Optional.of(Paths.get(jInfo.getArgument(i + 1)));
+      }
+    }
+
+    // Fall-back to reading from the Bazel .params file
     try (java.io.BufferedReader params =
         Files.newBufferedReader(
             Paths.get(jInfo.getOutputjar() + "-2.params"),
             java.nio.charset.StandardCharsets.UTF_8)) {
       String line;
       while ((line = params.readLine()) != null) {
-        if ("--sourcegendir".equals(line)) {
+        if (SOURCEGENDIR_FLAG.equals(line)) {
           return Optional.of(Paths.get(params.readLine()));
         }
       }

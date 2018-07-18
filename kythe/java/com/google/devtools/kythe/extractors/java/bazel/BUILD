@@ -22,6 +22,7 @@ java_binary(
     jvm_flags = ["-Xbootclasspath/p:$${RUNPATH}$(location //third_party/javac:javac_jar)"],
     main_class = "com.google.devtools.kythe.extractors.java.bazel.JavaExtractor",
     deps = [
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
