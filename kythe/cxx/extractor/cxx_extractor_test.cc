@@ -352,6 +352,12 @@ TEST_F(CxxExtractorTest, DoesNotBreakForCompilerErrors) {
   FillAndVerifyCompilationUnit("b.cc", {}, {"./b.h", "b.cc"});
 }
 
+TEST_F(CxxExtractorTest, DoesNotBreakForMissingIncludes) {
+  AddSourceFile("b.cc", "#include \"D.h\"\nint main() { return 0;}");
+  AddSourceFile("./b.h", "class A;");
+  FillAndVerifyCompilationUnit("b.cc", {}, {"./b.h", "b.cc"});
+}
+
 }  // anonymous namespace
 }  // namespace kythe
 
