@@ -126,4 +126,9 @@ public class JavaIndexerConfig extends IndexerConfig {
     this.emitAnchorScopes = emitAnchorScopes;
     return this;
   }
+
+  public JavaIndexerConfig setEmitJvmSignatures(boolean emitJvmSignatures) {
+    this.emitJvmSignatures = emitJvmSignatures;
+    return this;
+  }
 }
