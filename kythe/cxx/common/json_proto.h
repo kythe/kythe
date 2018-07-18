@@ -20,9 +20,18 @@
 #include <string>
 
 #include "google/protobuf/any.pb.h"
+#include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/message.h"
+#include "kythe/cxx/common/status.h"
 
 namespace kythe {
+
+/// \brief Deserializes a protobuf from a JSON text stream.
+/// \param stream The input stream from which to read.
+/// \param message The message to parse.
+/// \return The status message result of parsing.
+Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream *input,
+                           google::protobuf::Message *message);
 
 /// \brief Deserializes a protobuf from its JSON form, including the format
 /// wrapper.
