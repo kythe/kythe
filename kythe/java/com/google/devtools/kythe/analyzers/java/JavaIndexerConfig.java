@@ -22,7 +22,7 @@ import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 public class JavaIndexerConfig extends IndexerConfig {
 
   @Parameter(names = "--emit_jvm_signatures", description = "Generate vnames with jvm signatures.")
-  protected boolean emitJvmSignatures;
+  private boolean emitJvmSignatures;
 
   @Parameter(
     names = "--ignore_vname_paths",
@@ -124,6 +124,11 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setEmitAnchorScopes(boolean emitAnchorScopes) {
     this.emitAnchorScopes = emitAnchorScopes;
+    return this;
+  }
+
+  public JavaIndexerConfig setEmitJvmSignatures(boolean emitJvmSignatures) {
+    this.emitJvmSignatures = emitJvmSignatures;
     return this;
   }
 }
