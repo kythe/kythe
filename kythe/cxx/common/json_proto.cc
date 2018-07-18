@@ -166,6 +166,28 @@ bool MergeJsonWithMessage(const std::string &in, std::string *format_key,
   return false;
 }
 
+Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream *input,
+                           google::protobuf::Message *message) {
+  auto resolver =
+      MakeTypeResolverForPool(message->GetDescriptor()->file()->pool());
+
+  std::string binary;
+  google::protobuf::io::StringOutputStream output(&binary);
+  auto status = google::protobuf::util::JsonToBinaryStream(
+      resolver.get(), message->GetDescriptor()->full_name(), input, &output,
+      {});
+
+  if (!status.ok()) {
+    return Status(static_cast<StatusCode>(status.error_code()),
+                  std::string(status.error_message()));
+  }
+  if (!message->ParseFromString(binary)) {
+    return InvalidArgumentError(
+        "JSON transcoder produced invalid protobuf output.");
+  }
+  return OkStatus();
+}
+
 void PackAny(const google::protobuf::Message &message, const char *type_uri,
              google::protobuf::Any *out) {
   out->set_type_url(type_uri);
