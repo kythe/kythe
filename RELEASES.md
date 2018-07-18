@@ -1,6 +1,9 @@
 # Release Notes
 
 ## [Unreleased]
+Nothing to report yet.
+
+## [v0.0.28] - 2018-07-18
 
 ### Added
  - `write_tables`: `--experimental_beam_pipeline` runs the post-processor as an
@@ -338,7 +341,8 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased]: https://github.com/google/kythe/compare/v0.0.27...HEAD
+[Unreleased] https://github.com/google/kythe/compare/v0.0.28...HEAD
+[v0.0.28]: https://github.com/google/kythe/compare/v0.0.27...v0.0.28
 [v0.0.27]: https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 [v0.0.26]: https://github.com/google/kythe/compare/v0.0.25...v0.0.26
 [v0.0.25]: https://github.com/google/kythe/compare/v0.0.24...v0.0.25
