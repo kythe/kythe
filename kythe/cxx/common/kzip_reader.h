@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_COMMON_KZIP_READER_H
-#define KYTHE_CXX_COMMON_KZIP_READER_H
+#ifndef KYTHE_CXX_COMMON_KZIP_READER_H_
+#define KYTHE_CXX_COMMON_KZIP_READER_H_
 
 #include <functional>
 #include <string>
@@ -57,4 +57,4 @@ class KzipReader : public IndexReaderInterface {
 
 }  // namespace kythe
 
-#endif  // KYTHE_CXX_COMMON_KZIP_READER_H
+#endif  // KYTHE_CXX_COMMON_KZIP_READER_H_

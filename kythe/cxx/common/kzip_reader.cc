@@ -288,19 +288,6 @@ Status ToStatus(zip_error_t* error) {
   return Status(code, zip_error_strerror(error));
 }
 
-class ZipError {
- public:
-  ZipError() { zip_error_init(get()); }
-  ~ZipError() { zip_error_fini(get()); }
-
-  Status ToStatus() { return kythe::ToStatus(get()); };
-
-  zip_error_t* get() { return &error_; }
-
- private:
-  zip_error_t error_;
-};
-
 absl::optional<zip_uint64_t> FileSize(zip_t* archive, zip_uint64_t index) {
   zip_stat_t sb;
   zip_stat_init(&sb);
@@ -337,7 +324,6 @@ StatusOr<std::string> ReadTextFile(zip_t* archive, const std::string& path) {
 /* static */
 StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
   // TODO(shahms): Support opening a zip_source_t wrapper class of some sort.
-  // ZipError error;
   int error;
   if (auto archive =
           ZipHandle(zip_open(std::string(path).c_str(), ZIP_RDONLY, &error))) {
@@ -348,7 +334,6 @@ StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
       return root.status();
     }
   }
-  // return error.ToStatus();
   return Status(ZlibStatusCode(error), absl::StrCat("Unable to open: ", path));
 }
 
