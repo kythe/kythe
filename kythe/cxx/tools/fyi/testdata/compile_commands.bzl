@@ -1,5 +1,7 @@
 """Rule for generating compile_commands.json.in with appropriate inlcude directories."""
 
+load("//tools/build_rules/verifier_test:toolchain_utils.bzl", "find_cpp_toolchain")
+
 _TEMPLATE = """  {{
     "directory": "OUT_DIR",
     "command": "clang++ -c {filename} -std=c++11 -Wall -Werror -I. -IBASE_DIR {system_includes}",
@@ -9,7 +11,7 @@ _TEMPLATE = """  {{
 def _compile_commands_impl(ctx):
   system_includes = " ".join([
       "-I{}".format(d)
-      for d in ctx.fragments.cpp.built_in_include_directories
+      for d in find_cpp_toolchain(ctx).built_in_include_directories
   ])
   ctx.actions.write(
       output = ctx.outputs.compile_commands,
@@ -25,9 +27,13 @@ compile_commands = rule(
             mandatory = True,
             allow_empty = False,
         ),
+        # Do not add references, temporary attribute for find_cpp_toolchain.
+        # See go/skylark-api-for-cc-toolchain for more details.
+        "_cc_toolchain": attr.label(
+            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+        ),
     },
     doc = "Generates a compile_commannds.json.in template file.",
-    fragments = ["cpp"],
     outputs = {
         "compile_commands": "compile_commands.json.in",
     },
