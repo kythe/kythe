@@ -1,6 +1,6 @@
 """Rule for generating compile_commands.json.in with appropriate inlcude directories."""
 
-load("//third_party/kythe:tools/build_rules/verifier_test/toolchain_utils.bzl", "find_cpp_toolchain")
+load("//tools/build_rules/verifier_test:toolchain_utils.bzl", "find_cpp_toolchain")
 
 _TEMPLATE = """  {{
     "directory": "OUT_DIR",
@@ -30,7 +30,7 @@ compile_commands = rule(
         # Do not add references, temporary attribute for find_cpp_toolchain.
         # See go/skylark-api-for-cc-toolchain for more details.
         "_cc_toolchain": attr.label(
-            default = Label("//tools/cpp:current_cc_toolchain"),
+            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
     },
     doc = "Generates a compile_commannds.json.in template file.",
