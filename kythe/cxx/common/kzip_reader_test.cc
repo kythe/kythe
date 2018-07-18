@@ -38,12 +38,22 @@ TEST(KzipReaderTest, OpenFailsForMissingRoot) {
 }
 
 TEST(KzipReaderTest, OpenAndReadSimpleKzip) {
-  StatusOr<std::unique_ptr<IndexReaderInterface>> reader =
-      KzipReader::Open(TestFile("stringset.kzip"));
+  StatusOr<IndexReader> reader = KzipReader::Open(TestFile("stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
-  EXPECT_TRUE((*reader)
+  EXPECT_TRUE(reader
                   ->Scan([&](absl::string_view digest) {
-                    auto unit = (*reader)->ReadUnit(digest);
+                    auto unit = reader->ReadUnit(digest);
+                    if (unit.ok()) {
+                      for (const auto& file : unit->unit().required_input()) {
+                        auto data = reader->ReadFile(file.info().digest());
+                        EXPECT_TRUE(data.ok())
+                            << "Failed to read file contents: "
+                            << data.status().ToString();
+                        if (!data.ok()) {
+                          return false;
+                        }
+                      }
+                    }
                     EXPECT_TRUE(unit.ok())
                         << "Failed to read compilation unit: "
                         << unit.status().ToString();
@@ -51,6 +61,5 @@ TEST(KzipReaderTest, OpenAndReadSimpleKzip) {
                   })
                   .ok());
 }
-
 }  // namespace
 }  // namespace kythe

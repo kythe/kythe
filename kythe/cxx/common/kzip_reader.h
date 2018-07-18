@@ -14,7 +14,7 @@ namespace kythe {
 
 class KzipReader : public IndexReaderInterface {
  public:
-  static StatusOr<std::unique_ptr<KzipReader>> Open(absl::string_view path);
+  static StatusOr<IndexReader> Open(absl::string_view path);
 
   Status Scan(const ScanCallback& callback) override;
 

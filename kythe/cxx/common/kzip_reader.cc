@@ -319,14 +319,15 @@ StatusOr<std::string> ReadTextFile(zip_t* archive, const std::string& path) {
 }  // namespace
 
 /* static */
-StatusOr<std::unique_ptr<KzipReader>> KzipReader::Open(absl::string_view path) {
+StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
   // TODO(shahms): Support opening a zip_source_t wrapper class of some sort.
   // ZipError error;
   int error;
   if (auto archive =
           ZipHandle(zip_open(std::string(path).c_str(), ZIP_RDONLY, &error))) {
     if (auto root = Validate(archive.get())) {
-      return absl::WrapUnique(new KzipReader(std::move(archive), *root));
+      return IndexReader(
+          absl::WrapUnique(new KzipReader(std::move(archive), *root)));
     } else {
       return root.status();
     }
