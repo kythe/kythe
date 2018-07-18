@@ -56,7 +56,7 @@ expand_template(
             "HAVE_COMMONCRYPTO": False,
             "HAVE_CRYPTO": False,
             "HAVE_DIRENT_H": False,
-            "HAVE_FICLONERANGE": True,
+            "HAVE_FICLONERANGE": False,
             "HAVE_FILENO": True,
             "HAVE_FSEEK": True,
             "HAVE_FSEEKO": True,
