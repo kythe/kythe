@@ -22,7 +22,7 @@ import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 public class JavaIndexerConfig extends IndexerConfig {
 
   @Parameter(names = "--emit_jvm_signatures", description = "Generate vnames with jvm signatures.")
-  private boolean emitJvmSignatures;
+  protected boolean emitJvmSignatures;
 
   @Parameter(
     names = "--ignore_vname_paths",
