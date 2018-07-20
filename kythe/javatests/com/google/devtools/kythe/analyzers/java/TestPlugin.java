@@ -48,8 +48,12 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
     Context context = kytheGraph.getJavaContext();
     Symtab symtab = Symtab.instance(context);
     Names names = Names.instance(context);
-    ClassSymbol specialAnnotationSym =
-        symtab.getClass(symtab.java_base, names.fromString("pkg.PluginTests$SpecialAnnotation"));
+    ClassSymbol specialAnnotationSym = null;
+    for (ClassSymbol sym :
+        symtab.getClassesForName(names.fromString("pkg.PluginTests$SpecialAnnotation"))) {
+      specialAnnotationSym = sym;
+      break;
+    }
     specialAnnotationNode = kytheGraph.getNode(specialAnnotationSym).orElse(null);
     if (specialAnnotationNode == null) {
       return v;
@@ -75,7 +79,6 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
         continue;
       }
       // We're analyzing a method annotated by SpecialAnnotation.  Now we do special analysis.
-
       kytheGraph
           .getNode(tree)
           .map(KytheNode::getVName)
@@ -129,6 +132,5 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
 
       break;
     }
-
   }
 }
