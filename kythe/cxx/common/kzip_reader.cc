@@ -28,6 +28,7 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/json_proto.h"
+#include "kythe/cxx/common/libzip/error.h"
 
 namespace kythe {
 namespace {
@@ -320,20 +321,6 @@ StatusOr<std::string> ReadTextFile(zip_t* archive, const std::string& path) {
   return UnknownError(absl::StrCat("Unable to read: ", path));
 }
 
-/// \brief RAII wrapper around zip_error_t.
-class ZipError {
- public:
-  ZipError() { zip_error_init(get()); }
-  ZipError(const ZipError&) = delete;
-  ZipError& operator=(const ZipError&) = delete;
-  ~ZipError() { zip_error_fini(get()); }
-
-  zip_error_t* get() { return &error_; }
-
- private:
-  zip_error_t error_;
-};
-
 }  // namespace
 
 /* static */
@@ -353,7 +340,7 @@ StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
 
 /* static */
 StatusOr<IndexReader> KzipReader::FromSource(zip_source_t* source) {
-  ZipError error;
+  libzip::Error error;
   if (auto archive =
           ZipHandle(zip_open_from_source(source, ZIP_RDONLY, error.get()))) {
     if (auto root = Validate(archive.get())) {

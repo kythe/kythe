@@ -319,6 +319,7 @@ cc_library(
     deps = [
         ":index_reader",
         ":json_proto",
+        ":libzip/error",
         ":status_or",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -337,6 +338,7 @@ cc_test(
     ],
     deps = [
         ":kzip_reader",
+        ":libzip/error",
         "//third_party:gtest_main",
         # TODO(shahms): Should this go in `kzip_reader`?
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
@@ -366,4 +368,12 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
     ],
+)
+
+cc_library(
+    name = "libzip/error",
+    srcs = ["libzip/error.cc"],
+    hdrs = ["libzip/error.h"],
+    visibility = ["//visibility:private"],
+    deps = ["@org_libzip//:zip"],
 )
