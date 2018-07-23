@@ -29,6 +29,20 @@
 namespace kythe {
 namespace {
 
+/// \brief Returns an error for any command except ZIP_SOURCE_ERROR.
+zip_int64_t BadZipSource(void* state, void* data, zip_uint64_t len,
+                         zip_source_cmd_t cmd) {
+  switch (cmd) {
+    case ZIP_SOURCE_FREE:
+      return 0;
+    case ZIP_SOURCE_ERROR:
+      return zip_error_to_data(static_cast<zip_error_t*>(state), data, len);
+    default:
+      zip_error_set(static_cast<zip_error_t*>(state), ZIP_ER_INVAL, 0);
+      return -1;
+  }
+}
+
 absl::string_view TestSrcdir() {
   return absl::StripSuffix(CHECK_NOTNULL(getenv("TEST_SRCDIR")), "/");
 }
@@ -55,6 +69,56 @@ TEST(KzipReaderTest, OpenFailsForMissingRoot) {
 
 TEST(KzipReaderTest, OpenAndReadSimpleKzip) {
   StatusOr<IndexReader> reader = KzipReader::Open(TestFile("stringset.kzip"));
+  ASSERT_TRUE(reader.ok()) << reader.status();
+  EXPECT_TRUE(reader
+                  ->Scan([&](absl::string_view digest) {
+                    auto unit = reader->ReadUnit(digest);
+                    if (unit.ok()) {
+                      for (const auto& file : unit->unit().required_input()) {
+                        auto data = reader->ReadFile(file.info().digest());
+                        EXPECT_TRUE(data.ok())
+                            << "Failed to read file contents: "
+                            << data.status().ToString();
+                        if (!data.ok()) {
+                          return false;
+                        }
+                      }
+                    }
+                    EXPECT_TRUE(unit.ok())
+                        << "Failed to read compilation unit: "
+                        << unit.status().ToString();
+                    return unit.ok();
+                  })
+                  .ok());
+}
+
+TEST(KzipReaderTest, FromSourceFailsIfSourceDoes) {
+  zip_error_t error;
+  zip_error_init(&error);
+
+  {
+    zip_error_t inner;
+    zip_error_init(&inner);
+
+    EXPECT_EQ(KzipReader::FromSource(
+                  zip_source_function_create(
+                      BadZipSource, static_cast<void*>(&error), &inner))
+                  .status()
+                  .code(),
+              StatusCode::kUnimplemented);
+
+    zip_error_fini(&inner);
+  }
+  zip_error_fini(&error);
+}
+
+TEST(KzipReaderTest, FromSourceReadsSimpleKzip) {
+  zip_error_t error;
+  zip_error_init(&error);
+  StatusOr<IndexReader> reader = KzipReader::FromSource(
+      zip_source_file_create(TestFile("stringset.kzip").c_str(), 0, -1, &error));
+  zip_error_fini(&error);
+
   ASSERT_TRUE(reader.ok()) << reader.status();
   EXPECT_TRUE(reader
                   ->Scan([&](absl::string_view digest) {

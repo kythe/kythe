@@ -126,6 +126,7 @@ StatusCode ZlibStatusCode(int zip_error) {
     case ZIP_ER_MULTIDISK:    // Multi-disk zip archives not supported
     case ZIP_ER_COMPNOTSUPP:  // Compression method not supported
     case ZIP_ER_ENCRNOTSUPP:  // Encryption method not supported
+    case ZIP_ER_OPNOTSUPP:    // Operation not supported
       return StatusCode::kUnimplemented;
     case ZIP_ER_INVAL:            // Invalid argument
     case ZIP_ER_NOZIP:            // Not a zip archive
@@ -319,11 +320,24 @@ StatusOr<std::string> ReadTextFile(zip_t* archive, const std::string& path) {
   return UnknownError(absl::StrCat("Unable to read: ", path));
 }
 
+/// \brief RAII wrapper around zip_error_t.
+class ZipError {
+ public:
+  ZipError() { zip_error_init(get()); }
+  ZipError(const ZipError&) = delete;
+  ZipError& operator=(const ZipError&) = delete;
+  ~ZipError() { zip_error_fini(get()); }
+
+  zip_error_t* get() { return &error_; }
+
+ private:
+  zip_error_t error_;
+};
+
 }  // namespace
 
 /* static */
 StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
-  // TODO(shahms): Support opening a zip_source_t wrapper class of some sort.
   int error;
   if (auto archive =
           ZipHandle(zip_open(std::string(path).c_str(), ZIP_RDONLY, &error))) {
@@ -335,6 +349,21 @@ StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
     }
   }
   return Status(ZlibStatusCode(error), absl::StrCat("Unable to open: ", path));
+}
+
+/* static */
+StatusOr<IndexReader> KzipReader::FromSource(zip_source_t* source) {
+  ZipError error;
+  if (auto archive =
+          ZipHandle(zip_open_from_source(source, ZIP_RDONLY, error.get()))) {
+    if (auto root = Validate(archive.get())) {
+      return IndexReader(
+          absl::WrapUnique(new KzipReader(std::move(archive), *root)));
+    } else {
+      return root.status();
+    }
+  }
+  return ToStatus(error.get());
 }
 
 KzipReader::KzipReader(ZipHandle archive, absl::string_view root)
