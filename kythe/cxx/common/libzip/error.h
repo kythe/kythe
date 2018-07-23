@@ -19,6 +19,8 @@
 
 #include <zip.h>
 
+#include "kythe/cxx/common/status.h"
+
 namespace kythe {
 namespace libzip {
 
@@ -26,9 +28,14 @@ namespace libzip {
 class Error {
  public:
   Error() { zip_error_init(get()); }
+  ~Error() { zip_error_fini(get()); }
+
+  // Error is neither copyable nor movable.
   Error(const Error&) = delete;
   Error& operator=(const Error&) = delete;
-  ~Error() { zip_error_fini(get()); }
+
+  /// \brief Converts the Error into a Kythe::Status.
+  Status ToStatus();
 
   zip_error_t* get() { return &error_; }
 
@@ -36,6 +43,11 @@ class Error {
   zip_error_t error_;
 };
 
+/// \brief Converts a zip_error_t into kythe::Status.
+Status ToStatus(zip_error_t* error);
+
+/// \brief Translates a ZLIB_ER_* constant into a StatusCode.
+StatusCode ZlibStatusCode(int zlib_error);
 
 }  // namespace libzip
 }  // namespace kythe
