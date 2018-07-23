@@ -32,6 +32,12 @@ class KzipReader : public IndexReaderInterface {
  public:
   static StatusOr<IndexReader> Open(absl::string_view path);
 
+  /// \brief Constructs an `IndexReader` from the provided source.
+  /// `zip_source_t` is reference counted, see
+  /// https://libzip.org/documentation/zip_source.html
+  /// for detailed ownership semantics.
+  static StatusOr<IndexReader> FromSource(zip_source_t* source);
+
   Status Scan(const ScanCallback& callback) override;
 
   StatusOr<kythe::proto::IndexedCompilation> ReadUnit(
