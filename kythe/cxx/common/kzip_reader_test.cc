@@ -25,6 +25,7 @@
 #include "absl/strings/strip.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/common/libzip/error.h"
 
 namespace kythe {
 namespace {
@@ -93,31 +94,24 @@ TEST(KzipReaderTest, OpenAndReadSimpleKzip) {
 }
 
 TEST(KzipReaderTest, FromSourceFailsIfSourceDoes) {
-  zip_error_t error;
-  zip_error_init(&error);
-
+  libzip::Error error;
   {
-    zip_error_t inner;
-    zip_error_init(&inner);
+    libzip::Error inner;
 
-    EXPECT_EQ(KzipReader::FromSource(
-                  zip_source_function_create(
-                      BadZipSource, static_cast<void*>(&error), &inner))
-                  .status()
-                  .code(),
-              StatusCode::kUnimplemented);
-
-    zip_error_fini(&inner);
+    EXPECT_EQ(
+        KzipReader::FromSource(
+            zip_source_function_create(
+                BadZipSource, static_cast<void*>(error.get()), inner.get()))
+            .status()
+            .code(),
+        StatusCode::kUnimplemented);
   }
-  zip_error_fini(&error);
 }
 
 TEST(KzipReaderTest, FromSourceReadsSimpleKzip) {
-  zip_error_t error;
-  zip_error_init(&error);
-  StatusOr<IndexReader> reader = KzipReader::FromSource(
-      zip_source_file_create(TestFile("stringset.kzip").c_str(), 0, -1, &error));
-  zip_error_fini(&error);
+  libzip::Error error;
+  StatusOr<IndexReader> reader = KzipReader::FromSource(zip_source_file_create(
+      TestFile("stringset.kzip").c_str(), 0, -1, error.get()));
 
   ASSERT_TRUE(reader.ok()) << reader.status();
   EXPECT_TRUE(reader
