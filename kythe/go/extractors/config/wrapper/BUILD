@@ -4,11 +4,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "wrapper",
-    srcs = [
-        "gradle_build_modifier.go",
-    ],
-    deps = [
-    ],
+    srcs = ["gradle_build_modifier.go"],
 )
 
 go_test(

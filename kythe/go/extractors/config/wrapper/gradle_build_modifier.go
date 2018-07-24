@@ -1,14 +1,14 @@
 package wrapper
 
 import (
-	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"regexp"
 )
 
 // These are the lines necessary for gradle build to use a different javac.
-var kytheJavacWrapper = `
+const kytheJavacWrapper = `
 allprojects {
   gradle.projectsEvaluated {
     tasks.withType(JavaCompile) {
@@ -45,25 +45,16 @@ func PreProcessGradleBuild(gradleBuildFile string) error {
 }
 
 func hasKytheWrapper(gradleBuildFile string) (bool, error) {
-	f, err := os.Open(gradleBuildFile)
+	bits, err := ioutil.ReadFile(gradleBuildFile)
 	if err != nil {
-		return false, fmt.Errorf("Opening file %s: %v", gradleBuildFile, err)
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		if kytheMatcher.MatchString(scanner.Text()) {
-			return true, nil
-		}
-		if javacMatcher.MatchString(scanner.Text()) {
-			return false, fmt.Errorf("Found existing non-kythe javac override for file %s, which we can't handle yet.", gradleBuildFile)
-		}
-	}
-	if err := scanner.Err(); err != nil {
 		return false, fmt.Errorf("Reading file %s: %v", gradleBuildFile, err)
 	}
-
+	if kytheMatcher.Match(bits) {
+		return true, nil
+	}
+	if javacMatcher.Match(bits) {
+		return false, fmt.Errorf("Found existing non-kythe javac override for file %s, which we can't handle yet.", gradleBuildFile)
+	}
 	return false, nil
 }
 

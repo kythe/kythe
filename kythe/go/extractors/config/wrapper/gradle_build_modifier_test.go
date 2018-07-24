@@ -16,6 +16,10 @@ const testDataDir = "testdata"
 
 var multipleNewLines = regexp.MustCompile("\n{2,}")
 
+// filesEqual compares two strings by collapsing irrelevant whitespace.
+// It returns both a boolean indicating equality, as well as any relevant
+// diff.
+// TODO(#2860) combine this with imagesEqual in a util.
 func filesEqual(got, want []byte) (bool, string) {
 	// remove superfluous whitespace
 	gotStr := strings.Trim(string(got[:]), " \n")
@@ -34,32 +38,32 @@ func filesEqual(got, want []byte) (bool, string) {
 
 func TestHasKythe(t *testing.T) {
 	testcases := []struct {
-		f string
+		fileName string
 		// Whether kythe javac wrapper should be present.
-		k bool
+		hasWrapper bool
 		// Whether we expect an error.
-		e bool
+		wantError bool
 	}{
-		{"modified-gradle.build", true, false},
-		{"plain-gradle.build", false, false},
-		{"other-gradle.build", false, true},
+		{fileName: "modified-gradle.build", hasWrapper: true},
+		{fileName: "plain-gradle.build"},
+		{fileName: "other-gradle.build", wantError: true},
 	}
 
 	for _, tcase := range testcases {
 		// This should just ignore the file and do nothing.
-		k, err := hasKytheWrapper(getPath(tcase.f))
-		if err != nil && !tcase.e {
+		hasWrapper, err := hasKytheWrapper(getPath(tcase.fileName))
+		if err != nil && !tcase.wantError {
 			t.Fatalf("Failed to open test gradle file: %v", err)
-		} else if err == nil && tcase.e {
-			t.Errorf("Expected a failure for file %s, but didn't get one.", tcase.f)
-		} else if tcase.k != k {
+		} else if err == nil && tcase.wantError {
+			t.Errorf("Expected a failure for file %s, but didn't get one.", tcase.fileName)
+		} else if tcase.hasWrapper != hasWrapper {
 			var errstr string
-			if tcase.k {
+			if tcase.hasWrapper {
 				errstr = "should"
 			} else {
 				errstr = "should not"
 			}
-			t.Errorf("file %s %s already have kythe javac-wrapper", tcase.f, errstr)
+			t.Errorf("file %s %s already have kythe javac-wrapper", tcase.fileName, errstr)
 		}
 	}
 }
