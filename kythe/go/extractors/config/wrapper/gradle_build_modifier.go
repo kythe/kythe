@@ -20,11 +20,11 @@ allprojects {
 `
 
 // This matches a line which sets the javac to use Kythe's javac-wrapper.sh
-var kytheMatcher = regexp.MustCompile(`^\s*options\.forkOptions\.executable\ =\ '/opt/kythe/extractors/javac-wrapper.sh'\s*$`)
+var kytheMatcher = regexp.MustCompile(`\s+options\.forkOptions\.executable\ =\ '/opt/kythe/extractors/javac-wrapper.sh'`)
 
 // This matches any line which sets a new javac executable, useful for detecting
 // edge cases which already modify javac.
-var javacMatcher = regexp.MustCompile(`^\s*options\.forkOptions\.executable\ =.*$`)
+var javacMatcher = regexp.MustCompile(`\s+options\.forkOptions\.executable\ =`)
 
 // PreProcessGradleBuild takes a gradle.build file and either verifies that it
 // already has the bits necessary to run kythe's javac wrapper, or adds that
