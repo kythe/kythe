@@ -1,2 +1,5 @@
 build --workspace_status_command tools/buildstamp/get_workspace_status
 build --auto_cpu_environment_group=//buildenv:cpu
+
+# Ensure environment variables are static across machines; allows for cross-user caching.
+build --experimental_strict_action_env
