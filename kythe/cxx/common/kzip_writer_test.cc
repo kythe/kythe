@@ -56,6 +56,64 @@ template <typename T> WithStatusFn<T> WithStatus(Status* status, T function) {
   return WithStatusFn<T>{status, std::move(function)};
 }
 
+StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
+CopyIndex(IndexReader* reader, IndexWriter* writer) {
+  Status error;
+  std::unordered_map<std::string, std::unordered_set<std::string>> digests;
+  Status scan = reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
+    auto unit = reader->ReadUnit(digest);
+    if (!unit.ok()) {
+      return unit.status();
+    }
+    auto written_digest = writer->WriteUnit(*unit);
+    if (!written_digest.ok()) {
+      return written_digest.status();
+    }
+    for (const auto& file : unit->unit().required_input()) {
+      auto data = reader->ReadFile(file.info().digest());
+      if (!data.ok()) {
+        return data.status();
+      }
+      auto written_file = writer->WriteFile(*data);
+      if (!written_file.ok()) {
+        return written_file.status();
+      }
+      digests[*written_digest].insert(*written_file);
+    }
+    return OkStatus();
+  }));
+  if (!scan.ok()) {
+    return scan;
+  }
+  if (!error.ok()) {
+    return error;
+  }
+  return digests;
+}
+
+StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
+ReadDigests(IndexReader* reader) {
+  Status error;
+  std::unordered_map<std::string, std::unordered_set<std::string>> digests;
+  Status scan = reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
+    auto unit = reader->ReadUnit(digest);
+    if (!unit.ok()) {
+      return unit.status();
+    }
+    for (const auto& file : unit->unit().required_input()) {
+      digests[std::string(digest)].insert(file.info().digest());
+    }
+    return OkStatus();
+  }));
+  if (!scan.ok()) {
+    return scan;
+  }
+  if (!error.ok()) {
+    return error;
+  }
+  return digests;
+}
+
 TEST(KzipReaderTest, RecapitulatesSimpleKzip) {
   StatusOr<IndexReader> reader = KzipReader::Open(TestFile("stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
@@ -63,64 +121,18 @@ TEST(KzipReaderTest, RecapitulatesSimpleKzip) {
   StatusOr<IndexWriter> writer =
       KzipWriter::Create(absl::StrCat(TestTmpdir(), "/stringset.kzip"));
   ASSERT_TRUE(writer.ok()) << writer.status();
-  Status error;
-  std::unordered_map<std::string, std::unordered_set<std::string>> digests;
-  EXPECT_TRUE(
-      reader
-          ->Scan(WithStatus(
-              &error,
-              [&](absl::string_view digest) {
-                if (auto unit = reader->ReadUnit(digest)) {
-                  if (auto written = writer->WriteUnit(*unit)) {
-                    for (const auto& file : unit->unit().required_input()) {
-                      if (auto data = reader->ReadFile(file.info().digest())) {
-                        if (auto written_file = writer->WriteFile(*data)) {
-                          EXPECT_EQ(*written_file, file.info().digest());
-                          digests[*written].insert(*written_file);
-                        } else {
-                          return written_file.status();
-                        }
-                      } else {
-                        return data.status();
-                      }
-                    }
-                  } else {
-                    return written.status();
-                  }
-                } else {
-                  return unit.status();
-                }
-                return OkStatus();
-              }))
-          .ok());
-  EXPECT_TRUE(error.ok()) << error;
+  auto written_digests = CopyIndex(&*reader, &*writer);
+  ASSERT_TRUE(written_digests.ok()) << written_digests.status();
   {
     auto status = writer->Close();
     ASSERT_TRUE(status.ok()) << status;
   }
+
   reader = KzipReader::Open(absl::StrCat(TestTmpdir(), "/stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
-  std::unordered_map<std::string, std::unordered_set<std::string>> result;
-  EXPECT_TRUE(
-      reader
-          ->Scan(WithStatus(
-              &error,
-              [&](absl::string_view digest) {
-                if (auto unit = reader->ReadUnit(digest)) {
-                  for (const auto& file : unit->unit().required_input()) {
-                    if (auto data = reader->ReadFile(file.info().digest())) {
-                      result[std::string(digest)].insert(file.info().digest());
-                    } else {
-                      return data.status();
-                    }
-                  }
-                } else {
-                  return unit.status();
-                }
-                return OkStatus();
-              }))
-          .ok());
-  EXPECT_EQ(digests, result);
+  auto read_digests = ReadDigests(&*reader);
+  ASSERT_TRUE(read_digests.ok());
+  EXPECT_EQ(*written_digests, *read_digests);
 }
 
 }  // namespace
