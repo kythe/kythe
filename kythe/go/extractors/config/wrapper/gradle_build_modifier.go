@@ -20,11 +20,11 @@ allprojects {
 `
 
 // This matches a line which sets the javac to use Kythe's javac-wrapper.sh
-var kytheMatcher = regexp.MustCompile(`\s+options\.forkOptions\.executable\ =\ '/opt/kythe/extractors/javac-wrapper.sh'`)
+var kytheMatcher = regexp.MustCompile(`\n\s+options\.forkOptions\.executable\ =\ '/opt/kythe/extractors/javac-wrapper.sh'`)
 
 // This matches any line which sets a new javac executable, useful for detecting
 // edge cases which already modify javac.
-var javacMatcher = regexp.MustCompile(`\s+options\.forkOptions\.executable\ =`)
+var javacMatcher = regexp.MustCompile(`\n\s+options\.forkOptions\.executable\ =`)
 
 // PreProcessGradleBuild takes a gradle.build file and either verifies that it
 // already has the bits necessary to run kythe's javac wrapper, or adds that
@@ -47,13 +47,13 @@ func PreProcessGradleBuild(gradleBuildFile string) error {
 func hasKytheWrapper(gradleBuildFile string) (bool, error) {
 	bits, err := ioutil.ReadFile(gradleBuildFile)
 	if err != nil {
-		return false, fmt.Errorf("Reading file %s: %v", gradleBuildFile, err)
+		return false, fmt.Errorf("reading file %s: %v", gradleBuildFile, err)
 	}
 	if kytheMatcher.Match(bits) {
 		return true, nil
 	}
 	if javacMatcher.Match(bits) {
-		return false, fmt.Errorf("Found existing non-kythe javac override for file %s, which we can't handle yet.", gradleBuildFile)
+		return false, fmt.Errorf("found existing non-kythe javac override for file %s, which we can't handle yet.", gradleBuildFile)
 	}
 	return false, nil
 }

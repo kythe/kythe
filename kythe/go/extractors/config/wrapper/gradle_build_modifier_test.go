@@ -16,9 +16,9 @@ const testDataDir = "testdata"
 
 var multipleNewLines = regexp.MustCompile("\n{2,}")
 
-// filesEqual compares two strings by collapsing irrelevant whitespace.
-// It returns both a boolean indicating equality, as well as any relevant
-// diff.
+// filesEqual compares two strings after collapsing irrelevant whitespace at the
+// beginning or end of lines. It returns both a boolean indicating equality, as
+// well as any relevant diff.
 // TODO(#2860) combine this with imagesEqual in a util.
 func filesEqual(got, want []byte) (bool, string) {
 	// remove superfluous whitespace
