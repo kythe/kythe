@@ -38,7 +38,7 @@ const testDataDir = "testdata"
 func mustLoadDockerFile(t *testing.T, testConfigFile string) []byte {
 	t.Helper()
 	fileName := fmt.Sprintf("expected_%s.Dockerfile", strings.Replace(filepath.Base(testConfigFile), ".json", "", 1))
-	content, err := ioutil.ReadFile(os.ExpandEnv(filepath.Join(testDataDir, fileName)))
+	content, err := ioutil.ReadFile(testutil.TestFilePath(t, filepath.Join(testDataDir, fileName)))
 	if err != nil {
 		t.Fatalf("Failed to open test docker file: %v\n", err)
 	}
@@ -60,7 +60,7 @@ func (t testFiles) Close() error {
 
 func mustOpenTestData(t *testing.T) testFiles {
 	t.Helper()
-	fileNames, err := filepath.Glob(os.ExpandEnv(fmt.Sprintf("%s/%s", testDataDir, "*.json")))
+	fileNames, err := filepath.Glob(testutil.TestFilePath(t, os.ExpandEnv(fmt.Sprintf("%s/%s", testDataDir, "*.json"))))
 	if err != nil {
 		t.Fatalf("Failed to glob for test data files: %v\n", err)
 	}
@@ -71,7 +71,7 @@ func mustOpenTestData(t *testing.T) testFiles {
 
 	var files []*os.File
 	for _, fileName := range fileNames {
-		file, err := os.Open(os.ExpandEnv(fileName))
+		file, err := os.Open(fileName)
 		if err != nil {
 			t.Fatalf("Failed to load test data: %v", err)
 		}
