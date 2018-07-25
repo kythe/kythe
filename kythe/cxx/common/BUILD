@@ -16,7 +16,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        ":status",
+        ":status_or",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
@@ -295,7 +295,7 @@ cc_library(
     srcs = ["index_writer.cc"],
     hdrs = ["index_writer.h"],
     deps = [
-        ":status",
+        ":status_or",
         "//kythe/proto:analysis_cc_proto",
         "@com_google_absl//absl/strings",
     ],
@@ -321,6 +321,7 @@ cc_library(
         ":json_proto",
         ":libzip/error",
         ":status_or",
+        "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
@@ -342,6 +343,38 @@ cc_test(
         "//third_party:gtest_main",
         # TODO(shahms): Should this go in `kzip_reader`?
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
+    ],
+)
+
+cc_library(
+    name = "kzip_writer",
+    srcs = ["kzip_writer.cc"],
+    hdrs = ["kzip_writer.h"],
+    deps = [
+        ":index_writer",
+        ":json_proto",
+        ":libzip/error",
+        "@boringssl//:crypto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@org_libzip//:zip",
+    ],
+)
+
+cc_test(
+    name = "kzip_writer_test",
+    srcs = ["kzip_writer_test.cc"],
+    data = [
+        "//kythe/cxx/common/testdata:stringset.kzip",
+    ],
+    deps = [
+        ":kzip_reader",
+        ":kzip_writer",
+        ":libzip/error",
+        "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
     ],
 )
 

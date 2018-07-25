@@ -22,7 +22,7 @@
 #include "google/protobuf/any.pb.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/message.h"
-#include "kythe/cxx/common/status.h"
+#include "kythe/cxx/common/status_or.h"
 
 namespace kythe {
 
@@ -57,6 +57,12 @@ bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
 /// \return True on success; false on failure.
 bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
                                 std::string *out);
+
+/// \brief Serializes a protobuf to JSON form with no wrapper.
+/// \param message The protobuf to serialize.
+/// \return JSON string on success; Status on failure.
+StatusOr<std::string> WriteMessageAsJsonToString(
+    const google::protobuf::Message &message);
 
 /// \brief Wrap a protobuf up into an Any.
 /// \param message The message to wrap.

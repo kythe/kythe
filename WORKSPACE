@@ -259,27 +259,38 @@ http_archive(
     url = "https://github.com/bazelbuild/rules_go/releases/download/0.12.1/rules_go-0.12.1.tar.gz",
 )
 
+# Required by com_google_protobuf.
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "ca4e3b8e4da9266c3a9101c8f4704fe2e20eb5625b2a6a7d2d7d45e3dd4efffd",
+    strip_prefix = "bazel-skylib-0.5.0",
+    urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.5.0.zip"],
+)
+
 # proto_library, cc_proto_library, and java_proto_library rules implicitly
 # depend on @com_google_protobuf for protoc and proto runtimes.
 #
 # N.B. We have a near-clone of the protobuf BUILD file overriding upstream so
 # that we can set the unexported config variable to enable zlib. Without this,
 # protobuf silently yields link errors.
+# The most recent release (v3.6.0.1) lacks an fix for
+# https://github.com/google/protobuf/issues/4771, which we rely on in tests.
+# TODO(shahms): Update to the first release to include that fix.
 new_http_archive(
     name = "com_google_protobuf",
     build_file = "third_party/protobuf.BUILD",
-    sha256 = "e514c2e613dc47c062ea8df480efeec368ffbef98af0437ac00cdaadcb0d80d2",
-    strip_prefix = "protobuf-3.6.0",
-    urls = ["https://github.com/google/protobuf/archive/v3.6.0.zip"],
+    sha256 = "08608786f26c2ae4e5ff854560289779314b60179b5df824836303e2c0fae407",
+    strip_prefix = "protobuf-964201af37f8a0009440a52a30a66317724a52c3",
+    urls = ["https://github.com/google/protobuf/archive/964201af37f8a0009440a52a30a66317724a52c3.zip"],
 )
 
 # A copy of the above archive because com_google_riegeli uses a non-standard name... (╯°□°)╯︵ ┻━┻
 new_http_archive(
     name = "protobuf_archive",
     build_file = "third_party/protobuf.BUILD",
-    sha256 = "e514c2e613dc47c062ea8df480efeec368ffbef98af0437ac00cdaadcb0d80d2",
-    strip_prefix = "protobuf-3.6.0",
-    urls = ["https://github.com/google/protobuf/archive/v3.6.0.zip"],
+    sha256 = "08608786f26c2ae4e5ff854560289779314b60179b5df824836303e2c0fae407",
+    strip_prefix = "protobuf-964201af37f8a0009440a52a30a66317724a52c3",
+    urls = ["https://github.com/google/protobuf/archive/964201af37f8a0009440a52a30a66317724a52c3.zip"],
 )
 
 http_archive(

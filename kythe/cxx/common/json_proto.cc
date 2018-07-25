@@ -83,10 +83,8 @@ std::unique_ptr<TypeResolver, MaybeDeleteResolver> MakeTypeResolverForPool(
       new PermissiveTypeResolver(pool));
 }
 
-}  // namespace
-
-bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
-                                std::string *out) {
+Status WriteMessageAsJsonToStringInternal(
+    const google::protobuf::Message &message, std::string *out) {
   auto resolver =
       MakeTypeResolverForPool(message.GetDescriptor()->file()->pool());
 
@@ -96,11 +94,32 @@ bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
   auto status = google::protobuf::util::BinaryToJsonString(
       resolver.get(), message.GetDescriptor()->full_name(),
       message.SerializeAsString(), out, options);
+  if (!status.ok()) {
+    return Status(static_cast<StatusCode>(status.error_code()),
+                  std::string(status.error_message()));
+  }
+  return OkStatus();
+}
 
+}  // namespace
+
+bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
+                                std::string *out) {
+  auto status = WriteMessageAsJsonToStringInternal(message, out);
   if (!status.ok()) {
     LOG(ERROR) << status.ToString();
   }
   return status.ok();
+}
+
+StatusOr<std::string> WriteMessageAsJsonToString(
+    const google::protobuf::Message &message) {
+  std::string result;
+  auto status = WriteMessageAsJsonToStringInternal(message, &result);
+  if (!status.ok()) {
+    return status;
+  }
+  return result;
 }
 
 bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
@@ -147,7 +166,6 @@ bool MergeJsonWithMessage(const std::string &in, std::string *format_key,
       CHECK(document["content"].Accept(writer));
       return std::string(buffer.GetString());
     }();
-    LOG(ERROR) << content;
     std::string binary;
 
     auto resolver =

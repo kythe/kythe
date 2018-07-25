@@ -28,6 +28,7 @@ namespace libzip {
 class Error {
  public:
   Error() { zip_error_init(get()); }
+  explicit Error(int code) { zip_error_init_with_code(get(), code); }
   ~Error() { zip_error_fini(get()); }
 
   // Error is neither copyable nor movable.
