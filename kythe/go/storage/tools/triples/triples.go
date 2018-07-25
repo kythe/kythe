@@ -27,6 +27,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"io"
@@ -41,6 +42,7 @@ import (
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 
@@ -156,6 +158,9 @@ func toTriple(entry *spb.Entry) (*rdf.Triple, error) {
 	if graphstore.IsEdge(entry) {
 		t.Predicate = entry.EdgeKind
 		t.Object = kytheuri.FromVName(entry.Target).String()
+	} else if entry.FactName == facts.Code {
+		t.Predicate = entry.FactName
+		t.Object = base64.StdEncoding.EncodeToString(entry.FactValue)
 	} else {
 		t.Predicate = entry.FactName
 		t.Object = string(entry.FactValue)
