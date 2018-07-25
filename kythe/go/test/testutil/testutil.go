@@ -228,6 +228,7 @@ func RandBytes(bytes []byte) {
 func TestFilePath(t *testing.T, path string) string {
 	pwd, err := os.Getwd()
 	if err != nil {
+		t.Helper()
 		t.Fatalf("Failed to resolve path %s: %v", path, err)
 	}
 	return filepath.Join(pwd, filepath.FromSlash(path))
