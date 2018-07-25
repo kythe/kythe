@@ -150,8 +150,8 @@ Status ToStatus(zip_error_t* error) {
   return Status(code, zip_error_strerror(error));
 }
 
-StatusCode ZlibStatusCode(int zip_error) {
-  switch (zip_error) {
+StatusCode ZlibStatusCode(int zlib_error) {
+  switch (zlib_error) {
     case ZIP_ER_OK:  // No error
       return StatusCode::kOk;
     case ZIP_ER_MULTIDISK:    // Multi-disk zip archives not supported

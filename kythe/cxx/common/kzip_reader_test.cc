@@ -18,6 +18,7 @@
 
 #include <stdlib.h>
 #include <string>
+#include <unistd.h>
 
 #include "absl/base/port.h"
 #include "absl/strings/str_cat.h"
@@ -44,12 +45,18 @@ zip_int64_t BadZipSource(void* state, void* data, zip_uint64_t len,
   }
 }
 
-absl::string_view TestSrcdir() {
-  return absl::StripSuffix(CHECK_NOTNULL(getenv("TEST_SRCDIR")), "/");
+std::string TestRoot() {
+  if (auto* workspace = getenv("TEST_WORKSPACE")) {
+    return absl::StrCat(
+        absl::StripSuffix(CHECK_NOTNULL(getenv("TEST_SRCDIR")), "/"), "/",
+        absl::StripSuffix(workspace, "/"), "/");
+  }
+  static char path[PATH_MAX];
+  return absl::StrCat(absl::StripSuffix(getcwd(path, PATH_MAX), "/"), "/");
 }
 
 std::string TestFile(absl::string_view basename) {
-  return absl::StrCat(TestSrcdir(), "/io_kythe/kythe/cxx/common/testdata/",
+  return absl::StrCat(TestRoot(), "kythe/cxx/common/testdata/",
                       absl::StripPrefix(basename, "/"));
 }
 

@@ -29,8 +29,14 @@
 namespace kythe {
 namespace {
 
-absl::string_view TestSrcdir() {
-  return absl::StripSuffix(CHECK_NOTNULL(getenv("TEST_SRCDIR")), "/");
+std::string TestRoot() {
+  if (auto* workspace = getenv("TEST_WORKSPACE")) {
+    return absl::StrCat(
+        absl::StripSuffix(CHECK_NOTNULL(getenv("TEST_SRCDIR")), "/"), "/",
+        absl::StripSuffix(workspace, "/"), "/");
+  }
+  static char path[PATH_MAX];
+  return absl::StrCat(absl::StripSuffix(getcwd(path, PATH_MAX), "/"), "/");
 }
 
 absl::string_view TestTmpdir() {
@@ -38,7 +44,7 @@ absl::string_view TestTmpdir() {
 }
 
 std::string TestFile(absl::string_view basename) {
-  return absl::StrCat(TestSrcdir(), "/io_kythe/kythe/cxx/common/testdata/",
+  return absl::StrCat(TestRoot(), "kythe/cxx/common/testdata/",
                       absl::StripPrefix(basename, "/"));
 }
 
