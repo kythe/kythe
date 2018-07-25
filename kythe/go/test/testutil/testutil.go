@@ -168,11 +168,7 @@ func TrimmedEqual(got, want []byte) (bool, string) {
 
 	// diff want vs got
 	diff := cmp.Diff(gotStr, wantStr)
-	if diff != "" {
-		return false, diff
-	}
-
-	return true, ""
+	return diff == "", diff
 }
 
 // FatalOnErr calls b.Fatalf(msg, err, args...) if err != nil
