@@ -5,36 +5,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	"kythe.io/kythe/go/util/testutils"
 )
 
 const testDataDir = "testdata"
-
-var multipleNewLines = regexp.MustCompile("\n{2,}")
-
-// filesEqual compares two strings after collapsing irrelevant whitespace at the
-// beginning or end of lines. It returns both a boolean indicating equality, as
-// well as any relevant diff.
-// TODO(#2860) combine this with imagesEqual in a util.
-func filesEqual(got, want []byte) (bool, string) {
-	// remove superfluous whitespace
-	gotStr := strings.Trim(string(got[:]), " \n")
-	wantStr := strings.Trim(string(want[:]), " \n")
-	gotStr = multipleNewLines.ReplaceAllString(gotStr, "\n")
-	wantStr = multipleNewLines.ReplaceAllString(wantStr, "\n")
-
-	// diff want vs got
-	diff := cmp.Diff(gotStr, wantStr)
-	if diff != "" {
-		return false, diff
-	}
-
-	return true, ""
-}
 
 func TestHasKythe(t *testing.T) {
 	testcases := []struct {
@@ -106,7 +82,7 @@ func TestPreprocess(t *testing.T) {
 		}
 
 		// Compare results.
-		eq, diff := filesEqual(readBytes(t, tfName), readBytes(t, getPath(tcase.expectedOutputFile)))
+		eq, diff := testutils.TrimmedEqual(readBytes(t, tfName), readBytes(t, getPath(tcase.expectedOutputFile)))
 		if !eq {
 			t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
 		}
