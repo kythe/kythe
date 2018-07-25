@@ -16,9 +16,6 @@
 
 #include "kythe/cxx/common/kzip_reader.h"
 
-#include <errno.h>
-#include <iostream>
-
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -30,8 +27,12 @@
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/libzip/error.h"
 
+#include <openssl/sha.h>
+#include "absl/strings/escaping.h"
+
 namespace kythe {
 namespace {
+
 struct ZipFileClose {
   void operator()(zip_file_t* file) {
     if (file != nullptr) {
@@ -109,7 +110,7 @@ StatusOr<absl::string_view> Validate(zip_t* archive) {
         absl::StrCat("Malformed kzip: invalid root: ", root));
   }
   root.remove_suffix(root.size() - slashpos);
-  LOG(INFO) << "Using archive root: " << root;
+  VLOG(1) << "Using archive root: " << root;
   for (int i = 0; i < zip_get_num_entries(archive, 0); ++i) {
     absl::string_view name = zip_get_name(archive, i, 0);
     if (!absl::StartsWith(name, root)) {
@@ -165,8 +166,7 @@ StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
       return root.status();
     }
   }
-  return Status(libzip::ZlibStatusCode(error),
-                absl::StrCat("Unable to open: ", path));
+  return libzip::Error(error).ToStatus();
 }
 
 /* static */
