@@ -23,7 +23,7 @@ go_test(
     data = glob(["testdata/**"]),
     library = ":config",
     deps = [
-        "//kythe/go/util/testutils",
+        "//kythe/go/test/testutil",
         "//kythe/proto:extraction_config_go_proto",
         "@com_github_golang_protobuf//jsonpb:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",

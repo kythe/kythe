@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"kythe.io/kythe/go/util/testutils"
+	"kythe.io/kythe/go/test/testutil"
 )
 
 const testDataDir = "testdata"
@@ -82,7 +82,7 @@ func TestPreprocess(t *testing.T) {
 		}
 
 		// Compare results.
-		eq, diff := testutils.TrimmedEqual(readBytes(t, tfName), readBytes(t, getPath(tcase.expectedOutputFile)))
+		eq, diff := testutil.TrimmedEqual(readBytes(t, tfName), readBytes(t, getPath(tcase.expectedOutputFile)))
 		if !eq {
 			t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
 		}

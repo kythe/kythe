@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 
-	"kythe.io/kythe/go/util/testutils"
+	"kythe.io/kythe/go/test/testutil"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -97,7 +97,7 @@ func TestNewImageGeneratesExpectedDockerFiles(t *testing.T) {
 		}
 
 		want := mustLoadDockerFile(t, file.Name())
-		if eq, diff := testutils.TrimmedEqual(want, got); !eq {
+		if eq, diff := testutil.TrimmedEqual(want, got); !eq {
 
 			t.Fatalf("Images were not equal, diff:\n%s", diff)
 		}
@@ -159,7 +159,7 @@ func TestCreateImageWritesProperData(t *testing.T) {
 		}
 
 		want := mustLoadDockerFile(t, file.Name())
-		if eq, diff := testutils.TrimmedEqual(got, want); !eq {
+		if eq, diff := testutil.TrimmedEqual(got, want); !eq {
 			t.Fatalf("Images were not equal, diff:\n%s\n", diff)
 		}
 	}

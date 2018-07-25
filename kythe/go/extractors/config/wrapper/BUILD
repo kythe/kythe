@@ -13,6 +13,6 @@ go_test(
     data = glob(["testdata/**"]),
     library = ":wrapper",
     deps = [
-        "//kythe/go/util/testutils",
+        "//kythe/go/test/testutil",
     ],
 )
