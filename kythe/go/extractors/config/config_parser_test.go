@@ -22,36 +22,18 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 
+	"kythe.io/kythe/go/test/testutil"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	"github.com/google/go-cmp/cmp"
 
 	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
 const testDataDir = "testdata"
-
-var multipleNewLines = regexp.MustCompile("\n{2,}")
-
-func imagesEqual(got, want []byte) (bool, string) {
-	// remove superfluous whitespace
-	gotStr := strings.Trim(string(got[:]), " \n")
-	wantStr := strings.Trim(string(want[:]), " \n")
-	gotStr = multipleNewLines.ReplaceAllString(gotStr, "\n")
-	wantStr = multipleNewLines.ReplaceAllString(wantStr, "\n")
-
-	// diff want vs got
-	diff := cmp.Diff(gotStr, wantStr)
-	if diff != "" {
-		return false, diff
-	}
-
-	return true, ""
-}
 
 func mustLoadDockerFile(t *testing.T, testConfigFile string) []byte {
 	t.Helper()
@@ -115,7 +97,7 @@ func TestNewImageGeneratesExpectedDockerFiles(t *testing.T) {
 		}
 
 		want := mustLoadDockerFile(t, file.Name())
-		if eq, diff := imagesEqual(want, got); !eq {
+		if eq, diff := testutil.TrimmedEqual(want, got); !eq {
 
 			t.Fatalf("Images were not equal, diff:\n%s", diff)
 		}
@@ -177,7 +159,7 @@ func TestCreateImageWritesProperData(t *testing.T) {
 		}
 
 		want := mustLoadDockerFile(t, file.Name())
-		if eq, diff := imagesEqual(got, want); !eq {
+		if eq, diff := testutil.TrimmedEqual(got, want); !eq {
 			t.Fatalf("Images were not equal, diff:\n%s\n", diff)
 		}
 	}

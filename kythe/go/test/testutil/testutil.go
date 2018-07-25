@@ -22,10 +22,13 @@ import (
 	"math/rand"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
 )
 
 func caller(up int) (file string, line int) {
@@ -149,6 +152,23 @@ func expectMapEqual(expected, got reflect.Value) error {
 	}
 
 	return nil
+}
+
+var multipleNewLines = regexp.MustCompile("\n{2,}")
+
+// TrimmedEqual compares two strings after collapsing irrelevant whitespace at
+// the beginning or end of lines. It returns both a boolean indicating equality,
+// as well as any relevant diff.
+func TrimmedEqual(got, want []byte) (bool, string) {
+	// remove superfluous whitespace
+	gotStr := strings.Trim(string(got[:]), " \n")
+	wantStr := strings.Trim(string(want[:]), " \n")
+	gotStr = multipleNewLines.ReplaceAllString(gotStr, "\n")
+	wantStr = multipleNewLines.ReplaceAllString(wantStr, "\n")
+
+	// diff want vs got
+	diff := cmp.Diff(gotStr, wantStr)
+	return diff == "", diff
 }
 
 // FatalOnErr calls b.Fatalf(msg, err, args...) if err != nil
