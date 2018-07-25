@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+// Package wrapper contains libraries for modifying repo build configs for
+// kythe extraction, by wrapping their calls to javac with javac-wrapper.sh.
 package wrapper
 
 import (
@@ -69,7 +71,7 @@ func hasKytheWrapper(gradleBuildFile string) (bool, error) {
 		return true, nil
 	}
 	if javacMatcher.Match(bits) {
-		return false, fmt.Errorf("found existing non-kythe javac override for file %s, which we can't handle yet.", gradleBuildFile)
+		return false, fmt.Errorf("found existing non-kythe javac override for file %s, which we can't handle yet", gradleBuildFile)
 	}
 	return false, nil
 }
