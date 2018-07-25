@@ -226,9 +226,9 @@ func RandBytes(bytes []byte) {
 // TestFilePath takes a path and resolves it based on the testdir.  If it
 // cannot successfully do so, it calls t.Fatal and abandons.
 func TestFilePath(t *testing.T, path string) string {
+	t.Helper()
 	pwd, err := os.Getwd()
 	if err != nil {
-		t.Helper()
 		t.Fatalf("Failed to resolve path %s: %v", path, err)
 	}
 	return filepath.Join(pwd, filepath.FromSlash(path))
