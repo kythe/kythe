@@ -35,6 +35,7 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    deprecation = "Please use :kzip_{reader,writer}",
     visibility = [
         "//kythe:default_visibility",
         "//third_party/llvm/src:__pkg__",
