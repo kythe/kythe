@@ -24,6 +24,8 @@ public enum EdgeKind {
   TAGGED(true, "tagged"),
 
   // Edges from an anchor.
+  COMPLETES(true, "completes"),
+  COMPLETES_UNIQUELY(true, "completes/uniquely"),
   IMPUTES(true, "imputes"),
   REF(true, "ref"),
   REF_CALL(true, "ref/call"),
