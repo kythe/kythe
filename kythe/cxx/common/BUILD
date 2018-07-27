@@ -338,6 +338,7 @@ cc_test(
         "//kythe/cxx/common/testdata:stringset.kzip",
     ],
     deps = [
+        ":testutil",
         ":kzip_reader",
         ":libzip/error",
         "//third_party:gtest_main",
@@ -372,6 +373,7 @@ cc_test(
         ":kzip_reader",
         ":kzip_writer",
         ":libzip/error",
+        ":testutil",
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
         "//third_party:gtest_main",
         "@com_google_absl//absl/strings",
@@ -411,5 +413,16 @@ cc_library(
     deps = [
         ":status",
         "@org_libzip//:zip",
+    ],
+)
+
+cc_library(
+    name = "testutil",
+    testonly = 1,
+    srcs = ["testutil.cc"],
+    hdrs = ["testutil.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
     ],
 )
