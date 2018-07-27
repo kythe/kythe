@@ -26,6 +26,8 @@
 namespace kythe {
 namespace {
 
+// This must match the name from the workspace(name={name})
+// rule in the root WORKSPACE file.
 constexpr char kDefaultWorkspace[] = "io_kythe";
 
 }  // namespace
