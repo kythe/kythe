@@ -17,6 +17,7 @@
 #include "kythe/cxx/common/kzip_writer.h"
 
 #include <zip.h>
+#include <cstdlib>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -25,26 +26,17 @@
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/libzip/error.h"
+#include "kythe/cxx/common/testutil.h"
 
 namespace kythe {
 namespace {
 
-std::string TestRoot() {
-  if (auto* workspace = getenv("TEST_WORKSPACE")) {
-    return absl::StrCat(
-        absl::StripSuffix(CHECK_NOTNULL(getenv("TEST_SRCDIR")), "/"), "/",
-        absl::StripSuffix(workspace, "/"), "/");
-  }
-  static char path[PATH_MAX];
-  return absl::StrCat(absl::StripSuffix(getcwd(path, PATH_MAX), "/"), "/");
-}
-
 absl::string_view TestTmpdir() {
-  return absl::StripSuffix(CHECK_NOTNULL(getenv("TEST_TMPDIR")), "/");
+  return absl::StripSuffix(std::getenv("TEST_TMPDIR"), "/");
 }
 
 std::string TestFile(absl::string_view basename) {
-  return absl::StrCat(TestRoot(), "kythe/cxx/common/testdata/",
+  return absl::StrCat(TestSourceRoot(), "kythe/cxx/common/testdata/",
                       absl::StripPrefix(basename, "/"));
 }
 
