@@ -134,11 +134,11 @@ class CxxExtractorTest : public testing::Test {
     AddAbsoluteSourceFile(absolute_path, code);
   }
 
-  /// \brief An `IndexWriterSink` that only holds protocol buffers in memory.
-  class CapturingIndexWriterSink : public kythe::IndexWriterSink {
+  /// \brief An `CompilationWriterSink` that only holds protocol buffers in
+  /// memory.
+  class CapturingCompilationWriterSink : public kythe::CompilationWriterSink {
    public:
-    void OpenIndex(const std::string &path,
-                   const std::string &unit_hash) override {}
+    void OpenIndex(const std::string &unit_hash) override {}
     void WriteHeader(const kythe::proto::CompilationUnit &header) override {
       units_.push_back(header);
     }
@@ -155,14 +155,14 @@ class CxxExtractorTest : public testing::Test {
     std::vector<kythe::proto::FileData> data_;
   };
 
-  /// \brief An `IndexWriterSink` that forwards all calls to another sink.
-  class ForwardingIndexWriterSink : public kythe::IndexWriterSink {
+  /// \brief An `CompilationWriterSink` that forwards all calls to another sink.
+  class ForwardingCompilationWriterSink : public kythe::CompilationWriterSink {
    public:
-    ForwardingIndexWriterSink(kythe::IndexWriterSink *underlying_sink)
+    ForwardingCompilationWriterSink(
+        kythe::CompilationWriterSink *underlying_sink)
         : underlying_sink_(underlying_sink) {}
-    void OpenIndex(const std::string &path,
-                   const std::string &unit_hash) override {
-      underlying_sink_->OpenIndex(path, unit_hash);
+    void OpenIndex(const std::string &unit_hash) override {
+      underlying_sink_->OpenIndex(unit_hash);
     }
     void WriteHeader(const kythe::proto::CompilationUnit &header) override {
       underlying_sink_->WriteHeader(header);
@@ -172,7 +172,7 @@ class CxxExtractorTest : public testing::Test {
     }
 
    private:
-    kythe::IndexWriterSink *underlying_sink_;
+    kythe::CompilationWriterSink *underlying_sink_;
   };
 
   /// \brief Runs the extractor on a given source file, directing its output
@@ -188,12 +188,12 @@ class CxxExtractorTest : public testing::Test {
                            const std::vector<std::string> &arguments,
                            const std::vector<std::string> &required_inputs,
                            const int revision, const std::string &output,
-                           CapturingIndexWriterSink *sink) {
+                           CapturingCompilationWriterSink *sink) {
     std::vector<std::string> final_arguments = {"tool", "-o", output,
                                                 "-fsyntax-only", source_file};
     final_arguments.insert(final_arguments.end(), arguments.begin(),
                            arguments.end());
-    kythe::IndexWriter index_writer;
+    kythe::CompilationWriter index_writer;
     index_writer.set_root_directory(root_.str());
     index_writer.set_args(final_arguments);
     kythe::proto::CompilationUnit unit;
@@ -208,10 +208,11 @@ class CxxExtractorTest : public testing::Test {
             const PreprocessorTranscript &transcript,
             const std::unordered_map<std::string, SourceFile> &source_files,
             const HeaderSearchInfo *header_search_info, bool had_errors) {
-          index_writer.WriteIndex(supported_language::Language::kCpp,
-                                  absl::make_unique<ForwardingIndexWriterSink>(sink),
-                                  main_source_file, transcript, source_files,
-                                  header_search_info, had_errors, ".");
+          index_writer.WriteIndex(
+              supported_language::Language::kCpp,
+              absl::make_unique<ForwardingCompilationWriterSink>(sink),
+              main_source_file, transcript, source_files, header_search_info,
+              had_errors, ".");
         });
     clang::tooling::ToolInvocation invocation(
         final_arguments, extractor.release(), file_manager.get());
@@ -220,7 +221,7 @@ class CxxExtractorTest : public testing::Test {
 
   /// \brief Checks that all the files referenced by the compilation unit
   /// seen by `sink` have also been written out in `sink`.
-  void VerifyCompilationUnit(const CapturingIndexWriterSink &sink,
+  void VerifyCompilationUnit(const CapturingCompilationWriterSink &sink,
                              const int revision, const std::string &output) {
     ASSERT_EQ(1, sink.units().size());
     // TODO(zarko): use or delete revision and output.
@@ -244,7 +245,7 @@ class CxxExtractorTest : public testing::Test {
       const std::string &output) {
     // TODO(zarko): Is it useful to preserve the old test suite's
     // `required_inputs` and `revision`, or should they be eliminated?
-    CapturingIndexWriterSink sink;
+    CapturingCompilationWriterSink sink;
     FillCompilationUnit(path, arguments, required_inputs, revision, output,
                         &sink);
     VerifyCompilationUnit(sink, revision, output);

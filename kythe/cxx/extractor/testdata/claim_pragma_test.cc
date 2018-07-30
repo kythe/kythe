@@ -197,13 +197,14 @@ class CanonicalHashComparator : public DefaultFieldComparator {
   HashMap right_message_hashes_;
 };
 
-class FakeIndexWriterSink : public kythe::IndexWriterSink {
+class FakeCompilationWriterSink : public kythe::CompilationWriterSink {
  public:
-  explicit FakeIndexWriterSink(int* call_count) : call_count_(call_count) {}
+  explicit FakeCompilationWriterSink(int* call_count)
+      : call_count_(call_count) {}
 
  private:
   void WriteFileContent(const kythe::proto::FileData&) override {}
-  void OpenIndex(const std::string&, const std::string&) override {}
+  void OpenIndex(const std::string&) override {}
   void WriteHeader(const kythe::proto::CompilationUnit& unit) override {
     (*call_count_)++;
 
@@ -243,15 +244,17 @@ class FakeIndexWriterSink : public kythe::IndexWriterSink {
 TEST(ClaimPragmaTest, ClaimPragmaIsSupported) {
   kythe::ExtractorConfiguration extractor;
   extractor.SetArgs({
-      "dummy-executable", "--with_executable", "/dummy/path/to/g++",
+      "dummy-executable",
+      "--with_executable",
+      "/dummy/path/to/g++",
       "-I./kythe/cxx/extractor/testdata",
       "./kythe/cxx/extractor/testdata/claim_main.cc",
   });
 
   int call_count = 0;
-  EXPECT_TRUE(
-      extractor.Extract(supported_language::Language::kCpp,
-                        absl::make_unique<FakeIndexWriterSink>(&call_count)));
+  EXPECT_TRUE(extractor.Extract(
+      supported_language::Language::kCpp,
+      absl::make_unique<FakeCompilationWriterSink>(&call_count)));
   EXPECT_EQ(call_count, 1);
 }
 
