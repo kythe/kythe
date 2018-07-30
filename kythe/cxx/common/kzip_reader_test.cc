@@ -16,17 +16,14 @@
 
 #include "kythe/cxx/common/kzip_reader.h"
 
-#include <stdlib.h>
 #include <string>
-#include <unistd.h>
 
-#include "absl/base/port.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/libzip/error.h"
+#include "kythe/cxx/common/testutil.h"
 
 namespace kythe {
 namespace {
@@ -45,18 +42,8 @@ zip_int64_t BadZipSource(void* state, void* data, zip_uint64_t len,
   }
 }
 
-std::string TestRoot() {
-  if (auto* workspace = getenv("TEST_WORKSPACE")) {
-    return absl::StrCat(
-        absl::StripSuffix(CHECK_NOTNULL(getenv("TEST_SRCDIR")), "/"), "/",
-        absl::StripSuffix(workspace, "/"), "/");
-  }
-  static char path[PATH_MAX];
-  return absl::StrCat(absl::StripSuffix(getcwd(path, PATH_MAX), "/"), "/");
-}
-
 std::string TestFile(absl::string_view basename) {
-  return absl::StrCat(TestRoot(), "kythe/cxx/common/testdata/",
+  return absl::StrCat(TestSourceRoot(), "kythe/cxx/common/testdata/",
                       absl::StripPrefix(basename, "/"));
 }
 
@@ -105,13 +92,11 @@ TEST(KzipReaderTest, FromSourceFailsIfSourceDoes) {
   {
     libzip::Error inner;
 
-    EXPECT_EQ(
-        KzipReader::FromSource(
-            zip_source_function_create(
-                BadZipSource, static_cast<void*>(error.get()), inner.get()))
-            .status()
-            .code(),
-        StatusCode::kUnimplemented);
+    zip_source_t* source = zip_source_function_create(
+        BadZipSource, static_cast<void*>(error.get()), inner.get());
+    EXPECT_EQ(KzipReader::FromSource(source).status().code(),
+              StatusCode::kUnimplemented);
+    zip_source_free(source);
   }
 }
 

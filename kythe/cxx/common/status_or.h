@@ -59,8 +59,18 @@ class ABSL_MUST_USE_RESULT StatusOr final {
   StatusOr& operator=(StatusOr<U>&& other);
 
   ABSL_MUST_USE_RESULT bool ok() const { return this->status_.ok(); }
-  const Status& status() const& { return this->status_; }
+
+#if defined(__clang__) && __clang_major__ == 3 && __clang_minor__ == 5
+  // clang 3.5 will choose the incorrect overload if the ref-qualifiers
+  // are present.
+  // TODO: either bump the minimum version of clang we require or find a
+  // reasonable fix for this.
+  const Status& status() const { return this->status_; }
+  Status status() { return this->status_; }
+#else
+  const Status& status() const & { return this->status_; }
   Status status() && { return std::move(this->status_); }
+#endif
 
   explicit operator bool() const { return this->ok(); }
 

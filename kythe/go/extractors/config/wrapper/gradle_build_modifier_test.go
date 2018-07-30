@@ -43,7 +43,7 @@ func TestHasKythe(t *testing.T) {
 
 	for _, tcase := range testcases {
 		// This should just ignore the file and do nothing.
-		hasWrapper, err := hasKytheWrapper(getPath(tcase.fileName))
+		hasWrapper, err := hasKytheWrapper(getPath(t, tcase.fileName))
 		if err != nil && !tcase.wantError {
 			t.Fatalf("Failed to open test gradle file: %v", err)
 		} else if err == nil && tcase.wantError {
@@ -77,7 +77,7 @@ func TestPreprocess(t *testing.T) {
 		}
 		tfName := tf.Name()
 		defer os.Remove(tfName)
-		infile, err := os.Open(getPath(tcase.inputFile))
+		infile, err := os.Open(getPath(t, tcase.inputFile))
 		if err != nil {
 			t.Fatalf("opening file %s: %v", tcase.inputFile, err)
 		}
@@ -98,7 +98,7 @@ func TestPreprocess(t *testing.T) {
 		}
 
 		// Compare results.
-		eq, diff := testutil.TrimmedEqual(readBytes(t, tfName), readBytes(t, getPath(tcase.expectedOutputFile)))
+		eq, diff := testutil.TrimmedEqual(readBytes(t, tfName), readBytes(t, getPath(t, tcase.expectedOutputFile)))
 		if !eq {
 			t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
 		}
@@ -106,8 +106,8 @@ func TestPreprocess(t *testing.T) {
 }
 
 // getPath returns a resolved filepath name for a file living in testdata/ directory.
-func getPath(f string) string {
-	return os.ExpandEnv(filepath.Join(testDataDir, f))
+func getPath(t *testing.T, f string) string {
+	return testutil.TestFilePath(t, filepath.Join(testDataDir, f))
 }
 
 func readBytes(t *testing.T, f string) []byte {
