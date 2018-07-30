@@ -127,12 +127,12 @@ static bool LoadSpawnInfo(const XAState &xa_state,
     return false;
   }
 
-  config.SetKindexOutputFile(xa_state.output_file);
+  config.SetOutputFile(xa_state.output_file);
   config.SetArgs(args);
   config.SetVNameConfig(xa_state.vname_config);
   config.SetTargetName(info.owner());
   if (spawn_info.output_file_size() > 0) {
-    config.SetOutputPath(spawn_info.output_file(0));
+    config.SetCompilationOutputPath(spawn_info.output_file(0));
   }
   return true;
 }
@@ -166,11 +166,11 @@ static bool LoadCppInfo(const XAState &xa_state,
     return false;
   }
 
-  config.SetKindexOutputFile(xa_state.output_file);
+  config.SetOutputFile(xa_state.output_file);
   config.SetArgs(args);
   config.SetVNameConfig(xa_state.vname_config);
   config.SetTargetName(info.owner());
-  config.SetOutputPath(cpp_info.output_file());
+  config.SetCompilationOutputPath(cpp_info.output_file());
   return true;
 }
 

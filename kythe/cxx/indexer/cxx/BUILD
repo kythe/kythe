@@ -286,11 +286,12 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
+        "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
+        "//third_party/llvm",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
