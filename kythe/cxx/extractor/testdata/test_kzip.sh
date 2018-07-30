@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This test checks that the extractor will emit index packs.
+# This test checks that the extractor will emit kzip files.
 # It should be run from the Kythe root.
 TEST_NAME="test_index_pack"
 . ./kythe/cxx/extractor/testdata/test_common.sh
