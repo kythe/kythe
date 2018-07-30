@@ -1,0 +1,20 @@
+# Description
+
+AppEngine configuration for Kythe's Buildbot instance.
+
+https://buildbot-dot-kythe-repo.appspot.com/
+
+# Deployment
+
+1) [Setup gcloud](https://cloud.google.com/sdk/gcloud/)
+2) Make sure `gcloud` works in the context of the `kythe-repo` project:
+
+```shell
+gcloud config set project kythe-repo
+```
+
+3) Run the `deploy.sh` script
+
+```shell
+./kythe/releases/appengine/buildbot/deploy.sh
+```
