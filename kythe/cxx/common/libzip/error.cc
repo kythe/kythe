@@ -45,18 +45,15 @@ StatusCode SystemStatusCode(int sys_error) {
       return StatusCode::kDeadlineExceeded;
     case ENODEV:     // No such device
     case ENOENT:     // No such file or directory
-    case ENOMEDIUM:  // No medium found
     case ENXIO:      // No such device or address
     case ESRCH:      // No such process
       return StatusCode::kNotFound;
     case EEXIST:         // File exists
     case EADDRNOTAVAIL:  // Address not available
     case EALREADY:       // Connection already in progress
-    case ENOTUNIQ:       // Name not unique on network
       return StatusCode::kAlreadyExists;
     case EPERM:   // Operation not permitted
     case EACCES:  // Permission denied
-    case ENOKEY:  // Required key not available
     case EROFS:   // Read only file system
       return StatusCode::kPermissionDenied;
     case ENOTEMPTY:   // Directory not empty
@@ -64,17 +61,14 @@ StatusCode SystemStatusCode(int sys_error) {
     case ENOTDIR:     // Not a directory
     case EADDRINUSE:  // Address already in use
     case EBADF:       // Invalid file descriptor
-    case EBADFD:      // File descriptor in bad state
     case EBUSY:       // Device or resource busy
     case ECHILD:      // No child processes
     case EISCONN:     // Socket is connected
-    case EISNAM:      // Is a named type file
     case ENOTBLK:     // Block device required
     case ENOTCONN:    // The socket is not connected
     case EPIPE:       // Broken pipe
     case ESHUTDOWN:   // Cannot send after transport endpoint shutdown
     case ETXTBSY:     // Text file busy
-    case EUNATCH:     // Protocol driver not attached
       return StatusCode::kFailedPrecondition;
     case ENOSPC:   // No space left on device
     case EDQUOT:   // Disk quota exceeded
@@ -87,12 +81,10 @@ StatusCode SystemStatusCode(int sys_error) {
     case ENOSR:    // No STREAM resources
     case EUSERS:   // Too many users
       return StatusCode::kResourceExhausted;
-    case ECHRNG:     // Channel number out of range
     case EFBIG:      // File too large
     case EOVERFLOW:  // Value too large to be stored in data type
     case ERANGE:     // Result too large
       return StatusCode::kOutOfRange;
-    case ENOPKG:           // Package not installed
     case ENOSYS:           // Function not implemented
     case ENOTSUP:          // Operation not supported
     case EAFNOSUPPORT:     // Address family not supported
@@ -102,7 +94,6 @@ StatusCode SystemStatusCode(int sys_error) {
     case EXDEV:            // Improper link
       return StatusCode::kUnimplemented;
     case EAGAIN:        // Resource temporarily unavailable
-    case ECOMM:         // Communication error on send
     case ECONNREFUSED:  // Connection refused
     case ECONNABORTED:  // Connection aborted
     case ECONNRESET:    // Connection reset
@@ -114,7 +105,6 @@ StatusCode SystemStatusCode(int sys_error) {
     case ENETUNREACH:   // Network unreachable
     case ENOLCK:        // No locks available
     case ENOLINK:       // Link has been severed
-    case ENONET:        // Machine is not on the network
       return StatusCode::kUnavailable;
     case EDEADLK:  // Resource deadlock avoided
     case ESTALE:   // Stale file handle
