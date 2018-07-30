@@ -72,11 +72,11 @@ int main(int argc, char *argv[]) {
   if (std::find(args.begin(), args.end(), "-c") == args.end()) {
     args.push_back(cpp_info.source_file());
   }
-  config.SetKindexOutputFile(output_file);
+  config.SetOutputFile(output_file);
   config.SetArgs(args);
   config.SetVNameConfig(vname_config);
   config.SetTargetName(info.owner());
-  config.SetOutputPath(cpp_info.output_file());
+  config.SetCompilationOutputPath(cpp_info.output_file());
   config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();
   return 0;

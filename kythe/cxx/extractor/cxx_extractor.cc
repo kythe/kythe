@@ -37,12 +37,14 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/match.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/language.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/proto_conversions.h"
+#include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/extractor/CommandLineUtils.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
@@ -165,6 +167,13 @@ static std::string Sha256(const void* bytes, size_t length) {
   unsigned char sha_buf[SHA256_DIGEST_LENGTH];
   ::SHA256(reinterpret_cast<const unsigned char*>(bytes), length, sha_buf);
   return LowercaseStringHexEncodeSha(sha_buf);
+}
+
+/// \brief Returns a kzip-based IndexWriter or dies.
+IndexWriter OpenKzipWriterOrDie(const std::string& path) {
+  auto writer = KzipWriter::Create(path);
+  CHECK(writer.ok()) << "Failed to open KzipWriter: " << writer.status();
+  return std::move(*writer);
 }
 
 /// \brief The state shared among the extractor's various moving parts.
@@ -907,6 +916,36 @@ void KindexWriterSink::WriteFileContent(const kythe::proto::FileData& content) {
       << "Couldn't write content to " << open_path_;
 }
 
+KzipWriterSink::KzipWriterSink(const std::string& path)
+    : writer_(OpenKzipWriterOrDie(path)) {}
+
+void KzipWriterSink::WriteHeader(const kythe::proto::CompilationUnit& header) {
+  kythe::proto::IndexedCompilation compilation;
+  *compilation.mutable_unit() = header;
+  auto digest = writer_.WriteUnit(compilation);
+  if (!digest.ok()) {
+    LOG(ERROR) << "Error adding compilation: " << digest.status();
+  }
+}
+
+void KzipWriterSink::WriteFileContent(const kythe::proto::FileData& file) {
+  if (auto digest = writer_.WriteFile(file.content())) {
+    if (!file.info().digest().empty() && file.info().digest() != *digest) {
+      LOG(WARNING) << "Wrote FileData with mismatched digests: "
+                   << file.info().ShortDebugString() << " != " << *digest;
+    }
+  } else {
+    LOG(ERROR) << "Error writing filedata: " << digest.status();
+  }
+}
+
+KzipWriterSink::~KzipWriterSink() {
+  auto status = writer_.Close();
+  if (!status.ok()) {
+    LOG(ERROR) << "Error closing kzip output: " << status;
+  }
+}
+
 bool CompilationWriter::SetVNameConfiguration(const std::string& json) {
   std::string error_text;
   if (!vname_generator_.LoadJsonString(json, &error_text)) {
@@ -1228,7 +1267,7 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
     output_directory_ = env_output_directory;
   }
   if (const char* env_output_file = getenv("KYTHE_OUTPUT_FILE")) {
-    SetKindexOutputFile(env_output_file);
+    SetOutputFile(env_output_file);
   }
   if (const char* env_exclude_empty_dirs = getenv("KYTHE_EXCLUDE_EMPTY_DIRS")) {
     index_writer_.set_exclude_empty_dirs(true);
@@ -1290,7 +1329,7 @@ bool ExtractorConfiguration::Extract(
           new RecordingFS(clang::vfs::getRealFileSystem(), &index_writer_)));
   index_writer_.set_target_name(target_name_);
   index_writer_.set_rule_type(rule_type_);
-  index_writer_.set_output_path(output_path_);
+  index_writer_.set_output_path(compilation_output_path_);
   auto extractor = NewExtractor(
       &index_writer_,
       [this, &lang, &sink](
@@ -1314,10 +1353,12 @@ bool ExtractorConfiguration::Extract(supported_language::Language lang) {
   std::unique_ptr<CompilationWriterSink> sink;
   if (using_index_packs_) {
     sink = absl::make_unique<IndexPackWriterSink>(output_directory_);
+  } else if (!output_file_.empty() && absl::EndsWith(output_file_, ".kzip")) {
+    sink = absl::make_unique<KzipWriterSink>(output_file_);
   } else {
     sink = absl::make_unique<KindexWriterSink>(
-        kindex_path_.empty() ? output_directory_ : kindex_path_,
-        !kindex_path_.empty());
+        output_file_.empty() ? output_directory_ : output_file_,
+        !output_file_.empty());
   }
 
   return Extract(lang, std::move(sink));
