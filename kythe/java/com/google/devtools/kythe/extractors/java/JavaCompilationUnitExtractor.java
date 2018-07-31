@@ -116,6 +116,7 @@ public class JavaCompilationUnitExtractor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private static final String JDK_MODULE_PREFIX = "/modules/java.";
   private static final String MODULE_INFO_NAME = "module-info";
   private static final String SOURCE_JAR_ROOT = "!SOURCE_JAR!";
 
@@ -479,17 +480,17 @@ public class JavaCompilationUnitExtractor {
             String.format(
                 "Unsupported java file kind: '%s' for '%s'", requiredInput.getKind().name(), uri));
     }
+    String path = uri.getRawSchemeSpecificPart();
 
     // If the file was part of the JDK we do not store it as the JDK is tied
     // to the analyzer we'll run on this information later on.
-    if (isJarPath && jarPath.startsWith(jdkJar)) {
+    if (isJarPath && jarPath.startsWith(jdkJar) || path.startsWith(JDK_MODULE_PREFIX)) {
       return;
     }
 
     // Make the path relative to the indexer (e.g. a subdir of corpus/).
     // If not possible, we store the fullpath.
-    String relativePath =
-        ExtractorUtils.tryMakeRelative(rootDirectory, uri.getRawSchemeSpecificPart());
+    String relativePath = ExtractorUtils.tryMakeRelative(rootDirectory, path);
 
     String strippedPath = relativePath;
     if (isJarPath) {
