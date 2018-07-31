@@ -11,9 +11,11 @@ required_input {
     path: "test_file.cc"
     digest: "deac66ccb79f6d31c0fa7d358de48e083c15c02ff50ec1ebd4b64314b9e6e196"
   }
-  context {
-    row {
-      source_context: "hash0"
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash0"
+      }
     }
   }
 }
