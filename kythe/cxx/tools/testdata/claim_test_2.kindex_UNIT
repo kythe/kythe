@@ -5,12 +5,14 @@ required_input {
   v_name {
     path: "a.h"
   }
-  context {
-    row {
-      source_context: "a.h_1"
-    }
-    row {
-      source_context: "a.h_2"
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "a.h_1"
+      }
+      row {
+        source_context: "a.h_2"
+      }
     }
   }
 }

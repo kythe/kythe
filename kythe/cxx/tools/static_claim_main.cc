@@ -106,6 +106,26 @@ using ClaimantMap = std::map<VName, Claimant, kythe::VNameLess>;
 /// include the transcript as a prefix.
 using ClaimableMap = std::map<VName, Claimable, kythe::VNameLess>;
 
+/// \brief Range wrapper around unpacked ContextDependentVersion rows.
+class FileContextRows {
+ public:
+  using iterator = decltype(
+      std::declval<kythe::proto::ContextDependentVersion>().row().begin());
+
+  explicit FileContextRows(const kythe::proto::CompilationUnit::FileInput& file_input) {
+    for (const google::protobuf::Any& detail : file_input.details()) {
+      if (detail.UnpackTo(&context_)) break;
+    }
+  }
+
+  iterator begin() const { return context_.row().begin(); }
+  iterator end() const { return context_.row().end(); }
+  bool empty() const { return context_.row().empty(); }
+
+ private:
+  kythe::proto::ContextDependentVersion context_;
+};
+
 /// \brief Generates and exports a mapping from claimants to claimables.
 class ClaimTool {
  public:
@@ -179,7 +199,8 @@ class ClaimTool {
     }
     for (auto &input : unit.required_input()) {
       ++total_input_count_;
-      if (input.context().row_size()) {
+      FileContextRows context_rows(input);
+      if (!context_rows.empty()) {
         VName input_vname = input.v_name();
         if (!input_vname.signature().empty()) {
           // We generally expect that file vnames have no signature.
@@ -189,7 +210,7 @@ class ClaimTool {
           LOG(WARNING) << "Input " << input_vname.DebugString()
                        << " has a nonempty signature.\n";
         }
-        for (const auto &row : input.context().row()) {
+        for (const auto &row : context_rows) {
           // If we have a (r, h, c) entry, we'd better have an input entry for
           // the file included at h with context c (otherwise the index file
           // isn't well-formed). We therefore only need to claim each unique

@@ -124,9 +124,7 @@ message CompilationUnit {
     // the file's path and digest.
     FileInfo info = 2;
 
-    // The file's context-dependent version table.
-    // TODO(schroederc): add as a details message
-    ContextDependentVersion context = 3 [deprecated = true];
+    reserved 3;
 
     // Per-language or per-tool details.
     repeated google.protobuf.Any details = 4;

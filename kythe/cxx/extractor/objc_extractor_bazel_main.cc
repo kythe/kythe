@@ -183,7 +183,7 @@ static bool LoadExtraAction(const XAState &xa_state,
   CHECK_GE(fd, 0) << "Couldn't open input file " << xa_state.extra_action_file;
   FileInputStream file_input_stream(fd);
   CodedInputStream coded_input_stream(&file_input_stream);
-  coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+  coded_input_stream.SetTotalBytesLimit(INT_MAX);
   CHECK(info.ParseFromCodedStream(&coded_input_stream));
   close(fd);
 
