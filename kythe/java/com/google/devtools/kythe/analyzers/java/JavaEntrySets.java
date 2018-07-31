@@ -323,6 +323,11 @@ public class JavaEntrySets extends KytheEntrySets {
     hashes.add(sym.getQualifiedName().toString().hashCode());
     hashes.add(sym.getKind().ordinal());
     for (Modifier mod : sym.getModifiers()) {
+      if (Modifier.FINAL == mod && sym.getKind() == ElementKind.ENUM) {
+        // Ignored due to Bazel's headers always making enums final.  See:
+        // https://github.com/google/turbine/blob/0536e276/java/com/google/turbine/binder/CompUnitPreprocessor.java#L168
+        continue;
+      }
       hashes.add(mod.ordinal());
     }
 
