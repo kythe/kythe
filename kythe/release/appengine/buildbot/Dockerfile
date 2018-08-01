@@ -56,8 +56,7 @@ RUN wget https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz && \
 ENV PATH=$PATH:/usr/local/go/bin
 
 # Install Bazel min/max versions
-RUN curl -L -o /usr/bin/bazel-0.14.0 https://github.com/bazelbuild/bazel/releases/download/0.14.0/bazel-0.14.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.14.0
-RUN curl -L -o /usr/bin/bazel-0.15.2 https://github.com/bazelbuild/bazel/releases/download/0.15.2/bazel-0.15.2-linux-x86_64 && chmod +x /usr/bin/bazel-0.15.2
+RUN curl -L -o /usr/bin/bazel-0.16.0 https://github.com/bazelbuild/bazel/releases/download/0.16.0/bazel-0.16.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.16.0
 ADD bazel /usr/bin/bazel
 
 ADD cache-llvm.sh /usr/bin/

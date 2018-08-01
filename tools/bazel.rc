@@ -3,3 +3,10 @@ build --auto_cpu_environment_group=//buildenv:cpu
 
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env
+
+# By default, compile for Java 8
+build --javacopt='--release 8'
+build --nojava_header_compilation # https://github.com/bazelbuild/bazel/issues/5733
+
+# Ensure that we do not use an older Java version for the --javabase.
+build --javabase=@bazel_tools//tools/jdk:host_jdk
