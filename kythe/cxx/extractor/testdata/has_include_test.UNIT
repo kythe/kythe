@@ -14,6 +14,13 @@ required_input {
       source_context: "hash0"
     }
   }
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash0"
+      }
+    }
+  }
 }
 required_input {
   v_name {

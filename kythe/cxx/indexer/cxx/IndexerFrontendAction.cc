@@ -45,6 +45,26 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 
 namespace {
 
+/// \brief Range wrapper around unpacked ContextDependentVersion rows.
+class FileContextRows {
+ public:
+  using iterator = decltype(
+      std::declval<kythe::proto::ContextDependentVersion>().row().begin());
+
+  explicit FileContextRows(const kythe::proto::CompilationUnit::FileInput& file_input) {
+    for (const google::protobuf::Any& detail : file_input.details()) {
+      if (detail.UnpackTo(&context_)) break;
+    }
+  }
+
+  iterator begin() const { return context_.row().begin(); }
+  iterator end() const { return context_.row().end(); }
+  bool empty() const { return context_.row().empty(); }
+
+ private:
+  kythe::proto::ContextDependentVersion context_;
+};
+
 bool DecodeDetails(const proto::CompilationUnit &Unit,
                    proto::CxxCompilationUnitDetails &Details) {
   for (const auto &Any : Unit.details()) {
@@ -142,7 +162,7 @@ std::string IndexCompilationUnit(
       VFS->SetVName(Input.info().path(), Input.v_name());
     }
     const std::string &FilePath = Input.info().path();
-    for (const auto &Row : Input.context().row()) {
+    for (const auto &Row : FileContextRows(Input)) {
       if (Row.always_process()) {
         auto ClaimableVname = Input.v_name();
         ClaimableVname.set_signature(Row.source_context() +

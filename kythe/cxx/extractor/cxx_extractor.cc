@@ -35,16 +35,16 @@
 #include "clang/Tooling/Tooling.h"
 
 #include "absl/memory/memory.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "absl/strings/match.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
+#include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/common/language.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/proto_conversions.h"
-#include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/extractor/CommandLineUtils.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
@@ -77,6 +77,59 @@ std::string LowercaseStringHexEncodeSha(
     sha_text[i * 2 + 1] = kHexDigits[sha_buf[i] & 0xF];
   }
   return sha_text;
+}
+
+google::protobuf::Any* FindMutableContext(
+    kythe::proto::CompilationUnit::FileInput* file_input,
+    kythe::proto::ContextDependentVersion* context) {
+  for (auto& detail : *file_input->mutable_details()) {
+    if (detail.UnpackTo(context)) {
+      return &detail;
+    }
+  }
+  return file_input->add_details();
+}
+
+class MutableFileContext {
+ public:
+  explicit MutableFileContext(
+      kythe::proto::CompilationUnit::FileInput* file_input)
+      : file_input_(file_input),
+        any_(FindMutableContext(file_input, &context_)) {}
+
+  kythe::proto::ContextDependentVersion* operator->() { return &context_; }
+
+  ~MutableFileContext() {
+    // TODO(shahms): Remove this when the field has been removed.
+    *file_input_->mutable_context() = context_;
+    any_->PackFrom(context_);
+  }
+
+ private:
+  kythe::proto::CompilationUnit::FileInput* file_input_;
+  kythe::proto::ContextDependentVersion context_;
+  google::protobuf::Any* any_;
+};
+
+void AddFileContext(const SourceFile& source_file,
+                    kythe::proto::CompilationUnit::FileInput* file_input) {
+  if (source_file.include_history.empty()) {
+    return;
+  }
+
+  MutableFileContext context(file_input);
+  for (const auto& row : source_file.include_history) {
+    auto* row_pb = context->add_row();
+    row_pb->set_source_context(row.first);
+    if (row.second.default_claim == ClaimDirective::AlwaysClaim) {
+      row_pb->set_always_process(true);
+    }
+    for (const auto& col : row.second.out_edges) {
+      auto* col_pb = row_pb->add_column();
+      col_pb->set_offset(col.first);
+      col_pb->set_linked_context(col.second);
+    }
+  }
 }
 
 /// \brief Comparator for CompilationUnit::FileInput, ordering by VName.
@@ -905,7 +958,7 @@ KindexWriterSink::~KindexWriterSink() {
 
 void KindexWriterSink::WriteHeader(
     const kythe::proto::CompilationUnit& header) {
-  coded_stream_->WriteVarint32(header.ByteSize());
+  coded_stream_->WriteVarint32(header.ByteSizeLong());
   CHECK(header.SerializeToCodedStream(coded_stream_.get()))
       << "Couldn't write header to " << open_path_;
 }
@@ -980,18 +1033,7 @@ void CompilationWriter::FillFileInput(
   file_info->set_path(clang_path == "-" ? "<stdin>" : clang_path);
   file_info->set_digest(Sha256(source_file.file_content.c_str(),
                                source_file.file_content.size()));
-  for (const auto& row : source_file.include_history) {
-    auto* row_pb = file_input->mutable_context()->add_row();
-    row_pb->set_source_context(row.first);
-    if (row.second.default_claim == ClaimDirective::AlwaysClaim) {
-      row_pb->set_always_process(true);
-    }
-    for (const auto& col : row.second.out_edges) {
-      auto* col_pb = row_pb->add_column();
-      col_pb->set_offset(col.first);
-      col_pb->set_linked_context(col.second);
-    }
-  }
+  AddFileContext(source_file, file_input);
 }
 
 void CompilationWriter::InsertExtraIncludes(

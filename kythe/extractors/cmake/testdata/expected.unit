@@ -16,6 +16,13 @@ required_input {
       source_context: "hash0"
     }
   }
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash0"
+      }
+    }
+  }
 }
 argument: "TEST_EXTRACTOR"
 argument: "-DKYTHE_IS_RUNNING=1"

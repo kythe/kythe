@@ -125,7 +125,7 @@ message CompilationUnit {
     FileInfo info = 2;
 
     // The file's context-dependent version table.
-    // TODO(schroederc): add as a details message
+    // TODO(shahms): Remove this when the Indexers have been updated.
     ContextDependentVersion context = 3 [deprecated = true];
 
     // Per-language or per-tool details.

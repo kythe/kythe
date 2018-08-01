@@ -31,6 +31,29 @@ required_input {
       }
     }
   }
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash0"
+        column {
+          offset: 20
+          linked_context: "hash1"
+        }
+        column {
+          offset: 46
+          linked_context: "hash2"
+        }
+        column {
+          offset: 72
+          linked_context: "hash3"
+        }
+        column {
+          offset: 98
+          linked_context: "hash2"
+        }
+      }
+    }
+  }
 }
 required_input {
   v_name {
@@ -48,6 +71,16 @@ required_input {
       source_context: "hash1"
     }
   }
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash3"
+      }
+      row {
+        source_context: "hash1"
+      }
+    }
+  }
 }
 required_input {
   v_name {
@@ -60,6 +93,13 @@ required_input {
   context {
     row {
       source_context: "hash2"
+    }
+  }
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash2"
+      }
     }
   }
 }
