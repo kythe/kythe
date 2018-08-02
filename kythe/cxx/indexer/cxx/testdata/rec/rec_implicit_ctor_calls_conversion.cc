@@ -7,13 +7,8 @@ struct T {
 };
 void c(T);
 void fn() {
-  // The anchor for implicit conversions should span the entire expression.
-  //- String ref/call TCharCtor
-  //- String.loc/start @$"("
-  //- String.loc/end @$z
+  //- @"\"xyz\"" ref/call TCharCtor
   c("xyz");
-  //- Addition ref/call TIntCtor
-  //- Addition.loc/start @^"1"
-  //- Addition.loc/end @$"4"
+  //- @"1 + 2 + 4" ref/call TIntCtor
   c(1 + 2 + 4);
 }
