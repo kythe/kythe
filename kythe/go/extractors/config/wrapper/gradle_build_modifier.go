@@ -38,6 +38,7 @@ allprojects {
 `
 
 // This matches a line which sets the javac to use Kythe's javac-wrapper.sh
+// TODO(danielmoy): consider making this not hard-coded to /opt/kythe/extractors/javac-wrapper.sh
 var kytheMatcher = regexp.MustCompile(`\n\s*options\.forkOptions\.executable\ =\ '/opt/kythe/extractors/javac-wrapper.sh'`)
 
 // This matches any line which sets a new javac executable, useful for detecting
