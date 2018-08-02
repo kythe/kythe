@@ -70,9 +70,7 @@ Use:
 ```
 ./runner \
   --builder=MAVEN \
-  --preprocessor=/opt/kythe/extractors/javac_extractor.jar \
-  --build_file=pom.xml \
-  --build_task=install
+  --mvn_pom_preprocessor=/opt/kythe/extractors/javac_extractor.jar \
   --javac_wrapper=/opt/kythe/extractors/javac-wrapper.sh
 ```
 
