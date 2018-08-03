@@ -484,7 +484,7 @@ public class JavaCompilationUnitExtractor {
 
     // If the file was part of the JDK we do not store it as the JDK is tied
     // to the analyzer we'll run on this information later on.
-    if (isJarPath && jarPath.startsWith(jdkJar) || path.startsWith(JDK_MODULE_PREFIX)) {
+    if ((isJarPath && jarPath.startsWith(jdkJar)) || path.startsWith(JDK_MODULE_PREFIX)) {
       return;
     }
 
