@@ -810,6 +810,16 @@ cc_indexer_test(
     ],
 )
 
+cc_indexer_test(
+    name = "macros_lambda_call",
+    srcs = ["basic/macros_lambda_call.cc"],
+    ignore_dups = True,
+    tags = [
+        "basic",
+        "manual",  # https://github.com/google/kythe/issues/2899
+    ],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
