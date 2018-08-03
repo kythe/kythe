@@ -1631,6 +1631,17 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "rec_implicit_ctor_calls_conversion",
+    srcs = ["rec/rec_implicit_ctor_calls_conversion.cc"],
+    check_for_singletons = True,
+    ignore_dups = True,
+    tags = [
+        "manual",  # https://github.com/google/kythe/issues/2894
+        "rec",
+    ],
+)
+
+cc_indexer_test(
     name = "rec_implicit_new",
     srcs = ["rec/rec_implicit_new.cc"],
     tags = ["rec"],
