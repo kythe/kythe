@@ -1,3 +1,5 @@
+// Verify that function calls inside lambdas inside macros
+// include correct anchor spans.
 #define CHECK(x) (x)
 
 //- @Call defines/binding CallDecl
