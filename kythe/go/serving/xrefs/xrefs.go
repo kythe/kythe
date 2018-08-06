@@ -38,6 +38,7 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/tickets"
+	"kythe.io/kythe/go/util/span"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
@@ -224,7 +225,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	if len(req.DirtyBuffer) > 0 {
 		text = req.DirtyBuffer
 	}
-	norm := xrefs.NewNormalizer(text)
+	norm := span.NewNormalizer(text)
 
 	loc, err := norm.Location(req.GetLocation())
 	if err != nil {
@@ -242,9 +243,9 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		}
 	}
 
-	var patcher *xrefs.Patcher
+	var patcher *span.Patcher
 	if len(req.DirtyBuffer) > 0 {
-		patcher = xrefs.NewPatcher(decor.File.Text, req.DirtyBuffer)
+		patcher = span.NewPatcher(decor.File.Text, req.DirtyBuffer)
 	}
 
 	// The span with which to constrain the set of returned anchor references.
@@ -294,7 +295,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 			start, end, exists := patcher.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset)
 			// Filter non-existent anchor.  Anchors can no longer exist if we were
 			// given a dirty buffer and the anchor was inside a changed region.
-			if !exists || !xrefs.InSpanBounds(spanKind, start, end, startBoundary, endBoundary) {
+			if !exists || !span.InBounds(spanKind, start, end, startBoundary, endBoundary) {
 				continue
 			}
 
@@ -366,7 +367,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 				// Filter non-existent (or out-of-bounds) diagnostic.  Diagnostics can
 				// no longer exist if we were given a dirty buffer and the diagnostic
 				// was inside a changed region.
-				if !exists || !xrefs.InSpanBounds(spanKind, start, end, startBoundary, endBoundary) {
+				if !exists || !span.InBounds(spanKind, start, end, startBoundary, endBoundary) {
 					continue
 				}
 
@@ -386,7 +387,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	return reply, nil
 }
 
-func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
+func decorationToReference(norm *span.Normalizer, d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
 	span := norm.SpanOffsets(d.Anchor.StartOffset, d.Anchor.EndOffset)
 	return &xpb.DecorationsReply_Reference{
 		TargetTicket:     d.Target,

@@ -37,6 +37,7 @@ import (
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 	"kythe.io/kythe/go/util/schema/tickets"
+	"kythe.io/kythe/go/util/span"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	ipb "kythe.io/kythe/proto/internal_go_proto"
@@ -611,7 +612,7 @@ func newPageKey(src string, n int) string { return fmt.Sprintf("%s.%.10d", src, 
 // CrossReference returns a (Referent, TargetAnchor) *ipb.CrossReference
 // equivalent to the given decoration.  The decoration's anchor is expanded
 // given its parent file and associated Normalizer.
-func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration, tgt *srvpb.Node) (*ipb.CrossReference, error) {
+func CrossReference(file *srvpb.File, norm *span.Normalizer, d *srvpb.FileDecorations_Decoration, tgt *srvpb.Node) (*ipb.CrossReference, error) {
 	if file == nil || norm == nil {
 		return nil, errors.New("missing decoration's parent file")
 	}
@@ -640,7 +641,7 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 
 // ExpandAnchor returns the ExpandedAnchor equivalent of the given RawAnchor
 // where file (and its associated Normalizer) must be the anchor's parent file.
-func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normalizer, kind string) (*srvpb.ExpandedAnchor, error) {
+func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *span.Normalizer, kind string) (*srvpb.ExpandedAnchor, error) {
 	if err := checkSpan(len(file.Text), anchor.StartOffset, anchor.EndOffset); err != nil {
 		return nil, fmt.Errorf("invalid text offsets: %v", err)
 	}

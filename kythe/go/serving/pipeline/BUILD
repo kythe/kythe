@@ -12,7 +12,6 @@ go_library(
     deps = [
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
-        "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
         "//kythe/go/serving/graph",
         "//kythe/go/serving/pipeline/nodes",
@@ -29,6 +28,7 @@ go_library(
         "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/nodes",
         "//kythe/go/util/sortutil",
+        "//kythe/go/util/span",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:filetree_go_proto",
         "//kythe/proto:internal_go_proto",
