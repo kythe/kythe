@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-// Package wrapper contains libraries for modifying repo build configs for
-// kythe extraction, by wrapping their calls to javac with javac-wrapper.sh.
-package wrapper
+package gradlecmd
 
 import (
 	"fmt"

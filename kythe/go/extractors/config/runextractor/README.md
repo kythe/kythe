@@ -1,14 +1,18 @@
 # Kythe Extractor Wrapping
 
-This package contains resources for preprocessing a repository's build
-configuration before running Kythe Extraction via `extractrepo.go`.
+This package contains a binary and supporting libraries for doing extraction
+on repos using Kythe.  It is intended as the last step where extraction is
+actually performed by invoking the builds, along with any immediate
+preprocessing required.
 
 ## Build System Extractors
 
-We support Kythe Extraction on a few different build systems.
+We support Kythe extraction on a few different build systems.
 
 ### Gradle
 
+In order to run Kythe extraction on a gradle repo, we must first modify the
+`gradle.build` file to hook into a separate javac wrapper binary.
 `gradle_build_modifier.go` takes an input `gradle.build` file and appends the
 bits necessary for replacing javac calls with Kythe's `javac-wrapper.sh`.
 
@@ -61,7 +65,7 @@ should work without extra effort.
 ## RunExtractor
 
 In addition to the custom preprocessing logic for Kythe Extraction on different
-build systems, we also have a wrapper binary.  `wrapper/runextractor` is a simple
+build systems, we also have a wrapper binary.  `runextractor` is a simple
 executible that is used as the inner-most entrypoint for Kythe Extraction.  It
 is derived from `kythe/extractors/java/maven/mvn-extract.sh`.
 
