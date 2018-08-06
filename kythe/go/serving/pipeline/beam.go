@@ -156,12 +156,7 @@ func keyRef(r *ppb.Reference) (*spb.VName, *ppb.Reference) {
 	}
 }
 
-// Decorations returns a Kythe file decorations table derived from the Kythe
-// input graph.  The beam.PCollection has elements of type
-// KV<string, *srvpb.FileDecorations>.
-func (k *KytheBeam) Decorations() beam.PCollection {
-	s := k.s.Scope("Decorations")
-
+func (k *KytheBeam) decorationPieces(s beam.Scope) beam.PCollection {
 	targets := beam.ParDo(s, toEnclosingFile, k.References())
 	bareNodes := beam.ParDo(s, &nodes.Filter{IncludeEdges: []string{}}, k.nodes)
 
@@ -174,7 +169,23 @@ func (k *KytheBeam) Decorations() beam.PCollection {
 	// TODO(schroederc): overrides
 	// TODO(schroederc): diagnostics
 
-	pieces := beam.Flatten(s, decor, files, nodes, defs)
+	return beam.Flatten(s, decor, files, nodes, defs)
+}
+
+// SplitDecorations returns a columnar Kythe file decorations table derived from
+// the Kythe input graph.  The beam.PCollection has elements of type
+// KV<[]byte, []byte>.
+func (k *KytheBeam) SplitDecorations() beam.PCollection {
+	s := k.s.Scope("SplitDecorations")
+	return beam.ParDo(s, encodeDecorPiece, k.decorationPieces(s))
+}
+
+// Decorations returns a Kythe file decorations table derived from the Kythe
+// input graph.  The beam.PCollection has elements of type
+// KV<string, *srvpb.FileDecorations>.
+func (k *KytheBeam) Decorations() beam.PCollection {
+	s := k.s.Scope("Decorations")
+	pieces := k.decorationPieces(s)
 	return beam.ParDo(s, &ticketKey{"decor:"}, beam.CombinePerKey(s, &combineDecorPieces{}, pieces))
 }
 
