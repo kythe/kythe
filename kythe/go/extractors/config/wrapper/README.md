@@ -58,10 +58,10 @@ using the extra action mechanism.  The extractrepo tool therefore doesn't handle
 Bazel directly, but repositories using Bazel for languages we already support
 should work without extra effort.
 
-## Runner
+## RunExtractor
 
 In addition to the custom preprocessing logic for Kythe Extraction on different
-build systems, we also have a runner binary.  `wrapper/runner` is a simple
+build systems, we also have a wrapper binary.  `wrapper/runextractor` is a simple
 executible that is used as the inner-most entrypoint for Kythe Extraction.  It
 is derived from `kythe/extractors/java/maven/mvn-extract.sh`.
 
