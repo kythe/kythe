@@ -91,7 +91,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer db.Close(ctx)
 
 	if err := profile.Start(ctx); err != nil {
 		log.Fatal(err)
