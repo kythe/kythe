@@ -146,7 +146,7 @@ func main() {
 		flagutil.UsageError("must provide --path")
 	}
 
-	defer (*apiFlag).Close()
+	defer (*apiFlag).Close(ctx)
 	xs = *apiFlag
 	gs = *apiFlag
 

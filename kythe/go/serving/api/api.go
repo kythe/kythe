@@ -22,7 +22,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -44,11 +43,13 @@ import (
 
 // Interface is a union of the xrefs and filetree interfaces.
 type Interface interface {
-	io.Closer
 	xrefs.Service
 	graph.Service
 	filetree.Service
 	identifiers.Service
+
+	// Close releases the underlying resources for the API.
+	Close(context.Context) error
 }
 
 const (
@@ -86,7 +87,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error opening local DB at %q: %v", apiSpec, err)
 		}
-		api.closer = func() error { return db.Close() }
+		api.closer = func(ctx context.Context) error { return db.Close(ctx) }
 
 		tbl := &table.KVProto{db}
 		api.xs = xsrv.NewCombinedTable(tbl)
@@ -125,13 +126,13 @@ type apiCloser struct {
 	ft filetree.Service
 	id identifiers.Service
 
-	closer func() error
+	closer func(context.Context) error
 }
 
-// Close implements the io.Closer interface.
-func (api apiCloser) Close() error {
+// Close implements part of Interface.
+func (api apiCloser) Close(ctx context.Context) error {
 	if api.closer != nil {
-		return api.closer()
+		return api.closer(ctx)
 	}
 	return nil
 }
