@@ -62,17 +62,18 @@ func (g *gradleCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...i
 	if err := g.verifyFlags(); err != nil {
 		return g.Fail("incorrect flags: %v", err)
 	}
-	tf, err := backup.Save(g.buildFile)
+	tf, err := backup.New(g.buildFile)
 	if err != nil {
 		return g.Fail("error backing up %s: %v", g.buildFile, err)
 	}
+	defer tf.Release()
 	if err := PreProcessGradleBuild(g.buildFile); err != nil {
 		return g.Fail("error modifying %s: %v", g.buildFile, err)
 	}
 	if err := exec.Command("gradle", "build").Run(); err != nil {
 		return g.Fail("error executing gradle build: %v", err)
 	}
-	if err := backup.Restore(g.buildFile, tf); err != nil {
+	if err := tf.Restore(); err != nil {
 		return g.Fail("error restoring %s from %s: %v", g.buildFile, tf, err)
 	}
 	return subcommands.ExitSuccess

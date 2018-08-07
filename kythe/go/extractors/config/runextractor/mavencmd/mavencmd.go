@@ -68,10 +68,11 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 	if err := m.verifyFlags(); err != nil {
 		return m.Fail("invalid flags: %v", err)
 	}
-	tf, err := backup.Save(m.buildFile)
+	tf, err := backup.New(m.buildFile)
 	if err != nil {
 		return m.Fail("error backing up %s: %v", m.buildFile, err)
 	}
+	defer tf.Release()
 	if err := exec.Command("java", "-jar", m.pomPreProcessor, "-pom", m.buildFile).Run(); err != nil {
 		return m.Fail("error modifying maven build file %s: %v", m.buildFile, err)
 	}
@@ -81,7 +82,7 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 		fmt.Sprintf("-Dmaven.compiler.executable=%s", m.javacWrapper)).Run(); err != nil {
 		return m.Fail("error executing maven build: %v", err)
 	}
-	if err := backup.Restore(m.buildFile, tf); err != nil {
+	if err := tf.Restore(); err != nil {
 		return m.Fail("error restoring %s from %s: %v", m.buildFile, tf, err)
 	}
 	return subcommands.ExitSuccess

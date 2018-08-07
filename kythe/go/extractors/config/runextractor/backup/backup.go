@@ -16,59 +16,64 @@
 
 // Package backup is a simple library for backing up a config file and restoring
 // it using a temporary file.
+//
+// Example usage:
+//
+//    tmp, err := backup.Save(someFile)
+//    if err != nil {
+//       return fmt.Errorf("backing up %q: %v", somePath, err)
+//    }
+//    defer tmp.Release()
+//    // ... do real work ...
+//    tmp.Restore()
 package backup
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
 )
 
-// Save copies a given file to a temp file, returning the temp file name.
-func Save(configFile string) (tfname string, oerr error) {
-	// Copy over the build file temporarily so we can undo any hacks.
-	bf, err := os.Open(configFile)
-	if err != nil {
-		return "", fmt.Errorf("opening config file %s", configFile)
-	}
-	defer bf.Close()
-	tf, err := ioutil.TempFile("", "tmp-build-file")
-	if err != nil {
-		return "", fmt.Errorf("opening temp file")
-	}
-	defer func() {
-		oerr := bf.Close()
-		if err == nil {
-			err = oerr
-		}
-	}()
-	_, err = io.Copy(tf, bf)
-	return tf.Name(), err
+type File struct {
+	orig, tmp string // file paths
 }
 
-// Restore copies a given temp file back to the original file location.
-// TODO(danielmoy): consider not blindly copying back with 644 permissions.
-func Restore(configFile string, tempFile string) (err error) {
-	tf, err := os.Open(tempFile)
+func New(orig string) (*File, error) {
+	f, err := os.Open(orig)
 	if err != nil {
-		return fmt.Errorf("opening %s: %v", tempFile, err)
+		return nil, err
 	}
-	defer tf.Close()
-	bf, err := os.OpenFile(configFile, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		return fmt.Errorf("opening %s: %v", configFile, err)
-	}
-	defer func() {
-		oerr := bf.Close()
-		if err == nil {
-			err = oerr
-		}
-	}()
-	_, err = io.Copy(bf, tf)
-	if err != nil {
-		return fmt.Errorf("copying: %v", err)
-	}
+	defer f.Close()
 
-	return
+	dir, base := filepath.Split(orig)
+	tf, err := ioutil.TempFile(dir, base+".bkup")
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(tf, f)
+	cerr := tf.Close()
+	if err != nil {
+		return nil, err
+	} else if cerr != nil {
+		return nil, cerr
+	}
+	return &File{orig, tf.Name()}, nil
+}
+
+func (f *File) Restore() error {
+	if err := os.Rename(f.tmp, f.orig); err != nil {
+		return err
+	}
+	f.tmp = ""
+	return nil
+}
+
+func (f *File) Release() {
+	if f.tmp != "" {
+		if err := os.Remove(f.tmp); err != nil {
+			log.Printf("Warning: removing backup of %q failed: %v", f.orig, err)
+		}
+	}
 }
