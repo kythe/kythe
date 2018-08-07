@@ -84,7 +84,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
 	}
-	defer db.Close()
+	defer db.Close(ctx)
 	tbl := &table.KVProto{db}
 	xs = xsrv.NewCombinedTable(tbl)
 	gs = gsrv.NewCombinedTable(tbl)

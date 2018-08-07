@@ -46,9 +46,10 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	xs := api.Flag("api", api.CommonDefault, api.CommonFlagUsage)
 	flag.Parse()
-	defer (*xs).Close()
+	defer (*xs).Close(ctx)
 
 	wr := delimited.NewWriter(os.Stdout)
 	var count int
@@ -57,7 +58,6 @@ func main() {
 		return wr.PutProto(e)
 	})
 
-	ctx := context.Background()
 	for _, ticket := range flag.Args() {
 		log.Printf("Atomizing: %q", ticket)
 		if err := atomizeFileDecorations(ctx, *xs, ticket, atomizer); err != nil {
