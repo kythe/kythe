@@ -62,7 +62,7 @@ func (g *gradleCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...i
 	if err := g.verifyFlags(); err != nil {
 		return g.Fail("incorrect flags: %v", err)
 	}
-	tf, err := backup.Backup(g.buildFile)
+	tf, err := backup.Save(g.buildFile)
 	if err != nil {
 		return g.Fail("error backing up %s: %v", g.buildFile, err)
 	}

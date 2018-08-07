@@ -68,7 +68,7 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 	if err := m.verifyFlags(); err != nil {
 		return m.Fail("invalid flags: %v", err)
 	}
-	tf, err := backup.Backup(m.buildFile)
+	tf, err := backup.Save(m.buildFile)
 	if err != nil {
 		return m.Fail("error backing up %s: %v", m.buildFile, err)
 	}

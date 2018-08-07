@@ -25,8 +25,8 @@ import (
 	"os"
 )
 
-// Backup copies a given file to a temp file, returning the temp file name.
-func Backup(configFile string) (tfname string, oerr error) {
+// Save copies a given file to a temp file, returning the temp file name.
+func Save(configFile string) (tfname string, oerr error) {
 	// Copy over the build file temporarily so we can undo any hacks.
 	bf, err := os.Open(configFile)
 	if err != nil {
