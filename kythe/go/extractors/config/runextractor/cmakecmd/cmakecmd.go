@@ -34,7 +34,7 @@ type cmakeCommand struct {
 	pomPreProcessor string
 }
 
-// New creates a new subcommand for running maven extraction.
+// New creates a new subcommand for running cmake extraction.
 func New() subcommands.Command {
 	return &cmakeCommand{
 		Info: cmdutil.NewInfo("cmake", "extract a repo built with cmake",
