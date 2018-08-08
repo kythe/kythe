@@ -20,6 +20,7 @@ package cmakecmd
 
 import (
 	"context"
+	"flag"
 
 	"kythe.io/kythe/go/util/cmdutil"
 
