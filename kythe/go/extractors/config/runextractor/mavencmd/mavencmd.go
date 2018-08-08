@@ -82,6 +82,10 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 		fmt.Sprintf("-Dmaven.compiler.executable=%s", m.javacWrapper)).Run(); err != nil {
 		return m.Fail("error executing maven build: %v", err)
 	}
+	// We restore the original config file even during successful runs because
+	// the repo might persist outside of the calling docker image.  If that ends
+	// up never happening in the future, could consider pulling this block
+	// inside the above error case(s).
 	if err := tf.Restore(); err != nil {
 		return m.Fail("error restoring %s from %s: %v", m.buildFile, tf, err)
 	}
