@@ -6,6 +6,7 @@ go_binary(
     name = "runextractor",
     srcs = ["runextractor.go"],
     deps = [
+        "//kythe/go/extractors/config/runextractor/cmakecmd",
         "//kythe/go/extractors/config/runextractor/gradlecmd",
         "//kythe/go/extractors/config/runextractor/mavencmd",
         "@com_github_google_subcommands//:go_default_library",

@@ -36,6 +36,7 @@ type gradleCommand struct {
 	javacWrapper string
 }
 
+// New creates a new subcommand for running gradle extraction.
 func New() subcommands.Command {
 	return &gradleCommand{
 		Info: cmdutil.NewInfo("gradle", "extract a repo built with gradle",
@@ -43,6 +44,8 @@ func New() subcommands.Command {
 	}
 }
 
+// SetFlags implements the subcommands interface and provides command-specific
+// flags for gradle extraction.
 func (g *gradleCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&g.javacWrapper, "javac_wrapper", "", "A required executable that wraps javac for Kythe extraction.")
 	fs.StringVar(&g.buildFile, "build_file", "gradle.build", "The config file for a gradle repo, defaults to 'gradle.build'")
@@ -58,6 +61,7 @@ func (g gradleCommand) verifyFlags() error {
 	return nil
 }
 
+// Execute implements the subcommands interface and runs gradle extraction.
 func (g *gradleCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
 	if err := g.verifyFlags(); err != nil {
 		return g.Fail("incorrect flags: %v", err)

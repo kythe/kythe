@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-// Binary runextractor provides a tool to wrap a Java compilation with Kythe's
+// Binary runextractor provides a tool to wrap a repo's compilation with Kythe's
 // custom extractor logic.
 //
 // Before running this binary, make sure that any required environment variables
-// for the underlying javac wrapper are set.  For example the default Kythe
-// javac-wrapper.sh has requirements described at
-// kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac-wrapper.sh
+// for the underlying wrappers are set.  A description of these can be found in
+// the README.md file.
 package main
 
 import (
@@ -28,6 +27,7 @@ import (
 	"flag"
 	"os"
 
+	"kythe.io/kythe/go/extractors/config/runextractor/cmakecmd"
 	"kythe.io/kythe/go/extractors/config/runextractor/gradlecmd"
 	"kythe.io/kythe/go/extractors/config/runextractor/mavencmd"
 
@@ -35,10 +35,12 @@ import (
 )
 
 const (
+	cppGroup  = "cc"
 	javaGroup = "java"
 )
 
 func init() {
+	subcommands.Register(cmakecmd.New(), cppGroup)
 	subcommands.Register(gradlecmd.New(), javaGroup)
 	subcommands.Register(mavencmd.New(), javaGroup)
 }
