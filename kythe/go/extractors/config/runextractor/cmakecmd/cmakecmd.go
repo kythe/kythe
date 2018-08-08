@@ -29,9 +29,8 @@ import (
 type cmakeCommand struct {
 	cmdutil.Info
 
-	buildFile       string
-	javacWrapper    string
-	pomPreProcessor string
+	// // Anything set from flags goes here
+	// someFlag string
 }
 
 // New creates a new subcommand for running cmake extraction.
