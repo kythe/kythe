@@ -68,6 +68,7 @@ func New(orig string) (*File, error) {
 	return &File{orig, tf.Name()}, nil
 }
 
+// Restore puts the original version of the backed up file back in place.
 func (f *File) Restore() error {
 	if err := os.Rename(f.tmp, f.orig); err != nil {
 		return err
@@ -76,6 +77,7 @@ func (f *File) Restore() error {
 	return nil
 }
 
+// Release removes the temporary file copy if it hasn't already been moved.
 func (f *File) Release() {
 	if f.tmp != "" {
 		if err := os.Remove(f.tmp); err != nil {

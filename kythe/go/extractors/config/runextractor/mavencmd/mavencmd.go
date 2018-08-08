@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package mavencmd extracts a gradle repo.
+// Package mavencmd extracts a maven repo.
 package mavencmd
 
 import (
@@ -37,6 +37,7 @@ type mavenCommand struct {
 	pomPreProcessor string
 }
 
+// New creates a new subcommand for running maven extraction.
 func New() subcommands.Command {
 	return &mavenCommand{
 		Info: cmdutil.NewInfo("maven", "extract a repo built with maven",
@@ -44,6 +45,8 @@ func New() subcommands.Command {
 	}
 }
 
+// SetFlags implements the subcommands interface and provides command-specific
+// flags for maven extraction.
 func (m *mavenCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&m.javacWrapper, "javac_wrapper", "", "A required executable that wraps javac for Kythe extraction.")
 	// TODO(#2905): Consider replacing this with a native go library, not executing out to a jar.
@@ -53,7 +56,7 @@ func (m *mavenCommand) SetFlags(fs *flag.FlagSet) {
 
 func (m mavenCommand) verifyFlags() error {
 	if m.buildFile == "" {
-		return fmt.Errorf("gradle build file (e.g. 'pom.xml') not set")
+		return fmt.Errorf("maven build file (e.g. 'pom.xml') not set")
 	}
 	if m.javacWrapper == "" {
 		return fmt.Errorf("required -javac_wrapper not set")
@@ -64,6 +67,7 @@ func (m mavenCommand) verifyFlags() error {
 	return nil
 }
 
+// Execute implements the subcommands interface and runs maven extraction.
 func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
 	if err := m.verifyFlags(); err != nil {
 		return m.Fail("invalid flags: %v", err)

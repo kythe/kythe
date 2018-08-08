@@ -5,6 +5,37 @@ on repos using Kythe.  It is intended as the last step where extraction is
 actually performed by invoking the builds, along with any immediate
 preprocessing required.
 
+## RunExtractor
+
+`runextractor` is an executible that is used as the inner-most entrypoint for
+Kythe Extraction.  This binary is intended to encapsulate any logic required for
+extracting that is common to the build-system.  So for example any configuration
+that is on a per-repo basis should be handled upstream, not in this binary.
+It is derived from `kythe/extractors/java/maven/mvn-extract.sh`.
+
+Use:
+
+```
+./runner \
+  --builder=MAVEN \
+  --mvn_pom_preprocessor=/opt/kythe/extractors/javac_extractor.jar \
+  --javac_wrapper=/opt/kythe/extractors/javac-wrapper.sh
+```
+
+### Environment Variables
+
+Because `runextractor` is invoked in a manner not conducive to cleanly passing
+commandline flags, there is non-trivial setup done with environment variables.
+When calling `runextractor`, here are the relevant environment variables:
+
+* **KYTHE_ROOT_DIRECTORY**: The root path for file input to be extracted.
+* **KYTHE_OUTPUT_DIRECTORY**: The path for storing output.
+
+Java relevant env vars:
+* **JAVAC_EXTRACTOR_JAR**: A path to a jar file containing the java extractor.
+* **REAL_JAVAC**: A path to a "normal" javac binary (not a wrapped binary).
+
+
 ## Build System Extractors
 
 We support Kythe extraction on a few different build systems.
@@ -61,20 +92,4 @@ Actually we have no custom work here.  We extract compilation records from Bazel
 using the extra action mechanism.  The extractrepo tool therefore doesn't handle
 Bazel directly, but repositories using Bazel for languages we already support
 should work without extra effort.
-
-## RunExtractor
-
-In addition to the custom preprocessing logic for Kythe Extraction on different
-build systems, we also have a wrapper binary.  `runextractor` is a simple
-executible that is used as the inner-most entrypoint for Kythe Extraction.  It
-is derived from `kythe/extractors/java/maven/mvn-extract.sh`.
-
-Use:
-
-```
-./runner \
-  --builder=MAVEN \
-  --mvn_pom_preprocessor=/opt/kythe/extractors/javac_extractor.jar \
-  --javac_wrapper=/opt/kythe/extractors/javac-wrapper.sh
-```
 
