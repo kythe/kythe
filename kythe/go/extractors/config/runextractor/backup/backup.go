@@ -36,13 +36,16 @@ import (
 	"path/filepath"
 )
 
-// A File is a simple holder for a backup of some file that supports Recovery
-// to restore the original version.
+// A File records the locations of an original file and a backup copy of that
+// file.  The Restore method replaces the contents of the original with the
+// backup, overwriting any changes that were made since the backup was created.
 type File struct {
 	orig, tmp string // file paths
 }
 
-// New backs a given file up to an adjacent temporary file.
+// New creates a backup copy of the specified file, located in the same
+// directory. The caller should ensure the Release method is called when the
+// backup is no longer needed, to clean up.
 func New(orig string) (*File, error) {
 	f, err := os.Open(orig)
 	if err != nil {
