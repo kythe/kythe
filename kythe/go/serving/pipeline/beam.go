@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strconv"
 
-	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/pipeline/nodes"
 	"kythe.io/kythe/go/serving/xrefs/assemble"
 	"kythe.io/kythe/go/util/compare"
@@ -31,6 +30,7 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	kinds "kythe.io/kythe/go/util/schema/nodes"
+	"kythe.io/kythe/go/util/span"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/golang/protobuf/proto"
@@ -427,7 +427,7 @@ func toFiles(n *ppb.Node) (*spb.VName, *srvpb.File) {
 }
 
 func normalizeAnchors(file *srvpb.File, anchor func(**ppb.Node) bool, emit func(*ppb.Reference)) error {
-	norm := xrefs.NewNormalizer(file.Text)
+	norm := span.NewNormalizer(file.Text)
 	var n *ppb.Node
 	for anchor(&n) {
 		raw, err := toRawAnchor(n)

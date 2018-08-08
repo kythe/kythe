@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
@@ -76,15 +77,16 @@ func main() {
 		en = json.NewEncoder(os.Stdout)
 	}
 
+	ctx := context.Background()
 	for _, path := range flag.Args() {
 		func() {
 			db, err := leveldb.Open(path, nil)
 			if err != nil {
 				log.Fatalf("Error opening %q: %v", path, err)
 			}
-			defer db.Close()
+			defer db.Close(ctx)
 
-			it, err := db.ScanPrefix([]byte(*keyPrefix), nil)
+			it, err := db.ScanPrefix(ctx, []byte(*keyPrefix), nil)
 			if err != nil {
 				log.Fatalf("Error creating iterator for %q: %v", path, err)
 			}

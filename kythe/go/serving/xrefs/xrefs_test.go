@@ -26,6 +26,7 @@ import (
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/span"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/text/encoding"
@@ -489,7 +490,7 @@ func TestDecorationsRefs(t *testing.T) {
 		t.Errorf("Unexpected encoding: %q", reply.Encoding)
 	}
 
-	expected := refs(xrefs.NewNormalizer(d.File.Text), d.Decoration)
+	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration)
 	if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
 		t.Fatal(err)
 	}
@@ -1216,7 +1217,7 @@ func makeFactList(keyVals ...string) []*cpb.Fact {
 	return facts
 }
 
-func refs(norm *xrefs.Normalizer, ds []*srvpb.FileDecorations_Decoration) (refs []*xpb.DecorationsReply_Reference) {
+func refs(norm *span.Normalizer, ds []*srvpb.FileDecorations_Decoration) (refs []*xpb.DecorationsReply_Reference) {
 	for _, d := range ds {
 		refs = append(refs, decorationToReference(norm, d))
 	}

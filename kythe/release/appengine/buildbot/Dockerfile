@@ -14,6 +14,7 @@
 
 FROM debian:jessie
 
+RUN echo "deb http://ftp.debian.org/debian jessie-backports main" >>/etc/apt/sources.list
 RUN echo "deb http://ftp.debian.org/debian stretch-backports main" >>/etc/apt/sources.list
 
 RUN apt-get update && \
@@ -31,6 +32,8 @@ RUN apt-get update && \
       gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.5 bison \
       # Kythe misc dependencies
       asciidoc source-highlight graphviz curl parallel && \
+    # Bazel's fallback @local_jdk
+    apt-get -t jessie-backports install -y openjdk-8-jdk && \
     apt-get clean
 
 # Install Buildbot

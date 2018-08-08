@@ -56,12 +56,13 @@ func main() {
 	apiFlag := api.Flag("api", api.CommonDefault, api.CommonFlagUsage)
 	flag.Parse()
 
-	status := cli.Execute(context.Background(), cli.API{
+	ctx := context.Background()
+	status := cli.Execute(ctx, cli.API{
 		XRefService:       *apiFlag,
 		GraphService:      *apiFlag,
 		FileTreeService:   *apiFlag,
 		IdentifierService: *apiFlag,
 	})
-	(*apiFlag).Close()
+	(*apiFlag).Close(ctx)
 	os.Exit(int(status))
 }

@@ -810,6 +810,16 @@ cc_indexer_test(
     ],
 )
 
+cc_indexer_test(
+    name = "macros_lambda_call",
+    srcs = ["basic/macros_lambda_call.cc"],
+    ignore_dups = True,
+    tags = [
+        "basic",
+        "manual",  # https://github.com/google/kythe/issues/2899
+    ],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
@@ -1628,6 +1638,17 @@ cc_indexer_test(
     check_for_singletons = True,
     ignore_dups = True,
     tags = ["rec"],
+)
+
+cc_indexer_test(
+    name = "rec_implicit_ctor_calls_conversion",
+    srcs = ["rec/rec_implicit_ctor_calls_conversion.cc"],
+    check_for_singletons = True,
+    ignore_dups = True,
+    tags = [
+        "manual",  # https://github.com/google/kythe/issues/2894
+        "rec",
+    ],
 )
 
 cc_indexer_test(
