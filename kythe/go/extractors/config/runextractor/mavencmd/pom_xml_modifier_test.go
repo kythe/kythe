@@ -28,34 +28,7 @@ import (
 
 const testDataDir = "testdata"
 
-func TestHasCompilerPlugin(t *testing.T) {
-	testcases := []struct {
-		fileName string
-		// Whether kythe javac wrapper should be present.
-		hasPlugin bool
-	}{
-		{fileName: "modified-pom.xml", hasPlugin: true},
-		{fileName: "plain-pom.xml"},
-	}
-
-	for _, tcase := range testcases {
-		// This should just ignore the file and do nothing.
-		hasPlugin, err := hasCompilerPlugin(getPath(t, tcase.fileName))
-		if err != nil {
-			t.Fatalf("Failed to open test pom.xml file: %v", err)
-		} else if tcase.hasPlugin != hasPlugin {
-			var errstr string
-			if tcase.hasPlugin {
-				errstr = "should"
-			} else {
-				errstr = "should not"
-			}
-			t.Errorf("file %s %s already have compiler plugin", tcase.fileName, errstr)
-		}
-	}
-}
-
-func TestPreprocess(t *testing.T) {
+func TestPreProcess(t *testing.T) {
 	testcases := []struct {
 		inputFile          string
 		expectedOutputFile string
@@ -88,7 +61,7 @@ func TestPreprocess(t *testing.T) {
 		}
 
 		// Do the copy if necessary.
-		if err := PreProcessPomXml(tfName); err != nil {
+		if err := PreProcessPomXML(tfName); err != nil {
 			t.Fatalf("modifying pom.xml %s: %v", tcase.inputFile, err)
 		}
 
@@ -96,6 +69,7 @@ func TestPreprocess(t *testing.T) {
 		eq, diff := testutil.TrimmedEqual(readBytes(t, tfName), readBytes(t, getPath(t, tcase.expectedOutputFile)))
 		if !eq {
 			t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
+			t.Errorf("input: %s", readBytes(t, getPath(t, tcase.inputFile)))
 		}
 	}
 }
