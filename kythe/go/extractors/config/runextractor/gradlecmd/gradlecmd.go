@@ -21,6 +21,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
 	"os/exec"
 
 	"kythe.io/kythe/go/extractors/config/runextractor/backup"
@@ -52,6 +53,11 @@ func (g *gradleCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 func (g gradleCommand) verifyFlags() error {
+	for _, key := range []string{"KYTHE_CORPUS", "KYTHE_ROOT_DIRECTORY", "KYTHE_OUTPUT_DIRECTORY", "JAVAC_EXTRACTOR_JAR", "REAL_JAVAC"} {
+		if os.Getenv(key) == "" {
+			return fmt.Errorf("required env var %s not set", key)
+		}
+	}
 	if g.buildFile == "" {
 		return fmt.Errorf("gradle build file (e.g. 'gradle.build') not set")
 	}

@@ -28,6 +28,7 @@ Because `runextractor` is invoked in a manner not conducive to cleanly passing
 commandline flags, there is non-trivial setup done with environment variables.
 When calling `runextractor`, here are the relevant environment variables:
 
+* **KYTHE_CORPUS**: The corpus set for extracted files.
 * **KYTHE_ROOT_DIRECTORY**: The root path for file input to be extracted.
 * **KYTHE_OUTPUT_DIRECTORY**: The path for storing output.
 
