@@ -60,7 +60,7 @@ _INDEXER_FLAGS = {
     "experimental_drop_cpp_fwd_decl_docs": False,
 }
 
-def _compiler_options(cpp, copts, includes):
+def _compiler_options(ctx, cpp, copts, includes):
     """Returns the list of compiler flags from the C++ toolchain."""
 
     # Bazel is missing these attributes until 0.16.0,
@@ -73,7 +73,7 @@ def _compiler_options(cpp, copts, includes):
         )
         variables = cc_common.create_compile_variables(
             feature_configuration = feature_configuration,
-            cc_toolchain = cc_toolchain,
+            cc_toolchain = cpp,
             user_compile_flags = depset(copts),
             system_include_directories = includes,
             add_legacy_cxx_options = True,
@@ -149,6 +149,7 @@ def _cc_extract_kindex_impl(ctx):
             vnames_config = ctx.file.vnames_config,
             srcs = [src],
             opts = _compiler_options(
+                ctx,
                 cpp,
                 ctx.attr.opts,
                 toolchain_includes,
