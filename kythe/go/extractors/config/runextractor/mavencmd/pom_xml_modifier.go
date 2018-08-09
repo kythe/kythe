@@ -18,7 +18,6 @@ package mavencmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/beevik/etree"
@@ -31,7 +30,6 @@ import (
 // Note this potentially modifies the input file, so make a copy beforehand if
 // you need to keep the original.
 func PreProcessPomXML(pomXMLFile string) error {
-	log.Printf("Reading file %s", pomXMLFile)
 	doc := etree.NewDocument()
 	err := doc.ReadFromFile(pomXMLFile)
 	if err != nil {
@@ -43,10 +41,12 @@ func PreProcessPomXML(pomXMLFile string) error {
 	if err := appendCompilerPlugin(doc); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(pomXMLFile, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	f, err := os.OpenFile(pomXMLFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("opening file %s for append: %v", pomXMLFile, err)
 	}
+	doc.Indent(2)
+	doc.WriteTo(f)
 	return f.Close()
 }
 
@@ -70,21 +70,15 @@ func appendCompilerPlugin(doc *etree.Document) error {
 	}
 	plugins := build.SelectElement("plugins")
 	if plugins == nil {
-		log.Printf("Adding new plugins element")
-		plugins = project.CreateElement("plugins")
+		plugins = build.CreateElement("plugins")
 	}
-	log.Printf("Adding new plugin element")
 	newPlugin := plugins.CreateElement("plugin")
-	foo := newPlugin.CreateElement("wtffoo")
-	foo.SetText("Why does this not appear?")
-	log.Printf("Adding new groupId element")
 	groupID := newPlugin.CreateElement("groupId")
 	groupID.SetText("org.apache.maven.plugins")
 	artifactID := newPlugin.CreateElement("artifactId")
 	artifactID.SetText("maven-compiler-plugin")
 	version := newPlugin.CreateElement("version")
 	version.SetText("3.7.0")
-	log.Printf("Version text %s", version.Text())
 	configuration := newPlugin.CreateElement("configuration")
 	source := configuration.CreateElement("source")
 	source.SetText("1.8")

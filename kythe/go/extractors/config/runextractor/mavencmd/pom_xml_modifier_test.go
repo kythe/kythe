@@ -35,6 +35,7 @@ func TestPreProcess(t *testing.T) {
 	}{
 		{"modified-pom.xml", "modified-pom.xml"},
 		{"plain-pom.xml", "modified-pom.xml"},
+		{"other-pom.xml", "modified-pom.xml"},
 	}
 
 	for _, tcase := range testcases {
@@ -69,7 +70,7 @@ func TestPreProcess(t *testing.T) {
 		eq, diff := testutil.TrimmedEqual(readBytes(t, tfName), readBytes(t, getPath(t, tcase.expectedOutputFile)))
 		if !eq {
 			t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
-			t.Errorf("input: %s", readBytes(t, getPath(t, tcase.inputFile)))
+			t.Errorf("input: %s", readBytes(t, tfName))
 		}
 	}
 }
