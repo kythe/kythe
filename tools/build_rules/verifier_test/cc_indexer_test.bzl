@@ -75,7 +75,7 @@ def _compiler_options(ctx, cpp, copts, includes):
             feature_configuration = feature_configuration,
             cc_toolchain = cpp,
             user_compile_flags = depset(copts),
-            system_include_directories = includes,
+            system_include_directories = depset(includes),
             add_legacy_cxx_options = True,
         )
         return cc_common.get_memory_inefficient_command_line(
