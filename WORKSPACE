@@ -533,3 +533,10 @@ go_repository(
     custom = "zstd",
     importpath = "github.com/DataDog/zstd",
 )
+
+go_repository(
+    name = "com_github_beevik_etree",
+    commit = "9d7e8feddccb4ed1b8afb54e368bd323d2ff652c",
+    custom = "etree",
+    importpath = "github.com/beevik/etree",
+)
