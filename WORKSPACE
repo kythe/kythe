@@ -385,6 +385,13 @@ go_repository(
 )
 
 go_repository(
+    name = "com_github_google_shlex",
+    commit = "6f45313302b9c56850fc17f99e40caebce98c716",
+    custom = "shlex",
+    importpath = "github.com/google/shlex",
+)
+
+go_repository(
     name = "com_github_sergi_go_diff",
     commit = "da645544ed44df016359bd4c0e3dc60ee3a0da43",
     custom = "diff",

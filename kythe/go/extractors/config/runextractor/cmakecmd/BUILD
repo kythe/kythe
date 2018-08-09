@@ -7,6 +7,8 @@ go_library(
     srcs = ["cmakecmd.go"],
     deps = [
         "//kythe/go/util/cmdutil",
+        "@com_github_google_shlex//:go_default_library",
         "@com_github_google_subcommands//:go_default_library",
+        "@com_github_pborman_uuid//:go_default_library",
     ],
 )
