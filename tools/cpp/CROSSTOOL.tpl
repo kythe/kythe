@@ -73,10 +73,8 @@ toolchain {
   host_system_name: "armeabi-v7a"
   needsPic: true
   supports_gold_linker: false
-  supports_incremental_linker: false
   supports_fission: false
   supports_interface_shared_objects: false
-  supports_normalizing_ar: false
   supports_start_end_lib: false
   target_libc: "armeabi-v7a"
   target_cpu: "armeabi-v7a"
@@ -108,10 +106,8 @@ toolchain {
   abi_version: "local"
   abi_libc_version: "local"
   supports_gold_linker: false
-  supports_incremental_linker: false
   supports_fission: false
   supports_interface_shared_objects: false
-  supports_normalizing_ar: false
   supports_start_end_lib: false
 
   tool_path { name: "ar" path: "/bin/false" }
@@ -186,7 +182,6 @@ toolchain {
   target_cpu: "x64_windows"
   compiler: "msvc-cl"
   target_libc: "msvcrt"
-  default_python_version: "python2.7"
 
 %{cxx_builtin_include_directory}
 
@@ -233,8 +228,6 @@ toolchain {
   supports_gold_linker: false
   supports_start_end_lib: false
   supports_interface_shared_objects: true
-  supports_incremental_linker: false
-  supports_normalizing_ar: true
   needsPic: false
 
   # TODO(pcloudy): Review those flags below, they should be defined by cl.exe
