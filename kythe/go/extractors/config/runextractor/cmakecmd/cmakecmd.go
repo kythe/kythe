@@ -34,6 +34,8 @@ import (
 	"bitbucket.org/creachadair/shell"
 	"github.com/google/subcommands"
 	"github.com/pborman/uuid"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 )
 
 type cmakeCommand struct {
@@ -128,22 +130,35 @@ func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 	if err != nil {
 		return c.Fail("unable to set up environment: %v", err)
 	}
+	sem := semaphore.NewWeighted(128) // Limit concurrency.
+	extraction, ctx := errgroup.WithContext(ctx)
 	for _, entry := range commands {
-		cmd := exec.CommandContext(ctx, extractor, "--with_executable")
-		args, ok := shell.Split(entry.Command)
-		if !ok {
-			return c.Fail("unable to split command line")
-		}
-		cmd.Args = append(cmd.Args, args...)
-		cmd.Dir, err = filepath.Abs(entry.Directory)
-		if err != nil {
-			return c.Fail("unable to resolve cmake directory: %v", err)
-		}
-		cmd.Env = exEnv
-		// TODO(shahms): Parallelize this.
-		if _, err := cmd.Output(); err != nil {
-			return c.Fail("error running extractor: %v (%s)", err, err.(*exec.ExitError).Stderr)
-		}
+		entry := entry
+		extraction.Go(func() error {
+			if err := sem.Acquire(ctx, 1); err != nil {
+				return err
+			}
+			defer sem.Release(1)
+
+			cmd := exec.CommandContext(ctx, extractor, "--with_executable")
+			args, ok := shell.Split(entry.Command)
+			if !ok {
+				return fmt.Errorf("unable to split command line")
+			}
+			cmd.Args = append(cmd.Args, args...)
+			cmd.Dir, err = filepath.Abs(entry.Directory)
+			if err != nil {
+				return fmt.Errorf("unable to resolve cmake directory: %v", err)
+			}
+			cmd.Env = exEnv
+			if _, err := cmd.Output(); err != nil {
+				return fmt.Errorf("error running extractor: %v (%s)", err, err.(*exec.ExitError).Stderr)
+			}
+			return nil
+		})
+	}
+	if err := extraction.Wait(); err != nil {
+		return c.Fail("error extracting repository: %v", err)
 	}
 	return subcommands.ExitSuccess
 }
