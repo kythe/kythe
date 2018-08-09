@@ -31,7 +31,7 @@ import (
 
 	"kythe.io/kythe/go/util/cmdutil"
 
-	"github.com/google/shlex"
+	"bitbucket.org/creachadair/shell"
 	"github.com/google/subcommands"
 	"github.com/pborman/uuid"
 )
@@ -130,9 +130,9 @@ func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 	}
 	for _, entry := range commands {
 		cmd := exec.CommandContext(ctx, extractor, "--with_executable")
-		args, err := shlex.Split(entry.Command)
-		if err != nil {
-			return c.Fail("unable to parse command line: %v", err)
+		args, ok := shell.Split(entry.Command)
+		if !ok {
+			return c.Fail("unable to split command line")
 		}
 		cmd.Args = append(cmd.Args, args...)
 		cmd.Dir, err = filepath.Abs(entry.Directory)
