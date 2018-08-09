@@ -7,6 +7,7 @@ go_binary(
     srcs = ["extract_kindex.go"],
     deps = [
         "//kythe/go/extractors/bazel",
+        "//kythe/go/extractors/bazel/extutil",
         "//kythe/go/platform/kindex",
         "//kythe/go/util/vnameutil",
         "//third_party/bazel:extra_actions_base_go_proto",
