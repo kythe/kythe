@@ -41,7 +41,7 @@ var (
 type test struct {
 	Input string `json:"input"`
 	Match bool   `json:"match"`
-	Want  struct {
+	Want  *struct {
 		Corpus string `json:"corpus"`
 		Root   string `json:"root"`
 		Path   string `json:"path"`
@@ -49,6 +49,9 @@ type test struct {
 }
 
 func (t test) vname() *spb.VName {
+	if t.Want == nil {
+		return nil
+	}
 	return &spb.VName{
 		Corpus: t.Want.Corpus,
 		Root:   t.Want.Root,
