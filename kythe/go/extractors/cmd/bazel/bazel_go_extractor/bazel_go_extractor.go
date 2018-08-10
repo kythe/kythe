@@ -91,6 +91,7 @@ func main() {
 		CheckAction: ext.checkAction,
 		CheckInput:  ext.checkInput,
 		CheckEnv:    ext.checkEnv,
+		IsSource:    ext.isSource,
 		FixUnit:     ext.fixup,
 	}
 	ai, err := bazel.SpawnAction(info)
@@ -148,6 +149,8 @@ func (e *extractor) checkInput(path string) (string, bool) {
 	}
 	return path, false
 }
+
+func (*extractor) isSource(name string) bool { return filepath.Ext(name) == ".go" }
 
 func (*extractor) checkEnv(name, _ string) bool { return name != "PATH" }
 
