@@ -46,6 +46,7 @@ type cmakeCommand struct {
 	sourceDir string
 }
 
+// A compileCommand holds the decoded arguments of a CMake JSON command spec.
 type compileCommand struct {
 	Command   string
 	Directory string
