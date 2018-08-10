@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	corpus = flag.String("corpus", "kythe.io", "The corpus label to assign (required)")
+	corpus = flag.String("corpus", "kythe", "The corpus label to assign (required)")
 )
 
 const baseUsage = `Usage: %[1]s [flags] <extra-action> <output-file> <vname-config>`
