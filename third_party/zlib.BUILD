@@ -16,13 +16,15 @@ _ZLIB_HEADERS = [
     "zutil.h",
 ]
 
+_ZLIB_PREFIXED_HEADERS = ["zlib/include/" + hdr for hdr in _ZLIB_HEADERS]
+
 # In order to limit the damage from the `includes` propagation
 # via `:zlib`, copy the public headers to a subdirectory and
 # expose those.
 genrule(
     name = "copy_public_headers",
     srcs = _ZLIB_HEADERS,
-    outs = ["zlib/include/" + hdr for hdr in _ZLIB_HEADERS],
+    outs = _ZLIB_PREFIXED_HEADERS,
     cmd = "cp $(SRCS) $(@D)/zlib/include/",
     visibility = ["//visibility:private"],
 )
@@ -49,7 +51,7 @@ cc_library(
         # around the fact that zlib isn't consistent in its
         # choice of <> or "" delimiter when including itself.
     ] + _ZLIB_HEADERS,
-    hdrs = glob(["zlib/include/*"]),
+    hdrs = _ZLIB_PREFIXED_HEADERS,
     copts = [
         "-Wno-unused-variable",
         "-Wno-implicit-function-declaration",
