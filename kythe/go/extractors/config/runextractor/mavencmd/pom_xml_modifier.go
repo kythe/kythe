@@ -23,13 +23,13 @@ import (
 	"github.com/beevik/etree"
 )
 
-// PreProcessPomXML takes a pom.xml file and either verifies that it already has
+// preProcessPomXML takes a pom.xml file and either verifies that it already has
 // the bits necessary to specify a separate compiler on commandline, or adds
 // functionality by dropping in a maven-compiler-plugin to the build.
 //
-// Note this potentially modifies the input file, so make a copy beforehand if
-// you need to keep the original.
-func PreProcessPomXML(pomXMLFile string) error {
+// Note this potentially overwrites the input file, even if it returns an error,
+// so make a copy beforehand if you need to keep the original.
+func preProcessPomXML(pomXMLFile string) error {
 	doc := etree.NewDocument()
 	err := doc.ReadFromFile(pomXMLFile)
 	if err != nil {
@@ -38,12 +38,12 @@ func PreProcessPomXML(pomXMLFile string) error {
 	if hasCompilerPlugin(doc) {
 		return nil
 	}
-	if err := appendCompilerPlugin(doc); err != nil {
+	if err := insertCompilerPlugin(doc); err != nil {
 		return err
 	}
 	f, err := os.OpenFile(pomXMLFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		return fmt.Errorf("opening file %s for append: %v", pomXMLFile, err)
+		return fmt.Errorf("opening file: %v", err)
 	}
 	doc.Indent(2)
 	doc.WriteTo(f)
@@ -59,7 +59,18 @@ func hasCompilerPlugin(doc *etree.Document) bool {
 	return false
 }
 
-func appendCompilerPlugin(doc *etree.Document) error {
+// appendCompilerPlugin modifies a doc containing the root element of a pom.xml
+// configuration, by injecting a custom Maven compiler <plugin> element into the
+// plugin list for the top-level project.  This allows mvn install commands to
+// specify --Dmaven.compiler.executable on commandline and use a separate
+// compiler.
+//
+// Note this is unlike the gradle.build modification, where a separate
+// commandline argument is not necessary.
+//
+// An example modification can be found in the tests.  We would expect
+// testdata/other-pom.xml to be transformed into testdata/modified-pom.xml
+func insertCompilerPlugin(doc *etree.Document) error {
 	project := doc.SelectElement("project")
 	if project == nil {
 		return fmt.Errorf("no top level <project> element")

@@ -62,7 +62,7 @@ func TestPreProcess(t *testing.T) {
 		}
 
 		// Do the copy if necessary.
-		if err := PreProcessPomXML(tfName); err != nil {
+		if err := preProcessPomXML(tfName); err != nil {
 			t.Fatalf("modifying pom.xml %s: %v", tcase.inputFile, err)
 		}
 
