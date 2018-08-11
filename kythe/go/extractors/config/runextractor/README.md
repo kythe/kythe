@@ -13,6 +13,10 @@ extracting that is common to the build-system.  So for example any configuration
 that is on a per-repo basis should be handled upstream, not in this binary.
 It is derived from `kythe/extractors/java/maven/mvn-extract.sh`.
 
+`runextractor` is expected to be run from the root of a repository, so that
+any access to config files (`gradle.build`, `pom.xml`, etc) is sensible, and
+also so that execution of build/compile commands works.
+
 Use:
 
 ```

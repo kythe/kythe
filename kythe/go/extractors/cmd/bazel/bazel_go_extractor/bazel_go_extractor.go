@@ -21,7 +21,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -29,17 +28,16 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/bazel"
+	"kythe.io/kythe/go/extractors/bazel/extutil"
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	"bitbucket.org/creachadair/shell"
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	gopb "kythe.io/kythe/proto/go_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
-	eapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
 
 var (
@@ -74,7 +72,7 @@ func main() {
 	outputFile := flag.Arg(1)
 	vnameRuleFile := flag.Arg(2)
 
-	info, err := loadExtraAction(extraActionFile)
+	info, err := bazel.LoadAction(extraActionFile)
 	if err != nil {
 		log.Fatalf("Error loading extra action: %v", err)
 	}
@@ -85,7 +83,7 @@ func main() {
 	// Load vname rewriting rules. We handle this directly, becaues the Bazel
 	// Go rules have some pathological symlink handling that the normal rules
 	// need to be patched for.
-	rules, err := loadRules(vnameRuleFile)
+	rules, err := bazel.LoadRules(vnameRuleFile)
 	if err != nil {
 		log.Fatalf("Error loading vname rules: %v", err)
 	}
@@ -103,56 +101,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Invalid extra action: %v", err)
 	}
-	cu, err := config.Extract(context.Background(), ai)
-	if err != nil {
+
+	ctx := context.Background()
+	if err := extutil.ExtractAndWrite(ctx, config, ai, outputFile); err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
-
-	// Write and flush the output to a .kindex file.
-	if err := writeToFile(cu, outputFile); err != nil {
-		log.Fatalf("Writing output failed: %v", err)
-	}
-}
-
-// writeToFile creates the specified output file from the contents of w.
-func writeToFile(w io.WriterTo, path string) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	_, err = w.WriteTo(f)
-	cerr := f.Close()
-	if err != nil {
-		return err
-	}
-	return cerr
-}
-
-// loadExtraAction reads the contents of the file at path and decodes it as an
-// ExtraActionInfo protobuf message.
-func loadExtraAction(path string) (*eapb.ExtraActionInfo, error) {
-	bits, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var info eapb.ExtraActionInfo
-	if err := proto.Unmarshal(bits, &info); err != nil {
-		return nil, err
-	}
-	return &info, nil
-}
-
-// loadRules reads the contents of the file at path and decodes it as a
-// slice of vname rewriting rules. The result is empty if path == "".
-func loadRules(path string) (vnameutil.Rules, error) {
-	if path == "" {
-		return nil, nil
-	}
-	bits, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	return vnameutil.ParseRules(bits)
 }
 
 type extractor struct {
