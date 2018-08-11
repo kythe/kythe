@@ -25,6 +25,7 @@ import (
 	"os/exec"
 
 	"kythe.io/kythe/go/extractors/config/runextractor/backup"
+	"kythe.io/kythe/go/extractors/config/runextractor/constants"
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"github.com/google/subcommands"
@@ -56,7 +57,7 @@ func (m *mavenCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 func (m mavenCommand) verifyFlags() error {
-	for _, key := range []string{"KYTHE_CORPUS", "KYTHE_ROOT_DIRECTORY", "KYTHE_OUTPUT_DIRECTORY", "JAVAC_EXTRACTOR_JAR", "REAL_JAVAC"} {
+	for _, key := range constants.RequiredJavaEnvVars() {
 		if os.Getenv(key) == "" {
 			return fmt.Errorf("required env var %s not set", key)
 		}

@@ -10,6 +10,7 @@ go_library(
     ],
     deps = [
         "//kythe/go/extractors/config/runextractor/backup",
+        "//kythe/go/extractors/config/runextractor/constants",
         "//kythe/go/util/cmdutil",
         "@com_github_beevik_etree//:go_default_library",
         "@com_github_google_subcommands//:go_default_library",
