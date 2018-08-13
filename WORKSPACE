@@ -39,6 +39,17 @@ bind(
 )
 
 new_http_archive(
+    name = "se_haxx_curl",
+    build_file = "//third_party:curl.BUILD",
+    sha256 = "ff3e80c1ca6a068428726cd7dd19037a47cc538ce58ef61c59587191039b2ca6",
+    strip_prefix = "curl-7.49.1",
+    urls = [
+        "http://bazel-mirror.storage.googleapis.com/curl.haxx.se/download/curl-7.49.1.tar.gz",
+        "https://curl.haxx.se/download/curl-7.49.1.tar.gz",
+    ],
+)
+
+new_http_archive(
     name = "net_zlib",
     build_file = "third_party/zlib.BUILD",
     sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
