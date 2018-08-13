@@ -731,7 +731,7 @@ void IndexerASTVisitor::HandleFileLevelComments(
   auto C = std::lower_bound(
       RCL.getComments().begin(), RCL.getComments().end(), StartIdLoc,
       [&](clang::RawComment *const T1, const decltype(StartIdLoc) &T2) {
-        return Context.getSourceManager().getDecomposedLoc(T1->getLocStart()) <
+        return Context.getSourceManager().getDecomposedLoc(T1->getBeginLoc()) <
                T2;
       });
   // Walk through the comments in Id starting with the one at the top. If we
@@ -739,7 +739,7 @@ void IndexerASTVisitor::HandleFileLevelComments(
   // already in Id, this check will immediately break;.)
   if (C != RCL.getComments().end()) {
     auto CommentIdLoc =
-        Context.getSourceManager().getDecomposedLoc((*C)->getLocStart());
+        Context.getSourceManager().getDecomposedLoc((*C)->getBeginLoc());
     if (CommentIdLoc.first != Id) {
       return;
     }
@@ -1170,7 +1170,7 @@ bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
                                                 ArgNodeIds.size());
       auto StmtId = BuildNodeIdForImplicitStmt(E);
       auto Range = clang::SourceRange(E->getMemberLoc(),
-                                      E->getLocEnd().getLocWithOffset(1));
+                                      E->getEndLoc().getLocWithOffset(1));
       if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
         Observer.recordDeclUseLocation(RCC.value(), TappNodeId,
                                        GraphObserver::Claimability::Unclaimable,
@@ -1225,7 +1225,7 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr *E,
     // TODO(zarko): What about static initializers? Do we blame these on the
     // translation unit?
     clang::SourceLocation RPL = E->getParenOrBraceRange().getEnd();
-    clang::SourceLocation RefLoc = E->getLocStart();
+    clang::SourceLocation RefLoc = E->getBeginLoc();
     if (TSI != nullptr) {
       if (const auto ETL =
               TSI->getTypeLoc().getAs<clang::ElaboratedTypeLoc>()) {
@@ -1245,7 +1245,7 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr *E,
       // This loses the right paren without the offset.
       SR.setEnd(RPL.getLocWithOffset(1));
     } else if (TSI != nullptr) {
-      SR.setEnd(TSI->getTypeLoc().getLocEnd().getLocWithOffset(1));
+      SR.setEnd(TSI->getTypeLoc().getEndLoc().getLocWithOffset(1));
     } else {
       SR.setEnd(SR.getEnd().getLocWithOffset(1));
     }
@@ -1321,7 +1321,7 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
         CanQualType::CreateUnsafe(QTCan));
     DDId =
         BuildNodeIdForDependentName(clang::NestedNameSpecifierLoc(), DtorName,
-                                    E->getLocStart(), TyId, EmitRanges::No);
+                                    E->getBeginLoc(), TyId, EmitRanges::No);
   }
   if (DDId) {
     clang::SourceRange SR = E->getSourceRange();
@@ -1367,7 +1367,7 @@ bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr *E) {
   auto StmtId = BuildNodeIdForImplicitStmt(E);
   if (FunctionDecl *New = E->getOperatorNew()) {
     auto NewId = BuildNodeIdForRefToDecl(New);
-    clang::SourceLocation NewLoc = E->getLocStart();
+    clang::SourceLocation NewLoc = E->getBeginLoc();
     if (NewLoc.isFileID()) {
       clang::SourceRange NewRange(
           NewLoc, GetLocForEndOfToken(*Observer.getSourceManager(),
@@ -1435,7 +1435,7 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
       CanQualType::CreateUnsafe(QTCan));
   if (auto LookupId =
           BuildNodeIdForDependentName(clang::NestedNameSpecifierLoc(), CtorName,
-                                      E->getLocStart(), TyId, EmitRanges::No)) {
+                                      E->getBeginLoc(), TyId, EmitRanges::No)) {
     clang::SourceLocation RPL = E->getRParenLoc();
     clang::SourceRange SR = E->getSourceRange();
     // This loses the right paren without the offset.
@@ -1982,7 +1982,7 @@ bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl *Decl) {
   // Use the range covering `namespace` for anonymous namespaces.
   SourceRange NameRange;
   if (Decl->isAnonymousNamespace()) {
-    SourceLocation Loc = Decl->getLocStart();
+    SourceLocation Loc = Decl->getBeginLoc();
     if (Decl->isInline() && Loc.isValid() && Loc.isFileID()) {
       // Skip the `inline` keyword.
       Loc = RangeForSingleTokenFromSourceLocation(
@@ -3419,7 +3419,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     }
   }
   if (!DeclRange.isValid()) {
-    DeclRange = clang::SourceRange(Decl->getLocStart(), Decl->getLocEnd());
+    DeclRange = clang::SourceRange(Decl->getBeginLoc(), Decl->getEndLoc());
   }
   Ostream << "@";
   if (DeclRange.getBegin().isValid()) {
@@ -5349,8 +5349,8 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
   // right brace. We actually want to include the right brace in the range
   // we record, so get the location *after* the right brace.
   const auto AfterBrace =
-      ConsumeToken(Expr->getLocEnd(), clang::tok::r_square).getEnd();
-  const SourceRange SR(Expr->getLocStart(), AfterBrace);
+      ConsumeToken(Expr->getEndLoc(), clang::tok::r_square).getEnd();
+  const SourceRange SR(Expr->getBeginLoc(), AfterBrace);
   if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
     // This does not take dynamic dispatch into account when looking for the
     // method definition.
