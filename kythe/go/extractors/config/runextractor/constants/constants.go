@@ -17,8 +17,6 @@
 // Package constants defines relevant constants common to multiple extractors.
 package constants
 
-import ()
-
 func requiredEnvVars() []string {
 	return []string{"KYTHE_CORPUS", "KYTHE_ROOT_DIRECTORY", "KYTHE_OUTPUT_DIRECTORY"}
 }
