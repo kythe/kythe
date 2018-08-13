@@ -54,7 +54,7 @@ func (g *gradleCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 func (g gradleCommand) verifyFlags() error {
-	for _, key := range constants.RequiredJavaEnvVars() {
+	for _, key := range constants.RequiredJavaEnv {
 		if os.Getenv(key) == "" {
 			return fmt.Errorf("required env var %s not set", key)
 		}

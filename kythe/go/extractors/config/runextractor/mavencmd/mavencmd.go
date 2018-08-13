@@ -54,7 +54,7 @@ func (m *mavenCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 func (m mavenCommand) verifyFlags() error {
-	for _, key := range constants.RequiredJavaEnvVars() {
+	for _, key := range constants.RequiredJavaEnv {
 		if os.Getenv(key) == "" {
 			return fmt.Errorf("required env var %s not set", key)
 		}

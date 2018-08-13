@@ -17,15 +17,9 @@
 // Package constants defines relevant constants common to multiple extractors.
 package constants
 
-func requiredEnvVars() []string {
-	return []string{"KYTHE_CORPUS", "KYTHE_ROOT_DIRECTORY", "KYTHE_OUTPUT_DIRECTORY"}
-}
-
-// RequiredJavaEnvVars returns all of the enivornment variables required for
-// extracting a java corpus, including env vars common for all extractors.
-func RequiredJavaEnvVars() []string {
-	vars := requiredEnvVars()
-	vars = append(vars, "JAVAC_EXTRACTOR_JAR")
-	vars = append(vars, "REAL_JAVAC")
-	return vars
-}
+var (
+	requiredEnv = []string{"KYTHE_CORPUS", "KYTHE_ROOT_DIRECTORY", "KYTHE_OUTPUT_DIRECTORY"}
+	// RequiredJavaEnv is all of the enivornment variables required for
+	// extracting a java corpus, including env vars common for all extractors.
+	RequiredJavaEnv = append(requiredEnv, "JAVAC_EXTRACTOR_JAR", "REAL_JAVAC")
+)
