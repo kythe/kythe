@@ -5,6 +5,10 @@ licenses(["notice"])  # MIT/X derivative license
 
 exports_files(["COPYING"])
 
+CURL_COPTS = [
+    "-Wno-incompatible-pointer-types-discards-qualifiers",
+]
+
 cc_library(
     name = "curl",
     srcs = [
@@ -262,7 +266,7 @@ cc_library(
         "//conditions:default": [
             "-DCURL_MAX_WRITE_SIZE=65536",
         ],
-    }),
+    }) + CURL_COPTS,
     includes = ["include"],
     linkopts = select({
         ":darwin": [
