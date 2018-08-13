@@ -70,7 +70,7 @@ func TestPreProcess(t *testing.T) {
 		eq, diff := testutil.TrimmedEqual(mustReadBytes(t, tfName), mustReadBytes(t, getPath(t, tcase.expectedOutputFile)))
 		if !eq {
 			t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
-			t.Errorf("input: %s", readBytes(t, tfName))
+			t.Errorf("input: %s", mustReadBytes(t, tfName))
 		}
 	}
 }
