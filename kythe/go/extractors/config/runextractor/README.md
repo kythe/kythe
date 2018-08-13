@@ -84,15 +84,18 @@ Maven is handled in Java by
 xml library to parse and modify the mvn `pom.xml` config file in a similar way
 as described above for gradle.
 
+### CMake
+
+CMake repositories are extracted from `compile_commands.json` after building
+the repository with `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`. It then invokes the
+`cxx_extractor` binary as if it were a compiler for each of those commands.
+
+
 #### Future work
 
 In theory if we can find a nice xml library for golang that supports reflecting
 into specific elements and modifying without knowing the whole file structure,
 then we could do away with the Java binary for maven preprocessing.
-
-### CMake
-
-Coming soon™.  https://github.com/google/kythe/issues/2861
 
 ### Bazel
 
@@ -100,4 +103,3 @@ Actually we have no custom work here.  We extract compilation records from Bazel
 using the extra action mechanism.  The extractrepo tool therefore doesn't handle
 Bazel directly, but repositories using Bazel for languages we already support
 should work without extra effort.
-

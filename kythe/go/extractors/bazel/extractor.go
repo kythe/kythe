@@ -293,6 +293,8 @@ func (c *Config) classifyInputs(info *ActionInfo, unit *apb.CompilationUnit) []s
 			vname, ok := c.Rules.Apply(path)
 			if !ok {
 				vname = &spb.VName{Corpus: c.Corpus, Path: path}
+			} else if vname.Corpus == "" {
+				vname.Corpus = c.Corpus
 			}
 
 			// Add the skeleton of a required input carrying the vname.

@@ -3,8 +3,8 @@
 ## `extractrepo.go`
 
 This tool runs a Kythe extraction on a specified repository using an extraction
-configuration as defined in [kythe.proto.ExtractionConfiguration](https://github.com/google/kythe/blob/ecbaa951f2cee00ad9f6e3165b078badf02dd38b/kythe/proto/extraction_config.proto).
-It makes a local clone of the repository via the specified repository URI, and 
+configuration as defined in [kythe.proto.ExtractionConfiguration](https://github.com/google/kythe/blob/master/kythe/proto/extraction_config.proto).
+It makes a local clone of the repository via the specified repository URI, and
 runs an extraction on its contents. It will accept an extraction configuration
 file specified as a CLI argument, otherwise it will search the root of repository
 for a Kythe configuration file named: ".kythe-extraction-config". The extraction
@@ -70,4 +70,3 @@ If you are managing a long list of repos, you can also sepecify a file with one
 repo per line, and instead call:
 
 `repotester -repos_list_file <file> ...`
-
