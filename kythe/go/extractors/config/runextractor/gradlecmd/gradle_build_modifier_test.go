@@ -70,38 +70,40 @@ func TestPreprocess(t *testing.T) {
 	}
 
 	for _, tcase := range testcases {
-		// Copy the file into a temp file.
-		tf, err := ioutil.TempFile("", tcase.inputFile)
-		if err != nil {
-			t.Fatalf("creating temp file: %v", err)
-		}
-		tfName := tf.Name()
-		defer os.Remove(tfName)
-		infile, err := os.Open(getPath(t, tcase.inputFile))
-		if err != nil {
-			t.Fatalf("opening file %s: %v", tcase.inputFile, err)
-		}
-		_, err = io.Copy(tf, infile)
-		if err != nil {
-			t.Fatalf("copying %s: %v", tcase.inputFile, err)
-		}
-		if err := infile.Close(); err != nil {
-			t.Fatalf("closing %s: %v", tcase.inputFile, err)
-		}
-		if err := tf.Close(); err != nil {
-			t.Fatalf("closing temp file: %v", err)
-		}
+		t.Run(tcase.inputFile, func(t *testing.T) {
+			// Copy the file into a temp file.
+			tf, err := ioutil.TempFile("", tcase.inputFile)
+			if err != nil {
+				t.Fatalf("creating temp file: %v", err)
+			}
+			tfName := tf.Name()
+			defer os.Remove(tfName)
+			infile, err := os.Open(getPath(t, tcase.inputFile))
+			if err != nil {
+				t.Fatalf("opening file %s: %v", tcase.inputFile, err)
+			}
+			_, err = io.Copy(tf, infile)
+			if err != nil {
+				t.Fatalf("copying %s: %v", tcase.inputFile, err)
+			}
+			if err := infile.Close(); err != nil {
+				t.Fatalf("closing %s: %v", tcase.inputFile, err)
+			}
+			if err := tf.Close(); err != nil {
+				t.Fatalf("closing temp file: %v", err)
+			}
 
-		// Do the copy if necessary.
-		if err := PreProcessGradleBuild(tfName); err != nil {
-			t.Fatalf("modifying gradle file %s: %v", tcase.inputFile, err)
-		}
+			// Do the copy if necessary.
+			if err := PreProcessGradleBuild(tfName); err != nil {
+				t.Fatalf("modifying gradle file %s: %v", tcase.inputFile, err)
+			}
 
-		// Compare results.
-		eq, diff := testutil.TrimmedEqual(mustReadBytes(t, tfName), mustReadBytes(t, getPath(t, tcase.expectedOutputFile)))
-		if !eq {
-			t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
-		}
+			// Compare results.
+			eq, diff := testutil.TrimmedEqual(mustReadBytes(t, tfName), mustReadBytes(t, getPath(t, tcase.expectedOutputFile)))
+			if !eq {
+				t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
+			}
+		})
 	}
 }
 
