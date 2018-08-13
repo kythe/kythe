@@ -122,7 +122,7 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_protobuf//:protobuf",
-        "@curl",
+        "@se_haxx_curl//:curl",
     ],
 )
 

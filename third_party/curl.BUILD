@@ -207,9 +207,6 @@ cc_library(
         ":darwin": [
             "lib/vtls/darwinssl.c",
         ],
-        ":ios": [
-            "lib/vtls/darwinssl.c",
-        ],
         ":windows": [
             "lib/asyn-thread.c",
             "lib/inet_ntop.c",
@@ -268,16 +265,12 @@ cc_library(
     }),
     includes = ["include"],
     linkopts = select({
-        ":android": [
-            "-pie",
-        ],
         ":darwin": [
             "-Wl,-framework",
             "-Wl,CoreFoundation",
             "-Wl,-framework",
             "-Wl,Security",
         ],
-        ":ios": [],
         ":windows": [
             "ws2_32.lib",
         ],
@@ -289,7 +282,6 @@ cc_library(
     deps = [
         "@net_zlib//:zlib",
     ] + select({
-        ":ios": [],
         ":windows": [],
         "//conditions:default": [
             "@boringssl//:ssl",
@@ -659,11 +651,6 @@ genrule(
 )
 
 config_setting(
-    name = "ios",
-    values = {"crosstool_top": "//tools/osx/crosstool:crosstool"},
-)
-
-config_setting(
     name = "darwin",
     values = {"cpu": "darwin"},
 )
@@ -671,9 +658,4 @@ config_setting(
 config_setting(
     name = "windows",
     values = {"cpu": "x64_windows_msvc"},
-)
-
-config_setting(
-    name = "android",
-    values = {"crosstool_top": "//external:android/crosstool"},
 )

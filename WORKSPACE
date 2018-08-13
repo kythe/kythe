@@ -39,7 +39,7 @@ bind(
 )
 
 new_http_archive(
-    name = "curl",
+    name = "se_haxx_curl",
     build_file = "//third_party:curl.BUILD",
     sha256 = "ff3e80c1ca6a068428726cd7dd19037a47cc538ce58ef61c59587191039b2ca6",
     strip_prefix = "curl-7.49.1",
