@@ -30,15 +30,19 @@ Use:
 
 Because `runextractor` is invoked in a manner not conducive to cleanly passing
 commandline flags, there is non-trivial setup done with environment variables.
-When calling `runextractor`, here are the relevant environment variables:
+When calling `runextractor`, here are the required environment variables:
 
-* **KYTHE_ROOT_DIRECTORY**: The root path for file input to be extracted.
-* **KYTHE_OUTPUT_DIRECTORY**: The path for storing output.
+* **KYTHE_ROOT_DIRECTORY**: The absolute path for file input to be extracted.
+* **KYTHE_OUTPUT_DIRECTORY**: The absolute path for storing output.
+* **KYTHE_CORPUS**: The corpus label for extracted files.
 
-Java relevant env vars:
-* **JAVAC_EXTRACTOR_JAR**: A path to a jar file containing the java extractor.
+For Java there are other required env vars:
+* **JAVAC_EXTRACTOR_JAR**: A absolute path to a jar file containing the java
+  extractor.
 * **REAL_JAVAC**: A path to a "normal" javac binary (not a wrapped binary).
 
+TODO(#156): If we can get rid of docker in docker, working dir relative paths
+  might be easier to work with.
 
 ## Build System Extractors
 

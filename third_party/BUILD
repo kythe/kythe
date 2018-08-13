@@ -40,12 +40,6 @@ filegroup(
 )
 
 cc_library(
-    name = "libcurl",
-    srcs = ["empty.cc"],
-    linkopts = ["-lcurl"],
-)
-
-cc_library(
     name = "libuuid",
     srcs = ["empty.cc"],
     linkopts = select({

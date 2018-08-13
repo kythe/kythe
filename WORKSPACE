@@ -39,6 +39,17 @@ bind(
 )
 
 new_http_archive(
+    name = "se_haxx_curl",
+    build_file = "//third_party:curl.BUILD",
+    sha256 = "ff3e80c1ca6a068428726cd7dd19037a47cc538ce58ef61c59587191039b2ca6",
+    strip_prefix = "curl-7.49.1",
+    urls = [
+        "http://bazel-mirror.storage.googleapis.com/curl.haxx.se/download/curl-7.49.1.tar.gz",
+        "https://curl.haxx.se/download/curl-7.49.1.tar.gz",
+    ],
+)
+
+new_http_archive(
     name = "net_zlib",
     build_file = "third_party/zlib.BUILD",
     sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
@@ -532,4 +543,11 @@ go_repository(
     commit = "aebefd9fcb99f22cd691ef778a12ed68f0e6a1ab",
     custom = "zstd",
     importpath = "github.com/DataDog/zstd",
+)
+
+go_repository(
+    name = "com_github_beevik_etree",
+    commit = "9d7e8feddccb4ed1b8afb54e368bd323d2ff652c",
+    custom = "etree",
+    importpath = "github.com/beevik/etree",
 )
