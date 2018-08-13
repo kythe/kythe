@@ -120,7 +120,7 @@ clang::SourceRange FindNamedCalleeRange(const clang::Expr* expr) {
   if (const auto* callee = clang::dyn_cast<const clang::DeclRefExpr>(
           expr->IgnoreParenImpCasts())) {
     return clang::SourceRange(callee->getLocation(),
-                              callee->getLocEnd().getLocWithOffset(1));
+                              callee->getEndLoc().getLocWithOffset(1));
   }
   return clang::SourceRange();
 }

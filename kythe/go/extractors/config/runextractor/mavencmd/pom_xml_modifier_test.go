@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package gradlecmd
+package mavencmd
 
 import (
 	"io"
@@ -28,45 +28,14 @@ import (
 
 const testDataDir = "testdata"
 
-func TestHasKythe(t *testing.T) {
-	testcases := []struct {
-		fileName string
-		// Whether kythe javac wrapper should be present.
-		hasWrapper bool
-		// Whether we expect an error.
-		wantError bool
-	}{
-		{fileName: "modified-gradle.build", hasWrapper: true},
-		{fileName: "plain-gradle.build"},
-		{fileName: "other-gradle.build", wantError: true},
-	}
-
-	for _, tcase := range testcases {
-		// This should just ignore the file and do nothing.
-		hasWrapper, err := hasKytheWrapper(getPath(t, tcase.fileName))
-		if err != nil && !tcase.wantError {
-			t.Fatalf("Failed to open test gradle file: %v", err)
-		} else if err == nil && tcase.wantError {
-			t.Errorf("Expected a failure for file %s, but didn't get one.", tcase.fileName)
-		} else if tcase.hasWrapper != hasWrapper {
-			var errstr string
-			if tcase.hasWrapper {
-				errstr = "should"
-			} else {
-				errstr = "should not"
-			}
-			t.Errorf("file %s %s already have kythe javac-wrapper", tcase.fileName, errstr)
-		}
-	}
-}
-
-func TestPreprocess(t *testing.T) {
+func TestPreProcess(t *testing.T) {
 	testcases := []struct {
 		inputFile          string
 		expectedOutputFile string
 	}{
-		{"modified-gradle.build", "modified-gradle.build"},
-		{"plain-gradle.build", "modified-gradle.build"},
+		{"modified-pom.xml", "modified-pom.xml"},
+		{"plain-pom.xml", "modified-pom.xml"},
+		{"other-pom.xml", "modified-pom.xml"},
 	}
 
 	for _, tcase := range testcases {
@@ -94,14 +63,15 @@ func TestPreprocess(t *testing.T) {
 			}
 
 			// Do the copy if necessary.
-			if err := PreProcessGradleBuild(tfName); err != nil {
-				t.Fatalf("modifying gradle file %s: %v", tcase.inputFile, err)
+			if err := preProcessPomXML(tfName); err != nil {
+				t.Fatalf("modifying pom.xml %s: %v", tcase.inputFile, err)
 			}
 
 			// Compare results.
 			eq, diff := testutil.TrimmedEqual(mustReadBytes(t, tfName), mustReadBytes(t, getPath(t, tcase.expectedOutputFile)))
 			if !eq {
 				t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
+				t.Errorf("input: %s", mustReadBytes(t, tfName))
 			}
 		})
 	}
