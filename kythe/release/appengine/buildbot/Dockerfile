@@ -60,6 +60,7 @@ ENV PATH=$PATH:/usr/local/go/bin
 
 # Install Bazel min/max versions
 RUN curl -L -o /usr/bin/bazel-0.16.0 https://github.com/bazelbuild/bazel/releases/download/0.16.0/bazel-0.16.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.16.0
+RUN curl -L -o /usr/bin/bazel-0.16.1 https://github.com/bazelbuild/bazel/releases/download/0.16.1/bazel-0.16.1-linux-x86_64 && chmod +x /usr/bin/bazel-0.16.1
 ADD bazel /usr/bin/bazel
 
 ADD cache-llvm.sh /usr/bin/
