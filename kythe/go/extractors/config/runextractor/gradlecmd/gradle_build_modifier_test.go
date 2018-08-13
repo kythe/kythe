@@ -98,7 +98,7 @@ func TestPreprocess(t *testing.T) {
 		}
 
 		// Compare results.
-		eq, diff := testutil.TrimmedEqual(readBytes(t, tfName), readBytes(t, getPath(t, tcase.expectedOutputFile)))
+		eq, diff := testutil.TrimmedEqual(mustReadBytes(t, tfName), mustReadBytes(t, getPath(t, tcase.expectedOutputFile)))
 		if !eq {
 			t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
 		}
@@ -110,7 +110,8 @@ func getPath(t *testing.T, f string) string {
 	return testutil.TestFilePath(t, filepath.Join(testDataDir, f))
 }
 
-func readBytes(t *testing.T, f string) []byte {
+func mustReadBytes(t *testing.T, f string) []byte {
+	t.Helper()
 	b, err := ioutil.ReadFile(f)
 	if err != nil {
 		t.Fatalf("Failed to read %s: %v", f, err)
