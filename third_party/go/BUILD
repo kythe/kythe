@@ -11,6 +11,7 @@ filegroup(
         "@go_cmp//:LICENSE",
         "@go_diff//:LICENSE",
         "@go_errors//:LICENSE",
+        "@go_etree//:LICENSE",
         "@go_github//:LICENSE",
         "@go_google_api//:LICENSE",
         "@go_google_cloud//:LICENSE",

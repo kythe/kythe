@@ -21,9 +21,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
 	"os/exec"
 
 	"kythe.io/kythe/go/extractors/config/runextractor/backup"
+	"kythe.io/kythe/go/extractors/config/runextractor/constants"
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"github.com/google/subcommands"
@@ -52,6 +54,11 @@ func (g *gradleCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 func (g gradleCommand) verifyFlags() error {
+	for _, key := range constants.RequiredJavaEnv {
+		if os.Getenv(key) == "" {
+			return fmt.Errorf("required env var %s not set", key)
+		}
+	}
 	if g.buildFile == "" {
 		return fmt.Errorf("gradle build file (e.g. 'gradle.build') not set")
 	}

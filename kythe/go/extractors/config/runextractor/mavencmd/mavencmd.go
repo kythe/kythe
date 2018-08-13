@@ -21,9 +21,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
 	"os/exec"
 
 	"kythe.io/kythe/go/extractors/config/runextractor/backup"
+	"kythe.io/kythe/go/extractors/config/runextractor/constants"
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"github.com/google/subcommands"
@@ -32,9 +34,8 @@ import (
 type mavenCommand struct {
 	cmdutil.Info
 
-	buildFile       string
-	javacWrapper    string
-	pomPreProcessor string
+	pomXML       string
+	javacWrapper string
 }
 
 // New creates a new subcommand for running maven extraction.
@@ -49,20 +50,20 @@ func New() subcommands.Command {
 // flags for maven extraction.
 func (m *mavenCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&m.javacWrapper, "javac_wrapper", "", "A required executable that wraps javac for Kythe extraction.")
-	// TODO(#2905): Consider replacing this with a native go library, not executing out to a jar.
-	fs.StringVar(&m.pomPreProcessor, "pom_pre_processor", "", "A required jar that preprocesses a maven file in preparation for Kythe Extraction.")
-	fs.StringVar(&m.buildFile, "build_file", "pom.xml", "The config file for a maven repo, defaults to 'pom.xml'")
+	fs.StringVar(&m.pomXML, "pom_xml", "pom.xml", "The config file for a maven repo, defaults to 'pom.xml'")
 }
 
 func (m mavenCommand) verifyFlags() error {
-	if m.buildFile == "" {
-		return fmt.Errorf("maven build file (e.g. 'pom.xml') not set")
+	for _, key := range constants.RequiredJavaEnv {
+		if os.Getenv(key) == "" {
+			return fmt.Errorf("required env var %s not set", key)
+		}
+	}
+	if m.pomXML == "" {
+		return fmt.Errorf("maven pom XML (e.g. 'pom.xml') not set")
 	}
 	if m.javacWrapper == "" {
 		return fmt.Errorf("required -javac_wrapper not set")
-	}
-	if m.pomPreProcessor == "" {
-		return fmt.Errorf("required -pom_pre_processor not set")
 	}
 	return nil
 }
@@ -72,13 +73,13 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 	if err := m.verifyFlags(); err != nil {
 		return m.Fail("invalid flags: %v", err)
 	}
-	tf, err := backup.New(m.buildFile)
+	tf, err := backup.New(m.pomXML)
 	if err != nil {
-		return m.Fail("error backing up %s: %v", m.buildFile, err)
+		return m.Fail("error backing up %s: %v", m.pomXML, err)
 	}
 	defer tf.Release()
-	if err := exec.Command("java", "-jar", m.pomPreProcessor, "-pom", m.buildFile).Run(); err != nil {
-		return m.Fail("error modifying maven build file %s: %v", m.buildFile, err)
+	if err := preProcessPomXML(m.pomXML); err != nil {
+		return m.Fail("error modifying maven pom XML %s: %v", m.pomXML, err)
 	}
 	if err := exec.Command("mvn", "clean", "install",
 		"-Dmaven.compiler.forceJavaCompilerUser=true",
@@ -91,7 +92,7 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 	// up never happening in the future, could consider pulling this block
 	// inside the above error case(s).
 	if err := tf.Restore(); err != nil {
-		return m.Fail("error restoring %s from %s: %v", m.buildFile, tf, err)
+		return m.Fail("error restoring %s from %s: %v", m.pomXML, tf, err)
 	}
 	return subcommands.ExitSuccess
 }
