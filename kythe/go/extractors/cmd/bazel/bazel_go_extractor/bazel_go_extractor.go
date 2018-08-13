@@ -157,6 +157,7 @@ func (*extractor) checkEnv(name, _ string) bool { return name != "PATH" }
 func (e *extractor) fixup(unit *apb.CompilationUnit) error {
 	// Try to infer a unit vname from the output.
 	if vname, ok := e.rules.Apply(e.compileArgs.outputPath); ok {
+		vname.Language = govname.Language
 		unit.VName = vname
 	}
 	return bazel.AddDetail(unit, &gopb.GoDetails{
