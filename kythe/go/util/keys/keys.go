@@ -37,12 +37,16 @@ func Append(key []byte, items ...interface{}) ([]byte, error) {
 	for _, item := range items {
 		switch x := item.(type) {
 		case *spb.VName:
+			// Split into strings based on http://kythe.io/docs/kythe-storage.html ordering
 			expanded = append(expanded, x.Corpus, x.Language, x.Path, x.Root, x.Signature)
 		case int32:
+			// Convert to orderedcode supported int64 type
 			expanded = append(expanded, int64(x))
 		case int:
+			// Convert to orderedcode supported int64 type
 			expanded = append(expanded, int64(x))
 		default:
+			// Assume type is supported; let orderedcode produce error otherwise
 			expanded = append(expanded, x)
 		}
 	}
@@ -59,6 +63,7 @@ func Append(key []byte, items ...interface{}) ([]byte, error) {
 //
 // More detail at: https://godoc.org/github.com/google/orderedcode#Parse
 func Parse(key string, items ...interface{}) (remaining string, err error) {
+	// See Append implementation for details
 	expanded := make([]interface{}, 0, len(items))
 	for _, item := range items {
 		switch x := item.(type) {
