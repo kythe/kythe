@@ -12,6 +12,7 @@ require (
 	github.com/google/go-cmp v0.0.0-20180328201512-5411ab924f9f
 	github.com/google/go-github v0.0.0-20180509124334-8ea2e2657df8
 	github.com/google/go-querystring v0.0.0-20170111101155-53e6ce116135
+	github.com/google/orderedcode v0.0.0-20150706152543-05a79567b685
 	github.com/google/subcommands v0.0.0-20180305171600-a3682377147e
 	github.com/jmhodges/levigo v0.0.0-20161115193449-c42d9e0ca023
 	github.com/minio/highwayhash v0.0.0-20180501080913-85fc8a2dacad
