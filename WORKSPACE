@@ -551,3 +551,9 @@ go_repository(
     custom = "etree",
     importpath = "github.com/beevik/etree",
 )
+
+go_repository(
+    name = "com_github_google_orderedcode",
+    commit = "05a79567b685231e7ca5db3adccddf9ae9dd86df",
+    importpath = "github.com/google/orderedcode",
+)
