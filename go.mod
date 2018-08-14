@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.0.0-20180405132441-01301d1df806
 	github.com/DataDog/zstd v0.0.0-20180321192404-aebefd9fcb99
 	github.com/apache/beam v0.0.0-20180627234850-625bfb536df1
+	github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb
 	github.com/golang/protobuf v0.0.0-20171107165515-b4deda0973fb
 	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
 	github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540
