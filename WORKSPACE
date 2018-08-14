@@ -488,7 +488,7 @@ go_repository(
 
 go_repository(
     name = "com_github_apache_beam",
-    commit = "625bfb536df1b34a21a87a9a350b0dc7c351997f",
+    commit = "e91d7f9a1df1415d231b35907b487a376695139c",
     custom = "beam",
     importpath = "github.com/apache/beam",
 )
@@ -550,4 +550,10 @@ go_repository(
     commit = "9d7e8feddccb4ed1b8afb54e368bd323d2ff652c",
     custom = "etree",
     importpath = "github.com/beevik/etree",
+)
+
+go_repository(
+    name = "com_github_google_orderedcode",
+    commit = "05a79567b685231e7ca5db3adccddf9ae9dd86df",
+    importpath = "github.com/google/orderedcode",
 )
