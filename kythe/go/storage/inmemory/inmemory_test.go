@@ -34,7 +34,7 @@ func TestKeyValueDB_get(t *testing.T) {
 
 	if val, err := db.Get(ctx, []byte("nonExistent"), nil); err == nil {
 		t.Errorf("Found nonExistent value: %q", val)
-	} else if err != io.EOF && err != nil {
+	} else if err != io.EOF {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
