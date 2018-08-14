@@ -84,6 +84,7 @@ func (h Harness) extractor() config.Extractor {
 	return h.Extractor
 }
 
+// TODO(#53): Implement indexing on smoke test harness.
 func (h Harness) indexer() Indexer {
 	if h.Indexer == nil {
 		return EmptyIndexer
