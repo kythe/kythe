@@ -1372,9 +1372,6 @@ bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr *E) {
       }
     }
   }
-
-  BuildNodeIdForType(E->getAllocatedTypeSourceInfo()->getTypeLoc(),
-                     EmitRanges::Yes);
   return true;
 }
 
@@ -3970,14 +3967,14 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForEnumTypeLoc(
   return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
 }
 
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForRecordTypeLoc(
+absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForRecordTypeLoc(
     clang::RecordTypeLoc TL) {
   RecordDecl *Decl = CHECK_NOTNULL(TL.getDecl());
   if (const auto *Spec = dyn_cast<ClassTemplateSpecializationDecl>(Decl)) {
     // TODO(shahms): Don't, you know, do this.
     // Currently the logic for building a node for a template-based TypeLoc is
     // complicated.
-    return *BuildNodeIdForType(TL, EmitRanges::No);
+    return BuildNodeIdForType(TL, EmitRanges::No);
   } else {
     if (RecordDecl *Defn = Decl->getDefinition()) {
       // Special-case linking to a defn instead of using a tnominal.
@@ -4441,46 +4438,9 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                                            TemplateArgsPtrs.size());
         }
       } else /* Not a ClassTemplateSpecializationDecl */ {
-        if (RecordDecl *Defn = Decl->getDefinition()) {
-          Claimability = GraphObserver::Claimability::Unclaimable;
-          if (!TypeAlreadyBuilt) {
-            // Special-case linking to a defn instead of using a tnominal.
-            // This handles the SpanID case as well.
-            if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
-              if (const auto *CTD = RD->getDescribedClassTemplate()) {
-                // Link to the template binder, not the internal class.
-                ID = BuildNodeIdForDecl(CTD);
-              } else {
-                // This is an ordinary CXXRecordDecl.
-                ID = BuildNodeIdForDecl(Defn);
-              }
-            } else {
-              // This is a non-CXXRecordDecl, so it can't be templated.
-              ID = BuildNodeIdForDecl(Defn);
-            }
-          }
-        } else {
-          // Thanks to the ODR, we shouldn't record multiple nominal type nodes
-          // for the same TU: given distinct names, NameIds will be distinct,
-          // there may be only one definition bound to each name, and we
-          // memoize the NodeIds we give to types.
-          if (!TypeAlreadyBuilt) {
-            auto Marks = MarkedSources.Generate(Decl);
-            auto DeclNameId = BuildNameIdForDecl(Decl);
-            ID = Observer.recordNominalTypeNode(
-                DeclNameId,
-                Marks.GenerateMarkedSource(
-                    Observer.nodeIdForNominalTypeNode(DeclNameId)),
-                GetDeclChildOf(Decl));
-          }
-          if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes &&
-              !Decl->isEmbeddedInDeclarator()) {
-            // Still use tnominal refs for C-style "struct foo* bar"
-            // declarations.
-            // TODO(zarko): Add completions for these.
-            SpanID = BuildNodeIdForDecl(Decl);
-          }
-        }
+        return TypeAlreadyBuilt ? Prev->second
+                                : (TypeNodes[Key] = BuildNodeIdForRecordTypeLoc(
+                                       TypeLoc.castAs<RecordTypeLoc>()));
       }
     } break;
     case TypeLoc::Elaborated: {

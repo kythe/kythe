@@ -235,9 +235,11 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       clang::TemplateName Name, clang::SourceLocation L);
 
   // TODO(shahms): Document these. Also make them all const.
-  GraphObserver::NodeId BuildNodeIdForBuiltinTypeLoc(clang::BuiltinTypeLoc TL) const;
+  GraphObserver::NodeId BuildNodeIdForBuiltinTypeLoc(
+      clang::BuiltinTypeLoc TL) const;
   GraphObserver::NodeId BuildNodeIdForEnumTypeLoc(clang::EnumTypeLoc TL);
-  GraphObserver::NodeId BuildNodeIdForRecordTypeLoc(clang::RecordTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForRecordTypeLoc(
+      clang::RecordTypeLoc TL);
   GraphObserver::NodeId BuildNodeIdForObjCInterfaceTypeLoc(
       clang::ObjCInterfaceTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateTypeParmTypeLoc(
