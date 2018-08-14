@@ -1704,8 +1704,8 @@ bool IndexerASTVisitor::VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL) {
 
 bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
   if (const auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
-    auto Claimability = GraphObserver::Claimability::Unclaimable;
     if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
+      auto Claimability = GraphObserver::Claimability::Unclaimable;
       if (!TL.getDecl()->getDefinition()) {
         // TODO(shahms): Only emit this once.
         auto Marks = MarkedSources.Generate(TL.getDecl());
@@ -1726,7 +1726,27 @@ bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
 }
 
 bool IndexerASTVisitor::VisitRecordTypeLoc(clang::RecordTypeLoc TL) {
-  BuildNodeIdForType(TL, EmitRanges::Yes);
+  if (const auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+    if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
+      auto Claimability = GraphObserver::Claimability::Unclaimable;
+      RecordDecl* Decl = CHECK_NOTNULL(TL.getDecl());
+      if (!Decl->getDefinition()) {
+        // TODO(shahms): Only emit this once.
+        auto Marks = MarkedSources.Generate(TL.getDecl());
+        Observer.recordNominalTypeNode(*Id, Marks.GenerateMarkedSource(*Id),
+                                       GetDeclChildOf(TL.getDecl()));
+        Claimability = GraphObserver::Claimability::Claimable;
+        if (!Decl->isEmbeddedInDeclarator()) {
+          // Still use tnominal refs for C-style "struct foo* bar"
+          // declarations.
+          // TODO(zarko): Add completions for these.
+          Id = BuildNodeIdForDecl(Decl);
+        }
+      }
+      Observer.recordTypeSpellingLocation(*RCC, *Id, Claimability,
+                                          IsImplicit(*RCC));
+    }
+  }
   return true;
 }
 
@@ -3950,8 +3970,33 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForEnumTypeLoc(
   return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
 }
 
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCInterfaceTypeLoc(
-    clang::ObjCInterfaceTypeLoc TL) {
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForRecordTypeLoc(
+    clang::RecordTypeLoc TL) {
+  RecordDecl *Decl = CHECK_NOTNULL(TL.getDecl());
+  if (const auto *Spec = dyn_cast<ClassTemplateSpecializationDecl>(Decl)) {
+    // TODO(shahms): Don't, you know, do this.
+    // Currently the logic for building a node for a template-based TypeLoc is
+    // complicated.
+    return *BuildNodeIdForType(TL, EmitRanges::No);
+  } else {
+    if (RecordDecl *Defn = Decl->getDefinition()) {
+      // Special-case linking to a defn instead of using a tnominal.
+      if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
+        if (const auto *CTD = RD->getDescribedClassTemplate()) {
+          // Link to the template binder, not the internal class.
+          return BuildNodeIdForDecl(CTD);
+        }
+      }
+      // This is a non-CXXRecordDecl or non-template.
+      return BuildNodeIdForDecl(Defn);
+    } else {
+      return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
+    }
+  }
+}
+
+GraphObserver::NodeId
+IndexerASTVisitor::BuildNodeIdForObjCInterfaceTypeLoc(clang::ObjCInterfaceTypeLoc TL) {
   const auto *IFace = CHECK_NOTNULL(TL.getIFaceDecl());
   // Link to the implementation if we have one, otherwise link to the
   // interface. If we just have a forward declaration, link to the nominal
