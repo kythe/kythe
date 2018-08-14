@@ -182,14 +182,14 @@ message Node {
   // Special-case for the ubiquitous /kythe/node/kind fact.  This fact will not
   // appear in the fact list above.
   oneof kind {
-    kythe.proto.schema.NodeKind kythe_kind = 4;
+    NodeKind kythe_kind = 4;
     string generic_kind = 5;
   }
 
   // Special-case for the ubiquitous /kythe/subkind fact.  This fact will not
   // appear in the fact list above.
   oneof subkind {
-    kythe.proto.schema.Subkind kythe_subkind = 6;
+    Subkind kythe_subkind = 6;
     string generic_subkind = 7;
   }
 }
@@ -198,8 +198,11 @@ message Node {
 message Fact {
   kythe.proto.VName source = 1;
 
+  // The fact's name.  If standard, a Kythe FactName enum is used.  Otherwise,
+  // the fact name will be represented as a string (as encoded in an
+  // Entry.fact_name).
   oneof name {
-    kythe.proto.schema.FactName kythe_name = 2;
+    FactName kythe_name = 2;
     string generic_name = 3;
   }
 
@@ -211,8 +214,11 @@ message Edge {
   kythe.proto.VName source = 1;
   kythe.proto.VName target = 2;
 
+  // The edge's kind.  If standard, a Kythe EdgeKind enum is used.  Otherwise,
+  // the edge kind will be represented as a string (as encoded in an
+  // Entry.edge_kind without its ordinal).
   oneof kind {
-    kythe.proto.schema.EdgeKind kythe_kind = 3;
+    EdgeKind kythe_kind = 3;
     string generic_kind = 4;
   }
   int32 ordinal = 5;
