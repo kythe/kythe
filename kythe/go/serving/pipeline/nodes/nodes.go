@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package nodes provides Beam transformations over *ppb.Nodes.
+// Package nodes provides Beam transformations over *scpb.Nodes.
 package nodes
 
 import (
@@ -31,7 +31,6 @@ import (
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 
-	ppb "kythe.io/kythe/proto/pipeline_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -44,7 +43,7 @@ func init() {
 	beam.RegisterType(reflect.TypeOf((*combineNodes)(nil)).Elem())
 }
 
-// FromEntries transforms a PCollection of *ppb.Entry protos into *ppb.Nodes.
+// FromEntries transforms a PCollection of *ppb.Entry protos into *scpb.Nodes.
 func FromEntries(s beam.Scope, entries beam.PCollection) beam.PCollection {
 	s = s.Scope("FromEntries")
 	return beam.ParDo(s, embedSourceKey,
@@ -52,12 +51,12 @@ func FromEntries(s beam.Scope, entries beam.PCollection) beam.PCollection {
 			beam.ParDo(s, entryToNode, entries)))
 }
 
-func entryToNode(e *spb.Entry, emit func(*spb.VName, *ppb.Node)) error {
+func entryToNode(e *spb.Entry, emit func(*spb.VName, *scpb.Node)) error {
 	if e.Source == nil {
 		return fmt.Errorf("invalid Entry: source is missing: %+v", e)
 	}
 
-	n := &ppb.Node{}
+	n := &scpb.Node{}
 	if e.EdgeKind == "" {
 		if e.FactName == "" || e.Target != nil {
 			return fmt.Errorf("invalid fact Entry: {%v}", e)
@@ -67,16 +66,16 @@ func entryToNode(e *spb.Entry, emit func(*spb.VName, *ppb.Node)) error {
 		case facts.NodeKind:
 			kind := string(e.FactValue)
 			if k := schema.NodeKind(kind); k != scpb.NodeKind_UNKNOWN_NODE_KIND {
-				n.Kind = &ppb.Node_KytheKind{k}
+				n.Kind = &scpb.Node_KytheKind{k}
 			} else {
-				n.Kind = &ppb.Node_GenericKind{kind}
+				n.Kind = &scpb.Node_GenericKind{kind}
 			}
 		case facts.Subkind:
 			subkind := string(e.FactValue)
 			if k := schema.Subkind(subkind); k != scpb.Subkind_UNKNOWN_SUBKIND {
-				n.Subkind = &ppb.Node_KytheSubkind{k}
+				n.Subkind = &scpb.Node_KytheSubkind{k}
 			} else {
-				n.Subkind = &ppb.Node_GenericSubkind{subkind}
+				n.Subkind = &scpb.Node_GenericSubkind{subkind}
 			}
 		default:
 			n.Fact = append(n.Fact, entryToFact(e))
@@ -93,40 +92,40 @@ func entryToNode(e *spb.Entry, emit func(*spb.VName, *ppb.Node)) error {
 	return nil
 }
 
-func entryToEdge(e *spb.Entry) *ppb.Edge {
+func entryToEdge(e *spb.Entry) *scpb.Edge {
 	kind, ord, _ := edges.ParseOrdinal(e.EdgeKind)
-	g := &ppb.Edge{Target: e.Target, Ordinal: int32(ord)}
+	g := &scpb.Edge{Target: e.Target, Ordinal: int32(ord)}
 	edgeKind := schema.EdgeKind(kind)
 	if edgeKind == scpb.EdgeKind_UNKNOWN_EDGE_KIND {
-		g.Kind = &ppb.Edge_GenericKind{kind}
+		g.Kind = &scpb.Edge_GenericKind{kind}
 	} else {
-		g.Kind = &ppb.Edge_KytheKind{edgeKind}
+		g.Kind = &scpb.Edge_KytheKind{edgeKind}
 	}
 	return g
 }
 
-func entryToFact(e *spb.Entry) *ppb.Fact {
-	f := &ppb.Fact{Value: e.FactValue}
+func entryToFact(e *spb.Entry) *scpb.Fact {
+	f := &scpb.Fact{Value: e.FactValue}
 	name := schema.FactName(e.FactName)
 	if name == scpb.FactName_UNKNOWN_FACT_NAME {
-		f.Name = &ppb.Fact_GenericName{e.FactName}
+		f.Name = &scpb.Fact_GenericName{e.FactName}
 	} else {
-		f.Name = &ppb.Fact_KytheName{name}
+		f.Name = &scpb.Fact_KytheName{name}
 	}
 	return f
 }
 
 var conflictingFactsCounter = beam.NewCounter("kythe.nodes", "conflicting-facts")
 
-// combineNodes is a Beam combiner for *ppb.Nodes.  All facts and edges are
-// merged into a single *ppb.Node.  If a fact has multiple values, an arbitrary
+// combineNodes is a Beam combiner for *scpb.Nodes.  All facts and edges are
+// merged into a single *scpb.Node.  If a fact has multiple values, an arbitrary
 // value is chosen (this includes special-case facts like node kinds).
 // Duplicate edges are removed.
 type combineNodes struct{}
 
-func (combineNodes) CreateAccumulator() *ppb.Node { return &ppb.Node{} }
+func (combineNodes) CreateAccumulator() *scpb.Node { return &scpb.Node{} }
 
-func (c *combineNodes) MergeAccumulators(ctx context.Context, accum, n *ppb.Node) *ppb.Node {
+func (c *combineNodes) MergeAccumulators(ctx context.Context, accum, n *scpb.Node) *scpb.Node {
 	if n.Kind != nil {
 		if accum.Kind != nil &&
 			(accum.GetKytheKind() != n.GetKytheKind() || accum.GetGenericKind() != n.GetGenericKind()) {
@@ -146,11 +145,11 @@ func (c *combineNodes) MergeAccumulators(ctx context.Context, accum, n *ppb.Node
 	return accum
 }
 
-func (c *combineNodes) AddInput(ctx context.Context, accum, n *ppb.Node) *ppb.Node {
+func (c *combineNodes) AddInput(ctx context.Context, accum, n *scpb.Node) *scpb.Node {
 	return c.MergeAccumulators(ctx, accum, n)
 }
 
-func (c *combineNodes) ExtractOutput(ctx context.Context, n *ppb.Node) *ppb.Node {
+func (c *combineNodes) ExtractOutput(ctx context.Context, n *scpb.Node) *scpb.Node {
 	// TODO(schroederc): deduplicate earlier during combine
 	if len(n.Fact) > 1 {
 		sort.Slice(n.Fact, func(a, b int) bool { return compareFacts(n.Fact[a], n.Fact[b]) == compare.LT })
@@ -180,12 +179,12 @@ func (c *combineNodes) ExtractOutput(ctx context.Context, n *ppb.Node) *ppb.Node
 	return n
 }
 
-func compareFacts(a, b *ppb.Fact) compare.Order {
+func compareFacts(a, b *scpb.Fact) compare.Order {
 	return compare.Ints(int(a.GetKytheName()), int(b.GetKytheName())).
 		AndThen(a.GetGenericName(), b.GetGenericName())
 }
 
-func compareEdges(a, b *ppb.Edge) compare.Order {
+func compareEdges(a, b *scpb.Edge) compare.Order {
 	return compare.Ints(int(a.GetKytheKind()), int(b.GetKytheKind())).
 		AndThen(a.GetGenericKind(), b.GetGenericKind()).
 		AndThen(int(a.Ordinal), int(b.Ordinal)).
@@ -195,8 +194,8 @@ func compareEdges(a, b *ppb.Edge) compare.Order {
 			}))
 }
 
-func embedSourceKey(src *spb.VName, n *ppb.Node) *ppb.Node {
-	return &ppb.Node{
+func embedSourceKey(src *spb.VName, n *scpb.Node) *scpb.Node {
+	return &scpb.Node{
 		Source:  src,
 		Kind:    n.Kind,
 		Subkind: n.Subkind,
@@ -205,7 +204,7 @@ func embedSourceKey(src *spb.VName, n *ppb.Node) *ppb.Node {
 	}
 }
 
-// Filter is a beam DoFn that emits *ppb.Nodes matching a set of kinds/subkinds.
+// Filter is a beam DoFn that emits *scpb.Nodes matching a set of kinds/subkinds.
 // Optionally, each processed node's facts/edges will also be filtered to the
 // desired set.
 //
@@ -256,7 +255,7 @@ type Filter struct {
 }
 
 // ProcessElement emits the given Node if it matches the given Filter.
-func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
+func (f *Filter) ProcessElement(n *scpb.Node, emit func(*scpb.Node)) error {
 	if f.FilterByKind != nil && !contains(Kind(n), f.FilterByKind) {
 		return nil
 	} else if f.FilterBySubkind != nil && !contains(Subkind(n), f.FilterBySubkind) {
@@ -274,7 +273,7 @@ func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
 		if len(f.IncludeFacts) == 0 {
 			facts = nil
 		} else {
-			facts = make([]*ppb.Fact, 0, len(n.Fact))
+			facts = make([]*scpb.Fact, 0, len(n.Fact))
 			for _, fact := range n.Fact {
 				if contains(FactName(fact), f.IncludeFacts) {
 					facts = append(facts, fact)
@@ -288,7 +287,7 @@ func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
 		if len(f.IncludeEdges) == 0 {
 			edges = nil
 		} else {
-			edges = make([]*ppb.Edge, 0, len(n.Edge))
+			edges = make([]*scpb.Edge, 0, len(n.Edge))
 			for _, edge := range n.Edge {
 				if contains(EdgeKind(edge), f.IncludeEdges) {
 					edges = append(edges, edge)
@@ -297,7 +296,7 @@ func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
 		}
 	}
 
-	emit(&ppb.Node{
+	emit(&scpb.Node{
 		Source:  n.Source,
 		Kind:    n.Kind,
 		Subkind: n.Subkind,
@@ -308,7 +307,7 @@ func (f *Filter) ProcessElement(n *ppb.Node, emit func(*ppb.Node)) error {
 }
 
 // Kind returns the string representation of the node's kind.
-func Kind(n *ppb.Node) string {
+func Kind(n *scpb.Node) string {
 	if k := n.GetGenericKind(); k != "" {
 		return k
 	}
@@ -316,7 +315,7 @@ func Kind(n *ppb.Node) string {
 }
 
 // Subkind returns the string representation of the node's subkind.
-func Subkind(n *ppb.Node) string {
+func Subkind(n *scpb.Node) string {
 	if k := n.GetGenericSubkind(); k != "" {
 		return k
 	}
@@ -324,7 +323,7 @@ func Subkind(n *ppb.Node) string {
 }
 
 // FactName returns the string representation of the fact's name.
-func FactName(f *ppb.Fact) string {
+func FactName(f *scpb.Fact) string {
 	if k := f.GetGenericName(); k != "" {
 		return k
 	}
@@ -332,7 +331,7 @@ func FactName(f *ppb.Fact) string {
 }
 
 // EdgeKind returns the string representation of the edge's kind.
-func EdgeKind(e *ppb.Edge) string {
+func EdgeKind(e *scpb.Edge) string {
 	if k := e.GetGenericKind(); k != "" {
 		return k
 	}

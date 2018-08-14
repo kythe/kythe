@@ -24,28 +24,27 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
 	"github.com/apache/beam/sdks/go/pkg/beam/x/debug"
 
-	ppb "kythe.io/kythe/proto/pipeline_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 func TestCorpusRoots(t *testing.T) {
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}, {
 		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path2"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}, {
 		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path3"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}, {
 		Source: &spb.VName{Corpus: "corpus", Path: "p/to/file.go"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}, {
 		Source: &spb.VName{Corpus: "corpus2", Path: "p/to/file.go"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}}
 
 	expected := []*srvpb.CorpusRoots{{
@@ -69,21 +68,21 @@ func TestCorpusRoots(t *testing.T) {
 }
 
 func TestDirectories(t *testing.T) {
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}, {
 		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path2"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}, {
 		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path3"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}, {
 		Source: &spb.VName{Corpus: "corpus", Path: "p/to/file.go"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}, {
 		Source: &spb.VName{Corpus: "corpus2", Path: "p/to/file.go"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}}
 
 	expected := []*srvpb.FileDirectory{{

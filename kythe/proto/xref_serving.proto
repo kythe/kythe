@@ -1,0 +1,124 @@
+/*
+ * Copyright 2018 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto.serving.xrefs;
+
+option java_package = "com.google.devtools.kythe.proto";
+
+import "kythe/proto/common.proto";
+import "kythe/proto/schema.proto";
+import "kythe/proto/serving.proto";
+import "kythe/proto/storage.proto";
+
+// Columnar protocol buffer format for FileDecorations.
+//
+// Design: https://github.com/google/kythe/blob/master/kythe/docs/rfc/2909.md
+//
+// Columnar key prefix: "fd"-file
+message FileDecorations {
+  // Index for columnar file decorations data.
+  //
+  // Columnar key: <empty>
+  message Index {
+    string text_encoding = 1;
+  }
+
+  // File contents (possibly partial) for FileDecorations.
+  //
+  // Columnar key: 00-start-end
+  message Text {
+    // Starting offset of this file contents piece.
+    int32 start_offest = 1;
+    // Ending offset of this file contents piece.
+    int32 end_offset = 2;
+
+    bytes text = 3;
+  }
+
+  // File decoration target
+  //
+  // Columnar key: 10-start-end-kind-target
+  message Target {
+    // Starting offset of this file decoration.
+    int32 start_offest = 1;
+    // Ending offset of this file decoration.
+    int32 end_offset = 2;
+
+    oneof kind {
+      kythe.proto.schema.EdgeKind kythe_kind = 3;
+      string generic_kind = 4;
+    }
+
+    kythe.proto.VName target = 5;
+  }
+
+  // Override per file decoration target node.
+  // 
+  // Columnar key: 20-target-kind-override
+  message TargetOverride {
+    enum Kind {
+      OVERRIDES  = 0;
+      EXTENDS    = 1;
+    }
+
+    // File decorations target node marked as overridden.
+    kythe.proto.VName overridden = 1;
+    Kind kind = 2;
+    // Node that overrides the file decoration target node.
+    kythe.proto.VName overriding = 3;
+  }
+
+  // File decorations target node.
+  //
+  // Columnar key: 30-target
+  message TargetNode {
+    kythe.proto.schema.Node node = 1;
+  }
+
+  // File decorations target node definition.
+  //
+  // Columnar key: 40-target
+  message TargetDefinition {
+    kythe.proto.VName definition = 1;
+  }
+
+  // Location for each node mentioned by a TargetDefinition
+  //
+  // Columnar key: 50-definition
+  message DefinitionLocation {
+    kythe.proto.serving.ExpandedAnchor location = 1;
+  }
+
+  // Override data for each overriding node mentioned in a TargetOverride.
+  //
+  // Columnar key: 60-override
+  message Override {
+    kythe.proto.common.MarkedSource marked_source = 1;
+  }
+
+  // Diagnostic per file span
+  //
+  // Columnar key: 70-start-end-hash
+  message Diagnostic {
+    kythe.proto.common.Diagnostic diagnostic = 1;
+  }
+}
+
+message CrossReferences {
+  // TODO(schroederc): https://github.com/google/kythe/pull/2909
+}

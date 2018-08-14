@@ -18,6 +18,8 @@ syntax = "proto3";
 
 package kythe.proto.schema;
 
+import "kythe/proto/storage.proto";
+
 // Index between schema-defined strings and proto enums.
 message Index {
   message EdgeKinds {
@@ -164,4 +166,57 @@ enum EdgeKind {
   TAGGED                   = 41;
   TYPED                    = 42;
   UNDEFINES                = 43;
+}
+
+// A Node represents a Kythe graph node with all its known facts and edges.
+message Node {
+  kythe.proto.VName source = 1;
+
+  // Facts associated with the source VName (making exception for a small number
+  // of special-cases below).
+  repeated Fact fact = 2;
+
+  // Edges associated with the source VName.
+  repeated Edge edge = 3;
+
+  // Special-case for the ubiquitous /kythe/node/kind fact.  This fact will not
+  // appear in the fact list above.
+  oneof kind {
+    kythe.proto.schema.NodeKind kythe_kind = 4;
+    string generic_kind = 5;
+  }
+
+  // Special-case for the ubiquitous /kythe/subkind fact.  This fact will not
+  // appear in the fact list above.
+  oneof subkind {
+    kythe.proto.schema.Subkind kythe_subkind = 6;
+    string generic_subkind = 7;
+  }
+}
+
+// A Fact represents a single Kythe graph node fact.
+message Fact {
+  kythe.proto.VName source = 1;
+
+  oneof name {
+    kythe.proto.schema.FactName kythe_name = 2;
+    string generic_name = 3;
+  }
+
+  bytes value = 4;
+}
+
+// An Edge represents a single Kythe graph edge.
+message Edge {
+  kythe.proto.VName source = 1;
+  kythe.proto.VName target = 2;
+
+  oneof kind {
+    kythe.proto.schema.EdgeKind kythe_kind = 3;
+    string generic_kind = 4;
+  }
+  int32 ordinal = 5;
+
+  Node source_node = 6;
+  Node target_node = 7;
 }
