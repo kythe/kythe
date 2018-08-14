@@ -29,9 +29,13 @@ filegroup(
 proto_library(
     name = "schema_proto",
     srcs = ["schema.proto"],
+    deps = [":storage_proto"],
 )
 
-go_kythe_proto(proto = ":schema_proto")
+go_kythe_proto(
+    proto = ":schema_proto",
+    deps = [":storage_go_proto"],
+)
 
 # Common Kythe protocol buffer definitions shared among other libraries
 proto_library(
@@ -452,6 +456,28 @@ go_kythe_proto(
 java_proto_library(
     name = "serving_java_proto",
     deps = [":serving_proto"],
+)
+
+proto_library(
+    name = "xref_serving_proto",
+    srcs = ["xref_serving.proto"],
+    visibility = ["//kythe/go/serving:__subpackages__"],
+    deps = [
+        ":common_proto",
+        ":schema_proto",
+        ":serving_proto",
+        ":storage_proto",
+    ],
+)
+
+go_kythe_proto(
+    proto = ":xref_serving_proto",
+    deps = [
+        ":common_go_proto",
+        ":schema_go_proto",
+        ":serving_go_proto",
+        ":storage_go_proto",
+    ],
 )
 
 proto_library(
