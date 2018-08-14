@@ -31,7 +31,6 @@ import (
 type reader struct {
 	r *chunkReader
 
-	verified bool
 	metadata *rmpb.RecordsMetadata
 
 	recordReader recordReader

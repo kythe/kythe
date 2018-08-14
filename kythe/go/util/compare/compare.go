@@ -189,11 +189,6 @@ func Bytes(s, t []byte) Order { return Order(bytes.Compare(s, t)) }
 // Ints returns LT if a < b, EQ if a == b, or GT if a > b.
 func Ints(a, b int) Order { return ToOrder(a - b) }
 
-var (
-	emptyVName = new(spb.VName)
-	emptyEntry = new(spb.Entry)
-)
-
 // Options for comparing components of *spb.VName protobuf messages.
 var (
 	ByVNameSignature = By(func(x interface{}) interface{} {
