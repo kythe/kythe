@@ -118,7 +118,7 @@ func copyDir(args copyArgs) error {
 			// Intentionally do nothing for base dir.
 			return nil
 		}
-		if args.skipDir != "" && filepath.HasPrefix(path, args.skipDir) {
+		if args.skipDir != "" && strings.HasPrefix(path, args.skipDir) {
 			return filepath.SkipDir
 		}
 		rel, err := filepath.Rel(args.in, path)
