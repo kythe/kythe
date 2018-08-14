@@ -69,8 +69,8 @@ func init() {
 
 	beam.RegisterType(reflect.TypeOf((*cpb.MarkedSource)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.DecorationPiece)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*ppb.Edge)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*ppb.Node)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*scpb.Edge)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*scpb.Node)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.Reference)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.Entry)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.VName)(nil)).Elem())
@@ -92,7 +92,7 @@ type KytheBeam struct {
 	s beam.Scope
 
 	fileVNames beam.PCollection // *spb.VName
-	nodes      beam.PCollection // *ppb.Node
+	nodes      beam.PCollection // *scpb.Node
 	files      beam.PCollection // *srvpb.File
 	refs       beam.PCollection // *ppb.Reference
 }
@@ -237,7 +237,7 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 	return accum
 }
 
-func convertPipelineNode(node *ppb.Node) *srvpb.Node {
+func convertPipelineNode(node *scpb.Node) *srvpb.Node {
 	n := &srvpb.Node{Ticket: kytheuri.ToString(node.Source)}
 	if kind := nodes.Kind(node); kind != "" {
 		n.Fact = append(n.Fact, &cpb.Fact{
@@ -322,8 +322,8 @@ func fileVName(anchor *spb.VName) *spb.VName {
 	}
 }
 
-func nodeToDecorPiece(key *spb.VName, node func(**ppb.Node) bool, file func(**spb.VName) bool, emit func(*spb.VName, *ppb.DecorationPiece)) {
-	var n, singleNode *ppb.Node
+func nodeToDecorPiece(key *spb.VName, node func(**scpb.Node) bool, file func(**spb.VName) bool, emit func(*spb.VName, *ppb.DecorationPiece)) {
+	var n, singleNode *scpb.Node
 	for node(&n) {
 		singleNode = n
 	}
@@ -332,7 +332,7 @@ func nodeToDecorPiece(key *spb.VName, node func(**ppb.Node) bool, file func(**sp
 	}
 
 	piece := &ppb.DecorationPiece{
-		Piece: &ppb.DecorationPiece_Node{&ppb.Node{
+		Piece: &ppb.DecorationPiece_Node{&scpb.Node{
 			Source:  key,
 			Kind:    singleNode.Kind,
 			Subkind: singleNode.Subkind,
@@ -368,7 +368,7 @@ func defToDecorPiece(node *spb.VName, defs func(**srvpb.ExpandedAnchor) bool, fi
 	}
 }
 
-// Nodes returns all *ppb.Nodes from the Kythe input graph.
+// Nodes returns all *scpb.Nodes from the Kythe input graph.
 func (k *KytheBeam) Nodes() beam.PCollection { return k.nodes }
 
 // References returns all derived *ppb.References from the Kythe input graph.
@@ -401,11 +401,11 @@ func (k *KytheBeam) getFiles() beam.PCollection {
 	return k.files
 }
 
-func keyByPath(n *ppb.Node) (*spb.VName, *ppb.Node) {
+func keyByPath(n *scpb.Node) (*spb.VName, *scpb.Node) {
 	return &spb.VName{Corpus: n.Source.Corpus, Root: n.Source.Root, Path: n.Source.Path}, n
 }
 
-func toRefs(p *spb.VName, file func(**srvpb.File) bool, anchor func(**ppb.Node) bool, emit func(*ppb.Reference)) error {
+func toRefs(p *spb.VName, file func(**srvpb.File) bool, anchor func(**scpb.Node) bool, emit func(*ppb.Reference)) error {
 	var f *srvpb.File
 	if !file(&f) {
 		return nil
@@ -413,7 +413,7 @@ func toRefs(p *spb.VName, file func(**srvpb.File) bool, anchor func(**ppb.Node) 
 	return normalizeAnchors(f, anchor, emit)
 }
 
-func toFiles(n *ppb.Node) (*spb.VName, *srvpb.File) {
+func toFiles(n *scpb.Node) (*spb.VName, *srvpb.File) {
 	var f srvpb.File
 	for _, fact := range n.Fact {
 		switch fact.GetKytheName() {
@@ -426,9 +426,9 @@ func toFiles(n *ppb.Node) (*spb.VName, *srvpb.File) {
 	return n.Source, &f
 }
 
-func normalizeAnchors(file *srvpb.File, anchor func(**ppb.Node) bool, emit func(*ppb.Reference)) error {
+func normalizeAnchors(file *srvpb.File, anchor func(**scpb.Node) bool, emit func(*ppb.Reference)) error {
 	norm := span.NewNormalizer(file.Text)
-	var n *ppb.Node
+	var n *scpb.Node
 	for anchor(&n) {
 		raw, err := toRawAnchor(n)
 		if err != nil {
@@ -467,7 +467,7 @@ func normalizeAnchors(file *srvpb.File, anchor func(**ppb.Node) bool, emit func(
 	return nil
 }
 
-func toRawAnchor(n *ppb.Node) (*srvpb.RawAnchor, error) {
+func toRawAnchor(n *scpb.Node) (*srvpb.RawAnchor, error) {
 	var a srvpb.RawAnchor
 	for _, f := range n.Fact {
 		i, err := strconv.Atoi(string(f.Value))
@@ -493,8 +493,8 @@ func toRawAnchor(n *ppb.Node) (*srvpb.RawAnchor, error) {
 	return &a, nil
 }
 
-func moveSourceToKey(n *ppb.Node) (*spb.VName, *ppb.Node) {
-	return n.Source, &ppb.Node{
+func moveSourceToKey(n *scpb.Node) (*spb.VName, *scpb.Node) {
+	return n.Source, &scpb.Node{
 		Kind:    n.Kind,
 		Subkind: n.Subkind,
 		Fact:    n.Fact,
@@ -533,11 +533,11 @@ func (k *KytheBeam) Edges() (beam.PCollection, beam.PCollection) {
 	return beam.ParDo2(s, groupEdges, beam.CoGroupByKey(s, nodes, edges, rev))
 }
 
-// nodeToReverseEdges emits an *ppb.Edge with its SourceNode populated for each of n's edges.  The
-// key for each *ppb.Edge is its Target VName.
-func nodeToReverseEdges(n *ppb.Node, emit func(*spb.VName, *ppb.Edge)) {
+// nodeToReverseEdges emits an *scpb.Edge with its SourceNode populated for each of n's edges.  The
+// key for each *scpb.Edge is its Target VName.
+func nodeToReverseEdges(n *scpb.Node, emit func(*spb.VName, *scpb.Edge)) {
 	for _, e := range n.Edge {
-		emit(e.Target, &ppb.Edge{
+		emit(e.Target, &scpb.Edge{
 			SourceNode: n,
 			Target:     e.Target,
 			Kind:       e.Kind,
@@ -546,11 +546,11 @@ func nodeToReverseEdges(n *ppb.Node, emit func(*spb.VName, *ppb.Edge)) {
 	}
 }
 
-// nodeToEdges emits an *ppb.Edge for each of n's edges.  The key for each *ppb.Edge is its Target
+// nodeToEdges emits an *scpb.Edge for each of n's edges.  The key for each *scpb.Edge is its Target
 // VName.
-func nodeToEdges(n *ppb.Node, emit func(*spb.VName, *ppb.Edge)) {
+func nodeToEdges(n *scpb.Node, emit func(*spb.VName, *scpb.Edge)) {
 	for _, e := range n.Edge {
-		emit(e.Target, &ppb.Edge{
+		emit(e.Target, &scpb.Edge{
 			Source:  n.Source,
 			Target:  e.Target,
 			Kind:    e.Kind,
@@ -559,16 +559,16 @@ func nodeToEdges(n *ppb.Node, emit func(*spb.VName, *ppb.Edge)) {
 	}
 }
 
-// reverseEdge emits the reverse of each *ppb.Edge, embedding the associated TargetNode.
-func reverseEdge(src *spb.VName, nodeStream func(**ppb.Node) bool, edgeStream func(**ppb.Edge) bool, emit func(*spb.VName, *ppb.Edge)) {
-	var node *ppb.Node
+// reverseEdge emits the reverse of each *scpb.Edge, embedding the associated TargetNode.
+func reverseEdge(src *spb.VName, nodeStream func(**scpb.Node) bool, edgeStream func(**scpb.Edge) bool, emit func(*spb.VName, *scpb.Edge)) {
+	var node *scpb.Node
 	if !nodeStream(&node) {
-		node = &ppb.Node{Source: src}
+		node = &scpb.Node{Source: src}
 	}
 
-	var e *ppb.Edge
+	var e *scpb.Edge
 	for edgeStream(&e) {
-		emit(e.Source, &ppb.Edge{
+		emit(e.Source, &scpb.Edge{
 			Source:     e.Source,
 			TargetNode: node,
 			Kind:       e.Kind,
@@ -579,11 +579,11 @@ func reverseEdge(src *spb.VName, nodeStream func(**ppb.Node) bool, edgeStream fu
 
 // groupEdges emits *srvpb.PagedEdgeSets and *srvpb.EdgePages for a node and its forward/reverse
 // edges.
-func groupEdges(src *spb.VName, nodeStream func(**ppb.Node) bool, edgeStream, revStream func(**ppb.Edge) bool, emitSet func(string, *srvpb.PagedEdgeSet), emitPage func(string, *srvpb.EdgePage)) {
+func groupEdges(src *spb.VName, nodeStream func(**scpb.Node) bool, edgeStream, revStream func(**scpb.Edge) bool, emitSet func(string, *srvpb.PagedEdgeSet), emitPage func(string, *srvpb.EdgePage)) {
 	set := &srvpb.PagedEdgeSet{}
 	// TODO(schroederc): paging
 
-	var node *ppb.Node
+	var node *scpb.Node
 	if nodeStream(&node) {
 		node.Source = src
 		set.Source = convertPipelineNode(node)
@@ -593,7 +593,7 @@ func groupEdges(src *spb.VName, nodeStream func(**ppb.Node) bool, edgeStream, re
 
 	groups := make(map[string]*srvpb.EdgeGroup)
 
-	var edge *ppb.Edge
+	var edge *scpb.Edge
 	for edgeStream(&edge) {
 		kind := nodes.EdgeKind(edge)
 		g, ok := groups[kind]
@@ -676,8 +676,8 @@ func completeDocument(key *spb.VName, docStream func(**srvpb.Document) bool, msS
 }
 
 // nodeToDocs emits a (*spb.VName, *srvpb.Document) pair for each
-// /kythe/edge/documents edges from the given `doc` *ppb.Node.
-func nodeToDocs(n *ppb.Node, emit func(*spb.VName, *srvpb.Document)) {
+// /kythe/edge/documents edges from the given `doc` *scpb.Node.
+func nodeToDocs(n *scpb.Node, emit func(*spb.VName, *srvpb.Document)) {
 	d := &srvpb.Document{}
 	for _, f := range n.Fact {
 		if f.GetKytheName() == scpb.FactName_TEXT {
@@ -693,8 +693,8 @@ func nodeToDocs(n *ppb.Node, emit func(*spb.VName, *srvpb.Document)) {
 	}
 }
 
-// parseMarkedSource parses the /kythe/code fact for each *ppb.Node.
-func parseMarkedSource(n *ppb.Node, emit func(*spb.VName, *cpb.MarkedSource)) error {
+// parseMarkedSource parses the /kythe/code fact for each *scpb.Node.
+func parseMarkedSource(n *scpb.Node, emit func(*spb.VName, *cpb.MarkedSource)) error {
 	for _, f := range n.Fact {
 		if f.GetKytheName() == scpb.FactName_CODE {
 			var ms cpb.MarkedSource
@@ -709,8 +709,8 @@ func parseMarkedSource(n *ppb.Node, emit func(*spb.VName, *cpb.MarkedSource)) er
 }
 
 // nodeToChildren emits a (parent, child) pair for each /kythe/edge/childof edge
-// per *ppb.Node.
-func nodeToChildren(n *ppb.Node, emit func(*spb.VName, *spb.VName)) {
+// per *scpb.Node.
+func nodeToChildren(n *scpb.Node, emit func(*spb.VName, *spb.VName)) {
 	for _, e := range n.Edge {
 		if e.GetKytheKind() == scpb.EdgeKind_CHILD_OF {
 			emit(e.Target, n.Source) // parent -> child
