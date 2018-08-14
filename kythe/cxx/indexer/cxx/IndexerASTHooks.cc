@@ -1738,7 +1738,24 @@ bool IndexerASTVisitor::VisitInjectedClassName(
 
 bool IndexerASTVisitor::VisitObjCInterfaceTypeLoc(
     clang::ObjCInterfaceTypeLoc TL) {
-  BuildNodeIdForType(TL, EmitRanges::Yes);
+  if (const auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+    if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
+      auto Claimability = GraphObserver::Claimability::Unclaimable;
+      const auto *IFace = CHECK_NOTNULL(TL.getIFaceDecl());
+      // Link to the implementation if we have one, otherwise link to the
+      // interface. If we just have a forward declaration, link to the nominal
+      // type node.
+      if (!IFace->getImplementation() && IsObjCForwardDecl(IFace)) {
+        Claimability = GraphObserver::Claimability::Claimable;
+        // TODO(shahms): Only emit this once.
+        auto Marks = MarkedSources.Generate(IFace);
+        Observer.recordNominalTypeNode(*Id, Marks.GenerateMarkedSource(*Id),
+                                       GetDeclChildOf(IFace));
+      }
+      Observer.recordTypeSpellingLocation(*RCC, *Id, Claimability,
+                                          IsImplicit(*RCC));
+    }
+  }
   return true;
 }
 
@@ -2669,7 +2686,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
   if (auto *CRD = dyn_cast<const clang::CXXRecordDecl>(Decl)) {
     for (const auto &BCS : CRD->bases()) {
       if (auto BCSType = BuildNodeIdForType(
-              BCS.getTypeSourceInfo()->getTypeLoc(), EmitRanges::Yes)) {
+              BCS.getTypeSourceInfo()->getTypeLoc(), EmitRanges::No)) {
         Observer.recordExtendsEdge(BodyDeclNode, BCSType.value(),
                                    BCS.isVirtual(), BCS.getAccessSpecifier());
       }
@@ -3933,6 +3950,25 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForEnumTypeLoc(
   return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
 }
 
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCInterfaceTypeLoc(
+    clang::ObjCInterfaceTypeLoc TL) {
+  const auto *IFace = CHECK_NOTNULL(TL.getIFaceDecl());
+  // Link to the implementation if we have one, otherwise link to the
+  // interface. If we just have a forward declaration, link to the nominal
+  // type node.
+  if (const auto *Impl = IFace->getImplementation()) {
+    return BuildNodeIdForDecl(Impl);
+  } else if (!IsObjCForwardDecl(IFace)) {
+    return BuildNodeIdForDecl(IFace);
+  } else {
+    // Thanks to the ODR, we shouldn't record multiple nominal type nodes
+    // for the same TU: given distinct names, NameIds will be distinct,
+    // there may be only one definition bound to each name, and we
+    // memoize the NodeIds we give to types.
+    return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(IFace));
+  }
+}
+
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForTemplateTypeParmTypeLoc(
     clang::TemplateTypeParmTypeLoc TL) {
   if (auto* Decl = FindTemplateTypeParmTypeLocDecl(TL)) {
@@ -4068,6 +4104,11 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                  ? Prev->second
                  : (TypeNodes[Key] = BuildNodeIdForTemplateTypeParmTypeLoc(
                         TypeLoc.castAs<TemplateTypeParmTypeLoc>()));
+    case TypeLoc::ObjCInterface:  // Leaf
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] = BuildNodeIdForObjCInterfaceTypeLoc(
+                        TypeLoc.castAs<ObjCInterfaceTypeLoc>()));
     case TypeLoc::Qualified: {
       const auto &T = TypeLoc.castAs<QualifiedTypeLoc>();
       InEmitRanges = IndexerASTVisitor::EmitRanges::No;
@@ -4594,38 +4635,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         break;
       }
       ID = ApplyBuiltinTypeConstructor("ptr", *PointeeID);
-    } break;
-    case TypeLoc::ObjCInterface: {  // Leaf
-      const auto &ITypeLoc = TypeLoc.castAs<ObjCInterfaceTypeLoc>();
-      const auto *IFace = ITypeLoc.getIFaceDecl();
-      if (!TypeAlreadyBuilt) {
-        // Link to the implementation if we have one, otherwise link to the
-        // interface. If we just have a forward declaration, link to the nominal
-        // type node.
-        if (const auto *Impl = IFace->getImplementation()) {
-          Claimability = GraphObserver::Claimability::Unclaimable;
-          ID = BuildNodeIdForDecl(Impl);
-        } else if (!IsObjCForwardDecl(IFace)) {
-          Claimability = GraphObserver::Claimability::Unclaimable;
-          ID = BuildNodeIdForDecl(IFace);
-        } else {
-          // Thanks to the ODR, we shouldn't record multiple nominal type nodes
-          // for the same TU: given distinct names, NameIds will be distinct,
-          // there may be only one definition bound to each name, and we
-          // memoize the NodeIds we give to types.
-          auto Marks = MarkedSources.Generate(IFace);
-          auto DeclNameId = BuildNameIdForDecl(IFace);
-          ID = Observer.recordNominalTypeNode(
-              DeclNameId,
-              Marks.GenerateMarkedSource(
-                  Observer.nodeIdForNominalTypeNode(DeclNameId)),
-              GetDeclChildOf(IFace));
-        }
-      }
-      if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes &&
-          !IFace->getImplementation() && !IsObjCForwardDecl(IFace)) {
-        SpanID = BuildNodeIdForDecl(IFace);
-      }
     } break;
     case TypeLoc::ObjCObject: {
       const auto &ObjLoc = TypeLoc.castAs<ObjCObjectTypeLoc>();
