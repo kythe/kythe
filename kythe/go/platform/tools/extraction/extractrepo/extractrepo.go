@@ -120,9 +120,6 @@ func isEmptyDir(dir string) bool {
 	return err == nil && len(fi) == 0
 }
 
-// kytheConfigFileName The name of the Kythe extraction config
-const kytheExtractionConfigFile = ".kythe-extraction-config"
-
 func main() {
 	flag.Parse()
 	verifyFlags()
