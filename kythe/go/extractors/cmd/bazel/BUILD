@@ -23,6 +23,7 @@ action_listener(
 extra_action(
     name = "extra_action",
     cmd = ("$(location :bazel_go_extractor)" +
+           " -corpus kythe.io" +
            " $(EXTRA_ACTION_FILE)" +
            " $(output $(ACTION_ID).go.kindex)" +
            " $(location :govnames.json)"),

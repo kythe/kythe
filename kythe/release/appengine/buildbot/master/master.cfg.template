@@ -80,16 +80,16 @@ c['schedulers'] = []
 c['schedulers'].append(schedulers.SingleBranchScheduler(
     name="master",
     change_filter=util.ChangeFilter(category=None, branch='master'),
-    builderNames=["bazel-0.15.2", "bazel-0.14.0", "bazel-opt", "go-1.10.3"]))
+    builderNames=["bazel-0.16.0", "bazel-0.16.1", "bazel-opt", "go-1.10.3"]))
 c['schedulers'].append(schedulers.SingleBranchScheduler(
     name="pull-requests",
     change_filter=util.ChangeFilter(category='pull'),
-    builderNames=["bazel-0.15.2", "bazel-0.14.0", "bazel-opt", "go-1.10.3"]))
+    builderNames=["bazel-0.16.0", "bazel-0.16.1", "bazel-opt", "go-1.10.3"]))
 
 # Allow builders to be "forced"
 c['schedulers'].append(schedulers.ForceScheduler(
     name="force",
-    builderNames=["bazel-0.15.2", "bazel-0.14.0", "bazel-opt", "go-1.10.3"]))
+    builderNames=["bazel-0.16.0", "bazel-0.16.1", "bazel-opt", "go-1.10.3"]))
 
 ####### BUILDERS
 
@@ -121,23 +121,23 @@ build_lock = util.WorkerLock("worker_builds", maxCountForWorker={'local-worker':
 c['builders'] = []
 c['builders'].append(
     util.BuilderConfig(
-        name="bazel-0.15.2",
+        name="bazel-0.16.0",
         workernames=["local-worker"],
-        properties={'bazel_version': '0.15.2'},
+        properties={'bazel_version': '0.16.0'},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(
     util.BuilderConfig(
-        name="bazel-0.14.0",
+        name="bazel-0.16.1",
         workernames=["local-worker"],
-        properties={'bazel_version': '0.14.0'},
+        properties={'bazel_version': '0.16.1'},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(
     util.BuilderConfig(
         name="bazel-opt",
         workernames=["local-worker"],
-        properties={'bazel_version': '0.15.2', 'bazel_flags': ['-c', 'opt']},
+        properties={'bazel_version': '0.16.1', 'bazel_flags': ['-c', 'opt']},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(

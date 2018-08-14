@@ -14,6 +14,7 @@
 
 FROM debian:jessie
 
+RUN echo "deb http://ftp.debian.org/debian jessie-backports main" >>/etc/apt/sources.list
 RUN echo "deb http://ftp.debian.org/debian stretch-backports main" >>/etc/apt/sources.list
 
 RUN apt-get update && \
@@ -31,6 +32,8 @@ RUN apt-get update && \
       gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.5 bison \
       # Kythe misc dependencies
       asciidoc source-highlight graphviz curl parallel && \
+    # Bazel's fallback @local_jdk
+    apt-get -t jessie-backports install -y openjdk-8-jdk && \
     apt-get clean
 
 # Install Buildbot
@@ -56,8 +59,8 @@ RUN wget https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz && \
 ENV PATH=$PATH:/usr/local/go/bin
 
 # Install Bazel min/max versions
-RUN curl -L -o /usr/bin/bazel-0.14.0 https://github.com/bazelbuild/bazel/releases/download/0.14.0/bazel-0.14.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.14.0
-RUN curl -L -o /usr/bin/bazel-0.15.2 https://github.com/bazelbuild/bazel/releases/download/0.15.2/bazel-0.15.2-linux-x86_64 && chmod +x /usr/bin/bazel-0.15.2
+RUN curl -L -o /usr/bin/bazel-0.16.0 https://github.com/bazelbuild/bazel/releases/download/0.16.0/bazel-0.16.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.16.0
+RUN curl -L -o /usr/bin/bazel-0.16.1 https://github.com/bazelbuild/bazel/releases/download/0.16.1/bazel-0.16.1-linux-x86_64 && chmod +x /usr/bin/bazel-0.16.1
 ADD bazel /usr/bin/bazel
 
 ADD cache-llvm.sh /usr/bin/

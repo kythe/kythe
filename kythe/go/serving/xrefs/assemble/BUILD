@@ -17,6 +17,7 @@ go_library(
         "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/nodes",
         "//kythe/go/util/schema/tickets",
+        "//kythe/go/util/span",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:serving_go_proto",

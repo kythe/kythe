@@ -30,7 +30,7 @@ git clone git@github.com:google/kythe.git
 Kythe relies on the following external dependencies:
 
 * go >=1.7
-* clang-3.5
+* clang >=3.6
 * cmake >= 3.4.3
 * node.js
 * asciidoc

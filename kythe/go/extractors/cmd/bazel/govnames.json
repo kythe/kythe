@@ -1,33 +1,34 @@
 [
   {
-    "pattern": "bazel-out/[^/]+/bin/(github\\.com(?:/[-.\\w]+){2})(?:/(.+))$",
+    "pattern": "bazel-out/[^~]*~/(github\\.com(?:/[-.\\w]+){2})(?:/(.+))?\\.a$",
     "vname": {
       "corpus": "@1@",
       "path": "@2@"
     }
   },
   {
-    "pattern": "bazel-out/[^/]+/bin/(bitbucket\\.org/[-.\\w]+/[-\\w]+)\\.a",
-    "vname": {
-      "corpus": "@1@"
-    }
-  },
-  {
-    "pattern": "bazel-out/[^/]+/bin/(bitbucket\\.org(?:/[-.\\w]+){2})(?:/(.*))?",
+    "pattern": "bazel-out/[^~]*~/(bitbucket\\.org(?:/[-.\\w]+){2})(?:/(.+))?\\.a$",
     "vname": {
       "corpus": "@1@",
       "path": "@2@"
     }
   },
   {
-    "pattern": "bazel-out/[^/]+/bin/(golang\\.org(?:/x/\\w+))/(.+)\\.[ax]$",
+    "pattern": "bazel-out/[^~]*~/(golang\\.org(?:/x/\\w+))/(.+)\\.a$",
     "vname": {
       "corpus": "@1@",
       "path": "@2@"
     }
   },
   {
-    "pattern": "bazel-out/[^/]+/(\\w+)/([-.\\w]+)/(.+)$",
+    "pattern": "bazel-out/[^/]+/(\\w+)/(kythe/.+\\.go)$",
+    "vname": {
+      "root": "bazel-out/@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/(\\w+)/[^~]*~/([-.\\w]+)/(.+\\.go)$",
     "vname": {
       "corpus": "@2@",
       "root": "bazel-out/@1@",
@@ -35,18 +36,24 @@
     }
   },
   {
-    "pattern": "external/io_bazel_rules_go_toolchain/(pkg/\\w+_\\w+)(?:/vendor/\\w+)?/(.*)\\.[ax]$",
+    "pattern": "bazel-out/.*stdlib~/pkg/\\w+/vendor/golang_org/x/(\\w+)/(.*)\\.a$",
     "vname": {
-      "corpus": "golang.org",
-      "root": "@1@",
+      "corpus": "golang.org/x/@1@",
       "path": "@2@"
     }
   },
   {
-    "pattern": "(.*)",
+    "pattern": "bazel-out/.*stdlib~/pkg/\\w+/(.*)\\.a$",
     "vname": {
-      "corpus": "kythe.io",
+      "corpus": "golang.org",
       "path": "@1@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/(\\w+)/[^~]*~/([-.\\w]+)/(.+)\\.a$",
+    "vname": {
+      "corpus": "@2@",
+      "path": "@3@"
     }
   }
 ]

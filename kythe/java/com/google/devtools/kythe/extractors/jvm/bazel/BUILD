@@ -18,7 +18,6 @@ extra_action(
 java_binary(
     name = "bazel_jvm_extractor",
     srcs = ["BazelJvmExtractor.java"],
-    data = ["//third_party/javac:javac_jar"],
     main_class = "com.google.devtools.kythe.extractors.jvm.bazel.BazelJvmExtractor",
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/jvm:jvm_extractor",

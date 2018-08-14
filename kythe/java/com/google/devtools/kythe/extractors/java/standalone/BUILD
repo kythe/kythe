@@ -8,9 +8,14 @@ java_binary(
         "AbstractJavacWrapper.java",
         "Javac8Wrapper.java",
     ],
-    data = ["//third_party/javac:javac_jar"],
+    data = [
+        "//third_party/javac:java_compiler_jar",
+        "//third_party/javac:jdk_compiler_jar",
+    ],
     jvm_flags = [
-        "-Xbootclasspath/p:$${RUNPATH}$(location //third_party/javac:javac_jar)",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.api=java.compiler",
+        "--patch-module=java.compiler=$${RUNPATH}$(location //third_party/javac:java_compiler_jar)",
+        "--patch-module=jdk.compiler=$${RUNPATH}$(location //third_party/javac:jdk_compiler_jar)",
     ],
     main_class = "com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper",
     deps = [

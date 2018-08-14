@@ -29,7 +29,6 @@ import (
 
 	"kythe.io/kythe/go/services/filetree"
 	"kythe.io/kythe/go/services/graphstore"
-	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
 	gsrv "kythe.io/kythe/go/serving/graph"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
@@ -42,6 +41,7 @@ import (
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 	"kythe.io/kythe/go/util/sortutil"
+	"kythe.io/kythe/go/util/span"
 
 	"github.com/golang/protobuf/proto"
 
@@ -400,7 +400,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 	var (
 		curFile string
 		file    *srvpb.File
-		norm    *xrefs.Normalizer
+		norm    *span.Normalizer
 		decor   *srvpb.FileDecorations
 		targets map[string]*srvpb.Node
 	)
@@ -453,7 +453,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 		} else {
 			decor.File = fragment.File
 			file = fragment.File
-			norm = xrefs.NewNormalizer(file.Text)
+			norm = span.NewNormalizer(file.Text)
 		}
 
 		return nil

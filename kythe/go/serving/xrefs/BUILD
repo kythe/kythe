@@ -11,6 +11,7 @@ go_library(
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/tickets",
+        "//kythe/go/util/span",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:graph_go_proto",
         "//kythe/proto:internal_go_proto",
