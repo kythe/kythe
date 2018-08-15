@@ -306,13 +306,13 @@ new_http_archive(
 
 http_archive(
     name = "google_bazel_common",
-    strip_prefix = "bazel-common-370b397507d9bab9d9cdad8dfe7e6ccc8c2d0c67",
-    urls = ["https://github.com/google/bazel-common/archive/370b397507d9bab9d9cdad8dfe7e6ccc8c2d0c67.zip"],
+    strip_prefix = "bazel-common-e7580d1db7466e6c8403f7826b7558ea5e99bbfd",
+    urls = ["https://github.com/google/bazel-common/archive/e7580d1db7466e6c8403f7826b7558ea5e99bbfd.zip"],
 )
 
 git_repository(
     name = "com_google_common_flogger",
-    commit = "b08ed99eb6dcd62afe81fd0fafd97299b1870fbf",
+    commit = "1b447d1663ff8703cbdb672a034b4d8e4a68ed70",
     remote = "https://github.com/google/flogger",
 )
 
