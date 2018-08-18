@@ -441,18 +441,21 @@ func (ls *Server) anchorToLoc(w Workspace, a *xpb.Anchor) *lsp.Location {
 }
 
 func spanToRange(s *cpb.Span) *lsp.Range {
-	if s == nil || s.Start == nil || s.End == nil {
+	if s == nil || s.Start == nil {
 		return nil
+	} else if s.End == nil {
+		s.End = s.Start
 	}
 
-	// LineNumber is 1 indexed, so 0 indicates unknown which
-	// means it can't be used for lookups so we discard
+	// LineNumber is 1 indexed, so 0 indicates it's unknown, which in turn
+	// means it can't be used for lookups so we discard these.
 	if s.Start.LineNumber == 0 || s.End.LineNumber == 0 {
 		return nil
 	}
 
 	return &lsp.Range{
 		Start: lsp.Position{
+			// N.B. LSP line numbers are 0-based, Kythe is 1-based.
 			Line:      int(s.Start.LineNumber - 1),
 			Character: int(s.Start.ColumnOffset),
 		},
