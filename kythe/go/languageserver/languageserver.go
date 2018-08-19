@@ -307,12 +307,13 @@ func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) 
 				return []lsp.Location{loc}, nil
 			}
 
-			// There definition range doesn't exist anymore
-			return []lsp.Location{}, nil
+			// Their definition range doesn't exist anymore, or is empty.  If
+			// it's empty fall through and return the original location Kythe
+			// reported.
+			if l.Range.Start != l.Range.End {
+				return []lsp.Location{}, nil
+			}
 		}
-
-		log.Printf("Unable to map definition to local location")
-		// We don't how to map it so we just return the location from Kythe
 		return []lsp.Location{*l}, nil
 	}
 
