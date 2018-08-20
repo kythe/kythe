@@ -25,7 +25,8 @@ def genyacc(name, src, header_out, source_out, extra_outs = []):
       source_out: The generated source file.
       extra_outs: Additional generated outputs.
     """
-    cmd = "bison -o $(@D)/%s $(location %s)" % (source_out, src)
+    arg_adjust = "$$(bison --version | grep -qE '^bison .* 3\..*' && echo -Wno-deprecated)"
+    cmd = "bison %s -o $(@D)/%s $(location %s)" % (arg_adjust, source_out, src)
     native.genrule(
         name = name,
         outs = [source_out, header_out] + extra_outs,
