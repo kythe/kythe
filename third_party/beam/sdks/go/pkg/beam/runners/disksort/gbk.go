@@ -32,6 +32,7 @@ import (
 
 	"github.com/apache/beam/sdks/go/pkg/beam/core/graph"
 	"github.com/apache/beam/sdks/go/pkg/beam/core/runtime/exec"
+	"github.com/apache/beam/sdks/go/pkg/beam/core/typex"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -48,6 +49,8 @@ type CoGBK struct {
 	Edge *graph.MultiEdge
 	Out  exec.Node
 
+	wEnc   exec.WindowEncoder
+	wDec   exec.WindowDecoder
 	keyEnc exec.ElementEncoder
 	keyDec exec.ElementDecoder
 
@@ -79,6 +82,8 @@ func (n *CoGBK) Up(ctx context.Context) error {
 	}
 	setupConcurrencyGroup.Do(func() { concurrencyGroupSem = make(chan struct{}, concurrency) })
 
+	n.wEnc = exec.MakeWindowEncoder(n.Edge.Input[0].From.WindowingStrategy().Fn.Coder())
+	n.wDec = exec.MakeWindowDecoder(n.Edge.Input[0].From.WindowingStrategy().Fn.Coder())
 	n.keyEnc = exec.MakeElementEncoder(n.Edge.Input[0].From.Coder.Components[0])
 	n.keyDec = exec.MakeElementDecoder(n.Edge.Input[0].From.Coder.Components[0])
 
@@ -103,7 +108,7 @@ func (n *CoGBK) Up(ctx context.Context) error {
 	return nil
 }
 
-func (n *CoGBK) StartBundle(ctx context.Context, id string, data exec.DataManager) error {
+func (n *CoGBK) StartBundle(ctx context.Context, id string, data exec.DataContext) error {
 	return n.Out.StartBundle(ctx, id, data)
 }
 
@@ -111,28 +116,40 @@ func (n *CoGBK) ProcessElement(ctx context.Context, elm exec.FullValue, _ ...exe
 	index := elm.Elm.(int)             // index of Inputs
 	value := elm.Elm2.(exec.FullValue) // actual KV<K,V>
 
-	fullKey := exec.FullValue{Elm: value.Elm, Timestamp: value.Timestamp}  // strip V from KV<K,V>
 	fullVal := exec.FullValue{Elm: value.Elm2, Timestamp: value.Timestamp} // strip K from KV<K,V>
-
 	var buf bytes.Buffer
-	if err := n.keyEnc.Encode(fullKey, &buf); err != nil {
-		return fmt.Errorf("failed to encode key %v for CoGBK: %v", elm, err)
-	}
-	key := append([]byte{}, buf.Bytes()...)
-	buf.Reset()
 	if err := n.valEnc[index].Encode(fullVal, &buf); err != nil {
 		return fmt.Errorf("failed to encode val %v for CoGBK: %v", elm, err)
 	}
-	val := buf.Bytes()
+	val := append([]byte{}, buf.Bytes()...)
 
-	shard := int(crc32.ChecksumIEEE(key)) % len(n.sorters)
-	n.mu[shard].Lock()
-	defer n.mu[shard].Unlock()
-	return n.sorters[shard].Add(&iterValue{
-		Key:   key,
-		Index: index,
-		Value: val,
-	})
+	// Encode KV per window
+	for _, w := range elm.Windows {
+		ws := []typex.Window{w}
+		fullKey := exec.FullValue{Elm: value.Elm, Timestamp: value.Timestamp, Windows: ws} // strip V from KV<K,V>
+
+		buf.Reset()
+		if err := n.keyEnc.Encode(fullKey, &buf); err != nil {
+			return fmt.Errorf("failed to encode key %v for CoGBK: %v", elm, err)
+		}
+		if err := n.wEnc.Encode(ws, &buf); err != nil {
+			return fmt.Errorf("failed to encode window %v for CoGBK: %v", w, err)
+		}
+		key := append([]byte{}, buf.Bytes()...)
+
+		shard := int(crc32.ChecksumIEEE(key)) % len(n.sorters)
+		n.mu[shard].Lock()
+		err := n.sorters[shard].Add(&iterValue{
+			Key:   key,
+			Index: index,
+			Value: val,
+		})
+		n.mu[shard].Unlock()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type iterStream struct {
@@ -149,13 +166,13 @@ type iterStream struct {
 	opened bool
 }
 
-func (i *iterStream) Open() exec.Stream {
+func (i *iterStream) Open() (exec.Stream, error) {
 	// TODO(schroederc): add disksort support for reiteration
 	if i.opened {
-		panic("disksort CoGBK does not support ReStreams")
+		return nil, fmt.Errorf("disksort CoGBK does not support ReStreams")
 	}
 	i.opened = true
-	return i
+	return i, nil
 }
 
 func (i *iterStream) Read() (exec.FullValue, error) {
@@ -293,10 +310,16 @@ func (n *CoGBK) FinishBundle(ctx context.Context) error {
 				next = nil
 				keyCounts[i]++
 
-				fullKey, err := n.keyDec.Decode(bytes.NewBuffer(iv.Key))
+				buf := bytes.NewBuffer(iv.Key)
+				fullKey, err := n.keyDec.Decode(buf)
 				if err != nil {
 					return fmt.Errorf("error decoding key %q: %v", string(iv.Key), err)
 				}
+				ws, err := n.wDec.Decode(buf)
+				if err != nil {
+					return fmt.Errorf("error decoding key window %q: %v", string(iv.Key), err)
+				}
+				fullKey.Windows = ws
 
 				values := make([]exec.ReStream, len(n.Edge.Input))
 				for i := 0; i < len(values); i++ {
