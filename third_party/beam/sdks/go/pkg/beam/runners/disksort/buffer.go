@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/apache/beam/sdks/go/pkg/beam/core/runtime/exec"
+	"github.com/apache/beam/sdks/go/pkg/beam/core/typex"
 	"github.com/apache/beam/sdks/go/pkg/beam/log"
 )
 
@@ -43,7 +44,7 @@ func (n *buffer) Up(ctx context.Context) error {
 	return nil
 }
 
-func (n *buffer) StartBundle(ctx context.Context, id string, data exec.DataManager) error {
+func (n *buffer) StartBundle(ctx context.Context, id string, data exec.DataContext) error {
 	n.buf = nil
 	n.done = false
 	return nil
@@ -83,7 +84,7 @@ type wait struct {
 	next exec.Node
 
 	instID string
-	mgr    exec.DataManager
+	mgr    exec.DataContext
 
 	buf   []exec.FullValue
 	ready int  // guards ready
@@ -131,7 +132,7 @@ func (w *wait) Up(ctx context.Context) error {
 	return nil
 }
 
-func (w *wait) StartBundle(ctx context.Context, id string, data exec.DataManager) error {
+func (w *wait) StartBundle(ctx context.Context, id string, data exec.DataContext) error {
 	return nil // done in notify
 }
 
@@ -158,6 +159,13 @@ func (w *wait) FinishBundle(ctx context.Context) error {
 
 func (w *wait) Down(ctx context.Context) error {
 	return nil
+}
+
+func (n *buffer) NewIterable(ctx context.Context, reader exec.SideInputReader, w typex.Window) (exec.ReStream, error) {
+	if !n.done {
+		panic(fmt.Sprintf("buffer[%v] incomplete: %v", n.uid, len(n.buf)))
+	}
+	return &exec.FixedReStream{Buf: n.buf}, nil
 }
 
 func (w *wait) String() string {

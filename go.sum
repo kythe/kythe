@@ -6,8 +6,8 @@ cloud.google.com/go v0.0.0-20180405132441-01301d1df806 h1:JTpoFWTceA0iBjfhpuPja5
 cloud.google.com/go v0.0.0-20180405132441-01301d1df806/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 github.com/DataDog/zstd v0.0.0-20180321192404-aebefd9fcb99 h1:h4MiQG/EzHgRINnRtFkYrXlgidSWgw6yt2wwJUZy4+A=
 github.com/DataDog/zstd v0.0.0-20180321192404-aebefd9fcb99/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
-github.com/apache/beam v0.0.0-20180627234850-625bfb536df1 h1:iY1PVnzoWqzkQjW9mqeD8Km+Cv6eRJGHd8A/0ZwSJGM=
-github.com/apache/beam v0.0.0-20180627234850-625bfb536df1/go.mod h1:/8NX3Qi8vGstDLLaeaU7+lzVEu/ACaQhYjeefzQ0y1o=
+github.com/apache/beam v0.0.0-20180818234836-f31b789d591f h1:JSs6+f/gC5hf31dYCS2cpoDt8+rwMxvDD/E6+tE5HIE=
+github.com/apache/beam v0.0.0-20180818234836-f31b789d591f/go.mod h1:/8NX3Qi8vGstDLLaeaU7+lzVEu/ACaQhYjeefzQ0y1o=
 github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb h1:7UqUs7q4Iir6wMDedPXDB6uaPkuQv0oGrDoTydZyxG0=
 github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb/go.mod h1:r8Aw8JqVegEf0w2fDnATrX9VpkMcyFeM0FhwO62wh+A=
 github.com/golang/protobuf v0.0.0-20171107165515-b4deda0973fb h1:Xy9W6nssiKgvOCRSF7ohlJwwp0pk0BPH0LLS7u0B9to=

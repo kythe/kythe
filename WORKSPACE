@@ -488,7 +488,7 @@ go_repository(
 
 go_repository(
     name = "com_github_apache_beam",
-    commit = "625bfb536df1b34a21a87a9a350b0dc7c351997f",
+    commit = "f31b789d591f7b8f6f96899a79fb6edf45ebcd34",
     custom = "beam",
     importpath = "github.com/apache/beam",
 )
