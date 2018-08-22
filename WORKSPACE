@@ -1,5 +1,7 @@
 workspace(name = "io_kythe")
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
