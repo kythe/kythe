@@ -33,6 +33,7 @@ import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
+import com.google.devtools.kythe.util.JsonUtil;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistry;
 import java.io.File;
@@ -49,17 +50,30 @@ import java.util.zip.ZipFile;
 
 /** Java CompilationUnit extractor using Bazel's extra_action feature. */
 public class JavaExtractor {
+
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+  private static final String KZIP_OUTPUT_FORMAT = "kzip";
+  private static final String KINDEX_OUTPUT_FORMAT = "kindex";
 
   public static void main(String[] args) throws IOException, ExtractionException {
-    if (args.length != 3) {
-      System.err.println("Usage: java_extractor extra-action-file output-file vname-config");
+    JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
+
+    if (args.length != 4) {
+      System.err.println(
+          "Usage: java_extractor extra-action-file output-file vname-config output-format");
+      System.err.println("output-format may be \"kindex\" or \"kzip\"");
       System.exit(1);
     }
 
     String extraActionPath = args[0];
     String outputPath = args[1];
     String vNamesConfigPath = args[2];
+    String outputFormat = args[3];
+
+    if (!outputFormat.equals(KZIP_OUTPUT_FORMAT) && !outputFormat.equals(KINDEX_OUTPUT_FORMAT)) {
+      System.err.println("output-format must be \"kindex\" or \"kzip\"");
+      System.exit(1);
+    }
 
     ExtensionRegistry registry = ExtensionRegistry.newInstance();
     ExtraActionsBase.registerAllExtensions(registry);
@@ -148,7 +162,11 @@ public class JavaExtractor {
                 javacOpts,
                 jInfo.getOutputjar());
 
-    IndexInfoUtils.writeIndexInfoToFile(description, outputPath);
+    if (outputFormat.equals(KZIP_OUTPUT_FORMAT)) {
+      IndexInfoUtils.writeKzipToFile(description, outputPath);
+    } else {
+      IndexInfoUtils.writeKindexToFile(description, outputPath);
+    }
   }
 
   /** Extracts a source jar and adds all java files in it to the list of sources. */

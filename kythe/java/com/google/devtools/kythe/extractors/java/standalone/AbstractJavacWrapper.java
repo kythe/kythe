@@ -95,18 +95,7 @@ public abstract class AbstractJavacWrapper {
 
         CompilationDescription indexInfo =
             processCompilation(getCleanedUpArguments(args), extractor);
-
-        String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
-        if (!Strings.isNullOrEmpty(outputFile)) {
-          IndexInfoUtils.writeIndexInfoToFile(indexInfo, outputFile);
-        } else {
-          String outputDir = readEnvironmentVariable("KYTHE_OUTPUT_DIRECTORY");
-          if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
-            writeIndexInfoToFile(outputDir, indexInfo);
-          } else {
-            new Archive(outputDir).writeDescription(indexInfo);
-          }
-        }
+        outputIndexInfo(indexInfo);
 
         CompilationUnit compilationUnit = indexInfo.getCompilationUnit();
         if (compilationUnit.getHasCompileErrors()) {
@@ -125,6 +114,28 @@ public abstract class AbstractJavacWrapper {
       System.err.println(Throwables.getStackTraceAsString(e));
       System.exit(2);
     }
+  }
+
+  private static void outputIndexInfo(CompilationDescription indexInfo) throws IOException {
+    String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
+    if (!Strings.isNullOrEmpty(outputFile)) {
+      IndexInfoUtils.writeKindexToFile(indexInfo, outputFile);
+      return;
+    }
+
+    String kzipOutputFile = System.getenv("KYTHE_KZIP_OUTPUT_FILE");
+    if (!Strings.isNullOrEmpty(kzipOutputFile)) {
+      IndexInfoUtils.writeKzipToFile(indexInfo, kzipOutputFile);
+      return;
+    }
+
+    String outputDir = readEnvironmentVariable("KYTHE_OUTPUT_DIRECTORY");
+    if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
+      writeIndexInfoToFile(outputDir, indexInfo);
+      return;
+    }
+
+    new Archive(outputDir).writeDescription(indexInfo);
   }
 
   private static String[] getCleanedUpArguments(String[] args) throws IOException {
@@ -166,7 +177,7 @@ public abstract class AbstractJavacWrapper {
             .replaceAll("^/+|/+$", "")
             .replace('/', '_');
     String path = IndexInfoUtils.getIndexPath(rootDirectory, name).toString();
-    IndexInfoUtils.writeIndexInfoToFile(indexInfo, path);
+    IndexInfoUtils.writeKindexToFile(indexInfo, path);
   }
 
   private boolean passThroughIfAnalysisOnly(String[] args) throws Exception {
