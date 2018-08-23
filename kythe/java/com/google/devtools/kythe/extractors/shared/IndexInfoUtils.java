@@ -54,17 +54,17 @@ public class IndexInfoUtils {
   public static final String KINDEX_FILE_EXT = ".kindex";
   public static final String KZIP_FILE_EXT = ".kzip";
 
-  public static CompilationDescription readIndexInfoFromFile(String indexInfoFilename)
+  public static CompilationDescription readKindexInfoFromFile(String indexInfoFilename)
       throws IOException {
     checkArgument(!Strings.isNullOrEmpty(indexInfoFilename), "indexInfoFilename");
 
     try (InputStream indexInfoInputStream =
         new GZIPInputStream(new FileInputStream(indexInfoFilename))) {
-      return readIndexInfoFromStream(indexInfoInputStream);
+      return readKindexInfoFromStream(indexInfoInputStream);
     }
   }
 
-  public static CompilationDescription readIndexInfoFromStream(InputStream inputStream)
+  public static CompilationDescription readKindexInfoFromStream(InputStream inputStream)
       throws IOException {
     checkNotNull(inputStream, "inputStream");
 
@@ -79,6 +79,16 @@ public class IndexInfoUtils {
       fileContents.add(FileData.parseFrom(codedStream.readBytes()));
     }
     return new CompilationDescription(compilationUnit, fileContents);
+  }
+
+  public static Collection<CompilationDescription> readKZip(String path)
+      throws IOException, KZipException {
+    KZip.Reader reader = new KZipReader(new File(path));
+    List<CompilationDescription> compilations = new ArrayList<>();
+    for (IndexedCompilation indexedCompilation : reader.scan()) {
+      compilations.add(indexedCompilationToCompilationDescription(indexedCompilation, reader));
+    }
+    return compilations;
   }
 
   private static CompilationDescription indexedCompilationToCompilationDescription(

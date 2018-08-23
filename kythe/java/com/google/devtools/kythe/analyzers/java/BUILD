@@ -82,6 +82,7 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
         "//kythe/java/com/google/devtools/kythe/platform/java",
+        "//kythe/java/com/google/devtools/kythe/platform/kzip",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
