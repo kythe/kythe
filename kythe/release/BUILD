@@ -45,12 +45,14 @@ genrule(
     ],
     outs = [
         "kythe-" + release_version + ".tar.gz",
-        "kythe-" + release_version + ".tar.gz.md5",
+        "kythe-" + release_version + ".tar.gz.sha256",
     ],
     cmd = " ".join([
         "export GENDIR=$(GENDIR);",
         "export BINDIR=$(BINDIR);",
-        "$(location package_release.sh) $(location kythe-" + release_version + ".tar.gz)",
+        "$(location package_release.sh)",
+        "$(location //kythe/go/platform/tools/shasum_tool)",
+        "$(location kythe-" + release_version + ".tar.gz)",
         "$(locations misc)",
         "--cp $(location java_indexer) indexers/java_indexer.jar",
         "--cp $(location jvm_indexer) indexers/jvm_indexer.jar",
@@ -71,7 +73,10 @@ genrule(
     ]),
     heuristic_label_expansion = False,
     tags = ["manual"],
-    tools = ["package_release.sh"],
+    tools = [
+        "package_release.sh",
+        "//kythe/go/platform/tools/shasum_tool"
+    ],
 )
 
 filegroup(
@@ -89,11 +94,16 @@ sh_test(
     srcs = ["release_test.sh"],
     data = [
         ":release",
+        "//kythe/go/platform/tools/shasum_tool",
         "//kythe/testdata:entries",
         "//kythe/testdata:test.kindex",
         "//third_party/guava",
         "@com_github_stedolan_jq//:jq",
     ],
+    # Since go binaries are not located at their bazel target path (//go/binary
+    # might be in bazel-out/go/binary/host/text/binary), pass the actual
+    # location of the binary directly to the shell script.
+    args = ["$(location //kythe/go/platform/tools/shasum_tool)"],
     tags = [
         "local",
         "manual",
