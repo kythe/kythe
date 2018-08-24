@@ -50,19 +50,19 @@ public final class KZipReader implements KZip.Reader {
   }
 
   private static String getRootPrefix(ZipFile zipFile) {
-    Enumeration<? extends ZipEntry> zipEntires = zipFile.entries();
-    if (!zipEntires.hasMoreElements()) {
+    Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
+    if (!zipEntries.hasMoreElements()) {
       throw new KZipException("missing root entry");
     }
-    ZipEntry root = zipEntires.nextElement();
+    ZipEntry root = zipEntries.nextElement();
     if (!root.isDirectory()) {
       throw new KZipException("invalid root entry: " + root.getName());
     }
     String rootPrefix = root.getName();
 
     // Make sure each path in the kzip has the same root.
-    while (zipEntires.hasMoreElements()) {
-      ZipEntry zipEntry = zipEntires.nextElement();
+    while (zipEntries.hasMoreElements()) {
+      ZipEntry zipEntry = zipEntries.nextElement();
       if (!zipEntry.getName().startsWith(rootPrefix)) {
         throw new KZipException("Invalid entry (bad root): " + zipEntry.getName());
       }
@@ -72,9 +72,10 @@ public final class KZipReader implements KZip.Reader {
 
   @Override
   public Iterator<Analysis.IndexedCompilation> scan() {
-    String unitPrefix = KZip.getUnitsPath(rootPrefix, "");
+    String unitPrefix = KZip.getUnitsPath(rootPrefix, "/");
     return zipFile
         .stream()
+        .filter(entry -> !entry.isDirectory())
         .filter(entry -> entry.getName().startsWith(unitPrefix))
         .map(this::readUnit)
         .iterator();

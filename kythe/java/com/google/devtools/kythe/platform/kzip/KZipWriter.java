@@ -53,9 +53,9 @@ public final class KZipWriter implements KZip.Writer {
 
   @Override
   public String writeUnit(Analysis.IndexedCompilation compilation) throws IOException {
+    String digest = KZip.DATA_DIGEST.hashBytes(compilation.getUnit().toByteArray()).toString();
     byte[] jsonData =
         gson.toJson(compilation, Analysis.IndexedCompilation.class).getBytes(KZip.DATA_CHARSET);
-    String digest = KZip.DATA_DIGEST.hashBytes(jsonData).toString();
     String compilationPath = KZip.getUnitsPath(ROOT_PREFIX, digest);
     appendZip(jsonData, compilationPath);
     return digest;

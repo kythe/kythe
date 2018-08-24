@@ -71,12 +71,14 @@ public class KZip {
     Iterator<Analysis.IndexedCompilation> scan();
 
     /**
-     * Returns the compilation record corresponding to the given unit digest or empty if it cannot
-     * be found.
+     * Returns the compilation record corresponding to the given unit digest. Throws a
+     * {@link KZipException} if the unit cannot be read.
      */
     IndexedCompilation readUnit(String unitDigest);
 
-    /** Reads and returns the requested file data or empty if it cannot be found. */
+    /** Reads and returns the requested file data. Throws a {@link KZipException} if the file cannot
+     * be read.
+     */
     byte[] readFile(String fileDigest);
   }
 

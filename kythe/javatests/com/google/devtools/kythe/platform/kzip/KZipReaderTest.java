@@ -20,7 +20,9 @@ import static junit.framework.TestCase.fail;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.devtools.kythe.proto.Analysis;
+import com.google.devtools.kythe.proto.Analysis.IndexedCompilation;
 import com.google.devtools.kythe.util.JsonUtil;
+import com.google.gson.JsonParseException;
 import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.util.HashSet;
@@ -66,6 +68,34 @@ public final class KZipReaderTest {
       fail();
     } catch (KZipException expected) {
     }
+  }
+
+  @Test
+  public void testOpenFailsForGarbageUnit() throws IOException {
+    try {
+      KZipReader reader = new KZipReader(TestDataUtil.getTestFile("garbage_unit.kzip"));
+      // Iterate over the units so we try to read in the garbage.
+      for (Iterator<IndexedCompilation> it = reader.scan(); it.hasNext(); ) {}
+      fail();
+    } catch (JsonParseException expected) {
+    }
+  }
+
+  @Test
+  public void testKZipWithEmptyFileDoesNotCrash() throws IOException {
+    KZipReader reader = new KZipReader(TestDataUtil.getTestFile("stringset_with_empty_file.kzip"));
+    for (Iterator<IndexedCompilation> it = reader.scan(); it.hasNext(); ) {
+      IndexedCompilation compilation = it.next();
+      for (Analysis.CompilationUnit.FileInput fileInput :
+          compilation.getUnit().getRequiredInputList()) {
+        byte[] bytes = reader.readFile(fileInput.getInfo().getDigest());
+        if (bytes.length == 0) {
+          // we have properly read an empty file.
+          return;
+        }
+      }
+    }
+    fail("Never read an empty file");
   }
 
   private static final Set<String> EXPECTED_STRINGSET_FILE_DIGESTS =

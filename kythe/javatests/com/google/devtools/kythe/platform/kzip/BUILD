@@ -4,8 +4,10 @@ java_test(
     srcs = ["KZipReaderTest.java"],
     data = [
             "//kythe/cxx/common/testdata:empty.kzip",
+            "//kythe/cxx/common/testdata:garbage_unit.kzip",
             "//kythe/cxx/common/testdata:malformed.kzip",
             "//kythe/cxx/common/testdata:stringset.kzip",
+            "//kythe/cxx/common/testdata:stringset_with_empty_file.kzip",
     ],
     deps = [
         ":test_util",
@@ -15,6 +17,7 @@ java_test(
         "//kythe/proto:go_java_proto",
         "//third_party/truth",
         "@com_google_guava_guava//jar",
+        "@com_google_code_gson_gson//jar",
         "@com_google_protobuf//:protobuf_java_util",
         "@junit_junit//jar",
     ],
