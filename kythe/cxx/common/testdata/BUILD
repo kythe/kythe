@@ -4,8 +4,10 @@ load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 exports_files([
     "empty.kzip",
+    "garbage_unit.kzip",
     "malformed.kzip",
     "stringset.kzip",
+    "stringset_with_empty_file.kzip",
 ])
 
 filegroup(
