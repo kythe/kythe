@@ -75,7 +75,8 @@ public class KZip {
      */
     IndexedCompilation readUnit(String unitDigest);
 
-    /** Reads and returns the requested file data. Throws a {@link KZipException} if the file cannot
+    /**
+     * Reads and returns the requested file data. Throws a {@link KZipException} if the file cannot
      * be read.
      */
     byte[] readFile(String fileDigest);
