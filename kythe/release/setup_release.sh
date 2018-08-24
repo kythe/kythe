@@ -28,7 +28,7 @@
 #   4) "Draft a new release" at https://github.com/google/kythe/releases
 #   5) Set tag version / release title to the new $VERSION
 #   6) Set description to newest section of RELEASES.md
-#   7) Upload bazel-genfiles/kythe/release/kythe-$VERSION.tar.gz{,.md5}
+#   7) Upload bazel-genfiles/kythe/release/kythe-$VERSION.tar.gz{,.sha256}
 #      These files were generated in step 3.
 #   8) Mark as "pre-release" and "Save draft"
 #   9) Add draft release URL to Pull Request

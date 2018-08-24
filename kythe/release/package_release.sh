@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Script to package a release tar and create its associated .md5 checksum.
+# Script to package a release tar and create its associated .sha256 checksum.
 #
-# Usage: package_release.sh <path-to-output-tar.gz> [package contents]
+# Usage: package_release.sh <shasum_tool> <path-to-output-tar.gz> [package contents]
 #
 # In the simplest case, each file given will be placed in the root of the
 # resulting archive.  The --relpath, --path, and --cp flags change this behavior
@@ -33,7 +33,7 @@
 #
 # Example:
 #   BINDIR=bazel-bin/ \
-#     package_release.sh /tmp/b.tar.gz README.adoc LICENSE \
+#     package_release.sh /path/to/sha /tmp/b.tar.gz README.adoc LICENSE \
 #       --path some/path/for/docs kythe/docs/kythe-{overview,storage}.txt \
 #       --relpaths kythe/docs bazel-bin/kythe/docs/schema/schema.html \
 #       --cp CONTRIBUTING.md kythe/docs/how-to-contribute.md
@@ -46,6 +46,9 @@
 #       kythe-storage.txt
 #       schema.html
 #       how-to-contribute.md
+
+SHASUM_TOOL="$1"
+shift
 
 OUT="$1"
 shift
@@ -117,5 +120,4 @@ done
 
 tar czf "$OUT" -C "$OUT.dir" .
 
-cd "$(dirname "$OUT")"
-md5sum "$(basename "$OUT")" > "$(basename "$OUT").md5"
+$SHASUM_TOOL "$OUT" > "$OUT.sha256"
