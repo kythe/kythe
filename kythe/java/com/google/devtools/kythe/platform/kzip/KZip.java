@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.Iterator;
 
 /**
  * Handles reading from and writing to files in the kzip format, a standard format for storage of
@@ -68,7 +67,7 @@ public class KZip {
   public interface Reader {
 
     /** Returns all the compilation records in the kzip, in unspecified order. */
-    Iterator<Analysis.IndexedCompilation> scan();
+    Iterable<IndexedCompilation> scan();
 
     /**
      * Returns the compilation record corresponding to the given unit digest. Throws a

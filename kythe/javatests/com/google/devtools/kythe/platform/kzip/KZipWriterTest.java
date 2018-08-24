@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import kythe.proto.Go;
@@ -97,8 +96,7 @@ public final class KZipWriterTest {
   private static InMemoryKZip readKZip(File file) throws IOException, KZipException {
     InMemoryKZip inMemoryKZip = new InMemoryKZip();
     KZipReader reader = new KZipReader(file);
-    for (Iterator<Analysis.IndexedCompilation> it = reader.scan(); it.hasNext(); ) {
-      Analysis.IndexedCompilation compilation = it.next();
+    for (Analysis.IndexedCompilation compilation : reader.scan()) {
       Analysis.CompilationUnit unit = compilation.getUnit();
       inMemoryKZip.compilations.add(compilation);
       for (Analysis.CompilationUnit.FileInput input : unit.getRequiredInputList()) {

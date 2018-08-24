@@ -26,7 +26,6 @@ import com.google.gson.JsonParseException;
 import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import kythe.proto.Go;
 import org.junit.Before;
@@ -75,7 +74,7 @@ public final class KZipReaderTest {
     try {
       KZipReader reader = new KZipReader(TestDataUtil.getTestFile("garbage_unit.kzip"));
       // Iterate over the units so we try to read in the garbage.
-      for (Iterator<IndexedCompilation> it = reader.scan(); it.hasNext(); ) {}
+      for (IndexedCompilation compilation :  reader.scan()) {}
       fail();
     } catch (JsonParseException expected) {
     }
@@ -84,8 +83,7 @@ public final class KZipReaderTest {
   @Test
   public void testKZipWithEmptyFileDoesNotCrash() throws IOException {
     KZipReader reader = new KZipReader(TestDataUtil.getTestFile("stringset_with_empty_file.kzip"));
-    for (Iterator<IndexedCompilation> it = reader.scan(); it.hasNext(); ) {
-      IndexedCompilation compilation = it.next();
+    for (IndexedCompilation compilation : reader.scan()) {
       for (Analysis.CompilationUnit.FileInput fileInput :
           compilation.getUnit().getRequiredInputList()) {
         byte[] bytes = reader.readFile(fileInput.getInfo().getDigest());
@@ -118,8 +116,7 @@ public final class KZipReaderTest {
     Set<String> foundFiles = new HashSet<>();
 
     KZipReader reader = new KZipReader(TestDataUtil.getTestFile("stringset.kzip"));
-    for (Iterator<Analysis.IndexedCompilation> it = reader.scan(); it.hasNext(); ) {
-      Analysis.IndexedCompilation cu = it.next();
+    for (IndexedCompilation cu : reader.scan()) {
       numFoundUnits++;
       for (Analysis.CompilationUnit.FileInput file : cu.getUnit().getRequiredInputList()) {
         byte[] fileContents = reader.readFile(file.getInfo().getDigest());

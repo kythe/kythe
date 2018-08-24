@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -71,9 +70,10 @@ public final class KZipReader implements KZip.Reader {
   }
 
   @Override
-  public Iterator<Analysis.IndexedCompilation> scan() {
+  public Iterable<Analysis.IndexedCompilation> scan() {
     String unitPrefix = KZip.getUnitsPath(rootPrefix, "/");
-    return zipFile
+    return () ->
+    zipFile
         .stream()
         .filter(entry -> !entry.isDirectory())
         .filter(entry -> entry.getName().startsWith(unitPrefix))
