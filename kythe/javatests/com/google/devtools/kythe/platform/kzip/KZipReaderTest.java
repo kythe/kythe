@@ -21,20 +21,23 @@ import static junit.framework.TestCase.fail;
 import com.google.common.collect.ImmutableSet;
 import com.google.devtools.kythe.proto.Analysis;
 import com.google.devtools.kythe.proto.Analysis.IndexedCompilation;
+import com.google.devtools.kythe.proto.Go.GoDetails;
 import com.google.devtools.kythe.util.JsonUtil;
 import com.google.gson.JsonParseException;
 import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import kythe.proto.Go;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public final class KZipReaderTest {
 
   private static final JsonFormat.TypeRegistry JSON_TYPE_REGISTRY =
-      JsonFormat.TypeRegistry.newBuilder().add(Go.GoDetails.getDescriptor()).build();
+      JsonFormat.TypeRegistry.newBuilder().add(GoDetails.getDescriptor()).build();
 
   @Before
   public void setup() {
