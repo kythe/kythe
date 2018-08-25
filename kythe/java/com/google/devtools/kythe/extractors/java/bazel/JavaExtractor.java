@@ -57,8 +57,7 @@ public class JavaExtractor {
     JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
 
     if (args.length != 3) {
-      System.err.println(
-          "Usage: java_extractor extra-action-file output-file vname-config");
+      System.err.println("Usage: java_extractor extra-action-file output-file vname-config");
       System.exit(1);
     }
 

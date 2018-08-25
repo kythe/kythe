@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import javax.imageio.event.IIOReadUpdateListener;
 
 /**
  * General logic for a javac-based {@link CompilationUnit} extractor.

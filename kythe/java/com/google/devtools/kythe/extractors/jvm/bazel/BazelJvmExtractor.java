@@ -45,7 +45,7 @@ import java.util.List;
 public class BazelJvmExtractor {
 
   public static void main(String[] args) throws IOException, ExtractionException {
-    if (args.length != 3 && args.length != 4) {
+    if (args.length != 2 && args.length != 3) {
       System.err.println(
           "Usage: bazel_jvm_extractor extra-action-file output-file [vnames-config]");
       System.exit(1);
@@ -82,8 +82,8 @@ public class BazelJvmExtractor {
     Options opts = new Options();
     opts.buildTarget = info.getOwner();
     opts.jarOrClassFiles.addAll(jarFiles);
-    if (args.length == 4) {
-      opts.vnamesConfigFile = Paths.get(args[3]);
+    if (args.length == 3) {
+      opts.vnamesConfigFile = Paths.get(args[2]);
     }
 
     CompilationDescription indexInfo = JvmExtractor.extract(opts);
