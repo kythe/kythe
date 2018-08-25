@@ -48,13 +48,11 @@ public class JarExtractor {
       throws IOException {
     String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
     if (!Strings.isNullOrEmpty(outputFile)) {
-      IndexInfoUtils.writeKindexToFile(indexInfo, outputFile);
-      return;
-    }
-
-    String kzipOutputFile = System.getenv("KYTHE_KZIP_OUTPUT_FILE");
-    if (!Strings.isNullOrEmpty(kzipOutputFile)) {
-      IndexInfoUtils.writeKzipToFile(indexInfo, kzipOutputFile);
+      if (outputFile.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+        IndexInfoUtils.writeKzipToFile(indexInfo, outputFile);
+      } else {
+        IndexInfoUtils.writeKindexToFile(indexInfo, outputFile);
+      }
       return;
     }
 
@@ -66,7 +64,7 @@ public class JarExtractor {
 
     if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
       String name = Hashing.sha256().hashUnencodedChars(Joiner.on(" ").join(args)).toString();
-      String path = IndexInfoUtils.getIndexPath(outputDir, name).toString();
+      String path = IndexInfoUtils.getKindexPath(outputDir, name).toString();
       IndexInfoUtils.writeKindexToFile(indexInfo, path);
       return;
     }

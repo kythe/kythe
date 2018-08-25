@@ -52,28 +52,19 @@ import java.util.zip.ZipFile;
 public class JavaExtractor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-  private static final String KZIP_OUTPUT_FORMAT = "kzip";
-  private static final String KINDEX_OUTPUT_FORMAT = "kindex";
 
   public static void main(String[] args) throws IOException, ExtractionException {
     JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
 
-    if (args.length != 4) {
+    if (args.length != 3) {
       System.err.println(
-          "Usage: java_extractor extra-action-file output-file vname-config output-format");
-      System.err.println("output-format may be \"kindex\" or \"kzip\"");
+          "Usage: java_extractor extra-action-file output-file vname-config");
       System.exit(1);
     }
 
     String extraActionPath = args[0];
     String outputPath = args[1];
     String vNamesConfigPath = args[2];
-    String outputFormat = args[3];
-
-    if (!outputFormat.equals(KZIP_OUTPUT_FORMAT) && !outputFormat.equals(KINDEX_OUTPUT_FORMAT)) {
-      System.err.println("output-format must be \"kindex\" or \"kzip\"");
-      System.exit(1);
-    }
 
     ExtensionRegistry registry = ExtensionRegistry.newInstance();
     ExtraActionsBase.registerAllExtensions(registry);
@@ -162,7 +153,7 @@ public class JavaExtractor {
                 javacOpts,
                 jInfo.getOutputjar());
 
-    if (outputFormat.equals(KZIP_OUTPUT_FORMAT)) {
+    if (outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
       IndexInfoUtils.writeKzipToFile(description, outputPath);
     } else {
       IndexInfoUtils.writeKindexToFile(description, outputPath);

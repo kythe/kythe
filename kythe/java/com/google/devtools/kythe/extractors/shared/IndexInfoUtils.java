@@ -51,7 +51,8 @@ import java.util.zip.GZIPOutputStream;
 /** Utilities to read and write compilation index information in .kindex files. */
 public class IndexInfoUtils {
 
-  public static final String INDEX_FILE_EXT = ".kindex";
+  public static final String KINDEX_FILE_EXT = ".kindex";
+  public static final String KZIP_FILE_EXT = ".kzip";
 
   public static CompilationDescription readIndexInfoFromFile(String indexInfoFilename)
       throws IOException {
@@ -78,16 +79,6 @@ public class IndexInfoUtils {
       fileContents.add(FileData.parseFrom(codedStream.readBytes()));
     }
     return new CompilationDescription(compilationUnit, fileContents);
-  }
-
-  public static Collection<CompilationDescription> readKZip(String path)
-      throws IOException, KZipException {
-    KZip.Reader reader = new KZipReader(new File(path));
-    List<CompilationDescription> compilations = new ArrayList<>();
-    for (IndexedCompilation indexedCompilation : reader.scan()) {
-      compilations.add(indexedCompilationToCompilationDescription(indexedCompilation, reader));
-    }
-    return compilations;
   }
 
   private static CompilationDescription indexedCompilationToCompilationDescription(
@@ -140,7 +131,7 @@ public class IndexInfoUtils {
     }
   }
 
-  public static Path getIndexPath(String rootDirectory, String basename) {
-    return Paths.get(rootDirectory, basename + INDEX_FILE_EXT);
+  public static Path getKindexPath(String rootDirectory, String basename) {
+    return Paths.get(rootDirectory, basename + KINDEX_FILE_EXT);
   }
 }

@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import javax.imageio.event.IIOReadUpdateListener;
 
 /**
  * General logic for a javac-based {@link CompilationUnit} extractor.
@@ -119,13 +120,11 @@ public abstract class AbstractJavacWrapper {
   private static void outputIndexInfo(CompilationDescription indexInfo) throws IOException {
     String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
     if (!Strings.isNullOrEmpty(outputFile)) {
-      IndexInfoUtils.writeKindexToFile(indexInfo, outputFile);
-      return;
-    }
-
-    String kzipOutputFile = System.getenv("KYTHE_KZIP_OUTPUT_FILE");
-    if (!Strings.isNullOrEmpty(kzipOutputFile)) {
-      IndexInfoUtils.writeKzipToFile(indexInfo, kzipOutputFile);
+      if (outputFile.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+        IndexInfoUtils.writeKzipToFile(indexInfo, outputFile);
+      } else {
+        IndexInfoUtils.writeKindexToFile(indexInfo, outputFile);
+      }
       return;
     }
 
@@ -176,7 +175,7 @@ public abstract class AbstractJavacWrapper {
             .trim()
             .replaceAll("^/+|/+$", "")
             .replace('/', '_');
-    String path = IndexInfoUtils.getIndexPath(rootDirectory, name).toString();
+    String path = IndexInfoUtils.getKindexPath(rootDirectory, name).toString();
     IndexInfoUtils.writeKindexToFile(indexInfo, path);
   }
 

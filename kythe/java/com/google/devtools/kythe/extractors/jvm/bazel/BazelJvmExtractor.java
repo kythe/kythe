@@ -43,25 +43,16 @@ import java.util.List;
  * <p>Usage: bazel_jvm_extractor <extra_action_file> <output_file>
  */
 public class BazelJvmExtractor {
-  private static String KINDEX_FILE_TYPE = "kindex";
-  private static String KZIP_FILE_TYPE = "kzip";
 
   public static void main(String[] args) throws IOException, ExtractionException {
     if (args.length != 3 && args.length != 4) {
       System.err.println(
-          "Usage: bazel_jvm_extractor extra-action-file output-file output-type [vnames-config]");
-      System.err.println("output-type can be \"kindex\" or \"kzip\"");
+          "Usage: bazel_jvm_extractor extra-action-file output-file [vnames-config]");
       System.exit(1);
     }
 
     String extraActionPath = args[0];
     String outputPath = args[1];
-    String outputType = args[2];
-
-    if (!outputType.equals(KZIP_FILE_TYPE) && !outputType.equals(KINDEX_FILE_TYPE)) {
-      System.err.println("output-type must be \"kindex\" or \"kzip\"");
-      System.exit(1);
-    }
 
     ExtensionRegistry registry = ExtensionRegistry.newInstance();
     ExtraActionsBase.registerAllExtensions(registry);
@@ -103,7 +94,7 @@ public class BazelJvmExtractor {
       return;
     }
 
-    if (outputType.equals(KZIP_FILE_TYPE)) {
+    if (outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
       IndexInfoUtils.writeKzipToFile(indexInfo, outputPath);
     } else {
       IndexInfoUtils.writeKindexToFile(indexInfo, outputPath);
