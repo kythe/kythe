@@ -99,6 +99,7 @@ public class KZip {
     String writeFile(String data) throws IOException;
 
     /** Flushes and closes the writer, and its underlying stream */
+    @Override
     void close() throws IOException;
   }
 
