@@ -27,7 +27,6 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import com.google.gson.protobuf.ProtoTypeAdapter;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.GeneratedMessageV3;
@@ -69,7 +68,6 @@ public class JsonUtil {
     return builder
         .registerTypeHierarchyAdapter(GeneratedMessageV3.class, new GeneratedMessageV3TypeAdapter())
         .registerTypeHierarchyAdapter(ProtocolMessageEnum.class, new ProtoEnumTypeAdapter())
-        .registerTypeHierarchyAdapter(GeneratedMessage.class, ProtoTypeAdapter.newBuilder().build())
         .registerTypeHierarchyAdapter(ByteString.class, new ByteStringTypeAdapter())
         .registerTypeAdapter(byte[].class, new ByteArrayTypeAdapter())
         .registerTypeHierarchyAdapter(LazyStringList.class, new LazyStringListTypeAdapter());
