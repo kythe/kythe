@@ -53,18 +53,21 @@ RUN wget https://cmake.org/files/v3.11/cmake-3.11.3-Linux-x86_64.sh && \
     rm cmake*.sh
 
 # Install Go
-RUN wget https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz && \
+RUN wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go*.tar.gz && \
     rm -rf go*.tar.gz
 ENV PATH=$PATH:/usr/local/go/bin
 
-# Install Bazel min/max versions
+# Install Bazel minimum supported version
 RUN curl -L -o /usr/bin/bazel-0.16.0 https://github.com/bazelbuild/bazel/releases/download/0.16.0/bazel-0.16.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.16.0
-RUN curl -L -o /usr/bin/bazel-0.16.1 https://github.com/bazelbuild/bazel/releases/download/0.16.1/bazel-0.16.1-linux-x86_64 && chmod +x /usr/bin/bazel-0.16.1
 ADD bazel /usr/bin/bazel
 
+# Pre-cache LLVM
 ADD cache-llvm.sh /usr/bin/
 RUN chmod +x /usr/bin/cache-llvm.sh && cache-llvm.sh --init
+
+# Install latest supported Bazel version
+RUN curl -L -o /usr/bin/bazel-0.16.1 https://github.com/bazelbuild/bazel/releases/download/0.16.1/bazel-0.16.1-linux-x86_64 && chmod +x /usr/bin/bazel-0.16.1
 
 # Buildbot configuration
 ADD bazelrc /root/.bazelrc
