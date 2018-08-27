@@ -18,6 +18,7 @@ package com.google.devtools.kythe.platform.kzip;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.devtools.kythe.proto.Analysis;
+import com.google.devtools.kythe.proto.Go.GoDetails;
 import com.google.devtools.kythe.util.JsonUtil;
 import com.google.protobuf.util.JsonFormat;
 import java.io.File;
@@ -27,14 +28,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import kythe.proto.Go;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public final class KZipWriterTest {
 
   private static final JsonFormat.TypeRegistry JSON_TYPE_REGISTRY =
-      JsonFormat.TypeRegistry.newBuilder().add(Go.GoDetails.getDescriptor()).build();
+      JsonFormat.TypeRegistry.newBuilder().add(GoDetails.getDescriptor()).build();
 
   @Before
   public void setup() {
