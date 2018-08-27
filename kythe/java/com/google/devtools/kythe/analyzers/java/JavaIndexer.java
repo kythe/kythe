@@ -101,6 +101,9 @@ public class JavaIndexer {
         try {
           Collection<CompilationDescription> compilationDescriptions =
               IndexInfoUtils.readKZip(compilationPath);
+          if (config.getIgnoreEmptyKZip() && compilationDescriptions.isEmpty()) {
+            return;
+          }
           if (compilationDescriptions.size() != 1) {
             throw new IllegalArgumentException(
                 "The kzip did not contain exactly 1 CompilationDescription. It contained "
@@ -191,6 +194,11 @@ public class JavaIndexer {
     private boolean ignoreEmptyKIndex;
 
     @Parameter(
+        names = "--ignore_empty_kzip",
+        description = "Ignore empty .kzip files; exit successfully with no output")
+    private boolean ignoreEmptyKZip;
+
+    @Parameter(
         names = {"--out", "-out"},
         description = "Write the entries to this file (or stdout if unspecified)")
     private String outputPath;
@@ -217,6 +225,10 @@ public class JavaIndexer {
 
     public final boolean getIgnoreEmptyKIndex() {
       return ignoreEmptyKIndex;
+    }
+
+    public final boolean getIgnoreEmptyKZip() {
+      return ignoreEmptyKZip;
     }
 
     public final String getOutputPath() {
