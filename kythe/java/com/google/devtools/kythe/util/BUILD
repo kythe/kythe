@@ -49,7 +49,6 @@ java_library(
     name = "json",
     srcs = ["JsonUtil.java"],
     deps = [
-        "//third_party/gson:proto",
         "//third_party/guava",
         "@com_google_code_gson_gson//jar",
         "@com_google_protobuf//:protobuf_java",
