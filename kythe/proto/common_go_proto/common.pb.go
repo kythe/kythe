@@ -73,14 +73,14 @@ var MarkedSource_Kind_name = map[int32]string{
 	8: "PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS",
 }
 var MarkedSource_Kind_value = map[string]int32{
-	"BOX":                                     0,
-	"TYPE":                                    1,
-	"PARAMETER":                               2,
-	"IDENTIFIER":                              3,
-	"CONTEXT":                                 4,
-	"INITIALIZER":                             5,
-	"PARAMETER_LOOKUP_BY_PARAM":               6,
-	"LOOKUP_BY_PARAM":                         7,
+	"BOX":                       0,
+	"TYPE":                      1,
+	"PARAMETER":                 2,
+	"IDENTIFIER":                3,
+	"CONTEXT":                   4,
+	"INITIALIZER":               5,
+	"PARAMETER_LOOKUP_BY_PARAM": 6,
+	"LOOKUP_BY_PARAM":           7,
 	"PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS": 8,
 }
 
