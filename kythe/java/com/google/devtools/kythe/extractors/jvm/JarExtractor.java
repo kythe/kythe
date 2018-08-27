@@ -41,24 +41,34 @@ public class JarExtractor {
       System.exit(2);
     }
 
-    CompilationDescription indexInfo = JvmExtractor.extract(options);
+    outputIndex(JvmExtractor.extract(options), args);
+  }
 
+  private static void outputIndex(CompilationDescription indexInfo, String[] args)
+      throws IOException {
     String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
     if (!Strings.isNullOrEmpty(outputFile)) {
-      IndexInfoUtils.writeIndexInfoToFile(indexInfo, outputFile);
-    } else {
-      String outputDir = System.getenv("KYTHE_OUTPUT_DIRECTORY");
-      if (Strings.isNullOrEmpty(outputDir)) {
-        throw new IllegalArgumentException(
-            "required KYTHE_OUTPUT_FILE or KYTHE_OUTPUT_DIRECTORY environment variable is unset");
-      }
-      if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
-        String name = Hashing.sha256().hashUnencodedChars(Joiner.on(" ").join(args)).toString();
-        String path = IndexInfoUtils.getIndexPath(outputDir, name).toString();
-        IndexInfoUtils.writeIndexInfoToFile(indexInfo, path);
+      if (outputFile.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+        IndexInfoUtils.writeKzipToFile(indexInfo, outputFile);
       } else {
-        new Archive(outputDir).writeDescription(indexInfo);
+        IndexInfoUtils.writeKindexToFile(indexInfo, outputFile);
       }
+      return;
     }
+
+    String outputDir = System.getenv("KYTHE_OUTPUT_DIRECTORY");
+    if (Strings.isNullOrEmpty(outputDir)) {
+      throw new IllegalArgumentException(
+          "required KYTHE_OUTPUT_FILE or KYTHE_OUTPUT_DIRECTORY environment variable is unset");
+    }
+
+    if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
+      String name = Hashing.sha256().hashUnencodedChars(Joiner.on(" ").join(args)).toString();
+      String path = IndexInfoUtils.getKindexPath(outputDir, name).toString();
+      IndexInfoUtils.writeKindexToFile(indexInfo, path);
+      return;
+    }
+
+    new Archive(outputDir).writeDescription(indexInfo);
   }
 }
