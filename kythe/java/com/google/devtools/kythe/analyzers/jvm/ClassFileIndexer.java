@@ -86,7 +86,7 @@ public class ClassFileIndexer {
           visitJarClassFiles(file, classVisitor);
         } else if (fileName.endsWith(CLASS_FILE_EXT)) {
           visitClassFile(file, classVisitor);
-        } else if (fileName.endsWith(IndexInfoUtils.INDEX_FILE_EXT)) {
+        } else if (fileName.endsWith(IndexInfoUtils.KINDEX_FILE_EXT)) {
           CompilationDescription desc = IndexInfoUtils.readIndexInfoFromFile(fileName);
           analyzeCompilation(
               desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()), classVisitor);

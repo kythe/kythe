@@ -10,6 +10,7 @@ java_library(
     ],
     deps = [
         ":file_vnames",
+        "//kythe/java/com/google/devtools/kythe/platform/kzip:kzip",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",

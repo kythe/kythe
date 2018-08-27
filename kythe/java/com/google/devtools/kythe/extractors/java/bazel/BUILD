@@ -33,9 +33,13 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
+        "//kythe/java/com/google/devtools/kythe/util:json",
+        "//kythe/proto:buildinfo_java_proto",
+        "//kythe/proto:java_java_proto",
         "//third_party/bazel:extra_actions_base_java_proto",
         "//third_party/guava",
         "//third_party/javac",
         "@com_google_protobuf//:protobuf_java",
+        "@com_google_protobuf//:protobuf_java_util",
     ],
 )

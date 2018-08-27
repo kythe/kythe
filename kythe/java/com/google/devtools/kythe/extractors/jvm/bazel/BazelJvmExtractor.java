@@ -43,6 +43,7 @@ import java.util.List;
  * <p>Usage: bazel_jvm_extractor <extra_action_file> <output_file>
  */
 public class BazelJvmExtractor {
+
   public static void main(String[] args) throws IOException, ExtractionException {
     if (args.length != 2 && args.length != 3) {
       System.err.println(
@@ -93,6 +94,10 @@ public class BazelJvmExtractor {
       return;
     }
 
-    IndexInfoUtils.writeIndexInfoToFile(indexInfo, outputPath);
+    if (outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+      IndexInfoUtils.writeKzipToFile(indexInfo, outputPath);
+    } else {
+      IndexInfoUtils.writeKindexToFile(indexInfo, outputPath);
+    }
   }
 }
