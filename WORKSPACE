@@ -563,3 +563,7 @@ go_repository(
     commit = "05a79567b685231e7ca5db3adccddf9ae9dd86df",
     importpath = "github.com/google/orderedcode",
 )
+
+load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
+
+external_tools_configure()
