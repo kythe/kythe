@@ -20,10 +20,16 @@ directories:
   kythe/java/com/google/devtools/kythe/analyzers/
   kythe/java/com/google/devtools/kythe/platform/java/helpers
   kythe/java/com/google/devtools/kythe/util
+  kythe/java/com/google/devtools/kythe/extractors/shared
   kythe/javatests/com/google/devtools/kythe/analyzers/
 
 # These could be more precise to have faster sync times.
 targets:
   //kythe/java/com/google/devtools/kythe/analyzers/base/...:all
   //kythe/java/com/google/devtools/kythe/analyzers/java/...:all
+  //kythe/java/com/google/devtools/kythe/analyzers/jvm/...:all
+  //kythe/javatests/com/google/devtools/kythe/analyzers/base/...:all
+  //kythe/javatests/com/google/devtools/kythe/analyzers/java/...:all
+  //kythe/javatests/com/google/devtools/kythe/analyzers/jvm/...:all
+  //kythe/java/com/google/devtools/kythe/extractors/shared
 
