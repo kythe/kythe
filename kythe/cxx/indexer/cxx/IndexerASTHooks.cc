@@ -3971,10 +3971,32 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForRecordTyp
     clang::RecordTypeLoc TL) {
   RecordDecl *Decl = CHECK_NOTNULL(TL.getDecl());
   if (const auto *Spec = dyn_cast<ClassTemplateSpecializationDecl>(Decl)) {
-    // TODO(shahms): Don't, you know, do this.
-    // Currently the logic for building a node for a template-based TypeLoc is
-    // complicated.
-    return BuildNodeIdForType(TL, EmitRanges::No);
+    // Clang doesn't appear to construct TemplateSpecialization
+    // types for non-dependent specializations, instead representing
+    // them as ClassTemplateSpecializationDecls directly.
+    clang::ClassTemplateDecl *SpecializedTemplateDecl =
+        Spec->getSpecializedTemplate();
+    // Link directly to the defn if we have it; otherwise use tnominal.
+    if (SpecializedTemplateDecl->getTemplatedDecl()->getDefinition()) {
+      return BuildNodeIdForDecl(SpecializedTemplateDecl);
+    }
+    auto TemplateName = Observer.nodeIdForNominalTypeNode(
+        BuildNameIdForDecl(SpecializedTemplateDecl));
+    const auto &TAL = Spec->getTemplateArgs();
+    std::vector<GraphObserver::NodeId> TemplateArgs;
+    TemplateArgs.reserve(TAL.size());
+    std::vector<const GraphObserver::NodeId *> TemplateArgsPtrs;
+    TemplateArgsPtrs.resize(TAL.size(), nullptr);
+    for (unsigned A = 0, AE = TAL.size(); A != AE; ++A) {
+      if (auto ArgA =
+              BuildNodeIdForTemplateArgument(TAL[A], Spec->getLocation())) {
+        TemplateArgs.push_back(ArgA.value());
+        TemplateArgsPtrs[A] = &TemplateArgs[A];
+      } else {
+        return absl::nullopt;
+      }
+    }
+    return Observer.nodeIdForTappNode(TemplateName, TemplateArgsPtrs);
   } else {
     if (RecordDecl *Defn = Decl->getDefinition()) {
       // Special-case linking to a defn instead of using a tnominal.
