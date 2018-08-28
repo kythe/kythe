@@ -18,7 +18,7 @@ def asciidoc(name, src, attrs={}, confs=[], data=[], tools=[], tags=None):
     cmd = '\n'.join([
         'export OUTDIR="$$PWD/$(@D)"',
         'export LOGFILE="$$(mktemp -t \"XXXXXXasciidoc\")"',
-        'export PATH',
+        'export PATH="$$PATH:/usr/local/bin/"',
         'trap "rm -f \"$${LOGFILE}\"" EXIT ERR INT',
         "asciidoc %s -o $(@) $(location %s) 2> \"$${LOGFILE}\"" % (' '.join(args), src),
         'cat $${LOGFILE}',
