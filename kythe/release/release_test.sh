@@ -18,6 +18,8 @@ set -o pipefail
 # Test the Kythe release package for basic functionality.
 
 export TMPDIR=${TEST_TMPDIR:?}
+SHASUM_TOOL="$PWD/$1"
+shift
 
 TEST_PORT=9898
 ADDR=localhost:$TEST_PORT
@@ -32,7 +34,12 @@ fi
 
 cd kythe/release
 
-md5sum -c kythe-*.tar.gz.md5
+EXPECTED_SUM=$(cat kythe-*.tar.gz.sha256)
+SUM=$("$SHASUM_TOOL" kythe-*.tar.gz)
+if [[ "$SUM" != "$EXPECTED_SUM" ]]; then
+  echo "Expected digest \"$EXPECTED_SUM\" but got \"$SUM\"."
+  exit 1
+fi
 
 rm -rf "$TMPDIR/release"
 mkdir "$TMPDIR/release"

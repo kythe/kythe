@@ -52,12 +52,15 @@ type compileCommand struct {
 	Directory string
 }
 
+// New creates a new subcommand for running cmake extraction.
 func New() subcommands.Command {
 	return &cmakeCommand{
 		Info: cmdutil.NewInfo("cmake", "extract a repo build with CMake", `documight`),
 	}
 }
 
+// SetFlags implements the subcommands interface and provides command-specific
+// flags for cmake extraction.
 func (c *cmakeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.extractor, "extractor", "", "A required path to the extractor binary to use.")
 	fs.StringVar(&c.sourceDir, "sourcedir", ".", "A required path to the repository root. Defaults to the current directory.")
@@ -79,6 +82,7 @@ func (c *cmakeCommand) verifyFlags() error {
 	return nil
 }
 
+// Execute implements the subcommands interface and runs cmake extraction.
 func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
 	if err := c.verifyFlags(); err != nil {
 		return c.Fail("incorrect flags: %v", err)

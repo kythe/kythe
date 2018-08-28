@@ -307,12 +307,13 @@ func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) 
 				return []lsp.Location{loc}, nil
 			}
 
-			// There definition range doesn't exist anymore
-			return []lsp.Location{}, nil
+			// Their definition range doesn't exist anymore, or is empty.  If
+			// it's empty fall through and return the original location Kythe
+			// reported.
+			if l.Range.Start != l.Range.End {
+				return []lsp.Location{}, nil
+			}
 		}
-
-		log.Printf("Unable to map definition to local location")
-		// We don't how to map it so we just return the location from Kythe
 		return []lsp.Location{*l}, nil
 	}
 
@@ -441,18 +442,21 @@ func (ls *Server) anchorToLoc(w Workspace, a *xpb.Anchor) *lsp.Location {
 }
 
 func spanToRange(s *cpb.Span) *lsp.Range {
-	if s == nil || s.Start == nil || s.End == nil {
+	if s == nil || s.Start == nil {
 		return nil
+	} else if s.End == nil {
+		s.End = s.Start
 	}
 
-	// LineNumber is 1 indexed, so 0 indicates unknown which
-	// means it can't be used for lookups so we discard
+	// LineNumber is 1 indexed, so 0 indicates it's unknown, which in turn
+	// means it can't be used for lookups so we discard these.
 	if s.Start.LineNumber == 0 || s.End.LineNumber == 0 {
 		return nil
 	}
 
 	return &lsp.Range{
 		Start: lsp.Position{
+			// N.B. LSP line numbers are 0-based, Kythe is 1-based.
 			Line:      int(s.Start.LineNumber - 1),
 			Character: int(s.Start.ColumnOffset),
 		},

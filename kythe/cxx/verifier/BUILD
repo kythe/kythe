@@ -16,11 +16,9 @@ genyacc(
 
 genlex(
     name = "lexer",
-    srcs = [
-        "assertions.lex",
-        ":parser",
-    ],
+    src = "assertions.lex",
     out = "lexer.yy.cc",
+    includes = [":parser"],
 )
 
 cc_library(

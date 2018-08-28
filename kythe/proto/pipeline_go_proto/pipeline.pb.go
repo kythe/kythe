@@ -21,564 +21,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type Node struct {
-	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
-	Fact   []*Fact                 `protobuf:"bytes,2,rep,name=fact" json:"fact,omitempty"`
-	Edge   []*Edge                 `protobuf:"bytes,3,rep,name=edge" json:"edge,omitempty"`
-	// Types that are valid to be assigned to Kind:
-	//	*Node_KytheKind
-	//	*Node_GenericKind
-	Kind isNode_Kind `protobuf_oneof:"kind"`
-	// Types that are valid to be assigned to Subkind:
-	//	*Node_KytheSubkind
-	//	*Node_GenericSubkind
-	Subkind              isNode_Subkind `protobuf_oneof:"subkind"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
-}
-
-func (m *Node) Reset()         { *m = Node{} }
-func (m *Node) String() string { return proto.CompactTextString(m) }
-func (*Node) ProtoMessage()    {}
-func (*Node) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pipeline_31b70f6420ca9d7a, []int{0}
-}
-func (m *Node) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Node.Unmarshal(m, b)
-}
-func (m *Node) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Node.Marshal(b, m, deterministic)
-}
-func (dst *Node) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Node.Merge(dst, src)
-}
-func (m *Node) XXX_Size() int {
-	return xxx_messageInfo_Node.Size(m)
-}
-func (m *Node) XXX_DiscardUnknown() {
-	xxx_messageInfo_Node.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Node proto.InternalMessageInfo
-
-type isNode_Kind interface {
-	isNode_Kind()
-}
-type isNode_Subkind interface {
-	isNode_Subkind()
-}
-
-type Node_KytheKind struct {
-	KytheKind schema_go_proto.NodeKind `protobuf:"varint,4,opt,name=kythe_kind,json=kytheKind,enum=kythe.proto.schema.NodeKind,oneof"`
-}
-type Node_GenericKind struct {
-	GenericKind string `protobuf:"bytes,5,opt,name=generic_kind,json=genericKind,oneof"`
-}
-type Node_KytheSubkind struct {
-	KytheSubkind schema_go_proto.Subkind `protobuf:"varint,6,opt,name=kythe_subkind,json=kytheSubkind,enum=kythe.proto.schema.Subkind,oneof"`
-}
-type Node_GenericSubkind struct {
-	GenericSubkind string `protobuf:"bytes,7,opt,name=generic_subkind,json=genericSubkind,oneof"`
-}
-
-func (*Node_KytheKind) isNode_Kind()         {}
-func (*Node_GenericKind) isNode_Kind()       {}
-func (*Node_KytheSubkind) isNode_Subkind()   {}
-func (*Node_GenericSubkind) isNode_Subkind() {}
-
-func (m *Node) GetKind() isNode_Kind {
-	if m != nil {
-		return m.Kind
-	}
-	return nil
-}
-func (m *Node) GetSubkind() isNode_Subkind {
-	if m != nil {
-		return m.Subkind
-	}
-	return nil
-}
-
-func (m *Node) GetSource() *storage_go_proto.VName {
-	if m != nil {
-		return m.Source
-	}
-	return nil
-}
-
-func (m *Node) GetFact() []*Fact {
-	if m != nil {
-		return m.Fact
-	}
-	return nil
-}
-
-func (m *Node) GetEdge() []*Edge {
-	if m != nil {
-		return m.Edge
-	}
-	return nil
-}
-
-func (m *Node) GetKytheKind() schema_go_proto.NodeKind {
-	if x, ok := m.GetKind().(*Node_KytheKind); ok {
-		return x.KytheKind
-	}
-	return schema_go_proto.NodeKind_UNKNOWN_NODE_KIND
-}
-
-func (m *Node) GetGenericKind() string {
-	if x, ok := m.GetKind().(*Node_GenericKind); ok {
-		return x.GenericKind
-	}
-	return ""
-}
-
-func (m *Node) GetKytheSubkind() schema_go_proto.Subkind {
-	if x, ok := m.GetSubkind().(*Node_KytheSubkind); ok {
-		return x.KytheSubkind
-	}
-	return schema_go_proto.Subkind_UNKNOWN_SUBKIND
-}
-
-func (m *Node) GetGenericSubkind() string {
-	if x, ok := m.GetSubkind().(*Node_GenericSubkind); ok {
-		return x.GenericSubkind
-	}
-	return ""
-}
-
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Node) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Node_OneofMarshaler, _Node_OneofUnmarshaler, _Node_OneofSizer, []interface{}{
-		(*Node_KytheKind)(nil),
-		(*Node_GenericKind)(nil),
-		(*Node_KytheSubkind)(nil),
-		(*Node_GenericSubkind)(nil),
-	}
-}
-
-func _Node_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Node)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Node_KytheKind:
-		b.EncodeVarint(4<<3 | proto.WireVarint)
-		b.EncodeVarint(uint64(x.KytheKind))
-	case *Node_GenericKind:
-		b.EncodeVarint(5<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.GenericKind)
-	case nil:
-	default:
-		return fmt.Errorf("Node.Kind has unexpected type %T", x)
-	}
-	// subkind
-	switch x := m.Subkind.(type) {
-	case *Node_KytheSubkind:
-		b.EncodeVarint(6<<3 | proto.WireVarint)
-		b.EncodeVarint(uint64(x.KytheSubkind))
-	case *Node_GenericSubkind:
-		b.EncodeVarint(7<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.GenericSubkind)
-	case nil:
-	default:
-		return fmt.Errorf("Node.Subkind has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Node_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Node)
-	switch tag {
-	case 4: // kind.kythe_kind
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Kind = &Node_KytheKind{schema_go_proto.NodeKind(x)}
-		return true, err
-	case 5: // kind.generic_kind
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Kind = &Node_GenericKind{x}
-		return true, err
-	case 6: // subkind.kythe_subkind
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Subkind = &Node_KytheSubkind{schema_go_proto.Subkind(x)}
-		return true, err
-	case 7: // subkind.generic_subkind
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Subkind = &Node_GenericSubkind{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Node_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Node)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Node_KytheKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.KytheKind))
-	case *Node_GenericKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.GenericKind)))
-		n += len(x.GenericKind)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	// subkind
-	switch x := m.Subkind.(type) {
-	case *Node_KytheSubkind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.KytheSubkind))
-	case *Node_GenericSubkind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.GenericSubkind)))
-		n += len(x.GenericSubkind)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
-}
-
-type Fact struct {
-	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
-	// Types that are valid to be assigned to Name:
-	//	*Fact_KytheName
-	//	*Fact_GenericName
-	Name                 isFact_Name `protobuf_oneof:"name"`
-	Value                []byte      `protobuf:"bytes,4,opt,name=value,proto3" json:"value,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
-}
-
-func (m *Fact) Reset()         { *m = Fact{} }
-func (m *Fact) String() string { return proto.CompactTextString(m) }
-func (*Fact) ProtoMessage()    {}
-func (*Fact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pipeline_31b70f6420ca9d7a, []int{1}
-}
-func (m *Fact) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Fact.Unmarshal(m, b)
-}
-func (m *Fact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Fact.Marshal(b, m, deterministic)
-}
-func (dst *Fact) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Fact.Merge(dst, src)
-}
-func (m *Fact) XXX_Size() int {
-	return xxx_messageInfo_Fact.Size(m)
-}
-func (m *Fact) XXX_DiscardUnknown() {
-	xxx_messageInfo_Fact.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Fact proto.InternalMessageInfo
-
-type isFact_Name interface {
-	isFact_Name()
-}
-
-type Fact_KytheName struct {
-	KytheName schema_go_proto.FactName `protobuf:"varint,2,opt,name=kythe_name,json=kytheName,enum=kythe.proto.schema.FactName,oneof"`
-}
-type Fact_GenericName struct {
-	GenericName string `protobuf:"bytes,3,opt,name=generic_name,json=genericName,oneof"`
-}
-
-func (*Fact_KytheName) isFact_Name()   {}
-func (*Fact_GenericName) isFact_Name() {}
-
-func (m *Fact) GetName() isFact_Name {
-	if m != nil {
-		return m.Name
-	}
-	return nil
-}
-
-func (m *Fact) GetSource() *storage_go_proto.VName {
-	if m != nil {
-		return m.Source
-	}
-	return nil
-}
-
-func (m *Fact) GetKytheName() schema_go_proto.FactName {
-	if x, ok := m.GetName().(*Fact_KytheName); ok {
-		return x.KytheName
-	}
-	return schema_go_proto.FactName_UNKNOWN_FACT_NAME
-}
-
-func (m *Fact) GetGenericName() string {
-	if x, ok := m.GetName().(*Fact_GenericName); ok {
-		return x.GenericName
-	}
-	return ""
-}
-
-func (m *Fact) GetValue() []byte {
-	if m != nil {
-		return m.Value
-	}
-	return nil
-}
-
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Fact) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Fact_OneofMarshaler, _Fact_OneofUnmarshaler, _Fact_OneofSizer, []interface{}{
-		(*Fact_KytheName)(nil),
-		(*Fact_GenericName)(nil),
-	}
-}
-
-func _Fact_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Fact)
-	// name
-	switch x := m.Name.(type) {
-	case *Fact_KytheName:
-		b.EncodeVarint(2<<3 | proto.WireVarint)
-		b.EncodeVarint(uint64(x.KytheName))
-	case *Fact_GenericName:
-		b.EncodeVarint(3<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.GenericName)
-	case nil:
-	default:
-		return fmt.Errorf("Fact.Name has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Fact_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Fact)
-	switch tag {
-	case 2: // name.kythe_name
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Name = &Fact_KytheName{schema_go_proto.FactName(x)}
-		return true, err
-	case 3: // name.generic_name
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Name = &Fact_GenericName{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Fact_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Fact)
-	// name
-	switch x := m.Name.(type) {
-	case *Fact_KytheName:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.KytheName))
-	case *Fact_GenericName:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.GenericName)))
-		n += len(x.GenericName)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
-}
-
-type Edge struct {
-	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
-	Target *storage_go_proto.VName `protobuf:"bytes,2,opt,name=target" json:"target,omitempty"`
-	// Types that are valid to be assigned to Kind:
-	//	*Edge_KytheKind
-	//	*Edge_GenericKind
-	Kind                 isEdge_Kind `protobuf_oneof:"kind"`
-	Ordinal              int32       `protobuf:"varint,5,opt,name=ordinal" json:"ordinal,omitempty"`
-	SourceNode           *Node       `protobuf:"bytes,6,opt,name=source_node,json=sourceNode" json:"source_node,omitempty"`
-	TargetNode           *Node       `protobuf:"bytes,7,opt,name=target_node,json=targetNode" json:"target_node,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
-}
-
-func (m *Edge) Reset()         { *m = Edge{} }
-func (m *Edge) String() string { return proto.CompactTextString(m) }
-func (*Edge) ProtoMessage()    {}
-func (*Edge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pipeline_31b70f6420ca9d7a, []int{2}
-}
-func (m *Edge) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Edge.Unmarshal(m, b)
-}
-func (m *Edge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Edge.Marshal(b, m, deterministic)
-}
-func (dst *Edge) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Edge.Merge(dst, src)
-}
-func (m *Edge) XXX_Size() int {
-	return xxx_messageInfo_Edge.Size(m)
-}
-func (m *Edge) XXX_DiscardUnknown() {
-	xxx_messageInfo_Edge.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Edge proto.InternalMessageInfo
-
-type isEdge_Kind interface {
-	isEdge_Kind()
-}
-
-type Edge_KytheKind struct {
-	KytheKind schema_go_proto.EdgeKind `protobuf:"varint,3,opt,name=kythe_kind,json=kytheKind,enum=kythe.proto.schema.EdgeKind,oneof"`
-}
-type Edge_GenericKind struct {
-	GenericKind string `protobuf:"bytes,4,opt,name=generic_kind,json=genericKind,oneof"`
-}
-
-func (*Edge_KytheKind) isEdge_Kind()   {}
-func (*Edge_GenericKind) isEdge_Kind() {}
-
-func (m *Edge) GetKind() isEdge_Kind {
-	if m != nil {
-		return m.Kind
-	}
-	return nil
-}
-
-func (m *Edge) GetSource() *storage_go_proto.VName {
-	if m != nil {
-		return m.Source
-	}
-	return nil
-}
-
-func (m *Edge) GetTarget() *storage_go_proto.VName {
-	if m != nil {
-		return m.Target
-	}
-	return nil
-}
-
-func (m *Edge) GetKytheKind() schema_go_proto.EdgeKind {
-	if x, ok := m.GetKind().(*Edge_KytheKind); ok {
-		return x.KytheKind
-	}
-	return schema_go_proto.EdgeKind_UNKNOWN_EDGE_KIND
-}
-
-func (m *Edge) GetGenericKind() string {
-	if x, ok := m.GetKind().(*Edge_GenericKind); ok {
-		return x.GenericKind
-	}
-	return ""
-}
-
-func (m *Edge) GetOrdinal() int32 {
-	if m != nil {
-		return m.Ordinal
-	}
-	return 0
-}
-
-func (m *Edge) GetSourceNode() *Node {
-	if m != nil {
-		return m.SourceNode
-	}
-	return nil
-}
-
-func (m *Edge) GetTargetNode() *Node {
-	if m != nil {
-		return m.TargetNode
-	}
-	return nil
-}
-
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Edge) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Edge_OneofMarshaler, _Edge_OneofUnmarshaler, _Edge_OneofSizer, []interface{}{
-		(*Edge_KytheKind)(nil),
-		(*Edge_GenericKind)(nil),
-	}
-}
-
-func _Edge_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Edge)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Edge_KytheKind:
-		b.EncodeVarint(3<<3 | proto.WireVarint)
-		b.EncodeVarint(uint64(x.KytheKind))
-	case *Edge_GenericKind:
-		b.EncodeVarint(4<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.GenericKind)
-	case nil:
-	default:
-		return fmt.Errorf("Edge.Kind has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Edge_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Edge)
-	switch tag {
-	case 3: // kind.kythe_kind
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Kind = &Edge_KytheKind{schema_go_proto.EdgeKind(x)}
-		return true, err
-	case 4: // kind.generic_kind
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Kind = &Edge_GenericKind{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Edge_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Edge)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Edge_KytheKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.KytheKind))
-	case *Edge_GenericKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.GenericKind)))
-		n += len(x.GenericKind)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
-}
-
 type Reference struct {
 	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
 	// Types that are valid to be assigned to Kind:
@@ -596,7 +38,7 @@ func (m *Reference) Reset()         { *m = Reference{} }
 func (m *Reference) String() string { return proto.CompactTextString(m) }
 func (*Reference) ProtoMessage()    {}
 func (*Reference) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pipeline_31b70f6420ca9d7a, []int{3}
+	return fileDescriptor_pipeline_5ba3b51a6ecd7da7, []int{0}
 }
 func (m *Reference) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Reference.Unmarshal(m, b)
@@ -754,7 +196,7 @@ func (m *DecorationPiece) Reset()         { *m = DecorationPiece{} }
 func (m *DecorationPiece) String() string { return proto.CompactTextString(m) }
 func (*DecorationPiece) ProtoMessage()    {}
 func (*DecorationPiece) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pipeline_31b70f6420ca9d7a, []int{4}
+	return fileDescriptor_pipeline_5ba3b51a6ecd7da7, []int{1}
 }
 func (m *DecorationPiece) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecorationPiece.Unmarshal(m, b)
@@ -785,7 +227,7 @@ type DecorationPiece_Reference struct {
 	Reference *Reference `protobuf:"bytes,3,opt,name=reference,oneof"`
 }
 type DecorationPiece_Node struct {
-	Node *Node `protobuf:"bytes,4,opt,name=node,oneof"`
+	Node *schema_go_proto.Node `protobuf:"bytes,4,opt,name=node,oneof"`
 }
 type DecorationPiece_Definition_ struct {
 	Definition *DecorationPiece_Definition `protobuf:"bytes,5,opt,name=definition,oneof"`
@@ -824,7 +266,7 @@ func (m *DecorationPiece) GetReference() *Reference {
 	return nil
 }
 
-func (m *DecorationPiece) GetNode() *Node {
+func (m *DecorationPiece) GetNode() *schema_go_proto.Node {
 	if x, ok := m.GetPiece().(*DecorationPiece_Node); ok {
 		return x.Node
 	}
@@ -902,7 +344,7 @@ func _DecorationPiece_OneofUnmarshaler(msg proto.Message, tag, wire int, b *prot
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(Node)
+		msg := new(schema_go_proto.Node)
 		err := b.DecodeMessage(msg)
 		m.Piece = &DecorationPiece_Node{msg}
 		return true, err
@@ -962,7 +404,7 @@ func (m *DecorationPiece_Definition) Reset()         { *m = DecorationPiece_Defi
 func (m *DecorationPiece_Definition) String() string { return proto.CompactTextString(m) }
 func (*DecorationPiece_Definition) ProtoMessage()    {}
 func (*DecorationPiece_Definition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pipeline_31b70f6420ca9d7a, []int{4, 0}
+	return fileDescriptor_pipeline_5ba3b51a6ecd7da7, []int{1, 0}
 }
 func (m *DecorationPiece_Definition) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecorationPiece_Definition.Unmarshal(m, b)
@@ -997,59 +439,42 @@ func (m *DecorationPiece_Definition) GetDefinition() *serving_go_proto.ExpandedA
 }
 
 func init() {
-	proto.RegisterType((*Node)(nil), "kythe.proto.pipeline.Node")
-	proto.RegisterType((*Fact)(nil), "kythe.proto.pipeline.Fact")
-	proto.RegisterType((*Edge)(nil), "kythe.proto.pipeline.Edge")
 	proto.RegisterType((*Reference)(nil), "kythe.proto.pipeline.Reference")
 	proto.RegisterType((*DecorationPiece)(nil), "kythe.proto.pipeline.DecorationPiece")
 	proto.RegisterType((*DecorationPiece_Definition)(nil), "kythe.proto.pipeline.DecorationPiece.Definition")
 }
 
 func init() {
-	proto.RegisterFile("kythe/proto/pipeline.proto", fileDescriptor_pipeline_31b70f6420ca9d7a)
+	proto.RegisterFile("kythe/proto/pipeline.proto", fileDescriptor_pipeline_5ba3b51a6ecd7da7)
 }
 
-var fileDescriptor_pipeline_31b70f6420ca9d7a = []byte{
-	// 645 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x94, 0xcf, 0x6a, 0xdb, 0x4e,
-	0x10, 0xc7, 0x23, 0x59, 0xb6, 0xf1, 0x28, 0xbf, 0x04, 0x96, 0x1c, 0x14, 0xff, 0x0a, 0x71, 0x1d,
-	0x28, 0x6e, 0x0e, 0x4a, 0x70, 0x8f, 0xa1, 0x94, 0xba, 0x49, 0x30, 0x14, 0x42, 0xd9, 0x42, 0xaf,
-	0x61, 0x23, 0x8d, 0x95, 0x25, 0xf2, 0xae, 0x91, 0x15, 0xd3, 0xbc, 0x42, 0x9f, 0xa7, 0x2f, 0xd0,
-	0x17, 0xe9, 0x73, 0xf4, 0x58, 0x76, 0x76, 0xed, 0xda, 0x41, 0x6a, 0x9a, 0xf6, 0x24, 0x8d, 0xe7,
-	0x33, 0xff, 0xbe, 0x33, 0x32, 0x74, 0x6f, 0xef, 0xcb, 0x1b, 0x3c, 0x9e, 0x15, 0xba, 0xd4, 0xc7,
-	0x33, 0x39, 0xc3, 0x5c, 0x2a, 0x8c, 0xc9, 0x64, 0x7b, 0xe4, 0xb3, 0x46, 0xbc, 0xf4, 0x75, 0xa3,
-	0xf5, 0x88, 0x79, 0x72, 0x83, 0x53, 0x61, 0x91, 0xee, 0xfe, 0x86, 0x07, 0x8b, 0x85, 0x54, 0x59,
-	0xa5, 0xab, 0xd4, 0x85, 0xc8, 0x5c, 0xe2, 0xfe, 0x0f, 0x1f, 0x82, 0x4b, 0x9d, 0x22, 0x3b, 0x82,
-	0xd6, 0x5c, 0xdf, 0x15, 0x09, 0x46, 0x5e, 0xcf, 0x1b, 0x84, 0x43, 0x16, 0xaf, 0xd7, 0xff, 0x74,
-	0x29, 0xa6, 0xc8, 0x1d, 0xc1, 0x62, 0x08, 0x26, 0x22, 0x29, 0x23, 0xbf, 0xd7, 0x18, 0x84, 0xc3,
-	0x6e, 0x5c, 0xd5, 0x69, 0x7c, 0x21, 0x92, 0x92, 0x13, 0x67, 0x78, 0x4c, 0x33, 0x8c, 0x1a, 0xbf,
-	0xe3, 0xcf, 0xd3, 0x0c, 0x39, 0x71, 0xec, 0x35, 0x00, 0x21, 0x57, 0xb7, 0x52, 0xa5, 0x51, 0xd0,
-	0xf3, 0x06, 0x3b, 0xc3, 0x67, 0x1b, 0x51, 0x6e, 0x72, 0xd3, 0xf9, 0x7b, 0xa9, 0xd2, 0xf1, 0x16,
-	0xef, 0x90, 0xdb, 0x18, 0xec, 0x10, 0xb6, 0x33, 0x54, 0x58, 0xc8, 0xc4, 0x26, 0x68, 0xf6, 0xbc,
-	0x41, 0x67, 0xbc, 0xc5, 0x43, 0xf7, 0x2b, 0x41, 0x23, 0xf8, 0xcf, 0xd6, 0x98, 0xdf, 0x5d, 0x13,
-	0xd5, 0xa2, 0x32, 0xff, 0x57, 0x95, 0xf9, 0x68, 0x91, 0xb1, 0xc7, 0xb7, 0xc9, 0xeb, 0x6c, 0xf6,
-	0x12, 0x76, 0x97, 0x85, 0x96, 0x59, 0xda, 0x54, 0xcb, 0xe3, 0x3b, 0xce, 0xe1, 0xd0, 0x51, 0x0b,
-	0x02, 0x7a, 0x76, 0xa0, 0xed, 0xd0, 0xfe, 0x57, 0x0f, 0x02, 0x23, 0xd2, 0x93, 0xa4, 0x5f, 0x49,
-	0xa3, 0xc4, 0x14, 0x23, 0xbf, 0x5e, 0x1a, 0x93, 0xd9, 0x44, 0xae, 0xa4, 0x31, 0xc6, 0xba, 0x34,
-	0x94, 0xa0, 0xf1, 0x40, 0x1a, 0x82, 0xf6, 0xa0, 0xb9, 0x10, 0xf9, 0x1d, 0x92, 0xf2, 0xdb, 0xdc,
-	0x1a, 0x66, 0x02, 0x13, 0xd2, 0xff, 0xee, 0x43, 0x60, 0x76, 0xf5, 0xa4, 0xb6, 0x8f, 0xa0, 0x55,
-	0x8a, 0x22, 0xc3, 0x92, 0x5a, 0xae, 0x61, 0x2d, 0xf1, 0x60, 0xfb, 0x8d, 0xfa, 0x11, 0x4d, 0x17,
-	0x8f, 0x6f, 0x3f, 0xa8, 0xda, 0x7e, 0x04, 0x6d, 0x5d, 0xa4, 0x52, 0x89, 0x9c, 0xae, 0xa3, 0xc9,
-	0x97, 0x26, 0x3b, 0x85, 0xd0, 0xf6, 0x7c, 0xa5, 0x74, 0x8a, 0x74, 0x15, 0xb5, 0x27, 0x6b, 0xce,
-	0x8f, 0x83, 0xc5, 0xe9, 0x23, 0x3a, 0x85, 0xd0, 0x0e, 0x61, 0x83, 0xdb, 0x8f, 0x07, 0x5b, 0xdc,
-	0xbc, 0x2f, 0x4f, 0xa4, 0xff, 0xc5, 0x87, 0x0e, 0xc7, 0x09, 0x16, 0xa8, 0x12, 0xfc, 0xbb, 0xe3,
-	0xa0, 0xc1, 0xfd, 0x7f, 0x55, 0xae, 0x51, 0xa5, 0xdc, 0x29, 0xb4, 0x84, 0x4a, 0x6e, 0x74, 0x41,
-	0xc2, 0x86, 0xc3, 0xc3, 0xcd, 0xfc, 0xee, 0x7f, 0xe7, 0xfc, 0xf3, 0x4c, 0xa8, 0x14, 0xd3, 0xb7,
-	0x84, 0x72, 0x17, 0xc2, 0x06, 0xd0, 0x9c, 0x27, 0x7a, 0x86, 0x24, 0x7a, 0xf5, 0x2c, 0x16, 0x58,
-	0x89, 0xf1, 0xad, 0x01, 0xbb, 0x67, 0x98, 0xe8, 0x42, 0x94, 0x52, 0xab, 0x0f, 0x12, 0x13, 0x64,
-	0x43, 0x08, 0x27, 0x32, 0xc7, 0xab, 0x85, 0xbd, 0xe1, 0x7a, 0x5d, 0x3a, 0x06, 0xa3, 0x57, 0x76,
-	0x0c, 0x81, 0x31, 0xdc, 0xf9, 0xed, 0x57, 0x36, 0x7d, 0x21, 0x73, 0xf3, 0xb9, 0x10, 0xc8, 0xde,
-	0x40, 0xa7, 0x58, 0x2e, 0x81, 0x94, 0x08, 0x87, 0x07, 0xd5, 0x8b, 0x5c, 0xed, 0xca, 0xa8, 0xb9,
-	0x8a, 0x61, 0x27, 0x10, 0xd0, 0x11, 0x04, 0x8f, 0x1d, 0x81, 0x29, 0x69, 0x48, 0xc6, 0x01, 0x52,
-	0x9c, 0x48, 0x25, 0xcd, 0xa8, 0x4e, 0xa2, 0x93, 0xea, 0xb8, 0x07, 0x92, 0xc4, 0x67, 0xab, 0xb8,
-	0xf1, 0x16, 0x5f, 0xcb, 0xd2, 0xbd, 0x07, 0xf8, 0xe5, 0x63, 0x2f, 0x5c, 0x4f, 0xf5, 0x92, 0xd9,
-	0x4e, 0xde, 0x6d, 0x74, 0xe2, 0xff, 0xf9, 0xa2, 0xd7, 0xc2, 0x46, 0x6d, 0x68, 0xce, 0x4c, 0x73,
-	0xa3, 0xe7, 0x70, 0x90, 0xe8, 0x69, 0x9c, 0x69, 0x9d, 0xe5, 0x18, 0xa7, 0xb8, 0x28, 0xb5, 0xce,
-	0xe7, 0xeb, 0xe9, 0xae, 0x5b, 0xf4, 0x78, 0xf5, 0x33, 0x00, 0x00, 0xff, 0xff, 0x4e, 0xf7, 0xc4,
-	0x76, 0x11, 0x07, 0x00, 0x00,
+var fileDescriptor_pipeline_5ba3b51a6ecd7da7 = []byte{
+	// 419 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x51, 0xd1, 0x8a, 0xd3, 0x40,
+	0x14, 0x6d, 0xbb, 0x6d, 0x25, 0x37, 0xa2, 0x30, 0xf8, 0x90, 0x0d, 0xc2, 0xd6, 0x5d, 0x90, 0xe0,
+	0xc3, 0x54, 0xe2, 0xa3, 0x88, 0x58, 0x77, 0x25, 0x20, 0x2c, 0x32, 0x0f, 0xbe, 0x96, 0x38, 0x73,
+	0x9b, 0x0e, 0x9b, 0xcc, 0x84, 0x49, 0x2c, 0xee, 0x2f, 0xf8, 0x53, 0xfe, 0x9a, 0xcc, 0x64, 0xb6,
+	0x26, 0x92, 0x8a, 0x4f, 0xed, 0xcd, 0x39, 0xf7, 0xcc, 0xb9, 0xe7, 0x40, 0x7c, 0x77, 0xdf, 0xee,
+	0x71, 0x5d, 0x1b, 0xdd, 0xea, 0x75, 0x2d, 0x6b, 0x2c, 0xa5, 0x42, 0xea, 0x46, 0xf2, 0xcc, 0x61,
+	0xdd, 0x40, 0x1f, 0xb0, 0x38, 0xea, 0x6f, 0x34, 0x7c, 0x8f, 0x55, 0xde, 0x51, 0xe2, 0xf3, 0x01,
+	0x82, 0xe6, 0x20, 0x55, 0x31, 0x0a, 0xb5, 0xda, 0xe4, 0x85, 0x17, 0xbe, 0xfc, 0x39, 0x83, 0x80,
+	0xe1, 0x0e, 0x0d, 0x2a, 0x8e, 0xe4, 0x15, 0x2c, 0x1b, 0xfd, 0xdd, 0x70, 0x8c, 0xa6, 0xab, 0x69,
+	0x12, 0xa6, 0x84, 0xf6, 0x4d, 0x7c, 0xbd, 0xcd, 0x2b, 0x64, 0x9e, 0x41, 0xde, 0x01, 0x38, 0x70,
+	0x7b, 0x27, 0x95, 0x88, 0x66, 0xab, 0x69, 0xf2, 0x24, 0x7d, 0x3e, 0xe0, 0x7b, 0x7b, 0x37, 0xa2,
+	0xc0, 0xcf, 0x52, 0x89, 0x6c, 0xc2, 0x02, 0x07, 0xdb, 0x81, 0x5c, 0xc1, 0xe3, 0x02, 0x15, 0x1a,
+	0xc9, 0x3b, 0x81, 0xb3, 0xd5, 0x34, 0x09, 0xb2, 0x09, 0x0b, 0xfd, 0x57, 0x47, 0x7a, 0x0b, 0xcb,
+	0x5c, 0xf1, 0xbd, 0x36, 0xd1, 0xdc, 0xf9, 0xb9, 0x1a, 0xea, 0xfb, 0x23, 0x6f, 0x7e, 0xd4, 0xb9,
+	0x12, 0x28, 0x3e, 0x38, 0x2a, 0xf3, 0x2b, 0x24, 0x81, 0x45, 0xc3, 0x75, 0x8d, 0xd1, 0xe2, 0xe4,
+	0x2d, 0x1d, 0x61, 0xb3, 0x84, 0xb9, 0xf5, 0x70, 0xf9, 0xeb, 0x0c, 0x9e, 0x5e, 0x23, 0xd7, 0x26,
+	0x6f, 0xa5, 0x56, 0x5f, 0x24, 0x72, 0x24, 0x29, 0x84, 0x3b, 0x59, 0xe2, 0xf6, 0xb0, 0x55, 0x79,
+	0xf5, 0xaf, 0x5c, 0x02, 0x4b, 0x73, 0x7f, 0xc9, 0x1a, 0xe6, 0x76, 0x70, 0xa1, 0x84, 0xe9, 0xf9,
+	0xa8, 0xe9, 0x4f, 0xb2, 0xc4, 0x6c, 0xc2, 0x1c, 0x91, 0xbc, 0x87, 0xc0, 0x3c, 0x94, 0xe0, 0x92,
+	0x08, 0xd3, 0x0b, 0x3a, 0xd6, 0x3f, 0x3d, 0x76, 0x65, 0xd3, 0x3c, 0xee, 0x10, 0x0a, 0x73, 0xa5,
+	0x05, 0xfa, 0x98, 0xa2, 0xb1, 0x1a, 0x6e, 0xb5, 0x70, 0x0f, 0x5a, 0x1e, 0x61, 0x00, 0x02, 0x77,
+	0x52, 0x49, 0x7b, 0xa8, 0x0f, 0xe8, 0xf5, 0xf8, 0x8b, 0x7f, 0x05, 0x42, 0xaf, 0x8f, 0x7b, 0xd9,
+	0x84, 0xf5, 0x54, 0xe2, 0x7b, 0x80, 0x3f, 0x18, 0x79, 0xe9, 0x1d, 0x9d, 0x0e, 0xac, 0x73, 0xf2,
+	0x71, 0xe0, 0x64, 0xf6, 0xff, 0x35, 0xf7, 0xd6, 0x36, 0x8f, 0x60, 0x51, 0x5b, 0x73, 0x9b, 0x17,
+	0x70, 0xc1, 0x75, 0x45, 0x0b, 0xad, 0x8b, 0x12, 0xa9, 0xc0, 0x43, 0xab, 0x75, 0xd9, 0xf4, 0xe5,
+	0xbe, 0x2d, 0xdd, 0xcf, 0x9b, 0xdf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x51, 0x89, 0x91, 0x4a, 0x7c,
+	0x03, 0x00, 0x00,
 }

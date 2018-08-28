@@ -33,6 +33,7 @@ import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
+import com.google.devtools.kythe.util.JsonUtil;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistry;
 import java.io.File;
@@ -49,9 +50,12 @@ import java.util.zip.ZipFile;
 
 /** Java CompilationUnit extractor using Bazel's extra_action feature. */
 public class JavaExtractor {
+
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   public static void main(String[] args) throws IOException, ExtractionException {
+    JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
+
     if (args.length != 3) {
       System.err.println("Usage: java_extractor extra-action-file output-file vname-config");
       System.exit(1);
@@ -148,7 +152,11 @@ public class JavaExtractor {
                 javacOpts,
                 jInfo.getOutputjar());
 
-    IndexInfoUtils.writeIndexInfoToFile(description, outputPath);
+    if (outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+      IndexInfoUtils.writeKzipToFile(description, outputPath);
+    } else {
+      IndexInfoUtils.writeKindexToFile(description, outputPath);
+    }
   }
 
   /** Extracts a source jar and adds all java files in it to the list of sources. */

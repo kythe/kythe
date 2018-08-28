@@ -9,10 +9,7 @@ filegroup(
 
 java_import(
     name = "javac",
-    jars = [
-        "jdk_compiler.jar",
-        "java_compiler.jar",
-    ],
+    jars = ["javac-9-dev-r4023-1.jar"],
 )
 
 filegroup(

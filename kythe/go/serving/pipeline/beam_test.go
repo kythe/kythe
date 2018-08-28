@@ -35,42 +35,42 @@ import (
 )
 
 func TestReferences(t *testing.T) {
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Path: "path", Signature: "anchor1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
 			Value: []byte("0"),
 		}, {
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
 			Value: []byte("4"),
 		}},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_REF},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
 			Target: &spb.VName{Signature: "node1"},
 		}},
 	}, {
 		Source: &spb.VName{Path: "path", Signature: "anchor2"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
 			Value: []byte("5"),
 		}, {
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
 			Value: []byte("9"),
 		}},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
 			Target: &spb.VName{Path: "path", Signature: "anchor2_parent"},
 		}, {
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_REF_CALL},
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF_CALL},
 			Target: &spb.VName{Signature: "node2"},
 		}},
 	}, {
 		Source: &spb.VName{Path: "path"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 			Value: []byte("some text\n"),
 		}},
 	}}
@@ -147,32 +147,32 @@ func TestReferences(t *testing.T) {
 }
 
 func TestDecorations_targetNode(t *testing.T) {
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Path: "path", Signature: "anchor1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
 			Value: []byte("5"),
 		}, {
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
 			Value: []byte("9"),
 		}},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_REF},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
 			Target: &spb.VName{Signature: "node1"},
 		}},
 	}, {
 		Source: &spb.VName{Path: "path"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 			Value: []byte("some text\n"),
 		}},
 	}, {
 		Source: &spb.VName{Signature: "node1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_RECORD},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_GenericName{"/unknown/fact/name"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_GenericName{"/unknown/fact/name"},
 			Value: []byte("something"),
 		}},
 	}}
@@ -212,25 +212,25 @@ func TestDecorations_targetNode(t *testing.T) {
 }
 
 func TestDecorations_decoration(t *testing.T) {
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Path: "path", Signature: "anchor1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
 			Value: []byte("5"),
 		}, {
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
 			Value: []byte("9"),
 		}},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_REF},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
 			Target: &spb.VName{Signature: "node1"},
 		}},
 	}, {
 		Source: &spb.VName{Path: "path"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 			Value: []byte("some text\n"),
 		}},
 	}}
@@ -260,46 +260,46 @@ func TestDecorations_decoration(t *testing.T) {
 }
 
 func TestDecorations_targetDefinition(t *testing.T) {
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Path: "path", Signature: "anchor1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
 			Value: []byte("5"),
 		}, {
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
 			Value: []byte("9"),
 		}},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_REF},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
 			Target: &spb.VName{Signature: "node1"},
 		}},
 	}, {
 		Source: &spb.VName{Path: "path"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 			Value: []byte("some text\n"),
 		}},
 	}, {
 		Source: &spb.VName{Path: "path2", Signature: "def1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
 			Value: []byte("5"),
 		}, {
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
 			Value: []byte("8"),
 		}},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
 			Target: &spb.VName{Signature: "node1"},
 		}},
 	}, {
 		Source: &spb.VName{Path: "path2"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_FILE},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 			Value: []byte("some def\n"),
 		}},
 	}}
@@ -522,13 +522,13 @@ func TestCrossReferences(t *testing.T) {
 }
 
 func TestEdges_grouping(t *testing.T) {
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Signature: "node1"},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_PARAM},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_PARAM},
 			Target: &spb.VName{Signature: "node1"},
 		}, {
-			Kind:    &ppb.Edge_KytheKind{scpb.EdgeKind_PARAM},
+			Kind:    &scpb.Edge_KytheKind{scpb.EdgeKind_PARAM},
 			Ordinal: 1,
 			Target:  &spb.VName{Signature: "node1"},
 		}},
@@ -566,11 +566,11 @@ func TestEdges_grouping(t *testing.T) {
 }
 
 func TestEdges_reverses(t *testing.T) {
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Signature: "node1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_RECORD},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
 			Target: &spb.VName{Signature: "node2"},
 		}},
 	}}
@@ -616,7 +616,7 @@ func TestEdges_reverses(t *testing.T) {
 }
 
 func TestFileTree_registrations(t *testing.T) {
-	testNodes := []*ppb.Node{{}}
+	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
 	k := FromNodes(s, nodes)
 	k.CorpusRoots()
@@ -627,15 +627,15 @@ func TestFileTree_registrations(t *testing.T) {
 }
 
 func TestDocuments_text(t *testing.T) {
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Signature: "doc1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_DOC},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_DOC},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 			Value: []byte("raw document text"),
 		}},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_DOCUMENTS},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DOCUMENTS},
 			Target: &spb.VName{Signature: "node1"},
 		}},
 	}}
@@ -655,17 +655,17 @@ func TestDocuments_text(t *testing.T) {
 }
 
 func TestDocuments_children(t *testing.T) {
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Signature: "child1"},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
 			Target: &spb.VName{Signature: "node1"},
 		}},
 	}, {
 		Source: &spb.VName{Signature: "doc1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_DOC},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_DOCUMENTS},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_DOC},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DOCUMENTS},
 			Target: &spb.VName{Signature: "node1"},
 		}},
 	}}
@@ -694,17 +694,17 @@ func TestDocuments_markedSource(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testNodes := []*ppb.Node{{
+	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Signature: "node1"},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_CODE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_CODE},
 			Value: rec,
 		}},
 	}, {
 		Source: &spb.VName{Signature: "doc1"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_DOC},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_DOCUMENTS},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_DOC},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DOCUMENTS},
 			Target: &spb.VName{Signature: "node1"},
 		}},
 	}}
@@ -724,7 +724,7 @@ func TestDocuments_markedSource(t *testing.T) {
 }
 
 func TestDecorations_registrations(t *testing.T) {
-	testNodes := []*ppb.Node{{}}
+	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
 	FromNodes(s, nodes).Decorations()
 	if err := beamtest.CheckRegistrations(p); err != nil {
@@ -733,7 +733,7 @@ func TestDecorations_registrations(t *testing.T) {
 }
 
 func TestCrossReferences_registrations(t *testing.T) {
-	testNodes := []*ppb.Node{{}}
+	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
 	FromNodes(s, nodes).CrossReferences()
 	if err := beamtest.CheckRegistrations(p); err != nil {
@@ -742,7 +742,7 @@ func TestCrossReferences_registrations(t *testing.T) {
 }
 
 func TestEdges_registrations(t *testing.T) {
-	testNodes := []*ppb.Node{{}}
+	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
 	FromNodes(s, nodes).Edges()
 	if err := beamtest.CheckRegistrations(p); err != nil {
@@ -751,7 +751,7 @@ func TestEdges_registrations(t *testing.T) {
 }
 
 func TestDocuments_registrations(t *testing.T) {
-	testNodes := []*ppb.Node{{}}
+	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
 	FromNodes(s, nodes).Documents()
 	if err := beamtest.CheckRegistrations(p); err != nil {

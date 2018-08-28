@@ -1,10 +1,17 @@
-# The 0th src of genlex must be the lexer input.
-def genlex(name, srcs, out):
-    cmd = "flex -o $(@D)/%s $(location %s)" % (out, srcs[0])
+def genlex(name, src, out, includes = []):
+    """Generate a C++ lexer from a lex file using Flex.
+
+    Args:
+      name: The name of the rule.
+      src: The .lex source file.
+      out: The generated source file.
+      includes: A list of headers included by the .lex file.
+    """
+    cmd = "flex -o $(@D)/%s $(location %s)" % (out, src)
     native.genrule(
         name = name,
         outs = [out],
-        srcs = srcs,
+        srcs = [src] + includes,
         cmd = cmd,
     )
 
@@ -18,7 +25,8 @@ def genyacc(name, src, header_out, source_out, extra_outs = []):
       source_out: The generated source file.
       extra_outs: Additional generated outputs.
     """
-    cmd = "bison -o $(@D)/%s $(location %s)" % (source_out, src)
+    arg_adjust = "$$(bison --version | grep -qE '^bison .* 3\..*' && echo -Wno-deprecated)"
+    cmd = "bison %s -o $(@D)/%s $(location %s)" % (arg_adjust, source_out, src)
     native.genrule(
         name = name,
         outs = [source_out, header_out] + extra_outs,

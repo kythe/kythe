@@ -26,8 +26,7 @@ shell_tool_test(
       --output "$$kindex_output" \\
       --source "$$input"
 
-    size="$$(du -b "$$kindex_output" | cut -f1)"
-    if [[ "$$size" -eq 0 ]] ; then
+    if [[ ! -s "$$kindex_output" ]]; then
        echo "FAILED: output $$kindex_output is empty"
        exit 1
     fi

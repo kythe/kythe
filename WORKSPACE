@@ -1,5 +1,7 @@
 workspace(name = "io_kythe")
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
@@ -266,8 +268,8 @@ maven_jar(
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "8b68d0630d63d95dacc0016c3bb4b76154fe34fca93efd65d1c366de3fcb4294",
-    url = "https://github.com/bazelbuild/rules_go/releases/download/0.12.1/rules_go-0.12.1.tar.gz",
+    sha256 = "5f3b0304cdf0c505ec9e5b3c4fc4a87b5ca21b13d8ecc780c97df3d1809b9ce6",
+    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.15.1/rules_go-0.15.1.tar.gz"],
 )
 
 # Required by com_google_protobuf.
@@ -306,20 +308,20 @@ new_http_archive(
 
 http_archive(
     name = "google_bazel_common",
-    strip_prefix = "bazel-common-370b397507d9bab9d9cdad8dfe7e6ccc8c2d0c67",
-    urls = ["https://github.com/google/bazel-common/archive/370b397507d9bab9d9cdad8dfe7e6ccc8c2d0c67.zip"],
+    strip_prefix = "bazel-common-e7580d1db7466e6c8403f7826b7558ea5e99bbfd",
+    urls = ["https://github.com/google/bazel-common/archive/e7580d1db7466e6c8403f7826b7558ea5e99bbfd.zip"],
 )
 
 git_repository(
     name = "com_google_common_flogger",
-    commit = "b08ed99eb6dcd62afe81fd0fafd97299b1870fbf",
+    commit = "1b447d1663ff8703cbdb672a034b4d8e4a68ed70",
     remote = "https://github.com/google/flogger",
 )
 
 http_archive(
     name = "bazel_gazelle",
-    sha256 = "ddedc7aaeb61f2654d7d7d4fd7940052ea992ccdb031b8f9797ed143ac7e8d43",
-    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.12.0/bazel-gazelle-0.12.0.tar.gz",
+    sha256 = "c0a5739d12c6d05b6c1ad56f2200cb0b57c5a70e03ebd2f7b87ce88cabf09c7b",
+    urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/0.14.0/bazel-gazelle-0.14.0.tar.gz"],
 )
 
 load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
@@ -338,11 +340,14 @@ gazelle_dependencies()
 
 load("//tools:build_rules/shims.bzl", "go_repository")
 
-go_repository(
-    name = "com_github_golang_protobuf",
+# Kept for third_party license
+# TODO(schroederc): override bazel_rules_go dep once
+#                   https://github.com/bazelbuild/rules_go/issues/1533 is fixed
+new_git_repository(
+    name = "go_protobuf",
+    build_file = "third_party/go/protobuf.BUILD",
     commit = "b4deda0973fb4c70b50d226b1af49f3da59f5265",
-    custom = "protobuf",
-    importpath = "github.com/golang/protobuf",
+    remote = "https://github.com/golang/protobuf.git",
 )
 
 go_repository(
@@ -488,7 +493,8 @@ go_repository(
 
 go_repository(
     name = "com_github_apache_beam",
-    commit = "625bfb536df1b34a21a87a9a350b0dc7c351997f",
+    build_file_proto_mode = "disable",
+    commit = "f31b789d591f7b8f6f96899a79fb6edf45ebcd34",
     custom = "beam",
     importpath = "github.com/apache/beam",
 )
@@ -550,4 +556,10 @@ go_repository(
     commit = "9d7e8feddccb4ed1b8afb54e368bd323d2ff652c",
     custom = "etree",
     importpath = "github.com/beevik/etree",
+)
+
+go_repository(
+    name = "com_github_google_orderedcode",
+    commit = "05a79567b685231e7ca5db3adccddf9ae9dd86df",
+    importpath = "github.com/google/orderedcode",
 )

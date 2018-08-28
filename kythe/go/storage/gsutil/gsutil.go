@@ -131,7 +131,6 @@ func EnsureGracefulExit(gs ...graphstore.Service) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, syscall.SIGTERM)
-	signal.Notify(c, os.Kill)
 	go func() {
 		sig := <-c
 		log.Printf("graphstore: signal %v", sig)
