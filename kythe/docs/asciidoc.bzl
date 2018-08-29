@@ -1,3 +1,5 @@
+load("@bazel_skylib//:lib.bzl", "shell")
+
 def _asciidoc_impl(ctx):
     asciidoc = ctx.toolchains["//tools/build_rules/external_tools:external_tools_toolchain_type"].asciidoc
     args = ["--backend", "html", "--no-header-footer"]
@@ -16,25 +18,27 @@ def _asciidoc_impl(ctx):
     # to PATH in our run_shell command.
     tool_path = ctx.toolchains["//tools/build_rules/external_tools:external_tools_toolchain_type"].path
 
+    logfile = ctx.actions.declare_file(ctx.attr.name + ".logfile")
+
     # Run asciidoc, capture stderr, look in stderr for error messages and fail if we find any.
     ctx.actions.run_shell(
         inputs = [ctx.file.src] + ctx.files.confs + ([ctx.file.example_script] if ctx.file.example_script else []) + ctx.files.data,
-        outputs = [ctx.outputs.out, ctx.outputs.logfile],
+        outputs = [ctx.outputs.out, logfile],
         env = {
             "PATH": tool_path,
         },
         command = "\n".join([
-            '"%s" %s 2> "%s"' % (
-                asciidoc,
-                " ".join(args),
-                ctx.outputs.logfile.path,
+            '%s %s 2> %s' % (
+                shell.quote(asciidoc),
+                " ".join([shell.quote(arg) for arg in args]),
+                shell.quote(logfile.path),
             ),
             "if [[ $? -ne 0 ]]; then",
             "exit 1",
             "fi",
-            'cat "%s"' % (ctx.outputs.logfile.path),
-            'grep -q -e "filter non-zero exit code" -e "no output from filter" "%s"' % (
-                ctx.outputs.logfile.path
+            'cat %s' % (shell.quote(logfile.path)),
+            'grep -q -e "filter non-zero exit code" -e "no output from filter" %s' % (
+                shell.quote(logfile.path)
             ),
             "if [[ $? -ne 1 ]]; then",
             "exit 1",
@@ -70,6 +74,5 @@ asciidoc = rule(
     doc = "Generate asciidoc",
     outputs = {
         "out": "%{name}.html",
-        "logfile": "%{name}.logfile",
     },
 )

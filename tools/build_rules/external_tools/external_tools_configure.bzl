@@ -59,7 +59,7 @@ def _external_toolchain_autoconf_impl(repository_ctx):
 def symlink_command(repository_ctx, command):
     binary = repository_ctx.which(command)
     if binary == None:
-        fail("Unable to find '%s' executavle on path." % command)
+        fail("Unable to find '%s' executable on path." % command)
     repository_ctx.symlink(binary, command)
 
 external_toolchain_autoconf = repository_rule(
