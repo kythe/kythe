@@ -12,7 +12,7 @@ go_library(
         "//kythe/proto:cxx_go_proto",
         "//kythe/proto:go_go_proto",
         "//kythe/proto:java_go_proto",
-        "@com_github_golang_protobuf//jsonpb:go_default_library",
+        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
     ],
 )
 
