@@ -1,0 +1,92 @@
+/*
+ * Copyright 2018 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+import "kythe/proto/analysis.proto";
+import "kythe/proto/common.proto";
+import "kythe/proto/storage.proto";
+
+// This package defines messages used to implement JSON-RPC 2.0 message
+// exchange between a Kythe analyzer and its pipeline driver.  These messages
+// are designed so that their canonical proto3 JSON encoding corresponds to the
+// format in the spec. The encoding rules are defined by:
+// https://developers.google.com/protocol-buffers/docs/proto3#json.
+//
+// Spec: https://github.com/google/kythe/blob/master/kythe/docs/rfc/2966.md
+package kythe.driver;
+
+// A request from the analyzer to establish the version of the driver protocol.
+message InitRequest {
+  string protocol = 1;  // currently: "kythe1"
+}
+
+// A reply from the driver confirming the protocol version. The driver must
+// agree to use the requested protocol version, or report an error.
+message InitReply {
+  string protocol = 1;
+}
+
+// A request from the analyzer for a compilation record to analyze.
+message AnalyzeRequest {
+  // Only return a unit for analysis if its language matches.  If empty, any
+  // available unit may be delivered.
+  string language = 1;
+}
+
+// A reply from the driver delivering a compilation unit to analyze.
+message AnalyzeReply {
+  // An identifier assigned by the driver, unique across all active analyses
+  // currently in flight from this driver. This value must be set in all other
+  // requests involving this unit.
+  int64 id = 1;
+
+  // The compilation unit to analyze.
+  kythe.proto.CompilationUnit unit = 2;
+}
+
+// A request for the contents of a file.
+message FileRequest {
+  int64 id = 1;
+
+  // The file path and/or digest being requested. At least one of these fields
+  // must be non-empty.
+  string path = 2;
+  string digest = 3;
+}
+
+// A reply from the driver delivering the contents of a file.
+message FileReply {
+  string path = 1;
+  string digest = 2;
+  bytes data = 3;
+}
+
+// Sent as a notification by the analyzer to write output for the specified
+// compilation unit. The driver does not reply.
+message OutRequest {
+  int64 id = 1;
+
+  repeated bytes output = 2;
+  repeated kythe.proto.Entry entries = 3;
+}
+
+// Sent as a notification by the analyzer to carry log messages and diagnostics
+// about a pending analysis.  The driver does not reply.
+message LogRequest {
+  int64 id = 1;
+  kythe.proto.common.Diagnostic message = 2;
+}
