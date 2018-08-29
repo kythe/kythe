@@ -27,4 +27,4 @@ FILTER=".[]|\"cd \" + .directory + \" && \\\"${QUOTED_EXTRACTOR}\\\" --with_exec
 : ${KYTHE_ROOT_DIRECTORY:?Missing environment variable}
 : ${KYTHE_OUTPUT_DIRECTORY:?Missing environment variable}
 : ${DATABASE:?Missing database (use: ${0} path/to/compile_commands.json)}
-"${JQ}" -r "${FILTER}" "${DATABASE}" | parallel --gnu
+"${JQ}" -r "${FILTER}" "${DATABASE}" | sh
