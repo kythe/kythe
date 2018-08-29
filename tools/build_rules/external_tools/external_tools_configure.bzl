@@ -8,9 +8,7 @@ load("@//tools/build_rules/external_tools:external_tools_toolchain.bzl", "extern
 external_tools_toolchain(
   name = "host_toolchain_impl",
   asciidoc = "{asciidoc}",
-  dot = "{dot}",
-  python = "{python}",
-  cat = "{cat}",
+  path = "{path}"
 )
 
 toolchain(
@@ -32,16 +30,35 @@ def _external_toolchain_autoconf_impl(repository_ctx):
     asciidoc = repository_ctx.which("asciidoc")
     if asciidoc == None:
         fail("Unable to find 'asciidoc' executable on path.")
-    dot = repository_ctx.which("dot")
-    if dot == None:
-        fail("Unable to find 'dot' executable on path.")
-    python = repository_ctx.which("python")
-    if python == None:
-        fail("Unable to find 'python' executable on path.")
-    cat = repository_ctx.which("cat")
-    if cat == None:
-        fail("Unable to find 'cat' executable on path.")
-    repository_ctx.file("BUILD", _BUILD_TEMPLATE.format(asciidoc = asciidoc, dot = dot, python = python, cat = cat))
+    # These are the tools that the doc/schema generation need beyond the
+    # explicit call to asciidoc.
+    tools = [
+        "dot",
+        "python",
+        "grep",
+        "cat",
+        "source-highlight",
+        "mktemp",
+        "mkdir",
+        "touch",
+        "awk",
+        "tee",
+        "rm",
+        "cut",
+        "sha1sum",
+    ]
+    for tool in tools:
+      symlink_command(repository_ctx, tool)
+
+    repository_ctx.file("BUILD", _BUILD_TEMPLATE.format(
+        asciidoc = asciidoc,
+        path=repository_ctx.path("")))
+
+def symlink_command(repository_ctx, command):
+  binary = repository_ctx.which(command)
+  if binary == None:
+    fail("Unable to find '%s' executavle on path." % command)
+  repository_ctx.symlink(binary, command)
 
 external_toolchain_autoconf = repository_rule(
     implementation = _external_toolchain_autoconf_impl,

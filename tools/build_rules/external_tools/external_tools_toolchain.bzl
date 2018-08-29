@@ -7,6 +7,7 @@ def _external_tools_toolchain_impl(ctx):
             dot = ctx.attr.dot,
             python = ctx.attr.python,
             cat = ctx.attr.cat,
+            path = ctx.attr.path,
         ),
     ]
 
@@ -17,5 +18,6 @@ external_tools_toolchain = rule(
         "dot": attr.string(),
         "python": attr.string(),
         "cat": attr.string(),
+        "path": attr.string(),
     },
 )

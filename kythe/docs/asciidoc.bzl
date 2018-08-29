@@ -12,36 +12,33 @@ def _asciidoc_impl(ctx):
     args += ["-o", ctx.outputs.out.path]
     args += [ctx.file.src.path]
 
-    # Since asciidoc shells out to dot and dot may not be in the standard bazel
-    # path, have to find all the tools we use and construct a bespoke PATH for
-    # our run_shell command.
-    dot = ctx.toolchains["//tools/build_rules/external_tools:external_tools_toolchain_type"].dot
-    dot = dot[0:dot.rfind('/')]
-    python = ctx.toolchains["//tools/build_rules/external_tools:external_tools_toolchain_type"].python
-    python = python[0:python.rfind('/')]
-    cat = ctx.toolchains["//tools/build_rules/external_tools:external_tools_toolchain_type"].cat
-    cat = cat[0:cat.rfind('/')]
-
-    paths = dict([(dot, ""), (python, ""), (cat, "")]).keys()
+    # Get the path where all our necessary tools are located so it can be set
+    # to PATH in our run_shell command.
+    tool_path = ctx.toolchains["//tools/build_rules/external_tools:external_tools_toolchain_type"].path
 
     # Run asciidoc, capture stderr, look in stderr for error messages and fail if we find any.
     ctx.actions.run_shell(
         inputs = [ctx.file.src] + ctx.files.confs + ([ctx.file.example_script] if ctx.file.example_script else []) + ctx.files.data,
         outputs = [ctx.outputs.out, ctx.outputs.logfile],
         env = {
-            "PATH": ":".join(paths),
+            "PATH": tool_path,
         },
         command = "\n".join([
-            "set -eo pipefail",
             '"%s" %s 2> "%s"' % (
                 asciidoc,
                 " ".join(args),
                 ctx.outputs.logfile.path,
             ),
+            'if [[ $? -ne 0 ]]; then',
+            'exit 1',
+            'fi',
             'cat "%s"' % (ctx.outputs.logfile.path),
-            '! grep -q -e "filter non-zero exit code" -e "no output from filter" "%s"' % (
+            'grep -q -e "filter non-zero exit code" -e "no output from filter" "%s"' % (
                 ctx.outputs.logfile.path
             ),
+            'if [[ $? -ne 1 ]]; then',
+            'exit 1',
+            'fi',
         ]),
         mnemonic = "RunAsciidoc",
     )
