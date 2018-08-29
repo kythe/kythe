@@ -7,7 +7,7 @@ go_library(
     srcs = ["ptypes.go"],
     deps = [
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_golang_protobuf//ptypes:go_default_library",
+        "@com_github_golang_protobuf//ptypes:go_default_library_gen",
         "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )

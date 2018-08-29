@@ -10,7 +10,7 @@ go_binary(
         "//kythe/go/platform/kcd/kythe",
         "//kythe/go/platform/kzip",
         "//kythe/proto:analysis_go_proto",
-        "@com_github_golang_protobuf//jsonpb:go_default_library",
+        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
         "@org_golang_x_sync//errgroup:go_default_library",
         "@org_golang_x_sync//semaphore:go_default_library",
