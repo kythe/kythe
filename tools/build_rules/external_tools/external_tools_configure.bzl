@@ -30,6 +30,7 @@ def _external_toolchain_autoconf_impl(repository_ctx):
     asciidoc = repository_ctx.which("asciidoc")
     if asciidoc == None:
         fail("Unable to find 'asciidoc' executable on path.")
+
     # These are the tools that the doc/schema generation need beyond the
     # explicit call to asciidoc.
     tools = [
@@ -48,17 +49,18 @@ def _external_toolchain_autoconf_impl(repository_ctx):
         "sha1sum",
     ]
     for tool in tools:
-      symlink_command(repository_ctx, tool)
+        symlink_command(repository_ctx, tool)
 
     repository_ctx.file("BUILD", _BUILD_TEMPLATE.format(
         asciidoc = asciidoc,
-        path=repository_ctx.path("")))
+        path = repository_ctx.path(""),
+    ))
 
 def symlink_command(repository_ctx, command):
-  binary = repository_ctx.which(command)
-  if binary == None:
-    fail("Unable to find '%s' executavle on path." % command)
-  repository_ctx.symlink(binary, command)
+    binary = repository_ctx.which(command)
+    if binary == None:
+        fail("Unable to find '%s' executavle on path." % command)
+    repository_ctx.symlink(binary, command)
 
 external_toolchain_autoconf = repository_rule(
     implementation = _external_toolchain_autoconf_impl,

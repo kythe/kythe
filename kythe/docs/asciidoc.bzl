@@ -29,16 +29,16 @@ def _asciidoc_impl(ctx):
                 " ".join(args),
                 ctx.outputs.logfile.path,
             ),
-            'if [[ $? -ne 0 ]]; then',
-            'exit 1',
-            'fi',
+            "if [[ $? -ne 0 ]]; then",
+            "exit 1",
+            "fi",
             'cat "%s"' % (ctx.outputs.logfile.path),
             'grep -q -e "filter non-zero exit code" -e "no output from filter" "%s"' % (
                 ctx.outputs.logfile.path
             ),
-            'if [[ $? -ne 1 ]]; then',
-            'exit 1',
-            'fi',
+            "if [[ $? -ne 1 ]]; then",
+            "exit 1",
+            "fi",
         ]),
         mnemonic = "RunAsciidoc",
     )
