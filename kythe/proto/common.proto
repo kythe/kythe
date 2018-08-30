@@ -89,6 +89,19 @@ message Diagnostic {
   string context_url = 4;
 }
 
+// A Diagnostic with its associated file.
+message ResolvedDiagnostic {
+  CorpusPath corpus_path = 1;
+  Diagnostic diagnostic = 2;
+}
+
+// A file path rooted in a corpus.  This is a subset of a Kythe VName.
+message CorpusPath {
+  string corpus = 1;
+  string root = 2;
+  string path = 3;
+}
+
 message Link {
   // Semantic tickets for DEFINITION links.
   repeated string definition = 3;
