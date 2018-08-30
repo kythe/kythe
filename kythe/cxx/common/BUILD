@@ -410,7 +410,6 @@ cc_library(
     name = "libzip/error",
     srcs = ["libzip/error.cc"],
     hdrs = ["libzip/error.h"],
-    visibility = ["//visibility:private"],
     deps = [
         ":status",
         "@org_libzip//:zip",
