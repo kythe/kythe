@@ -27,18 +27,36 @@ namespace libzip {
 /// \brief RAII wrapper around zip_error_t.
 class Error {
  public:
-  Error() { zip_error_init(get()); }
+  /// \brief Constructs an Error instance from the libzip error code
+  /// and errno, if necessary.
   explicit Error(int code) { zip_error_init_with_code(get(), code); }
+  /// \brief Pseudo-copy constructor. Constructs an Error instance copying
+  /// the relevant portions of zip_error_t.
+  explicit Error(const zip_error_t& error) : Error() {
+    zip_error_set(get(), zip_error_code_zip(&error),
+                  zip_error_code_system(&error));
+  }
+  Error() { zip_error_init(get()); }
+  Error(const Error& other) : Error(*other.get()) {}
+  Error& operator=(const Error& other) {
+    zip_error_fini(get());
+    zip_error_init(get());
+    zip_error_set(get(), zip_error_code_zip(other.get()),
+                  zip_error_code_system(other.get()));
+    return *this;
+  }
   ~Error() { zip_error_fini(get()); }
 
-  // Error is neither copyable nor movable.
-  Error(const Error&) = delete;
-  Error& operator=(const Error&) = delete;
-
   /// \brief Converts the Error into a Kythe::Status.
+  Status ToStatus() const;
   Status ToStatus();
 
   zip_error_t* get() { return &error_; }
+  const zip_error_t* get() const { return &error_; }
+
+  int system_type() const { return zip_error_system_type(get()); }
+  int zip_code() const { return zip_error_code_zip(get()); }
+  int system_code() const { return zip_error_code_system(get()); }
 
  private:
   zip_error_t error_;
