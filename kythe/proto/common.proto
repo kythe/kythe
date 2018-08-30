@@ -89,7 +89,8 @@ message Diagnostic {
   string context_url = 4;
 }
 
-// A Diagnostic with its associated file.
+// A Diagnostic resolved to include its associated file through a Kythe `tagged`
+// graph edge.
 message ResolvedDiagnostic {
   CorpusPath corpus_path = 1;
   Diagnostic diagnostic = 2;
