@@ -22,7 +22,7 @@ public enum EdgeKind {
   DEFINES_BINDING(true, "defines/binding"),
   DOCUMENTS(true, "documents"),
   TAGGED(true, "tagged"),
-  UNDEFINES(true, "undeines"),
+  UNDEFINES(true, "undefines"),
 
   // Edges from an anchor.
   COMPLETES(true, "completes"),
