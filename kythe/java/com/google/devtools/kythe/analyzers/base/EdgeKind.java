@@ -40,7 +40,7 @@ public enum EdgeKind {
   REF_INCLUDES(true, "ref/includes"),
   REF_INIT(true, "ref/init"),
   REF_INIT_IMPLICIT(true, "ref/init/implicit"),
-  REF_QUERIES("ref/queries"),
+  REF_QUERIES(true, "ref/queries"),
 
   ALIASES("aliases"),
   ALIASES_ROOT("aliases/root"),

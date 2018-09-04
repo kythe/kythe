@@ -87,7 +87,7 @@ done
 "$VERIFIER_BIN" --ignore_dups "${SRCS}"/* < "${TEST_ENTRIES}"
 
 trap 'error FORMAT' ERR
-EXAMPLE_ID=$(sha1sum "$RAW_EXAMPLE" | cut -c 1-40)
+EXAMPLE_ID=$(shasum -a 256 "$RAW_EXAMPLE" | cut -c 1-64)
 
 if [[ -n "${DIV_STYLE}" ]]; then
   echo "<div style=\"${DIV_STYLE}\">"
