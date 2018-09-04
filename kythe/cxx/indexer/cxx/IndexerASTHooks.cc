@@ -916,7 +916,7 @@ void IndexerASTVisitor::VisitAttributes(const clang::Decl *Decl,
 }
 
 bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
-  if (Job->UnderneathImplicitTemplateInstantiation || Decl == nullptr ||
+  if ((Job->UnderneathImplicitTemplateInstantiation || Decl == nullptr) &&
       !Decl->hasAttrs()) {
     // Template instantiation can't add any documentation text.
     return true;
