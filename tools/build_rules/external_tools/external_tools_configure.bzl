@@ -46,7 +46,9 @@ def _external_toolchain_autoconf_impl(repository_ctx):
         "tee",
         "rm",
         "cut",
-        "sha1sum",
+        "shasum",
+        "sed",
+        "readlink",
     ]
     for tool in tools:
         symlink_command(repository_ctx, tool)
