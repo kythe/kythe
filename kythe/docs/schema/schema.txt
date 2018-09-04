@@ -28,7 +28,7 @@ examples from your own languages, but be sure to keep them up to date.
 Kythe Namespace
 ---------------
 
-All facts names in this doc are implicitly prefixed by `/kythe`::
+All fact names in this doc are implicitly prefixed by `/kythe`::
   e.g. `node/kind` is really `/kythe/node/kind`
 
 All edge kinds in this doc are implicitly prefixed by `/kythe/edge`::
@@ -1417,6 +1417,9 @@ Points toward::
 Common node facts
 -----------------
 
+Some facts can be attached to many different kinds of nodes. A subset of these
+(called tags) are interesting even if they have no associated values.
+
 [[nodekind]]
 node/kind
 ~~~~~~~~~
@@ -1447,6 +1450,19 @@ Brief description::
   hold a URI pointing to that documentation. For example, you may want to link
   builtin functions to their definitions in a language's reference manual.
 
+Attached to::
+  semantic nodes
+
+
+[[tagdeprecated]]
+tag/deprecated
+~~~~~~~~~~~~~~
+
+Brief description::
+  If this node should no longer be used, it should be marked with
+  `tag/deprecated`. If this fact has a nonempty value, that value should be
+  set to a human-readable reason why the node was deprecated, and/or what should
+  be done in the future.
 Attached to::
   semantic nodes
 

@@ -106,6 +106,7 @@ static const std::string *const kPropertySpellings[] = {
     new std::string("/kythe/variance"),
     new std::string("/kythe/param/default"),
     new std::string("/kythe/tag/static"),
+    new std::string("/kythe/tag/deprecated"),
 };
 
 static const std::string *const kEmptyStringSpelling = new std::string("");
