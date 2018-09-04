@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/libzip/error.h"
 #include "kythe/cxx/common/testutil.h"
+#include "kythe/proto/go.pb.h"
 
 namespace kythe {
 namespace {
@@ -63,6 +64,11 @@ TEST(KzipReaderTest, OpenFailsForMissingRoot) {
 }
 
 TEST(KzipReaderTest, OpenAndReadSimpleKzip) {
+  // This forces the GoDetails proto descriptor to be added to the pool so we
+  // can deserialize it. If we don't do this, we get an error like:
+  // "Invalid type URL, unknown type: kythe.proto.GoDetails for type Any".
+  proto::GoDetails needed_for_proto_deserialization;
+
   StatusOr<IndexReader> reader = KzipReader::Open(TestFile("stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
   EXPECT_TRUE(reader
@@ -101,6 +107,11 @@ TEST(KzipReaderTest, FromSourceFailsIfSourceDoes) {
 }
 
 TEST(KzipReaderTest, FromSourceReadsSimpleKzip) {
+  // This forces the GoDetails proto descriptor to be added to the pool so we
+  // can deserialize it. If we don't do this, we get an error like:
+  // "Invalid type URL, unknown type: kythe.proto.GoDetails for type Any".
+  proto::GoDetails needed_for_proto_deserialization;
+
   libzip::Error error;
   StatusOr<IndexReader> reader = KzipReader::FromSource(zip_source_file_create(
       TestFile("stringset.kzip").c_str(), 0, -1, error.get()));
