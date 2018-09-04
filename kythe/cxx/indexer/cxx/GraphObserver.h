@@ -891,6 +891,12 @@ class GraphObserver {
   /// \param VarNodeId The `NodeId` of the static variable.
   virtual void recordStaticVariable(const NodeId &VarNodeId) {}
 
+  /// \brief Records that the specified node is deprecated.
+  /// \param NodeId The `NodeId` of the deprecated node.
+  /// \param Advice A user-readable message about the deprecation (or empty).
+  virtual void recordDeprecated(const NodeId &NodeId,
+                                const llvm::StringRef &Advice) {}
+
   /// \brief Called when a new input file is entered.
   ///
   /// The file entered in the first `pushFile` is the compilation unit being
