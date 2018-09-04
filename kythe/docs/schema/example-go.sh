@@ -38,7 +38,7 @@ readonly ENTRIES="$TMP/example.entries"
 "$VERIFIER_BIN" --use_file_nodes < "$ENTRIES"
 
 trap 'error FORMAT' ERR
-readonly EXAMPLE_ID=$(sha1sum "$SRCFILE" | cut -c 1-40)
+readonly EXAMPLE_ID=$(shasum -a 256 "$SRCFILE" | cut -c 1-64)
 
 if [[ -n "$DIV_STYLE" ]] ; then
   echo "<div style=\"${DIV_STYLE}\">"
