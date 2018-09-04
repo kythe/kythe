@@ -1,0 +1,2 @@
+import '%workspace%/tools/bazel.rc'
+build --unconditional_warning="~/.bazelrc may not be being read, consider passing it through the --bazelrc flag."
