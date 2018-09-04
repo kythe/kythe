@@ -1461,8 +1461,8 @@ tag/deprecated
 Brief description::
   If this node should no longer be used, it should be marked with
   `tag/deprecated`. If this fact has a nonempty value, that value should be
-  set to a human-readable reason why the node was deprecated, and/or what should
-  be done in the future.
+  set to a UTF8-encoded human-readable reason why the node was deprecated,
+  and/or what should be done in the future.
 Attached to::
   semantic nodes
 
