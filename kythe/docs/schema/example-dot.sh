@@ -28,7 +28,7 @@ set -o pipefail
 
 RAW_EXAMPLE="$TMP/raw.dot"
 cat > "${RAW_EXAMPLE}"
-EXAMPLE_ID="$(sha1sum "${RAW_EXAMPLE}" | cut -c 1-40)"
+EXAMPLE_ID="$(shasum -a 256 "${RAW_EXAMPLE}" | cut -c 1-64)"
 dot -Tsvg -o "${EXAMPLE_ID}.svg" "${RAW_EXAMPLE}"
 echo "<div>"
 cat "${EXAMPLE_ID}.svg"
