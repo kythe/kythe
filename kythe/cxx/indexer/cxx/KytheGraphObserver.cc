@@ -1020,6 +1020,13 @@ void KytheGraphObserver::recordStaticVariable(const NodeId &VarNodeId) {
   recorder_->AddProperty(node_vname, PropertyID::kTagStatic, "");
 }
 
+void KytheGraphObserver::recordDeprecated(const NodeId &NodeId,
+                                          const llvm::StringRef &Advice) {
+  const VNameRef node_vname = VNameRefFromNodeId(NodeId);
+  recorder_->AddProperty(node_vname, PropertyID::kTagDeprecated,
+                         ConvertRef(Advice));
+}
+
 GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
     const llvm::StringRef &spelling) const {
   const auto &info = builtins_.find(spelling.str());
