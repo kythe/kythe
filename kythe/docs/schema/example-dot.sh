@@ -25,10 +25,11 @@ set -o pipefail
 #   LABEL
 #   CXX_INDEXER_BIN
 #   VERIFIER_BIN
+#   SHASUM_TOOL
 
 RAW_EXAMPLE="$TMP/raw.dot"
 cat > "${RAW_EXAMPLE}"
-EXAMPLE_ID="$(shasum -a 256 "${RAW_EXAMPLE}" | cut -c 1-64)"
+EXAMPLE_ID="$($SHASUM_TOOL "${RAW_EXAMPLE}" | cut -c 1-64)"
 dot -Tsvg -o "${EXAMPLE_ID}.svg" "${RAW_EXAMPLE}"
 echo "<div>"
 cat "${EXAMPLE_ID}.svg"
