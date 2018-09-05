@@ -136,7 +136,7 @@ clang::QualType FollowAliasChain(const clang::TypedefNameDecl *TND) {
     if (auto *TTD = dyn_cast<TypedefType>(QT.getTypePtr())) {
       TND = TTD->getDecl();
     } else if (auto *ET = dyn_cast<ElaboratedType>(QT.getTypePtr())) {
-      if (auto* TDT = dyn_cast<TypedefType>(ET->getNamedType().getTypePtr())) {
+      if (auto *TDT = dyn_cast<TypedefType>(ET->getNamedType().getTypePtr())) {
         TND = TDT->getDecl();
         Qs.addQualifiers(ET->getNamedType().getQualifiers());
       } else {
@@ -906,14 +906,25 @@ bool IndexerASTVisitor::VisitDeclaratorDecl(const clang::DeclaratorDecl *Decl) {
   return true;
 }
 
+void IndexerASTVisitor::VisitAttributes(const clang::Decl *Decl,
+                                        const GraphObserver::NodeId &NodeId) {
+  for (const auto &Attr : Decl->attrs()) {
+    if (const auto *DepAttr = clang::dyn_cast<clang::DeprecatedAttr>(Attr)) {
+      Observer.recordDeprecated(NodeId, DepAttr->getMessage());
+    }
+  }
+}
+
 bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
-  if (Job->UnderneathImplicitTemplateInstantiation || Decl == nullptr) {
+  if ((Job->UnderneathImplicitTemplateInstantiation || Decl == nullptr) &&
+      !Decl->hasAttrs()) {
     // Template instantiation can't add any documentation text.
     return true;
   }
-  const auto *Comment = Context.getRawCommentForDeclNoCache(Decl);
-  if (!Comment) {
-    // Fast path: if there are no attached documentation comments, bail.
+  const auto *CommentOrNull = Context.getRawCommentForDeclNoCache(Decl);
+  if (!CommentOrNull && !Decl->hasAttrs()) {
+    // Fast path: if there are no attached documentation comments or attributes,
+    // bail.
     return true;
   }
   const auto *DCxt = dyn_cast<DeclContext>(Decl);
@@ -926,39 +937,48 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
 
   if (const auto *DC = dyn_cast_or_null<DeclContext>(Decl)) {
     if (auto DCID = BuildNodeIdForDeclContext(DC)) {
+      VisitAttributes(Decl, DCID.value());
+      if (CommentOrNull == nullptr) {
+        return true;
+      }
       if (const auto *IFaceDecl = dyn_cast_or_null<ObjCInterfaceDecl>(DC)) {
-        VisitObjCInterfaceDeclComment(IFaceDecl, Comment, DCxt, DCID);
+        VisitObjCInterfaceDeclComment(IFaceDecl, CommentOrNull, DCxt, DCID);
       } else if (const auto *R = dyn_cast_or_null<RecordDecl>(DC)) {
-        VisitRecordDeclComment(R, Comment, DCxt, DCID);
+        VisitRecordDeclComment(R, CommentOrNull, DCxt, DCID);
       } else {
-        VisitComment(Comment, DCxt, DCID.value());
+        VisitComment(CommentOrNull, DCxt, DCID.value());
       }
     }
     if (const auto *CTPSD =
             dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
       auto NodeId = BuildNodeIdForDecl(CTPSD);
-      VisitComment(Comment, DCxt, NodeId);
+      VisitAttributes(Decl, NodeId);
+      if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
     }
     if (const auto *FD = dyn_cast_or_null<FunctionDecl>(Decl)) {
       if (const auto *FTD = FD->getDescribedFunctionTemplate()) {
         auto NodeId = BuildNodeIdForDecl(FTD);
-        VisitComment(Comment, DCxt, NodeId);
+        VisitAttributes(Decl, NodeId);
+        if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
       }
     }
   } else {
     if (const auto *VD = dyn_cast_or_null<VarDecl>(Decl)) {
       if (const auto *VTD = VD->getDescribedVarTemplate()) {
         auto NodeId = BuildNodeIdForDecl(VTD);
-        VisitComment(Comment, DCxt, NodeId);
+        VisitAttributes(VTD, NodeId);
+        if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
       }
     } else if (const auto *AD = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
       if (const auto *TATD = AD->getDescribedAliasTemplate()) {
         auto NodeId = BuildNodeIdForDecl(TATD);
-        VisitComment(Comment, DCxt, NodeId);
+        VisitAttributes(TATD, NodeId);
+        if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
       }
     }
     auto NodeId = BuildNodeIdForDecl(Decl);
-    VisitComment(Comment, DCxt, NodeId);
+    VisitAttributes(Decl, NodeId);
+    if (CommentOrNull != nullptr) VisitComment(CommentOrNull, DCxt, NodeId);
   }
   return true;
 }

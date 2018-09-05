@@ -15,11 +15,13 @@ def asciidoc_with_verifier(name, src):
             "example-cxx.sh",
             "example-objc.sh",
             "example-dot.sh",
+            "example-go.sh",
             "example-java.sh",
             "java-schema-file-data-template.FileData",
             "java-schema-unit-template.CompilationUnit",
             "//kythe/cxx/indexer/cxx:indexer",
             "//kythe/go/indexer/cmd/go_example:go_example",
+            "//kythe/go/platform/tools/shasum_tool",
             "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
             "//kythe/cxx/tools:kindex_tool",
             "//kythe/cxx/verifier",
@@ -37,6 +39,7 @@ def build_example_sh():
         "JAVA_INDEXER_BIN": "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
         "KINDEX_TOOL_BIN": "//kythe/cxx/tools:kindex_tool",
         "VERIFIER_BIN": "//kythe/cxx/verifier",
+        "SHASUM_TOOL": "//kythe/go/platform/tools/shasum_tool:shasum_tool",
     }
     fixes = [
         "-e '/^export %s=/{i\\\n_p=($(locations %s))\ns#$$#\"$$ROOT/$${_p[0]}\"#\n}'" % (key, target)
