@@ -34,6 +34,7 @@ export GO_INDEXER_BIN=
 export JAVA_INDEXER_BIN=
 export KINDEX_TOOL_BIN=
 export VERIFIER_BIN=
+export SHASUM_TOOL=
 
 export LANGUAGE="$3"
 export LABEL="$4"

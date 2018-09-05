@@ -24,8 +24,9 @@ set -o pipefail
 #   LANGUAGE
 #   LABEL
 #   JAVA_INDEXER_BIN
-#   VERIFIER_BIN
 #   KINDEX_TOOL_BIN
+#   VERIFIER_BIN
+#   SHASUM_TOOL
 #   SHOWGRAPH
 #
 # TODO(zarko): Provide alternate templates to avoid unnecessary boilerplate
@@ -34,7 +35,7 @@ set -o pipefail
 # Save the Java source example
 TEST_FILE="$TMP/E.java"
 tee "$TEST_FILE.orig" > "$TEST_FILE"
-FILE_SHA=$(shasum -a 256 "${TEST_FILE}.orig" | cut -c 1-64)
+FILE_SHA=$($SHASUM_TOOL "${TEST_FILE}.orig" | cut -c 1-64)
 
 # Convert to ascii proto format; escape backslashes, quotes, and newlines.
 python <<EOF > "${TEST_FILE}.FileData"

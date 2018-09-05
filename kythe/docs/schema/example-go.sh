@@ -26,6 +26,7 @@ set -o pipefail
 #   LABEL
 #   GO_INDEXER_BIN
 #   VERIFIER_BIN
+#   SHASUM_TOOL
 #   SHOWGRAPH
 
 readonly PKGDIR="$TMP/pkg"
@@ -38,7 +39,7 @@ readonly ENTRIES="$TMP/example.entries"
 "$VERIFIER_BIN" --use_file_nodes < "$ENTRIES"
 
 trap 'error FORMAT' ERR
-readonly EXAMPLE_ID=$(shasum -a 256 "$SRCFILE" | cut -c 1-64)
+readonly EXAMPLE_ID=$($SHASUM_TOOL "$SRCFILE" | cut -c 1-64)
 
 if [[ -n "$DIV_STYLE" ]] ; then
   echo "<div style=\"${DIV_STYLE}\">"

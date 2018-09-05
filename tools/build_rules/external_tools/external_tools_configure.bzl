@@ -46,7 +46,6 @@ def _external_toolchain_autoconf_impl(repository_ctx):
         "tee",
         "rm",
         "cut",
-        "shasum",
         "sed",
         "readlink",
     ]
