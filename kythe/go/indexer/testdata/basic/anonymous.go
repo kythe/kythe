@@ -63,3 +63,14 @@ var g = func(elt struct {
 	//- @elt ref Elt
 	return len(elt.P)
 }
+
+//- @em defines/binding Em
+//- Em.node/kind record
+type em struct {
+	v struct {
+		//- @X defines/binding EmX
+		//- EmX.node/kind variable
+		//- EmX.subkind field
+		X string
+	}
+}
