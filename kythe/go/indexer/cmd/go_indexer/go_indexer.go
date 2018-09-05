@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/url"
 	"os"
@@ -33,10 +32,8 @@ import (
 
 	"kythe.io/kythe/go/indexer"
 	"kythe.io/kythe/go/platform/delimited"
-	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/kzip"
-	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/metadata"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -44,8 +41,6 @@ import (
 )
 
 var (
-	doIndexPack = flag.Bool("indexpack", false, "Treat arguments as index pack directories")
-	doZipPack   = flag.Bool("zip", false, "Treat arguments as zipped indexpack files (implies -indexpack)")
 	doJSON      = flag.Bool("json", false, "Write output as JSON")
 	doLibNodes  = flag.Bool("libnodes", false, "Emit nodes for standard library packages")
 	doCodeFacts = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
@@ -165,9 +160,6 @@ type visitFunc func(context.Context, *apb.CompilationUnit, indexer.Fetcher) erro
 // visitPath invokes visit for each compilation denoted by path, which is
 // either a .kindex file (with a single compilation) or an index pack.
 func visitPath(ctx context.Context, path string, visit visitFunc) error {
-	if *doIndexPack || *doZipPack {
-		return visitIndexPack(ctx, path, visit)
-	}
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -188,36 +180,6 @@ func visitPath(ctx context.Context, path string, visit visitFunc) error {
 	default:
 		return fmt.Errorf("unknown file extension %q", ext)
 	}
-}
-
-// visitIndexPack invokes visit for each Kythe compilation in the index pack at
-// path. Any error returned by the visitor terminates the scan.
-func visitIndexPack(ctx context.Context, path string, visit visitFunc) error {
-	pack, err := openPack(ctx, path)
-	if err != nil {
-		return fmt.Errorf("opening indexpack: %v", err)
-	}
-	return pack.ReadUnits(ctx, "kythe", func(_ string, msg interface{}) error {
-		return visit(ctx, msg.(*apb.CompilationUnit), pack.Fetcher(ctx))
-	})
-}
-
-func openPack(ctx context.Context, path string) (*indexpack.Archive, error) {
-	utype := indexpack.UnitType((*apb.CompilationUnit)(nil))
-	if *doZipPack {
-		fi, err := vfs.Stat(ctx, path)
-		if err != nil {
-			return nil, err
-		} else if !fi.Mode().IsRegular() {
-			return nil, fmt.Errorf("invalid zip file path %q: %v", path, err)
-		}
-		f, err := vfs.Open(ctx, path)
-		if err != nil {
-			return nil, err
-		}
-		return indexpack.OpenZip(ctx, f.(io.ReaderAt), fi.Size(), utype)
-	}
-	return indexpack.Open(ctx, path, utype)
 }
 
 type kzipFetcher struct{ r *kzip.Reader }
