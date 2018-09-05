@@ -41,7 +41,6 @@ import (
 )
 
 var (
-	doZipPack   = flag.Bool("zip", false, "Treat arguments as zipped indexpack files (implies -indexpack)")
 	doJSON      = flag.Bool("json", false, "Write output as JSON")
 	doLibNodes  = flag.Bool("libnodes", false, "Emit nodes for standard library packages")
 	doCodeFacts = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
