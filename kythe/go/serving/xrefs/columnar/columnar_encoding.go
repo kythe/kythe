@@ -101,6 +101,7 @@ func encodeDecorText(prefix []byte, file *spb.VName, t *xspb.FileDecorations_Tex
 	if err != nil {
 		return nil, err
 	}
+	// Encode the subset of the value proto not encoded in the key.
 	val, err := proto.Marshal(&xspb.FileDecorations_Text{Text: t.Text})
 	if err != nil {
 		return nil, err
@@ -115,7 +116,6 @@ func encodeDecorTarget(prefix []byte, file *spb.VName, t *xspb.FileDecorations_T
 	if err != nil {
 		return nil, err
 	}
-
 	val, err := proto.Marshal(&xspb.FileDecorations_Target{})
 	if err != nil {
 		return nil, err
@@ -151,6 +151,7 @@ func encodeDecorTargetDefinition(prefix []byte, file *spb.VName, td *xspb.FileDe
 	if err != nil {
 		return nil, err
 	}
+	// Encode the subset of the value proto not encoded in the key.
 	val, err := proto.Marshal(&xspb.FileDecorations_TargetDefinition{Definition: td.Definition})
 	if err != nil {
 		return nil, err
@@ -178,6 +179,7 @@ func encodeDecorOverride(prefix []byte, file *spb.VName, o *xspb.FileDecorations
 	if err != nil {
 		return nil, err
 	}
+	// Encode the subset of the value proto not encoded in the key.
 	val, err := proto.Marshal(&xspb.FileDecorations_Override{MarkedSource: o.MarkedSource})
 	if err != nil {
 		return nil, err
