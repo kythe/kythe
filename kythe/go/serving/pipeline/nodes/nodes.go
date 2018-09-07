@@ -256,9 +256,9 @@ type Filter struct {
 
 // ProcessElement emits the given Node if it matches the given Filter.
 func (f *Filter) ProcessElement(n *scpb.Node, emit func(*scpb.Node)) error {
-	if f.FilterByKind != nil && !contains(Kind(n), f.FilterByKind) {
+	if f.FilterByKind != nil && !contains(schema.GetNodeKind(n), f.FilterByKind) {
 		return nil
-	} else if f.FilterBySubkind != nil && !contains(Subkind(n), f.FilterBySubkind) {
+	} else if f.FilterBySubkind != nil && !contains(schema.GetSubkind(n), f.FilterBySubkind) {
 		return nil
 	}
 
@@ -275,7 +275,7 @@ func (f *Filter) ProcessElement(n *scpb.Node, emit func(*scpb.Node)) error {
 		} else {
 			facts = make([]*scpb.Fact, 0, len(n.Fact))
 			for _, fact := range n.Fact {
-				if contains(FactName(fact), f.IncludeFacts) {
+				if contains(schema.GetFactName(fact), f.IncludeFacts) {
 					facts = append(facts, fact)
 				}
 			}
@@ -289,7 +289,7 @@ func (f *Filter) ProcessElement(n *scpb.Node, emit func(*scpb.Node)) error {
 		} else {
 			edges = make([]*scpb.Edge, 0, len(n.Edge))
 			for _, edge := range n.Edge {
-				if contains(EdgeKind(edge), f.IncludeEdges) {
+				if contains(schema.GetEdgeKind(edge), f.IncludeEdges) {
 					edges = append(edges, edge)
 				}
 			}
@@ -304,38 +304,6 @@ func (f *Filter) ProcessElement(n *scpb.Node, emit func(*scpb.Node)) error {
 		Edge:    edges,
 	})
 	return nil
-}
-
-// Kind returns the string representation of the node's kind.
-func Kind(n *scpb.Node) string {
-	if k := n.GetGenericKind(); k != "" {
-		return k
-	}
-	return schema.NodeKindString(n.GetKytheKind())
-}
-
-// Subkind returns the string representation of the node's subkind.
-func Subkind(n *scpb.Node) string {
-	if k := n.GetGenericSubkind(); k != "" {
-		return k
-	}
-	return schema.SubkindString(n.GetKytheSubkind())
-}
-
-// FactName returns the string representation of the fact's name.
-func FactName(f *scpb.Fact) string {
-	if k := f.GetGenericName(); k != "" {
-		return k
-	}
-	return schema.FactNameString(f.GetKytheName())
-}
-
-// EdgeKind returns the string representation of the edge's kind.
-func EdgeKind(e *scpb.Edge) string {
-	if k := e.GetGenericKind(); k != "" {
-		return k
-	}
-	return schema.EdgeKindString(e.GetKytheKind())
 }
 
 func contains(s string, lst []string) bool {
