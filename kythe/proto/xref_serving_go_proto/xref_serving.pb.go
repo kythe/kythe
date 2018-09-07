@@ -42,20 +42,32 @@ func (x FileDecorations_TargetOverride_Kind) String() string {
 	return proto.EnumName(FileDecorations_TargetOverride_Kind_name, int32(x))
 }
 func (FileDecorations_TargetOverride_Kind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0, 3, 0}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0, 3, 0}
 }
 
 type FileDecorations struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	File *storage_go_proto.VName `protobuf:"bytes,1,opt,name=file" json:"file,omitempty"`
+	// Types that are valid to be assigned to Entry:
+	//	*FileDecorations_Index_
+	//	*FileDecorations_Text_
+	//	*FileDecorations_Target_
+	//	*FileDecorations_TargetOverride_
+	//	*FileDecorations_TargetNode_
+	//	*FileDecorations_TargetDefinition_
+	//	*FileDecorations_DefinitionLocation_
+	//	*FileDecorations_Override_
+	//	*FileDecorations_Diagnostic_
+	Entry                isFileDecorations_Entry `protobuf_oneof:"entry"`
+	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
+	XXX_unrecognized     []byte                  `json:"-"`
+	XXX_sizecache        int32                   `json:"-"`
 }
 
 func (m *FileDecorations) Reset()         { *m = FileDecorations{} }
 func (m *FileDecorations) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations) ProtoMessage()    {}
 func (*FileDecorations) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0}
 }
 func (m *FileDecorations) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileDecorations.Unmarshal(m, b)
@@ -75,6 +87,332 @@ func (m *FileDecorations) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_FileDecorations proto.InternalMessageInfo
 
+type isFileDecorations_Entry interface {
+	isFileDecorations_Entry()
+}
+
+type FileDecorations_Index_ struct {
+	Index *FileDecorations_Index `protobuf:"bytes,2,opt,name=index,oneof"`
+}
+type FileDecorations_Text_ struct {
+	Text *FileDecorations_Text `protobuf:"bytes,3,opt,name=text,oneof"`
+}
+type FileDecorations_Target_ struct {
+	Target *FileDecorations_Target `protobuf:"bytes,4,opt,name=target,oneof"`
+}
+type FileDecorations_TargetOverride_ struct {
+	TargetOverride *FileDecorations_TargetOverride `protobuf:"bytes,5,opt,name=target_override,json=targetOverride,oneof"`
+}
+type FileDecorations_TargetNode_ struct {
+	TargetNode *FileDecorations_TargetNode `protobuf:"bytes,6,opt,name=target_node,json=targetNode,oneof"`
+}
+type FileDecorations_TargetDefinition_ struct {
+	TargetDefinition *FileDecorations_TargetDefinition `protobuf:"bytes,7,opt,name=target_definition,json=targetDefinition,oneof"`
+}
+type FileDecorations_DefinitionLocation_ struct {
+	DefinitionLocation *FileDecorations_DefinitionLocation `protobuf:"bytes,8,opt,name=definition_location,json=definitionLocation,oneof"`
+}
+type FileDecorations_Override_ struct {
+	Override *FileDecorations_Override `protobuf:"bytes,9,opt,name=override,oneof"`
+}
+type FileDecorations_Diagnostic_ struct {
+	Diagnostic *FileDecorations_Diagnostic `protobuf:"bytes,10,opt,name=diagnostic,oneof"`
+}
+
+func (*FileDecorations_Index_) isFileDecorations_Entry()              {}
+func (*FileDecorations_Text_) isFileDecorations_Entry()               {}
+func (*FileDecorations_Target_) isFileDecorations_Entry()             {}
+func (*FileDecorations_TargetOverride_) isFileDecorations_Entry()     {}
+func (*FileDecorations_TargetNode_) isFileDecorations_Entry()         {}
+func (*FileDecorations_TargetDefinition_) isFileDecorations_Entry()   {}
+func (*FileDecorations_DefinitionLocation_) isFileDecorations_Entry() {}
+func (*FileDecorations_Override_) isFileDecorations_Entry()           {}
+func (*FileDecorations_Diagnostic_) isFileDecorations_Entry()         {}
+
+func (m *FileDecorations) GetEntry() isFileDecorations_Entry {
+	if m != nil {
+		return m.Entry
+	}
+	return nil
+}
+
+func (m *FileDecorations) GetFile() *storage_go_proto.VName {
+	if m != nil {
+		return m.File
+	}
+	return nil
+}
+
+func (m *FileDecorations) GetIndex() *FileDecorations_Index {
+	if x, ok := m.GetEntry().(*FileDecorations_Index_); ok {
+		return x.Index
+	}
+	return nil
+}
+
+func (m *FileDecorations) GetText() *FileDecorations_Text {
+	if x, ok := m.GetEntry().(*FileDecorations_Text_); ok {
+		return x.Text
+	}
+	return nil
+}
+
+func (m *FileDecorations) GetTarget() *FileDecorations_Target {
+	if x, ok := m.GetEntry().(*FileDecorations_Target_); ok {
+		return x.Target
+	}
+	return nil
+}
+
+func (m *FileDecorations) GetTargetOverride() *FileDecorations_TargetOverride {
+	if x, ok := m.GetEntry().(*FileDecorations_TargetOverride_); ok {
+		return x.TargetOverride
+	}
+	return nil
+}
+
+func (m *FileDecorations) GetTargetNode() *FileDecorations_TargetNode {
+	if x, ok := m.GetEntry().(*FileDecorations_TargetNode_); ok {
+		return x.TargetNode
+	}
+	return nil
+}
+
+func (m *FileDecorations) GetTargetDefinition() *FileDecorations_TargetDefinition {
+	if x, ok := m.GetEntry().(*FileDecorations_TargetDefinition_); ok {
+		return x.TargetDefinition
+	}
+	return nil
+}
+
+func (m *FileDecorations) GetDefinitionLocation() *FileDecorations_DefinitionLocation {
+	if x, ok := m.GetEntry().(*FileDecorations_DefinitionLocation_); ok {
+		return x.DefinitionLocation
+	}
+	return nil
+}
+
+func (m *FileDecorations) GetOverride() *FileDecorations_Override {
+	if x, ok := m.GetEntry().(*FileDecorations_Override_); ok {
+		return x.Override
+	}
+	return nil
+}
+
+func (m *FileDecorations) GetDiagnostic() *FileDecorations_Diagnostic {
+	if x, ok := m.GetEntry().(*FileDecorations_Diagnostic_); ok {
+		return x.Diagnostic
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*FileDecorations) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _FileDecorations_OneofMarshaler, _FileDecorations_OneofUnmarshaler, _FileDecorations_OneofSizer, []interface{}{
+		(*FileDecorations_Index_)(nil),
+		(*FileDecorations_Text_)(nil),
+		(*FileDecorations_Target_)(nil),
+		(*FileDecorations_TargetOverride_)(nil),
+		(*FileDecorations_TargetNode_)(nil),
+		(*FileDecorations_TargetDefinition_)(nil),
+		(*FileDecorations_DefinitionLocation_)(nil),
+		(*FileDecorations_Override_)(nil),
+		(*FileDecorations_Diagnostic_)(nil),
+	}
+}
+
+func _FileDecorations_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*FileDecorations)
+	// entry
+	switch x := m.Entry.(type) {
+	case *FileDecorations_Index_:
+		b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Index); err != nil {
+			return err
+		}
+	case *FileDecorations_Text_:
+		b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Text); err != nil {
+			return err
+		}
+	case *FileDecorations_Target_:
+		b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Target); err != nil {
+			return err
+		}
+	case *FileDecorations_TargetOverride_:
+		b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.TargetOverride); err != nil {
+			return err
+		}
+	case *FileDecorations_TargetNode_:
+		b.EncodeVarint(6<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.TargetNode); err != nil {
+			return err
+		}
+	case *FileDecorations_TargetDefinition_:
+		b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.TargetDefinition); err != nil {
+			return err
+		}
+	case *FileDecorations_DefinitionLocation_:
+		b.EncodeVarint(8<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.DefinitionLocation); err != nil {
+			return err
+		}
+	case *FileDecorations_Override_:
+		b.EncodeVarint(9<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Override); err != nil {
+			return err
+		}
+	case *FileDecorations_Diagnostic_:
+		b.EncodeVarint(10<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Diagnostic); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("FileDecorations.Entry has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _FileDecorations_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*FileDecorations)
+	switch tag {
+	case 2: // entry.index
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FileDecorations_Index)
+		err := b.DecodeMessage(msg)
+		m.Entry = &FileDecorations_Index_{msg}
+		return true, err
+	case 3: // entry.text
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FileDecorations_Text)
+		err := b.DecodeMessage(msg)
+		m.Entry = &FileDecorations_Text_{msg}
+		return true, err
+	case 4: // entry.target
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FileDecorations_Target)
+		err := b.DecodeMessage(msg)
+		m.Entry = &FileDecorations_Target_{msg}
+		return true, err
+	case 5: // entry.target_override
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FileDecorations_TargetOverride)
+		err := b.DecodeMessage(msg)
+		m.Entry = &FileDecorations_TargetOverride_{msg}
+		return true, err
+	case 6: // entry.target_node
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FileDecorations_TargetNode)
+		err := b.DecodeMessage(msg)
+		m.Entry = &FileDecorations_TargetNode_{msg}
+		return true, err
+	case 7: // entry.target_definition
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FileDecorations_TargetDefinition)
+		err := b.DecodeMessage(msg)
+		m.Entry = &FileDecorations_TargetDefinition_{msg}
+		return true, err
+	case 8: // entry.definition_location
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FileDecorations_DefinitionLocation)
+		err := b.DecodeMessage(msg)
+		m.Entry = &FileDecorations_DefinitionLocation_{msg}
+		return true, err
+	case 9: // entry.override
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FileDecorations_Override)
+		err := b.DecodeMessage(msg)
+		m.Entry = &FileDecorations_Override_{msg}
+		return true, err
+	case 10: // entry.diagnostic
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(FileDecorations_Diagnostic)
+		err := b.DecodeMessage(msg)
+		m.Entry = &FileDecorations_Diagnostic_{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _FileDecorations_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*FileDecorations)
+	// entry
+	switch x := m.Entry.(type) {
+	case *FileDecorations_Index_:
+		s := proto.Size(x.Index)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *FileDecorations_Text_:
+		s := proto.Size(x.Text)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *FileDecorations_Target_:
+		s := proto.Size(x.Target)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *FileDecorations_TargetOverride_:
+		s := proto.Size(x.TargetOverride)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *FileDecorations_TargetNode_:
+		s := proto.Size(x.TargetNode)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *FileDecorations_TargetDefinition_:
+		s := proto.Size(x.TargetDefinition)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *FileDecorations_DefinitionLocation_:
+		s := proto.Size(x.DefinitionLocation)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *FileDecorations_Override_:
+		s := proto.Size(x.Override)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *FileDecorations_Diagnostic_:
+		s := proto.Size(x.Diagnostic)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 type FileDecorations_Index struct {
 	TextEncoding         string   `protobuf:"bytes,1,opt,name=text_encoding,json=textEncoding" json:"text_encoding,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -86,7 +424,7 @@ func (m *FileDecorations_Index) Reset()         { *m = FileDecorations_Index{} }
 func (m *FileDecorations_Index) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_Index) ProtoMessage()    {}
 func (*FileDecorations_Index) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0, 0}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0, 0}
 }
 func (m *FileDecorations_Index) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileDecorations_Index.Unmarshal(m, b)
@@ -114,7 +452,7 @@ func (m *FileDecorations_Index) GetTextEncoding() string {
 }
 
 type FileDecorations_Text struct {
-	StartOffest          int32    `protobuf:"varint,1,opt,name=start_offest,json=startOffest" json:"start_offest,omitempty"`
+	StartOffset          int32    `protobuf:"varint,1,opt,name=start_offset,json=startOffset" json:"start_offset,omitempty"`
 	EndOffset            int32    `protobuf:"varint,2,opt,name=end_offset,json=endOffset" json:"end_offset,omitempty"`
 	Text                 []byte   `protobuf:"bytes,3,opt,name=text,proto3" json:"text,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -126,7 +464,7 @@ func (m *FileDecorations_Text) Reset()         { *m = FileDecorations_Text{} }
 func (m *FileDecorations_Text) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_Text) ProtoMessage()    {}
 func (*FileDecorations_Text) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0, 1}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0, 1}
 }
 func (m *FileDecorations_Text) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileDecorations_Text.Unmarshal(m, b)
@@ -146,9 +484,9 @@ func (m *FileDecorations_Text) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_FileDecorations_Text proto.InternalMessageInfo
 
-func (m *FileDecorations_Text) GetStartOffest() int32 {
+func (m *FileDecorations_Text) GetStartOffset() int32 {
 	if m != nil {
-		return m.StartOffest
+		return m.StartOffset
 	}
 	return 0
 }
@@ -168,7 +506,7 @@ func (m *FileDecorations_Text) GetText() []byte {
 }
 
 type FileDecorations_Target struct {
-	StartOffest int32 `protobuf:"varint,1,opt,name=start_offest,json=startOffest" json:"start_offest,omitempty"`
+	StartOffset int32 `protobuf:"varint,1,opt,name=start_offset,json=startOffset" json:"start_offset,omitempty"`
 	EndOffset   int32 `protobuf:"varint,2,opt,name=end_offset,json=endOffset" json:"end_offset,omitempty"`
 	// Types that are valid to be assigned to Kind:
 	//	*FileDecorations_Target_KytheKind
@@ -184,7 +522,7 @@ func (m *FileDecorations_Target) Reset()         { *m = FileDecorations_Target{}
 func (m *FileDecorations_Target) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_Target) ProtoMessage()    {}
 func (*FileDecorations_Target) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0, 2}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0, 2}
 }
 func (m *FileDecorations_Target) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileDecorations_Target.Unmarshal(m, b)
@@ -225,9 +563,9 @@ func (m *FileDecorations_Target) GetKind() isFileDecorations_Target_Kind {
 	return nil
 }
 
-func (m *FileDecorations_Target) GetStartOffest() int32 {
+func (m *FileDecorations_Target) GetStartOffset() int32 {
 	if m != nil {
-		return m.StartOffest
+		return m.StartOffset
 	}
 	return 0
 }
@@ -338,7 +676,7 @@ func (m *FileDecorations_TargetOverride) Reset()         { *m = FileDecorations_
 func (m *FileDecorations_TargetOverride) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_TargetOverride) ProtoMessage()    {}
 func (*FileDecorations_TargetOverride) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0, 3}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0, 3}
 }
 func (m *FileDecorations_TargetOverride) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileDecorations_TargetOverride.Unmarshal(m, b)
@@ -390,7 +728,7 @@ func (m *FileDecorations_TargetNode) Reset()         { *m = FileDecorations_Targ
 func (m *FileDecorations_TargetNode) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_TargetNode) ProtoMessage()    {}
 func (*FileDecorations_TargetNode) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0, 4}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0, 4}
 }
 func (m *FileDecorations_TargetNode) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileDecorations_TargetNode.Unmarshal(m, b)
@@ -418,7 +756,8 @@ func (m *FileDecorations_TargetNode) GetNode() *schema_go_proto.Node {
 }
 
 type FileDecorations_TargetDefinition struct {
-	Definition           *storage_go_proto.VName `protobuf:"bytes,1,opt,name=definition" json:"definition,omitempty"`
+	Target               *storage_go_proto.VName `protobuf:"bytes,1,opt,name=target" json:"target,omitempty"`
+	Definition           *storage_go_proto.VName `protobuf:"bytes,2,opt,name=definition" json:"definition,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
 	XXX_unrecognized     []byte                  `json:"-"`
 	XXX_sizecache        int32                   `json:"-"`
@@ -428,7 +767,7 @@ func (m *FileDecorations_TargetDefinition) Reset()         { *m = FileDecoration
 func (m *FileDecorations_TargetDefinition) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_TargetDefinition) ProtoMessage()    {}
 func (*FileDecorations_TargetDefinition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0, 5}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0, 5}
 }
 func (m *FileDecorations_TargetDefinition) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileDecorations_TargetDefinition.Unmarshal(m, b)
@@ -448,6 +787,13 @@ func (m *FileDecorations_TargetDefinition) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_FileDecorations_TargetDefinition proto.InternalMessageInfo
 
+func (m *FileDecorations_TargetDefinition) GetTarget() *storage_go_proto.VName {
+	if m != nil {
+		return m.Target
+	}
+	return nil
+}
+
 func (m *FileDecorations_TargetDefinition) GetDefinition() *storage_go_proto.VName {
 	if m != nil {
 		return m.Definition
@@ -466,7 +812,7 @@ func (m *FileDecorations_DefinitionLocation) Reset()         { *m = FileDecorati
 func (m *FileDecorations_DefinitionLocation) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_DefinitionLocation) ProtoMessage()    {}
 func (*FileDecorations_DefinitionLocation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0, 6}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0, 6}
 }
 func (m *FileDecorations_DefinitionLocation) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileDecorations_DefinitionLocation.Unmarshal(m, b)
@@ -494,7 +840,8 @@ func (m *FileDecorations_DefinitionLocation) GetLocation() *serving_go_proto.Exp
 }
 
 type FileDecorations_Override struct {
-	MarkedSource         *common_go_proto.MarkedSource `protobuf:"bytes,1,opt,name=marked_source,json=markedSource" json:"marked_source,omitempty"`
+	Override             *storage_go_proto.VName       `protobuf:"bytes,1,opt,name=override" json:"override,omitempty"`
+	MarkedSource         *common_go_proto.MarkedSource `protobuf:"bytes,2,opt,name=marked_source,json=markedSource" json:"marked_source,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`
 	XXX_sizecache        int32                         `json:"-"`
@@ -504,7 +851,7 @@ func (m *FileDecorations_Override) Reset()         { *m = FileDecorations_Overri
 func (m *FileDecorations_Override) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_Override) ProtoMessage()    {}
 func (*FileDecorations_Override) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0, 7}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0, 7}
 }
 func (m *FileDecorations_Override) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileDecorations_Override.Unmarshal(m, b)
@@ -524,6 +871,13 @@ func (m *FileDecorations_Override) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_FileDecorations_Override proto.InternalMessageInfo
 
+func (m *FileDecorations_Override) GetOverride() *storage_go_proto.VName {
+	if m != nil {
+		return m.Override
+	}
+	return nil
+}
+
 func (m *FileDecorations_Override) GetMarkedSource() *common_go_proto.MarkedSource {
 	if m != nil {
 		return m.MarkedSource
@@ -542,7 +896,7 @@ func (m *FileDecorations_Diagnostic) Reset()         { *m = FileDecorations_Diag
 func (m *FileDecorations_Diagnostic) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_Diagnostic) ProtoMessage()    {}
 func (*FileDecorations_Diagnostic) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{0, 8}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{0, 8}
 }
 func (m *FileDecorations_Diagnostic) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileDecorations_Diagnostic.Unmarshal(m, b)
@@ -579,7 +933,7 @@ func (m *CrossReferences) Reset()         { *m = CrossReferences{} }
 func (m *CrossReferences) String() string { return proto.CompactTextString(m) }
 func (*CrossReferences) ProtoMessage()    {}
 func (*CrossReferences) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_serving_93298b8ea3ebd096, []int{1}
+	return fileDescriptor_xref_serving_1e8de75f9abcb42a, []int{1}
 }
 func (m *CrossReferences) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CrossReferences.Unmarshal(m, b)
@@ -615,46 +969,58 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("kythe/proto/xref_serving.proto", fileDescriptor_xref_serving_93298b8ea3ebd096)
+	proto.RegisterFile("kythe/proto/xref_serving.proto", fileDescriptor_xref_serving_1e8de75f9abcb42a)
 }
 
-var fileDescriptor_xref_serving_93298b8ea3ebd096 = []byte{
-	// 586 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x53, 0x4f, 0x6f, 0xd3, 0x4e,
-	0x10, 0xad, 0x7f, 0x75, 0xd3, 0x66, 0x92, 0xfe, 0xf9, 0xed, 0xc9, 0xb5, 0xa0, 0xa4, 0xe9, 0xa5,
-	0x42, 0x95, 0x2b, 0x85, 0x1b, 0x12, 0x45, 0x94, 0xb8, 0x6a, 0x45, 0x69, 0xc4, 0xb6, 0x54, 0x1c,
-	0x90, 0x22, 0xe3, 0x9d, 0xb8, 0xab, 0xc4, 0xbb, 0xd5, 0xee, 0x12, 0x85, 0xaf, 0xcb, 0x27, 0x80,
-	0x6f, 0x80, 0x76, 0xed, 0x26, 0x76, 0x15, 0xe0, 0xc2, 0x29, 0x3b, 0x33, 0x6f, 0xde, 0xcc, 0x7b,
-	0x13, 0xc3, 0xde, 0xf8, 0x9b, 0xb9, 0xc3, 0xe3, 0x7b, 0x25, 0x8d, 0x3c, 0x9e, 0x29, 0x1c, 0x0d,
-	0x35, 0xaa, 0x29, 0x17, 0x59, 0xe4, 0x52, 0x64, 0xd7, 0xd5, 0x8b, 0x20, 0x7a, 0x28, 0x59, 0x9c,
-	0x0e, 0x83, 0x6a, 0x6b, 0x2a, 0xf3, 0x5c, 0x8a, 0x02, 0x57, 0xaf, 0xe8, 0xf4, 0x0e, 0xf3, 0xa4,
-	0xac, 0xec, 0xd6, 0x2a, 0xd5, 0x49, 0x8f, 0x4a, 0x46, 0xaa, 0x24, 0x2b, 0xe7, 0x76, 0x7f, 0xae,
-	0xc3, 0xf6, 0x19, 0x9f, 0x60, 0x1f, 0x53, 0xa9, 0x12, 0xc3, 0xa5, 0xd0, 0xe1, 0x11, 0xac, 0x5d,
-	0x08, 0x86, 0x33, 0x72, 0x00, 0x9b, 0x06, 0x67, 0x66, 0x88, 0x22, 0x95, 0x8c, 0x8b, 0x2c, 0xf0,
-	0x3a, 0xde, 0x61, 0x93, 0xb6, 0x6d, 0x32, 0x2e, 0x73, 0xe1, 0x67, 0xf0, 0x6f, 0x70, 0x66, 0xc8,
-	0x3e, 0xb4, 0xb5, 0x49, 0x94, 0x19, 0xca, 0xd1, 0x08, 0xb5, 0x71, 0xd8, 0x35, 0xda, 0x72, 0xb9,
-	0x81, 0x4b, 0x91, 0xa7, 0x00, 0x28, 0x98, 0x05, 0x68, 0x34, 0xc1, 0x7f, 0x0e, 0xd0, 0x44, 0xc1,
-	0x06, 0x2e, 0x41, 0x08, 0xf8, 0x96, 0x39, 0x58, 0xed, 0x78, 0x87, 0x6d, 0xea, 0xde, 0xe1, 0x77,
-	0x0f, 0x1a, 0x37, 0x89, 0xca, 0xf0, 0x5f, 0x0c, 0x78, 0x05, 0xe0, 0x9c, 0x18, 0x8e, 0xb9, 0x60,
-	0x6e, 0xcc, 0x56, 0xef, 0x49, 0x54, 0x3b, 0x43, 0xe1, 0x68, 0xcc, 0x32, 0x7c, 0xc7, 0x05, 0x3b,
-	0x5f, 0xa1, 0x4d, 0x57, 0xb6, 0x01, 0x39, 0x80, 0x76, 0x86, 0x02, 0x15, 0x4f, 0x0b, 0x02, 0xdf,
-	0xba, 0x71, 0xbe, 0x42, 0x5b, 0x65, 0xd6, 0x81, 0x9e, 0x43, 0xc3, 0xb8, 0x7d, 0x83, 0xb5, 0x8e,
-	0x77, 0xd8, 0xea, 0x91, 0x1a, 0xff, 0xed, 0x55, 0x92, 0x23, 0x2d, 0x11, 0xa7, 0x0d, 0xf0, 0x2d,
-	0x51, 0xf8, 0xc3, 0x83, 0xad, 0x42, 0xe4, 0x60, 0x8a, 0x4a, 0x71, 0x86, 0xa4, 0x07, 0x20, 0x8b,
-	0x37, 0x43, 0xe1, 0xa4, 0x2e, 0xa7, 0xaa, 0xa0, 0x08, 0x2d, 0xe8, 0x9c, 0xee, 0xad, 0xde, 0x49,
-	0xf4, 0xdb, 0xff, 0x57, 0xf4, 0xe8, 0xe2, 0x51, 0x7d, 0x78, 0x64, 0x85, 0x50, 0xc7, 0x55, 0xd9,
-	0xc3, 0xde, 0x7f, 0xf5, 0xaf, 0x7b, 0x70, 0x91, 0x75, 0xbb, 0xe0, 0x3b, 0x2b, 0x36, 0xa1, 0x39,
-	0xb8, 0x8d, 0x29, 0xbd, 0xe8, 0xc7, 0xd7, 0x3b, 0x2b, 0xa4, 0x05, 0xeb, 0xf1, 0xa7, 0x9b, 0xf8,
-	0xaa, 0x7f, 0xbd, 0xe3, 0x85, 0x2f, 0x01, 0x8a, 0xa1, 0x57, 0x92, 0x21, 0x39, 0x02, 0x5f, 0x48,
-	0x86, 0xa5, 0xce, 0x60, 0xd9, 0x49, 0x2c, 0x8e, 0x3a, 0x54, 0x78, 0x06, 0x3b, 0x45, 0x6f, 0x1f,
-	0x47, 0x5c, 0x70, 0x2b, 0xc1, 0xee, 0xc9, 0xe6, 0xd1, 0x9f, 0xfc, 0x5a, 0xa0, 0xc2, 0x8f, 0x40,
-	0x16, 0x0c, 0x97, 0x32, 0x75, 0x66, 0x90, 0xd7, 0xb0, 0x31, 0x29, 0xdf, 0x25, 0xcf, 0xc1, 0x52,
-	0x27, 0xe3, 0xd9, 0x7d, 0x22, 0x18, 0xb2, 0x37, 0x22, 0xbd, 0x93, 0x8a, 0xce, 0x9b, 0xc2, 0x0f,
-	0xb0, 0x31, 0x3f, 0x63, 0x0c, 0x9b, 0x79, 0xa2, 0xc6, 0xc8, 0x86, 0x5a, 0x7e, 0x55, 0xe9, 0x83,
-	0xc2, 0x4e, 0x8d, 0xb1, 0xfc, 0xc0, 0xdf, 0x3b, 0xe0, 0xb5, 0xc3, 0xd1, 0x76, 0x5e, 0x89, 0xc2,
-	0x4b, 0x80, 0x3e, 0x4f, 0x32, 0x21, 0xb5, 0xe1, 0x29, 0x39, 0x01, 0x60, 0xf3, 0xa8, 0x64, 0xdc,
-	0x5b, 0xc6, 0xb8, 0xe8, 0xa1, 0x95, 0x8e, 0xee, 0xff, 0xb0, 0xfd, 0x56, 0x49, 0xad, 0x29, 0x8e,
-	0x50, 0xa1, 0x48, 0x51, 0x9f, 0xee, 0xc3, 0xb3, 0x54, 0xe6, 0x51, 0x26, 0x65, 0x36, 0xc1, 0x88,
-	0xe1, 0xd4, 0x48, 0x39, 0xd1, 0x55, 0xce, 0x2f, 0x0d, 0xf7, 0xf3, 0xe2, 0x57, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xf6, 0x72, 0x40, 0x50, 0xd7, 0x04, 0x00, 0x00,
+var fileDescriptor_xref_serving_1e8de75f9abcb42a = []byte{
+	// 783 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0x51, 0x6f, 0xe3, 0x44,
+	0x10, 0x76, 0x7a, 0x49, 0x9a, 0x4c, 0xd2, 0x24, 0xb7, 0xbc, 0xf8, 0x2c, 0x38, 0xee, 0x52, 0x09,
+	0x21, 0x74, 0x72, 0x21, 0x27, 0x1e, 0x00, 0xdd, 0x21, 0x4a, 0x8c, 0x7c, 0xba, 0xa3, 0x15, 0xdb,
+	0x52, 0xfa, 0x80, 0x14, 0x19, 0xef, 0xc4, 0x35, 0x4d, 0x76, 0xab, 0xf5, 0x52, 0xa5, 0x8f, 0xfc,
+	0x1a, 0xfe, 0x17, 0xbf, 0x80, 0x9f, 0x80, 0x3c, 0x76, 0x6d, 0x27, 0x6d, 0xa8, 0x8c, 0xee, 0xa9,
+	0xdd, 0x99, 0x6f, 0xbe, 0x6f, 0x67, 0xc7, 0xf3, 0x05, 0x9e, 0x5e, 0xde, 0x98, 0x0b, 0x3c, 0xb8,
+	0xd2, 0xca, 0xa8, 0x83, 0x95, 0xc6, 0xf9, 0x2c, 0x41, 0x7d, 0x1d, 0xcb, 0xc8, 0xa5, 0x10, 0x7b,
+	0x42, 0xf9, 0xec, 0xe0, 0xde, 0xa6, 0x52, 0x5c, 0xe2, 0xd8, 0xd5, 0xd2, 0x50, 0x2d, 0x97, 0x4a,
+	0x66, 0xb8, 0xf5, 0x4c, 0x12, 0x5e, 0xe0, 0x32, 0xc8, 0x33, 0x4f, 0xd6, 0x32, 0x55, 0xa5, 0x8d,
+	0x94, 0x51, 0x3a, 0x88, 0x72, 0xdd, 0xf1, 0x5f, 0x43, 0x18, 0xfe, 0x10, 0x2f, 0x70, 0x8a, 0xa1,
+	0xd2, 0x81, 0x89, 0x95, 0x4c, 0xd8, 0x27, 0xd0, 0x9c, 0xc7, 0x0b, 0xb4, 0x1b, 0xcf, 0x1a, 0x9f,
+	0xf6, 0x26, 0xcc, 0xad, 0xde, 0xf3, 0xec, 0x28, 0x58, 0x22, 0xa7, 0x3c, 0xf3, 0xa1, 0x15, 0x4b,
+	0x81, 0x2b, 0x7b, 0x87, 0x80, 0x9f, 0xbb, 0x5b, 0x1b, 0x72, 0x37, 0x24, 0xdc, 0x37, 0x69, 0x9d,
+	0x6f, 0xf1, 0x8c, 0x80, 0x79, 0xd0, 0x34, 0xb8, 0x32, 0xf6, 0x23, 0x22, 0x3a, 0xa8, 0x41, 0x74,
+	0x8a, 0x2b, 0xe3, 0x5b, 0x9c, 0xca, 0xd9, 0x5b, 0x68, 0x9b, 0x40, 0x47, 0x68, 0xec, 0x26, 0x11,
+	0x7d, 0x51, 0x87, 0x88, 0x0a, 0x7d, 0x8b, 0xe7, 0x14, 0x4c, 0xc0, 0x30, 0xfb, 0x6f, 0xa6, 0xae,
+	0x51, 0xeb, 0x58, 0xa0, 0xdd, 0x22, 0xd6, 0xaf, 0x6a, 0xb3, 0x1e, 0xe7, 0x04, 0xbe, 0xc5, 0x07,
+	0x66, 0x2d, 0xc2, 0xce, 0xa1, 0x97, 0xab, 0x48, 0x25, 0xd0, 0x6e, 0x93, 0xc2, 0x97, 0xb5, 0x15,
+	0x8e, 0x14, 0xb1, 0x83, 0x29, 0x4e, 0xec, 0x77, 0x78, 0x9c, 0x33, 0x0b, 0x9c, 0xc7, 0x32, 0x4e,
+	0xe1, 0xf6, 0x2e, 0xf1, 0x7f, 0x53, 0x9b, 0x7f, 0x5a, 0x50, 0xf8, 0x16, 0x1f, 0x99, 0x8d, 0x18,
+	0xbb, 0x82, 0x0f, 0x4a, 0x91, 0xd9, 0x42, 0x85, 0x54, 0x6c, 0x77, 0x48, 0xed, 0x55, 0x0d, 0xb5,
+	0x92, 0xf3, 0x5d, 0x4e, 0xe2, 0x5b, 0x9c, 0x89, 0x3b, 0x51, 0xf6, 0x13, 0x74, 0x8a, 0xb1, 0x74,
+	0x49, 0xe6, 0x65, 0x0d, 0x99, 0xca, 0x40, 0x0a, 0x1a, 0xf6, 0x0b, 0x80, 0x88, 0x83, 0x48, 0xaa,
+	0xc4, 0xc4, 0xa1, 0x0d, 0xb5, 0x27, 0x31, 0x2d, 0x8a, 0xd3, 0x49, 0x94, 0x54, 0xce, 0x0b, 0x68,
+	0xd1, 0xf7, 0xce, 0xf6, 0x61, 0x2f, 0xfd, 0x4e, 0x67, 0x28, 0x43, 0x25, 0x62, 0x19, 0xd1, 0x86,
+	0x75, 0x79, 0x3f, 0x0d, 0x7a, 0x79, 0xcc, 0xf9, 0x15, 0x9a, 0xe9, 0x47, 0xcd, 0x9e, 0x43, 0x3f,
+	0x31, 0x81, 0x36, 0x33, 0x35, 0x9f, 0x27, 0x68, 0x08, 0xdb, 0xe2, 0x3d, 0x8a, 0x1d, 0x53, 0x88,
+	0x7d, 0x04, 0x80, 0x52, 0xdc, 0x02, 0x76, 0x08, 0xd0, 0x45, 0x29, 0xf2, 0x34, 0xab, 0x6c, 0x55,
+	0x3f, 0x5b, 0x11, 0xe7, 0xef, 0x06, 0xb4, 0xb3, 0x91, 0xbe, 0x07, 0x81, 0x57, 0x00, 0xf4, 0x3c,
+	0xb3, 0xcb, 0x58, 0x0a, 0x92, 0x19, 0x4c, 0x3e, 0x5c, 0x7f, 0xb1, 0xcc, 0xa1, 0x3c, 0x11, 0xe1,
+	0xdb, 0x58, 0x0a, 0xdf, 0xe2, 0x5d, 0x4a, 0xa7, 0x07, 0xb6, 0x0f, 0xfd, 0x08, 0x25, 0xea, 0x38,
+	0xcc, 0x08, 0xd2, 0xa5, 0xed, 0xfa, 0x16, 0xef, 0xe5, 0x51, 0x02, 0x7d, 0x56, 0xec, 0x74, 0x6b,
+	0xab, 0x1d, 0xe5, 0x88, 0xc3, 0x36, 0x34, 0x53, 0x22, 0xe7, 0x9f, 0x06, 0x0c, 0xd6, 0x37, 0x8f,
+	0x4d, 0x00, 0xf2, 0x41, 0x0b, 0x94, 0xff, 0xe1, 0x6c, 0x15, 0x14, 0xe3, 0x19, 0x1d, 0xf5, 0x3d,
+	0x98, 0xbc, 0xfe, 0xdf, 0x6b, 0xef, 0xa6, 0x8d, 0x70, 0xe2, 0xaa, 0xdc, 0x23, 0x9d, 0xff, 0xa3,
+	0x07, 0xef, 0x11, 0xcb, 0x68, 0x3c, 0x86, 0x26, 0x3d, 0xc5, 0x1e, 0x74, 0x8f, 0xcf, 0x3c, 0xce,
+	0xdf, 0x4c, 0xbd, 0x93, 0x91, 0xc5, 0x7a, 0xb0, 0xeb, 0x9d, 0x9f, 0x7a, 0x47, 0xd3, 0x93, 0x51,
+	0xc3, 0xf9, 0x1a, 0xa0, 0x74, 0x02, 0xf6, 0x02, 0x9a, 0x64, 0x27, 0x59, 0x9f, 0xf6, 0x7d, 0x23,
+	0x49, 0x71, 0x9c, 0x50, 0x8e, 0x86, 0xd1, 0xe6, 0x96, 0x57, 0x9e, 0xbd, 0xf1, 0xd0, 0xb3, 0xa7,
+	0x3d, 0x55, 0x2c, 0x66, 0x67, 0x7b, 0x4f, 0x25, 0xca, 0xf9, 0x19, 0xd8, 0xdd, 0x5d, 0x67, 0xdf,
+	0x42, 0xa7, 0x30, 0x8f, 0x4c, 0x77, 0xff, 0xde, 0x57, 0xf7, 0x56, 0x57, 0x81, 0x14, 0x28, 0xbe,
+	0x93, 0xe1, 0x85, 0xd2, 0xbc, 0x28, 0x72, 0xfe, 0x6c, 0x40, 0xa7, 0x98, 0xb9, 0x5b, 0xf1, 0x88,
+	0xed, 0x5d, 0x94, 0x06, 0xe0, 0xc1, 0xde, 0x32, 0xd0, 0x97, 0x28, 0x66, 0x89, 0xfa, 0x43, 0x87,
+	0x98, 0xb7, 0xf2, 0x6c, 0xad, 0x28, 0xff, 0x35, 0xfe, 0x91, 0x80, 0x27, 0x84, 0xe3, 0xfd, 0x65,
+	0xe5, 0xe4, 0xbc, 0x03, 0x28, 0xad, 0x80, 0xbd, 0x5e, 0x73, 0x95, 0xec, 0x1a, 0x4f, 0xef, 0x63,
+	0x2c, 0x6b, 0xaa, 0xe6, 0x71, 0xb8, 0x0b, 0x2d, 0x94, 0x46, 0xdf, 0x8c, 0x1f, 0xc3, 0xf0, 0x7b,
+	0xad, 0x92, 0x84, 0xe3, 0x1c, 0x35, 0xca, 0x10, 0x93, 0xc3, 0xe7, 0xf0, 0x71, 0xa8, 0x96, 0x6e,
+	0xa4, 0x54, 0xb4, 0x40, 0x57, 0xe0, 0xb5, 0x51, 0x6a, 0x91, 0x54, 0xc9, 0x7f, 0x6b, 0xd3, 0x9f,
+	0x97, 0xff, 0x06, 0x00, 0x00, 0xff, 0xff, 0xc2, 0x0f, 0xfa, 0xa1, 0x8d, 0x08, 0x00, 0x00,
 }

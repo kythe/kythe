@@ -31,6 +31,20 @@ import "kythe/proto/storage.proto";
 //
 // Columnar key prefix: "fd"-file
 message FileDecorations {
+  kythe.proto.VName file = 1;
+
+  oneof entry {
+    Index index = 2;
+    Text text = 3;
+    Target target = 4;
+    TargetOverride target_override = 5;
+    TargetNode target_node = 6;
+    TargetDefinition target_definition = 7;
+    DefinitionLocation definition_location = 8;
+    Override override = 9;
+    Diagnostic diagnostic = 10;
+  }
+
   // Index for columnar file decorations data.
   //
   // Columnar key: <empty>
@@ -43,7 +57,7 @@ message FileDecorations {
   // Columnar key: 00-start-end
   message Text {
     // Starting offset of this file contents piece.
-    int32 start_offest = 1;
+    int32 start_offset = 1;
     // Ending offset of this file contents piece.
     int32 end_offset = 2;
 
@@ -55,7 +69,7 @@ message FileDecorations {
   // Columnar key: 10-start-end-kind-target
   message Target {
     // Starting offset of this file decoration.
-    int32 start_offest = 1;
+    int32 start_offset = 1;
     // Ending offset of this file decoration.
     int32 end_offset = 2;
 
@@ -94,7 +108,8 @@ message FileDecorations {
   //
   // Columnar key: 40-target
   message TargetDefinition {
-    kythe.proto.VName definition = 1;
+    kythe.proto.VName target = 1;
+    kythe.proto.VName definition = 2;
   }
 
   // Location for each node mentioned by a TargetDefinition
@@ -108,7 +123,8 @@ message FileDecorations {
   //
   // Columnar key: 60-override
   message Override {
-    kythe.proto.common.MarkedSource marked_source = 1;
+    kythe.proto.VName override = 1;
+    kythe.proto.common.MarkedSource marked_source = 2;
   }
 
   // Diagnostic per file span
