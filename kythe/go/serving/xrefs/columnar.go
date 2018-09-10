@@ -208,6 +208,8 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 				continue
 			}
 			def := e.TargetDefinition
+			// refsByTarget will be populated by now due to our chosen key ordering
+			// See: kythe/proto/xref_serving.proto
 			refs := refsByTarget[kytheuri.ToString(def.Target)]
 			if len(refs) == 0 {
 				continue
