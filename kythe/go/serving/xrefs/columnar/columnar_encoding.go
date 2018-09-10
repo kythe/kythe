@@ -32,13 +32,13 @@ import (
 	xspb "kythe.io/kythe/proto/xref_serving_go_proto"
 )
 
-// ColumnarDecorationsKeyPrefix is the common key prefix for all Kythe columnar
+// DecorationsKeyPrefix is the common key prefix for all Kythe columnar
 // FileDecoration key-value entries.
-var ColumnarDecorationsKeyPrefix, _ = keys.Append(nil, "fd")
+var DecorationsKeyPrefix, _ = keys.Append(nil, "fd")
 
 func init() {
 	// Restrict the capacity of the key prefix to ensure appending to it creates a new array.
-	ColumnarDecorationsKeyPrefix = ColumnarDecorationsKeyPrefix[:len(ColumnarDecorationsKeyPrefix):len(ColumnarDecorationsKeyPrefix)]
+	DecorationsKeyPrefix = DecorationsKeyPrefix[:len(DecorationsKeyPrefix):len(DecorationsKeyPrefix)]
 }
 
 // Columnar file decorations group numbers.
