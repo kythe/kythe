@@ -142,7 +142,6 @@ message FileDecorations {
 // Columnar key prefix: "xr"-source
 message CrossReferences {
   kythe.proto.VName source = 1;
-  // TODO(schroederc): https://github.com/google/kythe/pull/2909
 
   oneof entry {
     Index index = 2;
@@ -159,7 +158,7 @@ message CrossReferences {
   message Index {
     kythe.proto.schema.Node node = 1;
     kythe.proto.common.MarkedSource marked_source = 2;
-    repeated string merge_with = 3;
+    repeated kythe.proto.VName merge_with = 3;
   }
 
   // Single reference to source.
@@ -193,7 +192,7 @@ message CrossReferences {
   // A caller with callsites to the source node.
   //
   // Columnar key: 20-caller
-  message Caller{
+  message Caller {
     kythe.proto.VName caller = 1;
     // Syntactic location of the caller.
     kythe.proto.serving.ExpandedAnchor location = 2;

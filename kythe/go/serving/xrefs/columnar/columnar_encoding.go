@@ -32,13 +32,20 @@ import (
 	xspb "kythe.io/kythe/proto/xref_serving_go_proto"
 )
 
-// DecorationsKeyPrefix is the common key prefix for all Kythe columnar
-// FileDecoration key-value entries.
-var DecorationsKeyPrefix, _ = keys.Append(nil, "fd")
+var (
+	// DecorationsKeyPrefix is the common key prefix for all Kythe columnar
+	// FileDecoration key-value entries.
+	DecorationsKeyPrefix, _ = keys.Append(nil, "fd")
+
+	// CrossReferencesKeyPrefix is the common key prefix for all Kythe columnar
+	// CrossReferences key-value entries.
+	CrossReferencesKeyPrefix, _ = keys.Append(nil, "xr")
+)
 
 func init() {
-	// Restrict the capacity of the key prefix to ensure appending to it creates a new array.
+	// Restrict the capacity of the key prefixes to ensure appending to it creates a new array.
 	DecorationsKeyPrefix = DecorationsKeyPrefix[:len(DecorationsKeyPrefix):len(DecorationsKeyPrefix)]
+	CrossReferencesKeyPrefix = CrossReferencesKeyPrefix[:len(CrossReferencesKeyPrefix):len(CrossReferencesKeyPrefix)]
 }
 
 // Columnar file decorations group numbers.
@@ -364,5 +371,274 @@ func decodeDecorDiagnostic(file *spb.VName, key string, val []byte) (*xspb.FileD
 	return &xspb.FileDecorations{
 		File:  file,
 		Entry: &xspb.FileDecorations_Diagnostic_{&o},
+	}, nil
+}
+
+// Columnar file decorations group numbers.
+// See: kythe/proto/xref_serving.proto
+const (
+	columnarXRefsIndexGroup       = -1 // no group number
+	columnarXRefsReferenceGroup   = 0
+	columnarXRefsRelationGroup    = 10
+	columnarXRefsCallerGroup      = 20
+	columnarXRefsRelatedNodeGroup = 30
+)
+
+// EncodeCrossReferencesEntry encodes a columnar CrossReferences entry.
+func EncodeCrossReferencesEntry(keyPrefix []byte, xr *xspb.CrossReferences) (*KV, error) {
+	switch e := xr.Entry.(type) {
+	case *xspb.CrossReferences_Index_:
+		return encodeXRefIndex(keyPrefix, xr.Source, e.Index)
+	case *xspb.CrossReferences_Reference_:
+		return encodeXRefReference(keyPrefix, xr.Source, e.Reference)
+	case *xspb.CrossReferences_Relation_:
+		return encodeXRefRelation(keyPrefix, xr.Source, e.Relation)
+	case *xspb.CrossReferences_Caller_:
+		return encodeXRefCaller(keyPrefix, xr.Source, e.Caller)
+	case *xspb.CrossReferences_Callsite_:
+		return encodeXRefCallsite(keyPrefix, xr.Source, e.Callsite)
+	case *xspb.CrossReferences_RelatedNode_:
+		return encodeXRefRelatedNode(keyPrefix, xr.Source, e.RelatedNode)
+	default:
+		return nil, fmt.Errorf("unknown CrossReferences entry: %T", e)
+	}
+}
+
+func encodeXRefIndex(prefix []byte, src *spb.VName, idx *xspb.CrossReferences_Index) (*KV, error) {
+	key, err := keys.Append(prefix, src)
+	if err != nil {
+		return nil, err
+	}
+	val, err := proto.Marshal(idx)
+	if err != nil {
+		return nil, err
+	}
+	return &KV{key, val}, nil
+}
+
+func encodeXRefReference(prefix []byte, src *spb.VName, r *xspb.CrossReferences_Reference) (*KV, error) {
+	uri, err := kytheuri.Parse(r.Location.Ticket)
+	if err != nil {
+		return nil, err
+	}
+	file := &spb.VName{
+		Corpus: uri.Corpus,
+		Root:   uri.Root,
+		Path:   uri.Path,
+	}
+	key, err := keys.Append(prefix, src, columnarXRefsReferenceGroup,
+		r.GetGenericKind(), int32(r.GetKytheKind()), file,
+		r.Location.Span.GetStart().GetByteOffset(), r.Location.Span.GetEnd().GetByteOffset())
+	if err != nil {
+		return nil, err
+	}
+	val, err := proto.Marshal(&xspb.CrossReferences_Reference{Location: r.Location})
+	if err != nil {
+		return nil, err
+	}
+	return &KV{key, val}, nil
+}
+
+func encodeXRefRelation(prefix []byte, src *spb.VName, r *xspb.CrossReferences_Relation) (*KV, error) {
+	key, err := keys.Append(prefix, src, columnarXRefsRelationGroup,
+		r.GetGenericKind(), int32(r.GetKytheKind()), r.Ordinal, r.Reverse, r.Node)
+	if err != nil {
+		return nil, err
+	}
+	val, err := proto.Marshal(&xspb.CrossReferences_Relation{})
+	if err != nil {
+		return nil, err
+	}
+	return &KV{key, val}, nil
+}
+
+func encodeXRefCaller(prefix []byte, src *spb.VName, c *xspb.CrossReferences_Caller) (*KV, error) {
+	key, err := keys.Append(prefix, src, columnarXRefsCallerGroup, c.Caller)
+	if err != nil {
+		return nil, err
+	}
+	val, err := proto.Marshal(&xspb.CrossReferences_Caller{
+		Location:     c.Location,
+		MarkedSource: c.MarkedSource,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &KV{key, val}, nil
+}
+
+func encodeXRefCallsite(prefix []byte, src *spb.VName, c *xspb.CrossReferences_Callsite) (*KV, error) {
+	uri, err := kytheuri.Parse(c.Location.Ticket)
+	if err != nil {
+		return nil, err
+	}
+	file := &spb.VName{
+		Corpus: uri.Corpus,
+		Root:   uri.Root,
+		Path:   uri.Path,
+	}
+	key, err := keys.Append(prefix, src, columnarXRefsCallerGroup,
+		c.Caller, int32(c.Kind), file,
+		c.Location.Span.GetStart().GetByteOffset(), c.Location.Span.GetEnd().GetByteOffset())
+	if err != nil {
+		return nil, err
+	}
+	val, err := proto.Marshal(&xspb.CrossReferences_Callsite{
+		Location: c.Location,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &KV{key, val}, nil
+}
+
+func encodeXRefRelatedNode(prefix []byte, src *spb.VName, n *xspb.CrossReferences_RelatedNode) (*KV, error) {
+	key, err := keys.Append(prefix, src, columnarXRefsRelatedNodeGroup, n.Node.Source)
+	if err != nil {
+		return nil, err
+	}
+	val, err := proto.Marshal(n)
+	if err != nil {
+		return nil, err
+	}
+	return &KV{key, val}, nil
+}
+
+// DecodeCrossReferencesEntry decodes a columnar CrossReferences entry.
+func DecodeCrossReferencesEntry(src *spb.VName, key string, val []byte) (*xspb.CrossReferences, error) {
+	kind := columnarXRefsIndexGroup
+	if key != "" {
+		var err error
+		key, err = keys.Parse(key, &kind)
+		if err != nil {
+			return nil, fmt.Errorf("invalid CrossReferences group kind: %v", err)
+		}
+	}
+	switch kind {
+	case columnarXRefsIndexGroup:
+		return decodeXRefIndex(src, key, val)
+	case columnarXRefsReferenceGroup:
+		return decodeXRefReference(src, key, val)
+	case columnarXRefsRelationGroup:
+		return decodeXRefRelation(src, key, val)
+	case columnarXRefsCallerGroup:
+		return decodeXRefCallerOrCallsite(src, key, val)
+	case columnarXRefsRelatedNodeGroup:
+		return decodeXRefRelatedNode(src, key, val)
+	default:
+		return nil, fmt.Errorf("unknown group kind: %d", kind)
+	}
+}
+
+func decodeXRefIndex(src *spb.VName, key string, val []byte) (*xspb.CrossReferences, error) {
+	var idx xspb.CrossReferences_Index
+	if err := proto.Unmarshal(val, &idx); err != nil {
+		return nil, err
+	}
+	return &xspb.CrossReferences{
+		Source: src,
+		Entry:  &xspb.CrossReferences_Index_{&idx},
+	}, nil
+}
+
+func decodeXRefReference(src *spb.VName, key string, val []byte) (*xspb.CrossReferences, error) {
+	var (
+		genericKind string
+		kytheKind   int32
+	)
+	key, err := keys.Parse(key, &genericKind, &kytheKind)
+	if err != nil {
+		return nil, err
+	}
+	var ref xspb.CrossReferences_Reference
+	if err := proto.Unmarshal(val, &ref); err != nil {
+		return nil, err
+	}
+	if genericKind != "" {
+		ref.Kind = &xspb.CrossReferences_Reference_GenericKind{genericKind}
+	} else {
+		ref.Kind = &xspb.CrossReferences_Reference_KytheKind{scpb.EdgeKind(kytheKind)}
+	}
+	return &xspb.CrossReferences{
+		Source: src,
+		Entry:  &xspb.CrossReferences_Reference_{&ref},
+	}, nil
+}
+
+func decodeXRefRelation(src *spb.VName, key string, val []byte) (*xspb.CrossReferences, error) {
+	var (
+		genericKind string
+		kytheKind   int32
+		ordinal     int32
+		reverse     bool
+		node        spb.VName
+	)
+	key, err := keys.Parse(key, &genericKind, &kytheKind, &ordinal, &reverse, &node)
+	if err != nil {
+		return nil, err
+	}
+	var r xspb.CrossReferences_Relation
+	if err := proto.Unmarshal(val, &r); err != nil {
+		return nil, err
+	}
+	r.Reverse = reverse
+	r.Ordinal = ordinal
+	r.Node = &node
+	if genericKind != "" {
+		r.Kind = &xspb.CrossReferences_Relation_GenericKind{genericKind}
+	} else {
+		r.Kind = &xspb.CrossReferences_Relation_KytheKind{scpb.EdgeKind(kytheKind)}
+	}
+	return &xspb.CrossReferences{
+		Source: src,
+		Entry:  &xspb.CrossReferences_Relation_{&r},
+	}, nil
+}
+
+func decodeXRefCallerOrCallsite(src *spb.VName, key string, val []byte) (*xspb.CrossReferences, error) {
+	var caller spb.VName
+	key, err := keys.Parse(key, &caller)
+	if err != nil {
+		return nil, err
+	}
+
+	if key == "" {
+		var c xspb.CrossReferences_Caller
+		if err := proto.Unmarshal(val, &c); err != nil {
+			return nil, err
+		}
+		c.Caller = &caller
+		return &xspb.CrossReferences{
+			Source: src,
+			Entry:  &xspb.CrossReferences_Caller_{&c},
+		}, nil
+	}
+
+	var kind int32
+	key, err = keys.Parse(key, &kind)
+	if err != nil {
+		return nil, err
+	}
+
+	var c xspb.CrossReferences_Callsite
+	if err := proto.Unmarshal(val, &c); err != nil {
+		return nil, err
+	}
+	c.Caller = &caller
+	c.Kind = xspb.CrossReferences_Callsite_Kind(kind)
+	return &xspb.CrossReferences{
+		Source: src,
+		Entry:  &xspb.CrossReferences_Callsite_{&c},
+	}, nil
+}
+
+func decodeXRefRelatedNode(src *spb.VName, key string, val []byte) (*xspb.CrossReferences, error) {
+	var rn xspb.CrossReferences_RelatedNode
+	if err := proto.Unmarshal(val, &rn); err != nil {
+		return nil, err
+	}
+	return &xspb.CrossReferences{
+		Source: src,
+		Entry:  &xspb.CrossReferences_RelatedNode_{&rn},
 	}, nil
 }

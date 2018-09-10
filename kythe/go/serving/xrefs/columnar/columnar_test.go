@@ -17,6 +17,7 @@
 package columnar
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -31,7 +32,7 @@ import (
 	xspb "kythe.io/kythe/proto/xref_serving_go_proto"
 )
 
-func TestEncodingRoundtrip(t *testing.T) {
+func TestDecorationsEncodingRoundtrip(t *testing.T) {
 	file := &spb.VName{Corpus: "corpus", Root: "root", Path: "path"}
 	tests := []*xspb.FileDecorations{{
 		File: file,
@@ -121,24 +122,125 @@ func TestEncodingRoundtrip(t *testing.T) {
 	}}
 
 	for _, test := range tests {
-		kv, err := EncodeDecorationsEntry(nil, test)
-		if err != nil {
-			t.Errorf("Error encoding %T: %v", test.Entry, err)
-			continue
-		}
-		var file spb.VName
-		key, err := keys.Parse(string(kv.Key), &file)
-		if err != nil {
-			t.Errorf("Error decoding file for %T: %v", test.Entry, err)
-			continue
-		}
-		found, err := DecodeDecorationsEntry(&file, string(key), kv.Value)
-		if err != nil {
-			t.Errorf("Error decoding %T: %v", test.Entry, err)
-		} else if diff := cmp.Diff(test, found, ignoreProtoXXXFields); diff != "" {
-			t.Errorf("%T roundtrip differences: (- expected; + found)\n%s", test.Entry, diff)
-		}
+		t.Run(fmt.Sprintf("%T", test.Entry), func(t *testing.T) {
+			kv, err := EncodeDecorationsEntry(nil, test)
+			if err != nil {
+				t.Errorf("Error encoding %T: %v", test.Entry, err)
+				return
+			}
+			var file spb.VName
+			key, err := keys.Parse(string(kv.Key), &file)
+			if err != nil {
+				t.Errorf("Error decoding file for %T: %v", test.Entry, err)
+				return
+			}
+			found, err := DecodeDecorationsEntry(&file, string(key), kv.Value)
+			if err != nil {
+				t.Errorf("Error decoding %T: %v", test.Entry, err)
+			} else if diff := cmp.Diff(test, found, ignoreProtoXXXFields); diff != "" {
+				t.Errorf("%T roundtrip differences: (- expected; + found)\n%s", test.Entry, diff)
+			}
+		})
+	}
+}
 
+func TestCrossReferencesEncodingRoundtrip(t *testing.T) {
+	src := &spb.VName{Corpus: "corpus", Root: "root", Path: "path", Signature: "sig"}
+	tests := []*xspb.CrossReferences{{
+		Source: src,
+		Entry: &xspb.CrossReferences_Index_{&xspb.CrossReferences_Index{
+			Node:         &scpb.Node{},
+			MarkedSource: &cpb.MarkedSource{Kind: cpb.MarkedSource_IDENTIFIER},
+			MergeWith:    []*spb.VName{{Signature: "anything"}},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Reference_{&xspb.CrossReferences_Reference{
+			Kind: &xspb.CrossReferences_Reference_KytheKind{scpb.EdgeKind_REF},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:#reference",
+				Text:   "ref",
+				Span: &cpb.Span{
+					Start: &cpb.Point{ByteOffset: 16},
+					End:   &cpb.Point{ByteOffset: 128},
+				},
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Relation_{&xspb.CrossReferences_Relation{
+			Node:    &spb.VName{Signature: "relatedNode"},
+			Kind:    &xspb.CrossReferences_Relation_KytheKind{scpb.EdgeKind_EXTENDS},
+			Ordinal: 4,
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Relation_{&xspb.CrossReferences_Relation{
+			Node:    &spb.VName{Signature: "relatedNode"},
+			Kind:    &xspb.CrossReferences_Relation_KytheKind{scpb.EdgeKind_EXTENDS},
+			Ordinal: 2,
+			Reverse: true,
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Caller_{&xspb.CrossReferences_Caller{
+			Caller: &spb.VName{Signature: "caller"},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Callsite_{&xspb.CrossReferences_Callsite{
+			Caller: &spb.VName{Signature: "caller"},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:#callsite",
+				Text:   "callsite",
+				Span: &cpb.Span{
+					Start: &cpb.Point{ByteOffset: 32},
+					End:   &cpb.Point{ByteOffset: 256},
+				},
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Callsite_{&xspb.CrossReferences_Callsite{
+			Caller: &spb.VName{Signature: "caller"},
+			Kind:   xspb.CrossReferences_Callsite_OVERRIDE,
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:#callsite2",
+				Span: &cpb.Span{
+					Start: &cpb.Point{ByteOffset: 32},
+					End:   &cpb.Point{ByteOffset: 256},
+				},
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_RelatedNode_{&xspb.CrossReferences_RelatedNode{
+			Node: &scpb.Node{
+				Source: &spb.VName{Signature: "relatedNode"},
+			},
+		}},
+	}}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%T", test.Entry), func(t *testing.T) {
+			kv, err := EncodeCrossReferencesEntry(nil, test)
+			if err != nil {
+				t.Errorf("Error encoding %T: %v", test.Entry, err)
+				return
+			}
+			var src spb.VName
+			key, err := keys.Parse(string(kv.Key), &src)
+			if err != nil {
+				t.Errorf("Error decoding file for %T: %v", test.Entry, err)
+				return
+			}
+			found, err := DecodeCrossReferencesEntry(&src, string(key), kv.Value)
+			if err != nil {
+				t.Errorf("Error decoding %T: %v", test.Entry, err)
+			} else if diff := cmp.Diff(test, found, ignoreProtoXXXFields); diff != "" {
+				t.Errorf("%T roundtrip differences: (- expected; + found)\n%s", test.Entry, diff)
+			}
+		})
 	}
 }
 
