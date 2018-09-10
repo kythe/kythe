@@ -11,6 +11,7 @@ go_binary(
         "//kythe/go/services/graphstore/proxy",
         "//kythe/go/serving/pipeline",
         "//kythe/go/serving/pipeline/beamio",
+        "//kythe/go/serving/xrefs",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/stream",
