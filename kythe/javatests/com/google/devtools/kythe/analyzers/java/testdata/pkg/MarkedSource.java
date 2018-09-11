@@ -21,7 +21,7 @@ public class MarkedSource {
   //- Constant code CMS
   //- CMS child.0 ConstantType
   //- ConstantType.kind "TYPE"
-  //- CMS child.1 ContantCtx
+  //- CMS child.1 ConstantCtx
   //- ConstantCtx.kind "CONTEXT"
   //- CMS child.2 ConstantIdent
   //- ConstantIdent.kind "IDENTIFIER"
@@ -140,7 +140,7 @@ public class MarkedSource {
   //- CPType.post_text " "
   //- CParamCode child.1 CPCtx
   //- CPCtx.kind "CONTEXT"
-  //- CParamCPode child.2 CPId
+  //- _CParamCPode child.2 CPId
   //- CPId.kind "IDENTIFIER"
   //- CPId.pre_text "pc"
 
@@ -156,7 +156,7 @@ public class MarkedSource {
   //- DPType.post_text " "
   //- DParamCode child.1 DPCtx
   //- DPCtx.kind "CONTEXT"
-  //- DParamDPode child.2 DPId
+  //- _DParamDPode child.2 DPId
   //- DPId.kind "IDENTIFIER"
   //- DPId.pre_text "pd"
 

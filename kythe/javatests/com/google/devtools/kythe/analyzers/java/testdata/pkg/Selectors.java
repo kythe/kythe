@@ -2,23 +2,24 @@ package pkg;
 
 public class Selectors {
   //- @field defines/binding Field
+  //- @String ref String
   String field;
 
   //- @Optional ref OptionalAbs
   //- @maybe defines/binding Param
   public String m(Optional<String> maybe) {
     //- @maybe ref Param
-    //- @isPresent ref IsPresentMethod
+    //- @isPresent ref _IsPresentMethod
     if (maybe.isPresent()) {
       //- @maybe ref Param
-      //- @get ref GetMethod
+      //- @get ref _GetMethod
       //- @field ref Field
       //- @this ref This
       this.field = maybe.get();
     }
     //- @this ref This
     //- @m2 ref M2Method
-    //- @toString ref ToStringMethod
+    //- @toString ref _ToStringMethod
     return this.m2().toString();
   }
 
@@ -30,7 +31,7 @@ public class Selectors {
   }
 
   //- @String ref String
-  //- @"java.lang" ref JavaLangPackage
+  //- @"java.lang" ref _JavaLangPackage
   java.lang.String m3() {
     return null;
   }

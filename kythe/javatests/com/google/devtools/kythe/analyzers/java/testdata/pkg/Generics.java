@@ -34,7 +34,7 @@ public class Generics<T> {
     //- GVar typed GType
     //- GType.node/kind tapp
     //- GType param.0 GAbs
-    //- GType param.1 Str
+    //- GType param.1 _Str
     Generics<String> gs =
         //- @"Generics<String>" ref GType
         new Generics<String>();
@@ -49,7 +49,7 @@ public class Generics<T> {
 
     //- @"Optional<Generics<String>>" ref OType
     //- OType.node/kind tapp
-    //- OType param.0 Optional
+    //- OType param.0 _Optional
     //- OType param.1 GType
     //- @opt defines/binding OVar
     //- OVar typed OType
@@ -57,7 +57,7 @@ public class Generics<T> {
   }
 
   //- @Optional defines/binding OptionalAbs
-  //- OptionalClass childof OptionalAbs
+  //- _OptionalClass childof OptionalAbs
   //- @T defines/binding OptionalTVar
   //- OptionalTVar.node/kind absvar
   private static class Optional<T> {}
@@ -70,7 +70,7 @@ public class Generics<T> {
   //- BVar bounded/upper.1 Inter
   private static class Bounded<BV extends java.util.List & Inter> {}
 
-  //- @classTypeVarBound defines/binding ClassTypeVarBoundFunc
+  //- @classTypeVarBound defines/binding _ClassTypeVarBoundFunc
   //- @E defines/binding EVar
   //- EVar bounded/upper.0 TVar
   public <E extends T> void classTypeVarBound() {}
@@ -81,7 +81,7 @@ public class Generics<T> {
           //- @Y defines/binding YVar
           //- YVar bounded/upper.0 XVar
           Y extends X>
-      //- @ownTypeVarBound defines/binding OwnTypeVarBoundFunc
+      //- @ownTypeVarBound defines/binding _OwnTypeVarBoundFunc
       void ownTypeVarBound() {}
 
   // Verify that, if there are interface bounds, then java.lang.Object appears as a superclass bound
@@ -96,33 +96,33 @@ public class Generics<T> {
   // With only an (implicit or explicit) bound of Object, do emit a bounded/upper.0 edge,
   // but don't add the superfluous "extends java.lang.Object" in the name.
 
-  //- @noIFaceBound defines/binding Func
+  //- @noIFaceBound defines/binding _Func
   //- @S0 defines/binding S0Var
   //- S0Var bounded/upper.0 Obj
   public <S0> void noIFaceBound() {}
 
-  //- @objAndNoIFaceBound defines/binding OFunc
+  //- @objAndNoIFaceBound defines/binding _OFunc
   //- @S1 defines/binding S1Var
   //- S1Var bounded/upper.0 Obj
   public <S1> void objAndNoIFaceBound() {}
 
   // If there is at least one interface bound, only emit a bound of java.lang.Object if it was explicit.
 
-  //- @oneIFaceBound defines/binding IFunc
+  //- @oneIFaceBound defines/binding _IFunc
   //- @S2 defines/binding S2Var
   //- @List ref List
   //- !{ S2Var bounded/upper.0 Obj }
   //- S2Var bounded/upper.0 List
   public <S2 extends java.util.List> void oneIFaceBound() {}
 
-  //- @objAndOneIFaceBound defines/binding OIFunc
+  //- @objAndOneIFaceBound defines/binding _OIFunc
   //- @S3 defines/binding S3Var
   //- @List ref List
   //- S3Var bounded/upper.0 Obj
   //- S3Var bounded/upper.1 List
   public <S3 extends Object & java.util.List> void objAndOneIFaceBound() {}
 
-  //- @twoIfaceBounds defines/binding IIFunc
+  //- @twoIfaceBounds defines/binding _IIFunc
   //- @S4 defines/binding S4Var
   //- @List ref List
   //- @Inter ref Inter
@@ -131,7 +131,7 @@ public class Generics<T> {
   //- S4Var bounded/upper.1 Inter
   public <S4 extends java.util.List & Inter> void twoIfaceBounds() {}
 
-  //- @objAndTwoIFaceBounds defines/binding OIIFunc
+  //- @objAndTwoIFaceBounds defines/binding _OIIFunc
   //- @S5 defines/binding S5Var
   //- @List ref List
   //- @Inter ref Inter

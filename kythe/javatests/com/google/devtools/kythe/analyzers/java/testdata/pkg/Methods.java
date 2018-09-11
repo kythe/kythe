@@ -24,7 +24,7 @@ public class Methods {
   //- @noop defines/binding NoOp
   //- NoOp typed NullFunc
   //- NullFunc param.0 FnBuiltin = vname("fn#builtin", "", "", "", "java")
-  //- NullFunc param.1 VoidBuiltin = vname("void#builtin", "", "", "", "java")
+  //- NullFunc param.1 _VoidBuiltin = vname("void#builtin", "", "", "", "java")
   private void noop() {}
 
   //- @f defines/binding F
@@ -56,7 +56,7 @@ public class Methods {
   //- StrStrIntFunc param.0 FnBuiltin
   //- StrStrIntFunc param.1 String
   //- StrStrIntFunc param.2 String
-  //- StrStrIntFunc param.3 IntBuiltin = vname("int#builtin", "", "", "", "java")
+  //- StrStrIntFunc param.3 _IntBuiltin = vname("int#builtin", "", "", "", "java")
   private String repeat(String s, int n) {
     StringBuilder b = new StringBuilder();
     for (int i = 0; i < n; i++) {
@@ -70,7 +70,7 @@ public class Methods {
   //- Main param.0 Args
   //- Args typed StrArray
   //- StrArray.node/kind tapp
-  //- StrArray param.0 ArrayBuiltin = vname("array#builtin", "", "", "", "java")
+  //- StrArray param.0 _ArrayBuiltin = vname("array#builtin", "", "", "", "java")
   //- StrArray param.1 String
   public static void main(String[] args) {
     //- @#0toString ref ToString
@@ -85,6 +85,6 @@ public class Methods {
   }
 
 
-  //- @Exception ref Exception
+  //- @Exception ref _Exception
   public void error() throws Exception {}
 }

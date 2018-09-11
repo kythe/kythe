@@ -6,9 +6,9 @@
 //-    AnyPackage.node/kind package }
 public class DefaultPackage {
 
-  //- @CONSTANT defines/binding ConstantField
+  //- @CONSTANT defines/binding _ConstantField
   public static final String CONSTANT = "constantly unused... :-(";
 
-  //- @main defines/binding MainMethod
+  //- @main defines/binding _MainMethod
   public static void main(String[] args) {}
 }

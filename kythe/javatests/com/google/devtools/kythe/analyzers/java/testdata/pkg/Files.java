@@ -14,10 +14,10 @@ public class Files {
   //- InnerClass childof FilesClass
   public static class Inner {}
 
-  //- @staticMethod defines/binding StaticMethod
+  //- @staticMethod defines/binding _StaticMethod
   public static void staticMethod() {}
 
-  //- @CONSTANT defines/binding ConstantMember
+  //- @CONSTANT defines/binding _ConstantMember
   public static final int CONSTANT = 42;
 
   // Ensure this private member does not affect the class node across compilations.
@@ -28,9 +28,9 @@ public class Files {
 //-   .node/kind file
 //- File.text/encoding "UTF-8"
 
-//- @OtherDecl defines/binding ODecl
+//- @OtherDecl defines/binding _ODecl
 enum OtherDecl {}
 
 //- @Inter defines/binding InterAbs
-//- InterRaw childof InterAbs
+//- _InterRaw childof InterAbs
 interface Inter<T> {}

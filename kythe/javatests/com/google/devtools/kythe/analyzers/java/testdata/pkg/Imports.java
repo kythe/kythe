@@ -3,7 +3,7 @@ package pkg;
 //- @CASE_INSENSITIVE_ORDER ref/imports StringConst
 //- @String ref String
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
-//- @hashCode ref/imports HashCodeMethod
+//- @hashCode ref/imports _HashCodeMethod
 //- @"java.util" ref UtilPackage
 import static java.util.Objects.hashCode;
 

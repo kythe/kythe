@@ -36,7 +36,7 @@ DEFINE_bool(graphviz, false, "Only dump facts as a GraphViz-compatible graph");
 DEFINE_bool(annotated_graphviz, false, "Solve and annotate a GraphViz graph.");
 DEFINE_string(goal_prefix, "//-", "Denote goals with this string.");
 DEFINE_bool(use_file_nodes, false, "Look for assertions in UTF8 file nodes.");
-DEFINE_bool(check_for_singletons, false, "Fail on singleton variables.");
+DEFINE_bool(check_for_singletons, true, "Fail on singleton variables.");
 DEFINE_string(
     goal_regex, "",
     "If nonempty, denote goals with this regex. "

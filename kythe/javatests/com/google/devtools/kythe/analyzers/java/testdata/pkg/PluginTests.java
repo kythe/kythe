@@ -22,11 +22,11 @@ public class PluginTests {
 
   //- Class generates JVMClass
   //- Method generates JVMMethod
-  //- Constructor generates JVMConstructor
   //- Field generates JVMField
   //- JVMMethod /special/jvm/edge JVMClass
-  //- JVMConstructor /special/jvm/edge JVMClass
   //- JVMField /special/jvm/edge JVMClass
+  //- JVMConstructor /special/jvm/edge JVMClass
+  //- Constructor generates _JVMConstructor
 
   /** A special annotation for special methods. */
   public @interface SpecialAnnotation {}
