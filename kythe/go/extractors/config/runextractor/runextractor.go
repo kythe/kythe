@@ -28,6 +28,7 @@ import (
 	"os"
 
 	"kythe.io/kythe/go/extractors/config/runextractor/cmakecmd"
+	"kythe.io/kythe/go/extractors/config/runextractor/compdbcmd"
 	"kythe.io/kythe/go/extractors/config/runextractor/gradlecmd"
 	"kythe.io/kythe/go/extractors/config/runextractor/mavencmd"
 
@@ -41,6 +42,7 @@ const (
 
 func init() {
 	subcommands.Register(cmakecmd.New(), cppGroup)
+	subcommands.Register(compdbcmd.New(), cppGroup)
 	subcommands.Register(gradlecmd.New(), javaGroup)
 	subcommands.Register(mavencmd.New(), javaGroup)
 }

@@ -3,8 +3,8 @@ load("//tools:build_rules/shims.bzl", "go_library")
 package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
-    name = "cmakecmd",
-    srcs = ["cmakecmd.go"],
+    name = "compdbcmd",
+    srcs = ["compdbcmd.go"],
     deps = [
         "//kythe/go/extractors/config/runextractor/compdb",
         "//kythe/go/util/cmdutil",
