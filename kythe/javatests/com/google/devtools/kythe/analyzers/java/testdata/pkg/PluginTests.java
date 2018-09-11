@@ -3,7 +3,8 @@ package pkg;
 //- @PluginTests defines/binding Class
 public class PluginTests {
 
-  // @PluginTests defines/binding Constructor
+  @SpecialAnnotation
+  //- @PluginTests defines/binding Constructor
   PluginTests() {}
 
   @SpecialAnnotation
