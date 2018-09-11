@@ -15,7 +15,7 @@ mkdir -p "${OUT_DIR}"
 "${INDEXER}" "${TEST_INDEX}" --ignore_unimplemented=false \
     > "${OUT_DIR}/kindex_test.entries"
 cat "${OUT_DIR}/kindex_test.entries" \
-    | "${VERIFIER}" "${BASE_DIR}/kindex_test.verify"
+    | "${VERIFIER}" --nocheck_for_singletons "${BASE_DIR}/kindex_test.verify"
 # The second test (which is useless unless the first succeeds) checks that
 # we handle relative paths.
 "${KINDEX_TOOL}" -assemble "${REPO_TEST_INDEX}" \
@@ -26,4 +26,4 @@ cat "${OUT_DIR}/kindex_test.entries" \
 "${INDEXER}" "${REPO_TEST_INDEX}" --ignore_unimplemented=false \
     > "${OUT_DIR}/kindex_repo_test.entries"
 cat "${OUT_DIR}/kindex_repo_test.entries" \
-    | "${VERIFIER}" "${BASE_DIR}/kindex_repo_test.verify"
+    | "${VERIFIER}" --nocheck_for_singletons "${BASE_DIR}/kindex_repo_test.verify"

@@ -20,12 +20,12 @@ public class Comments
   //- DocNode param.2 InnerClass
   //- DocNode.text " This is a Javadoc comment with links to {@link [String]}, {@link [java.lang.Integer]}, and\n {@link [Inner]}.\n"
 
-  //- @fieldOne defines/binding FieldOne
+  //- @fieldOne defines/binding _FieldOne
   private static int fieldOne; // inline comment here
 
   //- FieldTwoDoc documents FieldTwo
   //- FieldTwoDoc.node/kind doc
-  //- !{ FieldTwoDoc.subkind AnySubkind }
+  //- !{ FieldTwoDoc.subkind _AnySubkind }
   //- FieldTwoDoc.text "fieldTwo represents the universe"
   //- @+3fieldTwo defines/binding FieldTwo
 
@@ -41,7 +41,7 @@ public class Comments
   //- FieldThreeDoc documents FieldThree
   //- FieldThreeDoc.node/kind doc
   //- FieldThreeDoc.text "EOL comment"
-  //- !{ FieldFourDoc documents FieldFour }
+  //- !{ _FieldFourDoc documents FieldFour }
 
   //- @+3fieldFive defines/binding FieldFive
   //- @+2fieldSix defines/binding FieldSix
@@ -124,6 +124,6 @@ public class Comments
   public int compareTo(Comments o) { return 0; }
   //- OverrideDoc documents CompareTo
   //- OverrideDoc.node/kind doc
-  //- OverrideDoc param.0 Override
+  //- OverrideDoc param.0 _Override
   //- OverrideDoc.text "This documents {@link #compareTo()} over {@link [Override]}. "
 }
