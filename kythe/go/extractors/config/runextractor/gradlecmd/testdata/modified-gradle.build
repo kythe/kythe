@@ -13,7 +13,7 @@ allprojects {
   gradle.projectsEvaluated {
     tasks.withType(JavaCompile) {
       options.fork = true
-      options.forkOptions.executable = '/opt/kythe/extractors/javac-wrapper.sh'
+      options.forkOptions.executable = '/tmp/javac-wrapper.sh'
     }
   }
 }

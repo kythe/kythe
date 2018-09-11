@@ -30,20 +30,23 @@ const testDataDir = "testdata"
 
 func TestHasKythe(t *testing.T) {
 	testcases := []struct {
-		fileName string
+		fileName     string
+		javacWrapper string
 		// Whether kythe javac wrapper should be present.
 		hasWrapper bool
 		// Whether we expect an error.
 		wantError bool
 	}{
-		{fileName: "modified-gradle.build", hasWrapper: true},
-		{fileName: "plain-gradle.build"},
-		{fileName: "other-gradle.build", wantError: true},
+		{fileName: "modified-gradle.build", javacWrapper: "/tmp/javac-wrapper.sh", hasWrapper: true},
+		{fileName: "plain-gradle.build", javacWrapper: "/tmp/javac-wrapper.sh"},
+		{fileName: "other-gradle.build", javacWrapper: "/tmp/javac-wrapper.sh", wantError: true},
+		// Look at other-gradle.build but use the correct javac wrapper.
+		{fileName: "other-gradle.build", javacWrapper: "/different/javac-wrapper.sh", hasWrapper: true},
 	}
 
 	for _, tcase := range testcases {
 		// This should just ignore the file and do nothing.
-		hasWrapper, err := hasKytheWrapper(getPath(t, tcase.fileName))
+		hasWrapper, err := hasKytheWrapper(getPath(t, tcase.fileName), tcase.javacWrapper)
 		if err != nil && !tcase.wantError {
 			t.Fatalf("Failed to open test gradle file: %v", err)
 		} else if err == nil && tcase.wantError {
@@ -63,10 +66,12 @@ func TestHasKythe(t *testing.T) {
 func TestPreprocess(t *testing.T) {
 	testcases := []struct {
 		inputFile          string
+		javacWrapper       string
 		expectedOutputFile string
 	}{
-		{"modified-gradle.build", "modified-gradle.build"},
-		{"plain-gradle.build", "modified-gradle.build"},
+		{"modified-gradle.build", "/tmp/javac-wrapper.sh", "modified-gradle.build"},
+		{"plain-gradle.build", "/tmp/javac-wrapper.sh", "modified-gradle.build"},
+		{"plain-gradle.build", "/different/javac-wrapper.sh", "other-gradle.build"},
 	}
 
 	for _, tcase := range testcases {
@@ -94,7 +99,7 @@ func TestPreprocess(t *testing.T) {
 			}
 
 			// Do the copy if necessary.
-			if err := PreProcessGradleBuild(tfName); err != nil {
+			if err := PreProcessGradleBuild(tfName, tcase.javacWrapper); err != nil {
 				t.Fatalf("modifying gradle file %s: %v", tcase.inputFile, err)
 			}
 
