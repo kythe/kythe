@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-// Package compdb contains functionality necessary for extracting from a `compile_commands.json` file.
+// Package compdb contains functionality necessary for extracting from a
+// compile_commands.json file.
 package compdb
 
 import (
@@ -33,19 +34,21 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-// A compileCommand holds the decoded arguments of a LLVM compilation database JSON command spec.
+// A compileCommand holds the decoded arguments of a LLVM compilation database
+// JSON command spec.
 type compileCommand struct {
 	Command   string
 	Directory string
 }
 
-// ExtractCompilations runs the specified extractor over each compilation record found in the compile_commands.json file at path.
+// ExtractCompilations runs the specified extractor over each compilation record
+// found in the compile_commands.json file at path.
 func ExtractCompilations(ctx context.Context, extractor, path string) error {
 	commands, err := readCommands(path)
 	if err != nil {
 		return err
 	}
-	exEnv, err := extractorEnv()
+	env, err := extractorEnv()
 	if err != nil {
 		return err
 	}
@@ -69,7 +72,7 @@ func ExtractCompilations(ctx context.Context, extractor, path string) error {
 			if err != nil {
 				return fmt.Errorf("unable to resolve cmake directory: %v", err)
 			}
-			cmd.Env = exEnv
+			cmd.Env = env
 			if _, err := cmd.Output(); err != nil {
 				if exit, ok := err.(*exec.ExitError); ok {
 					return fmt.Errorf("error running extractor: %v (%s)", exit, exit.Stderr)
