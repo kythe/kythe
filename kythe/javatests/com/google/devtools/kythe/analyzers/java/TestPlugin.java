@@ -117,7 +117,7 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
           .getJvmNode(sym)
           .map(KytheNode::getVName)
           .ifPresent(
-              jvmMethod ->
+              jvmNode ->
                   Optional.ofNullable(sym)
                       .map(Symbol::enclClass)
                       .flatMap(kytheGraph::getJvmNode)
@@ -125,9 +125,7 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
                       .ifPresent(
                           jvmClass -> {
                             // Add an extra edge to the enclosing Kythe JVM class.
-                            entrySets
-                                .getEmitter()
-                                .emitEdge(jvmMethod, "/special/jvm/edge", jvmClass);
+                            entrySets.getEmitter().emitEdge(jvmNode, "/special/jvm/edge", jvmClass);
                           }));
 
       break;

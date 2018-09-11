@@ -14,9 +14,7 @@ jvm_verifier_test(
     verifier_opts = [
         "--ignore_dups",
         "--convert_marked_source",
-        # While there shouldn't be any actual singletons, jvm_nodes triggers
-        # man false positives in the verifier.
-        # TODO(#2994): Determine if we should ignore the singletons or if there is an actual bug.
+        # Ignore singletons that are used in the Java indexer side of the JVM tests.
         "--nocheck_for_singletons",
     ],
     deps = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg:jvm_tests"],
