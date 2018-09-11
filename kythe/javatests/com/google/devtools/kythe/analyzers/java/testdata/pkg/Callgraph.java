@@ -43,7 +43,7 @@ public class Callgraph {
 
   //- @f defines/binding F
   //- F.node/kind function
-  //- F typed FType
+  //- F typed _FType
   static void f(int n) {
     //- @"new Callgraph" ref ECtor
     //- ECtorCall.loc/start @^"new Callgraph()"

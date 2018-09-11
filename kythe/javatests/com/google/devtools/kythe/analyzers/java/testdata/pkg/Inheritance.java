@@ -42,7 +42,7 @@ public class Inheritance {
   //- CClass extends BClass
   //- CClass extends IInterface
   //- !{ CClass extends AClass
-  //-    CCLass extends IInterface
+  //-    CClass extends IInterface
   //-    CClass extends BClass }
   static class C extends B implements I {
     @Override

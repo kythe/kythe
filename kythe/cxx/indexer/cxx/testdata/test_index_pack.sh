@@ -20,4 +20,4 @@ rm -rf -- "${OUT_DIR}/pack"
     "401bdc75a298d6c3a11a10f493b182032793034fddd84e9810f89b5def902309" \
     > "${OUT_DIR}/kindex_test.entries"
 cat "${OUT_DIR}/kindex_test.entries" \
-    | "${VERIFIER}" "${BASE_DIR}/kindex_test.verify"
+    | "${VERIFIER}" --nocheck_for_singletons "${BASE_DIR}/kindex_test.verify"

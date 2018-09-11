@@ -11,7 +11,7 @@ class Referent {
   public Referent() {}
 
   //- @Referent defines/binding IntegerConstructor
-  //- IntConstructor childof ReferentClass
+  //- IntegerConstructor childof ReferentClass
   public Referent(Integer x) {}
   
   //- @Referent defines/binding ObjectConstructor
@@ -40,7 +40,7 @@ class Referent {
     return this;
   }
 
-  //- @func defines/binding NullaryMethod
+  //- @func defines/binding AlternativeMethod
   //- AlternativeMethod childof ReferentClass
   public Referent func(Referent x) {
     return x;

@@ -17,7 +17,6 @@ public @interface Annotations {
 //- @Deprecated ref Deprecated
 @Deprecated
 //- @C defines/binding C
-//- C annotatedby Annotatedby
 //- C annotatedby Deprecated
 class C {
 

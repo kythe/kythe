@@ -12,7 +12,7 @@ public class Classes {
   //- DefaultCtor typed DefaultCtorType
   //- DefaultCtorType param.0 FnBuiltin
   //- DefaultCtorType param.1 N
-  //- !{ DefaultCtorAnchor defines/binding DefaultCtor }
+  //- !{ _DefaultCtorAnchor defines/binding DefaultCtor }
 
   //- @StaticInner defines/binding SI
   //- SI.node/kind record

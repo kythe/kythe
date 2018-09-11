@@ -15,7 +15,7 @@ public class Lambdas {
   private static final Function<Object, Object> IDENTITY = x -> x;
 
   //- @fieldName defines/binding Field
-  //- Field childof LambdaClass
+  //- Field childof LambdasClass
   Object fieldName;
 
   //- @num defines/binding NumParameter1
@@ -41,7 +41,7 @@ public class Lambdas {
   //- @getAdder defines/binding GetAdder
   //- @adderX defines/binding AdderX
   public Function<Integer, Integer> getAdder(final int adderX) {
-    //- @adderY defines/binding AdderyY
+    //- @adderY defines/binding AdderY
     return adderY
         //- @adderX ref AdderX
         //- @adderY ref AdderY
