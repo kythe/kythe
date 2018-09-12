@@ -35,6 +35,7 @@ const (
 // current working directory for running tests.
 // Returns expected working directory.
 func setupEnvironment(t *testing.T) string {
+	t.Helper()
 	// TODO(shahms): ExtractCompilations should take an output path.
 	output := os.Getenv("TEST_TMPDIR")
 	if output == "" {
@@ -63,19 +64,19 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 		t.Fatalf("Unable to change working directory: %v", err)
 	}
 	if err := ExtractCompilations(context.Background(), extractor, "compilation_database.json"); err != nil {
-		t.Fatalf("Errro running ExtractCompilations: %v", err)
+		t.Fatalf("Error running ExtractCompilations: %v", err)
 	}
 	err = filepath.Walk(os.Getenv("KYTHE_OUTPUT_DIRECTORY"), func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return nil
-		}
 		if err != nil {
 			return err
+		} else if info.IsDir() {
+			return nil
 		}
 		reader, err := os.Open(path)
 		if err != nil {
 			return err
 		}
+		defer reader.Close()
 		comp, err := kindex.New(reader)
 		if err != nil {
 			return err
@@ -86,7 +87,7 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-		t.Fatalf("Error processing extraced output: %v", err)
+		t.Fatalf("Error processing extracted output: %v", err)
 	}
 
 }
