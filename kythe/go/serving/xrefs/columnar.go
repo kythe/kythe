@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"regexp"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/xrefs/columnar"
@@ -39,6 +40,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
+	scpb "kythe.io/kythe/proto/schema_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
 	xspb "kythe.io/kythe/proto/xref_serving_go_proto"
 )
@@ -67,8 +69,7 @@ func NewColumnarTable(t keyvalue.DB) *ColumnarTable {
 type ColumnarTable struct {
 	keyvalue.DB
 
-	// TODO(schroederc): implement xrefs columnar format reader
-	*Table // fallback non-columnar xrefs/documentation
+	*Table // fallback non-columnar documentation
 }
 
 // Decorations implements part of the xrefs.Service interface.
@@ -186,21 +187,8 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 				continue
 			}
 			n := e.TargetNode.Node
-
-			c := &cpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
-			for _, f := range n.Fact {
-				name := schema.GetFactName(f)
-				if xrefs.MatchesAny(name, patterns) {
-					c.Facts[name] = f.Value
-				}
-			}
-			if kind := schema.GetNodeKind(n); kind != "" && xrefs.MatchesAny(facts.NodeKind, patterns) {
-				c.Facts[facts.NodeKind] = []byte(kind)
-			}
-			if subkind := schema.GetSubkind(n); subkind != "" && xrefs.MatchesAny(facts.Subkind, patterns) {
-				c.Facts[facts.Subkind] = []byte(subkind)
-			}
-			if len(c.Facts) > 0 {
+			c := filterNode(patterns, n)
+			if c != nil && len(c.Facts) > 0 {
 				reply.Nodes[kytheuri.ToString(n.Source)] = c
 			}
 		case *xspb.FileDecorations_TargetDefinition_:
@@ -241,4 +229,185 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 	}
 
 	return reply, nil
+}
+
+func addXRefNode(reply *xpb.CrossReferencesReply, patterns []*regexp.Regexp, n *scpb.Node) {
+	if len(patterns) == 0 {
+		return
+	}
+	ticket := kytheuri.ToString(n.Source)
+	if _, ok := reply.Nodes[ticket]; !ok {
+		c := filterNode(patterns, n)
+		if c != nil && len(c.Facts) > 0 {
+			reply.Nodes[ticket] = c
+		}
+	}
+}
+
+// CrossReferences implements part of the xrefs.Service interface.
+func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	reply := &xpb.CrossReferencesReply{
+		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
+	}
+
+	relatedNodes := stringset.New()
+	patterns := xrefs.ConvertFilters(req.Filter)
+	relatedKinds := stringset.New(req.RelatedNodeKind...)
+	if len(patterns) > 0 {
+		reply.Nodes = make(map[string]*cpb.NodeInfo)
+	}
+	emitSnippets := req.Snippets != xpb.SnippetsKind_NONE
+
+	// TODO(schroederc): paging
+
+	for _, ticket := range req.Ticket {
+		uri, err := kytheuri.Parse(ticket)
+		if err != nil {
+			return nil, err
+		}
+		prefix, err := keys.Append(columnar.CrossReferencesKeyPrefix, uri.VName())
+		if err != nil {
+			return nil, err
+		}
+		it, err := c.DB.ScanPrefix(ctx, prefix, &keyvalue.Options{LargeRead: true})
+		if err != nil {
+			return nil, err
+		}
+
+		k, val, err := it.Next()
+		if err == io.EOF || !bytes.Equal(k, prefix) {
+			continue
+		} else if err != nil {
+			return nil, err
+		}
+
+		// Decode CrossReferences Index
+		var idx xspb.CrossReferences_Index
+		if err := proto.Unmarshal(val, &idx); err != nil {
+			return nil, fmt.Errorf("error decoding index: %v", err)
+		}
+		idx.Node.Source = uri.VName()
+		addXRefNode(reply, patterns, idx.Node)
+
+		// TODO(schroederc): handle merge_with
+
+		set := &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: ticket}
+		reply.CrossReferences[ticket] = set
+
+		// TODO remove callers without callsites
+		callers := make(map[string]*xpb.CrossReferencesReply_RelatedAnchor)
+
+		// Main loop to scan over each columnar kv entry.
+		for {
+			k, val, err := it.Next()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				return nil, err
+			}
+			key := string(k[len(prefix):])
+
+			// TODO(schroederc): only parse needed entries
+			e, err := columnar.DecodeCrossReferencesEntry(uri.VName(), key, val)
+			if err != nil {
+				return nil, err
+			}
+
+			switch e := e.Entry.(type) {
+			case *xspb.CrossReferences_Reference_:
+				ref := e.Reference
+				if xrefs.IsRefKind(req.ReferenceKind, getRefKind(ref)) {
+					a := a2a(ref.Location, emitSnippets).Anchor
+					a.Ticket = ""
+					set.Reference = append(set.Reference, &xpb.CrossReferencesReply_RelatedAnchor{
+						Anchor: a,
+					})
+				}
+			case *xspb.CrossReferences_Relation_:
+				if len(patterns) == 0 {
+					continue
+				}
+				rel := e.Relation
+				kind := rel.GetGenericKind()
+				if kind == "" {
+					kind = schema.EdgeKindString(rel.GetKytheKind())
+				}
+				if rel.Reverse {
+					kind = "%" + kind
+				}
+				if xrefs.IsRelatedNodeKind(relatedKinds, kind) {
+					relatedNode := kytheuri.ToString(rel.Node)
+					relatedNodes.Add(relatedNode)
+					set.RelatedNode = append(set.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
+						Ticket:       relatedNode,
+						RelationKind: kind,
+						Ordinal:      rel.Ordinal,
+					})
+				}
+			case *xspb.CrossReferences_RelatedNode_:
+				relatedNode := kytheuri.ToString(e.RelatedNode.Node.Source)
+				if relatedNodes.Contains(relatedNode) {
+					addXRefNode(reply, patterns, e.RelatedNode.Node)
+				}
+			case *xspb.CrossReferences_Caller_:
+				if req.CallerKind == xpb.CrossReferencesRequest_NO_CALLERS {
+					continue
+				}
+				c := e.Caller
+				a := a2a(c.Location, emitSnippets).Anchor
+				a.Ticket = ""
+				callerTicket := kytheuri.ToString(c.Caller)
+				caller := &xpb.CrossReferencesReply_RelatedAnchor{
+					Anchor:       a,
+					MarkedSource: c.MarkedSource,
+					Ticket:       callerTicket,
+				}
+				callers[callerTicket] = caller
+				set.Caller = append(set.Caller, caller)
+			case *xspb.CrossReferences_Callsite_:
+				c := e.Callsite
+				if req.CallerKind == xpb.CrossReferencesRequest_NO_CALLERS ||
+					(req.CallerKind == xpb.CrossReferencesRequest_DIRECT_CALLERS && c.Kind == xspb.CrossReferences_Callsite_OVERRIDE) {
+					continue
+				}
+				caller := callers[kytheuri.ToString(c.Caller)]
+				if caller == nil {
+					log.Printf("WARNING: missing Caller for callsite: %+v", c)
+					continue
+				}
+				a := a2a(c.Location, emitSnippets).Anchor
+				a.Ticket = ""
+				// TODO(schroederc): set anchor kind to differentiate kinds?
+				caller.Site = append(caller.Site, a)
+			default:
+				return nil, fmt.Errorf("unhandled internal serving type: %T", e)
+			}
+		}
+	}
+
+	return reply, nil
+}
+
+func getRefKind(ref *xspb.CrossReferences_Reference) string {
+	if k := ref.GetGenericKind(); k != "" {
+		return k
+	}
+	return schema.EdgeKindString(ref.GetKytheKind())
+}
+
+func filterNode(patterns []*regexp.Regexp, n *scpb.Node) *cpb.NodeInfo {
+	c := &cpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
+	for _, f := range n.Fact {
+		name := schema.GetFactName(f)
+		if xrefs.MatchesAny(name, patterns) {
+			c.Facts[name] = f.Value
+		}
+	}
+	if kind := schema.GetNodeKind(n); kind != "" && xrefs.MatchesAny(facts.NodeKind, patterns) {
+		c.Facts[facts.NodeKind] = []byte(kind)
+	}
+	if subkind := schema.GetSubkind(n); subkind != "" && xrefs.MatchesAny(facts.Subkind, patterns) {
+		c.Facts[facts.Subkind] = []byte(subkind)
+	}
+	return c
 }

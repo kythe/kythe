@@ -45,6 +45,14 @@ func mustWriteDecor(t *testing.T, w keyvalue.Writer, fd *xspb.FileDecorations) {
 	mustWrite(t, w, kv.Key, kv.Value)
 }
 
+func mustWriteXRef(t *testing.T, w keyvalue.Writer, fd *xspb.CrossReferences) {
+	kv, err := columnar.EncodeCrossReferencesEntry(columnar.CrossReferencesKeyPrefix, fd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, w, kv.Key, kv.Value)
+}
+
 func mustWrite(t *testing.T, w keyvalue.Writer, key, val []byte) {
 	if err := w.Write(key, val); err != nil {
 		t.Fatal(err)
@@ -142,7 +150,7 @@ func TestServingDecorations(t *testing.T) {
 		}
 	})
 
-	t.Run("source_text", makeTestCase(ctx, xs, &xpb.DecorationsRequest{
+	t.Run("source_text", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
 		Location:   &xpb.Location{Ticket: fileTicket},
 		SourceText: true,
 	}, &xpb.DecorationsReply{
@@ -151,7 +159,7 @@ func TestServingDecorations(t *testing.T) {
 		Encoding:   "ascii",
 	}))
 
-	t.Run("references", makeTestCase(ctx, xs, &xpb.DecorationsRequest{
+	t.Run("references", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
 		Location:   &xpb.Location{Ticket: fileTicket},
 		References: true,
 	}, &xpb.DecorationsReply{
@@ -190,7 +198,7 @@ func TestServingDecorations(t *testing.T) {
 		// DefinitionLocations: not requested
 	}))
 
-	t.Run("referenced_nodes", makeTestCase(ctx, xs, &xpb.DecorationsRequest{
+	t.Run("referenced_nodes", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
 		Location:   &xpb.Location{Ticket: fileTicket},
 		References: true,
 		Filter:     []string{"**"},
@@ -236,7 +244,7 @@ func TestServingDecorations(t *testing.T) {
 		// DefinitionLocations: not requested
 	}))
 
-	t.Run("target_definitions", makeTestCase(ctx, xs, &xpb.DecorationsRequest{
+	t.Run("target_definitions", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
 		Location:          &xpb.Location{Ticket: fileTicket},
 		References:        true,
 		TargetDefinitions: true,
@@ -286,7 +294,7 @@ func TestServingDecorations(t *testing.T) {
 	// TODO(schroederc): test diagnostics (w/ or w/o span)
 }
 
-func makeTestCase(ctx context.Context, xs xrefs.Service, req *xpb.DecorationsRequest, expected *xpb.DecorationsReply) func(*testing.T) {
+func makeDecorTestCase(ctx context.Context, xs xrefs.Service, req *xpb.DecorationsRequest, expected *xpb.DecorationsReply) func(*testing.T) {
 	return func(t *testing.T) {
 		reply, err := xs.Decorations(ctx, req)
 		if err != nil {
@@ -294,6 +302,257 @@ func makeTestCase(ctx context.Context, xs xrefs.Service, req *xpb.DecorationsReq
 		}
 		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
 			t.Fatalf("DecorationsReply differences: (- expected; + found)\n%s", diff)
+		}
+	}
+}
+
+func TestServingCrossReferences(t *testing.T) {
+	ctx := context.Background()
+	db := inmemory.NewKeyValueDB()
+	w, err := db.Writer(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Mark table as columnar
+	mustWrite(t, w, []byte(ColumnarTableKeyMarker), []byte{})
+
+	src := &spb.VName{Path: "path", Signature: "signature"}
+	span := &cpb.Span{
+		Start: &cpb.Point{
+			ByteOffset:   5,
+			ColumnOffset: 5,
+			LineNumber:   1,
+		},
+		End: &cpb.Point{
+			ByteOffset:   9,
+			ColumnOffset: 9,
+			LineNumber:   1,
+		},
+	}
+	xrefs := []*xspb.CrossReferences{{
+		Source: src,
+		Entry: &xspb.CrossReferences_Index_{&xspb.CrossReferences_Index{
+			Node: &scpb.Node{
+				Kind: &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Reference_{&xspb.CrossReferences_Reference{
+			Kind: &xspb.CrossReferences_Reference_KytheKind{scpb.EdgeKind_REF},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=path1#ref1",
+				Span:   span,
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Reference_{&xspb.CrossReferences_Reference{
+			Kind: &xspb.CrossReferences_Reference_KytheKind{scpb.EdgeKind_REF_CALL},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=path2#ref2",
+				Span:   span,
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Caller_{&xspb.CrossReferences_Caller{
+			Caller: &spb.VName{Signature: "caller"},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=path#caller",
+				Span:   span,
+			},
+			MarkedSource: &cpb.MarkedSource{Kind: cpb.MarkedSource_IDENTIFIER, PreText: "caller"},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Callsite_{&xspb.CrossReferences_Callsite{
+			Caller: &spb.VName{Signature: "caller"},
+			Kind:   xspb.CrossReferences_Callsite_DIRECT,
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=path2#callsite",
+				Span:   span,
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Callsite_{&xspb.CrossReferences_Callsite{
+			Caller: &spb.VName{Signature: "caller"},
+			Kind:   xspb.CrossReferences_Callsite_OVERRIDE,
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=path3#callsite_override",
+				Span:   span,
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Relation_{&xspb.CrossReferences_Relation{
+			Node:    &spb.VName{Signature: "relatedNode"},
+			Kind:    &xspb.CrossReferences_Relation_KytheKind{scpb.EdgeKind_CHILD_OF},
+			Reverse: true,
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_RelatedNode_{&xspb.CrossReferences_RelatedNode{
+			Node: &scpb.Node{
+				Source: &spb.VName{Signature: "relatedNode"},
+				Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FUNCTION},
+			},
+		}},
+	}}
+	for _, xr := range xrefs {
+		mustWriteXRef(t, w, xr)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	xs := NewService(ctx, db)
+
+	refs := []*xpb.CrossReferencesReply_RelatedAnchor{{
+		Anchor: &xpb.Anchor{
+			Parent: "kythe:?path=path1",
+			Span:   span,
+		},
+	}, {
+		Anchor: &xpb.Anchor{
+			Parent: "kythe:?path=path2",
+			Span:   span,
+		},
+	}}
+
+	ticket := kytheuri.ToString(src)
+
+	t.Run("requested_node", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:          []string{ticket},
+		Filter:          []string{"**"},
+		RelatedNodeKind: []string{"NONE"},
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket: ticket,
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: {
+				Facts: map[string][]byte{
+					"/kythe/node/kind": []byte("record"),
+				},
+			},
+		},
+	}))
+
+	t.Run("refs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:        []string{ticket},
+		ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:    ticket,
+				Reference: refs,
+			},
+		},
+	}))
+
+	t.Run("related_nodes", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:        []string{ticket},
+		ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
+		Filter:        []string{"**"},
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:    ticket,
+				Reference: refs,
+				RelatedNode: []*xpb.CrossReferencesReply_RelatedNode{{
+					Ticket:       "kythe:#relatedNode",
+					RelationKind: "%/kythe/edge/childof",
+				}},
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: {
+				Facts: map[string][]byte{
+					"/kythe/node/kind": []byte("record"),
+				},
+			},
+			"kythe:#relatedNode": {
+				Facts: map[string][]byte{
+					"/kythe/node/kind": []byte("function"),
+				},
+			},
+		},
+	}))
+
+	t.Run("non_call_refs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:        []string{ticket},
+		ReferenceKind: xpb.CrossReferencesRequest_NON_CALL_REFERENCES,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:    ticket,
+				Reference: refs[0:1],
+			},
+		},
+	}))
+
+	t.Run("callsites", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:     []string{ticket},
+		CallerKind: xpb.CrossReferencesRequest_OVERRIDE_CALLERS,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket: ticket,
+				Caller: []*xpb.CrossReferencesReply_RelatedAnchor{{
+					Ticket: "kythe:#caller",
+					Anchor: &xpb.Anchor{
+						Parent: "kythe:?path=path",
+						Span:   span,
+					},
+					MarkedSource: &cpb.MarkedSource{Kind: cpb.MarkedSource_IDENTIFIER, PreText: "caller"},
+					Site: []*xpb.Anchor{{
+						Parent: "kythe:?path=path2",
+						Span:   span,
+					}, {
+						Parent: "kythe:?path=path3",
+						Span:   span,
+					}},
+				}},
+			},
+		},
+	}))
+
+	t.Run("direct_callsites", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:     []string{ticket},
+		CallerKind: xpb.CrossReferencesRequest_DIRECT_CALLERS,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket: ticket,
+				Caller: []*xpb.CrossReferencesReply_RelatedAnchor{{
+					Ticket: "kythe:#caller",
+					Anchor: &xpb.Anchor{
+						Parent: "kythe:?path=path",
+						Span:   span,
+					},
+					MarkedSource: &cpb.MarkedSource{Kind: cpb.MarkedSource_IDENTIFIER, PreText: "caller"},
+					Site: []*xpb.Anchor{{
+						Parent: "kythe:?path=path2",
+						Span:   span,
+					}},
+				}},
+			},
+		},
+	}))
+}
+
+func makeXRefTestCase(ctx context.Context, xs xrefs.Service, req *xpb.CrossReferencesRequest, expected *xpb.CrossReferencesReply) func(*testing.T) {
+	return func(t *testing.T) {
+		reply, err := xs.CrossReferences(ctx, req)
+		if err != nil {
+			t.Fatalf("CrossReferences error: %v", err)
+		}
+		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+			t.Fatalf("CrossReferencesReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
 }
