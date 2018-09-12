@@ -135,6 +135,90 @@ message FileDecorations {
   }
 }
 
+// Columnar protocol buffer format for CrossReferences.
+//
+// Design: https://github.com/google/kythe/blob/master/kythe/docs/rfc/2909.md
+//
+// Columnar key prefix: "xr"-source
 message CrossReferences {
-  // TODO(schroederc): https://github.com/google/kythe/pull/2909
+  kythe.proto.VName source = 1;
+
+  oneof entry {
+    Index index = 2;
+    Reference reference = 3;
+    Relation relation = 4;
+    Caller caller = 5;
+    Callsite callsite = 6;
+    RelatedNode related_node = 7;
+  }
+
+  // Index for columnar cross-references data.
+  //
+  // Columnar key: <empty>
+  message Index {
+    kythe.proto.schema.Node node = 1;
+    kythe.proto.common.MarkedSource marked_source = 2;
+    repeated kythe.proto.VName merge_with = 3;
+  }
+
+  // Single reference to source.
+  //
+  // Columnar key: 00-kind-file-start-end
+  message Reference {
+    oneof kind {
+      kythe.proto.schema.EdgeKind kythe_kind = 1;
+      string generic_kind = 2;
+    }
+    kythe.proto.serving.ExpandedAnchor location = 3;
+  }
+
+  // Single edge relation to the source node.
+  //
+  // Columnar key: 10-kind-reverse-ordinal-target
+  message Relation {
+    // Target node of the relation
+    kythe.proto.VName node = 1;
+    // Relation to the node.
+    oneof kind {
+      kythe.proto.schema.EdgeKind kythe_kind = 2;
+      string generic_kind = 3;
+    }
+    // Edge ordinal for this relation to the node.
+    int32 ordinal = 4;
+    // Whether the relation is a reverse edge.
+    bool reverse = 5;
+  }
+
+  // A caller with callsites to the source node.
+  //
+  // Columnar key: 20-caller
+  message Caller {
+    kythe.proto.VName caller = 1;
+    // Syntactic location of the caller.
+    kythe.proto.serving.ExpandedAnchor location = 2;
+    // MarkedSource of the caller.
+    kythe.proto.common.MarkedSource marked_source = 3;
+  }
+
+  // A single callsite to the source node.
+  //
+  // Columnar key: 20-caller-kind-file-start-end
+  message Callsite {
+    kythe.proto.VName caller = 1;
+    // Syntactic location of the callsite.
+    kythe.proto.serving.ExpandedAnchor location = 2;
+    Kind kind = 3;
+
+    enum Kind {
+      DIRECT = 0;
+      OVERRIDE = 1;
+    }
+  }
+
+  // Node data for relations.
+  //
+  // Columnar key: 30-node
+  message RelatedNode {
+    kythe.proto.schema.Node node = 1;
+  }
 }
