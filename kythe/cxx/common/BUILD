@@ -317,6 +317,9 @@ cc_library(
     name = "kzip_reader",
     srcs = ["kzip_reader.cc"],
     hdrs = ["kzip_reader.h"],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
         ":index_reader",
         ":json_proto",
@@ -353,6 +356,9 @@ cc_library(
     name = "kzip_writer",
     srcs = ["kzip_writer.cc"],
     hdrs = ["kzip_writer.h"],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
         ":index_writer",
         ":json_proto",
