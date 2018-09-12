@@ -131,7 +131,7 @@ func TestServingSimpleDecorations(t *testing.T) {
 	xs := xsrv.NewService(ctx, db)
 	fileTicket := kytheuri.ToString(file)
 
-	t.Run("source_text", makeTestCase(ctx, xs, &xpb.DecorationsRequest{
+	t.Run("source_text", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
 		Location:   &xpb.Location{Ticket: fileTicket},
 		SourceText: true,
 	}, &xpb.DecorationsReply{
@@ -140,7 +140,7 @@ func TestServingSimpleDecorations(t *testing.T) {
 		Encoding:   "ascii",
 	}))
 
-	t.Run("references", makeTestCase(ctx, xs, &xpb.DecorationsRequest{
+	t.Run("references", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
 		Location:   &xpb.Location{Ticket: fileTicket},
 		References: true,
 	}, &xpb.DecorationsReply{
@@ -179,7 +179,7 @@ func TestServingSimpleDecorations(t *testing.T) {
 		// DefinitionLocations: not requested
 	}))
 
-	t.Run("referenced_nodes", makeTestCase(ctx, xs, &xpb.DecorationsRequest{
+	t.Run("referenced_nodes", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
 		Location:   &xpb.Location{Ticket: fileTicket},
 		References: true,
 		Filter:     []string{"**"},
@@ -225,7 +225,7 @@ func TestServingSimpleDecorations(t *testing.T) {
 		// DefinitionLocations: not requested
 	}))
 
-	t.Run("target_definitions", makeTestCase(ctx, xs, &xpb.DecorationsRequest{
+	t.Run("target_definitions", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
 		Location:          &xpb.Location{Ticket: fileTicket},
 		References:        true,
 		TargetDefinitions: true,
@@ -296,13 +296,129 @@ func TestServingSimpleDecorations(t *testing.T) {
 	// TODO(schroederc): test diagnostics (w/ or w/o span)
 }
 
+func TestServingSimpleCrossReferences(t *testing.T) {
+	src := &spb.VName{Path: "path", Signature: "signature"}
+	testNodes := []*scpb.Node{{
+		Source: &spb.VName{Path: "path"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("blah blah\n"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT_ENCODING},
+			Value: []byte("ascii"),
+		}},
+	}, {
+		Source: &spb.VName{Path: "path", Signature: "anchor1"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("5"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("9"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
+			Target: src,
+		}},
+	}, {
+		Source: src,
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+	}}
+
+	p, s, nodes := ptest.CreateList(testNodes)
+	xrefs := FromNodes(s, nodes).SplitCrossReferences()
+
+	db := inmemory.NewKeyValueDB()
+	w, err := db.Writer(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Mark table as columnar
+	if err := w.Write([]byte(xsrv.ColumnarTableKeyMarker), []byte{}); err != nil {
+		t.Fatal(err)
+	}
+	// Write columnar data to inmemory.KeyValueDB
+	beam.ParDo(s, &writeTo{w}, xrefs)
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	} else if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	xs := xsrv.NewService(ctx, db)
+
+	ticket := kytheuri.ToString(src)
+
+	t.Run("requested_node", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:          []string{ticket},
+		Filter:          []string{"**"},
+		RelatedNodeKind: []string{"NONE"},
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket: ticket,
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: {
+				Facts: map[string][]byte{
+					"/kythe/node/kind": []byte("record"),
+				},
+			},
+		},
+	}))
+
+	t.Run("refs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:        []string{ticket},
+		ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket: ticket,
+				Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{
+					Anchor: &xpb.Anchor{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   5,
+								ColumnOffset: 5,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					},
+				}},
+			},
+		},
+	}))
+}
+
 type writeTo struct{ w keyvalue.Writer }
 
 func (p *writeTo) ProcessElement(ctx context.Context, k, v []byte, emit func([]byte)) error {
 	return p.w.Write(k, v)
 }
 
-func makeTestCase(ctx context.Context, xs xrefs.Service, req *xpb.DecorationsRequest, expected *xpb.DecorationsReply) func(*testing.T) {
+func makeDecorTestCase(ctx context.Context, xs xrefs.Service, req *xpb.DecorationsRequest, expected *xpb.DecorationsReply) func(*testing.T) {
 	return func(t *testing.T) {
 		reply, err := xs.Decorations(ctx, req)
 		if err != nil {
@@ -310,6 +426,18 @@ func makeTestCase(ctx context.Context, xs xrefs.Service, req *xpb.DecorationsReq
 		}
 		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
 			t.Fatalf("DecorationsReply differences: (- expected; + found)\n%s", diff)
+		}
+	}
+}
+
+func makeXRefTestCase(ctx context.Context, xs xrefs.Service, req *xpb.CrossReferencesRequest, expected *xpb.CrossReferencesReply) func(*testing.T) {
+	return func(t *testing.T) {
+		reply, err := xs.CrossReferences(ctx, req)
+		if err != nil {
+			t.Fatalf("CrossReferences error: %v", err)
+		}
+		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+			t.Fatalf("CrossReferencesReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
 }
