@@ -57,7 +57,7 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 
 	extractor, err := filepath.Abs("kythe/cxx/extractor/cxx_extractor")
 	if err != nil {
-		t.Fatal("Unable to get absolute path to extractor: %v", err)
+		t.Fatalf("Unable to get absolute path to extractor: %v", err)
 	}
 	// Paths in compilation_database.json are relative to the testdata directory, so change there.
 	if err := os.Chdir(filepath.Join(root, testPath, "testdata")); err != nil {
