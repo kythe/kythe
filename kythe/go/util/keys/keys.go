@@ -30,6 +30,7 @@ import (
 //
 //  - *spb.VName
 //  - int32/int
+//  - bool
 //
 // More detail at: https://godoc.org/github.com/google/orderedcode#Append
 func Append(key []byte, items ...interface{}) ([]byte, error) {
@@ -45,6 +46,12 @@ func Append(key []byte, items ...interface{}) ([]byte, error) {
 		case int:
 			// Convert to orderedcode supported int64 type
 			expanded = append(expanded, int64(x))
+		case bool:
+			var n int64
+			if x {
+				n = 1
+			}
+			expanded = append(expanded, n)
 		default:
 			// Assume type is supported; let orderedcode produce error otherwise
 			expanded = append(expanded, x)
@@ -60,6 +67,7 @@ func Append(key []byte, items ...interface{}) ([]byte, error) {
 //
 //  - *spb.VName
 //  - int32/int
+//  - bool
 //
 // More detail at: https://godoc.org/github.com/google/orderedcode#Parse
 func Parse(key string, items ...interface{}) (remaining string, err error) {
@@ -76,6 +84,10 @@ func Parse(key string, items ...interface{}) (remaining string, err error) {
 		case *int:
 			var n int64
 			defer func() { *x = int(n) }()
+			expanded = append(expanded, &n)
+		case *bool:
+			var n int64
+			defer func() { *x = n != 0 }()
 			expanded = append(expanded, &n)
 		default:
 			expanded = append(expanded, x)

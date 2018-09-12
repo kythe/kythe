@@ -34,11 +34,11 @@
 #include "clang/Sema/Template.h"
 #include "glog/logging.h"
 
-#include "kythe/cxx/indexer/cxx/semantic_hash.h"
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
+#include "kythe/cxx/indexer/cxx/semantic_hash.h"
 #include "marked_source.h"
 #include "type_map.h"
 
@@ -151,7 +151,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   bool TraverseLambdaExpr(clang::LambdaExpr *Expr);
 
-  bool TraverseConstructorInitializer(clang::CXXCtorInitializer* Init);
+  bool TraverseConstructorInitializer(clang::CXXCtorInitializer *Init);
   bool TraverseCXXNewExpr(clang::CXXNewExpr *E);
   bool TraverseCXXFunctionalCastExpr(clang::CXXFunctionalCastExpr *E);
 
@@ -633,6 +633,11 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   void VisitComment(const clang::RawComment *Comment,
                     const clang::DeclContext *DC,
                     const GraphObserver::NodeId &DocumentedNode);
+
+  /// \brief Emit data for attributes attached to `Decl`, whose `NodeId`
+  /// is `TargetNode`.
+  void VisitAttributes(const clang::Decl *Decl,
+                       const GraphObserver::NodeId &TargetNode);
 
   /// \brief Attempts to find the ID of the first parent of `Decl` for
   /// attaching a `childof` relationship.

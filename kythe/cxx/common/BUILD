@@ -317,11 +317,15 @@ cc_library(
     name = "kzip_reader",
     srcs = ["kzip_reader.cc"],
     hdrs = ["kzip_reader.h"],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
         ":index_reader",
         ":json_proto",
         ":libzip/error",
         ":status_or",
+        "//kythe/proto:analysis_cc_proto",
         "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -352,10 +356,14 @@ cc_library(
     name = "kzip_writer",
     srcs = ["kzip_writer.cc"],
     hdrs = ["kzip_writer.h"],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
         ":index_writer",
         ":json_proto",
         ":libzip/error",
+        "//kythe/proto:analysis_cc_proto",
         "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -410,7 +418,6 @@ cc_library(
     name = "libzip/error",
     srcs = ["libzip/error.cc"],
     hdrs = ["libzip/error.h"],
-    visibility = ["//visibility:private"],
     deps = [
         ":status",
         "@org_libzip//:zip",

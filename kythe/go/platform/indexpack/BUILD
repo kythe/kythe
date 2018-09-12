@@ -9,7 +9,7 @@ go_library(
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/vfs",
         "//kythe/go/platform/vfs/zip",
-        "@com_github_golang_protobuf//jsonpb:go_default_library",
+        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_pborman_uuid//:go_default_library",
     ],

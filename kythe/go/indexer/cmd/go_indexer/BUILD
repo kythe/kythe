@@ -8,10 +8,8 @@ go_binary(
     deps = [
         "//kythe/go/indexer",
         "//kythe/go/platform/delimited",
-        "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/kzip",
-        "//kythe/go/platform/vfs",
         "//kythe/go/util/metadata",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",

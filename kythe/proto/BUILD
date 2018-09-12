@@ -585,3 +585,22 @@ go_kythe_proto(
         ":storage_go_proto",
     ],
 )
+
+proto_library(
+    name = "driver_proto",
+    srcs = ["driver.proto"],
+    deps = [
+        ":analysis_proto",
+        ":common_proto",
+        ":storage_proto",
+    ],
+)
+
+go_kythe_proto(
+    proto = ":driver_proto",
+    deps = [
+        ":analysis_go_proto",
+        ":common_go_proto",
+        ":storage_go_proto",
+    ],
+)

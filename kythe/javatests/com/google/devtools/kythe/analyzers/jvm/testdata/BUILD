@@ -14,6 +14,8 @@ jvm_verifier_test(
     verifier_opts = [
         "--ignore_dups",
         "--convert_marked_source",
+        # Ignore singletons that are used in the Java indexer side of the JVM tests.
+        "--nocheck_for_singletons",
     ],
     deps = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg:jvm_tests"],
 )

@@ -14,7 +14,7 @@ allprojects {
   gradle.projectsEvaluated {
     tasks.withType(JavaCompile) {
       options.fork = true
-      options.forkOptions.executable = '/some-other/javac-wrapper.sh'
+      options.forkOptions.executable = '/different/javac-wrapper.sh'
     }
   }
 }

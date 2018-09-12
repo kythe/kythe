@@ -22,6 +22,7 @@
 
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/status_or.h"
+#include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
 

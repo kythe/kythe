@@ -85,8 +85,8 @@ func main() {
 		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
 	}
 	defer db.Close(ctx)
+	xs = xsrv.NewService(ctx, db)
 	tbl := &table.KVProto{db}
-	xs = xsrv.NewCombinedTable(tbl)
 	gs = gsrv.NewCombinedTable(tbl)
 	if *maxTicketsPerRequest > 0 {
 		xs = xrefs.BoundedRequests{

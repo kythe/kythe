@@ -156,12 +156,7 @@ func keyRef(r *ppb.Reference) (*spb.VName, *ppb.Reference) {
 	}
 }
 
-// Decorations returns a Kythe file decorations table derived from the Kythe
-// input graph.  The beam.PCollection has elements of type
-// KV<string, *srvpb.FileDecorations>.
-func (k *KytheBeam) Decorations() beam.PCollection {
-	s := k.s.Scope("Decorations")
-
+func (k *KytheBeam) decorationPieces(s beam.Scope) beam.PCollection {
 	targets := beam.ParDo(s, toEnclosingFile, k.References())
 	bareNodes := beam.ParDo(s, &nodes.Filter{IncludeEdges: []string{}}, k.nodes)
 
@@ -174,7 +169,23 @@ func (k *KytheBeam) Decorations() beam.PCollection {
 	// TODO(schroederc): overrides
 	// TODO(schroederc): diagnostics
 
-	pieces := beam.Flatten(s, decor, files, nodes, defs)
+	return beam.Flatten(s, decor, files, nodes, defs)
+}
+
+// SplitDecorations returns a columnar Kythe file decorations table derived from
+// the Kythe input graph.  The beam.PCollection has elements of type
+// KV<[]byte, []byte>.
+func (k *KytheBeam) SplitDecorations() beam.PCollection {
+	s := k.s.Scope("SplitDecorations")
+	return beam.ParDo(s, encodeDecorPiece, k.decorationPieces(s))
+}
+
+// Decorations returns a Kythe file decorations table derived from the Kythe
+// input graph.  The beam.PCollection has elements of type
+// KV<string, *srvpb.FileDecorations>.
+func (k *KytheBeam) Decorations() beam.PCollection {
+	s := k.s.Scope("Decorations")
+	pieces := k.decorationPieces(s)
 	return beam.ParDo(s, &ticketKey{"decor:"}, beam.CombinePerKey(s, &combineDecorPieces{}, pieces))
 }
 
@@ -239,13 +250,13 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 
 func convertPipelineNode(node *scpb.Node) *srvpb.Node {
 	n := &srvpb.Node{Ticket: kytheuri.ToString(node.Source)}
-	if kind := nodes.Kind(node); kind != "" {
+	if kind := schema.GetNodeKind(node); kind != "" {
 		n.Fact = append(n.Fact, &cpb.Fact{
 			Name:  facts.NodeKind,
 			Value: []byte(kind),
 		})
 	}
-	if subkind := nodes.Subkind(node); subkind != "" {
+	if subkind := schema.GetSubkind(node); subkind != "" {
 		n.Fact = append(n.Fact, &cpb.Fact{
 			Name:  facts.Subkind,
 			Value: []byte(subkind),
@@ -253,7 +264,7 @@ func convertPipelineNode(node *scpb.Node) *srvpb.Node {
 	}
 	for _, f := range node.Fact {
 		n.Fact = append(n.Fact, &cpb.Fact{
-			Name:  nodes.FactName(f),
+			Name:  schema.GetFactName(f),
 			Value: f.Value,
 		})
 	}
@@ -595,7 +606,7 @@ func groupEdges(src *spb.VName, nodeStream func(**scpb.Node) bool, edgeStream, r
 
 	var edge *scpb.Edge
 	for edgeStream(&edge) {
-		kind := nodes.EdgeKind(edge)
+		kind := schema.GetEdgeKind(edge)
 		g, ok := groups[kind]
 		if !ok {
 			g = &srvpb.EdgeGroup{Kind: kind}
@@ -608,7 +619,7 @@ func groupEdges(src *spb.VName, nodeStream func(**scpb.Node) bool, edgeStream, r
 		})
 	}
 	for revStream(&edge) {
-		kind := "%" + nodes.EdgeKind(edge) // encode reverse edge kind
+		kind := "%" + schema.GetEdgeKind(edge) // encode reverse edge kind
 		g, ok := groups[kind]
 		if !ok {
 			g = &srvpb.EdgeGroup{Kind: kind}

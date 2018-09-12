@@ -4,12 +4,20 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "xrefs",
-    srcs = ["xrefs.go"],
+    srcs = [
+        "columnar.go",
+        "xrefs.go",
+    ],
     deps = [
         "//kythe/go/services/xrefs",
+        "//kythe/go/serving/xrefs/columnar",
+        "//kythe/go/storage/keyvalue",
         "//kythe/go/storage/table",
+        "//kythe/go/util/keys",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/schema",
         "//kythe/go/util/schema/edges",
+        "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/tickets",
         "//kythe/go/util/span",
         "//kythe/proto:common_go_proto",
@@ -17,6 +25,7 @@ go_library(
         "//kythe/proto:internal_go_proto",
         "//kythe/proto:serving_go_proto",
         "//kythe/proto:xref_go_proto",
+        "//kythe/proto:xref_serving_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_golang_snappy//:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
@@ -37,5 +46,19 @@ go_test(
         "@org_golang_x_text//encoding:go_default_library",
         "@org_golang_x_text//encoding/unicode:go_default_library",
         "@org_golang_x_text//transform:go_default_library",
+    ],
+)
+
+go_test(
+    name = "columnar_test",
+    size = "small",
+    srcs = ["columnar_test.go"],
+    library = ":xrefs",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//kythe/go/storage/inmemory",
+        "//kythe/proto:schema_go_proto",
+        "//kythe/proto:storage_go_proto",
+        "@com_github_google_go_cmp//cmp:go_default_library",
     ],
 )

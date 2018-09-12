@@ -131,6 +131,10 @@ StatusCode GetStatusCode(zip_error_t* error) {
 }  // namespace
 
 Status Error::ToStatus() { return kythe::libzip::ToStatus(get()); }
+Status Error::ToStatus() const {
+  // Due to caching in zip_error_strerror, it can't be const so we must copy.
+  return Error(*this).ToStatus();
+}
 
 Status ToStatus(zip_error_t* error) {
   StatusCode code = GetStatusCode(error);

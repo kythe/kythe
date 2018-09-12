@@ -20,6 +20,7 @@ package schema
 import (
 	"kythe.io/kythe/go/util/schema/facts"
 
+	scpb "kythe.io/kythe/proto/schema_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -95,4 +96,36 @@ func (n *Node) ToEntries() []*spb.Entry {
 		}
 	}
 	return entries
+}
+
+// GetNodeKind returns the string representation of the node's kind.
+func GetNodeKind(n *scpb.Node) string {
+	if k := n.GetGenericKind(); k != "" {
+		return k
+	}
+	return NodeKindString(n.GetKytheKind())
+}
+
+// GetSubkind returns the string representation of the node's subkind.
+func GetSubkind(n *scpb.Node) string {
+	if k := n.GetGenericSubkind(); k != "" {
+		return k
+	}
+	return SubkindString(n.GetKytheSubkind())
+}
+
+// GetFactName returns the string representation of the fact's name.
+func GetFactName(f *scpb.Fact) string {
+	if k := f.GetGenericName(); k != "" {
+		return k
+	}
+	return FactNameString(f.GetKytheName())
+}
+
+// GetEdgeKind returns the string representation of the edge's kind.
+func GetEdgeKind(e *scpb.Edge) string {
+	if k := e.GetGenericKind(); k != "" {
+		return k
+	}
+	return EdgeKindString(e.GetKytheKind())
 }

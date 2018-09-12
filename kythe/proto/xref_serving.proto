@@ -31,6 +31,20 @@ import "kythe/proto/storage.proto";
 //
 // Columnar key prefix: "fd"-file
 message FileDecorations {
+  kythe.proto.VName file = 1;
+
+  oneof entry {
+    Index index = 2;
+    Text text = 3;
+    Target target = 4;
+    TargetOverride target_override = 5;
+    TargetNode target_node = 6;
+    TargetDefinition target_definition = 7;
+    DefinitionLocation definition_location = 8;
+    Override override = 9;
+    Diagnostic diagnostic = 10;
+  }
+
   // Index for columnar file decorations data.
   //
   // Columnar key: <empty>
@@ -43,7 +57,7 @@ message FileDecorations {
   // Columnar key: 00-start-end
   message Text {
     // Starting offset of this file contents piece.
-    int32 start_offest = 1;
+    int32 start_offset = 1;
     // Ending offset of this file contents piece.
     int32 end_offset = 2;
 
@@ -55,7 +69,7 @@ message FileDecorations {
   // Columnar key: 10-start-end-kind-target
   message Target {
     // Starting offset of this file decoration.
-    int32 start_offest = 1;
+    int32 start_offset = 1;
     // Ending offset of this file decoration.
     int32 end_offset = 2;
 
@@ -94,7 +108,8 @@ message FileDecorations {
   //
   // Columnar key: 40-target
   message TargetDefinition {
-    kythe.proto.VName definition = 1;
+    kythe.proto.VName target = 1;
+    kythe.proto.VName definition = 2;
   }
 
   // Location for each node mentioned by a TargetDefinition
@@ -108,7 +123,8 @@ message FileDecorations {
   //
   // Columnar key: 60-override
   message Override {
-    kythe.proto.common.MarkedSource marked_source = 1;
+    kythe.proto.VName override = 1;
+    kythe.proto.common.MarkedSource marked_source = 2;
   }
 
   // Diagnostic per file span
@@ -119,6 +135,90 @@ message FileDecorations {
   }
 }
 
+// Columnar protocol buffer format for CrossReferences.
+//
+// Design: https://github.com/google/kythe/blob/master/kythe/docs/rfc/2909.md
+//
+// Columnar key prefix: "xr"-source
 message CrossReferences {
-  // TODO(schroederc): https://github.com/google/kythe/pull/2909
+  kythe.proto.VName source = 1;
+
+  oneof entry {
+    Index index = 2;
+    Reference reference = 3;
+    Relation relation = 4;
+    Caller caller = 5;
+    Callsite callsite = 6;
+    RelatedNode related_node = 7;
+  }
+
+  // Index for columnar cross-references data.
+  //
+  // Columnar key: <empty>
+  message Index {
+    kythe.proto.schema.Node node = 1;
+    kythe.proto.common.MarkedSource marked_source = 2;
+    repeated kythe.proto.VName merge_with = 3;
+  }
+
+  // Single reference to source.
+  //
+  // Columnar key: 00-kind-file-start-end
+  message Reference {
+    oneof kind {
+      kythe.proto.schema.EdgeKind kythe_kind = 1;
+      string generic_kind = 2;
+    }
+    kythe.proto.serving.ExpandedAnchor location = 3;
+  }
+
+  // Single edge relation to the source node.
+  //
+  // Columnar key: 10-kind-reverse-ordinal-target
+  message Relation {
+    // Target node of the relation
+    kythe.proto.VName node = 1;
+    // Relation to the node.
+    oneof kind {
+      kythe.proto.schema.EdgeKind kythe_kind = 2;
+      string generic_kind = 3;
+    }
+    // Edge ordinal for this relation to the node.
+    int32 ordinal = 4;
+    // Whether the relation is a reverse edge.
+    bool reverse = 5;
+  }
+
+  // A caller with callsites to the source node.
+  //
+  // Columnar key: 20-caller
+  message Caller {
+    kythe.proto.VName caller = 1;
+    // Syntactic location of the caller.
+    kythe.proto.serving.ExpandedAnchor location = 2;
+    // MarkedSource of the caller.
+    kythe.proto.common.MarkedSource marked_source = 3;
+  }
+
+  // A single callsite to the source node.
+  //
+  // Columnar key: 20-caller-kind-file-start-end
+  message Callsite {
+    kythe.proto.VName caller = 1;
+    // Syntactic location of the callsite.
+    kythe.proto.serving.ExpandedAnchor location = 2;
+    Kind kind = 3;
+
+    enum Kind {
+      DIRECT = 0;
+      OVERRIDE = 1;
+    }
+  }
+
+  // Node data for relations.
+  //
+  // Columnar key: 30-node
+  message RelatedNode {
+    kythe.proto.schema.Node node = 1;
+  }
 }

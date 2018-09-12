@@ -6,7 +6,7 @@ load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.16", "0.16")
+check_version("0.16", "0.17")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
@@ -563,3 +563,7 @@ go_repository(
     commit = "05a79567b685231e7ca5db3adccddf9ae9dd86df",
     importpath = "github.com/google/orderedcode",
 )
+
+load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
+
+external_tools_configure()

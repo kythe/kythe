@@ -28,7 +28,7 @@ public class Names {
 
   static void func() {
     //- @Local defines/binding LocalClass
-    //- !{ LocalClass named LocalClassName }
+    //- !{ LocalClass named _LocalClassName }
     class Local {};
   }
 }

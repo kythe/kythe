@@ -24,6 +24,7 @@
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/libzip/error.h"
+#include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
 namespace {

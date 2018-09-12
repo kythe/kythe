@@ -26,6 +26,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/libzip/error.h"
+#include "kythe/proto/analysis.pb.h"
 
 #include <openssl/sha.h>
 #include "absl/strings/escaping.h"

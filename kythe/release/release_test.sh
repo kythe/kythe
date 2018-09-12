@@ -85,9 +85,9 @@ tools/read_entries --graphstore gs | \
   tools/entrystream --sort >/dev/null
 
 # Smoke test the verifier
-echo "//- Any childof Any2" > any_childof_any2
+echo "//- _ childof _" > any_childof_any2
 tools/verifier --ignore_dups --show_goals any_childof_any2 < entries
-echo "//- Any noSuchEdge Any2" > any_nosuchedge_any2
+echo "//- _ noSuchEdge _" > any_nosuchedge_any2
 if tools/verifier --ignore_dups any_nosuchedge_any2 < entries; then
   echo "ERROR: verifier found a non-existent edge" >&2
   exit 1

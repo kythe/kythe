@@ -25,6 +25,7 @@ set -o pipefail
 #   LABEL
 #   CXX_INDEXER_BIN
 #   VERIFIER_BIN
+#   SHASUM_TOOL
 #   SHOWGRAPH
 #   VERIFIER_ARGS
 
@@ -88,7 +89,7 @@ done
 "$VERIFIER_BIN" "${VERIFIER_ARGS}" --ignore_dups "${SRCS}"/* < "${TEST_ENTRIES}"
 
 trap 'error FORMAT' ERR
-EXAMPLE_ID=$(sha1sum "$RAW_EXAMPLE" | cut -c 1-40)
+EXAMPLE_ID=$($SHASUM_TOOL "$RAW_EXAMPLE" | cut -c 1-64)
 
 if [[ -n "${DIV_STYLE}" ]]; then
   echo "<div style=\"${DIV_STYLE}\">"
