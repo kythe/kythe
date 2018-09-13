@@ -2770,10 +2770,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     FunctionType =
         BuildNodeIdForType(TSI->getTypeLoc(), Decl->getType(), EmitRanges::Yes);
   } else {
-    FunctionType = BuildNodeIdForType(
-        Context.getTrivialTypeSourceInfo(Decl->getType(), NameRange.getBegin())
-            ->getTypeLoc(),
-        EmitRanges::No);
+    FunctionType = BuildNodeIdForType(Decl->getType());
   }
 
   if (FunctionType) {
@@ -4563,8 +4560,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         GenericArgIdPtrs.resize(ObjLoc.getNumTypeArgs(), nullptr);
         for (unsigned int i = 0; i < ObjLoc.getNumTypeArgs(); ++i) {
           const auto *TI = ObjLoc.getTypeArgTInfo(i);
-          if (auto Arg = BuildNodeIdForType(TI->getTypeLoc(), TI->getType(),
-                                            EmitRanges)) {
+          if (auto Arg = BuildNodeIdForType(TI->getTypeLoc(), EmitRanges)) {
             GenericArgIds.push_back((Arg.value()));
             GenericArgIdPtrs[i] = &GenericArgIds[i];
           } else {
