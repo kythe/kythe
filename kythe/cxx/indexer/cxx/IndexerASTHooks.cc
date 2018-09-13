@@ -1813,6 +1813,11 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
   return true;
 }
 
+bool IndexerASTVisitor::VisitDeducedTypeLoc(clang::DeducedTypeLoc TL) {
+  BuildNodeIdForType(TL, EmitRanges::Yes);
+  return true;
+}
+
 bool IndexerASTVisitor::VisitSubstTemplateTypeParmTypeLoc(
     clang::SubstTemplateTypeParmTypeLoc TL) {
   // TODO(zarko): Record both the replaced parameter and the replacement

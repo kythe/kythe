@@ -136,6 +136,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   bool VisitTemplateSpecializationTypeLoc(clang::TemplateSpecializationTypeLoc TL);
 
+  // Handles AutoTypeLoc and DeducedTemplateSpecialization
+  bool VisitDeducedTypeLoc(clang::DeducedTypeLoc TL);
+
   // Visit the subtypes of TypedefNameDecl individually because we want to do
   // something different with ObjCTypeParamDecl.
   bool VisitTypedefDecl(const clang::TypedefDecl *Decl);
@@ -234,16 +237,19 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateExpansion(
       clang::TemplateName Name, clang::SourceLocation L);
 
-  // TODO(shahms): Document these. Also make them all const.
+  // TODO(shahms): Document these and make const as appropriate.
+  //   ... but it may not be due to caching (which should be figured out).
+  //   ... similarly, Observer.record...() should probably be used in some
+  //   places which we've converted to no longer do that.
   GraphObserver::NodeId BuildNodeIdForBuiltinTypeLoc(
       clang::BuiltinTypeLoc TL) const;
   GraphObserver::NodeId BuildNodeIdForEnumTypeLoc(clang::EnumTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForRecordTypeLoc(
       clang::RecordTypeLoc TL);
-  GraphObserver::NodeId BuildNodeIdForObjCInterfaceTypeLoc(
-      clang::ObjCInterfaceTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateTypeParmTypeLoc(
       clang::TemplateTypeParmTypeLoc TL);
+  GraphObserver::NodeId BuildNodeIdForObjCInterfaceTypeLoc(
+      clang::ObjCInterfaceTypeLoc TL);
 
   const clang::TemplateTypeParmDecl *FindTemplateTypeParmTypeLocDecl(
       clang::TemplateTypeParmTypeLoc TL) const;
