@@ -1415,9 +1415,7 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
   absl::optional<GraphObserver::NodeId> TyId;
   clang::NestedNameSpecifierLoc NNSLoc;
   if (E->getDestroyedTypeInfo() != nullptr) {
-    TyId = BuildNodeIdForType(E->getDestroyedTypeInfo()->getTypeLoc(),
-                              E->getDestroyedTypeInfo()->getTypeLoc().getType(),
-                              EmitRanges::Yes);
+    TyId = BuildNodeIdForType(E->getDestroyedTypeInfo()->getTypeLoc(), EmitRanges::Yes);
   } else if (E->hasQualifier()) {
     NNSLoc = E->getQualifierLoc();
   }
@@ -1445,9 +1443,7 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
     return true;
   }
   CHECK(E->getTypeSourceInfo() != nullptr);
-  auto TyId = BuildNodeIdForType(E->getTypeSourceInfo()->getTypeLoc(),
-                                 E->getTypeSourceInfo()->getTypeLoc().getType(),
-                                 EmitRanges::Yes);
+  auto TyId = BuildNodeIdForType(E->getTypeSourceInfo()->getTypeLoc(), EmitRanges::Yes);
   if (!TyId) {
     return true;
   }
@@ -1708,7 +1704,7 @@ bool IndexerASTVisitor::VisitUnaryExprOrTypeTraitExpr(
     if (!TSI->getTypeLoc().isNull()) {
       // TODO(zarko): Possibly discern the Decl for TargetType and call
       // InspectDeclRef on it.
-      BuildNodeIdForType(TSI->getTypeLoc(), TSI->getType(), EmitRanges::Yes);
+      BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::Yes);
     }
   }
   return true;
@@ -2959,8 +2955,7 @@ bool IndexerASTVisitor::VisitObjCTypeParamDecl(
   // for us. If there is not explicit bound, it will return id.
   auto BoundInfo = Decl->getTypeSourceInfo();
 
-  if (auto Type = BuildNodeIdForType(BoundInfo->getTypeLoc(),
-                                     BoundInfo->getType(), EmitRanges::Yes)) {
+  if (auto Type = BuildNodeIdForType(BoundInfo->getTypeLoc(), EmitRanges::Yes)) {
     if (Decl->hasExplicitBound()) {
       Observer.recordUpperBoundEdge(TypeParamId, Type.value());
     } else {
