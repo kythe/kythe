@@ -389,6 +389,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     TreeContext ctx = owner.down(methodDef);
 
     scan(methodDef.getThrows(), ctx);
+    scan(methodDef.getDefaultValue(), ctx);
 
     JavaNode returnType = scan(methodDef.getReturnType(), ctx);
     List<JavaNode> params = new ArrayList<>();
@@ -1283,8 +1284,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   static JvmGraph.Type.MethodType toMethodJvmType(Type.MethodType type) {
     return JvmGraph.Type.methodType(
-        type.getParameterTypes()
-            .stream()
+        type.getParameterTypes().stream()
             .map(KytheTreeScanner::toJvmType)
             .collect(Collectors.toList()),
         toJvmReturnType(type.getReturnType()));
