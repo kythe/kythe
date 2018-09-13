@@ -26,6 +26,7 @@ set -o pipefail
 #   JAVA_INDEXER_BIN
 #   KINDEX_TOOL_BIN
 #   VERIFIER_BIN
+#   VERIFIER_ARGS
 #   SHASUM_TOOL
 #   SHOWGRAPH
 #
@@ -55,7 +56,7 @@ if ! "$JAVA_INDEXER_BIN" "${TEST_FILE}.kindex" >"${TEST_FILE}.entries"; then
 fi
 
 # Verify the index.
-if ! "$VERIFIER_BIN" --ignore_dups "${TEST_FILE}.orig" <"${TEST_FILE}.entries"; then
+if ! "$VERIFIER_BIN" "${VERIFIER_ARGS}" --ignore_dups "${TEST_FILE}.orig" <"${TEST_FILE}.entries"; then
   error VERIFY
 fi
 
