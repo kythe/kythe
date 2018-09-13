@@ -1749,8 +1749,7 @@ void IndexerASTVisitor::VisitNestedNameSpecifierLoc(
     if (NNS->getKind() != NestedNameSpecifier::TypeSpec &&
         NNS->getKind() != NestedNameSpecifier::TypeSpecWithTemplate)
       break;
-    BuildNodeIdForType(NNSL.getTypeLoc(), NNS->getAsType(),
-                       IndexerASTVisitor::EmitRanges::Yes);
+    BuildNodeIdForType(NNSL.getTypeLoc(), IndexerASTVisitor::EmitRanges::Yes);
     NNSL = NNSL.getPrefix();
   }
 }
@@ -5486,8 +5485,7 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD,
   // QualType provided by getReturnType.
   auto R = MD->getReturnTypeSourceInfo();
   auto ReturnType =
-      R ? BuildNodeIdForType(R->getTypeLoc(), R->getType().getTypePtr(),
-                             EmitRanges)
+      R ? BuildNodeIdForType(R->getTypeLoc(), EmitRanges)
         : BuildNodeIdForType(MD->getReturnType());
   if (!ReturnType) {
     return ReturnType;
@@ -5497,12 +5495,8 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD,
   for (auto PVD : MD->parameters()) {
     if (PVD) {
       auto TSI = PVD->getTypeSourceInfo();
-      auto ParamType =
-          TSI ? BuildNodeIdForType(
-                    PVD->getTypeSourceInfo()->getTypeLoc(),
-                    PVD->getTypeSourceInfo()->getTypeLoc().getTypePtr(),
-                    EmitRanges)
-              : BuildNodeIdForType(PVD->getType());
+      auto ParamType = TSI ? BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges)
+                           : BuildNodeIdForType(PVD->getType());
       if (!ParamType) {
         return ParamType;
       }
