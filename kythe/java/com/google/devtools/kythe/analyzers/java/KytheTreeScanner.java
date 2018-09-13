@@ -251,7 +251,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   @Override
   public JavaNode visitIdent(JCIdent ident, TreeContext owner) {
-    return emitSymUsage(owner.down(ident), ident.sym);
+    TreeContext ctx = owner.down(ident);
+    if (ident.sym == null) {
+      return emitDiagnostic(ctx, "missing identifier symbol", null, null);
+    }
+    return emitSymUsage(ctx, ident.sym);
   }
 
   @Override
