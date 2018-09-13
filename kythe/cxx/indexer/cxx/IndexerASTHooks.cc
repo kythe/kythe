@@ -2918,10 +2918,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     FunctionType =
         BuildNodeIdForType(TSI->getTypeLoc(), Decl->getType(), EmitRanges::Yes);
   } else {
-    FunctionType = BuildNodeIdForType(
-        Context.getTrivialTypeSourceInfo(Decl->getType(), NameRange.getBegin())
-            ->getTypeLoc(),
-        EmitRanges::No);
+    FunctionType = BuildNodeIdForType(Decl->getType());
   }
 
   if (FunctionType) {
@@ -3103,8 +3100,7 @@ bool IndexerASTVisitor::VisitObjCTypeParamDecl(
   // for us. If there is not explicit bound, it will return id.
   auto BoundInfo = Decl->getTypeSourceInfo();
 
-  if (auto Type = BuildNodeIdForType(BoundInfo->getTypeLoc(),
-                                     BoundInfo->getType(), EmitRanges::Yes)) {
+  if (auto Type = BuildNodeIdForType(BoundInfo->getTypeLoc(), EmitRanges::Yes)) {
     if (Decl->hasExplicitBound()) {
       Observer.recordUpperBoundEdge(TypeParamId, Type.value());
     } else {
@@ -4714,8 +4710,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         GenericArgIdPtrs.resize(ObjLoc.getNumTypeArgs(), nullptr);
         for (unsigned int i = 0; i < ObjLoc.getNumTypeArgs(); ++i) {
           const auto *TI = ObjLoc.getTypeArgTInfo(i);
-          if (auto Arg = BuildNodeIdForType(TI->getTypeLoc(), TI->getType(),
-                                            EmitRanges)) {
+          if (auto Arg = BuildNodeIdForType(TI->getTypeLoc(), EmitRanges)) {
             GenericArgIds.push_back((Arg.value()));
             GenericArgIdPtrs[i] = &GenericArgIds[i];
           } else {
@@ -5632,8 +5627,7 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD,
   // QualType provided by getReturnType.
   auto R = MD->getReturnTypeSourceInfo();
   auto ReturnType =
-      R ? BuildNodeIdForType(R->getTypeLoc(), R->getType().getTypePtr(),
-                             EmitRanges)
+      R ? BuildNodeIdForType(R->getTypeLoc(), EmitRanges)
         : BuildNodeIdForType(MD->getReturnType());
   if (!ReturnType) {
     return ReturnType;
@@ -5643,12 +5637,8 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD,
   for (auto PVD : MD->parameters()) {
     if (PVD) {
       auto TSI = PVD->getTypeSourceInfo();
-      auto ParamType =
-          TSI ? BuildNodeIdForType(
-                    PVD->getTypeSourceInfo()->getTypeLoc(),
-                    PVD->getTypeSourceInfo()->getTypeLoc().getTypePtr(),
-                    EmitRanges)
-              : BuildNodeIdForType(PVD->getType());
+      auto ParamType = TSI ? BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges)
+                           : BuildNodeIdForType(PVD->getType());
       if (!ParamType) {
         return ParamType;
       }
