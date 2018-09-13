@@ -254,6 +254,6 @@ $$C++$$ variable:
 //- VXSpaceBox.pre_text " "
 //- VXRoot child.2 VXIdentifier
 //- VXIdentifier.kind "IDENTIFIER"
-//- VXIdenfifier.pre_text x
+//- VXIdentifier.pre_text x
 int x;
 --------------------------------------------------------------------------------
