@@ -1022,26 +1022,39 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
+  // Cached common java.lang.* nodes.
+  private JavaNode javaLangObjectNode, javaLangEnumNode;
+
   // Returns a JavaNode representing java.lang.Object.
   private JavaNode getJavaLangObjectNode() {
-    Symbol javaLangObject = getSymbols().objectType.asElement();
-    String javaLangObjectSignature = signatureGenerator.getSignature(javaLangObject).get();
-    VName javaLangObjectVName =
-        entrySets.getNode(signatureGenerator, javaLangObject, javaLangObjectSignature, null, null);
-    return new JavaNode(javaLangObjectVName);
+    if (javaLangObjectNode == null) {
+      javaLangObjectNode = resolveJavaLangSymbol(getSymbols().objectType.asElement());
+    }
+    return javaLangObjectNode;
   }
 
   // Returns a JavaNode representing java.lang.Enum<E> where E is a given enum type.
   private JavaNode getJavaLangEnumNode(VName enumVName) {
-    Symbol javaLangEnum = getSymbols().enumSym;
-    String javaLangEnumSignature = signatureGenerator.getSignature(javaLangEnum).get();
-    EntrySet javaLangEnumEntrySet =
-        entrySets.newAbstractAndEmit(
-            entrySets.getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature, null, null));
+    if (javaLangEnumNode == null) {
+      javaLangEnumNode =
+          new JavaNode(
+              entrySets
+                  .newAbstractAndEmit(resolveJavaLangSymbol(getSymbols().enumSym).getVName())
+                  .getVName());
+    }
     EntrySet typeNode =
         entrySets.newTApplyAndEmit(
-            javaLangEnumEntrySet.getVName(), Collections.singletonList(enumVName));
+            javaLangEnumNode.getVName(), Collections.singletonList(enumVName));
     return new JavaNode(typeNode);
+  }
+
+  private JavaNode resolveJavaLangSymbol(Symbol sym) {
+    Optional<String> signature = signatureGenerator.getSignature(sym);
+    if (!signature.isPresent()) {
+      // This usually indicates a problem with the compilation's bootclasspath.
+      return emitDiagnostic(null, "failed to resolve " + sym, null, null);
+    }
+    return new JavaNode(entrySets.getNode(signatureGenerator, sym, signature.get(), null, null));
   }
 
   // Creates/emits an anchor and an associated edge
@@ -1155,14 +1168,16 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (context != null) {
       d.setContextUrl(context);
     }
-    Span s = ctx.getTreeSpan();
-    if (s.isValid()) {
-      d.getSpanBuilder().getStartBuilder().setByteOffset(s.getStart());
-      d.getSpanBuilder().getEndBuilder().setByteOffset(s.getEnd());
-    } else if (s.getStart() >= 0) {
-      // If the span isn't valid but we have a valid start, use the start for a zero-width span.
-      d.getSpanBuilder().getStartBuilder().setByteOffset(s.getStart());
-      d.getSpanBuilder().getEndBuilder().setByteOffset(s.getStart());
+    if (ctx != null) {
+      Span s = ctx.getTreeSpan();
+      if (s.isValid()) {
+        d.getSpanBuilder().getStartBuilder().setByteOffset(s.getStart());
+        d.getSpanBuilder().getEndBuilder().setByteOffset(s.getEnd());
+      } else if (s.getStart() >= 0) {
+        // If the span isn't valid but we have a valid start, use the start for a zero-width span.
+        d.getSpanBuilder().getStartBuilder().setByteOffset(s.getStart());
+        d.getSpanBuilder().getEndBuilder().setByteOffset(s.getStart());
+      }
     }
     EntrySet node = entrySets.emitDiagnostic(filePositions, d.build());
     // TODO(schroederc): don't allow any edges to a diagnostic node
