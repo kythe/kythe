@@ -313,10 +313,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     boolean documented = visitDocComment(classNode, absNode);
 
     if (absNode != null) {
-      List<String> tParamNames = new ArrayList<>();
-      for (JCTypeParameter tParam : classDef.getTypeParameters()) {
-        tParamNames.add(tParam.getName().toString());
-      }
       if (classIdent != null) {
         EntrySet absAnchor =
             entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
