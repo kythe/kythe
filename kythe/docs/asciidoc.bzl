@@ -1,7 +1,13 @@
 load("@bazel_skylib//:lib.bzl", "shell")
 
+_toolchain_type = "//tools/build_rules/external_tools:external_tools_toolchain_type"
+
 def _asciidoc_impl(ctx):
-    asciidoc = ctx.toolchains["//tools/build_rules/external_tools:external_tools_toolchain_type"].asciidoc
+    # Locate the asciidoc binary from the toolchain and construct its args.
+    # Because an asciidoc run produces an unknown number of files from the
+    # execution of filters, the output is staged to a temporary directory
+    # and packaged into a .zip file.
+    asciidoc = ctx.toolchains[_toolchain_type].asciidoc
     args = ["--backend", "html", "--no-header-footer"]
     for key, value in ctx.attr.attrs.items():
         if value:
@@ -11,24 +17,32 @@ def _asciidoc_impl(ctx):
     if ctx.attr.example_script:
         args += ["--attribute=example_script=" + ctx.file.example_script.path]
     args += ["--conf-file=%s" % c.path for c in ctx.files.confs]
-    args += ["-o", ctx.outputs.out.path]
+    args += ["-o", "out/" + ctx.attr.name + ".html"]
     args += [ctx.file.src.path]
 
     # Get the path where all our necessary tools are located so it can be set
     # to PATH in our run_shell command.
-    tool_path = ctx.toolchains["//tools/build_rules/external_tools:external_tools_toolchain_type"].path
+    tool_path = ctx.toolchains[_toolchain_type].path
 
+    # Declare the logfile as an output so that it can be read if something goes
+    # awry (otherwise Bazel will clean it up).
     logfile = ctx.actions.declare_file(ctx.attr.name + ".logfile")
 
-    # Run asciidoc, capture stderr, look in stderr for error messages and fail if we find any.
+    # Run asciidoc and capture stderr to logfile. If it succeeds, look in the
+    # captured log for error messages and fail if we find any.
     ctx.actions.run_shell(
-        inputs = [ctx.file.src] + ctx.files.confs + ([ctx.file.example_script] if ctx.file.example_script else []) + ctx.files.data,
+        inputs = ([ctx.file.src] +
+                  ctx.files.confs +
+                  ([ctx.file.example_script] if ctx.file.example_script else []) +
+                  ctx.files.data),
         outputs = [ctx.outputs.out, logfile],
-        env = {
-            "PATH": tool_path,
-        },
+        env = {"PATH": tool_path},  # so we can locate the binaries asciidoc needs
         command = "\n".join([
-            '%s %s 2> %s' % (
+            # Create the temporary staging directory.
+            "mkdir out",
+
+            # Run asciidoc itself, and fail if it returns nonzero.
+            "%s %s 2> %s" % (
                 shell.quote(asciidoc),
                 " ".join([shell.quote(arg) for arg in args]),
                 shell.quote(logfile.path),
@@ -36,13 +50,18 @@ def _asciidoc_impl(ctx):
             "if [[ $? -ne 0 ]]; then",
             "exit 1",
             "fi",
-            'cat %s' % (shell.quote(logfile.path)),
+
+            # The tool succeeded, but now check for error diagnostics.
+            "cat %s" % (shell.quote(logfile.path)),
             'grep -q -e "filter non-zero exit code" -e "no output from filter" %s' % (
                 shell.quote(logfile.path)
             ),
             "if [[ $? -ne 1 ]]; then",
             "exit 1",
             "fi",
+
+            # Package up the outputs into the zip file.
+            "(cd out; zip -9qr ../%s *)" % ctx.outputs.out.path,
         ]),
         mnemonic = "RunAsciidoc",
     )
@@ -73,6 +92,6 @@ asciidoc = rule(
     },
     doc = "Generate asciidoc",
     outputs = {
-        "out": "%{name}.html",
+        "out": "%{name}.zip",
     },
 )
