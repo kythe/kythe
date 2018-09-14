@@ -136,7 +136,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   bool VisitTemplateSpecializationTypeLoc(clang::TemplateSpecializationTypeLoc TL);
 
-  // Handles AutoTypeLoc and DeducedTemplateSpecialization
+  // Handles AutoTypeLoc and DeducedTemplateSpecializationTypeLoc
   bool VisitDeducedTypeLoc(clang::DeducedTypeLoc TL);
 
   // Visit the subtypes of TypedefNameDecl individually because we want to do
@@ -250,6 +250,17 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       clang::TemplateTypeParmTypeLoc TL);
   GraphObserver::NodeId BuildNodeIdForObjCInterfaceTypeLoc(
       clang::ObjCInterfaceTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForPointerTypeLoc(
+      clang::PointerTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForLValueReferenceTypeLoc(
+      clang::LValueReferenceTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForRValueReferenceTypeLoc(
+      clang::RValueReferenceTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForDeducedTypeLoc(
+      clang::DeducedTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForQualifiedTypeLoc(
+      clang::QualifiedTypeLoc TL);
+
 
   const clang::TemplateTypeParmDecl *FindTemplateTypeParmTypeLocDecl(
       clang::TemplateTypeParmTypeLoc TL) const;

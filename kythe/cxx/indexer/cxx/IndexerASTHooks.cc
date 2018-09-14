@@ -1024,6 +1024,19 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
   if (Decl == nullptr) {
     return true;
   }
+
+  // This is a dirty, dirty hack to allow other parts of the code to more
+  // cleanly handle deduced types.
+  // TODO(shahms): Figure out why these aren't the same for the deduced case
+  // and possibly fix it upstream.
+  if (auto *D = dyn_cast<clang::DeclaratorDecl>(Decl)) {
+    if (auto* TSI = D->getTypeSourceInfo()) {
+      if (TSI->getType() != D->getType()) {
+        TSI->overrideType(D->getType());
+      }
+    }
+  }
+
   auto Scope = RestoreValue(Job->PruneIncompleteFunctions);
   if (Job->PruneIncompleteFunctions) {
     if (auto *FD = llvm::dyn_cast<clang::FunctionDecl>(Decl)) {
@@ -1814,7 +1827,12 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
 }
 
 bool IndexerASTVisitor::VisitDeducedTypeLoc(clang::DeducedTypeLoc TL) {
-  BuildNodeIdForType(TL, EmitRanges::Yes);
+  if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+    if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
+      Observer.recordTypeSpellingLocation(
+          *RCC, *Id, GraphObserver::Claimability::Claimable, IsImplicit(*RCC));
+    }
+  }
   return true;
 }
 
@@ -4035,6 +4053,14 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForRecordTyp
   }
 }
 
+absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForTemplateTypeParmTypeLoc(
+    clang::TemplateTypeParmTypeLoc TL) {
+  if (auto* Decl = FindTemplateTypeParmTypeLocDecl(TL)) {
+    return BuildNodeIdForDecl(Decl);
+  }
+  return absl::nullopt;
+}
+
 GraphObserver::NodeId
 IndexerASTVisitor::BuildNodeIdForObjCInterfaceTypeLoc(clang::ObjCInterfaceTypeLoc TL) {
   const auto *IFace = CHECK_NOTNULL(TL.getIFaceDecl());
@@ -4054,10 +4080,66 @@ IndexerASTVisitor::BuildNodeIdForObjCInterfaceTypeLoc(clang::ObjCInterfaceTypeLo
   }
 }
 
-absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForTemplateTypeParmTypeLoc(
-    clang::TemplateTypeParmTypeLoc TL) {
-  if (auto* Decl = FindTemplateTypeParmTypeLocDecl(TL)) {
-    return BuildNodeIdForDecl(Decl);
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForPointerTypeLoc(clang::PointerTypeLoc TL) {
+  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc(), EmitRanges::No)) {
+    return ApplyBuiltinTypeConstructor("ptr", *PointeeID);
+  }
+  return absl::nullopt;
+}
+
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForLValueReferenceTypeLoc(clang::LValueReferenceTypeLoc TL) {
+  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc(), EmitRanges::No)) {
+    return ApplyBuiltinTypeConstructor("lvr", *PointeeID);
+  }
+  return absl::nullopt;
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForRValueReferenceTypeLoc(clang::RValueReferenceTypeLoc TL) {
+  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc(), EmitRanges::No)) {
+    return ApplyBuiltinTypeConstructor("rvr", *PointeeID);
+  }
+  return absl::nullopt;
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForDeducedTypeLoc(clang::DeducedTypeLoc TL) {
+  auto DeducedQT = TL.getTypePtr()->getDeducedType();
+  if (DeducedQT.isNull()) {
+    // We still need to come up with a name here--it's more useful than
+    // returning None, since we might be down a branch of some structural
+    // type. We might also have an unconstrained type variable,
+    // as with `auto foo();` with no definition.
+    // TODO(zarko): Is "auto" the correct thing to return here for
+    // a DeducedTemplateSpecialization?
+    return Observer.getNodeIdForBuiltinType("auto");
+  }
+  return BuildNodeIdForType(DeducedQT);
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForQualifiedTypeLoc(clang::QualifiedTypeLoc TL) {
+  // TODO(zarko): ObjC tycons; embedded C tycons (address spaces).
+  if (auto ID = BuildNodeIdForType(TL.getUnqualifiedLoc(), EmitRanges::No)) {
+    // Don't look down into type aliases. We'll have hit those during the
+    // BuildNodeIdForType call above.
+    // TODO(zarko): also add canonical edges (what do we call the edges?
+    // 'expanded' seems reasonable).
+    //   using ConstInt = const int;
+    //   using CVInt1 = volatile ConstInt;
+    if (TL.getType().isLocalConstQualified()) {
+      ID = ApplyBuiltinTypeConstructor("const", *ID);
+    }
+    if (TL.getType().isLocalRestrictQualified()) {
+      ID = ApplyBuiltinTypeConstructor("restrict", *ID);
+    }
+    if (TL.getType().isLocalVolatileQualified()) {
+      ID = ApplyBuiltinTypeConstructor("volatile", *ID);
+    }
+    return ID;
   }
   return absl::nullopt;
 }
@@ -4194,82 +4276,39 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                  ? Prev->second
                  : (TypeNodes[Key] = BuildNodeIdForObjCInterfaceTypeLoc(
                         TypeLoc.castAs<ObjCInterfaceTypeLoc>()));
-    case TypeLoc::Qualified: {
-      const auto &T = TypeLoc.castAs<QualifiedTypeLoc>();
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      // TODO(zarko): ObjC tycons; embedded C tycons (address spaces).
-      ID = BuildNodeIdForType(T.getUnqualifiedLoc(), PT, EmitRanges);
-      if (!ID) { return absl::nullopt; }
-      if (TypeAlreadyBuilt) {
-        break;
-      }
-      // Don't look down into type aliases. We'll have hit those during the
-      // BuildNodeIdForType call above.
-      // TODO(zarko): also add canonical edges (what do we call the edges?
-      // 'expanded' seems reasonable).
-      //   using ConstInt = const int;
-      //   using CVInt1 = volatile ConstInt;
-      if (T.getType().isLocalConstQualified()) {
-        ID = ApplyBuiltinTypeConstructor("const", *ID);
-      }
-      if (T.getType().isLocalRestrictQualified()) {
-        ID = ApplyBuiltinTypeConstructor("restrict", *ID);
-      }
-      if (T.getType().isLocalVolatileQualified()) {
-        ID = ApplyBuiltinTypeConstructor("volatile", *ID);
-      }
-    } break;
+    case TypeLoc::Pointer:
+      // TODO(shahms): Remove this CHECK.
+      CHECK(isa<PointerType>(PT));
+      return TypeAlreadyBuilt ? Prev->second
+                              : (TypeNodes[Key] = BuildNodeIdForPointerTypeLoc(
+                                     TypeLoc.castAs<PointerTypeLoc>()));
+    case TypeLoc::LValueReference:
+      // TODO(shahms): Remove this CHECK.
+      CHECK(isa<LValueReferenceType>(PT));
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] = BuildNodeIdForLValueReferenceTypeLoc(
+                        TypeLoc.castAs<LValueReferenceTypeLoc>()));
+    case TypeLoc::RValueReference:
+      // TODO(shahms): Remove this CHECK.
+      CHECK(isa<RValueReferenceType>(PT));
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] = BuildNodeIdForRValueReferenceTypeLoc(
+                        TypeLoc.castAs<RValueReferenceTypeLoc>()));
+    case TypeLoc::Auto:
+    case TypeLoc::DeducedTemplateSpecialization:
+      // TODO(shahms): Remove this CHECK.
+      CHECK(isa<DeducedType>(PT));
+      return TypeAlreadyBuilt ? Prev->second
+                              : (TypeNodes[Key] = BuildNodeIdForDeducedTypeLoc(
+                                     TypeLoc.castAs<DeducedTypeLoc>()));
+    case TypeLoc::Qualified:
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] = BuildNodeIdForQualifiedTypeLoc(
+                        TypeLoc.castAs<QualifiedTypeLoc>()));
       UNSUPPORTED_CLANG_TYPE(Complex);
-    case TypeLoc::Pointer: {
-      const auto &T = TypeLoc.castAs<PointerTypeLoc>();
-      const auto *DT = dyn_cast<PointerType>(PT);
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto PointeeID = BuildNodeIdForType(T.getPointeeLoc(),
-                                          DT ? DT->getPointeeType().getTypePtr()
-                                             : T.getPointeeLoc().getTypePtr(),
-                                          EmitRanges);
-      if (!PointeeID) {
-        return absl::nullopt;
-      }
-      if (TypeAlreadyBuilt) {
-        break;
-      }
-      ID = ApplyBuiltinTypeConstructor("ptr", *PointeeID);
-    } break;
-    case TypeLoc::LValueReference: {
-      const auto &T = TypeLoc.castAs<LValueReferenceTypeLoc>();
-      const auto *DT = dyn_cast<LValueReferenceType>(PT);
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto ReferentID =
-          BuildNodeIdForType(T.getPointeeLoc(),
-                             DT ? DT->getPointeeType().getTypePtr()
-                                : T.getPointeeLoc().getTypePtr(),
-                             EmitRanges);
-      if (!ReferentID) {
-        return absl::nullopt;
-      }
-      if (TypeAlreadyBuilt) {
-        break;
-      }
-      ID = ApplyBuiltinTypeConstructor("lvr", *ReferentID);
-    } break;
-    case TypeLoc::RValueReference: {
-      const auto &T = TypeLoc.castAs<RValueReferenceTypeLoc>();
-      const auto *DT = dyn_cast<RValueReferenceType>(PT);
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto ReferentID =
-          BuildNodeIdForType(T.getPointeeLoc(),
-                             DT ? DT->getPointeeType().getTypePtr()
-                                : T.getPointeeLoc().getTypePtr(),
-                             EmitRanges);
-      if (!ReferentID) {
-        return absl::nullopt;
-      }
-      if (TypeAlreadyBuilt) {
-        break;
-      }
-      ID = ApplyBuiltinTypeConstructor("rvr", *ReferentID);
-    } break;
       UNSUPPORTED_CLANG_TYPE(MemberPointer);
     case TypeLoc::ConstantArray: {
       const auto &T = TypeLoc.castAs<ConstantArrayTypeLoc>();
@@ -4572,27 +4611,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         ID = Observer.recordTappNode(TemplateName.value(), TemplateArgsPtrs,
                                      TemplateArgsPtrs.size());
       }
-    } break;
-    case TypeLoc::Auto:
-    case TypeLoc::DeducedTemplateSpecialization: {
-      const auto *DT = dyn_cast<DeducedType>(PT);
-      QualType DeducedQT = DT->getDeducedType();
-      if (DeducedQT.isNull()) {
-        const auto &DTL = TypeLoc.castAs<DeducedTypeLoc>();
-        const auto *T = DTL.getTypePtr();
-        DeducedQT = T->getDeducedType();
-        if (DeducedQT.isNull()) {
-          // We still need to come up with a name here--it's more useful than
-          // returning None, since we might be down a branch of some structural
-          // type. We might also have an unconstrained type variable,
-          // as with `auto foo();` with no definition.
-          // TODO(zarko): Is "auto" the correct thing to return here for
-          // a DeducedTemplateSpecialization?
-          ID = Observer.getNodeIdForBuiltinType("auto");
-          break;
-        }
-      }
-      ID = BuildNodeIdForType(DeducedQT);
     } break;
     case TypeLoc::InjectedClassName: {
       const auto &T = TypeLoc.castAs<InjectedClassNameTypeLoc>();
