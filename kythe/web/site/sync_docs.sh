@@ -30,7 +30,12 @@ bazel --bazelrc=/dev/null build //kythe/docs/... //kythe/docs/schema \
     //kythe/docs/schema:writing-an-indexer \
     //kythe/docs/schema:indexing-protobuf \
     //kythe/docs/schema:marked-source
+# Copy the zipped asciidoc outputs into the staging directory, unpack the
+# archives, then remove them. We do this to ensure the output retains the
+# directory structure of the source tree.
 rsync -Lr --chmod=a+w --delete "bazel-bin/kythe/docs/" "$DIR"/_docs
+find "$DIR"/_docs -type f -name '*.zip' -execdir unzip -q {} ';' -delete
+
 DOCS=($(bazel query 'kind("source file", deps(//kythe/docs/..., 1))' | \
   grep -E '\.(txt|adoc|ad)$' | \
   parallel --gnu -L1 'x() { file="$(tr : / <<<"$1")"; echo ${file#//kythe/docs/}; }; x'))
