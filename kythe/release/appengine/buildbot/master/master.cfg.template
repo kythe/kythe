@@ -76,7 +76,7 @@ c['change_source'].append(GitHubPullrequestPoller(
 
 ####### SCHEDULERS
 
-allBuilders = ["bazel-0.16.0", "bazel-0.16.1", "bazel-release", "bazel-opt", "go-1.11-gopath", "go-1.11-module"]
+allBuilders = ["bazel-0.16.0", "bazel-0.17.1", "bazel-release", "bazel-opt", "go-1.11-gopath", "go-1.11-module"]
 
 c['schedulers'] = []
 c['schedulers'].append(schedulers.SingleBranchScheduler(
@@ -136,23 +136,23 @@ c['builders'].append(
         factory=bazelKytheSteps))
 c['builders'].append(
     util.BuilderConfig(
-        name="bazel-0.16.1",
+        name="bazel-0.17.1",
         workernames=["local-worker"],
-        properties={'bazel_version': '0.16.1'},
+        properties={'bazel_version': '0.17.1'},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(
     util.BuilderConfig(
         name="bazel-opt",
         workernames=["local-worker"],
-        properties={'bazel_version': '0.16.1', 'bazel_flags': ['-c', 'opt']},
+        properties={'bazel_version': '0.17.1', 'bazel_flags': ['-c', 'opt']},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(
     util.BuilderConfig(
         name="bazel-release",
         workernames=["local-worker"],
-        properties={'bazel_version': '0.16.1', 'bazel_flags': ['-c', 'opt', '--stamp'], 'bazel_target': '//kythe/release:release_test'},
+        properties={'bazel_version': '0.17.1', 'bazel_flags': ['-c', 'opt', '--stamp'], 'bazel_target': '//kythe/release:release_test'},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(
