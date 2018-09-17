@@ -1,7 +1,7 @@
 workspace(name = "io_kythe")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
@@ -17,9 +17,9 @@ bind(
     actual = "//third_party:libuuid",
 )
 
-new_http_archive(
+http_archive(
     name = "org_libmemcached_libmemcached",
-    build_file = "third_party/libmemcached.BUILD",
+    build_file = "@//third_party:libmemcached.BUILD",
     sha256 = "e22c0bb032fde08f53de9ffbc5a128233041d9f33b5de022c0978a2149885f82",
     strip_prefix = "libmemcached-1.0.18",
     url = "https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz",
@@ -40,9 +40,9 @@ bind(
     actual = "@com_google_code_gson_gson//jar",
 )
 
-new_http_archive(
+http_archive(
     name = "se_haxx_curl",
-    build_file = "//third_party:curl.BUILD",
+    build_file = "@//third_party:curl.BUILD",
     sha256 = "ff3e80c1ca6a068428726cd7dd19037a47cc538ce58ef61c59587191039b2ca6",
     strip_prefix = "curl-7.49.1",
     urls = [
@@ -51,9 +51,9 @@ new_http_archive(
     ],
 )
 
-new_http_archive(
+http_archive(
     name = "net_zlib",
-    build_file = "third_party/zlib.BUILD",
+    build_file = "@//third_party:zlib.BUILD",
     sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
     strip_prefix = "zlib-1.2.11",
     urls = [
@@ -66,9 +66,9 @@ bind(
     actual = "@net_zlib//:zlib",
 )
 
-new_http_archive(
+http_archive(
     name = "org_libzip",
-    build_file = "third_party/libzip.BUILD",
+    build_file = "@//third_party:libzip.BUILD",
     sha256 = "a5d22f0c87a2625450eaa5e10db18b8ee4ef17042102d04c62e311993a2ba363",
     strip_prefix = "libzip-rel-1-5-1",
     urls = [
@@ -136,41 +136,41 @@ http_archive(
     url = "https://github.com/google/riegeli/archive/bd99099abd41abbe35a10f3bfa35e15b6b2d893a.zip",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_google_glog",
-    build_file = "third_party/googlelog.BUILD",
+    build_file = "@//third_party:googlelog.BUILD",
     sha256 = "ce61883437240d650be724043e8b3c67e257690f876ca9fd53ace2a791cfea6c",
     strip_prefix = "glog-bac8811710c77ac3718be1c4801f43d37c1aea46",
     url = "https://github.com/google/glog/archive/bac8811710c77ac3718be1c4801f43d37c1aea46.zip",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_tencent_rapidjson",
-    build_file = "third_party/rapidjson.BUILD",
+    build_file = "@//third_party:rapidjson.BUILD",
     sha256 = "8e00c38829d6785a2dfb951bb87c6974fa07dfe488aa5b25deec4b8bc0f6a3ab",
     strip_prefix = "rapidjson-1.1.0",
     url = "https://github.com/Tencent/rapidjson/archive/v1.1.0.zip",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_stedolan_jq",
-    build_file = "third_party/jq.BUILD",
+    build_file = "@//third_party:jq.BUILD",
     sha256 = "998c41babeb57b4304e65b4eb73094279b3ab1e63801b6b4bddd487ce009b39d",
     strip_prefix = "jq-1.4",
     url = "https://github.com/stedolan/jq/releases/download/jq-1.4/jq-1.4.tar.gz",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_google_snappy",
-    build_file = "third_party/snappy.BUILD",
+    build_file = "@//third_party:snappy.BUILD",
     sha256 = "61e05a0295fd849072668b1f3494801237d809427cfe8fd014cda455036c3ef7",
     strip_prefix = "snappy-1.1.7",
     url = "https://github.com/google/snappy/archive/1.1.7.zip",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_google_leveldb",
-    build_file = "third_party/leveldb.BUILD",
+    build_file = "@//third_party:leveldb.BUILD",
     sha256 = "5b2bd7a91489095ad54bb81ca6544561025b48ec6d19cc955325f96755d88414",
     strip_prefix = "leveldb-1.20",
     url = "https://github.com/google/leveldb/archive/v1.20.zip",
@@ -289,18 +289,18 @@ http_archive(
 # The most recent release (v3.6.0.1) lacks an fix for
 # https://github.com/google/protobuf/issues/4771, which we rely on in tests.
 # TODO(shahms): Update to the first release to include that fix.
-new_http_archive(
+http_archive(
     name = "com_google_protobuf",
-    build_file = "third_party/protobuf.BUILD",
+    build_file = "@//third_party:protobuf.BUILD",
     sha256 = "08608786f26c2ae4e5ff854560289779314b60179b5df824836303e2c0fae407",
     strip_prefix = "protobuf-964201af37f8a0009440a52a30a66317724a52c3",
     urls = ["https://github.com/google/protobuf/archive/964201af37f8a0009440a52a30a66317724a52c3.zip"],
 )
 
 # A copy of the above archive because com_google_riegeli uses a non-standard name... (╯°□°)╯︵ ┻━┻
-new_http_archive(
+http_archive(
     name = "protobuf_archive",
-    build_file = "third_party/protobuf.BUILD",
+    build_file = "@//third_party:protobuf.BUILD",
     sha256 = "08608786f26c2ae4e5ff854560289779314b60179b5df824836303e2c0fae407",
     strip_prefix = "protobuf-964201af37f8a0009440a52a30a66317724a52c3",
     urls = ["https://github.com/google/protobuf/archive/964201af37f8a0009440a52a30a66317724a52c3.zip"],
@@ -345,7 +345,7 @@ load("//tools:build_rules/shims.bzl", "go_repository")
 #                   https://github.com/bazelbuild/rules_go/issues/1533 is fixed
 new_git_repository(
     name = "go_protobuf",
-    build_file = "third_party/go/protobuf.BUILD",
+    build_file = "@//third_party/go:protobuf.BUILD",
     commit = "b4deda0973fb4c70b50d226b1af49f3da59f5265",
     remote = "https://github.com/golang/protobuf.git",
 )

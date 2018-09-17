@@ -25,6 +25,7 @@ set -o pipefail
 #   LABEL
 #   CXX_INDEXER_BIN
 #   VERIFIER_BIN
+#   VERIFIER_ARGS
 #   SHASUM_TOOL
 #   SHOWGRAPH
 
@@ -85,7 +86,7 @@ do
   "$CXX_INDEXER_BIN" --ignore_unimplemented=false -i "${TEST_M}" -- $CXX_ARGS \
       >> "${TEST_ENTRIES}"
 done
-"$VERIFIER_BIN" --ignore_dups "${SRCS}"/* < "${TEST_ENTRIES}"
+"$VERIFIER_BIN" "${VERIFIER_ARGS}" --ignore_dups "${SRCS}"/* < "${TEST_ENTRIES}"
 
 trap 'error FORMAT' ERR
 EXAMPLE_ID=$($SHASUM_TOOL "$RAW_EXAMPLE" | cut -c 1-64)

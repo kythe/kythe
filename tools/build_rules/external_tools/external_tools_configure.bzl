@@ -34,20 +34,21 @@ def _external_toolchain_autoconf_impl(repository_ctx):
     # These are the tools that the doc/schema generation need beyond the
     # explicit call to asciidoc.
     tools = [
-        "dot",
-        "python",
-        "grep",
-        "cat",
-        "source-highlight",
-        "mktemp",
-        "mkdir",
-        "touch",
         "awk",
-        "tee",
-        "rm",
+        "cat",
         "cut",
-        "sed",
+        "dot",
+        "grep",
+        "mkdir",
+        "mktemp",
+        "python",
         "readlink",
+        "rm",
+        "sed",
+        "source-highlight",
+        "tee",
+        "touch",
+        "zip",
     ]
     for tool in tools:
         symlink_command(repository_ctx, tool)
