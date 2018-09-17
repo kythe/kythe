@@ -49,13 +49,13 @@ ScopeGuard<F> MakeScopeGuard(F&& Fn) {
 template <typename StackType>
 struct StackSizeRestorer {
   void operator()() const {
-      CHECK_LE(Size, Target->size());
-      while (Size < Target->size()) {
-        Target->pop_back();
-      }
+    CHECK_LE(Size, Target->size());
+    while (Size < Target->size()) {
+      Target->pop_back();
+    }
   }
 
-  StackType *Target;
+  StackType* Target;
   decltype(Target->size()) Size;
 };
 
@@ -66,7 +66,7 @@ struct StackSizeRestorer {
 ///   auto R = RestoreStack(SomeStack);
 /// \endcode
 template <typename StackType>
-ScopeGuard<StackSizeRestorer<StackType>> RestoreStack(StackType &S) {
+ScopeGuard<StackSizeRestorer<StackType>> RestoreStack(StackType& S) {
   return ScopeGuard<StackSizeRestorer<StackType>>({&S, S.size()});
 }
 
@@ -75,13 +75,14 @@ template <typename StackType>
 struct BackPopper {
   void operator()() const { Target->pop_back(); }
 
-  StackType *Target;
+  StackType* Target;
 };
 
 /// \brief Pushes the value onto the stack and returns a sentinel which will
 /// remove it at destruction.
 template <typename StackType, typename ValueType>
-ScopeGuard<BackPopper<StackType>> PushScope(StackType &Target, ValueType &&Value) {
+ScopeGuard<BackPopper<StackType>> PushScope(StackType& Target,
+                                            ValueType&& Value) {
   Target.push_back(std::forward<ValueType>(Value));
   return ScopeGuard<BackPopper<StackType>>({&Target});
 }
@@ -89,18 +90,16 @@ ScopeGuard<BackPopper<StackType>> PushScope(StackType &Target, ValueType &&Value
 /// \brief Restores the recorded value.
 template <typename ValueType>
 struct ValueRestorer {
-  void operator()() const {
-      *Target = Value;
-  }
+  void operator()() const { *Target = Value; }
 
-  ValueType *Target;
+  ValueType* Target;
   ValueType Value;
 };
 
 /// \brief Records the current value of the target and returns a sentinel
 /// which will restore it upon destruction.
 template <typename ValueType>
-ScopeGuard<ValueRestorer<ValueType>> RestoreValue(ValueType &Value) {
+ScopeGuard<ValueRestorer<ValueType>> RestoreValue(ValueType& Value) {
   return ScopeGuard<ValueRestorer<ValueType>>({&Value, Value});
 }
 

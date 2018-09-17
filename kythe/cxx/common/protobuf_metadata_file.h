@@ -31,13 +31,13 @@ namespace kythe {
 /// will be ignored.
 /// \param path the proto AST path.
 template <typename Path>
-proto::VName VNameForProtoPath(const proto::VName &file_vname,
-                               const Path &path) {
+proto::VName VNameForProtoPath(const proto::VName& file_vname,
+                               const Path& path) {
   proto::VName out(file_vname);
   std::string signature;
   std::stringstream sig(signature);
   bool first_node = true;
-  for (const auto &node : path) {
+  for (const auto& node : path) {
     sig << (first_node ? "" : ".") << node;
     first_node = false;
   }
@@ -54,8 +54,8 @@ class ProtobufMetadataSupport : public MetadataSupport {
   /// not parse into a `proto2.GeneratedCodeInfo` message, returns null and logs
   /// a warning.
   std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string &raw_filename, const std::string &filename,
-      const llvm::MemoryBuffer *buffer) override;
+      const std::string& raw_filename, const std::string& filename,
+      const llvm::MemoryBuffer* buffer) override;
 
   void UseVNameLookup(VNameLookup lookup) override { vname_lookup_ = lookup; }
 
@@ -65,11 +65,11 @@ class ProtobufMetadataSupport : public MetadataSupport {
   /// \param context_vname the VName to use when a .proto's VName can't be
   /// identified.
   proto::VName VNameForAnnotation(
-      const proto::VName &context_vname,
-      const google::protobuf::GeneratedCodeInfo::Annotation &annotation);
+      const proto::VName& context_vname,
+      const google::protobuf::GeneratedCodeInfo::Annotation& annotation);
 
   /// Used to build VNames for proto objects.
-  VNameLookup vname_lookup_ = [](const std::string &path, proto::VName *out) {
+  VNameLookup vname_lookup_ = [](const std::string& path, proto::VName* out) {
     return false;
   };
 };

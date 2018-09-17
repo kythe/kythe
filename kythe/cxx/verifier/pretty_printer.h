@@ -27,13 +27,13 @@ namespace verifier {
 class PrettyPrinter {
  public:
   /// \brief Prints `string`.
-  virtual void Print(const std::string &string) = 0;
+  virtual void Print(const std::string& string) = 0;
 
   /// \brief Prints `string`.
-  virtual void Print(const char *string) = 0;
+  virtual void Print(const char* string) = 0;
 
   /// \brief Prints `ptr` in hex with a 0x prefix (or 0 for null pointers).
-  virtual void Print(const void *ptr) = 0;
+  virtual void Print(const void* ptr) = 0;
 
   virtual ~PrettyPrinter();
 };
@@ -42,11 +42,11 @@ class PrettyPrinter {
 class StringPrettyPrinter : public PrettyPrinter {
  public:
   /// \copydoc PrettyPrinter::Print(const std::string&)
-  void Print(const std::string &string) override;
+  void Print(const std::string& string) override;
   /// \copydoc PrettyPrinter::Print(const char *)
-  void Print(const char *string) override;
+  void Print(const char* string) override;
   /// \copydoc PrettyPrinter::Print(const void *)
-  void Print(const void *ptr) override;
+  void Print(const void* ptr) override;
   /// Returns the `string` printed to thus far.
   std::string str() { return data_.str(); }
 
@@ -59,16 +59,16 @@ class StringPrettyPrinter : public PrettyPrinter {
 class FileHandlePrettyPrinter : public PrettyPrinter {
  public:
   /// \param file The file handle to print to.
-  explicit FileHandlePrettyPrinter(FILE *file) : file_(file) {}
+  explicit FileHandlePrettyPrinter(FILE* file) : file_(file) {}
   /// \copydoc PrettyPrinter::Print(const std::string&)
-  void Print(const std::string &string) override;
+  void Print(const std::string& string) override;
   /// \copydoc PrettyPrinter::Print(const char *)
-  void Print(const char *string) override;
+  void Print(const char* string) override;
   /// \copydoc PrettyPrinter::Print(const void *)
-  void Print(const void *ptr) override;
+  void Print(const void* ptr) override;
 
  private:
-  FILE *file_;
+  FILE* file_;
 };
 
 /// \brief A `PrettyPrinter` that wraps another `PrettyPrinter` but escapes
@@ -77,17 +77,17 @@ class QuoteEscapingPrettyPrinter : public PrettyPrinter {
  public:
   /// \param wrapped The `PrettyPrinter` to which transformed text should be
   /// sent.
-  explicit QuoteEscapingPrettyPrinter(PrettyPrinter &wrapped)
+  explicit QuoteEscapingPrettyPrinter(PrettyPrinter& wrapped)
       : wrapped_(wrapped) {}
   /// \copydoc PrettyPrinter::Print(const std::string&)
-  void Print(const std::string &string) override;
+  void Print(const std::string& string) override;
   /// \copydoc PrettyPrinter::Print(const char *)
-  void Print(const char *string) override;
+  void Print(const char* string) override;
   /// \copydoc PrettyPrinter::Print(const void *)
-  void Print(const void *ptr) override;
+  void Print(const void* ptr) override;
 
  private:
-  PrettyPrinter &wrapped_;
+  PrettyPrinter& wrapped_;
 };
 
 /// \brief A `PrettyPrinter` that wraps another `PrettyPrinter` but escapes
@@ -96,17 +96,17 @@ class HtmlEscapingPrettyPrinter : public PrettyPrinter {
  public:
   /// \param wrapped The `PrettyPrinter` to which transformed text should be
   /// sent.
-  explicit HtmlEscapingPrettyPrinter(PrettyPrinter &wrapped)
+  explicit HtmlEscapingPrettyPrinter(PrettyPrinter& wrapped)
       : wrapped_(wrapped) {}
   /// \copydoc PrettyPrinter::Print(const std::string&)
-  void Print(const std::string &string) override;
+  void Print(const std::string& string) override;
   /// \copydoc PrettyPrinter::Print(const char *)
-  void Print(const char *string) override;
+  void Print(const char* string) override;
   /// \copydoc PrettyPrinter::Print(const void *)
-  void Print(const void *ptr) override;
+  void Print(const void* ptr) override;
 
  private:
-  PrettyPrinter &wrapped_;
+  PrettyPrinter& wrapped_;
 };
 
 }  // namespace verifier

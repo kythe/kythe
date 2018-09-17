@@ -41,7 +41,8 @@ std::string TestFile(absl::string_view basename) {
                       absl::StripPrefix(basename, "/"));
 }
 
-template <typename T> struct WithStatusFn {
+template <typename T>
+struct WithStatusFn {
   bool operator()(absl::string_view digest) {
     *status = function(digest);
     return status->ok();
@@ -51,7 +52,8 @@ template <typename T> struct WithStatusFn {
   T function;
 };
 
-template <typename T> WithStatusFn<T> WithStatus(Status* status, T function) {
+template <typename T>
+WithStatusFn<T> WithStatus(Status* status, T function) {
   return WithStatusFn<T>{status, std::move(function)};
 }
 

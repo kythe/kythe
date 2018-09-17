@@ -59,7 +59,7 @@ class KzipReader : public IndexReaderInterface {
   zip_t* archive() { return archive_.get(); }
 
   ZipHandle archive_;
-  absl::string_view root_; // Memory owned by `archive_`.
+  absl::string_view root_;  // Memory owned by `archive_`.
 };
 
 }  // namespace kythe

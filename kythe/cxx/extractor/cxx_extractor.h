@@ -93,10 +93,10 @@ struct SourceFile {
 /// if none).
 /// \param had_errors Whether we encountered any errors so far.
 using ExtractorCallback = std::function<void(
-    const std::string &main_source_file,
-    const PreprocessorTranscript &main_source_file_transcript,
-    const std::unordered_map<std::string, SourceFile> &source_files,
-    const HeaderSearchInfo *header_search_info, bool had_errors)>;
+    const std::string& main_source_file,
+    const PreprocessorTranscript& main_source_file_transcript,
+    const std::unordered_map<std::string, SourceFile>& source_files,
+    const HeaderSearchInfo* header_search_info, bool had_errors)>;
 
 /// \brief Called by the `CompilationWriter` once it has finished building
 /// protobufs.
@@ -106,21 +106,21 @@ class CompilationWriterSink {
  public:
   /// \brief Called before `WriteHeader`.
   /// \param unit_hash The identifier for the compilation unit being written.
-  virtual void OpenIndex(const std::string &unit_hash) = 0;
+  virtual void OpenIndex(const std::string& unit_hash) = 0;
   /// \brief Writes the `CompilationUnit` to the index.
-  virtual void WriteHeader(const kythe::proto::CompilationUnit &header) = 0;
+  virtual void WriteHeader(const kythe::proto::CompilationUnit& header) = 0;
   /// \brief Writes a `FileData` record to the indexfile.
-  virtual void WriteFileContent(const kythe::proto::FileData &content) = 0;
+  virtual void WriteFileContent(const kythe::proto::FileData& content) = 0;
   virtual ~CompilationWriterSink() = default;
 };
 
 /// \brief Writes extracted data to an index pack.
 class IndexPackWriterSink : public CompilationWriterSink {
  public:
-  explicit IndexPackWriterSink(const std::string &path) : path_(path) {}
-  void OpenIndex(const std::string &unit_hash) override;
-  void WriteHeader(const kythe::proto::CompilationUnit &header) override;
-  void WriteFileContent(const kythe::proto::FileData &content) override;
+  explicit IndexPackWriterSink(const std::string& path) : path_(path) {}
+  void OpenIndex(const std::string& unit_hash) override;
+  void WriteHeader(const kythe::proto::CompilationUnit& header) override;
+  void WriteFileContent(const kythe::proto::FileData& content) override;
 
  private:
   /// The open index pack, if any.
@@ -134,11 +134,11 @@ class KindexWriterSink : public CompilationWriterSink {
  public:
   /// \param path The file to which to write.
   /// \param single_file Whether to write to the single file or as a directory.
-  explicit KindexWriterSink(const std::string &path, bool single_file)
+  explicit KindexWriterSink(const std::string& path, bool single_file)
       : path_(path), single_file_(single_file) {}
-  void OpenIndex(const std::string &unit_hash) override;
-  void WriteHeader(const kythe::proto::CompilationUnit &header) override;
-  void WriteFileContent(const kythe::proto::FileData &content) override;
+  void OpenIndex(const std::string& unit_hash) override;
+  void WriteHeader(const kythe::proto::CompilationUnit& header) override;
+  void WriteFileContent(const kythe::proto::FileData& content) override;
   ~KindexWriterSink();
 
  private:
@@ -164,10 +164,10 @@ class KindexWriterSink : public CompilationWriterSink {
 class KzipWriterSink : public CompilationWriterSink {
  public:
   /// \param path The file to which to write.
-  explicit KzipWriterSink(const std::string &path);
+  explicit KzipWriterSink(const std::string& path);
   void OpenIndex(const std::string&) override {}
-  void WriteHeader(const kythe::proto::CompilationUnit &header) override;
-  void WriteFileContent(const kythe::proto::FileData &content) override;
+  void WriteHeader(const kythe::proto::CompilationUnit& header) override;
+  void WriteFileContent(const kythe::proto::FileData& content) override;
   ~KzipWriterSink() override;
 
  private:
@@ -183,27 +183,27 @@ class CompilationWriter {
   /// `args` should be the `argv` (without terminating null) that would be
   /// passed to the main() of a build tool. It includes both the tool's
   /// name as it was invoked and the name of the main source file.
-  void set_args(const std::vector<std::string> &args) { args_ = args; }
+  void set_args(const std::vector<std::string>& args) { args_ = args; }
   /// \brief Set the target triple used during compilation.
   ///
   /// Setting this allows the indexer to set the same triple that was used
   /// during extraction even if it is run on a machine with a different
   /// architecture.
-  void set_triple(const std::string &triple) { triple_ = triple; }
+  void set_triple(const std::string& triple) { triple_ = triple; }
   /// \brief Configure the default corpus.
-  void set_corpus(const std::string &corpus) { corpus_ = corpus; }
+  void set_corpus(const std::string& corpus) { corpus_ = corpus; }
   /// \brief Record the name of the target that generated this compilation.
-  void set_target_name(const std::string &target) { target_name_ = target; }
+  void set_target_name(const std::string& target) { target_name_ = target; }
   /// \brief Record the rule type that generated this compilation.
-  void set_rule_type(const std::string &rule_type) { rule_type_ = rule_type; }
+  void set_rule_type(const std::string& rule_type) { rule_type_ = rule_type; }
   /// \brief Record the output path generated by this compilation.
-  void set_output_path(const std::string &path) { output_path_ = path; }
+  void set_output_path(const std::string& path) { output_path_ = path; }
   /// \brief Configure vname generation using some JSON string.
   /// \return true on success, false on failure
-  bool SetVNameConfiguration(const std::string &json_string);
+  bool SetVNameConfiguration(const std::string& json_string);
   /// \brief Configure the path used for the root.
-  void set_root_directory(const std::string &dir) { root_directory_ = dir; }
-  const std::string &root_directory() const { return root_directory_; }
+  void set_root_directory(const std::string& dir) { root_directory_ = dir; }
+  const std::string& root_directory() const { return root_directory_; }
   /// \brief Don't include empty directories.
   void set_exclude_empty_dirs(bool exclude) { exclude_empty_dirs_ = exclude; }
   /// \brief Don't include files read during autoconfiguration.
@@ -214,17 +214,17 @@ class CompilationWriter {
   void WriteIndex(
       supported_language::Language lang,
       std::unique_ptr<CompilationWriterSink> sink,
-      const std::string &main_source_file, const std::string &entry_context,
-      const std::unordered_map<std::string, SourceFile> &source_files,
-      const HeaderSearchInfo *header_search_info, bool had_errors,
-      const std::string &clang_working_dir);
+      const std::string& main_source_file, const std::string& entry_context,
+      const std::unordered_map<std::string, SourceFile>& source_files,
+      const HeaderSearchInfo* header_search_info, bool had_errors,
+      const std::string& clang_working_dir);
   /// \brief Set the fields of `file_input` for the given file.
   /// \param clang_path A path to the file as seen by clang.
   /// \param source_file The `SourceFile` to configure `file_input` with.
   /// \param file_input The proto to configure.
-  void FillFileInput(const std::string &clang_path,
-                     const SourceFile &source_file,
-                     kythe::proto::CompilationUnit_FileInput *file_input);
+  void FillFileInput(const std::string& clang_path,
+                     const SourceFile& source_file,
+                     kythe::proto::CompilationUnit_FileInput* file_input);
   /// \brief Erases previously-recorded opened files (e.g., because they were
   /// used during autoconfiguration and are uninteresting).
   ///
@@ -233,22 +233,22 @@ class CompilationWriter {
   void CancelPreviouslyOpenedFiles();
 
   /// \brief Erases previously-recorded paths to intermediate files.
-  void ScrubIntermediateFiles(const clang::HeaderSearchOptions &options);
+  void ScrubIntermediateFiles(const clang::HeaderSearchOptions& options);
 
   /// \brief Records that a path was successfully opened for reading.
-  void OpenedForRead(const std::string &clang_path);
+  void OpenedForRead(const std::string& clang_path);
 
   /// \brief Records that a directory path was successfully opened for status.
-  void DirectoryOpenedForStatus(const std::string &clang_path);
+  void DirectoryOpenedForStatus(const std::string& clang_path);
 
   /// \brief Attempts to generate a VName for the file at some path.
   /// \param path The path (likely from Clang) to the file.
-  kythe::proto::VName VNameForPath(const std::string &path);
+  kythe::proto::VName VNameForPath(const std::string& path);
 
  private:
   /// Called to read and insert content for extra include files.
-  void InsertExtraIncludes(kythe::proto::CompilationUnit *unit,
-                           kythe::proto::CxxCompilationUnitDetails *details);
+  void InsertExtraIncludes(kythe::proto::CompilationUnit* unit,
+                           kythe::proto::CxxCompilationUnitDetails* details);
   /// The `FileVNameGenerator` used to generate file vnames.
   FileVNameGenerator vname_generator_;
   /// The arguments used for this compilation.
@@ -283,32 +283,32 @@ class CompilationWriter {
 /// \param index_writer The `CompilationWriter` to use.
 /// \param callback A function to call once extraction is complete.
 std::unique_ptr<clang::FrontendAction> NewExtractor(
-    CompilationWriter *index_writer, ExtractorCallback callback);
+    CompilationWriter* index_writer, ExtractorCallback callback);
 
 /// \brief Adds builtin versions of the compiler header files to
 /// `invocation`'s virtual file system in `map_directory`.
 /// \param invocation The invocation to modify.
 /// \param map_directory The directory to use.
-void MapCompilerResources(clang::tooling::ToolInvocation *invocation,
-                          const char *map_directory);
+void MapCompilerResources(clang::tooling::ToolInvocation* invocation,
+                          const char* map_directory);
 
 /// \brief Contains the configuration necessary for the extractor to run.
 class ExtractorConfiguration {
  public:
   /// \brief Set the arguments that will be passed to Clang.
-  void SetArgs(const std::vector<std::string> &args);
+  void SetArgs(const std::vector<std::string>& args);
   /// \brief Initialize the configuration using the process environment.
   void InitializeFromEnvironment();
   /// \brief Load the VName config file from `path` or terminate.
-  void SetVNameConfig(const std::string &path);
+  void SetVNameConfig(const std::string& path);
   /// \brief If a kindex file will be written, write it here.
-  void SetOutputFile(const std::string &path) { output_file_ = path; }
+  void SetOutputFile(const std::string& path) { output_file_ = path; }
   /// \brief Record the name of the target that generated this compilation.
-  void SetTargetName(const std::string &target) { target_name_ = target; }
+  void SetTargetName(const std::string& target) { target_name_ = target; }
   /// \brief Record the rule type that generated this compilation.
-  void SetRuleType(const std::string &rule_type) { rule_type_ = rule_type; }
+  void SetRuleType(const std::string& rule_type) { rule_type_ = rule_type; }
   /// \brief Record the output path produced by this compilation.
-  void SetCompilationOutputPath(const std::string &path) {
+  void SetCompilationOutputPath(const std::string& path) {
     compilation_output_path_ = path;
   }
   /// \brief Executes the extractor with this configuration, returning true on

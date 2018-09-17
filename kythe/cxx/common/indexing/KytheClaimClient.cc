@@ -25,11 +25,11 @@ constexpr char kArbitraryClaimantRoot[] = "KytheClaimClient";
 }  // anonymous namespace
 
 bool KytheClaimClient::ClaimBatch(
-    std::vector<std::pair<std::string, bool>> *tokens) {
+    std::vector<std::pair<std::string, bool>>* tokens) {
   kythe::proto::VName claim;
   claim.set_root(kArbitraryClaimantRoot);
   bool success = false;
-  for (auto &token : *tokens) {
+  for (auto& token : *tokens) {
     claim.set_signature(token.first);
     if ((token.second = Claim(claim, claim))) {
       success = true;
@@ -38,8 +38,8 @@ bool KytheClaimClient::ClaimBatch(
   return success;
 }
 
-bool StaticClaimClient::Claim(const kythe::proto::VName &claimant,
-                              const kythe::proto::VName &vname) {
+bool StaticClaimClient::Claim(const kythe::proto::VName& claimant,
+                              const kythe::proto::VName& vname) {
   const auto lookup = claim_table_.find(vname);
   if (lookup == claim_table_.end()) {
     // We don't know who's responsible for this VName.
@@ -48,8 +48,8 @@ bool StaticClaimClient::Claim(const kythe::proto::VName &claimant,
   return VNameEquals(lookup->second, claimant);
 }
 
-void StaticClaimClient::AssignClaim(const kythe::proto::VName &claimable,
-                                    const kythe::proto::VName &claimant) {
+void StaticClaimClient::AssignClaim(const kythe::proto::VName& claimable,
+                                    const kythe::proto::VName& claimant) {
   claim_table_[claimable] = claimant;
 }
 
@@ -64,7 +64,7 @@ DynamicClaimClient::~DynamicClaimClient() {
       request_count_ == 0 ? 0.0 : (double)rejected_requests_ / request_count_);
 }
 
-bool DynamicClaimClient::OpenMemcache(const std::string &spec) {
+bool DynamicClaimClient::OpenMemcache(const std::string& spec) {
   if (cache_) {
     memcached_free(cache_);
     cache_ = nullptr;
@@ -81,7 +81,7 @@ bool DynamicClaimClient::OpenMemcache(const std::string &spec) {
 
 using Hash = unsigned char[SHA256_DIGEST_LENGTH];
 
-void HashVName(const kythe::proto::VName &vname, size_t count, Hash *hash) {
+void HashVName(const kythe::proto::VName& vname, size_t count, Hash* hash) {
   ::SHA256_CTX sha;
   ::SHA256_Init(&sha);
   ::SHA256_Update(&sha, vname.signature().c_str(), vname.signature().size());
@@ -90,11 +90,11 @@ void HashVName(const kythe::proto::VName &vname, size_t count, Hash *hash) {
   ::SHA256_Update(&sha, vname.root().c_str(), vname.root().size());
   ::SHA256_Update(&sha, vname.corpus().c_str(), vname.corpus().size());
   ::SHA256_Update(&sha, &count, sizeof(count));
-  ::SHA256_Final(reinterpret_cast<unsigned char *>(hash), &sha);
+  ::SHA256_Final(reinterpret_cast<unsigned char*>(hash), &sha);
 }
 
-bool DynamicClaimClient::Claim(const kythe::proto::VName &claimant,
-                               const kythe::proto::VName &vname) {
+bool DynamicClaimClient::Claim(const kythe::proto::VName& claimant,
+                               const kythe::proto::VName& vname) {
   // TODO(zarko): (It may not matter because this is already
   // lossy, but) we only check to see whether anyone has made a claim on a
   // vname at any point; if not, then we assume that we own that vname.
@@ -112,8 +112,8 @@ bool DynamicClaimClient::Claim(const kythe::proto::VName &claimant,
     for (size_t tries = 0; tries < max_redundant_claims_; ++tries) {
       HashVName(vname, tries, &vname_hash);
       memcached_return_t add_result = memcached_add(
-          cache_, reinterpret_cast<const char *>(&vname_hash),
-          SHA256_DIGEST_LENGTH, reinterpret_cast<const char *>(&claimant_hash),
+          cache_, reinterpret_cast<const char*>(&vname_hash),
+          SHA256_DIGEST_LENGTH, reinterpret_cast<const char*>(&claimant_hash),
           SHA256_DIGEST_LENGTH, 0, 0);
       if (!memcached_success(add_result) &&
           add_result != MEMCACHED_DATA_EXISTS) {
@@ -140,8 +140,8 @@ bool DynamicClaimClient::Claim(const kythe::proto::VName &claimant,
   }
 }
 
-void DynamicClaimClient::AssignClaim(const kythe::proto::VName &claimable,
-                                     const kythe::proto::VName &claimant) {
+void DynamicClaimClient::AssignClaim(const kythe::proto::VName& claimable,
+                                     const kythe::proto::VName& claimant) {
   claim_table_[claimable] = claimant;
 }
 }  // namespace kythe

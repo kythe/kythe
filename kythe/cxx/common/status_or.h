@@ -68,7 +68,7 @@ class ABSL_MUST_USE_RESULT StatusOr final {
   const Status& status() const { return this->status_; }
   Status status() { return this->status_; }
 #else
-  const Status& status() const & { return this->status_; }
+  const Status& status() const& { return this->status_; }
   Status status() && { return std::move(this->status_); }
 #endif
 

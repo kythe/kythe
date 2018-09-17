@@ -22,8 +22,8 @@
 #include <unordered_set>
 
 #include "IndexerLibrarySupport.h"
-#include "clang/AST/Expr.h"
 #include "absl/strings/string_view.h"
+#include "clang/AST/Expr.h"
 
 namespace kythe {
 

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "absl/memory/memory.h"
 #include "kythe/cxx/common/net_client.h"
+#include "absl/memory/memory.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
@@ -46,7 +46,7 @@ void TestNodeRequest() {
 }
 }  // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::ParseCommandLineFlags(&argc, &argv, true);

@@ -49,9 +49,10 @@ class ActionFactory : public clang::tooling::ToolAction {
 
   /// \copydoc clang::tooling::ToolAction::runInvocation
   bool runInvocation(
-      std::shared_ptr<clang::CompilerInvocation> invocation, clang::FileManager *files,
+      std::shared_ptr<clang::CompilerInvocation> invocation,
+      clang::FileManager* files,
       std::shared_ptr<clang::PCHContainerOperations> pch_container_ops,
-      clang::DiagnosticConsumer *diagnostics) override;
+      clang::DiagnosticConsumer* diagnostics) override;
 
  private:
   friend class Action;
@@ -65,7 +66,7 @@ class ActionFactory : public clang::tooling::ToolAction {
   /// \brief Try to find a `FileTracker` for the given path.
   /// \param filename the path to search for
   /// \return the old `FileTracker` for `filename`, or a new one.
-  FileTracker *GetOrCreateTracker(llvm::StringRef filename);
+  FileTracker* GetOrCreateTracker(llvm::StringRef filename);
 
   /// \brief Use the rewritten data stored in `file_trackers_` and the
   /// builtin headers in `builtin_headers_` as input.
@@ -73,11 +74,11 @@ class ActionFactory : public clang::tooling::ToolAction {
   /// \param remapped_buffers A vector of (path, buffer) to fill. It does
   /// not gain ownership of the `llvm::MemoryBuffer` instances.
   void RemapFiles(llvm::StringRef resource_dir,
-                  std::vector<std::pair<std::string, llvm::MemoryBuffer *>>
-                      *remapped_buffers);
+                  std::vector<std::pair<std::string, llvm::MemoryBuffer*>>*
+                      remapped_buffers);
 
   /// \brief Maps paths to `FileTracker` instances.
-  typedef llvm::StringMap<FileTracker *> FileTrackerMap;
+  typedef llvm::StringMap<FileTracker*> FileTrackerMap;
 
   /// Maps full paths (as seen by Clang) to `FileTracker` instances.
   FileTrackerMap file_trackers_;
