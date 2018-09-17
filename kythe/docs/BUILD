@@ -65,5 +65,4 @@ asciidoc(
 asciidoc(
     name = "schema-overview",
     src = "schema-overview.txt",
-    tags = ["manual"],
 )

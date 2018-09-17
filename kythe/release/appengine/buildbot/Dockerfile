@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:jessie
+FROM debian:stretch
 
-RUN echo "deb http://ftp.debian.org/debian jessie-backports main" >>/etc/apt/sources.list
 RUN echo "deb http://ftp.debian.org/debian stretch-backports main" >>/etc/apt/sources.list
 
 RUN apt-get update && \
@@ -26,14 +25,14 @@ RUN apt-get update && \
       python python-dev python-pip wget git \
       # Required by go tool build of Kythe
       libleveldb-dev \
+      # Bazel's fallback @local_jdk
+      openjdk-8-jdk \
       # Bazel dependencies
       pkg-config zip g++ zlib1g-dev unzip \
       # Kythe C++ dependencies
-      gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.5 bison \
+      cmake gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.8 bison \
       # Kythe misc dependencies
       asciidoc source-highlight graphviz curl parallel && \
-    # Bazel's fallback @local_jdk
-    apt-get -t jessie-backports install -y openjdk-8-jdk && \
     apt-get clean
 
 # Install Buildbot
@@ -44,13 +43,8 @@ RUN pip install --upgrade six service_identity pyasn1 cryptography pyopenssl
 RUN pip install buildbot-worker
 
 # Kythe symlink for Kythe to pickup clang installation
-RUN ln -s /usr/bin/clang-3.5 /usr/bin/clang && \
-    ln -s /usr/bin/clang++-3.5 /usr/bin/clang++
-
-# We require a newer cmake than in Debian Jessie
-RUN wget https://cmake.org/files/v3.11/cmake-3.11.3-Linux-x86_64.sh && \
-    sh cmake*.sh --skip-license && \
-    rm cmake*.sh
+RUN ln -s /usr/bin/clang-3.8 /usr/bin/clang && \
+    ln -s /usr/bin/clang++-3.8 /usr/bin/clang++
 
 # Install Go
 RUN wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz && \
