@@ -231,6 +231,26 @@ const clang::Decl *FindImplicitDeclForStmt(
   }
   return nullptr;
 }
+
+// Overrides the type from `TSI` with that in `Type` restoring the original upon
+// destruction.
+class ScopedTypeOverride {
+ public:
+  explicit ScopedTypeOverride(clang::TypeSourceInfo *TSI, clang::QualType Type)
+      : tsi_(TSI), type_(tsi_->getType()) {
+    tsi_->overrideType(Type);
+  }
+
+  ~ScopedTypeOverride() { tsi_->overrideType(type_); }
+
+  // Neither copyable nor movable.
+  ScopedTypeOverride(const ScopedTypeOverride &) = delete;
+  ScopedTypeOverride &operator=(const ScopedTypeOverride) = delete;
+
+ private:
+  clang::TypeSourceInfo *tsi_;
+  clang::QualType type_;
+};
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl *decl) {
@@ -1029,10 +1049,11 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
   // cleanly handle deduced types.
   // TODO(shahms): Figure out why these aren't the same for the deduced case
   // and possibly fix it upstream.
+  absl::optional<ScopedTypeOverride> type_override;
   if (auto *D = dyn_cast<clang::DeclaratorDecl>(Decl)) {
-    if (auto* TSI = D->getTypeSourceInfo()) {
+    if (auto *TSI = D->getTypeSourceInfo()) {
       if (TSI->getType() != D->getType()) {
-        TSI->overrideType(D->getType());
+        type_override.emplace(TSI, D->getType());
       }
     }
   }
@@ -4144,6 +4165,25 @@ IndexerASTVisitor::BuildNodeIdForQualifiedTypeLoc(clang::QualifiedTypeLoc TL) {
   return absl::nullopt;
 }
 
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForConstantArrayTypeLoc(
+    clang::ConstantArrayTypeLoc TL) {
+  if (auto ElementID = BuildNodeIdForType(TL.getElementLoc(), EmitRanges::No)) {
+    // TODO(zarko): Record size expression.
+    return ApplyBuiltinTypeConstructor("carr", *ElementID);
+  }
+  return absl::nullopt;
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForIncompleteArrayTypeLoc(
+    clang::IncompleteArrayTypeLoc TL) {
+  if (auto ElementID = BuildNodeIdForType(TL.getElementLoc(), EmitRanges::No)) {
+    return ApplyBuiltinTypeConstructor("iarr", *ElementID);
+  }
+  return absl::nullopt;
+}
+
 const clang::TemplateTypeParmDecl* IndexerASTVisitor::FindTemplateTypeParmTypeLocDecl(clang::TemplateTypeParmTypeLoc TL) const {
   // Either the `TemplateTypeParm` will link directly to a relevant
   // `TemplateTypeParmDecl` or (particularly in the case of canonicalized
@@ -4310,39 +4350,16 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                         TypeLoc.castAs<QualifiedTypeLoc>()));
       UNSUPPORTED_CLANG_TYPE(Complex);
       UNSUPPORTED_CLANG_TYPE(MemberPointer);
-    case TypeLoc::ConstantArray: {
-      const auto &T = TypeLoc.castAs<ConstantArrayTypeLoc>();
-      const auto *DT = dyn_cast<ConstantArrayType>(PT);
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto ElementID = BuildNodeIdForType(T.getElementLoc(),
-                                          DT ? DT->getElementType().getTypePtr()
-                                             : T.getElementLoc().getTypePtr(),
-                                          EmitRanges);
-      if (!ElementID) {
-        return absl::nullopt;
-      }
-      if (TypeAlreadyBuilt) {
-        break;
-      }
-      // TODO(zarko): Record size expression.
-      ID = ApplyBuiltinTypeConstructor("carr", *ElementID);
-    } break;
-    case TypeLoc::IncompleteArray: {
-      const auto &T = TypeLoc.castAs<IncompleteArrayTypeLoc>();
-      const auto *DT = dyn_cast<IncompleteArrayType>(PT);
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto ElementID = BuildNodeIdForType(T.getElementLoc(),
-                                          DT ? DT->getElementType().getTypePtr()
-                                             : T.getElementLoc().getTypePtr(),
-                                          EmitRanges);
-      if (!ElementID) {
-        return absl::nullopt;
-      }
-      if (TypeAlreadyBuilt) {
-        break;
-      }
-      ID = ApplyBuiltinTypeConstructor("iarr", *ElementID);
-    } break;
+    case TypeLoc::ConstantArray:
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] = BuildNodeIdForConstantArrayTypeLoc(
+                        TypeLoc.castAs<ConstantArrayTypeLoc>()));
+    case TypeLoc::IncompleteArray:
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] = BuildNodeIdForIncompleteArrayTypeLoc(
+                        TypeLoc.castAs<IncompleteArrayTypeLoc>()));
       UNSUPPORTED_CLANG_TYPE(VariableArray);
     case TypeLoc::DependentSizedArray: {
       const auto &T = TypeLoc.castAs<DependentSizedArrayTypeLoc>();
