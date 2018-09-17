@@ -4380,29 +4380,11 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                  : (TypeNodes[Key] = BuildNodeIdForIncompleteArrayTypeLoc(
                         TypeLoc.castAs<IncompleteArrayTypeLoc>()));
       UNSUPPORTED_CLANG_TYPE(VariableArray);
-    case TypeLoc::DependentSizedArray: {
-      const auto& T = TypeLoc.castAs<DependentSizedArrayTypeLoc>();
-      const auto* DT = dyn_cast<DependentSizedArrayType>(PT);
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      auto ElementID = BuildNodeIdForType(T.getElementLoc(),
-                                          DT ? DT->getElementType().getTypePtr()
-                                             : T.getElementLoc().getTypePtr(),
-                                          EmitRanges);
-      if (!ElementID) {
-        return absl::nullopt;
-      }
-      if (TypeAlreadyBuilt) {
-        break;
-      }
-      if (auto ExpressionID = BuildNodeIdForExpr(
-              DT ? DT->getSizeExpr() : T.getSizeExpr(), EmitRanges)) {
-        ID = Observer.recordTappNode(
-            Observer.getNodeIdForBuiltinType("darr"),
-            {{&ElementID.value(), &ExpressionID.value()}}, 2);
-      } else {
-        ID = ApplyBuiltinTypeConstructor("darr", *ElementID);
-      }
-    } break;
+    case TypeLoc::DependentSizedArray:
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] = BuildNodeIdForDependentSizedArrayTypeLoc(
+                        TypeLoc.castAs<DependentSizedArrayTypeLoc>()));
       UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
       UNSUPPORTED_CLANG_TYPE(Vector);
       UNSUPPORTED_CLANG_TYPE(ExtVector);
