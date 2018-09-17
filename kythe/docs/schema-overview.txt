@@ -20,9 +20,9 @@ Kythe Schema Overview
 :priority: 999
 
 This document is intended as a high-level overview of the
-http://kythe.io/docs/schema/[Kythe graph schema], and explains some of the
+https://kythe.io/docs/schema/[Kythe graph schema], and explains some of the
 core features that make up the overall graph structure. It does not replace the
-http://kythe.io/docs/schema/[Kythe graph schema] doc, which should still be
+https://kythe.io/docs/schema/[Kythe graph schema] doc, which should still be
 used as a canonical reference. Instead, this is intended to help orient the
 reader with what various pieces of the schema mean, and how to interpret it.
 
@@ -72,25 +72,25 @@ https://github.com/creachadair/kythe/blob/master/kythe/go/platform/kcd/memdb/mem
 where a `Revisions` function is implemented for the (concrete) `DB` type in
 that file.
 
-A **fact** is a named string value associated with a node. The
-http://kythe.io/docs/schema/#_common_node_facts[Kythe schema], defines the
+A **fact** is a named bytestring value associated with a node. The
+https://kythe.io/docs/schema/#_common_node_facts[Kythe schema], defines the
 names and expected formats for various facts; for example the `doc/uri` fact is
 commonly used to attach a reference to some externally-located documentation to
 a node in the graph.
 
-An **edge** is a directed, labelled relationship between two nodes. In the above
-example, we would paint an edge from the anchor at `Revisions` to the semantic
-node for its `function` node, with the `defines/binding` label. This indicates
-that the anchor is a "definition" for the function (specifically, one that binds
-it to an identifier).
+An **edge** is a directed, labelled relationship between two nodes. In the
+above example, we would paint a `define/binding` edge from the anchor at
+`Revisions` to the `function` semantic node. This indicates that the anchor is
+a "definition" for the function (specifically, one that binds it to an
+identifier).
 
 NOTE: In the diagrams below, not all the possible anchors, semantic nodes,
-facts, or edges are shown, just a few examples. We will continue to refer back
-to the same `kcd.go` file where possible.
+facts, or edges are shown. We will continue to refer back to the same `kcd.go`
+file where possible.
 
 == [[Examples]] Edge and Node Examples
 
-Now we will explain some of the basic edges and nodes that you'll see in a kythe
+Now we will explain some of the basic edges and nodes that you'll see in a Kythe
 schema.
 
 === [[FeatureJumpToDef]] Jump-to-Definition
@@ -151,7 +151,7 @@ There may in general be more than one definition site for a given semantic node,
 and in some cases there may be no definition at all. When a unique definition
 does exist we call it the **target definition** of the node.
 
-An example with no definition sites is an implicit constructor in Java: If you
+An example with no definition sites is an implicit constructor in Java. If you
 define a class and do not write a constructor, the compiler writes one for you,
 and it participates in cross-references, but it does not have a location in the
 source text of your program.
@@ -316,7 +316,7 @@ digraph FuncyParam {
   func -> p0 [label="param.0"]
   func -> p1 [label="param.1"]
   func -> p2 [label="param.2"]
-  p0def [label="'_'\nkcd.go";shape=ellipse]
+  p0def [label="'ctx'\nkcd.go";shape=ellipse]
   p1def [label="'filter'\nkcd.go";shape=ellipse]
   p2def [label="'f'\nkcd.go";shape=ellipse]
   p0def -> p0 [label="defines/binding"]
@@ -330,12 +330,8 @@ digraph FuncyParam {
 [source,Go]
 ----
 type Reader interface {
-  Revisions(_ context.Context, filter *RevisionsFilter, f func(Revision) error) error
+  Revisions(ctx context.Context, filter *RevisionsFilter, f func(Revision) error) error
 ----
-
-NOTE: In Go, the blank (`_`) parameter name is used when the syntax requires the
-parameter to be named, but the parameter itself is unused in the body of the
-function.
 
 Back to `kcd.go` `Revisions` method, we see how its function parameters work in
 the Kythe schema. We see the same old anchor and semantic node definition for
@@ -343,7 +339,7 @@ the Kythe schema. We see the same old anchor and semantic node definition for
 for the three parameters to the function (`_`, `filter`, and `f`) with the
 expected `defines/binding` edges. Finally, each of the function param nodes is
 pointed to from the `Revisions` node with a
-http://kythe.io/docs/schema/#param[`param.N`] edge, indicating that they are
+https://kythe.io/docs/schema/#param[`param.N`] edge, indicating that they are
 function parameters for the given indices.
 
 === [[FeatureDoc]] Documentation
