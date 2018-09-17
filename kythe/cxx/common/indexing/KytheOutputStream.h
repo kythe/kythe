@@ -33,14 +33,14 @@ struct VNameRef {
   absl::string_view root;
   absl::string_view path;
   absl::string_view language;
-  explicit VNameRef(const proto::VName &vname)
+  explicit VNameRef(const proto::VName& vname)
       : signature(vname.signature().data(), vname.signature().size()),
         corpus(vname.corpus().data(), vname.corpus().size()),
         root(vname.root().data(), vname.root().size()),
         path(vname.path().data(), vname.path().size()),
         language(vname.language().data(), vname.language().size()) {}
   VNameRef() {}
-  void Expand(proto::VName *vname) const {
+  void Expand(proto::VName* vname) const {
     vname->mutable_signature()->assign(signature.data(), signature.size());
     vname->mutable_corpus()->assign(corpus.data(), corpus.size());
     vname->mutable_root()->assign(root.data(), root.size());
@@ -50,12 +50,12 @@ struct VNameRef {
 };
 /// A collection of references to the components of a single Kythe fact.
 struct FactRef {
-  const VNameRef *source;
+  const VNameRef* source;
   absl::string_view fact_name;
   absl::string_view fact_value;
   /// Overwrites all of the fields in `entry` that can differ between single
   /// facts.
-  void Expand(proto::Entry *entry) const {
+  void Expand(proto::Entry* entry) const {
     source->Expand(entry->mutable_source());
     entry->mutable_fact_name()->assign(fact_name.data(), fact_name.size());
     entry->mutable_fact_value()->assign(fact_value.data(), fact_value.size());
@@ -63,12 +63,12 @@ struct FactRef {
 };
 /// A collection of references to the components of a single Kythe edge.
 struct EdgeRef {
-  const VNameRef *source;
+  const VNameRef* source;
   absl::string_view edge_kind;
-  const VNameRef *target;
+  const VNameRef* target;
   /// Overwrites all of the fields in `entry` that can differ between edges
   /// without ordinals.
-  void Expand(proto::Entry *entry) const {
+  void Expand(proto::Entry* entry) const {
     source->Expand(entry->mutable_source());
     target->Expand(entry->mutable_target());
     entry->mutable_edge_kind()->assign(edge_kind.data(), edge_kind.size());
@@ -77,13 +77,13 @@ struct EdgeRef {
 /// A collection of references to the components of a single Kythe edge with an
 /// ordinal.
 struct OrdinalEdgeRef {
-  const VNameRef *source;
+  const VNameRef* source;
   absl::string_view edge_kind;
-  const VNameRef *target;
+  const VNameRef* target;
   uint32_t ordinal;
   /// Overwrites all of the fields in `entry` that can differ between edges with
   /// ordinals.
-  void Expand(proto::Entry *entry) const {
+  void Expand(proto::Entry* entry) const {
     char digits[12];  // strlen("4294967295") + 2
     int dot_ordinal_length = ::sprintf(digits, ".%u", ordinal);
     entry->mutable_edge_kind()->clear();
@@ -98,9 +98,9 @@ struct OrdinalEdgeRef {
 // Interface for receiving Kythe data.
 class KytheOutputStream {
  public:
-  virtual void Emit(const FactRef &fact) = 0;
-  virtual void Emit(const EdgeRef &edge) = 0;
-  virtual void Emit(const OrdinalEdgeRef &edge) = 0;
+  virtual void Emit(const FactRef& fact) = 0;
+  virtual void Emit(const EdgeRef& edge) = 0;
+  virtual void Emit(const OrdinalEdgeRef& edge) = 0;
   /// Add a buffer to the buffer stack to group facts, edges, and buffers
   /// together.
   virtual void PushBuffer() {}

@@ -41,9 +41,9 @@ class HashCache {
   static constexpr size_t kHashSize = SHA256_DIGEST_LENGTH;
   virtual ~HashCache() {}
   /// \brief Notes that `hash` was seen.
-  virtual void RegisterHash(const Hash &hash) {}
+  virtual void RegisterHash(const Hash& hash) {}
   /// \return true if `hash` has been seen before.
-  virtual bool SawHash(const Hash &hash) { return false; }
+  virtual bool SawHash(const Hash& hash) { return false; }
   /// \brief Sets guidelines about the amount of source data per hash.
   /// \param min_size no fewer than this many bytes should be hashed.
   /// \param max_size no more than this many bytes should be hashed.
@@ -65,30 +65,30 @@ class MemcachedHashCache : public HashCache {
   ~MemcachedHashCache() override;
 
   /// \brief Use a memcached instance (e.g. "--SERVER=foo:1234")
-  bool OpenMemcache(const std::string &spec);
+  bool OpenMemcache(const std::string& spec);
 
-  void RegisterHash(const Hash &hash) override;
+  void RegisterHash(const Hash& hash) override;
 
-  bool SawHash(const Hash &hash) override;
+  bool SawHash(const Hash& hash) override;
 
  private:
-  ::memcached_st *cache_ = nullptr;
+  ::memcached_st* cache_ = nullptr;
 };
 
 // Interface for receiving Kythe data.
 class KytheCachingOutput : public KytheOutputStream {
  public:
   /// \brief Use a given `HashCache` to deduplicate buffers.
-  virtual void UseHashCache(HashCache *cache) {}
+  virtual void UseHashCache(HashCache* cache) {}
   virtual ~KytheCachingOutput() {}
 };
 
 /// \brief An output stream that drops its output.
 class NullOutputStream : public KytheCachingOutput {
  public:
-  void Emit(const FactRef &fact) override {}
-  void Emit(const EdgeRef &edge) override {}
-  void Emit(const OrdinalEdgeRef &edge) override {}
+  void Emit(const FactRef& fact) override {}
+  void Emit(const EdgeRef& edge) override {}
+  void Emit(const OrdinalEdgeRef& edge) override {}
 };
 
 /// \brief Manages a stack of size-bounded buffers.
@@ -96,20 +96,20 @@ class BufferStack {
  public:
   /// \brief Hashes the buffer at the top of the stack, returning the result
   /// in `hash`.
-  void HashTop(HashCache::Hash *hash) const {
+  void HashTop(HashCache::Hash* hash) const {
     assert(buffers_ != nullptr);
     ::SHA256_CTX sha;
     ::SHA256_Init(&sha);
-    for (Buffer *joined = buffers_; joined; joined = joined->joined) {
+    for (Buffer* joined = buffers_; joined; joined = joined->joined) {
       ::SHA256_Update(&sha, joined->slab.data(), joined->slab.size());
     }
-    ::SHA256_Final(reinterpret_cast<unsigned char *>(hash), &sha);
+    ::SHA256_Final(reinterpret_cast<unsigned char*>(hash), &sha);
   }
   /// \brief Copies the buffer at the top of the stack to some `stream`.
   void CopyTopToStream(
-      google::protobuf::io::ZeroCopyOutputStream *stream) const {
-    for (Buffer *joined = buffers_; joined; joined = joined->joined) {
-      void *proto_data;
+      google::protobuf::io::ZeroCopyOutputStream* stream) const {
+    for (Buffer* joined = buffers_; joined; joined = joined->joined) {
+      void* proto_data;
       int proto_size;
       size_t write_at = 0;
       while (write_at < joined->slab.size()) {
@@ -131,18 +131,18 @@ class BufferStack {
   /// \brief Allocates space for writing data to the buffer on the top of
   /// the stack.
   /// \return A pointer to `bytes` bytes of storage.
-  unsigned char *WriteToTop(size_t bytes) {
+  unsigned char* WriteToTop(size_t bytes) {
     assert(buffers_);
     size_t insertion_point = buffers_->slab.size();
     buffers_->slab.resize(insertion_point + bytes);
-    unsigned char *buffer = &buffers_->slab[insertion_point];
+    unsigned char* buffer = &buffers_->slab[insertion_point];
     buffers_->joined_size += bytes;
     return buffer;
   }
   /// \brief Pushes a new buffer to the stack.
   /// \param expected_size An estimate of the buffer's maximum size.
   void Push(size_t expected_size) {
-    Buffer *buffer = free_buffers_;
+    Buffer* buffer = free_buffers_;
     if (buffer) {
       free_buffers_ = buffer->previous;
     } else {
@@ -163,13 +163,13 @@ class BufferStack {
   /// \brief Pops the buffer from the top of the stack.
   void Pop() {
     assert(buffers_);
-    Buffer *joined = buffers_->joined;
+    Buffer* joined = buffers_->joined;
     while (joined) {
       joined->previous = free_buffers_;
       free_buffers_ = joined;
       joined = joined->joined;
     }
-    Buffer *to_free = buffers_;
+    Buffer* to_free = buffers_;
     buffers_ = to_free->previous;
     to_free->previous = free_buffers_;
     free_buffers_ = to_free;
@@ -192,9 +192,9 @@ class BufferStack {
         buffers_->previous->joined_size + buffers_->joined_size >= max_size) {
       return false;
     }
-    Buffer *to_merge = buffers_;
-    Buffer *merge_into = buffers_->previous;
-    Buffer *merge_into_join_tail = merge_into;
+    Buffer* to_merge = buffers_;
+    Buffer* merge_into = buffers_->previous;
+    Buffer* merge_into_join_tail = merge_into;
     while (merge_into_join_tail->joined) {
       merge_into_join_tail = merge_into_join_tail->joined;
     }
@@ -209,7 +209,7 @@ class BufferStack {
       Pop();
     }
     while (free_buffers_) {
-      Buffer *previous = free_buffers_->previous;
+      Buffer* previous = free_buffers_->previous;
       delete free_buffers_;
       free_buffers_ = previous;
     }
@@ -222,21 +222,21 @@ class BufferStack {
     /// `size` plus the `size` of all joined buffers.
     size_t joined_size;
     /// The previous buffer on the stack or the freelist.
-    Buffer *previous;
+    Buffer* previous;
     /// A link to the next buffer that was merged with this one.
-    Buffer *joined;
+    Buffer* joined;
   };
   /// The stack of open buffers.
-  Buffer *buffers_ = nullptr;
+  Buffer* buffers_ = nullptr;
   /// Inactive buffers ready for allocation.
-  Buffer *free_buffers_ = nullptr;
+  Buffer* free_buffers_ = nullptr;
 };
 
 // A `KytheCachingOutputStream` that records `Entry` instances to a
 // `FileOutputStream`.
 class FileOutputStream : public KytheCachingOutput {
  public:
-  explicit FileOutputStream(google::protobuf::io::FileOutputStream *stream)
+  explicit FileOutputStream(google::protobuf::io::FileOutputStream* stream)
       : stream_(stream) {
     edge_entry_.set_fact_name("/");
     UseHashCache(&default_cache_);
@@ -247,19 +247,19 @@ class FileOutputStream : public KytheCachingOutput {
   void set_flush_after_each_entry(bool value) {
     flush_after_each_entry_ = value;
   }
-  void Emit(const FactRef &fact) override {
+  void Emit(const FactRef& fact) override {
     fact.Expand(&fact_entry_);
     EnqueueEntry(fact_entry_);
   }
-  void Emit(const EdgeRef &edge) override {
+  void Emit(const EdgeRef& edge) override {
     edge.Expand(&edge_entry_);
     EnqueueEntry(edge_entry_);
   }
-  void Emit(const OrdinalEdgeRef &edge) override {
+  void Emit(const OrdinalEdgeRef& edge) override {
     edge.Expand(&edge_entry_);
     EnqueueEntry(edge_entry_);
   }
-  void UseHashCache(HashCache *cache) override {
+  void UseHashCache(HashCache* cache) override {
     cache_ = cache;
     min_size_ = cache_->min_size();
     max_size_ = cache_->max_size();
@@ -286,7 +286,7 @@ class FileOutputStream : public KytheCachingOutput {
 
  private:
   /// The output stream to write on.
-  google::protobuf::io::FileOutputStream *stream_;
+  google::protobuf::io::FileOutputStream* stream_;
   /// A prototypical Kythe fact, used only to build other Kythe facts.
   proto::Entry fact_entry_;
   /// A prototypical Kythe edge, used only to build same.
@@ -297,7 +297,7 @@ class FileOutputStream : public KytheCachingOutput {
   /// Emits all data from the top buffer (if the hash cache says it's relevant).
   void EmitAndReleaseTopBuffer();
   /// Emits an entry or adds it to a buffer (if the stack is nonempty).
-  void EnqueueEntry(const proto::Entry &entry);
+  void EnqueueEntry(const proto::Entry& entry);
   /// The minimum size a buffer must be to get emitted.
   size_t min_size_ = 0;
   /// The maximum size a buffer can reach before it's split.
@@ -306,7 +306,7 @@ class FileOutputStream : public KytheCachingOutput {
   /// (when the buffer stack is empty).
   bool flush_after_each_entry_;
   /// The active hash cache;
-  HashCache *cache_;
+  HashCache* cache_;
   /// The default hash cache.
   HashCache default_cache_;
   /// Whether we should dump stats to standard out on destruction.

@@ -46,9 +46,9 @@ class JsonClient {
   /// \param request The document to issue as the request.
   /// \param response The document to fill with the response.
   /// \return true on success and false on failure
-  bool Request(const std::string &uri, bool post,
-               const rapidjson::Document &request,
-               rapidjson::Document *response);
+  bool Request(const std::string& uri, bool post,
+               const rapidjson::Document& request,
+               rapidjson::Document* response);
 
   /// \brief Issue a request.
   /// \param uri The URI to request.
@@ -56,8 +56,8 @@ class JsonClient {
   /// \param request The string to issue as the request.
   /// \param response The document to fill with the response.
   /// \return true on success and false on failure
-  bool Request(const std::string &uri, bool post, const std::string &request,
-               rapidjson::Document *response);
+  bool Request(const std::string& uri, bool post, const std::string& request,
+               rapidjson::Document* response);
 
   /// \brief Issue a request.
   /// \param uri The URI to request.
@@ -65,17 +65,17 @@ class JsonClient {
   /// \param request The string to issue as the request.
   /// \param response The raw string to fill with the response.
   /// \return true on success and false on failure
-  bool Request(const std::string &uri, bool post, const std::string &request,
-               std::string *response);
+  bool Request(const std::string& uri, bool post, const std::string& request,
+               std::string* response);
 
  private:
-  static size_t CurlWriteCallback(void *data, size_t size, size_t nmemb,
-                                  void *user);
-  static size_t CurlReadCallback(void *data, size_t size, size_t nmemb,
-                                 void *user);
+  static size_t CurlWriteCallback(void* data, size_t size, size_t nmemb,
+                                  void* user);
+  static size_t CurlReadCallback(void* data, size_t size, size_t nmemb,
+                                 void* user);
 
   /// The network context.
-  CURL *curl_;
+  CURL* curl_;
   /// A buffer used for communications.
   std::string to_send_;
   /// Where we are in the buffer.
@@ -94,8 +94,8 @@ class XrefsClient {
   /// \param reply On success, will be merged with the reply.
   /// \param error_text On failure, will be set to an error description.
   /// \return true on success, false on failure.
-  virtual bool Nodes(const proto::NodesRequest &request,
-                     proto::NodesReply *reply, std::string *error_text) {
+  virtual bool Nodes(const proto::NodesRequest& request,
+                     proto::NodesReply* reply, std::string* error_text) {
     if (error_text) {
       *error_text = "Unimplemented.";
     }
@@ -107,8 +107,8 @@ class XrefsClient {
   /// \param reply On success, will be merged with the reply.
   /// \param error_text On failure, will be set to an error description.
   /// \return true on success, false on failure.
-  virtual bool Edges(const proto::EdgesRequest &request,
-                     proto::EdgesReply *reply, std::string *error_text) {
+  virtual bool Edges(const proto::EdgesRequest& request,
+                     proto::EdgesReply* reply, std::string* error_text) {
     if (error_text) {
       *error_text = "Unimplemented.";
     }
@@ -120,9 +120,9 @@ class XrefsClient {
   /// \param reply On success, will be merged with the reply.
   /// \param error_text On failure, will be set to an error description.
   /// \return true on success, false on failure.
-  virtual bool Decorations(const proto::DecorationsRequest &request,
-                           proto::DecorationsReply *reply,
-                           std::string *error_text) {
+  virtual bool Decorations(const proto::DecorationsRequest& request,
+                           proto::DecorationsReply* reply,
+                           std::string* error_text) {
     if (error_text) {
       *error_text = "Unimplemented.";
     }
@@ -134,9 +134,9 @@ class XrefsClient {
   /// \param reply On success, will be merged with the reply.
   /// \param error_text On failure, will be set to an error description.
   /// \return true on success, false on failure.
-  virtual bool Documentation(const proto::DocumentationRequest &request,
-                             proto::DocumentationReply *reply,
-                             std::string *error_text) {
+  virtual bool Documentation(const proto::DocumentationRequest& request,
+                             proto::DocumentationReply* reply,
+                             std::string* error_text) {
     if (error_text) {
       *error_text = "Unimplemented.";
     }
@@ -150,35 +150,35 @@ class XrefsJsonClient : public XrefsClient {
   /// \param client The JsonClient to use.
   /// \param base_uri The base URI of the service ("http://localhost:8080")
   XrefsJsonClient(std::unique_ptr<JsonClient> client,
-                  const std::string &base_uri)
+                  const std::string& base_uri)
       : client_(std::move(client)),
         nodes_uri_(base_uri + "/nodes?proto=1"),
         edges_uri_(base_uri + "/edges?proto=1"),
         decorations_uri_(base_uri + "/decorations?proto=1"),
         documentation_uri_(base_uri + "/documentation?proto=1") {}
-  bool Nodes(const proto::NodesRequest &request, proto::NodesReply *reply,
-             std::string *error_text) override {
+  bool Nodes(const proto::NodesRequest& request, proto::NodesReply* reply,
+             std::string* error_text) override {
     return Roundtrip(nodes_uri_, request, reply, error_text);
   }
-  bool Edges(const proto::EdgesRequest &request, proto::EdgesReply *reply,
-             std::string *error_text) override {
+  bool Edges(const proto::EdgesRequest& request, proto::EdgesReply* reply,
+             std::string* error_text) override {
     return Roundtrip(edges_uri_, request, reply, error_text);
   }
-  bool Decorations(const proto::DecorationsRequest &request,
-                   proto::DecorationsReply *reply,
-                   std::string *error_text) override {
+  bool Decorations(const proto::DecorationsRequest& request,
+                   proto::DecorationsReply* reply,
+                   std::string* error_text) override {
     return Roundtrip(decorations_uri_, request, reply, error_text);
   }
-  bool Documentation(const proto::DocumentationRequest &request,
-                     proto::DocumentationReply *reply,
-                     std::string *error_text) override {
+  bool Documentation(const proto::DocumentationRequest& request,
+                     proto::DocumentationReply* reply,
+                     std::string* error_text) override {
     return Roundtrip(documentation_uri_, request, reply, error_text);
   }
 
  private:
-  bool Roundtrip(const std::string &endpoint,
-                 const google::protobuf::Message &request,
-                 google::protobuf::Message *response, std::string *error_text);
+  bool Roundtrip(const std::string& endpoint,
+                 const google::protobuf::Message& request,
+                 google::protobuf::Message* response, std::string* error_text);
 
   std::unique_ptr<JsonClient> client_;
   std::string nodes_uri_;

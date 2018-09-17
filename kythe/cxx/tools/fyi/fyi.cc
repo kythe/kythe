@@ -59,7 +59,7 @@ class FileTracker {
   /// happend).
   ///
   /// The object shares its lifetime with this FileTracker.
-  llvm::MemoryBuffer *memory_buffer() { return memory_buffer_.get(); }
+  llvm::MemoryBuffer* memory_buffer() { return memory_buffer_.get(); }
 
   llvm::StringRef filename() { return filename_; }
 
@@ -68,8 +68,8 @@ class FileTracker {
     if (memory_buffer_backing_store_[active_buffer_].empty()) {
       return "";
     }
-    auto *store = &memory_buffer_backing_store_[active_buffer_];
-    const char *start = store->data();
+    auto* store = &memory_buffer_backing_store_[active_buffer_];
+    const char* start = store->data();
     // Why the - 1?: MemoryBufferBackingStore ends with a NUL terminator.
     return llvm::StringRef(start, store->size() - 1);
   }
@@ -89,7 +89,7 @@ class FileTracker {
   /// \param is_angled whether angle brackets were used
   /// \param hash_location the source location of the include's \#
   /// \param end_location the source location following the include
-  void NextInclude(clang::SourceManager *source_manager,
+  void NextInclude(clang::SourceManager* source_manager,
                    llvm::StringRef canonical_path, llvm::StringRef uttered_path,
                    bool IsAngled, clang::SourceLocation hash_location,
                    clang::SourceLocation end_location) {
@@ -102,7 +102,7 @@ class FileTracker {
   /// \brief Rewrite the associated source file with our tentative suggestions.
   /// \param rewriter a valid Rewriter.
   /// \return true if changes will be made, false otherwise.
-  bool Rewrite(clang::Rewriter *rewriter) {
+  bool Rewrite(clang::Rewriter* rewriter) {
     if (state_ != State::kBusy) {
       return false;
     }
@@ -128,18 +128,18 @@ class FileTracker {
   /// allocated buffers.
   /// \param file_id the current ID of the file we are rewriting
   /// \param rewriter a valid Rewriter.
-  void CommitRewrite(clang::FileID file_id, clang::Rewriter *rewriter) {
+  void CommitRewrite(clang::FileID file_id, clang::Rewriter* rewriter) {
     assert(active_buffer_ < 2);
     can_undo_ = true;
     active_buffer_ = 1 - active_buffer_;
-    auto *store = &memory_buffer_backing_store_[active_buffer_];
-    const clang::RewriteBuffer *buffer = rewriter->getRewriteBufferFor(file_id);
+    auto* store = &memory_buffer_backing_store_[active_buffer_];
+    const clang::RewriteBuffer* buffer = rewriter->getRewriteBufferFor(file_id);
     store->clear();
     llvm::raw_svector_ostream buffer_stream(*store);
     buffer->write(buffer_stream);
     // Required null terminator.
     store->push_back(0);
-    const char *start = store->data();
+    const char* start = store->data();
     llvm::StringRef data(start, store->size() - 1);
     memory_buffer_ = llvm::MemoryBuffer::getMemBuffer(data);
   }
@@ -168,13 +168,13 @@ class FileTracker {
   /// \brief Decode and possibly take action on a diagnostic received during
   /// a compilation (sub)pass.
   /// \param diagnostic The diagnostic to handle.
-  void HandleStoredDiagnostic(clang::StoredDiagnostic &diagnostic) {
+  void HandleStoredDiagnostic(clang::StoredDiagnostic& diagnostic) {
     pass_had_errors_ = true;
   }
 
   /// \brief Add an include to the set of includes to try.
   /// \param include_path The include path to try (as a quoted include).
-  void TryInclude(const std::string &include_path) {
+  void TryInclude(const std::string& include_path) {
     if (!tried_.count(include_path)) {
       untried_.insert(include_path);
     }
@@ -257,7 +257,7 @@ class FileTracker {
 class PreprocessorHooks : public clang::PPCallbacks {
  public:
   /// \param enclosing_pass The `Action` controlling this pass. Not owned.
-  explicit PreprocessorHooks(Action *enclosing_pass)
+  explicit PreprocessorHooks(Action* enclosing_pass)
       : enclosing_pass_(enclosing_pass), tracked_file_(nullptr) {}
 
   /// \copydoc PPCallbacks::FileChanged
@@ -275,35 +275,35 @@ class PreprocessorHooks : public clang::PPCallbacks {
   /// records details about each inclusion directive encountered (such as
   /// the name of the included file, the location of the directive, and so on).
   void InclusionDirective(clang::SourceLocation hash_location,
-                          const clang::Token &include_token,
+                          const clang::Token& include_token,
                           llvm::StringRef file_name, bool is_angled,
                           clang::CharSourceRange file_name_range,
-                          const clang::FileEntry *include_file,
+                          const clang::FileEntry* include_file,
                           llvm::StringRef search_path,
                           llvm::StringRef relative_path,
-                          const clang::Module *imported,
+                          const clang::Module* imported,
                           clang::SrcMgr::CharacteristicKind FileType) override;
 
  private:
   friend class Action;
 
   /// The current `Action`. Not owned.
-  Action *enclosing_pass_;
+  Action* enclosing_pass_;
 
   /// The `FileEntry` corresponding to the tracker in `enclosing_pass_`.
   /// Not owned.
-  const clang::FileEntry *tracked_file_;
+  const clang::FileEntry* tracked_file_;
 };
 
 /// \brief Manages a full parse and any subsequent reparses for a single file.
 class Action : public clang::ASTFrontendAction,
                public clang::ExternalSemaSource {
  public:
-  explicit Action(ActionFactory &factory) : factory_(factory) {}
+  explicit Action(ActionFactory& factory) : factory_(factory) {}
 
   /// \copydoc ASTFrontendAction::BeginInvocation
-  bool BeginInvocation(clang::CompilerInstance &CI) override {
-    auto *pp_opts = &CI.getPreprocessorOpts();
+  bool BeginInvocation(clang::CompilerInstance& CI) override {
+    auto* pp_opts = &CI.getPreprocessorOpts();
     pp_opts->RetainRemappedFileBuffers = true;
     pp_opts->AllowPCHWithCompilerErrors = true;
     factory_.RemapFiles(CI.getHeaderSearchOpts().ResourceDir,
@@ -313,7 +313,7 @@ class Action : public clang::ASTFrontendAction,
 
   /// \copydoc ASTFrontendAction::CreateASTConsumer
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
-      clang::CompilerInstance &compiler, llvm::StringRef in_file) override {
+      clang::CompilerInstance& compiler, llvm::StringRef in_file) override {
     tracker_ = factory_.GetOrCreateTracker(in_file);
     // Don't bother starting a new pass if the tracker is finished.
     if (tracker_->state() == FileTracker::State::kBusy) {
@@ -335,14 +335,14 @@ class Action : public clang::ASTFrontendAction,
       return;
     }
 
-    clang::CompilerInstance *compiler = &getCompilerInstance();
+    clang::CompilerInstance* compiler = &getCompilerInstance();
     assert(!compiler->hasSema() && "CI already has Sema");
 
     if (hasCodeCompletionSupport() &&
         !compiler->getFrontendOpts().CodeCompletionAt.FileName.empty())
       compiler->createCodeCompletionConsumer();
 
-    clang::CodeCompleteConsumer *completion_consumer = nullptr;
+    clang::CodeCompleteConsumer* completion_consumer = nullptr;
     if (compiler->hasCodeCompletionConsumer())
       completion_consumer = &compiler->getCodeCompletionConsumer();
 
@@ -356,10 +356,10 @@ class Action : public clang::ASTFrontendAction,
   /// \brief Copies the tickets from `reply.edge_set` to `request.ticket`.
   /// \return false if no tickets were copied
   template <typename Reply, typename Request>
-  bool CopyTicketsFromEdgeSets(const Reply &reply, Request *request) {
-    for (const auto &edge_set : reply.edge_sets()) {
-      for (const auto &group : edge_set.second.groups()) {
-        for (const auto &edge : group.second.edge()) {
+  bool CopyTicketsFromEdgeSets(const Reply& reply, Request* request) {
+    for (const auto& edge_set : reply.edge_sets()) {
+      for (const auto& group : edge_set.second.groups()) {
+        for (const auto& edge : group.second.edge()) {
           request->add_ticket(edge.target_ticket());
         }
       }
@@ -370,10 +370,10 @@ class Action : public clang::ASTFrontendAction,
   /// \brief Adds the paths of all /kythe/node/file nodes from `reply.node` to
   /// this Action's `FileTracker`'s include list.
   template <typename Reply>
-  void AddFileNodesToTracker(const Reply &reply) {
-    for (const auto &parent : reply.nodes()) {
+  void AddFileNodesToTracker(const Reply& reply) {
+    for (const auto& parent : reply.nodes()) {
       bool is_file = false;
-      for (const auto &fact : parent.second.facts()) {
+      for (const auto& fact : parent.second.facts()) {
         if (fact.first == kythe::common::schema::kFactNodeKind) {
           is_file = (fact.second == "/kythe/node/file");
           break;
@@ -391,11 +391,11 @@ class Action : public clang::ASTFrontendAction,
 
   /// \copydoc ExternalSemaSource::CorrectTypo
   clang::TypoCorrection CorrectTypo(
-      const clang::DeclarationNameInfo &typo, int lookup_kind,
-      clang::Scope *scope, clang::CXXScopeSpec *scope_spec,
-      clang::CorrectionCandidateCallback &callback,
-      clang::DeclContext *member_context, bool entering_context,
-      const clang::ObjCObjectPointerType *objc_ptr_type) override {
+      const clang::DeclarationNameInfo& typo, int lookup_kind,
+      clang::Scope* scope, clang::CXXScopeSpec* scope_spec,
+      clang::CorrectionCandidateCallback& callback,
+      clang::DeclContext* member_context, bool entering_context,
+      const clang::ObjCObjectPointerType* objc_ptr_type) override {
     // Conservatively assume that something went wrong if we had to invoke
     // typo correction.
     tracker_->pass_had_errors_ = true;
@@ -448,14 +448,14 @@ class Action : public clang::ASTFrontendAction,
     return clang::TypoCorrection();
   }
 
-  FileTracker *tracker() { return tracker_; }
+  FileTracker* tracker() { return tracker_; }
 
  private:
   /// The `ActionFactory` orchestrating this multipass run.
-  ActionFactory &factory_;
+  ActionFactory& factory_;
 
   /// The `FileTracker` keeping track of the file being processed.
-  FileTracker *tracker_ = nullptr;
+  FileTracker* tracker_ = nullptr;
 };
 
 void PreprocessorHooks::FileChanged(clang::SourceLocation loc,
@@ -466,15 +466,15 @@ void PreprocessorHooks::FileChanged(clang::SourceLocation loc,
     return;
   }
   if (reason == clang::PPCallbacks::EnterFile) {
-    clang::SourceManager *source_manager =
+    clang::SourceManager* source_manager =
         &enclosing_pass_->getCompilerInstance().getSourceManager();
     clang::FileID loc_id = source_manager->getFileID(loc);
-    if (const clang::FileEntry *file_entry =
+    if (const clang::FileEntry* file_entry =
             source_manager->getFileEntryForID(loc_id)) {
       if (file_entry->getName() == enclosing_pass_->tracker()->filename()) {
         enclosing_pass_->tracker()->set_file_begin(loc);
         bool valid = true;
-        const auto *buffer =
+        const auto* buffer =
             source_manager->getMemoryBufferForFile(file_entry, &valid);
         if (valid && buffer) {
           enclosing_pass_->tracker()->SetInitialContent(buffer->getBuffer());
@@ -486,19 +486,19 @@ void PreprocessorHooks::FileChanged(clang::SourceLocation loc,
 }
 
 void PreprocessorHooks::InclusionDirective(
-    clang::SourceLocation hash_location, const clang::Token &include_token,
+    clang::SourceLocation hash_location, const clang::Token& include_token,
     llvm::StringRef file_name, bool is_angled,
     clang::CharSourceRange file_name_range,
-    const clang::FileEntry *include_file, llvm::StringRef search_path,
-    llvm::StringRef relative_path, const clang::Module *imported,
+    const clang::FileEntry* include_file, llvm::StringRef search_path,
+    llvm::StringRef relative_path, const clang::Module* imported,
     clang::SrcMgr::CharacteristicKind FileType) {
   if (!enclosing_pass_ || !enclosing_pass_->tracker()) {
     return;
   }
-  clang::SourceManager *source_manager =
+  clang::SourceManager* source_manager =
       &enclosing_pass_->getCompilerInstance().getSourceManager();
   auto id_position = source_manager->getDecomposedExpansionLoc(hash_location);
-  const auto *source_file =
+  const auto* source_file =
       source_manager->getFileEntryForID(id_position.first);
   if (source_file == nullptr || include_file == nullptr) {
     return;
@@ -513,14 +513,14 @@ void PreprocessorHooks::InclusionDirective(
 ActionFactory::ActionFactory(std::unique_ptr<XrefsClient> xrefs,
                              size_t iterations)
     : xrefs_(std::move(xrefs)), iterations_(iterations) {
-  for (const auto *file = builtin_headers_create(); file->name; ++file) {
+  for (const auto* file = builtin_headers_create(); file->name; ++file) {
     builtin_headers_.push_back(llvm::MemoryBuffer::getMemBufferCopy(
         llvm::StringRef(file->data), file->name));
   }
 }
 
 ActionFactory::~ActionFactory() {
-  for (auto &tracker : file_trackers_) {
+  for (auto& tracker : file_trackers_) {
     delete tracker.second;
   }
   file_trackers_.clear();
@@ -528,18 +528,18 @@ ActionFactory::~ActionFactory() {
 
 void ActionFactory::RemapFiles(
     llvm::StringRef resource_dir,
-    std::vector<std::pair<std::string, llvm::MemoryBuffer *>>
-        *remapped_buffers) {
+    std::vector<std::pair<std::string, llvm::MemoryBuffer*>>*
+        remapped_buffers) {
   remapped_buffers->clear();
   for (FileTrackerMap::iterator I = file_trackers_.begin(),
                                 E = file_trackers_.end();
        I != E; ++I) {
-    FileTracker *tracker = I->second;
-    if (llvm::MemoryBuffer *buffer = tracker->memory_buffer()) {
+    FileTracker* tracker = I->second;
+    if (llvm::MemoryBuffer* buffer = tracker->memory_buffer()) {
       remapped_buffers->push_back(std::make_pair(tracker->filename(), buffer));
     }
   }
-  for (const auto &buffer : builtin_headers_) {
+  for (const auto& buffer : builtin_headers_) {
     llvm::SmallString<1024> out_path = resource_dir;
     llvm::sys::path::append(out_path, "include");
     llvm::sys::path::append(out_path, buffer->getBufferIdentifier());
@@ -547,10 +547,10 @@ void ActionFactory::RemapFiles(
   }
 }
 
-FileTracker *ActionFactory::GetOrCreateTracker(llvm::StringRef filename) {
+FileTracker* ActionFactory::GetOrCreateTracker(llvm::StringRef filename) {
   FileTrackerMap::iterator i = file_trackers_.find(filename);
   if (i == file_trackers_.end()) {
-    FileTracker *new_tracker = new FileTracker(filename);
+    FileTracker* new_tracker = new FileTracker(filename);
     file_trackers_[filename] = new_tracker;
     return new_tracker;
   }
@@ -566,9 +566,9 @@ bool ActionFactory::ShouldRunAgain() { return iterations_ > 0; }
 
 bool ActionFactory::runInvocation(
     std::shared_ptr<clang::CompilerInvocation> invocation,
-    clang::FileManager *files,
+    clang::FileManager* files,
     std::shared_ptr<clang::PCHContainerOperations> pch_container_ops,
-    clang::DiagnosticConsumer *diagnostics) {
+    clang::DiagnosticConsumer* diagnostics) {
   // ASTUnit::LoadFromCompilerInvocationAction complains about this too, but
   // we'll leave in our own assert to document the assumption.
   assert(invocation->getFrontendOpts().Inputs.size() == 1);
@@ -583,7 +583,7 @@ bool ActionFactory::runInvocation(
         llvm::errs(), &invocation->getDiagnosticOpts());
     diags->setClient(diagnostics, /*ShouldOwnClient*/ true);
   }
-  clang::ASTUnit *ast_unit = nullptr;
+  clang::ASTUnit* ast_unit = nullptr;
   // We only consider one full parse on one input file for now, so we only ever
   // need one Action.
   auto action = llvm::make_unique<Action>(*this);
@@ -614,7 +614,7 @@ bool ActionFactory::runInvocation(
       // Since we don't want our buffers to be deleted, we have to clear out
       // the ones ASTUnit might touch, then pass it a new list.
       invocation->getPreprocessorOpts().RemappedFileBuffers.clear();
-      std::vector<std::pair<std::string, llvm::MemoryBuffer *>> buffers;
+      std::vector<std::pair<std::string, llvm::MemoryBuffer*>> buffers;
       RemapFiles(invocation->getHeaderSearchOpts().ResourceDir, &buffers);
       // Reparse doesn't offer any way to run actions, so we're limited here
       // to checking whether our edits were successful (or perhaps to

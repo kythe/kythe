@@ -36,8 +36,9 @@ class SemanticHash {
   /// \brief Constructs a new SemanticHash using `decl_string` to calculate a
   /// string from a template declaration and `on_unimplemented` for behavior
   /// when encountering an unhandled AST node.
-  explicit SemanticHash(std::function<std::string(const clang::Decl*)> decl_string,
-               OnUnimplemented on_unimplemented = OnUnimplemented::Abort)
+  explicit SemanticHash(
+      std::function<std::string(const clang::Decl*)> decl_string,
+      OnUnimplemented on_unimplemented = OnUnimplemented::Abort)
       : ignore_unimplemented_(on_unimplemented == OnUnimplemented::Continue),
         decl_string_(std::move(decl_string)) {}
 

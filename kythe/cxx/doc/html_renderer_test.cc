@@ -33,13 +33,13 @@ class TestHtmlRendererOptions : public HtmlRendererOptions {
     definition_locations_["kythe://food"].set_parent("kythe://foop");
     definition_locations_["kythe://bard"].set_parent("kythe://barp&q=1<");
   }
-  const proto::common::NodeInfo *node_info(
-      const std::string &ticket) const override {
+  const proto::common::NodeInfo* node_info(
+      const std::string& ticket) const override {
     auto record = node_info_.find(ticket);
     return record != node_info_.end() ? &record->second : nullptr;
   }
-  const proto::Anchor *anchor_for_ticket(
-      const std::string &ticket) const override {
+  const proto::Anchor* anchor_for_ticket(
+      const std::string& ticket) const override {
     auto record = definition_locations_.find(ticket);
     return record != definition_locations_.end() ? &record->second : nullptr;
   }
@@ -51,13 +51,13 @@ class TestHtmlRendererOptions : public HtmlRendererOptions {
 class HtmlRendererTest : public ::testing::Test {
  public:
   HtmlRendererTest() {
-    options_.make_link_uri = [](const proto::Anchor &anchor) {
+    options_.make_link_uri = [](const proto::Anchor& anchor) {
       return anchor.parent();
     };
   }
 
  protected:
-  std::string RenderAsciiProtoDocument(const char *document_pb) {
+  std::string RenderAsciiProtoDocument(const char* document_pb) {
     proto::DocumentationReply::Document document;
     if (!TextFormat::ParseFromString(document_pb, &document)) {
       return "(invalid ascii protobuf)";
@@ -65,14 +65,14 @@ class HtmlRendererTest : public ::testing::Test {
     Printable printable(document.text());
     return kythe::RenderHtml(options_, printable);
   }
-  std::string RenderJavadoc(const char *raw_text) {
+  std::string RenderJavadoc(const char* raw_text) {
     proto::Printable reply_;
     reply_.set_raw_text(raw_text);
     Printable input(reply_);
     auto output = HandleMarkup({ParseJavadoxygen}, input);
     return kythe::RenderHtml(options_, output);
   }
-  std::string RenderHtml(const char *raw_text) {
+  std::string RenderHtml(const char* raw_text) {
     proto::Printable reply_;
     reply_.set_raw_text(raw_text);
     Printable input(reply_);
@@ -333,7 +333,7 @@ TEST_F(HtmlRendererTest, RenderSimpleQualifiedName) {
 }  // anonymous namespace
 }  // namespace kythe
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   ::testing::InitGoogleTest(&argc, argv);

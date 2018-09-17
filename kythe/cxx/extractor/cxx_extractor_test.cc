@@ -44,7 +44,7 @@ class CxxExtractorTest : public testing::Test {
   ~CxxExtractorTest() {
     // Do the best we can to clean up the temporary files we've made.
     std::error_code err;
-    for (const auto &file : files_to_remove_) {
+    for (const auto& file : files_to_remove_) {
       err = llvm::sys::fs::remove(file);
       if (err.value()) {
         LOG(WARNING) << "Couldn't remove " << file << ": " << err.message();
@@ -55,7 +55,7 @@ class CxxExtractorTest : public testing::Test {
     bool progress = true;
     while (progress) {
       progress = false;
-      for (const auto &dir : directories_to_remove_) {
+      for (const auto& dir : directories_to_remove_) {
         if (!llvm::sys::fs::remove(llvm::Twine(dir)).value()) {
           directories_to_remove_.erase(dir);
           progress = true;
@@ -70,9 +70,9 @@ class CxxExtractorTest : public testing::Test {
 
   /// Creates all the non-existent directories in `path` and destroys them
   /// when the test completes. Ported from `llvm::sys::fs::create_directories`.
-  void UndoableCreateDirectories(const llvm::Twine &path) {
+  void UndoableCreateDirectories(const llvm::Twine& path) {
     llvm::SmallString<128> path_storage;
-    const auto &path_string = path.toStringRef(path_storage);
+    const auto& path_string = path.toStringRef(path_storage);
 
     // Be optimistic and try to create the directory
     std::error_code err = llvm::sys::fs::create_directory(path_string, true);
@@ -95,8 +95,8 @@ class CxxExtractorTest : public testing::Test {
   /// \param path Absolute path, beginning with / (or B:\ or \\, etc), to the
   /// file to create.
   /// \param code Code to write at the file named by `path`.
-  void AddAbsoluteSourceFile(const llvm::StringRef &path,
-                             const std::string &code) {
+  void AddAbsoluteSourceFile(const llvm::StringRef& path,
+                             const std::string& code) {
     int write_fd;
     UndoableCreateDirectories(path);
     ASSERT_EQ(0, llvm::sys::fs::remove(path).value());
@@ -114,14 +114,14 @@ class CxxExtractorTest : public testing::Test {
   ///
   /// This uses `llvm::sys::fs::create_link`, which does different things
   /// depending on the platform (symlinks on Linux, something else on Windows)
-  void CreateLink(const llvm::Twine &to, const llvm::Twine &from) {
+  void CreateLink(const llvm::Twine& to, const llvm::Twine& from) {
     ASSERT_EQ(0, llvm::sys::fs::create_link(to, from).value());
     files_to_remove_.insert(from.str());
   }
 
   /// \brief Returns an absolute path from the test temporary directory
   /// ending with `relative_path`.
-  std::string GetRootedPath(const llvm::Twine &relative_path) {
+  std::string GetRootedPath(const llvm::Twine& relative_path) {
     llvm::SmallString<256> appended_path;
     llvm::sys::path::append(appended_path, llvm::Twine(root_), relative_path);
     CHECK_EQ(0, llvm::sys::fs::make_absolute(appended_path).value());
@@ -129,7 +129,7 @@ class CxxExtractorTest : public testing::Test {
   }
 
   /// \brief Adds a file at relative path `path` with content `code`.
-  void AddSourceFile(const llvm::Twine &path, const std::string &code) {
+  void AddSourceFile(const llvm::Twine& path, const std::string& code) {
     std::string absolute_path = GetRootedPath(path);
     AddAbsoluteSourceFile(absolute_path, code);
   }
@@ -138,17 +138,17 @@ class CxxExtractorTest : public testing::Test {
   /// memory.
   class CapturingCompilationWriterSink : public kythe::CompilationWriterSink {
    public:
-    void OpenIndex(const std::string &unit_hash) override {}
-    void WriteHeader(const kythe::proto::CompilationUnit &header) override {
+    void OpenIndex(const std::string& unit_hash) override {}
+    void WriteHeader(const kythe::proto::CompilationUnit& header) override {
       units_.push_back(header);
     }
-    void WriteFileContent(const kythe::proto::FileData &content) override {
+    void WriteFileContent(const kythe::proto::FileData& content) override {
       data_.push_back(content);
     }
-    const std::vector<kythe::proto::CompilationUnit> &units() const {
+    const std::vector<kythe::proto::CompilationUnit>& units() const {
       return units_;
     }
-    const std::vector<kythe::proto::FileData> &data() const { return data_; }
+    const std::vector<kythe::proto::FileData>& data() const { return data_; }
 
    private:
     std::vector<kythe::proto::CompilationUnit> units_;
@@ -159,20 +159,20 @@ class CxxExtractorTest : public testing::Test {
   class ForwardingCompilationWriterSink : public kythe::CompilationWriterSink {
    public:
     ForwardingCompilationWriterSink(
-        kythe::CompilationWriterSink *underlying_sink)
+        kythe::CompilationWriterSink* underlying_sink)
         : underlying_sink_(underlying_sink) {}
-    void OpenIndex(const std::string &unit_hash) override {
+    void OpenIndex(const std::string& unit_hash) override {
       underlying_sink_->OpenIndex(unit_hash);
     }
-    void WriteHeader(const kythe::proto::CompilationUnit &header) override {
+    void WriteHeader(const kythe::proto::CompilationUnit& header) override {
       underlying_sink_->WriteHeader(header);
     }
-    void WriteFileContent(const kythe::proto::FileData &content) override {
+    void WriteFileContent(const kythe::proto::FileData& content) override {
       underlying_sink_->WriteFileContent(content);
     }
 
    private:
-    kythe::CompilationWriterSink *underlying_sink_;
+    kythe::CompilationWriterSink* underlying_sink_;
   };
 
   /// \brief Runs the extractor on a given source file, directing its output
@@ -184,11 +184,11 @@ class CxxExtractorTest : public testing::Test {
   /// \param revision Revision ID for this index (TODO(zarko): keep?)
   /// \param output Output file for the compilation.
   /// \param sink Where to send the result protobufs.
-  void FillCompilationUnit(const std::string &source_file,
-                           const std::vector<std::string> &arguments,
-                           const std::vector<std::string> &required_inputs,
-                           const int revision, const std::string &output,
-                           CapturingCompilationWriterSink *sink) {
+  void FillCompilationUnit(const std::string& source_file,
+                           const std::vector<std::string>& arguments,
+                           const std::vector<std::string>& required_inputs,
+                           const int revision, const std::string& output,
+                           CapturingCompilationWriterSink* sink) {
     std::vector<std::string> final_arguments = {"tool", "-o", output,
                                                 "-fsyntax-only", source_file};
     final_arguments.insert(final_arguments.end(), arguments.begin(),
@@ -204,10 +204,10 @@ class CxxExtractorTest : public testing::Test {
     auto extractor = kythe::NewExtractor(
         &index_writer,
         [&index_writer, &sink](
-            const std::string &main_source_file,
-            const PreprocessorTranscript &transcript,
-            const std::unordered_map<std::string, SourceFile> &source_files,
-            const HeaderSearchInfo *header_search_info, bool had_errors) {
+            const std::string& main_source_file,
+            const PreprocessorTranscript& transcript,
+            const std::unordered_map<std::string, SourceFile>& source_files,
+            const HeaderSearchInfo* header_search_info, bool had_errors) {
           index_writer.WriteIndex(
               supported_language::Language::kCpp,
               absl::make_unique<ForwardingCompilationWriterSink>(sink),
@@ -221,15 +221,15 @@ class CxxExtractorTest : public testing::Test {
 
   /// \brief Checks that all the files referenced by the compilation unit
   /// seen by `sink` have also been written out in `sink`.
-  void VerifyCompilationUnit(const CapturingCompilationWriterSink &sink,
-                             const int revision, const std::string &output) {
+  void VerifyCompilationUnit(const CapturingCompilationWriterSink& sink,
+                             const int revision, const std::string& output) {
     ASSERT_EQ(1, sink.units().size());
     // TODO(zarko): use or delete revision and output.
-    const kythe::proto::CompilationUnit &unit = sink.units().front();
-    for (const auto &file_input : unit.required_input()) {
-      const std::string &path = file_input.info().path();
+    const kythe::proto::CompilationUnit& unit = sink.units().front();
+    for (const auto& file_input : unit.required_input()) {
+      const std::string& path = file_input.info().path();
       bool found_data = false;
-      for (const auto &file_data : sink.data()) {
+      for (const auto& file_data : sink.data()) {
         if (file_data.info().path() == path) {
           found_data = true;
           break;
@@ -240,9 +240,9 @@ class CxxExtractorTest : public testing::Test {
   }
 
   void FillAndVerifyCompilationUnit(
-      const std::string &path, const std::vector<std::string> &arguments,
-      const std::vector<std::string> &required_inputs, const int revision,
-      const std::string &output) {
+      const std::string& path, const std::vector<std::string>& arguments,
+      const std::vector<std::string>& required_inputs, const int revision,
+      const std::string& output) {
     // TODO(zarko): Is it useful to preserve the old test suite's
     // `required_inputs` and `revision`, or should they be eliminated?
     CapturingCompilationWriterSink sink;
@@ -252,15 +252,15 @@ class CxxExtractorTest : public testing::Test {
   }
 
   void FillAndVerifyCompilationUnit(
-      const std::string &path, const std::vector<std::string> &arguments,
-      const std::vector<std::string> &required_inputs, const int revision) {
+      const std::string& path, const std::vector<std::string>& arguments,
+      const std::vector<std::string>& required_inputs, const int revision) {
     FillAndVerifyCompilationUnit(path, arguments, required_inputs, revision,
                                  "output.o");
   }
 
   void FillAndVerifyCompilationUnit(
-      const std::string &path, const std::vector<std::string> &arguments,
-      const std::vector<std::string> &required_inputs) {
+      const std::string& path, const std::vector<std::string>& arguments,
+      const std::vector<std::string>& required_inputs) {
     FillAndVerifyCompilationUnit(path, arguments, required_inputs, 1);
   }
 
@@ -362,7 +362,7 @@ TEST_F(CxxExtractorTest, DoesNotBreakForMissingIncludes) {
 }  // anonymous namespace
 }  // namespace kythe
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   ::testing::InitGoogleTest(&argc, argv);

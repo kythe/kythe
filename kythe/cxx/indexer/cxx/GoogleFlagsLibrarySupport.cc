@@ -25,7 +25,7 @@ namespace kythe {
 
 /// \return true if `SpellingLoc` exists in the scratch space, is in a macro,
 /// or is invalid.
-static bool SpellingLocIsImaginary(const clang::SourceManager &SM,
+static bool SpellingLocIsImaginary(const clang::SourceManager& SM,
                                    clang::SourceLocation SpellingLoc) {
   if (!SpellingLoc.isValid() || !SpellingLoc.isFileID()) {
     return true;
@@ -52,9 +52,9 @@ static bool SpellingLocIsImaginary(const clang::SourceManager &SM,
 /// \param LO The LangOptions used to check the input AST.
 /// \param Decl The VarDecl that may belong to a flag.
 /// \param RefLoc If valid, the location of the reference made to Decl.
-static clang::SourceRange
-GetVarDeclFlagDeclLoc(const clang::LangOptions &LO, const clang::VarDecl *Decl,
-                      clang::SourceLocation RefLoc = clang::SourceLocation()) {
+static clang::SourceRange GetVarDeclFlagDeclLoc(
+    const clang::LangOptions& LO, const clang::VarDecl* Decl,
+    clang::SourceLocation RefLoc = clang::SourceLocation()) {
   // Quickly bail out if this isn't "FLAGS_foo":
   if (!Decl->getName().startswith("FLAGS_")) {
     return clang::SourceLocation();
@@ -65,8 +65,8 @@ GetVarDeclFlagDeclLoc(const clang::LangOptions &LO, const clang::VarDecl *Decl,
   if (!Loc.isMacroID() || !Loc.isValid()) {
     return clang::SourceLocation();
   }
-  const auto &Context = Decl->getASTContext();
-  const auto &SM = Context.getSourceManager();
+  const auto& Context = Decl->getASTContext();
+  const auto& SM = Context.getSourceManager();
   // Reject references that come from imaginary places (like token pastes in
   // flags headers).
   if (RefLoc.isValid() && RefLoc.isMacroID() &&
@@ -90,7 +90,7 @@ GetVarDeclFlagDeclLoc(const clang::LangOptions &LO, const clang::VarDecl *Decl,
     if (MaybeFlagsFileId.isInvalid()) {
       return false;
     }
-    const auto *MaybeFlagsFileEntry = SM.getFileEntryForID(MaybeFlagsFileId);
+    const auto* MaybeFlagsFileEntry = SM.getFileEntryForID(MaybeFlagsFileId);
     if (!MaybeFlagsFileEntry) {
       return false;
     }
@@ -164,20 +164,20 @@ GetVarDeclFlagDeclLoc(const clang::LangOptions &LO, const clang::VarDecl *Decl,
 /// \brief Given the NodeId of the primary variable defn or decl of a flag,
 /// returns a NodeId for the flag itself.
 /// \param VarId the NodeId for the flag's primary variable (not a _no or _nono)
-static GraphObserver::NodeId NodeIdForFlag(const GraphObserver::NodeId &VarId) {
+static GraphObserver::NodeId NodeIdForFlag(const GraphObserver::NodeId& VarId) {
   return GraphObserver::NodeId(VarId.getToken(),
                                "google/gflag#" + VarId.getRawIdentity());
 }
 
 void GoogleFlagsLibrarySupport::InspectVariable(
-    IndexerASTVisitor &V, GraphObserver::NodeId &NodeId,
-    GraphObserver::NodeId &DeclBodyNodeId, const clang::VarDecl *Decl,
-    GraphObserver::Completeness Compl, const std::vector<Completion> &Compls) {
+    IndexerASTVisitor& V, GraphObserver::NodeId& NodeId,
+    GraphObserver::NodeId& DeclBodyNodeId, const clang::VarDecl* Decl,
+    GraphObserver::Completeness Compl, const std::vector<Completion>& Compls) {
   if (NodeId != DeclBodyNodeId) {
     // Google flags aren't variable templates, so abort early.
     return;
   }
-  GraphObserver &GO = V.getGraphObserver();
+  GraphObserver& GO = V.getGraphObserver();
   auto Range = GetVarDeclFlagDeclLoc(*GO.getLangOptions(), Decl);
   if (Range.isValid()) {
     auto FlagName = clang::Lexer::getSourceText(
@@ -196,8 +196,8 @@ void GoogleFlagsLibrarySupport::InspectVariable(
       clang::FileID DeclFile =
           GO.getSourceManager()->getFileID(Range.getBegin());
       // If there are any Completions, this must be a definition.
-      for (const auto &C : Compls) {
-        if (const auto *NextDecl = llvm::dyn_cast<clang::VarDecl>(C.Decl)) {
+      for (const auto& C : Compls) {
+        if (const auto* NextDecl = llvm::dyn_cast<clang::VarDecl>(C.Decl)) {
           auto NextDeclRange =
               GetVarDeclFlagDeclLoc(*GO.getLangOptions(), NextDecl);
           if (NextDeclRange.isValid()) {
@@ -217,11 +217,11 @@ void GoogleFlagsLibrarySupport::InspectVariable(
 }
 
 void GoogleFlagsLibrarySupport::InspectDeclRef(
-    IndexerASTVisitor &V, clang::SourceLocation DeclRefLocation,
-    const GraphObserver::Range &Ref, GraphObserver::NodeId &RefId,
-    const clang::NamedDecl *TargetDecl) {
-  GraphObserver &GO = V.getGraphObserver();
-  const auto *VD = llvm::dyn_cast<const clang::VarDecl>(TargetDecl);
+    IndexerASTVisitor& V, clang::SourceLocation DeclRefLocation,
+    const GraphObserver::Range& Ref, GraphObserver::NodeId& RefId,
+    const clang::NamedDecl* TargetDecl) {
+  GraphObserver& GO = V.getGraphObserver();
+  const auto* VD = llvm::dyn_cast<const clang::VarDecl>(TargetDecl);
   if (!VD) {
     // We only care about VarDecls.
     return;
@@ -233,4 +233,4 @@ void GoogleFlagsLibrarySupport::InspectDeclRef(
                              V.IsImplicit(Ref));
   }
 }
-} // namespace kythe
+}  // namespace kythe

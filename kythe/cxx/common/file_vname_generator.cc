@@ -29,11 +29,11 @@ FileVNameGenerator::FileVNameGenerator() {
   CHECK_EQ(RE2::NoError, substitution_matcher_.error_code());
 }
 
-std::string FileVNameGenerator::ApplyRule(const StringConsRule &rule,
-                                          const re2::StringPiece *argv,
+std::string FileVNameGenerator::ApplyRule(const StringConsRule& rule,
+                                          const re2::StringPiece* argv,
                                           int argc) const {
   std::string ret;
-  for (const auto &node : rule) {
+  for (const auto& node : rule) {
     switch (node.kind) {
       case StringConsNode::Kind::kEmitText:
         ret.append(node.raw_text);
@@ -47,9 +47,9 @@ std::string FileVNameGenerator::ApplyRule(const StringConsRule &rule,
   return ret;
 }
 
-bool FileVNameGenerator::ParseRule(const std::string &rule, int max_capture,
-                                   StringConsRule *result,
-                                   std::string *error_text) {
+bool FileVNameGenerator::ParseRule(const std::string& rule, int max_capture,
+                                   StringConsRule* result,
+                                   std::string* error_text) {
   CHECK(result != nullptr);
   CHECK(error_text != nullptr);
   re2::StringPiece rule_left(rule);
@@ -84,15 +84,15 @@ bool FileVNameGenerator::ParseRule(const std::string &rule, int max_capture,
 }
 
 kythe::proto::VName FileVNameGenerator::LookupBaseVName(
-    const std::string &path) const {
+    const std::string& path) const {
   re2::StringPiece argv[kMaxRegexArgs];
   RE2::Arg args[kMaxRegexArgs];
-  RE2::Arg *arg_pointers[kMaxRegexArgs];
+  RE2::Arg* arg_pointers[kMaxRegexArgs];
   for (size_t n = 0; n < kMaxRegexArgs; ++n) {
     args[n] = &argv[n];
     arg_pointers[n] = &args[n];
   }
-  for (const auto &rule : rules_) {
+  for (const auto& rule : rules_) {
     // Invariant: capture_groups <= kMaxRegexArgs
     // RE2 will fail to match if we provide more args than there are captures
     // for a given regex.
@@ -115,7 +115,7 @@ kythe::proto::VName FileVNameGenerator::LookupBaseVName(
 }
 
 kythe::proto::VName FileVNameGenerator::LookupVName(
-    const std::string &path) const {
+    const std::string& path) const {
   kythe::proto::VName vname = LookupBaseVName(path);
   if (vname.path().empty()) {
     vname.set_path(path);
@@ -123,8 +123,8 @@ kythe::proto::VName FileVNameGenerator::LookupVName(
   return vname;
 }
 
-bool FileVNameGenerator::LoadJsonString(const std::string &data,
-                                        std::string *error_text) {
+bool FileVNameGenerator::LoadJsonString(const std::string& data,
+                                        std::string* error_text) {
   CHECK(error_text != nullptr);
   using Value = rapidjson::Value;
   rapidjson::Document document;

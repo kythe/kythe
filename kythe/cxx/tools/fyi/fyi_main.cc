@@ -32,7 +32,7 @@ static cl::opt<std::string> xrefs("xrefs",
                                   cl::desc("Base URI for xrefs service"),
                                   cl::init("http://localhost:8080"));
 
-int main(int argc, const char **argv) {
+int main(int argc, const char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.1");

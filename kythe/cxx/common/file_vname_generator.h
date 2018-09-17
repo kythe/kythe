@@ -35,14 +35,14 @@ class FileVNameGenerator {
   /// \param json_string The string containing the configuration to add.
   /// \param error_text Non-null. Will be set to text describing any errors.
   /// \return false if the string could not be parsed.
-  bool LoadJsonString(const std::string &json_string, std::string *error_text);
+  bool LoadJsonString(const std::string& json_string, std::string* error_text);
 
   /// \brief Returns a base VName for a given file path (or an empty VName if
   /// no configuration rule matches the path).
-  kythe::proto::VName LookupBaseVName(const std::string &path) const;
+  kythe::proto::VName LookupBaseVName(const std::string& path) const;
 
   /// \brief Returns a VName for the given file path.
-  kythe::proto::VName LookupVName(const std::string &path) const;
+  kythe::proto::VName LookupVName(const std::string& path) const;
 
  private:
   /// \brief A command to use when building a result string.
@@ -61,16 +61,16 @@ class FileVNameGenerator {
   /// \param rule The rule to apply.
   /// \param argv The `RE2::Arg` results from the regex match.
   /// \param argc The length of the array `argv`.
-  std::string ApplyRule(const StringConsRule &rule,
-                        const re2::StringPiece *argv, int argc) const;
+  std::string ApplyRule(const StringConsRule& rule,
+                        const re2::StringPiece* argv, int argc) const;
   /// \brief Parses `rule` into a `StringConsRule`.
   /// \param rule The rule to parse.
   /// \param max_capture_index The maximum utterable capture index.
   /// \param result The StringConsRule to parse into.
   /// \param error_text Set to a descriptive message if parsing fails.
   /// \return false if we could not parse a rule.
-  bool ParseRule(const std::string &rule, int max_capture_index,
-                 StringConsRule *result, std::string *error_text);
+  bool ParseRule(const std::string& rule, int max_capture_index,
+                 StringConsRule* result, std::string* error_text);
   /// \brief A rule to apply to certain paths.
   struct VNameRule {
     /// The pattern used to match against a path.

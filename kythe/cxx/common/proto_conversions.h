@@ -25,7 +25,7 @@ namespace kythe {
 /// \brief Wrap a protobuf string in a StringRef.
 /// \param string The string to wrap.
 /// \return The wrapped string (which should not outlive `string`).
-inline llvm::StringRef ToStringRef(const google::protobuf::string &string) {
+inline llvm::StringRef ToStringRef(const google::protobuf::string& string) {
   return llvm::StringRef(string.c_str(), string.size());
 }
 }  // namespace kythe
