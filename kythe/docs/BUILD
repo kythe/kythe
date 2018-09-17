@@ -61,3 +61,9 @@ asciidoc(
     name = "kythe-kzip",
     src = "kythe-kzip.txt",
 )
+
+asciidoc(
+    name = "schema-overview",
+    src = "schema-overview.txt",
+    tags = ["manual"],
+)
