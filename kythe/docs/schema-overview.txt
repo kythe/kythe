@@ -48,7 +48,7 @@ digraph Terms {
 An **anchor** denotes a region of a file. For example, in `kcd.go`, the
 `Reader` type/interface has many anchors:
 
-[source,go]
+[source,Go]
 ----
 type Reader interface {
   Revisions(_ context.Context, filter *RevisionsFilter, f func(Revision) error) error
@@ -119,7 +119,7 @@ digraph J2D {
 }
 ------------------------------------------------------------------------
 
-[source,go]
+[source,Go]
 ----
 func (rf *RevisionsFilter) Compile() (func(Revision) bool, error) {
   if rf == nil || (rf.Revision == "" && rf.Corpus == "" && rf.Until.IsZero() && rf.Since.IsZero()) {
@@ -193,14 +193,14 @@ digraph CallGraph {
 
 `kcd.go`:
 
-[source,go]
+[source,Go]
 ----
 func (rf *RevisionsFilter) Compile() (func(Revision) bool, error) {
 ----
 
 `memdb.go`:
 
-[source,go]
+[source,Go]
 ----
 type DB struct {
 ...
@@ -251,7 +251,7 @@ digraph ClassH {
 
 `kcd.go`:
 
-[source,go]
+[source,Go]
 ----
 type Reader interface {
   Revisions(_ context.Context, filter *RevisionsFilter, f func(Revision) error) error
@@ -260,7 +260,7 @@ type Reader interface {
 
 `memdb.go`:
 
-[source,go]
+[source,Go]
 ----
 type DB struct {
 ...
@@ -327,7 +327,7 @@ digraph FuncyParam {
 
 `kcd.go`:
 
-[source,go]
+[source,Go]
 ----
 type Reader interface {
   Revisions(_ context.Context, filter *RevisionsFilter, f func(Revision) error) error
@@ -408,7 +408,7 @@ digraph AnchorDocStyle {
 
 `kcd.go`:
 
-[source,go]
+[source,Go]
 ----
 // Reader represents read-only access to an underlying storage layer used to
 // implement a compilation database.
