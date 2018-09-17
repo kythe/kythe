@@ -157,7 +157,8 @@ and it participates in cross-references, but it does not have a location in the
 source text of your program.
 
 Multiple definition sites occur for many C++ objects, including forward
-declarations of classes or function prototypes and their completions.
+declarations of classes or function prototypes and their completions.  Anchors
+for that (re)declarations of a type also use `defines/binding` edges.
 
 === [[FeatureCallGraph]] Callgraph
 
