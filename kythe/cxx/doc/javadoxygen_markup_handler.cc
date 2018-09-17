@@ -52,12 +52,12 @@ namespace {
 ///     (TagEnumerator, "tag-name", is-section, is-tag-block, tag-block-id)
 /// Sections affect parsing. We don't treat the "\brief" section as a tag block.
 // clang-format-off
-#define DOXYGEN_TAGS(v) \
-  v(Brief, "brief", true, false, NOT_TAG_BLOCK) \
-  v(C, "c", false, false, NOT_TAG_BLOCK) \
-  v(Return, "return", true, true, Returns) \
-  v(Returns, "returns", true, true, Returns) \
-  v(Param, "param", true, false, NOT_TAG_BLOCK)
+#define DOXYGEN_TAGS(v)                                  \
+  v(Brief, "brief", true, false, NOT_TAG_BLOCK)          \
+      v(C, "c", false, false, NOT_TAG_BLOCK)             \
+          v(Return, "return", true, true, Returns)       \
+              v(Returns, "returns", true, true, Returns) \
+                  v(Param, "param", true, false, NOT_TAG_BLOCK)
 // clang-format on
 enum class JavadocTag : int {
 #define ENUM_CASE(n, s, b, i) n,
@@ -375,7 +375,7 @@ size_t ParseJavadocBrace(const std::string& buffer, size_t open_brace,
   EvaluateJavadocTag(buffer, tag_begin, close_brace, tag, out_spans);
   return close_brace + 1;
 }
-}
+}  // namespace
 
 void ParseJavadoxygen(const Printable& in_message, const PrintableSpans&,
                       PrintableSpans* out_spans) {

@@ -22,7 +22,7 @@
 #include "glog/logging.h"
 
 namespace kythe {
-bool isObjCSelector(const clang::DeclarationName &DN) {
+bool isObjCSelector(const clang::DeclarationName& DN) {
   switch (DN.getNameKind()) {
     case clang::DeclarationName::NameKind::ObjCZeroArgSelector:
     case clang::DeclarationName::NameKind::ObjCOneArgSelector:
@@ -33,8 +33,8 @@ bool isObjCSelector(const clang::DeclarationName &DN) {
   }
 }
 
-void SkipWhitespace(const clang::SourceManager &source_manager,
-                    clang::SourceLocation *loc) {
+void SkipWhitespace(const clang::SourceManager& source_manager,
+                    clang::SourceLocation* loc) {
   CHECK(loc != nullptr);
 
   while (clang::isWhitespace(*source_manager.getCharacterData(*loc))) {
@@ -43,8 +43,8 @@ void SkipWhitespace(const clang::SourceManager &source_manager,
 }
 
 clang::SourceRange RangeForASTEntityFromSourceLocation(
-    const clang::SourceManager &source_manager,
-    const clang::LangOptions &lang_options,
+    const clang::SourceManager& source_manager,
+    const clang::LangOptions& lang_options,
     clang::SourceLocation start_location) {
   if (start_location.isFileID()) {
     clang::SourceRange first_token_range =
@@ -83,9 +83,9 @@ clang::SourceRange RangeForASTEntityFromSourceLocation(
 }
 
 clang::SourceRange RangeForOperatorName(
-    const clang::SourceManager &source_manager,
-    const clang::LangOptions &lang_options,
-    const clang::SourceRange &operator_token_range) {
+    const clang::SourceManager& source_manager,
+    const clang::LangOptions& lang_options,
+    const clang::SourceRange& operator_token_range) {
   // Make a longer range than `operator_token_range`, if possible, so that
   // the range captures which operator this is.  There are two kinds of
   // operators; type conversion operators, and overloaded operators.
@@ -153,8 +153,8 @@ clang::SourceRange RangeForOperatorName(
 }
 
 clang::SourceLocation GetLocForEndOfToken(
-    const clang::SourceManager &source_manager,
-    const clang::LangOptions &lang_options,
+    const clang::SourceManager& source_manager,
+    const clang::LangOptions& lang_options,
     clang::SourceLocation start_location) {
   if (start_location.isMacroID()) {
     start_location = source_manager.getExpansionLoc(start_location);
@@ -165,8 +165,8 @@ clang::SourceLocation GetLocForEndOfToken(
 }
 
 clang::SourceRange RangeForSingleTokenFromSourceLocation(
-    const clang::SourceManager &source_manager,
-    const clang::LangOptions &lang_options, clang::SourceLocation start) {
+    const clang::SourceManager& source_manager,
+    const clang::LangOptions& lang_options, clang::SourceLocation start) {
   CHECK(start.isFileID());
   clang::SourceLocation end =
       GetLocForEndOfToken(source_manager, lang_options, start);
@@ -174,8 +174,8 @@ clang::SourceRange RangeForSingleTokenFromSourceLocation(
 }
 
 bool IsTopLevelNonMacroMacroArgument(
-    const clang::SourceManager &source_manager,
-    const clang::SourceLocation &source_location) {
+    const clang::SourceManager& source_manager,
+    const clang::SourceLocation& source_location) {
   if (!source_location.isMacroID()) return false;
   clang::SourceLocation loc = source_location;
   // We want to get closer towards the initial macro typed into the source only
@@ -190,39 +190,38 @@ bool IsTopLevelNonMacroMacroArgument(
   return !loc.isMacroID();
 }
 
-const clang::Decl *FindSpecializedTemplate(const clang::Decl *decl) {
-  if (const auto *FD = llvm::dyn_cast<const clang::FunctionDecl>(decl)) {
-    if (auto *ftsi = FD->getTemplateSpecializationInfo()) {
+const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl) {
+  if (const auto* FD = llvm::dyn_cast<const clang::FunctionDecl>(decl)) {
+    if (auto* ftsi = FD->getTemplateSpecializationInfo()) {
       if (!ftsi->isExplicitInstantiationOrSpecialization()) {
         return ftsi->getTemplate();
       }
     }
-  } else if (const auto *ctsd =
+  } else if (const auto* ctsd =
                  llvm::dyn_cast<const clang::ClassTemplateSpecializationDecl>(
                      decl)) {
     if (!ctsd->isExplicitInstantiationOrSpecialization()) {
       auto primary_or_partial = ctsd->getSpecializedTemplateOrPartial();
-      if (const auto *partial =
-              primary_or_partial.dyn_cast<
-                  clang::ClassTemplatePartialSpecializationDecl *>()) {
+      if (const auto* partial =
+              primary_or_partial
+                  .dyn_cast<clang::ClassTemplatePartialSpecializationDecl*>()) {
         return partial;
-      } else if (const auto *primary =
-                     primary_or_partial
-                         .dyn_cast<clang::ClassTemplateDecl *>()) {
+      } else if (const auto* primary =
+                     primary_or_partial.dyn_cast<clang::ClassTemplateDecl*>()) {
         return primary;
       }
     }
-  } else if (const auto *vtsd =
+  } else if (const auto* vtsd =
                  llvm::dyn_cast<const clang::VarTemplateSpecializationDecl>(
                      decl)) {
     if (!vtsd->isExplicitInstantiationOrSpecialization()) {
       auto primary_or_partial = vtsd->getSpecializedTemplateOrPartial();
-      if (const auto *partial =
+      if (const auto* partial =
               primary_or_partial
-                  .dyn_cast<clang::VarTemplatePartialSpecializationDecl *>()) {
+                  .dyn_cast<clang::VarTemplatePartialSpecializationDecl*>()) {
         return partial;
-      } else if (const auto *primary =
-                     primary_or_partial.dyn_cast<clang::VarTemplateDecl *>()) {
+      } else if (const auto* primary =
+                     primary_or_partial.dyn_cast<clang::VarTemplateDecl*>()) {
         return primary;
       }
     }

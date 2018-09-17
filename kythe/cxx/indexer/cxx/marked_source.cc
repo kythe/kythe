@@ -33,8 +33,8 @@ DEFINE_bool(pretty_print_function_prototypes, false,
 namespace kythe {
 namespace {
 /// \return true if `range` is valid for use in annotations.
-bool IsValidRange(const clang::SourceManager &source_manager,
-                  const clang::SourceRange &range) {
+bool IsValidRange(const clang::SourceManager& source_manager,
+                  const clang::SourceRange& range) {
   // Check that the range is valid and ends in macros xnor files.
   if (!range.isValid() ||
       range.getBegin().isFileID() != range.getEnd().isFileID()) {
@@ -49,13 +49,13 @@ bool IsValidRange(const clang::SourceManager &source_manager,
   return true;
 }
 
-llvm::StringRef GetTextRange(const clang::SourceManager &source_manager,
-                             const clang::SourceRange &range) {
+llvm::StringRef GetTextRange(const clang::SourceManager& source_manager,
+                             const clang::SourceRange& range) {
   if (!IsValidRange(source_manager, range)) {
     return llvm::StringRef();
   }
-  const char *begin = source_manager.getCharacterData(range.getBegin());
-  const char *end = source_manager.getCharacterData(range.getEnd());
+  const char* begin = source_manager.getCharacterData(range.getBegin());
+  const char* end = source_manager.getCharacterData(range.getEnd());
   if (begin > end) {
     return llvm::StringRef();
   }
@@ -69,10 +69,10 @@ constexpr char kReplacementFile[] = "x.cc";
 /// \param replacements the set of transformations applied to `source_text`.
 /// \param incomplete set to true if reformatting failed.
 /// \return the reformatted text buffer (or the empty string).
-std::string Reformat(const clang::LangOptions &lang_options,
+std::string Reformat(const clang::LangOptions& lang_options,
                      llvm::StringRef source_text,
-                     clang::tooling::Replacements *replacements,
-                     bool *incomplete) {
+                     clang::tooling::Replacements* replacements,
+                     bool* incomplete) {
   clang::format::FormatStyle style =
       clang::format::getGoogleStyle(clang::format::FormatStyle::LK_Cpp);
   std::vector<clang::tooling::Range> ranges = {
@@ -115,7 +115,7 @@ struct Annotation {
   Kind kind;
   size_t begin;
   size_t end;
-  bool operator<(const Annotation &o) const {
+  bool operator<(const Annotation& o) const {
     return std::tie(begin, o.end, kind) < std::tie(o.begin, end, o.kind);
   }
 };
@@ -126,14 +126,14 @@ class NodeStack {
   /// \brief Copy data from `annotations` and `formatted_range` to
   /// `dest_source`.
   /// \return the MarkedSource node covering an identifier, or null.
-  MarkedSource *ProcessAnnotations(const std::string &formatted_range,
-                                   const std::vector<Annotation> &annotations,
-                                   MarkedSource *dest_source) {
+  MarkedSource* ProcessAnnotations(const std::string& formatted_range,
+                                   const std::vector<Annotation>& annotations,
+                                   MarkedSource* dest_source) {
     /// For certain kinds of annotations, we'll substitute our own special
     /// MarkedSource. When we enter one of these, cancel_count gets
     /// incremented; when we exit, it gets decremented.
     size_t cancel_count = 0;
-    MarkedSource *ident_node = nullptr;
+    MarkedSource* ident_node = nullptr;
     size_t cursor = 0;
     // There's always at least one annotation. It spans the whole of
     // formatted_range_ and it's ordered before the other annotations.
@@ -157,7 +157,7 @@ class NodeStack {
       if (annotation == annotations.size()) {
         break;
       }
-      const auto &next = annotations[annotation++];
+      const auto& next = annotations[annotation++];
       if (cursor < next_begin) {
         AppendToTop(formatted_range, cancel_count, cursor, next_begin, false);
         cursor = next_begin;
@@ -165,7 +165,7 @@ class NodeStack {
       nodes_.push(Node{&next, annotation == 1
                                   ? dest_source
                                   : nodes_.top().marked_source->add_child()});
-      auto *child = nodes_.top().marked_source;
+      auto* child = nodes_.top().marked_source;
       switch (next.kind) {
         case Annotation::TokenText:
           break;
@@ -211,14 +211,14 @@ class NodeStack {
   /// \param at_end whether the span on the top of the stack is about to be
   /// popped because there are no other spans that get opened before the
   /// current span closes.
-  void AppendToTop(const std::string &formatted_range, size_t cancel_count,
+  void AppendToTop(const std::string& formatted_range, size_t cancel_count,
                    size_t start, size_t end, bool at_end) {
     CHECK(!nodes_.empty());
     if (cancel_count != 0) {
       return;
     }
-    const auto *annotation = nodes_.top().annotation;
-    auto *node = nodes_.top().marked_source;
+    const auto* annotation = nodes_.top().annotation;
+    auto* node = nodes_.top().marked_source;
     if (at_end) {
       if (node->child().empty() && node->post_text().empty()) {
         node->mutable_pre_text()->append(formatted_range, start, end - start);
@@ -231,7 +231,7 @@ class NodeStack {
       if (node->child().empty()) {
         node->mutable_pre_text()->append(formatted_range, start, end - start);
       } else {
-        auto *new_node = node->add_child();
+        auto* new_node = node->add_child();
         new_node->mutable_pre_text()->append(formatted_range, start,
                                              end - start);
       }
@@ -239,8 +239,8 @@ class NodeStack {
   }
   /// A currently-entered annotation.
   struct Node {
-    const Annotation *annotation;
-    MarkedSource *marked_source;
+    const Annotation* annotation;
+    MarkedSource* marked_source;
   };
   /// The stack of currently entered annotations and their corresponding
   /// MarkedSource messages.
@@ -258,8 +258,8 @@ class NodeStack {
 /// of, e.g.:
 ///   virtual float (*bam(short function_arg) const)(int function_ptr_arg) = 0;
 clang::SourceRange GetReturnTypeSourceRangeForFunctionPointerReturningFunction(
-    const clang::FunctionDecl *decl) {
-  if (const auto *type_info = decl->getTypeSourceInfo()) {
+    const clang::FunctionDecl* decl) {
+  if (const auto* type_info = decl->getTypeSourceInfo()) {
     if (auto function_type = type_info->getTypeLoc()
                                  .IgnoreParens()
                                  .getAs<clang::FunctionTypeLoc>()) {
@@ -277,8 +277,8 @@ clang::SourceRange GetReturnTypeSourceRangeForFunctionPointerReturningFunction(
   }
   return {};
 }
-bool SameFileRangesOverlapOpenInterval(const clang::SourceRange &outer,
-                                       const clang::SourceRange &inner) {
+bool SameFileRangesOverlapOpenInterval(const clang::SourceRange& outer,
+                                       const clang::SourceRange& inner) {
   return outer.isValid() && inner.isValid() &&
          outer.getBegin().getRawEncoding() <=
              inner.getBegin().getRawEncoding() &&
@@ -291,11 +291,11 @@ bool SameFileRangesOverlapOpenInterval(const clang::SourceRange &outer,
 /// reformatted buffer.
 class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
  public:
-  DeclAnnotator(MarkedSourceCache *cache,
-                clang::tooling::Replacements *replacements,
+  DeclAnnotator(MarkedSourceCache* cache,
+                clang::tooling::Replacements* replacements,
                 clang::SourceLocation original_begin,
-                const std::string &formatted_range, MarkedSource *marked_source,
-                const clang::SourceRange &default_name_range)
+                const std::string& formatted_range, MarkedSource* marked_source,
+                const clang::SourceRange& default_name_range)
       : cache_(cache),
         replacements_(replacements),
         original_begin_(original_begin),
@@ -308,11 +308,11 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     // Remember the location of the qualified name.
     InsertAnnotation(default_name_range, Annotation{Annotation::QualifiedName});
   }
-  MarkedSource *ident_node() {
+  MarkedSource* ident_node() {
     return ident_node_ ? ident_node_ : marked_source_;
   }
-  void VisitVarDecl(clang::VarDecl *decl) {
-    if (const auto *type_source_info = decl->getTypeSourceInfo()) {
+  void VisitVarDecl(clang::VarDecl* decl) {
+    if (const auto* type_source_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_source_info->getType(),
                           type_source_info->getTypeLoc().getSourceRange())) {
         InsertAnnotation(ExpandRangeBySingleToken(
@@ -322,8 +322,8 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
       }
     }
   }
-  void VisitFieldDecl(clang::FieldDecl *decl) {
-    if (const auto *type_source_info = decl->getTypeSourceInfo()) {
+  void VisitFieldDecl(clang::FieldDecl* decl) {
+    if (const auto* type_source_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_source_info->getType(),
                           type_source_info->getTypeLoc().getSourceRange())) {
         InsertAnnotation(ExpandRangeBySingleToken(
@@ -333,9 +333,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
       }
     }
   }
-  void VisitFunctionDecl(clang::FunctionDecl *decl) {
+  void VisitFunctionDecl(clang::FunctionDecl* decl) {
     clang::SourceRange arg_list;
-    if (const auto *type_info = decl->getTypeSourceInfo()) {
+    if (const auto* type_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_info->getType(),
                           type_info->getTypeLoc().getSourceRange())) {
         if (auto function_type = type_info->getTypeLoc()
@@ -390,7 +390,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     }
   }
 
-  void VisitObjCMethodDecl(clang::ObjCMethodDecl *decl) {
+  void VisitObjCMethodDecl(clang::ObjCMethodDecl* decl) {
     // TODO(salguarneri) Do something sensible for selectors and arguments.
     // Selectors are effectively the name of the method, but the selectors are
     // interrupted in source code by parameters, so we don't have a single range
@@ -409,8 +409,8 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     }
   }
 
-  void Annotate(const clang::NamedDecl *named_decl) {
-    Visit(const_cast<clang::NamedDecl *>(named_decl));
+  void Annotate(const clang::NamedDecl* named_decl) {
+    Visit(const_cast<clang::NamedDecl*>(named_decl));
     CompleteMarkedSource();
   }
 
@@ -421,7 +421,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     // the bizarre concrete syntax for function pointers.
     std::sort(annotations_.begin(), annotations_.end());
     NodeStack node_stack;
-    if (auto *ident_node = node_stack.ProcessAnnotations(
+    if (auto* ident_node = node_stack.ProcessAnnotations(
             formatted_range_, annotations_, marked_source_)) {
       ident_node_ = ident_node;
     }
@@ -429,8 +429,8 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
 
   /// \brief adds an annotation to the annotation list, transforming
   /// offsets from original source to reformatted source.
-  void InsertAnnotation(const clang::SourceRange &original_range,
-                        Annotation &&annotation) {
+  void InsertAnnotation(const clang::SourceRange& original_range,
+                        Annotation&& annotation) {
     unsigned start_offset = original_range.getBegin().getRawEncoding() -
                             original_begin_.getRawEncoding();
     unsigned end_offset;
@@ -475,20 +475,20 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
   /// nullable).
   /// 2) The token is transformed to _Nullable by the time we analyze. nullable
   /// is placed to the left of types, _Nullable is placed to the right of types.
-  bool ShouldSkipDecl(const clang::Decl *decl, const clang::QualType &qt,
-                      const clang::SourceRange &sr) {
+  bool ShouldSkipDecl(const clang::Decl* decl, const clang::QualType& qt,
+                      const clang::SourceRange& sr) {
     clang::Optional<clang::NullabilityKind> k =
         qt->getNullability(decl->getASTContext());
     return k && sr.getBegin().getRawEncoding() > sr.getEnd().getRawEncoding();
   }
 
-  MarkedSourceCache *cache_;
-  clang::tooling::Replacements *replacements_;
+  MarkedSourceCache* cache_;
+  clang::tooling::Replacements* replacements_;
   clang::SourceLocation original_begin_;
-  const std::string &formatted_range_;
-  MarkedSource *marked_source_;
-  const clang::SourceRange &name_range_;
-  MarkedSource *ident_node_ = nullptr;
+  const std::string& formatted_range_;
+  MarkedSource* marked_source_;
+  const clang::SourceRange& name_range_;
+  MarkedSource* ident_node_ = nullptr;
   std::vector<Annotation> annotations_;
 };
 }  // anonymous namespace
@@ -514,8 +514,8 @@ bool MarkedSourceGenerator::WillGenerateMarkedSource() const {
          llvm::isa<clang::ObjCTypeParamDecl>(decl_);
 }
 
-std::string GetDeclName(const clang::LangOptions &lang_options,
-                        const clang::NamedDecl *decl) {
+std::string GetDeclName(const clang::LangOptions& lang_options,
+                        const clang::NamedDecl* decl) {
   auto name = decl->getDeclName();
   auto identifier_info = name.getAsIdentifierInfo();
   if (identifier_info && !identifier_info->getName().empty()) {
@@ -530,13 +530,13 @@ std::string GetDeclName(const clang::LangOptions &lang_options,
       default:
         break;
     }
-  } else if (const auto *method_decl =
+  } else if (const auto* method_decl =
                  llvm::dyn_cast<clang::CXXMethodDecl>(decl)) {
     if (llvm::isa<clang::CXXConstructorDecl>(method_decl)) {
       return "(ctor)";
     } else if (llvm::isa<clang::CXXDestructorDecl>(method_decl)) {
       return "(dtor)";
-    } else if (const auto *conv_decl =
+    } else if (const auto* conv_decl =
                    llvm::dyn_cast<clang::CXXConversionDecl>(method_decl)) {
       auto to_type = conv_decl->getConversionType();
       if (!to_type.isNull()) {
@@ -556,12 +556,12 @@ std::string GetDeclName(const clang::LangOptions &lang_options,
 }
 
 void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
-    MarkedSource *marked_source_node,
-    const clang::ClassTemplateSpecializationDecl *decl) {
-  auto *template_decl = decl->getSpecializedTemplate();
-  auto *template_params = template_decl->getTemplateParameters();
+    MarkedSource* marked_source_node,
+    const clang::ClassTemplateSpecializationDecl* decl) {
+  auto* template_decl = decl->getSpecializedTemplate();
+  auto* template_params = template_decl->getTemplateParameters();
   auto cached_default = cache_->first_default_template_argument()->find(decl);
-  const auto &template_args = decl->getTemplateArgs();
+  const auto& template_args = decl->getTemplateArgs();
   unsigned noprint;
   if (cached_default != cache_->first_default_template_argument()->end()) {
     noprint = cached_default->second;
@@ -571,7 +571,7 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     // default args are used).
     unsigned first_default = template_params->getMinRequiredArguments();
     clang::TemplateArgumentListInfo list_prefix;
-    auto add_template_argument = [&](const clang::TemplateArgument &arg) {
+    auto add_template_argument = [&](const clang::TemplateArgument& arg) {
       switch (arg.getKind()) {
         case clang::TemplateArgument::Null:
           // This argument has not been deduced.
@@ -610,11 +610,11 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
           break;
         }
         unsigned arg_index = 0;
-        for (const auto &arg : out_arguments) {
+        for (const auto& arg : out_arguments) {
           // TODO(zarko): for certain kinds of declarations, source_arg may be
           // a tyvar reference ('type-parameter-0-0'). Can we thread through
           // the type context in those cases?
-          const auto &source_arg = template_args.get(arg_index);
+          const auto& source_arg = template_args.get(arg_index);
           if (arg.structurallyEquals(source_arg)) {
             ++arg_index;
           } else {
@@ -629,15 +629,15 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     }
     (*cache_->first_default_template_argument())[decl] = noprint;
   }
-  auto *typarams = marked_source_node->add_child();
+  auto* typarams = marked_source_node->add_child();
   typarams->set_kind(MarkedSource::PARAMETER);
   typarams->set_pre_text("<");
   typarams->set_post_child_text(", ");
   typarams->set_post_text(">");
   typarams->set_default_children_count(template_args.size() - noprint);
   auto policy = clang::PrintingPolicy(cache_->lang_options());
-  for (const auto &print_arg : template_args.asArray()) {
-    auto *next_arg = typarams->add_child();
+  for (const auto& print_arg : template_args.asArray()) {
+    auto* next_arg = typarams->add_child();
     typarams->set_kind(MarkedSource::BOX);
     // TODO(zarko): Call ReplaceMarkedSourceWithQualifiedName recursively
     // instead of using the pretty printer? If we do this, we'll need to update
@@ -654,7 +654,7 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
 }
 
 bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
-    MarkedSource *node) {
+    MarkedSource* node) {
   // We could also consider populating the context dynamically at serving
   // or denormalization time, but doing this requires unbounded recursive
   // queries, so it's probably not worth it.
@@ -662,29 +662,29 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
   // NamedDecl::printQualifiedName (from which this code is derived).
 
   // Collect contexts.
-  const auto *decl_context = decl_->getDeclContext();
-  llvm::SmallVector<const clang::DeclContext *, 8> contexts;
+  const auto* decl_context = decl_->getDeclContext();
+  llvm::SmallVector<const clang::DeclContext*, 8> contexts;
   while (decl_context && llvm::isa<clang::NamedDecl>(decl_context)) {
     contexts.push_back(decl_context);
     decl_context = decl_context->getParent();
   }
 
-  MarkedSource *self = node;
+  MarkedSource* self = node;
   if (!contexts.empty()) {
     // Avoid creating an unnecessary BOX if there are no context nodes.
-    auto *parents = node->add_child();
+    auto* parents = node->add_child();
     self = node->add_child();
     parents->set_kind(MarkedSource::CONTEXT);
     parents->set_add_final_list_token(true);
     parents->set_post_child_text("::");
     auto policy = clang::PrintingPolicy(cache_->lang_options());
-    for (const auto *decl_context : reverse(contexts)) {
-      auto *parent = parents->add_child();
-      if (const auto *spec =
+    for (const auto* decl_context : reverse(contexts)) {
+      auto* parent = parents->add_child();
+      if (const auto* spec =
               llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(
                   decl_context)) {
         parent->set_kind(MarkedSource::BOX);
-        auto *class_name = parent->add_child();
+        auto* class_name = parent->add_child();
         class_name->set_kind(MarkedSource::IDENTIFIER);
         std::string pre_text;
         {
@@ -698,7 +698,7 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
         std::string pre_text;
         {
           llvm::raw_string_ostream stream(pre_text);
-          if (const auto *namespace_decl =
+          if (const auto* namespace_decl =
                   llvm::dyn_cast<clang::NamespaceDecl>(decl_context)) {
             if (namespace_decl->isAnonymousNamespace()) {
               stream << (policy.MSVCFormatting ? "`anonymous namespace\'"
@@ -706,16 +706,16 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
             } else {
               stream << *namespace_decl;
             }
-          } else if (const auto *record_decl =
+          } else if (const auto* record_decl =
                          llvm::dyn_cast<clang::RecordDecl>(decl_context)) {
             if (!record_decl->getIdentifier())
               stream << "(anonymous " << record_decl->getKindName() << ')';
             else
               stream << *record_decl;
-          } else if (const auto *function_decl =
+          } else if (const auto* function_decl =
                          llvm::dyn_cast<clang::FunctionDecl>(decl_context)) {
             stream << *function_decl;
-          } else if (const auto *enum_decl =
+          } else if (const auto* enum_decl =
                          llvm::dyn_cast<clang::EnumDecl>(decl_context)) {
             stream << *enum_decl;
           } else {
@@ -733,7 +733,7 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
 
 absl::optional<MarkedSource>
 MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
-    const GraphObserver::NodeId &decl_id) {
+    const GraphObserver::NodeId& decl_id) {
   auto start_loc = decl_->getSourceRange().getBegin();
   if (start_loc.isMacroID()) {
     start_loc = cache_->source_manager().getExpansionLoc(start_loc);
@@ -784,10 +784,10 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
 }
 
 MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForFunction(
-    const clang::FunctionDecl *func) {
+    const clang::FunctionDecl* func) {
   MarkedSource out;
   ReplaceMarkedSourceWithQualifiedName(out.add_child());
-  auto *child = out.add_child();
+  auto* child = out.add_child();
   child->set_kind(MarkedSource::PARAMETER_LOOKUP_BY_PARAM);
   child->set_pre_text("(");
   child->set_post_child_text(", ");
@@ -802,7 +802,7 @@ MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForNamedDecl() {
 }
 
 absl::optional<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
-    const GraphObserver::NodeId &decl_id) {
+    const GraphObserver::NodeId& decl_id) {
   // MarkedSource generation is expensive. If we're not going to write out the
   // marked source later on, don't spend time on it.
   // TODO(zarko): Introduce a similar check for documentation.
@@ -811,7 +811,7 @@ absl::optional<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
   }
   if (llvm::isa<clang::VarDecl>(decl_) || llvm::isa<clang::FieldDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);
-  } else if (const auto *func = llvm::dyn_cast<clang::FunctionDecl>(decl_)) {
+  } else if (const auto* func = llvm::dyn_cast<clang::FunctionDecl>(decl_)) {
     if (FLAGS_pretty_print_function_prototypes) {
       return GenerateMarkedSourceForFunction(func);
     } else {

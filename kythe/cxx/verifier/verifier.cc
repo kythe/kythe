@@ -29,7 +29,7 @@ namespace kythe {
 namespace verifier {
 namespace {
 
-typedef std::vector<AstNode *> Database;
+typedef std::vector<AstNode*> Database;
 
 /// \brief The return code from a verifier thunk.
 using ThunkRet = size_t;
@@ -45,26 +45,26 @@ static ThunkRet kImpossible = {3};
 /// establishing that cut without changing assignments.
 static ThunkRet kFirstCut = {4};
 
-typedef const std::function<ThunkRet()> &Thunk;
+typedef const std::function<ThunkRet()>& Thunk;
 
-static std::string *kDefaultDatabase = new std::string("builtin");
-static std::string *kStandardIn = new std::string("-");
+static std::string* kDefaultDatabase = new std::string("builtin");
+static std::string* kStandardIn = new std::string("-");
 
-static bool EncodedIdentEqualTo(AstNode *a, AstNode *b) {
-  Identifier *ia = a->AsIdentifier();
-  Identifier *ib = b->AsIdentifier();
+static bool EncodedIdentEqualTo(AstNode* a, AstNode* b) {
+  Identifier* ia = a->AsIdentifier();
+  Identifier* ib = b->AsIdentifier();
   return ia->symbol() == ib->symbol();
 }
 
-static bool EncodedIdentLessThan(AstNode *a, AstNode *b) {
-  Identifier *ia = a->AsIdentifier();
-  Identifier *ib = b->AsIdentifier();
+static bool EncodedIdentLessThan(AstNode* a, AstNode* b) {
+  Identifier* ia = a->AsIdentifier();
+  Identifier* ib = b->AsIdentifier();
   return ia->symbol() < ib->symbol();
 }
 
-static bool EncodedVNameEqualTo(App *a, App *b) {
-  Tuple *ta = a->rhs()->AsTuple();
-  Tuple *tb = b->rhs()->AsTuple();
+static bool EncodedVNameEqualTo(App* a, App* b) {
+  Tuple* ta = a->rhs()->AsTuple();
+  Tuple* tb = b->rhs()->AsTuple();
   for (int i = 0; i < 5; ++i) {
     if (!EncodedIdentEqualTo(ta->element(i), tb->element(i))) {
       return false;
@@ -73,9 +73,9 @@ static bool EncodedVNameEqualTo(App *a, App *b) {
   return true;
 }
 
-static bool EncodedVNameLessThan(App *a, App *b) {
-  Tuple *ta = a->rhs()->AsTuple();
-  Tuple *tb = b->rhs()->AsTuple();
+static bool EncodedVNameLessThan(App* a, App* b) {
+  Tuple* ta = a->rhs()->AsTuple();
+  Tuple* tb = b->rhs()->AsTuple();
   for (int i = 0; i < 4; ++i) {
     if (EncodedIdentLessThan(ta->element(i), tb->element(i))) {
       return true;
@@ -87,9 +87,9 @@ static bool EncodedVNameLessThan(App *a, App *b) {
   return EncodedIdentLessThan(ta->element(4), tb->element(4));
 }
 
-static bool EncodedVNameOrIdentLessThan(AstNode *a, AstNode *b) {
-  App *aa = a->AsApp();  // nullptr if a is not a vname
-  App *ab = b->AsApp();  // nullptr if b is not a vname
+static bool EncodedVNameOrIdentLessThan(AstNode* a, AstNode* b) {
+  App* aa = a->AsApp();  // nullptr if a is not a vname
+  App* ab = b->AsApp();  // nullptr if b is not a vname
   if (aa && ab) {
     return EncodedVNameLessThan(aa, ab);
   } else if (!aa && ab) {
@@ -102,9 +102,9 @@ static bool EncodedVNameOrIdentLessThan(AstNode *a, AstNode *b) {
   }
 }
 
-static bool EncodedVNameOrIdentEqualTo(AstNode *a, AstNode *b) {
-  App *aa = a->AsApp();  // nullptr if a is not a vname
-  App *ab = b->AsApp();  // nullptr if b is not a vname
+static bool EncodedVNameOrIdentEqualTo(AstNode* a, AstNode* b) {
+  App* aa = a->AsApp();  // nullptr if a is not a vname
+  App* ab = b->AsApp();  // nullptr if b is not a vname
   if (aa && ab) {
     return EncodedVNameEqualTo(aa, ab);
   } else if (!aa && ab) {
@@ -117,9 +117,9 @@ static bool EncodedVNameOrIdentEqualTo(AstNode *a, AstNode *b) {
 }
 
 /// \brief Sort entries such that those that set fact values are adjacent.
-static bool EncodedFactLessThan(AstNode *a, AstNode *b) {
-  Tuple *ta = a->AsApp()->rhs()->AsTuple();
-  Tuple *tb = b->AsApp()->rhs()->AsTuple();
+static bool EncodedFactLessThan(AstNode* a, AstNode* b) {
+  Tuple* ta = a->AsApp()->rhs()->AsTuple();
+  Tuple* tb = b->AsApp()->rhs()->AsTuple();
   if (EncodedVNameOrIdentLessThan(ta->element(0), tb->element(0))) {
     return true;
   }
@@ -150,9 +150,9 @@ static bool EncodedFactLessThan(AstNode *a, AstNode *b) {
   return false;
 }
 
-static AstNode *DerefEVar(AstNode *node) {
+static AstNode* DerefEVar(AstNode* node) {
   while (node) {
-    if (auto *evar = node->AsEVar()) {
+    if (auto* evar = node->AsEVar()) {
       node = evar->current();
     } else {
       break;
@@ -161,39 +161,39 @@ static AstNode *DerefEVar(AstNode *node) {
   return node;
 }
 
-static Identifier *SafeAsIdentifier(AstNode *node) {
+static Identifier* SafeAsIdentifier(AstNode* node) {
   return node == nullptr ? nullptr : node->AsIdentifier();
 }
 
 struct AtomFactKey {
-  Identifier *edge_kind;
-  Identifier *fact_name;
-  Identifier *fact_value;
-  Identifier *source_vname[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
-  Identifier *target_vname[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+  Identifier* edge_kind;
+  Identifier* fact_name;
+  Identifier* fact_value;
+  Identifier* source_vname[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+  Identifier* target_vname[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
   // fact_tuple is expected to be a full tuple from a Fact head
-  AtomFactKey(AstNode *vname_head, Tuple *fact_tuple)
+  AtomFactKey(AstNode* vname_head, Tuple* fact_tuple)
       : edge_kind(SafeAsIdentifier(DerefEVar(fact_tuple->element(1)))),
         fact_name(SafeAsIdentifier(DerefEVar(fact_tuple->element(3)))),
         fact_value(SafeAsIdentifier(DerefEVar(fact_tuple->element(4)))) {
     InitVNameFields(vname_head, fact_tuple->element(0), &source_vname[0]);
     InitVNameFields(vname_head, fact_tuple->element(2), &target_vname[0]);
   }
-  void InitVNameFields(AstNode *vname_head, AstNode *maybe_vname,
-                       Identifier **out) {
+  void InitVNameFields(AstNode* vname_head, AstNode* maybe_vname,
+                       Identifier** out) {
     maybe_vname = DerefEVar(maybe_vname);
     if (maybe_vname == nullptr) {
       return;
     }
-    if (auto *app = maybe_vname->AsApp()) {
+    if (auto* app = maybe_vname->AsApp()) {
       if (DerefEVar(app->lhs()) != vname_head) {
         return;
       }
-      AstNode *maybe_tuple = DerefEVar(app->rhs());
+      AstNode* maybe_tuple = DerefEVar(app->rhs());
       if (maybe_tuple == nullptr) {
         return;
       }
-      if (auto *tuple = maybe_tuple->AsTuple()) {
+      if (auto* tuple = maybe_tuple->AsTuple()) {
         if (tuple->size() != 5) {
           return;
         }
@@ -210,8 +210,8 @@ enum class Order { LT, EQ, GT };
 // How we order incomplete keys depends on whether we're looking for
 // an upper or lower bound. See below for details. The node passed in
 // must be an application of Fact to a full fact tuple.
-static Order CompareFactWithKey(Order incomplete, AstNode *a, AtomFactKey *k) {
-  Tuple *ta = a->AsApp()->rhs()->AsTuple();
+static Order CompareFactWithKey(Order incomplete, AstNode* a, AtomFactKey* k) {
+  Tuple* ta = a->AsApp()->rhs()->AsTuple();
   if (k->edge_kind == nullptr) {
     return incomplete;
   } else if (EncodedIdentLessThan(ta->element(1), k->edge_kind)) {
@@ -233,7 +233,7 @@ static Order CompareFactWithKey(Order incomplete, AstNode *a, AtomFactKey *k) {
   } else if (!EncodedIdentEqualTo(ta->element(4), k->fact_value)) {
     return Order::GT;
   }
-  auto vname_compare = [incomplete](Tuple *va, Identifier *tuple[5]) {
+  auto vname_compare = [incomplete](Tuple* va, Identifier* tuple[5]) {
     for (size_t i = 0; i < 5; ++i) {
       if (tuple[i] == nullptr) {
         return incomplete;
@@ -247,14 +247,14 @@ static Order CompareFactWithKey(Order incomplete, AstNode *a, AtomFactKey *k) {
     }
     return Order::EQ;
   };
-  if (Tuple *vs = ta->element(0)->AsApp()->rhs()->AsTuple()) {
+  if (Tuple* vs = ta->element(0)->AsApp()->rhs()->AsTuple()) {
     auto ord = vname_compare(vs, k->source_vname);
     if (ord != Order::EQ) {
       return ord;
     }
   }
-  if (auto *app = ta->element(2)->AsApp()) {
-    if (Tuple *vt = app->rhs()->AsTuple()) {
+  if (auto* app = ta->element(2)->AsApp()) {
+    if (Tuple* vt = app->rhs()->AsTuple()) {
       auto ord = vname_compare(vt, k->target_vname);
       if (ord != Order::EQ) {
         return ord;
@@ -268,13 +268,13 @@ static Order CompareFactWithKey(Order incomplete, AstNode *a, AtomFactKey *k) {
 // (0,0,2,3) (0,1,2,3) (0,1,2,4) (1,1,2,4)
 //          ^---  (0,1,_,_)  ---^
 
-static bool FastLookupKeyLessThanFact(AtomFactKey *k, AstNode *a) {
+static bool FastLookupKeyLessThanFact(AtomFactKey* k, AstNode* a) {
   // This is used to find upper bounds, so keys with incomplete suffixes should
   // be ordered after all facts that share their complete prefixes.
   return CompareFactWithKey(Order::LT, a, k) == Order::GT;
 }
 
-static bool FastLookupFactLessThanKey(AstNode *a, AtomFactKey *k) {
+static bool FastLookupFactLessThanKey(AstNode* a, AtomFactKey* k) {
   // This is used to find lower bounds, so keys with incomplete suffixes should
   // be ordered after facts with lower prefixes but before facts with complete
   // suffixes.
@@ -287,9 +287,9 @@ static bool FastLookupFactLessThanKey(AstNode *a, AtomFactKey *k) {
 // with the first three fields present; then source_node
 // missing some of the time; then target_node missing most of
 // the time.
-static bool FastLookupFactLessThan(AstNode *a, AstNode *b) {
-  Tuple *ta = a->AsApp()->rhs()->AsTuple();
-  Tuple *tb = b->AsApp()->rhs()->AsTuple();
+static bool FastLookupFactLessThan(AstNode* a, AstNode* b) {
+  Tuple* ta = a->AsApp()->rhs()->AsTuple();
+  Tuple* tb = b->AsApp()->rhs()->AsTuple();
   if (EncodedIdentLessThan(ta->element(1), tb->element(1))) {
     return true;
   }
@@ -332,15 +332,15 @@ class Solver {
  public:
   using Inspection = AssertionParser::Inspection;
 
-  Solver(Verifier *context, Database &database,
-         std::multimap<std::pair<size_t, size_t>, AstNode *> &anchors,
-         std::function<bool(Verifier *, const Inspection &)> &inspect)
+  Solver(Verifier* context, Database& database,
+         std::multimap<std::pair<size_t, size_t>, AstNode*>& anchors,
+         std::function<bool(Verifier*, const Inspection&)>& inspect)
       : context_(*context),
         database_(database),
         anchors_(anchors),
         inspect_(inspect) {}
 
-  ThunkRet UnifyTuple(Tuple *st, Tuple *tt, size_t ofs, size_t max,
+  ThunkRet UnifyTuple(Tuple* st, Tuple* tt, size_t ofs, size_t max,
                       ThunkRet cut, Thunk f) {
     if (ofs == max) return f();
     return Unify(st->element(ofs), tt->element(ofs), cut,
@@ -349,32 +349,32 @@ class Solver {
                  });
   }
 
-  ThunkRet Unify(AstNode *s, AstNode *t, ThunkRet cut, Thunk f) {
-    if (EVar *e = s->AsEVar()) {
+  ThunkRet Unify(AstNode* s, AstNode* t, ThunkRet cut, Thunk f) {
+    if (EVar* e = s->AsEVar()) {
       return UnifyEVar(e, t, cut, f);
-    } else if (EVar *e = t->AsEVar()) {
+    } else if (EVar* e = t->AsEVar()) {
       return UnifyEVar(e, s, cut, f);
-    } else if (Identifier *si = s->AsIdentifier()) {
-      if (Identifier *ti = t->AsIdentifier()) {
+    } else if (Identifier* si = s->AsIdentifier()) {
+      if (Identifier* ti = t->AsIdentifier()) {
         if (si->symbol() == ti->symbol()) {
           return f();
         }
       }
-    } else if (App *sa = s->AsApp()) {
-      if (App *ta = t->AsApp()) {
+    } else if (App* sa = s->AsApp()) {
+      if (App* ta = t->AsApp()) {
         return Unify(sa->lhs(), ta->lhs(), cut, [this, sa, ta, cut, &f]() {
           return Unify(sa->rhs(), ta->rhs(), cut, f);
         });
       }
-    } else if (Tuple *st = s->AsTuple()) {
-      if (Tuple *tt = t->AsTuple()) {
+    } else if (Tuple* st = s->AsTuple()) {
+      if (Tuple* tt = t->AsTuple()) {
         if (st->size() != tt->size()) {
           return kNoException;
         }
         return UnifyTuple(st, tt, 0, st->size(), cut, f);
       }
-    } else if (Range *sr = s->AsRange()) {
-      if (Range *tr = t->AsRange()) {
+    } else if (Range* sr = s->AsRange()) {
+      if (Range* tr = t->AsRange()) {
         if (sr->begin() == tr->begin() && sr->end() == tr->end()) {
           return f();
         }
@@ -383,19 +383,19 @@ class Solver {
     return kNoException;
   }
 
-  bool Occurs(EVar *e, AstNode *t) {
-    if (App *a = t->AsApp()) {
+  bool Occurs(EVar* e, AstNode* t) {
+    if (App* a = t->AsApp()) {
       return Occurs(e, a->lhs()) || Occurs(e, a->rhs());
-    } else if (EVar *ev = t->AsEVar()) {
+    } else if (EVar* ev = t->AsEVar()) {
       return ev->current() ? Occurs(e, ev->current()) : e == ev;
-    } else if (Tuple *tu = t->AsTuple()) {
+    } else if (Tuple* tu = t->AsTuple()) {
       for (size_t i = 0, c = tu->size(); i != c; ++i) {
         if (Occurs(e, tu->element(i))) {
           return true;
         }
       }
       return false;
-    } else if (Range *r = t->AsRange()) {
+    } else if (Range* r = t->AsRange()) {
       return false;
     } else {
       CHECK(t->AsIdentifier() && "Inexhaustive match.");
@@ -404,8 +404,8 @@ class Solver {
     return true;
   }
 
-  ThunkRet UnifyEVar(EVar *e, AstNode *t, ThunkRet cut, Thunk f) {
-    if (AstNode *ec = e->current()) {
+  ThunkRet UnifyEVar(EVar* e, AstNode* t, ThunkRet cut, Thunk f) {
+    if (AstNode* ec = e->current()) {
       return Unify(ec, t, cut, f);
     }
     if (t->AsEVar() == e) {
@@ -428,10 +428,10 @@ class Solver {
     return f_ret;
   }
 
-  ThunkRet MatchAtomVersusDatabase(AstNode *atom, ThunkRet cut, Thunk f) {
-    if (auto *app = atom->AsApp()) {
+  ThunkRet MatchAtomVersusDatabase(AstNode* atom, ThunkRet cut, Thunk f) {
+    if (auto* app = atom->AsApp()) {
       if (app->lhs() == context_.fact_id()) {
-        if (auto *tuple = app->rhs()->AsTuple()) {
+        if (auto* tuple = app->rhs()->AsTuple()) {
           if (tuple->size() == 5) {
             AtomFactKey key(context_.vname_id(), tuple);
             // Make use of the fast lookup sort order.
@@ -462,11 +462,11 @@ class Solver {
 
   /// \brief If `atom` has the syntactic form =(a, b), returns the tuple (a, b).
   /// Otherwise returns `null`.
-  Tuple *MatchEqualsArgs(AstNode *atom) {
-    if (App *a = atom->AsApp()) {
-      if (Identifier *id = a->lhs()->AsIdentifier()) {
+  Tuple* MatchEqualsArgs(AstNode* atom) {
+    if (App* a = atom->AsApp()) {
+      if (Identifier* id = a->lhs()->AsIdentifier()) {
         if (id->symbol() == context_.eq_id()->symbol()) {
-          if (Tuple *tu = a->rhs()->AsTuple()) {
+          if (Tuple* tu = a->rhs()->AsTuple()) {
             if (tu->size() == 2) {
               return tu;
             }
@@ -477,11 +477,11 @@ class Solver {
     return nullptr;
   }
 
-  ThunkRet MatchAtom(AstNode *atom, AstNode *program, ThunkRet cut, Thunk f) {
+  ThunkRet MatchAtom(AstNode* atom, AstNode* program, ThunkRet cut, Thunk f) {
     // We only have the database and eq-constraints right now.
     assert(program == nullptr);
-    if (auto *tu = MatchEqualsArgs(atom)) {
-      if (Range *r = tu->element(0)->AsRange()) {
+    if (auto* tu = MatchEqualsArgs(atom)) {
+      if (Range* r = tu->element(0)->AsRange()) {
         auto anchors =
             anchors_.equal_range(std::make_pair(r->begin(), r->end()));
         if (anchors.first == anchors.second) {
@@ -503,9 +503,9 @@ class Solver {
     return MatchAtomVersusDatabase(atom, cut, f);
   }
 
-  ThunkRet SolveGoal(AstNode *goal, ThunkRet cut, Thunk f) {
+  ThunkRet SolveGoal(AstNode* goal, ThunkRet cut, Thunk f) {
     // We only have atomic goals right now.
-    if (App *a = goal->AsApp()) {
+    if (App* a = goal->AsApp()) {
       return MatchAtom(goal, nullptr, cut, f);
     } else {
       // TODO(zarko): Replace with a configurable PrettyPrinter.
@@ -514,7 +514,7 @@ class Solver {
     }
   }
 
-  ThunkRet SolveGoalArray(AssertionParser::GoalGroup *group, size_t cur,
+  ThunkRet SolveGoalArray(AssertionParser::GoalGroup* group, size_t cur,
                           ThunkRet cut, Thunk f) {
     if (cur > highest_goal_reached_) {
       highest_goal_reached_ = cur;
@@ -528,7 +528,7 @@ class Solver {
   }
 
   bool PerformInspection() {
-    for (const auto &inspection : context_.parser()->inspections()) {
+    for (const auto& inspection : context_.parser()->inspections()) {
       if (!inspect_(&context_, inspection)) {
         return false;
       }
@@ -536,10 +536,10 @@ class Solver {
     return true;
   }
 
-  ThunkRet SolveGoalGroups(AssertionParser *context, Thunk f) {
+  ThunkRet SolveGoalGroups(AssertionParser* context, Thunk f) {
     for (size_t cur = 0, cut = kFirstCut; cur < context->groups().size();
          ++cur, ++cut) {
-      auto *group = &context->groups()[cur];
+      auto* group = &context->groups()[cur];
       if (cur > highest_group_reached_) {
         highest_goal_reached_ = 0;
         highest_group_reached_ = cur;
@@ -575,10 +575,10 @@ class Solver {
   size_t highest_goal_reached() const { return highest_goal_reached_; }
 
  private:
-  Verifier &context_;
-  Database &database_;
-  std::multimap<std::pair<size_t, size_t>, AstNode *> &anchors_;
-  std::function<bool(Verifier *, const Inspection &)> &inspect_;
+  Verifier& context_;
+  Database& database_;
+  std::multimap<std::pair<size_t, size_t>, AstNode*>& anchors_;
+  std::function<bool(Verifier*, const Inspection&)>& inspect_;
   size_t highest_group_reached_ = 0;
   size_t highest_goal_reached_ = 0;
 };
@@ -639,14 +639,14 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   SetGoalCommentPrefix("//-");
 }
 
-void Verifier::SetGoalCommentPrefix(const std::string &it) {
+void Verifier::SetGoalCommentPrefix(const std::string& it) {
   std::string error;
   auto escaped = RE2::QuoteMeta(it);
   CHECK(SetGoalCommentRegex("\\s*" + escaped + "(.*)", &error)) << error;
 }
 
-bool Verifier::SetGoalCommentRegex(const std::string &regex,
-                                   std::string *error) {
+bool Verifier::SetGoalCommentRegex(const std::string& regex,
+                                   std::string* error) {
   auto re2 = absl::make_unique<RE2>(regex);
   if (re2->error_code() != RE2::NoError) {
     if (error) {
@@ -668,7 +668,7 @@ bool Verifier::SetGoalCommentRegex(const std::string &regex,
   return true;
 }
 
-bool Verifier::LoadInlineProtoFile(const std::string &file_data) {
+bool Verifier::LoadInlineProtoFile(const std::string& file_data) {
   kythe::proto::Entries entries;
   bool ok = google::protobuf::TextFormat::ParseFromString(file_data, &entries);
   if (!ok) {
@@ -685,7 +685,7 @@ bool Verifier::LoadInlineProtoFile(const std::string &file_data) {
                                        "\\s*\\#\\-(.*)");
 }
 
-bool Verifier::LoadInlineRuleFile(const std::string &filename) {
+bool Verifier::LoadInlineRuleFile(const std::string& filename) {
   bool parsed = parser_.ParseInlineRuleFile(filename, *goal_comment_regex_);
   if (!parsed) {
     return false;
@@ -693,7 +693,7 @@ bool Verifier::LoadInlineRuleFile(const std::string &filename) {
   return true;
 }
 
-bool Verifier::LoadInMemoryRuleFile(AstNode *vname, Symbol text) {
+bool Verifier::LoadInMemoryRuleFile(AstNode* vname, Symbol text) {
   StringPrettyPrinter printer;
   vname->Dump(symbol_table_, &printer);
   fake_files_[printer.str()] = text;
@@ -710,13 +710,13 @@ void Verifier::SaveEVarAssignments() {
 
 void Verifier::ShowGoals() {
   FileHandlePrettyPrinter printer(stdout);
-  for (auto &group : parser_.groups()) {
+  for (auto& group : parser_.groups()) {
     if (group.accept_if == AssertionParser::GoalGroup::kNoneMayFail) {
       printer.Print("group:\n");
     } else {
       printer.Print("negated group:\n");
     }
-    for (auto *goal : group.goals) {
+    for (auto* goal : group.goals) {
       printer.Print("  goal: ");
       goal->Dump(symbol_table_, &printer);
       printer.Print("\n");
@@ -724,10 +724,10 @@ void Verifier::ShowGoals() {
   }
 }
 
-static bool PrintInMemoryFileSection(const std::string &file_text,
+static bool PrintInMemoryFileSection(const std::string& file_text,
                                      size_t start_line, size_t start_ix,
                                      size_t end_line, size_t end_ix,
-                                     PrettyPrinter *printer) {
+                                     PrettyPrinter* printer) {
   size_t current_line = 0;
   size_t pos = 0;
   auto walk_lines = [&](size_t until_line) {
@@ -756,14 +756,14 @@ static bool PrintInMemoryFileSection(const std::string &file_text,
   return true;
 }
 
-static bool PrintFileSection(FILE *file, size_t start_line, size_t start_ix,
+static bool PrintFileSection(FILE* file, size_t start_line, size_t start_ix,
                              size_t end_line, size_t end_ix,
-                             PrettyPrinter *printer) {
+                             PrettyPrinter* printer) {
   if (!file) {
     printer->Print("(null file)\n");
     return false;
   }
-  char *lineptr = nullptr;
+  char* lineptr = nullptr;
   size_t buf_length = 0;
   ssize_t line_length = 0;
   size_t line_number = 0;
@@ -820,7 +820,7 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
     printer.Print("group, whose last goal was)\n  ");
     --index;
   }
-  auto *goal = parser_.groups()[group].goals[index];
+  auto* goal = parser_.groups()[group].goals[index];
   yy::location goal_location = goal->location();
   yy::position goal_begin = goal_location.begin;
   yy::position goal_end = goal_location.end;
@@ -850,7 +850,7 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
           &printer);
     } else if (*goal_end.filename != *kStandardIn &&
                *goal_begin.filename == *goal_end.filename) {
-      FILE *f = fopen(goal_end.filename->c_str(), "r");
+      FILE* f = fopen(goal_end.filename->c_str(), "r");
       if (f != nullptr) {
         printed_goal =
             PrintFileSection(f, goal_begin.line - 1, goal_begin.column - 1,
@@ -865,7 +865,7 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 }
 
 bool Verifier::VerifyAllGoals(
-    std::function<bool(Verifier *, const Solver::Inspection &)> inspect) {
+    std::function<bool(Verifier*, const Solver::Inspection&)> inspect) {
   if (!PrepareDatabase()) {
     return false;
   }
@@ -877,8 +877,8 @@ bool Verifier::VerifyAllGoals(
 }
 
 bool Verifier::VerifyAllGoals() {
-  return VerifyAllGoals([this](Verifier *context,
-                               const Solver::Inspection &inspection) {
+  return VerifyAllGoals([this](Verifier* context,
+                               const Solver::Inspection& inspection) {
     if (inspection.kind == Solver::Inspection::Kind::EXPLICIT) {
       FileHandlePrettyPrinter printer(saving_assignments_ ? stderr : stdout);
       printer.Print(inspection.label);
@@ -893,34 +893,34 @@ bool Verifier::VerifyAllGoals() {
   });
 }
 
-Identifier *Verifier::IdentifierFor(const yy::location &location,
-                                    const std::string &token) {
+Identifier* Verifier::IdentifierFor(const yy::location& location,
+                                    const std::string& token) {
   Symbol symbol = symbol_table_.intern(token);
   return new (&arena_) Identifier(location, symbol);
 }
 
-Identifier *Verifier::IdentifierFor(const yy::location &location, int integer) {
+Identifier* Verifier::IdentifierFor(const yy::location& location, int integer) {
   Symbol symbol = symbol_table_.intern(std::to_string(integer));
   return new (&arena_) Identifier(location, symbol);
 }
 
-AstNode *Verifier::MakePredicate(const yy::location &location, AstNode *head,
-                                 std::initializer_list<AstNode *> values) {
+AstNode* Verifier::MakePredicate(const yy::location& location, AstNode* head,
+                                 std::initializer_list<AstNode*> values) {
   size_t values_count = values.size();
-  AstNode **body = (AstNode **)arena_.New(values_count * sizeof(AstNode *));
+  AstNode** body = (AstNode**)arena_.New(values_count * sizeof(AstNode*));
   size_t vn = 0;
-  for (AstNode *v : values) {
+  for (AstNode* v : values) {
     body[vn] = v;
     ++vn;
   }
-  AstNode *tuple = new (&arena_) Tuple(location, values_count, body);
+  AstNode* tuple = new (&arena_) Tuple(location, values_count, body);
   return new (&arena_) App(location, head, tuple);
 }
 
 /// \brief Sort nodes such that nodes and facts are grouped.
-static bool GraphvizSortOrder(AstNode *a, AstNode *b) {
-  Tuple *ta = a->AsApp()->rhs()->AsTuple();
-  Tuple *tb = b->AsApp()->rhs()->AsTuple();
+static bool GraphvizSortOrder(AstNode* a, AstNode* b) {
+  Tuple* ta = a->AsApp()->rhs()->AsTuple();
+  Tuple* tb = b->AsApp()->rhs()->AsTuple();
   if (EncodedVNameOrIdentLessThan(ta->element(0), tb->element(0))) {
     return true;
   }
@@ -951,9 +951,9 @@ static bool GraphvizSortOrder(AstNode *a, AstNode *b) {
   return false;
 }
 
-static bool EncodedFactEqualTo(AstNode *a, AstNode *b) {
-  Tuple *ta = a->AsApp()->rhs()->AsTuple();
-  Tuple *tb = b->AsApp()->rhs()->AsTuple();
+static bool EncodedFactEqualTo(AstNode* a, AstNode* b) {
+  Tuple* ta = a->AsApp()->rhs()->AsTuple();
+  Tuple* tb = b->AsApp()->rhs()->AsTuple();
   return EncodedVNameOrIdentEqualTo(ta->element(0), tb->element(0)) &&
          EncodedIdentEqualTo(ta->element(1), tb->element(1)) &&
          EncodedVNameOrIdentEqualTo(ta->element(2), tb->element(2)) &&
@@ -961,8 +961,8 @@ static bool EncodedFactEqualTo(AstNode *a, AstNode *b) {
          EncodedIdentEqualTo(ta->element(4), tb->element(4));
 }
 
-static bool EncodedVNameHasValidForm(Verifier *cxt, AstNode *a) {
-  Tuple *ta = a->AsApp()->rhs()->AsTuple();
+static bool EncodedVNameHasValidForm(Verifier* cxt, AstNode* a) {
+  Tuple* ta = a->AsApp()->rhs()->AsTuple();
   return ta->element(0) != cxt->empty_string_id() ||
          ta->element(1) != cxt->empty_string_id() ||
          ta->element(2) != cxt->empty_string_id() ||
@@ -970,8 +970,8 @@ static bool EncodedVNameHasValidForm(Verifier *cxt, AstNode *a) {
          ta->element(4) != cxt->empty_string_id();
 }
 
-static bool EncodedFactHasValidForm(Verifier *cxt, AstNode *a) {
-  Tuple *ta = a->AsApp()->rhs()->AsTuple();
+static bool EncodedFactHasValidForm(Verifier* cxt, AstNode* a) {
+  Tuple* ta = a->AsApp()->rhs()->AsTuple();
   if (ta->element(0) == cxt->empty_string_id() ||
       !EncodedVNameHasValidForm(cxt, ta->element(0))) {
     // Always need a source.
@@ -995,7 +995,7 @@ static bool EncodedFactHasValidForm(Verifier *cxt, AstNode *a) {
       if (!EncodedIdentEqualTo(ta->element(3), cxt->ordinal_id())) {
         return false;
       }
-      const std::string &ordinal_val =
+      const std::string& ordinal_val =
           cxt->symbol_table()->text(ta->element(4)->AsIdentifier()->symbol());
       // TODO: check if valid int
       return true;
@@ -1018,11 +1018,11 @@ bool Verifier::PrepareDatabase() {
   // Now we can do a simple pairwise check on each of the facts to see
   // whether the invariants hold.
   bool is_ok = true;
-  AstNode *last_anchor_vname = nullptr;
-  AstNode *last_file_vname = nullptr;
+  AstNode* last_anchor_vname = nullptr;
+  AstNode* last_file_vname = nullptr;
   size_t last_anchor_start = ~0;
   for (size_t f = 0; f < facts_.size(); ++f) {
-    AstNode *fb = facts_[f];
+    AstNode* fb = facts_[f];
 
     if (!EncodedFactHasValidForm(this, fb)) {
       printer.Print("Fact has invalid form:\n  ");
@@ -1031,7 +1031,7 @@ bool Verifier::PrepareDatabase() {
       is_ok = false;
       continue;
     }
-    Tuple *tb = fb->AsApp()->rhs()->AsTuple();
+    Tuple* tb = fb->AsApp()->rhs()->AsTuple();
     if (tb->element(1) == empty_string_id_ &&
         tb->element(2) == empty_string_id_) {
       bool is_kind_fact = EncodedIdentEqualTo(tb->element(3), kind_id_);
@@ -1097,7 +1097,7 @@ bool Verifier::PrepareDatabase() {
       continue;
     }
 
-    AstNode *fa = facts_[f - 1];
+    AstNode* fa = facts_[f - 1];
     if (!ignore_dups_ && EncodedFactEqualTo(fa, fb)) {
       printer.Print("Two facts were equal:\n  ");
       fa->Dump(symbol_table_, &printer);
@@ -1107,7 +1107,7 @@ bool Verifier::PrepareDatabase() {
       is_ok = false;
       continue;
     }
-    Tuple *ta = fa->AsApp()->rhs()->AsTuple();
+    Tuple* ta = fa->AsApp()->rhs()->AsTuple();
     if (EncodedVNameEqualTo(ta->element(0)->AsApp(), tb->element(0)->AsApp()) &&
         ta->element(1) == empty_string_id_ &&
         tb->element(1) == empty_string_id_ &&
@@ -1122,8 +1122,8 @@ bool Verifier::PrepareDatabase() {
         ta->element(0)->Dump(symbol_table_, &printer);
         printer.Print("\n  ");
         printer.Print("\nThe decoded values were:\n");
-        auto print_decoded = [&](AstNode *value) {
-          if (auto *ident = value->AsIdentifier()) {
+        auto print_decoded = [&](AstNode* value) {
+          if (auto* ident = value->AsIdentifier()) {
             proto::common::MarkedSource marked_source;
             if (!marked_source.ParseFromString(
                     symbol_table_.text(ident->symbol()))) {
@@ -1156,9 +1156,9 @@ bool Verifier::PrepareDatabase() {
   return is_ok;
 }
 
-AstNode *Verifier::ConvertVName(const yy::location &loc,
-                                const kythe::proto::VName &vname) {
-  AstNode **values = (AstNode **)arena_.New(sizeof(AstNode *) * 5);
+AstNode* Verifier::ConvertVName(const yy::location& loc,
+                                const kythe::proto::VName& vname) {
+  AstNode** values = (AstNode**)arena_.New(sizeof(AstNode*) * 5);
   values[0] = vname.signature().empty() ? empty_string_id_
                                         : IdentifierFor(loc, vname.signature());
   values[1] = vname.corpus().empty() ? empty_string_id_
@@ -1169,19 +1169,19 @@ AstNode *Verifier::ConvertVName(const yy::location &loc,
                                    : IdentifierFor(loc, vname.path());
   values[4] = vname.language().empty() ? empty_string_id_
                                        : IdentifierFor(loc, vname.language());
-  AstNode *tuple = new (&arena_) Tuple(loc, 5, values);
+  AstNode* tuple = new (&arena_) Tuple(loc, 5, values);
   return new (&arena_) App(vname_id_, tuple);
 }
 
-AstNode *Verifier::NewUniqueVName(const yy::location &loc) {
+AstNode* Verifier::NewUniqueVName(const yy::location& loc) {
   return MakePredicate(
       loc, vname_id_,
       {new (&arena_) Identifier(loc, symbol_table_.unique()), empty_string_id_,
        empty_string_id_, empty_string_id_, empty_string_id_});
 }
 
-AstNode *Verifier::ConvertCodeFact(const yy::location &loc,
-                                   const google::protobuf::string &code_data) {
+AstNode* Verifier::ConvertCodeFact(const yy::location& loc,
+                                   const google::protobuf::string& code_data) {
   proto::common::MarkedSource marked_source;
   if (!marked_source.ParseFromString(code_data)) {
     std::cerr << loc << ": can't parse code protobuf" << std::endl;
@@ -1190,12 +1190,12 @@ AstNode *Verifier::ConvertCodeFact(const yy::location &loc,
   return ConvertMarkedSource(loc, marked_source);
 }
 
-AstNode *Verifier::ConvertMarkedSource(const yy::location &loc,
-                                       const proto::common::MarkedSource &source) {
+AstNode* Verifier::ConvertMarkedSource(
+    const yy::location& loc, const proto::common::MarkedSource& source) {
   // Explode each MarkedSource message into a node with an unutterable vname.
-  auto *vname = NewUniqueVName(loc);
+  auto* vname = NewUniqueVName(loc);
   for (int child = 0; child < source.child_size(); ++child) {
-    auto *child_vname = ConvertMarkedSource(loc, source.child(child));
+    auto* child_vname = ConvertMarkedSource(loc, source.child(child));
     if (child_vname == nullptr) {
       return nullptr;
     }
@@ -1204,7 +1204,7 @@ AstNode *Verifier::ConvertMarkedSource(const yy::location &loc,
         {vname, marked_source_child_id_, child_vname, ordinal_id_,
          IdentifierFor(builtin_location_, std::to_string(child))}));
   }
-  for (const auto &link : source.link()) {
+  for (const auto& link : source.link()) {
     if (link.definition_size() != 1) {
       std::cerr << loc << ": bad link: want one definition" << std::endl;
       return nullptr;
@@ -1219,7 +1219,7 @@ AstNode *Verifier::ConvertMarkedSource(const yy::location &loc,
                                     ConvertVName(loc, from_uri.second.v_name()),
                                     root_id_, empty_string_id_}));
   }
-  auto emit_fact = [&](AstNode *fact_id, AstNode *fact_value) {
+  auto emit_fact = [&](AstNode* fact_id, AstNode* fact_value) {
     facts_.push_back(MakePredicate(
         loc, fact_id_,
         {vname, empty_string_id_, empty_string_id_, fact_id, fact_value}));
@@ -1275,15 +1275,15 @@ AstNode *Verifier::ConvertMarkedSource(const yy::location &loc,
   return vname;
 }
 
-bool Verifier::AssertSingleFact(std::string *database, unsigned int fact_id,
-                                const kythe::proto::Entry &entry) {
+bool Verifier::AssertSingleFact(std::string* database, unsigned int fact_id,
+                                const kythe::proto::Entry& entry) {
   yy::location loc;
   loc.initialize(database);
   loc.begin.column = 1;
   loc.begin.line = fact_id;
   loc.end = loc.begin;
   Symbol code_symbol = code_id_->AsIdentifier()->symbol();
-  AstNode **values = (AstNode **)arena_.New(sizeof(AstNode *) * 5);
+  AstNode** values = (AstNode**)arena_.New(sizeof(AstNode*) * 5);
   values[0] =
       entry.has_source() ? ConvertVName(loc, entry.source()) : empty_string_id_;
   // We're removing support for ordinal facts. Support them during the
@@ -1325,8 +1325,8 @@ bool Verifier::AssertSingleFact(std::string *database, unsigned int fact_id,
                                    : empty_string_id_;
   }
 
-  AstNode *tuple = new (&arena_) Tuple(loc, 5, values);
-  AstNode *fact = new (&arena_) App(fact_id_, tuple);
+  AstNode* tuple = new (&arena_) Tuple(loc, 5, values);
+  AstNode* fact = new (&arena_) App(fact_id_, tuple);
 
   database_prepared_ = false;
   facts_.push_back(fact);
@@ -1342,8 +1342,8 @@ void Verifier::DumpAsJson() {
   FileHandlePrettyPrinter printer(stdout);
   QuoteEscapingPrettyPrinter escaping_printer(printer);
   FileHandlePrettyPrinter dprinter(stderr);
-  auto DumpAsJson = [this, &printer, &escaping_printer](const char *label,
-                                                        AstNode *node) {
+  auto DumpAsJson = [this, &printer, &escaping_printer](const char* label,
+                                                        AstNode* node) {
     printer.Print(label);
     if (node == empty_string_id()) {
       // Canonicalize "" as null in the JSON output.
@@ -1354,13 +1354,13 @@ void Verifier::DumpAsJson() {
       printer.Print("\"");
     }
   };
-  auto DumpVName = [this, &printer, &DumpAsJson](const char *label,
-                                                 AstNode *node) {
+  auto DumpVName = [this, &printer, &DumpAsJson](const char* label,
+                                                 AstNode* node) {
     printer.Print(label);
     if (node == empty_string_id()) {
       printer.Print("null");
     } else {
-      Tuple *vname = node->AsApp()->rhs()->AsTuple();
+      Tuple* vname = node->AsApp()->rhs()->AsTuple();
       printer.Print("{");
       DumpAsJson("\"signature\":", vname->element(0));
       DumpAsJson(",\"corpus\":", vname->element(1));
@@ -1372,8 +1372,8 @@ void Verifier::DumpAsJson() {
   };
   printer.Print("[");
   for (size_t i = 0; i < facts_.size(); ++i) {
-    AstNode *fact = facts_[i];
-    Tuple *t = fact->AsApp()->rhs()->AsTuple();
+    AstNode* fact = facts_[i];
+    Tuple* t = fact->AsApp()->rhs()->AsTuple();
     printer.Print("{");
     DumpVName("\"source\":", t->element(0));
     DumpAsJson(",\"edge_kind\":", t->element(1));
@@ -1390,12 +1390,12 @@ void Verifier::DumpAsDot() {
     return;
   }
   std::map<std::string, std::string> vname_labels;
-  for (const auto &label_vname : saved_assignments_) {
+  for (const auto& label_vname : saved_assignments_) {
     if (!label_vname.second) {
       continue;
     }
-    if (App *a = label_vname.second->AsApp()) {
-      if (Tuple *t = a->rhs()->AsTuple()) {
+    if (App* a = label_vname.second->AsApp()) {
+      if (Tuple* t = a->rhs()->AsTuple()) {
         StringPrettyPrinter printer;
         QuoteEscapingPrettyPrinter quote_printer(printer);
         label_vname.second->Dump(symbol_table_, &printer);
@@ -1408,14 +1408,14 @@ void Verifier::DumpAsDot() {
       }
     }
   }
-  auto GetLabel = [&](AstNode *node) {
+  auto GetLabel = [&](AstNode* node) {
     if (!node) {
       return std::string();
     }
     StringPrettyPrinter id_string;
     QuoteEscapingPrettyPrinter id_quote(id_string);
     node->Dump(symbol_table_, &id_string);
-    const auto &label = vname_labels.find(id_string.str());
+    const auto& label = vname_labels.find(id_string.str());
     if (label != vname_labels.end()) {
       return label->second;
     } else {
@@ -1429,8 +1429,8 @@ void Verifier::DumpAsDot() {
   FileHandlePrettyPrinter dprinter(stderr);
   printer.Print("digraph G {\n");
   for (size_t i = 0; i < facts_.size(); ++i) {
-    AstNode *fact = facts_[i];
-    Tuple *t = fact->AsApp()->rhs()->AsTuple();
+    AstNode* fact = facts_[i];
+    Tuple* t = fact->AsApp()->rhs()->AsTuple();
     printer.Print("\"");
     t->element(0)->Dump(symbol_table_, &quote_printer);
     printer.Print("\"");
@@ -1442,7 +1442,7 @@ void Verifier::DumpAsDot() {
       bool is_file_node = false;
       size_t first_fact = i, last_fact = facts_.size();
       for (; i < facts_.size(); ++i) {
-        Tuple *nt = facts_[i]->AsApp()->rhs()->AsTuple();
+        Tuple* nt = facts_[i]->AsApp()->rhs()->AsTuple();
         if (!EncodedVNameOrIdentEqualTo(nt->element(0), t->element(0)) ||
             nt->element(1) != empty_string_id()) {
           // Moved past the fact block or moved to a different source node.
@@ -1468,7 +1468,7 @@ void Verifier::DumpAsDot() {
       } else {
         printer.Print(" [ label=<<TABLE>");
         printer.Print("<TR><TD COLSPAN=\"2\">");
-        Tuple *nt = facts_[first_fact]->AsApp()->rhs()->AsTuple();
+        Tuple* nt = facts_[first_fact]->AsApp()->rhs()->AsTuple();
         // Since all of our facts are well-formed, we know this is a vname.
         nt->element(0)->AsApp()->rhs()->Dump(symbol_table_, &html_printer);
         if (!label.empty()) {
@@ -1477,7 +1477,7 @@ void Verifier::DumpAsDot() {
         }
         printer.Print("</TD></TR>");
         for (i = first_fact; i < last_fact; ++i) {
-          Tuple *nt = facts_[i]->AsApp()->rhs()->AsTuple();
+          Tuple* nt = facts_[i]->AsApp()->rhs()->AsTuple();
           printer.Print("<TR><TD>");
           nt->element(3)->Dump(symbol_table_, &html_printer);
           printer.Print("</TD><TD>");

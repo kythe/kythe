@@ -43,10 +43,10 @@ StatusCode SystemStatusCode(int sys_error) {
     case ETIMEDOUT:  // Connection timed out
     case ETIME:      // Timer expired
       return StatusCode::kDeadlineExceeded;
-    case ENODEV:     // No such device
-    case ENOENT:     // No such file or directory
-    case ENXIO:      // No such device or address
-    case ESRCH:      // No such process
+    case ENODEV:  // No such device
+    case ENOENT:  // No such file or directory
+    case ENXIO:   // No such device or address
+    case ESRCH:   // No such process
       return StatusCode::kNotFound;
     case EEXIST:         // File exists
     case EADDRNOTAVAIL:  // Address not available

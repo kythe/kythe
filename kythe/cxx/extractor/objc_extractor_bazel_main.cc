@@ -90,8 +90,8 @@ struct XAState {
   std::string sdkroot_script;
 };
 
-static bool ContainsUnsupportedArg(const std::vector<std::string> &args) {
-  for (const auto &arg : args) {
+static bool ContainsUnsupportedArg(const std::vector<std::string>& args) {
+  for (const auto& arg : args) {
     // We do not support compilations using modules yet.
     if (arg == "-fmodules") {
       return true;
@@ -100,16 +100,16 @@ static bool ContainsUnsupportedArg(const std::vector<std::string> &args) {
   return false;
 }
 
-static bool LoadSpawnInfo(const XAState &xa_state,
-                          const blaze::ExtraActionInfo &info,
-                          kythe::ExtractorConfiguration &config) {
+static bool LoadSpawnInfo(const XAState& xa_state,
+                          const blaze::ExtraActionInfo& info,
+                          kythe::ExtractorConfiguration& config) {
   blaze::SpawnInfo spawn_info = info.GetExtension(blaze::SpawnInfo::spawn_info);
 
   std::vector<std::string> args;
   // If the user didn't specify a script path, don't mutate the arguments in the
   // extra action.
   if (xa_state.devdir_script.empty() || xa_state.sdkroot_script.empty()) {
-    for (const auto &i : spawn_info.argument()) {
+    for (const auto& i : spawn_info.argument()) {
       std::string arg = i;
       args.push_back(arg);
     }
@@ -137,9 +137,9 @@ static bool LoadSpawnInfo(const XAState &xa_state,
   return true;
 }
 
-static bool LoadCppInfo(const XAState &xa_state,
-                        const blaze::ExtraActionInfo &info,
-                        kythe::ExtractorConfiguration &config) {
+static bool LoadCppInfo(const XAState& xa_state,
+                        const blaze::ExtraActionInfo& info,
+                        kythe::ExtractorConfiguration& config) {
   blaze::CppCompileInfo cpp_info =
       info.GetExtension(blaze::CppCompileInfo::cpp_compile_info);
 
@@ -148,7 +148,7 @@ static bool LoadCppInfo(const XAState &xa_state,
   // extra action.
   if (xa_state.devdir_script.empty() || xa_state.sdkroot_script.empty()) {
     args.push_back(cpp_info.tool());
-    for (const auto &i : cpp_info.compiler_option()) {
+    for (const auto& i : cpp_info.compiler_option()) {
       std::string arg = i;
       args.push_back(arg);
     }
@@ -174,8 +174,8 @@ static bool LoadCppInfo(const XAState &xa_state,
   return true;
 }
 
-static bool LoadExtraAction(const XAState &xa_state,
-                            kythe::ExtractorConfiguration &config) {
+static bool LoadExtraAction(const XAState& xa_state,
+                            kythe::ExtractorConfiguration& config) {
   using namespace google::protobuf::io;
   blaze::ExtraActionInfo info;
   int fd =
@@ -197,7 +197,7 @@ static bool LoadExtraAction(const XAState &xa_state,
   return false;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.2");

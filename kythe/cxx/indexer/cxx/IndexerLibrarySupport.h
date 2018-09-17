@@ -43,7 +43,7 @@ class LibrarySupport {
   /// \brief A single completed declaration (in the Kythe `completes` sense).
   struct Completion {
     /// The Decl being completed.
-    const clang::Decl *Decl;
+    const clang::Decl* Decl;
     /// The corresponding NodeId. If `Decl` is underneath a template, this will
     /// point to the `Abs` node of that template.
     GraphObserver::NodeId DeclId;
@@ -64,12 +64,12 @@ class LibrarySupport {
   /// \param Decl The VarDecl in question.
   /// \param Compl Whether the Decl was complete.
   /// \param Compls If the Decl is complete, the decls that it completes.
-  virtual void InspectVariable(IndexerASTVisitor &V,
-                               GraphObserver::NodeId &DeclNodeId,
-                               GraphObserver::NodeId &DeclBodyNodeId,
-                               const clang::VarDecl *Decl,
+  virtual void InspectVariable(IndexerASTVisitor& V,
+                               GraphObserver::NodeId& DeclNodeId,
+                               GraphObserver::NodeId& DeclBodyNodeId,
+                               const clang::VarDecl* Decl,
                                GraphObserver::Completeness Compl,
-                               const std::vector<Completion> &Compls) {}
+                               const std::vector<Completion>& Compls) {}
 
   /// \brief Called on any DeclRef.
   /// \param V The active IndexerASTVisitor.
@@ -77,21 +77,21 @@ class LibrarySupport {
   /// \param Ref The range of the reference.
   /// \param RefId The NodeId of the referent (TargetDecl).
   /// \param TargetDecl The NamedDecl being referenced.
-  virtual void InspectDeclRef(IndexerASTVisitor &V,
+  virtual void InspectDeclRef(IndexerASTVisitor& V,
                               clang::SourceLocation DeclRefLocation,
-                              const GraphObserver::Range &Ref,
-                              GraphObserver::NodeId &RefId,
-                              const clang::NamedDecl *TargetDecl) {}
+                              const GraphObserver::Range& Ref,
+                              GraphObserver::NodeId& RefId,
+                              const clang::NamedDecl* TargetDecl) {}
 
   /// \brief Called on any CallExpr.
   /// \param V The active IndexerASTVisitor.
   /// \param CallExpr The call expr.
   /// \param Range The range of the call expr.
   /// \param CalleeId The NodeId of the callee.
-  virtual void InspectCallExpr(IndexerASTVisitor &V,
-                               const clang::CallExpr *CallExpr,
-                               const GraphObserver::Range &Range,
-                               GraphObserver::NodeId &CalleeId) {}
+  virtual void InspectCallExpr(IndexerASTVisitor& V,
+                               const clang::CallExpr* CallExpr,
+                               const GraphObserver::Range& Range,
+                               GraphObserver::NodeId& CalleeId) {}
 };
 
 /// \brief A collection of library support implementations.

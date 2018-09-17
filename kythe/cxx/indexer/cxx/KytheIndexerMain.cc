@@ -49,7 +49,7 @@ DEFINE_bool(experimental_drop_cpp_fwd_decl_docs, false,
 
 namespace kythe {
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.1");
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
       FLAGS_experimental_drop_instantiation_independent_data;
   options.AllowFSAccess = context.allow_filesystem_access();
   if (FLAGS_report_profiling_events) {
-    options.ReportProfileEvent = [](const char *counter, ProfilingEvent event) {
+    options.ReportProfileEvent = [](const char* counter, ProfilingEvent event) {
       fprintf(stderr, "%s: %s\n", counter,
               event == ProfilingEvent::Enter ? "enter" : "exit");
     };
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   bool had_errors = false;
   NullOutputStream null_stream;
 
-  for (auto &job : *context.jobs()) {
+  for (auto& job : *context.jobs()) {
     options.EffectiveWorkingDirectory = job.working_directory;
 
     kythe::MetadataSupports meta_supports;
@@ -101,10 +101,10 @@ int main(int argc, char *argv[]) {
     std::string result = IndexCompilationUnit(
         job.unit, job.virtual_files, *context.claim_client(),
         context.hash_cache(),
-        job.silent ? static_cast<KytheCachingOutput &>(null_stream)
-                   : static_cast<KytheCachingOutput &>(*context.output()),
+        job.silent ? static_cast<KytheCachingOutput&>(null_stream)
+                   : static_cast<KytheCachingOutput&>(*context.output()),
         options, &meta_supports, &library_supports,
-        [](IndexerASTVisitor *indexer) {
+        [](IndexerASTVisitor* indexer) {
           return IndexerWorklist::CreateDefaultWorklist(indexer);
         });
 
@@ -119,4 +119,4 @@ int main(int argc, char *argv[]) {
 
 }  // namespace kythe
 
-int main(int argc, char *argv[]) { return kythe::main(argc, argv); }
+int main(int argc, char* argv[]) { return kythe::main(argc, argv); }

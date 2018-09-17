@@ -38,7 +38,7 @@
 namespace kythe {
 
 bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
-                   llvm::Twine code, const std::string &filename) {
+                   llvm::Twine code, const std::string& filename) {
   if (tool_action == nullptr) return false;
   return clang::tooling::runToolOnCode(tool_action.release(), code, filename);
 }
@@ -51,7 +51,8 @@ class FileContextRows {
   using iterator = decltype(
       std::declval<kythe::proto::ContextDependentVersion>().row().begin());
 
-  explicit FileContextRows(const kythe::proto::CompilationUnit::FileInput& file_input) {
+  explicit FileContextRows(
+      const kythe::proto::CompilationUnit::FileInput& file_input) {
     for (const google::protobuf::Any& detail : file_input.details()) {
       if (detail.UnpackTo(&context_)) break;
     }
@@ -65,9 +66,9 @@ class FileContextRows {
   kythe::proto::ContextDependentVersion context_;
 };
 
-bool DecodeDetails(const proto::CompilationUnit &Unit,
-                   proto::CxxCompilationUnitDetails &Details) {
-  for (const auto &Any : Unit.details()) {
+bool DecodeDetails(const proto::CompilationUnit& Unit,
+                   proto::CxxCompilationUnitDetails& Details) {
+  for (const auto& Any : Unit.details()) {
     if (Any.type_url() == kCxxCompilationUnitDetailsURI) {
       if (UnpackAny(Any, &Details)) {
         return true;
@@ -77,8 +78,8 @@ bool DecodeDetails(const proto::CompilationUnit &Unit,
   return false;
 }
 
-bool DecodeHeaderSearchInfo(const proto::CxxCompilationUnitDetails &Details,
-                            HeaderSearchInfo &Info) {
+bool DecodeHeaderSearchInfo(const proto::CxxCompilationUnitDetails& Details,
+                            HeaderSearchInfo& Info) {
   if (!Details.has_header_search_info()) {
     return false;
   }
@@ -90,13 +91,13 @@ bool DecodeHeaderSearchInfo(const proto::CxxCompilationUnitDetails &Details,
   return true;
 }
 
-std::string ConfigureSystemHeaders(const proto::CompilationUnit &Unit,
-                                   std::vector<proto::FileData> &Files) {
+std::string ConfigureSystemHeaders(const proto::CompilationUnit& Unit,
+                                   std::vector<proto::FileData>& Files) {
   std::vector<proto::FileData> OldFiles;
   OldFiles.swap(Files);
   const std::string HeaderPath = "/kythe_builtins/include/";
   std::unordered_set<std::string> NewHeaders;
-  for (const auto *Header = builtin_headers_create(); Header->name != nullptr;
+  for (const auto* Header = builtin_headers_create(); Header->name != nullptr;
        ++Header) {
     auto Path = HeaderPath + Header->name;
     auto Data = Header->data;
@@ -107,7 +108,7 @@ std::string ConfigureSystemHeaders(const proto::CompilationUnit &Unit,
     Files.push_back(NewFile);
     NewHeaders.insert(Path);
   }
-  for (const auto &File : OldFiles) {
+  for (const auto& File : OldFiles) {
     if (NewHeaders.find(File.info().path()) == NewHeaders.end()) {
       Files.push_back(File);
     }
@@ -117,11 +118,11 @@ std::string ConfigureSystemHeaders(const proto::CompilationUnit &Unit,
 }  // anonymous namespace
 
 std::string IndexCompilationUnit(
-    const proto::CompilationUnit &Unit, std::vector<proto::FileData> &Files,
-    KytheClaimClient &Client, HashCache *Cache, KytheCachingOutput &Output,
-    const IndexerOptions &Options, const MetadataSupports *MetaSupports,
-    const LibrarySupports *LibrarySupports,
-    std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+    const proto::CompilationUnit& Unit, std::vector<proto::FileData>& Files,
+    KytheClaimClient& Client, HashCache* Cache, KytheCachingOutput& Output,
+    const IndexerOptions& Options, const MetadataSupports* MetaSupports,
+    const LibrarySupports* LibrarySupports,
+    std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
         CreateWorklist) {
   HeaderSearchInfo HSI;
   proto::CxxCompilationUnitDetails Details;
@@ -129,7 +130,7 @@ std::string IndexCompilationUnit(
   std::vector<llvm::StringRef> Dirs;
   if (DecodeDetails(Unit, Details)) {
     HSIValid = DecodeHeaderSearchInfo(Details, HSI);
-    for (const auto &stat_path : Details.stat_path()) {
+    for (const auto& stat_path : Details.stat_path()) {
       Dirs.push_back(ToStringRef(stat_path.path()));
     }
   }
@@ -139,7 +140,7 @@ std::string IndexCompilationUnit(
   }
   clang::FileSystemOptions FSO;
   FSO.WorkingDir = Options.EffectiveWorkingDirectory;
-  for (auto &Path : HSI.paths) {
+  for (auto& Path : HSI.paths) {
     Dirs.push_back(ToStringRef(Path.path));
   }
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(
@@ -156,20 +157,20 @@ std::string IndexCompilationUnit(
   }
   Observer.set_claimant(Unit.v_name());
   Observer.set_starting_context(Unit.entry_context());
-  for (const auto &Input : Unit.required_input()) {
+  for (const auto& Input : Unit.required_input()) {
     if (Input.has_info() && !Input.info().path().empty() &&
         Input.has_v_name()) {
       VFS->SetVName(Input.info().path(), Input.v_name());
     }
-    const std::string &FilePath = Input.info().path();
-    for (const auto &Row : FileContextRows(Input)) {
+    const std::string& FilePath = Input.info().path();
+    for (const auto& Row : FileContextRows(Input)) {
       if (Row.always_process()) {
         auto ClaimableVname = Input.v_name();
         ClaimableVname.set_signature(Row.source_context() +
                                      ClaimableVname.signature());
         Client.AssignClaim(ClaimableVname, Unit.v_name());
       }
-      for (const auto &Col : Row.column()) {
+      for (const auto& Col : Row.column()) {
         Observer.AddContextInformation(FilePath, Row.source_context(),
                                        Col.offset(), Col.linked_context());
       }
@@ -177,7 +178,7 @@ std::string IndexCompilationUnit(
   }
   if (MetaSupports != nullptr) {
     MetaSupports->UseVNameLookup(
-        [VFS](const std::string &path, proto::VName *out) {
+        [VFS](const std::string& path, proto::VName* out) {
           return VFS->get_vname(path, out);
         });
   }

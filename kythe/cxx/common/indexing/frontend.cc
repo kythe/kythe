@@ -77,8 +77,8 @@ llvm::StringRef strip_silent_input_prefix(llvm::StringRef argument) {
 ///
 /// `path` should be a file that contains a GZip-compressed sequence of
 /// varint-prefixed wire format ClaimAssignment protobuf messages.
-void DecodeStaticClaimTable(const std::string &path,
-                            kythe::StaticClaimClient *client) {
+void DecodeStaticClaimTable(const std::string& path,
+                            kythe::StaticClaimClient* client) {
   using namespace google::protobuf::io;
   int fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
   CHECK_GE(fd, 0) << "Couldn't open input file " << path;
@@ -105,9 +105,9 @@ void DecodeStaticClaimTable(const std::string &path,
 /// \param path The path from which the file should be read.
 /// \param virtual_files A vector to be filled with FileData.
 /// \param unit A `CompilationUnit` to be decoded from the .kindex.
-void DecodeIndexFile(const std::string &path,
-                     std::vector<proto::FileData> *virtual_files,
-                     proto::CompilationUnit *unit) {
+void DecodeIndexFile(const std::string& path,
+                     std::vector<proto::FileData>* virtual_files,
+                     proto::CompilationUnit* unit) {
   using namespace google::protobuf::io;
   int fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
   CHECK_GE(fd, 0) << "Couldn't open input file " << path;
@@ -140,15 +140,15 @@ void DecodeIndexFile(const std::string &path,
 /// \param index_pack The index pack from which to read.
 /// \param virtual_files A vector to be filled with FileData.
 /// \param unit A `CompilationUnit` to be decoded from the index pack.
-void DecodeIndexPack(const std::string &cu_hash,
+void DecodeIndexPack(const std::string& cu_hash,
                      std::unique_ptr<IndexPack> index_pack,
-                     std::vector<proto::FileData> *virtual_files,
-                     proto::CompilationUnit *unit) {
+                     std::vector<proto::FileData>* virtual_files,
+                     proto::CompilationUnit* unit) {
   std::string error_text;
   CHECK(index_pack->ReadCompilationUnit(cu_hash, unit, &error_text))
       << "Could not read " << cu_hash << ": " << error_text;
-  for (const auto &input : unit->required_input()) {
-    const auto &info = input.info();
+  for (const auto& input : unit->required_input()) {
+    const auto& info = input.info();
     CHECK(!info.path().empty());
     CHECK(!info.digest().empty())
         << "Required input " << info.path() << " is missing its digest.";
@@ -165,8 +165,8 @@ void DecodeIndexPack(const std::string &cu_hash,
 }
 }  // anonymous namespace
 
-std::string IndexerContext::UsageMessage(const std::string &program_title,
-                                         const std::string &program_name) {
+std::string IndexerContext::UsageMessage(const std::string& program_title,
+                                         const std::string& program_name) {
   std::string message = "Command-line frontend for " + program_title;
   message.append(R"(.
 Invokes the program on a single compilation unit. By default reads source text
@@ -202,7 +202,7 @@ bool IndexerContext::HasIndexArguments() {
     had_index = true;
     CHECK(args_.size() >= 2) << "You must specify a compilation unit.";
   } else {
-    for (const auto &arg : args_) {
+    for (const auto& arg : args_) {
       if (llvm::StringRef(arg).endswith(".kindex")) {
         had_index = true;
       }
@@ -216,9 +216,9 @@ bool IndexerContext::HasIndexArguments() {
   return had_index;
 }
 
-void IndexerContext::LoadDataFromIndex(const std::string &kindex_file_or_cu) {
+void IndexerContext::LoadDataFromIndex(const std::string& kindex_file_or_cu) {
   jobs_.emplace_back();
-  auto *job = &jobs_.back();
+  auto* job = &jobs_.back();
   std::string name = strip_silent_input_prefix(kindex_file_or_cu);
   if (name.empty()) {
     job->silent = false;
@@ -247,9 +247,9 @@ void IndexerContext::LoadDataFromIndex(const std::string &kindex_file_or_cu) {
 }
 
 void IndexerContext::LoadDataFromUnpackedFile(
-    const std::string &default_filename) {
+    const std::string& default_filename) {
   jobs_.emplace_back();
-  auto *job = &jobs_.back();
+  auto* job = &jobs_.back();
   allow_filesystem_access_ = true;
   int read_fd = STDIN_FILENO;
   std::string source_file_name = default_filename;
@@ -282,7 +282,7 @@ void IndexerContext::LoadDataFromUnpackedFile(
   file_data.mutable_info()->set_path(source_file_name);
   file_data.set_content(source_data.str());
   job->virtual_files.push_back(std::move(file_data));
-  for (const auto &arg : args_) {
+  for (const auto& arg : args_) {
     job->unit.add_argument(arg);
   }
   job->unit.mutable_v_name()->set_corpus(FLAGS_icorpus);
@@ -309,8 +309,8 @@ void IndexerContext::InitializeClaimClient() {
 }
 
 void IndexerContext::NormalizeFileVNames() {
-  for (auto &job : jobs_) {
-    for (auto &input : *job.unit.mutable_required_input()) {
+  for (auto& job : jobs_) {
+    for (auto& input : *job.unit.mutable_required_input()) {
       input.mutable_v_name()->set_path(
           CleanPath(ToStringRef(input.v_name().path())));
       input.mutable_v_name()->clear_signature();
@@ -328,7 +328,8 @@ void IndexerContext::OpenOutputStreams() {
       ::exit(1);
     }
   }
-  raw_output_ = absl::make_unique<google::protobuf::io::FileOutputStream>(write_fd_);
+  raw_output_ =
+      absl::make_unique<google::protobuf::io::FileOutputStream>(write_fd_);
   kythe_output_ = absl::make_unique<kythe::FileOutputStream>(raw_output_.get());
   kythe_output_->set_show_stats(FLAGS_cache_stats);
   kythe_output_->set_flush_after_each_entry(FLAGS_flush_after_each_entry);
@@ -354,8 +355,8 @@ void IndexerContext::OpenHashCache() {
   }
 }
 
-IndexerContext::IndexerContext(const std::vector<std::string> &args,
-                               const std::string &default_filename)
+IndexerContext::IndexerContext(const std::vector<std::string>& args,
+                               const std::string& default_filename)
     : args_(args), ignore_unimplemented_(FLAGS_ignore_unimplemented) {
   args_.erase(std::remove(args_.begin(), args_.end(), std::string()),
               args_.end());

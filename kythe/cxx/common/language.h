@@ -27,7 +27,7 @@ namespace supported_language {
 // The indexer operates on Objective-C, C, and C++. Since there are links
 // between all of those languages, it is easiest if we output all indexer facts
 // using a single language, even if it is a bit of a lie.
-extern const char *const kIndexerLang;
+extern const char* const kIndexerLang;
 
 enum class Language { kCpp, kObjectiveC };
 

@@ -87,7 +87,7 @@ TEST(JsonProto, Deserialize) {
 }  // namespace
 }  // namespace kythe
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   ::testing::InitGoogleTest(&argc, argv);

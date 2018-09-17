@@ -32,8 +32,8 @@
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
 
 namespace {
-using ::google::protobuf::io::FileInputStream;
 using ::google::protobuf::io::CodedInputStream;
+using ::google::protobuf::io::FileInputStream;
 
 bool ReadExtraAction(const std::string& path, blaze::ExtraActionInfo* info,
                      blaze::CppCompileInfo* cpp_info) {
