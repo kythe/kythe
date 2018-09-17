@@ -4187,6 +4187,20 @@ IndexerASTVisitor::BuildNodeIdForIncompleteArrayTypeLoc(
   return absl::nullopt;
 }
 
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForDependentSizedArrayTypeLoc(
+    clang::DependentSizedArrayTypeLoc TL) {
+  if (auto ElemID = BuildNodeIdForType(TL.getElementLoc(), EmitRanges::No)) {
+    if (auto ExprID = BuildNodeIdForExpr(TL.getSizeExpr(), EmitRanges::No)) {
+      return Observer.recordTappNode(Observer.getNodeIdForBuiltinType("darr"),
+                                     {{&ElemID.value(), &ExprID.value()}}, 2);
+    } else {
+      return ApplyBuiltinTypeConstructor("darr", *ElemID);
+    }
+  }
+  return absl::nullopt;
+}
+
 const clang::TemplateTypeParmDecl*
 IndexerASTVisitor::FindTemplateTypeParmTypeLocDecl(
     clang::TemplateTypeParmTypeLoc TL) const {

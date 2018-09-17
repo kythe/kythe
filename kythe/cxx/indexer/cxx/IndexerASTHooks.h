@@ -266,6 +266,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       clang::ConstantArrayTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForIncompleteArrayTypeLoc(
       clang::IncompleteArrayTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForDependentSizedArrayTypeLoc(
+      clang::DependentSizedArrayTypeLoc TL);
 
   const clang::TemplateTypeParmDecl* FindTemplateTypeParmTypeLocDecl(
       clang::TemplateTypeParmTypeLoc TL) const;
