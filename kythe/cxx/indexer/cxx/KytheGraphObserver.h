@@ -46,7 +46,7 @@ class KytheGraphRecorder;
 /// GraphObserver.
 class KytheClaimToken : public GraphObserver::ClaimToken {
  public:
-  std::string StampIdentity(const std::string &identity) const override {
+  std::string StampIdentity(const std::string& identity) const override {
     std::string stamped = identity;
     if (!vname_.corpus().empty()) {
       stamped.append("#");
@@ -63,13 +63,13 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
     return stamped;
   }
 
-  void *GetClass() const override { return &clazz_; }
+  void* GetClass() const override { return &clazz_; }
 
-  static bool classof(const ClaimToken *t) { return t->GetClass() == &clazz_; }
+  static bool classof(const ClaimToken* t) { return t->GetClass() == &clazz_; }
 
   /// \brief Marks a VNameRef as belonging to this token.
   /// This token must outlive the VNameRef.
-  void DecorateVName(VNameRef *target) const {
+  void DecorateVName(VNameRef* target) const {
     target->corpus =
         absl::string_view(vname_.corpus().data(), vname_.corpus().size());
     target->root =
@@ -80,13 +80,13 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
 
   /// \brief Sets a VName that controls the corpus, root and path of claimed
   /// objects.
-  void set_vname(const kythe::proto::VName &vname) {
+  void set_vname(const kythe::proto::VName& vname) {
     vname_.set_corpus(vname.corpus());
     vname_.set_root(vname.root());
     vname_.set_path(vname.path());
   }
 
-  const kythe::proto::VName &vname() const { return vname_; }
+  const kythe::proto::VName& vname() const { return vname_; }
 
   /// \sa rough_claimed
   void set_rough_claimed(bool value) { rough_claimed_ = value; }
@@ -102,11 +102,11 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   /// \brief If true, this node isn't language-specific.
   bool language_independent() const { return language_independent_; }
 
-  bool operator==(const ClaimToken &rhs) const override {
+  bool operator==(const ClaimToken& rhs) const override {
     if (this == &rhs) {
       return true;
     }
-    if (const auto *kythe_rhs = clang::dyn_cast<KytheClaimToken>(&rhs)) {
+    if (const auto* kythe_rhs = clang::dyn_cast<KytheClaimToken>(&rhs)) {
       return kythe_rhs->rough_claimed_ == rough_claimed_ &&
              kythe_rhs->vname_.corpus() == vname_.corpus() &&
              kythe_rhs->vname_.path() == vname_.path() &&
@@ -115,8 +115,8 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
     return false;
   }
 
-  bool operator!=(const ClaimToken &rhs) const override {
-    if (const auto *kythe_rhs = clang::dyn_cast<KytheClaimToken>(&rhs)) {
+  bool operator!=(const ClaimToken& rhs) const override {
+    if (const auto* kythe_rhs = clang::dyn_cast<KytheClaimToken>(&rhs)) {
       return kythe_rhs->rough_claimed_ != rough_claimed_ ||
              kythe_rhs->vname_.corpus() != vname_.corpus() ||
              kythe_rhs->vname_.path() != vname_.path() ||
@@ -126,7 +126,7 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   }
 
  private:
-  static void *clazz_;
+  static void* clazz_;
   /// The prototypical VName to use for claimed objects.
   kythe::proto::VName vname_;
   bool rough_claimed_ = true;
@@ -137,9 +137,9 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
 /// discovered during indexing to the provided `KytheGraphRecorder`.
 class KytheGraphObserver : public GraphObserver {
  public:
-  KytheGraphObserver(KytheGraphRecorder *recorder, KytheClaimClient *client,
-                     const MetadataSupports *meta_supports,
-                     const llvm::IntrusiveRefCntPtr<IndexVFS> &vfs,
+  KytheGraphObserver(KytheGraphRecorder* recorder, KytheClaimClient* client,
+                     const MetadataSupports* meta_supports,
+                     const llvm::IntrusiveRefCntPtr<IndexVFS>& vfs,
                      ProfilingCallback ReportProfileEventCallback)
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
@@ -153,185 +153,185 @@ class KytheGraphObserver : public GraphObserver {
   }
 
   NodeId getNodeIdForBuiltinType(
-      const llvm::StringRef &spelling) const override;
+      const llvm::StringRef& spelling) const override;
 
-  const KytheClaimToken *getDefaultClaimToken() const override {
+  const KytheClaimToken* getDefaultClaimToken() const override {
     return &default_token_;
   }
 
-  void applyMetadataFile(clang::FileID ID, const clang::FileEntry *FE,
-                         const std::string &SearchString) override;
+  void applyMetadataFile(clang::FileID ID, const clang::FileEntry* FE,
+                         const std::string& SearchString) override;
   void StopDeferringNodes() { deferring_nodes_ = false; }
   void DropRedundantWraiths() { drop_redundant_wraiths_ = true; }
   void Delimit() override { recorder_->PushEntryGroup(); }
   void Undelimit() override { recorder_->PopEntryGroup(); }
 
   NodeId nodeIdForTappNode(
-      const NodeId &TyconId,
-      const std::vector<const NodeId *> &Params) const override;
+      const NodeId& TyconId,
+      const std::vector<const NodeId*>& Params) const override;
 
-  NodeId recordTappNode(const NodeId &TappId, const NodeId &TyconId,
-                        const std::vector<const NodeId *> &Params,
+  NodeId recordTappNode(const NodeId& TappId, const NodeId& TyconId,
+                        const std::vector<const NodeId*>& Params,
                         unsigned FirstDefaultParam) override;
 
   NodeId nodeIdForTsigmaNode(
-      const std::vector<const NodeId *> &Params) const override;
-  NodeId recordTsigmaNode(const NodeId &TsigmaId,
-                          const std::vector<const NodeId *> &Params) override;
+      const std::vector<const NodeId*>& Params) const override;
+  NodeId recordTsigmaNode(const NodeId& TsigmaId,
+                          const std::vector<const NodeId*>& Params) override;
 
-  NodeId nodeIdForTypeAliasNode(const NameId &AliasName,
-                                const NodeId &AliasedType) const override;
+  NodeId nodeIdForTypeAliasNode(const NameId& AliasName,
+                                const NodeId& AliasedType) const override;
 
   NodeId recordTypeAliasNode(
-      const NodeId &AliasId, const NodeId &AliasedType,
-      const absl::optional<NodeId> &RootAliasedType,
-      const absl::optional<MarkedSource> &MarkedSource) override;
+      const NodeId& AliasId, const NodeId& AliasedType,
+      const absl::optional<NodeId>& RootAliasedType,
+      const absl::optional<MarkedSource>& MarkedSource) override;
 
   void recordFunctionNode(
-      const NodeId &Node, Completeness FunctionCompleteness,
+      const NodeId& Node, Completeness FunctionCompleteness,
       FunctionSubkind Subkind,
-      const absl::optional<MarkedSource> &MarkedSource) override;
+      const absl::optional<MarkedSource>& MarkedSource) override;
 
   void recordAbsVarNode(
-      const NodeId &Node,
-      const absl::optional<MarkedSource> &MarkedSource) override;
+      const NodeId& Node,
+      const absl::optional<MarkedSource>& MarkedSource) override;
 
-  void recordAbsNode(const NodeId &Node) override;
+  void recordAbsNode(const NodeId& Node) override;
 
   void recordMarkedSource(
-      const NodeId &Node,
-      const absl::optional<MarkedSource> &MarkedSource) override;
+      const NodeId& Node,
+      const absl::optional<MarkedSource>& MarkedSource) override;
 
-  void recordLookupNode(const NodeId &Node,
-                        const llvm::StringRef &Name) override;
+  void recordLookupNode(const NodeId& Node,
+                        const llvm::StringRef& Name) override;
 
-  void recordParamEdge(const NodeId &ParamOfNode, uint32_t Ordinal,
-                       const NodeId &ParamNode) override;
+  void recordParamEdge(const NodeId& ParamOfNode, uint32_t Ordinal,
+                       const NodeId& ParamNode) override;
 
   void recordInterfaceNode(
-      const NodeId &Node,
-      const absl::optional<MarkedSource> &MarkedSource) override;
+      const NodeId& Node,
+      const absl::optional<MarkedSource>& MarkedSource) override;
 
   void recordRecordNode(
-      const NodeId &Node, RecordKind Kind, Completeness RecordCompleteness,
-      const absl::optional<MarkedSource> &MarkedSource) override;
+      const NodeId& Node, RecordKind Kind, Completeness RecordCompleteness,
+      const absl::optional<MarkedSource>& MarkedSource) override;
 
-  void recordEnumNode(const NodeId &Node, Completeness Compl,
+  void recordEnumNode(const NodeId& Node, Completeness Compl,
                       EnumKind Kind) override;
 
-  void recordIntegerConstantNode(const NodeId &Node,
-                                 const llvm::APSInt &Value) override;
+  void recordIntegerConstantNode(const NodeId& Node,
+                                 const llvm::APSInt& Value) override;
 
-  NodeId nodeIdForNominalTypeNode(const NameId &TypeName) const override;
+  NodeId nodeIdForNominalTypeNode(const NameId& TypeName) const override;
 
-  NodeId recordNominalTypeNode(const NodeId &TypeName,
-                               const absl::optional<MarkedSource> &MarkedSource,
-                               const absl::optional<NodeId> &Parent) override;
+  NodeId recordNominalTypeNode(const NodeId& TypeName,
+                               const absl::optional<MarkedSource>& MarkedSource,
+                               const absl::optional<NodeId>& Parent) override;
 
-  void recordCategoryExtendsEdge(const NodeId &InheritingNodeId,
-                                 const NodeId &InheritedTypeId) override;
+  void recordCategoryExtendsEdge(const NodeId& InheritingNodeId,
+                                 const NodeId& InheritedTypeId) override;
 
-  void recordExtendsEdge(const NodeId &InheritingNodeId,
-                         const NodeId &InheritedTypeId, bool IsVirtual,
+  void recordExtendsEdge(const NodeId& InheritingNodeId,
+                         const NodeId& InheritedTypeId, bool IsVirtual,
                          clang::AccessSpecifier AS) override;
 
-  void recordDeclUseLocation(const Range &SourceRange, const NodeId &DeclId,
+  void recordDeclUseLocation(const Range& SourceRange, const NodeId& DeclId,
                              GraphObserver::Claimability Cl,
                              GraphObserver::Implicit I) override;
 
-  void recordInitLocation(const Range &SourceRange, const NodeId &DeclId,
+  void recordInitLocation(const Range& SourceRange, const NodeId& DeclId,
                           GraphObserver::Claimability Cl,
                           GraphObserver::Implicit I) override;
 
   void recordVariableNode(
-      const NodeId &DeclNode, Completeness VarCompleteness,
+      const NodeId& DeclNode, Completeness VarCompleteness,
       VariableSubkind Subkind,
-      const absl::optional<MarkedSource> &MarkedSource) override;
+      const absl::optional<MarkedSource>& MarkedSource) override;
 
   void recordNamespaceNode(
-      const NodeId &DeclNode,
-      const absl::optional<MarkedSource> &MarkedSource) override;
+      const NodeId& DeclNode,
+      const absl::optional<MarkedSource>& MarkedSource) override;
 
-  void recordUserDefinedNode(const NodeId &Id, const llvm::StringRef &NodeKind,
+  void recordUserDefinedNode(const NodeId& Id, const llvm::StringRef& NodeKind,
                              Completeness Compl) override;
 
-  void recordFullDefinitionRange(const Range &SourceRange, const NodeId &DeclId,
-                                 const absl::optional<NodeId> &DefnId) override;
+  void recordFullDefinitionRange(const Range& SourceRange, const NodeId& DeclId,
+                                 const absl::optional<NodeId>& DefnId) override;
 
   void recordDefinitionBindingRange(
-      const Range &BindingRange, const NodeId &DeclId,
-      const absl::optional<NodeId> &DefnId) override;
+      const Range& BindingRange, const NodeId& DeclId,
+      const absl::optional<NodeId>& DefnId) override;
 
   void recordDefinitionRangeWithBinding(
-      const Range &SourceRange, const Range &BindingRange, const NodeId &DeclId,
-      const absl::optional<NodeId> &DefnId) override;
+      const Range& SourceRange, const Range& BindingRange, const NodeId& DeclId,
+      const absl::optional<NodeId>& DefnId) override;
 
-  void recordDocumentationRange(const Range &SourceRange,
-                                const NodeId &DocId) override;
+  void recordDocumentationRange(const Range& SourceRange,
+                                const NodeId& DocId) override;
 
-  void recordDocumentationText(const NodeId &DocId, const std::string &DocText,
-                               const std::vector<NodeId> &DocLinks) override;
+  void recordDocumentationText(const NodeId& DocId, const std::string& DocText,
+                               const std::vector<NodeId>& DocLinks) override;
 
-  void recordDeclUseLocationInDocumentation(const Range &SourceRange,
-                                            const NodeId &DeclId) override;
+  void recordDeclUseLocationInDocumentation(const Range& SourceRange,
+                                            const NodeId& DeclId) override;
 
-  void recordCompletionRange(const Range &SourceRange, const NodeId &DefnId,
+  void recordCompletionRange(const Range& SourceRange, const NodeId& DefnId,
                              Specificity Spec,
-                             const NodeId &CompletingNode) override;
+                             const NodeId& CompletingNode) override;
 
-  void recordTypeSpellingLocation(const Range &SourceRange,
-                                  const NodeId &TypeId, Claimability Cl,
+  void recordTypeSpellingLocation(const Range& SourceRange,
+                                  const NodeId& TypeId, Claimability Cl,
                                   Implicit I) override;
 
-  void recordChildOfEdge(const NodeId &ChildNodeId,
-                         const NodeId &ParentNodeId) override;
+  void recordChildOfEdge(const NodeId& ChildNodeId,
+                         const NodeId& ParentNodeId) override;
 
-  void recordTypeEdge(const NodeId &TermNodeId,
-                      const NodeId &TypeNodeId) override;
+  void recordTypeEdge(const NodeId& TermNodeId,
+                      const NodeId& TypeNodeId) override;
 
-  void recordUpperBoundEdge(const NodeId &TypeNodeId,
-                            const NodeId &TypeBoundNodeId) override;
+  void recordUpperBoundEdge(const NodeId& TypeNodeId,
+                            const NodeId& TypeBoundNodeId) override;
 
-  void recordVariance(const NodeId &TypeNodeId, const Variance V) override;
+  void recordVariance(const NodeId& TypeNodeId, const Variance V) override;
 
-  void recordSpecEdge(const NodeId &TermNodeId, const NodeId &TypeNodeId,
+  void recordSpecEdge(const NodeId& TermNodeId, const NodeId& TypeNodeId,
                       Confidence Conf) override;
 
-  void recordInstEdge(const NodeId &TermNodeId, const NodeId &TypeNodeId,
+  void recordInstEdge(const NodeId& TermNodeId, const NodeId& TypeNodeId,
                       Confidence Conf) override;
 
-  void recordOverridesEdge(const NodeId &Overrider,
-                           const NodeId &BaseObject) override;
+  void recordOverridesEdge(const NodeId& Overrider,
+                           const NodeId& BaseObject) override;
 
-  void recordOverridesRootEdge(const NodeId &Overrider,
-                               const NodeId &RootBaseObject) override;
+  void recordOverridesRootEdge(const NodeId& Overrider,
+                               const NodeId& RootBaseObject) override;
 
-  void recordCallEdge(const Range &SourceRange, const NodeId &CallerId,
-                      const NodeId &CalleeId, Implicit i) override;
+  void recordCallEdge(const Range& SourceRange, const NodeId& CallerId,
+                      const NodeId& CalleeId, Implicit i) override;
 
-  absl::optional<NodeId> recordFileInitializer(const Range &CallSite) override;
+  absl::optional<NodeId> recordFileInitializer(const Range& CallSite) override;
 
-  void recordMacroNode(const NodeId &MacroNode) override;
+  void recordMacroNode(const NodeId& MacroNode) override;
 
-  void recordExpandsRange(const Range &SourceRange,
-                          const NodeId &MacroId) override;
+  void recordExpandsRange(const Range& SourceRange,
+                          const NodeId& MacroId) override;
 
-  void recordIndirectlyExpandsRange(const Range &SourceRange,
-                                    const NodeId &MacroId) override;
+  void recordIndirectlyExpandsRange(const Range& SourceRange,
+                                    const NodeId& MacroId) override;
 
-  void recordUndefinesRange(const Range &SourceRange,
-                            const NodeId &MacroId) override;
+  void recordUndefinesRange(const Range& SourceRange,
+                            const NodeId& MacroId) override;
 
-  void recordIncludesRange(const Range &SourceRange,
-                           const clang::FileEntry *File) override;
+  void recordIncludesRange(const Range& SourceRange,
+                           const clang::FileEntry* File) override;
 
-  void recordBoundQueryRange(const Range &SourceRange,
-                             const NodeId &MacroId) override;
+  void recordBoundQueryRange(const Range& SourceRange,
+                             const NodeId& MacroId) override;
 
-  void recordStaticVariable(const NodeId &VarNodeId) override;
+  void recordStaticVariable(const NodeId& VarNodeId) override;
 
-  void recordDeprecated(const NodeId &NodeId,
-                        const llvm::StringRef &Advice) override;
+  void recordDeprecated(const NodeId& NodeId,
+                        const llvm::StringRef& Advice) override;
 
   void pushFile(clang::SourceLocation BlameLocation,
                 clang::SourceLocation Location) override;
@@ -342,20 +342,20 @@ class KytheGraphObserver : public GraphObserver {
       clang::SourceLocation Location) const override;
 
   void AppendMainSourceFileIdentifierToStream(
-      llvm::raw_ostream &Ostream) override;
+      llvm::raw_ostream& Ostream) override;
 
   /// \brief Configures the claimant that will be used to make claims.
-  void set_claimant(const kythe::proto::VName &vname) { claimant_ = vname; }
+  void set_claimant(const kythe::proto::VName& vname) { claimant_ = vname; }
 
-  bool claimNode(const NodeId &NodeId) override {
-    if (const auto *token =
+  bool claimNode(const NodeId& NodeId) override {
+    if (const auto* token =
             clang::dyn_cast<KytheClaimToken>(NodeId.getToken())) {
       return token->rough_claimed();
     }
     return true;
   }
 
-  bool claimRange(const GraphObserver::Range &range) override;
+  bool claimRange(const GraphObserver::Range& range) override;
 
   bool claimLocation(clang::SourceLocation Loc) override;
 
@@ -367,51 +367,51 @@ class KytheGraphObserver : public GraphObserver {
   /// \param context The source context.
   /// \param offset The offset into the source file.
   /// \param dest_context The context we'll transition into.
-  void AddContextInformation(const std::string &path,
-                             const PreprocessorContext &context,
+  void AddContextInformation(const std::string& path,
+                             const PreprocessorContext& context,
                              unsigned offset,
-                             const PreprocessorContext &dest_context);
+                             const PreprocessorContext& dest_context);
 
   /// \brief Configures the starting context.
   /// \param context Context to use when the main source file is entered.
-  void set_starting_context(const PreprocessorContext &context) {
+  void set_starting_context(const PreprocessorContext& context) {
     starting_context_ = context;
   }
 
-  const KytheClaimToken *getClaimTokenForLocation(
+  const KytheClaimToken* getClaimTokenForLocation(
       const clang::SourceLocation L) const override;
 
-  const KytheClaimToken *getClaimTokenForRange(
-      const clang::SourceRange &SR) const override;
+  const KytheClaimToken* getClaimTokenForRange(
+      const clang::SourceRange& SR) const override;
 
-  const KytheClaimToken *getNamespaceClaimToken(
+  const KytheClaimToken* getNamespaceClaimToken(
       clang::SourceLocation Loc) const override;
 
-  const KytheClaimToken *getAnonymousNamespaceClaimToken(
+  const KytheClaimToken* getAnonymousNamespaceClaimToken(
       clang::SourceLocation Loc) const override;
 
   /// \brief Appends a representation of `Range` to `Ostream`.
-  void AppendRangeToStream(llvm::raw_ostream &Ostream,
-                           const Range &Range) override;
+  void AppendRangeToStream(llvm::raw_ostream& Ostream,
+                           const Range& Range) override;
 
-  bool claimImplicitNode(const std::string &identifier) override;
+  bool claimImplicitNode(const std::string& identifier) override;
 
-  void finishImplicitNode(const std::string &identifier) override;
+  void finishImplicitNode(const std::string& identifier) override;
 
-  bool claimBatch(std::vector<std::pair<std::string, bool>> *pairs) override;
+  bool claimBatch(std::vector<std::pair<std::string, bool>>* pairs) override;
 
   void iterateOverClaimedFiles(
-      std::function<bool(clang::FileID, const NodeId &)> iter) const override;
+      std::function<bool(clang::FileID, const NodeId&)> iter) const override;
 
  private:
-  void AddMarkedSource(const VNameRef &vname,
-                       const absl::optional<MarkedSource> &signature) {
+  void AddMarkedSource(const VNameRef& vname,
+                       const absl::optional<MarkedSource>& signature) {
     if (signature) {
       recorder_->AddMarkedSource(vname, *signature);
     }
   }
 
-  void RecordSourceLocation(const VNameRef &vname,
+  void RecordSourceLocation(const VNameRef& vname,
                             clang::SourceLocation source_location,
                             PropertyID offset_id);
 
@@ -419,52 +419,52 @@ class KytheGraphObserver : public GraphObserver {
   ///
   /// A `SourceLocation` may have additional structure due to macro expansions.
   /// This function is used to generate a full serialization of this structure.
-  void AppendFullLocationToStream(std::vector<clang::FileID> *posted_fileids,
+  void AppendFullLocationToStream(std::vector<clang::FileID>* posted_fileids,
                                   clang::SourceLocation source_location,
-                                  llvm::raw_ostream &Ostream);
+                                  llvm::raw_ostream& Ostream);
 
   /// \brief Append a stable representation of `loc` to `Ostream`, even if
   /// `loc` is in a temporary buffer.
   void AppendFileBufferSliceHashToStream(clang::SourceLocation loc,
-                                         llvm::raw_ostream &Ostream);
+                                         llvm::raw_ostream& Ostream);
 
-  VNameRef VNameRefFromNodeId(const GraphObserver::NodeId &node_id) const;
-  kythe::proto::VName VNameFromFileEntry(const clang::FileEntry *file_entry);
-  kythe::proto::VName ClaimableVNameFromFileID(const clang::FileID &file_id);
-  kythe::proto::VName VNameFromRange(const GraphObserver::Range &range);
-  kythe::proto::VName StampedVNameFromRange(const GraphObserver::Range &range,
-                                            const GraphObserver::NodeId &stamp);
+  VNameRef VNameRefFromNodeId(const GraphObserver::NodeId& node_id) const;
+  kythe::proto::VName VNameFromFileEntry(const clang::FileEntry* file_entry);
+  kythe::proto::VName ClaimableVNameFromFileID(const clang::FileID& file_id);
+  kythe::proto::VName VNameFromRange(const GraphObserver::Range& range);
+  kythe::proto::VName StampedVNameFromRange(const GraphObserver::Range& range,
+                                            const GraphObserver::NodeId& stamp);
   /// Checks whether the edge from the anchor with `anchor_vname` covering
   /// `source_range` to `primary_anchored_to_decl` with kind `anchor_edge_kind`
   /// is interesting to any metadata provider.
   void ApplyMetadataRules(
-      const GraphObserver::Range &source_range,
-      const GraphObserver::NodeId &primary_anchored_to_decl,
-      const absl::optional<GraphObserver::NodeId> &primary_anchored_to_def,
-      EdgeKindID anchor_edge_kind, const kythe::proto::VName &anchor_name);
+      const GraphObserver::Range& source_range,
+      const GraphObserver::NodeId& primary_anchored_to_decl,
+      const absl::optional<GraphObserver::NodeId>& primary_anchored_to_def,
+      EdgeKindID anchor_edge_kind, const kythe::proto::VName& anchor_name);
   void RecordStampedAnchor(
-      const GraphObserver::Range &source_range,
-      const GraphObserver::NodeId &primary_anchored_to_decl,
-      const absl::optional<GraphObserver::NodeId> &primary_anchored_to_def,
-      EdgeKindID anchor_edge_kind, const GraphObserver::NodeId &stamp);
-  void RecordAnchor(const GraphObserver::Range &source_range,
-                    const GraphObserver::NodeId &primary_anchored_to,
+      const GraphObserver::Range& source_range,
+      const GraphObserver::NodeId& primary_anchored_to_decl,
+      const absl::optional<GraphObserver::NodeId>& primary_anchored_to_def,
+      EdgeKindID anchor_edge_kind, const GraphObserver::NodeId& stamp);
+  void RecordAnchor(const GraphObserver::Range& source_range,
+                    const GraphObserver::NodeId& primary_anchored_to,
                     EdgeKindID anchor_edge_kind, Claimability claimability);
-  void RecordAnchor(const GraphObserver::Range &source_range,
-                    const kythe::proto::VName &primary_anchored_to,
+  void RecordAnchor(const GraphObserver::Range& source_range,
+                    const kythe::proto::VName& primary_anchored_to,
                     EdgeKindID anchor_edge_kind, Claimability claimability);
   /// Records a Range.
-  void RecordRange(const proto::VName &range_vname,
-                   const GraphObserver::Range &range);
-  void UnconditionalRecordRange(const proto::VName &range_vname,
-                                const GraphObserver::Range &range);
+  void RecordRange(const proto::VName& range_vname,
+                   const GraphObserver::Range& range);
+  void UnconditionalRecordRange(const proto::VName& range_vname,
+                                const GraphObserver::Range& range);
   /// Execute metadata actions for `defines` edges.
-  void MetaHookDefines(const MetadataFile &meta, const VNameRef &anchor,
+  void MetaHookDefines(const MetadataFile& meta, const VNameRef& anchor,
                        unsigned range_begin, unsigned range_end,
-                       const VNameRef &def);
+                       const VNameRef& def);
 
   struct RangeHash {
-    size_t operator()(const GraphObserver::Range &range) const {
+    size_t operator()(const GraphObserver::Range& range) const {
       return std::hash<unsigned>()(
                  range.PhysicalRange.getBegin().getRawEncoding()) ^
              (std::hash<unsigned>()(
@@ -478,7 +478,7 @@ class KytheGraphObserver : public GraphObserver {
   };
 
   struct StampedRangeHash {
-    size_t operator()(const std::pair<Range, GraphObserver::NodeId> &p) const {
+    size_t operator()(const std::pair<Range, GraphObserver::NodeId>& p) const {
       return (std::hash<std::string>()(p.second.getRawIdentity())) << 1 ^
              RangeHash()(p.first);
     }
@@ -489,14 +489,14 @@ class KytheGraphObserver : public GraphObserver {
     EdgeKindID EdgeKind;
     GraphObserver::NodeId EdgeTarget;
     size_t Hash;
-    bool operator==(const RangeEdge &range) const {
+    bool operator==(const RangeEdge& range) const {
       return std::tie(Hash, PhysicalRange, EdgeKind, EdgeTarget) ==
              std::tie(range.Hash, range.PhysicalRange, range.EdgeKind,
                       range.EdgeTarget);
     }
-    static size_t ComputeHash(const clang::SourceRange &PhysicalRange,
+    static size_t ComputeHash(const clang::SourceRange& PhysicalRange,
                               EdgeKindID EdgeKind,
-                              const GraphObserver::NodeId &EdgeTarget) {
+                              const GraphObserver::NodeId& EdgeTarget) {
       return std::hash<unsigned>()(PhysicalRange.getBegin().getRawEncoding()) ^
              (std::hash<unsigned>()(PhysicalRange.getEnd().getRawEncoding())
               << 1) ^
@@ -506,7 +506,7 @@ class KytheGraphObserver : public GraphObserver {
   };
 
   struct ContextFreeRangeEdgeHash {
-    size_t operator()(const RangeEdge &range) const { return range.Hash; }
+    size_t operator()(const RangeEdge& range) const { return range.Hash; }
   };
 
   /// A file we have entered but not left.
@@ -527,7 +527,7 @@ class KytheGraphObserver : public GraphObserver {
   /// A location in the main source file.
   clang::SourceLocation main_source_file_loc_;
   /// A claim token in the main source file.
-  KytheClaimToken *main_source_file_token_ = nullptr;
+  KytheClaimToken* main_source_file_token_ = nullptr;
   /// Files we have previously inspected for claiming. When they refer to
   /// FileEntries, a FileID represents a specific file being included from a
   /// given include position. There will therefore be many FileIDs that map to
@@ -538,9 +538,9 @@ class KytheGraphObserver : public GraphObserver {
   std::map<clang::FileID, KytheClaimToken> claimed_file_specific_tokens_;
   /// Maps from claim tokens to claim tokens with path and root dropped.
   /// Used from logically const member funtions.
-  mutable std::map<const KytheClaimToken *, KytheClaimToken> namespace_tokens_;
+  mutable std::map<const KytheClaimToken*, KytheClaimToken> namespace_tokens_;
   /// The `KytheGraphRecorder` used to record graph data. Must not be null.
-  KytheGraphRecorder *recorder_;
+  KytheGraphRecorder* recorder_;
   /// A VName representing this `GraphObserver`'s claiming authority.
   kythe::proto::VName claimant_;
   /// The starting preprocessor context.
@@ -552,10 +552,10 @@ class KytheGraphObserver : public GraphObserver {
   /// Maps from file UID to its various context incarnations.
   std::map<llvm::sys::fs::UniqueID, ContextToIncludes> path_to_context_data_;
   /// The `KytheClaimClient` used to reduce output redundancy. Not null.
-  KytheClaimClient *client_;
+  KytheClaimClient* client_;
   /// Contains the `FileEntry`s for files we have already recorded.
   /// These pointers are not owned by the `KytheGraphObserver`.
-  std::unordered_set<const clang::FileEntry *> recorded_files_;
+  std::unordered_set<const clang::FileEntry*> recorded_files_;
   /// The set of anchor nodes with locations that have not yet been recorded.
   /// This allows the `GraphObserver` to limit the amount of redundant range
   /// information it emits should an anchor be the source of multiple edges.
@@ -567,7 +567,7 @@ class KytheGraphObserver : public GraphObserver {
   std::unordered_set<std::pair<Range, GraphObserver::NodeId>, StampedRangeHash>
       stamped_ranges_;
   /// Used to eliminate redundant file-level initializers.
-  std::unordered_set<const KytheClaimToken *> recorded_inits_;
+  std::unordered_set<const KytheClaimToken*> recorded_inits_;
   /// If true, anchors and edges from a given physical source location will
   /// be dropped if they were previously emitted from the same location
   /// with the same edge kind to the same target.
@@ -589,7 +589,7 @@ class KytheGraphObserver : public GraphObserver {
   /// Whether to try and locally deduplicate nodes.
   bool deferring_nodes_ = true;
   /// \brief Enabled metadata import support.
-  const MetadataSupports *const meta_supports_;
+  const MetadataSupports* const meta_supports_;
   /// The virtual filesystem in use.
   llvm::IntrusiveRefCntPtr<IndexVFS> vfs_;
   /// A neutral claim token.
@@ -608,7 +608,7 @@ class KytheGraphObserver : public GraphObserver {
   /// Add known Builtins to builtins_.
   void RegisterBuiltins();
   /// Emit a particular Builtin.
-  void EmitBuiltin(Builtin *builtin) const;
+  void EmitBuiltin(Builtin* builtin) const;
   /// Emit entries for C++ meta nodes.
   void EmitMetaNodes();
   /// Registered builtins.

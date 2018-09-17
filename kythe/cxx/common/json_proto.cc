@@ -36,20 +36,20 @@ using ::google::protobuf::util::TypeResolver;
 
 class PermissiveTypeResolver : public TypeResolver {
  public:
-  explicit PermissiveTypeResolver(const DescriptorPool *pool)
+  explicit PermissiveTypeResolver(const DescriptorPool* pool)
       : impl_(google::protobuf::util::NewTypeResolverForDescriptorPool("",
                                                                        pool)) {}
 
   google::protobuf::util::Status ResolveMessageType(
-      const std::string &type_url,
-      google::protobuf::Type *message_type) override {
+      const std::string& type_url,
+      google::protobuf::Type* message_type) override {
     absl::string_view adjusted = type_url;
     adjusted.remove_prefix(type_url.rfind('/') + 1);
     return impl_->ResolveMessageType(absl::StrCat("/", adjusted), message_type);
   }
 
   google::protobuf::util::Status ResolveEnumType(
-      const std::string &type_url, google::protobuf::Enum *enum_type) override {
+      const std::string& type_url, google::protobuf::Enum* enum_type) override {
     absl::string_view adjusted = type_url;
     adjusted.remove_prefix(type_url.rfind('/') + 1);
     return impl_->ResolveEnumType(absl::StrCat("/", adjusted), enum_type);
@@ -59,14 +59,14 @@ class PermissiveTypeResolver : public TypeResolver {
   std::unique_ptr<TypeResolver> impl_;
 };
 
-TypeResolver *GetGeneratedTypeResolver() {
-  static TypeResolver *generated_resolver =
+TypeResolver* GetGeneratedTypeResolver() {
+  static TypeResolver* generated_resolver =
       new PermissiveTypeResolver(DescriptorPool::generated_pool());
   return generated_resolver;
 }
 
 struct MaybeDeleteResolver {
-  void operator()(TypeResolver *resolver) const {
+  void operator()(TypeResolver* resolver) const {
     if (resolver != GetGeneratedTypeResolver()) {
       delete resolver;
     }
@@ -74,7 +74,7 @@ struct MaybeDeleteResolver {
 };
 
 std::unique_ptr<TypeResolver, MaybeDeleteResolver> MakeTypeResolverForPool(
-    const DescriptorPool *pool) {
+    const DescriptorPool* pool) {
   if (pool == DescriptorPool::generated_pool()) {
     return std::unique_ptr<TypeResolver, MaybeDeleteResolver>(
         GetGeneratedTypeResolver());
@@ -84,7 +84,7 @@ std::unique_ptr<TypeResolver, MaybeDeleteResolver> MakeTypeResolverForPool(
 }
 
 Status WriteMessageAsJsonToStringInternal(
-    const google::protobuf::Message &message, std::string *out) {
+    const google::protobuf::Message& message, std::string* out) {
   auto resolver =
       MakeTypeResolverForPool(message.GetDescriptor()->file()->pool());
 
@@ -103,8 +103,8 @@ Status WriteMessageAsJsonToStringInternal(
 
 }  // namespace
 
-bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
-                                std::string *out) {
+bool WriteMessageAsJsonToString(const google::protobuf::Message& message,
+                                std::string* out) {
   auto status = WriteMessageAsJsonToStringInternal(message, out);
   if (!status.ok()) {
     LOG(ERROR) << status.ToString();
@@ -113,7 +113,7 @@ bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
 }
 
 StatusOr<std::string> WriteMessageAsJsonToString(
-    const google::protobuf::Message &message) {
+    const google::protobuf::Message& message) {
   std::string result;
   auto status = WriteMessageAsJsonToStringInternal(message, &result);
   if (!status.ok()) {
@@ -122,9 +122,9 @@ StatusOr<std::string> WriteMessageAsJsonToString(
   return result;
 }
 
-bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
-                                const std::string &format_key,
-                                std::string *out) {
+bool WriteMessageAsJsonToString(const google::protobuf::Message& message,
+                                const std::string& format_key,
+                                std::string* out) {
   rapidjson::StringBuffer buffer;
   rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
   writer.StartObject();
@@ -143,8 +143,8 @@ bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
   return true;
 }
 
-bool MergeJsonWithMessage(const std::string &in, std::string *format_key,
-                          google::protobuf::Message *message) {
+bool MergeJsonWithMessage(const std::string& in, std::string* format_key,
+                          google::protobuf::Message* message) {
   rapidjson::Document document;
   document.Parse(in.c_str());
   if (document.HasParseError()) {
@@ -184,8 +184,8 @@ bool MergeJsonWithMessage(const std::string &in, std::string *format_key,
   return false;
 }
 
-Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream *input,
-                           google::protobuf::Message *message) {
+Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
+                           google::protobuf::Message* message) {
   auto resolver =
       MakeTypeResolverForPool(message->GetDescriptor()->file()->pool());
 
@@ -206,16 +206,16 @@ Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream *input,
   return OkStatus();
 }
 
-void PackAny(const google::protobuf::Message &message, const char *type_uri,
-             google::protobuf::Any *out) {
+void PackAny(const google::protobuf::Message& message, const char* type_uri,
+             google::protobuf::Any* out) {
   out->set_type_url(type_uri);
   google::protobuf::io::StringOutputStream stream(out->mutable_value());
   google::protobuf::io::CodedOutputStream coded_output_stream(&stream);
   message.SerializeToCodedStream(&coded_output_stream);
 }
 
-bool UnpackAny(const google::protobuf::Any &any,
-               google::protobuf::Message *result) {
+bool UnpackAny(const google::protobuf::Any& any,
+               google::protobuf::Message* result) {
   google::protobuf::io::ArrayInputStream stream(any.value().data(),
                                                 any.value().size());
   google::protobuf::io::CodedInputStream coded_input_stream(&stream);

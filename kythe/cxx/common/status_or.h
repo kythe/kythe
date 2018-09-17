@@ -68,7 +68,7 @@ class ABSL_MUST_USE_RESULT StatusOr final {
   const Status& status() const { return this->status_; }
   Status status() { return this->status_; }
 #else
-  const Status& status() const & { return this->status_; }
+  const Status& status() const& { return this->status_; }
   Status status() && { return std::move(this->status_); }
 #endif
 
@@ -99,6 +99,7 @@ StatusOr<T>& StatusOr<T>::operator=(const Status& status) {
   this->status_ = status;
   this->value_.reset();
   DCHECK(!this->ok());
+  return *this;
 }
 
 template <typename T>
@@ -106,18 +107,21 @@ StatusOr<T>& StatusOr<T>::operator=(Status&& status) {
   this->status_ = std::move(status);
   this->value_.reset();
   DCHECK(!this->ok());
+  return *this;
 }
 
 template <typename T>
 StatusOr<T>& StatusOr<T>::operator=(const T& value) {
   this->value_ = value;
   this->status_ = OkStatus();
+  return *this;
 }
 
 template <typename T>
 StatusOr<T>& StatusOr<T>::operator=(T&& value) {
   this->value_ = std::move(value);
   this->status_ = OkStatus();
+  return *this;
 }
 
 template <typename T>
@@ -142,6 +146,7 @@ template <typename U>
 StatusOr<T>& StatusOr<T>::operator=(StatusOr<U>&& other) {
   this->status_ = std::move(other.status_);
   this->value_ = std::move(other.value_);
+  return *this;
 }
 
 }  // namespace kythe

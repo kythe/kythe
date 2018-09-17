@@ -22,7 +22,7 @@
 namespace kythe {
 namespace supported_language {
 
-const char *const kIndexerLang = "c++";
+const char* const kIndexerLang = "c++";
 
 constexpr char kCpp[] = "c++";
 constexpr char kObjectiveC[] = "objectivec";

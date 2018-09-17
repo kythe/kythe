@@ -77,7 +77,7 @@ struct MiniAnchor {
 /// Adds brackets to Text to define anchor locations (escaping existing ones)
 /// and sorts Anchors such that the ith Anchor corresponds to the ith opening
 /// bracket. Drops empty or negative-length spans.
-void InsertAnchorMarks(std::string &Text, std::vector<MiniAnchor> &Anchors);
+void InsertAnchorMarks(std::string& Text, std::vector<MiniAnchor>& Anchors);
 
 /// \brief Used internally to check whether parts of the AST can be ignored.
 class PruneCheck;
@@ -86,12 +86,12 @@ class PruneCheck;
 /// writes it to a `GraphObserver`.
 class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
  public:
-  IndexerASTVisitor(clang::ASTContext &C, BehaviorOnUnimplemented B,
+  IndexerASTVisitor(clang::ASTContext& C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, Verbosity V,
                     BehaviorOnFwdDeclComments ObjC,
-                    BehaviorOnFwdDeclComments Cpp, const LibrarySupports &S,
-                    clang::Sema &Sema, std::function<bool()> ShouldStopIndexing,
-                    GraphObserver *GO = nullptr)
+                    BehaviorOnFwdDeclComments Cpp, const LibrarySupports& S,
+                    clang::Sema& Sema, std::function<bool()> ShouldStopIndexing,
+                    GraphObserver* GO = nullptr)
       : IgnoreUnimplemented(B),
         TemplateMode(T),
         Verbosity(V),
@@ -104,63 +104,63 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
         MarkedSources(&Sema, &Observer),
         ShouldStopIndexing(std::move(ShouldStopIndexing)) {}
 
-  bool VisitDecl(const clang::Decl *Decl);
-  bool VisitDeclaratorDecl(const clang::DeclaratorDecl *Decl);
-  bool VisitFieldDecl(const clang::FieldDecl *Decl);
-  bool VisitVarDecl(const clang::VarDecl *Decl);
-  bool VisitNamespaceDecl(const clang::NamespaceDecl *Decl);
-  bool VisitBindingDecl(const clang::BindingDecl *Decl);
-  bool VisitDeclRefExpr(const clang::DeclRefExpr *DRE);
-  bool VisitDesignatedInitExpr(const clang::DesignatedInitExpr *DIE);
-  bool VisitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr *E);
-  bool VisitCXXConstructExpr(const clang::CXXConstructExpr *E);
-  bool VisitCXXFunctionalCastExpr(const clang::CXXFunctionalCastExpr *E);
-  bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
-  bool VisitCXXNewExpr(const clang::CXXNewExpr *E);
-  bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr *E);
+  bool VisitDecl(const clang::Decl* Decl);
+  bool VisitDeclaratorDecl(const clang::DeclaratorDecl* Decl);
+  bool VisitFieldDecl(const clang::FieldDecl* Decl);
+  bool VisitVarDecl(const clang::VarDecl* Decl);
+  bool VisitNamespaceDecl(const clang::NamespaceDecl* Decl);
+  bool VisitBindingDecl(const clang::BindingDecl* Decl);
+  bool VisitDeclRefExpr(const clang::DeclRefExpr* DRE);
+  bool VisitDesignatedInitExpr(const clang::DesignatedInitExpr* DIE);
+  bool VisitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr* E);
+  bool VisitCXXConstructExpr(const clang::CXXConstructExpr* E);
+  bool VisitCXXFunctionalCastExpr(const clang::CXXFunctionalCastExpr* E);
+  bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr* E);
+  bool VisitCXXNewExpr(const clang::CXXNewExpr* E);
+  bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr* E);
   bool VisitCXXUnresolvedConstructExpr(
-      const clang::CXXUnresolvedConstructExpr *E);
-  bool VisitCallExpr(const clang::CallExpr *Expr);
-  bool VisitMemberExpr(const clang::MemberExpr *Expr);
+      const clang::CXXUnresolvedConstructExpr* E);
+  bool VisitCallExpr(const clang::CallExpr* Expr);
+  bool VisitMemberExpr(const clang::MemberExpr* Expr);
   bool VisitCXXDependentScopeMemberExpr(
-      const clang::CXXDependentScopeMemberExpr *Expr);
+      const clang::CXXDependentScopeMemberExpr* Expr);
 
   // Visit the subtypes of TypedefNameDecl individually because we want to do
   // something different with ObjCTypeParamDecl.
-  bool VisitTypedefDecl(const clang::TypedefDecl *Decl);
-  bool VisitTypeAliasDecl(const clang::TypeAliasDecl *Decl);
-  bool VisitObjCTypeParamDecl(const clang::ObjCTypeParamDecl *Decl);
-  bool VisitUsingShadowDecl(const clang::UsingShadowDecl *Decl);
+  bool VisitTypedefDecl(const clang::TypedefDecl* Decl);
+  bool VisitTypeAliasDecl(const clang::TypeAliasDecl* Decl);
+  bool VisitObjCTypeParamDecl(const clang::ObjCTypeParamDecl* Decl);
+  bool VisitUsingShadowDecl(const clang::UsingShadowDecl* Decl);
 
-  bool VisitRecordDecl(const clang::RecordDecl *Decl);
-  bool VisitEnumDecl(const clang::EnumDecl *Decl);
-  bool VisitEnumConstantDecl(const clang::EnumConstantDecl *Decl);
-  bool VisitFunctionDecl(clang::FunctionDecl *Decl);
-  bool TraverseDecl(clang::Decl *Decl);
+  bool VisitRecordDecl(const clang::RecordDecl* Decl);
+  bool VisitEnumDecl(const clang::EnumDecl* Decl);
+  bool VisitEnumConstantDecl(const clang::EnumConstantDecl* Decl);
+  bool VisitFunctionDecl(clang::FunctionDecl* Decl);
+  bool TraverseDecl(clang::Decl* Decl);
 
-  bool TraverseLambdaExpr(clang::LambdaExpr *Expr);
+  bool TraverseLambdaExpr(clang::LambdaExpr* Expr);
 
-  bool TraverseConstructorInitializer(clang::CXXCtorInitializer *Init);
-  bool TraverseCXXNewExpr(clang::CXXNewExpr *E);
-  bool TraverseCXXFunctionalCastExpr(clang::CXXFunctionalCastExpr *E);
+  bool TraverseConstructorInitializer(clang::CXXCtorInitializer* Init);
+  bool TraverseCXXNewExpr(clang::CXXNewExpr* E);
+  bool TraverseCXXFunctionalCastExpr(clang::CXXFunctionalCastExpr* E);
 
-  bool IndexConstructExpr(const clang::CXXConstructExpr *E,
-                          const clang::TypeSourceInfo *TSI);
+  bool IndexConstructExpr(const clang::CXXConstructExpr* E,
+                          const clang::TypeSourceInfo* TSI);
 
   // Objective C specific nodes
-  bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl *Decl);
-  bool VisitObjCCompatibleAliasDecl(const clang::ObjCCompatibleAliasDecl *Decl);
-  bool VisitObjCCategoryDecl(const clang::ObjCCategoryDecl *Decl);
+  bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl* Decl);
+  bool VisitObjCCompatibleAliasDecl(const clang::ObjCCompatibleAliasDecl* Decl);
+  bool VisitObjCCategoryDecl(const clang::ObjCCategoryDecl* Decl);
   bool VisitObjCImplementationDecl(
-      const clang::ObjCImplementationDecl *ImplDecl);
-  bool VisitObjCCategoryImplDecl(const clang::ObjCCategoryImplDecl *ImplDecl);
-  bool VisitObjCInterfaceDecl(const clang::ObjCInterfaceDecl *Decl);
-  bool VisitObjCProtocolDecl(const clang::ObjCProtocolDecl *Decl);
-  bool VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl);
-  bool VisitObjCPropertyDecl(const clang::ObjCPropertyDecl *Decl);
-  bool VisitObjCIvarRefExpr(const clang::ObjCIvarRefExpr *IRE);
-  bool VisitObjCMessageExpr(const clang::ObjCMessageExpr *Expr);
-  bool VisitObjCPropertyRefExpr(const clang::ObjCPropertyRefExpr *Expr);
+      const clang::ObjCImplementationDecl* ImplDecl);
+  bool VisitObjCCategoryImplDecl(const clang::ObjCCategoryImplDecl* ImplDecl);
+  bool VisitObjCInterfaceDecl(const clang::ObjCInterfaceDecl* Decl);
+  bool VisitObjCProtocolDecl(const clang::ObjCProtocolDecl* Decl);
+  bool VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl);
+  bool VisitObjCPropertyDecl(const clang::ObjCPropertyDecl* Decl);
+  bool VisitObjCIvarRefExpr(const clang::ObjCIvarRefExpr* IRE);
+  bool VisitObjCMessageExpr(const clang::ObjCMessageExpr* Expr);
+  bool VisitObjCPropertyRefExpr(const clang::ObjCPropertyRefExpr* Expr);
 
   // TODO(salguarnieri) We could link something here (the square brackets?) to
   // the setter and getter methods
@@ -203,14 +203,14 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   // Objective C methods don't have TypeSourceInfo so we must construct a type
   // for the methods to be used in the graph.
   absl::optional<GraphObserver::NodeId> CreateObjCMethodTypeNode(
-      const clang::ObjCMethodDecl *MD, EmitRanges ER);
+      const clang::ObjCMethodDecl* MD, EmitRanges ER);
 
   /// \brief Builds a stable node ID for a compile-time expression.
   /// \param Expr The expression to represent.
   /// \param ER Whether to notify the `GraphObserver` about source text
   /// ranges for expressions.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForExpr(
-      const clang::Expr *Expr, EmitRanges ER);
+      const clang::Expr* Expr, EmitRanges ER);
 
   /// \brief Builds a stable node ID for a special template argument.
   /// \param Id A string representing the special argument.
@@ -232,7 +232,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// for types.
   /// \return The Node ID for `Type`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::TypeLoc &TypeLoc, const clang::Type *DType, EmitRanges ER);
+      const clang::TypeLoc& TypeLoc, const clang::Type* DType, EmitRanges ER);
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param TypeLoc The type that is being identified. If its location is valid
@@ -245,7 +245,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// instead of the range in TypeLoc.
   /// \return The Node ID for `Type`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::TypeLoc &TypeLoc, const clang::Type *DType, EmitRanges ER,
+      const clang::TypeLoc& TypeLoc, const clang::Type* DType, EmitRanges ER,
       clang::SourceRange SR);
 
   /// \brief Builds a stable node ID for `Type`.
@@ -257,7 +257,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// for types.
   /// \return The Node ID for `Type`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::TypeLoc &Type, const clang::QualType &QT, EmitRanges ER);
+      const clang::TypeLoc& Type, const clang::QualType& QT, EmitRanges ER);
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param Type The type that is being identified. If its location is valid
@@ -267,7 +267,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// for types.
   /// \return The Node ID for `Type`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::TypeLoc &Type, EmitRanges ER);
+      const clang::TypeLoc& Type, EmitRanges ER);
 
   /// \brief Builds a stable node ID for `QT`.
   /// \param QT The type that is being identified.
@@ -277,19 +277,19 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// If you can provide a `TypeLoc` for the type, it is better to use
   /// `BuildNodeIdForType(const clang::TypeLoc, EmitRanges)`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::QualType &QT);
+      const clang::QualType& QT);
 
   /// \brief Builds a stable node ID for the given `TemplateName`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateName(
-      const clang::TemplateName &Name, clang::SourceLocation L);
+      const clang::TemplateName& Name, clang::SourceLocation L);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
-      const clang::TemplateArgumentLoc &Arg, EmitRanges ER);
+      const clang::TemplateArgumentLoc& Arg, EmitRanges ER);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
-      const clang::TemplateArgument &Arg, clang::SourceLocation L);
+      const clang::TemplateArgument& Arg, clang::SourceLocation L);
 
   /// \brief Builds a stable node ID for `Stmt`.
   ///
@@ -301,24 +301,24 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \return The node for `Stmt` if the statement was implicit; otherwise,
   /// None.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForImplicitStmt(
-      const clang::Stmt *Stmt);
+      const clang::Stmt* Stmt);
 
   /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
   /// template instantiation.
   absl::optional<GraphObserver::NodeId>
-  BuildNodeIdForImplicitTemplateInstantiation(const clang::Decl *Decl);
+  BuildNodeIdForImplicitTemplateInstantiation(const clang::Decl* Decl);
 
   /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
   /// function template instantiation.
   absl::optional<GraphObserver::NodeId>
   BuildNodeIdForImplicitFunctionTemplateInstantiation(
-      const clang::FunctionDecl *Decl);
+      const clang::FunctionDecl* Decl);
 
   /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
   /// class template instantiation.
   absl::optional<GraphObserver::NodeId>
   BuildNodeIdForImplicitClassTemplateInstantiation(
-      const clang::ClassTemplateSpecializationDecl *Decl);
+      const clang::ClassTemplateSpecializationDecl* Decl);
 
   /// \brief Builds a stable node ID for an external reference to `Decl`.
   ///
@@ -328,13 +328,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// \param Decl The declaration that is being identified.
   /// \return The node for `Decl`.
-  GraphObserver::NodeId BuildNodeIdForRefToDecl(const clang::Decl *Decl);
+  GraphObserver::NodeId BuildNodeIdForRefToDecl(const clang::Decl* Decl);
 
   /// \brief Builds a stable node ID for `Decl`.
   ///
   /// \param Decl The declaration that is being identified.
   /// \return The node for `Decl`.
-  GraphObserver::NodeId BuildNodeIdForDecl(const clang::Decl *Decl);
+  GraphObserver::NodeId BuildNodeIdForDecl(const clang::Decl* Decl);
 
   /// \brief Builds a stable node ID for the definition of `Decl`, if
   /// `Decl` is not already a definition and its definition can be found.
@@ -344,8 +344,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// and its definition can be found; or None.
   template <typename D>
   absl::optional<GraphObserver::NodeId> BuildNodeIdForDefnOfDecl(
-      const D *Decl) {
-    if (const auto *Defn = Decl->getDefinition()) {
+      const D* Decl) {
+    if (const auto* Defn = Decl->getDefinition()) {
       if (Defn != Decl) {
         return BuildNodeIdForDecl(Defn);
       }
@@ -357,7 +357,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// \param Decl The declaration that is being identified.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTypedefNameDecl(
-      const clang::TypedefNameDecl *TND);
+      const clang::TypedefNameDecl* TND);
 
   /// \brief Builds a stable node ID for `Decl`.
   ///
@@ -371,19 +371,19 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param Index The index of the sub-id to generate.
   ///
   /// \return A stable node ID for `Decl`'s `Index`th subnode.
-  GraphObserver::NodeId BuildNodeIdForDecl(const clang::Decl *Decl,
+  GraphObserver::NodeId BuildNodeIdForDecl(const clang::Decl* Decl,
                                            unsigned Index);
 
   /// \brief Categorizes the name of `Decl` according to the equivalence classes
   /// defined by `GraphObserver::NameId::NameEqClass`.
   GraphObserver::NameId::NameEqClass BuildNameEqClassForDecl(
-      const clang::Decl *Decl);
+      const clang::Decl* Decl);
 
   /// \brief Builds a stable name ID for the name of `Decl`.
   ///
   /// \param Decl The declaration that is being named.
   /// \return The name for `Decl`.
-  GraphObserver::NameId BuildNameIdForDecl(const clang::Decl *Decl);
+  GraphObserver::NameId BuildNameIdForDecl(const clang::Decl* Decl);
 
   /// \brief Builds a NodeId for the given dependent name.
   ///
@@ -394,9 +394,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// such that the dependent name is lookup(lookup*(Root, NNS), Id).
   /// \param ER If `EmitRanges::Yes`, records ranges for syntactic elements.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForDependentName(
-      const clang::NestedNameSpecifierLoc &NNS,
-      const clang::DeclarationName &Id, const clang::SourceLocation IdLoc,
-      const absl::optional<GraphObserver::NodeId> &Root, EmitRanges ER);
+      const clang::NestedNameSpecifierLoc& NNS,
+      const clang::DeclarationName& Id, const clang::SourceLocation IdLoc,
+      const absl::optional<GraphObserver::NodeId>& Root, EmitRanges ER);
 
   /// \brief Is `VarDecl` a definition?
   ///
@@ -404,10 +404,10 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// of a function definition; otherwise it is always a declaration. This
   /// differs from the C++ Standard, which treats these parameters as
   /// definitions (basic.scope.proto).
-  static bool IsDefinition(const clang::VarDecl *VD);
+  static bool IsDefinition(const clang::VarDecl* VD);
 
   /// \brief Is `FunctionDecl` a definition?
-  static bool IsDefinition(const clang::FunctionDecl *FD);
+  static bool IsDefinition(const clang::FunctionDecl* FD);
 
   /// \brief Gets a range for the name of a declaration, whether that name is a
   /// single token or otherwise.
@@ -415,7 +415,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// The returned range is a best-effort attempt to cover the "name" of
   /// the entity as written in the source code.
   clang::SourceRange RangeForNameOfDeclaration(
-      const clang::NamedDecl *Decl) const;
+      const clang::NamedDecl* Decl) const;
 
   /// Consume a token of the `ExpectedKind` from the `StartLocation`,
   /// returning the range for that token on success and an invalid
@@ -427,24 +427,24 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   clang::SourceRange ConsumeToken(clang::SourceLocation StartLocation,
                                   clang::tok::TokenKind ExpectedKind) const;
 
-  bool TraverseClassTemplateDecl(clang::ClassTemplateDecl *TD);
+  bool TraverseClassTemplateDecl(clang::ClassTemplateDecl* TD);
   bool TraverseClassTemplateSpecializationDecl(
-      clang::ClassTemplateSpecializationDecl *TD);
+      clang::ClassTemplateSpecializationDecl* TD);
   bool TraverseClassTemplatePartialSpecializationDecl(
-      clang::ClassTemplatePartialSpecializationDecl *TD);
+      clang::ClassTemplatePartialSpecializationDecl* TD);
 
-  bool TraverseVarTemplateDecl(clang::VarTemplateDecl *VD);
+  bool TraverseVarTemplateDecl(clang::VarTemplateDecl* VD);
   bool TraverseVarTemplateSpecializationDecl(
-      clang::VarTemplateSpecializationDecl *VD);
+      clang::VarTemplateSpecializationDecl* VD);
   bool ForceTraverseVarTemplateSpecializationDecl(
-      clang::VarTemplateSpecializationDecl *VD);
+      clang::VarTemplateSpecializationDecl* VD);
   bool TraverseVarTemplatePartialSpecializationDecl(
-      clang::VarTemplatePartialSpecializationDecl *TD);
+      clang::VarTemplatePartialSpecializationDecl* TD);
 
-  bool TraverseFunctionDecl(clang::FunctionDecl *FD);
-  bool TraverseFunctionTemplateDecl(clang::FunctionTemplateDecl *FTD);
+  bool TraverseFunctionDecl(clang::FunctionDecl* FD);
+  bool TraverseFunctionTemplateDecl(clang::FunctionTemplateDecl* FTD);
 
-  bool TraverseTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl *TATD);
+  bool TraverseTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* TATD);
 
   bool shouldVisitTemplateInstantiations() const {
     return TemplateMode == BehaviorOnTemplates::VisitInstantiations;
@@ -458,53 +458,53 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool shouldVisitImplicitCode() const { return true; }
   // Disables data recursion. We intercept Traverse* methods in the RAV, which
   // are not triggered during data recursion.
-  bool shouldUseDataRecursionFor(clang::Stmt *S) const { return false; }
+  bool shouldUseDataRecursionFor(clang::Stmt* S) const { return false; }
 
   /// \brief Records the range of a definition. If the range cannot be placed
   /// somewhere inside a source file, no record is made.
   void MaybeRecordDefinitionRange(
-      const absl::optional<GraphObserver::Range> &R,
-      const GraphObserver::NodeId &Id,
-      const absl::optional<GraphObserver::NodeId> &DeclId);
+      const absl::optional<GraphObserver::Range>& R,
+      const GraphObserver::NodeId& Id,
+      const absl::optional<GraphObserver::NodeId>& DeclId);
 
   /// \brief Returns the attached GraphObserver.
-  GraphObserver &getGraphObserver() { return Observer; }
+  GraphObserver& getGraphObserver() { return Observer; }
 
   /// \brief Returns the ASTContext.
-  const clang::ASTContext &getASTContext() { return Context; }
+  const clang::ASTContext& getASTContext() { return Context; }
 
   /// If `SR` is empty (getBegin() == getEnd()) and a valid file id, expands the
   /// range. Otherwise, returns the input unmodified.
-  clang::SourceRange ExpandRangeIfEmptyFileID(const clang::SourceRange &SR);
+  clang::SourceRange ExpandRangeIfEmptyFileID(const clang::SourceRange& SR);
 
   // If `SR` is a valid macro id, attempt to map it to a file range,
   // otherwise returns the input unmodified.
-  clang::SourceRange MapRangeToFileIfMacroID(const clang::SourceRange &SR);
+  clang::SourceRange MapRangeToFileIfMacroID(const clang::SourceRange& SR);
 
   /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext after expanding empty ranges and mapping macros to a file
   /// location.
   absl::optional<GraphObserver::Range> ExpandedFileRangeInCurrentContext(
-      const clang::SourceRange &SR);
+      const clang::SourceRange& SR);
 
   /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
   absl::optional<GraphObserver::Range> ExplicitRangeInCurrentContext(
-      const clang::SourceRange &SR);
+      const clang::SourceRange& SR);
 
   /// If `Implicit` is true, returns `Id` as an implicit Range; otherwise,
   /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
   absl::optional<GraphObserver::Range> RangeInCurrentContext(
-      bool Implicit, const GraphObserver::NodeId &Id,
-      const clang::SourceRange &SR);
+      bool Implicit, const GraphObserver::NodeId& Id,
+      const clang::SourceRange& SR);
 
   /// If `Id` is some NodeId, returns it as an implicit Range; otherwise,
   /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
   absl::optional<GraphObserver::Range> RangeInCurrentContext(
-      const absl::optional<GraphObserver::NodeId> &Id,
-      const clang::SourceRange &SR);
+      const absl::optional<GraphObserver::NodeId>& Id,
+      const clang::SourceRange& SR);
 
   void RunJob(std::unique_ptr<IndexJob> JobToRun) {
     Job = std::move(JobToRun);
@@ -516,12 +516,12 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
     }
   }
 
-  const IndexJob &getCurrentJob() {
+  const IndexJob& getCurrentJob() {
     CHECK(Job != nullptr);
     return *Job;
   }
 
-  void Work(clang::Decl *InitialDecl,
+  void Work(clang::Decl* InitialDecl,
             std::unique_ptr<IndexerWorklist> NewWorklist) {
     Worklist = std::move(NewWorklist);
     Worklist->EnqueueJob(llvm::make_unique<IndexJob>(InitialDecl));
@@ -529,7 +529,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       ;
     Observer.iterateOverClaimedFiles(
         [this, InitialDecl](clang::FileID Id,
-                            const GraphObserver::NodeId &FileNode) {
+                            const GraphObserver::NodeId& FileNode) {
           RunJob(llvm::make_unique<IndexJob>(InitialDecl, Id, FileNode));
           return !ShouldStopIndexing();
         });
@@ -542,12 +542,12 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// Blames a call to `Callee` at `Range` on everything at the top of
   /// `BlameStack` (or does nothing if there's nobody to blame).
-  void RecordCallEdges(const GraphObserver::Range &Range,
-                       const GraphObserver::NodeId &Callee);
+  void RecordCallEdges(const GraphObserver::Range& Range,
+                       const GraphObserver::NodeId& Callee);
 
   /// \return whether `range` should be considered to be implicit under the
   /// current context.
-  GraphObserver::Implicit IsImplicit(const GraphObserver::Range &range);
+  GraphObserver::Implicit IsImplicit(const GraphObserver::Range& range);
 
  private:
   using Base = RecursiveASTVisitor;
@@ -570,8 +570,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   BehaviorOnFwdDeclComments CppFwdDocs;
 
   NullGraphObserver NullObserver;
-  GraphObserver &Observer;
-  clang::ASTContext &Context;
+  GraphObserver& Observer;
+  clang::ASTContext& Context;
 
   /// \brief The result of calling into the lexer.
   enum class LexerResult {
@@ -585,7 +585,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param Token The token to overwrite.
   /// \return `Failure` if there was a failure, `Success` on success.
   LexerResult getRawToken(clang::SourceLocation StartLocation,
-                          clang::Token &Token) const {
+                          clang::Token& Token) const {
     return Observer.getPreprocessor()->getRawToken(StartLocation, Token,
                                                    true /* ignoreWhiteSpace */)
                ? LexerResult::Failure
@@ -594,31 +594,31 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Handle the file-level comments for `Id` with node ID `FileId`.
   void HandleFileLevelComments(clang::FileID Id,
-                               const GraphObserver::NodeId &FileId);
+                               const GraphObserver::NodeId& FileId);
 
   /// \brief Emit data for `Comment` that documents `DocumentedNode`, using
   /// `DC` for lookups.
-  void VisitComment(const clang::RawComment *Comment,
-                    const clang::DeclContext *DC,
-                    const GraphObserver::NodeId &DocumentedNode);
+  void VisitComment(const clang::RawComment* Comment,
+                    const clang::DeclContext* DC,
+                    const GraphObserver::NodeId& DocumentedNode);
 
   /// \brief Emit data for attributes attached to `Decl`, whose `NodeId`
   /// is `TargetNode`.
-  void VisitAttributes(const clang::Decl *Decl,
-                       const GraphObserver::NodeId &TargetNode);
+  void VisitAttributes(const clang::Decl* Decl,
+                       const GraphObserver::NodeId& TargetNode);
 
   /// \brief Attempts to find the ID of the first parent of `Decl` for
   /// attaching a `childof` relationship.
-  absl::optional<GraphObserver::NodeId> GetDeclChildOf(const clang::Decl *D);
+  absl::optional<GraphObserver::NodeId> GetDeclChildOf(const clang::Decl* D);
 
   /// \brief Attempts to add some representation of `ND` to `Ostream`.
   /// \return true on success; false on failure.
-  bool AddNameToStream(llvm::raw_string_ostream &Ostream,
-                       const clang::NamedDecl *ND);
+  bool AddNameToStream(llvm::raw_string_ostream& Ostream,
+                       const clang::NamedDecl* ND);
 
   absl::optional<GraphObserver::NodeId> ApplyBuiltinTypeConstructor(
-      const char *BuiltinName,
-      const absl::optional<GraphObserver::NodeId> &Param);
+      const char* BuiltinName,
+      const absl::optional<GraphObserver::NodeId>& Param);
 
   /// \brief Ascribes a type to `AscribeTo`.
   /// \param Type The `TypeLoc` referring to the type
@@ -629,9 +629,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// a deduced `auto` in the source text will appear to be undeduced.
   /// In this case, it's useful to query the object being ascribed for its
   /// unlocated QualType, as this does get updated.
-  void AscribeSpelledType(const clang::TypeLoc &Type,
-                          const clang::QualType &DType,
-                          const GraphObserver::NodeId &AscribeTo);
+  void AscribeSpelledType(const clang::TypeLoc& Type,
+                          const clang::QualType& DType,
+                          const GraphObserver::NodeId& AscribeTo);
 
   /// \brief Returns the parent of the given node, along with the index
   /// at which the node appears underneath each parent.
@@ -659,7 +659,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
   template <typename NodeT>
-  const IndexedParent *getIndexedParent(const NodeT &Node) {
+  const IndexedParent* getIndexedParent(const NodeT& Node) {
     return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
   }
 
@@ -667,13 +667,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// A subtree is prunable if it's "the same" in all possible indexer runs.
   /// This excludes, for example, certain template instantiations.
-  bool declDominatesPrunableSubtree(const clang::Decl *Decl);
+  bool declDominatesPrunableSubtree(const clang::Decl* Decl);
 
-  const IndexedParent *getIndexedParent(
-      const clang::ast_type_traits::DynTypedNode &Node);
+  const IndexedParent* getIndexedParent(
+      const clang::ast_type_traits::DynTypedNode& Node);
 
   /// Initializes AllParents, if necessary, and then returns a pointer to it.
-  IndexedParentMap *getAllParents();
+  IndexedParentMap* getAllParents();
 
   /// A map from memoizable DynTypedNodes to their parent nodes
   /// and their child indices with respect to those parents.
@@ -684,14 +684,14 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// `BodyId`, including the edge linking the template and its body. Returns
   /// the `NodeId` for the dominating template.
   template <typename TemplateDeclish>
-  GraphObserver::NodeId RecordTemplate(const TemplateDeclish *Template,
-                                       const GraphObserver::NodeId &BodyId);
+  GraphObserver::NodeId RecordTemplate(const TemplateDeclish* Template,
+                                       const GraphObserver::NodeId& BodyId);
 
   /// Records information about the generic class by wrapping the node
   /// `BodyId`. Returns the `NodeId` for the dominating generic type.
   GraphObserver::NodeId RecordGenericClass(
-      const clang::ObjCInterfaceDecl *IDecl,
-      const clang::ObjCTypeParamList *TPL, const GraphObserver::NodeId &BodyId);
+      const clang::ObjCInterfaceDecl* IDecl,
+      const clang::ObjCTypeParamList* TPL, const GraphObserver::NodeId& BodyId);
 
   /// \brief Fills `ArgNodeIds` with pointers to `NodeId`s for a template
   /// argument list.
@@ -703,8 +703,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool BuildTemplateArgumentList(
       llvm::Optional<llvm::ArrayRef<clang::TemplateArgumentLoc>> ArgsAsWritten,
       llvm::ArrayRef<clang::TemplateArgument> Args,
-      std::vector<GraphObserver::NodeId> &ArgIds,
-      std::vector<const GraphObserver::NodeId *> &ArgNodeIds);
+      std::vector<GraphObserver::NodeId>& ArgIds,
+      std::vector<const GraphObserver::NodeId*>& ArgNodeIds);
 
   /// Dumps information about `TypeContext` to standard error when looking for
   /// an entry at (`Depth`, `Index`).
@@ -713,18 +713,18 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief Attempts to add a childof edge between DeclNode and its parent.
   /// \param Decl The (outer, in the case of a template) decl.
   /// \param DeclNode The (outer) `NodeId` for `Decl`.
-  void AddChildOfEdgeToDeclContext(const clang::Decl *Decl,
+  void AddChildOfEdgeToDeclContext(const clang::Decl* Decl,
                                    const GraphObserver::NodeId DeclNode);
 
   /// Points at the inner node of the DeclContext, if it's a template.
   /// Otherwise points at the DeclContext as a Decl.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForDeclContext(
-      const clang::DeclContext *DC);
+      const clang::DeclContext* DC);
 
   /// Points at the tapp node for a DeclContext, if it's an implicit template
   /// instantiation. Otherwise behaves as `BuildNodeIdForDeclContext`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForRefToDeclContext(
-      const clang::DeclContext *DC);
+      const clang::DeclContext* DC);
 
   /// Avoid regenerating type node IDs and keep track of where we are while
   /// generating node IDs for recursive types. The key is opaque and
@@ -737,8 +737,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// in the same way but do not have a useful common ancestry.
   ///
   /// \param IsInit set to true if this is an initializing reference.
-  bool VisitDeclRefOrIvarRefExpr(const clang::Expr *Expr,
-                                 const clang::NamedDecl *const FoundDecl,
+  bool VisitDeclRefOrIvarRefExpr(const clang::Expr* Expr,
+                                 const clang::NamedDecl* const FoundDecl,
                                  clang::SourceLocation SL,
                                  bool IsImplicit = false, bool IsInit = false);
 
@@ -757,7 +757,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param IFace The interface decl to use to look up the super and
   //// protocols.
   void ConnectToSuperClassAndProtocols(const GraphObserver::NodeId BodyDeclNode,
-                                       const clang::ObjCInterfaceDecl *IFace);
+                                       const clang::ObjCInterfaceDecl* IFace);
   void ConnectToProtocols(const GraphObserver::NodeId BodyDeclNode,
                           clang::ObjCProtocolList::loc_iterator locStart,
                           clang::ObjCProtocolList::loc_iterator locEnd,
@@ -769,10 +769,10 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// For FunctionDecl and ObjCMethodDecl, this connects the parameters to the
   /// function/method decl.
   /// \param Decl This should be a FunctionDecl or ObjCMethodDecl.
-  void ConnectParam(const clang::Decl *Decl,
-                    const GraphObserver::NodeId &FuncNode,
+  void ConnectParam(const clang::Decl* Decl,
+                    const GraphObserver::NodeId& FuncNode,
                     bool IsFunctionDefinition, const unsigned int ParamNumber,
-                    const clang::ParmVarDecl *Param, bool DeclIsImplicit);
+                    const clang::ParmVarDecl* Param, bool DeclIsImplicit);
 
   /// \brief Record the type node for this interface usage.
   ///
@@ -784,13 +784,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// each protocol and constructs a new tapp node for this TypeUnion.
   absl::optional<GraphObserver::NodeId> RecordObjCInterfaceType(
       GraphObserver::NodeId BaseType, bool BaseIsId,
-      const clang::ObjCObjectType *T,
+      const clang::ObjCObjectType* T,
       llvm::ArrayRef<clang::SourceLocation> ProtocolLocs);
 
   /// \brief Draw the completes edge from a Decl to each of its redecls.
-  void RecordCompletesForRedecls(const clang::Decl *Decl,
-                                 const clang::SourceRange &NameRange,
-                                 const GraphObserver::NodeId &DeclNode);
+  void RecordCompletesForRedecls(const clang::Decl* Decl,
+                                 const clang::SourceRange& NameRange,
+                                 const GraphObserver::NodeId& DeclNode);
 
   /// \brief Draw an extends/category edge from the category to the class the
   /// category is extending.
@@ -800,13 +800,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// \param DeclNode The node for the category (impl or decl).
   /// \param IFace The class interface for class we are adding a category to.
-  void ConnectCategoryToBaseClass(const GraphObserver::NodeId &DeclNode,
-                                  const clang::ObjCInterfaceDecl *IFace);
+  void ConnectCategoryToBaseClass(const GraphObserver::NodeId& DeclNode,
+                                  const clang::ObjCInterfaceDecl* IFace);
 
-  void LogErrorWithASTDump(const std::string &msg,
-                           const clang::Decl *Decl) const;
-  void LogErrorWithASTDump(const std::string &msg,
-                           const clang::Expr *Expr) const;
+  void LogErrorWithASTDump(const std::string& msg,
+                           const clang::Decl* Decl) const;
+  void LogErrorWithASTDump(const std::string& msg,
+                           const clang::Expr* Expr) const;
 
   /// \brief Mark each node of `NNSL` as a reference.
   /// \param NNSL the nested name specifier to visit.
@@ -814,41 +814,41 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief This is used to handle the visitation of a clang::TypedefDecl
   /// or a clang::TypeAliasDecl.
-  bool VisitCTypedef(const clang::TypedefNameDecl *Decl);
+  bool VisitCTypedef(const clang::TypedefNameDecl* Decl);
 
   /// \brief Find the implementation for `MD`. If `MD` is a definition, `MD` is
   /// returned. Otherwise, the method tries to find the implementation by
   /// looking through the interface and its implementation. If a method
   /// implementation is found, it is returned otherwise `MD` is returned.
-  const clang::ObjCMethodDecl *FindMethodDefn(
-      const clang::ObjCMethodDecl *MD, const clang::ObjCInterfaceDecl *I);
+  const clang::ObjCMethodDecl* FindMethodDefn(
+      const clang::ObjCMethodDecl* MD, const clang::ObjCInterfaceDecl* I);
 
   void VisitObjCInterfaceDeclComment(
-      const clang::ObjCInterfaceDecl *Decl, const clang::RawComment *Comment,
-      const clang::DeclContext *DCxt,
+      const clang::ObjCInterfaceDecl* Decl, const clang::RawComment* Comment,
+      const clang::DeclContext* DCxt,
       absl::optional<GraphObserver::NodeId> DCID);
 
-  void VisitRecordDeclComment(const clang::RecordDecl *Decl,
-                              const clang::RawComment *Comment,
-                              const clang::DeclContext *DCxt,
+  void VisitRecordDeclComment(const clang::RecordDecl* Decl,
+                              const clang::RawComment* Comment,
+                              const clang::DeclContext* DCxt,
                               absl::optional<GraphObserver::NodeId> DCID);
 
   /// \brief Maps known Decls to their NodeIds.
-  llvm::DenseMap<const clang::Decl *, GraphObserver::NodeId> DeclToNodeId;
+  llvm::DenseMap<const clang::Decl*, GraphObserver::NodeId> DeclToNodeId;
 
   /// \brief Used for calculating semantic hashes.
   SemanticHash Hash{
-      [this](const clang::Decl *Decl) {
+      [this](const clang::Decl* Decl) {
         return BuildNameIdForDecl(Decl).ToString();
       },
       // These enums are intentionally compatible.
       static_cast<SemanticHash::OnUnimplemented>(IgnoreUnimplemented)};
 
   /// \brief Enabled library-specific callbacks.
-  const LibrarySupports &Supports;
+  const LibrarySupports& Supports;
 
   /// \brief The `Sema` instance to use.
-  clang::Sema &Sema;
+  clang::Sema& Sema;
 
   /// \brief The cache to use to generate signatures.
   MarkedSourceCache MarkedSources;
@@ -863,18 +863,18 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   std::unique_ptr<IndexerWorklist> Worklist;
 
   /// \brief Comments we've already visited.
-  std::unordered_set<const clang::RawComment *> VisitedComments;
+  std::unordered_set<const clang::RawComment*> VisitedComments;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
 class IndexerASTConsumer : public clang::SemaConsumer {
  public:
   explicit IndexerASTConsumer(
-      GraphObserver *GO, BehaviorOnUnimplemented B, BehaviorOnTemplates T,
+      GraphObserver* GO, BehaviorOnUnimplemented B, BehaviorOnTemplates T,
       Verbosity V, BehaviorOnFwdDeclComments ObjC,
-      BehaviorOnFwdDeclComments Cpp, const LibrarySupports &S,
+      BehaviorOnFwdDeclComments Cpp, const LibrarySupports& S,
       std::function<bool()> ShouldStopIndexing,
-      std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+      std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
           CreateWorklist)
       : Observer(GO),
         IgnoreUnimplemented(B),
@@ -886,7 +886,7 @@ class IndexerASTConsumer : public clang::SemaConsumer {
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
         CreateWorklist(std::move(CreateWorklist)) {}
 
-  void HandleTranslationUnit(clang::ASTContext &Context) override {
+  void HandleTranslationUnit(clang::ASTContext& Context) override {
     CHECK(Sema != nullptr);
     IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
                               Verbosity, ObjCFwdDocs, CppFwdDocs, Supports,
@@ -897,12 +897,12 @@ class IndexerASTConsumer : public clang::SemaConsumer {
     }
   }
 
-  void InitializeSema(clang::Sema &S) override { Sema = &S; }
+  void InitializeSema(clang::Sema& S) override { Sema = &S; }
 
   void ForgetSema() override { Sema = nullptr; }
 
  private:
-  GraphObserver *const Observer;
+  GraphObserver* const Observer;
   /// Whether we should stop on missing cases or continue on.
   BehaviorOnUnimplemented IgnoreUnimplemented;
   /// Whether we should visit template instantiations.
@@ -914,13 +914,13 @@ class IndexerASTConsumer : public clang::SemaConsumer {
   /// Should we emit documentation for forward decls in C++?
   BehaviorOnFwdDeclComments CppFwdDocs;
   /// Which library supports are enabled.
-  const LibrarySupports &Supports;
+  const LibrarySupports& Supports;
   /// The active Sema instance.
-  clang::Sema *Sema;
+  clang::Sema* Sema;
   /// \return true if we should stop indexing.
   std::function<bool()> ShouldStopIndexing;
   /// \return a new worklist for the given visitor.
-  std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+  std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
       CreateWorklist;
 };
 

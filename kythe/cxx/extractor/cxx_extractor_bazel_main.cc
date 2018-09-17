@@ -31,9 +31,9 @@
 
 #include "cxx_extractor.h"
 
-static void LoadExtraAction(const std::string &path,
-                            blaze::ExtraActionInfo *info,
-                            blaze::CppCompileInfo *cpp_info) {
+static void LoadExtraAction(const std::string& path,
+                            blaze::ExtraActionInfo* info,
+                            blaze::CppCompileInfo* cpp_info) {
   using namespace google::protobuf::io;
   int fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
   CHECK_GE(fd, 0) << "Couldn't open input file " << path;
@@ -46,7 +46,7 @@ static void LoadExtraAction(const std::string &path,
   *cpp_info = info->GetExtension(blaze::CppCompileInfo::cpp_compile_info);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.1");

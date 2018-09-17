@@ -45,7 +45,7 @@ DEFINE_bool(convert_marked_source, false,
             "Convert MarkedSource-valued facts to subgraphs.");
 DEFINE_bool(show_anchors, false, "Show anchor locations instead of @s");
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   ::gflags::SetVersionString("0.1");
   ::gflags::SetUsageMessage(R"(Verification tool for Kythe databases.
@@ -98,7 +98,7 @@ Example:
       return 1;
     }
 
-    for (const auto &rule_file : rule_files) {
+    for (const auto& rule_file : rule_files) {
       if (rule_file.empty()) {
         continue;
       }

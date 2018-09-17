@@ -35,12 +35,12 @@ namespace kythe {
 ///
 /// \param to_relativize Relative or absolute path to a file.
 /// \param relativize_against Relative or absolute path to a directory.
-std::string RelativizePath(const std::string &to_relativize,
-                           const std::string &relativize_against);
+std::string RelativizePath(const std::string& to_relativize,
+                           const std::string& relativize_against);
 
 /// \brief Convert `in_path` to an absolute path, eliminating `.` and `..`.
 /// \param in_path The path to convert.
-std::string MakeCleanAbsolutePath(const std::string &in_path);
+std::string MakeCleanAbsolutePath(const std::string& in_path);
 
 /// \brief Lexically eliminate `.` and `..` from `in_path`.
 ///
@@ -58,10 +58,10 @@ std::string JoinPath(llvm::StringRef a, llvm::StringRef b);
 /// \param relative_path The path to the file, relative to search_path.
 /// \param filename The filename used to consult the filesystem.
 /// \return The FileEntry we found or null if we didn't find one.
-const clang::FileEntry *LookupFileForIncludePragma(
-    clang::Preprocessor *preprocessor, llvm::SmallVectorImpl<char> *search_path,
-    llvm::SmallVectorImpl<char> *relative_path,
-    llvm::SmallVectorImpl<char> *filename);
+const clang::FileEntry* LookupFileForIncludePragma(
+    clang::Preprocessor* preprocessor, llvm::SmallVectorImpl<char>* search_path,
+    llvm::SmallVectorImpl<char>* relative_path,
+    llvm::SmallVectorImpl<char>* filename);
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_COMMON_PATH_UTILS_H_

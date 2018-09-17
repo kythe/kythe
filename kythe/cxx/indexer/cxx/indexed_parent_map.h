@@ -67,7 +67,8 @@ class IndexedParentMap {
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename T> const IndexedParent* GetIndexedParent(const T& node) const {
+  template <typename T>
+  const IndexedParent* GetIndexedParent(const T& node) const {
     return GetIndexedParent(clang::ast_type_traits::DynTypedNode::create(node));
   }
 

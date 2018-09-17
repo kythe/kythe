@@ -77,12 +77,11 @@ class MutableContextRows {
 
 /// \brief Gives each `hash` a unique, shorter ID based on visitation order.
 void CanonicalizeHash(std::map<google::protobuf::string, size_t>* hashes,
-                             google::protobuf::string* hash) {
+                      google::protobuf::string* hash) {
   auto inserted = hashes->insert({*hash, hashes->size()});
   *hash =
       google::protobuf::string("hash" + std::to_string(inserted.first->second));
 }
-
 
 void DumpIndexFile(const std::string& path) {
   using namespace google::protobuf::io;
@@ -155,7 +154,7 @@ void DumpIndexFile(const std::string& path) {
 }
 
 void BuildIndexFile(const std::string& outfile,
-                           const std::vector<std::string>& elements) {
+                    const std::vector<std::string>& elements) {
   CHECK(!elements.empty()) << "Need at least a CompilationUnit!";
   using namespace google::protobuf::io;
   int out_fd =
