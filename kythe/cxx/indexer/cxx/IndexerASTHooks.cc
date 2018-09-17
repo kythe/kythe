@@ -1872,6 +1872,16 @@ bool IndexerASTVisitor::VisitSubstTemplateTypeParmTypeLoc(
   return true;
 }
 
+bool IndexerASTVisitor::VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL) {
+  if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+    if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
+      Observer.recordTypeSpellingLocation(
+          *RCC, *Id, GraphObserver::Claimability::Claimable, IsImplicit(*RCC));
+    }
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::VisitDesignatedInitExpr(
     const clang::DesignatedInitExpr* DIE) {
   for (const auto& D : DIE->designators()) {
@@ -4201,6 +4211,22 @@ IndexerASTVisitor::BuildNodeIdForDependentSizedArrayTypeLoc(
   return absl::nullopt;
 }
 
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForFunctionNoProtoTypeLoc(
+    clang::FunctionNoProtoTypeLoc TL) {
+  return Observer.getNodeIdForBuiltinType("knrfn");
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForParenTypeLoc(clang::ParenTypeLoc TL) {
+  return BuildNodeIdForType(TL.getInnerLoc(), EmitRanges::No);
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForDecltypeTypeLoc(clang::DecltypeTypeLoc TL) {
+  return BuildNodeIdForType(TL.getTypePtr()->getUnderlyingType());
+}
+
 const clang::TemplateTypeParmDecl*
 IndexerASTVisitor::FindTemplateTypeParmTypeLocDecl(
     clang::TemplateTypeParmTypeLoc TL) const {
@@ -4336,29 +4362,21 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                  : (TypeNodes[Key] = BuildNodeIdForObjCInterfaceTypeLoc(
                         TypeLoc.castAs<ObjCInterfaceTypeLoc>()));
     case TypeLoc::Pointer:
-      // TODO(shahms): Remove this CHECK.
-      CHECK(isa<PointerType>(PT));
       return TypeAlreadyBuilt ? Prev->second
                               : (TypeNodes[Key] = BuildNodeIdForPointerTypeLoc(
                                      TypeLoc.castAs<PointerTypeLoc>()));
     case TypeLoc::LValueReference:
-      // TODO(shahms): Remove this CHECK.
-      CHECK(isa<LValueReferenceType>(PT));
       return TypeAlreadyBuilt
                  ? Prev->second
                  : (TypeNodes[Key] = BuildNodeIdForLValueReferenceTypeLoc(
                         TypeLoc.castAs<LValueReferenceTypeLoc>()));
     case TypeLoc::RValueReference:
-      // TODO(shahms): Remove this CHECK.
-      CHECK(isa<RValueReferenceType>(PT));
       return TypeAlreadyBuilt
                  ? Prev->second
                  : (TypeNodes[Key] = BuildNodeIdForRValueReferenceTypeLoc(
                         TypeLoc.castAs<RValueReferenceTypeLoc>()));
     case TypeLoc::Auto:
     case TypeLoc::DeducedTemplateSpecialization:
-      // TODO(shahms): Remove this CHECK.
-      CHECK(isa<DeducedType>(PT));
       return TypeAlreadyBuilt ? Prev->second
                               : (TypeNodes[Key] = BuildNodeIdForDeducedTypeLoc(
                                      TypeLoc.castAs<DeducedTypeLoc>()));
@@ -4434,22 +4452,15 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       }
     } break;
     case TypeLoc::FunctionNoProto:
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      if (!TypeAlreadyBuilt) {
-        const auto& T = TypeLoc.castAs<FunctionNoProtoTypeLoc>();
-        ID = Observer.getNodeIdForBuiltinType("knrfn");
-      }
-      break;
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] = BuildNodeIdForFunctionNoProtoTypeLoc(
+                        TypeLoc.castAs<FunctionNoProtoTypeLoc>()));
       UNSUPPORTED_CLANG_TYPE(UnresolvedUsing);
-    case TypeLoc::Paren: {
-      const auto& T = TypeLoc.castAs<ParenTypeLoc>();
-      const auto* DT = dyn_cast<ParenType>(PT);
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      ID = BuildNodeIdForType(
-          T.getInnerLoc(),
-          DT ? DT->getInnerType().getTypePtr() : T.getInnerLoc().getTypePtr(),
-          EmitRanges);
-    } break;
+    case TypeLoc::Paren:
+      return TypeAlreadyBuilt ? Prev->second
+                              : (TypeNodes[Key] = BuildNodeIdForParenTypeLoc(
+                                     TypeLoc.castAs<ParenTypeLoc>()));
     case TypeLoc::Typedef: {
       // TODO(zarko): Return canonicalized versions as non-primary elements of
       // the absl::optional.
@@ -4479,13 +4490,9 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       UNSUPPORTED_CLANG_TYPE(TypeOfExpr);
       UNSUPPORTED_CLANG_TYPE(TypeOf);
     case TypeLoc::Decltype:
-      if (!TypeAlreadyBuilt) {
-        const auto& T = TypeLoc.castAs<DecltypeTypeLoc>();
-        const auto* DT = dyn_cast<DecltypeType>(PT);
-        ID = BuildNodeIdForType(DT ? DT->getUnderlyingType()
-                                   : T.getTypePtr()->getUnderlyingType());
-      }
-      break;
+      return TypeAlreadyBuilt ? Prev->second
+                              : (TypeNodes[Key] = BuildNodeIdForDecltypeTypeLoc(
+                                     TypeLoc.castAs<DecltypeTypeLoc>()));
       UNSUPPORTED_CLANG_TYPE(UnaryTransform);
     case TypeLoc::Record: {  // Leaf.
       const auto& T = TypeLoc.castAs<RecordTypeLoc>();

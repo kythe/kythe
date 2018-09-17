@@ -140,6 +140,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   // Handles AutoTypeLoc and DeducedTemplateSpecializationTypeLoc
   bool VisitDeducedTypeLoc(clang::DeducedTypeLoc TL);
+  bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
+
 
   // Visit the subtypes of TypedefNameDecl individually because we want to do
   // something different with ObjCTypeParamDecl.
@@ -268,6 +270,12 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       clang::IncompleteArrayTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForDependentSizedArrayTypeLoc(
       clang::DependentSizedArrayTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForFunctionNoProtoTypeLoc(
+      clang::FunctionNoProtoTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForParenTypeLoc(
+      clang::ParenTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForDecltypeTypeLoc(
+      clang::DecltypeTypeLoc TL);
 
   const clang::TemplateTypeParmDecl* FindTemplateTypeParmTypeLocDecl(
       clang::TemplateTypeParmTypeLoc TL) const;
