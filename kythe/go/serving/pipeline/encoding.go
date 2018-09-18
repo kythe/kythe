@@ -18,6 +18,7 @@ package pipeline
 
 import (
 	"fmt"
+	"reflect"
 
 	"kythe.io/kythe/go/serving/xrefs/columnar"
 	"kythe.io/kythe/go/util/kytheuri"
@@ -31,7 +32,45 @@ import (
 	xspb "kythe.io/kythe/proto/xref_serving_go_proto"
 )
 
-func init() { beam.RegisterFunction(encodeDecorPiece) }
+func init() {
+	beam.RegisterFunction(encodeCrossRef)
+	beam.RegisterFunction(encodeDecorPiece)
+	beam.RegisterFunction(refToCrossRef)
+	beam.RegisterFunction(nodeToCrossRef)
+	beam.RegisterType(reflect.TypeOf((*xspb.CrossReferences)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*xspb.FileDecorations)(nil)).Elem())
+}
+
+func encodeCrossRef(xr *xspb.CrossReferences, emit func([]byte, []byte)) error {
+	kv, err := columnar.EncodeCrossReferencesEntry(columnar.CrossReferencesKeyPrefix, xr)
+	if err != nil {
+		return err
+	}
+	emit(kv.Key, kv.Value)
+	return nil
+}
+
+func refToCrossRef(r *ppb.Reference) *xspb.CrossReferences {
+	ref := &xspb.CrossReferences_Reference{Location: r.Anchor}
+	if k := r.GetGenericKind(); k != "" {
+		ref.Kind = &xspb.CrossReferences_Reference_GenericKind{k}
+	} else {
+		ref.Kind = &xspb.CrossReferences_Reference_KytheKind{r.GetKytheKind()}
+	}
+	return &xspb.CrossReferences{
+		Source: r.Source,
+		Entry:  &xspb.CrossReferences_Reference_{ref},
+	}
+}
+
+func nodeToCrossRef(n *scpb.Node) *xspb.CrossReferences {
+	return &xspb.CrossReferences{
+		Source: n.Source,
+		Entry: &xspb.CrossReferences_Index_{&xspb.CrossReferences_Index{
+			Node: n,
+		}},
+	}
+}
 
 func encodeDecorPiece(file *spb.VName, p *ppb.DecorationPiece, emit func([]byte, []byte)) error {
 	switch p := p.Piece.(type) {

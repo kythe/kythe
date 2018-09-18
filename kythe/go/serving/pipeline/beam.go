@@ -107,6 +107,25 @@ func FromEntries(s beam.Scope, entries beam.PCollection) *KytheBeam {
 	return FromNodes(s, nodes.FromEntries(s, entries))
 }
 
+// SplitCrossReferences returns a columnar Kythe cross-references table derived
+// from the Kythe input graph.  The beam.PCollection has elements of type
+// KV<[]byte, []byte>.
+func (k *KytheBeam) SplitCrossReferences() beam.PCollection {
+	s := k.s.Scope("SplitCrossReferences")
+
+	refs := beam.ParDo(s, refToCrossRef, k.References())
+	idx := beam.ParDo(s, nodeToCrossRef, k.Nodes())
+
+	return beam.ParDo(s, encodeCrossRef, beam.Flatten(s,
+		idx,
+		refs,
+		// TODO(schroederc): marked_source
+		// TODO(schroederc): merge_with
+		// TODO(schroederc): related nodes
+		// TODO(schroederc): callers
+	))
+}
+
 // CrossReferences returns a Kythe file decorations table derived from the Kythe
 // input graph.  The beam.PCollections have elements of type
 // KV<string, *srvpb.PagedCrossReferences> and

@@ -143,19 +143,19 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 	k := pipeline.FromEntries(s, entries)
 	shards := 8 // TODO(schroederc): better determine number of shards
 	edgeSets, edgePages := k.Edges()
-	xrefSets, xrefPages := k.CrossReferences()
 	if *experimentalColumnarData {
 		beamio.WriteLevelDB(s, *tablePath, shards,
 			createColumnarMetadata(s),
+			k.SplitCrossReferences(),
 			k.SplitDecorations(),
 			k.CorpusRoots(),
 			k.Directories(),
 			k.Documents(),
-			// TODO(schroederc): replace edges/xrefs with columnar format
-			xrefSets, xrefPages,
+			// TODO(schroederc): replace edges with columnar format
 			edgeSets, edgePages,
 		)
 	} else {
+		xrefSets, xrefPages := k.CrossReferences()
 		beamio.WriteLevelDB(s, *tablePath, shards,
 			k.CorpusRoots(),
 			k.Decorations(),
