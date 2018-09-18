@@ -258,7 +258,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 	}
 	emitSnippets := req.Snippets != xpb.SnippetsKind_NONE
 
-	// TODO(schroederc): paging
+	// TODO(schroederc): implement paging xrefs in large CrossReferencesReply messages
 
 	for _, ticket := range req.Ticket {
 		uri, err := kytheuri.Parse(ticket)
