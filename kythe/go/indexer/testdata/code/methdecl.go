@@ -29,6 +29,7 @@ type w struct{}
 //- LTParams.post_child_text ", "
 //-
 //- LTResult.pre_text " "
+//- LTResult.kind "TYPE"
 //- LTResult child.0 LTReturn
 //- LTReturn.pre_text "bool"
 //-
