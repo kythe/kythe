@@ -23,6 +23,7 @@ go_library(
         "//kythe/proto:common_go_proto",
         "//kythe/proto:graph_go_proto",
         "//kythe/proto:internal_go_proto",
+        "//kythe/proto:schema_go_proto",
         "//kythe/proto:serving_go_proto",
         "//kythe/proto:xref_go_proto",
         "//kythe/proto:xref_serving_go_proto",
@@ -57,7 +58,6 @@ go_test(
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/go/storage/inmemory",
-        "//kythe/proto:schema_go_proto",
         "//kythe/proto:storage_go_proto",
         "@com_github_google_go_cmp//cmp:go_default_library",
     ],
