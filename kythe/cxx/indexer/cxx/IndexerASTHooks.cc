@@ -1760,10 +1760,6 @@ bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
     if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
       auto Claimability = GraphObserver::Claimability::Unclaimable;
       if (!TL.getDecl()->getDefinition()) {
-        // TODO(shahms): Only emit this once.
-        auto Marks = MarkedSources.Generate(TL.getDecl());
-        Observer.recordNominalTypeNode(*Id, Marks.GenerateMarkedSource(*Id),
-                                       GetDeclChildOf(TL.getDecl()));
         Claimability = GraphObserver::Claimability::Claimable;
         // If there is no visible definition, Id will be a tnominal node
         // whereas it is more useful to decorate the span as a reference
@@ -1784,10 +1780,6 @@ bool IndexerASTVisitor::VisitRecordTypeLoc(clang::RecordTypeLoc TL) {
       auto Claimability = GraphObserver::Claimability::Unclaimable;
       RecordDecl* Decl = CHECK_NOTNULL(TL.getDecl());
       if (!Decl->getDefinition()) {
-        // TODO(shahms): Only emit this once.
-        auto Marks = MarkedSources.Generate(TL.getDecl());
-        Observer.recordNominalTypeNode(*Id, Marks.GenerateMarkedSource(*Id),
-                                       GetDeclChildOf(TL.getDecl()));
         Claimability = GraphObserver::Claimability::Claimable;
         if (!Decl->isEmbeddedInDeclarator()) {
           // Still use tnominal refs for C-style "struct foo* bar"
@@ -1815,15 +1807,9 @@ bool IndexerASTVisitor::VisitObjCInterfaceTypeLoc(
     if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
       auto Claimability = GraphObserver::Claimability::Unclaimable;
       const auto* IFace = CHECK_NOTNULL(TL.getIFaceDecl());
-      // Link to the implementation if we have one, otherwise link to the
-      // interface. If we just have a forward declaration, link to the nominal
-      // type node.
       if (!IFace->getImplementation() && IsObjCForwardDecl(IFace)) {
+        // Only claim on definitions.
         Claimability = GraphObserver::Claimability::Claimable;
-        // TODO(shahms): Only emit this once.
-        auto Marks = MarkedSources.Generate(IFace);
-        Observer.recordNominalTypeNode(*Id, Marks.GenerateMarkedSource(*Id),
-                                       GetDeclChildOf(IFace));
       }
       Observer.recordTypeSpellingLocation(*RCC, *Id, Claimability,
                                           IsImplicit(*RCC));
@@ -1873,6 +1859,24 @@ bool IndexerASTVisitor::VisitSubstTemplateTypeParmTypeLoc(
 }
 
 bool IndexerASTVisitor::VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL) {
+  if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+    if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
+      Observer.recordTypeSpellingLocation(
+          *RCC, *Id, GraphObserver::Claimability::Claimable, IsImplicit(*RCC));
+    }
+  }
+  return true;
+}
+
+bool IndexerASTVisitor::VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL) {
+  // This one wraps a qualified (via 'struct S' | 'N::M::type') type
+  // reference and we don't want to link 'struct'.
+  // TODO(zarko): Add an anchor for all the Elaborated type; otherwise decls
+  // like `typedef B::C tdef;` will only anchor `C` instead of `B::C`.
+  return true;
+}
+
+bool IndexerASTVisitor::VisitTypedefTypeLoc(clang::TypedefTypeLoc TL) {
   if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
     if (auto Id = BuildNodeIdForType(TL, EmitRanges::No)) {
       Observer.recordTypeSpellingLocation(
@@ -4035,7 +4039,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForEnumTypeLoc(
   if (EnumDecl* Defn = Decl->getDefinition()) {
     return BuildNodeIdForDecl(Defn);
   }
-  return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
+  return BuildNominalNodeIdForDecl(Decl);
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -4080,7 +4084,7 @@ IndexerASTVisitor::BuildNodeIdForRecordTypeLoc(clang::RecordTypeLoc TL) {
       // This is a non-CXXRecordDecl or non-template.
       return BuildNodeIdForDecl(Defn);
     } else {
-      return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
+      return BuildNominalNodeIdForDecl(Decl);
     }
   }
 }
@@ -4109,7 +4113,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCInterfaceTypeLoc(
     // for the same TU: given distinct names, NameIds will be distinct,
     // there may be only one definition bound to each name, and we
     // memoize the NodeIds we give to types.
-    return Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(IFace));
+    return BuildNominalNodeIdForDecl(IFace);
   }
 }
 
@@ -4225,6 +4229,42 @@ IndexerASTVisitor::BuildNodeIdForParenTypeLoc(clang::ParenTypeLoc TL) {
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForDecltypeTypeLoc(clang::DecltypeTypeLoc TL) {
   return BuildNodeIdForType(TL.getTypePtr()->getUnderlyingType());
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForElaboratedTypeLoc(
+    clang::ElaboratedTypeLoc TL) {
+  return BuildNodeIdForType(TL.getNamedTypeLoc(), EmitRanges::No);
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForTypedefTypeLoc(clang::TypedefTypeLoc TL) {
+  // TODO(zarko): Return canonicalized versions as well.
+  GraphObserver::NameId AliasID = BuildNameIdForDecl(TL.getTypedefNameDecl());
+  // We're retrieving the type of an alias here, so we shouldn't thread
+  // through the deduced type.
+  if (auto AliasedTypeID = BuildNodeIdForType(
+          TL.getTypedefNameDecl()->getTypeSourceInfo()->getTypeLoc(),
+          EmitRanges::No)) {
+    // TODO(shahms): Move caching here and use
+    // `Observer.nodeIdForTypeAliasNode()` when already built?
+    // Or is always using the cached id sufficient?
+    auto ID = Observer.nodeIdForTypeAliasNode(AliasID, *AliasedTypeID);
+    auto Marks = MarkedSources.Generate(TL.getTypedefNameDecl());
+    return Observer.recordTypeAliasNode(
+        ID, *AliasedTypeID,
+        BuildNodeIdForType(FollowAliasChain(TL.getTypedefNameDecl())),
+        Marks.GenerateMarkedSource(ID));
+  }
+  return absl::nullopt;
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNominalNodeIdForDecl(
+    const clang::NamedDecl* Decl) {
+  auto NominalID = Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
+  return Observer.recordNominalTypeNode(
+      NominalID, MarkedSources.Generate(Decl).GenerateMarkedSource(NominalID),
+      GetDeclChildOf(Decl));
 }
 
 const clang::TemplateTypeParmDecl*
@@ -4461,30 +4501,10 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       return TypeAlreadyBuilt ? Prev->second
                               : (TypeNodes[Key] = BuildNodeIdForParenTypeLoc(
                                      TypeLoc.castAs<ParenTypeLoc>()));
-    case TypeLoc::Typedef: {
-      // TODO(zarko): Return canonicalized versions as non-primary elements of
-      // the absl::optional.
-      const auto& T = TypeLoc.castAs<TypedefTypeLoc>();
-      GraphObserver::NameId AliasID =
-          BuildNameIdForDecl(T.getTypedefNameDecl());
-      // We're retrieving the type of an alias here, so we shouldn't thread
-      // through the deduced type.
-      auto AliasedTypeID = BuildNodeIdForType(
-          T.getTypedefNameDecl()->getTypeSourceInfo()->getTypeLoc(),
-          IndexerASTVisitor::EmitRanges::No);
-      if (!AliasedTypeID) {
-        return absl::nullopt;
-      }
-      auto Marks = MarkedSources.Generate(T.getTypedefNameDecl());
-      ID = TypeAlreadyBuilt
-               ? Observer.nodeIdForTypeAliasNode(AliasID, AliasedTypeID.value())
-               : Observer.recordTypeAliasNode(
-                     AliasID, AliasedTypeID.value(),
-                     BuildNodeIdForType(
-                         FollowAliasChain(T.getTypedefNameDecl())),
-                     Marks.GenerateMarkedSource(Observer.nodeIdForTypeAliasNode(
-                         AliasID, AliasedTypeID.value())));
-    } break;
+    case TypeLoc::Typedef:
+      return TypeAlreadyBuilt ? Prev->second
+                              : (TypeNodes[Key] = BuildNodeIdForTypedefTypeLoc(
+                                     TypeLoc.castAs<TypedefTypeLoc>()));
       UNSUPPORTED_CLANG_TYPE(Adjusted);
       UNSUPPORTED_CLANG_TYPE(Decayed);
       UNSUPPORTED_CLANG_TYPE(TypeOfExpr);
@@ -4551,20 +4571,11 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                                        TypeLoc.castAs<RecordTypeLoc>()));
       }
     } break;
-    case TypeLoc::Elaborated: {
-      // This one wraps a qualified (via 'struct S' | 'N::M::type') type
-      // reference.
-      const auto& T = TypeLoc.castAs<ElaboratedTypeLoc>();
-      const auto* DT = dyn_cast<ElaboratedType>(PT);
-      ID = BuildNodeIdForType(T.getNamedTypeLoc(),
-                              DT ? DT->getNamedType().getTypePtr()
-                                 : T.getNamedTypeLoc().getTypePtr(),
-                              EmitRanges);
-      // Don't link 'struct'.
-      InEmitRanges = IndexerASTVisitor::EmitRanges::No;
-      // TODO(zarko): Add an anchor for all the Elaborated type; otherwise decls
-      // like `typedef B::C tdef;` will only anchor `C` instead of `B::C`.
-    } break;
+    case TypeLoc::Elaborated:
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] = BuildNodeIdForElaboratedTypeLoc(
+                        TypeLoc.castAs<ElaboratedTypeLoc>()));
     // "Within an instantiated template, all template type parameters have been
     // replaced with these. They are used solely to record that a type was
     // originally written as a template type parameter; therefore they are

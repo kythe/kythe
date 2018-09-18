@@ -141,7 +141,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   // Handles AutoTypeLoc and DeducedTemplateSpecializationTypeLoc
   bool VisitDeducedTypeLoc(clang::DeducedTypeLoc TL);
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
-
+  bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
+  bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);
 
   // Visit the subtypes of TypedefNameDecl individually because we want to do
   // something different with ObjCTypeParamDecl.
@@ -268,7 +269,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       clang::ConstantArrayTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForIncompleteArrayTypeLoc(
       clang::IncompleteArrayTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForDependentSizedArrayTypeLoc(
+  absl::optional<GraphObserver::NodeId>
+  BuildNodeIdForDependentSizedArrayTypeLoc(
       clang::DependentSizedArrayTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForFunctionNoProtoTypeLoc(
       clang::FunctionNoProtoTypeLoc TL);
@@ -276,6 +278,14 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       clang::ParenTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForDecltypeTypeLoc(
       clang::DecltypeTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForElaboratedTypeLoc(
+      clang::ElaboratedTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForTypedefTypeLoc(
+      clang::TypedefTypeLoc TL);
+
+  // Helper function which constructs marked source and records
+  // a tnominal node for the given `Decl`.
+  GraphObserver::NodeId BuildNominalNodeIdForDecl(const clang::NamedDecl* Decl);
 
   const clang::TemplateTypeParmDecl* FindTemplateTypeParmTypeLocDecl(
       clang::TemplateTypeParmTypeLoc TL) const;
