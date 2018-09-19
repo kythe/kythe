@@ -111,9 +111,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitBindingDecl(const clang::BindingDecl* Decl);
   bool VisitDeclRefExpr(const clang::DeclRefExpr* DRE);
   bool VisitDesignatedInitExpr(const clang::DesignatedInitExpr* DIE);
-  bool VisitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr* E);
   bool VisitCXXConstructExpr(const clang::CXXConstructExpr* E);
-  bool VisitCXXFunctionalCastExpr(const clang::CXXFunctionalCastExpr* E);
   bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr* E);
   bool VisitCXXNewExpr(const clang::CXXNewExpr* E);
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr* E);
@@ -131,18 +129,19 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitInjectedClassName(clang::InjectedClassNameTypeLoc TL);
   bool VisitObjCInterfaceTypeLoc(clang::ObjCInterfaceTypeLoc TL);
   bool VisitTemplateTypeParmTypeLoc(clang::TemplateTypeParmTypeLoc TL);
-
   bool VisitSubstTemplateTypeParmTypeLoc(
       clang::SubstTemplateTypeParmTypeLoc TL);
-
   bool VisitTemplateSpecializationTypeLoc(
       clang::TemplateSpecializationTypeLoc TL);
-
   // Handles AutoTypeLoc and DeducedTemplateSpecializationTypeLoc
   bool VisitDeducedTypeLoc(clang::DeducedTypeLoc TL);
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);
+
+  bool TraverseAttributedTypeLoc(clang::AttributedTypeLoc TL);
+  bool TraverseDependentAddressSpaceTypeLoc(
+      clang::DependentAddressSpaceTypeLoc TL);
 
   // Visit the subtypes of TypedefNameDecl individually because we want to do
   // something different with ObjCTypeParamDecl.
@@ -246,42 +245,46 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   //   ... but it may not be due to caching (which should be figured out).
   //   ... similarly, Observer.record...() should probably be used in some
   //   places which we've converted to no longer do that.
-  GraphObserver::NodeId BuildNodeIdForBuiltinTypeLoc(
-      clang::BuiltinTypeLoc TL) const;
-  GraphObserver::NodeId BuildNodeIdForEnumTypeLoc(clang::EnumTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForRecordTypeLoc(
+  GraphObserver::NodeId BuildNodeIdForBuiltin(clang::BuiltinTypeLoc TL) const;
+  GraphObserver::NodeId BuildNodeIdForEnum(clang::EnumTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForRecord(
       clang::RecordTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateTypeParmTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateTypeParm(
       clang::TemplateTypeParmTypeLoc TL);
-  GraphObserver::NodeId BuildNodeIdForObjCInterfaceTypeLoc(
+  GraphObserver::NodeId BuildNodeIdForObjCInterface(
       clang::ObjCInterfaceTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForPointerTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForPointer(
       clang::PointerTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForLValueReferenceTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForLValueReference(
       clang::LValueReferenceTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForRValueReferenceTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForRValueReference(
       clang::RValueReferenceTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForDeducedTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForDeduced(
       clang::DeducedTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForQualifiedTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForQualified(
       clang::QualifiedTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForConstantArrayTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForConstantArray(
       clang::ConstantArrayTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForIncompleteArrayTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForIncompleteArray(
       clang::IncompleteArrayTypeLoc TL);
-  absl::optional<GraphObserver::NodeId>
-  BuildNodeIdForDependentSizedArrayTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForDependentSizedArray(
       clang::DependentSizedArrayTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForFunctionNoProtoTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForFunctionProto(
+      clang::FunctionProtoTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForFunctionNoProto(
       clang::FunctionNoProtoTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForParenTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForParen(
       clang::ParenTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForDecltypeTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForDecltype(
       clang::DecltypeTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForElaboratedTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForElaborated(
       clang::ElaboratedTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForTypedefTypeLoc(
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForTypedef(
       clang::TypedefTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForSubstTemplateTypeParm(
+      clang::SubstTemplateTypeParmTypeLoc TL);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForInjectedClassName(
+      clang::InjectedClassNameTypeLoc TL);
 
   // Helper function which constructs marked source and records
   // a tnominal node for the given `Decl`.
