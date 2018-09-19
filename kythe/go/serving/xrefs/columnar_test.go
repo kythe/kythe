@@ -330,12 +330,17 @@ func TestServingCrossReferences(t *testing.T) {
 			LineNumber:   1,
 		},
 	}
+	ms := &cpb.MarkedSource{
+		Kind:    cpb.MarkedSource_IDENTIFIER,
+		PreText: "identifier",
+	}
 	xrefs := []*xspb.CrossReferences{{
 		Source: src,
 		Entry: &xspb.CrossReferences_Index_{&xspb.CrossReferences_Index{
 			Node: &scpb.Node{
 				Kind: &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
 			},
+			MarkedSource: ms,
 		}},
 	}, {
 		Source: src,
@@ -430,7 +435,8 @@ func TestServingCrossReferences(t *testing.T) {
 	}, &xpb.CrossReferencesReply{
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: {
-				Ticket: ticket,
+				Ticket:       ticket,
+				MarkedSource: ms,
 			},
 		},
 		Nodes: map[string]*cpb.NodeInfo{
@@ -448,8 +454,9 @@ func TestServingCrossReferences(t *testing.T) {
 	}, &xpb.CrossReferencesReply{
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: {
-				Ticket:    ticket,
-				Reference: refs,
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Reference:    refs,
 			},
 		},
 	}))
@@ -461,8 +468,9 @@ func TestServingCrossReferences(t *testing.T) {
 	}, &xpb.CrossReferencesReply{
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: {
-				Ticket:    ticket,
-				Reference: refs,
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Reference:    refs,
 				RelatedNode: []*xpb.CrossReferencesReply_RelatedNode{{
 					Ticket:       "kythe:#relatedNode",
 					RelationKind: "%/kythe/edge/childof",
@@ -489,8 +497,9 @@ func TestServingCrossReferences(t *testing.T) {
 	}, &xpb.CrossReferencesReply{
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: {
-				Ticket:    ticket,
-				Reference: refs[0:1],
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Reference:    refs[0:1],
 			},
 		},
 	}))
@@ -501,7 +510,8 @@ func TestServingCrossReferences(t *testing.T) {
 	}, &xpb.CrossReferencesReply{
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: {
-				Ticket: ticket,
+				Ticket:       ticket,
+				MarkedSource: ms,
 				Caller: []*xpb.CrossReferencesReply_RelatedAnchor{{
 					Ticket: "kythe:#caller",
 					Anchor: &xpb.Anchor{
@@ -527,7 +537,8 @@ func TestServingCrossReferences(t *testing.T) {
 	}, &xpb.CrossReferencesReply{
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: {
-				Ticket: ticket,
+				Ticket:       ticket,
+				MarkedSource: ms,
 				Caller: []*xpb.CrossReferencesReply_RelatedAnchor{{
 					Ticket: "kythe:#caller",
 					Anchor: &xpb.Anchor{
