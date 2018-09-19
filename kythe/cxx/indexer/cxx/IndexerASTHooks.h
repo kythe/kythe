@@ -605,7 +605,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief Emit data for attributes attached to `Decl`, whose `NodeId`
   /// is `TargetNode`.
   void VisitAttributes(const clang::Decl* Decl,
-                       const GraphObserver::NodeId& NodeId);
+                       const GraphObserver::NodeId& TargetNode);
 
   /// \brief Attempts to find the ID of the first parent of `Decl` for
   /// attaching a `childof` relationship.

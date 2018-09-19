@@ -906,11 +906,11 @@ bool IndexerASTVisitor::VisitDeclaratorDecl(const clang::DeclaratorDecl* Decl) {
   return true;
 }
 
-void IndexerASTVisitor::VisitAttributes(const clang::Decl* Decl,
-                                        const GraphObserver::NodeId& NodeId) {
+void IndexerASTVisitor::VisitAttributes(
+    const clang::Decl* Decl, const GraphObserver::NodeId& TargetNode) {
   for (const auto& Attr : Decl->attrs()) {
     if (const auto* DepAttr = clang::dyn_cast<clang::DeprecatedAttr>(Attr)) {
-      Observer.recordDeprecated(NodeId, DepAttr->getMessage());
+      Observer.recordDeprecated(TargetNode, DepAttr->getMessage());
     }
   }
 }
