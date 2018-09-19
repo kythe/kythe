@@ -38,6 +38,7 @@
 #include "IndexerLibrarySupport.h"
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
+#include "kythe/cxx/indexer/cxx/node_set.h"
 #include "kythe/cxx/indexer/cxx/semantic_hash.h"
 #include "marked_source.h"
 #include "type_map.h"
@@ -247,12 +248,18 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   //   places which we've converted to no longer do that.
   GraphObserver::NodeId BuildNodeIdForBuiltin(clang::BuiltinTypeLoc TL) const;
   GraphObserver::NodeId BuildNodeIdForEnum(clang::EnumTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForRecord(
-      clang::RecordTypeLoc TL);
+  NodeSet BuildNodeSetForEnum(clang::EnumTypeLoc TL);
+
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForRecord(clang::RecordTypeLoc TL);
+  NodeSet BuildNodeSetForRecord(clang::RecordTypeLoc TL);
+
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateTypeParm(
       clang::TemplateTypeParmTypeLoc TL);
+
   GraphObserver::NodeId BuildNodeIdForObjCInterface(
       clang::ObjCInterfaceTypeLoc TL);
+  NodeSet BuildNodeSetForObjCInterface(clang::ObjCInterfaceTypeLoc TL);
+
   absl::optional<GraphObserver::NodeId> BuildNodeIdForPointer(
       clang::PointerTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForLValueReference(

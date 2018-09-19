@@ -113,6 +113,7 @@ cc_library(
         ":indexed_parent_map",
         ":indexer_library_support",
         ":marked_source",
+        ":node_set",
         ":scope_guard",
         ":semantic_hash",
         ":type_map",
@@ -390,6 +391,15 @@ cc_library(
         "//third_party/llvm",
         "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "node_set",
+    hdrs = ["node_set.h"],
+    deps = [
+        ":graph_observer",
+        "@com_google_absl//absl/types:optional",
     ],
 )
 
