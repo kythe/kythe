@@ -230,11 +230,11 @@ class AssertionParser {
 
   /// \brief Pushes an absolute location spec (@token:1234).
   void PushAbsoluteLocationSpec(const std::string& for_token,
-                                const std::string& abs_spec);
+                                const std::string& absolute);
 
   /// \brief Changes the last-pushed location spec to match the `match_spec`th
   /// instance of its match string.
-  void SetTopLocationSpecMatchNumber(const std::string& match_spec);
+  void SetTopLocationSpecMatchNumber(const std::string& number);
 
   AstNode* CreateAnchorSpec(const yy::location& location);
 
