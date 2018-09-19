@@ -1850,6 +1850,17 @@ bool IndexerASTVisitor::VisitTypedefTypeLoc(clang::TypedefTypeLoc TL) {
   return true;
 }
 
+bool IndexerASTVisitor::VisitInjectedClassNameTypeLoc(
+    clang::InjectedClassNameTypeLoc TL) {
+  if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+    if (auto Nodes = BuildNodeSetForInjectedClassName(TL)) {
+      Observer.recordTypeSpellingLocation(
+          *RCC, Nodes.ForReference(), Nodes.claimability(), IsImplicit(*RCC));
+    }
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::TraverseAttributedTypeLoc(clang::AttributedTypeLoc TL) {
   // TODO(shahms): Emit a reference to the underlying TL covering the entire
   // range of attributed TL.
@@ -4059,7 +4070,22 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(clang::RecordTypeLoc TL) {
                                   TemplateArgsPtrs, TemplateArgsPtrs.size()),
           std::move(DeclId)};
     }
-  } else if (RecordDecl* Defn = Decl->getDefinition()) {
+  } else {
+    return BuildNodeSetForNonSpecializedRecordDecl(Decl);
+  }
+}
+
+absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForRecord(
+    clang::RecordTypeLoc TL) {
+  if (auto Nodes = BuildNodeSetForRecord(TL)) {
+    return std::move(Nodes).value();
+  }
+  return absl::nullopt;
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForNonSpecializedRecordDecl(
+    const clang::RecordDecl* Decl) {
+  if (const RecordDecl* Defn = Decl->getDefinition()) {
     // Special-case linking to a defn instead of using a tnominal.
     if (const auto* RD = dyn_cast<CXXRecordDecl>(Defn)) {
       if (const auto* CTD = RD->getDescribedClassTemplate()) {
@@ -4081,14 +4107,6 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(clang::RecordTypeLoc TL) {
     // See https://phabricator-dot-kythe-repo.appspot.com/D1887
     return {BuildNominalNodeIdForDecl(Decl), BuildNodeIdForDecl(Decl)};
   }
-}
-
-absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForRecord(
-    clang::RecordTypeLoc TL) {
-  if (auto Nodes = BuildNodeSetForRecord(TL)) {
-    return std::move(Nodes).value();
-  }
-  return absl::nullopt;
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -4297,29 +4315,10 @@ IndexerASTVisitor::BuildNodeIdForSubstTemplateTypeParm(
   return BuildNodeIdForType(TL.getTypePtr()->getReplacementType());
 }
 
-absl::optional<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdForInjectedClassName(
+NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
     clang::InjectedClassNameTypeLoc TL) {
-  const auto* Decl = TL.getDecl();
   // TODO(zarko): Replace with logic that uses InjectedType.
-  // TODO(shahms): And/or refactor this to use the same logic as RecordTypeLoc.
-  if (RecordDecl* Defn = Decl->getDefinition()) {
-    if (const auto* RD = dyn_cast<CXXRecordDecl>(Defn)) {
-      if (const auto* CTD = RD->getDescribedClassTemplate()) {
-        // Link to the template binder, not the internal class.
-        return BuildNodeIdForDecl(CTD);
-      } else {
-        // This is an ordinary CXXRecordDecl.
-        return BuildNodeIdForDecl(Defn);
-      }
-    } else {
-      // This is a non-CXXRecordDecl, so it can't be templated.
-      return BuildNodeIdForDecl(Defn);
-    }
-  } else {
-    return BuildNominalNodeIdForDecl(Decl);
-  }
-  return absl::nullopt;
+  return BuildNodeSetForNonSpecializedRecordDecl(TL.getDecl());
 }
 
 GraphObserver::NodeId IndexerASTVisitor::BuildNominalNodeIdForDecl(
@@ -4609,46 +4608,13 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                                      TemplateArgsPtrs.size());
       }
     } break;
-    case TypeLoc::InjectedClassName: {
-      const auto& T = TypeLoc.castAs<InjectedClassNameTypeLoc>();
-      CXXRecordDecl* Decl = T.getDecl();
-      if (!TypeAlreadyBuilt) {  // Leaf.
-        // TODO(zarko): Replace with logic that uses InjectedType.
-        if (RecordDecl* Defn = Decl->getDefinition()) {
-          // This already handles SpanID (by always linking to Defn).
-          Claimability = GraphObserver::Claimability::Unclaimable;
-          if (const auto* RD = dyn_cast<CXXRecordDecl>(Defn)) {
-            if (const auto* CTD = RD->getDescribedClassTemplate()) {
-              // Link to the template binder, not the internal class.
-              ID = BuildNodeIdForDecl(CTD);
-            } else {
-              // This is an ordinary CXXRecordDecl.
-              ID = BuildNodeIdForDecl(Defn);
-            }
-          } else {
-            // This is a non-CXXRecordDecl, so it can't be templated.
-            ID = BuildNodeIdForDecl(Defn);
-          }
-        } else {
-          auto Marks = MarkedSources.Generate(Decl);
-          auto DeclNameId = BuildNameIdForDecl(Decl);
-          ID = Observer.recordNominalTypeNode(
-              DeclNameId,
-              Marks.GenerateMarkedSource(
-                  Observer.nodeIdForNominalTypeNode(DeclNameId)),
-              GetDeclChildOf(Decl));
-          if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
-            SpanID = BuildNodeIdForDecl(Decl);
-          }
-        }
-      } else {
-        if (Decl->getDefinition() != nullptr) {
-          Claimability = GraphObserver::Claimability::Unclaimable;
-        } else if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
-          SpanID = BuildNodeIdForDecl(Decl);
-        }
-      }
-    } break;
+    case TypeLoc::InjectedClassName:
+      return TypeAlreadyBuilt
+                 ? Prev->second
+                 : (TypeNodes[Key] =
+                        BuildNodeSetForInjectedClassName(
+                            TypeLoc.castAs<InjectedClassNameTypeLoc>())
+                            .AsOptional());
     case TypeLoc::DependentName:
       if (!TypeAlreadyBuilt) {
         const auto& T = TypeLoc.castAs<DependentNameTypeLoc>();

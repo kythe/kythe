@@ -139,6 +139,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);
+  bool VisitInjectedClassNameTypeLoc(clang::InjectedClassNameTypeLoc TL);
 
   bool TraverseAttributedTypeLoc(clang::AttributedTypeLoc TL);
   bool TraverseDependentAddressSpaceTypeLoc(
@@ -290,12 +291,14 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       clang::TypedefTypeLoc TL);
   absl::optional<GraphObserver::NodeId> BuildNodeIdForSubstTemplateTypeParm(
       clang::SubstTemplateTypeParmTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForInjectedClassName(
-      clang::InjectedClassNameTypeLoc TL);
+  NodeSet BuildNodeSetForInjectedClassName(clang::InjectedClassNameTypeLoc TL);
 
   // Helper function which constructs marked source and records
   // a tnominal node for the given `Decl`.
   GraphObserver::NodeId BuildNominalNodeIdForDecl(const clang::NamedDecl* Decl);
+
+  // Helper used by BuildNodeSetForRecord and BuildNodeSetForInjectedClassName.
+  NodeSet BuildNodeSetForNonSpecializedRecordDecl(const clang::RecordDecl* Decl);
 
   const clang::TemplateTypeParmDecl* FindTemplateTypeParmTypeLocDecl(
       clang::TemplateTypeParmTypeLoc TL) const;

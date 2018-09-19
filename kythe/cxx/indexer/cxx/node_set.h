@@ -57,6 +57,9 @@ class NodeSet {
     return (secondary_.has_value() ? *secondary_ : *primary_);
   }
 
+  const absl::optional<NodeId>& AsOptional() const& { return primary_; }
+  absl::optional<NodeId>&& AsOptional() && { return std::move(primary_); }
+
   Claimability claimability() const { return claim_; }
 
  private:
