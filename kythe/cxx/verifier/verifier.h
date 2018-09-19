@@ -163,7 +163,7 @@ class Verifier {
 
   /// \brief Change the regex used to identify goals in source text.
   /// \return false on failure.
-  bool SetGoalCommentRegex(const std::string& it, std::string* error);
+  bool SetGoalCommentRegex(const std::string& regex, std::string* error);
 
   /// \brief Use a prefix to match goals in source text.
   void SetGoalCommentPrefix(const std::string& it);
