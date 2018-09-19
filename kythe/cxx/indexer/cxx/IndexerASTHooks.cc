@@ -1685,7 +1685,7 @@ IndexerASTVisitor::BuildNodeIdForDeclContext(const clang::DeclContext* DC) {
 }
 
 void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
-    const clang::Decl* Decl, const GraphObserver::NodeId DeclNode) {
+    const clang::Decl* Decl, const GraphObserver::NodeId& DeclNode) {
   if (const DeclContext* DC = Decl->getDeclContext()) {
     if (FLAGS_experimental_alias_template_instantiations) {
       if (!Job->UnderneathImplicitTemplateInstantiation) {

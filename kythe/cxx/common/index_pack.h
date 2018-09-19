@@ -245,7 +245,7 @@ class IndexPack {
   /// \brief Write data of kind `kind` with some raw payload.
   /// \param sha If null, recalculates the SHA256 digest of the data.
   /// \return false on failure and true on success.
-  bool WriteData(IndexPackFilesystem::DataKind kind, const char* bytes,
+  bool WriteData(IndexPackFilesystem::DataKind kind, const char* data,
                  size_t size, std::string* error_text,
                  std::string* sha = nullptr);
 

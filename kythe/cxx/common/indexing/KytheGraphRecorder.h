@@ -136,7 +136,7 @@ absl::string_view spelling_of(EdgeKindID edge_kind_id);
 
 /// Returns true and sets `out_edge` to the enumerator corresponding to
 /// `spelling` (or returns false if there is no such correspondence).
-bool of_spelling(absl::string_view spelling, EdgeKindID* out_edge);
+bool of_spelling(absl::string_view str, EdgeKindID* edge_id);
 
 /// \brief Records Kythe nodes and edges to a provided `KytheOutputStream`.
 class KytheGraphRecorder {
