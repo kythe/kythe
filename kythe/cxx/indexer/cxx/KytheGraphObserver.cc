@@ -827,15 +827,15 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForTappNode(
 
 GraphObserver::NodeId KytheGraphObserver::recordTappNode(
     const NodeId& tapp_id, const NodeId& tycon_id,
-    const std::vector<const NodeId*>& params, unsigned FirstDefaultParam) {
-  CHECK(FirstDefaultParam <= params.size());
+    const std::vector<const NodeId*>& params, unsigned first_default_param) {
+  CHECK(first_default_param <= params.size());
   if (!deferring_nodes_ ||
       written_types_.insert(tapp_id.ToClaimedString()).second) {
     VNameRef tapp_vname(VNameRefFromNodeId(tapp_id));
     recorder_->AddProperty(tapp_vname, NodeKindID::kTApp);
-    if (FirstDefaultParam < params.size()) {
+    if (first_default_param < params.size()) {
       recorder_->AddProperty(tapp_vname, PropertyID::kParamDefault,
-                             FirstDefaultParam);
+                             first_default_param);
     }
     recorder_->AddEdge(tapp_vname, EdgeKindID::kParam,
                        VNameRefFromNodeId(tycon_id), 0);
