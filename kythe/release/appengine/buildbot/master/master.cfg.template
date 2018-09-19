@@ -53,8 +53,14 @@ autoBuildUsers = [
     'zrlk',
 ]
 def pullRequestFilter(req):
+  # Blacklist anything that explicitly says 'nobuildbot'
+  for label in req['labels']:
+    if label['name'] == 'nobuildbot':
+      return False
+  # Default buildbot all maintainer commits
   if req['user']['login'] in autoBuildUsers:
     return True
+  # Also allow explicitly labeled commits by non-maintainers
   for label in req['labels']:
     if label['name'] == 'buildbot':
       return True
