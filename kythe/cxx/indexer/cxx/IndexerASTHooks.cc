@@ -906,11 +906,11 @@ bool IndexerASTVisitor::VisitDeclaratorDecl(const clang::DeclaratorDecl* Decl) {
   return true;
 }
 
-void IndexerASTVisitor::VisitAttributes(const clang::Decl* Decl,
-                                        const GraphObserver::NodeId& NodeId) {
+void IndexerASTVisitor::VisitAttributes(
+    const clang::Decl* Decl, const GraphObserver::NodeId& TargetNode) {
   for (const auto& Attr : Decl->attrs()) {
     if (const auto* DepAttr = clang::dyn_cast<clang::DeprecatedAttr>(Attr)) {
-      Observer.recordDeprecated(NodeId, DepAttr->getMessage());
+      Observer.recordDeprecated(TargetNode, DepAttr->getMessage());
     }
   }
 }
@@ -1685,7 +1685,7 @@ IndexerASTVisitor::BuildNodeIdForDeclContext(const clang::DeclContext* DC) {
 }
 
 void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
-    const clang::Decl* Decl, const GraphObserver::NodeId DeclNode) {
+    const clang::Decl* Decl, const GraphObserver::NodeId& DeclNode) {
   if (const DeclContext* DC = Decl->getDeclContext()) {
     if (FLAGS_experimental_alias_template_instantiations) {
       if (!Job->UnderneathImplicitTemplateInstantiation) {
