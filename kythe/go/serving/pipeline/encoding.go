@@ -25,6 +25,7 @@ import (
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 
+	cpb "kythe.io/kythe/proto/common_go_proto"
 	ppb "kythe.io/kythe/proto/pipeline_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -63,11 +64,16 @@ func refToCrossRef(r *ppb.Reference) *xspb.CrossReferences {
 	}
 }
 
-func nodeToCrossRef(n *scpb.Node) *xspb.CrossReferences {
+func nodeToCrossRef(key *spb.VName, nodeStream func(**scpb.Node) bool, msStream func(**cpb.MarkedSource) bool) *xspb.CrossReferences {
+	var n *scpb.Node
+	var ms *cpb.MarkedSource
+	nodeStream(&n)
+	msStream(&ms)
 	return &xspb.CrossReferences{
-		Source: n.Source,
+		Source: key,
 		Entry: &xspb.CrossReferences_Index_{&xspb.CrossReferences_Index{
-			Node: n,
+			Node:         n,
+			MarkedSource: ms,
 		}},
 	}
 }

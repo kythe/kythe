@@ -49,6 +49,7 @@ func init() {
 	beam.RegisterFunction(groupCrossRefs)
 	beam.RegisterFunction(groupEdges)
 	beam.RegisterFunction(keyByPath)
+	beam.RegisterFunction(keyNode)
 	beam.RegisterFunction(keyRef)
 	beam.RegisterFunction(moveSourceToKey)
 	beam.RegisterFunction(nodeToChildren)
@@ -95,6 +96,8 @@ type KytheBeam struct {
 	nodes      beam.PCollection // *scpb.Node
 	files      beam.PCollection // *srvpb.File
 	refs       beam.PCollection // *ppb.Reference
+
+	markedSources beam.PCollection // KV<*spb.VName, *cpb.MarkedSource>
 }
 
 // FromNodes creates a KytheBeam pipeline from an input collection of
@@ -107,6 +110,8 @@ func FromEntries(s beam.Scope, entries beam.PCollection) *KytheBeam {
 	return FromNodes(s, nodes.FromEntries(s, entries))
 }
 
+func keyNode(n *scpb.Node) (*spb.VName, *scpb.Node) { return n.Source, n }
+
 // SplitCrossReferences returns a columnar Kythe cross-references table derived
 // from the Kythe input graph.  The beam.PCollection has elements of type
 // KV<[]byte, []byte>.
@@ -114,13 +119,15 @@ func (k *KytheBeam) SplitCrossReferences() beam.PCollection {
 	s := k.s.Scope("SplitCrossReferences")
 
 	refs := beam.ParDo(s, refToCrossRef, k.References())
-	idx := beam.ParDo(s, nodeToCrossRef, k.Nodes())
+	idx := beam.ParDo(s, nodeToCrossRef, beam.CoGroupByKey(s,
+		beam.ParDo(s, keyNode, k.Nodes()),
+		k.getMarkedSources(),
+		// TODO(schroederc): merge_with
+	))
 
 	return beam.ParDo(s, encodeCrossRef, beam.Flatten(s,
 		idx,
 		refs,
-		// TODO(schroederc): marked_source
-		// TODO(schroederc): merge_with
 		// TODO(schroederc): related nodes
 		// TODO(schroederc): callers
 	))
@@ -662,6 +669,17 @@ func groupEdges(src *spb.VName, nodeStream func(**scpb.Node) bool, edgeStream, r
 	emitSet("edgeSets:"+set.Source.Ticket, set)
 }
 
+func (k *KytheBeam) getMarkedSources() beam.PCollection {
+	if !k.markedSources.IsValid() {
+		s := k.s.Scope("MarkedSources")
+		k.markedSources = beam.Seq(s, k.nodes, &nodes.Filter{
+			IncludeFacts: []string{facts.Code},
+			IncludeEdges: []string{},
+		}, parseMarkedSource)
+	}
+	return k.markedSources
+}
+
 // Documents returns a Kythe documentation table derived from the Kythe input
 // graph.  The beam.PCollection has elements of type KV<string,
 // *srvpb.Document>.
@@ -673,10 +691,7 @@ func (k *KytheBeam) Documents() beam.PCollection {
 		IncludeFacts: []string{facts.Text},
 		IncludeEdges: []string{edges.Documents},
 	}, nodeToDocs)
-	markedSources := beam.Seq(s, k.nodes, &nodes.Filter{
-		IncludeFacts: []string{facts.Code},
-		IncludeEdges: []string{},
-	}, parseMarkedSource)
+	markedSources := k.getMarkedSources()
 	children := beam.Seq(s, k.nodes, &nodes.Filter{
 		IncludeFacts: []string{},
 		IncludeEdges: []string{edges.ChildOf},
