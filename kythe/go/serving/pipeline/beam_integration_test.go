@@ -29,6 +29,7 @@ import (
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
@@ -38,6 +39,14 @@ import (
 )
 
 var ctx = context.Background()
+
+func encodeMarkedSource(ms *cpb.MarkedSource) []byte {
+	rec, err := proto.Marshal(ms)
+	if err != nil {
+		panic(err)
+	}
+	return rec
+}
 
 func TestServingSimpleDecorations(t *testing.T) {
 	file := &spb.VName{Path: "path"}
@@ -298,6 +307,10 @@ func TestServingSimpleDecorations(t *testing.T) {
 
 func TestServingSimpleCrossReferences(t *testing.T) {
 	src := &spb.VName{Path: "path", Signature: "signature"}
+	ms := &cpb.MarkedSource{
+		Kind:    cpb.MarkedSource_IDENTIFIER,
+		PreText: "identifier",
+	}
 	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Path: "path"},
 		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
@@ -325,6 +338,10 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 	}, {
 		Source: src,
 		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_CODE},
+			Value: encodeMarkedSource(ms),
+		}},
 	}}
 
 	p, s, nodes := ptest.CreateList(testNodes)
@@ -348,7 +365,6 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 	} else if err := w.Close(); err != nil {
 		t.Fatal(err)
 	}
-
 	xs := xsrv.NewService(ctx, db)
 
 	ticket := kytheuri.ToString(src)
@@ -360,13 +376,17 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 	}, &xpb.CrossReferencesReply{
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: {
-				Ticket: ticket,
+				Ticket:       ticket,
+				MarkedSource: ms,
 			},
 		},
 		Nodes: map[string]*cpb.NodeInfo{
 			ticket: {
 				Facts: map[string][]byte{
 					"/kythe/node/kind": []byte("record"),
+
+					// TODO(schroederc): ellide; MarkedSource already included
+					"/kythe/code": encodeMarkedSource(ms),
 				},
 			},
 		},
@@ -378,7 +398,8 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 	}, &xpb.CrossReferencesReply{
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: {
-				Ticket: ticket,
+				Ticket:       ticket,
+				MarkedSource: ms,
 				Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{
 					Anchor: &xpb.Anchor{
 						Parent: "kythe:?path=path",

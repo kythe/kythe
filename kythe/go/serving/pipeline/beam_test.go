@@ -615,17 +615,6 @@ func TestEdges_reverses(t *testing.T) {
 	}
 }
 
-func TestFileTree_registrations(t *testing.T) {
-	testNodes := []*scpb.Node{{}}
-	p, s, nodes := ptest.CreateList(testNodes)
-	k := FromNodes(s, nodes)
-	k.CorpusRoots()
-	k.Directories()
-	if err := beamtest.CheckRegistrations(p); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestDocuments_text(t *testing.T) {
 	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Signature: "doc1"},
@@ -723,38 +712,43 @@ func TestDocuments_markedSource(t *testing.T) {
 	}
 }
 
+func TestFileTree_registrations(t *testing.T) {
+	testNodes := []*scpb.Node{{}}
+	p, s, nodes := ptest.CreateList(testNodes)
+	k := FromNodes(s, nodes)
+	k.CorpusRoots()
+	k.Directories()
+	beamtest.CheckRegistrations(t, p)
+}
+
 func TestDecorations_registrations(t *testing.T) {
 	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
-	FromNodes(s, nodes).Decorations()
-	if err := beamtest.CheckRegistrations(p); err != nil {
-		t.Fatal(err)
-	}
+	k := FromNodes(s, nodes)
+	k.Decorations()
+	k.SplitDecorations()
+	beamtest.CheckRegistrations(t, p)
 }
 
 func TestCrossReferences_registrations(t *testing.T) {
 	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
-	FromNodes(s, nodes).CrossReferences()
-	if err := beamtest.CheckRegistrations(p); err != nil {
-		t.Fatal(err)
-	}
+	k := FromNodes(s, nodes)
+	k.CrossReferences()
+	k.SplitCrossReferences()
+	beamtest.CheckRegistrations(t, p)
 }
 
 func TestEdges_registrations(t *testing.T) {
 	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
 	FromNodes(s, nodes).Edges()
-	if err := beamtest.CheckRegistrations(p); err != nil {
-		t.Fatal(err)
-	}
+	beamtest.CheckRegistrations(t, p)
 }
 
 func TestDocuments_registrations(t *testing.T) {
 	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
 	FromNodes(s, nodes).Documents()
-	if err := beamtest.CheckRegistrations(p); err != nil {
-		t.Fatal(err)
-	}
+	beamtest.CheckRegistrations(t, p)
 }

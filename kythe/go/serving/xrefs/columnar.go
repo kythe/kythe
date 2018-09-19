@@ -291,7 +291,10 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 
 		// TODO(schroederc): handle merge_with
 
-		set := &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: ticket}
+		set := &xpb.CrossReferencesReply_CrossReferenceSet{
+			Ticket:       ticket,
+			MarkedSource: idx.MarkedSource,
+		}
 		reply.CrossReferences[ticket] = set
 
 		// TODO remove callers without callsites
