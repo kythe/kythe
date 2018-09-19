@@ -12,6 +12,7 @@ MANIFEST-*
 .#*
 \#*#
 .DS_Store
+.vscode
 
 # Binary files
 *.class
