@@ -12,6 +12,16 @@ load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
 clang_configure()
 
+http_archive(
+    name = "bazel_toolchains",
+    sha256 = "529f6763716f91e5b62bd14eeb5389b376126ecb276b127a78c95f8721280c11",
+    strip_prefix = "bazel-toolchains-f95842b60173ce5f931ae7341488b6cb2610fd94",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/f95842b60173ce5f931ae7341488b6cb2610fd94.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/f95842b60173ce5f931ae7341488b6cb2610fd94.tar.gz",
+    ],
+)
+
 bind(
     name = "libuuid",
     actual = "//third_party:libuuid",
