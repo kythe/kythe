@@ -107,6 +107,7 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
         -DLLVM_BUILD_RUNTIME="OFF" \
         -DLLVM_DYLIB_COMPONENTS="" \
         -DLLVM_ENABLE_OCAMLDOC="OFF" \
+        -DLLVM_ENABLE_RTTI="ON" \
         -DLLVM_INCLUDE_DOCS="OFF" \
         -DLLVM_INCLUDE_EXAMPLES="OFF" \
         -DLLVM_INCLUDE_GO_TESTS="OFF" \
