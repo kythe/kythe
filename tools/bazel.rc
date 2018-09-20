@@ -1,8 +1,5 @@
 # TODO(#2897): move to %workspace%/.bazelrc
 
-# Remote Build Execution requires a strong hash function, such as SHA256.
-startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
-
 build --workspace_status_command tools/buildstamp/get_workspace_status
 build --auto_cpu_environment_group=//buildenv:cpu
 
@@ -16,6 +13,10 @@ build --nojava_header_compilation # https://github.com/bazelbuild/bazel/issues/5
 # Ensure that we do not use an older Java version for the --javabase.
 build --javabase=@bazel_tools//tools/jdk:host_jdk
 
+# Remote Build Execution requires a strong hash function, such as SHA256.
+startup:remote --host_jvm_args=-Dbazel.DigestFunction=SHA256
+
+# Use the RBE instance in the kythe-repo project
 build:remote --remote_instance_name=projects/kythe-repo/instances/default_instance --project_id=kythe-repo
 
 build:remote --auth_enabled=true

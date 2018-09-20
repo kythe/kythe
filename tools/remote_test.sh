@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Tests the Kythe repository using experimental Remote Build Execution.
+# Tests the Kythe repository using experimental Remote Build Execution.  This
+# script runs supported Kythe build targets using the "remote" configuration to
+# keep track of our support of RBE.
 
 exclude_tags=(
   manual
