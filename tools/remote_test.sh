@@ -25,22 +25,20 @@ exclude_kinds=(
   asciidoc
   go_entries
   go_extract
+  verifier_test
 )
 exclude_targets=(
-  //kythe/cxx/verifier:all
-  //third_party/llvm
-  //third_party:libuuid
   @com_google_common_flogger//api:gen_platform_provider
 )
 
 query='//...'
-for tag in ${exclude_tags[@]}; do
+for tag in "${exclude_tags[@]}"; do
   query="$query - attr(tags, $tag, //...)"
 done
-for kind in ${exclude_kinds[@]}; do
+for kind in "${exclude_kinds[@]}"; do
   query="$query - kind($kind, //...)"
 done
-for target in ${exclude_targets[@]}; do
+for target in "${exclude_targets[@]}"; do
   query="$query - rdeps(//..., $target)"
 done
 targets=($(bazel query "$query"))
