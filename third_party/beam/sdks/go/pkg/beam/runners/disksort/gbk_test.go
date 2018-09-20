@@ -25,9 +25,6 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/x/debug"
 )
 
-// Disable parallelism to work with order-dependent passert checks.
-func init() { *gbkConcurrency = 1 }
-
 func TestGBK(t *testing.T) {
 	p, s, nums := ptest.CreateList([]int{1, 2, 3, 4, 2, 3, 3})
 
