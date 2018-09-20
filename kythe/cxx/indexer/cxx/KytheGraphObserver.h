@@ -168,188 +168,193 @@ class KytheGraphObserver : public GraphObserver {
 
   NodeId nodeIdForTappNode(
       const NodeId& TyconId,
-      const std::vector<const NodeId*>& Params) const override;
+      const std::vector<const NodeId*>& params) const override;
 
-  NodeId recordTappNode(const NodeId& TappId, const NodeId& TyconId,
-                        const std::vector<const NodeId*>& Params,
-                        unsigned FirstDefaultParam) override;
+  NodeId recordTappNode(const NodeId& tapp_id, const NodeId& tycon_id,
+                        const std::vector<const NodeId*>& params,
+                        unsigned first_default_param) override;
 
   NodeId nodeIdForTsigmaNode(
-      const std::vector<const NodeId*>& Params) const override;
-  NodeId recordTsigmaNode(const NodeId& TsigmaId,
-                          const std::vector<const NodeId*>& Params) override;
+      const std::vector<const NodeId*>& params) const override;
+  NodeId recordTsigmaNode(const NodeId& tsigma_id,
+                          const std::vector<const NodeId*>& params) override;
 
-  NodeId nodeIdForTypeAliasNode(const NameId& AliasName,
-                                const NodeId& AliasedType) const override;
+  NodeId nodeIdForTypeAliasNode(const NameId& alias_name,
+                                const NodeId& aliased_type) const override;
 
   NodeId recordTypeAliasNode(
-      const NodeId& AliasId, const NodeId& AliasedType,
-      const absl::optional<NodeId>& RootAliasedType,
-      const absl::optional<MarkedSource>& MarkedSource) override;
+      const NodeId& alias_id, const NodeId& aliased_type,
+      const absl::optional<NodeId>& root_aliased_type,
+      const absl::optional<MarkedSource>& marked_source) override;
 
   void recordFunctionNode(
-      const NodeId& Node, Completeness FunctionCompleteness,
-      FunctionSubkind Subkind,
-      const absl::optional<MarkedSource>& MarkedSource) override;
+      const NodeId& node, Completeness function_completeness,
+      FunctionSubkind subkind,
+      const absl::optional<MarkedSource>& marked_source) override;
 
   void recordAbsVarNode(
-      const NodeId& Node,
-      const absl::optional<MarkedSource>& MarkedSource) override;
+      const NodeId& node,
+      const absl::optional<MarkedSource>& marked_source) override;
 
-  void recordAbsNode(const NodeId& Node) override;
+  void recordAbsNode(const NodeId& node) override;
 
   void recordMarkedSource(
-      const NodeId& Node,
-      const absl::optional<MarkedSource>& MarkedSource) override;
+      const NodeId& node,
+      const absl::optional<MarkedSource>& marked_source) override;
 
-  void recordLookupNode(const NodeId& Node,
-                        const llvm::StringRef& Name) override;
+  void recordLookupNode(const NodeId& node,
+                        const llvm::StringRef& name) override;
 
-  void recordParamEdge(const NodeId& ParamOfNode, uint32_t Ordinal,
-                       const NodeId& ParamNode) override;
+  void recordParamEdge(const NodeId& param_of_node, uint32_t ordinal,
+                       const NodeId& param_node) override;
 
   void recordInterfaceNode(
-      const NodeId& Node,
-      const absl::optional<MarkedSource>& MarkedSource) override;
+      const NodeId& node,
+      const absl::optional<MarkedSource>& marked_source) override;
 
   void recordRecordNode(
-      const NodeId& Node, RecordKind Kind, Completeness RecordCompleteness,
-      const absl::optional<MarkedSource>& MarkedSource) override;
+      const NodeId& node, RecordKind Kind, Completeness record_completeness,
+      const absl::optional<MarkedSource>& marked_source) override;
 
-  void recordEnumNode(const NodeId& Node, Completeness Compl,
-                      EnumKind Kind) override;
+  void recordEnumNode(const NodeId& node, Completeness completeness,
+                      EnumKind kind) override;
 
-  void recordIntegerConstantNode(const NodeId& Node,
-                                 const llvm::APSInt& Value) override;
+  void recordIntegerConstantNode(const NodeId& node,
+                                 const llvm::APSInt& value) override;
 
-  NodeId nodeIdForNominalTypeNode(const NameId& TypeName) const override;
+  NodeId nodeIdForNominalTypeNode(const NameId& type_name) const override;
 
-  NodeId recordNominalTypeNode(const NodeId& TypeName,
-                               const absl::optional<MarkedSource>& MarkedSource,
-                               const absl::optional<NodeId>& Parent) override;
+  NodeId recordNominalTypeNode(
+      const NodeId& type_name,
+      const absl::optional<MarkedSource>& marked_source,
+      const absl::optional<NodeId>& parent) override;
 
-  void recordCategoryExtendsEdge(const NodeId& InheritingNodeId,
-                                 const NodeId& InheritedTypeId) override;
+  void recordCategoryExtendsEdge(const NodeId& inheriting_node_id,
+                                 const NodeId& inherited_type_id) override;
 
-  void recordExtendsEdge(const NodeId& InheritingNodeId,
-                         const NodeId& InheritedTypeId, bool IsVirtual,
-                         clang::AccessSpecifier AS) override;
+  void recordExtendsEdge(const NodeId& inheriting_node_id,
+                         const NodeId& inherited_type_id, bool IsVirtual,
+                         clang::AccessSpecifier access_specifier) override;
 
-  void recordDeclUseLocation(const Range& SourceRange, const NodeId& DeclId,
-                             GraphObserver::Claimability Cl,
-                             GraphObserver::Implicit I) override;
+  void recordDeclUseLocation(const Range& source_range, const NodeId& decl_id,
+                             GraphObserver::Claimability cl,
+                             GraphObserver::Implicit i) override;
 
-  void recordInitLocation(const Range& SourceRange, const NodeId& DeclId,
-                          GraphObserver::Claimability Cl,
-                          GraphObserver::Implicit I) override;
+  void recordInitLocation(const Range& source_range, const NodeId& decl_id,
+                          GraphObserver::Claimability cl,
+                          GraphObserver::Implicit i) override;
 
   void recordVariableNode(
-      const NodeId& DeclNode, Completeness VarCompleteness,
-      VariableSubkind Subkind,
-      const absl::optional<MarkedSource>& MarkedSource) override;
+      const NodeId& decl_node, Completeness var_completeness,
+      VariableSubkind subkind,
+      const absl::optional<MarkedSource>& marked_source) override;
 
   void recordNamespaceNode(
-      const NodeId& DeclNode,
-      const absl::optional<MarkedSource>& MarkedSource) override;
+      const NodeId& decl_node,
+      const absl::optional<MarkedSource>& marked_source) override;
 
-  void recordUserDefinedNode(const NodeId& Id, const llvm::StringRef& NodeKind,
-                             Completeness Compl) override;
+  void recordUserDefinedNode(const NodeId& id, const llvm::StringRef& node_kind,
+                             Completeness completeness) override;
 
-  void recordFullDefinitionRange(const Range& SourceRange, const NodeId& DeclId,
-                                 const absl::optional<NodeId>& DefnId) override;
+  void recordFullDefinitionRange(
+      const Range& SourceRange, const NodeId& decl_id,
+      const absl::optional<NodeId>& defn_id) override;
 
   void recordDefinitionBindingRange(
-      const Range& BindingRange, const NodeId& DeclId,
-      const absl::optional<NodeId>& DefnId) override;
+      const Range& binding_range, const NodeId& decl_id,
+      const absl::optional<NodeId>& defn_id) override;
 
   void recordDefinitionRangeWithBinding(
-      const Range& SourceRange, const Range& BindingRange, const NodeId& DeclId,
-      const absl::optional<NodeId>& DefnId) override;
+      const Range& source_range, const Range& binding_range,
+      const NodeId& decl_id, const absl::optional<NodeId>& defn_id) override;
 
-  void recordDocumentationRange(const Range& SourceRange,
-                                const NodeId& DocId) override;
+  void recordDocumentationRange(const Range& source_range,
+                                const NodeId& doc_id) override;
 
-  void recordDocumentationText(const NodeId& DocId, const std::string& DocText,
-                               const std::vector<NodeId>& DocLinks) override;
+  void recordDocumentationText(const NodeId& doc_id,
+                               const std::string& doc_text,
+                               const std::vector<NodeId>& doc_links) override;
 
-  void recordDeclUseLocationInDocumentation(const Range& SourceRange,
-                                            const NodeId& DeclId) override;
+  void recordDeclUseLocationInDocumentation(const Range& source_range,
+                                            const NodeId& decl_id) override;
 
-  void recordCompletionRange(const Range& SourceRange, const NodeId& DefnId,
-                             Specificity Spec,
-                             const NodeId& CompletingNode) override;
+  void recordCompletionRange(const Range& source_range, const NodeId& defn_id,
+                             Specificity spec,
+                             const NodeId& completing_node) override;
 
-  void recordTypeSpellingLocation(const Range& SourceRange,
-                                  const NodeId& TypeId, Claimability Cl,
-                                  Implicit I) override;
+  void recordTypeSpellingLocation(const Range& source_range,
+                                  const NodeId& TypeId,
+                                  Claimability claimability,
+                                  Implicit i) override;
 
-  void recordChildOfEdge(const NodeId& ChildNodeId,
-                         const NodeId& ParentNodeId) override;
+  void recordChildOfEdge(const NodeId& child_node_id,
+                         const NodeId& parent_node_id) override;
 
-  void recordTypeEdge(const NodeId& TermNodeId,
-                      const NodeId& TypeNodeId) override;
+  void recordTypeEdge(const NodeId& term_node_id,
+                      const NodeId& type_node_id) override;
 
-  void recordUpperBoundEdge(const NodeId& TypeNodeId,
-                            const NodeId& TypeBoundNodeId) override;
+  void recordUpperBoundEdge(const NodeId& type_node_id,
+                            const NodeId& type_bound_node_id) override;
 
-  void recordVariance(const NodeId& TypeNodeId, const Variance V) override;
+  void recordVariance(const NodeId& type_node_id,
+                      const Variance variance) override;
 
-  void recordSpecEdge(const NodeId& TermNodeId, const NodeId& TypeNodeId,
-                      Confidence Conf) override;
+  void recordSpecEdge(const NodeId& term_node_id, const NodeId& type_node_id,
+                      Confidence conf) override;
 
-  void recordInstEdge(const NodeId& TermNodeId, const NodeId& TypeNodeId,
-                      Confidence Conf) override;
+  void recordInstEdge(const NodeId& term_node_id, const NodeId& type_node_id,
+                      Confidence conf) override;
 
-  void recordOverridesEdge(const NodeId& Overrider,
-                           const NodeId& BaseObject) override;
+  void recordOverridesEdge(const NodeId& overrider,
+                           const NodeId& base_object) override;
 
-  void recordOverridesRootEdge(const NodeId& Overrider,
-                               const NodeId& RootBaseObject) override;
+  void recordOverridesRootEdge(const NodeId& overrider,
+                               const NodeId& root_base_object) override;
 
-  void recordCallEdge(const Range& SourceRange, const NodeId& CallerId,
-                      const NodeId& CalleeId, Implicit i) override;
+  void recordCallEdge(const Range& source_range, const NodeId& caller_id,
+                      const NodeId& callee_id, Implicit i) override;
 
-  absl::optional<NodeId> recordFileInitializer(const Range& CallSite) override;
+  absl::optional<NodeId> recordFileInitializer(const Range& call_side) override;
 
-  void recordMacroNode(const NodeId& MacroNode) override;
+  void recordMacroNode(const NodeId& macro_node) override;
 
-  void recordExpandsRange(const Range& SourceRange,
-                          const NodeId& MacroId) override;
+  void recordExpandsRange(const Range& source_range,
+                          const NodeId& macro_id) override;
 
-  void recordIndirectlyExpandsRange(const Range& SourceRange,
-                                    const NodeId& MacroId) override;
+  void recordIndirectlyExpandsRange(const Range& source_range,
+                                    const NodeId& macro_id) override;
 
-  void recordUndefinesRange(const Range& SourceRange,
-                            const NodeId& MacroId) override;
+  void recordUndefinesRange(const Range& source_range,
+                            const NodeId& macro_id) override;
 
-  void recordIncludesRange(const Range& SourceRange,
-                           const clang::FileEntry* File) override;
+  void recordIncludesRange(const Range& source_range,
+                           const clang::FileEntry* file) override;
 
-  void recordBoundQueryRange(const Range& SourceRange,
-                             const NodeId& MacroId) override;
+  void recordBoundQueryRange(const Range& source_range,
+                             const NodeId& macro_id) override;
 
-  void recordStaticVariable(const NodeId& VarNodeId) override;
+  void recordStaticVariable(const NodeId& var_node_id) override;
 
-  void recordDeprecated(const NodeId& NodeId,
-                        const llvm::StringRef& Advice) override;
+  void recordDeprecated(const NodeId& node_id,
+                        const llvm::StringRef& advice) override;
 
-  void pushFile(clang::SourceLocation BlameLocation,
-                clang::SourceLocation Location) override;
+  void pushFile(clang::SourceLocation blame_location,
+                clang::SourceLocation location) override;
 
   void popFile() override;
 
   bool isMainSourceFileRelatedLocation(
-      clang::SourceLocation Location) const override;
+      clang::SourceLocation location) const override;
 
   void AppendMainSourceFileIdentifierToStream(
-      llvm::raw_ostream& Ostream) override;
+      llvm::raw_ostream& ostream) override;
 
   /// \brief Configures the claimant that will be used to make claims.
   void set_claimant(const kythe::proto::VName& vname) { claimant_ = vname; }
 
-  bool claimNode(const NodeId& NodeId) override {
+  bool claimNode(const NodeId& node_id) override {
     if (const auto* token =
-            clang::dyn_cast<KytheClaimToken>(NodeId.getToken())) {
+            clang::dyn_cast<KytheClaimToken>(node_id.getToken())) {
       return token->rough_claimed();
     }
     return true;
@@ -357,7 +362,7 @@ class KytheGraphObserver : public GraphObserver {
 
   bool claimRange(const GraphObserver::Range& range) override;
 
-  bool claimLocation(clang::SourceLocation Loc) override;
+  bool claimLocation(clang::SourceLocation source_location) override;
 
   /// A representation of the state of the preprocessor.
   using PreprocessorContext = std::string;
@@ -379,20 +384,20 @@ class KytheGraphObserver : public GraphObserver {
   }
 
   const KytheClaimToken* getClaimTokenForLocation(
-      const clang::SourceLocation L) const override;
+      const clang::SourceLocation source_location) const override;
 
   const KytheClaimToken* getClaimTokenForRange(
-      const clang::SourceRange& SR) const override;
+      const clang::SourceRange& source_range) const override;
 
   const KytheClaimToken* getNamespaceClaimToken(
-      clang::SourceLocation Loc) const override;
+      clang::SourceLocation source_location) const override;
 
   const KytheClaimToken* getAnonymousNamespaceClaimToken(
-      clang::SourceLocation Loc) const override;
+      clang::SourceLocation source_location) const override;
 
   /// \brief Appends a representation of `Range` to `Ostream`.
-  void AppendRangeToStream(llvm::raw_ostream& Ostream,
-                           const Range& Range) override;
+  void AppendRangeToStream(llvm::raw_ostream& ostream,
+                           const Range& range) override;
 
   bool claimImplicitNode(const std::string& identifier) override;
 
