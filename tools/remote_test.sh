@@ -23,9 +23,6 @@ exclude_tags=(
 )
 exclude_kinds=(
   asciidoc
-  go_entries
-  go_extract
-  verifier_test
 )
 exclude_targets=(
   @com_google_common_flogger//api:gen_platform_provider

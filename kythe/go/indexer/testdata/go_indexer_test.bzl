@@ -35,7 +35,7 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
   srcdir  = tmpdir + '/src/' + ipath
   pkgdir  = tmpdir + '/pkg/%s_%s' % (mode.goos, mode.goarch)
   extras  = []
-  cmds    = ['set -e', 'mkdir -p ' + pkgdir, 'mkdir -p ' + srcdir]
+  cmds    = ['#!/bin/sh -e', 'mkdir -p ' + pkgdir, 'mkdir -p ' + srcdir]
 
   # Link the source files and dependencies into a common temporary directory.
   # Source files need to be made relative to the temp directory.
