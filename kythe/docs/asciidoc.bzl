@@ -20,6 +20,10 @@ def _asciidoc_impl(ctx):
     args += ["-o", "out/" + ctx.attr.name + ".html"]
     args += [ctx.file.src.path]
 
+    # Get the path where all our necessary tools are located so it can be set
+    # to PATH in our run_shell command.
+    tool_path = ctx.toolchains[_toolchain_type].path
+
     # Declare the logfile as an output so that it can be read if something goes
     # awry (otherwise Bazel will clean it up).
     logfile = ctx.actions.declare_file(ctx.attr.name + ".logfile")
@@ -33,6 +37,8 @@ def _asciidoc_impl(ctx):
                   ctx.files.data),
         outputs = [ctx.outputs.out, logfile],
         command = "\n".join([
+            'export PATH="$PATH:' + tool_path + '"',
+
             # Create the temporary staging directory.
             "mkdir out",
 
