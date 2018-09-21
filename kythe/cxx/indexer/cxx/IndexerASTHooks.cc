@@ -925,10 +925,10 @@ void IndexerASTVisitor::VisitComment(
 }
 
 void IndexerASTVisitor::VisitAttributes(const clang::Decl* Decl,
-                                        const GraphObserver::NodeId& NodeId) {
+                                        const GraphObserver::NodeId& TargetNode) {
   for (const auto& Attr : Decl->attrs()) {
     if (const auto* DepAttr = clang::dyn_cast<clang::DeprecatedAttr>(Attr)) {
-      Observer.recordDeprecated(NodeId, DepAttr->getMessage());
+      Observer.recordDeprecated(TargetNode, DepAttr->getMessage());
     }
   }
 }
@@ -1548,8 +1548,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitClassTemplateInstantiation(
                         : Optional<ArrayRef<TemplateArgumentLoc>>(),
           CTSD->getTemplateArgs().asArray(), NIDS, NIDPS)) {
     if (auto SpecializedNode = BuildNodeIdForTemplateName(
-            clang::TemplateName(CTSD->getSpecializedTemplate()),
-            CTSD->getPointOfInstantiation())) {
+            clang::TemplateName(CTSD->getSpecializedTemplate()))) {
       if (PrimaryOrPartial.is<clang::ClassTemplateDecl*>() &&
           !isa<const clang::ClassTemplatePartialSpecializationDecl>(CTSD)) {
         // Point to a tapp of the primary template.
@@ -1652,8 +1651,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
       // If there's more than one possible template name (e.g., this is
       // dependent), choose one arbitrarily.
       for (const auto& TN : TNs) {
-        if (auto SpecializedNode =
-                BuildNodeIdForTemplateName(TN.first, TN.second)) {
+        if (auto SpecializedNode = BuildNodeIdForTemplateName(TN.first)) {
           return Observer.recordTappNode(SpecializedNode.value(), NIDPS,
                                          NumArgsAsWritten);
         }
@@ -1706,7 +1704,7 @@ IndexerASTVisitor::BuildNodeIdForDeclContext(const clang::DeclContext* DC) {
 }
 
 void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
-    const clang::Decl* Decl, const GraphObserver::NodeId DeclNode) {
+    const clang::Decl* Decl, const GraphObserver::NodeId& DeclNode) {
   if (const DeclContext* DC = Decl->getDeclContext()) {
     if (FLAGS_experimental_alias_template_instantiations) {
       if (!Job->UnderneathImplicitTemplateInstantiation) {
@@ -2026,8 +2024,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
                           : Optional<ArrayRef<TemplateArgumentLoc>>(),
             VTSD->getTemplateArgs().asArray(), NIDS, NIDPS)) {
       if (auto SpecializedNode = BuildNodeIdForTemplateName(
-              clang::TemplateName(VTSD->getSpecializedTemplate()),
-              VTSD->getPointOfInstantiation())) {
+              clang::TemplateName(VTSD->getSpecializedTemplate()))) {
         if (PrimaryOrPartial.is<clang::VarTemplateDecl*>() &&
             !isa<const clang::VarTemplatePartialSpecializationDecl>(Decl)) {
           // This is both an instance and a specialization of the primary
@@ -2685,8 +2682,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
                           : Optional<ArrayRef<TemplateArgumentLoc>>(),
             CTSD->getTemplateArgs().asArray(), NIDS, NIDPS)) {
       if (auto SpecializedNode = BuildNodeIdForTemplateName(
-              clang::TemplateName(CTSD->getSpecializedTemplate()),
-              CTSD->getPointOfInstantiation())) {
+              clang::TemplateName(CTSD->getSpecializedTemplate()))) {
         if (PrimaryOrPartial.is<clang::ClassTemplateDecl*>() &&
             !isa<const clang::ClassTemplatePartialSpecializationDecl>(Decl)) {
           // This is both an instance and a specialization of the primary
@@ -2902,8 +2898,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                             ? GraphObserver::Confidence::Speculative
                             : GraphObserver::Confidence::NonSpeculative;
       for (const auto& TN : TNs) {
-        if (auto SpecializedNode =
-                BuildNodeIdForTemplateName(TN.first, TN.second)) {
+        if (auto SpecializedNode = BuildNodeIdForTemplateName(TN.first)) {
           // Because partial specialization of function templates is forbidden,
           // instantiates edges will always choose the same type (a tapp with
           // the primary template as its first argument) as specializes edges.
@@ -3660,8 +3655,7 @@ GraphObserver::NodeId IndexerASTVisitor::ApplyBuiltinTypeConstructor(
 }
 
 absl::optional<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name,
-                                              const clang::SourceLocation L) {
+IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
   // TODO(zarko): Do we need to canonicalize `Name`?
   // Maybe with Context.getCanonicalTemplateName()?
   switch (Name.getKind()) {
@@ -3678,9 +3672,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name,
           // BuildNodeIdForDecl() all the time makes sense. We aren't even
           // emitting ranges.
           if (const auto* TDType = TD->getTypeForDecl()) {
-            QualType QT(TDType, 0);
-            TypeSourceInfo* TSI = Context.getTrivialTypeSourceInfo(QT, L);
-            return BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::No);
+            return BuildNodeIdForType(QualType(TDType, 0));
           } else if (const auto* TAlias = dyn_cast<TypeAliasDecl>(TD)) {
             // The names for type alias types are the same for type alias nodes.
             return BuildNodeIdForTypedefNameDecl(TAlias);
@@ -3862,9 +3854,8 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForSpecialTemplateArgument(
 }
 
 absl::optional<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdForTemplateExpansion(clang::TemplateName Name,
-                                                   clang::SourceLocation L) {
-  return BuildNodeIdForTemplateName(Name, L);
+IndexerASTVisitor::BuildNodeIdForTemplateExpansion(clang::TemplateName Name) {
+  return BuildNodeIdForTemplateName(Name);
 }
 
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
@@ -3941,10 +3932,10 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       return BuildNodeIdForSpecialTemplateArgument(
           Arg.getAsIntegral().toString(10) + "i");
     case TemplateArgument::Template:
-      return BuildNodeIdForTemplateName(Arg.getAsTemplate(), L);
+      return BuildNodeIdForTemplateName(Arg.getAsTemplate());
     case TemplateArgument::TemplateExpansion:
       return BuildNodeIdForTemplateExpansion(
-          Arg.getAsTemplateOrTemplatePattern(), L);
+          Arg.getAsTemplateOrTemplatePattern());
     case TemplateArgument::Expression:
       CHECK(Arg.getAsExpr() != nullptr);
       return BuildNodeIdForExpr(Arg.getAsExpr(), EmitRanges::Yes);
@@ -3989,11 +3980,10 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       return BuildNodeIdForSpecialTemplateArgument(
           Arg.getAsIntegral().toString(10) + "i");
     case TemplateArgument::Template:
-      return BuildNodeIdForTemplateName(Arg.getAsTemplate(),
-                                        ArgLoc.getTemplateNameLoc());
+      return BuildNodeIdForTemplateName(Arg.getAsTemplate());
     case TemplateArgument::TemplateExpansion:
       return BuildNodeIdForTemplateExpansion(
-          Arg.getAsTemplateOrTemplatePattern(), ArgLoc.getTemplateNameLoc());
+          Arg.getAsTemplateOrTemplatePattern());
     case TemplateArgument::Expression:
       CHECK(ArgLoc.getSourceExpression() != nullptr);
       return BuildNodeIdForExpr(ArgLoc.getSourceExpression(), EmitRanges);
@@ -4566,8 +4556,8 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       // specializations appear as different types.
       const auto& T = TypeLoc.castAs<TemplateSpecializationTypeLoc>();
       const SourceLocation& TNameLoc = T.getTemplateNameLoc();
-      auto TemplateName = BuildNodeIdForTemplateName(
-          T.getTypePtr()->getTemplateName(), TNameLoc);
+      auto TemplateName =
+          BuildNodeIdForTemplateName(T.getTypePtr()->getTemplateName());
       if (!TemplateName) {
         return absl::nullopt;
       }

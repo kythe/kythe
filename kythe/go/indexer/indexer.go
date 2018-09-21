@@ -547,7 +547,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 			})
 		}
 		if res := sig.Results(); res != nil && res.Len() > 0 {
-			rms := &cpb.MarkedSource{PreText: " "}
+			rms := &cpb.MarkedSource{Kind: cpb.MarkedSource_TYPE, PreText: " "}
 			if res.Len() > 1 {
 				// If there is more than one result type, parenthesize.
 				rms.PreText = " ("

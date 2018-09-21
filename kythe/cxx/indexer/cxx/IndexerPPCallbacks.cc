@@ -319,7 +319,7 @@ GraphObserver::NodeId IndexerPPCallbacks::BuildNodeIdForMacro(
 
 void IndexerPPCallbacks::HandleKytheMetadataPragma(
     clang::Preprocessor& preprocessor, clang::PragmaIntroducerKind introducer,
-    clang::Token& first_token) {
+    clang::Token& FirstToken) {
   llvm::SmallString<1024> search_path;
   llvm::SmallString<1024> relative_path;
   llvm::SmallString<1024> filename;
@@ -330,7 +330,7 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
     return;
   }
   clang::FileID pragma_file_id =
-      Observer.getSourceManager()->getFileID(first_token.getLocation());
+      Observer.getSourceManager()->getFileID(FirstToken.getLocation());
   if (!pragma_file_id.isInvalid()) {
     Observer.applyMetadataFile(pragma_file_id, file, "");
   } else {
@@ -340,7 +340,7 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
 
 void IndexerPPCallbacks::HandleKytheInlineMetadataPragma(
     clang::Preprocessor& preprocessor, clang::PragmaIntroducerKind introducer,
-    clang::Token& first_token) {
+    clang::Token& FirstToken) {
   std::string search_string;
   clang::Token tok;
   if (!preprocessor.LexStringLiteral(tok, search_string,
@@ -352,7 +352,7 @@ void IndexerPPCallbacks::HandleKytheInlineMetadataPragma(
     return;
   }
   clang::FileID pragma_file_id =
-      Observer.getSourceManager()->getFileID(first_token.getLocation());
+      Observer.getSourceManager()->getFileID(FirstToken.getLocation());
   if (pragma_file_id.isInvalid()) {
     LOG(WARNING) << "Invalid file ID for kythe_inline_metadata";
     return;

@@ -171,6 +171,8 @@ message CrossReferences {
       string generic_kind = 2;
     }
     kythe.proto.serving.ExpandedAnchor location = 3;
+
+    // TODO(schroederc): add priority grouping
   }
 
   // Single edge relation to the source node.
@@ -188,6 +190,8 @@ message CrossReferences {
     int32 ordinal = 4;
     // Whether the relation is a reverse edge.
     bool reverse = 5;
+
+    // TODO(schroederc): add priority grouping
   }
 
   // A caller with callsites to the source node.

@@ -81,7 +81,7 @@ func (g *gradleCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...i
 	if err := PreProcessGradleBuild(g.buildFile, g.javacWrapper); err != nil {
 		return g.Fail("error modifying %s: %v", g.buildFile, err)
 	}
-	if err := exec.Command("gradle", "build").Run(); err != nil {
+	if err := exec.Command("gradle", "clean", "build").Run(); err != nil {
 		return g.Fail("error executing gradle build: %v", err)
 	}
 	if err := tf.Restore(); err != nil {

@@ -20,6 +20,7 @@ package beamtest
 import (
 	"fmt"
 	"reflect"
+	"testing"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/core/runtime"
@@ -28,28 +29,27 @@ import (
 )
 
 // CheckRegistrations returns an error if p uses any non-registered types.
-func CheckRegistrations(p *beam.Pipeline) error {
+func CheckRegistrations(t *testing.T, p *beam.Pipeline) {
 	edges, nodes, err := p.Build()
 	if err != nil {
-		return fmt.Errorf("invalid pipeline: %v", err)
+		t.Fatalf("invalid pipeline: %v", err)
 	}
 	for _, n := range nodes {
 		if err := checkFullType(n.Type()); err != nil {
-			return err
+			t.Error(n)
 		}
 	}
 	for _, e := range edges {
 		if fn := e.DoFn; fn != nil {
 			if fn.Recv != nil {
 				if err := checkFnType(reflect.TypeOf(fn.Recv)); err != nil {
-					return err
+					t.Error(err)
 				}
 			} else if _, err := runtime.ResolveFunction(fn.Name(), fn.Fn.Fn.Type()); err != nil {
-				return fmt.Errorf("error resolving function: %v", err)
+				t.Errorf("error resolving function: %v", err)
 			}
 		}
 	}
-	return nil
 }
 
 var protoMessageType = reflect.TypeOf((*proto.Message)(nil)).Elem()

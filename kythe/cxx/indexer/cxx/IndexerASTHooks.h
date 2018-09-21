@@ -239,9 +239,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Builds a stable node ID for a template expansion template argument.
   /// \param Name The template pattern being expanded.
-  /// \param L The location of the expansion.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateExpansion(
-      clang::TemplateName Name, clang::SourceLocation L);
+      clang::TemplateName Name);
 
   // TODO(shahms): Document these and make const as appropriate.
   //   ... but it may not be due to caching (which should be figured out).
@@ -361,7 +360,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Builds a stable node ID for the given `TemplateName`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateName(
-      const clang::TemplateName& Name, clang::SourceLocation L);
+      const clang::TemplateName& Name);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
@@ -487,7 +486,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   static bool IsDefinition(const clang::VarDecl* VD);
 
   /// \brief Is `FunctionDecl` a definition?
-  static bool IsDefinition(const clang::FunctionDecl* FD);
+  static bool IsDefinition(const clang::FunctionDecl* FunctionDecl);
 
   /// \brief Gets a range for the name of a declaration, whether that name is a
   /// single token or otherwise.
@@ -513,7 +512,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool TraverseClassTemplatePartialSpecializationDecl(
       clang::ClassTemplatePartialSpecializationDecl* TD);
 
-  bool TraverseVarTemplateDecl(clang::VarTemplateDecl* VD);
+  bool TraverseVarTemplateDecl(clang::VarTemplateDecl* TD);
   bool TraverseVarTemplateSpecializationDecl(
       clang::VarTemplateSpecializationDecl* VD);
   bool ForceTraverseVarTemplateSpecializationDecl(
@@ -716,7 +715,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// In this case, it's useful to query the object being ascribed for its
   /// unlocated QualType, as this does get updated.
   void AscribeSpelledType(const clang::TypeLoc& Type,
-                          const clang::QualType& DType,
+                          const clang::QualType& TrueType,
                           const GraphObserver::NodeId& AscribeTo);
 
   /// \brief Returns the parent of the given node, along with the index
@@ -770,8 +769,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// `BodyId`, including the edge linking the template and its body. Returns
   /// the `NodeId` for the dominating template.
   template <typename TemplateDeclish>
-  GraphObserver::NodeId RecordTemplate(const TemplateDeclish* Template,
-                                       const GraphObserver::NodeId& BodyId);
+  GraphObserver::NodeId RecordTemplate(
+      const TemplateDeclish* Decl, const GraphObserver::NodeId& BodyDeclNode);
 
   /// Records information about the generic class by wrapping the node
   /// `BodyId`. Returns the `NodeId` for the dominating generic type.
@@ -800,7 +799,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param Decl The (outer, in the case of a template) decl.
   /// \param DeclNode The (outer) `NodeId` for `Decl`.
   void AddChildOfEdgeToDeclContext(const clang::Decl* Decl,
-                                   const GraphObserver::NodeId DeclNode);
+                                   const GraphObserver::NodeId& DeclNode);
 
   /// Points at the inner node of the DeclContext, if it's a template.
   /// Otherwise points at the DeclContext as a Decl.

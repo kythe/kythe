@@ -35,7 +35,7 @@ class FileVNameGenerator {
   /// \param json_string The string containing the configuration to add.
   /// \param error_text Non-null. Will be set to text describing any errors.
   /// \return false if the string could not be parsed.
-  bool LoadJsonString(const std::string& json_string, std::string* error_text);
+  bool LoadJsonString(const std::string& data, std::string* error_text);
 
   /// \brief Returns a base VName for a given file path (or an empty VName if
   /// no configuration rule matches the path).

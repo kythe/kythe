@@ -63,12 +63,13 @@ llvm::ErrorOr<clang::vfs::Status> IndexVFS::status(const llvm::Twine& path) {
   return make_error_code(llvm::errc::no_such_file_or_directory);
 }
 
-bool IndexVFS::get_vname(const llvm::StringRef& path, proto::VName* vname) {
+bool IndexVFS::get_vname(const llvm::StringRef& path,
+                         proto::VName* merge_with) {
   if (FileRecord* record =
           FileRecordForPath(path, BehaviorOnMissing::kReturnError, 0)) {
     if (record->status.getType() == llvm::sys::fs::file_type::regular_file &&
         record->has_vname) {
-      *vname = record->vname;
+      *merge_with = record->vname;
       return true;
     }
   }

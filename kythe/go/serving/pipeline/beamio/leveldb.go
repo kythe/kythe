@@ -223,7 +223,10 @@ type tableMetadata struct {
 	Seq int
 }
 
-var duplicateLevelDBKeysCounter = beam.NewCounter("kythe.beamio.leveldb", "duplicate-keys")
+var (
+	duplicateLevelDBKeysCounter     = beam.NewCounter("kythe.beamio.leveldb", "duplicate-keys")
+	conflictingLevelDBValuesCounter = beam.NewCounter("kythe.beamio.leveldb", "conflicting-values")
+)
 
 // ProcessElement writes a set of keyValues to the an SSTable per shard.  Shards
 // should be small enough to fit into memory so that they can be sorted.
@@ -253,6 +256,9 @@ func (w *writeTable) ProcessElement(ctx context.Context, shard int, kvIter func(
 	j := 1
 	for i := 1; i < len(els); i++ {
 		if bytes.Equal(els[j-1].Key, els[i].Key) {
+			if !bytes.Equal(els[j-1].Value, els[i].Value) {
+				conflictingLevelDBValuesCounter.Inc(ctx, 1)
+			}
 			duplicateLevelDBKeysCounter.Inc(ctx, 1)
 		} else {
 			els[j] = els[i]
