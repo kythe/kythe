@@ -21,9 +21,6 @@
 exclude_tags=(
   manual
 )
-exclude_kinds=(
-  asciidoc
-)
 exclude_targets=(
   @com_google_common_flogger//api:gen_platform_provider
 )
@@ -31,9 +28,6 @@ exclude_targets=(
 query='//...'
 for tag in "${exclude_tags[@]}"; do
   query="$query - attr(tags, $tag, //...)"
-done
-for kind in "${exclude_kinds[@]}"; do
-  query="$query - kind($kind, //...)"
 done
 for target in "${exclude_targets[@]}"; do
   query="$query - rdeps(//..., $target)"
