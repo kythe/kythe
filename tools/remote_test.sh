@@ -18,20 +18,5 @@
 # script runs supported Kythe build targets using the "remote" configuration to
 # keep track of our support of RBE.
 
-exclude_tags=(
-  manual
-)
-exclude_targets=(
-  //kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/...
-)
-
-query='//...'
-for tag in "${exclude_tags[@]}"; do
-  query="$query - attr(tags, $tag, //...)"
-done
-for target in "${exclude_targets[@]}"; do
-  query="$query - rdeps(//..., $target)"
-done
-targets=($(bazel query "$query"))
-
-bazel test --config=remote "$@" "${targets[@]}"
+# TODO(schroederc): remove test script
+bazel test --config=remote "$@" //...
