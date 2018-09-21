@@ -219,9 +219,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Builds a stable node ID for a template expansion template argument.
   /// \param Name The template pattern being expanded.
-  /// \param L The location of the expansion.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateExpansion(
-      clang::TemplateName Name, clang::SourceLocation L);
+      clang::TemplateName Name);
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param TypeLoc The type that is being identified. If its location is valid
@@ -281,7 +280,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Builds a stable node ID for the given `TemplateName`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateName(
-      const clang::TemplateName& Name, clang::SourceLocation L);
+      const clang::TemplateName& Name);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
