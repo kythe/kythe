@@ -22,7 +22,7 @@ exclude_tags=(
   manual
 )
 exclude_targets=(
-  @com_google_common_flogger//api:gen_platform_provider
+  //kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/...
 )
 
 query='//...'

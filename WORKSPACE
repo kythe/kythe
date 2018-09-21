@@ -324,8 +324,9 @@ http_archive(
 
 git_repository(
     name = "com_google_common_flogger",
-    commit = "1b447d1663ff8703cbdb672a034b4d8e4a68ed70",
-    remote = "https://github.com/google/flogger",
+    commit = "f6071d2c5cd6c6c4f5fcd9f74bfec4ca972b0423",
+    # TODO(schroederc): remove usage of fork once https://github.com/google/flogger/pull/37 is closed
+    remote = "https://github.com/schroederc/flogger",
 )
 
 http_archive(
