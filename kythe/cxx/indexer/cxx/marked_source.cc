@@ -311,14 +311,55 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
   MarkedSource* ident_node() {
     return ident_node_ ? ident_node_ : marked_source_;
   }
+  // \brief Insert one or more type annotations.
+  // \param type_range the source range covering the type.
+  // \param arg_list the source range covering the argument list for functions,
+  // or an invalid range otherwise.
+  //
+  // This function will split the type annotation range if the identifier for
+  // the decl being annotated is inside the range (e.g., char x[] = {1};).
+  void InsertTypeAnnotation(const clang::SourceRange& type_range,
+                            clang::SourceRange arg_list) {
+    clang::SourceRange type_lhs = type_range;
+    clang::SourceRange type_rhs = type_lhs;
+    // By default, we assume that nested ranges imply nested annotation nodes.
+    // If we come across (e.g.) a function returning a function pointer, this
+    // will give suboptimal results. We'll instead split the type range if we
+    // find that it contains parameters or the decl name.
+    //
+    // TODO(zarko): Even if we perform this split, we'll end up with a
+    // type signature for
+    //   virtual float (*bam(short a) const)(int b) = 0;
+    // that looks like `float (* const)(int b)`
+    // There are other places this can happen too, like:
+    //   float (*bam(short a) const &)(int b) = 0;
+    // which will yield `float (* const &)(int b)`.
+    // It appears that we'll need to parse the text manually looking for
+    // the closing paren to determine where type_rhs should begin.
+    if (SameFileRangesOverlapOpenInterval(type_lhs, name_range_)) {
+      type_rhs = clang::SourceRange(name_range_.getEnd(), type_lhs.getEnd());
+      type_lhs =
+          clang::SourceRange(type_lhs.getBegin(), name_range_.getBegin());
+    }
+    if (SameFileRangesOverlapOpenInterval(type_rhs, arg_list)) {
+      if (type_lhs == type_rhs) {
+        type_lhs = clang::SourceRange(type_lhs.getBegin(), arg_list.getBegin());
+      }
+      type_rhs = clang::SourceRange(arg_list.getEnd(), type_rhs.getEnd());
+    }
+    if (type_lhs != type_rhs) {
+      InsertAnnotation(type_rhs, Annotation{Annotation::Type});
+    }
+    InsertAnnotation(type_lhs, Annotation{Annotation::Type});
+  }
   void VisitVarDecl(clang::VarDecl* decl) {
     if (const auto* type_source_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_source_info->getType(),
                           type_source_info->getTypeLoc().getSourceRange())) {
-        InsertAnnotation(ExpandRangeBySingleToken(
-                             cache_->source_manager(), cache_->lang_options(),
-                             type_source_info->getTypeLoc().getSourceRange()),
-                         Annotation{Annotation::Type});
+        auto type_loc = ExpandRangeBySingleToken(
+            cache_->source_manager(), cache_->lang_options(),
+            type_source_info->getTypeLoc().getSourceRange());
+        InsertTypeAnnotation(type_loc, clang::SourceRange{});
       }
     }
   }
@@ -326,10 +367,10 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (const auto* type_source_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_source_info->getType(),
                           type_source_info->getTypeLoc().getSourceRange())) {
-        InsertAnnotation(ExpandRangeBySingleToken(
-                             cache_->source_manager(), cache_->lang_options(),
-                             type_source_info->getTypeLoc().getSourceRange()),
-                         Annotation{Annotation::Type});
+        auto type_loc = ExpandRangeBySingleToken(
+            cache_->source_manager(), cache_->lang_options(),
+            type_source_info->getTypeLoc().getSourceRange());
+        InsertTypeAnnotation(type_loc, clang::SourceRange{});
       }
     }
   }
@@ -355,38 +396,10 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     }
     if (!ShouldSkipDecl(decl, decl->getReturnType(), type_range) &&
         type_range.isValid()) {
-      auto type_lhs = ExpandRangeBySingleToken(
-          cache_->source_manager(), cache_->lang_options(), type_range);
-      clang::SourceRange type_rhs = type_lhs;
-      // By default, we assume that nested ranges imply nested annotation nodes.
-      // If we come across a function returning a function pointer, this will
-      // give suboptimal results. We'll instead split the type range if we find
-      // that it contains parameters or the function name.
-      // TODO(zarko): Even if we perform this split, we'll end up with a
-      // type signature for
-      //   virtual float (*bam(short a) const)(int b) = 0;
-      // that looks like `float (* const)(int b)`
-      // There are other places this can happen too, like:
-      //   float (*bam(short a) const &)(int b) = 0;
-      // which will yield `float (* const &)(int b)`.
-      // It appears that we'll need to parse the text manually looking for
-      // the closing paren to determine where type_rhs should begin.
-      if (SameFileRangesOverlapOpenInterval(type_lhs, name_range_)) {
-        type_rhs = clang::SourceRange(name_range_.getEnd(), type_lhs.getEnd());
-        type_lhs =
-            clang::SourceRange(type_lhs.getBegin(), name_range_.getBegin());
-      }
-      if (SameFileRangesOverlapOpenInterval(type_rhs, arg_list)) {
-        if (type_lhs == type_rhs) {
-          type_lhs =
-              clang::SourceRange(type_lhs.getBegin(), arg_list.getBegin());
-        }
-        type_rhs = clang::SourceRange(arg_list.getEnd(), type_rhs.getEnd());
-      }
-      if (type_lhs != type_rhs) {
-        InsertAnnotation(type_rhs, Annotation{Annotation::Type});
-      }
-      InsertAnnotation(type_lhs, Annotation{Annotation::Type});
+      InsertTypeAnnotation(
+          ExpandRangeBySingleToken(cache_->source_manager(),
+                                   cache_->lang_options(), type_range),
+          arg_list);
     }
   }
 
