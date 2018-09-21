@@ -123,11 +123,30 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitCXXDependentScopeMemberExpr(
       const clang::CXXDependentScopeMemberExpr* Expr);
 
+  // Work-in-Progress design for TypeLoc decorations:
+  //  1) Opt-in decoration from Visit<T>TypeLoc(<T>TypeLoc)
+  //    a) Helper function VisitGenericTypeLoc(<T>)
+  //    b) Calls BuildNodeSetForTypeLoc(<T>)
+  //       (via overloads? or dynamic dispatch?)
+  //  2) "Special" logic (Attirbuted, etc.) handled via Traverse<T>TypeLoc
+  //    (or WalkUpFrom<T> ?)
+  //  3) BuildNodeIdForType(QualType) only overload (maybe Type*?)
+  //  4) BuildNodeSetForType(QualType)
+  //  5) Eventually, use custom RecursiveASTVisitor subclass for NodeId
+  //     building.
+  //
+  //  Getting there:
+  //    1) Visit*TypeLoc for currently decorated types in BuildNodeIdForType
+  //      a) Traverse{Attributed,DependentAddressSpace}TypeLock working
+  //      b) Remove EmitEdges from BuildNodeIdForType
+  //    2) Dispatch to BuildNodeSetFor<TypeLoc>() in BuildNodeIdForType
+  //    3) Switch BuildNodeIdForType to wrapping BuildNodeSetForType
+  //    4) Re-divide decorated vs non-decorated types into NodeSet vs NodeId?
+  //    5) Change Id/Set building to take QualType/Type*
   // Visitors for leaf TypeLoc types.
   bool VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL);
   bool VisitEnumTypeLoc(clang::EnumTypeLoc TL);
   bool VisitRecordTypeLoc(clang::RecordTypeLoc TL);
-  bool VisitInjectedClassName(clang::InjectedClassNameTypeLoc TL);
   bool VisitObjCInterfaceTypeLoc(clang::ObjCInterfaceTypeLoc TL);
   bool VisitTemplateTypeParmTypeLoc(clang::TemplateTypeParmTypeLoc TL);
   bool VisitSubstTemplateTypeParmTypeLoc(
@@ -140,6 +159,10 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);
   bool VisitInjectedClassNameTypeLoc(clang::InjectedClassNameTypeLoc TL);
+  bool VisitDependentNameTypeLoc(clang::DependentNameTypeLoc TL);
+  bool VisitPackExpansionTypeLoc(clang::PackExpansionTypeLoc TL);
+  bool VisitObjCObjectTypeLoc(clang::ObjCObjectTypeLoc TL);
+  bool VisitObjCTypeParam(clang::ObjCTypeParamTypeLoc TL);
 
   bool TraverseAttributedTypeLoc(clang::AttributedTypeLoc TL);
   bool TraverseDependentAddressSpaceTypeLoc(
@@ -246,58 +269,55 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   //   ... but it may not be due to caching (which should be figured out).
   //   ... similarly, Observer.record...() should probably be used in some
   //   places which we've converted to no longer do that.
-  GraphObserver::NodeId BuildNodeIdForBuiltin(clang::BuiltinTypeLoc TL) const;
-  GraphObserver::NodeId BuildNodeIdForEnum(clang::EnumTypeLoc TL);
+  NodeSet BuildNodeSetForType(clang::TypeLoc TL);
+  NodeSet BuildNodeSetForType(clang::QualType QT);
+  NodeSet BuildNodeSetForBuiltin(clang::BuiltinTypeLoc TL) const;
   NodeSet BuildNodeSetForEnum(clang::EnumTypeLoc TL);
-
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForRecord(clang::RecordTypeLoc TL);
   NodeSet BuildNodeSetForRecord(clang::RecordTypeLoc TL);
-
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateTypeParm(
-      clang::TemplateTypeParmTypeLoc TL);
-
-  GraphObserver::NodeId BuildNodeIdForObjCInterface(
-      clang::ObjCInterfaceTypeLoc TL);
-  NodeSet BuildNodeSetForObjCInterface(clang::ObjCInterfaceTypeLoc TL);
-
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForPointer(
-      clang::PointerTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForLValueReference(
-      clang::LValueReferenceTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForRValueReference(
-      clang::RValueReferenceTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForDeduced(
-      clang::DeducedTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForQualified(
-      clang::QualifiedTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForConstantArray(
-      clang::ConstantArrayTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForIncompleteArray(
-      clang::IncompleteArrayTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForDependentSizedArray(
-      clang::DependentSizedArrayTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForFunctionProto(
-      clang::FunctionProtoTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForFunctionNoProto(
-      clang::FunctionNoProtoTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForParen(
-      clang::ParenTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForDecltype(
-      clang::DecltypeTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForElaborated(
-      clang::ElaboratedTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForTypedef(
-      clang::TypedefTypeLoc TL);
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForSubstTemplateTypeParm(
-      clang::SubstTemplateTypeParmTypeLoc TL);
   NodeSet BuildNodeSetForInjectedClassName(clang::InjectedClassNameTypeLoc TL);
+  NodeSet BuildNodeSetForObjCInterface(clang::ObjCInterfaceTypeLoc TL);
+  NodeSet BuildNodeSetForTemplateTypeParm(clang::TemplateTypeParmTypeLoc TL);
+  NodeSet BuildNodeSetForPointer(clang::PointerTypeLoc TL);
+  NodeSet BuildNodeSetForLValueReference(clang::LValueReferenceTypeLoc TL);
+  NodeSet BuildNodeSetForRValueReference(clang::RValueReferenceTypeLoc TL);
+
+  NodeSet BuildNodeSetForAuto(clang::AutoTypeLoc TL);
+  NodeSet BuildNodeSetForDeducedTemplateSpecialization(
+      clang::DeducedTemplateSpecializationTypeLoc TL);
+
+  NodeSet BuildNodeSetForQualified(clang::QualifiedTypeLoc TL);
+  NodeSet BuildNodeSetForConstantArray(clang::ConstantArrayTypeLoc TL);
+  NodeSet BuildNodeSetForIncompleteArray(clang::IncompleteArrayTypeLoc TL);
+  NodeSet BuildNodeSetForDependentSizedArray(
+      clang::DependentSizedArrayTypeLoc TL);
+  NodeSet BuildNodeSetForFunctionProto(clang::FunctionProtoTypeLoc TL);
+  NodeSet BuildNodeSetForFunctionNoProto(clang::FunctionNoProtoTypeLoc TL);
+  NodeSet BuildNodeSetForParen(clang::ParenTypeLoc TL);
+  NodeSet BuildNodeSetForDecltype(clang::DecltypeTypeLoc TL);
+  NodeSet BuildNodeSetForElaborated(clang::ElaboratedTypeLoc TL);
+  NodeSet BuildNodeSetForTypedef(clang::TypedefTypeLoc TL);
+
+  NodeSet BuildNodeSetForSubstTemplateTypeParm(
+      clang::SubstTemplateTypeParmTypeLoc TL);
+  NodeSet BuildNodeSetForDependentName(clang::DependentNameTypeLoc TL);
+  NodeSet BuildNodeSetForTemplateSpecialization(
+      clang::TemplateSpecializationTypeLoc TL);
+  NodeSet BuildNodeSetForPackExpansion(clang::PackExpansionTypeLoc TL);
+  NodeSet BuildNodeSetForBlockPointer(clang::BlockPointerTypeLoc TL);
+  NodeSet BuildNodeSetForObjCObjectPointer(clang::ObjCObjectPointerTypeLoc TL);
+  NodeSet BuildNodeSetForObjCObject(clang::ObjCObjectTypeLoc TL);
+  NodeSet BuildNodeSetForObjCTypeParam(clang::ObjCTypeParamTypeLoc TL);
+
+  // Helper used for Auto and DeducedTemplateSpecialization.
+  NodeSet BuildNodeSetForDeduced(clang::DeducedTypeLoc TL);
 
   // Helper function which constructs marked source and records
   // a tnominal node for the given `Decl`.
   GraphObserver::NodeId BuildNominalNodeIdForDecl(const clang::NamedDecl* Decl);
 
   // Helper used by BuildNodeSetForRecord and BuildNodeSetForInjectedClassName.
-  NodeSet BuildNodeSetForNonSpecializedRecordDecl(const clang::RecordDecl* Decl);
+  NodeSet BuildNodeSetForNonSpecializedRecordDecl(
+      const clang::RecordDecl* Decl);
 
   const clang::TemplateTypeParmDecl* FindTemplateTypeParmTypeLocDecl(
       clang::TemplateTypeParmTypeLoc TL) const;
@@ -814,7 +834,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// Avoid regenerating type node IDs and keep track of where we are while
   /// generating node IDs for recursive types. The key is opaque and
   /// makes sense only within the implementation of this class.
-  TypeMap<absl::optional<GraphObserver::NodeId>> TypeNodes;
+  TypeMap<NodeSet> TypeNodes;
 
   /// \brief Visit an Expr that refers to some NamedDecl.
   ///

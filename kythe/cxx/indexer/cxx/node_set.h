@@ -32,6 +32,9 @@ class NodeSet {
   using NodeId = GraphObserver::NodeId;
 
  public:
+  // Named constructor for a default-constructed (empty) NodeSet.
+  static NodeSet Empty() { return {}; }
+
   NodeSet() = default;
   NodeSet(NodeId primary) : primary_(std::move(primary)) {}
   NodeSet(NodeId primary, Claimability claim)
@@ -47,8 +50,8 @@ class NodeSet {
 
   bool has_value() const { return primary_.has_value(); }
   explicit operator bool() const { return has_value(); }
-  const NodeId& value() const& { return *primary_; }
-  NodeId&& value() && { return *std::move(primary_); }
+  const NodeId& value() const& { return primary_.value(); }
+  NodeId&& value() && { return std::move(primary_).value(); }
   const NodeId& operator*() const& { return *primary_; }
   NodeId&& operator*() && { return *std::move(primary_); }
   const NodeId* operator->() const { return primary_.operator->(); }
