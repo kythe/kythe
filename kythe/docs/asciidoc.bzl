@@ -36,8 +36,10 @@ def _asciidoc_impl(ctx):
                   ([ctx.file.example_script] if ctx.file.example_script else []) +
                   ctx.files.data),
         outputs = [ctx.outputs.out, logfile],
-        env = {"PATH": tool_path},  # so we can locate the binaries asciidoc needs
         command = "\n".join([
+             # so we can locate the binaries asciidoc needs
+            'export PATH="$PATH:' + tool_path + '"',
+
             # Create the temporary staging directory.
             "mkdir out",
 
