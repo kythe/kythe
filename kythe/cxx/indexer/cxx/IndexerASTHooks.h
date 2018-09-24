@@ -308,7 +308,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForObjCTypeParam(clang::ObjCTypeParamTypeLoc TL);
   NodeSet BuildNodeSetForObjCInterface(clang::ObjCInterfaceTypeLoc TL);
   NodeSet BuildNodeSetForAttributed(clang::AttributedTypeLoc TL);
-  NodeSet BuildNodeSetForDependentAddressSpace(clang::DependentAddressSpaceTypeLoc TL);
+  NodeSet BuildNodeSetForDependentAddressSpace(
+      clang::DependentAddressSpaceTypeLoc TL);
 
   // Helper used for Auto and DeducedTemplateSpecialization.
   NodeSet BuildNodeSetForDeduced(clang::DeducedTypeLoc TL);
@@ -881,18 +882,12 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
                     bool IsFunctionDefinition, const unsigned int ParamNumber,
                     const clang::ParmVarDecl* Param, bool DeclIsImplicit);
 
-  /// \brief Record the type node for this interface usage.
-  ///
-  /// This works properly for id and non-id types. If T->getInterface() returns
-  /// null T is of type id otherwise T is a "real" class.
-  ///
-  /// If this is a naked id (no protocols listed), this returns the node id
-  /// for the builtin id node. Otherwise, this calls BuildNodeIdForDecl for
-  /// each protocol and constructs a new tapp node for this TypeUnion.
-  absl::optional<GraphObserver::NodeId> RecordObjCInterfaceType(
-      GraphObserver::NodeId BaseType, bool BaseIsId,
-      const clang::ObjCObjectType* T,
-      llvm::ArrayRef<clang::SourceLocation> ProtocolLocs);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForObjCProtocols(
+      clang::ObjCObjectTypeLoc TL);
+  GraphObserver::NodeId BuildNodeIdForObjCProtocols(
+      const clang::ObjCObjectType* T);
+  GraphObserver::NodeId BuildNodeIdForObjCProtocols(
+      GraphObserver::NodeId BaseType, const clang::ObjCObjectType* T);
 
   /// \brief Draw the completes edge from a Decl to each of its redecls.
   void RecordCompletesForRedecls(const clang::Decl* Decl,

@@ -1793,7 +1793,7 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
     if (auto RCC =
             ExplicitRangeInCurrentContext(RangeForSingleTokenFromSourceLocation(
                 *Observer.getSourceManager(), *Observer.getLangOptions(),
-                TL.getTemplateNameLoc()))) {
+                NameLocation))) {
       if (auto TemplateName =
               BuildNodeIdForTemplateName(TL.getTypePtr()->getTemplateName())) {
         NodeId DeclNode = [&] {
@@ -1903,19 +1903,25 @@ bool IndexerASTVisitor::VisitPackExpansionTypeLoc(
 }
 
 bool IndexerASTVisitor::VisitObjCObjectTypeLoc(clang::ObjCObjectTypeLoc TL) {
-  BuildNodeIdForType(TL, EmitRanges::Yes);
-#if 0
+  for (unsigned i = 0; i < TL.getNumProtocols(); ++i) {
+    if (auto RCC = ExpandedRangeInCurrentContext(TL.getProtocolLoc(i))) {
+      Observer.recordDeclUseLocation(*RCC,
+                                     BuildNodeIdForDecl(TL.getProtocol(i)),
+                                     Claimability::Claimable, IsImplicit(*RCC));
+    }
+  }
+
   if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
     if (auto Nodes = BuildNodeSetForObjCObject(TL)) {
       Observer.recordTypeSpellingLocation(
           *RCC, Nodes.ForReference(), Nodes.claimability(), IsImplicit(*RCC));
     }
   }
-#endif
   return true;
 }
 
-bool IndexerASTVisitor::VisitObjCTypeParamTypeLoc(clang::ObjCTypeParamTypeLoc TL) {
+bool IndexerASTVisitor::VisitObjCTypeParamTypeLoc(
+    clang::ObjCTypeParamTypeLoc TL) {
   if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
     if (auto Nodes = BuildNodeSetForObjCTypeParam(TL)) {
       Observer.recordTypeSpellingLocation(
@@ -4434,7 +4440,26 @@ NodeSet IndexerASTVisitor::BuildNodeSetForObjCObjectPointer(
 
 NodeSet IndexerASTVisitor::BuildNodeSetForObjCObject(
     clang::ObjCObjectTypeLoc TL) {
-  // TODO(shahms): Implement this.
+  if (auto BaseId = BuildNodeIdForObjCProtocols(TL)) {
+    if (TL.getNumTypeArgs() == 0) {
+      return *std::move(BaseId);
+    }
+    std::vector<NodeId> GenericArgIds;
+    std::vector<const NodeId*> GenericArgIdPtrs;
+    GenericArgIds.reserve(TL.getNumTypeArgs());
+    GenericArgIdPtrs.resize(TL.getNumTypeArgs(), nullptr);
+    for (unsigned int i = 0; i < TL.getNumTypeArgs(); ++i) {
+      const auto* TI = TL.getTypeArgTInfo(i);
+      if (auto Arg = BuildNodeIdForType(TI->getTypeLoc(), EmitRanges::No)) {
+        GenericArgIds.push_back(*Arg);
+        GenericArgIdPtrs[i] = &GenericArgIds[i];
+      } else {
+        return NodeSet::Empty();
+      }
+    }
+    return Observer.recordTappNode(*BaseId, GenericArgIdPtrs,
+                                   GenericArgIdPtrs.size());
+  }
   return NodeSet::Empty();
 }
 
@@ -4537,7 +4562,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     const clang::TypeLoc& TypeLoc, const clang::Type* PT,
     const EmitRanges EmitRanges, SourceRange SR) {
-
   NodeSet Nodes;
   const QualType QT = TypeLoc.getType();
   TypeKey Key(Context, QT, PT);
@@ -4578,6 +4602,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     DELEGATE_TYPE(ObjCInterface);     // Leaf.
     DELEGATE_TYPE(ObjCObjectPointer);
     DELEGATE_TYPE(ObjCTypeParam);
+    DELEGATE_TYPE(ObjCObject);
     DELEGATE_TYPE(Pointer);
     DELEGATE_TYPE(LValueReference);
     DELEGATE_TYPE(RValueReference);
@@ -4633,46 +4658,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     UNSUPPORTED_CLANG_TYPE(Atomic);
     UNSUPPORTED_CLANG_TYPE(Pipe);
     UNSUPPORTED_CLANG_TYPE(DependentVector);
-    case TypeLoc::ObjCObject: {
-      const auto& ObjLoc = TypeLoc.castAs<ObjCObjectTypeLoc>();
-      const auto* DT = ObjLoc.getTypePtr();
-      absl::optional<GraphObserver::NodeId> IFaceNode;
-      absl::optional<GraphObserver::NodeId> BaseType;
-      if (const auto* IFace = DT->getInterface()) {
-        BaseType = BuildNodeIdForType(ObjLoc.getBaseLoc(), EmitRanges::No);
-      } else {
-        BaseType = Observer.getNodeIdForBuiltinType("id");
-      }
-      if (BaseType) {
-        IFaceNode = RecordObjCInterfaceType(BaseType.value(),
-                                            DT->getInterface() == nullptr, DT,
-                                            ObjLoc.getProtocolLocs());
-      } else {
-        return absl::nullopt;
-      }
-
-      if (ObjLoc.getNumTypeArgs() > 0) {
-        std::vector<GraphObserver::NodeId> GenericArgIds;
-        std::vector<const GraphObserver::NodeId*> GenericArgIdPtrs;
-        GenericArgIds.reserve(ObjLoc.getNumTypeArgs());
-        GenericArgIdPtrs.resize(ObjLoc.getNumTypeArgs(), nullptr);
-        for (unsigned int i = 0; i < ObjLoc.getNumTypeArgs(); ++i) {
-          const auto* TI = ObjLoc.getTypeArgTInfo(i);
-          if (auto Arg = BuildNodeIdForType(TI->getTypeLoc(), EmitRanges::No)) {
-            GenericArgIds.push_back((Arg.value()));
-            GenericArgIdPtrs[i] = &GenericArgIds[i];
-          } else {
-            return Arg;
-          }
-        }
-        if (!TypeAlreadyBuilt) {
-          Nodes = Observer.recordTappNode(IFaceNode.value(), GenericArgIdPtrs,
-                                          GenericArgIdPtrs.size());
-        }
-      } else if (!TypeAlreadyBuilt && IFaceNode.has_value()) {
-        Nodes = *IFaceNode;
-      }
-    }; break;
   }
 
   if (TypeAlreadyBuilt) {
@@ -4680,14 +4665,18 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   } else {
     TypeNodes[Key] = Nodes;
   }
+#if 0
   if (SR.isValid() && SR.getBegin().isFileID() &&
       InEmitRanges == IndexerASTVisitor::EmitRanges::Yes && Nodes.has_value()) {
     if (auto RCC =
             ExplicitRangeInCurrentContext(ExpandRangeIfEmptyFileID(SR))) {
+      LOG(ERROR) << "Recording Node: " << Nodes.ForReference().ToString();
+      TypeLoc.getType().dump();
       Observer.recordTypeSpellingLocation(
           *RCC, Nodes.ForReference(), Nodes.claimability(), IsImplicit(*RCC));
     }
   }
+#endif
   return Nodes.AsOptional();
 }
 
@@ -4695,50 +4684,71 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
 #undef DELEGATE_TYPE
 
 absl::optional<GraphObserver::NodeId>
-IndexerASTVisitor::RecordObjCInterfaceType(
-    GraphObserver::NodeId BaseType, bool BaseIsId, const ObjCObjectType* T,
-    ArrayRef<SourceLocation> ProtocolLocs) {
-  const auto Protocols = T->getProtocols();
-  if (Protocols.empty()) {
-    return BaseType;
+IndexerASTVisitor::BuildNodeIdForObjCProtocols(clang::ObjCObjectTypeLoc TL) {
+  if (TL.getTypePtr()->getInterface()) {
+    if (auto BaseId = BuildNodeIdForType(TL.getBaseLoc(), EmitRanges::No)) {
+      return BuildNodeIdForObjCProtocols(*BaseId, TL.getTypePtr());
+    } else {
+      return absl::nullopt;
+    }
+  } else {
+    return BuildNodeIdForObjCProtocols(TL.getTypePtr());
   }
+}
+
+// Base case.
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
+    const ObjCObjectType* T) {
   // Use a multimap since it is sorted by key and we want our nodes sorted by
   // their (uncompressed) name. We want the items sorted by the original class
   // name because the user should be able to write down a union type
   // for the verifier and they can only do that if they know the order in
   // which the types will be passed as parameters.
   std::multimap<std::string, GraphObserver::NodeId> ProtocolNodes;
-  unsigned i = 0;
-  for (ObjCProtocolDecl* P : Protocols) {
-    auto SL = ProtocolLocs[i++];
-    auto PID = BuildNodeIdForDecl(P);
-    auto SR = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(), SL);
-    if (auto ERCC = ExplicitRangeInCurrentContext(SR)) {
-      Observer.recordDeclUseLocation(ERCC.value(), PID,
-                                     GraphObserver::Claimability::Claimable,
-                                     IsImplicit(ERCC.value()));
-    }
-    ProtocolNodes.insert({P->getNameAsString(), PID});
+  for (ObjCProtocolDecl* P : T->getProtocols()) {
+    ProtocolNodes.insert({P->getNameAsString(), BuildNodeIdForDecl(P)});
   }
   if (ProtocolNodes.empty()) {
-    return BaseType;
-  } else if (BaseIsId && ProtocolNodes.size() == 1) {
+    return Observer.getNodeIdForBuiltinType("id");
+  } else if (ProtocolNodes.size() == 1) {
     // We have something like id<P1>. This is a special case of the following
     // code that handles id<P1, P2> because *this* case can skip the
     // intermediate union tapp.
-    return (ProtocolNodes.begin()->second);
+    return ProtocolNodes.begin()->second;
+  }
+  // We have something like id<P1, P2>  union of types P1 and P2.
+  std::vector<const GraphObserver::NodeId*> ProtocolNodePointers;
+  ProtocolNodePointers.reserve(ProtocolNodes.size());
+  for (const auto& PN : ProtocolNodes) {
+    ProtocolNodePointers.push_back(&PN.second);
+  }
+  // Create/find the Union node.
+  auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
+  return Observer.recordTappNode(UnionTApp, ProtocolNodePointers,
+                                 ProtocolNodePointers.size());
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
+    GraphObserver::NodeId BaseType, const ObjCObjectType* T) {
+  // Use a multimap since it is sorted by key and we want our nodes sorted by
+  // their (uncompressed) name. We want the items sorted by the original class
+  // name because the user should be able to write down a union type
+  // for the verifier and they can only do that if they know the order in
+  // which the types will be passed as parameters.
+  std::multimap<std::string, GraphObserver::NodeId> ProtocolNodes;
+  for (ObjCProtocolDecl* P : T->getProtocols()) {
+    ProtocolNodes.insert({P->getNameAsString(), BuildNodeIdForDecl(P)});
+  }
+  if (ProtocolNodes.empty()) {
+    return BaseType;
   }
   // We have something like id<P1, P2> or P1<P2>, which means this is a union
   // of types P1 and P2.
-
   std::vector<const GraphObserver::NodeId*> ProtocolNodePointers;
-  ProtocolNodePointers.reserve(ProtocolNodes.size() + (BaseIsId ? 0 : 1));
-  if (!BaseIsId) {
-    ProtocolNodePointers.push_back(&BaseType);
-  }
+  ProtocolNodePointers.reserve(ProtocolNodes.size() + 1);
+  ProtocolNodePointers.push_back(&BaseType);
   for (const auto& PN : ProtocolNodes) {
-    ProtocolNodePointers.push_back(&(PN.second));
+    ProtocolNodePointers.push_back(&PN.second);
   }
   // Create/find the Union node.
   auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
