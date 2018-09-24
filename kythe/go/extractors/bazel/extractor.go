@@ -168,8 +168,6 @@ func (c *Config) ExtractToFile(ctx context.Context, info *ActionInfo, w *kzip.Wr
 	})
 	if err != nil {
 		return "", err
-	} else if err := c.fixup(cu); err != nil {
-		return "", err
 	}
 	return w.AddUnit(cu, nil)
 }
