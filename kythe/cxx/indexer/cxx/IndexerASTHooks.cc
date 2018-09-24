@@ -1915,7 +1915,7 @@ bool IndexerASTVisitor::VisitObjCObjectTypeLoc(clang::ObjCObjectTypeLoc TL) {
   return true;
 }
 
-bool IndexerASTVisitor::VisitObjCTypeParam(clang::ObjCTypeParamTypeLoc TL) {
+bool IndexerASTVisitor::VisitObjCTypeParamTypeLoc(clang::ObjCTypeParamTypeLoc TL) {
   if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
     if (auto Nodes = BuildNodeSetForObjCTypeParam(TL)) {
       Observer.recordTypeSpellingLocation(
@@ -4658,7 +4658,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         GenericArgIdPtrs.resize(ObjLoc.getNumTypeArgs(), nullptr);
         for (unsigned int i = 0; i < ObjLoc.getNumTypeArgs(); ++i) {
           const auto* TI = ObjLoc.getTypeArgTInfo(i);
-          if (auto Arg = BuildNodeIdForType(TI->getTypeLoc(), EmitRanges)) {
+          if (auto Arg = BuildNodeIdForType(TI->getTypeLoc(), EmitRanges::No)) {
             GenericArgIds.push_back((Arg.value()));
             GenericArgIdPtrs[i] = &GenericArgIds[i];
           } else {

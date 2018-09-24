@@ -147,7 +147,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL);
   bool VisitEnumTypeLoc(clang::EnumTypeLoc TL);
   bool VisitRecordTypeLoc(clang::RecordTypeLoc TL);
-  bool VisitObjCInterfaceTypeLoc(clang::ObjCInterfaceTypeLoc TL);
   bool VisitTemplateTypeParmTypeLoc(clang::TemplateTypeParmTypeLoc TL);
   bool VisitSubstTemplateTypeParmTypeLoc(
       clang::SubstTemplateTypeParmTypeLoc TL);
@@ -161,8 +160,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitInjectedClassNameTypeLoc(clang::InjectedClassNameTypeLoc TL);
   bool VisitDependentNameTypeLoc(clang::DependentNameTypeLoc TL);
   bool VisitPackExpansionTypeLoc(clang::PackExpansionTypeLoc TL);
+  bool VisitObjCInterfaceTypeLoc(clang::ObjCInterfaceTypeLoc TL);
   bool VisitObjCObjectTypeLoc(clang::ObjCObjectTypeLoc TL);
-  bool VisitObjCTypeParam(clang::ObjCTypeParamTypeLoc TL);
+  bool VisitObjCTypeParamTypeLoc(clang::ObjCTypeParamTypeLoc TL);
 
   bool TraverseAttributedTypeLoc(clang::AttributedTypeLoc TL);
   bool TraverseDependentAddressSpaceTypeLoc(
@@ -275,7 +275,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForEnum(clang::EnumTypeLoc TL);
   NodeSet BuildNodeSetForRecord(clang::RecordTypeLoc TL);
   NodeSet BuildNodeSetForInjectedClassName(clang::InjectedClassNameTypeLoc TL);
-  NodeSet BuildNodeSetForObjCInterface(clang::ObjCInterfaceTypeLoc TL);
   NodeSet BuildNodeSetForTemplateTypeParm(clang::TemplateTypeParmTypeLoc TL);
   NodeSet BuildNodeSetForPointer(clang::PointerTypeLoc TL);
   NodeSet BuildNodeSetForLValueReference(clang::LValueReferenceTypeLoc TL);
@@ -307,6 +306,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForObjCObjectPointer(clang::ObjCObjectPointerTypeLoc TL);
   NodeSet BuildNodeSetForObjCObject(clang::ObjCObjectTypeLoc TL);
   NodeSet BuildNodeSetForObjCTypeParam(clang::ObjCTypeParamTypeLoc TL);
+  NodeSet BuildNodeSetForObjCInterface(clang::ObjCInterfaceTypeLoc TL);
   NodeSet BuildNodeSetForAttributed(clang::AttributedTypeLoc TL);
   NodeSet BuildNodeSetForDependentAddressSpace(clang::DependentAddressSpaceTypeLoc TL);
 
