@@ -86,8 +86,6 @@ allBuilders = [
     "bazel-0.16.0",
     "bazel-0.17.1",
     "bazel-release",
-    "bazel-opt",
-    "bazel-rbe",
     "go-1.11-gopath",
     "go-1.11-module"
 ]
@@ -116,7 +114,9 @@ bazelKytheSteps.addStep(steps.ShellCommand(
     env=bazelBinEnv,
     haltOnFailure=True))
 bazelKytheSteps.addStep(steps.ShellCommand(
-    command=["bazel", "test", util.Property('bazel_flags', default=[]), "-k", util.Property('bazel_target', default='//...')],
+    command=["bazel", "test", "-k",
+             util.Property('bazel_flags', default=[]), 
+             util.Property('bazel_targets', default=['//...'])],
     env=bazelBinEnv))
 
 goKytheSteps = util.BuildFactory()
@@ -138,13 +138,6 @@ goModuleKytheSteps.addStep(steps.ShellCommand(command=["go", "test", "./kythe/..
 goModuleKytheSteps.addStep(steps.ShellCommand(command="! { git diff --color=always -- go.{mod,sum} | grep .; }",
                                               warnOnFailure=True))
 
-bazelRBESteps = util.BuildFactory()
-bazelRBESteps.addStep(steps.GitHub(
-    repourl=util.Property('repository', 'git://github.com/google/kythe.git'),
-    mode='incremental'))
-bazelRBESteps.addStep(steps.ShellCommand(command=["cache-llvm.sh", "--update"], haltOnFailure=True))
-bazelRBESteps.addStep(steps.ShellCommand(command=["./tools/remote_test.sh", "-k"]))
-
 build_lock = util.WorkerLock("worker_builds", maxCountForWorker={'local-worker': 1})
 
 c['builders'] = []
@@ -159,21 +152,21 @@ c['builders'].append(
     util.BuilderConfig(
         name="bazel-0.17.1",
         workernames=["local-worker"],
-        properties={'bazel_version': '0.17.1'},
-        locks=[build_lock.access('exclusive')],
-        factory=bazelKytheSteps))
-c['builders'].append(
-    util.BuilderConfig(
-        name="bazel-opt",
-        workernames=["local-worker"],
-        properties={'bazel_version': '0.17.1', 'bazel_flags': ['-c', 'opt']},
+        properties={'bazel_version': '0.17.1', 
+                    'bazel_flags': ['--config=remote']},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(
     util.BuilderConfig(
         name="bazel-release",
         workernames=["local-worker"],
-        properties={'bazel_version': '0.17.1', 'bazel_flags': ['-c', 'opt', '--stamp'], 'bazel_target': '//kythe/release:release_test'},
+        properties={'bazel_version': '0.17.1', 
+                    'bazel_flags': ['--config=remote', '-c', 'opt', '--stamp'], 
+                    'bazel_targets': [
+                        '//...',
+                        '//kythe/docs/schema',
+                        '//kythe/release:release_test'
+                    ]},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(
@@ -188,12 +181,6 @@ c['builders'].append(
       workernames=["local-worker"],
       locks=[build_lock.access('counting')],
       factory=goModuleKytheSteps))
-c['builders'].append(
-    util.BuilderConfig(
-        name="bazel-rbe",
-        workernames=["local-worker"],
-        locks=[build_lock.access('exclusive')],
-        factory=bazelRBESteps))
 
 ####### BUILDBOT SERVICES
 
