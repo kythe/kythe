@@ -53,7 +53,8 @@ func New(orig string) (*File, error) {
 	}
 	defer f.Close()
 
-	dir, base := filepath.Split(orig)
+	dir := filepath.Dir(orig)
+	base := filepath.Base(orig)
 	tf, err := ioutil.TempFile(dir, base+".bkup")
 	if err != nil {
 		return nil, err
