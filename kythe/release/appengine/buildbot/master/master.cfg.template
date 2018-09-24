@@ -86,7 +86,6 @@ allBuilders = [
     "bazel-0.16.0",
     "bazel-0.17.1",
     "bazel-release",
-    "bazel-opt",
     "go-1.11-gopath",
     "go-1.11-module"
 ]
@@ -117,7 +116,7 @@ bazelKytheSteps.addStep(steps.ShellCommand(
 bazelKytheSteps.addStep(steps.ShellCommand(
     command=["bazel", "test", "-k",
              util.Property('bazel_flags', default=[]), 
-             util.Property('bazel_target', default='//...')],
+             util.Property('bazel_targets', default=['//...'])],
     env=bazelBinEnv))
 
 goKytheSteps = util.BuildFactory()
@@ -154,15 +153,7 @@ c['builders'].append(
         name="bazel-0.17.1",
         workernames=["local-worker"],
         properties={'bazel_version': '0.17.1', 
-                    'bazel_flags': ['--config=remote', '-c', 'opt']},
-        locks=[build_lock.access('exclusive')],
-        factory=bazelKytheSteps))
-c['builders'].append(
-    util.BuilderConfig(
-        name="bazel-opt",
-        workernames=["local-worker"],
-        properties={'bazel_version': '0.17.1',
-                    'bazel_flags': ['--config=remote', '-c', 'opt']},
+                    'bazel_flags': ['--config=remote']},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(
@@ -171,7 +162,11 @@ c['builders'].append(
         workernames=["local-worker"],
         properties={'bazel_version': '0.17.1', 
                     'bazel_flags': ['--config=remote', '-c', 'opt', '--stamp'], 
-                    'bazel_target': '//kythe/release:release_test'},
+                    'bazel_targets': [
+                        '//...',
+                        '//kythe/docs/schema',
+                        '//kythe/release:release_test'
+                    ]},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(
