@@ -4635,12 +4635,11 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     UNSUPPORTED_CLANG_TYPE(DependentVector);
     case TypeLoc::ObjCObject: {
       const auto& ObjLoc = TypeLoc.castAs<ObjCObjectTypeLoc>();
-      const auto* DT = dyn_cast<ObjCObjectType>(PT);
+      const auto* DT = ObjLoc.getTypePtr();
       absl::optional<GraphObserver::NodeId> IFaceNode;
       absl::optional<GraphObserver::NodeId> BaseType;
       if (const auto* IFace = DT->getInterface()) {
-        BaseType = BuildNodeIdForType(ObjLoc.getBaseLoc(),
-                                      IFace->getTypeForDecl(), EmitRanges);
+        BaseType = BuildNodeIdForType(ObjLoc.getBaseLoc(), EmitRanges::No);
       } else {
         BaseType = Observer.getNodeIdForBuiltinType("id");
       }
@@ -4720,8 +4719,7 @@ IndexerASTVisitor::RecordObjCInterfaceType(
                                      GraphObserver::Claimability::Claimable,
                                      IsImplicit(ERCC.value()));
     }
-    ProtocolNodes.insert(std::pair<std::string, GraphObserver::NodeId>(
-        P->getNameAsString(), PID));
+    ProtocolNodes.insert({P->getNameAsString(), PID});
   }
   if (ProtocolNodes.empty()) {
     return BaseType;
