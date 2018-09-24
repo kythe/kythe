@@ -23,3 +23,4 @@ ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac-wrappe
 ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac_extractor_deploy.jar /opt/kythe/extractors/javac_extractor.jar
 ADD kythe/java/com/google/devtools/kythe/extractors/java/maven/mvn-extract.sh /opt/kythe/extractors/mvn-extract.sh
 ADD kythe/java/com/google/devtools/kythe/platform/tools/mvn_pom_preprocessor_deploy.jar /opt/kythe/extractors/mvn_pom_preprocessor.jar
+ADD kythe/go/extractors/config/runextractor/linux_amd64_stripped/runextractor /opt/kythe/extractors/runextractor
