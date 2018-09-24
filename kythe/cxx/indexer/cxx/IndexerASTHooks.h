@@ -307,6 +307,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForObjCObjectPointer(clang::ObjCObjectPointerTypeLoc TL);
   NodeSet BuildNodeSetForObjCObject(clang::ObjCObjectTypeLoc TL);
   NodeSet BuildNodeSetForObjCTypeParam(clang::ObjCTypeParamTypeLoc TL);
+  NodeSet BuildNodeSetForAttributed(clang::AttributedTypeLoc TL);
+  NodeSet BuildNodeSetForDependentAddressSpace(clang::DependentAddressSpaceTypeLoc TL);
 
   // Helper used for Auto and DeducedTemplateSpecialization.
   NodeSet BuildNodeSetForDeduced(clang::DeducedTypeLoc TL);

@@ -1927,14 +1927,28 @@ bool IndexerASTVisitor::VisitObjCTypeParam(clang::ObjCTypeParamTypeLoc TL) {
 
 bool IndexerASTVisitor::TraverseAttributedTypeLoc(clang::AttributedTypeLoc TL) {
   // TODO(shahms): Emit a reference to the underlying TL covering the entire
-  // range of attributed TL.
+  // range of attributed TL.  This was the desired behavior previously, but not
+  // implemented as such.
+  //
+  // If we have an attributed type, treat it as the raw type, but provide the
+  // source range of the attributed type. This allows us to connect a _Nonnull
+  // type back to the underlying type's definition. For example:
+  // `@property Data * _Nullable var;` should connect back to the type Data *,
+  // not Data * _Nullable;
   return Base::TraverseAttributedTypeLoc(TL);
 }
 
 bool IndexerASTVisitor::TraverseDependentAddressSpaceTypeLoc(
     clang::DependentAddressSpaceTypeLoc TL) {
   // TODO(shahms): Emit a reference to the underlying TL covering the entire
-  // range of attributed TL.
+  // range of attributed TL.  This was the desired behavior previously, but not
+  // implemented as such.
+  //
+  // If we have an attributed type, treat it as the raw type, but provide the
+  // source range of the attributed type. This allows us to connect a _Nonnull
+  // type back to the underlying type's definition. For example:
+  // `@property Data * _Nullable var;` should connect back to the type Data *,
+  // not Data * _Nullable;
   return Base::TraverseDependentAddressSpaceTypeLoc(TL);
 }
 
@@ -4432,6 +4446,16 @@ NodeSet IndexerASTVisitor::BuildNodeSetForObjCTypeParam(
   return NodeSet::Empty();
 }
 
+NodeSet IndexerASTVisitor::BuildNodeSetForAttributed(
+    clang::AttributedTypeLoc TL) {
+  return BuildNodeSetForType(TL.getModifiedLoc());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentAddressSpace(
+    clang::DependentAddressSpaceTypeLoc TL) {
+  return BuildNodeSetForType(TL.getPointeeTypeLoc());
+}
+
 GraphObserver::NodeId IndexerASTVisitor::BuildNominalNodeIdForDecl(
     const clang::NamedDecl* Decl) {
   auto NominalID = Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
@@ -4513,29 +4537,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     const clang::TypeLoc& TypeLoc, const clang::Type* PT,
     const EmitRanges EmitRanges, SourceRange SR) {
-  // If we have an attributed type, treat it as the raw type, but provide the
-  // source range of the attributed type. This allows us to connect a _Nonnull
-  // type back to the underlying type's definition. For example:
-  // `@property Data * _Nullable var;` should connect back to the type Data *,
-  // not Data * _Nullable;
-  if (TypeLoc.getTypeLocClass() == TypeLoc::Attributed ||
-      TypeLoc.getTypeLocClass() == TypeLoc::DependentAddressSpace) {
-    // Sometimes the TypeLoc is Attributed, but the type is actually
-    // TypedefType.
-    if (const auto* AT = dyn_cast<AttributedType>(PT)) {
-      const auto& ATL = TypeLoc.castAs<AttributedTypeLoc>();
-      return BuildNodeIdForType(ATL.getModifiedLoc(),
-                                AT->getModifiedType().getTypePtr(), EmitRanges,
-                                SR);
-    }
 
-    if (const auto* DT = dyn_cast<DependentAddressSpaceType>(PT)) {
-      const auto& DTL = TypeLoc.castAs<DependentAddressSpaceTypeLoc>();
-      return BuildNodeIdForType(DTL.getPointeeTypeLoc(),
-                                DT->getPointeeType().getTypePtr(), EmitRanges,
-                                SR);
-    }
-  }
   NodeSet Nodes;
   const QualType QT = TypeLoc.getType();
   TypeKey Key(Context, QT, PT);
@@ -4601,6 +4603,8 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     DELEGATE_TYPE(PackExpansion);
     DELEGATE_TYPE(BlockPointer);
     DELEGATE_TYPE(TemplateSpecialization);
+    DELEGATE_TYPE(Attributed);
+    DELEGATE_TYPE(DependentAddressSpace);
     UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
     UNSUPPORTED_CLANG_TYPE(Complex);
     UNSUPPORTED_CLANG_TYPE(MemberPointer);
@@ -4628,10 +4632,6 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     UNSUPPORTED_CLANG_TYPE(SubstTemplateTypeParmPack);
     UNSUPPORTED_CLANG_TYPE(Atomic);
     UNSUPPORTED_CLANG_TYPE(Pipe);
-    // Attributed is handled in a special way at the top of this function so
-    // it is impossible for the typeloc to be TypeLoc::Attributed.
-    UNSUPPORTED_CLANG_TYPE(Attributed);
-    UNSUPPORTED_CLANG_TYPE(DependentAddressSpace);
     UNSUPPORTED_CLANG_TYPE(DependentVector);
     case TypeLoc::ObjCObject: {
       const auto& ObjLoc = TypeLoc.castAs<ObjCObjectTypeLoc>();
