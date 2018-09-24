@@ -28,16 +28,20 @@ def _asciidoc_impl(ctx):
     # awry (otherwise Bazel will clean it up).
     logfile = ctx.actions.declare_file(ctx.attr.name + ".logfile")
 
+    # Resolve data targets to get input files and runfiles manifests.
+    data, _, manifests = ctx.resolve_command(tools = ctx.attr.data)
+
     # Run asciidoc and capture stderr to logfile. If it succeeds, look in the
     # captured log for error messages and fail if we find any.
     ctx.actions.run_shell(
         inputs = ([ctx.file.src] +
                   ctx.files.confs +
                   ([ctx.file.example_script] if ctx.file.example_script else []) +
-                  ctx.files.data),
+                  data),
+        input_manifests = manifests,
         outputs = [ctx.outputs.out, logfile],
         command = "\n".join([
-             # so we can locate the binaries asciidoc needs
+            # so we can locate the binaries asciidoc needs
             'export PATH="$PATH:' + tool_path + '"',
 
             # Create the temporary staging directory.
