@@ -66,7 +66,7 @@ type Repo struct {
 	// their corresponding volumes.
 	// When not running inside a docker cotnainer, these can be left unset,
 	// in which case an ephemeral temp directory is used for TempRepoDir, and
-	// output is written directly into OutputPath from mvn-extract.sh.
+	// output is written directly into OutputPath from runextractor.go.
 
 	// An optional temporary repo path to copy the input repo to.
 	TempRepoDir string
