@@ -123,26 +123,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitCXXDependentScopeMemberExpr(
       const clang::CXXDependentScopeMemberExpr* Expr);
 
-  // Work-in-Progress design for TypeLoc decorations:
-  //  1) Opt-in decoration from Visit<T>TypeLoc(<T>TypeLoc)
-  //    a) Helper function VisitGenericTypeLoc(<T>)
-  //    b) Calls BuildNodeSetForTypeLoc(<T>)
-  //       (via overloads? or dynamic dispatch?)
-  //  2) "Special" logic (Attirbuted, etc.) handled via Traverse<T>TypeLoc
-  //    (or WalkUpFrom<T> ?)
-  //  3) BuildNodeIdForType(QualType) only overload (maybe Type*?)
-  //  4) BuildNodeSetForType(QualType)
-  //  5) Eventually, use custom RecursiveASTVisitor subclass for NodeId
-  //     building.
-  //
-  //  Getting there:
-  //    1) Visit*TypeLoc for currently decorated types in BuildNodeIdForType
-  //      a) Traverse{Attributed,DependentAddressSpace}TypeLock working
-  //      b) Remove EmitEdges from BuildNodeIdForType
-  //    2) Dispatch to BuildNodeSetFor<TypeLoc>() in BuildNodeIdForType
-  //    3) Switch BuildNodeIdForType to wrapping BuildNodeSetForType
-  //    4) Re-divide decorated vs non-decorated types into NodeSet vs NodeId?
-  //    5) Change Id/Set building to take QualType/Type*
   // Visitors for leaf TypeLoc types.
   bool VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL);
   bool VisitEnumTypeLoc(clang::EnumTypeLoc TL);
@@ -167,6 +147,11 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool TraverseAttributedTypeLoc(clang::AttributedTypeLoc TL);
   bool TraverseDependentAddressSpaceTypeLoc(
       clang::DependentAddressSpaceTypeLoc TL);
+
+  // Emit edges for an anchor pointing to the indicated type.
+  bool EmitTypeLocNodes(clang::TypeLoc TL);
+
+  bool TraverseDeclarationNameInfo(clang::DeclarationNameInfo NameInfo);
 
   // Visit the subtypes of TypedefNameDecl individually because we want to do
   // something different with ObjCTypeParamDecl.
@@ -265,12 +250,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateExpansion(
       clang::TemplateName Name);
 
-  // TODO(shahms): Document these and make const as appropriate.
-  //   ... but it may not be due to caching (which should be figured out).
-  //   ... similarly, Observer.record...() should probably be used in some
-  //   places which we've converted to no longer do that.
-  NodeSet BuildNodeSetForType(clang::TypeLoc TL);
-  NodeSet BuildNodeSetForType(clang::QualType QT);
+  /// \brief Builds a stable NodeSet for the given TypeLoc.
+  /// \param TL The TypeLoc for which to build a NodeSet..
+  /// \returns NodeSet instance indicating claimability of the contained
+  /// NodeIds.
+  NodeSet BuildNodeSetForType(const clang::TypeLoc& TL);
+  NodeSet BuildNodeSetForType(const clang::QualType& QT);
+
   NodeSet BuildNodeSetForBuiltin(clang::BuiltinTypeLoc TL) const;
   NodeSet BuildNodeSetForEnum(clang::EnumTypeLoc TL);
   NodeSet BuildNodeSetForRecord(clang::RecordTypeLoc TL);
@@ -325,59 +311,24 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   const clang::TemplateTypeParmDecl* FindTemplateTypeParmTypeLocDecl(
       clang::TemplateTypeParmTypeLoc TL) const;
 
-  /// \brief Builds a stable node ID for `Type`.
-  /// \param TypeLoc The type that is being identified. If its location is valid
-  /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
-  /// the location of constituent elements.
-  /// \param DType The deduced form of `Type`. (May be `Type.getTypePtr()`).
-  /// \param ER whether to notify the `GraphObserver` about source text ranges
-  /// for types.
-  /// \return The Node ID for `Type`.
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::TypeLoc& TypeLoc, const clang::Type* DType, EmitRanges ER);
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForObjCProtocols(
+      clang::ObjCObjectTypeLoc TL);
+  GraphObserver::NodeId BuildNodeIdForObjCProtocols(
+      const clang::ObjCObjectType* T);
+  GraphObserver::NodeId BuildNodeIdForObjCProtocols(
+      GraphObserver::NodeId BaseType, const clang::ObjCObjectType* T);
 
   /// \brief Builds a stable node ID for `Type`.
-  /// \param TypeLoc The type that is being identified. If its location is valid
-  /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
-  /// the location of constituent elements.
-  /// \param DType The deduced form of `Type`. (May be `Type.getTypePtr()`).
-  /// \param ER whether to notify the `GraphObserver` about source text ranges
-  /// for types.
-  /// \param SR source range to use for the type location. This will be used
-  /// instead of the range in TypeLoc.
+  /// \param TypeLoc The type that is being identified.
   /// \return The Node ID for `Type`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::TypeLoc& TypeLoc, const clang::Type* DType, EmitRanges ER,
-      clang::SourceRange SR);
-
-  /// \brief Builds a stable node ID for `Type`.
-  /// \param Type The type that is being identified. If its location is valid
-  /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
-  /// the location of constituent elements.
-  /// \param QT The deduced form of `Type`. (May be `Type.getType()`).
-  /// \param ER whether to notify the `GraphObserver` about source text ranges
-  /// for types.
-  /// \return The Node ID for `Type`.
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::TypeLoc& Type, const clang::QualType& QT, EmitRanges ER);
-
-  /// \brief Builds a stable node ID for `Type`.
-  /// \param Type The type that is being identified. If its location is valid
-  /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
-  /// the location of constituent elements.
-  /// \param ER whether to notify the `GraphObserver` about source text ranges
-  /// for types.
-  /// \return The Node ID for `Type`.
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::TypeLoc& Type, EmitRanges ER);
+      const clang::TypeLoc& TypeLoc);
 
   /// \brief Builds a stable node ID for `QT`.
   /// \param QT The type that is being identified.
   /// \return The Node ID for `QT`.
   ///
   /// This function will invent a `TypeLoc` with an invalid location.
-  /// If you can provide a `TypeLoc` for the type, it is better to use
-  /// `BuildNodeIdForType(const clang::TypeLoc, EmitRanges)`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
       const clang::QualType& QT);
 
@@ -881,13 +832,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
                     const GraphObserver::NodeId& FuncNode,
                     bool IsFunctionDefinition, const unsigned int ParamNumber,
                     const clang::ParmVarDecl* Param, bool DeclIsImplicit);
-
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForObjCProtocols(
-      clang::ObjCObjectTypeLoc TL);
-  GraphObserver::NodeId BuildNodeIdForObjCProtocols(
-      const clang::ObjCObjectType* T);
-  GraphObserver::NodeId BuildNodeIdForObjCProtocols(
-      GraphObserver::NodeId BaseType, const clang::ObjCObjectType* T);
 
   /// \brief Draw the completes edge from a Decl to each of its redecls.
   void RecordCompletesForRedecls(const clang::Decl* Decl,

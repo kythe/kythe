@@ -44,7 +44,7 @@ CxxCompilationUnits = provider(
 
 _VERIFIER_FLAGS = {
     "convert_marked_source": False,
-    "ignore_dups": True,
+    "ignore_dups": False,
     "check_for_singletons": False,
     "goal_prefix": "//-",
 }
