@@ -52,19 +52,20 @@ const defaultConfig = `{
       "name": "javac-extractor-artifacts",
       "copy_spec": [
         {
+          "source": "/opt/kythe/extractors/runextractor"
+        },
+        {
           "source": "/opt/kythe/extractors/javac-wrapper.sh"
         },
         {
           "source": "/opt/kythe/extractors/javac_extractor.jar"
-        },
-        {
-          "source": "/opt/kythe/extractors/mvn-extract.sh"
-        },
-        {
-          "source": "/opt/kythe/extractors/mvn_pom_preprocessor.jar"
-        }      
+        }
       ],
       "env_var": [
+        {
+          "name": "KYTHE_CORPUS",
+          "value": "testcorpus"
+        },
         {
           "name": "REAL_JAVAC",
           "value": "$JAVA_HOME/bin/javac"
@@ -72,14 +73,6 @@ const defaultConfig = `{
         {
           "name": "JAVAC_EXTRACTOR_JAR",
           "value": "/opt/kythe/extractors/javac_extractor.jar"
-        },
-        {
-          "name": "JAVAC_WRAPPER",
-          "value": "/opt/kythe/extractors/javac-wrapper.sh"
-        },
-        {
-          "name": "MVN_POM_PREPROCESSOR",
-          "value": "/opt/kythe/extractors/mvn_pom_preprocessor.jar"
         }
       ]
     },
@@ -106,7 +99,7 @@ const defaultConfig = `{
       ]
     }
   ],
-  "entry_point": ["/opt/kythe/extractors/mvn-extract.sh"]
+  "entry_point": ["/opt/kythe/extractors/runextractor", "maven", "-pom_xml", "pom.xml", "-javac_wrapper", "/opt/kythe/extractors/javac-wrapper.sh"]
 }`
 
 // DefaultConfig returns a reader for a valid
