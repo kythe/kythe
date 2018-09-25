@@ -27,10 +27,10 @@ import (
 	"kythe.io/kythe/go/extractors/config/base/mvn"
 )
 
-// GetDefaultConfig tries to find a valid base builder that works for a given
-// repo and returns a json-encoded kythe.proto.ExtractionConfiguration that will
-// work for simple repos using thatbuilder.
-func GetDefaultConfig(repoDir string) (string, bool) {
+// DefaultConfig tries to find a valid base builder that works for a given repo
+// and returns a json-encoded kythe.proto.ExtractionConfiguration that will work
+// for simple repos using thatbuilder.
+func DefaultConfig(repoDir string) (string, bool) {
 	// TODO(#3060): There might be more than one match, in which case we need to
 	// know what to do to combine separate extractors' output.
 	for _, b := range supportedBuilders() {

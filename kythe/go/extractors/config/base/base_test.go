@@ -26,7 +26,7 @@ import (
 	"kythe.io/kythe/go/test/testutil"
 )
 
-func TestGetDefaultConfig(t *testing.T) {
+func TestDefaultConfig(t *testing.T) {
 	expectedConfig := map[string]string{
 		"maven":  "testdata/mvn_config.json",
 		"gradle": "testdata/gradle_config.json",
@@ -36,7 +36,7 @@ func TestGetDefaultConfig(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			td := makeTestDir(tc.BuildFile, t)
 			defer os.RemoveAll(td)
-			r, ok := GetDefaultConfig(td)
+			r, ok := DefaultConfig(td)
 			if !ok {
 				t.Fatalf("Did not recognize %s file as a %s repo.", tc.BuildFile, tc.Name)
 			}
