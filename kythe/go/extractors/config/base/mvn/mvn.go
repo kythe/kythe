@@ -18,12 +18,7 @@
 // using Maven.
 package mvn
 
-import (
-	"io"
-	"strings"
-)
-
-const defaultConfig = `{
+const DefaultConfig = `{
   "required_image": [
     {
       "uri": "openjdk:8",
@@ -101,22 +96,3 @@ const defaultConfig = `{
   ],
   "entry_point": ["/opt/kythe/extractors/runextractor", "maven", "-pom_xml", "pom.xml", "-javac_wrapper", "/opt/kythe/extractors/javac-wrapper.sh"]
 }`
-
-// Mvn implements the builderType interface for a Maven repo.
-type Mvn struct{}
-
-// Name is a descriptor for maven itself.
-func (m Mvn) Name() string {
-	return "maven"
-}
-
-// BuildFile is the default name of a maven build config file, pom.xml.
-func (m Mvn) BuildFile() string {
-	return "pom.xml"
-}
-
-// DefaultConfig returns a reader for a valid
-// kythe.proto.ExtractionConfiguration object that works for many repos.
-func (m Mvn) DefaultConfig() io.Reader {
-	return strings.NewReader(defaultConfig)
-}

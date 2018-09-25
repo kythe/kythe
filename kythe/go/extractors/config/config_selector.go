@@ -22,12 +22,11 @@ package config
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"kythe.io/kythe/go/extractors/config/default/gradle"
-	"kythe.io/kythe/go/extractors/config/default/mvn"
+	"kythe.io/kythe/go/extractors/config/base"
 
 	"github.com/golang/protobuf/jsonpb"
 
@@ -44,15 +43,8 @@ func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, erro
 
 	f, err := os.Open(configPath)
 	if os.IsNotExist(err) {
-		// TODO(#3060): Depending on how we want to handle multiple types of
-		// builders in a single repo, this may be a bad approach.
-		// Specifically, we just greedily pick the first one we find and
-		// ignore others.
-		for _, b := range supportedBuilders() {
-			r, ok := testBuilder(b, repoDir)
-			if ok {
-				return load(r)
-			}
+		if defaultConfig, ok := base.GetDefaultConfig(repoDir); ok {
+			return load(strings.NewReader(defaultConfig))
 		}
 		return nil, fmt.Errorf("failed to find a supported builder for repo %s", repoDir)
 	} else if err != nil {
@@ -61,49 +53,6 @@ func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, erro
 
 	defer f.Close()
 	return load(f)
-}
-
-func supportedBuilders() []builderType {
-	return []builderType{&mvn.Mvn{}, &gradle.Gradle{}}
-}
-
-// builderType gives info about a given builder.
-type builderType interface {
-	// Name is just a human-readable string describing the builder.
-	Name() string
-	// BuildFile should be the default build config file for the builder, like
-	// 'BUILD' in bazel, 'pom.xml' in maven.
-	BuildFile() string
-	// DefaultConfig returns a reader that yields a valid
-	// kythe.proto.ExtractionConfiguration which is fine-tuned to work for a
-	// simple repo of the given BuilderType.
-	DefaultConfig() io.Reader
-}
-
-// Note right now most of the matching logic lives out here in config_selector,
-// under the assumption that figuring out what type of builder a given repo uses
-// won't be that different based on the type of *builder*.  Instead, we assume
-// that most of the logic will be based on the repo contents.  If that ends up
-// being a faulty assumption, then BuildFile() above should probably changed to
-// something like Matches(repoDir string), so that each individual builder type
-
-func testBuilder(builder builderType, repoDir string) (io.Reader, bool) {
-	// TODO(danielmoy): This logic probably needs to hunt for config
-	// files that are not in the top-level directory.
-	buildPath := filepath.Join(repoDir, builder.BuildFile())
-	f, err := os.Open(buildPath)
-	if os.IsNotExist(err) {
-		return nil, false
-	} else if err != nil {
-		log.Printf("Failed to open build file %s", buildPath)
-		return nil, false
-	}
-	// TODO(danielmoy): In the event that we need to inspect the build file
-	// itself to modify the default config in some way (pull in dependencies,
-	// etc), then this cannot simply be closed without looking at it.  But for
-	// now, we just always use default config.
-	defer f.Close()
-	return builder.DefaultConfig(), true
 }
 
 // load parses an extraction configuration from the specified reader.

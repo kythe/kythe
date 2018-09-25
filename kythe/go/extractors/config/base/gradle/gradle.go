@@ -18,12 +18,7 @@
 // using Gradle.
 package gradle
 
-import (
-	"io"
-	"strings"
-)
-
-const defaultConfig = `{
+const DefaultConfig = `{
   "required_image": [
     {
       "uri": "openjdk:8",
@@ -101,22 +96,3 @@ const defaultConfig = `{
   ],
   "entry_point": ["/opt/kythe/extractors/runextractor", "gradle", "-build_file", "build.gradle", "-javac_wrapper", "/opt/kythe/extractors/javac-wrapper.sh"]
 }`
-
-// Gradle implements the builderType interface for a Gradle repo.
-type Gradle struct{}
-
-// Name is a descriptor for Gradle itself.
-func (g Gradle) Name() string {
-	return "gradle"
-}
-
-// BuildFile returns the default build file for a gradle repo, gradle.build.
-func (g Gradle) BuildFile() string {
-	return "build.gradle"
-}
-
-// DefaultConfig returns a reader for a valid
-// kythe.proto.ExtractionConfiguration object that works for many repos.
-func (g Gradle) DefaultConfig() io.Reader {
-	return strings.NewReader(defaultConfig)
-}

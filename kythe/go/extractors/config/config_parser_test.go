@@ -33,7 +33,7 @@ import (
 	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
-const testDataDir = "testdata"
+const testDataDir = "base/testdata"
 
 func mustLoadDockerFile(t *testing.T, testConfigFile string) []byte {
 	t.Helper()

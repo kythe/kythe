@@ -22,57 +22,84 @@ import (
 	"path/filepath"
 	"testing"
 
-	"kythe.io/kythe/go/extractors/config/default/gradle"
-	"kythe.io/kythe/go/extractors/config/default/mvn"
 	"kythe.io/kythe/go/test/testutil"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+
+	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
-type testBuildType struct {
-	buildFile, expectedConfig string
-	builder                   builderType
+type testcase struct {
+	name          string
+	expectedError bool
+	configFile    string
+	buildFile     string
+	expectedProto *ecpb.ExtractionConfiguration
 }
 
-func TestSelectBuilder(t *testing.T) {
-	tCases := []testBuildType{
-		testBuildType{
-			buildFile:      "pom.xml",
-			expectedConfig: "testdata/mvn_config.json",
-			builder:        &mvn.Mvn{},
+func TestFindConfig(t *testing.T) {
+	tCases := []testcase{
+		testcase{
+			name:          "maven-default",
+			buildFile:     "pom.xml",
+			expectedProto: loadProto("base/testdata/mvn_config.json", t),
 		},
-		testBuildType{
-			buildFile:      "build.gradle",
-			expectedConfig: "testdata/gradle_config.json",
-			builder:        &gradle.Gradle{},
+		// Note that if we're passed a config, technically we don't need to see
+		// the config at this step in the process.  If we were being thorough,
+		// the makeTestDir would populate a inner/nested/pom.xml, but I'm being
+		// lazy.
+		testcase{
+			name:          "maven-passed",
+			configFile:    "base/testdata/mvn2_config.json",
+			expectedProto: loadProto("base/testdata/mvn2_config.json", t),
+		},
+		testcase{
+			name:          "maven-missing-pom",
+			expectedError: true,
+		},
+		testcase{
+			name:          "maven-missing-config",
+			expectedError: true,
+			configFile:    "base/testdata/sir_not_appearing_in_this_repo.json",
+		},
+		// Even if there's a build.gradle file, if the config is directly
+		// passed in, then trust the user.
+		testcase{
+			name:          "passed-overrides-default",
+			buildFile:     "gradle.build",
+			configFile:    "base/testdata/mvn2_config.json",
+			expectedProto: loadProto("base/testdata/mvn2_config.json", t),
+		},
+		testcase{
+			name:          "gradle-default",
+			buildFile:     "build.gradle",
+			expectedProto: loadProto("base/testdata/gradle_config.json", t),
 		},
 	}
 	for _, tc := range tCases {
-		t.Run(tc.builder.Name(), func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			td := makeTestDir(tc.buildFile, t)
 			defer os.RemoveAll(td)
-			r, ok := testBuilder(tc.builder, td)
-			if !ok {
-				t.Fatalf("Did not recognize %s file as a %s repo.", tc.buildFile, tc.builder.Name())
-			}
+			p, err := findConfig(tc.configFile, td)
+			if err != nil && !tc.expectedError {
+				t.Fatalf("Unexpected error finding config %v", err)
+			} else if err == nil && tc.expectedError {
+				t.Fatalf("Expected error finding config %s, but didn't get one!", tc.name)
+			} else if !tc.expectedError {
+				if tc.expectedProto == nil {
+					t.Fatalf("Test specification failure - should have an expected proto for case %s", tc.name)
+				}
 
-			// Let's also make sure that foo_config.json stays in sync with foo.go,
-			// because I've already forgotten to do that twice now.
-			fn := testutil.TestFilePath(t, tc.expectedConfig)
-			expected, err := ioutil.ReadFile(fn)
-			if err != nil {
-				t.Fatalf("Failed to open config file: %s", fn)
-			}
-			actual, err := ioutil.ReadAll(r)
-			if err != nil {
-				t.Fatalf("Failed to read default config")
-			}
-			if eq, diff := testutil.TrimmedEqual(expected, actual); !eq {
-				t.Fatalf("Images were not equal, diff:\n%s", diff)
+				if !proto.Equal(tc.expectedProto, p) {
+					t.Fatalf("Expected and actual protos differ:\n%s\n\n%s", tc.expectedProto, p)
+				}
 			}
 		})
 	}
 }
 
-// makeTestDir creates a temporary directory with a build file in it.  The
+// makeTestDir creates a temporary directory, optionally with a build file.  The
 // caller is responsible for cleaning up the temp directory.
 func makeTestDir(buildFile string, t *testing.T) string {
 	t.Helper()
@@ -80,9 +107,27 @@ func makeTestDir(buildFile string, t *testing.T) string {
 	if err != nil {
 		t.Fatalf("failed to create test dir %s: %v", buildFile, err)
 	}
-	tf := filepath.Join(td, buildFile)
-	if err := ioutil.WriteFile(tf, []byte("not a real build file"), 0644); err != nil {
-		t.Fatalf("failed to create test build file %s: %v", buildFile, err)
+	if buildFile != "" {
+		tf := filepath.Join(td, buildFile)
+		if err := ioutil.WriteFile(tf, []byte("not a real build file"), 0644); err != nil {
+			t.Fatalf("failed to create test build file %s: %v", buildFile, err)
+		}
 	}
 	return td
+}
+
+func loadProto(path string, t *testing.T) *ecpb.ExtractionConfiguration {
+	t.Helper()
+	tf := testutil.TestFilePath(t, path)
+	f, err := os.Open(tf)
+	if err != nil {
+		t.Fatalf("Test specfication failure: failed to load config %s: %v", path, err)
+	}
+	defer f.Close()
+	extractionConfig := &ecpb.ExtractionConfiguration{}
+	if err := jsonpb.Unmarshal(f, extractionConfig); err != nil {
+		t.Fatalf("Test specification failure: failed to parse config %s: %v", path, err)
+	}
+
+	return extractionConfig
 }
