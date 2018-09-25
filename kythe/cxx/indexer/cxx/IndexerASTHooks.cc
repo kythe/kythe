@@ -4061,7 +4061,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForNonSpecializedRecordDecl(
     // If there is no visible definition, Id will be a tnominal node
     // whereas it is more useful to decorate the span as a reference
     // to the visible declaration.
-    // See https://phabricator-dot-kythe-repo.appspot.com/D1887
+    // See https://github.com/google/kythe/issues/2329
     return {BuildNominalNodeIdForDecl(Decl), BuildNodeIdForDecl(Decl)};
   }
 }
