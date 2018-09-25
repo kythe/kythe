@@ -240,7 +240,8 @@ const clang::Decl* FindImplicitDeclForStmt(
 // destruction.
 class ScopedTypeOverride {
  public:
-  explicit ScopedTypeOverride(clang::TypeSourceInfo* tsi, clang::QualType new_type)
+  explicit ScopedTypeOverride(clang::TypeSourceInfo* tsi,
+                              clang::QualType new_type)
       : tsi_(tsi), previous_type_(tsi_->getType()) {
     tsi_->overrideType(new_type);
   }
@@ -4000,12 +4001,11 @@ NodeSet IndexerASTVisitor::BuildNodeSetForEnum(clang::EnumTypeLoc TL) {
   // If there is no visible definition, Id will be a tnominal node
   // whereas it is more useful to decorate the span as a reference
   // to the visible declaration.
-  // See https://phabricator-dot-kythe-repo.appspot.com/D1887
+  // See https://github.com/google/kythe/issues/2329
   return {BuildNominalNodeIdForDecl(Decl), BuildNodeIdForDecl(Decl)};
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForRecord(clang::RecordTypeLoc TL) {
-  // TODO(shahms): Caching.
   RecordDecl* Decl = CHECK_NOTNULL(TL.getDecl());
   if (const auto* Spec = dyn_cast<ClassTemplateSpecializationDecl>(Decl)) {
     // TODO(shahms): Simplify building template argument lists.
@@ -4076,7 +4076,6 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTemplateTypeParm(
 
 NodeSet IndexerASTVisitor::BuildNodeSetForObjCInterface(
     clang::ObjCInterfaceTypeLoc TL) {
-  // TODO(shahms): Caching.
   const auto* IFace = CHECK_NOTNULL(TL.getIFaceDecl());
   // Link to the implementation if we have one, otherwise link to the
   // interface. If we just have a forward declaration, link to the nominal
@@ -4271,7 +4270,8 @@ NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
 
 NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
     clang::DependentNameTypeLoc TL) {
-  // TODO(shahms): EmitRanges below should be No.
+  // TODO(shahms): EmitRanges below should be No, but we currently
+  // rely on edges emitted in BuildNodeIdForDependentName.
   if (auto ID = BuildNodeIdForDependentName(
           TL.getQualifierLoc(),
           clang::DeclarationName(TL.getTypePtr()->getIdentifier()),
@@ -4499,11 +4499,10 @@ NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::TypeLoc& TL) {
       UNSUPPORTED_CLANG_TYPE(UnresolvedUsing);
       UNSUPPORTED_CLANG_TYPE(UnaryTransform);
       // "When a pack expansion in the source code contains multiple parameter
-      // packs
-      // and those parameter packs correspond to different levels of template
-      // parameter lists, this type node is used to represent a template type
-      // parameter pack from an outer level, which has already had its
-      // argument pack substituted but that still lives within a pack
+      // packs and those parameter packs correspond to different levels of
+      // template parameter lists, this type node is used to represent a
+      // template type parameter pack from an outer level, which has already had
+      // its argument pack substituted but that still lives within a pack
       // expansion that itself could not be instantiated. When actually
       // performing a substitution into that pack expansion (e.g., when all
       // template parameters have corresponding arguments), this type will be
@@ -4533,7 +4532,8 @@ IndexerASTVisitor::BuildNodeIdForObjCProtocols(clang::ObjCObjectTypeLoc TL) {
   }
 }
 
-// Base case.
+// Base case where we don't have a separate BaseType to contend with
+// (BaseType is just an `id` node).
 GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
     const ObjCObjectType* T) {
   // Use a multimap since it is sorted by key and we want our nodes sorted by
