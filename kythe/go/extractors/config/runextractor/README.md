@@ -11,7 +11,6 @@ preprocessing required.
 Kythe Extraction.  This binary is intended to encapsulate any logic required for
 extracting that is common to the build-system.  So for example any configuration
 that is on a per-repo basis should be handled upstream, not in this binary.
-It is derived from `kythe/extractors/java/maven/mvn-extract.sh`.
 
 `runextractor` is expected to be run from the root of a repository, so that
 any access to config files (`gradle.build`, `pom.xml`, etc) is sensible, and
@@ -79,23 +78,18 @@ particular `org.codehaus.groovy.ast.CodeVisitorSupport` might be sufficient.
 
 ### Maven
 
-Maven is handled in Java by
-`com.google.devtools.kythe.platform.tools.MvnPomPreprocessor`.  It utilizes an
-xml library to parse and modify the mvn `pom.xml` config file in a similar way
-as described above for gradle.
+Maven's build config is handled in Java by `mavencmd/pom_xml_modifier.go`.  It
+utilizes the etree xml library to parse and modify the mvn `pom.xml` config file
+in a similar way as described above for gradle.  One notable difference between
+gradle and maven here is that gradle actually embeds the refrence to the javac
+wrapper directly into the build file, while the modifications to the maven pom
+xml file merely allow future configuration at runtime.
 
 ### CMake
 
 CMake repositories are extracted from `compile_commands.json` after building
 the repository with `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`. It then invokes the
 `cxx_extractor` binary as if it were a compiler for each of those commands.
-
-
-#### Future work
-
-In theory if we can find a nice xml library for golang that supports reflecting
-into specific elements and modifying without knowing the whole file structure,
-then we could do away with the Java binary for maven preprocessing.
 
 ### Bazel
 
