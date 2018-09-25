@@ -56,6 +56,9 @@ class NodeSet {
   NodeId&& operator*() && { return *std::move(primary_); }
   const NodeId* operator->() const { return primary_.operator->(); }
 
+  /// \brief When emitting a "ref" edge to this entity, prefer this node.
+  /// This is primarily used to prefer a particular declaration in situations
+  /// where we oridinarily want to use a tnomical node.
   const NodeId& ForReference() const {
     return (secondary_.has_value() ? *secondary_ : *primary_);
   }
