@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-// Package mvn defines a default kythe.proto.ExtractionConfiguration for Java
-// using Maven.
-package mvn
+// Package gradle defines a default kythe.proto.ExtractionConfiguration for Java
+// using Gradle.
+package gradle
 
 import (
 	"io"
@@ -77,11 +77,11 @@ const defaultConfig = `{
       ]
     },
     {
-      "uri": "maven:latest",
-      "name": "maven",
+      "uri": "gradle:latest",
+      "name": "gradle",
       "copy_spec": [
         {
-          "source": "/usr/share/maven"
+          "source": "/usr/share/gradle"
         },
         {
           "source": "/etc/ssl"
@@ -89,34 +89,34 @@ const defaultConfig = `{
       ],
       "env_var": [
         {
-          "name": "MAVEN_HOME",
-          "value": "/usr/share/maven"
+          "name": "GRADLE_HOME",
+          "value": "/usr/share/gradle"
         },
         {
           "name": "PATH",
-          "value": "$MAVEN_HOME/bin:$PATH"
+          "value": "$GRADLE_HOME/bin:$PATH"
         }
       ]
     }
   ],
-  "entry_point": ["/opt/kythe/extractors/runextractor", "maven", "-pom_xml", "pom.xml", "-javac_wrapper", "/opt/kythe/extractors/javac-wrapper.sh"]
+  "entry_point": ["/opt/kythe/extractors/runextractor", "gradle", "-build_file", "build.gradle", "-javac_wrapper", "/opt/kythe/extractors/javac-wrapper.sh"]
 }`
 
-// Mvn implements the builderType interface for a Maven repo.
-type Mvn struct{}
+// Gradle implements the builderType interface for a Gradle repo.
+type Gradle struct{}
 
-// Name is a descriptor for maven itself.
-func (m Mvn) Name() string {
-	return "maven"
+// Name is a descriptor for Gradle itself.
+func (g Gradle) Name() string {
+	return "gradle"
 }
 
-// BuildFile is the default name of a maven build config file, pom.xml.
-func (m Mvn) BuildFile() string {
-	return "pom.xml"
+// BuildFile returns the default build file for a gradle repo, gradle.build.
+func (g Gradle) BuildFile() string {
+	return "build.gradle"
 }
 
 // DefaultConfig returns a reader for a valid
 // kythe.proto.ExtractionConfiguration object that works for many repos.
-func (m Mvn) DefaultConfig() io.Reader {
+func (g Gradle) DefaultConfig() io.Reader {
 	return strings.NewReader(defaultConfig)
 }

@@ -6,9 +6,11 @@ go_library(
     name = "config",
     srcs = [
         "config_parser.go",
+        "config_selector.go",
         "extractor.go",
     ],
     deps = [
+        "//kythe/go/extractors/config/default/gradle",
         "//kythe/go/extractors/config/default/mvn",
         "//kythe/proto:extraction_config_go_proto",
         "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
@@ -18,7 +20,7 @@ go_library(
 )
 
 go_test(
-    name = "config_test",
+    name = "config_parser_test",
     srcs = ["config_parser_test.go"],
     data = glob(["testdata/**"]),
     library = ":config",
@@ -27,5 +29,17 @@ go_test(
         "//kythe/proto:extraction_config_go_proto",
         "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
         "@com_github_golang_protobuf//proto:go_default_library",
+    ],
+)
+
+go_test(
+    name = "config_selector_test",
+    srcs = ["config_selector_test.go"],
+    data = glob(["testdata/**"]),
+    library = ":config",
+    deps = [
+        "//kythe/go/extractors/config/default/gradle",
+        "//kythe/go/extractors/config/default/mvn",
+        "//kythe/go/test/testutil",
     ],
 )
