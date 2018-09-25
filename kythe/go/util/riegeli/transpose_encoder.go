@@ -462,21 +462,20 @@ func (t *transposedChunkWriter) buildStateMachine(bufferIndices map[nodeID]int) 
 		states[i] = stateInfo{next: i + 1} // no-op jump state
 	}
 
-	// Encode each tag in the state machine.
-	for i := len(t.encodedTags) - 1; i > 0; i-- {
-		pos := t.encodedTags[i]
-		var nexts []int
-		for next := range possibleNexts[pos] {
-			nexts = append(nexts, next)
-		}
+	// Mark implicit states
+	for pos, nexts := range possibleNexts {
 		if len(nexts) <= 1 {
-			// States with an unambiguous transition are marked as implicit (no
-			// transition byte is needed).
 			idx := posToIndex(pos)
 			if states[idx].next < len(states) {
 				states[idx].next += len(states) // mark implicit
 			}
-		} else {
+		}
+	}
+
+	// Encode each transition in the state machine.
+	for i := len(t.encodedTags) - 1; i > 0; i-- {
+		pos := t.encodedTags[i]
+		if len(possibleNexts[pos]) > 1 {
 			// Next state is ambiguous.  Determine the next state's offset to the
 			// current index.  If it is greater than a single transition byte can
 			// handle, trampoline through the no-op states created above.
@@ -487,7 +486,7 @@ func (t *transposedChunkWriter) buildStateMachine(bufferIndices map[nodeID]int) 
 				jump := (base/(maxTransitions+1))*(maxTransitions+1) + maxTransitions + 1
 				transitions = append(transitions, byte(jump-base)<<2)
 				offset -= (jump - base)
-				for offset >= maxTransitions {
+				for offset > maxTransitions {
 					jump += maxTransitions + 1
 					transitions = append(transitions, byte(maxTransitions)<<2)
 					offset -= (maxTransitions + 1)

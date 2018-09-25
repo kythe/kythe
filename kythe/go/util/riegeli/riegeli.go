@@ -256,9 +256,6 @@ func NewWriterAt(w io.Writer, pos int, opts *WriterOptions) *Writer {
 }
 
 // Writer is a Riegeli records file writer.
-//
-// TODO(schroederc): add support for writing RecordsMetadata
-// TODO(schroederc): encode options as a string in RecordsMetadata
 type Writer struct {
 	opts *WriterOptions
 	w    *blockWriter
