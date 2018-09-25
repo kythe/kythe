@@ -22,7 +22,7 @@ def kindex_extractor(name, corpus, language, rules='', mnemonics=None,
   """This macro creates extra_action and action_listener for kindex.
 
   This macro expands to an extra action listener that invokes extract_kindex
-  on matching spawn actions to produce a Kythe compilation record in .kindex
+  on matching spawn actions to produce a Kythe compilation record in .kzip
   format.
 
   Args:
@@ -48,7 +48,7 @@ def kindex_extractor(name, corpus, language, rules='', mnemonics=None,
 
   xa_name = name + "_extra_action"
   xa_tool = "//kythe/go/extractors/cmd/bazel:extract_kindex"
-  xa_output = "$(ACTION_ID).%s.kindex" % language
+  xa_output = "$(ACTION_ID).%s.kzip" % language
   xa_args = {
       "extra_action": "$(EXTRA_ACTION_FILE)",
       "corpus":       corpus,

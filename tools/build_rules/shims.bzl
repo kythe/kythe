@@ -43,6 +43,7 @@ def go_binary(name, importpath=None, **kwargs):
   _go_binary(
     name = name,
     importpath = importpath,
+    out = name,
     **kwargs
   )
 

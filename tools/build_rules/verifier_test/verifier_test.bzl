@@ -163,6 +163,8 @@ def _java_extract_kindex_impl(ctx):
   )
 
   args = ctx.attr.opts + [
+      # TODO(schroederc): properly support --release options
+      "-target", "9", "-source", "9",
       "-encoding", "utf-8",
       "-cp", ":".join([j.path for j in jars]),
   ]

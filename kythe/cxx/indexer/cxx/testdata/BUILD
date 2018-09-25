@@ -304,6 +304,12 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "enum_fwd_ref",
+    srcs = ["basic/enum_fwd_ref.cc"],
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "builtin_functions",
     srcs = ["basic/builtin_functions.c"],
     check_for_singletons = True,
@@ -2403,6 +2409,14 @@ test_suite(
 cc_indexer_test(
     name = "ms_absvar",
     srcs = ["marked_source/ms_absvar.cc"],
+    convert_marked_source = True,
+    std = "c++14",
+    tags = ["marked_source"],
+)
+
+cc_indexer_test(
+    name = "ms_array",
+    srcs = ["marked_source/ms_array.cc"],
     convert_marked_source = True,
     std = "c++14",
     tags = ["marked_source"],
