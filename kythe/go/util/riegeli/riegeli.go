@@ -84,6 +84,10 @@ type WriterOptions struct {
 
 	// Compression is the type of compression used for encoding chunks.
 	Compression CompressionType
+
+	// Transpose determines whether Protocol Buffer messages have their component
+	// key-value entries encoded in separate buffers for better compression.
+	Transpose bool
 }
 
 // TODO(schroederc): encode/decode options as a string for RecordsMetadata
@@ -111,6 +115,13 @@ func (o *WriterOptions) chunkSize() uint64 {
 	return o.ChunkSize
 }
 
+func (o *WriterOptions) transpose() bool {
+	if o == nil {
+		return false
+	}
+	return o.Transpose
+}
+
 // NewWriter returns a Riegeli Writer for a new Riegeli file to be written to w.
 func NewWriter(w io.Writer, opts *WriterOptions) *Writer { return NewWriterAt(w, 0, opts) }
 
@@ -132,7 +143,7 @@ type Writer struct {
 	opts *WriterOptions
 	w    *blockWriter
 
-	recordWriter *recordChunkWriter
+	recordWriter *talliedRecordWriter
 
 	fileHeaderWritten bool
 }
@@ -145,13 +156,12 @@ func (w *Writer) Put(rec []byte) error {
 	}
 
 	if w.recordWriter == nil {
-		w.recordWriter, err = newRecordChunkWriter(w.opts)
-		if err != nil {
+		if err := w.setupRecordWriter(); err != nil {
 			return err
 		}
 	}
 
-	if err := w.recordWriter.put(rec); err != nil {
+	if err := w.recordWriter.Put(rec); err != nil {
 		return err
 	} else if w.recordWriter.decodedSize >= w.opts.chunkSize() {
 		return w.Flush()
@@ -161,11 +171,23 @@ func (w *Writer) Put(rec []byte) error {
 
 // PutProto writes/buffers the given proto.Message as a Riegili record.
 func (w *Writer) PutProto(msg proto.Message) error {
-	rec, err := proto.Marshal(msg)
+	err := w.ensureFileHeader()
 	if err != nil {
 		return err
 	}
-	return w.Put(rec)
+
+	if w.recordWriter == nil {
+		if err := w.setupRecordWriter(); err != nil {
+			return err
+		}
+	}
+
+	if _, err := w.recordWriter.PutProto(msg); err != nil {
+		return err
+	} else if w.recordWriter.decodedSize >= w.opts.chunkSize() {
+		return w.Flush()
+	}
+	return nil
 }
 
 // Flush writes any buffered records to the underlying io.Writer.

@@ -27,30 +27,38 @@ import (
 
 var nullRecord = bytes.Repeat([]byte{0}, maxRandRecordSize)
 
-func genNulls(b *testing.B) []byte { return nullRecord }
+func genNulls(size int) [][]byte {
+	recs := make([][]byte, size)
+	for i := 0; i < size; i++ {
+		recs[i] = nullRecord
+	}
+	return recs
+}
 
 const maxRandRecordSize = 1024 * 1024 * 8
 
-var buf = make([]byte, maxRandRecordSize+8)
-
-func genRand(seed int64) func(b *testing.B) []byte {
-	rand := rand.New(rand.NewSource(seed))
-	return func(b *testing.B) []byte {
-		b.Helper()
-		b.StopTimer()
-		l := rand.Int() % maxRandRecordSize
-		for i := 0; i < l; i += 8 {
-			binary.LittleEndian.PutUint64(buf[i:], rand.Uint64())
+func genRand(seed int64) func(int) [][]byte {
+	return func(size int) [][]byte {
+		rand := rand.New(rand.NewSource(seed))
+		recs := make([][]byte, 0, size)
+		buf := make([]byte, size*maxRandRecordSize+8)
+		for n := 0; n < size; n++ {
+			l := rand.Int() % maxRandRecordSize
+			for i := 0; i < l; i += 8 {
+				binary.LittleEndian.PutUint64(buf[i:], rand.Uint64())
+			}
+			recs = append(recs, buf[:l])
+			buf = buf[l:]
 		}
-		b.StartTimer()
-		return buf[:l]
+		return recs
 	}
 }
 
-func benchWrite(b *testing.B, out io.Writer, pos int, opts *WriterOptions, gen func(*testing.B) []byte) {
+func benchWrite(b *testing.B, out io.Writer, pos int, opts *WriterOptions, gen func(int) [][]byte) {
+	recs := gen(b.N)
+	b.ResetTimer()
 	w := NewWriterAt(out, pos, opts)
-	for i := 0; i < b.N; i++ {
-		rec := gen(b)
+	for _, rec := range recs {
 		if err := w.Put(rec); err != nil {
 			b.Fatal(err)
 		}
@@ -61,17 +69,33 @@ func benchWrite(b *testing.B, out io.Writer, pos int, opts *WriterOptions, gen f
 	}
 }
 
-func BenchmarkWriteNullUncompressed(b *testing.B) { benchWrite(b, ioutil.Discard, 0, nil, genNulls) }
-func BenchmarkWriteNullBrotli(b *testing.B) {
-	benchWrite(b, ioutil.Discard, 0, &WriterOptions{Compression: BrotliCompression(-1)}, genNulls)
+// TODO(schroederc): replace name with string encoding of options (ala C++)
+var benchOptions = []struct {
+	Name string
+	*WriterOptions
+}{
+	{"defaults", nil},
+	{"uncompressed", &WriterOptions{Compression: NoCompression}},
+	{"brotli", &WriterOptions{Compression: BrotliCompression(-1)}},
+	{"zstd", &WriterOptions{Compression: ZSTDCompression(-1)}},
+
+	{"transpose", &WriterOptions{Transpose: true}},
+	{"uncompressed,transpose", &WriterOptions{Compression: NoCompression, Transpose: true}},
+	{"brotli,transpose", &WriterOptions{Compression: BrotliCompression(-1), Transpose: true}},
 }
 
-func BenchmarkWriteRandUncompressed(b *testing.B) { benchWrite(b, ioutil.Discard, 0, nil, genRand(0)) }
-func BenchmarkWriteRandBrotli(b *testing.B) {
-	benchWrite(b, ioutil.Discard, 0, &WriterOptions{Compression: BrotliCompression(-1)}, genRand(0))
+func BenchmarkWriteNull(b *testing.B) {
+	for _, opts := range benchOptions {
+		b.Run(opts.Name, func(b *testing.B) { benchWrite(b, ioutil.Discard, 0, opts.WriterOptions, genNulls) })
+	}
+}
+func BenchmarkWriteRand(b *testing.B) {
+	for _, opts := range benchOptions {
+		b.Run(opts.Name, func(b *testing.B) { benchWrite(b, ioutil.Discard, 0, opts.WriterOptions, genRand(0)) })
+	}
 }
 
-func benchRead(b *testing.B, opts *WriterOptions, gen func(*testing.B) []byte) {
+func benchRead(b *testing.B, opts *WriterOptions, gen func(int) [][]byte) {
 	buf := bytes.NewBuffer(nil)
 	benchWrite(b, buf, 0, opts, gen)
 	b.ResetTimer()
@@ -86,12 +110,13 @@ func benchRead(b *testing.B, opts *WriterOptions, gen func(*testing.B) []byte) {
 	}
 }
 
-func BenchmarkReadNullUncompressed(b *testing.B) { benchRead(b, nil, genNulls) }
-func BenchmarkReadNullBrotli(b *testing.B) {
-	benchRead(b, &WriterOptions{Compression: BrotliCompression(-1)}, genNulls)
+func BenchmarkReadNull(b *testing.B) {
+	for _, opts := range benchOptions {
+		b.Run(opts.Name, func(b *testing.B) { benchRead(b, opts.WriterOptions, genNulls) })
+	}
 }
-
-func BenchmarkReadRandUncompressed(b *testing.B) { benchRead(b, nil, genRand(0)) }
-func BenchmarkReadRandBrotli(b *testing.B) {
-	benchRead(b, &WriterOptions{Compression: BrotliCompression(-1)}, genRand(0))
+func BenchmarkReadRand(b *testing.B) {
+	for _, opts := range benchOptions {
+		b.Run(opts.Name, func(b *testing.B) { benchRead(b, opts.WriterOptions, genRand(0)) })
+	}
 }

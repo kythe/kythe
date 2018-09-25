@@ -1,0 +1,39 @@
+/*
+ * Copyright 2018 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto2";
+
+package kythe.proto.riegeli_test;
+
+message Simple {
+  optional string name = 1;
+}
+
+message Complex {
+  optional string str = 1;
+  optional int32 i32 = 2;
+  optional int64 i64 = 3;
+  optional bytes bits = 4;
+  repeated string rep = 5;
+
+  optional Simple simple_nested = 6;
+
+  repeated group Group = 7 {
+    optional string grp_str = 1;
+  };
+
+  optional Complex complex_nested = 8;
+}

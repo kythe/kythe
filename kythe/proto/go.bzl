@@ -33,7 +33,7 @@ _go_proto_src = rule(
     },
 )
 
-def go_kythe_proto(proto=None, deps=[]):
+def go_kythe_proto(proto=None, deps=[], importpath=None):
   """Helper for go_proto_library for kythe project.
 
   A shorthand for a go_proto_library with its import path set to the
@@ -64,10 +64,12 @@ def go_kythe_proto(proto=None, deps=[]):
   else:
     name = base + "_go_proto"
 
+  if not importpath:
+    importpath = KYTHE_IMPORT_BASE + "/" + name
   go_proto_library(
       name = name,
       deps = deps,
-      importpath = KYTHE_IMPORT_BASE + "/" + name,
+      importpath = importpath,
       proto = proto,
   )
 
