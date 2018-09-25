@@ -1750,7 +1750,6 @@ bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
 
 bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
     clang::TemplateSpecializationTypeLoc TL) {
-  // TODO(shahms): Helper for this Explicit...(SingleToken..(...)) calls.
   auto NameLocation = TL.getTemplateNameLoc();
   if (NameLocation.isFileID()) {
     if (auto RCC = ExpandedRangeInCurrentContext(NameLocation)) {
