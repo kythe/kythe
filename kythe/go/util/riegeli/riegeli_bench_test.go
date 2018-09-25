@@ -69,29 +69,33 @@ func benchWrite(b *testing.B, out io.Writer, pos int, opts *WriterOptions, gen f
 	}
 }
 
-// TODO(schroederc): replace name with string encoding of options (ala C++)
-var benchOptions = []struct {
-	Name string
-	*WriterOptions
-}{
-	{"defaults", nil},
-	{"uncompressed", &WriterOptions{Compression: NoCompression}},
-	{"brotli", &WriterOptions{Compression: BrotliCompression(-1)}},
-	{"zstd", &WriterOptions{Compression: ZSTDCompression(-1)}},
+var benchOptions = []string{
+	"defaults",
+	"uncompressed",
+	"brotli",
+	"zstd",
 
-	{"transpose", &WriterOptions{Transpose: true}},
-	{"uncompressed,transpose", &WriterOptions{Compression: NoCompression, Transpose: true}},
-	{"brotli,transpose", &WriterOptions{Compression: BrotliCompression(-1), Transpose: true}},
+	"transpose",
+	"uncompressed,transpose",
+	"brotli,transpose",
 }
 
 func BenchmarkWriteNull(b *testing.B) {
-	for _, opts := range benchOptions {
-		b.Run(opts.Name, func(b *testing.B) { benchWrite(b, ioutil.Discard, 0, opts.WriterOptions, genNulls) })
+	for _, test := range benchOptions {
+		opts, err := ParseOptions(test)
+		if err != nil {
+			b.Fatal(err)
+		}
+		b.Run(test, func(b *testing.B) { benchWrite(b, ioutil.Discard, 0, opts, genNulls) })
 	}
 }
 func BenchmarkWriteRand(b *testing.B) {
-	for _, opts := range benchOptions {
-		b.Run(opts.Name, func(b *testing.B) { benchWrite(b, ioutil.Discard, 0, opts.WriterOptions, genRand(0)) })
+	for _, test := range benchOptions {
+		opts, err := ParseOptions(test)
+		if err != nil {
+			b.Fatal(err)
+		}
+		b.Run(test, func(b *testing.B) { benchWrite(b, ioutil.Discard, 0, opts, genRand(0)) })
 	}
 }
 
@@ -111,12 +115,20 @@ func benchRead(b *testing.B, opts *WriterOptions, gen func(int) [][]byte) {
 }
 
 func BenchmarkReadNull(b *testing.B) {
-	for _, opts := range benchOptions {
-		b.Run(opts.Name, func(b *testing.B) { benchRead(b, opts.WriterOptions, genNulls) })
+	for _, test := range benchOptions {
+		opts, err := ParseOptions(test)
+		if err != nil {
+			b.Fatal(err)
+		}
+		b.Run(test, func(b *testing.B) { benchRead(b, opts, genNulls) })
 	}
 }
 func BenchmarkReadRand(b *testing.B) {
-	for _, opts := range benchOptions {
-		b.Run(opts.Name, func(b *testing.B) { benchRead(b, opts.WriterOptions, genRand(0)) })
+	for _, test := range benchOptions {
+		opts, err := ParseOptions(test)
+		if err != nil {
+			b.Fatal(err)
+		}
+		b.Run(test, func(b *testing.B) { benchRead(b, opts, genRand(0)) })
 	}
 }
