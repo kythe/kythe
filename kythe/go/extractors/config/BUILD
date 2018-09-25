@@ -8,6 +8,9 @@ go_library(
         "config_parser.go",
         "extractor.go",
     ],
+    data = [
+        "//kythe/java/com/google/devtools/kythe/extractors/java/artifacts",
+    ],
     deps = [
         "//kythe/go/extractors/config/default/mvn",
         "//kythe/proto:extraction_config_go_proto",
