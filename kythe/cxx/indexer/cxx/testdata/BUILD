@@ -304,6 +304,12 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "enum_fwd_ref",
+    srcs = ["basic/enum_fwd_ref.cc"],
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "builtin_functions",
     srcs = ["basic/builtin_functions.c"],
     check_for_singletons = True,
