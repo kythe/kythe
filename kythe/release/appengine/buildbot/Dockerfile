@@ -22,7 +22,7 @@ RUN apt-get update && \
     apt-get -t stretch-backports install -y libbrotli-dev && \
     apt-get install -y \
       # Buildbot dependencies
-      python python-dev python-pip wget git \
+      python3 python3-dev python3-pip wget git \
       # Required by go tool build of Kythe
       libleveldb-dev \
       # Bazel's fallback @local_jdk
@@ -36,11 +36,11 @@ RUN apt-get update && \
     apt-get clean
 
 # Install Buildbot
-RUN pip install --upgrade pip
-RUN pip install buildbot
-RUN pip install buildbot-www buildbot-console-view buildbot-grid-view buildbot-waterfall-view psycopg2-binary txrequests
-RUN pip install --upgrade six service_identity pyasn1 cryptography pyopenssl
-RUN pip install buildbot-worker
+RUN pip3 install --upgrade pip
+RUN pip3 install buildbot
+RUN pip3 install buildbot-www buildbot-console-view buildbot-grid-view buildbot-waterfall-view psycopg2-binary txrequests
+RUN pip3 install --upgrade six service_identity pyasn1 cryptography pyopenssl
+RUN pip3 install buildbot-worker
 
 # Kythe symlink for Kythe to pickup clang installation
 RUN ln -s /usr/bin/clang-3.8 /usr/bin/clang && \
