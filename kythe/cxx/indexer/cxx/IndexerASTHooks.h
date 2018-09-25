@@ -250,7 +250,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       clang::TemplateName Name);
 
   /// \brief Builds a stable NodeSet for the given TypeLoc.
-  /// \param TL The TypeLoc for which to build a NodeSet..
+  /// \param TL The TypeLoc for which to build a NodeSet.
   /// \returns NodeSet instance indicating claimability of the contained
   /// NodeIds.
   NodeSet BuildNodeSetForType(const clang::TypeLoc& TL);

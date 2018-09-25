@@ -5112,8 +5112,9 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
         NameRangeInContext.value();
 
     // If we want to draw an edge from method impl to property we can modify
-    // the following code: auto *propertyDecl = Decl->findPropertyDecl(true /*
-    // checkOverrides */); if (propertyDecl != nullptr)  ...
+    // the following code:
+    // auto *propertyDecl = Decl->findPropertyDecl(true /* checkOverrides */);
+    // if (propertyDecl != nullptr)  ...
 
     // This is necessary if this definition comes from an implicit method from
     // a property.
