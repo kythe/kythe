@@ -140,7 +140,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitInjectedClassNameTypeLoc(clang::InjectedClassNameTypeLoc TL);
   bool VisitDependentNameTypeLoc(clang::DependentNameTypeLoc TL);
   bool VisitPackExpansionTypeLoc(clang::PackExpansionTypeLoc TL);
-  bool VisitObjCInterfaceTypeLoc(clang::ObjCInterfaceTypeLoc TL);
   bool VisitObjCObjectTypeLoc(clang::ObjCObjectTypeLoc TL);
   bool VisitObjCTypeParamTypeLoc(clang::ObjCTypeParamTypeLoc TL);
 

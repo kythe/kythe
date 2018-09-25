@@ -236,16 +236,16 @@ const clang::Decl* FindImplicitDeclForStmt(
   return nullptr;
 }
 
-// Overrides the type from `TSI` with that in `Type` restoring the original upon
+// Calls tsi->overrideType(new_type) and restores the current type upon
 // destruction.
 class ScopedTypeOverride {
  public:
-  explicit ScopedTypeOverride(clang::TypeSourceInfo* TSI, clang::QualType Type)
-      : tsi_(TSI), type_(tsi_->getType()) {
-    tsi_->overrideType(Type);
+  explicit ScopedTypeOverride(clang::TypeSourceInfo* tsi, clang::QualType new_type)
+      : tsi_(tsi), previous_type_(tsi_->getType()) {
+    tsi_->overrideType(new_type);
   }
 
-  ~ScopedTypeOverride() { tsi_->overrideType(type_); }
+  ~ScopedTypeOverride() { tsi_->overrideType(previous_type_); }
 
   // Neither copyable nor movable.
   ScopedTypeOverride(const ScopedTypeOverride&) = delete;
@@ -253,7 +253,7 @@ class ScopedTypeOverride {
 
  private:
   clang::TypeSourceInfo* tsi_;
-  clang::QualType type_;
+  clang::QualType previous_type_;
 };
 }  // anonymous namespace
 
@@ -1735,12 +1735,6 @@ bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
 
 bool IndexerASTVisitor::VisitRecordTypeLoc(clang::RecordTypeLoc TL) {
   return EmitTypeLocNodes(TL);
-}
-
-bool IndexerASTVisitor::VisitObjCInterfaceTypeLoc(
-    clang::ObjCInterfaceTypeLoc TL) {
-  // return EmitTypeLocNodes(TL);
-  return true;
 }
 
 bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
