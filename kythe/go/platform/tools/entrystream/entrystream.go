@@ -194,7 +194,8 @@ func main() {
 				return encoder.Encode(entry)
 			}))
 		case riegeliFormat:
-			wr := riegeli.NewWriter(out, nil)
+			// TODO(schroederc): add --riegeli_options flag
+			wr := riegeli.NewWriter(out, &riegeli.WriterOptions{Transpose: true})
 			failOnErr(rd(func(entry *spb.Entry) error {
 				rec, err := proto.Marshal(entry)
 				if err != nil {
