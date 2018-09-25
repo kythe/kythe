@@ -7,6 +7,7 @@ build_example_sh()
 asciidoc_with_verifier(
     name = "schema",
     src = "schema.txt",
+    tags = ["manual"],
 )
 
 asciidoc_with_verifier(

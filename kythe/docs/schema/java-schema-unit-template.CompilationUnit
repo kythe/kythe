@@ -13,6 +13,10 @@ required_input {
   }
 }
 has_compile_errors: false
+argument: "-target"
+argument: "9"
+argument: "-source"
+argument: "9"
 argument: "-sourcepath"
 argument: "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata"
 source_file: "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/E.java"

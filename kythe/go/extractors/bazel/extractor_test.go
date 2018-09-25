@@ -19,6 +19,7 @@ package bazel
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -96,6 +97,7 @@ type results struct {
 }
 
 func (r *results) newConfig() *Config {
+	fixed := false // see FixUnit, below
 	return &Config{
 		Corpus:   testCorpus,
 		Language: testLang,
@@ -116,7 +118,14 @@ func (r *results) newConfig() *Config {
 		},
 
 		IsSource: func(path string) bool { return filepath.Ext(path) == ".src" },
-		FixUnit:  func(unit *apb.CompilationUnit) error { r.gotUnit = unit; return nil },
+		FixUnit: func(unit *apb.CompilationUnit) error {
+			if fixed {
+				return errors.New("redundant call to FixUnit")
+			}
+			fixed = true
+			r.gotUnit = unit
+			return nil
+		},
 
 		// All the files are empty, and all the children are above average.
 		OpenRead: func(_ context.Context, path string) (io.ReadCloser, error) {

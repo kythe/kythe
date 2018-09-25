@@ -1,6 +1,6 @@
 load("//kythe/docs:asciidoc.bzl", "asciidoc")
 
-def asciidoc_with_verifier(name, src):
+def asciidoc_with_verifier(name, src, tags = None):
     """Invoke the asciidoc tool on the specified source file, filtering examples to
     be passed to the verifier. If the verifier does not succeed, the build will fail.
     """
@@ -26,7 +26,7 @@ def asciidoc_with_verifier(name, src):
             "//kythe/cxx/tools:kindex_tool",
             "//kythe/cxx/verifier",
         ],
-        tags = ["manual"],
+        tags = tags,
     )
 
 def build_example_sh():
