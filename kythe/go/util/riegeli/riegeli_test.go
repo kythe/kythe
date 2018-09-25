@@ -114,9 +114,9 @@ func testReadWriteStrings(t *testing.T, opts *WriterOptions) {
 }
 
 func writeProtos(t *testing.T, opts *WriterOptions, n int) *bytes.Buffer {
+	t.Helper()
 	var buf bytes.Buffer
 	wr := NewWriter(&buf, opts)
-
 	for i := 0; i < n; i++ {
 		if err := wr.PutProto(numToProto(i)); err != nil {
 			t.Fatalf("Error PutProto(%d): %v", i, err)
@@ -128,6 +128,8 @@ func writeProtos(t *testing.T, opts *WriterOptions, n int) *bytes.Buffer {
 	return &buf
 }
 
+// numToProto constructs a *rtpb.Complex using a given integer as its field
+// values and as counter for repeated field sizes.
 func numToProto(i int) *rtpb.Complex {
 	msg := &rtpb.Complex{
 		Str:  proto.String(fmt.Sprintf("s%d", i)),
