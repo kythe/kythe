@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 
-"""This module provides rules for kindex extraction."""
+"""This module provides rules for kzip extraction."""
 
-def kindex_extractor(
+def kzip_extractor(
         name,
         corpus,
         language,
@@ -27,23 +27,23 @@ def kindex_extractor(
         sources = "",
         source_args = "",
         scoped = True):
-    """This macro creates extra_action and action_listener for kindex.
+    """This macro creates extra_action and action_listener for extract_kzip.
 
-    This macro expands to an extra action listener that invokes extract_kindex
+    This macro expands to an extra action listener that invokes extract_kzip
     on matching spawn actions to produce a Kythe compilation record in .kzip
     format.
 
     Args:
       name: name of the build rule ("_extra_action" is appended in output)
-      corpus: the required corpus passed to the kindex extractor
-      language: the required language passed to the kindex extractor
-      rules: the rules passed to the kindex extractor
+      corpus: the required corpus passed to the kzip extractor
+      language: the required language passed to the kzip extractor
+      rules: the rules passed to the kzip extractor
       mnemonics: the required mnemonics passed to the action listener
-      include: optional RE2 matching files to include in the kindex extractor
-      exclude: optional RE2 matching files to exclude in the kindex extractor
-      sources: optional RE2 matching source files for the kindex extractor
+      include: optional RE2 matching files to include in the kzip extractor
+      exclude: optional RE2 matching files to exclude in the kzip extractor
+      sources: optional RE2 matching source files for the kzip extractor
       source_args: optional RE2 matching arguments to consider source files in
-        kindex extractor
+        kzip extractor
       scoped: optional boolean whether to match source paths only in target pkg
     """
 
@@ -55,7 +55,7 @@ def kindex_extractor(
         fail("The 'corpus' attribute must be non-empty")
 
     xa_name = name + "_extra_action"
-    xa_tool = "//kythe/go/extractors/cmd/bazel:extract_kindex"
+    xa_tool = "//kythe/go/extractors/cmd/bazel:extract_kzip"
     xa_output = "$(ACTION_ID).%s.kzip" % language
     xa_args = {
         "extra_action": "$(EXTRA_ACTION_FILE)",

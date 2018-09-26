@@ -71,6 +71,10 @@ const DefaultConfig = `{
         {
           "name": "JAVAC_EXTRACTOR_JAR",
           "value": "/opt/kythe/extractors/javac_extractor.jar"
+        },
+        {
+          "name": "KYTHE_OUTPUT_FILE",
+          "value": "$KYTHE_OUTPUT_DIRECTORY/extractor-output.kzip"
         }
       ]
     },

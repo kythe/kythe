@@ -31,5 +31,5 @@ KYTHE_OUTPUT_FILE="${OUT_DIR}/compilations.kzip" \
 #    -I./kythe/cxx/extractor/testdata \
 #    ./kythe/cxx/extractor/testdata/transcript_main.cc
 test -f "${OUT_DIR}/compilations.kzip" || exit 1
-[[ $(unzip -l "${OUT_DIR}/compilations.kzip" | grep '/files/' | wc -l) -eq 3 ]]
-[[ $(unzip -l "${OUT_DIR}/compilations.kzip" | grep '/units/' | wc -l) -eq 1 ]]
+[[ $(unzip -l "${OUT_DIR}/compilations.kzip" | grep '/files/.' | wc -l) -eq 3 ]]
+[[ $(unzip -l "${OUT_DIR}/compilations.kzip" | grep '/units/.' | wc -l) -eq 1 ]]

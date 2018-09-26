@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Program extract_kindex implements a Bazel extra action that captures a Kythe
+// Program extract_kzip implements a Bazel extra action that captures a Kythe
 // compilation record for a "spawn" action.
 package main
 
