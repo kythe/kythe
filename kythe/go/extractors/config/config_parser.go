@@ -21,11 +21,9 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 
 	"bitbucket.org/creachadair/shell"
-	"github.com/golang/protobuf/jsonpb"
 
 	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
@@ -142,17 +140,6 @@ WORKDIR %[2]s
 	}
 
 	return buf.Bytes(), nil
-}
-
-// load parses an extraction configuration from the specified reader.
-func load(r io.Reader) (*ecpb.ExtractionConfiguration, error) {
-	// attempt to deserialize the extraction config
-	extractionConfig := &ecpb.ExtractionConfiguration{}
-	if err := jsonpb.Unmarshal(r, extractionConfig); err != nil {
-		return nil, err
-	}
-
-	return extractionConfig, nil
 }
 
 // createImage uses the specified extraction configuration to generate a
