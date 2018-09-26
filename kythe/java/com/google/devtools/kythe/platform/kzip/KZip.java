@@ -110,6 +110,9 @@ public class KZip {
 
   private KZip() {}
 
+  // TODO(salguarnieri) See if we can avoid using Gson entirely and use the json support in
+  // GeneratedMessageV3.
+
   static Gson buildGson(GsonBuilder builder) {
     return JsonUtil.registerProtoTypes(builder).create();
   }
