@@ -27,10 +27,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"kythe.io/kythe/go/extractors/config/default/mvn"
-
-	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
 // kytheConfigFileName The name of the Kythe extraction config
@@ -295,26 +291,6 @@ func verifyRequiredTools(repo Repo) error {
 		return err
 	}
 	return nil
-}
-
-func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, error) {
-	// if a config was passed in, use the specified config, otherwise go
-	// hunt for one in the repository.
-	if configPath == "" {
-		// otherwise, use a Kythe config within the repo (if it exists)
-		configPath = filepath.Join(repoDir, kytheExtractionConfigFile)
-	}
-
-	f, err := os.Open(configPath)
-	if os.IsNotExist(err) {
-		// TODO(danielmoy): This needs to be configurable by builder, language, etc.
-		return load(mvn.DefaultConfig())
-	} else if err != nil {
-		return nil, fmt.Errorf("opening config file: %v", err)
-	}
-
-	defer f.Close()
-	return load(f)
 }
 
 func mustCleanUpImage(ctx context.Context, tmpImageTag string) {

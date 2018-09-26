@@ -1,29 +1,4 @@
-/*
- * Copyright 2018 The Kythe Authors. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-// Package mvn defines a default kythe.proto.ExtractionConfiguration for Java
-// using Maven.
-package mvn
-
-import (
-	"io"
-	"strings"
-)
-
-const defaultConfig = `{
+{
   "required_image": [
     {
       "uri": "openjdk:8",
@@ -77,11 +52,11 @@ const defaultConfig = `{
       ]
     },
     {
-      "uri": "maven:latest",
-      "name": "maven",
+      "uri": "gradle:latest",
+      "name": "gradle",
       "copy_spec": [
         {
-          "source": "/usr/share/maven"
+          "source": "/usr/share/gradle"
         },
         {
           "source": "/etc/ssl"
@@ -89,21 +64,15 @@ const defaultConfig = `{
       ],
       "env_var": [
         {
-          "name": "MAVEN_HOME",
-          "value": "/usr/share/maven"
+          "name": "GRADLE_HOME",
+          "value": "/usr/share/gradle"
         },
         {
           "name": "PATH",
-          "value": "$MAVEN_HOME/bin:$PATH"
+          "value": "$GRADLE_HOME/bin:$PATH"
         }
       ]
     }
   ],
-  "entry_point": ["/opt/kythe/extractors/runextractor", "maven", "-pom_xml", "pom.xml", "-javac_wrapper", "/opt/kythe/extractors/javac-wrapper.sh"]
-}`
-
-// DefaultConfig returns a reader for a valid
-// kythe.proto.ExtractionConfiguration object that works for many repos.
-func DefaultConfig() io.Reader {
-	return strings.NewReader(defaultConfig)
+  "entry_point": ["/opt/kythe/extractors/runextractor", "gradle", "-build_file", "build.gradle", "-javac_wrapper", "/opt/kythe/extractors/javac-wrapper.sh"]
 }
