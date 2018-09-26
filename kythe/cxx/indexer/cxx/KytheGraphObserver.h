@@ -168,16 +168,16 @@ class KytheGraphObserver : public GraphObserver {
 
   NodeId nodeIdForTappNode(
       const NodeId& TyconId,
-      const std::vector<const NodeId*>& params) const override;
+      absl::Span<const NodeId> params) const override;
 
   NodeId recordTappNode(const NodeId& tapp_id, const NodeId& tycon_id,
-                        const std::vector<const NodeId*>& params,
+                        absl::Span<const NodeId> params,
                         unsigned first_default_param) override;
 
   NodeId nodeIdForTsigmaNode(
-      const std::vector<const NodeId*>& params) const override;
+      absl::Span<const NodeId> params) const override;
   NodeId recordTsigmaNode(const NodeId& tsigma_id,
-                          const std::vector<const NodeId*>& params) override;
+                          absl::Span<const NodeId> params) override;
 
   NodeId nodeIdForTypeAliasNode(const NameId& alias_name,
                                 const NodeId& aliased_type) const override;

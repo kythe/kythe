@@ -751,18 +751,11 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       const clang::ObjCInterfaceDecl* IDecl,
       const clang::ObjCTypeParamList* TPL, const GraphObserver::NodeId& BodyId);
 
-  /// \brief Fills `ArgNodeIds` with pointers to `NodeId`s for a template
-  /// argument list.
-  /// \param `ArgsAsWritten` Use this argument list if it isn't None.
-  /// \param `Args` Use this argument list if `ArgsAsWritten` is None.
-  /// \param `ArgIds` Vector into which pointers in `ArgNodeIds` will point.
-  /// \param `ArgNodeIds` Vector of pointers to the result type list.
-  /// \return true on success; if false, `ArgNodeIds` is invalid.
-  bool BuildTemplateArgumentList(
-      llvm::Optional<llvm::ArrayRef<clang::TemplateArgumentLoc>> ArgsAsWritten,
-      llvm::ArrayRef<clang::TemplateArgument> Args,
-      std::vector<GraphObserver::NodeId>& ArgIds,
-      std::vector<const GraphObserver::NodeId*>& ArgNodeIds);
+  /// \brief Returns a vector of NodeId for each template argument.
+  absl::optional<std::vector<GraphObserver::NodeId>> BuildTemplateArgumentList(
+      llvm::ArrayRef<clang::TemplateArgument> Args);
+  absl::optional<std::vector<GraphObserver::NodeId>> BuildTemplateArgumentList(
+      llvm::ArrayRef<clang::TemplateArgumentLoc> Args);
 
   /// Dumps information about `TypeContext` to standard error when looking for
   /// an entry at (`Depth`, `Index`).
