@@ -127,7 +127,19 @@ const (
 	zstdOption         = "zstd"
 )
 
-// ParseOptions decodes a WriterOptions from text.
+// ParseOptions decodes a WriterOptions from text:
+//
+//   options ::= option? ("," option?)*
+//   option ::=
+//     "default" |
+//     "transpose" (":" ("true" | "false"))? |
+//     "uncompressed" |
+//     "brotli" (":" brotli_level)? |
+//     "zstd" (":" zstd_level)? |
+//     "chunk_size" ":" chunk_size
+//   brotli_level ::= integer 0..11 (default 9)
+//   zstd_level ::= integer 0..22 (default 9)
+//   chunk_size ::= positive integer
 func ParseOptions(s string) (*WriterOptions, error) {
 	if s == "" {
 		return nil, nil
@@ -138,7 +150,7 @@ func ParseOptions(s string) (*WriterOptions, error) {
 		switch kv[0] {
 		case defaultOptions: // ignore
 		case brotliOption:
-			level := -1
+			level := DefaultBrotliLevel
 			if len(kv) != 1 {
 				var err error
 				level, err = strconv.Atoi(kv[1])
@@ -148,7 +160,7 @@ func ParseOptions(s string) (*WriterOptions, error) {
 			}
 			opts.Compression = BrotliCompression(level)
 		case zstdOption:
-			level := -1
+			level := DefaultZSTDLevel
 			if len(kv) != 1 {
 				var err error
 				level, err = strconv.Atoi(kv[1])
