@@ -9,17 +9,17 @@ _TEMPLATE = """  {{
   }}"""
 
 def _compile_commands_impl(ctx):
-  system_includes = " ".join([
-      "-I{}".format(d)
-      for d in find_cpp_toolchain(ctx).built_in_include_directories
-  ])
-  ctx.actions.write(
-      output = ctx.outputs.compile_commands,
-      content = "[\n{}]\n".format(",\n".join([
-          _TEMPLATE.format(filename=name, system_includes=system_includes)
-          for name in ctx.attr.filenames
-      ])),
-  )
+    system_includes = " ".join([
+        "-I{}".format(d)
+        for d in find_cpp_toolchain(ctx).built_in_include_directories
+    ])
+    ctx.actions.write(
+        output = ctx.outputs.compile_commands,
+        content = "[\n{}]\n".format(",\n".join([
+            _TEMPLATE.format(filename = name, system_includes = system_includes)
+            for name in ctx.attr.filenames
+        ])),
+    )
 
 compile_commands = rule(
     attrs = {
