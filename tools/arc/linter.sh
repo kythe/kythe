@@ -38,7 +38,7 @@ case $file in
 esac
 
 case $name in
-  BUILD|*.BUILD)
+  BUILD|*.BUILD|*.bzl)
     if command -v buildifier &>/dev/null; then
       buildifier --mode=check "$file" | sed 's/^/buildifier::error:1 /'
     fi ;;
