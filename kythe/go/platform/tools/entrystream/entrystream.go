@@ -73,6 +73,8 @@ var (
 	readFormat  = flag.String("read_format", delimitedFormat, "Format of the input stream (accepted formats: {delimited,json,riegeli})")
 	writeFormat = flag.String("write_format", delimitedFormat, "Format of the output stream (accepted formats: {delimited,json,riegeli})")
 
+	riegeliOptions = flag.String("riegeli_writer_options", "", "Riegeli writer options")
+
 	sortStream      = flag.Bool("sort", false, "Sort entry stream into GraphStore order")
 	uniqEntries     = flag.Bool("unique", false, "Print only unique entries (implies --sort)")
 	entrySets       = flag.Bool("entrysets", false, "Print Entry protos as JSON EntrySets (implies --sort and --write_format=json)")
@@ -194,8 +196,9 @@ func main() {
 				return encoder.Encode(entry)
 			}))
 		case riegeliFormat:
-			// TODO(schroederc): add --riegeli_options flag
-			wr := riegeli.NewWriter(out, &riegeli.WriterOptions{Transpose: true})
+			opts, err := riegeli.ParseOptions(*riegeliOptions)
+			failOnErr(err)
+			wr := riegeli.NewWriter(out, opts)
 			failOnErr(rd(func(entry *spb.Entry) error {
 				rec, err := proto.Marshal(entry)
 				if err != nil {
