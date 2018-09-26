@@ -21,5 +21,14 @@ var (
 	requiredEnv = []string{"KYTHE_CORPUS", "KYTHE_ROOT_DIRECTORY", "KYTHE_OUTPUT_DIRECTORY"}
 	// RequiredJavaEnv is all of the enivornment variables required for
 	// extracting a java corpus, including env vars common for all extractors.
-	RequiredJavaEnv = append(requiredEnv, "JAVAC_EXTRACTOR_JAR", "REAL_JAVAC")
+	RequiredJavaEnv = append(requiredEnv,
+		// For example java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar
+		"JAVAC_EXTRACTOR_JAR",
+		// For example /usr/lib/jvm/java-8-openjdk/bin/javac
+		"REAL_JAVAC",
+		// If set to a file ending in '.kzip', this will cause the extractor to
+		// output a .kzip file instead of multiple .kindex files.
+		// Note this does not obviate the need to set KYTHE_OUTPUT_DIRECTORY.
+		"KYTHE_OUTPUT_FILE",
+	)
 )

@@ -176,10 +176,6 @@ public class JavaCompilationUnitExtractor {
     }
   }
 
-  public String getRootDirectory() {
-    return rootDirectory;
-  }
-
   private CompilationUnit buildCompilationUnit(
       String target,
       Iterable<String> options,
