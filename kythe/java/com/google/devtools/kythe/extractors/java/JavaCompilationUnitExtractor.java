@@ -275,8 +275,7 @@ public class JavaCompilationUnitExtractor {
 
     List<FileData> fileContents = ExtractorUtils.convertBytesToFileDatas(results.fileContents);
     List<FileInput> compilationFileInputs =
-        ExtractorUtils.toFileInputs(fileVNames, results.relativePaths::get, fileContents)
-            .stream()
+        ExtractorUtils.toFileInputs(fileVNames, results.relativePaths::get, fileContents).stream()
             .map(
                 input -> {
                   String sourceBasename = results.sourceFileNames.get(input.getInfo().getPath());
@@ -701,7 +700,13 @@ public class JavaCompilationUnitExtractor {
     }
     List<String> completeOptions =
         completeCompilerOptions(
-            standardFileManager, options, classpath, bootclasspath, sourcepath, tempDir);
+            standardFileManager,
+            options,
+            classpath,
+            bootclasspath,
+            sourcepath,
+            processorpath,
+            tempDir);
 
     final List<CompilationUnitTree> compilationUnits = new ArrayList<>();
     Symtab syms;
@@ -724,8 +729,8 @@ public class JavaCompilationUnitExtractor {
                   .asSubclass(Processor.class)
                   .getConstructor()
                   .newInstance());
-        } catch (ReflectiveOperationException e) {
-          throw new ExtractionException("Bad processor entry", e, false);
+        } catch (Throwable e) {
+          throw new ExtractionException("Bad processor entry: " + processor, e, false);
         }
       }
 
@@ -774,6 +779,37 @@ public class JavaCompilationUnitExtractor {
         }
         throw new ExtractionException("Fatal error while running javac compiler.", e, false);
       }
+
+      // If we encountered any compilation errors, we report them even though we
+      // still store the compilation information for this set of sources.
+      for (Diagnostic<? extends JavaFileObject> diag : diagnosticsCollector.getDiagnostics()) {
+        if (diag.getKind() == Diagnostic.Kind.ERROR) {
+          results.hasErrors = true;
+          if (diag.getSource() != null) {
+            logger.atSevere().log(
+                "compiler error: %s(%d): %s",
+                diag.getSource().getName(), diag.getLineNumber(), diag.getMessage(Locale.ENGLISH));
+          } else {
+            logger.atSevere().log("compiler error: %s", diag.getMessage(Locale.ENGLISH));
+          }
+        }
+      }
+
+      // Ensure generated source directory is relative to root.
+      genSrcDir =
+          genSrcDir.transform(
+              p -> Paths.get(ExtractorUtils.tryMakeRelative(rootDirectory, p.toString())));
+
+      for (String source : sources) {
+        results.explicitSources.add(ExtractorUtils.tryMakeRelative(rootDirectory, source));
+      }
+
+      getAdditionalSourcePaths(compilationUnits, results);
+
+      // Find files potentially used for resolving .* imports.
+      findOnDemandImportedFiles(compilationUnits, fileManager);
+      // We accumulate all file contents from the java compiler so we can store it in the bigtable.
+      findRequiredFiles(fileManager, mapClassesToSources(syms), genSrcDir, results);
     } finally {
       try {
         DeleteRecursively.delete(tempDir);
@@ -781,36 +817,7 @@ public class JavaCompilationUnitExtractor {
         logger.atSevere().withCause(ioe).log("Failed to delete temporary directory %s", tempDir);
       }
     }
-    // If we encountered any compilation errors, we report them even though we
-    // still store the compilation information for this set of sources.
-    for (Diagnostic<? extends JavaFileObject> diag : diagnosticsCollector.getDiagnostics()) {
-      if (diag.getKind() == Diagnostic.Kind.ERROR) {
-        results.hasErrors = true;
-        if (diag.getSource() != null) {
-          logger.atSevere().log(
-              "compiler error: %s(%d): %s",
-              diag.getSource().getName(), diag.getLineNumber(), diag.getMessage(Locale.ENGLISH));
-        } else {
-          logger.atSevere().log("compiler error: %s", diag.getMessage(Locale.ENGLISH));
-        }
-      }
-    }
 
-    // Ensure generated source directory is relative to root.
-    genSrcDir =
-        genSrcDir.transform(
-            p -> Paths.get(ExtractorUtils.tryMakeRelative(rootDirectory, p.toString())));
-
-    for (String source : sources) {
-      results.explicitSources.add(ExtractorUtils.tryMakeRelative(rootDirectory, source));
-    }
-
-    getAdditionalSourcePaths(compilationUnits, results);
-
-    // Find files potentially used for resolving .* imports.
-    findOnDemandImportedFiles(compilationUnits, fileManager);
-    // We accumulate all file contents from the java compiler so we can store it in the bigtable.
-    findRequiredFiles(fileManager, mapClassesToSources(syms), genSrcDir, results);
     return results;
   }
 
@@ -899,6 +906,7 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> classpath,
       Iterable<String> bootclasspath,
       Iterable<String> sourcepath,
+      Iterable<String> processorpath,
       Path tempDestinationDir)
       throws ExtractionException {
 
@@ -915,6 +923,12 @@ public class JavaCompilationUnitExtractor {
         sourcepath,
         "-sourcepath",
         StandardLocation.SOURCE_PATH);
+    setLocation(
+        completeOptions,
+        standardFileManager,
+        processorpath,
+        "-processorpath",
+        StandardLocation.ANNOTATION_PROCESSOR_PATH);
     setLocation(
         completeOptions,
         standardFileManager,
