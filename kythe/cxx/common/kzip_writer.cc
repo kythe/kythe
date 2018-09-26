@@ -101,9 +101,8 @@ StatusOr<std::string> KzipWriter::WriteUnit(
     auto status = InitializeArchive(archive_);
     if (!status.ok()) {
       return status;
-    } else {
-      initialized_ = true;
     }
+    initialized_ = true;
   }
   if (auto json = WriteMessageAsJsonToString(unit)) {
     contents_.push_back(std::move(*json));
@@ -122,9 +121,8 @@ StatusOr<std::string> KzipWriter::WriteFile(absl::string_view content) {
     auto status = InitializeArchive(archive_);
     if (!status.ok()) {
       return status;
-    } else {
-      initialized_ = true;
     }
+    initialized_ = true;
   }
   contents_.emplace_back(content);
   auto status = WriteTextFile(archive_, kFileRoot, contents_.back());
