@@ -18,6 +18,9 @@
 // using Gradle.
 package gradle
 
+// DefaultConfig describes a kythe.proto.ExtractionConfiguration object for a
+// basic Gradle repository, including the extractor entrypoint using a
+// build.gradle file located at the top level of the repo.
 const DefaultConfig = `{
   "required_image": [
     {
