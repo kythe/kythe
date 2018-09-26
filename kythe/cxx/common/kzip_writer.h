@@ -57,6 +57,7 @@ class KzipWriter : public IndexWriterInterface {
  private:
   explicit KzipWriter(zip_t* archive);
 
+  bool initialized_ = false;  // Whether or not the `root` entry exists.
   zip_t* archive_;  // Owned, but must be manually deleted via `Close`.
   // Memory for inserted files must be retained until close.
   std::vector<std::string> contents_;

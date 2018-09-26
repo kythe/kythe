@@ -92,7 +92,7 @@ class ZipFileInputStream : public google::protobuf::io::ZeroCopyInputStream {
 
 absl::optional<absl::string_view> UnitDigest(absl::string_view path) {
   path.remove_prefix(std::min(path.find('/'), path.size()));
-  if (!absl::ConsumePrefix(&path, "/units/")) {
+  if (!absl::ConsumePrefix(&path, "/units/") || path.empty()) {
     return absl::nullopt;
   }
   return path;

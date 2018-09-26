@@ -29,8 +29,9 @@
 namespace kythe {
 namespace {
 
-constexpr absl::string_view kFileRoot = "root/files/";
+constexpr absl::string_view kRoot = "root/";
 constexpr absl::string_view kUnitRoot = "root/units/";
+constexpr absl::string_view kFileRoot = "root/files/";
 
 std::string SHA256Digest(absl::string_view content) {
   std::array<unsigned char, SHA256_DIGEST_LENGTH> buf;
@@ -52,6 +53,18 @@ StatusOr<std::string> WriteTextFile(zip_t* archive, absl::string_view root,
     zip_source_free(source);
   }
   return libzip::ToStatus(zip_get_error(archive));
+}
+
+// Creates entries for the three directories if not already present.
+Status InitializeArchive(zip_t* archive) {
+  for (const auto name : {kRoot, kUnitRoot, kFileRoot}) {
+    if (zip_dir_add(archive, name.data(), ZIP_FL_ENC_UTF_8) < 0) {
+      Status status = libzip::ToStatus(zip_get_error(archive));
+      zip_error_clear(archive);
+      return status;
+    }
+  }
+  return OkStatus();
 }
 
 }  // namespace
@@ -84,6 +97,14 @@ KzipWriter::~KzipWriter() {
 
 StatusOr<std::string> KzipWriter::WriteUnit(
     const kythe::proto::IndexedCompilation& unit) {
+  if (!initialized_) {
+    auto status = InitializeArchive(archive_);
+    if (!status.ok()) {
+      return status;
+    } else {
+      initialized_ = true;
+    }
+  }
   if (auto json = WriteMessageAsJsonToString(unit)) {
     contents_.push_back(std::move(*json));
     auto status = WriteTextFile(archive_, kUnitRoot, contents_.back());
@@ -97,6 +118,14 @@ StatusOr<std::string> KzipWriter::WriteUnit(
 }
 
 StatusOr<std::string> KzipWriter::WriteFile(absl::string_view content) {
+  if (!initialized_) {
+    auto status = InitializeArchive(archive_);
+    if (!status.ok()) {
+      return status;
+    } else {
+      initialized_ = true;
+    }
+  }
   contents_.emplace_back(content);
   auto status = WriteTextFile(archive_, kFileRoot, contents_.back());
   if (!status.ok()) {
