@@ -29,7 +29,7 @@ def kindex_extractor(
         scoped = True):
     """This macro creates extra_action and action_listener for kindex.
 
-    This macro expands to an extra action listener that invokes extract_kindex
+    This macro expands to an extra action listener that invokes extract_kzip
     on matching spawn actions to produce a Kythe compilation record in .kzip
     format.
 
@@ -55,7 +55,7 @@ def kindex_extractor(
         fail("The 'corpus' attribute must be non-empty")
 
     xa_name = name + "_extra_action"
-    xa_tool = "//kythe/go/extractors/cmd/bazel:extract_kindex"
+    xa_tool = "//kythe/go/extractors/cmd/bazel:extract_kzip"
     xa_output = "$(ACTION_ID).%s.kzip" % language
     xa_args = {
         "extra_action": "$(EXTRA_ACTION_FILE)",
