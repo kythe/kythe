@@ -18,6 +18,9 @@
 // using Maven.
 package mvn
 
+// DefaultConfig describes a kythe.proto.ExtractionConfiguration object for a
+// basic Maven repository, including the extractor entrypoint using a pom.xml
+// file located at the top level of the repo.
 const DefaultConfig = `{
   "required_image": [
     {
