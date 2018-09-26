@@ -23,6 +23,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "glog/logging.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/libzip/error.h"
@@ -31,6 +32,7 @@
 
 namespace kythe {
 namespace {
+using ::testing::ElementsAre;
 
 absl::string_view TestTmpdir() {
   return absl::StripSuffix(std::getenv("TEST_TMPDIR"), "/");
@@ -115,7 +117,7 @@ ReadDigests(IndexReader* reader) {
   return digests;
 }
 
-TEST(KzipReaderTest, RecapitulatesSimpleKzip) {
+TEST(KzipWriterTest, RecapitulatesSimpleKzip) {
   // This forces the GoDetails proto descriptor to be added to the pool so we
   // can deserialize it. If we don't do this, we get an error like:
   // "Invalid type URL, unknown type: kythe.proto.GoDetails for type Any".
@@ -137,8 +139,47 @@ TEST(KzipReaderTest, RecapitulatesSimpleKzip) {
   reader = KzipReader::Open(absl::StrCat(TestTmpdir(), "/stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
   auto read_digests = ReadDigests(&*reader);
-  ASSERT_TRUE(read_digests.ok());
+  ASSERT_TRUE(read_digests.ok()) << read_digests.status();
   EXPECT_EQ(*written_digests, *read_digests);
+}
+
+TEST(KzipReaderTest, IncludesDirectoryEntries) {
+  StatusOr<IndexWriter> writer =
+      KzipWriter::Create(absl::StrCat(TestTmpdir(), "/dummy.kzip"));
+  ASSERT_TRUE(writer.ok()) << writer.status();
+  {
+    auto digest = writer->WriteFile("contents");
+    ASSERT_TRUE(digest.ok()) << digest.status();
+  }
+  {
+    auto status = writer->Close();
+    ASSERT_TRUE(status.ok()) << status;
+  }
+
+  std::vector<std::string> contents;
+  {
+    auto* archive = zip_open(absl::StrCat(TestTmpdir(), "/dummy.kzip").data(),
+                             ZIP_RDONLY, nullptr);
+    ASSERT_NE(archive, nullptr);
+    struct Closer {
+      ~Closer() { zip_discard(a); }
+      zip_t* a;
+    } closer{archive};
+    for (int i = 0; i < zip_get_num_entries(archive, 0); ++i) {
+      const char* name = zip_get_name(archive, i, 0);
+      ASSERT_NE(archive, nullptr) << libzip::ToStatus(zip_get_error(archive));
+      contents.push_back(name);
+    }
+  }
+  EXPECT_THAT(
+      contents,
+      // Order matters here as "root/" must come first.
+      // We don't really care about the rest of the entries, but it's easy
+      // enough to fix the order of the subdirectories and minimally harmful.
+      ElementsAre(
+          "root/", "root/units/", "root/files/",
+          "root/files/"
+          "d1b2a59fbea7e20077af9f91b27e95e865061b270be03ff539ab3b73587882e8"));
 }
 
 }  // namespace
