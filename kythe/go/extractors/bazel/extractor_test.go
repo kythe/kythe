@@ -62,7 +62,7 @@ var (
 	}
 	si = &xapb.SpawnInfo{
 		Argument:   []string{"cc", "-o", testOutput, "-c", "2.src", "4.src"},
-		InputFile:  []string{"1.dep", "2.src", "3.dep", "4.src"},
+		InputFile:  []string{"1.dep", "2.src", "3.dep", "1.dep", "4.src"},
 		OutputFile: []string{testOutput, "garbage"},
 		Variable: []*xapb.EnvironmentVariable{{
 			Name:  proto.String("PATH"),
@@ -140,7 +140,7 @@ func (r *results) checkValues(t *testing.T, cu *apb.CompilationUnit) {
 	wantInfo := &ActionInfo{ // N.B.: Values prior to filtering!
 		Target:    testTarget,
 		Arguments: []string{"cc", "-o", testOutput, "-c", "2.src", "4.src"},
-		Inputs:    []string{"1.dep", "2.src", "3.dep", "4.src"},
+		Inputs:    []string{"1.dep", "1.dep", "2.src", "3.dep", "4.src"},
 		Outputs:   []string{testOutput, "garbage"},
 		Environment: map[string]string{
 			"PATH":  "p1:p2",
