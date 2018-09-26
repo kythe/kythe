@@ -29,6 +29,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	rtpb "kythe.io/kythe/go/util/riegeli/riegeli_test_go_proto"
+	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )
 
 func TestParseOptions(t *testing.T) {
@@ -343,8 +344,27 @@ func TestReaderSeekAllPositions(t *testing.T) {
 	}
 }
 
+func TestRecordsMetadata(t *testing.T) {
+	opts := &WriterOptions{
+		Transpose:   true,
+		Compression: BrotliCompression(4),
+	}
+	expected := &rmpb.RecordsMetadata{
+		RecordWriterOptions: proto.String(opts.String()),
+	}
+
+	buf := writeStrings(t, opts, 128)
+	rd := NewReader(bytes.NewReader(buf.Bytes()))
+
+	found, err := rd.RecordsMetadata()
+	if err != nil {
+		log.Fatal(err)
+	} else if diff := cmp.Diff(found, expected, ignoreProtoXXXFields); diff != "" {
+		t.Errorf("Unexpected RecordsMetadata:  (-: found; +: expected)\n%s", diff)
+	}
+}
+
 // TODO(schroederc): test transposed chunks
-// TODO(schroederc): test RecordsMetadata
 // TODO(schroederc): test padding
 
 var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
