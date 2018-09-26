@@ -98,7 +98,10 @@ func TestReadWriteNonProto(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Run(test, func(t *testing.T) { testReadWriteStrings(t, opts) })
+		t.Run(test, func(t *testing.T) {
+			t.Parallel()
+			testReadWriteStrings(t, opts)
+		})
 	}
 }
 
@@ -108,7 +111,10 @@ func TestReadWriteProto(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Run(test, func(t *testing.T) { testReadWriteProtos(t, opts) })
+		t.Run(test, func(t *testing.T) {
+			t.Parallel()
+			testReadWriteProtos(t, opts)
+		})
 	}
 }
 
