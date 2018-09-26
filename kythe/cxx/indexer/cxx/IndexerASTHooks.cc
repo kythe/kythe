@@ -1559,7 +1559,6 @@ absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     const clang::FunctionDecl* FD) {
   std::vector<GraphObserver::NodeId> NIDS;
-  std::vector<const GraphObserver::NodeId*> NIDPS;
   const clang::TemplateArgumentLoc* ArgsAsWritten = nullptr;
   unsigned NumArgsAsWritten = 0;
   const clang::TemplateArgumentList* Args = nullptr;
@@ -1604,7 +1603,6 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     if (ArgsAsWritten) {
       // Prefer arguments as they were written in source files.
       NIDS.reserve(NumArgsAsWritten);
-      NIDPS.reserve(NumArgsAsWritten);
       for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
         if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I],
                                                         EmitRanges::Yes)) {
@@ -1616,7 +1614,6 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
       }
     } else {
       NIDS.reserve(Args->size());
-      NIDPS.reserve(Args->size());
       for (unsigned I = 0; I < Args->size(); ++I) {
         if (auto ArgId = BuildNodeIdForTemplateArgument(
                 Args->get(I), clang::SourceLocation())) {
@@ -1628,9 +1625,6 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
       }
     }
     if (CouldGetAllTypes) {
-      for (const auto& NID : NIDS) {
-        NIDPS.push_back(&NID);
-      }
       // If there's more than one possible template name (e.g., this is
       // dependent), choose one arbitrarily.
       for (const auto& TN : TNs) {
@@ -2819,10 +2813,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   if (ArgsAsWritten || Args) {
     bool CouldGetAllTypes = true;
     std::vector<GraphObserver::NodeId> NIDS;
-    std::vector<const GraphObserver::NodeId*> NIDPS;
     if (ArgsAsWritten) {
       NIDS.reserve(NumArgsAsWritten);
-      NIDPS.reserve(NumArgsAsWritten);
       for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
         if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I],
                                                         EmitRanges::Yes)) {
@@ -2834,7 +2826,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       }
     } else {
       NIDS.reserve(Args->size());
-      NIDPS.reserve(Args->size());
       for (unsigned I = 0; I < Args->size(); ++I) {
         if (auto ArgId = BuildNodeIdForTemplateArgument(
                 Args->get(I), clang::SourceLocation())) {
@@ -2846,9 +2837,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       }
     }
     if (CouldGetAllTypes) {
-      for (const auto& NID : NIDS) {
-        NIDPS.push_back(&NID);
-      }
       auto Confidence = TNsAreSpeculative
                             ? GraphObserver::Confidence::Speculative
                             : GraphObserver::Confidence::NonSpeculative;
@@ -3962,13 +3950,10 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(clang::RecordTypeLoc TL) {
     const auto& TAL = Spec->getTemplateArgs();
     std::vector<GraphObserver::NodeId> TemplateArgs;
     TemplateArgs.reserve(TAL.size());
-    std::vector<const GraphObserver::NodeId*> TemplateArgsPtrs;
-    TemplateArgsPtrs.reserve(TAL.size());
     for (const auto& Arg : TAL.asArray()) {
       if (auto ArgA =
               BuildNodeIdForTemplateArgument(Arg, Spec->getLocation())) {
         TemplateArgs.push_back(ArgA.value());
-        TemplateArgsPtrs.push_back(&TemplateArgs.back());
       } else {
         return NodeSet::Empty();
       }
@@ -4144,7 +4129,6 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentSizedArray(
 NodeSet IndexerASTVisitor::BuildNodeSetForFunctionProto(
     clang::FunctionProtoTypeLoc TL) {
   std::vector<GraphObserver::NodeId> NodeIds;
-  std::vector<const GraphObserver::NodeId*> NodeIdPtrs;
   auto ReturnType = BuildNodeIdForType(TL.getReturnLoc());
   if (!ReturnType) {
     return NodeSet::Empty();
@@ -4159,9 +4143,6 @@ NodeSet IndexerASTVisitor::BuildNodeSetForFunctionProto(
     }
   }
 
-  for (const auto& node : NodeIds) {
-    NodeIdPtrs.push_back(&node);
-  }
   const char* Tycon = TL.getTypePtr()->isVariadic() ? "fnvararg" : "fn";
   return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
                                  NodeIds);
@@ -4238,13 +4219,10 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
           BuildNodeIdForTemplateName(TL.getTypePtr()->getTemplateName())) {
     std::vector<GraphObserver::NodeId> TemplateArgs;
     TemplateArgs.reserve(TL.getNumArgs());
-    std::vector<const GraphObserver::NodeId*> TemplateArgsPtrs;
-    TemplateArgsPtrs.reserve(TL.getNumArgs());
     for (unsigned A = 0, AE = TL.getNumArgs(); A != AE; ++A) {
       if (auto ArgA =
               BuildNodeIdForTemplateArgument(TL.getArgLoc(A), EmitRanges::No)) {
         TemplateArgs.push_back(ArgA.value());
-        TemplateArgsPtrs.push_back(&TemplateArgs.back());
       } else {
         return NodeSet::Empty();
       }
@@ -4282,14 +4260,11 @@ NodeSet IndexerASTVisitor::BuildNodeSetForObjCObject(
       return *std::move(BaseId);
     }
     std::vector<NodeId> GenericArgIds;
-    std::vector<const NodeId*> GenericArgIdPtrs;
     GenericArgIds.reserve(TL.getNumTypeArgs());
-    GenericArgIdPtrs.resize(TL.getNumTypeArgs(), nullptr);
     for (unsigned int i = 0; i < TL.getNumTypeArgs(); ++i) {
       const auto* TI = TL.getTypeArgTInfo(i);
       if (auto Arg = BuildNodeIdForType(TI->getTypeLoc())) {
         GenericArgIds.push_back(*Arg);
-        GenericArgIdPtrs[i] = &GenericArgIds[i];
       } else {
         return NodeSet::Empty();
       }
@@ -5286,7 +5261,6 @@ absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD,
                                             EmitRanges EmitRanges) {
   std::vector<GraphObserver::NodeId> NodeIds;
-  std::vector<const GraphObserver::NodeId*> NodeIdPtrs;
   // If we are in an implicit method (for example: property access), we may
   // not get return type source information and we will have to rely on the
   // QualType provided by getReturnType.
@@ -5310,9 +5284,6 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD,
     }
   }
 
-  for (size_t I = 0; I < NodeIds.size(); ++I) {
-    NodeIdPtrs.push_back(&NodeIds[I]);
-  }
   // TODO(salguarnieri) Make this a constant somewhere
   const char* Tycon = "fn";
   return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
