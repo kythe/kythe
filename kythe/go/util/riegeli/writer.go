@@ -24,6 +24,8 @@ import (
 	"io"
 
 	"github.com/golang/protobuf/proto"
+
+	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )
 
 // https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md#file-signature
@@ -39,9 +41,41 @@ func (w *Writer) ensureFileHeader() error {
 	}
 
 	_, err := fileSignatureChunk.WriteTo(w.w, w.w.pos)
-	// TODO(schroederc): encode RecordsMetadata chunk
+	if err != nil {
+		return err
+	}
+
+	opts := w.opts.String()
+	if opts != "" {
+		rw, err := newTransposeChunkWriter(w.opts)
+		tw := &talliedRecordWriter{recordWriter: rw}
+		if err != nil {
+			return err
+		} else if _, err := tw.PutProto(&rmpb.RecordsMetadata{
+			// TODO(schroederc): add support for full RecordsMetadata
+			RecordWriterOptions: proto.String(opts),
+		}); err != nil {
+			return err
+		}
+		data, err := tw.Encode()
+		if err != nil {
+			return err
+		}
+		chunk := &chunk{
+			Header: chunkHeader{
+				ChunkType:       fileMetadataChunkType,
+				DataSize:        uint64(len(data)),
+				DecodedDataSize: tw.decodedSize,
+			},
+			Data: data,
+		}
+		if _, err := chunk.WriteTo(w.w, w.w.pos); err != nil {
+			return err
+		}
+	}
+
 	w.fileHeaderWritten = true
-	return err
+	return nil
 }
 
 func (w *Writer) setupRecordWriter() error {

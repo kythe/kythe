@@ -25,6 +25,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 
@@ -43,11 +46,34 @@ const (
 var DefaultCompression = BrotliCompression(DefaultBrotliLevel)
 
 // CompressionType is the type of compression used for encoding Riegeli chunks.
-type CompressionType interface{ isCompressionType() }
+type CompressionType interface {
+	fmt.Stringer
+	isCompressionType()
+}
 
 type compressionLevel struct {
 	compressionType
 	level int
+}
+
+// String encodes the compressionLevel as a textual WriterOption.
+func (c *compressionLevel) String() string {
+	switch c.compressionType {
+	case noCompression:
+		return uncompressedOption
+	case brotliCompression:
+		if c.level != DefaultBrotliLevel {
+			return fmt.Sprintf("%s:%d", brotliOption, c.level)
+		}
+		return brotliOption
+	case zstdCompression:
+		if c.level != DefaultZSTDLevel {
+			return fmt.Sprintf("%s:%d", zstdOption, c.level)
+		}
+		return zstdOption
+	default:
+		panic(fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(c.compressionType)}))
+	}
 }
 
 func (*compressionLevel) isCompressionType() {}
@@ -90,7 +116,101 @@ type WriterOptions struct {
 	Transpose bool
 }
 
-// TODO(schroederc): encode/decode options as a string for RecordsMetadata
+// Textual WriterOptions format:
+// https://github.com/google/riegeli/blob/4a321b2/riegeli/records/record_writer.h#L98
+const (
+	brotliOption       = "brotli"
+	chunkSizeOption    = "chunk_size"
+	defaultOptions     = "default"
+	transposeOption    = "transpose"
+	uncompressedOption = "uncompressed"
+	zstdOption         = "zstd"
+)
+
+// ParseOptions decodes a WriterOptions from text:
+//
+//   options ::= option? ("," option?)*
+//   option ::=
+//     "default" |
+//     "transpose" (":" ("true" | "false"))? |
+//     "uncompressed" |
+//     "brotli" (":" brotli_level)? |
+//     "zstd" (":" zstd_level)? |
+//     "chunk_size" ":" chunk_size
+//   brotli_level ::= integer 0..11 (default 9)
+//   zstd_level ::= integer 0..22 (default 9)
+//   chunk_size ::= positive integer
+func ParseOptions(s string) (*WriterOptions, error) {
+	if s == "" {
+		return nil, nil
+	}
+	opts := &WriterOptions{}
+	for _, opt := range strings.Split(s, ",") {
+		kv := strings.SplitN(opt, ":", 2)
+		switch kv[0] {
+		case defaultOptions: // ignore
+		case brotliOption:
+			level := DefaultBrotliLevel
+			if len(kv) != 1 {
+				var err error
+				level, err = strconv.Atoi(kv[1])
+				if err != nil {
+					return nil, fmt.Errorf("malformed option: %q: %v", opt, err)
+				}
+			}
+			opts.Compression = BrotliCompression(level)
+		case zstdOption:
+			level := DefaultZSTDLevel
+			if len(kv) != 1 {
+				var err error
+				level, err = strconv.Atoi(kv[1])
+				if err != nil {
+					return nil, fmt.Errorf("malformed option: %q: %v", opt, err)
+				}
+			}
+			opts.Compression = ZSTDCompression(level)
+		case transposeOption:
+			switch {
+			case len(kv) == 1 || kv[1] == "true":
+				opts.Transpose = true
+			case kv[1] == "false":
+				opts.Transpose = false
+			default:
+				return nil, fmt.Errorf("malformed option: %q", opt)
+			}
+		case uncompressedOption:
+			if len(kv) != 1 {
+				return nil, fmt.Errorf("malformed option: %q", opt)
+			}
+			opts.Compression = NoCompression
+		default:
+			return nil, fmt.Errorf("unknown option: %q", opt)
+		}
+	}
+	return opts, nil
+}
+
+// String encodes the WriterOptions as text.
+func (o *WriterOptions) String() string {
+	if o == nil {
+		return ""
+	}
+	var options []string
+	if o.ChunkSize > 0 {
+		options = append(options, fmt.Sprintf("%s:%d", chunkSizeOption, o.ChunkSize))
+	}
+	if o.Compression != nil {
+		options = append(options, o.Compression.String())
+	}
+	if o.Transpose {
+		options = append(options, transposeOption)
+	}
+	if len(options) == 0 {
+		return defaultOptions
+	}
+	sort.Strings(options)
+	return strings.Join(options, ",")
+}
 
 func (o *WriterOptions) compressionType() compressionType {
 	c := DefaultCompression
@@ -136,9 +256,6 @@ func NewWriterAt(w io.Writer, pos int, opts *WriterOptions) *Writer {
 }
 
 // Writer is a Riegeli records file writer.
-//
-// TODO(schroederc): add support for writing RecordsMetadata
-// TODO(schroederc): add support for tranposed records
 type Writer struct {
 	opts *WriterOptions
 	w    *blockWriter

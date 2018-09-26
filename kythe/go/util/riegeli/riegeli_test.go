@@ -29,7 +29,36 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	rtpb "kythe.io/kythe/go/util/riegeli/riegeli_test_go_proto"
+	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )
+
+func TestParseOptions(t *testing.T) {
+	tests := []string{
+		"",
+		"default",
+		"brotli",
+		"brotli:5",
+		"transpose",
+		"uncompressed",
+		"zstd",
+		"zstd:5",
+		"brotli,transpose",
+		"transpose,uncompressed",
+		"brotli:5,transpose",
+	}
+
+	for _, test := range tests {
+		opts, err := ParseOptions(test)
+		if err != nil {
+			t.Errorf("ParseOptions error: %v", err)
+			continue
+		}
+
+		if found := opts.String(); found != test {
+			t.Errorf("Expected: %q; found: %q", test, found)
+		}
+	}
+}
 
 func TestWriteEmpty(t *testing.T) {
 	var buf bytes.Buffer
@@ -53,30 +82,40 @@ func TestWriteEmpty(t *testing.T) {
 	}
 }
 
-// TODO(schroederc): replace name with string encoding of options (ala C++)
-var testedOptions = []struct {
-	Name string
-	*WriterOptions
-}{
-	{"defaults", nil},
-	{"uncompressed", &WriterOptions{Compression: NoCompression}},
-	{"brotli", &WriterOptions{Compression: BrotliCompression(-1)}},
-	{"zstd", &WriterOptions{Compression: ZSTDCompression(-1)}},
+var testedOptions = []string{
+	"default",
+	"uncompressed",
+	"brotli",
+	"zstd",
 
-	{"transpose", &WriterOptions{Transpose: true}},
-	{"uncompressed,transpose", &WriterOptions{Compression: NoCompression, Transpose: true}},
-	{"brotli,transpose", &WriterOptions{Compression: BrotliCompression(-1), Transpose: true}},
+	"transpose",
+	"uncompressed,transpose",
+	"brotli,transpose",
 }
 
 func TestReadWriteNonProto(t *testing.T) {
 	for _, test := range testedOptions {
-		t.Run(test.Name, func(t *testing.T) { testReadWriteStrings(t, test.WriterOptions) })
+		opts, err := ParseOptions(test)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Run(test, func(t *testing.T) {
+			t.Parallel()
+			testReadWriteStrings(t, opts)
+		})
 	}
 }
 
 func TestReadWriteProto(t *testing.T) {
 	for _, test := range testedOptions {
-		t.Run(test.Name, func(t *testing.T) { testReadWriteProtos(t, test.WriterOptions) })
+		opts, err := ParseOptions(test)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Run(test, func(t *testing.T) {
+			t.Parallel()
+			testReadWriteProtos(t, opts)
+		})
 	}
 }
 
@@ -305,8 +344,27 @@ func TestReaderSeekAllPositions(t *testing.T) {
 	}
 }
 
+func TestRecordsMetadata(t *testing.T) {
+	opts := &WriterOptions{
+		Transpose:   true,
+		Compression: BrotliCompression(4),
+	}
+	expected := &rmpb.RecordsMetadata{
+		RecordWriterOptions: proto.String(opts.String()),
+	}
+
+	buf := writeStrings(t, opts, 128)
+	rd := NewReader(bytes.NewReader(buf.Bytes()))
+
+	found, err := rd.RecordsMetadata()
+	if err != nil {
+		log.Fatal(err)
+	} else if diff := cmp.Diff(found, expected, ignoreProtoXXXFields); diff != "" {
+		t.Errorf("Unexpected RecordsMetadata:  (-: found; +: expected)\n%s", diff)
+	}
+}
+
 // TODO(schroederc): test transposed chunks
-// TODO(schroederc): test RecordsMetadata
 // TODO(schroederc): test padding
 
 var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
