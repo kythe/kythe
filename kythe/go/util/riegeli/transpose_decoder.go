@@ -244,6 +244,10 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 		if next >= numStates {
 			machine.states[i].implicit = true
 			machine.states[i].next = int(next - numStates)
+
+			if machine.states[i].next >= int(numStates) {
+				return nil, fmt.Errorf("invalid state transition: %d (numStates: %d)", machine.states[i].next, numStates)
+			}
 		} else {
 			machine.states[i].next = int(next)
 		}
