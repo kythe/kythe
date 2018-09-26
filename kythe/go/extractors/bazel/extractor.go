@@ -283,7 +283,9 @@ func (c *Config) classifyInputs(info *ActionInfo, unit *apb.CompilationUnit) []s
 	for _, in := range info.Inputs {
 		path, ok := c.checkInput(in)
 		if ok {
-			inputs.Add(path)
+			if !inputs.Add(path) {
+				continue // don't re-add files we've already seen
+			}
 			if c.isSource(path) {
 				sourceFiles.Add(path)
 				c.logPrintf("Matched source file from inputs: %q", path)
