@@ -24,6 +24,7 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
@@ -82,7 +83,7 @@ public class JsonUtil {
     @Override
     public JsonElement serialize(GeneratedMessageV3 msg, Type t, JsonSerializationContext ctx) {
       try {
-        return new JsonPrimitive(PRINTER.print(msg));
+        return new JsonParser().parse(PRINTER.print(msg));
       } catch (InvalidProtocolBufferException e) {
         throw new RuntimeException(e);
       }

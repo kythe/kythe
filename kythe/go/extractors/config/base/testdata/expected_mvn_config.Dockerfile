@@ -18,6 +18,7 @@ COPY --from=javac-extractor-artifacts /opt/kythe/extractors/javac_extractor.jar 
 ENV KYTHE_CORPUS=testcorpus
 ENV REAL_JAVAC=$JAVA_HOME/bin/javac
 ENV JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
+ENV KYTHE_OUTPUT_FILE=$KYTHE_OUTPUT_DIRECTORY/extractor-output.kzip
 COPY --from=maven /usr/share/maven /usr/share/maven
 COPY --from=maven /etc/ssl /etc/ssl
 ENV MAVEN_HOME=/usr/share/maven

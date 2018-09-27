@@ -18,6 +18,7 @@ COPY --from=javac-extractor-artifacts /opt/kythe/extractors/javac_extractor.jar 
 ENV KYTHE_CORPUS=testcorpus
 ENV REAL_JAVAC=$JAVA_HOME/bin/javac
 ENV JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
+ENV KYTHE_OUTPUT_FILE=$KYTHE_OUTPUT_DIRECTORY/extractor-output.kzip
 COPY --from=gradle /usr/share/gradle /usr/share/gradle
 COPY --from=gradle /etc/ssl /etc/ssl
 ENV GRADLE_HOME=/usr/share/gradle
