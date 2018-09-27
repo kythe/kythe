@@ -61,7 +61,7 @@ ADD cache-llvm.sh /usr/bin/
 RUN chmod +x /usr/bin/cache-llvm.sh && cache-llvm.sh --init
 
 # Install latest supported Bazel version
-RUN curl -L -o /usr/bin/bazel-0.17.1 https://github.com/bazelbuild/bazel/releases/download/0.17.1/bazel-0.17.1-linux-x86_64 && chmod +x /usr/bin/bazel-0.17.1
+RUN curl -L -o /usr/bin/bazel-0.17.2 https://github.com/bazelbuild/bazel/releases/download/0.17.2/bazel-0.17.2-linux-x86_64 && chmod +x /usr/bin/bazel-0.17.2
 
 # Buildbot configuration
 ADD bazelrc /root/.bazelrc
