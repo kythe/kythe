@@ -980,6 +980,22 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "function_knr_defn",
+    srcs = ["function/function_knr_defn.c"],
+    std = "gnu89",
+    tags = ["function"],
+)
+
+cc_indexer_test(
+    name = "function_picky_types",
+    srcs = ["function/function_picky_types.c"],
+    convert_marked_source = True,
+    ignore_dups = True,
+    std = "gnu89",
+    tags = ["function"],
+)
+
+cc_indexer_test(
     name = "function_lambda",
     srcs = ["function/function_lambda.cc"],
     ignore_dups = True,
