@@ -24,6 +24,7 @@
 
 #include "absl/strings/escaping.h"
 #include "absl/types/optional.h"
+#include "absl/types/span.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/Specifiers.h"
@@ -409,9 +410,8 @@ class GraphObserver {
   /// \param Params The `NodeId`s of the types to apply to the constructor or
   /// abstraction.
   /// \return The application's result's ID.
-  virtual NodeId nodeIdForTappNode(
-      const NodeId& TyconId,
-      const std::vector<const NodeId*>& Params) const = 0;
+  virtual NodeId nodeIdForTappNode(const NodeId& TyconId,
+                                   absl::Span<const NodeId> Params) const = 0;
 
   /// \brief Records a type application node, returning its ID.
   /// \note This is the elimination form for the `abs` node.
@@ -424,7 +424,7 @@ class GraphObserver {
   /// assigned its default value (or Params.size() otherwise).
   /// \return The application's result's ID.
   virtual NodeId recordTappNode(const NodeId& TappId, const NodeId& TyconId,
-                                const std::vector<const NodeId*>& Params,
+                                absl::Span<const NodeId> Params,
                                 unsigned FirstDefaultParam) = 0;
 
   /// \brief Records a type application node, returning its ID.
@@ -436,31 +436,42 @@ class GraphObserver {
   /// \param FirstDefaultParam The first type parameter to consider
   /// assigned its default value (or Params.size() otherwise).
   /// \return The application's result's ID.
-  NodeId recordTappNode(const NodeId& TyconId,
-                        const std::vector<const NodeId*>& Params,
+  NodeId recordTappNode(const NodeId& TyconId, absl::Span<const NodeId> Params,
                         unsigned FirstDefaultParam) {
     return recordTappNode(nodeIdForTappNode(TyconId, Params), TyconId, Params,
                           FirstDefaultParam);
+  }
+
+  /// \brief Records a type application node, returning its ID.
+  /// \note This is the elimination form for the `abs` node.
+  /// \param TyconId The `NodeId` of the appropriate type constructor or
+  /// abstraction.
+  /// \param Params The `NodeId`s of the types to apply to the constructor or
+  /// abstraction.
+  /// Uses Params.size() for FirstDefaultParam.
+  /// \return The application's result's ID.
+  NodeId recordTappNode(const NodeId& TyconId,
+                        absl::Span<const NodeId> Params) {
+    return recordTappNode(TyconId, Params, Params.size());
   }
 
   /// \brief Returns the ID for a tsigma type node (e.g. a C++ parameter pack
   /// substitution).
   /// \param Params The `NodeId`s of the types to include.
   /// \return The result's ID.
-  virtual NodeId nodeIdForTsigmaNode(
-      const std::vector<const NodeId*>& Params) const = 0;
+  virtual NodeId nodeIdForTsigmaNode(absl::Span<const NodeId> Params) const = 0;
 
   /// \brief Records a sigma node, returning its ID.
   /// \param TsigmaId The `NodeId` to record.
   /// \param Params The `NodeId`s of the types to include.
   /// \return The result's ID.
   virtual NodeId recordTsigmaNode(const NodeId& TsigmaId,
-                                  const std::vector<const NodeId*>& Params) = 0;
+                                  absl::Span<const NodeId> Params) = 0;
 
   /// \brief Records a sigma node, returning its ID.
   /// \param Params The `NodeId`s of the types to include.
   /// \return The result's ID.
-  NodeId recordTsigmaNode(const std::vector<const NodeId*>& Params) {
+  NodeId recordTsigmaNode(absl::Span<const NodeId> Params) {
     return recordTsigmaNode(nodeIdForTsigmaNode(Params), Params);
   }
 
@@ -1100,24 +1111,22 @@ class NullGraphObserver : public GraphObserver {
     return NodeId(getDefaultClaimToken(), "");
   }
 
-  NodeId nodeIdForTsigmaNode(
-      const std::vector<const NodeId*>& Params) const override {
+  NodeId nodeIdForTsigmaNode(absl::Span<const NodeId> Params) const override {
     return NodeId(getDefaultClaimToken(), "");
   }
 
   NodeId recordTsigmaNode(const NodeId& TsigmaId,
-                          const std::vector<const NodeId*>& Params) override {
+                          absl::Span<const NodeId> Params) override {
     return TsigmaId;
   }
 
-  NodeId nodeIdForTappNode(
-      const NodeId& TyconId,
-      const std::vector<const NodeId*>& Params) const override {
+  NodeId nodeIdForTappNode(const NodeId& TyconId,
+                           absl::Span<const NodeId> Params) const override {
     return NodeId(getDefaultClaimToken(), "");
   }
 
   NodeId recordTappNode(const NodeId& TappId, const NodeId& TyconId,
-                        const std::vector<const NodeId*>& Params,
+                        absl::Span<const NodeId> Params,
                         unsigned FirstDefaultParam) override {
     return NodeId(getDefaultClaimToken(), "");
   }

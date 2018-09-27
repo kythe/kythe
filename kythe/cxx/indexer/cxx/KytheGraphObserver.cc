@@ -16,6 +16,8 @@
 
 #include "KytheGraphObserver.h"
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -48,6 +50,13 @@ DEFINE_bool(fail_on_unimplemented_builtin, false,
 
 namespace kythe {
 namespace {
+
+struct ClaimedStringFormatter {
+  void operator()(std::string* out, const GraphObserver::NodeId& id) {
+    out->append(id.ToClaimedString());
+  }
+};
+
 absl::string_view ConvertRef(llvm::StringRef ref) {
   return absl::string_view(ref.data(), ref.size());
 }
@@ -770,38 +779,29 @@ GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
 }
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTsigmaNode(
-    const std::vector<const NodeId*>& params) const {
-  std::string identity;
-  llvm::raw_string_ostream ostream(identity);
-  bool comma = false;
-  ostream << "#sigma(";
-  for (const auto* next_id : params) {
-    if (comma) {
-      ostream << ",";
-    }
-    ostream << next_id->ToClaimedString();
-    comma = true;
-  }
-  ostream << ")";
-  return GraphObserver::NodeId(&type_token_, ostream.str());
+    absl::Span<const NodeId> params) const {
+  return GraphObserver::NodeId(
+      &type_token_,
+      absl::StrCat("#sigma(",
+                   absl::StrJoin(params, ",", ClaimedStringFormatter{}), ")"));
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordTsigmaNode(
-    const NodeId& tsigma_id, const std::vector<const NodeId*>& params) {
+    const NodeId& tsigma_id, absl::Span<const NodeId> params) {
   if (!deferring_nodes_ ||
       written_types_.insert(tsigma_id.ToClaimedString()).second) {
-    VNameRef tsigma_vname(VNameRefFromNodeId(tsigma_id));
+    VNameRef tsigma_vname = VNameRefFromNodeId(tsigma_id);
     recorder_->AddProperty(tsigma_vname, NodeKindID::kTSigma);
     for (uint32_t param_index = 0; param_index < params.size(); ++param_index) {
       recorder_->AddEdge(tsigma_vname, EdgeKindID::kParam,
-                         VNameRefFromNodeId(*params[param_index]), param_index);
+                         VNameRefFromNodeId(params[param_index]), param_index);
     }
   }
   return tsigma_id;
 }
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTappNode(
-    const NodeId& tycon_id, const std::vector<const NodeId*>& params) const {
+    const NodeId& tycon_id, absl::Span<const NodeId> params) const {
   // We can't just use juxtaposition here because it leads to ambiguity
   // as we can't assume that we have kind information, eg
   //   foo bar baz
@@ -809,29 +809,19 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForTappNode(
   //   foo (bar baz)
   // We'll turn it into a C-style function application:
   //   foo(bar,baz) || foo(bar(baz))
-  std::string identity;
-  llvm::raw_string_ostream ostream(identity);
-  bool comma = false;
-  ostream << tycon_id.ToClaimedString();
-  ostream << "(";
-  for (const auto* next_id : params) {
-    if (comma) {
-      ostream << ",";
-    }
-    ostream << next_id->ToClaimedString();
-    comma = true;
-  }
-  ostream << ")";
-  return GraphObserver::NodeId(&type_token_, ostream.str());
+  return GraphObserver::NodeId(
+      &type_token_,
+      absl::StrCat(tycon_id.ToClaimedString(), "(",
+                   absl::StrJoin(params, ",", ClaimedStringFormatter{}), ")"));
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordTappNode(
     const NodeId& tapp_id, const NodeId& tycon_id,
-    const std::vector<const NodeId*>& params, unsigned first_default_param) {
+    absl::Span<const NodeId> params, unsigned first_default_param) {
   CHECK(first_default_param <= params.size());
   if (!deferring_nodes_ ||
       written_types_.insert(tapp_id.ToClaimedString()).second) {
-    VNameRef tapp_vname(VNameRefFromNodeId(tapp_id));
+    VNameRef tapp_vname = VNameRefFromNodeId(tapp_id);
     recorder_->AddProperty(tapp_vname, NodeKindID::kTApp);
     if (first_default_param < params.size()) {
       recorder_->AddProperty(tapp_vname, PropertyID::kParamDefault,
@@ -841,7 +831,7 @@ GraphObserver::NodeId KytheGraphObserver::recordTappNode(
                        VNameRefFromNodeId(tycon_id), 0);
     for (uint32_t param_index = 0; param_index < params.size(); ++param_index) {
       recorder_->AddEdge(tapp_vname, EdgeKindID::kParam,
-                         VNameRefFromNodeId(*params[param_index]),
+                         VNameRefFromNodeId(params[param_index]),
                          param_index + 1);
     }
   }

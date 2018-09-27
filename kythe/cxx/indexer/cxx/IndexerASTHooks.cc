@@ -1222,13 +1222,8 @@ bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
       BuildNodeIdForDependentName(E->getQualifierLoc(), E->getMember(),
                                   E->getMemberLoc(), Root, EmitRanges::Yes);
   if (DepNodeId && E->hasExplicitTemplateArgs()) {
-    std::vector<GraphObserver::NodeId> ArgIds;
-    std::vector<const GraphObserver::NodeId*> ArgNodeIds;
-    if (BuildTemplateArgumentList(
-            llvm::makeArrayRef(E->getTemplateArgs(), E->getNumTemplateArgs()),
-            llvm::None, ArgIds, ArgNodeIds)) {
-      auto TappNodeId = Observer.recordTappNode(DepNodeId.value(), ArgNodeIds,
-                                                ArgNodeIds.size());
+    if (auto ArgIds = BuildTemplateArgumentList(E->template_arguments())) {
+      auto TappNodeId = Observer.recordTappNode(*DepNodeId, *ArgIds);
       auto StmtId = BuildNodeIdForImplicitStmt(E);
       auto Range = clang::SourceRange(E->getMemberLoc(),
                                       E->getEndLoc().getLocWithOffset(1));
@@ -1266,11 +1261,7 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
           GraphObserver::Claimability::Unclaimable, IsImplicit(RCC.value()));
       if (E->hasExplicitTemplateArgs()) {
         // We still want to link the template args.
-        std::vector<GraphObserver::NodeId> ArgIds;
-        std::vector<const GraphObserver::NodeId*> ArgNodeIds;
-        BuildTemplateArgumentList(
-            llvm::makeArrayRef(E->getTemplateArgs(), E->getNumTemplateArgs()),
-            llvm::None, ArgIds, ArgNodeIds);
+        BuildTemplateArgumentList(E->template_arguments());
       }
     }
   }
@@ -1546,34 +1537,27 @@ IndexerASTVisitor::BuildNodeIdForImplicitClassTemplateInstantiation(
           dyn_cast<const clang::ClassTemplatePartialSpecializationDecl>(CTSD)) {
     ArgsAsWritten = CTPSD->getTemplateArgsAsWritten();
   }
-  std::vector<GraphObserver::NodeId> NIDS;
-  std::vector<const GraphObserver::NodeId*> NIDPS;
   auto PrimaryOrPartial = CTSD->getSpecializedTemplateOrPartial();
-  if (BuildTemplateArgumentList(
-          ArgsAsWritten ? llvm::makeArrayRef(ArgsAsWritten->getTemplateArgs(),
-                                             ArgsAsWritten->NumTemplateArgs)
-                        : Optional<ArrayRef<TemplateArgumentLoc>>(),
-          CTSD->getTemplateArgs().asArray(), NIDS, NIDPS)) {
+  if (auto NIDS =
+          (ArgsAsWritten ? BuildTemplateArgumentList(ArgsAsWritten->arguments())
+                         : BuildTemplateArgumentList(
+                               CTSD->getTemplateArgs().asArray()))) {
     if (auto SpecializedNode = BuildNodeIdForTemplateName(
             clang::TemplateName(CTSD->getSpecializedTemplate()))) {
       if (PrimaryOrPartial.is<clang::ClassTemplateDecl*>() &&
           !isa<const clang::ClassTemplatePartialSpecializationDecl>(CTSD)) {
         // Point to a tapp of the primary template.
-        return Observer.recordTappNode(
-            SpecializedNode.value(), NIDPS,
-            ArgsAsWritten ? ArgsAsWritten->NumTemplateArgs : NIDPS.size());
+        return Observer.recordTappNode(*SpecializedNode, *NIDS);
       }
     }
   }
   if (const auto* Partial =
           PrimaryOrPartial
               .dyn_cast<clang::ClassTemplatePartialSpecializationDecl*>()) {
-    if (BuildTemplateArgumentList(
-            llvm::None, CTSD->getTemplateInstantiationArgs().asArray(), NIDS,
-            NIDPS)) {
+    if (auto NIDS = BuildTemplateArgumentList(
+            CTSD->getTemplateInstantiationArgs().asArray())) {
       // Point to a tapp of the partial template specialization.
-      return Observer.recordTappNode(BuildNodeIdForDecl(Partial), NIDPS,
-                                     NIDPS.size());
+      return Observer.recordTappNode(BuildNodeIdForDecl(Partial), *NIDS);
     }
   }
   return absl::nullopt;
@@ -1583,7 +1567,6 @@ absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     const clang::FunctionDecl* FD) {
   std::vector<GraphObserver::NodeId> NIDS;
-  std::vector<const GraphObserver::NodeId*> NIDPS;
   const clang::TemplateArgumentLoc* ArgsAsWritten = nullptr;
   unsigned NumArgsAsWritten = 0;
   const clang::TemplateArgumentList* Args = nullptr;
@@ -1628,7 +1611,6 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     if (ArgsAsWritten) {
       // Prefer arguments as they were written in source files.
       NIDS.reserve(NumArgsAsWritten);
-      NIDPS.reserve(NumArgsAsWritten);
       for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
         if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I],
                                                         EmitRanges::Yes)) {
@@ -1640,7 +1622,6 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
       }
     } else {
       NIDS.reserve(Args->size());
-      NIDPS.reserve(Args->size());
       for (unsigned I = 0; I < Args->size(); ++I) {
         if (auto ArgId = BuildNodeIdForTemplateArgument(
                 Args->get(I), clang::SourceLocation())) {
@@ -1652,14 +1633,11 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
       }
     }
     if (CouldGetAllTypes) {
-      for (const auto& NID : NIDS) {
-        NIDPS.push_back(&NID);
-      }
       // If there's more than one possible template name (e.g., this is
       // dependent), choose one arbitrarily.
       for (const auto& TN : TNs) {
         if (auto SpecializedNode = BuildNodeIdForTemplateName(TN.first)) {
-          return Observer.recordTappNode(SpecializedNode.value(), NIDPS,
+          return Observer.recordTappNode(SpecializedNode.value(), NIDS,
                                          NumArgsAsWritten);
         }
       }
@@ -1943,39 +1921,34 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
   return true;
 }
 
-bool IndexerASTVisitor::BuildTemplateArgumentList(
-    Optional<ArrayRef<TemplateArgumentLoc>> ArgsAsWritten,
-    ArrayRef<TemplateArgument> Args, std::vector<GraphObserver::NodeId>& ArgIds,
-    std::vector<const GraphObserver::NodeId*>& ArgNodeIds) {
-  ArgIds.clear();
-  ArgNodeIds.clear();
-  if (ArgsAsWritten) {
-    ArgIds.reserve(ArgsAsWritten->size());
-    ArgNodeIds.reserve(ArgsAsWritten->size());
-    for (const auto& ArgLoc : *ArgsAsWritten) {
-      if (auto ArgId =
-              BuildNodeIdForTemplateArgument(ArgLoc, EmitRanges::Yes)) {
-        ArgIds.push_back(ArgId.value());
-      } else {
-        return false;
-      }
-    }
-  } else {
-    ArgIds.reserve(Args.size());
-    ArgNodeIds.reserve(Args.size());
-    for (const auto& Arg : Args) {
-      if (auto ArgId =
-              BuildNodeIdForTemplateArgument(Arg, clang::SourceLocation())) {
-        ArgIds.push_back(ArgId.value());
-      } else {
-        return false;
-      }
+absl::optional<std::vector<GraphObserver::NodeId>>
+IndexerASTVisitor::BuildTemplateArgumentList(ArrayRef<TemplateArgument> Args) {
+  std::vector<NodeId> result;
+  result.reserve(Args.size());
+  for (const auto& Arg : Args) {
+    if (auto ArgId =
+            BuildNodeIdForTemplateArgument(Arg, clang::SourceLocation())) {
+      result.push_back(*ArgId);
+    } else {
+      return absl::nullopt;
     }
   }
-  for (const auto& NID : ArgIds) {
-    ArgNodeIds.push_back(&NID);
+  return result;
+}
+
+absl::optional<std::vector<GraphObserver::NodeId>>
+IndexerASTVisitor::BuildTemplateArgumentList(
+    ArrayRef<TemplateArgumentLoc> Args) {
+  std::vector<NodeId> result;
+  result.reserve(Args.size());
+  for (const auto& ArgLoc : Args) {
+    if (auto ArgId = BuildNodeIdForTemplateArgument(ArgLoc, EmitRanges::Yes)) {
+      result.push_back(*ArgId);
+    } else {
+      return absl::nullopt;
+    }
   }
-  return true;
+  return result;
 }
 
 bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
@@ -2023,14 +1996,11 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
     // If this is a partial specialization, we've already recorded the newly
     // abstracted parameters above. We can now record the type arguments passed
     // to the template we're specializing. Synthesize the type we need.
-    std::vector<GraphObserver::NodeId> NIDS;
-    std::vector<const GraphObserver::NodeId*> NIDPS;
     auto PrimaryOrPartial = VTSD->getSpecializedTemplateOrPartial();
-    if (BuildTemplateArgumentList(
-            ArgsAsWritten ? llvm::makeArrayRef(ArgsAsWritten->getTemplateArgs(),
-                                               ArgsAsWritten->NumTemplateArgs)
-                          : Optional<ArrayRef<TemplateArgumentLoc>>(),
-            VTSD->getTemplateArgs().asArray(), NIDS, NIDPS)) {
+    if (auto NIDS = (ArgsAsWritten
+                         ? BuildTemplateArgumentList(ArgsAsWritten->arguments())
+                         : BuildTemplateArgumentList(
+                               VTSD->getTemplateArgs().asArray()))) {
       if (auto SpecializedNode = BuildNodeIdForTemplateName(
               clang::TemplateName(VTSD->getSpecializedTemplate()))) {
         if (PrimaryOrPartial.is<clang::VarTemplateDecl*>() &&
@@ -2038,31 +2008,22 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
           // This is both an instance and a specialization of the primary
           // template. We use the same arguments list for both.
           Observer.recordInstEdge(
-              DeclNode,
-              Observer.recordTappNode(SpecializedNode.value(), NIDPS,
-                                      ArgsAsWritten
-                                          ? ArgsAsWritten->NumTemplateArgs
-                                          : NIDPS.size()),
+              DeclNode, Observer.recordTappNode(SpecializedNode.value(), *NIDS),
               GraphObserver::Confidence::NonSpeculative);
         }
         Observer.recordSpecEdge(
-            DeclNode,
-            Observer.recordTappNode(
-                SpecializedNode.value(), NIDPS,
-                ArgsAsWritten ? ArgsAsWritten->NumTemplateArgs : NIDPS.size()),
+            DeclNode, Observer.recordTappNode(SpecializedNode.value(), *NIDS),
             GraphObserver::Confidence::NonSpeculative);
       }
     }
     if (const auto* Partial =
             PrimaryOrPartial
                 .dyn_cast<clang::VarTemplatePartialSpecializationDecl*>()) {
-      if (BuildTemplateArgumentList(
-              llvm::None, VTSD->getTemplateInstantiationArgs().asArray(), NIDS,
-              NIDPS)) {
+      if (auto NIDS = BuildTemplateArgumentList(
+              VTSD->getTemplateInstantiationArgs().asArray())) {
         Observer.recordInstEdge(
             DeclNode,
-            Observer.recordTappNode(BuildNodeIdForDecl(Partial), NIDPS,
-                                    NIDPS.size()),
+            Observer.recordTappNode(BuildNodeIdForDecl(Partial), *NIDS),
             GraphObserver::Confidence::NonSpeculative);
       }
     }
@@ -2681,14 +2642,11 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
     // If this is a partial specialization, we've already recorded the newly
     // abstracted parameters above. We can now record the type arguments passed
     // to the template we're specializing. Synthesize the type we need.
-    std::vector<GraphObserver::NodeId> NIDS;
-    std::vector<const GraphObserver::NodeId*> NIDPS;
     auto PrimaryOrPartial = CTSD->getSpecializedTemplateOrPartial();
-    if (BuildTemplateArgumentList(
-            ArgsAsWritten ? llvm::makeArrayRef(ArgsAsWritten->getTemplateArgs(),
-                                               ArgsAsWritten->NumTemplateArgs)
-                          : Optional<ArrayRef<TemplateArgumentLoc>>(),
-            CTSD->getTemplateArgs().asArray(), NIDS, NIDPS)) {
+    if (auto NIDS = (ArgsAsWritten
+                         ? BuildTemplateArgumentList(ArgsAsWritten->arguments())
+                         : BuildTemplateArgumentList(
+                               CTSD->getTemplateArgs().asArray()))) {
       if (auto SpecializedNode = BuildNodeIdForTemplateName(
               clang::TemplateName(CTSD->getSpecializedTemplate()))) {
         if (PrimaryOrPartial.is<clang::ClassTemplateDecl*>() &&
@@ -2696,31 +2654,22 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
           // This is both an instance and a specialization of the primary
           // template. We use the same arguments list for both.
           Observer.recordInstEdge(
-              DeclNode,
-              Observer.recordTappNode(SpecializedNode.value(), NIDPS,
-                                      ArgsAsWritten
-                                          ? ArgsAsWritten->NumTemplateArgs
-                                          : NIDPS.size()),
+              DeclNode, Observer.recordTappNode(SpecializedNode.value(), *NIDS),
               GraphObserver::Confidence::NonSpeculative);
         }
         Observer.recordSpecEdge(
-            DeclNode,
-            Observer.recordTappNode(
-                SpecializedNode.value(), NIDPS,
-                ArgsAsWritten ? ArgsAsWritten->NumTemplateArgs : NIDPS.size()),
+            DeclNode, Observer.recordTappNode(SpecializedNode.value(), *NIDS),
             GraphObserver::Confidence::NonSpeculative);
       }
     }
     if (const auto* Partial =
             PrimaryOrPartial
                 .dyn_cast<clang::ClassTemplatePartialSpecializationDecl*>()) {
-      if (BuildTemplateArgumentList(
-              llvm::None, CTSD->getTemplateInstantiationArgs().asArray(), NIDS,
-              NIDPS)) {
+      if (auto NIDS = BuildTemplateArgumentList(
+              CTSD->getTemplateInstantiationArgs().asArray())) {
         Observer.recordInstEdge(
             DeclNode,
-            Observer.recordTappNode(BuildNodeIdForDecl(Partial), NIDPS,
-                                    NIDPS.size()),
+            Observer.recordTappNode(BuildNodeIdForDecl(Partial), *NIDS),
             GraphObserver::Confidence::NonSpeculative);
       }
     }
@@ -2822,7 +2771,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     Observer.recordInstEdge(
         OuterNode,
         Observer.recordTappNode(BuildNodeIdForDecl(MSI->getInstantiatedFrom()),
-                                {}, 0),
+                                {}),
         GraphObserver::Confidence::NonSpeculative);
   } else if (auto* FTSI = Decl->getTemplateSpecializationInfo()) {
     if (FTSI->TemplateArgumentsAsWritten) {
@@ -2872,10 +2821,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   if (ArgsAsWritten || Args) {
     bool CouldGetAllTypes = true;
     std::vector<GraphObserver::NodeId> NIDS;
-    std::vector<const GraphObserver::NodeId*> NIDPS;
     if (ArgsAsWritten) {
       NIDS.reserve(NumArgsAsWritten);
-      NIDPS.reserve(NumArgsAsWritten);
       for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
         if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I],
                                                         EmitRanges::Yes)) {
@@ -2887,7 +2834,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       }
     } else {
       NIDS.reserve(Args->size());
-      NIDPS.reserve(Args->size());
       for (unsigned I = 0; I < Args->size(); ++I) {
         if (auto ArgId = BuildNodeIdForTemplateArgument(
                 Args->get(I), clang::SourceLocation())) {
@@ -2899,9 +2845,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       }
     }
     if (CouldGetAllTypes) {
-      for (const auto& NID : NIDS) {
-        NIDPS.push_back(&NID);
-      }
       auto Confidence = TNsAreSpeculative
                             ? GraphObserver::Confidence::Speculative
                             : GraphObserver::Confidence::NonSpeculative;
@@ -2912,12 +2855,12 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
           // the primary template as its first argument) as specializes edges.
           Observer.recordInstEdge(
               OuterNode,
-              Observer.recordTappNode(SpecializedNode.value(), NIDPS,
+              Observer.recordTappNode(SpecializedNode.value(), NIDS,
                                       NumArgsAsWritten),
               Confidence);
           Observer.recordSpecEdge(
               OuterNode,
-              Observer.recordTappNode(SpecializedNode.value(), NIDPS,
+              Observer.recordTappNode(SpecializedNode.value(), NIDS,
                                       NumArgsAsWritten),
               Confidence);
         }
@@ -3642,8 +3585,8 @@ bool IndexerASTVisitor::IsDefinition(const FunctionDecl* FunctionDecl) {
 
 GraphObserver::NodeId IndexerASTVisitor::ApplyBuiltinTypeConstructor(
     const char* BuiltinName, const GraphObserver::NodeId& Param) {
-  GraphObserver::NodeId TyconID(Observer.getNodeIdForBuiltinType(BuiltinName));
-  return Observer.recordTappNode(TyconID, {&Param}, 1);
+  GraphObserver::NodeId TyconID = Observer.getNodeIdForBuiltinType(BuiltinName);
+  return Observer.recordTappNode(TyconID, {Param});
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -3934,18 +3877,13 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       std::vector<GraphObserver::NodeId> Nodes;
       Nodes.reserve(Arg.pack_size());
       for (const auto& Element : Arg.pack_elements()) {
-        auto Id(BuildNodeIdForTemplateArgument(Element, L));
+        auto Id = BuildNodeIdForTemplateArgument(Element, L);
         if (!Id) {
-          return Id;
+          return absl::nullopt;
         }
         Nodes.push_back(Id.value());
       }
-      std::vector<const GraphObserver::NodeId*> NodePointers;
-      NodePointers.reserve(Arg.pack_size());
-      for (const auto& Id : Nodes) {
-        NodePointers.push_back(&Id);
-      }
-      return Observer.recordTsigmaNode(NodePointers);
+      return Observer.recordTsigmaNode(Nodes);
     }
   }
   return absl::nullopt;
@@ -4020,28 +3958,23 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(clang::RecordTypeLoc TL) {
     const auto& TAL = Spec->getTemplateArgs();
     std::vector<GraphObserver::NodeId> TemplateArgs;
     TemplateArgs.reserve(TAL.size());
-    std::vector<const GraphObserver::NodeId*> TemplateArgsPtrs;
-    TemplateArgsPtrs.reserve(TAL.size());
     for (const auto& Arg : TAL.asArray()) {
       if (auto ArgA =
               BuildNodeIdForTemplateArgument(Arg, Spec->getLocation())) {
         TemplateArgs.push_back(ArgA.value());
-        TemplateArgsPtrs.push_back(&TemplateArgs.back());
       } else {
         return NodeSet::Empty();
       }
     }
     const auto* SpecDecl = Spec->getSpecializedTemplate();
     NodeId DeclId =
-        Observer.recordTappNode(BuildNodeIdForDecl(SpecDecl), TemplateArgsPtrs,
-                                TemplateArgsPtrs.size());
+        Observer.recordTappNode(BuildNodeIdForDecl(SpecDecl), TemplateArgs);
     if (SpecDecl->getTemplatedDecl()->getDefinition()) {
       return {std::move(DeclId), Claimability::Unclaimable};
     } else {
-      return {
-          Observer.recordTappNode(BuildNominalNodeIdForDecl(SpecDecl),
-                                  TemplateArgsPtrs, TemplateArgsPtrs.size()),
-          std::move(DeclId)};
+      return {Observer.recordTappNode(BuildNominalNodeIdForDecl(SpecDecl),
+                                      TemplateArgs),
+              std::move(DeclId)};
     }
   } else {
     return BuildNodeSetForNonSpecializedRecordDecl(Decl);
@@ -4193,7 +4126,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentSizedArray(
   if (auto ElemID = BuildNodeIdForType(TL.getElementLoc())) {
     if (auto ExprID = BuildNodeIdForExpr(TL.getSizeExpr(), EmitRanges::No)) {
       return Observer.recordTappNode(Observer.getNodeIdForBuiltinType("darr"),
-                                     {{&ElemID.value(), &ExprID.value()}}, 2);
+                                     {*ElemID, *ExprID});
     } else {
       return ApplyBuiltinTypeConstructor("darr", *ElemID);
     }
@@ -4204,7 +4137,6 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentSizedArray(
 NodeSet IndexerASTVisitor::BuildNodeSetForFunctionProto(
     clang::FunctionProtoTypeLoc TL) {
   std::vector<GraphObserver::NodeId> NodeIds;
-  std::vector<const GraphObserver::NodeId*> NodeIdPtrs;
   auto ReturnType = BuildNodeIdForType(TL.getReturnLoc());
   if (!ReturnType) {
     return NodeSet::Empty();
@@ -4219,12 +4151,9 @@ NodeSet IndexerASTVisitor::BuildNodeSetForFunctionProto(
     }
   }
 
-  for (const auto& node : NodeIds) {
-    NodeIdPtrs.push_back(&node);
-  }
   const char* Tycon = TL.getTypePtr()->isVariadic() ? "fnvararg" : "fn";
   return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
-                                 NodeIdPtrs, NodeIdPtrs.size());
+                                 NodeIds);
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForFunctionNoProto(
@@ -4298,19 +4227,15 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
           BuildNodeIdForTemplateName(TL.getTypePtr()->getTemplateName())) {
     std::vector<GraphObserver::NodeId> TemplateArgs;
     TemplateArgs.reserve(TL.getNumArgs());
-    std::vector<const GraphObserver::NodeId*> TemplateArgsPtrs;
-    TemplateArgsPtrs.reserve(TL.getNumArgs());
     for (unsigned A = 0, AE = TL.getNumArgs(); A != AE; ++A) {
       if (auto ArgA =
               BuildNodeIdForTemplateArgument(TL.getArgLoc(A), EmitRanges::No)) {
         TemplateArgs.push_back(ArgA.value());
-        TemplateArgsPtrs.push_back(&TemplateArgs.back());
       } else {
         return NodeSet::Empty();
       }
     }
-    return Observer.recordTappNode(*TemplateName, TemplateArgsPtrs,
-                                   TemplateArgsPtrs.size());
+    return Observer.recordTappNode(*TemplateName, TemplateArgs);
   }
   return NodeSet::Empty();
 }
@@ -4343,20 +4268,16 @@ NodeSet IndexerASTVisitor::BuildNodeSetForObjCObject(
       return *std::move(BaseId);
     }
     std::vector<NodeId> GenericArgIds;
-    std::vector<const NodeId*> GenericArgIdPtrs;
     GenericArgIds.reserve(TL.getNumTypeArgs());
-    GenericArgIdPtrs.resize(TL.getNumTypeArgs(), nullptr);
     for (unsigned int i = 0; i < TL.getNumTypeArgs(); ++i) {
       const auto* TI = TL.getTypeArgTInfo(i);
       if (auto Arg = BuildNodeIdForType(TI->getTypeLoc())) {
         GenericArgIds.push_back(*Arg);
-        GenericArgIdPtrs[i] = &GenericArgIds[i];
       } else {
         return NodeSet::Empty();
       }
     }
-    return Observer.recordTappNode(*BaseId, GenericArgIdPtrs,
-                                   GenericArgIdPtrs.size());
+    return Observer.recordTappNode(*BaseId, GenericArgIds);
   }
   return NodeSet::Empty();
 }
@@ -4562,15 +4483,14 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
     return ProtocolNodes.begin()->second;
   }
   // We have something like id<P1, P2>  union of types P1 and P2.
-  std::vector<const GraphObserver::NodeId*> ProtocolNodePointers;
-  ProtocolNodePointers.reserve(ProtocolNodes.size());
+  std::vector<GraphObserver::NodeId> ProtocolIds;
+  ProtocolIds.reserve(ProtocolNodes.size());
   for (const auto& PN : ProtocolNodes) {
-    ProtocolNodePointers.push_back(&PN.second);
+    ProtocolIds.push_back(PN.second);
   }
   // Create/find the Union node.
   auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
-  return Observer.recordTappNode(UnionTApp, ProtocolNodePointers,
-                                 ProtocolNodePointers.size());
+  return Observer.recordTappNode(UnionTApp, ProtocolIds);
 }
 
 GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
@@ -4589,16 +4509,15 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
   }
   // We have something like id<P1, P2> or P1<P2>, which means this is a union
   // of types P1 and P2.
-  std::vector<const GraphObserver::NodeId*> ProtocolNodePointers;
-  ProtocolNodePointers.reserve(ProtocolNodes.size() + 1);
-  ProtocolNodePointers.push_back(&BaseType);
+  std::vector<GraphObserver::NodeId> ProtocolIds;
+  ProtocolIds.reserve(ProtocolNodes.size() + 1);
+  ProtocolIds.push_back(BaseType);
   for (const auto& PN : ProtocolNodes) {
-    ProtocolNodePointers.push_back(&PN.second);
+    ProtocolIds.push_back(PN.second);
   }
   // Create/find the Union node.
   auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
-  return Observer.recordTappNode(UnionTApp, ProtocolNodePointers,
-                                 ProtocolNodePointers.size());
+  return Observer.recordTappNode(UnionTApp, ProtocolIds);
 }
 
 // This is the synthesize statement.
@@ -5350,7 +5269,6 @@ absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD,
                                             EmitRanges EmitRanges) {
   std::vector<GraphObserver::NodeId> NodeIds;
-  std::vector<const GraphObserver::NodeId*> NodeIdPtrs;
   // If we are in an implicit method (for example: property access), we may
   // not get return type source information and we will have to rely on the
   // QualType provided by getReturnType.
@@ -5374,13 +5292,10 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD,
     }
   }
 
-  for (size_t I = 0; I < NodeIds.size(); ++I) {
-    NodeIdPtrs.push_back(&NodeIds[I]);
-  }
   // TODO(salguarnieri) Make this a constant somewhere
   const char* Tycon = "fn";
   return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
-                                 NodeIdPtrs, NodeIdPtrs.size());
+                                 NodeIds);
 }
 
 void IndexerASTVisitor::LogErrorWithASTDump(const std::string& msg,
