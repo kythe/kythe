@@ -16,6 +16,8 @@
 # limitations under the License.
 
 from os import path
+import json
+import urllib.request
 
 from buildbot.changes.github import GitHubPullrequestPoller
 from buildbot.plugins import *
@@ -43,9 +45,6 @@ c['protocols'] = {'pb': {'port': 9989}}
 ####### CHANGESOURCES
 
 def pullRequestFilter(pr):
-  import json
-  import urllib.request
-
   # Blacklist anything that explicitly says 'nobuildbot'
   for label in pr['labels']:
     if label['name'] == 'nobuildbot':
