@@ -256,6 +256,14 @@ class ScopedTypeOverride {
   clang::TypeSourceInfo* tsi_;
   clang::QualType previous_type_;
 };
+
+template <typename T>
+std::string DumpString(const T& val) {
+  std::string s;
+  llvm::raw_string_ostream ss(s);
+  val.dump(ss);
+  return s;
+}
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -1051,13 +1059,13 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
   }
 
   // This is a dirty, dirty hack to allow other parts of the code to more
-  // cleanly handle deduced types.
-  // TODO(shahms): Figure out why these aren't the same for the deduced case
-  // and possibly fix it upstream.
+  // cleanly handle deduced types, but should *only* be done for deduced types.
+  // TODO(shahms): Remove this when it's fixed upstream.
+  //   Or replace it with the properly deduced type.
   absl::optional<ScopedTypeOverride> type_override;
   if (auto* D = dyn_cast<clang::DeclaratorDecl>(Decl)) {
     if (auto* TSI = D->getTypeSourceInfo()) {
-      if (TSI->getType() != D->getType()) {
+      if (TSI->getType() != D->getType() && TSI->getType()->isUndeducedType()) {
         type_override.emplace(TSI, D->getType());
       }
     }
