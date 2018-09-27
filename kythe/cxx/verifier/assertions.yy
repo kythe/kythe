@@ -1,10 +1,11 @@
 // Started from the calc++ example code as part of the Bison-3.0 distribution.
+// NOTE: This file must remain compatible with Bison 2.3.
 %skeleton "lalr1.cc"
 %defines
-%define parser_class_name {AssertionParserImpl}
-%code requires {
+%define "parser_class_name" "AssertionParserImpl"
+%{
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +30,7 @@ namespace verifier {
 class AssertionParser;
 }
 }
-}
+%}
 %parse-param { ::kythe::verifier::AssertionParser &context }
 %lex-param { ::kythe::verifier::AssertionParser &context }
 %locations

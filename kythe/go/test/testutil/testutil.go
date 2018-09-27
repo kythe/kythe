@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,21 +20,17 @@ package testutil
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
 )
-
-func caller(up int) (file string, line int) {
-	_, file, line, ok := runtime.Caller(up + 2)
-	if !ok {
-		panic("could not get runtime.Caller")
-	}
-	return filepath.Base(file), line
-}
 
 // DeepEqual determines if expected is deeply equal to got, returning a
 // detailed error if not. It is okay for expected and got to be protobuf
@@ -151,6 +147,31 @@ func expectMapEqual(expected, got reflect.Value) error {
 	return nil
 }
 
+var multipleNewLines = regexp.MustCompile("\n{2,}")
+
+// TrimmedEqual compares two strings after collapsing irrelevant whitespace at
+// the beginning or end of lines. It returns both a boolean indicating equality,
+// as well as any relevant diff.
+func TrimmedEqual(got, want []byte) (bool, string) {
+	// remove superfluous whitespace
+	gotStr := strings.Trim(string(got[:]), " \n")
+	wantStr := strings.Trim(string(want[:]), " \n")
+	gotStr = multipleNewLines.ReplaceAllString(gotStr, "\n")
+	wantStr = multipleNewLines.ReplaceAllString(wantStr, "\n")
+
+	// diff want vs got
+	diff := cmp.Diff(gotStr, wantStr)
+	return diff == "", diff
+}
+
+func caller(up int) (file string, line int) {
+	_, file, line, ok := runtime.Caller(up + 2)
+	if !ok {
+		panic("could not get runtime.Caller")
+	}
+	return filepath.Base(file), line
+}
+
 // FatalOnErr calls b.Fatalf(msg, err, args...) if err != nil
 func FatalOnErr(b *testing.B, msg string, err error, args ...interface{}) {
 	if err != nil {
@@ -200,4 +221,15 @@ func RandBytes(bytes []byte) {
 			n >>= 8
 		}
 	}
+}
+
+// TestFilePath takes a path and resolves it based on the testdir.  If it
+// cannot successfully do so, it calls t.Fatal and abandons.
+func TestFilePath(t *testing.T, path string) string {
+	t.Helper()
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to resolve path %s: %v", path, err)
+	}
+	return filepath.Join(pwd, filepath.FromSlash(path))
 }

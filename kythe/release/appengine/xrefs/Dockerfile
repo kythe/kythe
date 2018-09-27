@@ -1,4 +1,4 @@
-# Copyright 2015 Google Inc. All rights reserved.
+# Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ RUN apt-get update \
  && apt-get -y install libleveldb-dev git curl gcc python
 
 ENV GOPATH=/tmp/gopath
-RUN curl -LO https://storage.googleapis.com/golang/go1.9.linux-amd64.tar.gz \
- && tar -C /usr/local -xzf go1.9.linux-amd64.tar.gz \
- && rm -f go1.9.linux-amd64.tar.gz \
+RUN curl -LO https://storage.googleapis.com/golang/go1.10.3.linux-amd64.tar.gz \
+ && tar -C /usr/local -xzf go1.10.3.linux-amd64.tar.gz \
+ && rm -f go1.10.3.linux-amd64.tar.gz \
  && mkdir -p $GOPATH
 ENV PATH="/usr/local/go/bin:${PATH}"
 

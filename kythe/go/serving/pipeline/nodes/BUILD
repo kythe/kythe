@@ -10,7 +10,6 @@ go_library(
         "//kythe/go/util/schema",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
-        "//kythe/proto:pipeline_go_proto",
         "//kythe/proto:schema_go_proto",
         "//kythe/proto:storage_go_proto",
         "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",

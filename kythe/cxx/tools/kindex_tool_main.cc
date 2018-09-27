@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,15 +43,47 @@ DEFINE_bool(canonicalize_hashes, false,
             "Replace transcripts with sequence numbers");
 DEFINE_bool(suppress_details, false, "Suppress CU details.");
 
+namespace {
+
+/// \brief Range wrapper around ContextDependentVersion, if any.
+class MutableContextRows {
+ public:
+  using iterator =
+      decltype(std::declval<kythe::proto::ContextDependentVersion>()
+                   .mutable_row()
+                   ->begin());
+  explicit MutableContextRows(
+      kythe::proto::CompilationUnit::FileInput* file_input) {
+    for (google::protobuf::Any& detail : *file_input->mutable_details()) {
+      if (detail.UnpackTo(&context_)) {
+        any_ = &detail;
+      }
+    }
+  }
+
+  ~MutableContextRows() {
+    if (any_ != nullptr) {
+      any_->PackFrom(context_);
+    }
+  }
+
+  iterator begin() { return context_.mutable_row()->begin(); }
+  iterator end() { return context_.mutable_row()->end(); }
+
+ private:
+  google::protobuf::Any* any_ = nullptr;
+  kythe::proto::ContextDependentVersion context_;
+};
+
 /// \brief Gives each `hash` a unique, shorter ID based on visitation order.
-static void CanonicalizeHash(std::map<google::protobuf::string, size_t>* hashes,
-                             google::protobuf::string* hash) {
-  auto inserted = hashes->insert(std::make_pair(*hash, hashes->size()));
+void CanonicalizeHash(std::map<google::protobuf::string, size_t>* hashes,
+                      google::protobuf::string* hash) {
+  auto inserted = hashes->insert({*hash, hashes->size()});
   *hash =
       google::protobuf::string("hash" + std::to_string(inserted.first->second));
 }
 
-static void DumpIndexFile(const std::string& path) {
+void DumpIndexFile(const std::string& path) {
   using namespace google::protobuf::io;
   int in_fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
   CHECK_GE(in_fd, 0) << "Couldn't open input file " << path;
@@ -79,20 +111,28 @@ static void DumpIndexFile(const std::string& path) {
       }
       if (FLAGS_canonicalize_hashes) {
         CanonicalizeHash(&hash_table, unit.mutable_entry_context());
-        for (int i = 0; i < unit.required_input_size(); ++i) {
-          auto* input = unit.mutable_required_input(i);
-          for (int r = 0; r < input->context().row_size(); ++r) {
-            auto* row = input->mutable_context()->mutable_row(r);
-            CanonicalizeHash(&hash_table, row->mutable_source_context());
-            for (int c = 0; c < row->column_size(); ++c) {
-              auto* col = row->mutable_column(c);
-              CanonicalizeHash(&hash_table, col->mutable_linked_context());
+        for (auto& input : *unit.mutable_required_input()) {
+          for (auto& row : MutableContextRows(&input)) {
+            CanonicalizeHash(&hash_table, row.mutable_source_context());
+            for (auto& column : *row.mutable_column()) {
+              CanonicalizeHash(&hash_table, column.mutable_linked_context());
+            }
+          }
+          // TODO(shahms): Remove this when the indexers are updated.
+          if (input.has_context()) {
+            for (auto& row : *input.mutable_context()->mutable_row()) {
+              CanonicalizeHash(&hash_table, row.mutable_source_context());
+              for (auto& column : *row.mutable_column()) {
+                CanonicalizeHash(&hash_table, column.mutable_linked_context());
+              }
             }
           }
         }
       }
       FileOutputStream file_output_stream(out_fd);
-      CHECK(google::protobuf::TextFormat::Print(unit, &file_output_stream));
+      google::protobuf::TextFormat::Printer printer;
+      printer.SetExpandAny(true);
+      CHECK(printer.Print(unit, &file_output_stream));
       CHECK(file_output_stream.Close());
       decoded_unit = true;
     } else {
@@ -104,15 +144,17 @@ static void DumpIndexFile(const std::string& path) {
                         S_IREAD | S_IWRITE);
       CHECK_GE(out_fd, 0) << "Couldn't open " << out_path << " for writing.";
       FileOutputStream file_output_stream(out_fd);
-      CHECK(google::protobuf::TextFormat::Print(content, &file_output_stream));
+      google::protobuf::TextFormat::Printer printer;
+      printer.SetExpandAny(true);
+      CHECK(printer.Print(content, &file_output_stream));
       CHECK(file_output_stream.Close());
     }
   }
   CHECK(file_input_stream.Close());
 }
 
-static void BuildIndexFile(const std::string& outfile,
-                           const std::vector<std::string>& elements) {
+void BuildIndexFile(const std::string& outfile,
+                    const std::vector<std::string>& elements) {
   CHECK(!elements.empty()) << "Need at least a CompilationUnit!";
   using namespace google::protobuf::io;
   int out_fd =
@@ -148,6 +190,8 @@ static void BuildIndexFile(const std::string& outfile,
   }
   CHECK(close(out_fd) == 0);
 }
+
+}  // namespace
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;

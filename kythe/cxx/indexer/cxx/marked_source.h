@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ class MarkedSourceGenerator {
   void set_marked_source_end(clang::SourceLocation loc) { end_loc_ = loc; }
 
   /// Sets the range that covers the decl's (unqualified) name.
-  void set_name_range(const clang::SourceRange &range) { name_range_ = range; }
+  void set_name_range(const clang::SourceRange& range) { name_range_ = range; }
 
   /// \return true if GenerateMarkedSource will do work.
   /// \note This does not guarantee that GenerateMarkedSource != None.
@@ -52,20 +52,20 @@ class MarkedSourceGenerator {
   /// Attempt to build a marked source given all available information. Assumes
   /// that `decl_`'s ID is `decl_id`.
   absl::optional<MarkedSource> GenerateMarkedSource(
-      const GraphObserver::NodeId &decl_id);
+      const GraphObserver::NodeId& decl_id);
 
  private:
   friend class MarkedSourceCache;
 
-  MarkedSourceGenerator(MarkedSourceCache *cache, const clang::NamedDecl *decl)
+  MarkedSourceGenerator(MarkedSourceCache* cache, const clang::NamedDecl* decl)
       : cache_(cache), decl_(decl) {}
 
   /// Attempt to generate marked source using the original source code.
   absl::optional<MarkedSource> GenerateMarkedSourceUsingSource(
-      const GraphObserver::NodeId &decl_id);
+      const GraphObserver::NodeId& decl_id);
 
   /// Generate marked source by pretty-printing a function's prototype.
-  MarkedSource GenerateMarkedSourceForFunction(const clang::FunctionDecl *decl);
+  MarkedSource GenerateMarkedSourceForFunction(const clang::FunctionDecl* decl);
 
   /// Generate marked source for this decl, which must be a NamedDecl.
   MarkedSource GenerateMarkedSourceForNamedDecl();
@@ -89,8 +89,8 @@ class MarkedSourceGenerator {
   /// Because this operation is expensive, we cache (for each `decl`) its
   /// cutoff point. This cache is valid only for a particular AST.
   void ReplaceMarkedSourceWithTemplateArgumentList(
-      MarkedSource *marked_source_node,
-      const clang::ClassTemplateSpecializationDecl *decl);
+      MarkedSource* marked_source_node,
+      const clang::ClassTemplateSpecializationDecl* decl);
 
   /// \brief Fill the provided MarkedSource node with the decl's annotated
   /// qualified name.
@@ -98,13 +98,13 @@ class MarkedSourceGenerator {
   /// This should typically replace the text range covered by the bare
   /// identifier in a normal decl (and any qualified name in an external decl).
   /// \return false on failure
-  bool ReplaceMarkedSourceWithQualifiedName(MarkedSource *marked_source_node);
+  bool ReplaceMarkedSourceWithQualifiedName(MarkedSource* marked_source_node);
 
   /// The cache to consult (and to use to get at ::Sema and friends).
-  MarkedSourceCache *cache_;
+  MarkedSourceCache* cache_;
 
   /// The decl we're trying to build marked source for.
-  const clang::NamedDecl *decl_;
+  const clang::NamedDecl* decl_;
 
   /// The end of the marked source-relevant portion of source code.
   clang::SourceLocation end_loc_;
@@ -121,35 +121,35 @@ class MarkedSourceGenerator {
 /// Cached values are tied to a particular AST and `Sema` instance.
 class MarkedSourceCache {
  public:
-  MarkedSourceCache(clang::Sema *sema, GraphObserver *graph_observer)
+  MarkedSourceCache(clang::Sema* sema, GraphObserver* graph_observer)
       : source_manager_(*graph_observer->getSourceManager()),
         lang_options_(*graph_observer->getLangOptions()),
         sema_(sema),
         observer_(graph_observer) {}
 
   /// \brief Return a new `MarkedSourceGenerator` for the given decl.
-  MarkedSourceGenerator Generate(const clang::NamedDecl *decl) {
+  MarkedSourceGenerator Generate(const clang::NamedDecl* decl) {
     return MarkedSourceGenerator(this, decl);
   }
 
-  const clang::SourceManager &source_manager() const { return source_manager_; }
-  const clang::LangOptions &lang_options() const { return lang_options_; }
-  clang::Sema *sema() { return sema_; }
-  GraphObserver *observer() { return observer_; }
-  llvm::DenseMap<const clang::ClassTemplateSpecializationDecl *, unsigned>
-      *first_default_template_argument() {
+  const clang::SourceManager& source_manager() const { return source_manager_; }
+  const clang::LangOptions& lang_options() const { return lang_options_; }
+  clang::Sema* sema() { return sema_; }
+  GraphObserver* observer() { return observer_; }
+  llvm::DenseMap<const clang::ClassTemplateSpecializationDecl*, unsigned>*
+  first_default_template_argument() {
     return &first_default_template_argument_;
   }
 
  private:
-  const clang::SourceManager &source_manager_;
-  const clang::LangOptions &lang_options_;
-  clang::Sema *sema_;
-  GraphObserver *observer_;
+  const clang::SourceManager& source_manager_;
+  const clang::LangOptions& lang_options_;
+  clang::Sema* sema_;
+  GraphObserver* observer_;
 
   /// Maps from class template specializations to the first of that
   /// specialization's arguments that is default.
-  llvm::DenseMap<const clang::ClassTemplateSpecializationDecl *, unsigned>
+  llvm::DenseMap<const clang::ClassTemplateSpecializationDecl*, unsigned>
       first_default_template_argument_;
 };
 }  // namespace kythe

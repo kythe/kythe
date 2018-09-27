@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ class MetadataFile {
   }
 
   /// Rules to apply keyed on `begin`.
-  const std::multimap<unsigned, Rule> &rules() const { return rules_; }
+  const std::multimap<unsigned, Rule>& rules() const { return rules_; }
 
  private:
   /// Rules to apply keyed on `begin`.
@@ -70,7 +70,7 @@ class MetadataFile {
 /// \return true and merges `path`'s VName into `out` on success; false on
 /// failure.
 using VNameLookup =
-    std::function<bool(const std::string &path, proto::VName *out)>;
+    std::function<bool(const std::string& path, proto::VName* out)>;
 
 /// \brief Converts from arbitrary metadata formats to those supported by Kythe.
 ///
@@ -86,8 +86,8 @@ class MetadataSupport {
   /// decoded filename `filename` and contents in `buffer`.
   /// \return A `MetadataFile` on success; otherwise, null.
   virtual std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string &raw_filename, const std::string &filename,
-      const llvm::MemoryBuffer *buffer) {
+      const std::string& raw_filename, const std::string& filename,
+      const llvm::MemoryBuffer* buffer) {
     return nullptr;
   }
 
@@ -122,8 +122,8 @@ class MetadataSupports {
   }
 
   std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string &filename, const llvm::MemoryBuffer *buffer,
-      const std::string &search_string) const;
+      const std::string& filename, const llvm::MemoryBuffer* buffer,
+      const std::string& search_string) const;
 
   void UseVNameLookup(VNameLookup lookup) const;
 
@@ -135,8 +135,8 @@ class MetadataSupports {
 class KytheMetadataSupport : public MetadataSupport {
  public:
   std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string &raw_filename, const std::string &filename,
-      const llvm::MemoryBuffer *buffer) override;
+      const std::string& raw_filename, const std::string& filename,
+      const llvm::MemoryBuffer* buffer) override;
 
  private:
   /// \brief Load the JSON-encoded metadata from `json`.
@@ -144,8 +144,8 @@ class KytheMetadataSupport : public MetadataSupport {
   static std::unique_ptr<MetadataFile> LoadFromJSON(llvm::StringRef json);
   /// \brief Load the metadata rule from `value` into the Rule `rule`.
   /// \return false on failure.
-  static bool LoadMetaElement(const rapidjson::Value &value,
-                              MetadataFile::Rule *rule);
+  static bool LoadMetaElement(const rapidjson::Value& value,
+                              MetadataFile::Rule* rule);
 };
 
 }  // namespace kythe

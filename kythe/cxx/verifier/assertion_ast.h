@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ typedef size_t Symbol;
 class SymbolTable {
  public:
   /// \brief Returns the `Symbol` associated with `string`, or makes a new one.
-  Symbol intern(const std::string &string) {
+  Symbol intern(const std::string& string) {
     const auto old = symbols_.find(string);
     if (old != symbols_.end()) {
       return old->second;
@@ -51,12 +51,12 @@ class SymbolTable {
     return next_symbol;
   }
   /// \brief Returns the text associated with `symbol`.
-  const std::string &text(Symbol symbol) const { return *reverse_map_[symbol]; }
+  const std::string& text(Symbol symbol) const { return *reverse_map_[symbol]; }
 
   /// \brief Returns a string associated with `symbol` that disambiguates
   /// nonces.
   std::string PrettyText(Symbol symbol) const {
-    auto *text = reverse_map_[symbol];
+    auto* text = reverse_map_[symbol];
     if (text == &unique_symbol_) {
       return "(unique#" + std::to_string(symbol) + ")";
     } else if (!text->empty()) {
@@ -77,7 +77,7 @@ class SymbolTable {
   /// Maps text to unique `Symbol`s.
   std::unordered_map<std::string, Symbol> symbols_;
   /// Maps `Symbol`s back to their original text.
-  std::vector<const std::string *> reverse_map_;
+  std::vector<const std::string*> reverse_map_;
   /// The text to use for unique() symbols.
   std::string unique_symbol_ = "(unique)";
 };
@@ -98,21 +98,21 @@ class Arena {
   Arena() : next_block_index_(0) {}
 
   ~Arena() {
-    for (auto &b : blocks_) {
+    for (auto& b : blocks_) {
       delete[] b;
     }
   }
 
   /// \brief Allocate `bytes` bytes, aligned to `kPointerSize`, allocating
   /// new blocks from the system if necessary.
-  void *New(size_t bytes) {
+  void* New(size_t bytes) {
     // Align to kPointerSize bytes.
     bytes = (bytes + kPointerSize - 1) & kPointerSizeMask;
     CHECK(bytes < kBlockSize);
     offset_ += bytes;
     if (offset_ > kBlockSize) {
       if (next_block_index_ == blocks_.size()) {
-        char *next_block = new char[kBlockSize];
+        char* next_block = new char[kBlockSize];
         blocks_.push_back(next_block);
         current_block_ = next_block;
       } else {
@@ -127,7 +127,7 @@ class Arena {
  private:
   /// The size of a pointer on this machine. We support only machines with
   /// power-of-two address size and alignment requirements.
-  const size_t kPointerSize = sizeof(void *);
+  const size_t kPointerSize = sizeof(void*);
   /// `kPointerSize` (a power of two) sign-extended from its first set bit.
   const size_t kPointerSizeMask = ((~kPointerSize) + 1);
   /// The size of allocation requests to make from the normal heap.
@@ -144,19 +144,19 @@ class Arena {
   size_t next_block_index_;
   /// The block from which the `Arena` is currently making allocations. May
   /// be `nullptr` if no allocations have yet been made.
-  char *current_block_;
+  char* current_block_;
   /// All blocks that the `Arena` has allocated so far.
-  std::vector<char *> blocks_;
+  std::vector<char*> blocks_;
 };
 
 /// \brief An object that can be allocated inside an `Arena`.
 class ArenaObject {
  public:
-  void *operator new(size_t size, Arena *arena) { return arena->New(size); }
-  void operator delete(void *, size_t) {
+  void* operator new(size_t size, Arena* arena) { return arena->New(size); }
+  void operator delete(void*, size_t) {
     LOG(FATAL) << "Don't delete ArenaObjects.";
   }
-  void operator delete(void *ptr, Arena *arena) {
+  void operator delete(void* ptr, Arena* arena) {
     LOG(FATAL) << "Don't delete ArenaObjects.";
   }
 };
@@ -176,20 +176,20 @@ class Tuple;
 /// exceptions like `EVar`.
 class AstNode : public ArenaObject {
  public:
-  explicit AstNode(const yy::location &location) : location_(location) {}
+  explicit AstNode(const yy::location& location) : location_(location) {}
 
   /// \brief Returns the location where the `AstNode` was found if it came
   /// from source text.
-  const yy::location &location() const { return location_; }
+  const yy::location& location() const { return location_; }
 
   /// \brief Dumps the `AstNode` to `printer`.
-  virtual void Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {}
+  virtual void Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {}
 
-  virtual App *AsApp() { return nullptr; }
-  virtual EVar *AsEVar() { return nullptr; }
-  virtual Identifier *AsIdentifier() { return nullptr; }
-  virtual Range *AsRange() { return nullptr; }
-  virtual Tuple *AsTuple() { return nullptr; }
+  virtual App* AsApp() { return nullptr; }
+  virtual EVar* AsEVar() { return nullptr; }
+  virtual Identifier* AsIdentifier() { return nullptr; }
+  virtual Range* AsRange() { return nullptr; }
+  virtual Tuple* AsTuple() { return nullptr; }
 
  private:
   /// \brief The location where the `AstNode` can be found in source text, if
@@ -200,10 +200,10 @@ class AstNode : public ArenaObject {
 /// \brief A range specification that can unify with one or more ranges.
 class Range : public AstNode {
  public:
-  Range(const yy::location &location, size_t begin, size_t end)
+  Range(const yy::location& location, size_t begin, size_t end)
       : AstNode(location), begin_(begin), end_(end) {}
-  Range *AsRange() override { return this; }
-  void Dump(const SymbolTable &, PrettyPrinter *) override;
+  Range* AsRange() override { return this; }
+  void Dump(const SymbolTable&, PrettyPrinter*) override;
   size_t begin() const { return begin_; }
   size_t end() const { return end_; }
 
@@ -223,14 +223,14 @@ class Tuple : public AstNode {
   /// \param elements A preallocated buffer of `AstNode*` such that
   /// the total size of the buffer is equal to
   /// `element_count * sizeof(AstNode *)`
-  Tuple(const yy::location &location, size_t element_count, AstNode **elements)
+  Tuple(const yy::location& location, size_t element_count, AstNode** elements)
       : AstNode(location), element_count_(element_count), elements_(elements) {}
-  Tuple *AsTuple() override { return this; }
-  void Dump(const SymbolTable &, PrettyPrinter *) override;
+  Tuple* AsTuple() override { return this; }
+  void Dump(const SymbolTable&, PrettyPrinter*) override;
   /// \brief Returns the number of elements in the `Tuple`.
   size_t size() const { return element_count_; }
   /// \brief Returns the `index`th element of the `Tuple`, counting from zero.
-  AstNode *element(size_t index) const {
+  AstNode* element(size_t index) const {
     CHECK(index < element_count_);
     return elements_[index];
   }
@@ -239,7 +239,7 @@ class Tuple : public AstNode {
   /// The number of `AstNode *`s in `elements_`
   size_t element_count_;
   /// Storage for the `Tuple`'s elements.
-  AstNode **elements_;
+  AstNode** elements_;
 };
 
 /// \brief An application (eg, `f(g)`).
@@ -252,37 +252,37 @@ class App : public AstNode {
   /// location of the left-hand side.
   /// \param lhs The left-hand side of the application (eg, an `Identifier`).
   /// \param rhs The right-hand side of the application (eg, a `Tuple`).
-  App(AstNode *lhs, AstNode *rhs)
+  App(AstNode* lhs, AstNode* rhs)
       : AstNode(lhs->location()), lhs_(lhs), rhs_(rhs) {}
   /// \brief Constructs a new `App` node with an explicit `location`.
   /// \param `location` The location to use for this `App`.
   /// \param lhs The left-hand side of the application (eg, an `Identifier`).
   /// \param rhs The right-hand side of the application (eg, a `Tuple`).
-  App(const yy::location &location, AstNode *lhs, AstNode *rhs)
+  App(const yy::location& location, AstNode* lhs, AstNode* rhs)
       : AstNode(location), lhs_(lhs), rhs_(rhs) {}
 
-  App *AsApp() override { return this; }
-  void Dump(const SymbolTable &, PrettyPrinter *) override;
+  App* AsApp() override { return this; }
+  void Dump(const SymbolTable&, PrettyPrinter*) override;
 
   /// \brief The left-hand side (`f` in `f(g)`) of this `App`
-  AstNode *lhs() const { return lhs_; }
+  AstNode* lhs() const { return lhs_; }
   /// \brief The right-hand side (`(g)` in `f(g)`) of this `App
-  AstNode *rhs() const { return rhs_; }
+  AstNode* rhs() const { return rhs_; }
 
  private:
-  AstNode *lhs_;
-  AstNode *rhs_;
+  AstNode* lhs_;
+  AstNode* rhs_;
 };
 
 /// \brief An identifier (corresponding to some `Symbol`).
 class Identifier : public AstNode {
  public:
-  Identifier(const yy::location &location, Symbol symbol)
+  Identifier(const yy::location& location, Symbol symbol)
       : AstNode(location), symbol_(symbol) {}
   /// \brief The `Symbol` this `Identifier` represents.
   Symbol symbol() const { return symbol_; }
-  Identifier *AsIdentifier() override { return this; }
-  void Dump(const SymbolTable &, PrettyPrinter *) override;
+  Identifier* AsIdentifier() override { return this; }
+  void Dump(const SymbolTable&, PrettyPrinter*) override;
 
  private:
   Symbol symbol_;
@@ -296,20 +296,20 @@ class Identifier : public AstNode {
 class EVar : public AstNode {
  public:
   /// Constructs a new `EVar` with no assignment.
-  explicit EVar(const yy::location &location)
+  explicit EVar(const yy::location& location)
       : AstNode(location), current_(nullptr) {}
-  EVar *AsEVar() override { return this; }
-  void Dump(const SymbolTable &, PrettyPrinter *) override;
+  EVar* AsEVar() override { return this; }
+  void Dump(const SymbolTable&, PrettyPrinter*) override;
 
   /// \brief Returns current assignment, or `nullptr` if one has not been made.
-  AstNode *current() { return current_; }
+  AstNode* current() { return current_; }
 
   /// \brief Assigns this `EVar`.
-  void set_current(AstNode *node) { current_ = node; }
+  void set_current(AstNode* node) { current_ = node; }
 
  private:
   /// The `EVar`'s current assignment or `nullptr`.
-  AstNode *current_;
+  AstNode* current_;
 };
 
 }  // namespace verifier
@@ -318,8 +318,8 @@ class EVar : public AstNode {
 // Required by generated code.
 #define YY_DECL                                            \
   int kythe::verifier::AssertionParser::lex(               \
-      YySemanticValue *yylval_param, yy::location *yylloc, \
-      ::kythe::verifier::AssertionParser &context)
+      YySemanticValue* yylval_param, yy::location* yylloc, \
+      ::kythe::verifier::AssertionParser& context)
 namespace kythe {
 namespace verifier {
 class AssertionParser;
@@ -327,7 +327,7 @@ class AssertionParser;
 }  // namespace kythe
 struct YySemanticValue {
   std::string string;
-  kythe::verifier::AstNode *node;
+  kythe::verifier::AstNode* node;
   int int_;
   size_t size_t_;
 };

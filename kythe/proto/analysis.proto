@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,7 +125,7 @@ message CompilationUnit {
     FileInfo info = 2;
 
     // The file's context-dependent version table.
-    // TODO(schroederc): add as a details message
+    // TODO(shahms): Remove this when the Indexers have been updated.
     ContextDependentVersion context = 3 [deprecated = true];
 
     // Per-language or per-tool details.

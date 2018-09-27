@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,6 +120,12 @@ public class KytheEntrySets {
   public NodeBuilder newNode(NodeKind kind) {
     getStatisticsCollector().incrementCounter("new-node-" + kind);
     return new NodeBuilder(kind, language);
+  }
+
+  /** Returns a new {@link NodeBuilder} with the given node kind and vname set. */
+  public NodeBuilder newNode(NodeKind kind, VName source) {
+    getStatisticsCollector().incrementCounter("new-node-" + kind);
+    return new NodeBuilder(kind, source);
   }
 
   /** Returns (and emits) a new builtin node. */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 #include "CommandLineUtils.h"
 
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/Support/Regex.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Regex.h"
 
 #include <stddef.h>
 #include <stdio.h>
@@ -68,7 +68,7 @@ class FullMatchRegex {
 
 // Decide what will the driver do based on the inputs found on the command
 // line.
-DriverAction DetermineDriverAction(const std::vector<std::string> &args) {
+DriverAction DetermineDriverAction(const std::vector<std::string>& args) {
   const FullMatchRegex c_file_re("[^-].*\\.(c|i)");
   const FullMatchRegex cxx_file_re("[^-].*\\.(C|c\\+\\+|cc|cp|cpp|cxx|CPP|ii)");
   const FullMatchRegex fortran_file_re(
@@ -79,12 +79,12 @@ DriverAction DetermineDriverAction(const std::vector<std::string> &args) {
   enum DriverAction action = UNKNOWN;
   bool is_link = true;
   for (size_t i = 0; i < args.size(); ++i) {
-    const std::string &arg = args[i];
+    const std::string& arg = args[i];
     if (arg == "-c") {
       is_link = false;
     } else if (arg == "-x" && i < args.size() - 1) {
       // If we find -x, the language is being overridden by the user.
-      const std::string &language = args[i + 1];
+      const std::string& language = args[i + 1];
       if (language == "c++" || language == "c++-header" ||
           language == "c++-cpp-output")
         action = CXX_COMPILE;
@@ -126,7 +126,7 @@ DriverAction DetermineDriverAction(const std::vector<std::string> &args) {
 // Returns true if a C or C++ source file (or other files we want Clang
 // diagnostics for) appears in the given command line or args.
 bool HasCxxInputInCommandLineOrArgs(
-    const std::vector<std::string> &command_line_or_args) {
+    const std::vector<std::string>& command_line_or_args) {
   const enum DriverAction action = DetermineDriverAction(command_line_or_args);
   return action == CXX_COMPILE || action == C_COMPILE;
 }
@@ -134,11 +134,11 @@ bool HasCxxInputInCommandLineOrArgs(
 // Returns a copy of the input vector with every string which matches the
 // regular expression removed.
 static std::vector<std::string> CopyOmittingMatches(
-    const FullMatchRegex &re, const std::vector<std::string> &input) {
+    const FullMatchRegex& re, const std::vector<std::string>& input) {
   std::vector<std::string> output;
   std::remove_copy_if(
       input.begin(), input.end(), back_inserter(output),
-      [&re](const std::string &arg) { return re.FullMatch(arg); });
+      [&re](const std::string& arg) { return re.FullMatch(arg); });
   return output;
 }
 
@@ -146,7 +146,7 @@ static std::vector<std::string> CopyOmittingMatches(
 // the regular expression and one string immediately following the matching
 // string.
 static std::vector<std::string> CopyOmittingMatchesAndFollowers(
-    const FullMatchRegex &re, const std::vector<std::string> &input) {
+    const FullMatchRegex& re, const std::vector<std::string>& input) {
   std::vector<std::string> output;
   for (size_t i = 0; i < input.size(); ++i) {
     if (!re.FullMatch(input[i])) {
@@ -161,10 +161,10 @@ static std::vector<std::string> CopyOmittingMatchesAndFollowers(
 // Returns a copy of the input vector with the supplied prefix string removed
 // from any element of which it was a prefix.
 static std::vector<std::string> StripPrefix(
-    const std::string &prefix, const std::vector<std::string> &input) {
+    const std::string& prefix, const std::vector<std::string>& input) {
   std::vector<std::string> output;
   const size_t prefix_size = prefix.size();
-  for (const auto &arg : input) {
+  for (const auto& arg : input) {
     if (arg.compare(0, prefix_size, prefix) == 0) {
       output.push_back(arg.substr(prefix_size));
     } else {
@@ -175,7 +175,7 @@ static std::vector<std::string> StripPrefix(
 }
 
 std::vector<std::string> GCCArgsToClangArgs(
-    const std::vector<std::string> &gcc_args) {
+    const std::vector<std::string>& gcc_args) {
   // These are GCC-specific arguments which Clang does not yet understand or
   // support without issuing ugly warnings, and cannot otherwise be suppressed.
   const FullMatchRegex unsupported_args_re(
@@ -245,17 +245,17 @@ std::vector<std::string> GCCArgsToClangArgs(
 }
 
 std::vector<std::string> GCCArgsToClangSyntaxOnlyArgs(
-    const std::vector<std::string> &gcc_args) {
+    const std::vector<std::string>& gcc_args) {
   return AdjustClangArgsForSyntaxOnly(GCCArgsToClangArgs(gcc_args));
 }
 
 std::vector<std::string> GCCArgsToClangAnalyzeArgs(
-    const std::vector<std::string> &gcc_args) {
+    const std::vector<std::string>& gcc_args) {
   return AdjustClangArgsForAnalyze(GCCArgsToClangArgs(gcc_args));
 }
 
 std::vector<std::string> AdjustClangArgsForSyntaxOnly(
-    const std::vector<std::string> &clang_args) {
+    const std::vector<std::string>& clang_args) {
   // These are arguments which are inapplicable to '-fsyntax-only' behavior, but
   // are applicable to regular compilation.
   const FullMatchRegex inapplicable_args_re(
@@ -292,7 +292,7 @@ std::vector<std::string> AdjustClangArgsForSyntaxOnly(
 }
 
 std::vector<std::string> AdjustClangArgsForAnalyze(
-    const std::vector<std::string> &clang_args) {
+    const std::vector<std::string>& clang_args) {
   // --analyze is just like -fsyntax-only, except for the name of the
   // flag itself.
   std::vector<std::string> args = AdjustClangArgsForSyntaxOnly(clang_args);
@@ -309,7 +309,7 @@ std::vector<std::string> AdjustClangArgsForAnalyze(
 }
 
 std::vector<std::string> ClangArgsToGCCArgs(
-    const std::vector<std::string> &clang_args) {
+    const std::vector<std::string>& clang_args) {
   // These are Clang-specific args which GCC does not understand.
   const FullMatchRegex unsupported_args_re(
       "--target=.*"
@@ -372,11 +372,11 @@ std::vector<std::string> ClangArgsToGCCArgs(
 }
 
 std::vector<std::string> AdjustClangArgsForAddressSanitizer(
-    const std::vector<std::string> &input) {
+    const std::vector<std::string>& input) {
   const FullMatchRegex inapplicable_flags_re("-static");
   const FullMatchRegex inapplicable_flags_with_shared_re("-pie");
 
-  for (const auto &arg : input) {
+  for (const auto& arg : input) {
     if (arg == "-shared") {
       return CopyOmittingMatches(
           inapplicable_flags_with_shared_re,
@@ -387,11 +387,11 @@ std::vector<std::string> AdjustClangArgsForAddressSanitizer(
   return CopyOmittingMatches(inapplicable_flags_re, input);
 }
 
-std::vector<char *> CommandLineToArgv(const std::vector<std::string> &command) {
-  std::vector<char *> result;
+std::vector<char*> CommandLineToArgv(const std::vector<std::string>& command) {
+  std::vector<char*> result;
   result.reserve(command.size() + 1);
-  for (const auto &arg : command) {
-    result.push_back(const_cast<char *>(arg.c_str()));
+  for (const auto& arg : command) {
+    result.push_back(const_cast<char*>(arg.c_str()));
   }
   result.push_back(nullptr);
   return result;

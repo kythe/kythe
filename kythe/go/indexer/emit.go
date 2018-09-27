@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -292,9 +292,13 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 	}
 
 	// Handle fields of anonymous struct types declared in situ.
-	for _, v := range spec.Values {
-		if lit, ok := v.(*ast.CompositeLit); ok {
-			e.emitAnonFields(lit.Type)
+	if spec.Type != nil {
+		e.emitAnonFields(spec.Type)
+	} else {
+		for _, v := range spec.Values {
+			if lit, ok := v.(*ast.CompositeLit); ok {
+				e.emitAnonFields(lit.Type)
+			}
 		}
 	}
 }
@@ -325,7 +329,9 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		if st, ok := spec.Type.(*ast.StructType); ok {
 			mapFields(st.Fields, func(i int, id *ast.Ident) {
 				target := e.writeVarBinding(id, nodes.Field, nil)
-				e.writeDoc(st.Fields.List[i].Doc, target)
+				f := st.Fields.List[i]
+				e.writeDoc(f.Doc, target)
+				e.emitAnonFields(f.Type)
 			})
 
 			// Handle anonymous fields. Such fields behave as if they were

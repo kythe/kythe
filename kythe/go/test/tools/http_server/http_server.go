@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,17 +56,17 @@ func main() {
 		log.Fatal("Missing --port_file argument")
 	}
 
+	ctx := context.Background()
 	db, err := leveldb.Open(*servingTable, nil)
 	if err != nil {
 		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
 	}
-	defer db.Close()
+	defer db.Close(ctx)
+	xs := xsrv.NewService(ctx, db)
 	tbl := &table.KVProto{db}
-	xs := xsrv.NewCombinedTable(tbl)
 	gs := gsrv.NewCombinedTable(tbl)
 	ft := &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
 
-	ctx := context.Background()
 	xrefs.RegisterHTTPHandlers(ctx, xs, http.DefaultServeMux)
 	graph.RegisterHTTPHandlers(ctx, gs, http.DefaultServeMux)
 	filetree.RegisterHTTPHandlers(ctx, ft, http.DefaultServeMux)

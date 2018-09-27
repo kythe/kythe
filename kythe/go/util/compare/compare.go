@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,11 +188,6 @@ func Bytes(s, t []byte) Order { return Order(bytes.Compare(s, t)) }
 
 // Ints returns LT if a < b, EQ if a == b, or GT if a > b.
 func Ints(a, b int) Order { return ToOrder(a - b) }
-
-var (
-	emptyVName = new(spb.VName)
-	emptyEntry = new(spb.Entry)
-)
 
 // Options for comparing components of *spb.VName protobuf messages.
 var (

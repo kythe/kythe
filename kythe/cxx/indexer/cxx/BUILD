@@ -88,6 +88,7 @@ cc_library(
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -112,6 +113,7 @@ cc_library(
         ":indexed_parent_map",
         ":indexer_library_support",
         ":marked_source",
+        ":node_set",
         ":scope_guard",
         ":semantic_hash",
         ":type_map",
@@ -285,11 +287,12 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
+        "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
+        "//third_party/llvm",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
@@ -388,6 +391,15 @@ cc_library(
         "//third_party/llvm",
         "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "node_set",
+    hdrs = ["node_set.h"],
+    deps = [
+        ":graph_observer",
+        "@com_google_absl//absl/types:optional",
     ],
 )
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,18 @@
 #include <string>
 
 #include "google/protobuf/any.pb.h"
+#include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/message.h"
-#include "rapidjson/document.h"
+#include "kythe/cxx/common/status_or.h"
 
 namespace kythe {
+
+/// \brief Deserializes a protobuf from a JSON text stream.
+/// \param stream The input stream from which to read.
+/// \param message The message to parse.
+/// \return The status message result of parsing.
+Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
+                           google::protobuf::Message* message);
 
 /// \brief Deserializes a protobuf from its JSON form, including the format
 /// wrapper.
@@ -31,58 +39,44 @@ namespace kythe {
 /// \param format_key Set to the wrapper's format field.
 /// \param message Merged with the JSON data.
 /// \return true on success; false on failure.
-bool MergeJsonWithMessage(const std::string &in, std::string *format_key,
-                          google::protobuf::Message *message);
-
-/// \brief Deserializes a protobuf from its JSON form without expecting a
-/// wrapper.
-/// \param document The document to deserialize.
-/// \param message Merged with the JSON data.
-/// \return true on success; false on failure.
-bool MergeJsonWithMessage(const rapidjson::Document &document,
-                          google::protobuf::Message *message);
+bool MergeJsonWithMessage(const std::string& in, std::string* format_key,
+                          google::protobuf::Message* message);
 
 /// \brief Serializes a protobuf to JSON form, including the format wrapper.
 /// \param message The protobuf to serialize.
 /// \param format_key Specifies the format to declare in the wrapper.
 /// \param out Set to the serialized message on success.
 /// \return True on success; false on failure.
-bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
-                                const std::string &format_key,
-                                std::string *out);
+bool WriteMessageAsJsonToString(const google::protobuf::Message& message,
+                                const std::string& format_key,
+                                std::string* out);
 
 /// \brief Serializes a protobuf to JSON form with no wrapper.
 /// \param message The protobuf to serialize.
 /// \param out Set to the serialized message on success.
 /// \return True on success; false on failure.
-bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
-                                std::string *out);
+bool WriteMessageAsJsonToString(const google::protobuf::Message& message,
+                                std::string* out);
+
+/// \brief Serializes a protobuf to JSON form with no wrapper.
+/// \param message The protobuf to serialize.
+/// \return JSON string on success; Status on failure.
+StatusOr<std::string> WriteMessageAsJsonToString(
+    const google::protobuf::Message& message);
 
 /// \brief Wrap a protobuf up into an Any.
 /// \param message The message to wrap.
 /// \param type_uri The URI of the message type.
 /// \param out The resulting Any.
-void PackAny(const google::protobuf::Message &message, const char *type_uri,
-             google::protobuf::Any *out);
+void PackAny(const google::protobuf::Message& message, const char* type_uri,
+             google::protobuf::Any* out);
 
 /// \brief Unpack a protobuf from an Any.
 /// \param any The Any to unpack.
 /// \param result The message to unpack it over.
 /// \return false if unpacking failed
-bool UnpackAny(const google::protobuf::Any &any,
-               google::protobuf::Message *result);
-
-/// \brief Decodes a base64-encoded string.
-/// \param data The string to decode.
-/// \param decoded Set to the decoded value.
-/// \return false on failure.
-bool DecodeBase64(const google::protobuf::string &data,
-                  google::protobuf::string *decoded);
-
-/// \brief Encodes a string as base64.
-/// \param data The string to encode.
-/// \param encoded Set to the encoded value.
-google::protobuf::string EncodeBase64(const google::protobuf::string &data);
+bool UnpackAny(const google::protobuf::Any& any,
+               google::protobuf::Message* result);
 
 }  // namespace kythe
 

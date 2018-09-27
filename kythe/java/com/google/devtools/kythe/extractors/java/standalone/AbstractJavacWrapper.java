@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,18 +95,7 @@ public abstract class AbstractJavacWrapper {
 
         CompilationDescription indexInfo =
             processCompilation(getCleanedUpArguments(args), extractor);
-
-        String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
-        if (!Strings.isNullOrEmpty(outputFile)) {
-          IndexInfoUtils.writeIndexInfoToFile(indexInfo, outputFile);
-        } else {
-          String outputDir = readEnvironmentVariable("KYTHE_OUTPUT_DIRECTORY");
-          if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
-            writeIndexInfoToFile(outputDir, indexInfo);
-          } else {
-            new Archive(outputDir).writeDescription(indexInfo);
-          }
-        }
+        outputIndexInfo(indexInfo);
 
         CompilationUnit compilationUnit = indexInfo.getCompilationUnit();
         if (compilationUnit.getHasCompileErrors()) {
@@ -125,6 +114,26 @@ public abstract class AbstractJavacWrapper {
       System.err.println(Throwables.getStackTraceAsString(e));
       System.exit(2);
     }
+  }
+
+  private static void outputIndexInfo(CompilationDescription indexInfo) throws IOException {
+    String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
+    if (!Strings.isNullOrEmpty(outputFile)) {
+      if (outputFile.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+        IndexInfoUtils.writeKzipToFile(indexInfo, outputFile);
+      } else {
+        IndexInfoUtils.writeKindexToFile(indexInfo, outputFile);
+      }
+      return;
+    }
+
+    String outputDir = readEnvironmentVariable("KYTHE_OUTPUT_DIRECTORY");
+    if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
+      writeIndexInfoToFile(outputDir, indexInfo);
+      return;
+    }
+
+    new Archive(outputDir).writeDescription(indexInfo);
   }
 
   private static String[] getCleanedUpArguments(String[] args) throws IOException {
@@ -165,8 +174,8 @@ public abstract class AbstractJavacWrapper {
             .trim()
             .replaceAll("^/+|/+$", "")
             .replace('/', '_');
-    String path = IndexInfoUtils.getIndexPath(rootDirectory, name).toString();
-    IndexInfoUtils.writeIndexInfoToFile(indexInfo, path);
+    String path = IndexInfoUtils.getKindexPath(rootDirectory, name).toString();
+    IndexInfoUtils.writeKindexToFile(indexInfo, path);
   }
 
   private boolean passThroughIfAnalysisOnly(String[] args) throws Exception {

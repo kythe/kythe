@@ -263,6 +263,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "attribute_deprecated",
+    srcs = ["basic/attribute_deprecated.cc"],
+    check_for_singletons = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "auto",
     srcs = ["basic/auto.cc"],
     check_for_singletons = True,
@@ -294,6 +301,12 @@ cc_indexer_test(
         "basic",
         "c++14",
     ],
+)
+
+cc_indexer_test(
+    name = "enum_fwd_ref",
+    srcs = ["basic/enum_fwd_ref.cc"],
+    tags = ["basic"],
 )
 
 cc_indexer_test(
@@ -807,6 +820,16 @@ cc_indexer_test(
     tags = [
         "basic",
         "c++17",
+    ],
+)
+
+cc_indexer_test(
+    name = "macros_lambda_call",
+    srcs = ["basic/macros_lambda_call.cc"],
+    ignore_dups = True,
+    tags = [
+        "basic",
+        "manual",  # https://github.com/google/kythe/issues/2899
     ],
 )
 
@@ -1631,6 +1654,17 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "rec_implicit_ctor_calls_conversion",
+    srcs = ["rec/rec_implicit_ctor_calls_conversion.cc"],
+    check_for_singletons = True,
+    ignore_dups = True,
+    tags = [
+        "manual",  # https://github.com/google/kythe/issues/2894
+        "rec",
+    ],
+)
+
+cc_indexer_test(
     name = "rec_implicit_new",
     srcs = ["rec/rec_implicit_new.cc"],
     tags = ["rec"],
@@ -2375,6 +2409,14 @@ test_suite(
 cc_indexer_test(
     name = "ms_absvar",
     srcs = ["marked_source/ms_absvar.cc"],
+    convert_marked_source = True,
+    std = "c++14",
+    tags = ["marked_source"],
+)
+
+cc_indexer_test(
+    name = "ms_array",
+    srcs = ["marked_source/ms_array.cc"],
     convert_marked_source = True,
     std = "c++14",
     tags = ["marked_source"],

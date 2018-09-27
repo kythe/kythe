@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ enum class UriEscapeMode {
 /// \brief URI-escapes a string.
 /// \param mode The escaping mode to use.
 /// \param string The string to escape.
-std::string UriEscape(UriEscapeMode mode, const std::string &uri);
+std::string UriEscape(UriEscapeMode mode, const std::string& uri);
 
 /// \brief A Kythe URI.
 ///
@@ -45,15 +45,15 @@ class URI {
  public:
   URI() {}
   /// \brief Builds a URI from a `VName`, canonicalizing its `corpus`.
-  explicit URI(const kythe::proto::VName &from_vname);
+  explicit URI(const kythe::proto::VName& from_vname);
 
-  bool operator==(const URI &o) const { return VNameEquals(vname_, o.vname_); }
-  bool operator!=(const URI &o) const { return !VNameEquals(vname_, o.vname_); }
+  bool operator==(const URI& o) const { return VNameEquals(vname_, o.vname_); }
+  bool operator!=(const URI& o) const { return !VNameEquals(vname_, o.vname_); }
 
   /// \brief Constructs a URI from an encoded string.
   /// \param uri The string to construct from.
   /// \return (true, URI) on success; (false, empty URI) on failure.
-  static std::pair<bool, URI> FromString(const std::string &uri) {
+  static std::pair<bool, URI> FromString(const std::string& uri) {
     URI result;
     bool is_ok = result.ParseString(uri);
     return std::make_pair(is_ok, result);
@@ -65,13 +65,13 @@ class URI {
   std::string ToString() const;
 
   /// \return This URI as a VName.
-  const kythe::proto::VName &v_name() const { return vname_; }
+  const kythe::proto::VName& v_name() const { return vname_; }
 
  private:
   /// \brief Attempts to overwrite vname_ using the provided URI string.
   /// \param uri The URI to parse.
   /// \return true on success
-  bool ParseString(const std::string &uri);
+  bool ParseString(const std::string& uri);
 
   /// The VName this URI represents.
   kythe::proto::VName vname_;

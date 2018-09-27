@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,9 @@
 
 #include "cxx_extractor.h"
 
-static void LoadExtraAction(const std::string &path,
-                            blaze::ExtraActionInfo *info,
-                            blaze::CppCompileInfo *cpp_info) {
+static void LoadExtraAction(const std::string& path,
+                            blaze::ExtraActionInfo* info,
+                            blaze::CppCompileInfo* cpp_info) {
   using namespace google::protobuf::io;
   int fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
   CHECK_GE(fd, 0) << "Couldn't open input file " << path;
@@ -46,7 +46,7 @@ static void LoadExtraAction(const std::string &path,
   *cpp_info = info->GetExtension(blaze::CppCompileInfo::cpp_compile_info);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.1");
@@ -72,11 +72,11 @@ int main(int argc, char *argv[]) {
   if (std::find(args.begin(), args.end(), "-c") == args.end()) {
     args.push_back(cpp_info.source_file());
   }
-  config.SetKindexOutputFile(output_file);
+  config.SetOutputFile(output_file);
   config.SetArgs(args);
   config.SetVNameConfig(vname_config);
   config.SetTargetName(info.owner());
-  config.SetOutputPath(cpp_info.output_file());
+  config.SetCompilationOutputPath(cpp_info.output_file());
   config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();
   return 0;

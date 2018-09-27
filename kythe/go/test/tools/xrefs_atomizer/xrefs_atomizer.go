@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,9 +46,10 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	xs := api.Flag("api", api.CommonDefault, api.CommonFlagUsage)
 	flag.Parse()
-	defer (*xs).Close()
+	defer (*xs).Close(ctx)
 
 	wr := delimited.NewWriter(os.Stdout)
 	var count int
@@ -57,7 +58,6 @@ func main() {
 		return wr.PutProto(e)
 	})
 
-	ctx := context.Background()
 	for _, ticket := range flag.Args() {
 		log.Printf("Atomizing: %q", ticket)
 		if err := atomizeFileDecorations(ctx, *xs, ticket, atomizer); err != nil {

@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Copyright 2015 Google Inc. All rights reserved.
+# Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ PORT_FILE="${OUT_DIR:?no output directory for test}/service_port"
 ENTRYSTREAM_ARGS=
 if [[ -z "$TEST_ENTRIES" ]]; then
   TEST_ENTRIES="$TEST_JSON"
-  ENTRYSTREAM_ARGS=-read_json=true
+  ENTRYSTREAM_ARGS=-read_format=json
 fi
 CAT=cat
 if [[ "$TEST_ENTRIES" == *.gz ]]; then

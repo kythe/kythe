@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 
 namespace kythe {
 
-static const std::string *const kNodeKindSpellings[] = {
+static const std::string* const kNodeKindSpellings[] = {
     new std::string("anchor"),    new std::string("file"),
     new std::string("variable"),  new std::string("talias"),
     new std::string("tapp"),      new std::string("tnominal"),
@@ -33,7 +33,7 @@ static const std::string *const kNodeKindSpellings[] = {
     new std::string("tbuiltin"),  new std::string("meta"),
 };
 
-static const std::string *kEdgeKindSpellings[] = {
+static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines"),
     new std::string("/kythe/edge/typed"),
     new std::string("/kythe/edge/ref"),
@@ -77,9 +77,9 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/imputes"),
 };
 
-bool of_spelling(absl::string_view str, EdgeKindID *edge_id) {
+bool of_spelling(absl::string_view str, EdgeKindID* edge_id) {
   size_t edge_index = 0;
-  for (auto *edge : kEdgeKindSpellings) {
+  for (auto* edge : kEdgeKindSpellings) {
     if (*edge == str) {
       *edge_id = static_cast<kythe::EdgeKindID>(edge_index);
       return true;
@@ -89,7 +89,7 @@ bool of_spelling(absl::string_view str, EdgeKindID *edge_id) {
   return false;
 }
 
-static const std::string *const kPropertySpellings[] = {
+static const std::string* const kPropertySpellings[] = {
     new std::string("/kythe/loc"),
     new std::string("/kythe/loc/uri"),
     new std::string("/kythe/loc/start"),
@@ -106,41 +106,42 @@ static const std::string *const kPropertySpellings[] = {
     new std::string("/kythe/variance"),
     new std::string("/kythe/param/default"),
     new std::string("/kythe/tag/static"),
+    new std::string("/kythe/tag/deprecated"),
 };
 
-static const std::string *const kEmptyStringSpelling = new std::string("");
+static const std::string* const kEmptyStringSpelling = new std::string("");
 
-static const std::string *const kRootPropertySpelling = new std::string("/");
+static const std::string* const kRootPropertySpelling = new std::string("/");
 
 absl::string_view spelling_of(PropertyID property_id) {
-  const auto *str = kPropertySpellings[static_cast<ptrdiff_t>(property_id)];
+  const auto* str = kPropertySpellings[static_cast<ptrdiff_t>(property_id)];
   return absl::string_view(str->data(), str->size());
 }
 
 absl::string_view spelling_of(NodeKindID node_kind_id) {
-  const auto *str = kNodeKindSpellings[static_cast<ptrdiff_t>(node_kind_id)];
+  const auto* str = kNodeKindSpellings[static_cast<ptrdiff_t>(node_kind_id)];
   return absl::string_view(str->data(), str->size());
 }
 
 absl::string_view spelling_of(EdgeKindID edge_kind_id) {
-  const auto *str = kEdgeKindSpellings[static_cast<ptrdiff_t>(edge_kind_id)];
+  const auto* str = kEdgeKindSpellings[static_cast<ptrdiff_t>(edge_kind_id)];
   return absl::string_view(str->data(), str->size());
 }
 
-void KytheGraphRecorder::AddProperty(const VNameRef &node_vname,
+void KytheGraphRecorder::AddProperty(const VNameRef& node_vname,
                                      PropertyID property_id,
                                      absl::string_view property_value) {
   stream_->Emit(FactRef{&node_vname, spelling_of(property_id), property_value});
 }
 
-void KytheGraphRecorder::AddProperty(const VNameRef &node_vname,
+void KytheGraphRecorder::AddProperty(const VNameRef& node_vname,
                                      PropertyID property_id,
                                      const size_t property_value) {
   AddProperty(node_vname, property_id, std::to_string(property_value));
 }
 
-void KytheGraphRecorder::AddMarkedSource(const VNameRef &node_vname,
-                                         const MarkedSource &marked_source) {
+void KytheGraphRecorder::AddMarkedSource(const VNameRef& node_vname,
+                                         const MarkedSource& marked_source) {
   auto size = marked_source.ByteSize();
   std::vector<char> buffer(size);
   marked_source.SerializeToArray(buffer.data(), size);
@@ -148,20 +149,20 @@ void KytheGraphRecorder::AddMarkedSource(const VNameRef &node_vname,
                         absl::string_view(buffer.data(), buffer.size())});
 }
 
-void KytheGraphRecorder::AddEdge(const VNameRef &edge_from,
+void KytheGraphRecorder::AddEdge(const VNameRef& edge_from,
                                  EdgeKindID edge_kind_id,
-                                 const VNameRef &edge_to) {
+                                 const VNameRef& edge_to) {
   stream_->Emit(EdgeRef{&edge_from, spelling_of(edge_kind_id), &edge_to});
 }
 
-void KytheGraphRecorder::AddEdge(const VNameRef &edge_from,
+void KytheGraphRecorder::AddEdge(const VNameRef& edge_from,
                                  EdgeKindID edge_kind_id,
-                                 const VNameRef &edge_to, uint32_t ordinal) {
+                                 const VNameRef& edge_to, uint32_t ordinal) {
   stream_->Emit(
       OrdinalEdgeRef{&edge_from, spelling_of(edge_kind_id), &edge_to, ordinal});
 }
 
-void KytheGraphRecorder::AddFileContent(const VNameRef &file_vname,
+void KytheGraphRecorder::AddFileContent(const VNameRef& file_vname,
                                         absl::string_view file_content) {
   AddProperty(file_vname, PropertyID::kNodeKind,
               spelling_of(NodeKindID::kFile));

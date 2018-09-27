@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "absl/memory/memory.h"
 #include "index_pack.h"
+#include "absl/memory/memory.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -30,7 +30,7 @@ namespace {
 class InMemoryIndexPackFilesystem : public IndexPackFilesystem {
  public:
   bool AddFileContent(DataKind data_kind, WriteCallback callback,
-                      std::string *error_text) override {
+                      std::string* error_text) override {
     google::protobuf::string file_data;
     std::string file_name;
     {
@@ -44,9 +44,9 @@ class InMemoryIndexPackFilesystem : public IndexPackFilesystem {
     return true;
   }
 
-  bool ReadFileContent(DataKind data_kind, const std::string &file_name,
+  bool ReadFileContent(DataKind data_kind, const std::string& file_name,
                        ReadCallback callback,
-                       std::string *error_text) override {
+                       std::string* error_text) override {
     auto record = files_[data_kind].find(file_name);
     if (record == files_[data_kind].end()) {
       *error_text = "file not found";
@@ -59,7 +59,7 @@ class InMemoryIndexPackFilesystem : public IndexPackFilesystem {
   }
 
   bool ScanFiles(DataKind data_kind, ScanCallback callback,
-                 std::string *error_text) override {
+                 std::string* error_text) override {
     for (auto pair : files_[data_kind]) {
       if (!callback(pair.first)) {
         break;
@@ -111,7 +111,7 @@ TEST(IndexPack, ScanData) {
   EXPECT_TRUE(
       pack.ScanData(IndexPackFilesystem::DataKind::kFileData,
                     [&pack, &file_matched, &multiple_files,
-                     &file_had_errors](const std::string &data_hash) {
+                     &file_had_errors](const std::string& data_hash) {
                       if (file_matched) {
                         multiple_files = true;
                       } else {
@@ -136,7 +136,7 @@ TEST(IndexPack, ScanData) {
   EXPECT_TRUE(pack.ScanData(
       IndexPackFilesystem::DataKind::kCompilationUnit,
       [&pack, &unit_a_ok, &unit_b_ok,
-       &unit_errors](const std::string &unit_hash) {
+       &unit_errors](const std::string& unit_hash) {
         kythe::proto::CompilationUnit unit;
         std::string error_text;
         if (!pack.ReadCompilationUnit(unit_hash, &unit, &error_text) ||
@@ -225,7 +225,7 @@ class TemporaryFilesystem {
   bool Cleanup() {
     // Do the best we can to clean up the temporary files we've made.
     std::error_code err;
-    for (const auto &file : files_to_remove_) {
+    for (const auto& file : files_to_remove_) {
       err = llvm::sys::fs::remove(file);
       if (err.value()) {
         LOG(WARNING) << "Couldn't remove " << file << ": " << err.message();
@@ -237,7 +237,7 @@ class TemporaryFilesystem {
     bool progress = true;
     while (progress) {
       progress = false;
-      for (const auto &dir : directories_to_remove_) {
+      for (const auto& dir : directories_to_remove_) {
         auto result = llvm::sys::fs::remove(llvm::Twine(dir));
         if (!result) {
           directories_to_remove_.erase(dir);
@@ -251,7 +251,7 @@ class TemporaryFilesystem {
 
   /// \brief Attempts to then returns whether the directory at
   /// `relative_path` was removed. Fails if the directory is non-empty.
-  bool RemoveDirectoryIfExists(const std::string &relative_path) {
+  bool RemoveDirectoryIfExists(const std::string& relative_path) {
     llvm::SmallString<512> full_path(root_);
     llvm::sys::path::append(full_path, relative_path);
     return !llvm::sys::fs::remove(llvm::Twine(full_path));
@@ -259,15 +259,15 @@ class TemporaryFilesystem {
 
   /// \brief Attempts to then returns whether the file file_name in directory
   /// file_dir was removed.
-  bool RemoveFileIfExists(const std::string &file_dir,
-                          const std::string &file_name) {
+  bool RemoveFileIfExists(const std::string& file_dir,
+                          const std::string& file_name) {
     llvm::SmallString<512> full_path(root_);
     llvm::sys::path::append(full_path, file_dir, file_name);
     return !llvm::sys::fs::remove(llvm::Twine(full_path), false);
   }
 
   /// \brief Creates a temporary directory that will be removed on exit.
-  bool CreateDirectory(const std::string &relative_path) {
+  bool CreateDirectory(const std::string& relative_path) {
     llvm::SmallString<512> full_path(root_);
     llvm::sys::path::append(full_path, relative_path);
     if (!llvm::sys::fs::create_directory(llvm::Twine(full_path), true)) {
@@ -279,16 +279,16 @@ class TemporaryFilesystem {
 
   /// \brief Read all data from `stream` into `content`.
   /// \return true on success; false on failure
-  static bool ReadFromStream(google::protobuf::io::ZeroCopyInputStream *stream,
-                             std::string *content) {
+  static bool ReadFromStream(google::protobuf::io::ZeroCopyInputStream* stream,
+                             std::string* content) {
     content->clear();
-    const void *data;
+    const void* data;
     int size;
     while (stream->Next(&data, &size)) {
       if (size <= 0) {
         continue;
       }
-      content->append(static_cast<const char *>(data), size);
+      content->append(static_cast<const char*>(data), size);
     }
     return true;
   }
@@ -296,11 +296,11 @@ class TemporaryFilesystem {
   /// \brief Write all data from `content` to `stream`.
   /// \return true on success; false on failure.
   static bool WriteToStream(
-      const std::string &content,
-      google::protobuf::io::ZeroCopyOutputStream *stream) {
+      const std::string& content,
+      google::protobuf::io::ZeroCopyOutputStream* stream) {
     size_t write_pos = 0;
     while (write_pos < content.size()) {
-      void *buffer;
+      void* buffer;
       int buffer_size;
       if (!stream->Next(&buffer, &buffer_size)) {
         return false;
@@ -320,8 +320,8 @@ class TemporaryFilesystem {
   }
 
   /// \brief Writes a gzipped file that will be removed on exit.
-  bool CreateFile(const std::string &file_dir, const std::string &file_name,
-                  const std::string &content) {
+  bool CreateFile(const std::string& file_dir, const std::string& file_name,
+                  const std::string& content) {
     llvm::SmallString<512> full_path(root_);
     llvm::sys::path::append(full_path, file_dir, file_name);
     int write_fd;
@@ -406,7 +406,7 @@ TEST(IndexPack, PosixScanFiles) {
   ASSERT_TRUE(error_text.empty());
   std::vector<std::string> scanned_files;
   EXPECT_TRUE(posix->ScanFiles(IndexPackFilesystem::DataKind::kFileData,
-                               [&scanned_files](const std::string &file_name) {
+                               [&scanned_files](const std::string& file_name) {
                                  scanned_files.push_back(file_name);
                                  return true;
                                },
@@ -414,13 +414,13 @@ TEST(IndexPack, PosixScanFiles) {
   std::set<std::string> expect_scan_files = {kData1Sha, kData2Sha};
   EXPECT_EQ(scanned_files.size(), expect_scan_files.size());
   EXPECT_TRUE(error_text.empty());
-  for (const auto &file : expect_scan_files) {
+  for (const auto& file : expect_scan_files) {
     EXPECT_EQ(1, std::count(scanned_files.begin(), scanned_files.end(), file))
         << "When looking for " << file;
   }
   scanned_files.clear();
   EXPECT_TRUE(posix->ScanFiles(IndexPackFilesystem::DataKind::kCompilationUnit,
-                               [&scanned_files](const std::string &file_name) {
+                               [&scanned_files](const std::string& file_name) {
                                  scanned_files.push_back(file_name);
                                  return true;
                                },
@@ -428,7 +428,7 @@ TEST(IndexPack, PosixScanFiles) {
   std::set<std::string> expect_scan_units = {kUnit1Sha, kUnit2Sha};
   EXPECT_EQ(scanned_files.size(), expect_scan_units.size());
   EXPECT_TRUE(error_text.empty());
-  for (const auto &file : expect_scan_units) {
+  for (const auto& file : expect_scan_units) {
     EXPECT_EQ(1, std::count(scanned_files.begin(), scanned_files.end(), file))
         << "When looking for " << file;
   }
@@ -451,13 +451,13 @@ TEST(IndexPack, PosixReadContent) {
   std::vector<ExpectedContent> test_data = {
       {IndexPackFilesystem::DataKind::kFileData, kData1Sha, "data1"},
       {IndexPackFilesystem::DataKind::kCompilationUnit, kUnit1Sha, "unit1"}};
-  for (const auto &test : test_data) {
+  for (const auto& test : test_data) {
     std::string content;
     error_text.clear();
     EXPECT_TRUE(posix->ReadFileContent(
         test.kind, test.filename,
-        [&content](google::protobuf::io::ZeroCopyInputStream *stream,
-                   std::string *error_text) {
+        [&content](google::protobuf::io::ZeroCopyInputStream* stream,
+                   std::string* error_text) {
           return TemporaryFilesystem::ReadFromStream(stream, &content);
         },
         &error_text))
@@ -477,13 +477,13 @@ TEST(IndexPack, PosixAddContent) {
   ASSERT_TRUE(error_text.empty());
 
   auto Insert = [&posix, &error_text](IndexPackFilesystem::DataKind kind,
-                                      const std::string &hash,
-                                      const std::string &content) {
+                                      const std::string& hash,
+                                      const std::string& content) {
     return posix->AddFileContent(
         kind,
         [&hash, &content, &error_text](
-            google::protobuf::io::ZeroCopyOutputStream *stream,
-            std::string *file_name, std::string *error_text) {
+            google::protobuf::io::ZeroCopyOutputStream* stream,
+            std::string* file_name, std::string* error_text) {
           *file_name = hash;
           return TemporaryFilesystem::WriteToStream(content, stream);
         },
@@ -506,8 +506,8 @@ TEST(IndexPack, PosixAddContent) {
 
   EXPECT_TRUE(second_posix->ReadFileContent(
       IndexPackFilesystem::DataKind::kFileData, kData1Sha,
-      [&content](google::protobuf::io::ZeroCopyInputStream *stream,
-                 std::string *error_text) {
+      [&content](google::protobuf::io::ZeroCopyInputStream* stream,
+                 std::string* error_text) {
         return TemporaryFilesystem::ReadFromStream(stream, &content);
       },
       &error_text));
@@ -515,8 +515,8 @@ TEST(IndexPack, PosixAddContent) {
 
   EXPECT_TRUE(second_posix->ReadFileContent(
       IndexPackFilesystem::DataKind::kCompilationUnit, kData1Sha,
-      [&content](google::protobuf::io::ZeroCopyInputStream *stream,
-                 std::string *error_text) {
+      [&content](google::protobuf::io::ZeroCopyInputStream* stream,
+                 std::string* error_text) {
         return TemporaryFilesystem::ReadFromStream(stream, &content);
       },
       &error_text));
@@ -537,7 +537,7 @@ TEST(IndexPack, PosixAddContent) {
 }  // namespace
 }  // namespace kythe
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   ::testing::InitGoogleTest(&argc, argv);

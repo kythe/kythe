@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ const char IndexPackFilesystem::kCompilationUnitSuffix[] = ".unit";
 const char IndexPackFilesystem::kTempFileSuffix[] = ".new";
 
 std::unique_ptr<IndexPackPosixFilesystem> IndexPackPosixFilesystem::Open(
-    const std::string &root_path, IndexPackFilesystem::OpenMode open_mode,
-    std::string *error_text) {
+    const std::string& root_path, IndexPackFilesystem::OpenMode open_mode,
+    std::string* error_text) {
   llvm::SmallString<256> abs_root(root_path);
   if (auto err = llvm::sys::fs::make_absolute(abs_root)) {
     *error_text = err.message();
@@ -89,7 +89,7 @@ std::unique_ptr<IndexPackPosixFilesystem> IndexPackPosixFilesystem::Open(
 }
 
 std::string IndexPackPosixFilesystem::GenerateFilenameFor(
-    DataKind data_kind, const std::string &hash, std::string *error_text) {
+    DataKind data_kind, const std::string& hash, std::string* error_text) {
   if (hash.size() != 64) {
     *error_text = "Invalid name: bad SHA256 digest length.";
     return "";
@@ -120,7 +120,7 @@ class Uuid {
   }
 
   /// \brief Returns a UUID (if ok()) or an error string (if !ok()).
-  const std::string &payload() { return payload_; }
+  const std::string& payload() { return payload_; }
 
   /// \brief Checks whether the uuid generated correctly.
   bool ok() { return ok_; }
@@ -138,9 +138,9 @@ class Uuid {
 /// \param path_out Will be set to the path of the open file.
 /// \param error_text Set to an error description on failure.
 /// \return true on success, false on failure (fd_out, path_out are unset).
-static bool OpenUniqueTempFileIn(const std::string &abs_root_directory,
-                                 int *fd_out, std::string *path_out,
-                                 std::string *error_text) {
+static bool OpenUniqueTempFileIn(const std::string& abs_root_directory,
+                                 int* fd_out, std::string* path_out,
+                                 std::string* error_text) {
   for (;;) {
     Uuid new_uuid;
     if (!new_uuid.ok()) {
@@ -166,9 +166,9 @@ static bool OpenUniqueTempFileIn(const std::string &abs_root_directory,
 }
 
 bool IndexPackPosixFilesystem::ReadFileContent(DataKind data_kind,
-                                               const std::string &file_name,
+                                               const std::string& file_name,
                                                ReadCallback callback,
-                                               std::string *error_text) {
+                                               std::string* error_text) {
   std::string file = GenerateFilenameFor(data_kind, file_name, error_text);
   if (file.empty()) {
     return false;
@@ -182,7 +182,7 @@ bool IndexPackPosixFilesystem::ReadFileContent(DataKind data_kind,
   google::protobuf::io::GzipInputStream stream(
       &file_stream, google::protobuf::io::GzipInputStream::Format::GZIP);
   bool user_result = callback(&stream, error_text);
-  if (const char *err = stream.ZlibErrorMessage()) {
+  if (const char* err = stream.ZlibErrorMessage()) {
     *error_text = err;
     file_stream.Close();
     return false;
@@ -196,7 +196,7 @@ bool IndexPackPosixFilesystem::ReadFileContent(DataKind data_kind,
 
 bool IndexPackPosixFilesystem::ScanFiles(DataKind data_kind,
                                          ScanCallback callback,
-                                         std::string *error_text) {
+                                         std::string* error_text) {
   std::error_code err;
   llvm::sys::fs::directory_iterator current(
       llvm::Twine(directory_for(data_kind)), err),
@@ -210,7 +210,7 @@ bool IndexPackPosixFilesystem::ScanFiles(DataKind data_kind,
       *error_text = err.message();
       return false;
     }
-    const std::string &path = current->path();
+    const std::string& path = current->path();
     // Is the path well-formed for this kind?
     llvm::StringRef path_ref(path);
     if (llvm::sys::path::parent_path(path_ref) != directory_for(data_kind)) {
@@ -231,7 +231,7 @@ bool IndexPackPosixFilesystem::ScanFiles(DataKind data_kind,
 
 bool IndexPackPosixFilesystem::AddFileContent(DataKind data_kind,
                                               WriteCallback callback,
-                                              std::string *error_text) {
+                                              std::string* error_text) {
   if (open_mode_ != OpenMode::kReadWrite) {
     *error_text = "Index pack not opened for writing.";
     return false;
@@ -278,9 +278,9 @@ static constexpr char kHexDigits[] = "0123456789abcdef";
 /// TODO(zarko): Move this into its own common header.
 /// \brief Returns the lowercase-string-hex-encoded sha256 digest of the first
 /// `length` bytes of `bytes`.
-static std::string Sha256(const void *bytes, size_t length) {
+static std::string Sha256(const void* bytes, size_t length) {
   unsigned char sha_buf[SHA256_DIGEST_LENGTH];
-  ::SHA256(reinterpret_cast<const unsigned char *>(bytes), length, sha_buf);
+  ::SHA256(reinterpret_cast<const unsigned char*>(bytes), length, sha_buf);
   std::string sha_text(SHA256_DIGEST_LENGTH * 2, '\0');
   for (unsigned i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
     sha_text[i * 2] = kHexDigits[(sha_buf[i] >> 4) & 0xF];
@@ -289,51 +289,51 @@ static std::string Sha256(const void *bytes, size_t length) {
   return sha_text;
 }
 
-bool IndexPack::AddCompilationUnit(const kythe::proto::CompilationUnit &unit,
-                                   std::string *error_text) {
+bool IndexPack::AddCompilationUnit(const kythe::proto::CompilationUnit& unit,
+                                   std::string* error_text) {
   return WriteMessage(IndexPackFilesystem::DataKind::kCompilationUnit, unit,
                       error_text);
 }
 
-bool IndexPack::ReadFileData(const std::string &hash, std::string *out) {
+bool IndexPack::ReadFileData(const std::string& hash, std::string* out) {
   return filesystem_->ReadFileContent(
       IndexPackFilesystem::DataKind::kFileData, hash,
-      [out](google::protobuf::io::ZeroCopyInputStream *stream,
-            std::string *error_text) {
+      [out](google::protobuf::io::ZeroCopyInputStream* stream,
+            std::string* error_text) {
         out->clear();
-        const void *data;
+        const void* data;
         int size;
         // The callback's caller will check for errors.
         while (stream->Next(&data, &size)) {
           if (size <= 0) {
             continue;
           }
-          out->append(static_cast<const char *>(data), size);
+          out->append(static_cast<const char*>(data), size);
         }
         return true;
       },
       out);
 }
 
-bool IndexPack::ReadCompilationUnit(const std::string &hash,
-                                    kythe::proto::CompilationUnit *unit,
-                                    std::string *error_text) {
+bool IndexPack::ReadCompilationUnit(const std::string& hash,
+                                    kythe::proto::CompilationUnit* unit,
+                                    std::string* error_text) {
   // TODO(zarko): Wrap the input stream and deserialize from it without
   // the buffer in between.
   std::string buffer;
   if (!filesystem_->ReadFileContent(
           IndexPackFilesystem::DataKind::kCompilationUnit, hash,
-          [&buffer](google::protobuf::io::ZeroCopyInputStream *stream,
-                    std::string *error_text) {
+          [&buffer](google::protobuf::io::ZeroCopyInputStream* stream,
+                    std::string* error_text) {
             buffer.clear();
-            const void *data;
+            const void* data;
             int size;
             // The callback's caller will check for errors.
             while (stream->Next(&data, &size)) {
               if (size <= 0) {
                 continue;
               }
-              buffer.append(static_cast<const char *>(data), size);
+              buffer.append(static_cast<const char*>(data), size);
             }
             return true;
           },
@@ -355,12 +355,12 @@ bool IndexPack::ReadCompilationUnit(const std::string &hash,
 
 bool IndexPack::ScanData(IndexPackFilesystem::DataKind kind,
                          IndexPackFilesystem::ScanCallback callback,
-                         std::string *error_text) {
+                         std::string* error_text) {
   return filesystem_->ScanFiles(kind, std::move(callback), error_text);
 }
 
-bool IndexPack::AddFileData(const kythe::proto::FileData &content,
-                            std::string *error_text) {
+bool IndexPack::AddFileData(const kythe::proto::FileData& content,
+                            std::string* error_text) {
   std::string digest;
   if (content.has_info()) {
     digest = content.info().digest();
@@ -371,8 +371,8 @@ bool IndexPack::AddFileData(const kythe::proto::FileData &content,
 }
 
 bool IndexPack::WriteMessage(IndexPackFilesystem::DataKind kind,
-                             const google::protobuf::Message &message,
-                             std::string *error_text) {
+                             const google::protobuf::Message& message,
+                             std::string* error_text) {
   // TODO(zarko): Wrap the output stream and serialize to it without the
   // buffer in between. (This is why the filename is an out-parameter of
   // the callback to AddFileContent--we might have to calculate the hash
@@ -386,17 +386,17 @@ bool IndexPack::WriteMessage(IndexPackFilesystem::DataKind kind,
                    error_text, nullptr);
 }
 
-bool IndexPack::WriteData(IndexPackFilesystem::DataKind kind, const char *data,
-                          size_t size, std::string *error_text,
-                          std::string *sha_in) {
+bool IndexPack::WriteData(IndexPackFilesystem::DataKind kind, const char* data,
+                          size_t size, std::string* error_text,
+                          std::string* sha_in) {
   std::string sha = sha_in ? *sha_in : Sha256(data, size);
   return filesystem_->AddFileContent(
       kind,
-      [data, size, &sha](google::protobuf::io::ZeroCopyOutputStream *stream,
-                         std::string *file_name, std::string *error_text) {
+      [data, size, &sha](google::protobuf::io::ZeroCopyOutputStream* stream,
+                         std::string* file_name, std::string* error_text) {
         size_t bytes_left = size;
         while (bytes_left) {
-          void *buffer;
+          void* buffer;
           int buffer_size;
           if (!stream->Next(&buffer, &buffer_size) || buffer_size < 0) {
             *error_text = "Can't allocate buffer.";

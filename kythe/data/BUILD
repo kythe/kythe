@@ -7,6 +7,7 @@ exports_files(["schema_index.textproto"])
 filegroup(
     name = "vnames_config",
     srcs = ["vnames.json"],
+    visibility = ["//visibility:public"],
 )
 
 filegroup(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-// Package inmemory provides a in-memory implementation of graphstore.Service.
+// Package inmemory provides a in-memory implementation of graphstore.Service
+// and keyvalue.DB.
 package inmemory
 
 import (
 	"context"
 	"io"
 	"sort"
+	"strings"
 	"sync"
 
 	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/storage/keyvalue"
 	"kythe.io/kythe/go/util/compare"
 
 	"github.com/golang/protobuf/proto"
@@ -110,3 +113,135 @@ func (s *GraphStore) Scan(ctx context.Context, req *spb.ScanRequest, f graphstor
 	}
 	return nil
 }
+
+// NewKeyValueDB returns a keyvalue.DB backed by an in-memory data structure.
+func NewKeyValueDB() *KeyValueDB {
+	return &KeyValueDB{
+		db: make(map[string][]byte),
+	}
+}
+
+// KeyValueDB implements the keyvalue.DB interface backed by an in-memory map.
+type KeyValueDB struct {
+	mu   sync.RWMutex
+	db   map[string][]byte
+	keys []string
+}
+
+var _ keyvalue.DB = &KeyValueDB{}
+
+// Get implements part of the keyvalue.DB interface.
+func (k *KeyValueDB) Get(ctx context.Context, key []byte, opts *keyvalue.Options) ([]byte, error) {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+	val, ok := k.db[string(key)]
+	if !ok {
+		return nil, io.EOF
+	}
+	return val, nil
+}
+
+type kvPrefixIterator struct {
+	db     *KeyValueDB
+	prefix string
+	idx    int
+}
+
+// Next implements part of the keyvalue.Iterator interface.
+func (p *kvPrefixIterator) Next() (key, val []byte, err error) {
+	if p.idx >= len(p.db.keys) || !strings.HasPrefix(p.db.keys[p.idx], p.prefix) {
+		return nil, nil, io.EOF
+	}
+
+	k := p.db.keys[p.idx]
+	v := p.db.db[k]
+	p.idx++
+	return []byte(k), []byte(v), nil
+}
+
+// Close implements part of the keyvalue.Iterator interface.
+func (p *kvPrefixIterator) Close() error {
+	p.db.mu.RUnlock()
+	return nil
+}
+
+// ScanPrefix implements part of the keyvalue.DB interface.
+func (k *KeyValueDB) ScanPrefix(ctx context.Context, prefix []byte, opts *keyvalue.Options) (keyvalue.Iterator, error) {
+	k.mu.RLock()
+	p := string(prefix)
+	i := sort.Search(len(k.keys), func(i int) bool { return strings.HasPrefix(k.keys[i], p) })
+	return &kvPrefixIterator{k, p, i}, nil
+}
+
+type kvRangeIterator struct {
+	db  *KeyValueDB
+	end *string
+	idx int
+}
+
+// Next implements part of the keyvalue.Iterator interface.
+func (p *kvRangeIterator) Next() (key, val []byte, err error) {
+	if p.idx >= len(p.db.keys) || (p.end != nil && strings.Compare(p.db.keys[p.idx], *p.end) >= 0) {
+		return nil, nil, io.EOF
+	}
+
+	k := p.db.keys[p.idx]
+	v := p.db.db[k]
+	p.idx++
+	return []byte(k), []byte(v), nil
+}
+
+// Close implements part of the keyvalue.Iterator interface.
+func (p *kvRangeIterator) Close() error {
+	p.db.mu.RUnlock()
+	return nil
+}
+
+// ScanRange implements part of the keyvalue.DB interface.
+func (k *KeyValueDB) ScanRange(ctx context.Context, r *keyvalue.Range, opts *keyvalue.Options) (keyvalue.Iterator, error) {
+	k.mu.RLock()
+	var start int
+	if r != nil && len(r.Start) != 0 {
+		s := string(r.Start)
+		start = sort.Search(len(k.keys), func(i int) bool { return strings.Compare(k.keys[i], s) >= 0 })
+	}
+	var end *string
+	if r != nil && r.End != nil {
+		e := string(r.End)
+		end = &e
+	}
+	return &kvRangeIterator{k, end, start}, nil
+}
+
+type kvWriter struct{ db *KeyValueDB }
+
+// Write implements part of the keyvalue.Writer interface.
+func (w kvWriter) Write(key, val []byte) error {
+	k := string(key)
+	i := sort.Search(len(w.db.keys), func(i int) bool { return strings.Compare(w.db.keys[i], k) >= 0 })
+	if i == len(w.db.keys) {
+		w.db.keys = append(w.db.keys, k)
+	} else if w.db.keys[i] != k {
+		w.db.keys = append(w.db.keys[:i], append([]string{k}, w.db.keys[i:]...)...)
+	}
+	w.db.db[k] = val
+	return nil
+}
+
+// Close implements part of the keyvalue.Writer interface.
+func (w kvWriter) Close() error {
+	w.db.mu.Unlock()
+	return nil
+}
+
+// Writer implements part of the keyvalue.DB interface.
+func (k *KeyValueDB) Writer(ctx context.Context) (keyvalue.Writer, error) {
+	k.mu.Lock()
+	return kvWriter{k}, nil
+}
+
+// NewSnapshot implements part of the keyvalue.DB interface.
+func (k *KeyValueDB) NewSnapshot(ctx context.Context) keyvalue.Snapshot { return nil }
+
+// Close implements part of the keyvalue.DB interface.
+func (k *KeyValueDB) Close(context.Context) error { return nil }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@
 namespace kythe {
 
 proto::VName ProtobufMetadataSupport::VNameForAnnotation(
-    const proto::VName &context_vname,
-    const google::protobuf::GeneratedCodeInfo::Annotation &annotation) {
+    const proto::VName& context_vname,
+    const google::protobuf::GeneratedCodeInfo::Annotation& annotation) {
   proto::VName out;
   if (!vname_lookup_(annotation.source_file(), &out)) {
     out.set_corpus(context_vname.corpus());
@@ -38,8 +38,8 @@ proto::VName ProtobufMetadataSupport::VNameForAnnotation(
 }
 
 std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
-    const std::string &raw_filename, const std::string &filename,
-    const llvm::MemoryBuffer *buffer) {
+    const std::string& raw_filename, const std::string& filename,
+    const llvm::MemoryBuffer* buffer) {
   llvm::StringRef file_ref(filename);
   if (!file_ref.endswith(".pb.h.meta") && !file_ref.endswith(".proto.h.meta")) {
     return nullptr;
@@ -54,7 +54,7 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     return nullptr;
   }
   std::vector<MetadataFile::Rule> rules;
-  for (const auto &annotation : info.annotation()) {
+  for (const auto& annotation : info.annotation()) {
     MetadataFile::Rule rule;
     rule.begin = annotation.begin();
     rule.end = annotation.end();

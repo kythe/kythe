@@ -15,6 +15,13 @@ required_input {
       source_context: "hash0"
     }
   }
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash0"
+      }
+    }
+  }
 }
 argument: "-target"
 argument: "x86_64-unknown-linux-gnu"

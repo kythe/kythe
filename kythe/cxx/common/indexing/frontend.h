@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,26 +52,26 @@ class IndexerContext {
   /// \param default_filename Filename to use when reading from stdin
   /// (e.g., "stdin.cc")
   /// \pre google::ParseCommandLineFlags has been called.
-  IndexerContext(const std::vector<std::string> &args,
-                 const std::string &default_filename);
+  IndexerContext(const std::vector<std::string>& args,
+                 const std::string& default_filename);
   ~IndexerContext();
 
   /// \brief If non-null, the hash cache to use. Owned by `IndexerContext`.
-  HashCache *hash_cache() const { return hash_cache_.get(); }
+  HashCache* hash_cache() const { return hash_cache_.get(); }
   /// \brief If true, the indexer is permitted to touch the local filesystem.
   bool allow_filesystem_access() const { return allow_filesystem_access_; }
   /// \brief If true, the indexer should handle unknown elements gracefully.
   bool ignore_unimplemented() const { return ignore_unimplemented_; }
   /// \brief Indexer jobs to complete.
-  std::vector<IndexerJob> *jobs() { return &jobs_; }
+  std::vector<IndexerJob>* jobs() { return &jobs_; }
   /// \brief The claim client to use for this compilation. Not null.
-  KytheClaimClient *claim_client() const {
+  KytheClaimClient* claim_client() const {
     CHECK(claim_client_ != nullptr);
     return claim_client_.get();
   }
   /// \brief The output stream to use for this compilation. Not null; owned
   /// by `IndexerContext` and closed on destruction.
-  FileOutputStream *output() const {
+  FileOutputStream* output() const {
     CHECK(kythe_output_ != nullptr);
     return kythe_output_.get();
   }
@@ -80,8 +80,8 @@ class IndexerContext {
   /// \param program_title a description of the indexer
   /// ("the Kythe C++ indexer")
   /// \param program_name the executable name of the indexer ("cxx_indexer")
-  static std::string UsageMessage(const std::string &program_title,
-                                  const std::string &program_name);
+  static std::string UsageMessage(const std::string& program_title,
+                                  const std::string& program_name);
 
  private:
   /// \brief Checks to see if a .kindex or index pack was specified.
@@ -90,10 +90,10 @@ class IndexerContext {
   /// \brief Loads from an index pack or .kindex.
   /// \param kindex_file_or_cu The name of the .kindex (with extension) or
   /// the compilation unit hash.
-  void LoadDataFromIndex(const std::string &kindex_file_or_cu);
+  void LoadDataFromIndex(const std::string& kindex_file_or_cu);
   /// \brief Load data from an unpacked file.
   /// \param default_filename The filename to use if we're reading from stdin.
-  void LoadDataFromUnpackedFile(const std::string &default_filename);
+  void LoadDataFromUnpackedFile(const std::string& default_filename);
   /// \brief Initialize a claim client.
   void InitializeClaimClient();
   /// \brief Normalize input file vnames by cleaning paths and clearing

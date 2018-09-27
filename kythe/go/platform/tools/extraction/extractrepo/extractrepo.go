@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 // $PATH during execution.
 //
 // Usage:
-//   extractrepo -repo <repo-url> -output <output-file-path> -config [config-file-path]
+//   extractrepo -remote <repo-url> -output <output-file-path> -config [config-file-path]
 package main
 
 import (
@@ -119,9 +119,6 @@ func isEmptyDir(dir string) bool {
 	}
 	return err == nil && len(fi) == 0
 }
-
-// kytheConfigFileName The name of the Kythe extraction config
-const kytheExtractionConfigFile = ".kythe-extraction-config"
 
 func main() {
 	flag.Parse()

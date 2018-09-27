@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ namespace kythe {
 /// \brief Wrap a protobuf string in a StringRef.
 /// \param string The string to wrap.
 /// \return The wrapped string (which should not outlive `string`).
-inline llvm::StringRef ToStringRef(const google::protobuf::string &string) {
+inline llvm::StringRef ToStringRef(const google::protobuf::string& string) {
   return llvm::StringRef(string.c_str(), string.size());
 }
 }  // namespace kythe

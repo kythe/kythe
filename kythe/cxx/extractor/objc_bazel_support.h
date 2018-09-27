@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,28 +38,28 @@ namespace kythe {
 ///   "FOO"'B'  -> "\"FOO\"'B'"
 /// See the implementation for full details on all the transformations
 /// preformed.
-std::string SanitizeArgument(const std::string &s);
+std::string SanitizeArgument(const std::string& s);
 
 /// \brief Build a command prefix that specifies the environment variables
 // that should be set according to bazel. This returns a string like:
 // "env V1=VAL V2=VAL "
 std::string BuildEnvVarCommandPrefix(
-    const google::protobuf::RepeatedPtrField<blaze::EnvironmentVariable> &vars);
+    const google::protobuf::RepeatedPtrField<blaze::EnvironmentVariable>& vars);
 
 /// \brief Run a command and capture its (trimmed) stdout in a string.
-std::string RunScript(const std::string &cmd);
+std::string RunScript(const std::string& cmd);
 
 // \brief Populate args with the arguments from ci where the magic bazel strings
 // have been replaced with their actual values.
-void FillWithFixedArgs(std::vector<std::string> &args,
-                       const blaze::CppCompileInfo &ci,
-                       const std::string &devdir, const std::string &sdkroot);
+void FillWithFixedArgs(std::vector<std::string>& args,
+                       const blaze::CppCompileInfo& ci,
+                       const std::string& devdir, const std::string& sdkroot);
 
 // \brief Populate args with the arguments from si where the magic bazel strings
 // have been replaced with their actual values.
-void FillWithFixedArgs(std::vector<std::string> &args,
-                       const blaze::SpawnInfo &si, const std::string &devdir,
-                       const std::string &sdkroot);
+void FillWithFixedArgs(std::vector<std::string>& args,
+                       const blaze::SpawnInfo& si, const std::string& devdir,
+                       const std::string& sdkroot);
 
 }  // namespace kythe
 

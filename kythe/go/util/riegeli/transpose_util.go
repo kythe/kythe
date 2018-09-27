@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package riegeli
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 
 	"github.com/golang/protobuf/proto"
@@ -77,10 +76,8 @@ func hasDataBuffer(tag uint64, subtype tagSubtype) bool {
 		return true
 	case protoBytesType:
 		return subtype == delimitedStringSubtype
-	case protoStartGroupType, protoEndGroupType:
-		return false
 	default:
-		panic(fmt.Errorf("unknown wire type: %d", tag&7))
+		return false
 	}
 }
 
@@ -97,14 +94,10 @@ func validProtoTag(tag uint64) bool {
 
 // hasSubtype returns whether a tag has an associated subtype.
 func hasSubtype(tag uint64) bool {
-	switch protoWireType(tag & 7) {
-	case protoVarintType:
+	if protoWireType(tag&7) == protoVarintType {
 		return true
-	case protoFixed32Type, protoFixed64Type, protoBytesType, protoStartGroupType, protoEndGroupType:
-		return false
-	default:
-		panic(fmt.Errorf("unknown wire type: %d", tag&7))
 	}
+	return false
 }
 
 // A backwardWriter buffers each []byte pushed into it and allows them to be

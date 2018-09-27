@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package bazel
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -61,7 +62,7 @@ var (
 	}
 	si = &xapb.SpawnInfo{
 		Argument:   []string{"cc", "-o", testOutput, "-c", "2.src", "4.src"},
-		InputFile:  []string{"1.dep", "2.src", "3.dep", "4.src"},
+		InputFile:  []string{"1.dep", "2.src", "3.dep", "1.dep", "4.src"},
 		OutputFile: []string{testOutput, "garbage"},
 		Variable: []*xapb.EnvironmentVariable{{
 			Name:  proto.String("PATH"),
@@ -96,6 +97,7 @@ type results struct {
 }
 
 func (r *results) newConfig() *Config {
+	fixed := false // see FixUnit, below
 	return &Config{
 		Corpus:   testCorpus,
 		Language: testLang,
@@ -116,7 +118,14 @@ func (r *results) newConfig() *Config {
 		},
 
 		IsSource: func(path string) bool { return filepath.Ext(path) == ".src" },
-		FixUnit:  func(unit *apb.CompilationUnit) error { r.gotUnit = unit; return nil },
+		FixUnit: func(unit *apb.CompilationUnit) error {
+			if fixed {
+				return errors.New("redundant call to FixUnit")
+			}
+			fixed = true
+			r.gotUnit = unit
+			return nil
+		},
 
 		// All the files are empty, and all the children are above average.
 		OpenRead: func(_ context.Context, path string) (io.ReadCloser, error) {
@@ -131,7 +140,7 @@ func (r *results) checkValues(t *testing.T, cu *apb.CompilationUnit) {
 	wantInfo := &ActionInfo{ // N.B.: Values prior to filtering!
 		Target:    testTarget,
 		Arguments: []string{"cc", "-o", testOutput, "-c", "2.src", "4.src"},
-		Inputs:    []string{"1.dep", "2.src", "3.dep", "4.src"},
+		Inputs:    []string{"1.dep", "1.dep", "2.src", "3.dep", "4.src"},
 		Outputs:   []string{testOutput, "garbage"},
 		Environment: map[string]string{
 			"PATH":  "p1:p2",

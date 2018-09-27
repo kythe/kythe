@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/golang/protobuf/proto"
+
+	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )
 
 // https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md#file-signature
@@ -37,9 +41,58 @@ func (w *Writer) ensureFileHeader() error {
 	}
 
 	_, err := fileSignatureChunk.WriteTo(w.w, w.w.pos)
-	// TODO(schroederc): encode RecordsMetadata chunk
+	if err != nil {
+		return err
+	}
+
+	opts := w.opts.String()
+	if opts != "" {
+		rw, err := newTransposeChunkWriter(w.opts)
+		tw := &talliedRecordWriter{recordWriter: rw}
+		if err != nil {
+			return err
+		} else if _, err := tw.PutProto(&rmpb.RecordsMetadata{
+			// TODO(schroederc): add support for full RecordsMetadata
+			RecordWriterOptions: proto.String(opts),
+		}); err != nil {
+			return err
+		}
+		data, err := tw.Encode()
+		if err != nil {
+			return err
+		}
+		chunk := &chunk{
+			Header: chunkHeader{
+				ChunkType:       fileMetadataChunkType,
+				DataSize:        uint64(len(data)),
+				DecodedDataSize: tw.decodedSize,
+			},
+			Data: data,
+		}
+		if _, err := chunk.WriteTo(w.w, w.w.pos); err != nil {
+			return err
+		}
+	}
+
 	w.fileHeaderWritten = true
-	return err
+	return nil
+}
+
+func (w *Writer) setupRecordWriter() error {
+	var (
+		rw  recordWriter
+		err error
+	)
+	if w.opts.transpose() {
+		rw, err = newTransposeChunkWriter(w.opts)
+	} else {
+		rw, err = newRecordChunkWriter(w.opts)
+	}
+	if err != nil {
+		return err
+	}
+	w.recordWriter = &talliedRecordWriter{recordWriter: rw}
+	return nil
 }
 
 func (w *Writer) flushRecord() error {
@@ -48,13 +101,17 @@ func (w *Writer) flushRecord() error {
 		return nil
 	}
 
-	data, err := w.recordWriter.encode()
+	data, err := w.recordWriter.Encode()
 	if err != nil {
 		return fmt.Errorf("encoding record chunk: %v", err)
 	}
+	chunkType := recordChunkType
+	if w.opts.transpose() {
+		chunkType = transposedChunkType
+	}
 	chunk := &chunk{
 		Header: chunkHeader{
-			ChunkType:       recordChunkType,
+			ChunkType:       chunkType,
 			DataSize:        uint64(len(data)),
 			DecodedDataSize: w.recordWriter.decodedSize,
 			NumRecords:      w.recordWriter.numRecords,
@@ -64,8 +121,7 @@ func (w *Writer) flushRecord() error {
 	if _, err := chunk.WriteTo(w.w, w.w.pos); err != nil {
 		return err
 	}
-	w.recordWriter, err = newRecordChunkWriter(w.opts)
-	return err
+	return w.setupRecordWriter()
 }
 
 // A blockWriter interleaves blockHeaders inside chunks of data.  Each
@@ -144,14 +200,50 @@ func (b *blockHeader) WriteTo(w io.Writer) (int, error) {
 	return w.Write(buf[:])
 }
 
-type recordChunkWriter struct {
-	compressionType         compressionType
+type talliedRecordWriter struct {
+	recordWriter
 	numRecords, decodedSize uint64
+}
 
+// Put implements part of the recordWriter interface.
+func (t *talliedRecordWriter) Put(rec []byte) error {
+	if err := t.recordWriter.Put(rec); err != nil {
+		return err
+	}
+	t.numRecords++
+	t.decodedSize += uint64(len(rec))
+	return nil
+}
+
+// PutProto implements part of the recordWriter interface.
+func (t *talliedRecordWriter) PutProto(msg proto.Message) (int, error) {
+	size, err := t.recordWriter.PutProto(msg)
+	if err != nil {
+		return size, err
+	}
+	t.numRecords++
+	t.decodedSize += uint64(size)
+	return size, nil
+}
+
+type recordWriter interface {
+	io.Closer
+
+	// Put adds a new record to the chunk being written.
+	Put([]byte) error
+	// PutProto adds a new proto to the chunk being written.
+	PutProto(proto.Message) (int, error)
+	// Encode returns the binary-encoding of the Riegeli record chunk data.
+	Encode() ([]byte, error)
+}
+
+type recordChunkWriter struct {
+	compressionType                 compressionType
 	sizesCompressor, valsCompressor compressor
 }
 
-func (r *recordChunkWriter) put(rec []byte) error {
+// Put implements part of the recordWriter interface.
+func (r *recordChunkWriter) Put(rec []byte) error {
 	size := uint64(len(rec))
 
 	var buf [binary.MaxVarintLen64]byte
@@ -162,13 +254,19 @@ func (r *recordChunkWriter) put(rec []byte) error {
 	} else if _, err := r.valsCompressor.Write(rec); err != nil {
 		return fmt.Errorf("compressing record: %v", err)
 	}
-
-	r.decodedSize += size
-	r.numRecords++
 	return nil
 }
 
-// Close implements the io.Closer interface.
+// PutProto implements part of the recordWriter interface.
+func (r *recordChunkWriter) PutProto(msg proto.Message) (int, error) {
+	rec, err := proto.Marshal(msg)
+	if err != nil {
+		return 0, err
+	}
+	return len(rec), r.Put(rec)
+}
+
+// Close implements part of the recordWriter interface.
 func (r *recordChunkWriter) Close() error {
 	if err := r.sizesCompressor.Close(); err != nil {
 		return fmt.Errorf("closing record size compressor: %v", err)
@@ -178,8 +276,8 @@ func (r *recordChunkWriter) Close() error {
 	return nil
 }
 
-// encode returns the binary-encoding of the Riegeli record chunk.
-func (r *recordChunkWriter) encode() ([]byte, error) {
+// Encode implements part of the recordWriter interface.
+func (r *recordChunkWriter) Encode() ([]byte, error) {
 	if err := r.Close(); err != nil {
 		return nil, err
 	}

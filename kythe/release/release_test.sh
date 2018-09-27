@@ -1,7 +1,7 @@
 #!/bin/bash -e
 set -o pipefail
 
-# Copyright 2015 Google Inc. All rights reserved.
+# Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ set -o pipefail
 # Test the Kythe release package for basic functionality.
 
 export TMPDIR=${TEST_TMPDIR:?}
+SHASUM_TOOL="$PWD/$1"
+shift
 
 TEST_PORT=9898
 ADDR=localhost:$TEST_PORT
@@ -32,7 +34,12 @@ fi
 
 cd kythe/release
 
-md5sum -c kythe-*.tar.gz.md5
+EXPECTED_SUM=$(cat kythe-*.tar.gz.sha256)
+SUM=$("$SHASUM_TOOL" kythe-*.tar.gz)
+if [[ "$SUM" != "$EXPECTED_SUM" ]]; then
+  echo "Expected digest \"$EXPECTED_SUM\" but got \"$SUM\"."
+  exit 1
+fi
 
 rm -rf "$TMPDIR/release"
 mkdir "$TMPDIR/release"
@@ -46,8 +53,8 @@ tools/viewindex "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" | \
   jq . >/dev/null
 tools/indexpack --to_archive indexpack.test "$TEST_REPOSRCDIR/kythe/testdata/test.kindex"
 tools/entrystream < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" | \
-  tools/entrystream --write_json | \
-  tools/entrystream --read_json --entrysets >/dev/null
+  tools/entrystream --write_format=json | \
+  tools/entrystream --read_format=json --entrysets >/dev/null
 tools/triples < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" >/dev/null
 
 # TODO(zarko): add cxx extractor tests
@@ -78,9 +85,9 @@ tools/read_entries --graphstore gs | \
   tools/entrystream --sort >/dev/null
 
 # Smoke test the verifier
-echo "//- Any childof Any2" > any_childof_any2
+echo "//- _ childof _" > any_childof_any2
 tools/verifier --ignore_dups --show_goals any_childof_any2 < entries
-echo "//- Any noSuchEdge Any2" > any_nosuchedge_any2
+echo "//- _ noSuchEdge _" > any_nosuchedge_any2
 if tools/verifier --ignore_dups any_nosuchedge_any2 < entries; then
   echo "ERROR: verifier found a non-existent edge" >&2
   exit 1

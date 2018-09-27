@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ TEST(ObjcExtractorBazelMain, TestSanitizeWithAllDoubleSpecials) {
 TEST(ObjcExtractorBazelMain, TestExtractOneEnvVar) {
   std::vector<std::string> args;
   blaze::SpawnInfo si;
-  auto *e = si.add_variable();
+  auto* e = si.add_variable();
   e->set_name("VONE");
   e->set_value("VAL");
 
@@ -62,7 +62,7 @@ TEST(ObjcExtractorBazelMain, TestExtractOneEnvVar) {
 TEST(ObjcExtractorBazelMain, TestExtractManyEnvVars) {
   std::vector<std::string> args;
   blaze::SpawnInfo si;
-  auto *e = si.add_variable();
+  auto* e = si.add_variable();
   e->set_name("VONE");
   e->set_value("VAL");
   e = si.add_variable();
@@ -91,7 +91,7 @@ TEST(ObjcExtractorBazelMain, TestExtractManyEnvVars) {
 TEST(ObjcExtractorBazelMain, TestExtractIgnoreInvalidVarNames) {
   std::vector<std::string> args;
   blaze::SpawnInfo si;
-  auto *e = si.add_variable();
+  auto* e = si.add_variable();
   e->set_name("VONE");
   e->set_value("VAL");
   e = si.add_variable();
@@ -154,7 +154,7 @@ TEST(ObjcExtractorBazelMain, TestRunScriptThatFails) {
 }  // namespace
 }  // namespace kythe
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   ::testing::InitGoogleTest(&argc, argv);

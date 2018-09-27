@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,6 +87,20 @@ message Diagnostic {
   // may be documentation on a particular class of errors or a tracking issue
   // for prevalent errors.
   string context_url = 4;
+}
+
+// A Diagnostic resolved to include its associated file through a Kythe `tagged`
+// graph edge.
+message ResolvedDiagnostic {
+  CorpusPath corpus_path = 1;
+  Diagnostic diagnostic = 2;
+}
+
+// A file path rooted in a corpus.  This is a subset of a Kythe VName.
+message CorpusPath {
+  string corpus = 1;
+  string root = 2;
+  string path = 3;
 }
 
 message Link {

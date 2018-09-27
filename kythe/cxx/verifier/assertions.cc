@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@
 namespace kythe {
 namespace verifier {
 
-void EVar::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
+void EVar::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
   printer->Print("EVar(");
   printer->Print(this);
   printer->Print(" = ");
-  if (AstNode *node = current()) {
+  if (AstNode* node = current()) {
     node->Dump(symbol_table, printer);
   } else {
     printer->Print("<nullptr>");
@@ -35,11 +35,11 @@ void EVar::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
   printer->Print(")");
 }
 
-void Identifier::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
+void Identifier::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
   printer->Print(symbol_table.PrettyText(symbol_));
 }
 
-void Range::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
+void Range::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
   printer->Print("Range(");
   printer->Print(std::to_string(begin_));
   printer->Print(",");
@@ -47,7 +47,7 @@ void Range::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
   printer->Print(")");
 }
 
-void Tuple::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
+void Tuple::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
   printer->Print("(");
   for (size_t v = 0; v < element_count_; ++v) {
     elements_[v]->Dump(symbol_table, printer);
@@ -58,7 +58,7 @@ void Tuple::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
   printer->Print(")");
 }
 
-void App::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
+void App::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
   printer->Print("App(");
   lhs_->Dump(symbol_table, printer);
   printer->Print(", ");
@@ -66,9 +66,9 @@ void App::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
   printer->Print(")");
 }
 
-bool AssertionParser::ParseInlineRuleString(const std::string &content,
-                                            const std::string &fake_filename,
-                                            const RE2 &goal_comment_regex) {
+bool AssertionParser::ParseInlineRuleString(const std::string& content,
+                                            const std::string& fake_filename,
+                                            const RE2& goal_comment_regex) {
   had_errors_ = false;
   files_.push_back(fake_filename);
   ResetLine();
@@ -80,8 +80,8 @@ bool AssertionParser::ParseInlineRuleString(const std::string &content,
   return result == 0 && !had_errors_;
 }
 
-bool AssertionParser::ParseInlineRuleFile(const std::string &filename,
-                                          const RE2 &goal_comment_regex) {
+bool AssertionParser::ParseInlineRuleFile(const std::string& filename,
+                                          const RE2& goal_comment_regex) {
   files_.push_back(filename);
   had_errors_ = false;
   ResetLine();
@@ -93,14 +93,14 @@ bool AssertionParser::ParseInlineRuleFile(const std::string &filename,
   return result == 0 && !had_errors_;
 }
 
-void AssertionParser::Error(const yy::location &location,
-                            const std::string &message) {
+void AssertionParser::Error(const yy::location& location,
+                            const std::string& message) {
   // TODO(zarko): replace with a PrettyPrinter
   std::cerr << location << ": " << message << std::endl;
   had_errors_ = true;
 }
 
-void AssertionParser::Error(const std::string &message) {
+void AssertionParser::Error(const std::string& message) {
   // TODO(zarko): replace with a PrettyPrinter
   std::cerr << "When trying " << file() << ": " << message << std::endl;
   had_errors_ = true;
@@ -108,7 +108,7 @@ void AssertionParser::Error(const std::string &message) {
 
 bool AssertionParser::CheckForSingletonEVars() {
   bool old_had_errors = had_errors_;
-  for (const auto &singleton : singleton_evars_) {
+  for (const auto& singleton : singleton_evars_) {
     Error(singleton.first->location(),
           "singleton variable " +
               verifier_.symbol_table()->text(singleton.second) +
@@ -118,7 +118,7 @@ bool AssertionParser::CheckForSingletonEVars() {
   return !singleton_evars_.empty();
 }
 
-AssertionParser::AssertionParser(Verifier *verifier, bool trace_lex,
+AssertionParser::AssertionParser(Verifier* verifier, bool trace_lex,
                                  bool trace_parse)
     : verifier_(*verifier),
       arena_(verifier->arena()),
@@ -127,7 +127,7 @@ AssertionParser::AssertionParser(Verifier *verifier, bool trace_lex,
   groups_.push_back(GoalGroup{GoalGroup::kNoneMayFail});
 }
 
-bool AssertionParser::Unescape(const char *yytext, std::string *out) {
+bool AssertionParser::Unescape(const char* yytext, std::string* out) {
   if (out == nullptr || *yytext != '\"') {
     return false;
   }
@@ -159,23 +159,23 @@ bool AssertionParser::Unescape(const char *yytext, std::string *out) {
 
 void AssertionParser::ResetLine() { line_.clear(); }
 
-void AssertionParser::PushLocationSpec(const std::string &for_token) {
+void AssertionParser::PushLocationSpec(const std::string& for_token) {
   location_spec_stack_.emplace_back(LocationSpec{for_token, -1, false, true});
 }
 
-void AssertionParser::PushRelativeLocationSpec(const std::string &for_token,
-                                               const std::string &relative) {
+void AssertionParser::PushRelativeLocationSpec(const std::string& for_token,
+                                               const std::string& relative) {
   location_spec_stack_.emplace_back(
       LocationSpec{for_token, atoi(relative.c_str()), false, true});
 }
 
-void AssertionParser::PushAbsoluteLocationSpec(const std::string &for_token,
-                                               const std::string &absolute) {
+void AssertionParser::PushAbsoluteLocationSpec(const std::string& for_token,
+                                               const std::string& absolute) {
   location_spec_stack_.emplace_back(
       LocationSpec{for_token, atoi(absolute.c_str()), true, true});
 }
 
-void AssertionParser::SetTopLocationSpecMatchNumber(const std::string &number) {
+void AssertionParser::SetTopLocationSpecMatchNumber(const std::string& number) {
   if (!location_spec_stack_.empty()) {
     // number is "#"{blank}*{int}
     location_spec_stack_.back().must_be_unambiguous = false;
@@ -183,9 +183,9 @@ void AssertionParser::SetTopLocationSpecMatchNumber(const std::string &number) {
   }
 }
 
-Identifier *AssertionParser::PathIdentifierFor(
-    const yy::location &location, const std::string &path_frag,
-    const std::string &default_root) {
+Identifier* AssertionParser::PathIdentifierFor(
+    const yy::location& location, const std::string& path_frag,
+    const std::string& default_root) {
   if (path_frag.empty()) {
     return verifier_.IdentifierFor(location, "/");
   }
@@ -203,16 +203,16 @@ Identifier *AssertionParser::PathIdentifierFor(
   return verifier_.IdentifierFor(location, path_frag);
 }
 
-AstNode *AssertionParser::CreateEqualityConstraint(const yy::location &location,
-                                                   AstNode *lhs, AstNode *rhs) {
+AstNode* AssertionParser::CreateEqualityConstraint(const yy::location& location,
+                                                   AstNode* lhs, AstNode* rhs) {
   return verifier_.MakePredicate(location, verifier_.eq_id(), {lhs, rhs});
 }
 
-AstNode *AssertionParser::CreateSimpleEdgeFact(const yy::location &location,
-                                               AstNode *edge_lhs,
-                                               const std::string &literal_kind,
-                                               AstNode *edge_rhs,
-                                               AstNode *ordinal) {
+AstNode* AssertionParser::CreateSimpleEdgeFact(const yy::location& location,
+                                               AstNode* edge_lhs,
+                                               const std::string& literal_kind,
+                                               AstNode* edge_rhs,
+                                               AstNode* ordinal) {
   if (ordinal) {
     return verifier_.MakePredicate(
         location, verifier_.fact_id(),
@@ -226,20 +226,20 @@ AstNode *AssertionParser::CreateSimpleEdgeFact(const yy::location &location,
   }
 }
 
-AstNode *AssertionParser::CreateSimpleNodeFact(const yy::location &location,
-                                               AstNode *lhs,
-                                               const std::string &literal_key,
-                                               AstNode *value) {
+AstNode* AssertionParser::CreateSimpleNodeFact(const yy::location& location,
+                                               AstNode* lhs,
+                                               const std::string& literal_key,
+                                               AstNode* value) {
   return verifier_.MakePredicate(
       location, verifier_.fact_id(),
       {lhs, verifier_.empty_string_id(), verifier_.empty_string_id(),
        PathIdentifierFor(location, literal_key, "/kythe/"), value});
 }
 
-AstNode *AssertionParser::CreateInspect(const yy::location &location,
-                                        const std::string &inspect_id,
-                                        AstNode *to_inspect) {
-  if (EVar *evar = to_inspect->AsEVar()) {
+AstNode* AssertionParser::CreateInspect(const yy::location& location,
+                                        const std::string& inspect_id,
+                                        AstNode* to_inspect) {
+  if (EVar* evar = to_inspect->AsEVar()) {
     singleton_evars_.erase(evar);
     inspections_.emplace_back(inspect_id, evar, Inspection::Kind::EXPLICIT);
     return to_inspect;
@@ -249,12 +249,12 @@ AstNode *AssertionParser::CreateInspect(const yy::location &location,
   }
 }
 
-AstNode *AssertionParser::CreateDontCare(const yy::location &location) {
+AstNode* AssertionParser::CreateDontCare(const yy::location& location) {
   return new (verifier_.arena()) EVar(location);
 }
 
-AstNode *AssertionParser::CreateAtom(const yy::location &location,
-                                     const std::string &for_token) {
+AstNode* AssertionParser::CreateAtom(const yy::location& location,
+                                     const std::string& for_token) {
   if (!for_token.empty() && for_token[0] == '_') {
     return CreateDontCare(location);
   } else if (!for_token.empty() && isupper(for_token[0])) {
@@ -264,12 +264,12 @@ AstNode *AssertionParser::CreateAtom(const yy::location &location,
   }
 }
 
-Identifier *AssertionParser::CreateIdentifier(const yy::location &location,
-                                              const std::string &for_text) {
+Identifier* AssertionParser::CreateIdentifier(const yy::location& location,
+                                              const std::string& for_text) {
   Symbol symbol = verifier_.symbol_table()->intern(for_text);
   const auto old_binding = identifier_context_.find(symbol);
   if (old_binding == identifier_context_.end()) {
-    Identifier *new_id = new (verifier_.arena()) Identifier(location, symbol);
+    Identifier* new_id = new (verifier_.arena()) Identifier(location, symbol);
     identifier_context_.emplace(symbol, new_id);
     return new_id;
   } else {
@@ -277,12 +277,12 @@ Identifier *AssertionParser::CreateIdentifier(const yy::location &location,
   }
 }
 
-EVar *AssertionParser::CreateEVar(const yy::location &location,
-                                  const std::string &for_token) {
+EVar* AssertionParser::CreateEVar(const yy::location& location,
+                                  const std::string& for_token) {
   Symbol symbol = verifier_.symbol_table()->intern(for_token);
   const auto old_binding = evar_context_.find(symbol);
   if (old_binding == evar_context_.end()) {
-    EVar *new_evar = new (verifier_.arena()) EVar(location);
+    EVar* new_evar = new (verifier_.arena()) EVar(location);
     evar_context_.emplace(symbol, new_evar);
     if (default_inspect_) {
       inspections_.emplace_back(for_token, new_evar,
@@ -296,16 +296,16 @@ EVar *AssertionParser::CreateEVar(const yy::location &location,
   }
 }
 
-bool AssertionParser::ValidateTopLocationSpec(const yy::location &location,
-                                              size_t *line_number,
-                                              bool *use_line_number,
-                                              bool *must_be_unambiguous,
-                                              int *match_number) {
+bool AssertionParser::ValidateTopLocationSpec(const yy::location& location,
+                                              size_t* line_number,
+                                              bool* use_line_number,
+                                              bool* must_be_unambiguous,
+                                              int* match_number) {
   if (location_spec_stack_.empty()) {
     Error(location, "No locations on location stack.");
     return verifier_.empty_string_id();
   }
-  const auto &spec = location_spec_stack_.back();
+  const auto& spec = location_spec_stack_.back();
   *must_be_unambiguous = spec.must_be_unambiguous;
   *match_number = spec.match_number;
   if (spec.line_offset == 0) {
@@ -326,7 +326,7 @@ bool AssertionParser::ValidateTopLocationSpec(const yy::location &location,
   return true;
 }
 
-AstNode *AssertionParser::CreateAnchorSpec(const yy::location &location) {
+AstNode* AssertionParser::CreateAnchorSpec(const yy::location& location) {
   size_t line_number;
   bool use_line_number;
   bool must_be_unambiguous;
@@ -335,8 +335,8 @@ AstNode *AssertionParser::CreateAnchorSpec(const yy::location &location) {
                                &must_be_unambiguous, &match_number)) {
     return verifier_.empty_string_id();
   }
-  const auto &spec = location_spec_stack_.back();
-  EVar *new_evar = new (verifier_.arena()) EVar(location);
+  const auto& spec = location_spec_stack_.back();
+  EVar* new_evar = new (verifier_.arena()) EVar(location);
   unresolved_locations_.push_back(UnresolvedLocation{
       new_evar, spec.spec, line_number, use_line_number, group_id(),
       UnresolvedLocation::Kind::kAnchor, must_be_unambiguous, match_number});
@@ -344,7 +344,7 @@ AstNode *AssertionParser::CreateAnchorSpec(const yy::location &location) {
   return new_evar;
 }
 
-AstNode *AssertionParser::CreateOffsetSpec(const yy::location &location,
+AstNode* AssertionParser::CreateOffsetSpec(const yy::location& location,
                                            bool at_end) {
   size_t line_number;
   bool use_line_number;
@@ -354,8 +354,8 @@ AstNode *AssertionParser::CreateOffsetSpec(const yy::location &location,
                                &must_be_unambiguous, &match_number)) {
     return verifier_.empty_string_id();
   }
-  const auto &spec = location_spec_stack_.back();
-  EVar *new_evar = new (verifier_.arena()) EVar(location);
+  const auto& spec = location_spec_stack_.back();
+  EVar* new_evar = new (verifier_.arena()) EVar(location);
   unresolved_locations_.push_back(UnresolvedLocation{
       new_evar, spec.spec, line_number, use_line_number, group_id(),
       at_end ? UnresolvedLocation::Kind::kOffsetEnd
@@ -365,14 +365,14 @@ AstNode *AssertionParser::CreateOffsetSpec(const yy::location &location,
   return new_evar;
 }
 
-bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
+bool AssertionParser::ResolveLocations(const yy::location& end_of_line,
                                        size_t offset_after_endline,
                                        bool end_of_file) {
   bool was_ok = true;
   std::vector<UnresolvedLocation> succ_lines;
-  for (auto &record : unresolved_locations_) {
-    EVar *evar = record.anchor_evar;
-    std::string &token = record.anchor_text;
+  for (auto& record : unresolved_locations_) {
+    EVar* evar = record.anchor_evar;
+    std::string& token = record.anchor_text;
     yy::location location = evar->location();
     location.columns(token.size());
     if (record.use_line_number &&
@@ -456,13 +456,12 @@ bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
   return was_ok;
 }
 
-void AssertionParser::AppendToLine(const char *yytext) { line_.append(yytext); }
+void AssertionParser::AppendToLine(const char* yytext) { line_.append(yytext); }
 
-void AssertionParser::PushNode(AstNode *node) { node_stack_.push_back(node); }
+void AssertionParser::PushNode(AstNode* node) { node_stack_.push_back(node); }
 
-AstNode **AssertionParser::PopNodes(size_t count) {
-  AstNode **nodes =
-      (AstNode **)verifier_.arena()->New(count * sizeof(AstNode *));
+AstNode** AssertionParser::PopNodes(size_t count) {
+  AstNode** nodes = (AstNode**)verifier_.arena()->New(count * sizeof(AstNode*));
   size_t start = node_stack_.size() - count;
   for (size_t c = 0; c < count; ++c) {
     nodes[c] = node_stack_[start + c];
@@ -471,12 +470,12 @@ AstNode **AssertionParser::PopNodes(size_t count) {
   return nodes;
 }
 
-void AssertionParser::AppendGoal(size_t group_id, AstNode *goal) {
+void AssertionParser::AppendGoal(size_t group_id, AstNode* goal) {
   assert(group_id < groups_.size());
   groups_[group_id].goals.push_back(goal);
 }
 
-void AssertionParser::EnterGoalGroup(const yy::location &location,
+void AssertionParser::EnterGoalGroup(const yy::location& location,
                                      bool negated) {
   if (inside_goal_group_) {
     Error(location, "It is not valid to enter nested goal groups.");
@@ -487,7 +486,7 @@ void AssertionParser::EnterGoalGroup(const yy::location &location,
       GoalGroup{negated ? GoalGroup::kSomeMustFail : GoalGroup::kNoneMayFail});
 }
 
-void AssertionParser::ExitGoalGroup(const yy::location &location) {
+void AssertionParser::ExitGoalGroup(const yy::location& location) {
   if (!inside_goal_group_) {
     Error(location, "You've left a goal group before you've entered it.");
     return;
@@ -495,8 +494,8 @@ void AssertionParser::ExitGoalGroup(const yy::location &location) {
   inside_goal_group_ = false;
 }
 
-void AssertionParser::ScanBeginString(const RE2 &goal_comment_regex,
-                                      const std::string &data,
+void AssertionParser::ScanBeginString(const RE2& goal_comment_regex,
+                                      const std::string& data,
                                       bool trace_scanning) {
   // Preprocess the input by adding a - to the left of every goal line and a
   // . to the left of every non-goal line. From every goal line remove any
@@ -541,21 +540,21 @@ void AssertionParser::ScanBeginString(const RE2 &goal_comment_regex,
   SetScanBuffer(yy_buf, trace_scanning);
 }
 
-void AssertionParser::ScanBeginFile(const RE2 &goal_comment_regex,
+void AssertionParser::ScanBeginFile(const RE2& goal_comment_regex,
                                     bool trace_scanning) {
   std::string buffer;
   if (file().empty() || file() == "-") {
     Error("will not read goals from stdin");
     exit(EXIT_FAILURE);
   }
-  FILE *input = ::fopen(file().c_str(), "r");
+  FILE* input = ::fopen(file().c_str(), "r");
   CHECK(input != nullptr) << "Couldn't open " << file();
   CHECK(!::fseek(input, 0, SEEK_END));
   auto file_len = ::ftell(input);
   CHECK(file_len >= 0);
   CHECK(!::fseek(input, 0, SEEK_SET));
   buffer.resize(file_len);
-  CHECK(::fread(const_cast<char *>(buffer.data()), 1, file_len, input) ==
+  CHECK(::fread(const_cast<char*>(buffer.data()), 1, file_len, input) ==
         file_len);
   ::fclose(input);
   ScanBeginString(goal_comment_regex, buffer, trace_scanning);

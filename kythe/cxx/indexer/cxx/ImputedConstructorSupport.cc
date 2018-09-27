@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ clang::SourceRange FindNamedCalleeRange(const clang::Expr* expr) {
   if (const auto* callee = clang::dyn_cast<const clang::DeclRefExpr>(
           expr->IgnoreParenImpCasts())) {
     return clang::SourceRange(callee->getLocation(),
-                              callee->getLocEnd().getLocWithOffset(1));
+                              callee->getEndLoc().getLocWithOffset(1));
   }
   return clang::SourceRange();
 }

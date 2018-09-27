@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,25 +21,18 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/extractors/bazel"
+	"kythe.io/kythe/go/extractors/bazel/extutil"
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/vnameutil"
 
-	"bitbucket.org/creachadair/shell"
-	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
-
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	gopb "kythe.io/kythe/proto/go_go_proto"
-	spb "kythe.io/kythe/proto/storage_go_proto"
-	eapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
 
 var (
@@ -74,7 +67,7 @@ func main() {
 	outputFile := flag.Arg(1)
 	vnameRuleFile := flag.Arg(2)
 
-	info, err := loadExtraAction(extraActionFile)
+	info, err := bazel.LoadAction(extraActionFile)
 	if err != nil {
 		log.Fatalf("Error loading extra action: %v", err)
 	}
@@ -85,7 +78,7 @@ func main() {
 	// Load vname rewriting rules. We handle this directly, becaues the Bazel
 	// Go rules have some pathological symlink handling that the normal rules
 	// need to be patched for.
-	rules, err := loadRules(vnameRuleFile)
+	rules, err := bazel.LoadRules(vnameRuleFile)
 	if err != nil {
 		log.Fatalf("Error loading vname rules: %v", err)
 	}
@@ -94,414 +87,165 @@ func main() {
 	config := &bazel.Config{
 		Corpus:      *corpus,
 		Language:    govname.Language,
+		Rules:       rules,
 		CheckAction: ext.checkAction,
 		CheckInput:  ext.checkInput,
 		CheckEnv:    ext.checkEnv,
+		IsSource:    ext.isSource,
 		FixUnit:     ext.fixup,
 	}
 	ai, err := bazel.SpawnAction(info)
 	if err != nil {
 		log.Fatalf("Invalid extra action: %v", err)
 	}
-	cu, err := config.Extract(context.Background(), ai)
-	if err != nil {
+
+	ctx := context.Background()
+	if err := extutil.ExtractAndWrite(ctx, config, ai, outputFile); err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
-
-	// Write and flush the output to a .kindex file.
-	if err := writeToFile(cu, outputFile); err != nil {
-		log.Fatalf("Writing output failed: %v", err)
-	}
-}
-
-// writeToFile creates the specified output file from the contents of w.
-func writeToFile(w io.WriterTo, path string) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	_, err = w.WriteTo(f)
-	cerr := f.Close()
-	if err != nil {
-		return err
-	}
-	return cerr
-}
-
-// loadExtraAction reads the contents of the file at path and decodes it as an
-// ExtraActionInfo protobuf message.
-func loadExtraAction(path string) (*eapb.ExtraActionInfo, error) {
-	bits, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var info eapb.ExtraActionInfo
-	if err := proto.Unmarshal(bits, &info); err != nil {
-		return nil, err
-	}
-	return &info, nil
-}
-
-// loadRules reads the contents of the file at path and decodes it as a
-// slice of vname rewriting rules. The result is empty if path == "".
-func loadRules(path string) (vnameutil.Rules, error) {
-	if path == "" {
-		return nil, nil
-	}
-	bits, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	return vnameutil.ParseRules(bits)
 }
 
 type extractor struct {
-	rules        vnameutil.Rules
-	toolArgs     *toolArgs
-	goos, goarch string
+	rules       vnameutil.Rules
+	compileArgs *compileArgs
+
+	goos, goarch, goroot string
+	cgoEnabled           bool
 }
 
 func (e *extractor) checkAction(_ context.Context, info *bazel.ActionInfo) error {
-	toolArgs, err := extractToolArgs(info.Arguments)
-	if err != nil {
-		return fmt.Errorf("extracting tool arguments: %v", err)
-	}
-	e.toolArgs = toolArgs
-
+	e.compileArgs = parseCompileArgs(info.Arguments)
 	for name, value := range info.Environment {
 		switch name {
 		case "GOOS":
 			e.goos = value
 		case "GOARCH":
 			e.goarch = value
+		case "GOROOT":
+			e.goroot = value
+		case "CGO_ENABLED":
+			e.cgoEnabled = value == "1"
 		}
 	}
-	return nil
+
+	// The standard library packages aren't included explicitly.
+	// Walk the os_arch subdirectory of GOROOT to find them.
+	libRoot := filepath.Join(e.goroot, "pkg", e.goos+"_"+e.goarch)
+	return filepath.Walk(libRoot, func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !fi.IsDir() && filepath.Ext(path) == ".a" {
+			info.Inputs = append(info.Inputs, path)
+		}
+		return nil
+	})
 }
 
 func (e *extractor) checkInput(path string) (string, bool) {
-	return path, e.toolArgs.wantInput(path)
+	switch filepath.Ext(path) {
+	case ".go", ".a":
+		return path, true // keep source files, archives
+	}
+	return path, false
 }
 
-func (*extractor) checkEnv(name, _ string) bool {
-	switch name {
-	case "PATH", "GOOS", "GOARCH":
-		return false
-	}
-	return true
-}
+func (*extractor) isSource(name string) bool { return filepath.Ext(name) == ".go" }
+
+func (*extractor) checkEnv(name, _ string) bool { return name != "PATH" }
 
 func (e *extractor) fixup(unit *apb.CompilationUnit) error {
-	unit.Argument = e.toolArgs.compile
-	unit.SourceFile = e.toolArgs.sources
-	unit.WorkingDirectory = e.toolArgs.workDir
-	unit.VName.Path = e.toolArgs.importPath
-
-	// Adjust the paths through the symlink forest.
-	for i, fi := range unit.RequiredInput {
-		fixed := e.toolArgs.fixPath(fi.Info.GetPath())
-		fi.Info.Path = fixed
-		unit.RequiredInput[i].VName = e.rules.ApplyDefault(fixed, &spb.VName{
-			Corpus: *corpus,
-			Path:   fixed,
-		})
-
+	// Try to infer a unit vname from the output.
+	if vname, ok := e.rules.Apply(e.compileArgs.outputPath); ok {
+		vname.Language = govname.Language
+		unit.VName = vname
 	}
 	return bazel.AddDetail(unit, &gopb.GoDetails{
-		Goroot:     e.toolArgs.goRoot,
 		Goos:       e.goos,
 		Goarch:     e.goarch,
-		CgoEnabled: e.toolArgs.useCgo,
+		Goroot:     e.goroot,
+		CgoEnabled: e.cgoEnabled,
+		Compiler:   "gc",
 	})
 }
 
-// toolArgs captures the settings expressed by the Go compiler tool and its
-// arguments.
-type toolArgs struct {
-	compile     []string          // compiler argument list
-	paramsFile  string            // the response file, if one was used
-	workDir     string            // the compiler's working directory
-	goRoot      string            // the GOROOT path
-	importPath  string            // the import path being compiled
-	includePath string            // an include path, if set
-	outputPath  string            // the output from the compiler
-	toolRoot    string            // root directory for compiler/libraries
-	useCgo      bool              // whether cgo is enabled
-	useRace     bool              // whether the race-detector is enabled
-	pathmap     map[string]string // a mapping from physical path to expected path
-	sources     []string          // source file paths
-
-	// The file paths written by the Go compile actions do not have the names
-	// the compiler expects to match with the package import paths. Instead,
-	// the action creates a symlink forest where the links have the expected
-	// names and the targets of those links are the files as emitted.
-	//
-	// The pathmap allows us to invert this mapping, so that the files stored
-	// in a compilation record have the paths the compiler expects.
+// compileArgs records the build information extracted from the GoCompile
+// action's argument list.
+type compileArgs struct {
+	original    []string          // the original args, as provided
+	srcs        []string          // source file to be compiled
+	deps        []string          // import paths of direct dependencies
+	tags        []string          // build tags to assert
+	importMap   map[string]string // import map for direct dependencies
+	outputPath  string            // output object file
+	packageList string            // file containing the list of standard library packages
+	include     []string          // additional include directories
+	importPath  string            // output package import path
+	trimPrefix  string            // prefix to trim from source paths
 }
 
-// fixPath remaps path through the path map if it is present; or otherwise
-// returns path unmodified.
-func (g *toolArgs) fixPath(path string) string {
-	if fixed, ok := g.pathmap[path]; ok {
-		trimmed := trimPrefixDir(fixed, g.workDir)
-		if root, ok := findBazelOut(path); ok && !strings.Contains(trimmed, root) {
-			return filepath.Join(root, trimmed)
-		}
-		return trimmed
-	}
-	return path
-}
-
-// findBazelOut reports whether path is rooted under a Bazel output directory,
-// and if so returns the prefix of the path corresponding to that directory.
-func findBazelOut(path string) (string, bool) {
-	// Bazel stores outputs from the build process in a directory structure
-	// of the form bazel-out/<build-config>/<tag>/..., for example:
-	//
-	//    bazel-out/local_linux-fastbuild/genfiles/foo/bar.cc
-	//
-	// We detect this structure by checking for a prefix of the path with three
-	// or more components, the first of which is "bazel-out".
-
-	parts := strings.SplitN(path, string(filepath.Separator), 4)
-	if len(parts) >= 3 && parts[0] == "bazel-out" {
-		return filepath.Join(parts[:3]...), true
-	}
-	return "", false
-}
-
-// wantInput reports whether path should be included as a required input.
-func (g *toolArgs) wantInput(path string) bool {
-	// Drop the response file (if there is one).
-	if path == g.paramsFile {
-		return false
+func parseCompileArgs(args []string) *compileArgs {
+	c := &compileArgs{
+		original:  args,
+		importMap: make(map[string]string),
 	}
 
-	// Otherwise, anything that isn't in the tool root we keep.
-	trimmed, err := filepath.Rel(g.toolRoot, path)
-	if err != nil || trimmed == path {
-		return true
-	}
-
-	// Within the tool root, we keep library inputs, but discard binaries.
-	// Filter libraries based on the race-detector settings.
-	prefix, tail := splitPrefix(trimmed)
-	switch prefix {
-	case "bin/", "cmd/":
-		return false
-	case "pkg/":
-		sub, _ := splitPrefix(tail)
-		if strings.HasSuffix(sub, "_race/") && !g.useRace {
-			return false
-		}
-		return sub != "tool/"
-	default:
-		return true // conservative fallback
-	}
-}
-
-// bazelArgs captures compiler settings extracted from a Bazel response file.
-type bazelArgs struct {
-	paramsFile string            // the path of the params file (if there was one)
-	goRoot     string            // the corpus-relative path of the Go root
-	workDir    string            // the corpus-relative working directory
-	compile    []string          // the compiler argument list
-	symlinks   map[string]string // a mapping from original path to linked path
-
-	// TODO(fromberger): See if we can fix the rule definitions to emit the
-	// output in the correct format, so the symlink forest isn't needed.
-	// See also http://github.com/bazelbuild/rules_go/issues/211.
-}
-
-// checkParams reports whether args looks like a response file execution,
-// consisting either of a plain .params file or a bash -c command with an
-// argument file. If so, the response file path is returned.
-func checkParams(args []string) (string, bool) {
-	if len(args) == 1 && filepath.Ext(args[0]) == ".params" {
-		return args[0], true
-	} else if len(args) == 3 && args[0] == "/bin/bash" && args[1] == "-c" {
-		return args[2], true
-	}
-	return "", false
-}
-
-// parseBazelArgs extracts the compiler command line from the raw argument list
-// passed in by Bazel. The official Go rules currently pass in a response file
-// containing a shell script that we have to parse.
-func parseBazelArgs(args []string) (*bazelArgs, error) {
-	paramsFile, ok := checkParams(args)
-	if !ok {
-		// This is some unusual case; assume the arguments are already parsed.
-		return &bazelArgs{compile: args}, nil
-	}
-
-	// This is the expected case, a response file.
-	result := &bazelArgs{paramsFile: paramsFile}
-	f, err := os.Open(result.paramsFile)
-	if err != nil {
-		return nil, err
-	}
-	data, err := ioutil.ReadAll(f)
-	f.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// Split up the response into lines, and split each line into commands
-	// assuming a pipeline of the form "cmd1 && cmd2 && ...".
-	// Bazel exports GOROOT and changes the working directory, both of which we
-	// want for processing the compiler's argument list.
-	result.symlinks = make(map[string]string)
-	var last, srcs []string
-	parseShellCommands(data, func(cmd string, args []string) {
-		last = append([]string{cmd}, args...)
-		switch cmd {
-		case "export":
-			if dir := strings.TrimPrefix(args[0], "GOROOT=$(pwd)/"); dir != args[0] {
-				result.goRoot = filepath.Clean(dir)
-			}
-		case "cd":
-			result.workDir = args[0]
-		case "ln":
-			if len(args) == 3 && args[0] == "-s" {
-				result.symlinks[args[1]] = args[2]
-			}
-		default:
-			// The source arguments are collected using some bash nonsense.
-			// Reverse-engineer this.
-			//
-			// TODO(fromberger): Figure out a better way to deal with this,
-			// and probably file a bug upstream.
-			//
-			// The current incarnation of the Bazel rules expects to be able to
-			// run a filtering tool before the compiler, but it does this
-			// buried in the response file and it's tricky for us to replay
-			// that because we run without write access to those paths.
-			//
-			// We could maybe dike out the commands and run the filter, but for
-			// now we'll just take all the unfiltered source files as is.
-			trimmed := strings.TrimPrefix(cmd, "UNFILTERED_GO_FILES=(")
-			if trimmed != cmd {
-				line := strings.Join(append([]string{trimmed}, args...), " ")
-				srcs, _ = shell.Split(strings.TrimRight(line, ")"))
-			}
-		}
-	})
-	const filteredMarker = `${FILTERED_GO_FILES[@]}`
-	for _, arg := range last {
-		if arg == filteredMarker {
-			result.compile = append(result.compile, srcs...)
-		} else {
-			result.compile = append(result.compile, arg)
-		}
-	}
-	return result, nil
-}
-
-// extractToolArgs extracts the build tool arguments from args.
-func extractToolArgs(args []string) (*toolArgs, error) {
-	parsed, err := parseBazelArgs(args)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &toolArgs{
-		paramsFile: parsed.paramsFile,
-		workDir:    parsed.workDir,
-		goRoot:     filepath.Join(parsed.workDir, parsed.goRoot),
-		pathmap:    make(map[string]string),
-	}
-
-	// Process the parsed command-line arguments to find the tool, source, and
-	// output paths.
-	var wantArg *string
-	inTool := false
-	for _, arg := range parsed.compile {
-		// Discard arguments until the tool binary is found.
-		if !inTool {
-			if filepath.Base(arg) == "go" {
-				adjusted := filepath.Join(result.workDir, arg)
-				result.toolRoot = filepath.Dir(filepath.Dir(adjusted))
-				result.compile = append(result.compile, adjusted)
-				inTool = true
-			}
+	var tail []string // left-over non-flag arguments
+	flag := ""
+	for i, arg := range args {
+		if arg == "--" {
+			// An explicit "--" ends builder flag parsing.
+			tail = args[i+1:]
+			break
+		} else if flag == "" && strings.HasPrefix(arg, "-") {
+			// Record the name of a flag we want an argument for.
+			flag = strings.TrimLeft(arg, "-")
 			continue
 		}
 
-		// Scan for important flags.
-		if wantArg != nil { // capture argument for a previous flag
-			*wantArg = filepath.Join(parsed.workDir, arg)
-			result.compile = append(result.compile, *wantArg)
-			wantArg = nil
+		// At this point we have the argument for a flag.  These are the
+		// relevant flags from the toolchain's compile command.
+		switch flag {
+		case "dep":
+			c.deps = append(c.deps, arg)
+		case "importmap":
+			// Only record the mappings that change something.
+			ps := strings.SplitN(arg, "=", 2)
+			if len(ps) == 2 && ps[0] != ps[1] {
+				c.importMap[ps[0]] = ps[1]
+			}
+		case "o":
+			c.outputPath = arg
+		case "package_list":
+			c.packageList = arg
+		case "src":
+			c.srcs = append(c.srcs, arg)
+		case "tags":
+			c.tags = append(c.tags, arg)
+		}
+		flag = "" // reset
+	}
+
+	// Any remaining arguments are for consumption by the go tool.
+	// Pull out include paths and other useful stuff.
+	flag = ""
+	for _, arg := range tail {
+		if flag == "" && strings.HasPrefix(arg, "-") {
+			flag = strings.TrimLeft(arg, "-")
 			continue
 		}
-		result.compile = append(result.compile, arg)
-		if arg == "-p" {
-			wantArg = &result.importPath
-		} else if arg == "-o" {
-			wantArg = &result.outputPath
-		} else if arg == "-I" {
-			wantArg = &result.includePath
-		} else if arg == "-race" {
-			result.useRace = true
-		} else if !strings.HasPrefix(arg, "-") && strings.HasSuffix(arg, ".go") {
-			result.sources = append(result.sources, arg)
+
+		// These are the relevant flags for the "go tool compile" command.
+		switch flag {
+		case "I":
+			c.include = append(c.include, arg)
+		case "p":
+			c.importPath = arg
+		case "trimpath":
+			c.trimPrefix = arg
 		}
+		flag = "" // reset
 	}
 
-	// Reverse-engineer the symlink forest to recover the paths the compiler is
-	// expecting to see so the captured inputs map correctly.
-	for physical, logical := range parsed.symlinks {
-		result.pathmap[cleanLinkTarget(physical)] = logical
-	}
-
-	return result, nil
-}
-
-// parseShellCommands splits input into lines and parses each line as a shell
-// pipeline of the form "cmd1 && cmd2 && ...". Each resulting command and its
-// arguments are passed to f in their order of occurrence in the input.
-func parseShellCommands(input []byte, f func(cmd string, args []string)) {
-	for _, line := range strings.Split(string(input), "\n") {
-		words, _ := shell.Split(strings.TrimSpace(line))
-		for len(words) > 0 {
-			i := stringset.Index("&&", words)
-			if i < 0 {
-				f(words[0], words[1:])
-				break
-			}
-			f(words[0], words[1:i])
-			words = words[i+1:]
-		}
-	}
-}
-
-// splitPrefix separates the first slash-delimited component of path.
-// The prefix includes the slash, so that prefix + tail == path.
-// If there is no slash in the path, prefix == "".
-func splitPrefix(path string) (prefix, tail string) {
-	if i := strings.Index(path, "/"); i >= 0 {
-		return path[:i+1], path[i+1:]
-	}
-	return "", path
-}
-
-// cleanLinkTarget removes ".." markers from the head of path, and returns the
-// cleaned remainder.
-func cleanLinkTarget(path string) string {
-	const up = "../"
-	for strings.HasPrefix(path, up) {
-		path = path[len(up):]
-	}
-	return filepath.Clean(path)
-}
-
-// trimPrefixDir makes path relative to dir is possible; otherwise it returns
-// path unmodified.
-func trimPrefixDir(path, dir string) string {
-	if rel, err := filepath.Rel(dir, path); err == nil {
-		return rel
-	}
-	return path
+	return c
 }

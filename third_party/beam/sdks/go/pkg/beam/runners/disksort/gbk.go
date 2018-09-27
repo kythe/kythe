@@ -19,27 +19,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"flag"
 	"fmt"
-	"hash/crc32"
 	"io"
 	"log"
-	"runtime"
-	"sync"
 
 	"kythe.io/kythe/go/util/disksort"
 	"kythe.io/kythe/go/util/sortutil"
 
 	"github.com/apache/beam/sdks/go/pkg/beam/core/graph"
 	"github.com/apache/beam/sdks/go/pkg/beam/core/runtime/exec"
-	"golang.org/x/sync/errgroup"
-)
-
-var (
-	gbkConcurrency = flag.Int("beam_direct_gbk_concurrency", runtime.GOMAXPROCS(0)/2,
-		"Maximum allowed concurrency across all GBK operations")
-	concurrencyGroupSem   chan struct{}
-	setupConcurrencyGroup sync.Once
+	"github.com/apache/beam/sdks/go/pkg/beam/core/typex"
 )
 
 // CoGBK buffers all input and continues on FinishBundle. Use with small single-bundle data only.
@@ -48,14 +37,15 @@ type CoGBK struct {
 	Edge *graph.MultiEdge
 	Out  exec.Node
 
+	wEnc   exec.WindowEncoder
+	wDec   exec.WindowDecoder
 	keyEnc exec.ElementEncoder
 	keyDec exec.ElementDecoder
 
 	valEnc []exec.ElementEncoder
 	valDec []exec.ElementDecoder
 
-	sorters []disksort.Interface
-	mu      []sync.Mutex
+	sorter disksort.Interface
 }
 
 func (n *CoGBK) ID() exec.UnitID {
@@ -73,12 +63,8 @@ func iterValueLess(a, b interface{}) bool {
 }
 
 func (n *CoGBK) Up(ctx context.Context) error {
-	concurrency := *gbkConcurrency
-	if concurrency <= 0 {
-		concurrency = 1
-	}
-	setupConcurrencyGroup.Do(func() { concurrencyGroupSem = make(chan struct{}, concurrency) })
-
+	n.wEnc = exec.MakeWindowEncoder(n.Edge.Input[0].From.WindowingStrategy().Fn.Coder())
+	n.wDec = exec.MakeWindowDecoder(n.Edge.Input[0].From.WindowingStrategy().Fn.Coder())
 	n.keyEnc = exec.MakeElementEncoder(n.Edge.Input[0].From.Coder.Components[0])
 	n.keyDec = exec.MakeElementDecoder(n.Edge.Input[0].From.Coder.Components[0])
 
@@ -87,23 +73,20 @@ func (n *CoGBK) Up(ctx context.Context) error {
 		n.valDec = append(n.valDec, exec.MakeElementDecoder(input.From.Coder.Components[1]))
 	}
 
-	for i := 0; i < concurrency; i++ {
-		s, err := disksort.NewMergeSorter(disksort.MergeOptions{
-			CompressShards: true,
-			Marshaler:      iterValueMarshaler{},
-			Lesser:         sortutil.LesserFunc(iterValueLess),
-		})
-		if err != nil {
-			return fmt.Errorf("error creating MergeSorter: %v", err)
-		}
-		n.sorters = append(n.sorters, s)
+	s, err := disksort.NewMergeSorter(disksort.MergeOptions{
+		CompressShards: true,
+		Marshaler:      iterValueMarshaler{},
+		Lesser:         sortutil.LesserFunc(iterValueLess),
+	})
+	if err != nil {
+		return fmt.Errorf("error creating MergeSorter: %v", err)
 	}
-	n.mu = make([]sync.Mutex, len(n.sorters))
+	n.sorter = s
 
 	return nil
 }
 
-func (n *CoGBK) StartBundle(ctx context.Context, id string, data exec.DataManager) error {
+func (n *CoGBK) StartBundle(ctx context.Context, id string, data exec.DataContext) error {
 	return n.Out.StartBundle(ctx, id, data)
 }
 
@@ -111,28 +94,36 @@ func (n *CoGBK) ProcessElement(ctx context.Context, elm exec.FullValue, _ ...exe
 	index := elm.Elm.(int)             // index of Inputs
 	value := elm.Elm2.(exec.FullValue) // actual KV<K,V>
 
-	fullKey := exec.FullValue{Elm: value.Elm, Timestamp: value.Timestamp}  // strip V from KV<K,V>
 	fullVal := exec.FullValue{Elm: value.Elm2, Timestamp: value.Timestamp} // strip K from KV<K,V>
-
 	var buf bytes.Buffer
-	if err := n.keyEnc.Encode(fullKey, &buf); err != nil {
-		return fmt.Errorf("failed to encode key %v for CoGBK: %v", elm, err)
-	}
-	key := append([]byte{}, buf.Bytes()...)
-	buf.Reset()
 	if err := n.valEnc[index].Encode(fullVal, &buf); err != nil {
 		return fmt.Errorf("failed to encode val %v for CoGBK: %v", elm, err)
 	}
-	val := buf.Bytes()
+	val := append([]byte{}, buf.Bytes()...)
 
-	shard := int(crc32.ChecksumIEEE(key)) % len(n.sorters)
-	n.mu[shard].Lock()
-	defer n.mu[shard].Unlock()
-	return n.sorters[shard].Add(&iterValue{
-		Key:   key,
-		Index: index,
-		Value: val,
-	})
+	// Encode KV per window
+	for _, w := range elm.Windows {
+		ws := []typex.Window{w}
+		fullKey := exec.FullValue{Elm: value.Elm, Timestamp: value.Timestamp, Windows: ws} // strip V from KV<K,V>
+
+		buf.Reset()
+		if err := n.keyEnc.Encode(fullKey, &buf); err != nil {
+			return fmt.Errorf("failed to encode key %v for CoGBK: %v", elm, err)
+		}
+		if err := n.wEnc.Encode(ws, &buf); err != nil {
+			return fmt.Errorf("failed to encode window %v for CoGBK: %v", w, err)
+		}
+		key := append([]byte{}, buf.Bytes()...)
+
+		if err := n.sorter.Add(&iterValue{
+			Key:   key,
+			Index: index,
+			Value: val,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type iterStream struct {
@@ -149,13 +140,13 @@ type iterStream struct {
 	opened bool
 }
 
-func (i *iterStream) Open() exec.Stream {
+func (i *iterStream) Open() (exec.Stream, error) {
 	// TODO(schroederc): add disksort support for reiteration
 	if i.opened {
-		panic("disksort CoGBK does not support ReStreams")
+		return nil, fmt.Errorf("disksort CoGBK does not support ReStreams")
 	}
 	i.opened = true
-	return i
+	return i, nil
 }
 
 func (i *iterStream) Read() (exec.FullValue, error) {
@@ -266,81 +257,75 @@ func (iterValueMarshaler) Unmarshal(rec []byte) (interface{}, error) {
 }
 
 func (n *CoGBK) FinishBundle(ctx context.Context) error {
-	g, ctx := errgroup.WithContext(ctx)
-	keyCounts := make([]int, len(n.sorters))
-	for i := 0; i < len(n.sorters); i++ {
-		i := i
-		g.Go(func() error {
-			concurrencyGroupSem <- struct{}{}
-			defer func() { <-concurrencyGroupSem }()
-
-			iter, err := n.sorters[i].Iterator()
-			if err != nil {
-				return fmt.Errorf("error creating disksort.Iterator: %v", err)
-			}
-			next, iterErr := iter.Next()
-			for {
-				if iterErr == io.EOF {
-					if err := iter.Close(); err != nil {
-						return fmt.Errorf("error closing disksort.Iterator: %v", err)
-					}
-					return nil
-				} else if iterErr != nil {
-					return fmt.Errorf("error reading disksort.Iterator: %v", iterErr)
-				}
-
-				iv := next.(*iterValue)
-				next = nil
-				keyCounts[i]++
-
-				fullKey, err := n.keyDec.Decode(bytes.NewBuffer(iv.Key))
-				if err != nil {
-					return fmt.Errorf("error decoding key %q: %v", string(iv.Key), err)
-				}
-
-				values := make([]exec.ReStream, len(n.Edge.Input))
-				for i := 0; i < len(values); i++ {
-					is := &iterStream{n: n, key: iv.Key, idx: i, iter: iter}
-					if i == iv.Index {
-						is.buffer = iv
-					} else if i < iv.Index {
-						is.iter = nil // already closed
-					} else {
-						is.prev = values[i-1].(*iterStream)
-					}
-					values[i] = is
-				}
-				iv = nil
-
-				if err := n.Out.ProcessElement(ctx, fullKey, values...); err != nil {
-					return err
-				}
-
-				// Advance to next key
-				last := values[len(values)-1].(*iterStream)
-				for {
-					next, iterErr = last.next()
-					if iterErr == io.EOF {
-						if last.buffer != nil {
-							next = last.buffer
-							iterErr = nil
-						}
-						break
-					} else if iterErr != nil {
-						break
-					}
-				}
-			}
-		})
+	iter, err := n.sorter.Iterator()
+	if err != nil {
+		return fmt.Errorf("error creating disksort.Iterator: %v", err)
 	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
+
 	var totalKeys int
-	for _, cnt := range keyCounts {
-		totalKeys += cnt
+	next, iterErr := iter.Next()
+	for {
+		if iterErr == io.EOF {
+			if err := iter.Close(); err != nil {
+				return fmt.Errorf("error closing disksort.Iterator: %v", err)
+			}
+			return nil
+		} else if iterErr != nil {
+			return fmt.Errorf("error reading disksort.Iterator: %v", iterErr)
+		}
+
+		iv := next.(*iterValue)
+		next = nil
+		totalKeys++
+
+		buf := bytes.NewBuffer(iv.Key)
+		fullKey, err := n.keyDec.Decode(buf)
+		if err != nil {
+			return fmt.Errorf("error decoding key %q: %v", string(iv.Key), err)
+		}
+		ws, err := n.wDec.Decode(buf)
+		if err != nil {
+			return fmt.Errorf("error decoding key window %q: %v", string(iv.Key), err)
+		}
+		fullKey.Windows = ws
+
+		values := make([]exec.ReStream, len(n.Edge.Input))
+		for i := 0; i < len(values); i++ {
+			is := &iterStream{n: n, key: iv.Key, idx: i, iter: iter}
+			if i == iv.Index {
+				is.buffer = iv
+			} else if i < iv.Index {
+				is.iter = nil // already closed
+			} else {
+				is.prev = values[i-1].(*iterStream)
+			}
+			values[i] = is
+		}
+		iv = nil
+
+		if err := n.Out.ProcessElement(ctx, fullKey, values...); err != nil {
+			return err
+		}
+
+		// Advance to next key
+		last := values[len(values)-1].(*iterStream)
+		for {
+			next, iterErr = last.next()
+			if iterErr == io.EOF {
+				if last.buffer != nil {
+					next = last.buffer
+					iterErr = nil
+				}
+				break
+			} else if iterErr != nil {
+				break
+			}
+		}
 	}
-	log.Printf("CoGBK Σ%v = %d", keyCounts, totalKeys)
+
+	if *verbose {
+		log.Printf("CoGBK = %d", totalKeys)
+	}
 	return n.Out.FinishBundle(ctx)
 }
 

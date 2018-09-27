@@ -13,7 +13,6 @@ filegroup(
         "//third_party/gflags:COPYING.txt",
         "//third_party/glog:COPYING",
         "//third_party/go:licenses",
-        "//third_party/gson:license",
         "//third_party/guava:COPYING",
         "//third_party/javac:license",
         "//third_party/jcommander:license.txt",
@@ -37,12 +36,6 @@ filegroup(
         "@com_google_protobuf//:LICENSE",
         "@org_brotli//:LICENSE",
     ],
-)
-
-cc_library(
-    name = "libcurl",
-    srcs = ["empty.cc"],
-    linkopts = ["-lcurl"],
 )
 
 cc_library(

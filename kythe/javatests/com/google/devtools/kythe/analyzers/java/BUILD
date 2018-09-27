@@ -61,6 +61,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/analyzers/java:plugin",
         "//kythe/java/com/google/devtools/kythe/common:autoservice",
         "//kythe/proto:storage_java_proto",
-        "@bazel_tools//third_party/java/jdk/langtools:javac",
+        "//third_party/javac",
     ],
 )

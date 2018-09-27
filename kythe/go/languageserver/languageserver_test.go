@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ func (c MockClient) Nodes(_ context.Context, x *gpb.NodesRequest) (*gpb.NodesRep
 	return nil, fmt.Errorf("not Implemented")
 }
 func TestReferences(t *testing.T) {
-	const sourceText = "hi\nthere\nhi"
+	const sourceText = "hi\nthere\nhi\nend"
 	c := MockClient{
 		decRsp: []mockDec{
 			{
@@ -93,6 +93,11 @@ func TestReferences(t *testing.T) {
 							Span: &cpb.Span{
 								Start: &cpb.Point{LineNumber: 3, ColumnOffset: 0},
 								End:   &cpb.Point{LineNumber: 3, ColumnOffset: 2}}},
+						"kythe://corpus?path=file.txt#alt": {
+							Ticket: "kythe://corpus?path=file.txt#alt",
+							Parent: "kythe://corpus?path=file.txt",
+							Span: &cpb.Span{
+								Start: &cpb.Point{LineNumber: 4}}},
 					},
 					Reference: []*xpb.DecorationsReply_Reference{
 						{
@@ -108,7 +113,14 @@ func TestReferences(t *testing.T) {
 							Span: &cpb.Span{
 								Start: &cpb.Point{LineNumber: 3, ColumnOffset: 0},
 								End:   &cpb.Point{LineNumber: 3, ColumnOffset: 2}},
-						}}}}},
+						},
+						{
+							TargetDefinition: "kythe://corpus?path=file.txt#end",
+							TargetTicket:     "kythe://corpus?path=file.txt#alt",
+							Span: &cpb.Span{
+								Start: &cpb.Point{LineNumber: 4}},
+						},
+					}}}},
 		refRsp: []mockRef{
 			{
 				ticket: "kythe://corpus?path=file.txt#hi",
@@ -123,7 +135,20 @@ func TestReferences(t *testing.T) {
 										Parent: "kythe://corpus?path=file.txt",
 										Span: &cpb.Span{
 											Start: &cpb.Point{LineNumber: 3, ColumnOffset: 0},
-											End:   &cpb.Point{LineNumber: 3, ColumnOffset: 2}}}}}}}}}},
+											End:   &cpb.Point{LineNumber: 3, ColumnOffset: 2},
+										},
+									},
+								},
+								{
+									Anchor: &xpb.Anchor{
+										Ticket: "kythe://corpus?path=file.txt#end",
+										Parent: "kythe://corpus?path=file.txt",
+										Span: &cpb.Span{
+											Start: &cpb.Point{LineNumber: 4},
+										},
+									},
+								},
+							}}}}}},
 		docRsp: []mockDoc{{
 			ticket: "kythe://corpus?path=file.txt#hi",
 			resp: xpb.DocumentationReply{
@@ -200,7 +225,15 @@ func TestReferences(t *testing.T) {
 		URI: "file:///root/dir/file.txt",
 		Range: lsp.Range{
 			Start: lsp.Position{Line: 6, Character: 0},
-			End:   lsp.Position{Line: 6, Character: 2}}}}
+			End:   lsp.Position{Line: 6, Character: 2},
+		},
+	}, {
+		URI: "file:///root/dir/file.txt",
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 7},
+			End:   lsp.Position{Line: 7},
+		},
+	}}
 
 	if err := testutil.DeepEqual(locs, expected); err != nil {
 		t.Errorf("Incorrect references returned\n  Expected: %#v\n  Found:    %#v", expected, locs)

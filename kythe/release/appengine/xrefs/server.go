@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,18 +59,18 @@ func main() {
 	go func() { log.Fatal(http.ListenAndServe(*listeningAddr, nil)) }()
 
 	start := time.Now()
+	ctx := context.Background()
 	db, err := leveldb.Open(*servingTable, nil)
 	if err != nil {
 		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
 	}
-	defer db.Close()
+	defer db.Close(ctx)
 	tbl := &table.KVProto{db}
 	log.Printf("Serving data opened in %s", time.Since(start))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filepath.Join(*publicResources, filepath.Clean(r.URL.Path)))
 	})
-	ctx := context.Background()
 	xrefs.RegisterHTTPHandlers(ctx, xsrv.NewCombinedTable(tbl), http.DefaultServeMux)
 	filetree.RegisterHTTPHandlers(ctx, &ftsrv.Table{tbl, true}, http.DefaultServeMux)
 

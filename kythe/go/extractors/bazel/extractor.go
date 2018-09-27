@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,8 +168,6 @@ func (c *Config) ExtractToFile(ctx context.Context, info *ActionInfo, w *kzip.Wr
 	})
 	if err != nil {
 		return "", err
-	} else if err := c.fixup(cu); err != nil {
-		return "", err
 	}
 	return w.AddUnit(cu, nil)
 }
@@ -285,7 +283,9 @@ func (c *Config) classifyInputs(info *ActionInfo, unit *apb.CompilationUnit) []s
 	for _, in := range info.Inputs {
 		path, ok := c.checkInput(in)
 		if ok {
-			inputs.Add(path)
+			if !inputs.Add(path) {
+				continue // don't re-add files we've already seen
+			}
 			if c.isSource(path) {
 				sourceFiles.Add(path)
 				c.logPrintf("Matched source file from inputs: %q", path)
@@ -293,6 +293,8 @@ func (c *Config) classifyInputs(info *ActionInfo, unit *apb.CompilationUnit) []s
 			vname, ok := c.Rules.Apply(path)
 			if !ok {
 				vname = &spb.VName{Corpus: c.Corpus, Path: path}
+			} else if vname.Corpus == "" {
+				vname.Corpus = c.Corpus
 			}
 
 			// Add the skeleton of a required input carrying the vname.

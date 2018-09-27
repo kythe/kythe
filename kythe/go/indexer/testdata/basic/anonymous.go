@@ -28,7 +28,7 @@ func f(planx struct {
 	return planx.T
 }
 
-var _ = struct {
+var v = struct {
 	//- @V defines/binding V
 	//- V.node/kind variable
 	//- V.subkind field
@@ -37,6 +37,19 @@ var _ = struct {
 	//- @V ref V
 	V: 25,
 }
+
+//- @V ref V
+var _ = v.V
+
+var w struct {
+	//- @X defines/binding X
+	//- X.node/kind variable
+	//- X.subkind field
+	X uint32
+}
+
+//- @X ref X
+var _ = w.X
 
 //- @elt defines/binding Elt
 //- Elt.node/kind variable
@@ -49,4 +62,15 @@ var g = func(elt struct {
 	//- @P ref P
 	//- @elt ref Elt
 	return len(elt.P)
+}
+
+//- @em defines/binding Em
+//- Em.node/kind record
+type em struct {
+	v struct {
+		//- @X defines/binding EmX
+		//- EmX.node/kind variable
+		//- EmX.subkind field
+		X string
+	}
 }

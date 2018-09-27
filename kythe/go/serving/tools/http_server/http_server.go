@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,9 +84,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
 	}
-	defer db.Close()
+	defer db.Close(ctx)
+	xs = xsrv.NewService(ctx, db)
 	tbl := &table.KVProto{db}
-	xs = xsrv.NewCombinedTable(tbl)
 	gs = gsrv.NewCombinedTable(tbl)
 	if *maxTicketsPerRequest > 0 {
 		xs = xrefs.BoundedRequests{

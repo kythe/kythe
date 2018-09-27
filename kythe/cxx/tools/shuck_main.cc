@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ DEFINE_string(static_claim, "", "Read from this claim file.");
 DEFINE_bool(slice_dependencies, false, "Describe a miminal index pack.");
 
 template <typename ProtoType, typename ClosureType>
-void ReadGzippedDelimitedProtoSequence(const std::string &path, ClosureType f) {
+void ReadGzippedDelimitedProtoSequence(const std::string& path, ClosureType f) {
   namespace io = ::google::protobuf::io;
   int fd = ::open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
   CHECK_GE(fd, 0) << "Couldn't open input file " << path << ": "
@@ -76,7 +76,7 @@ void ReadGzippedDelimitedProtoSequence(const std::string &path, ClosureType f) {
   ::close(fd);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   gflags::SetVersionString("0.1");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
   std::set<std::string> compilations;
   ReadGzippedDelimitedProtoSequence<ClaimAssignment>(
       FLAGS_static_claim,
-      [&compilations, &paths](const ClaimAssignment &claim) {
+      [&compilations, &paths](const ClaimAssignment& claim) {
         if (paths.count(claim.dependency_v_name().path())) {
           compilations.insert(claim.compilation_v_name().signature());
         }
@@ -103,19 +103,19 @@ int main(int argc, char *argv[]) {
   kythe::IndexPack pack(std::move(filesystem));
   if (!pack.ScanData(
           kythe::IndexPackFilesystem::DataKind::kCompilationUnit,
-          [&pack, &paths, &compilations](const std::string &file_id) {
+          [&pack, &paths, &compilations](const std::string& file_id) {
             std::string error_text;
             CompilationUnit unit;
             CHECK(pack.ReadCompilationUnit(file_id, &unit, &error_text))
                 << "Error reading unit " << file_id << ": " << error_text;
             bool claimed = compilations.count(unit.v_name().signature());
-            for (const auto &input : unit.required_input()) {
+            for (const auto& input : unit.required_input()) {
               if (paths.count(input.v_name().path())) {
                 if (!FLAGS_slice_dependencies || claimed) {
                   ::printf("units/%s.unit\n", file_id.c_str());
                   if (!FLAGS_slice_dependencies && claimed) {
                     ::printf("# prev claim contains");
-                    for (const auto &arg : unit.source_file()) {
+                    for (const auto& arg : unit.source_file()) {
                       ::printf(" %s", arg.c_str());
                     }
                     ::printf("\n");

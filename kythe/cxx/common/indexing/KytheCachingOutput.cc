@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@
 
 namespace kythe {
 
-bool MemcachedHashCache::OpenMemcache(const std::string &spec) {
+bool MemcachedHashCache::OpenMemcache(const std::string& spec) {
   if (cache_) {
     memcached_free(cache_);
     cache_ = nullptr;
@@ -46,13 +46,13 @@ MemcachedHashCache::~MemcachedHashCache() {
   }
 }
 
-void MemcachedHashCache::RegisterHash(const Hash &hash) {
+void MemcachedHashCache::RegisterHash(const Hash& hash) {
   if (!cache_) {
     return;
   }
   char value = 1;
   memcached_return_t add_result =
-      memcached_add(cache_, reinterpret_cast<const char *>(hash), kHashSize,
+      memcached_add(cache_, reinterpret_cast<const char*>(hash), kHashSize,
                     &value, sizeof(value), 0, 0);
   if (!memcached_success(add_result) && add_result != MEMCACHED_DATA_EXISTS) {
     fprintf(stderr, "memcached add failed: %s\n",
@@ -60,12 +60,12 @@ void MemcachedHashCache::RegisterHash(const Hash &hash) {
   }
 }
 
-bool MemcachedHashCache::SawHash(const Hash &hash) {
+bool MemcachedHashCache::SawHash(const Hash& hash) {
   if (!cache_) {
     return false;
   }
   memcached_return_t ex_result =
-      memcached_exist(cache_, reinterpret_cast<const char *>(hash), kHashSize);
+      memcached_exist(cache_, reinterpret_cast<const char*>(hash), kHashSize);
   if (ex_result == MEMCACHED_SUCCESS) {
     return true;
   } else if (ex_result != MEMCACHED_NOTFOUND) {
@@ -96,7 +96,7 @@ FileOutputStream::~FileOutputStream() {
   }
 }
 
-void FileOutputStream::EnqueueEntry(const proto::Entry &entry) {
+void FileOutputStream::EnqueueEntry(const proto::Entry& entry) {
   if (cache_ == &default_cache_ || buffers_.empty()) {
     {
       google::protobuf::io::CodedOutputStream coded_stream(stream_);
@@ -113,7 +113,7 @@ void FileOutputStream::EnqueueEntry(const proto::Entry &entry) {
   size_t size_size =
       google::protobuf::io::CodedOutputStream::VarintSize32(entry_size);
   size_t size_delta = entry_size + size_size;
-  unsigned char *buffer = buffers_.WriteToTop(size_delta);
+  unsigned char* buffer = buffers_.WriteToTop(size_delta);
 
   google::protobuf::io::CodedOutputStream::WriteVarint32ToArray(entry_size,
                                                                 buffer);

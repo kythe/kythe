@@ -1,23 +1,35 @@
 workspace(name = "io_kythe")
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.14", "0.15")
+check_version("0.16", "0.17")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
 clang_configure()
+
+http_archive(
+    name = "bazel_toolchains",
+    sha256 = "529f6763716f91e5b62bd14eeb5389b376126ecb276b127a78c95f8721280c11",
+    strip_prefix = "bazel-toolchains-f95842b60173ce5f931ae7341488b6cb2610fd94",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/f95842b60173ce5f931ae7341488b6cb2610fd94.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/f95842b60173ce5f931ae7341488b6cb2610fd94.tar.gz",
+    ],
+)
 
 bind(
     name = "libuuid",
     actual = "//third_party:libuuid",
 )
 
-new_http_archive(
+http_archive(
     name = "org_libmemcached_libmemcached",
-    build_file = "third_party/libmemcached.BUILD",
+    build_file = "@//third_party:libmemcached.BUILD",
     sha256 = "e22c0bb032fde08f53de9ffbc5a128233041d9f33b5de022c0978a2149885f82",
     strip_prefix = "libmemcached-1.0.18",
     url = "https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz",
@@ -38,9 +50,20 @@ bind(
     actual = "@com_google_code_gson_gson//jar",
 )
 
-new_http_archive(
+http_archive(
+    name = "se_haxx_curl",
+    build_file = "@//third_party:curl.BUILD",
+    sha256 = "ff3e80c1ca6a068428726cd7dd19037a47cc538ce58ef61c59587191039b2ca6",
+    strip_prefix = "curl-7.49.1",
+    urls = [
+        "http://bazel-mirror.storage.googleapis.com/curl.haxx.se/download/curl-7.49.1.tar.gz",
+        "https://curl.haxx.se/download/curl-7.49.1.tar.gz",
+    ],
+)
+
+http_archive(
     name = "net_zlib",
-    build_file = "third_party/zlib.BUILD",
+    build_file = "@//third_party:zlib.BUILD",
     sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
     strip_prefix = "zlib-1.2.11",
     urls = [
@@ -51,6 +74,18 @@ new_http_archive(
 bind(
     name = "zlib",  # required by @com_google_protobuf
     actual = "@net_zlib//:zlib",
+)
+
+http_archive(
+    name = "org_libzip",
+    build_file = "@//third_party:libzip.BUILD",
+    sha256 = "a5d22f0c87a2625450eaa5e10db18b8ee4ef17042102d04c62e311993a2ba363",
+    strip_prefix = "libzip-rel-1-5-1",
+    urls = [
+        # Bazel does not like the official download link at libzip.org,
+        # so use the GitHub release tag.
+        "https://github.com/nih-at/libzip/archive/rel-1-5-1.zip",
+    ],
 )
 
 http_archive(
@@ -111,41 +146,41 @@ http_archive(
     url = "https://github.com/google/riegeli/archive/bd99099abd41abbe35a10f3bfa35e15b6b2d893a.zip",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_google_glog",
-    build_file = "third_party/googlelog.BUILD",
+    build_file = "@//third_party:googlelog.BUILD",
     sha256 = "ce61883437240d650be724043e8b3c67e257690f876ca9fd53ace2a791cfea6c",
     strip_prefix = "glog-bac8811710c77ac3718be1c4801f43d37c1aea46",
     url = "https://github.com/google/glog/archive/bac8811710c77ac3718be1c4801f43d37c1aea46.zip",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_tencent_rapidjson",
-    build_file = "third_party/rapidjson.BUILD",
+    build_file = "@//third_party:rapidjson.BUILD",
     sha256 = "8e00c38829d6785a2dfb951bb87c6974fa07dfe488aa5b25deec4b8bc0f6a3ab",
     strip_prefix = "rapidjson-1.1.0",
     url = "https://github.com/Tencent/rapidjson/archive/v1.1.0.zip",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_stedolan_jq",
-    build_file = "third_party/jq.BUILD",
+    build_file = "@//third_party:jq.BUILD",
     sha256 = "998c41babeb57b4304e65b4eb73094279b3ab1e63801b6b4bddd487ce009b39d",
     strip_prefix = "jq-1.4",
     url = "https://github.com/stedolan/jq/releases/download/jq-1.4/jq-1.4.tar.gz",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_google_snappy",
-    build_file = "third_party/snappy.BUILD",
+    build_file = "@//third_party:snappy.BUILD",
     sha256 = "61e05a0295fd849072668b1f3494801237d809427cfe8fd014cda455036c3ef7",
     strip_prefix = "snappy-1.1.7",
     url = "https://github.com/google/snappy/archive/1.1.7.zip",
 )
 
-new_http_archive(
+http_archive(
     name = "com_github_google_leveldb",
-    build_file = "third_party/leveldb.BUILD",
+    build_file = "@//third_party:leveldb.BUILD",
     sha256 = "5b2bd7a91489095ad54bb81ca6544561025b48ec6d19cc955325f96755d88414",
     strip_prefix = "leveldb-1.20",
     url = "https://github.com/google/leveldb/archive/v1.20.zip",
@@ -243,8 +278,16 @@ maven_jar(
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "8b68d0630d63d95dacc0016c3bb4b76154fe34fca93efd65d1c366de3fcb4294",
-    url = "https://github.com/bazelbuild/rules_go/releases/download/0.12.1/rules_go-0.12.1.tar.gz",
+    sha256 = "5f3b0304cdf0c505ec9e5b3c4fc4a87b5ca21b13d8ecc780c97df3d1809b9ce6",
+    urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.15.1/rules_go-0.15.1.tar.gz"],
+)
+
+# Required by com_google_protobuf.
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "ca4e3b8e4da9266c3a9101c8f4704fe2e20eb5625b2a6a7d2d7d45e3dd4efffd",
+    strip_prefix = "bazel-skylib-0.5.0",
+    urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.5.0.zip"],
 )
 
 # proto_library, cc_proto_library, and java_proto_library rules implicitly
@@ -253,55 +296,43 @@ http_archive(
 # N.B. We have a near-clone of the protobuf BUILD file overriding upstream so
 # that we can set the unexported config variable to enable zlib. Without this,
 # protobuf silently yields link errors.
-new_http_archive(
+# The most recent release (v3.6.0.1) lacks an fix for
+# https://github.com/google/protobuf/issues/4771, which we rely on in tests.
+# TODO(shahms): Update to the first release to include that fix.
+http_archive(
     name = "com_google_protobuf",
-    build_file = "third_party/protobuf.BUILD",
-    sha256 = "091d4263d9a55eccb6d3c8abde55c26eaaa933dea9ecabb185cdf3795f9b5ca2",
-    strip_prefix = "protobuf-3.5.1.1",
-    urls = ["https://github.com/google/protobuf/archive/v3.5.1.1.zip"],
+    build_file = "@//third_party:protobuf.BUILD",
+    sha256 = "08608786f26c2ae4e5ff854560289779314b60179b5df824836303e2c0fae407",
+    strip_prefix = "protobuf-964201af37f8a0009440a52a30a66317724a52c3",
+    urls = ["https://github.com/google/protobuf/archive/964201af37f8a0009440a52a30a66317724a52c3.zip"],
 )
 
 # A copy of the above archive because com_google_riegeli uses a non-standard name... (╯°□°)╯︵ ┻━┻
-new_http_archive(
+http_archive(
     name = "protobuf_archive",
-    build_file = "third_party/protobuf.BUILD",
-    sha256 = "091d4263d9a55eccb6d3c8abde55c26eaaa933dea9ecabb185cdf3795f9b5ca2",
-    strip_prefix = "protobuf-3.5.1.1",
-    urls = ["https://github.com/google/protobuf/archive/v3.5.1.1.zip"],
-)
-
-# This is required by the proto_library implementation for its
-# :cc_toolchain rule.
-http_archive(
-    name = "com_google_protobuf_cc",
-    strip_prefix = "protobuf-106ffc04be1abf3ff3399f54ccf149815b287dd9",
-    urls = ["https://github.com/google/protobuf/archive/106ffc04be1abf3ff3399f54ccf149815b287dd9.zip"],
-)
-
-# This is required by the proto_library implementation for its
-# :java_toolchain rule.
-http_archive(
-    name = "com_google_protobuf_java",
-    strip_prefix = "protobuf-106ffc04be1abf3ff3399f54ccf149815b287dd9",
-    urls = ["https://github.com/google/protobuf/archive/106ffc04be1abf3ff3399f54ccf149815b287dd9.zip"],
+    build_file = "@//third_party:protobuf.BUILD",
+    sha256 = "08608786f26c2ae4e5ff854560289779314b60179b5df824836303e2c0fae407",
+    strip_prefix = "protobuf-964201af37f8a0009440a52a30a66317724a52c3",
+    urls = ["https://github.com/google/protobuf/archive/964201af37f8a0009440a52a30a66317724a52c3.zip"],
 )
 
 http_archive(
     name = "google_bazel_common",
-    strip_prefix = "bazel-common-370b397507d9bab9d9cdad8dfe7e6ccc8c2d0c67",
-    urls = ["https://github.com/google/bazel-common/archive/370b397507d9bab9d9cdad8dfe7e6ccc8c2d0c67.zip"],
+    strip_prefix = "bazel-common-e7580d1db7466e6c8403f7826b7558ea5e99bbfd",
+    urls = ["https://github.com/google/bazel-common/archive/e7580d1db7466e6c8403f7826b7558ea5e99bbfd.zip"],
 )
 
 git_repository(
     name = "com_google_common_flogger",
-    commit = "b08ed99eb6dcd62afe81fd0fafd97299b1870fbf",
-    remote = "https://github.com/google/flogger",
+    commit = "f6071d2c5cd6c6c4f5fcd9f74bfec4ca972b0423",
+    # TODO(schroederc): remove usage of fork once https://github.com/google/flogger/pull/37 is closed
+    remote = "https://github.com/schroederc/flogger",
 )
 
 http_archive(
     name = "bazel_gazelle",
-    sha256 = "ddedc7aaeb61f2654d7d7d4fd7940052ea992ccdb031b8f9797ed143ac7e8d43",
-    url = "https://github.com/bazelbuild/bazel-gazelle/releases/download/0.12.0/bazel-gazelle-0.12.0.tar.gz",
+    sha256 = "c0a5739d12c6d05b6c1ad56f2200cb0b57c5a70e03ebd2f7b87ce88cabf09c7b",
+    urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/0.14.0/bazel-gazelle-0.14.0.tar.gz"],
 )
 
 load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
@@ -320,11 +351,14 @@ gazelle_dependencies()
 
 load("//tools:build_rules/shims.bzl", "go_repository")
 
-go_repository(
-    name = "com_github_golang_protobuf",
+# Kept for third_party license
+# TODO(schroederc): override bazel_rules_go dep once
+#                   https://github.com/bazelbuild/rules_go/issues/1533 is fixed
+new_git_repository(
+    name = "go_protobuf",
+    build_file = "@//third_party/go:protobuf.BUILD",
     commit = "b4deda0973fb4c70b50d226b1af49f3da59f5265",
-    custom = "protobuf",
-    importpath = "github.com/golang/protobuf",
+    remote = "https://github.com/golang/protobuf.git",
 )
 
 go_repository(
@@ -470,7 +504,8 @@ go_repository(
 
 go_repository(
     name = "com_github_apache_beam",
-    commit = "625bfb536df1b34a21a87a9a350b0dc7c351997f",
+    build_file_proto_mode = "disable",
+    commit = "09857b18ffd8131ffc1baadfd583f708358a32bb",
     custom = "beam",
     importpath = "github.com/apache/beam",
 )
@@ -526,3 +561,20 @@ go_repository(
     custom = "zstd",
     importpath = "github.com/DataDog/zstd",
 )
+
+go_repository(
+    name = "com_github_beevik_etree",
+    commit = "9d7e8feddccb4ed1b8afb54e368bd323d2ff652c",
+    custom = "etree",
+    importpath = "github.com/beevik/etree",
+)
+
+go_repository(
+    name = "com_github_google_orderedcode",
+    commit = "05a79567b685231e7ca5db3adccddf9ae9dd86df",
+    importpath = "github.com/google/orderedcode",
+)
+
+load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
+
+external_tools_configure()

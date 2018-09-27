@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@
 #include <unordered_set>
 
 #include "IndexerLibrarySupport.h"
-#include "clang/AST/Expr.h"
 #include "absl/strings/string_view.h"
+#include "clang/AST/Expr.h"
 
 namespace kythe {
 

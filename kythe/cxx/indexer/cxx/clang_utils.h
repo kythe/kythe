@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@
 
 namespace kythe {
 /// \return true if `DN` is an Objective-C selector.
-bool isObjCSelector(const clang::DeclarationName &DN);
+bool isObjCSelector(const clang::DeclarationName& DN);
 
 /// \brief Updates `*loc` to move it past whitespace characters.
 ///
@@ -32,8 +32,8 @@ bool isObjCSelector(const clang::DeclarationName &DN);
 /// given a location that is in whitespace between tokens.
 ///
 /// TODO(jdennett): Delete this if/when we replace its uses with sane lexing.
-void SkipWhitespace(const clang::SourceManager &source_manager,
-                    clang::SourceLocation *loc);
+void SkipWhitespace(const clang::SourceManager& source_manager,
+                    clang::SourceLocation* loc);
 
 /// \brief Gets a suitable range for an AST entity from the `start_location`.
 ///
@@ -56,8 +56,8 @@ void SkipWhitespace(const clang::SourceManager &source_manager,
 /// Note: the definition of "suitable" is in the context of the AST visitor.
 /// Being suitable may mean something different to the preprocessor.
 clang::SourceRange RangeForASTEntityFromSourceLocation(
-    const clang::SourceManager &source_manager,
-    const clang::LangOptions &lang_options,
+    const clang::SourceManager& source_manager,
+    const clang::LangOptions& lang_options,
     clang::SourceLocation start_location);
 
 /// \brief Gets a suitable range to represent the name of some `operator???`,
@@ -72,22 +72,22 @@ clang::SourceRange RangeForASTEntityFromSourceLocation(
 /// The argument `operator_token_range` should span the text of the
 /// `operator` keyword.
 clang::SourceRange RangeForOperatorName(
-    const clang::SourceManager &source_manager,
-    const clang::LangOptions &lang_options,
-    const clang::SourceRange &operator_token_range);
+    const clang::SourceManager& source_manager,
+    const clang::LangOptions& lang_options,
+    const clang::SourceRange& operator_token_range);
 
 /// \return the location at the end of the token starting at `start_location`
 clang::SourceLocation GetLocForEndOfToken(
-    const clang::SourceManager &source_manager,
-    const clang::LangOptions &lang_options,
+    const clang::SourceManager& source_manager,
+    const clang::LangOptions& lang_options,
     clang::SourceLocation start_location);
 
 /// \return the passed-in range with its end replaced by
 /// GetLocForEndOfToken(old_end)
 inline clang::SourceRange ExpandRangeBySingleToken(
-    const clang::SourceManager &source_manager,
-    const clang::LangOptions &lang_options,
-    const clang::SourceRange &source_range) {
+    const clang::SourceManager& source_manager,
+    const clang::LangOptions& lang_options,
+    const clang::SourceRange& source_range) {
   return clang::SourceRange(
       source_range.getBegin(),
       GetLocForEndOfToken(source_manager, lang_options, source_range.getEnd()));
@@ -100,8 +100,8 @@ inline clang::SourceRange ExpandRangeBySingleToken(
 /// true) because we want the range of a token in the context of the
 /// original file.
 clang::SourceRange RangeForSingleTokenFromSourceLocation(
-    const clang::SourceManager &source_manager,
-    const clang::LangOptions &lang_options,
+    const clang::SourceManager& source_manager,
+    const clang::LangOptions& lang_options,
     clang::SourceLocation start_location);
 
 /// \brief Returns true if the `source_location` is from a top-level macro
@@ -117,13 +117,13 @@ clang::SourceRange RangeForSingleTokenFromSourceLocation(
 /// MACRO_FUNCTION(MACRO_INT_VAR);  // a top level _macro_ macro argument
 /// ~~~
 bool IsTopLevelNonMacroMacroArgument(
-    const clang::SourceManager &source_manager,
-    const clang::SourceLocation &source_location);
+    const clang::SourceManager& source_manager,
+    const clang::SourceLocation& source_location);
 
 /// \brief If `decl` is an implicit template instantiation or specialization,
 /// returns the primary template or the partial specialization being
 /// instantiated. Otherwise, returns `decl`.
-const clang::Decl *FindSpecializedTemplate(const clang::Decl *decl);
+const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl);
 
 }  // namespace kythe
 

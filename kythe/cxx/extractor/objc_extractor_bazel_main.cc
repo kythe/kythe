@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,8 +90,8 @@ struct XAState {
   std::string sdkroot_script;
 };
 
-static bool ContainsUnsupportedArg(const std::vector<std::string> &args) {
-  for (const auto &arg : args) {
+static bool ContainsUnsupportedArg(const std::vector<std::string>& args) {
+  for (const auto& arg : args) {
     // We do not support compilations using modules yet.
     if (arg == "-fmodules") {
       return true;
@@ -100,16 +100,16 @@ static bool ContainsUnsupportedArg(const std::vector<std::string> &args) {
   return false;
 }
 
-static bool LoadSpawnInfo(const XAState &xa_state,
-                          const blaze::ExtraActionInfo &info,
-                          kythe::ExtractorConfiguration &config) {
+static bool LoadSpawnInfo(const XAState& xa_state,
+                          const blaze::ExtraActionInfo& info,
+                          kythe::ExtractorConfiguration& config) {
   blaze::SpawnInfo spawn_info = info.GetExtension(blaze::SpawnInfo::spawn_info);
 
   std::vector<std::string> args;
   // If the user didn't specify a script path, don't mutate the arguments in the
   // extra action.
   if (xa_state.devdir_script.empty() || xa_state.sdkroot_script.empty()) {
-    for (const auto &i : spawn_info.argument()) {
+    for (const auto& i : spawn_info.argument()) {
       std::string arg = i;
       args.push_back(arg);
     }
@@ -127,19 +127,19 @@ static bool LoadSpawnInfo(const XAState &xa_state,
     return false;
   }
 
-  config.SetKindexOutputFile(xa_state.output_file);
+  config.SetOutputFile(xa_state.output_file);
   config.SetArgs(args);
   config.SetVNameConfig(xa_state.vname_config);
   config.SetTargetName(info.owner());
   if (spawn_info.output_file_size() > 0) {
-    config.SetOutputPath(spawn_info.output_file(0));
+    config.SetCompilationOutputPath(spawn_info.output_file(0));
   }
   return true;
 }
 
-static bool LoadCppInfo(const XAState &xa_state,
-                        const blaze::ExtraActionInfo &info,
-                        kythe::ExtractorConfiguration &config) {
+static bool LoadCppInfo(const XAState& xa_state,
+                        const blaze::ExtraActionInfo& info,
+                        kythe::ExtractorConfiguration& config) {
   blaze::CppCompileInfo cpp_info =
       info.GetExtension(blaze::CppCompileInfo::cpp_compile_info);
 
@@ -148,7 +148,7 @@ static bool LoadCppInfo(const XAState &xa_state,
   // extra action.
   if (xa_state.devdir_script.empty() || xa_state.sdkroot_script.empty()) {
     args.push_back(cpp_info.tool());
-    for (const auto &i : cpp_info.compiler_option()) {
+    for (const auto& i : cpp_info.compiler_option()) {
       std::string arg = i;
       args.push_back(arg);
     }
@@ -166,16 +166,16 @@ static bool LoadCppInfo(const XAState &xa_state,
     return false;
   }
 
-  config.SetKindexOutputFile(xa_state.output_file);
+  config.SetOutputFile(xa_state.output_file);
   config.SetArgs(args);
   config.SetVNameConfig(xa_state.vname_config);
   config.SetTargetName(info.owner());
-  config.SetOutputPath(cpp_info.output_file());
+  config.SetCompilationOutputPath(cpp_info.output_file());
   return true;
 }
 
-static bool LoadExtraAction(const XAState &xa_state,
-                            kythe::ExtractorConfiguration &config) {
+static bool LoadExtraAction(const XAState& xa_state,
+                            kythe::ExtractorConfiguration& config) {
   using namespace google::protobuf::io;
   blaze::ExtraActionInfo info;
   int fd =
@@ -183,7 +183,7 @@ static bool LoadExtraAction(const XAState &xa_state,
   CHECK_GE(fd, 0) << "Couldn't open input file " << xa_state.extra_action_file;
   FileInputStream file_input_stream(fd);
   CodedInputStream coded_input_stream(&file_input_stream);
-  coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+  coded_input_stream.SetTotalBytesLimit(INT_MAX);
   CHECK(info.ParseFromCodedStream(&coded_input_stream));
   close(fd);
 
@@ -197,7 +197,7 @@ static bool LoadExtraAction(const XAState &xa_state,
   return false;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.2");

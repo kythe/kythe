@@ -1,5 +1,5 @@
 #!/bin/sh -e
-# Copyright 2015 Google Inc. All rights reserved.
+# Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@
 # be set to the new (matched) strings.
 
 # llvm
-MIN_LLVM_SHA="42f7ad099aa73695ea633c585da0a9848d6a730d"
-MIN_LLVM_REV="334273"
+MIN_LLVM_SHA="36f54002c931a026f490f9fb074c11d91e3487a2"
+MIN_LLVM_REV="339407"
 # clang
 # NOTE: when updating Clang, make sure to adjust the path in
 # //third_party/llvm/BUILD:clang_builtin_headers_resources
-MIN_CLANG_SHA="63624e51bdbda6731b3b4ce87ecc1789c9b85b5e"
-MIN_CLANG_REV="334221"
+MIN_CLANG_SHA="6601c8f525499269dba75f75bbd1ee2671aaa262"
+MIN_CLANG_REV="339409"
 
 FULL_SHA="${MIN_LLVM_SHA}-${MIN_CLANG_SHA}"

@@ -3,7 +3,6 @@ package(default_visibility = ["//kythe:proto_visibility"])
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load(":go.bzl", "go_kythe_proto")
 
-# TODO(jrtom): add explore.proto to this once it's ready
 filegroup(
     name = "public",
     srcs = [
@@ -12,6 +11,7 @@ filegroup(
         "buildinfo.proto",
         "common.proto",
         "cxx.proto",
+        "explore.proto",
         "extraction_config.proto",
         "filecontext.proto",
         "filetree.proto",
@@ -29,9 +29,13 @@ filegroup(
 proto_library(
     name = "schema_proto",
     srcs = ["schema.proto"],
+    deps = [":storage_proto"],
 )
 
-go_kythe_proto(proto = ":schema_proto")
+go_kythe_proto(
+    proto = ":schema_proto",
+    deps = [":storage_go_proto"],
+)
 
 # Common Kythe protocol buffer definitions shared among other libraries
 proto_library(
@@ -455,6 +459,28 @@ java_proto_library(
 )
 
 proto_library(
+    name = "xref_serving_proto",
+    srcs = ["xref_serving.proto"],
+    visibility = ["//kythe/go/serving:__subpackages__"],
+    deps = [
+        ":common_proto",
+        ":schema_proto",
+        ":serving_proto",
+        ":storage_proto",
+    ],
+)
+
+go_kythe_proto(
+    proto = ":xref_serving_proto",
+    deps = [
+        ":common_go_proto",
+        ":schema_go_proto",
+        ":serving_go_proto",
+        ":storage_go_proto",
+    ],
+)
+
+proto_library(
     name = "link_proto",
     srcs = ["link.proto"],
     deps = [":common_proto"],
@@ -556,6 +582,25 @@ go_kythe_proto(
     deps = [
         ":schema_go_proto",
         ":serving_go_proto",
+        ":storage_go_proto",
+    ],
+)
+
+proto_library(
+    name = "driver_proto",
+    srcs = ["driver.proto"],
+    deps = [
+        ":analysis_proto",
+        ":common_proto",
+        ":storage_proto",
+    ],
+)
+
+go_kythe_proto(
+    proto = ":driver_proto",
+    deps = [
+        ":analysis_go_proto",
+        ":common_go_proto",
         ":storage_go_proto",
     ],
 )

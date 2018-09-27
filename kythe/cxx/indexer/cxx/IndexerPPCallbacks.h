@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ namespace kythe {
 /// use and definition.
 class IndexerPPCallbacks : public clang::PPCallbacks {
  public:
-  IndexerPPCallbacks(clang::Preprocessor &PP, GraphObserver &GO, Verbosity V);
+  IndexerPPCallbacks(clang::Preprocessor& PP, GraphObserver& GO, Verbosity V);
   ~IndexerPPCallbacks() override;
 
   void FileChanged(clang::SourceLocation Loc,
@@ -40,36 +40,36 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
                    clang::SrcMgr::CharacteristicKind FileType,
                    clang::FileID PrevFID) override;
 
-  void MacroDefined(const clang::Token &Token,
-                    const clang::MacroDirective *Macro) override;
+  void MacroDefined(const clang::Token& Token,
+                    const clang::MacroDirective* Macro) override;
 
-  void MacroExpands(const clang::Token &Token,
-                    const clang::MacroDefinition &Macro,
+  void MacroExpands(const clang::Token& Token,
+                    const clang::MacroDefinition& Macro,
                     clang::SourceRange Range,
-                    const clang::MacroArgs *Args) override;
+                    const clang::MacroArgs* Args) override;
 
-  void Defined(const clang::Token &MacroName,
-               const clang::MacroDefinition &Macro,
+  void Defined(const clang::Token& MacroName,
+               const clang::MacroDefinition& Macro,
                clang::SourceRange Range) override;
 
-  void Ifdef(clang::SourceLocation Location, const clang::Token &MacroName,
-             const clang::MacroDefinition &Macro) override;
+  void Ifdef(clang::SourceLocation Location, const clang::Token& MacroName,
+             const clang::MacroDefinition& Macro) override;
 
-  void Ifndef(clang::SourceLocation Location, const clang::Token &MacroName,
-              const clang::MacroDefinition &Macro) override;
+  void Ifndef(clang::SourceLocation Location, const clang::Token& MacroName,
+              const clang::MacroDefinition& Macro) override;
 
-  void MacroUndefined(const clang::Token &MacroName,
-                      const clang::MacroDefinition &Macro,
+  void MacroUndefined(const clang::Token& MacroName,
+                      const clang::MacroDefinition& Macro,
                       const clang::MacroDirective* Undef) override;
 
   void InclusionDirective(clang::SourceLocation HashLocation,
-                          const clang::Token &IncludeToken,
+                          const clang::Token& IncludeToken,
                           llvm::StringRef Filename, bool IsAngled,
                           clang::CharSourceRange FilenameRange,
-                          const clang::FileEntry *FileEntry,
+                          const clang::FileEntry* FileEntry,
                           llvm::StringRef SearchPath,
                           llvm::StringRef RelativePath,
-                          const clang::Module *Imported,
+                          const clang::Module* Imported,
                           clang::SrcMgr::CharacteristicKind FileType) override;
 
   /// \brief Run by a `clang::PragmaHandler` to handle the `kythe_metadata`
@@ -80,9 +80,9 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
   /// this member function.
   ///
   /// \sa clang::PragmaHandler::HandlePragma
-  void HandleKytheMetadataPragma(clang::Preprocessor &Preprocessor,
+  void HandleKytheMetadataPragma(clang::Preprocessor& Preprocessor,
                                  clang::PragmaIntroducerKind Introducer,
-                                 clang::Token &FirstToken);
+                                 clang::Token& FirstToken);
 
   /// \brief Run by a `clang::PragmaHandler` to handle the
   /// `kythe_inline_metadata` pragma.
@@ -92,9 +92,9 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
   /// this member function.
   ///
   /// \sa clang::PragmaHandler::HandlePragma
-  void HandleKytheInlineMetadataPragma(clang::Preprocessor &Preprocessor,
+  void HandleKytheInlineMetadataPragma(clang::Preprocessor& Preprocessor,
                                        clang::PragmaIntroducerKind Introducer,
-                                       clang::Token &FirstToken);
+                                       clang::Token& FirstToken);
 
   void EndOfMainFile() override;
 
@@ -104,7 +104,7 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
   /// keeps track of a macro that needs this kind of analysis.
   struct DeferredRecord {
     const clang::Token MacroName;        ///< The spelling site for this macro.
-    const clang::MacroDirective *Macro;  ///< The macro itself, if defined.
+    const clang::MacroDirective* Macro;  ///< The macro itself, if defined.
     bool WasDefined;  ///< If true, the macro was defined at time of deferral.
     GraphObserver::Range Range;  ///< The range covering the spelling site.
   };
@@ -118,7 +118,7 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
 
   /// \brief Returns `SR` as a `Range` in the `IndexerPPCallbacks`'s current
   /// RangeContext.
-  GraphObserver::Range RangeInCurrentContext(const clang::SourceRange &SR) {
+  GraphObserver::Range RangeInCurrentContext(const clang::SourceRange& SR) {
     // TODO(zarko): which expansion are we in? (We don't generally want
     // to record this, though.)
     return GraphObserver::Range(SR, Observer.getClaimTokenForRange(SR));
@@ -126,34 +126,34 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
 
   /// \brief Records the use of a macro if that macro is defined.
   /// \param MacroNameToken The spelling site of the macro.
-  void AddMacroReferenceIfDefined(const clang::Token &MacroNameToken);
+  void AddMacroReferenceIfDefined(const clang::Token& MacroNameToken);
 
   /// \brief Emits a reference to a macro.
   /// \param MacroNameToken The token that spelled out the macro's name.
   /// \param Info The `MacroInfo` best matching `MacroNameToken`.
   /// \param IsDefined true if the macro was defined at time of reference.
-  void AddReferenceToMacro(const clang::Token &MacroNameToken,
-                           clang::MacroInfo const &Info, bool IsDefined);
+  void AddReferenceToMacro(const clang::Token& MacroNameToken,
+                           clang::MacroInfo const& Info, bool IsDefined);
 
   /// \brief Returns the source range of `Token`.
-  GraphObserver::Range RangeForTokenInCurrentContext(const clang::Token &Token);
+  GraphObserver::Range RangeForTokenInCurrentContext(const clang::Token& Token);
 
   /// \brief Builds a `NodeId` for some macro.
   /// \param Spelling A token representing the macro's spelling.
   /// \param Info The `MacroInfo` representing the macro.
-  GraphObserver::NodeId BuildNodeIdForMacro(const clang::Token &Spelling,
-                                            clang::MacroInfo const &Info);
+  GraphObserver::NodeId BuildNodeIdForMacro(const clang::Token& Spelling,
+                                            clang::MacroInfo const& Info);
 
   /// \brief Builds a `NameId` for some macro.
   /// \param Spelling A token representing the macro's spelling.
-  GraphObserver::NameId BuildNameIdForMacro(const clang::Token &Spelling);
+  GraphObserver::NameId BuildNameIdForMacro(const clang::Token& Spelling);
 
   /// The location of the hash for the last-seen #include.
   clang::SourceLocation LastInclusionHash;
   /// The `clang::Preprocessor` to which this `IndexerPPCallbacks` is listening.
-  const clang::Preprocessor &Preprocessor;
+  const clang::Preprocessor& Preprocessor;
   /// The `GraphObserver` we will use for reporting information.
-  GraphObserver &Observer;
+  GraphObserver& Observer;
   /// Whether we should emit all data.
   enum Verbosity Verbosity;
 };

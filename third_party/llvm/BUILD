@@ -86,5 +86,5 @@ cc_library(
 
 cc_resources(
     name = "clang_builtin_headers_resources",
-    data = glob(["llvm/build/lib/clang/7.0.0/include/**/*.h"]),
+    data = glob(["llvm/build/lib/clang/8.0.0/include/**/*.h"]),
 )

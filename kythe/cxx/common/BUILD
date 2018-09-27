@@ -16,10 +16,11 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "@boringssl//:crypto",
+        ":status_or",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:cc_wkt_protos",
         "@com_google_protobuf//:protobuf",
     ],
@@ -34,6 +35,7 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    deprecation = "Please use :kzip_{reader,writer}",
     visibility = [
         "//kythe:default_visibility",
         "//third_party/llvm/src:__pkg__",
@@ -43,6 +45,7 @@ cc_library(
         "//external:libuuid",
         "//external:zlib",
         "//kythe/proto:analysis_cc_proto",
+        "@boringssl//:crypto",
         "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
     ],
@@ -89,6 +92,7 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:cc_wkt_protos",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
@@ -114,11 +118,11 @@ cc_library(
         "//kythe/proto:graph_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "//kythe/proto:xref_cc_proto",
-        "//third_party:libcurl",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_protobuf//:protobuf",
+        "@se_haxx_curl//:curl",
     ],
 )
 
@@ -285,4 +289,148 @@ cc_library(
     srcs = ["language.cc"],
     hdrs = ["language.h"],
     deps = ["//third_party/llvm"],
+)
+
+cc_library(
+    name = "index_writer",
+    srcs = ["index_writer.cc"],
+    hdrs = ["index_writer.h"],
+    deps = [
+        ":status_or",
+        "//kythe/proto:analysis_cc_proto",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "index_reader",
+    srcs = ["index_reader.cc"],
+    hdrs = ["index_reader.h"],
+    deps = [
+        ":status_or",
+        "//kythe/proto:analysis_cc_proto",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "kzip_reader",
+    srcs = ["kzip_reader.cc"],
+    hdrs = ["kzip_reader.h"],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":index_reader",
+        ":json_proto",
+        ":libzip/error",
+        ":status_or",
+        "//kythe/proto:analysis_cc_proto",
+        "@boringssl//:crypto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@org_libzip//:zip",
+    ],
+)
+
+cc_test(
+    name = "kzip_reader_test",
+    srcs = ["kzip_reader_test.cc"],
+    data = [
+        "//kythe/cxx/common/testdata:empty.kzip",
+        "//kythe/cxx/common/testdata:malformed.kzip",
+        "//kythe/cxx/common/testdata:stringset.kzip",
+    ],
+    deps = [
+        ":testutil",
+        ":kzip_reader",
+        ":libzip/error",
+        "//third_party:gtest_main",
+        # TODO(shahms): Should this go in `kzip_reader`?
+        "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
+    ],
+)
+
+cc_library(
+    name = "kzip_writer",
+    srcs = ["kzip_writer.cc"],
+    hdrs = ["kzip_writer.h"],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":index_writer",
+        ":json_proto",
+        ":libzip/error",
+        "//kythe/proto:analysis_cc_proto",
+        "@boringssl//:crypto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@org_libzip//:zip",
+    ],
+)
+
+cc_test(
+    name = "kzip_writer_test",
+    srcs = ["kzip_writer_test.cc"],
+    data = [
+        "//kythe/cxx/common/testdata:stringset.kzip",
+    ],
+    deps = [
+        ":kzip_reader",
+        ":kzip_writer",
+        ":libzip/error",
+        ":testutil",
+        "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "status",
+    srcs = ["status.cc"],
+    hdrs = ["status.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "status_or",
+    hdrs = ["status_or.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":status",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+    ],
+)
+
+cc_library(
+    name = "libzip/error",
+    srcs = ["libzip/error.cc"],
+    hdrs = ["libzip/error.h"],
+    deps = [
+        ":status",
+        "@org_libzip//:zip",
+    ],
+)
+
+cc_library(
+    name = "testutil",
+    testonly = 1,
+    srcs = ["testutil.cc"],
+    hdrs = ["testutil.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+    ],
 )

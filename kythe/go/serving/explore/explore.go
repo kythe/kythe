@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,7 +171,6 @@ func (t *Tables) Parameters(ctx context.Context, req *epb.ParametersRequest) (*e
 // Parents returns the parents of a specified node
 // (for example, the file for a class, or the class for a function).
 // Note: in some cases a node may have more than one parent.
-// TODO: populate NodeData appropriately
 func (t *Tables) Parents(ctx context.Context, req *epb.ParentsRequest) (*epb.ParentsReply, error) {
 	childTickets := req.Tickets
 	if len(childTickets) == 0 {
@@ -213,7 +212,6 @@ func (t *Tables) Parents(ctx context.Context, req *epb.ParentsRequest) (*epb.Par
 
 // Children returns the children of a specified node
 // (for example, the classes contained in a file, or the functions contained in a class).
-// TODO: populate NodeData appropriately
 func (t *Tables) Children(ctx context.Context, req *epb.ChildrenRequest) (*epb.ChildrenReply, error) {
 	parentTickets := req.Tickets
 	if len(parentTickets) == 0 {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,28 +22,47 @@ public enum EdgeKind {
   DEFINES_BINDING(true, "defines/binding"),
   DOCUMENTS(true, "documents"),
   TAGGED(true, "tagged"),
+  UNDEFINES(true, "undefines"),
 
   // Edges from an anchor.
+  COMPLETES(true, "completes"),
+  COMPLETES_UNIQUELY(true, "completes/uniquely"),
   IMPUTES(true, "imputes"),
   REF(true, "ref"),
   REF_CALL(true, "ref/call"),
+  REF_CALL_IMPLICIT(true, "ref/call/implicit"),
   REF_DOC(true, "ref/doc"),
+  REF_EXPANDS(true, "ref/expands"),
+  REF_EXPANDS_TRANSITIVE(true, "ref/expands/transitive"),
   REF_FILE(true, "ref/file"),
+  REF_IMPLICIT(true, "ref/implicit"),
   REF_IMPORTS(true, "ref/imports"),
+  REF_INCLUDES(true, "ref/includes"),
+  REF_INIT(true, "ref/init"),
+  REF_INIT_IMPLICIT(true, "ref/init/implicit"),
+  REF_QUERIES(true, "ref/queries"),
 
   ALIASES("aliases"),
+  ALIASES_ROOT("aliases/root"),
   ANNOTATED_BY("annotatedby"),
   BOUNDED_LOWER("bounded/lower"),
   BOUNDED_UPPER("bounded/upper"),
   CHILDOF("childof"),
+  CHILDOF_CONTEXT("childof/context"),
   DEPENDS("depends"),
   EXPORTS("exports"),
   EXTENDS("extends"),
   GENERATES("generates"),
+  INSTANTIATES("instantiates"),
+  INSTANTIATES_SPECULATIVE("instantiates/speculative"),
   NAMED("named"),
   OVERRIDES("overrides"),
+  OVERRIDES_ROOT("overrides/root"),
   OVERRIDES_TRANSITIVE("overrides/transitive"),
   PARAM("param"),
+  SATISFIES("satisfies"),
+  SPECIALIZES("specializes"),
+  SPECIALIZES_SPECULATIVE("specializes/speculative"),
   TYPED("typed");
 
   private static final String EDGE_PREFIX = "/kythe/edge/";

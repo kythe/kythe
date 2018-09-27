@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import com.google.gson.protobuf.ProtoTypeAdapter;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.GeneratedMessageV3;
@@ -69,7 +69,6 @@ public class JsonUtil {
     return builder
         .registerTypeHierarchyAdapter(GeneratedMessageV3.class, new GeneratedMessageV3TypeAdapter())
         .registerTypeHierarchyAdapter(ProtocolMessageEnum.class, new ProtoEnumTypeAdapter())
-        .registerTypeHierarchyAdapter(GeneratedMessage.class, ProtoTypeAdapter.newBuilder().build())
         .registerTypeHierarchyAdapter(ByteString.class, new ByteStringTypeAdapter())
         .registerTypeAdapter(byte[].class, new ByteArrayTypeAdapter())
         .registerTypeHierarchyAdapter(LazyStringList.class, new LazyStringListTypeAdapter());
@@ -84,7 +83,7 @@ public class JsonUtil {
     @Override
     public JsonElement serialize(GeneratedMessageV3 msg, Type t, JsonSerializationContext ctx) {
       try {
-        return new JsonPrimitive(PRINTER.print(msg));
+        return new JsonParser().parse(PRINTER.print(msg));
       } catch (InvalidProtocolBufferException e) {
         throw new RuntimeException(e);
       }

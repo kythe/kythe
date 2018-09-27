@@ -1,7 +1,7 @@
 #!/bin/bash -e
 set -o pipefail
 
-# Copyright 2016 Google Inc. All rights reserved.
+# Copyright 2016 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ set -o pipefail
 #   LABEL
 #   GO_INDEXER_BIN
 #   VERIFIER_BIN
+#   SHASUM_TOOL
 #   SHOWGRAPH
 
 readonly PKGDIR="$TMP/pkg"
@@ -38,7 +39,7 @@ readonly ENTRIES="$TMP/example.entries"
 "$VERIFIER_BIN" --use_file_nodes < "$ENTRIES"
 
 trap 'error FORMAT' ERR
-readonly EXAMPLE_ID=$(sha1sum "$SRCFILE" | cut -c 1-40)
+readonly EXAMPLE_ID=$($SHASUM_TOOL "$SRCFILE" | cut -c 1-64)
 
 if [[ -n "$DIV_STYLE" ]] ; then
   echo "<div style=\"${DIV_STYLE}\">"

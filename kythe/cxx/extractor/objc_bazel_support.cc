@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ namespace kythe {
 
 // This is inspiried by Python's commands.mkarg
 // https://hg.python.org/cpython/file/tip/Lib/commands.py#l81
-std::string SanitizeArgument(const std::string &s) {
+std::string SanitizeArgument(const std::string& s) {
   if (s.find("'") == std::string::npos) {
     // There are no single quotes, so we can make the string safe by putting it
     // in single quotes.
@@ -39,10 +39,10 @@ std::string SanitizeArgument(const std::string &s) {
 }
 
 std::string BuildEnvVarCommandPrefix(
-    const google::protobuf::RepeatedPtrField<blaze::EnvironmentVariable>
-        &vars) {
+    const google::protobuf::RepeatedPtrField<blaze::EnvironmentVariable>&
+        vars) {
   std::stringstream ret;
-  for (const auto &env : vars) {
+  for (const auto& env : vars) {
     // Neither name nor value are validated or sanitized.
     // This really should be unnecessary, but we don't have any guarantees.
     if (RE2::FullMatch(env.name(), "[a-zA-Z_][a-zA-Z_0-9]*")) {
@@ -52,10 +52,10 @@ std::string BuildEnvVarCommandPrefix(
   return ret.str();
 }
 
-std::string RunScript(const std::string &cmd) {
+std::string RunScript(const std::string& cmd) {
   char buffer[256];
   std::string output = "";
-  FILE *f = popen(cmd.c_str(), "r");
+  FILE* f = popen(cmd.c_str(), "r");
   if (!f) {
     return output;
   }
@@ -68,11 +68,11 @@ std::string RunScript(const std::string &cmd) {
   return llvm::StringRef(output).trim();
 }
 
-void FillWithFixedArgs(std::vector<std::string> &args,
-                       const blaze::CppCompileInfo &ci,
-                       const std::string &devdir, const std::string &sdkroot) {
+void FillWithFixedArgs(std::vector<std::string>& args,
+                       const blaze::CppCompileInfo& ci,
+                       const std::string& devdir, const std::string& sdkroot) {
   args.push_back(ci.tool());
-  for (const auto &i : ci.compiler_option()) {
+  for (const auto& i : ci.compiler_option()) {
     std::string arg = i;
     RE2::GlobalReplace(&arg, "__BAZEL_XCODE_DEVELOPER_DIR__", devdir);
     RE2::GlobalReplace(&arg, "__BAZEL_XCODE_SDKROOT__", sdkroot);
@@ -85,10 +85,10 @@ void FillWithFixedArgs(std::vector<std::string> &args,
   }
 }
 
-void FillWithFixedArgs(std::vector<std::string> &args,
-                       const blaze::SpawnInfo &si, const std::string &devdir,
-                       const std::string &sdkroot) {
-  for (const auto &i : si.argument()) {
+void FillWithFixedArgs(std::vector<std::string>& args,
+                       const blaze::SpawnInfo& si, const std::string& devdir,
+                       const std::string& sdkroot) {
+  for (const auto& i : si.argument()) {
     std::string arg = i;
     RE2::GlobalReplace(&arg, "__BAZEL_XCODE_DEVELOPER_DIR__", devdir);
     RE2::GlobalReplace(&arg, "__BAZEL_XCODE_SDKROOT__", sdkroot);

@@ -1,10 +1,9 @@
-def expand_template_impl(ctx):
-  ctx.template_action(
-      template = ctx.file.template,
-      output = ctx.outputs.out,
-      substitutions = ctx.attr.substitutions,
-      executable = False,
-  )
+def _expand_template_impl(ctx):
+    ctx.actions.expand_template(
+        template = ctx.file.template,
+        output = ctx.outputs.out,
+        substitutions = ctx.attr.substitutions,
+    )
 
 expand_template = rule(
     attrs = {
@@ -17,5 +16,30 @@ expand_template = rule(
         "out": attr.output(mandatory = True),
     },
     output_to_genfiles = True,
-    implementation = expand_template_impl,
+    implementation = _expand_template_impl,
 )
+
+def cmake_substitutions(vars, defines = {}):
+    """Returns a dict of template substitutions combining `vars` and `defines`.
+
+    `vars` will be turned into a dict replacing `${key}` and `@key@` with `value`.
+    `defines` will be turned into a dict replacing `#cmakedefine` with `#define {value}`
+    if present is true, otherwise `/* #undef %s /*`.
+    """
+    subs = {}
+    for key, value in vars.items():
+        subs["${%s}" % (key,)] = str(value) if value != None else ""
+        subs["@%s@" % (key,)] = str(value) if value != None else ""
+
+    # TODO(shahms): Better handling of #cmakedefine delimiters and line endings to
+    # avoid the prefix-substitution problem.
+    # Potentially allow value to be: True, False, None or string.
+    #   True/False => Same as current
+    #   None       => assume no suffix value, include \n in sub and replacement
+    #   string     => use string to lookup in vars and assume ${} or @@ tail?
+    for macro, present in defines.items():
+        if present:
+            subs["#cmakedefine %s" % macro] = "#define %s" % macro
+        else:
+            subs["#cmakedefine %s" % macro] = "/* #undef %s */" % macro
+    return subs

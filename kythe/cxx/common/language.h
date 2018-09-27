@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ namespace supported_language {
 // The indexer operates on Objective-C, C, and C++. Since there are links
 // between all of those languages, it is easiest if we output all indexer facts
 // using a single language, even if it is a bit of a lie.
-extern const char *const kIndexerLang;
+extern const char* const kIndexerLang;
 
 enum class Language { kCpp, kObjectiveC };
 

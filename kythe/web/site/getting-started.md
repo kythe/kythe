@@ -30,7 +30,7 @@ git clone git@github.com:google/kythe.git
 Kythe relies on the following external dependencies:
 
 * go >=1.7
-* clang-3.5
+* clang >=3.6
 * cmake >= 3.4.3
 * node.js
 * asciidoc
@@ -42,7 +42,7 @@ Kythe relies on the following external dependencies:
 * libcurl4-openssl-dev
 * uuid-dev
 * libssl-dev
-* bison-3.0.4
+* bison-3.0.4 (2.3 is also acceptable)
 * flex-2.5
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
 * [leiningen](http://leiningen.org/) (used to build `kythe/web/ui`)

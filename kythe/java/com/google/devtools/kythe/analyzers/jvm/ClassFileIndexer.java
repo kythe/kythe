@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
+import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
+import com.google.devtools.kythe.platform.kzip.KZipException;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataCache;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
@@ -42,6 +44,7 @@ import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Java.JarDetails;
 import com.google.devtools.kythe.proto.Java.JarEntryDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.devtools.kythe.util.JsonUtil;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.BufferedOutputStream;
@@ -52,6 +55,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -67,6 +71,9 @@ public class ClassFileIndexer {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   public static void main(String[] args) throws AnalysisException {
+    // Necessary to allow the kzip library to read the any fields in the proto.
+    JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
+
     StandaloneConfig config = new StandaloneConfig();
     config.parseCommandLine(args);
 
@@ -86,10 +93,25 @@ public class ClassFileIndexer {
           visitJarClassFiles(file, classVisitor);
         } else if (fileName.endsWith(CLASS_FILE_EXT)) {
           visitClassFile(file, classVisitor);
-        } else if (fileName.endsWith(IndexInfoUtils.INDEX_FILE_EXT)) {
-          CompilationDescription desc = IndexInfoUtils.readIndexInfoFromFile(fileName);
+        } else if (fileName.endsWith(IndexInfoUtils.KINDEX_FILE_EXT)) {
+          CompilationDescription desc = IndexInfoUtils.readKindexInfoFromFile(fileName);
           analyzeCompilation(
               desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()), classVisitor);
+        } else if (fileName.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+          try {
+            Collection<CompilationDescription> compilationDescriptions =
+                IndexInfoUtils.readKZip(fileName);
+            if (compilationDescriptions.size() != 1) {
+              throw new AnalysisException(
+                  "The kzip file did not contain exactly 1 CompilationDescription. It contained "
+                      + compilationDescriptions.size());
+            }
+            CompilationDescription desc = compilationDescriptions.iterator().next();
+            analyzeCompilation(
+                desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()), classVisitor);
+          } catch (KZipException e) {
+            throw new AnalysisException("Couldn't open kzip file", e);
+          }
         } else {
           throw new IllegalArgumentException("unknown file path extension: " + fileName);
         }
@@ -208,15 +230,13 @@ public class ClassFileIndexer {
     private List<String> filesToIndex = new ArrayList<>();
 
     @Parameter(
-      names = "--print_statistics",
-      description = "Print final analyzer statistics to stderr"
-    )
+        names = "--print_statistics",
+        description = "Print final analyzer statistics to stderr")
     private boolean printStatistics;
 
     @Parameter(
-      names = {"--out", "-out"},
-      description = "Write the entries to this file (or stdout if unspecified)"
-    )
+        names = {"--out", "-out"},
+        description = "Write the entries to this file (or stdout if unspecified)")
     private String outputPath;
 
     public StandaloneConfig() {

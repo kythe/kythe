@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,8 @@ var (
 
 	readFormat  = flag.String("read_format", delimitedFormat, "Format of the input stream (accepted formats: {delimited,json,riegeli})")
 	writeFormat = flag.String("write_format", delimitedFormat, "Format of the output stream (accepted formats: {delimited,json,riegeli})")
+
+	riegeliOptions = flag.String("riegeli_writer_options", "", "Riegeli writer options")
 
 	sortStream      = flag.Bool("sort", false, "Sort entry stream into GraphStore order")
 	uniqEntries     = flag.Bool("unique", false, "Print only unique entries (implies --sort)")
@@ -194,7 +196,9 @@ func main() {
 				return encoder.Encode(entry)
 			}))
 		case riegeliFormat:
-			wr := riegeli.NewWriter(out, nil)
+			opts, err := riegeli.ParseOptions(*riegeliOptions)
+			failOnErr(err)
+			wr := riegeli.NewWriter(out, opts)
 			failOnErr(rd(func(entry *spb.Entry) error {
 				rec, err := proto.Marshal(entry)
 				if err != nil {

@@ -1,4 +1,5 @@
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
+load("//kythe/proto:go.bzl", "go_kythe_proto")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -8,7 +9,8 @@ go_library(
         "compression.go",
         "reader.go",
         "riegeli.go",
-        "transpose.go",
+        "transpose_decoder.go",
+        "transpose_encoder.go",
         "transpose_util.go",
         "util.go",
         "writer.go",
@@ -26,6 +28,10 @@ go_test(
     name = "riegeli_test",
     srcs = ["riegeli_test.go"],
     library = ":riegeli",
+    deps = [
+        ":riegeli_test_go_proto",
+        "@com_github_google_go_cmp//cmp:go_default_library",
+    ],
 )
 
 go_test(
@@ -57,7 +63,7 @@ go_test(
 
 go_test(
     name = "riegeli_bench_test",
-    srcs = ["riegeli_bench.go"],
+    srcs = ["riegeli_bench_test.go"],
     library = ":riegeli",
 )
 
@@ -65,4 +71,14 @@ go_test(
     name = "transpose_test",
     srcs = ["transpose_test.go"],
     library = ":riegeli",
+)
+
+proto_library(
+    name = "riegeli_test_proto",
+    srcs = ["riegeli_test.proto"],
+)
+
+go_kythe_proto(
+    importpath = "kythe.io/kythe/go/util/riegeli/riegeli_test_go_proto",
+    proto = ":riegeli_test_proto",
 )

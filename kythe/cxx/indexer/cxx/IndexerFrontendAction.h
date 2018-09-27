@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ class KytheClaimClient;
 /// \brief Runs a given tool on a piece of code with a given assumed filename.
 /// \returns true on success, false on failure.
 bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
-                   llvm::Twine code, const std::string &filename);
+                   llvm::Twine code, const std::string& filename);
 
 // A FrontendAction that extracts information about a translation unit both
 // from its AST (using an ASTConsumer) and from preprocessing (with a
@@ -67,11 +67,11 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 class IndexerFrontendAction : public clang::ASTFrontendAction {
  public:
   IndexerFrontendAction(
-      GraphObserver *GO, const HeaderSearchInfo *Info,
+      GraphObserver* GO, const HeaderSearchInfo* Info,
       std::function<bool()> ShouldStopIndexing,
-      std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+      std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
           CreateWorklist,
-      const LibrarySupports *LibrarySupports)
+      const LibrarySupports* LibrarySupports)
       : Observer(CHECK_NOTNULL(GO)),
         HeaderConfigValid(Info != nullptr),
         Supports(*CHECK_NOTNULL(LibrarySupports)),
@@ -106,14 +106,14 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
 
  private:
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
-      clang::CompilerInstance &CI, llvm::StringRef Filename) override {
+      clang::CompilerInstance& CI, llvm::StringRef Filename) override {
     if (HeaderConfigValid) {
-      auto &HeaderSearch = CI.getPreprocessor().getHeaderSearchInfo();
-      auto &FileManager = CI.getFileManager();
+      auto& HeaderSearch = CI.getPreprocessor().getHeaderSearchInfo();
+      auto& FileManager = CI.getFileManager();
       std::vector<clang::DirectoryLookup> Lookups;
       unsigned CurrentIdx = 0;
-      for (const auto &Path : HeaderConfig.paths) {
-        const clang::DirectoryEntry *DirEnt =
+      for (const auto& Path : HeaderConfig.paths) {
+        const clang::DirectoryEntry* DirEnt =
             FileManager.getDirectory(Path.path);
         if (DirEnt != nullptr) {
           Lookups.push_back(clang::DirectoryLookup(
@@ -146,7 +146,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
         CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist);
   }
 
-  bool BeginSourceFileAction(clang::CompilerInstance &CI) override {
+  bool BeginSourceFileAction(clang::CompilerInstance& CI) override {
     if (Observer) {
       CI.getPreprocessor().addPPCallbacks(llvm::make_unique<IndexerPPCallbacks>(
           CI.getPreprocessor(), *Observer, Verbosity));
@@ -159,7 +159,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   bool usesPreprocessorOnly() const override { return false; }
 
   /// The `GraphObserver` used for reporting information.
-  GraphObserver *Observer;
+  GraphObserver* Observer;
   /// Whether to die on missing cases or to continue onward.
   BehaviorOnUnimplemented IgnoreUnimplemented = BehaviorOnUnimplemented::Abort;
   /// Whether to visit template instantiations.
@@ -175,11 +175,11 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   /// Whether to use HeaderConfig.
   bool HeaderConfigValid;
   /// Library-specific callbacks.
-  const LibrarySupports &Supports;
+  const LibrarySupports& Supports;
   /// \return true if indexing should be cancelled.
   std::function<bool()> ShouldStopIndexing = [] { return false; };
   /// \return a new worklist for the given visitor.
-  std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+  std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
       CreateWorklist;
 };
 
@@ -202,11 +202,11 @@ class StdinAdjustSingleFrontendActionFactory
 
   bool runInvocation(
       std::shared_ptr<clang::CompilerInvocation> Invocation,
-      clang::FileManager *Files,
+      clang::FileManager* Files,
       std::shared_ptr<clang::PCHContainerOperations> PCHContainerOps,
-      clang::DiagnosticConsumer *DiagConsumer) override {
-    auto &FEOpts = Invocation->getFrontendOpts();
-    for (auto &Input : FEOpts.Inputs) {
+      clang::DiagnosticConsumer* DiagConsumer) override {
+    auto& FEOpts = Invocation->getFrontendOpts();
+    for (auto& Input : FEOpts.Inputs) {
       if (Input.isFile() && Input.getFile() == "-") {
         Input = clang::FrontendInputFile("<stdin>", Input.getKind(),
                                          Input.isSystem());
@@ -224,7 +224,7 @@ class StdinAdjustSingleFrontendActionFactory
 
   /// Note that FrontendActionFactory::create() specifies that the
   /// returned action is owned by the caller.
-  clang::FrontendAction *create() override { return Action.release(); }
+  clang::FrontendAction* create() override { return Action.release(); }
 };
 
 /// \brief Options that control how the indexer behaves.
@@ -250,7 +250,7 @@ struct IndexerOptions {
   bool DropInstantiationIndependentData = false;
   /// \brief A function that is called as the indexer enters and exits various
   /// phases of execution (in strict LIFO order).
-  ProfilingCallback ReportProfileEvent = [](const char *, ProfilingEvent) {};
+  ProfilingCallback ReportProfileEvent = [](const char*, ProfilingEvent) {};
   /// \brief A callback to determine whether to cancel indexing as quickly
   /// as possible.
   /// \return true if indexing should be cancelled.
@@ -272,11 +272,11 @@ struct IndexerOptions {
 /// visitor.
 /// \return empty if OK; otherwise, an error description.
 std::string IndexCompilationUnit(
-    const proto::CompilationUnit &Unit, std::vector<proto::FileData> &Files,
-    KytheClaimClient &ClaimClient, HashCache *Cache, KytheCachingOutput &Output,
-    const IndexerOptions &Options, const MetadataSupports *MetaSupports,
-    const LibrarySupports *LibrarySupports,
-    std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+    const proto::CompilationUnit& Unit, std::vector<proto::FileData>& Files,
+    KytheClaimClient& ClaimClient, HashCache* Cache, KytheCachingOutput& Output,
+    const IndexerOptions& Options, const MetadataSupports* MetaSupports,
+    const LibrarySupports* LibrarySupports,
+    std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
         CreateWorklist);
 
 }  // namespace kythe

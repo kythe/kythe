@@ -37,18 +37,20 @@ required_input {
     path: "./kythe/cxx/extractor/testdata/claim_main.cc"
     digest: "4b19bb44ad66bc14a2b29694604420990d94e2b27bb55d10ce9ad5a93f6a6bde"
   }
-  context {
-    row {
-      source_context: "hash0"
-      column {
-        offset: 12
-        linked_context: "hash1"
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash0"
+        column {
+          offset: 12
+          linked_context: "hash1"
+        }
+        column {
+          offset: 33
+          linked_context: "hash1"
+        }
+        always_process: true
       }
-      column {
-        offset: 33
-        linked_context: "hash1"
-      }
-      always_process: true
     }
   }
 }
@@ -60,10 +62,12 @@ required_input {
     path: "./kythe/cxx/extractor/testdata/claim_b.h"
     digest: "a3d03965930673eced0d8ad50753f1933013a27a06b8be57443781275f1f937f"
   }
-  context {
-    row {
-      source_context: "hash1"
-      always_process: true
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash1"
+        always_process: true
+      }
     }
   }
 }
@@ -75,9 +79,11 @@ required_input {
     path: "./kythe/cxx/extractor/testdata/claim_a.h"
     digest: "2c339c36aa02459955c6d5be9e73ebe030baf3b74dc1123439af8613844d0b1f"
   }
-  context {
-    row {
-      source_context: "hash1"
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash1"
+      }
     }
   }
 }
@@ -120,22 +126,22 @@ const FieldDescriptor* FindNestedFieldByLowercasePath(
 }
 
 std::vector<const FieldDescriptor*> CanonicalizedHashFields(
-    const kythe::proto::CompilationUnit& unit) {
-  const auto* desc = unit.GetDescriptor();
-  auto field = [desc](const std::vector<pbstring>& field_names) {
-    return FindNestedFieldByLowercasePath(desc, field_names);
-  };
+    const kythe::proto::CompilationUnit& unit,
+    const kythe::proto::ContextDependentVersion& context) {
+  const auto* unit_desc = unit.GetDescriptor();
+  const auto* context_desc = context.GetDescriptor();
   return {
-      field({"entry_context"}),
-      field({"required_input", "context", "row", "source_context"}),
-      field({"required_input", "context", "row", "column", "linked_context"}),
+      FindNestedFieldByLowercasePath(unit_desc, {"entry_context"}),
+      FindNestedFieldByLowercasePath(context_desc, {"row", "source_context"}),
+      FindNestedFieldByLowercasePath(context_desc,
+                                     {"row", "column", "linked_context"}),
   };
 }
 
 class CanonicalHashComparator : public DefaultFieldComparator {
  public:
   bool CanonicalizeHashField(const FieldDescriptor* field) {
-    CHECK(field->cpp_type() == FieldDescriptor::CPPTYPE_STRING)
+    CHECK(field && field->cpp_type() == FieldDescriptor::CPPTYPE_STRING)
         << "Field must be bytes or string.";
     auto result = canonical_fields_.insert(field);
     return result.second;
@@ -197,20 +203,22 @@ class CanonicalHashComparator : public DefaultFieldComparator {
   HashMap right_message_hashes_;
 };
 
-class FakeIndexWriterSink : public kythe::IndexWriterSink {
+class FakeCompilationWriterSink : public kythe::CompilationWriterSink {
  public:
-  explicit FakeIndexWriterSink(int* call_count) : call_count_(call_count) {}
+  explicit FakeCompilationWriterSink(int* call_count)
+      : call_count_(call_count) {}
 
  private:
   void WriteFileContent(const kythe::proto::FileData&) override {}
-  void OpenIndex(const std::string&, const std::string&) override {}
+  void OpenIndex(const std::string&) override {}
   void WriteHeader(const kythe::proto::CompilationUnit& unit) override {
     (*call_count_)++;
 
     const auto& desc = *unit.GetDescriptor();
 
+    kythe::proto::ContextDependentVersion context;
     CanonicalHashComparator hash_compare;
-    for (const auto* field : CanonicalizedHashFields(unit)) {
+    for (const auto* field : CanonicalizedHashFields(unit, context)) {
       hash_compare.CanonicalizeHashField(field);
     }
     MessageDifferencer diff;
@@ -243,15 +251,17 @@ class FakeIndexWriterSink : public kythe::IndexWriterSink {
 TEST(ClaimPragmaTest, ClaimPragmaIsSupported) {
   kythe::ExtractorConfiguration extractor;
   extractor.SetArgs({
-      "dummy-executable", "--with_executable", "/dummy/path/to/g++",
+      "dummy-executable",
+      "--with_executable",
+      "/dummy/path/to/g++",
       "-I./kythe/cxx/extractor/testdata",
       "./kythe/cxx/extractor/testdata/claim_main.cc",
   });
 
   int call_count = 0;
-  EXPECT_TRUE(
-      extractor.Extract(supported_language::Language::kCpp,
-                        absl::make_unique<FakeIndexWriterSink>(&call_count)));
+  EXPECT_TRUE(extractor.Extract(
+      supported_language::Language::kCpp,
+      absl::make_unique<FakeCompilationWriterSink>(&call_count)));
   EXPECT_EQ(call_count, 1);
 }
 

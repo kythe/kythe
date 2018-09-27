@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2016 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
@@ -76,15 +77,16 @@ func main() {
 		en = json.NewEncoder(os.Stdout)
 	}
 
+	ctx := context.Background()
 	for _, path := range flag.Args() {
 		func() {
 			db, err := leveldb.Open(path, nil)
 			if err != nil {
 				log.Fatalf("Error opening %q: %v", path, err)
 			}
-			defer db.Close()
+			defer db.Close(ctx)
 
-			it, err := db.ScanPrefix([]byte(*keyPrefix), nil)
+			it, err := db.ScanPrefix(ctx, []byte(*keyPrefix), nil)
 			if err != nil {
 				log.Fatalf("Error creating iterator for %q: %v", path, err)
 			}

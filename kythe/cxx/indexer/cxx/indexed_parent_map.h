@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,8 @@ class IndexedParentMap {
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename T> const IndexedParent* GetIndexedParent(const T& node) const {
+  template <typename T>
+  const IndexedParent* GetIndexedParent(const T& node) const {
     return GetIndexedParent(clang::ast_type_traits::DynTypedNode::create(node));
   }
 

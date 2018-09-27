@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 package keyvalue
 
 import (
+	"context"
 	"testing"
 
 	"kythe.io/kythe/go/storage/keyvalue"
@@ -46,20 +47,22 @@ const (
 	valSize = 32 // bytes
 )
 
+var ctx = context.Background()
+
 // BatchWriteBenchmark benchmarks the Write method of the given keyvalue.DB.
 // The number of updates per write is configured with batchSize.
 func BatchWriteBenchmark(b *testing.B, create CreateFunc, batchSize int) {
 	db, destroy, err := create()
 	testutil.FatalOnErr(b, "CreateFunc error: %v", err)
 	defer func() {
-		testutil.FatalOnErr(b, "db close error: %v", db.Close())
+		testutil.FatalOnErr(b, "db close error: %v", db.Close(ctx))
 		testutil.FatalOnErr(b, "DestroyFunc error: %v", destroy())
 	}()
 
 	keyBuf := make([]byte, keySize)
 	valBuf := make([]byte, valSize)
 	for i := 0; i < b.N; i++ {
-		wr, err := db.Writer()
+		wr, err := db.Writer(ctx)
 		testutil.FatalOnErr(b, "writer error: %v", err)
 		for j := 0; j < batchSize; j++ {
 			testutil.RandBytes(keyBuf)
@@ -77,7 +80,7 @@ func BatchWriteParallelBenchmark(b *testing.B, create CreateFunc, batchSize int)
 	db, destroy, err := create()
 	testutil.FatalOnErr(b, "CreateFunc error: %v", err)
 	defer func() {
-		testutil.FatalOnErr(b, "db close error: %v", db.Close())
+		testutil.FatalOnErr(b, "db close error: %v", db.Close(ctx))
 		testutil.FatalOnErr(b, "DestroyFunc error: %v", destroy())
 	}()
 
@@ -85,7 +88,7 @@ func BatchWriteParallelBenchmark(b *testing.B, create CreateFunc, batchSize int)
 		keyBuf := make([]byte, keySize)
 		valBuf := make([]byte, valSize)
 		for pb.Next() {
-			wr, err := db.Writer()
+			wr, err := db.Writer(ctx)
 			testutil.FatalOnErr(b, "writer error: %v", err)
 			for j := 0; j < batchSize; j++ {
 				testutil.RandBytes(keyBuf)

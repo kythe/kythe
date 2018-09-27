@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,18 +26,18 @@
 namespace kythe {
 
 static inline std::pair<uint64_t, uint64_t> PairFromUid(
-    const llvm::sys::fs::UniqueID &uid) {
+    const llvm::sys::fs::UniqueID& uid) {
   return std::make_pair(uid.getDevice(), uid.getFile());
 }
 
-IndexVFS::IndexVFS(const std::string &working_directory,
-                   const std::vector<proto::FileData> &virtual_files,
-                   const std::vector<llvm::StringRef> &virtual_dirs)
+IndexVFS::IndexVFS(const std::string& working_directory,
+                   const std::vector<proto::FileData>& virtual_files,
+                   const std::vector<llvm::StringRef>& virtual_dirs)
     : virtual_files_(virtual_files), working_directory_(working_directory) {
   assert(llvm::sys::path::is_absolute(working_directory) &&
          "Working directory must be absolute.");
-  for (const auto &data : virtual_files_) {
-    if (auto *record = FileRecordForPath(ToStringRef(data.info().path()),
+  for (const auto& data : virtual_files_) {
+    if (auto* record = FileRecordForPath(ToStringRef(data.info().path()),
                                          BehaviorOnMissing::kCreateFile,
                                          data.content().size())) {
       record->data =
@@ -50,25 +50,26 @@ IndexVFS::IndexVFS(const std::string &working_directory,
 }
 
 IndexVFS::~IndexVFS() {
-  for (auto &entry : uid_to_record_map_) {
+  for (auto& entry : uid_to_record_map_) {
     delete entry.second;
   }
 }
 
-llvm::ErrorOr<clang::vfs::Status> IndexVFS::status(const llvm::Twine &path) {
-  if (const auto *record =
+llvm::ErrorOr<clang::vfs::Status> IndexVFS::status(const llvm::Twine& path) {
+  if (const auto* record =
           FileRecordForPath(path.str(), BehaviorOnMissing::kReturnError, 0)) {
     return record->status;
   }
   return make_error_code(llvm::errc::no_such_file_or_directory);
 }
 
-bool IndexVFS::get_vname(const llvm::StringRef &path, proto::VName *vname) {
-  if (FileRecord *record =
+bool IndexVFS::get_vname(const llvm::StringRef& path,
+                         proto::VName* merge_with) {
+  if (FileRecord* record =
           FileRecordForPath(path, BehaviorOnMissing::kReturnError, 0)) {
     if (record->status.getType() == llvm::sys::fs::file_type::regular_file &&
         record->has_vname) {
-      *vname = record->vname;
+      *merge_with = record->vname;
       return true;
     }
   }
@@ -76,8 +77,8 @@ bool IndexVFS::get_vname(const llvm::StringRef &path, proto::VName *vname) {
 }
 
 llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> IndexVFS::openFileForRead(
-    const llvm::Twine &path) {
-  if (FileRecord *record =
+    const llvm::Twine& path) {
+  if (FileRecord* record =
           FileRecordForPath(path.str(), BehaviorOnMissing::kReturnError, 0)) {
     if (record->status.getType() == llvm::sys::fs::file_type::regular_file) {
       return absl::make_unique<File>(record);
@@ -87,12 +88,12 @@ llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> IndexVFS::openFileForRead(
 }
 
 clang::vfs::directory_iterator IndexVFS::dir_begin(
-    const llvm::Twine &dir, std::error_code &error_code) {
+    const llvm::Twine& dir, std::error_code& error_code) {
   return clang::vfs::directory_iterator();
 }
 
-void IndexVFS::SetVName(const std::string &path, const proto::VName &vname) {
-  if (FileRecord *record =
+void IndexVFS::SetVName(const std::string& path, const proto::VName& vname) {
+  if (FileRecord* record =
           FileRecordForPath(path, BehaviorOnMissing::kReturnError, 0)) {
     if (record->status.getType() == llvm::sys::fs::file_type::regular_file) {
       record->vname.CopyFrom(vname);
@@ -101,8 +102,8 @@ void IndexVFS::SetVName(const std::string &path, const proto::VName &vname) {
   }
 }
 
-bool IndexVFS::get_vname(const clang::FileEntry *entry,
-                         proto::VName *merge_with) {
+bool IndexVFS::get_vname(const clang::FileEntry* entry,
+                         proto::VName* merge_with) {
   auto record = uid_to_record_map_.find(PairFromUid(entry->getUniqueID()));
   if (record != uid_to_record_map_.end()) {
     if (record->second->status.getType() ==
@@ -115,7 +116,7 @@ bool IndexVFS::get_vname(const clang::FileEntry *entry,
   return false;
 }
 
-std::string IndexVFS::get_debug_uid_string(const llvm::sys::fs::UniqueID &uid) {
+std::string IndexVFS::get_debug_uid_string(const llvm::sys::fs::UniqueID& uid) {
   auto record = uid_to_record_map_.find(PairFromUid(uid));
   if (record != uid_to_record_map_.end()) {
     return record->second->status.getName();
@@ -124,7 +125,7 @@ std::string IndexVFS::get_debug_uid_string(const llvm::sys::fs::UniqueID &uid) {
          " file: " + std::to_string(uid.getFile()) + ")";
 }
 
-IndexVFS::FileRecord *IndexVFS::FileRecordForPathRoot(const llvm::Twine &path,
+IndexVFS::FileRecord* IndexVFS::FileRecordForPathRoot(const llvm::Twine& path,
                                                       bool create_if_missing) {
   std::string path_str(path.str());
   bool is_absolute = true;
@@ -149,7 +150,7 @@ IndexVFS::FileRecord *IndexVFS::FileRecordForPathRoot(const llvm::Twine &path,
                                  : BehaviorOnMissing::kReturnError,
                              0);
   }
-  FileRecord *name_record = nullptr;
+  FileRecord* name_record = nullptr;
   auto name_found = root_name_to_root_map_.find(root_name);
   if (name_found != root_name_to_root_map_.end()) {
     name_record = name_found->second;
@@ -170,7 +171,7 @@ IndexVFS::FileRecord *IndexVFS::FileRecordForPathRoot(const llvm::Twine &path,
                                  llvm::sys::fs::file_type::directory_file, 0);
 }
 
-IndexVFS::FileRecord *IndexVFS::FileRecordForPath(llvm::StringRef path,
+IndexVFS::FileRecord* IndexVFS::FileRecordForPath(llvm::StringRef path,
                                                   BehaviorOnMissing behavior,
                                                   size_t size) {
   using namespace llvm::sys::path;
@@ -203,7 +204,7 @@ IndexVFS::FileRecord *IndexVFS::FileRecordForPath(llvm::StringRef path,
       }
     }
   }
-  FileRecord *current_record = FileRecordForPathRoot(path, create_if_missing);
+  FileRecord* current_record = FileRecordForPathRoot(path, create_if_missing);
   for (auto node = path_components.crbegin(),
             node_end = path_components.crend();
        current_record != nullptr && node != node_end;) {
@@ -217,7 +218,7 @@ IndexVFS::FileRecord *IndexVFS::FileRecordForPath(llvm::StringRef path,
   return current_record;
 }
 
-static const char *NameOfFileType(const llvm::sys::fs::file_type type) {
+static const char* NameOfFileType(const llvm::sys::fs::file_type type) {
   switch (type) {
     case llvm::sys::fs::file_type::status_error:
       return "status_error";
@@ -242,11 +243,11 @@ static const char *NameOfFileType(const llvm::sys::fs::file_type type) {
   }
 }
 
-IndexVFS::FileRecord *IndexVFS::AllocOrReturnFileRecord(
-    FileRecord *parent, bool create_if_missing, llvm::StringRef label,
+IndexVFS::FileRecord* IndexVFS::AllocOrReturnFileRecord(
+    FileRecord* parent, bool create_if_missing, llvm::StringRef label,
     llvm::sys::fs::file_type type, size_t size) {
   assert(parent != nullptr);
-  for (auto &record : parent->children) {
+  for (auto& record : parent->children) {
     if (record->label == label) {
       if (create_if_missing && (record->status.getSize() != size ||
                                 record->status.getType() != type)) {
@@ -263,7 +264,7 @@ IndexVFS::FileRecord *IndexVFS::AllocOrReturnFileRecord(
   }
   llvm::SmallString<1024> out_path(llvm::StringRef(parent->status.getName()));
   llvm::sys::path::append(out_path, label);
-  FileRecord *new_record = new FileRecord{
+  FileRecord* new_record = new FileRecord{
       clang::vfs::Status(out_path, clang::vfs::getNextVirtualUniqueID(),
                          llvm::sys::TimePoint<>(), 0, 0, size, type,
                          llvm::sys::fs::all_read),

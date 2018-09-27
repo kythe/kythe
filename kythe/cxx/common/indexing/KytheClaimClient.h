@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ class KytheClaimClient {
   /// \param claimant A VName that identifies the claimant.
   /// \param vname A VName for the resource being claimed.
   /// \return true if `claimant` is responsible for `vname`.
-  virtual bool Claim(const kythe::proto::VName &claimant,
-                     const kythe::proto::VName &vname) {
+  virtual bool Claim(const kythe::proto::VName& claimant,
+                     const kythe::proto::VName& vname) {
     return true;
   }
   /// \brief Claim a batch of identifying tokens for an anonymous claimant.
@@ -50,10 +50,10 @@ class KytheClaimClient {
   /// Calls to `ClaimBatch` are not idempotent; claiming the same token more
   /// than once may fail even if the first claim succeeds. Implementations
   /// should ensure that failure is permanent.
-  virtual bool ClaimBatch(std::vector<std::pair<std::string, bool>> *tokens);
+  virtual bool ClaimBatch(std::vector<std::pair<std::string, bool>>* tokens);
   /// \brief Assigns responsibility for `claimable` to `claimant`.
-  virtual void AssignClaim(const kythe::proto::VName &claimable,
-                           const kythe::proto::VName &claimant) = 0;
+  virtual void AssignClaim(const kythe::proto::VName& claimable,
+                           const kythe::proto::VName& claimant) = 0;
 
   /// \brief Resets any cached state, including any claims made by
   /// `AssignClaim`.
@@ -63,8 +63,8 @@ class KytheClaimClient {
 /// \brief A client that makes static decisions about resources when possible.
 class StaticClaimClient : public KytheClaimClient {
  public:
-  bool Claim(const kythe::proto::VName &claimant,
-             const kythe::proto::VName &vname) override;
+  bool Claim(const kythe::proto::VName& claimant,
+             const kythe::proto::VName& vname) override;
 
   /// \brief Process data with unknown claim status?
   ///
@@ -74,8 +74,8 @@ class StaticClaimClient : public KytheClaimClient {
     process_unknown_status_ = process_unknown_status;
   }
 
-  void AssignClaim(const kythe::proto::VName &claimable,
-                   const kythe::proto::VName &claimant) override;
+  void AssignClaim(const kythe::proto::VName& claimable,
+                   const kythe::proto::VName& claimant) override;
 
   void Reset() override { claim_table_.clear(); }
 
@@ -96,14 +96,14 @@ class DynamicClaimClient : public KytheClaimClient {
   ~DynamicClaimClient() override;
 
   /// \brief Use a memcached instance (e.g. "--SERVER=foo:1234")
-  bool OpenMemcache(const std::string &spec);
+  bool OpenMemcache(const std::string& spec);
 
-  bool Claim(const kythe::proto::VName &claimant,
-             const kythe::proto::VName &vname) override;
+  bool Claim(const kythe::proto::VName& claimant,
+             const kythe::proto::VName& vname) override;
 
   /// Store a local override.
-  void AssignClaim(const kythe::proto::VName &claimable,
-                   const kythe::proto::VName &claimant) override;
+  void AssignClaim(const kythe::proto::VName& claimable,
+                   const kythe::proto::VName& claimant) override;
 
   /// Change how many times the same VName can be claimed.
   void set_max_redundant_claims(size_t value) { max_redundant_claims_ = value; }
@@ -114,7 +114,7 @@ class DynamicClaimClient : public KytheClaimClient {
   /// A local map from claimables to claimants.
   std::map<kythe::proto::VName, kythe::proto::VName, VNameLess> claim_table_;
   /// A remote map used for dynamic queries.
-  ::memcached_st *cache_ = nullptr;
+  ::memcached_st* cache_ = nullptr;
   /// The maximum number of times a VName can be claimed.
   size_t max_redundant_claims_ = 1;
   /// The number of claim requests ever made.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.google.devtools.kythe.extractors.jvm.JvmExtractor.Options;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
+import com.google.devtools.kythe.util.JsonUtil;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistry;
 import java.io.File;
@@ -43,7 +44,10 @@ import java.util.List;
  * <p>Usage: bazel_jvm_extractor <extra_action_file> <output_file>
  */
 public class BazelJvmExtractor {
+
   public static void main(String[] args) throws IOException, ExtractionException {
+    JsonUtil.usingTypeRegistry(JvmExtractor.JSON_TYPE_REGISTRY);
+
     if (args.length != 2 && args.length != 3) {
       System.err.println(
           "Usage: bazel_jvm_extractor extra-action-file output-file [vnames-config]");
@@ -93,6 +97,10 @@ public class BazelJvmExtractor {
       return;
     }
 
-    IndexInfoUtils.writeIndexInfoToFile(indexInfo, outputPath);
+    if (outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+      IndexInfoUtils.writeKzipToFile(indexInfo, outputPath);
+    } else {
+      IndexInfoUtils.writeKindexToFile(indexInfo, outputPath);
+    }
   }
 }

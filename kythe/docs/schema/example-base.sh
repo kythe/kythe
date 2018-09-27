@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Copyright 2014 Google Inc. All rights reserved.
+# Copyright 2014 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ export GO_INDEXER_BIN=
 export JAVA_INDEXER_BIN=
 export KINDEX_TOOL_BIN=
 export VERIFIER_BIN=
+export SHASUM_TOOL=
 
 export LANGUAGE="$3"
 export LABEL="$4"

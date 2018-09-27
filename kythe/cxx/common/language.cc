@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 namespace kythe {
 namespace supported_language {
 
-const char *const kIndexerLang = "c++";
+const char* const kIndexerLang = "c++";
 
 constexpr char kCpp[] = "c++";
 constexpr char kObjectiveC[] = "objectivec";

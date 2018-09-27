@@ -1,0 +1,418 @@
+// Copyright 2018 The Kythe Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Kythe Schema Overview
+=====================
+:Revision: 1.0
+:toc2:
+:toclevels: 3
+:priority: 999
+
+This document is intended as a high-level overview of the
+https://kythe.io/docs/schema/[Kythe graph schema], and explains some of the
+core features that make up the overall graph structure. It does not replace the
+https://kythe.io/docs/schema/[Kythe graph schema] doc, which should still be
+used as a canonical reference. Instead, this is intended to help orient the
+reader with what various pieces of the schema mean, and how to interpret it.
+
+== [[Terms]] Terminology Overview
+
+This document relies on the following basic terminology:
+
+[graphviz]
+------------------------------------------------------------------------
+digraph Terms {
+  graph [fontname="helvetica"]
+  node  [fontname="helvetica";shape=box,fontsize=10]
+  edge  [fontname="helvetica",fontsize=10]
+
+  sem [label="semantic node"]
+  anc [label="anchor";shape=ellipse]
+  A [shape=point]
+  B [shape=point]
+  A -> B [label="edge"]
+}
+------------------------------------------------------------------------
+
+An **anchor** denotes a region of a file. For example, in `kcd.go`, the
+`Reader` type/interface has many anchors:
+
+[source,Go]
+----
+type Reader interface {
+  Revisions(_ context.Context, filter *RevisionsFilter, f func(Revision) error) error
+  ^^^^^^^^^
+}
+----
+
+For example, there will be an anchor (indicated above by `^` marks) covering the
+identifier `Revisions` from `kcd.go`. The *span* of an anchor is the region of
+the file containing the entity of interest.
+
+A **semantic node** represents an abstract entity that may or may not be
+associated directly with a file. Semantic nodes obtain location by association
+with anchors.
+
+From the same example above, we can think of `Revisions` as the definition site
+of a semantic node (`function`) belonging to the type `Reader`. It has an
+anchor in `kcd.go` that defines where it is in the file. There is also another
+anchor in
+https://github.com/creachadair/kythe/blob/master/kythe/go/platform/kcd/memdb/memdb.go[`memdb.go`]
+where a `Revisions` function is implemented for the (concrete) `DB` type in
+that file.
+
+A **fact** is a named bytestring value associated with a node. The
+https://kythe.io/docs/schema/#_common_node_facts[Kythe schema], defines the
+names and expected formats for various facts; for example the `doc/uri` fact is
+commonly used to attach a reference to some externally-located documentation to
+a node in the graph.
+
+An **edge** is a directed, labelled relationship between two nodes. In the
+above example, we would paint a `define/binding` edge from the anchor at
+`Revisions` to the `function` semantic node. This indicates that the anchor is
+a "definition" for the function (specifically, one that binds it to an
+identifier).
+
+NOTE: In the diagrams below, not all the possible anchors, semantic nodes,
+facts, or edges are shown. We will continue to refer back to the same `kcd.go`
+file where possible.
+
+== [[Examples]] Edge and Node Examples
+
+Now we will explain some of the basic edges and nodes that you'll see in a Kythe
+schema.
+
+=== [[FeatureJumpToDef]] Jump-to-Definition
+
+Jump-to-definition allows navigating from a usage of some entity (e.g., a
+variable or function) to its definition. To support this, the indexer must, at
+minimum, emit an anchor for a definition site, a semantic node to represent the
+entity that is defined, and an anchor for the usage site. In this example, we
+see one definition and two references for a variable named `matchRevision`
+(from `kcd.go`):
+
+[graphviz]
+------------------------------------------------------------------------
+digraph J2D {
+  graph [fontname="helvetica"]
+  node  [fontname="helvetica";shape=box,fontsize=10]
+  edge  [fontname="helvetica",fontsize=10]
+
+  sem [label="matchRevision variable"]
+  def [label="'matchRevision'\nkcd.go";shape=ellipse]
+  def -> sem [label="defines/binding"]
+  ref [label="'matchRevision'\nkcd.go";shape=ellipse]
+  ref -> sem [label="ref"]
+  ref2 [label="`matchRevision`\nkcd.go";shape=ellipse]
+  ref2 -> sem [label="ref"]
+}
+------------------------------------------------------------------------
+
+[source,Go]
+----
+func (rf *RevisionsFilter) Compile() (func(Revision) bool, error) {
+  if rf == nil || (rf.Revision == "" && rf.Corpus == "" && rf.Until.IsZero() && rf.Since.IsZero()) {
+    return func(Revision) bool { return true }, nil
+  }
+  var matchRevision, matchCorpus func(...string) bool // definition
+  var err error
+  if matchRevision, err = singleMatcher(rf.Revision); err != nil {  // reference 1
+    return nil, err
+  }
+  if matchCorpus, err = singleMatcher(regexp.QuoteMeta(rf.Corpus)); err != nil {
+    return nil, err
+  }
+  return func(rev Revision) bool {
+    return matchRevision(rev.Revision) &&  // reference 2
+      matchCorpus(rev.Corpus) &&
+      (rf.Until.IsZero() || !rf.Until.Before(rev.Timestamp.In(time.UTC))) &&
+      (rf.Since.IsZero() || !rev.Timestamp.In(time.UTC).Before(rf.Since))
+  }, nil
+}
+----
+
+The first mention of `matchRevision` (commented as "definition") records an
+anchor with a `defines/binding` edge to the semantic node for that variable. The
+references (commented "reference 1" and "reference 2") have anchors with `ref`
+edges to the same semantic node.
+
+There may in general be more than one definition site for a given semantic node,
+and in some cases there may be no definition at all. When a unique definition
+does exist we call it the **target definition** of the node.
+
+An example with no definition sites is an implicit constructor in Java. If you
+define a class and do not write a constructor, the compiler writes one for you,
+and it participates in cross-references, but it does not have a location in the
+source text of your program.
+
+Multiple definition sites occur for many C++ objects, including forward
+declarations of classes or function prototypes and their completions.  Anchors
+for (re)declarations of a type also use `defines/binding` edges.
+
+=== [[FeatureCallGraph]] Callgraph
+
+The callgraph consists of a set of triples, each of which associates a **call
+site**, a **caller**, and a **callee**. The call site is the location in the
+source where the call occurs (typically a call-expression of some kind); the
+caller is the function that contains the call site, and the callee is the
+function that was invoked.
+
+In the Kythe schema, this structure is represented by three nodes and two edges:
+An anchor at the call site, and semantic nodes for the caller and callee
+respectively. The call site anchor has a `childof` edge pointing to the caller,
+and a `ref/call` edge pointing to the callee:
+
+[graphviz]
+------------------------------------------------------------------------
+digraph CallGraph {
+  graph [fontname="helvetica"]
+  node  [fontname="helvetica";shape=box,fontsize=10]
+  edge  [fontname="helvetica",fontsize=10]
+
+  caller [label="function Revisions"]
+  callee [label="function Compile"]
+  edef [label="'Compile()'\nkcd.go";shape=ellipse]
+  edef -> callee [label="defines/binding"]
+  rdef [label="'Revisions'\nmemdb.go";shape=ellipse]
+  rdef -> caller [label="defines/binding"]
+  call [label="'want.Compile()'\nmemdb.go";shape=ellipse]
+  call -> callee [label="ref/call"]
+  call -> caller [label="childof"]
+}
+------------------------------------------------------------------------
+
+`kcd.go`:
+
+[source,Go]
+----
+func (rf *RevisionsFilter) Compile() (func(Revision) bool, error) {
+----
+
+`memdb.go`:
+
+[source,Go]
+----
+type DB struct {
+...
+}
+...
+
+// Revisions implements a method of kcd.Reader.
+func (db DB) Revisions(_ context.Context, want *kcd.RevisionsFilter, f func(kcd.Revision) error) error {
+  revisionMatches, err := want.Compile()
+----
+
+NOTE: This graph does not show all the nodes and edges arising from these
+constructs. In particular, the complete graph will include additional nodes for
+the overrides (implementations) of the interface function in `memdb.go`. We've
+omitted that branch of the graph for the sake of brevity.
+
+Here we have two more parts of `kcd.go`, surrounding usage of the `Compile`
+function. The function is defined in `kcd.go`, and then referenced with a
+function call in `memdb.go`. The anchor of code for `Compile` in `kcd.go` has a
+`childof` edge pointing to the function semantic node for `Revisions`.
+
+=== [[FeatureOverrides]] Class/Interface Hierarchy & Overrides
+
+Inheritance relationships are captured by the `extends` and `satisfies` edges.
+Override relationships are expressed by the `overrides` edge. These
+relationships are illustrated by this example from Go (which uses the
+`satisfies` edge to express Go's implicit interface satisfaction). In this
+example, the `childof` edges capture the containment relationships between the
+methods and their types:
+
+[graphviz]
+------------------------------------------------------------------------
+digraph ClassH {
+  graph [fontname="helvetica"]
+  node  [fontname="helvetica";shape=box,fontsize=10]
+  edge  [fontname="helvetica",fontsize=10]
+
+  base [label="type Reader interface\n(kcd.go)"]
+  basemeth [label="function Revisions\n(kcd.go)"]
+  basemeth -> base [label="childof"]
+  derived [label="type DB struct\n(memdb.go)"]
+  derived -> base [label="satisfies"]
+  derivedmeth [label="function Revisions\n(memdb.go)"]
+  derivedmeth -> derived [label="childof"]
+  derivedmeth -> basemeth [label="overrides"]
+}
+------------------------------------------------------------------------
+
+`kcd.go`:
+
+[source,Go]
+----
+type Reader interface {
+  Revisions(_ context.Context, filter *RevisionsFilter, f func(Revision) error) error
+}
+----
+
+`memdb.go`:
+
+[source,Go]
+----
+type DB struct {
+...
+}
+...
+// Revisions implements a method of kcd.Reader.
+func (db DB) Revisions(_ context.Context, want *kcd.RevisionsFilter, f func(kcd.Revision) error) error {
+----
+
+Here we see the top level `Reader` interface again from `kcd.go`. The interface
+function `Revisions` from that same file has a `childof` edge pointing to the
+interface's node. The implementation of `Reader` that lives in `memdb.go` has a
+`satisfies` edge back to the parent interface, and its own `Revisions` function
+has an `overrides` edge pointing to the top level `Revisions` function from
+`kcd.go`. For C++ and Java, interfaces, abstract classes, and so on, have
+similar relationships in the Kythe schema.
+
+Note: For languages with explicitly-declared inheritance and interface
+implementation (such as Java), Kythe uses the `extends` edge label instead of
+`satisfies`.
+
+=== [[FeatureFunc]] Functions and Parameters
+
+Functions are represented by semantic nodes that have additional edges to
+indicate their relationship to the parameters of the function. These edges are
+named `param.0`, `param.1`, etc., where the ordinal reflects the order of
+declaration.
+
+As illustrated in this example, the parameters in turn may have their own
+declaration sites, following the conventions of the jump-to-definition example:
+
+[graphviz]
+------------------------------------------------------------------------
+digraph FuncyParam {
+  graph [fontname="helvetica"]
+  node  [fontname="helvetica";shape=box,fontsize=10]
+  edge  [fontname="helvetica",fontsize=10]
+
+  def [label="'Revisions'\nkcd.go";shape=ellipse]
+  def -> func [label="defines/binding"]
+  func [label="function Revisions"]
+  p0 [label="variable _"]
+  p1 [label="variable filter"]
+  p2 [label="variable f"]
+
+  // Note that the following 3 lines are only necessary to make sure the
+  // ordering of function params is correct, since graphviz likes to put f before
+  // filter.
+  {rank=same;p0 p1 p2}
+  p0 -> p1 [style=invis]
+  p1 -> p2 [style=invis]
+
+  func -> p0 [label="param.0"]
+  func -> p1 [label="param.1"]
+  func -> p2 [label="param.2"]
+  p0def [label="'ctx'\nkcd.go";shape=ellipse]
+  p1def [label="'filter'\nkcd.go";shape=ellipse]
+  p2def [label="'f'\nkcd.go";shape=ellipse]
+  p0def -> p0 [label="defines/binding"]
+  p1def -> p1 [label="defines/binding"]
+  p2def -> p2 [label="defines/binding"]
+}
+------------------------------------------------------------------------
+
+`kcd.go`:
+
+[source,Go]
+----
+type Reader interface {
+  Revisions(ctx context.Context, filter *RevisionsFilter, f func(Revision) error) error
+----
+
+Back to `kcd.go` `Revisions` method, we see how its function parameters work in
+the Kythe schema. We see the same old anchor and semantic node definition for
+`Revisions` as before, but this time we also see the anchors and semantic nodes
+for the three parameters to the function (`_`, `filter`, and `f`) with the
+expected `defines/binding` edges. Finally, each of the function param nodes is
+pointed to from the `Revisions` node with a
+https://kythe.io/docs/schema/#param[`param.N`] edge, indicating that they are
+function parameters for the given indices.
+
+=== [[FeatureDoc]] Documentation
+
+Documentation may be expressed either as an explicit `doc` node with a `text`
+fact containing a descriptive text, or as a plain `anchor` node spanning the
+literal text of the documentation (say, a comment). The latter may include
+parameter edges pointing to bracket-delimited substrings that should be
+considered references to other objects in the graph.
+
+==== [[FeatureDocText]] Text Fact Style
+
+[graphviz]
+------------------------------------------------------------------------
+digraph FactDocStyle {
+  graph [fontname="helvetica"]
+  node  [fontname="helvetica";shape=box,fontsize=10]
+  edge  [fontname="helvetica",fontsize=10]
+
+  thing [label="class FileDataCache"]
+  doc [ label="/kythe/doc = /** {@link FileData... **/" ];
+  doc -> thing [label="documents"]
+  doc -> p0 [label="param.0"]
+  doc -> p1 [label="param.1"]
+  p0 [label="interface Iterable"]
+  p1 [label="class FileData"]
+}
+------------------------------------------------------------------------
+
+`FileDataCache.java`:
+
+[source,java]
+----
+/**
+ * {@link FileDataProvider} that looks up file data from a given {@link Iterable}
+ * of {@link FileData}.
+ */
+----
+
+Here we look at
+https://github.com/google/kythe/blob/master/kythe/java/com/google/devtools/kythe/platform/shared/FileDataCache.java[`FileDataCache.java`]
+to get the two different types of documents alluded to above. The left half of
+the graph describes the javadoc string for the top level `FileDataCache` class,
+with a text fact pointing to a node with the actual comment of the javadoc. It
+also has `param.0` and `param.1` edges pointing to the named bits of code in
+the doc string, the `Iterable` interface and the `FileData` class.
+
+==== [[FeatureDocAnchor]] Anchor-Doc Style
+
+[graphviz]
+------------------------------------------------------------------------
+digraph AnchorDocStyle {
+  graph [fontname="helvetica"]
+  node  [fontname="helvetica";shape=box,fontsize=10]
+  edge  [fontname="helvetica",fontsize=10]
+
+  stuff [label="interface Reader"]
+  danc [label="// Reader ... database.",shape=ellipse]
+  danc -> stuff [label="documents"]
+}
+------------------------------------------------------------------------
+
+`kcd.go`:
+
+[source,Go]
+----
+// Reader represents read-only access to an underlying storage layer used to
+// implement a compilation database.
+type Reader interface {
+----
+
+The second way of handling documentation is via an anchor for the whole comment
+text, with a `documents` edge pointing to the semantic node of the thing that
+it is documenting. That is shown here with the text comment for `kcd.go`
+`Reader` interface.

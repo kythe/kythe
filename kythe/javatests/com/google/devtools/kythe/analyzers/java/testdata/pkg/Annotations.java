@@ -5,6 +5,9 @@ package pkg;
 public @interface Annotations {
   //- @classes defines/binding ClassesM
   Class<?>[] classes() default {};
+
+  //- @String ref StringClass
+  Class<?> withDef() default String.class;
 }
 
 //- @Annotations ref Annotation
@@ -17,7 +20,6 @@ public @interface Annotations {
 //- @Deprecated ref Deprecated
 @Deprecated
 //- @C defines/binding C
-//- C annotatedby Annotatedby
 //- C annotatedby Deprecated
 class C {
 
@@ -25,6 +27,7 @@ class C {
   @Deprecated
   //- @field defines/binding Field
   //- Field annotatedby Deprecated
+  //- @String ref StringClass
   private String field;
 
   //- @Deprecated ref Deprecated

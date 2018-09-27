@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,18 +28,18 @@ class GoogleProtoLibrarySupport : public LibrarySupport {
  public:
   GoogleProtoLibrarySupport() {}
 
-  void InspectCallExpr(IndexerASTVisitor &V, const clang::CallExpr *CallExpr,
-                       const GraphObserver::Range &Range,
-                       GraphObserver::NodeId &CalleeId) override;
+  void InspectCallExpr(IndexerASTVisitor& V, const clang::CallExpr* CallExpr,
+                       const GraphObserver::Range& Range,
+                       GraphObserver::NodeId& CalleeId) override;
 
  private:
   // Lazily initializes ParseProtoHelperDecl, and returns true if
   // ParseProtoHelper is available.
   bool CompilationUnitHasParseProtoHelperDecl(
-      const clang::ASTContext &ASTContext, const clang::CallExpr &Expr);
+      const clang::ASTContext& ASTContext, const clang::CallExpr& Expr);
 
   bool Initialized = false;
-  const clang::Decl *ParseProtoHelperDecl = nullptr;
+  const clang::Decl* ParseProtoHelperDecl = nullptr;
 };
 
 }  // namespace kythe

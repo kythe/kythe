@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,32 +84,10 @@ TEST(JsonProto, Deserialize) {
   EXPECT_EQ("e2", has_repeated_field.entries(1).edge_kind());
 }
 
-TEST(JsonProto, Encode64) {
-  EXPECT_EQ("aGVsbG8K", EncodeBase64("hello\n"));
-  EXPECT_EQ("", EncodeBase64(""));
-}
-
-TEST(JsonProto, Decode64) {
-  google::protobuf::string buffer;
-  EXPECT_TRUE(DecodeBase64("aGVsbG8K", &buffer));
-  EXPECT_EQ("hello\n", buffer);
-  EXPECT_TRUE(DecodeBase64("YnllCg==", &buffer));
-  EXPECT_EQ("bye\n", buffer);
-  EXPECT_TRUE(DecodeBase64("Y2lhbwo=", &buffer));
-  EXPECT_EQ("ciao\n", buffer);
-  EXPECT_TRUE(DecodeBase64("", &buffer));
-  EXPECT_EQ("", buffer);
-  // Check to make sure that the function tolerates bad input.
-  DecodeBase64("==", &buffer);
-  DecodeBase64("=", &buffer);
-  DecodeBase64("===", &buffer);
-  DecodeBase64("!", &buffer);
-}
-
 }  // namespace
 }  // namespace kythe
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   ::testing::InitGoogleTest(&argc, argv);

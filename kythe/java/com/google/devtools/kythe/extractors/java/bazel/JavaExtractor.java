@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteSource;
 import com.google.common.io.MoreFiles;
 import com.google.devtools.build.lib.actions.extra.ExtraActionInfo;
@@ -32,6 +33,7 @@ import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
+import com.google.devtools.kythe.util.JsonUtil;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistry;
 import java.io.File;
@@ -48,7 +50,12 @@ import java.util.zip.ZipFile;
 
 /** Java CompilationUnit extractor using Bazel's extra_action feature. */
 public class JavaExtractor {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
   public static void main(String[] args) throws IOException, ExtractionException {
+    JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
+
     if (args.length != 3) {
       System.err.println("Usage: java_extractor extra-action-file output-file vname-config");
       System.exit(1);
@@ -117,7 +124,12 @@ public class JavaExtractor {
     // Add the generated sources directory if any processors could be invoked.
     Optional<Path> genSrcDir = Optional.absent();
     if (!jInfo.getProcessorList().isEmpty()) {
-      genSrcDir = readGeneratedSourceDirParam(jInfo);
+      try {
+        genSrcDir = readGeneratedSourceDirParam(jInfo);
+      } catch (IOException ioe) {
+        logger.atWarning().withCause(ioe).log(
+            "Failed to find generated sources directory from javac parameters");
+      }
       if (genSrcDir.isPresent()) {
         javacOpts.add("-s");
         javacOpts.add(genSrcDir.get().toString());
@@ -140,7 +152,11 @@ public class JavaExtractor {
                 javacOpts,
                 jInfo.getOutputjar());
 
-    IndexInfoUtils.writeIndexInfoToFile(description, outputPath);
+    if (outputPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+      IndexInfoUtils.writeKzipToFile(description, outputPath);
+    } else {
+      IndexInfoUtils.writeKindexToFile(description, outputPath);
+    }
   }
 
   /** Extracts a source jar and adds all java files in it to the list of sources. */
@@ -200,16 +216,25 @@ public class JavaExtractor {
     return files;
   }
 
-  /** Reads Bazel's compilation params file and returns the value of the --sourcegendir flag. */
+  private static final String SOURCEGENDIR_FLAG = "--sourcegendir";
+
+  /** Reads Bazel's compilation parameters and returns the value of the --sourcegendir flag. */
   private static Optional<Path> readGeneratedSourceDirParam(JavaCompileInfo jInfo)
       throws IOException {
+    for (int i = 0; i < jInfo.getArgumentCount() - 1; i++) {
+      if (jInfo.getArgument(i).equals(SOURCEGENDIR_FLAG)) {
+        return Optional.of(Paths.get(jInfo.getArgument(i + 1)));
+      }
+    }
+
+    // Fall-back to reading from the Bazel .params file
     try (java.io.BufferedReader params =
         Files.newBufferedReader(
             Paths.get(jInfo.getOutputjar() + "-2.params"),
             java.nio.charset.StandardCharsets.UTF_8)) {
       String line;
       while ((line = params.readLine()) != null) {
-        if ("--sourcegendir".equals(line)) {
+        if (SOURCEGENDIR_FLAG.equals(line)) {
           return Optional.of(Paths.get(params.readLine()));
         }
       }

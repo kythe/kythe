@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.google.devtools.kythe.proto.Java.JarDetails;
 import com.google.devtools.kythe.proto.Java.JarEntryDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.Any;
+import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -51,6 +52,13 @@ public class JvmExtractor {
   public static final String BUILD_DETAILS_URL = "kythe.io/proto/kythe.proto.BuildDetails";
   public static final String JAR_DETAILS_URL = "kythe.io/proto/kythe.proto.JarDetails";
   public static final String JAR_ENTRY_DETAILS_URL = "kythe.io/proto/kythe.proto.JarEntryDetails";
+
+  public static final JsonFormat.TypeRegistry JSON_TYPE_REGISTRY =
+      JsonFormat.TypeRegistry.newBuilder()
+          .add(JarDetails.getDescriptor())
+          .add(JarEntryDetails.getDescriptor())
+          .add(BuildDetails.getDescriptor())
+          .build();
 
   /**
    * Returns a JVM {@link CompilationDescription} for the {@code .jar}/{@code .class} file paths

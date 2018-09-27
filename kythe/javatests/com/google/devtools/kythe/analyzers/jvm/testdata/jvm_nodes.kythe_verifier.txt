@@ -5,7 +5,7 @@
 //- ConstructorJvm.subkind constructor
 
 //- IntFieldJvm=vname("pkg.Jvm.intField", "", "", "", "jvm").node/kind variable
-//- IntFIeldJvm.subkind field
+//- IntFieldJvm.subkind field
 
 //- NestedJvm=vname("pkg.Jvm$Nested", "", "", "", "jvm").node/kind record
 //- NestedJvm.subkind class

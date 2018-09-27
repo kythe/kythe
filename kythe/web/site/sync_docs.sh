@@ -1,6 +1,6 @@
 #!/bin/bash -e
 #
-# Copyright 2014 Google Inc. All rights reserved.
+# Copyright 2014 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,13 +24,20 @@ export SHELL=/bin/bash
 DIR="$(readlink -e "$(dirname "$0")")"
 cd "$DIR/../../.."
 
-bazel --bazelrc=/dev/null build //kythe/docs/... //kythe/docs/schema \
+bazel --bazelrc=/dev/null build //kythe/docs/... \
+    //kythe/docs:schema-overview \
+    //kythe/docs/schema \
     //kythe/docs/schema:callgraph \
     //kythe/docs/schema:verifierstyle \
     //kythe/docs/schema:writing-an-indexer \
     //kythe/docs/schema:indexing-protobuf \
     //kythe/docs/schema:marked-source
+# Copy the zipped asciidoc outputs into the staging directory, unpack the
+# archives, then remove them. We do this to ensure the output retains the
+# directory structure of the source tree.
 rsync -Lr --chmod=a+w --delete "bazel-bin/kythe/docs/" "$DIR"/_docs
+find "$DIR"/_docs -type f -name '*.zip' -execdir unzip -q {} ';' -delete
+
 DOCS=($(bazel query 'kind("source file", deps(//kythe/docs/..., 1))' | \
   grep -E '\.(txt|adoc|ad)$' | \
   parallel --gnu -L1 'x() { file="$(tr : / <<<"$1")"; echo ${file#//kythe/docs/}; }; x'))

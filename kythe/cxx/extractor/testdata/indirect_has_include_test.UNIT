@@ -18,6 +18,17 @@ required_input {
       }
     }
   }
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash0"
+        column {
+          offset: 40
+          linked_context: "hash1"
+        }
+      }
+    }
+  }
 }
 required_input {
   v_name {
@@ -30,6 +41,13 @@ required_input {
   context {
     row {
       source_context: "hash2"
+    }
+  }
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash2"
+      }
     }
   }
 }
@@ -46,6 +64,16 @@ required_input {
       source_context: "hash1"
       column {
         linked_context: "hash2"
+      }
+    }
+  }
+  details {
+    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
+      row {
+        source_context: "hash1"
+        column {
+          linked_context: "hash2"
+        }
       }
     }
   }

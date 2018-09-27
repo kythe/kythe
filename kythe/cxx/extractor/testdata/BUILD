@@ -146,6 +146,21 @@ shell_tool_test(
 )
 
 shell_tool_test(
+    name = "kzip",
+    data = [
+        "skip_functions.sh",
+        "test_common.sh",
+        "transcript_a.h",
+        "transcript_b.h",
+        "transcript_main.cc",
+    ],
+    scriptfile = "test_kzip.sh",
+    tools = {
+        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
+    },
+)
+
+shell_tool_test(
     name = "has_include",
     data = [
         "has_include_test.UNIT",

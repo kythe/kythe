@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/serving/pipeline"
 	"kythe.io/kythe/go/serving/pipeline/beamio"
+	"kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/stream"
@@ -59,6 +60,7 @@ var (
 	verbose = flag.Bool("verbose", false, "Whether to emit extra, and possibly excessive, log messages")
 
 	experimentalBeamPipeline = flag.Bool("experimental_beam_pipeline", false, "Whether to use the Beam experimental pipeline implementation")
+	experimentalColumnarData = flag.Bool("experimental_beam_columnar_data", false, "Whether to emit columnar data from the Beam pipeline implementation")
 )
 
 func init() {
@@ -91,7 +93,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer db.Close(ctx)
 
 	if err := profile.Start(ctx); err != nil {
 		log.Fatal(err)
@@ -141,14 +143,38 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 	k := pipeline.FromEntries(s, entries)
 	shards := 8 // TODO(schroederc): better determine number of shards
 	edgeSets, edgePages := k.Edges()
-	xrefSets, xrefPages := k.CrossReferences()
-	beamio.WriteLevelDB(s, *tablePath, shards,
-		k.CorpusRoots(),
-		k.Decorations(),
-		k.Directories(),
-		k.Documents(),
-		xrefSets, xrefPages,
-		edgeSets, edgePages,
-	)
+	if *experimentalColumnarData {
+		beamio.WriteLevelDB(s, *tablePath, shards,
+			createColumnarMetadata(s),
+			k.SplitCrossReferences(),
+			k.SplitDecorations(),
+			k.CorpusRoots(),
+			k.Directories(),
+			k.Documents(),
+			// TODO(schroederc): replace edges with columnar format
+			edgeSets, edgePages,
+		)
+	} else {
+		xrefSets, xrefPages := k.CrossReferences()
+		beamio.WriteLevelDB(s, *tablePath, shards,
+			k.CorpusRoots(),
+			k.Decorations(),
+			k.Directories(),
+			k.Documents(),
+			xrefSets, xrefPages,
+			edgeSets, edgePages,
+		)
+	}
+
 	return beamx.Run(ctx, p)
 }
+
+func init() {
+	beam.RegisterFunction(emitColumnarMetadata)
+}
+
+func createColumnarMetadata(s beam.Scope) beam.PCollection {
+	return beam.ParDo(s, emitColumnarMetadata, beam.Impulse(s))
+}
+
+func emitColumnarMetadata(_ []byte) (string, string) { return xrefs.ColumnarTableKeyMarker, "v1" }

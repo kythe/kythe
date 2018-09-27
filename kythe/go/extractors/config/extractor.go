@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"kythe.io/kythe/go/extractors/config/default/mvn"
-
-	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
 
 // kytheConfigFileName The name of the Kythe extraction config
@@ -66,7 +62,7 @@ type Repo struct {
 	// their corresponding volumes.
 	// When not running inside a docker cotnainer, these can be left unset,
 	// in which case an ephemeral temp directory is used for TempRepoDir, and
-	// output is written directly into OutputPath from mvn-extract.sh.
+	// output is written directly into OutputPath from runextractor.go.
 
 	// An optional temporary repo path to copy the input repo to.
 	TempRepoDir string
@@ -118,7 +114,7 @@ func copyDir(args copyArgs) error {
 			// Intentionally do nothing for base dir.
 			return nil
 		}
-		if args.skipDir != "" && filepath.HasPrefix(path, args.skipDir) {
+		if args.skipDir != "" && strings.HasPrefix(path, args.skipDir) {
 			return filepath.SkipDir
 		}
 		rel, err := filepath.Rel(args.in, path)
@@ -295,26 +291,6 @@ func verifyRequiredTools(repo Repo) error {
 		return err
 	}
 	return nil
-}
-
-func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, error) {
-	// if a config was passed in, use the specified config, otherwise go
-	// hunt for one in the repository.
-	if configPath == "" {
-		// otherwise, use a Kythe config within the repo (if it exists)
-		configPath = filepath.Join(repoDir, kytheExtractionConfigFile)
-	}
-
-	f, err := os.Open(configPath)
-	if os.IsNotExist(err) {
-		// TODO(danielmoy): This needs to be configurable by builder, language, etc.
-		return load(mvn.DefaultConfig())
-	} else if err != nil {
-		return nil, fmt.Errorf("opening config file: %v", err)
-	}
-
-	defer f.Close()
-	return load(f)
 }
 
 func mustCleanUpImage(ctx context.Context, tmpImageTag string) {

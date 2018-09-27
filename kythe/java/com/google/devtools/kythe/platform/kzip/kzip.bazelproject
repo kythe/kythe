@@ -1,0 +1,9 @@
+directories:
+  kythe/java/com/google/devtools/kythe/platform/kzip
+  kythe/java/com/google/devtools/kythe/util
+  kythe/javatests/com/google/devtools/kythe/platform/kzip
+
+targets:
+  //kythe/java/com/google/devtools/kythe/platform/kzip/...:all
+  //kythe/java/com/google/devtools/kythe/util:json
+  //kythe/javatests/com/google/devtools/kythe/platform/kzip/...:all

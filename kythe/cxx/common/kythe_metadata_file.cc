@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 #include "kythe/cxx/common/kythe_metadata_file.h"
 
+#include "absl/strings/escaping.h"
 #include "glog/logging.h"
-#include "kythe/cxx/common/json_proto.h"  // DecodeBase64
 #include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/cxx/common/schema/edges.h"
 #include "kythe/proto/storage.pb.h"
@@ -32,7 +32,7 @@ namespace kythe {
     LOG(WARNING) << "Unexpected or missing key " #key " : " #type;        \
     return false;                                                         \
   }                                                                       \
-  const auto &key = key##_pair->value;
+  const auto& key = key##_pair->value;
 
 #define JSON_SAFE_LOAD_STRING(dest, key)                                 \
   const auto key##_pair = value.FindMember(#key);                        \
@@ -41,7 +41,7 @@ namespace kythe {
   }
 
 namespace {
-bool LoadVName(const rapidjson::Value &value, proto::VName *vname_out) {
+bool LoadVName(const rapidjson::Value& value, proto::VName* vname_out) {
   JSON_SAFE_LOAD_STRING(*(vname_out->mutable_signature()), signature);
   JSON_SAFE_LOAD_STRING(*(vname_out->mutable_root()), root);
   JSON_SAFE_LOAD_STRING(*(vname_out->mutable_path()), path);
@@ -94,7 +94,7 @@ std::unique_ptr<llvm::MemoryBuffer> LoadCommentMetadata(
     break;
   }
   google::protobuf::string decoded;
-  return DecodeBase64(raw_data, &decoded)
+  return absl::Base64Unescape(raw_data, &decoded)
              ? llvm::MemoryBuffer::getMemBufferCopy(ToStringRef(decoded))
              : nullptr;
 }
@@ -103,7 +103,7 @@ std::unique_ptr<llvm::MemoryBuffer> LoadCommentMetadata(
 /// \param buffer data to try and parse.
 /// \return the decoded metadata on success or null on failure.
 std::unique_ptr<llvm::MemoryBuffer> LoadHeaderMetadata(
-    const llvm::MemoryBuffer *buffer) {
+    const llvm::MemoryBuffer* buffer) {
   if (buffer->getBufferSize() < 2) {
     return nullptr;
   }
@@ -120,7 +120,7 @@ std::unique_ptr<llvm::MemoryBuffer> LoadHeaderMetadata(
 /// \param search_string the string identifying the data.
 /// \return the decoded metadata on success or null on failure.
 std::unique_ptr<llvm::MemoryBuffer> FindCommentMetadata(
-    const llvm::MemoryBuffer *buffer, const std::string &search_string) {
+    const llvm::MemoryBuffer* buffer, const std::string& search_string) {
   auto buf_string = buffer->getBuffer();
   auto comment_start = buf_string.find("/* " + search_string);
   if (comment_start == llvm::StringRef::npos) {
@@ -136,8 +136,8 @@ std::unique_ptr<llvm::MemoryBuffer> FindCommentMetadata(
 }
 }  // anonymous namespace
 
-bool KytheMetadataSupport::LoadMetaElement(const rapidjson::Value &value,
-                                           MetadataFile::Rule *rule) {
+bool KytheMetadataSupport::LoadMetaElement(const rapidjson::Value& value,
+                                           MetadataFile::Rule* rule) {
   JSON_SAFE_LOAD(type, String);
   if (type == "nop") {
     return true;
@@ -257,8 +257,8 @@ std::unique_ptr<MetadataFile> KytheMetadataSupport::LoadFromJSON(
 }
 
 std::unique_ptr<kythe::MetadataFile> KytheMetadataSupport::ParseFile(
-    const std::string &raw_filename, const std::string &filename,
-    const llvm::MemoryBuffer *buffer) {
+    const std::string& raw_filename, const std::string& filename,
+    const llvm::MemoryBuffer* buffer) {
   auto metadata = LoadFromJSON(buffer->getBuffer());
   if (!metadata) {
     LOG(WARNING) << "Failed loading " << raw_filename;
@@ -267,17 +267,17 @@ std::unique_ptr<kythe::MetadataFile> KytheMetadataSupport::ParseFile(
 }
 
 void MetadataSupports::UseVNameLookup(VNameLookup lookup) const {
-  for (auto &support : supports_) {
+  for (auto& support : supports_) {
     support->UseVNameLookup(lookup);
   }
 }
 
 std::unique_ptr<kythe::MetadataFile> MetadataSupports::ParseFile(
-    const std::string &filename, const llvm::MemoryBuffer *buffer,
-    const std::string &search_string) const {
+    const std::string& filename, const llvm::MemoryBuffer* buffer,
+    const std::string& search_string) const {
   std::string modified_filename = filename;
   std::unique_ptr<llvm::MemoryBuffer> decoded_buffer_storage;
-  const llvm::MemoryBuffer *decoded_buffer = buffer;
+  const llvm::MemoryBuffer* decoded_buffer = buffer;
   if (!search_string.empty()) {
     decoded_buffer_storage = FindCommentMetadata(buffer, search_string);
     if (decoded_buffer_storage == nullptr) {
@@ -295,7 +295,7 @@ std::unique_ptr<kythe::MetadataFile> MetadataSupports::ParseFile(
       LOG(WARNING) << filename << " wasn't a metadata header.";
     }
   }
-  for (const auto &support : supports_) {
+  for (const auto& support : supports_) {
     if (auto metadata =
             support->ParseFile(filename, modified_filename, decoded_buffer)) {
       return metadata;

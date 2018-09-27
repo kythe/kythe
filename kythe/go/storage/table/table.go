@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,8 +66,8 @@ type KVProto struct{ keyvalue.DB }
 var ErrNoSuchKey = errors.New("no such key")
 
 // Lookup implements part of the Proto interface.
-func (t *KVProto) Lookup(_ context.Context, key []byte, msg proto.Message) error {
-	v, err := t.Get(key, nil)
+func (t *KVProto) Lookup(ctx context.Context, key []byte, msg proto.Message) error {
+	v, err := t.Get(ctx, key, nil)
 	if err == io.EOF {
 		return ErrNoSuchKey
 	}
@@ -89,12 +89,12 @@ func (t *KVProto) Put(ctx context.Context, key []byte, msg proto.Message) error 
 type kvProtoBuffer struct{ pool *keyvalue.WritePool }
 
 // Put implements part of the BufferedProto interface.
-func (b *kvProtoBuffer) Put(_ context.Context, key []byte, msg proto.Message) error {
+func (b *kvProtoBuffer) Put(ctx context.Context, key []byte, msg proto.Message) error {
 	rec, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}
-	return b.pool.Write(key, rec)
+	return b.pool.Write(ctx, key, rec)
 }
 
 // Flush implements part of the BufferedProto interface.
@@ -104,4 +104,4 @@ func (b *kvProtoBuffer) Flush(_ context.Context) error { return b.pool.Flush() }
 func (t *KVProto) Buffered() BufferedProto { return &kvProtoBuffer{keyvalue.NewPool(t.DB, nil)} }
 
 // Close implements part of the Proto interface.
-func (t *KVProto) Close(_ context.Context) error { return t.DB.Close() }
+func (t *KVProto) Close(ctx context.Context) error { return t.DB.Close(ctx) }

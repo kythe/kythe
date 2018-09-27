@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,19 +34,19 @@ class GoogleFlagsLibrarySupport : public LibrarySupport {
   GoogleFlagsLibrarySupport() {}
 
   /// \brief Emits a google/gflag node if `Decl` is a flag.
-  void InspectVariable(IndexerASTVisitor &V, GraphObserver::NodeId &DeclNodeId,
-                       GraphObserver::NodeId &DeclBodyNodeId,
-                       const clang::VarDecl *Decl,
+  void InspectVariable(IndexerASTVisitor& V, GraphObserver::NodeId& DeclNodeId,
+                       GraphObserver::NodeId& DeclBodyNodeId,
+                       const clang::VarDecl* Decl,
                        GraphObserver::Completeness Compl,
-                       const std::vector<Completion> &Compls) override;
+                       const std::vector<Completion>& Compls) override;
 
   /// \brief Checks whether this DeclRef refers to a flag. If so, it emits an
   /// additional ref edge to the correspondng google/gflag node.
-  void InspectDeclRef(IndexerASTVisitor &V,
+  void InspectDeclRef(IndexerASTVisitor& V,
                       clang::SourceLocation DeclRefLocation,
-                      const GraphObserver::Range &Ref,
-                      GraphObserver::NodeId &RefId,
-                      const clang::NamedDecl *TargetDecl) override;
+                      const GraphObserver::Range& Ref,
+                      GraphObserver::NodeId& RefId,
+                      const clang::NamedDecl* TargetDecl) override;
 };
 
 }  // namespace kythe

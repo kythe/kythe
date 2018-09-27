@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,9 @@ class SemanticHash {
   /// \brief Constructs a new SemanticHash using `decl_string` to calculate a
   /// string from a template declaration and `on_unimplemented` for behavior
   /// when encountering an unhandled AST node.
-  explicit SemanticHash(std::function<std::string(const clang::Decl*)> decl_string,
-               OnUnimplemented on_unimplemented = OnUnimplemented::Abort)
+  explicit SemanticHash(
+      std::function<std::string(const clang::Decl*)> decl_string,
+      OnUnimplemented on_unimplemented = OnUnimplemented::Abort)
       : ignore_unimplemented_(on_unimplemented == OnUnimplemented::Continue),
         decl_string_(std::move(decl_string)) {}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,7 +137,7 @@ class Vistor {
     const file = path.relative(this.sourceRoot, sourceFile.fileName);
     const {line, character} =
         ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-    console.log(`TODO: ${file}:${line}:${character}: ${message}`);
+    console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
   }
 
   /**
@@ -268,6 +268,7 @@ class Vistor {
           break;
         case ts.SyntaxKind.BindingElement:
         case ts.SyntaxKind.ClassDeclaration:
+        case ts.SyntaxKind.ClassExpression:
         case ts.SyntaxKind.EnumDeclaration:
         case ts.SyntaxKind.EnumMember:
         case ts.SyntaxKind.FunctionDeclaration:
@@ -392,6 +393,35 @@ class Vistor {
     }
   }
 
+  /**
+   * visitHeritage visits the X found in an 'extends X' or 'implements X'.
+   *
+   * These are subtle in an interesting way.  When you have
+   *   interface X extends Y {}
+   * that is referring to the *type* Y (because interfaces are types, not
+   * values).  But it's also legal to write
+   *   class X extends (class Z { ... }) {}
+   * where the thing in the extends clause is itself an expression, and the
+   * existing logic for visiting a class expression already handles modelling
+   * the class as both a type and a value.
+   *
+   * The full set of possible combinations is:
+   * - class extends => value
+   * - interface extends => type
+   * - class implements => type
+   * - interface implements => illegal
+   */
+  visitHeritage(heritageClauses: ReadonlyArray<ts.HeritageClause>) {
+    for (const heritage of heritageClauses) {
+      if (heritage.token === ts.SyntaxKind.ExtendsKeyword && heritage.parent &&
+          heritage.parent.kind !== ts.SyntaxKind.InterfaceDeclaration) {
+        this.visit(heritage);
+      } else {
+        this.visitType(heritage);
+      }
+    }
+  }
+
   visitInterfaceDeclaration(decl: ts.InterfaceDeclaration) {
     let sym = this.getSymbolAtLocation(decl.name);
     if (!sym) {
@@ -403,11 +433,7 @@ class Vistor {
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
-    if (decl.heritageClauses) {
-      for (const heritage of decl.heritageClauses) {
-        this.visit(heritage);
-      }
-    }
+    if (decl.heritageClauses) this.visitHeritage(decl.heritageClauses);
     for (const member of decl.members) {
       this.visit(member);
     }
@@ -538,7 +564,8 @@ class Vistor {
     // so start by linking that.
     let moduleSym = this.getSymbolAtLocation(decl.moduleSpecifier);
     if (!moduleSym) {
-      this.todo(decl.moduleSpecifier, `import ${decl.getText()} has no symbol`);
+      // This can occur when the module failed to resolve to anything.
+      // See testdata/import_missing.ts for more on how that could happen.
       return;
     }
     let kModule = this.newVName(
@@ -846,11 +873,7 @@ class Vistor {
       this.visitJSDoc(decl, kClass);
     }
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
-    if (decl.heritageClauses) {
-      for (const heritage of decl.heritageClauses) {
-        this.visit(heritage);
-      }
-    }
+    if (decl.heritageClauses) this.visitHeritage(decl.heritageClauses);
     for (const member of decl.members) {
       this.visit(member);
     }

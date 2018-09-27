@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
+import com.google.devtools.kythe.platform.kzip.KZipException;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataCache;
 import com.google.devtools.kythe.platform.shared.KytheMetadataLoader;
@@ -42,6 +43,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
@@ -89,20 +91,39 @@ public class JavaIndexer {
     }
 
     CompilationDescription desc = null;
+    String compilationPath = compilation.get(0);
     if (!Strings.isNullOrEmpty(config.getIndexPackRoot())) {
       // java_indexer --index_pack=archive-root unit-key
-      desc = new Archive(config.getIndexPackRoot()).readDescription(compilation.get(0));
+      desc = new Archive(config.getIndexPackRoot()).readDescription(compilationPath);
     } else {
-      // java_indexer kindex-file
-      try {
-        desc = IndexInfoUtils.readIndexInfoFromFile(compilation.get(0));
-      } catch (EOFException e) {
-        if (config.getIgnoreEmptyKIndex()) {
-          return;
+      if (compilationPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+        // java_indexer kzip-file
+        try {
+          Collection<CompilationDescription> compilationDescriptions =
+              IndexInfoUtils.readKZip(compilationPath);
+          if (config.getIgnoreEmptyKZip() && compilationDescriptions.isEmpty()) {
+            return;
+          }
+          if (compilationDescriptions.size() != 1) {
+            throw new IllegalArgumentException(
+                "The kzip did not contain exactly 1 CompilationDescription. It contained "
+                    + compilationDescriptions.size());
+          }
+          desc = compilationDescriptions.iterator().next();
+        } catch (KZipException e) {
+          throw new IllegalArgumentException("Unable to read kzip", e);
         }
-        throw new IllegalArgumentException(
-            "given empty .kindex file \"" + compilation.get(0) + "\"; try --ignore_empty_kindex",
-            e);
+      } else {
+        // java_indexer kindex-file
+        try {
+          desc = IndexInfoUtils.readKindexInfoFromFile(compilationPath);
+        } catch (EOFException e) {
+          if (config.getIgnoreEmptyKIndex()) {
+            return;
+          }
+          throw new IllegalArgumentException(
+              "given empty .kindex file \"" + compilationPath + "\"; try --ignore_empty_kindex", e);
+        }
       }
     }
 
@@ -173,6 +194,11 @@ public class JavaIndexer {
     private boolean ignoreEmptyKIndex;
 
     @Parameter(
+        names = "--ignore_empty_kzip",
+        description = "Ignore empty .kzip files; exit successfully with no output")
+    private boolean ignoreEmptyKZip;
+
+    @Parameter(
         names = {"--out", "-out"},
         description = "Write the entries to this file (or stdout if unspecified)")
     private String outputPath;
@@ -199,6 +225,10 @@ public class JavaIndexer {
 
     public final boolean getIgnoreEmptyKIndex() {
       return ignoreEmptyKIndex;
+    }
+
+    public final boolean getIgnoreEmptyKZip() {
+      return ignoreEmptyKZip;
     }
 
     public final String getOutputPath() {

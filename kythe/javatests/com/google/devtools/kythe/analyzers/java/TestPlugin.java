@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,8 +48,12 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
     Context context = kytheGraph.getJavaContext();
     Symtab symtab = Symtab.instance(context);
     Names names = Names.instance(context);
-    ClassSymbol specialAnnotationSym =
-        symtab.getClass(symtab.java_base, names.fromString("pkg.PluginTests$SpecialAnnotation"));
+    ClassSymbol specialAnnotationSym = null;
+    for (ClassSymbol sym :
+        symtab.getClassesForName(names.fromString("pkg.PluginTests$SpecialAnnotation"))) {
+      specialAnnotationSym = sym;
+      break;
+    }
     specialAnnotationNode = kytheGraph.getNode(specialAnnotationSym).orElse(null);
     if (specialAnnotationNode == null) {
       return v;
@@ -75,7 +79,6 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
         continue;
       }
       // We're analyzing a method annotated by SpecialAnnotation.  Now we do special analysis.
-
       kytheGraph
           .getNode(tree)
           .map(KytheNode::getVName)
@@ -114,7 +117,7 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
           .getJvmNode(sym)
           .map(KytheNode::getVName)
           .ifPresent(
-              jvmMethod ->
+              jvmNode ->
                   Optional.ofNullable(sym)
                       .map(Symbol::enclClass)
                       .flatMap(kytheGraph::getJvmNode)
@@ -122,13 +125,10 @@ public class TestPlugin extends Plugin.Scanner<Void, Void> {
                       .ifPresent(
                           jvmClass -> {
                             // Add an extra edge to the enclosing Kythe JVM class.
-                            entrySets
-                                .getEmitter()
-                                .emitEdge(jvmMethod, "/special/jvm/edge", jvmClass);
+                            entrySets.getEmitter().emitEdge(jvmNode, "/special/jvm/edge", jvmClass);
                           }));
 
       break;
     }
-
   }
 }

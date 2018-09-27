@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Copyright 2015 Google Inc. All rights reserved.
+# Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -107,6 +107,7 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
         -DLLVM_BUILD_RUNTIME="OFF" \
         -DLLVM_DYLIB_COMPONENTS="" \
         -DLLVM_ENABLE_OCAMLDOC="OFF" \
+        -DLLVM_ENABLE_RTTI="ON" \
         -DLLVM_INCLUDE_DOCS="OFF" \
         -DLLVM_INCLUDE_EXAMPLES="OFF" \
         -DLLVM_INCLUDE_GO_TESTS="OFF" \

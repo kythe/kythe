@@ -36,7 +36,6 @@ java_library(
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "//third_party/javac",
-        "@bazel_tools//third_party/java/jdk/langtools:javac",
         "@com_beust_jcommander//jar",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:protobuf_java",
@@ -50,7 +49,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/util:position_mappings",
         "//kythe/java/com/google/devtools/kythe/util:span",
-        "@bazel_tools//third_party/java/jdk/langtools:javac",
+        "//third_party/javac",
     ],
 )
 
@@ -62,16 +61,17 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/util:span",
         "//kythe/proto:storage_java_proto",
-        "@bazel_tools//third_party/java/jdk/langtools:javac",
+        "//third_party/javac",
     ],
 )
 
 java_binary(
     name = "indexer",
     srcs = ["JavaIndexer.java"],
-    data = ["//third_party/javac:javac_jar"],
+    data = ["//third_party/javac:java_compiler_jar"],
     jvm_flags = [
-        "-Xbootclasspath/p:$${RUNPATH}$(location //third_party/javac:javac_jar)",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.api=java.compiler",
+        "--patch-module=java.compiler=$${RUNPATH}$(location //third_party/javac:java_compiler_jar)",
     ],
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexer",
     deps = [
@@ -82,6 +82,7 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
         "//kythe/java/com/google/devtools/kythe/platform/java",
+        "//kythe/java/com/google/devtools/kythe/platform/kzip",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",

@@ -1,6 +1,6 @@
 #!/bin/bash -e
 #
-# Copyright 2017 Google Inc. All rights reserved.
+# Copyright 2017 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ KYTHE="${KYTHE:-/opt/kythe}"
 rm -f -- graphstore/* tables/*
 mkdir -p graphstore tables
 # Read JSON entries from standard in to a graphstore.
-$KYTHE/tools/entrystream --read_json \
+$KYTHE/tools/entrystream --read_format=json \
   | $KYTHE/tools/write_entries -graphstore graphstore
 # Convert the graphstore to serving tables.
 $KYTHE/tools/write_tables -graphstore graphstore -out=tables

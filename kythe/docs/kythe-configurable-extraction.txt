@@ -1,4 +1,4 @@
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2018 The Kythe Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -113,7 +113,8 @@ repeated string entry_point
 This field defines the entry point for the generated image. The entry point is
 the logic which is run when the generated image's container is started. This is
 typically a script or binary which intiates the build and extraction process. An
-example entry point script can be found here: https://github.com/google/kythe/blob/master/kythe/java/com/google/devtools/kythe/extractors/java/maven/mvn-extract.sh[mvn-extract.sh].
+example entry point binary can be found here:
+https://github.com/google/kythe/blob/master/kythe/go/extractors/config/runextractor/runextractor.go[runextractor.go].
 For each listed `entry_point` the Docker image will have:
 ....
 ENTRYPOINT ["<entrypoint[0]>", "<entrypoint[1]>", ...]
@@ -159,7 +160,7 @@ generated extraction image. This wrapper is responsible for any pre-processing
 of build configuration files which might be necessary, as well as invoking the
 build system with the arguments necessary to hook the extractor into the build
 system's compilation step. An example of such a wrapper can be found here:
-https://github.com/google/kythe/blob/master/kythe/java/com/google/devtools/kythe/extractors/java/maven/mvn-extract.sh[mvn-extract.sh]
+https://github.com/google/kythe/blob/master/kythe/go/extractors/config/runextractor/runextractor.go[runextractor.go].
 
 A common pattern is to have the wrapper as well as any language specific
 extraction binaries bundled within an extraction artifacts base image for use

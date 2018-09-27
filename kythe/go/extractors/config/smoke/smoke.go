@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,6 +84,7 @@ func (h Harness) extractor() config.Extractor {
 	return h.Extractor
 }
 
+// TODO(#53): Implement indexing on smoke test harness.
 func (h Harness) indexer() Indexer {
 	if h.Indexer == nil {
 		return EmptyIndexer

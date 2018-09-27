@@ -1,7 +1,7 @@
 #!/bin/bash -e
 set -o pipefail
 
-# Copyright 2014 Google Inc. All rights reserved.
+# Copyright 2014 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,8 +24,10 @@ set -o pipefail
 #   LANGUAGE
 #   LABEL
 #   JAVA_INDEXER_BIN
-#   VERIFIER_BIN
 #   KINDEX_TOOL_BIN
+#   VERIFIER_BIN
+#   VERIFIER_ARGS
+#   SHASUM_TOOL
 #   SHOWGRAPH
 #
 # TODO(zarko): Provide alternate templates to avoid unnecessary boilerplate
@@ -34,7 +36,7 @@ set -o pipefail
 # Save the Java source example
 TEST_FILE="$TMP/E.java"
 tee "$TEST_FILE.orig" > "$TEST_FILE"
-FILE_SHA=$(shasum -a 256 "${TEST_FILE}.orig" | cut -c 1-64)
+FILE_SHA=$($SHASUM_TOOL "${TEST_FILE}.orig" | cut -c 1-64)
 
 # Convert to ascii proto format; escape backslashes, quotes, and newlines.
 python <<EOF > "${TEST_FILE}.FileData"
@@ -54,7 +56,7 @@ if ! "$JAVA_INDEXER_BIN" "${TEST_FILE}.kindex" >"${TEST_FILE}.entries"; then
 fi
 
 # Verify the index.
-if ! "$VERIFIER_BIN" --ignore_dups "${TEST_FILE}.orig" <"${TEST_FILE}.entries"; then
+if ! "$VERIFIER_BIN" "${VERIFIER_ARGS}" --ignore_dups "${TEST_FILE}.orig" <"${TEST_FILE}.entries"; then
   error VERIFY
 fi
 

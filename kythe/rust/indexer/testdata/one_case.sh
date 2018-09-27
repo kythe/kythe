@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2016 Google Inc. All rights reserved.
+# Copyright 2016 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ source kythe/rust/indexer/testdata/parse_args.sh
 echo "TEST_FILE = ${TEST_FILE}"
 echo "CRATE_TYPE = ${CRATE_TYPE}"
 ${INDEXER} --crate-type=${CRATE_TYPE} "${TEST_FILE}" | \
-    "${KYTHE_ENTRY_STREAM}" --read_json | \
+    "${KYTHE_ENTRY_STREAM}" --read_format=json | \
     "${VERIFIER}" "${TEST_FILE}" "${VERIFIER_ARGS[@]}"
 
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[2]} )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,18 +43,18 @@ void JsonClient::InitNetwork() {
   CHECK(::curl_global_init(CURL_GLOBAL_ALL) == 0);
 }
 
-size_t JsonClient::CurlWriteCallback(void *data, size_t size, size_t nmemb,
-                                     void *user) {
-  JsonClient *client = static_cast<JsonClient *>(user);
+size_t JsonClient::CurlWriteCallback(void* data, size_t size, size_t nmemb,
+                                     void* user) {
+  JsonClient* client = static_cast<JsonClient*>(user);
   size_t receive_head = client->received_.size();
   client->received_.resize(receive_head + size * nmemb);
   ::memcpy(&client->received_[receive_head], data, size * nmemb);
   return size * nmemb;
 }
 
-size_t JsonClient::CurlReadCallback(void *data, size_t size, size_t nmemb,
-                                    void *user) {
-  JsonClient *client = static_cast<JsonClient *>(user);
+size_t JsonClient::CurlReadCallback(void* data, size_t size, size_t nmemb,
+                                    void* user) {
+  JsonClient* client = static_cast<JsonClient*>(user);
   if (client->send_head_ >= client->to_send_.size()) {
     return 0;
   }
@@ -65,18 +65,18 @@ size_t JsonClient::CurlReadCallback(void *data, size_t size, size_t nmemb,
   return bytes_to_send;
 }
 
-bool JsonClient::Request(const std::string &uri, bool post,
-                         const rapidjson::Document &request,
-                         rapidjson::Document *response) {
+bool JsonClient::Request(const std::string& uri, bool post,
+                         const rapidjson::Document& request,
+                         rapidjson::Document* response) {
   rapidjson::StringBuffer string_buffer;
   rapidjson::Writer<rapidjson::StringBuffer> writer(string_buffer);
   request.Accept(writer);
   return Request(uri, post, string_buffer.GetString(), response);
 }
 
-bool JsonClient::Request(const std::string &uri, bool post,
-                         const std::string &request,
-                         rapidjson::Document *response) {
+bool JsonClient::Request(const std::string& uri, bool post,
+                         const std::string& request,
+                         rapidjson::Document* response) {
   std::string to_decode;
   if (!Request(uri, post, request, &to_decode)) {
     return false;
@@ -91,8 +91,8 @@ bool JsonClient::Request(const std::string &uri, bool post,
   return true;
 }
 
-bool JsonClient::Request(const std::string &uri, bool post,
-                         const std::string &request, std::string *response) {
+bool JsonClient::Request(const std::string& uri, bool post,
+                         const std::string& request, std::string* response) {
   to_send_ = request;
   send_head_ = 0;
   received_.clear();
@@ -103,7 +103,7 @@ bool JsonClient::Request(const std::string &uri, bool post,
   ::curl_easy_setopt(curl_, CURLOPT_READDATA, this);
   ::curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
   ::curl_easy_setopt(curl_, CURLOPT_WRITEDATA, this);
-  ::curl_slist *headers = nullptr;
+  ::curl_slist* headers = nullptr;
   if (post) {
     headers = ::curl_slist_append(headers, "Content-Type: application/json");
     ::curl_easy_setopt(curl_, CURLOPT_HTTPHEADER, headers);
@@ -134,10 +134,10 @@ bool JsonClient::Request(const std::string &uri, bool post,
   return true;
 }
 
-bool XrefsJsonClient::Roundtrip(const std::string &endpoint,
-                                const google::protobuf::Message &request,
-                                google::protobuf::Message *response,
-                                std::string *error_text) {
+bool XrefsJsonClient::Roundtrip(const std::string& endpoint,
+                                const google::protobuf::Message& request,
+                                google::protobuf::Message* response,
+                                std::string* error_text) {
   std::string request_json;
   if (!WriteMessageAsJsonToString(request, &request_json)) {
     if (error_text) {

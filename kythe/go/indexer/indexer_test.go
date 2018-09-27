@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import (
 	"go/token"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
@@ -48,13 +47,8 @@ func (m memFetcher) Fetch(path, digest string) ([]byte, error) {
 	return nil, os.ErrNotExist
 }
 
-func readTestFile(path string) ([]byte, error) {
-	pwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-	fullPath := filepath.Join(pwd, filepath.FromSlash(path))
-	return ioutil.ReadFile(fullPath)
+func readTestFile(t *testing.T, path string) ([]byte, error) {
+	return ioutil.ReadFile(testutil.TestFilePath(t, path))
 }
 
 func hexDigest(data []byte) string {
@@ -131,7 +125,7 @@ func TestResolve(t *testing.T) { // are you function enough not to back down?
 	//
 	// Package bar is specified as source and imports foo.
 	// TODO(fromberger): Compile foo as part of the build.
-	foo, err := readTestFile("testdata/foo.a")
+	foo, err := readTestFile(t, "testdata/foo.a")
 	if err != nil {
 		t.Fatalf("Unable to read foo.a: %v", err)
 	}

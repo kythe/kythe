@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2015 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ static cl::opt<std::string> xrefs("xrefs",
                                   cl::desc("Base URI for xrefs service"),
                                   cl::init("http://localhost:8080"));
 
-int main(int argc, const char **argv) {
+int main(int argc, const char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.1");

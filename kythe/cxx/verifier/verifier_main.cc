@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ DEFINE_bool(graphviz, false, "Only dump facts as a GraphViz-compatible graph");
 DEFINE_bool(annotated_graphviz, false, "Solve and annotate a GraphViz graph.");
 DEFINE_string(goal_prefix, "//-", "Denote goals with this string.");
 DEFINE_bool(use_file_nodes, false, "Look for assertions in UTF8 file nodes.");
-DEFINE_bool(check_for_singletons, false, "Fail on singleton variables.");
+DEFINE_bool(check_for_singletons, true, "Fail on singleton variables.");
 DEFINE_string(
     goal_regex, "",
     "If nonempty, denote goals with this regex. "
@@ -45,7 +45,7 @@ DEFINE_bool(convert_marked_source, false,
             "Convert MarkedSource-valued facts to subgraphs.");
 DEFINE_bool(show_anchors, false, "Show anchor locations instead of @s");
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   ::gflags::SetVersionString("0.1");
   ::gflags::SetUsageMessage(R"(Verification tool for Kythe databases.
@@ -98,7 +98,7 @@ Example:
       return 1;
     }
 
-    for (const auto &rule_file : rule_files) {
+    for (const auto& rule_file : rule_files) {
       if (rule_file.empty()) {
         continue;
       }

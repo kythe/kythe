@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All rights reserved.
+ * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
 	"github.com/apache/beam/sdks/go/pkg/beam/x/debug"
 
-	ppb "kythe.io/kythe/proto/pipeline_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -97,42 +96,42 @@ func TestFromEntries(t *testing.T) {
 		FactName:  facts.AnchorEnd,
 		FactValue: []byte("2"),
 	}}
-	expected := []*ppb.Node{{
+	expected := []*scpb.Node{{
 		Source:  &spb.VName{Signature: "node1"},
-		Kind:    &ppb.Node_KytheKind{scpb.NodeKind_RECORD},
-		Subkind: &ppb.Node_KytheSubkind{scpb.Subkind_CLASS},
+		Kind:    &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Subkind: &scpb.Node_KytheSubkind{scpb.Subkind_CLASS},
 	}, {
 		Source:  &spb.VName{Signature: "node2"},
-		Kind:    &ppb.Node_GenericKind{"unknown_nodekind"},
-		Subkind: &ppb.Node_GenericSubkind{"unknown_subkind"},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_GenericName{"/unknown/fact/name"},
+		Kind:    &scpb.Node_GenericKind{"unknown_nodekind"},
+		Subkind: &scpb.Node_GenericSubkind{"unknown_subkind"},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_GenericName{"/unknown/fact/name"},
 			Value: []byte("blah"),
 		}, {
-			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 			Value: []byte("text"),
 		}},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_GenericKind{"/unknown/edge/kind"},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_GenericKind{"/unknown/edge/kind"},
 			Target: &spb.VName{Signature: "node2"},
 		}, {
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_TYPED},
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_TYPED},
 			Target: &spb.VName{Signature: "node1"},
 		}},
 	}, {
 		Source: &spb.VName{Signature: "anchor"},
-		Kind:   &ppb.Node_KytheKind{scpb.NodeKind_ANCHOR},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_END},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
 			Value: []byte("2"),
 		}, {
-			Name:  &ppb.Fact_KytheName{scpb.FactName_LOC_START},
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
 			Value: []byte("1"),
 		}, {
-			Name:  &ppb.Fact_KytheName{scpb.FactName_SNIPPET_END},
+			Name:  &scpb.Fact_KytheName{scpb.FactName_SNIPPET_END},
 			Value: []byte("5"),
 		}, {
-			Name:  &ppb.Fact_KytheName{scpb.FactName_SNIPPET_START},
+			Name:  &scpb.Fact_KytheName{scpb.FactName_SNIPPET_START},
 			Value: []byte("0"),
 		}},
 	}}
@@ -148,47 +147,47 @@ func TestFromEntries(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	nodes := []*ppb.Node{{
+	nodes := []*scpb.Node{{
 		Source:  &spb.VName{Signature: "node1"},
-		Kind:    &ppb.Node_KytheKind{scpb.NodeKind_RECORD},
-		Subkind: &ppb.Node_KytheSubkind{scpb.Subkind_CLASS},
+		Kind:    &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Subkind: &scpb.Node_KytheSubkind{scpb.Subkind_CLASS},
 	}, {
 		Source:  &spb.VName{Signature: "node2"},
-		Kind:    &ppb.Node_GenericKind{"unknown_nodekind"},
-		Subkind: &ppb.Node_GenericSubkind{"unknown_subkind"},
-		Fact: []*ppb.Fact{{
-			Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+		Kind:    &scpb.Node_GenericKind{"unknown_nodekind"},
+		Subkind: &scpb.Node_GenericSubkind{"unknown_subkind"},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 			Value: []byte("text"),
 		}, {
-			Name:  &ppb.Fact_GenericName{"/unknown/fact/name"},
+			Name:  &scpb.Fact_GenericName{"/unknown/fact/name"},
 			Value: []byte("blah"),
 		}},
-		Edge: []*ppb.Edge{{
-			Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_TYPED},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_TYPED},
 			Target: &spb.VName{Signature: "node1"},
 		}, {
-			Kind:   &ppb.Edge_GenericKind{"/unknown/edge/kind"},
+			Kind:   &scpb.Edge_GenericKind{"/unknown/edge/kind"},
 			Target: &spb.VName{Signature: "node2"},
 		}},
 	}}
 
 	tests := []struct {
 		filter   Filter
-		expected []*ppb.Node
+		expected []*scpb.Node
 	}{
 		{Filter{}, nodes},
 		{Filter{FilterByKind: []string{"record", "unknown_nodekind"}}, nodes},
 		{Filter{FilterBySubkind: []string{"class", "unknown_subkind"}}, nodes},
 
-		{Filter{FilterByKind: []string{"record"}}, []*ppb.Node{nodes[0]}},
-		{Filter{FilterByKind: []string{"unknown_nodekind"}}, []*ppb.Node{nodes[1]}},
-		{Filter{FilterBySubkind: []string{"class"}}, []*ppb.Node{nodes[0]}},
-		{Filter{FilterBySubkind: []string{"unknown_subkind"}}, []*ppb.Node{nodes[1]}},
+		{Filter{FilterByKind: []string{"record"}}, []*scpb.Node{nodes[0]}},
+		{Filter{FilterByKind: []string{"unknown_nodekind"}}, []*scpb.Node{nodes[1]}},
+		{Filter{FilterBySubkind: []string{"class"}}, []*scpb.Node{nodes[0]}},
+		{Filter{FilterBySubkind: []string{"unknown_subkind"}}, []*scpb.Node{nodes[1]}},
 
 		{Filter{
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeFacts: []string{}, // exclude all facts
-		}, []*ppb.Node{{
+		}, []*scpb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
@@ -197,7 +196,7 @@ func TestFilter(t *testing.T) {
 		{Filter{
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeEdges: []string{}, // exclude all edges
-		}, []*ppb.Node{{
+		}, []*scpb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
@@ -208,12 +207,12 @@ func TestFilter(t *testing.T) {
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeFacts: []string{"/kythe/text"},
 			IncludeEdges: []string{},
-		}, []*ppb.Node{{
+		}, []*scpb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
-			Fact: []*ppb.Fact{{
-				Name:  &ppb.Fact_KytheName{scpb.FactName_TEXT},
+			Fact: []*scpb.Fact{{
+				Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 				Value: []byte("text"),
 			}},
 		}}},
@@ -221,12 +220,12 @@ func TestFilter(t *testing.T) {
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeFacts: []string{"/unknown/fact/name"},
 			IncludeEdges: []string{},
-		}, []*ppb.Node{{
+		}, []*scpb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
-			Fact: []*ppb.Fact{{
-				Name:  &ppb.Fact_GenericName{"/unknown/fact/name"},
+			Fact: []*scpb.Fact{{
+				Name:  &scpb.Fact_GenericName{"/unknown/fact/name"},
 				Value: []byte("blah"),
 			}},
 		}}},
@@ -235,12 +234,12 @@ func TestFilter(t *testing.T) {
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeFacts: []string{},
 			IncludeEdges: []string{"/kythe/edge/typed"},
-		}, []*ppb.Node{{
+		}, []*scpb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
-			Edge: []*ppb.Edge{{
-				Kind:   &ppb.Edge_KytheKind{scpb.EdgeKind_TYPED},
+			Edge: []*scpb.Edge{{
+				Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_TYPED},
 				Target: &spb.VName{Signature: "node1"},
 			}},
 		}}},
@@ -248,12 +247,12 @@ func TestFilter(t *testing.T) {
 			FilterByKind: []string{"unknown_nodekind"},
 			IncludeFacts: []string{},
 			IncludeEdges: []string{"/unknown/edge/kind"},
-		}, []*ppb.Node{{
+		}, []*scpb.Node{{
 			Source:  nodes[1].Source,
 			Kind:    nodes[1].Kind,
 			Subkind: nodes[1].Subkind,
-			Edge: []*ppb.Edge{{
-				Kind:   &ppb.Edge_GenericKind{"/unknown/edge/kind"},
+			Edge: []*scpb.Edge{{
+				Kind:   &scpb.Edge_GenericKind{"/unknown/edge/kind"},
 				Target: &spb.VName{Signature: "node2"},
 			}},
 		}}},

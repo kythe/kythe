@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2014 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,12 +52,12 @@ struct Claimant {
   /// \brief This Claimant's VName.
   VName vname;
   /// \brief The set of confirmed claims that this Claimant has. Non-owning.
-  std::set<Claimable *> claims;
+  std::set<Claimable*> claims;
 };
 
 /// \brief Stably compares `Claimants` by vname.
 struct ClaimantPointerLess {
-  bool operator()(const Claimant *lhs, const Claimant *rhs) const {
+  bool operator()(const Claimant* lhs, const Claimant* rhs) const {
     return kythe::VNameLess()(lhs->vname, rhs->vname);
   }
 };
@@ -68,16 +68,16 @@ struct Claimable {
   /// \brief This Claimable's VName.
   VName vname;
   /// \brief Of the `claimants`, which one has responsibility. Non-owning.
-  Claimant *elected_claimant;
+  Claimant* elected_claimant;
   /// \brief All of the Claimants that can possibly be given responsibility.
-  std::set<Claimant *, ClaimantPointerLess> claimants;
+  std::set<Claimant*, ClaimantPointerLess> claimants;
 };
 
 /// \brief Populates the compilation unit from a kindex.
 /// \param path Path to the .kindex file.
 /// \param unit Unit proto to fill.
-static void ReadCompilationUnit(const std::string &path,
-                                CompilationUnit *unit) {
+static void ReadCompilationUnit(const std::string& path,
+                                CompilationUnit* unit) {
   namespace io = google::protobuf::io;
   CHECK(unit != nullptr);
   int in_fd = ::open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
@@ -106,6 +106,27 @@ using ClaimantMap = std::map<VName, Claimant, kythe::VNameLess>;
 /// include the transcript as a prefix.
 using ClaimableMap = std::map<VName, Claimable, kythe::VNameLess>;
 
+/// \brief Range wrapper around unpacked ContextDependentVersion rows.
+class FileContextRows {
+ public:
+  using iterator = decltype(
+      std::declval<kythe::proto::ContextDependentVersion>().row().begin());
+
+  explicit FileContextRows(
+      const kythe::proto::CompilationUnit::FileInput& file_input) {
+    for (const google::protobuf::Any& detail : file_input.details()) {
+      if (detail.UnpackTo(&context_)) break;
+    }
+  }
+
+  iterator begin() const { return context_.row().begin(); }
+  iterator end() const { return context_.row().end(); }
+  bool empty() const { return context_.row().empty(); }
+
+ private:
+  kythe::proto::ContextDependentVersion context_;
+};
+
 /// \brief Generates and exports a mapping from claimants to claimables.
 class ClaimTool {
  public:
@@ -116,11 +137,11 @@ class ClaimTool {
   /// it when trying to assign a new claimable.
   void AssignClaims() {
     // claimables_ is sorted by VName.
-    for (auto &claimable : claimables_) {
+    for (auto& claimable : claimables_) {
       CHECK(!claimable.second.claimants.empty());
-      Claimant *emptiest_claimant = *claimable.second.claimants.begin();
+      Claimant* emptiest_claimant = *claimable.second.claimants.begin();
       // claimants is also sorted by VName, so this assignment should be stable.
-      for (auto &claimant : claimable.second.claimants) {
+      for (auto& claimant : claimable.second.claimants) {
         if (claimant->claims.size() < emptiest_claimant->claims.size()) {
           emptiest_claimant = claimant;
         }
@@ -134,7 +155,7 @@ class ClaimTool {
   /// `FLAGS_text`.
   void WriteClaimFile(int out_fd) {
     if (FLAGS_text) {
-      for (auto &claimable : claimables_) {
+      for (auto& claimable : claimables_) {
         if (claimable.second.elected_claimant) {
           ClaimAssignment claim;
           claim.mutable_compilation_v_name()->CopyFrom(
@@ -152,8 +173,8 @@ class ClaimTool {
       options.format = io::GzipOutputStream::GZIP;
       io::GzipOutputStream gzip_stream(&file_output_stream, options);
       io::CodedOutputStream coded_stream(&gzip_stream);
-      for (auto &claimable : claimables_) {
-        const auto &elected_claimant = claimable.second.elected_claimant;
+      for (auto& claimable : claimables_) {
+        const auto& elected_claimant = claimable.second.elected_claimant;
         if (elected_claimant) {
           ClaimAssignment claim;
           claim.mutable_compilation_v_name()->CopyFrom(elected_claimant->vname);
@@ -163,13 +184,13 @@ class ClaimTool {
         }
       }
       CHECK(!coded_stream.HadError());
-    }
+    }  // namespace io=google::protobuf::io;
     CHECK(::close(out_fd) == 0) << "errno was: " << errno;
   }
 
   /// \brief Add `unit` as a possible claimant and remember all of its
   /// dependencies (and their different transcripts) as claimables.
-  void HandleCompilationUnit(const CompilationUnit &unit) {
+  void HandleCompilationUnit(const CompilationUnit& unit) {
     auto insert_result =
         claimants_.emplace(unit.v_name(), Claimant{unit.v_name()});
     if (!insert_result.second) {
@@ -177,9 +198,10 @@ class ClaimTool {
                    << unit.v_name().DebugString()
                    << " had the same VName as another previous unit.";
     }
-    for (auto &input : unit.required_input()) {
+    for (auto& input : unit.required_input()) {
       ++total_input_count_;
-      if (input.context().row_size()) {
+      FileContextRows context_rows(input);
+      if (!context_rows.empty()) {
         VName input_vname = input.v_name();
         if (!input_vname.signature().empty()) {
           // We generally expect that file vnames have no signature.
@@ -189,7 +211,7 @@ class ClaimTool {
           LOG(WARNING) << "Input " << input_vname.DebugString()
                        << " has a nonempty signature.\n";
         }
-        for (const auto &row : input.context().row()) {
+        for (const auto& row : context_rows) {
           // If we have a (r, h, c) entry, we'd better have an input entry for
           // the file included at h with context c (otherwise the index file
           // isn't well-formed). We therefore only need to claim each unique
@@ -213,8 +235,8 @@ class ClaimTool {
     }
   }
 
-  const ClaimantMap &claimants() const { return claimants_; }
-  const ClaimableMap &claimables() const { return claimables_; }
+  const ClaimantMap& claimants() const { return claimants_; }
+  const ClaimableMap& claimables() const { return claimables_; }
   size_t total_include_count() const { return total_include_count_; }
   size_t total_input_count() const { return total_input_count_; }
 
@@ -229,7 +251,7 @@ class ClaimTool {
   size_t total_input_count_ = 0;
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.1");
@@ -262,7 +284,7 @@ int main(int argc, char *argv[]) {
     kythe::IndexPack pack(std::move(filesystem));
     if (!pack.ScanData(
             kythe::IndexPackFilesystem::DataKind::kCompilationUnit,
-            [&tool, &pack](const std::string &file_id) {
+            [&tool, &pack](const std::string& file_id) {
               std::string error_text;
               CompilationUnit unit;
               CHECK(pack.ReadCompilationUnit(file_id, &unit, &error_text))

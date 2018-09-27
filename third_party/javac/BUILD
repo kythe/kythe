@@ -13,6 +13,11 @@ java_import(
 )
 
 filegroup(
-    name = "javac_jar",
-    srcs = ["javac-9-dev-r4023-1.jar"],
+    name = "jdk_compiler_jar",
+    srcs = ["jdk_compiler.jar"],
+)
+
+filegroup(
+    name = "java_compiler_jar",
+    srcs = ["java_compiler.jar"],
 )
