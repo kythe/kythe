@@ -56,6 +56,7 @@ public class JvmExtractor {
   public static final JsonFormat.TypeRegistry JSON_TYPE_REGISTRY =
       JsonFormat.TypeRegistry.newBuilder()
           .add(JarDetails.getDescriptor())
+          .add(JarEntryDetails.getDescriptor())
           .add(BuildDetails.getDescriptor())
           .build();
 
