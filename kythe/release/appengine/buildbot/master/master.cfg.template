@@ -16,6 +16,8 @@
 # limitations under the License.
 
 from os import path
+import json
+import urllib.request
 
 from buildbot.changes.github import GitHubPullrequestPoller
 from buildbot.plugins import *
@@ -42,29 +44,34 @@ c['protocols'] = {'pb': {'port': 9989}}
 
 ####### CHANGESOURCES
 
-# List of Pull Request authors that automatically trigger builds
-autoBuildUsers = [
-    'creachadair',
-    'danielmoy-google',
-    'jrtom',
-    'salguarnieri',
-    'schroederc',
-    'shahms',
-    'zrlk',
-]
-def pullRequestFilter(req):
+def pullRequestFilter(pr):
   # Blacklist anything that explicitly says 'nobuildbot'
-  for label in req['labels']:
+  for label in pr['labels']:
     if label['name'] == 'nobuildbot':
       return False
-  # Default buildbot all maintainer commits
-  if req['user']['login'] in autoBuildUsers:
-    return True
-  # Also allow explicitly labeled commits by non-maintainers
-  for label in req['labels']:
-    if label['name'] == 'buildbot':
-      return True
-  return False
+
+  # Allow all Kythe maintainer Pull Requests
+  url = 'https://api.github.com/teams/1222120/memberships/'+pr['user']['login']
+  req = urllib.request.Request(
+      url, headers={'User-Agent': 'Buildbot', 'Authorization': 'token @secret{github_token}'})
+  try:
+    with urllib.request.urlopen(req) as f:
+      userMembership = json.loads(f.read().decode('utf-8'))
+      if userMembership['state'] == 'active' and userMembership['role'] == 'maintainer':
+        return True
+  except:
+    # User is not a member of the Kythe team
+    pass
+
+  # Allow explicitly labeled PRs by non-maintainers if they signed the CLA
+  signed_cla = False
+  requested = False
+  for label in pr['labels']:
+    if label['name'] == 'cla: yes':
+      signed_cla = True
+    elif label['name'] == 'buildbot':
+      requested = True
+  return signed_cla and requested
 
 c['change_source'] = []
 # Track github.com/google/kythe master
