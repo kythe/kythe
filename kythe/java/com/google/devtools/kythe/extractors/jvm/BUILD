@@ -28,5 +28,6 @@ java_library(
         "@com_beust_jcommander//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
+        "@com_google_protobuf//:protobuf_java_util",
     ],
 )

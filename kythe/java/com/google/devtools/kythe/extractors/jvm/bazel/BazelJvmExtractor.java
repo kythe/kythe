@@ -26,6 +26,7 @@ import com.google.devtools.kythe.extractors.jvm.JvmExtractor.Options;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
+import com.google.devtools.kythe.util.JsonUtil;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistry;
 import java.io.File;
@@ -45,6 +46,8 @@ import java.util.List;
 public class BazelJvmExtractor {
 
   public static void main(String[] args) throws IOException, ExtractionException {
+    JsonUtil.usingTypeRegistry(JvmExtractor.JSON_TYPE_REGISTRY);
+
     if (args.length != 2 && args.length != 3) {
       System.err.println(
           "Usage: bazel_jvm_extractor extra-action-file output-file [vnames-config]");
