@@ -15,3 +15,11 @@ def cc_resources(name, data):
         srcs = data,
         cmd = cmd,
     )
+
+# Returns the generated files directory root.
+#
+# Note: workaround for https://github.com/bazelbuild/bazel/issues/4463.
+def gendir():
+    if native.repository_name() == "@":
+        return "$(GENDIR)"
+    return "$(GENDIR)/external/" + native.repository_name().lstrip("@")

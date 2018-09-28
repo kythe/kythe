@@ -1,5 +1,7 @@
 licenses(["notice"])
 
+load("//tools:build_rules/cc_resources.bzl", "gendir")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -42,6 +44,6 @@ cc_library(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
-        "-I$(GENDIR)/third_party/llvm",
+        "-I" + gendir() + "/third_party/llvm",
     ],
 )
