@@ -476,7 +476,7 @@ func (c *chunkReader) SeekToChunkContaining(pos int64) error {
 
 		nextChunk := c.position + chunkHeaderSize + int64(h.DataSize) + int64(paddingSize(int(c.position), h))
 		if pos < nextChunk {
-			// We've at the chunk containing the desired position.
+			// We're at the chunk containing the desired position.
 			break
 		} else if err := c.r.Seek(nextChunk); err != nil {
 			return fmt.Errorf("error seeking to next chunk: %v", err)
