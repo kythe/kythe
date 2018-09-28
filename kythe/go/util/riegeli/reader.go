@@ -464,15 +464,22 @@ func (c *chunkReader) SeekToChunkContaining(pos int64) error {
 		}
 	}
 
-	var h *chunkHeader
-	var err error
-	for h == nil || pos >= c.position+chunkHeaderSize+int64(h.DataSize)+int64(paddingSize(int(c.position), h)) {
+	// Seek through chunks in block.
+	for {
 		c.position = c.r.Position()
-		h, err = decodeChunkHeader(c.r)
+		h, err := decodeChunkHeader(c.r)
 		if err == io.EOF {
 			return io.EOF
 		} else if err != nil {
 			return fmt.Errorf("reading chunk header: %v", err)
+		}
+
+		nextChunk := c.position + chunkHeaderSize + int64(h.DataSize) + int64(paddingSize(int(c.position), h))
+		if pos < nextChunk {
+			// We've at the chunk containing the desired position.
+			break
+		} else if err := c.r.Seek(nextChunk); err != nil {
+			return fmt.Errorf("error seeking to next chunk: %v", err)
 		}
 	}
 	return c.r.Seek(c.position)
