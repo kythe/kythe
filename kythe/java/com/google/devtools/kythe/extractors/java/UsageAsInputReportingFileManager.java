@@ -16,8 +16,8 @@
 
 package com.google.devtools.kythe.extractors.java;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -114,7 +114,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
 
   @Override
   public Iterable<? extends JavaFileObject> getJavaFileObjects(String... names) {
-    return getJavaFileForSources(Lists.newArrayList(names));
+    return getJavaFileForSources(ImmutableList.copyOf(names));
   }
 
   @Override
@@ -131,7 +131,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
 
   @Override
   public Iterable<? extends JavaFileObject> getJavaFileObjects(File... files) {
-    return getJavaFileObjectsFromFiles(Lists.newArrayList(files));
+    return getJavaFileObjectsFromFiles(ImmutableList.copyOf(files));
   }
 
   @Override
