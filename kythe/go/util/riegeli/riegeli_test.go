@@ -232,7 +232,7 @@ func TestEmptyRecord(t *testing.T) {
 
 func TestReaderSeekRecords(t *testing.T) {
 	const N = 1e4
-	buf := writeStrings(t, nil, N)
+	buf := writeStrings(t, &WriterOptions{}, N)
 
 	rd := NewReadSeeker(bytes.NewReader(buf.Bytes()))
 	lastIndex := int64(-1)
@@ -272,7 +272,7 @@ func TestReaderSeekRecords(t *testing.T) {
 
 func TestReaderSeekKnownPositions(t *testing.T) {
 	const N = 1e4
-	buf := writeStrings(t, nil, N)
+	buf := writeStrings(t, &WriterOptions{}, N)
 
 	rd := NewReadSeeker(bytes.NewReader(buf.Bytes()))
 	lastIndex := int64(-1)
@@ -312,7 +312,7 @@ func TestReaderSeekKnownPositions(t *testing.T) {
 
 func TestReaderSeekAllPositions(t *testing.T) {
 	const N = 1e4
-	buf := writeStrings(t, nil, N)
+	buf := writeStrings(t, &WriterOptions{}, N)
 
 	rd := NewReadSeeker(bytes.NewReader(buf.Bytes()))
 
