@@ -17,6 +17,8 @@
 package com.google.devtools.kythe.extractors.java;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -35,7 +37,8 @@ import javax.tools.StandardJavaFileManager;
  * compilation.
  */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
-class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
+class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<StandardJavaFileManager>
+    implements StandardJavaFileManager {
 
   private final Map<URI, InputUsageRecord> inputUsageRecords = new HashMap<>();
 
@@ -107,6 +110,38 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   @Override
   public boolean isSameFile(FileObject a, FileObject b) {
     return super.isSameFile(unwrap(a), unwrap(b));
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjects(String... names) {
+    return getJavaFileForSources(Lists.newArrayList(names));
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjectsFromStrings(Iterable<String> names) {
+    return getJavaFileForSources(names);
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjectsFromFiles(
+      Iterable<? extends File> files) {
+    return Iterables.transform(
+        fileManager.getJavaFileObjectsFromFiles(files), input -> map(input, null));
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjects(File... files) {
+    return getJavaFileObjectsFromFiles(Lists.newArrayList(files));
+  }
+
+  @Override
+  public void setLocation(Location location, Iterable<? extends File> path) throws IOException {
+    fileManager.setLocation(location, path);
+  }
+
+  @Override
+  public Iterable<? extends File> getLocation(Location location) {
+    return fileManager.getLocation(location);
   }
 
   // StandardJavaFileManager doesn't like it when it's asked about a JavaFileObject
