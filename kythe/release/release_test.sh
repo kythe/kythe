@@ -21,6 +21,8 @@ export TMPDIR=${TEST_TMPDIR:?}
 SHASUM_TOOL="$PWD/$1"
 shift
 
+JAVA_LANGTOOLS="$PWD/$(ls third_party/javac/javac*.jar)"
+
 TEST_PORT=9898
 ADDR=localhost:$TEST_PORT
 TEST_REPOSRCDIR="$PWD"
@@ -58,21 +60,23 @@ tools/entrystream < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" | \
 tools/triples < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" >/dev/null
 
 # TODO(zarko): add cxx extractor tests
+
 rm -rf "$TMPDIR/java_compilation"
-REAL_JAVAC="$(which java)" \
-  JAVAC_EXTRACTOR_JAR=$PWD/extractors/javac_extractor.jar \
+export KYTHE_OUTPUT_FILE="$TMPDIR/java_compilation/util.kindex"
+export KYTHE_JAVA_RUNTIME_OPTIONS="-Xbootclasspath/p:$JAVA_LANGTOOLS"
+JAVAC_EXTRACTOR_JAR=$PWD/extractors/javac_extractor.jar \
   KYTHE_ROOT_DIRECTORY="$TEST_REPOSRCDIR" \
-  KYTHE_OUTPUT_DIRECTORY="$TMPDIR/java_compilation" \
   KYTHE_EXTRACT_ONLY=1 \
-  extractors/javac-wrapper.sh -cp "$TEST_REPOSRCDIR/third_party/guava"/*.jar \
-  "$TEST_REPOSRCDIR/kythe/java/com/google/devtools/kythe/common"/*.java
+  extractors/javac-wrapper.sh \
+  "$TEST_REPOSRCDIR/kythe/java/com/google/devtools/kythe/util"/*.java
 cat "$TMPDIR"/javac-extractor.{out,err}
-java -Xbootclasspath/p:$PWD/indexers/java_indexer.jar \
-  -jar indexers/java_indexer.jar "$TMPDIR/java_compilation"/*.kindex | \
+test -r "$KYTHE_OUTPUT_FILE"
+java "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}" \
+  -jar indexers/java_indexer.jar "$KYTHE_OUTPUT_FILE" | \
   tools/entrystream --count
 
 # Ensure the Java indexer works on a curated test compilation
-java -Xbootclasspath/p:$PWD/indexers/java_indexer.jar \
+java "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}"  \
   -jar indexers/java_indexer.jar "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" > entries
 # TODO(zarko): add C++ test kindex entries
 

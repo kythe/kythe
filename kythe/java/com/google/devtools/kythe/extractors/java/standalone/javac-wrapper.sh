@@ -20,7 +20,9 @@
 # KYTHE_OUTPUT_DIRECTORY set to understand where the root of the compiled source
 # repository is and where to put the resulting .kindex files, respectively.
 #
-# This script assumes a usable java binary is on $PATH.
+# This script assumes a usable java binary is on $PATH or in $JAVA_HOME.
+# Runtime options (e.g -Xbootclasspath/p:)can be passed to `java` with the
+# $KYTHE_JAVA_RUNTIME_OPTIONS environment variable.
 #
 # This script is meant as a replacement for $JAVA_HOME/bin/javac.  It assumes
 # the true javac binary is in the same directory as itself and named
@@ -40,8 +42,10 @@
 
 export TMPDIR="${TMPDIR:-/tmp}"
 
-if [[ -z "$JAVABIN" ]]; then
+if [[ -z "$JAVA_HOME" ]]; then
   readonly JAVABIN="$(which java)"
+else
+  readonly JAVABIN="$JAVA_HOME/bin/java"
 fi
 if [[ -z "$REAL_JAVAC" ]]; then
   readonly REAL_JAVAC="$(dirname "$(readlink -e "$0")")/javac.real"
@@ -65,7 +69,8 @@ if [[ -n "$DOCKER_CLEANUP" ]]; then
   trap cleanup EXIT ERR INT
 fi
 
-"$JAVABIN" -jar "$JAVAC_EXTRACTOR_JAR" "$@" \
+"$JAVABIN" "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}" \
+  -jar "$JAVAC_EXTRACTOR_JAR" "$@" \
   1>>"$TMPDIR"/javac-extractor.out \
   2>>"$TMPDIR"/javac-extractor.err
 if [[ -z "$KYTHE_EXTRACT_ONLY" ]]; then
