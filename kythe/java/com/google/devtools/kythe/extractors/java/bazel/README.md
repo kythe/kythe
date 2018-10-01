@@ -19,7 +19,7 @@ the project.
 # Extra action invokes /opt/kythe/extractors/bazel_java_extractor.jar
 extra_action(
     name = "extractor",
-    cmd = ("java -Xbootclasspath/p:/opt/kythe/extractors/bazel_java_extractor.jar " +
+    cmd = ("java -Xbootclasspath/p:third_party/javac/javac*.jar " +
            "com.google.devtools.kythe.extractors.java.bazel.JavaExtractor " +
            "$(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kindex) $(location :vnames.json)"),
     data = [":vnames.json"],

@@ -139,7 +139,7 @@ Read `extractors/javac-wrapper.sh` for more details on its usage.
 
     mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 
-    java -Xbootclasspath/p:extractors/javac_extractor.jar \
+    java -Xbootclasspath/p:third_party/javac/javac*.jar \
       -jar extractors/javac_extractor.jar \
       -cp "${$(find third_party -name '*.jar' -printf '%p:')%:}" \
       $(find src/main -name '*.java')
