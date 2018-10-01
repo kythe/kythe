@@ -87,4 +87,6 @@ fi
 git checkout -b "release-$version"
 git commit -am "Setup release $version"
 
-bazel --bazelrc=/dev/null test --stamp -c opt //kythe/release:release_test
+# Build and test the Kythe release archive.
+bazel --bazelrc=/dev/null test --stamp -c opt \
+  //kythe/release //kythe/release:release_test
