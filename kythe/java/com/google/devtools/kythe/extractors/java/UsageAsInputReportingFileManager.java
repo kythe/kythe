@@ -20,7 +20,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -142,6 +144,18 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   @Override
   public Iterable<? extends File> getLocation(Location location) {
     return fileManager.getLocation(location);
+  }
+
+  // TODO(schroederc): @Override; method added in JDK9
+  public void setLocationFromPaths(Location location, Collection<? extends Path> paths)
+      throws IOException {
+    try {
+      StandardJavaFileManager.class
+          .getMethod("setLocationFromPaths", Location.class, Collection.class)
+          .invoke(fileManager, location, paths);
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException("setLocationFromPaths called by unsupported Java version", e);
+    }
   }
 
   // StandardJavaFileManager doesn't like it when it's asked about a JavaFileObject
