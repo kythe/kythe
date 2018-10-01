@@ -51,6 +51,7 @@ cc_library(
     ],
     deps = [
         ":markup_handler",
+        "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:lib",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:xref_cc_proto",
