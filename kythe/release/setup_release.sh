@@ -20,22 +20,20 @@
 # Guide to creating a Github release:
 #   1) Run this script on the clean master commit to release
 #      This creates a new release branch with a single commit for the new
-#      release $VERSION
+#      release $VERSION and builds the optimized release archive.
 #      $ ./kythe/release/setup_release.sh
 #   2) Open a Pull Request for review
-#   3) Build/test Kythe release archive w/ optimizations:
-#      $ bazel test -c opt //kythe/release:release_test
-#   4) "Draft a new release" at https://github.com/google/kythe/releases
-#   5) Set tag version / release title to the new $VERSION
-#   6) Set description to newest section of RELEASES.md
-#   7) Upload bazel-genfiles/kythe/release/kythe-$VERSION.tar.gz{,.sha256}
-#      These files were generated in step 3.
-#   8) Mark as "pre-release" and "Save draft"
-#   9) Add draft release URL to Pull Request
-#   10) Merge Pull Request once it has been accepted
-#   11) Edit Github release draft to set the tag's commit as the freshly pushed
+#   3) "Draft a new release" at https://github.com/google/kythe/releases
+#   4) Set tag version / release title to the new $VERSION
+#   5) Set description to newest section of RELEASES.md
+#   6) Upload bazel-genfiles/kythe/release/kythe-$VERSION.tar.gz{,.sha256}
+#      These files were generated in step 1.
+#   7) Mark as "pre-release" and "Save draft"
+#   8) Add draft release URL to Pull Request
+#   9) Merge Pull Request once it has been accepted
+#   10) Edit Github release draft to set the tag's commit as the freshly pushed
 #       release commit
-#   12) "Publish release"
+#   11) "Publish release"
 
 cd "$(dirname $0)"/../..
 
@@ -88,3 +86,5 @@ fi
 
 git checkout -b "release-$version"
 git commit -am "Setup release $version"
+
+bazel --bazelrc=/dev/null test --stamp -c opt //kythe/release:release_test
