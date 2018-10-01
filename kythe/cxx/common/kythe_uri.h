@@ -19,6 +19,7 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/common/vname_ordering.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -33,7 +34,7 @@ enum class UriEscapeMode {
 /// \brief URI-escapes a string.
 /// \param mode The escaping mode to use.
 /// \param string The string to escape.
-std::string UriEscape(UriEscapeMode mode, const std::string& uri);
+std::string UriEscape(UriEscapeMode mode, absl::string_view uri);
 
 /// \brief A Kythe URI.
 ///
@@ -43,7 +44,8 @@ std::string UriEscape(UriEscapeMode mode, const std::string& uri);
 /// corpus "a/c".
 class URI {
  public:
-  URI() {}
+  URI() = default;
+
   /// \brief Builds a URI from a `VName`, canonicalizing its `corpus`.
   explicit URI(const kythe::proto::VName& from_vname);
 
@@ -53,7 +55,7 @@ class URI {
   /// \brief Constructs a URI from an encoded string.
   /// \param uri The string to construct from.
   /// \return (true, URI) on success; (false, empty URI) on failure.
-  static std::pair<bool, URI> FromString(const std::string& uri) {
+  static std::pair<bool, URI> FromString(absl::string_view uri) {
     URI result;
     bool is_ok = result.ParseString(uri);
     return std::make_pair(is_ok, result);
@@ -71,7 +73,7 @@ class URI {
   /// \brief Attempts to overwrite vname_ using the provided URI string.
   /// \param uri The URI to parse.
   /// \return true on success
-  bool ParseString(const std::string& uri);
+  bool ParseString(absl::string_view uri);
 
   /// The VName this URI represents.
   kythe::proto::VName vname_;

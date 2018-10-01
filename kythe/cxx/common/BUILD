@@ -52,12 +52,39 @@ cc_library(
 )
 
 cc_library(
+    name = "kythe_uri",
+    srcs = ["kythe_uri.cc"],
+    hdrs = ["kythe_uri.h"],
+    deps = [
+        ":vname_ordering",
+        "//kythe/proto:storage_cc_proto",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "path_utils",
+    srcs = ["path_utils.cc"],
+    hdrs = ["path_utils.h"],
+    deps = [
+        ":lib",
+    ],
+)
+
+cc_library(
+    name = "vname_ordering",
+    hdrs = ["vname_ordering.h"],
+    deps = [
+        "//kythe/proto:storage_cc_proto",
+    ],
+)
+
+cc_library(
     name = "lib",
     srcs = [
         "cxx_details.cc",
         "file_vname_generator.cc",
         "kythe_metadata_file.cc",
-        "kythe_uri.cc",
         "path_utils.cc",
         "protobuf_metadata_file.cc",
     ],
@@ -65,7 +92,6 @@ cc_library(
         "cxx_details.h",
         "file_vname_generator.h",
         "kythe_metadata_file.h",
-        "kythe_uri.h",
         "path_utils.h",
         "proto_conversions.h",
         "protobuf_metadata_file.h",
@@ -165,7 +191,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        ":lib",
+        ":path_utils",
         "//third_party:gtest",
         "//third_party/llvm",
     ],
@@ -270,7 +296,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        ":lib",
+        ":kythe_uri",
         "//third_party:gtest",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
@@ -343,12 +369,11 @@ cc_test(
         "//kythe/cxx/common/testdata:stringset.kzip",
     ],
     deps = [
-        ":testutil",
         ":kzip_reader",
         ":libzip/error",
-        "//third_party:gtest_main",
-        # TODO(shahms): Should this go in `kzip_reader`?
+        ":testutil",
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
+        "//third_party:gtest_main",
     ],
 )
 
