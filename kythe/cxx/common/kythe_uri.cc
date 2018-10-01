@@ -14,16 +14,25 @@
  * limitations under the License.
  */
 
+#include <utility>
+
+#include "absl/strings/match.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "kythe/cxx/common/kythe_uri.h"
-#include "kythe/cxx/common/path_utils.h"
-#include "kythe/cxx/common/proto_conversions.h"
 
 namespace kythe {
+namespace {
+
+constexpr char kHexDigits[] = "0123456789ABCDEF";
+/// The URI scheme label for Kythe.
+constexpr char kUriScheme[] = "kythe";
+constexpr char kUriPrefix[] = "kythe:";
 
 /// \brief Returns whether a byte should be escaped.
 /// \param mode The escaping mode to use.
 /// \param c The byte to examine.
-inline bool should_escape(UriEscapeMode mode, char c) {
+bool should_escape(UriEscapeMode mode, char c) {
   return !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
            (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' ||
            c == '~' || (mode == UriEscapeMode::kEscapePaths && c == '/'));
@@ -32,7 +41,7 @@ inline bool should_escape(UriEscapeMode mode, char c) {
 /// \brief Returns the value of a hex digit.
 /// \param digit The hex digit.
 /// \return The value of the digit, or -1 if it was not a hex digit.
-inline int value_for_hex_digit(char c) {
+int value_for_hex_digit(char c) {
   if (c >= '0' && c <= '9') {
     return c - '0';
   } else if (c >= 'a' && c <= 'f') {
@@ -43,9 +52,54 @@ inline int value_for_hex_digit(char c) {
   return -1;
 }
 
-static constexpr char kHexDigits[] = "0123456789ABCDEF";
+std::pair<absl::string_view, absl::string_view> Split(absl::string_view input,
+                                                      char ch) {
+  return absl::StrSplit(input, absl::MaxSplits(ch, 1));
+}
 
-static std::string UriEscape(UriEscapeMode mode, llvm::StringRef uri) {
+// Predicate used in CleanPath for skipping empty components
+// and components consistening of a single '.'.
+struct SkipEmptyDot {
+  bool operator()(absl::string_view sp) { return !(sp.empty() || sp == "."); }
+};
+
+// Deal with relative paths as well as '/' and '//'.
+absl::string_view PathPrefix(absl::string_view path) {
+  int slash_count = 0;
+  for (char ch : path) {
+    if (ch == '/' && ++slash_count <= 2) continue;
+    break;
+  }
+  switch (slash_count) {
+    case 0:
+      return "";
+    case 2:
+      return "//";
+    default:
+      return "/";
+  }
+}
+
+// TODO(shahms): Use path_utils.h when it doesn't depend on LLVM.
+std::string CleanPath(absl::string_view input) {
+  const bool is_absolute_path = absl::StartsWith(input, "/");
+  std::vector<absl::string_view> parts;
+  for (absl::string_view comp : absl::StrSplit(input, '/', SkipEmptyDot{})) {
+    if (comp == "..") {
+      if (!parts.empty() && parts.back() != "..") {
+        parts.pop_back();
+        continue;
+      }
+      if (is_absolute_path) continue;
+    }
+    parts.push_back(comp);
+  }
+  // Deal with leading '//' as well as '/'.
+  return absl::StrCat(PathPrefix(input), absl::StrJoin(parts, "/"));
+}
+}  // namespace
+
+std::string UriEscape(UriEscapeMode mode, absl::string_view uri) {
   size_t num_escapes = 0;
   for (char c : uri) {
     if (should_escape(mode, c)) {
@@ -66,14 +120,10 @@ static std::string UriEscape(UriEscapeMode mode, llvm::StringRef uri) {
   return result;
 }
 
-std::string UriEscape(UriEscapeMode mode, const std::string& uri) {
-  return UriEscape(mode, llvm::StringRef(uri));
-}
-
 /// \brief URI-unescapes a string.
 /// \param string The string to unescape.
 /// \return A pair of (success, error-or-unescaped-string).
-std::pair<bool, std::string> UriUnescape(const std::string& string) {
+std::pair<bool, std::string> UriUnescape(absl::string_view string) {
   size_t num_escapes = 0;
   for (size_t i = 0, s = string.size(); i < s; ++i) {
     if (string[i] == '%') {
@@ -102,10 +152,6 @@ std::pair<bool, std::string> UriUnescape(const std::string& string) {
   return std::make_pair(true, result);
 }
 
-/// The URI scheme label for Kythe.
-static constexpr char kUriScheme[] = "kythe";
-static constexpr char kUriPrefix[] = "kythe:";
-
 std::string URI::ToString() const {
   std::string result = kUriPrefix;
   if (vname_.signature().empty() && vname_.path().empty() &&
@@ -113,11 +159,11 @@ std::string URI::ToString() const {
       vname_.language().empty()) {
     return result;
   }
-  llvm::StringRef signature = ToStringRef(vname_.signature());
-  llvm::StringRef path = ToStringRef(vname_.path());
-  llvm::StringRef corpus = ToStringRef(vname_.corpus());
-  llvm::StringRef language = ToStringRef(vname_.language());
-  llvm::StringRef root = ToStringRef(vname_.root());
+  absl::string_view signature = vname_.signature();
+  absl::string_view path = vname_.path();
+  absl::string_view corpus = vname_.corpus();
+  absl::string_view language = vname_.language();
+  absl::string_view root = vname_.root();
   if (!corpus.empty()) {
     result.append("//");
     result.append(UriEscape(UriEscapeMode::kEscapePaths, corpus));
@@ -143,8 +189,8 @@ std::string URI::ToString() const {
 
 /// \brief Separate out the scheme component of `uri` if one exists.
 /// \return (scheme, tail) if there was a scheme; ("", uri) otherwise.
-static std::pair<llvm::StringRef, llvm::StringRef> SplitScheme(
-    llvm::StringRef uri) {
+static std::pair<absl::string_view, absl::string_view> SplitScheme(
+    absl::string_view uri) {
   for (size_t i = 0, s = uri.size(); i != s; ++i) {
     char c = uri[i];
     if (c == ':') {
@@ -155,36 +201,35 @@ static std::pair<llvm::StringRef, llvm::StringRef> SplitScheme(
       break;
     }
   }
-  return std::make_pair(llvm::StringRef(), uri);
+  return std::make_pair(absl::string_view(), uri);
 }
 
 URI::URI(const kythe::proto::VName& from_vname) : vname_(from_vname) {}
 
-bool URI::ParseString(const std::string& in_string) {
-  llvm::StringRef string(in_string);
-  auto head_fragment = string.split('#');
+bool URI::ParseString(absl::string_view input) {
+  auto head_fragment = Split(input, '#');
   auto head = head_fragment.first, fragment = head_fragment.second;
   auto scheme_head = SplitScheme(head);
   auto scheme = scheme_head.first;
   head = scheme_head.second;
   if (scheme.empty()) {
-    if (head.startswith(":")) {
+    if (absl::StartsWith(head, ":")) {
       return false;
     }
   } else if (scheme != kUriScheme) {
     return false;
   } else if (!head.empty()) {
-    head = head.drop_front(1);
+    head.remove_prefix(1);
   }
-  auto head_attrs = head.split('?');
+  auto head_attrs = Split(head, '?');
   head = head_attrs.first;
   auto attrs = head_attrs.second;
   std::string corpus;
   if (!head.empty()) {
-    if (!head.startswith("//")) {
+    if (!absl::StartsWith(head, "//")) {
       return false;
     }
-    auto maybe_corpus = UriUnescape(head.drop_front(2));
+    auto maybe_corpus = UriUnescape(head.substr(2));
     if (!maybe_corpus.first) {
       return false;
     }
@@ -196,10 +241,10 @@ bool URI::ParseString(const std::string& in_string) {
   }
   auto signature = maybe_sig.second;
   while (!attrs.empty()) {
-    auto attr_rest = attrs.split('?');
+    auto attr_rest = Split(attrs, '?');
     auto attr = attr_rest.first;
     attrs = attr_rest.second;
-    auto name_value = attr.split('=');
+    auto name_value = Split(attr, '=');
     auto maybe_value = UriUnescape(name_value.second);
     if (!maybe_value.first || maybe_value.second.empty()) {
       return false;
