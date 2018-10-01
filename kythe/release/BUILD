@@ -75,7 +75,7 @@ genrule(
     tags = ["manual"],
     tools = [
         "package_release.sh",
-        "//kythe/go/platform/tools/shasum_tool"
+        "//kythe/go/platform/tools/shasum_tool",
     ],
 )
 
@@ -92,6 +92,10 @@ sh_test(
     name = "release_test",
     timeout = "short",
     srcs = ["release_test.sh"],
+    # Since go binaries are not located at their bazel target path (//go/binary
+    # might be in bazel-out/go/binary/host/text/binary), pass the actual
+    # location of the binary directly to the shell script.
+    args = ["$(location //kythe/go/platform/tools/shasum_tool)"],
     data = [
         ":release",
         "//kythe/go/platform/tools/shasum_tool",
@@ -100,10 +104,6 @@ sh_test(
         "//third_party/guava",
         "@com_github_stedolan_jq//:jq",
     ],
-    # Since go binaries are not located at their bazel target path (//go/binary
-    # might be in bazel-out/go/binary/host/text/binary), pass the actual
-    # location of the binary directly to the shell script.
-    args = ["$(location //kythe/go/platform/tools/shasum_tool)"],
     tags = [
         "local",
         "manual",
