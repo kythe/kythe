@@ -10,6 +10,7 @@ filegroup(
 java_import(
     name = "javac",
     jars = ["javac-9-dev-r4023-1.jar"],
+    neverlink = True,
 )
 
 filegroup(

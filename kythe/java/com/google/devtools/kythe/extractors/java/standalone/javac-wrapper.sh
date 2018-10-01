@@ -40,6 +40,9 @@
 
 export TMPDIR="${TMPDIR:-/tmp}"
 
+if [[ -z "$JAVABIN" ]]; then
+  readonly JAVABIN="$(which java)"
+fi
 if [[ -z "$REAL_JAVAC" ]]; then
   readonly REAL_JAVAC="$(dirname "$(readlink -e "$0")")/javac.real"
 fi
@@ -62,9 +65,9 @@ if [[ -n "$DOCKER_CLEANUP" ]]; then
   trap cleanup EXIT ERR INT
 fi
 
-java -Xbootclasspath/p:"$JAVAC_EXTRACTOR_JAR" \
-     -jar "$JAVAC_EXTRACTOR_JAR" \
-     "$@" >>"$TMPDIR"/javac-extractor.out 2>> "$TMPDIR"/javac-extractor.err
+"$JAVABIN" -jar "$JAVAC_EXTRACTOR_JAR" "$@" \
+  1>>"$TMPDIR"/javac-extractor.out \
+  2>>"$TMPDIR"/javac-extractor.err
 if [[ -z "$KYTHE_EXTRACT_ONLY" ]]; then
   "$REAL_JAVAC" "$@"
 fi
