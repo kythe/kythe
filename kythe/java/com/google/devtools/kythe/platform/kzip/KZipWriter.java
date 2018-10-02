@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipOutputStream;
 
 /** Write a kzip file. */
@@ -82,7 +83,16 @@ public final class KZipWriter implements KZip.Writer {
    */
   private void appendZip(byte[] data, String path) throws IOException {
     ZipEntry entry = new ZipEntry(path);
-    output.putNextEntry(entry);
+    try {
+      output.putNextEntry(entry);
+    } catch (ZipException e) {
+      // For the specific case of duplicates, we want to just safely continue
+      // (return without writing).
+      if (e.getMessage().startsWith("duplicate entry: ")) {
+        return;
+      }
+      throw e;
+    }
     output.write(data);
     output.closeEntry();
   }
