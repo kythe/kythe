@@ -59,7 +59,7 @@ const DefaultConfig = `{
           "source": "/opt/kythe/extractors/javac_extractor.jar"
         },
         {
-          "source": "/opt/kythe/extractors/javac8_extractor.jar"
+          "source": "/opt/kythe/extractors/javac9_tools.jar"
         }
       ],
       "env_var": [
@@ -81,7 +81,7 @@ const DefaultConfig = `{
         },
         {
           "name": "KYTHE_JAVA_RUNTIME_OPTIONS",
-          "value": "-Xbootclasspath/p:/opt/kythe/extractors/javac*.jar"
+          "value": "-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar"
         }
       ]
     },
