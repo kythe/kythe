@@ -35,7 +35,8 @@ public final class KZipWriter implements KZip.Writer {
   private final ZipOutputStream output;
   private final Gson gson;
 
-  // We may
+  // We store our own set of paths written, analogous to ZipOutputWriter.names, so that we avoid
+  // raising exceptions by writing duplicates.
   private final Set<String> pathsWritten;
 
   public KZipWriter(File file) throws IOException {
