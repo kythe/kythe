@@ -15,21 +15,29 @@
  */
 package com.google.devtools.kythe.platform.kzip;
 
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.proto.Analysis;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /** Write a kzip file. */
 public final class KZipWriter implements KZip.Writer {
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private static final String ROOT_PREFIX = "root/";
   private final ZipOutputStream output;
   private final Gson gson;
+
+  // We store our own set of paths written, analogous to ZipOutputWriter.names, so that we avoid
+  // raising exceptions by writing duplicates.
+  private final Set<String> pathsWritten;
 
   public KZipWriter(File file) throws IOException {
     this(file, KZip.buildGson(new GsonBuilder()));
@@ -49,6 +57,8 @@ public final class KZipWriter implements KZip.Writer {
     root.setComment("kzip root directory");
     this.output.putNextEntry(root);
     this.output.closeEntry();
+
+    this.pathsWritten = new HashSet<>();
   }
 
   @Override
@@ -81,10 +91,14 @@ public final class KZipWriter implements KZip.Writer {
    * @param path path in the zip file to create
    */
   private void appendZip(byte[] data, String path) throws IOException {
-    ZipEntry entry = new ZipEntry(path);
-    output.putNextEntry(entry);
-    output.write(data);
-    output.closeEntry();
+    if (pathsWritten.add(path)) {
+      ZipEntry entry = new ZipEntry(path);
+      output.putNextEntry(entry);
+      output.write(data);
+      output.closeEntry();
+    } else {
+      logger.atWarning().log("Warning: Already wrote %s to kzip.", path);
+    }
   }
 
   @Override
