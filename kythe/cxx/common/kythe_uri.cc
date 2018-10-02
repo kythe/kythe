@@ -206,8 +206,8 @@ static std::pair<absl::string_view, absl::string_view> SplitScheme(
 
 URI::URI(const kythe::proto::VName& from_vname) : vname_(from_vname) {}
 
-bool URI::ParseString(absl::string_view input) {
-  auto head_fragment = Split(input, '#');
+bool URI::ParseString(absl::string_view uri) {
+  auto head_fragment = Split(uri, '#');
   auto head = head_fragment.first, fragment = head_fragment.second;
   auto scheme_head = SplitScheme(head);
   auto scheme = scheme_head.first;
