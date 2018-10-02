@@ -6,9 +6,10 @@ java_library(
         "KZip.java",
         "KZipException.java",
         "KZipReader.java",
-        "KZipWriter.java"
+        "KZipWriter.java",
     ],
     deps = [
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
