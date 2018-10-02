@@ -21,6 +21,8 @@ import com.google.gson.GsonBuilder;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -30,6 +32,9 @@ public final class KZipWriter implements KZip.Writer {
   private static final String ROOT_PREFIX = "root/";
   private final ZipOutputStream output;
   private final Gson gson;
+
+  // We may
+  private final Set<String> pathsWritten;
 
   public KZipWriter(File file) throws IOException {
     this(file, KZip.buildGson(new GsonBuilder()));
@@ -49,6 +54,8 @@ public final class KZipWriter implements KZip.Writer {
     root.setComment("kzip root directory");
     this.output.putNextEntry(root);
     this.output.closeEntry();
+
+    this.pathsWritten = new HashSet<>();
   }
 
   @Override
@@ -81,10 +88,14 @@ public final class KZipWriter implements KZip.Writer {
    * @param path path in the zip file to create
    */
   private void appendZip(byte[] data, String path) throws IOException {
-    ZipEntry entry = new ZipEntry(path);
-    output.putNextEntry(entry);
-    output.write(data);
-    output.closeEntry();
+    if (pathsWritten.add(path)) {
+      ZipEntry entry = new ZipEntry(path);
+      output.putNextEntry(entry);
+      output.write(data);
+      output.closeEntry();
+    } else {
+      System.err.println("Warning: Already wrote " + path + " to kzip.");
+    }
   }
 
   @Override
