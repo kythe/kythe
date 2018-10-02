@@ -97,7 +97,7 @@ public final class KZipWriter implements KZip.Writer {
       output.write(data);
       output.closeEntry();
     } else {
-      logger.atWarning().log("Warning: Already wrote " + path + " to kzip.");
+      logger.atWarning().log("Warning: Already wrote %s to kzip.", path);
     }
   }
 
