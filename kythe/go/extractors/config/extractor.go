@@ -248,7 +248,7 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		targetRepoDir = DefaultRepoVolume
 	}
 	// run the extraction
-	commandArgs := []string{"run", "--rm"}
+	commandArgs := []string{"run"}
 	// Check and see if we're living inside a docker image.
 	// TODO(#156): This is an undesireable smell from docker-in-docker which
 	// should be removed when we refactor the inner docker away.
@@ -263,6 +263,7 @@ func ExtractRepo(ctx context.Context, repo Repo) error {
 		commandArgs = append(commandArgs, "-v", fmt.Sprintf("%s:%s", repo.OutputPath, outPath), "-v", fmt.Sprintf("%s:%s", repoDir, targetRepoDir))
 	}
 	commandArgs = append(commandArgs, "-t", imageTag)
+	fmt.Printf("command args: %s\n", commandArgs)
 	output, err = exec.CommandContext(ctx, "docker", commandArgs...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("extracting repo: %v\nCommand output: %s", err, string(output))

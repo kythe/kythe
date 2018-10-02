@@ -56,7 +56,7 @@ const DefaultConfig = `{
           "source": "/opt/kythe/extractors/javac-wrapper.sh"
         },
         {
-          "source": "/opt/kythe/extractors/javac_extractor.jar"
+          "source": "/opt/kythe/extractors/javac8_extractor.jar"
         }
       ],
       "env_var": [
@@ -70,11 +70,15 @@ const DefaultConfig = `{
         },
         {
           "name": "JAVAC_EXTRACTOR_JAR",
-          "value": "/opt/kythe/extractors/javac_extractor.jar"
+          "value": "/opt/kythe/extractors/javac8_extractor.jar"
         },
         {
           "name": "KYTHE_OUTPUT_FILE",
           "value": "$KYTHE_OUTPUT_DIRECTORY/extractor-output.kzip"
+        },
+        {
+          "name": "KYTHE_JAVA_RUNTIME_OPTIONS",
+          "value": "-Xbootclasspath/p:$JAVAC_EXTRACTOR_JAR"
         }
       ]
     },
