@@ -22,5 +22,4 @@ FROM debian:jessie
 ADD kythe/go/extractors/config/runextractor/runextractor /opt/kythe/extractors/runextractor
 ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac-wrapper.sh /opt/kythe/extractors/javac-wrapper.sh
 ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac_extractor_deploy.jar /opt/kythe/extractors/javac_extractor.jar
-# Yea ok the thing for running java8 says java9, oh well.
 ADD third_party/javac/javac-9-dev-r4023-1.jar /opt/kythe/extractors/javac8_extractor.jar
