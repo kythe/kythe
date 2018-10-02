@@ -69,3 +69,13 @@ java_library(
         "//kythe/proto:common_java_proto",
     ],
 )
+
+# Sources used to test Java extraction in //kythe/release:release_test.
+filegroup(
+    name = "test_srcs",
+    srcs = [
+        "DeleteRecursively.java",
+        "PositionMappings.java",
+        "Span.java",
+    ],
+)

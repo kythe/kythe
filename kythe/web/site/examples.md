@@ -32,10 +32,10 @@ export KYTHE_VNAMES="$PWD/kythe/data/vnames.json"         # Optional: VNames con
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 
 # Extract a Java compilation
-# java -Xbootclasspath/p:/opt/kythe/extractors/javac_extractor.jar \
+# java -Xbootclasspath/p:third_party/javac/javac*.jar \
 #   com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper \
 #   <javac_arguments>
-java -Xbootclasspath/p:/opt/kythe/extractors/javac_extractor.jar \
+java -Xbootclasspath/p:third_party/javac/javac*.jar \
   com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper \
   kythe/java/com/google/devtools/kythe/common/*.java
 
@@ -97,16 +97,16 @@ then be stored in a [GraphStore]({{site.baseurl}}/docs/kythe-storage.html).
   --index_pack=.kythe_indexpack f0dcfd6fe90919e957f635ec568a793554905012aea803589cdbec625d72de4d > entries
 
 # Indexing a Java compilation
-# java -Xbootclasspath/p:/opt/kythe/indexers/java_indexer.jar \
+# java -Xbootclasspath/p:third_party/javac/javac*.jar \
 #   com.google.devtools.kythe.analyzers.java.JavaIndexer \
 #   <kindex-file> > entries
-java -Xbootclasspath/p:/opt/kythe/indexers/java_indexer.jar \
+java -Xbootclasspath/p:third_party/javac/javac*.jar \
   com.google.devtools.kythe.analyzers.java.JavaIndexer \
   $PWD/.kythe_compilations/java/kythe_java_com_google_devtools_kythe_analyzers_java_analyzer.java.kindex > entries
-# java -Xbootclasspath/p:/opt/kythe/indexers/java_indexer.jar \
+# java -Xbootclasspath/p:third_party/javac/javac*.jar \
 #   com.google.devtools.kythe.analyzers.java.JavaIndexer \
 #   --index_path=<root> <unit-hash> > entries
-java -Xbootclasspath/p:/opt/kythe/indexers/java_indexer.jar \
+java -Xbootclasspath/p:third_party/javac/javac*.jar \
   com.google.devtools.kythe.analyzers.java.JavaIndexer \
   --index_pack=$PWD/.kythe_indexpack b3759d74b6ee8ba97312cf8b1b47c4263504a56ca9ab63e8f3af98298ccf9fd6 > entries
 # NOTE: https://kythe.io/phabricator/T40 -- the Java indexer should not be run in
