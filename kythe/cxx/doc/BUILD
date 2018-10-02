@@ -89,6 +89,7 @@ cc_library(
     deps = [
         ":html_renderer",
         ":markup_handler",
+        "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:net_client",
         "//kythe/cxx/common/schema:edges",
