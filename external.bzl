@@ -98,16 +98,13 @@ def kythe_dependencies():
     # N.B. We have a near-clone of the protobuf BUILD file overriding upstream so
     # that we can set the unexported config variable to enable zlib. Without this,
     # protobuf silently yields link errors.
-    # The most recent release (v3.6.0.1) lacks an fix for
-    # https://github.com/google/protobuf/issues/4771, which we rely on in tests.
-    # TODO(shahms): Update to the first release to include that fix.
     maybe(
         http_archive,
         name = "com_google_protobuf",
         build_file = "@io_kythe//third_party:protobuf.BUILD",
-        sha256 = "08608786f26c2ae4e5ff854560289779314b60179b5df824836303e2c0fae407",
-        strip_prefix = "protobuf-964201af37f8a0009440a52a30a66317724a52c3",
-        urls = ["https://github.com/google/protobuf/archive/964201af37f8a0009440a52a30a66317724a52c3.zip"],
+        sha256 = "d7a221b3d4fb4f05b7473795ccea9e05dab3b8721f6286a95fffbffc2d926f8b",
+        strip_prefix = "protobuf-3.6.1",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.6.1.zip"],
     )
 
     maybe(
