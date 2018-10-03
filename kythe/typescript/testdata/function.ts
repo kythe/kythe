@@ -37,3 +37,6 @@ let x: 3;
 //- @#1x ref ArrowX
 //- !{@#1x ref X}
 test((x => x + 1)(3), undefined);
+
+//- @x ref X
+function defaultArgument(a: number = x) {}

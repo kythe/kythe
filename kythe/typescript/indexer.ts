@@ -826,6 +826,8 @@ class Vistor {
 
       this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
       if (param.type) this.visitType(param.type);
+
+      if (param.initializer) this.visit(param.initializer);
     }
 
     if (decl.type) {
