@@ -38,6 +38,7 @@ java_library(
 java_library(
     name = "span",
     srcs = ["Span.java"],
+    visibility = ["//visibility:public"],
 )
 
 java_library(
@@ -59,6 +60,7 @@ java_library(
 java_library(
     name = "position_mappings",
     srcs = ["PositionMappings.java"],
+    visibility = ["//visibility:public"],
 )
 
 java_library(

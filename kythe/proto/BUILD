@@ -52,6 +52,7 @@ go_kythe_proto(proto = ":common_proto")
 
 java_proto_library(
     name = "common_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":common_proto"],
 )
 
@@ -74,6 +75,7 @@ go_kythe_proto(proto = ":storage_proto")
 
 java_proto_library(
     name = "storage_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":storage_proto"],
 )
 
@@ -134,6 +136,7 @@ go_kythe_proto(
 
 java_proto_library(
     name = "analysis_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":analysis_proto"],
 )
 

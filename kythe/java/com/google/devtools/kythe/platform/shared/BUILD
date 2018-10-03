@@ -1,10 +1,8 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(default_visibility = ["//visibility:public"])
 
 java_library(
     name = "analysis_exception",
-    srcs = [
-        "AnalysisException.java",
-    ],
+    srcs = ["AnalysisException.java"],
 )
 
 java_library(

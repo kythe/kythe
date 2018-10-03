@@ -1,4 +1,4 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(default_visibility = ["//visibility:public"])
 
 java_library(
     name = "stream_fact_emitter",
@@ -53,9 +53,7 @@ java_library(
 
 java_library(
     name = "compilation_analyzer",
-    srcs = [
-        "AbstractCompilationAnalyzer.java",
-    ],
+    srcs = ["AbstractCompilationAnalyzer.java"],
     deps = [
         ":entryset",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
