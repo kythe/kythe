@@ -2,7 +2,7 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-load("@//tools:build_rules/expand_template.bzl", "expand_template", "cmake_substitutions")
+load("@io_kythe//tools:build_rules/expand_template.bzl", "cmake_substitutions", "expand_template")
 
 _CMAKE_VARIABLES = {
     "LIBZIP_TYPES_INCLUDE": "#include <stdint.h>",

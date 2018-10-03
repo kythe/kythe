@@ -17,6 +17,62 @@ def _cc_dependencies():
         urls = ["https://zlib.net/zlib-1.2.11.tar.gz"],
     )
 
+    maybe(
+        http_archive,
+        name = "org_libzip",
+        build_file = "@io_kythe//third_party:libzip.BUILD",
+        sha256 = "a5d22f0c87a2625450eaa5e10db18b8ee4ef17042102d04c62e311993a2ba363",
+        strip_prefix = "libzip-rel-1-5-1",
+        urls = [
+            # Bazel does not like the official download link at libzip.org,
+            # so use the GitHub release tag.
+            "https://github.com/nih-at/libzip/archive/rel-1-5-1.zip",
+        ],
+    )
+
+    maybe(
+        http_archive,
+        name = "boringssl",  # Must match upstream workspace name.
+        # Gitiles creates gzip files with an embedded timestamp, so we cannot use
+        # sha256 to validate the archives.  We must rely on the commit hash and https.
+        # Commits must come from the master-with-bazel branch.
+        url = "https://boringssl.googlesource.com/boringssl/+archive/4be3aa87917b20fedc45fa1fc5b6a2f3738612ad.tar.gz",
+    )
+
+    maybe(
+        http_archive,
+        name = "com_github_tencent_rapidjson",
+        build_file = "@io_kythe//third_party:rapidjson.BUILD",
+        sha256 = "8e00c38829d6785a2dfb951bb87c6974fa07dfe488aa5b25deec4b8bc0f6a3ab",
+        strip_prefix = "rapidjson-1.1.0",
+        url = "https://github.com/Tencent/rapidjson/archive/v1.1.0.zip",
+    )
+
+    # Make sure to update regularly in accordance with Abseil's principle of live at HEAD
+    maybe(
+        http_archive,
+        name = "com_google_absl",
+        sha256 = "84c749757edd12da6188a0629a5d26bff8bba72a123b3aa571f4f5d9a03eaee6",
+        strip_prefix = "abseil-cpp-8f612ebb152fb7e05643a2bcf78cb89a8c0641ad",
+        url = "https://github.com/abseil/abseil-cpp/archive/8f612ebb152fb7e05643a2bcf78cb89a8c0641ad.zip",
+    )
+
+    maybe(
+        http_archive,
+        name = "com_google_googletest",
+        sha256 = "89cebb92b9a7eb32c53e180ccc0db8f677c3e838883c5fbd07e6412d7e1f12c7",
+        strip_prefix = "googletest-d175c8bf823e709d570772b038757fadf63bc632",
+        url = "https://github.com/google/googletest/archive/d175c8bf823e709d570772b038757fadf63bc632.zip",
+    )
+
+    maybe(
+        http_archive,
+        name = "com_github_gflags_gflags",
+        sha256 = "94ad0467a0de3331de86216cbc05636051be274bf2160f6e86f07345213ba45b",
+        strip_prefix = "gflags-77592648e3f3be87d6c7123eb81cbad75f9aef5a",
+        url = "https://github.com/gflags/gflags/archive/77592648e3f3be87d6c7123eb81cbad75f9aef5a.zip",
+    )
+
 def _java_dependencies():
     maybe(
         # For @com_google_common_flogger
