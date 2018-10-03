@@ -19,6 +19,7 @@
 #include <openssl/sha.h>
 #include <array>
 #include <string>
+#include <tuple>
 
 #include "absl/strings/escaping.h"
 #include "glog/logging.h"
@@ -162,7 +163,13 @@ auto KzipWriter::InsertFile(absl::string_view root, absl::string_view content)
     -> InsertionResult {
   auto digest = SHA256Digest(content);
   auto path = absl::StrCat(root, digest);
-  return InsertionResult{contents_.emplace(path, content)};
+  // Initially insert an empty string for the file content.
+  auto result = InsertionResult{contents_.emplace(path, "")};
+  if (result.inserted()) {
+    // Only copy in the real content if it was actually inserted into the map.
+    result.insertion.first->second = std::string(content);
+  }
+  return result;
 }
 
 inline absl::string_view KzipWriter::InsertionResult::digest() const {
