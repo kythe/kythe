@@ -1,6 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:maven_rules.bzl", "maven_jar")
 
 def maybe(repo_rule, name, **kwargs):
     """Defines a repository if it does not already exist.
@@ -35,42 +34,42 @@ def _java_dependencies():
     )
 
     maybe(
-        maven_jar,
+        native.maven_jar,
         name = "com_google_code_gson_gson",
         artifact = "com.google.code.gson:gson:2.8.5",
         sha1 = "f645ed69d595b24d4cf8b3fbb64cc505bede8829",
     )
 
     maybe(
-        maven_jar,
+        native.maven_jar,
         name = "com_google_guava_guava",
         artifact = "com.google.guava:guava:25.1-jre",
         sha1 = "6c57e4b22b44e89e548b5c9f70f0c45fe10fb0b4",
     )
 
     maybe(
-        maven_jar,
+        native.maven_jar,
         name = "com_google_re2j_re2j",
         artifact = "com.google.re2j:re2j:1.2",
         sha1 = "4361eed4abe6f84d982cbb26749825f285996dd2",
     )
 
     maybe(
-        maven_jar,
+        native.maven_jar,
         name = "com_google_code_findbugs_jsr305",
         artifact = "com.google.code.findbugs:jsr305:3.0.1",
         sha1 = "f7be08ec23c21485b9b5a1cf1654c2ec8c58168d",
     )
 
     maybe(
-        maven_jar,
+        native.maven_jar,
         name = "com_google_errorprone_error_prone_annotations",
         artifact = "com.google.errorprone:error_prone_annotations:2.3.1",
         sha1 = "a6a2b2df72fd13ec466216049b303f206bd66c5d",
     )
 
     maybe(
-        maven_jar,
+        native.maven_jar,
         name = "org_ow2_asm_asm",
         artifact = "org.ow2.asm:asm:6.0",
         sha1 = "bc6fa6b19424bb9592fe43bbc20178f92d403105",
