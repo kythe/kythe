@@ -73,15 +73,6 @@ def _cc_dependencies():
         url = "https://github.com/gflags/gflags/archive/77592648e3f3be87d6c7123eb81cbad75f9aef5a.zip",
     )
 
-    maybe(
-        http_archive,
-        name = "com_github_google_glog",
-        build_file = "@io_kythe//third_party:googlelog.BUILD",
-        sha256 = "ce61883437240d650be724043e8b3c67e257690f876ca9fd53ace2a791cfea6c",
-        strip_prefix = "glog-bac8811710c77ac3718be1c4801f43d37c1aea46",
-        url = "https://github.com/google/glog/archive/bac8811710c77ac3718be1c4801f43d37c1aea46.zip",
-    )
-
 def _java_dependencies():
     maybe(
         # For @com_google_common_flogger

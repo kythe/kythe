@@ -98,6 +98,14 @@ http_archive(
 )
 
 http_archive(
+    name = "com_github_google_glog",
+    build_file = "@io_kythe//third_party:googlelog.BUILD",
+    sha256 = "ce61883437240d650be724043e8b3c67e257690f876ca9fd53ace2a791cfea6c",
+    strip_prefix = "glog-bac8811710c77ac3718be1c4801f43d37c1aea46",
+    url = "https://github.com/google/glog/archive/bac8811710c77ac3718be1c4801f43d37c1aea46.zip",
+)
+
+http_archive(
     name = "com_github_stedolan_jq",
     build_file = "@io_kythe//third_party:jq.BUILD",
     sha256 = "998c41babeb57b4304e65b4eb73094279b3ab1e63801b6b4bddd487ce009b39d",
