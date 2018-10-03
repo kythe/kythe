@@ -41,14 +41,12 @@ std::string SHA256Digest(absl::string_view content) {
       absl::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()));
 }
 
-StatusOr<std::string> WriteTextFile(zip_t* archive, absl::string_view root,
-                                    absl::string_view content) {
-  auto digest = SHA256Digest(content);
-  auto path = absl::StrCat(root, digest);
+Status WriteTextFile(zip_t* archive, const std::string& path,
+                     absl::string_view content) {
   if (auto source =
           zip_source_buffer(archive, content.data(), content.size(), 0)) {
     if (zip_file_add(archive, path.c_str(), source, ZIP_FL_ENC_UTF_8) >= 0) {
-      return digest;
+      return OkStatus();
     }
     zip_source_free(source);
   }
@@ -65,6 +63,14 @@ Status InitializeArchive(zip_t* archive) {
     }
   }
   return OkStatus();
+}
+
+absl::string_view Basename(absl::string_view path) {
+  auto pos = path.find_last_of('/');
+  if (pos == absl::string_view::npos) {
+    return path.substr(0, 0);
+  }
+  return absl::ClippedSubstr(path, pos + 1);
 }
 
 }  // namespace
@@ -105,12 +111,15 @@ StatusOr<std::string> KzipWriter::WriteUnit(
     initialized_ = true;
   }
   if (auto json = WriteMessageAsJsonToString(unit)) {
-    contents_.push_back(std::move(*json));
-    auto status = WriteTextFile(archive_, kUnitRoot, contents_.back());
-    if (!status.ok()) {
-      contents_.pop_back();
+    auto file = InsertFile(kUnitRoot, std::move(*json));
+    if (file.inserted()) {
+      auto status = WriteTextFile(archive_, file.path(), file.contents());
+      if (!status.ok()) {
+        contents_.erase(file.path());
+        return status;
+      }
     }
-    return status;
+    return std::string(file.digest());
   } else {
     return json.status();
   }
@@ -124,12 +133,15 @@ StatusOr<std::string> KzipWriter::WriteFile(absl::string_view content) {
     }
     initialized_ = true;
   }
-  contents_.emplace_back(content);
-  auto status = WriteTextFile(archive_, kFileRoot, contents_.back());
-  if (!status.ok()) {
-    contents_.pop_back();
+  auto file = InsertFile(kFileRoot, content);
+  if (file.inserted()) {
+    auto status = WriteTextFile(archive_, file.path(), file.contents());
+    if (!status.ok()) {
+      contents_.erase(file.path());
+      return status;
+    }
   }
-  return status;
+  return std::string(file.digest());
 }
 
 Status KzipWriter::Close() {
@@ -145,4 +157,16 @@ Status KzipWriter::Close() {
   contents_.clear();
   return result;
 }
+
+auto KzipWriter::InsertFile(absl::string_view root, absl::string_view content)
+    -> InsertionResult {
+  auto digest = SHA256Digest(content);
+  auto path = absl::StrCat(root, digest);
+  return InsertionResult{contents_.emplace(path, content)};
+}
+
+inline absl::string_view KzipWriter::InsertionResult::digest() const {
+  return Basename(path());
+}
+
 }  // namespace kythe

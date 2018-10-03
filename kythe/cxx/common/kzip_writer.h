@@ -18,8 +18,9 @@
 #define KYTHE_CXX_COMMON_KZIP_WRITER_H_
 
 #include <zip.h>
-#include <vector>
+#include <unordered_map>
 
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/proto/analysis.pb.h"
@@ -55,12 +56,28 @@ class KzipWriter : public IndexWriterInterface {
   Status Close() override;
 
  private:
+  using Path = std::string;
+  using Contents = std::string;
+  using FileMap = std::unordered_map<Path, Contents>;
+
+  struct InsertionResult {
+    absl::string_view digest() const;
+    const std::string& path() const { return insertion.first->first; }
+    absl::string_view contents() const { return insertion.first->second; }
+    bool inserted() const { return insertion.second; }
+
+    std::pair<FileMap::iterator, bool> insertion;
+  };
+
   explicit KzipWriter(zip_t* archive);
+
+  InsertionResult InsertFile(absl::string_view root, absl::string_view content);
 
   bool initialized_ = false;  // Whether or not the `root` entry exists.
   zip_t* archive_;  // Owned, but must be manually deleted via `Close`.
-  // Memory for inserted files must be retained until close.
-  std::vector<std::string> contents_;
+  // Memory for inserted files must be retained until close and
+  // we don't want to insert identical entries multiple times.
+  FileMap contents_;
 };
 
 }  // namespace kythe
