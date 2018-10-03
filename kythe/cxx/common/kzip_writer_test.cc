@@ -59,6 +59,12 @@ WithStatusFn<T> WithStatus(Status* status, T function) {
   return WithStatusFn<T>{status, std::move(function)};
 }
 
+std::string TestOutputFile(absl::string_view basename) {
+  const auto* test_info = testing::UnitTest::GetInstance()->current_test_info();
+  return absl::StrCat(TestTmpdir(), "/", test_info->test_case_name(), "_",
+                      test_info->name(), "_", basename);
+}
+
 StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
 CopyIndex(IndexReader* reader, IndexWriter* writer) {
   Status error;
@@ -126,8 +132,8 @@ TEST(KzipWriterTest, RecapitulatesSimpleKzip) {
   StatusOr<IndexReader> reader = KzipReader::Open(TestFile("stringset.kzip"));
   ASSERT_TRUE(reader.ok()) << reader.status();
 
-  StatusOr<IndexWriter> writer =
-      KzipWriter::Create(absl::StrCat(TestTmpdir(), "/stringset.kzip"));
+  std::string output_file = TestOutputFile("stringset.kzip");
+  StatusOr<IndexWriter> writer = KzipWriter::Create(output_file);
   ASSERT_TRUE(writer.ok()) << writer.status();
   auto written_digests = CopyIndex(&*reader, &*writer);
   ASSERT_TRUE(written_digests.ok()) << written_digests.status();
@@ -136,16 +142,16 @@ TEST(KzipWriterTest, RecapitulatesSimpleKzip) {
     ASSERT_TRUE(status.ok()) << status;
   }
 
-  reader = KzipReader::Open(absl::StrCat(TestTmpdir(), "/stringset.kzip"));
+  reader = KzipReader::Open(output_file);
   ASSERT_TRUE(reader.ok()) << reader.status();
   auto read_digests = ReadDigests(&*reader);
   ASSERT_TRUE(read_digests.ok()) << read_digests.status();
   EXPECT_EQ(*written_digests, *read_digests);
 }
 
-TEST(KzipReaderTest, IncludesDirectoryEntries) {
-  StatusOr<IndexWriter> writer =
-      KzipWriter::Create(absl::StrCat(TestTmpdir(), "/dummy.kzip"));
+TEST(KzipWriterTest, IncludesDirectoryEntries) {
+  std::string dummy_file = TestOutputFile("dummy.kzip");
+  StatusOr<IndexWriter> writer = KzipWriter::Create(dummy_file);
   ASSERT_TRUE(writer.ok()) << writer.status();
   {
     auto digest = writer->WriteFile("contents");
@@ -158,8 +164,7 @@ TEST(KzipReaderTest, IncludesDirectoryEntries) {
 
   std::vector<std::string> contents;
   {
-    auto* archive = zip_open(absl::StrCat(TestTmpdir(), "/dummy.kzip").data(),
-                             ZIP_RDONLY, nullptr);
+    auto* archive = zip_open(dummy_file.c_str(), ZIP_RDONLY, nullptr);
     ASSERT_NE(archive, nullptr);
     struct Closer {
       ~Closer() { zip_discard(a); }
@@ -180,6 +185,24 @@ TEST(KzipReaderTest, IncludesDirectoryEntries) {
           "root/", "root/units/", "root/files/",
           "root/files/"
           "d1b2a59fbea7e20077af9f91b27e95e865061b270be03ff539ab3b73587882e8"));
+}
+
+TEST(KzipWriterTest, DuplicateFilesAreIgnored) {
+  StatusOr<IndexWriter> writer =
+      KzipWriter::Create(TestOutputFile("dummy.kzip"));
+  ASSERT_TRUE(writer.ok()) << writer.status();
+  {
+    auto digest = writer->WriteFile("contents");
+    ASSERT_TRUE(digest.ok()) << digest.status();
+  }
+  {
+    auto digest = writer->WriteFile("contents");
+    ASSERT_TRUE(digest.ok()) << digest.status();
+  }
+  {
+    auto status = writer->Close();
+    ASSERT_TRUE(status.ok()) << status;
+  }
 }
 
 }  // namespace
