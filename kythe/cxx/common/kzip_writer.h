@@ -77,6 +77,8 @@ class KzipWriter : public IndexWriterInterface {
   zip_t* archive_;  // Owned, but must be manually deleted via `Close`.
   // Memory for inserted files must be retained until close and
   // we don't want to insert identical entries multiple times.
+  // This must be a node-based container to ensure pointer stability of the file
+  // contents.
   FileMap contents_;
 };
 
