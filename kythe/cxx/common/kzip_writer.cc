@@ -69,7 +69,7 @@ Status InitializeArchive(zip_t* archive) {
 absl::string_view Basename(absl::string_view path) {
   auto pos = path.find_last_of('/');
   if (pos == absl::string_view::npos) {
-    return path.substr(0, 0);
+    return path;
   }
   return absl::ClippedSubstr(path, pos + 1);
 }
