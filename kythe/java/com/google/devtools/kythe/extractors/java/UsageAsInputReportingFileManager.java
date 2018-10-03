@@ -120,6 +120,11 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   }
 
   @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjects(File... files) {
+    return getJavaFileObjectsFromFiles(ImmutableList.copyOf(files));
+  }
+
+  @Override
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromStrings(Iterable<String> names) {
     return getJavaFileForSources(names);
   }
@@ -129,11 +134,6 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
       Iterable<? extends File> files) {
     return Iterables.transform(
         fileManager.getJavaFileObjectsFromFiles(files), input -> map(input, null));
-  }
-
-  @Override
-  public Iterable<? extends JavaFileObject> getJavaFileObjects(File... files) {
-    return getJavaFileObjectsFromFiles(ImmutableList.copyOf(files));
   }
 
   @Override
