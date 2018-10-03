@@ -1,4 +1,4 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(default_visibility = ["//visibility:public"])
 
 java_library(
     name = "shared",
@@ -10,7 +10,7 @@ java_library(
     ],
     deps = [
         ":file_vnames",
-        "//kythe/java/com/google/devtools/kythe/platform/kzip:kzip",
+        "//kythe/java/com/google/devtools/kythe/platform/kzip",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
@@ -20,9 +20,7 @@ java_library(
 
 java_library(
     name = "file_vnames",
-    srcs = [
-        "FileVNames.java",
-    ],
+    srcs = ["FileVNames.java"],
     deps = [
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
