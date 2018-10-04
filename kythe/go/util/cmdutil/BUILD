@@ -10,8 +10,8 @@ go_library(
 
 go_test(
     name = "cmdutil_test",
-    srcs = ["cmdutil_test.go"],
     testonly = True,
+    srcs = ["cmdutil_test.go"],
     deps = [
         ":cmdutil",
         "@com_github_google_subcommands//:go_default_library",

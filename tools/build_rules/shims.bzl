@@ -18,7 +18,7 @@ def go_repository(name, commit, importpath, custom = None, custom_git = None, **
             name = "go_" + custom,
             commit = commit,
             remote = custom_git,
-            overlay = {"//third_party/go:" + custom + ".BUILD": "BUILD"},
+            overlay = {"@io_kythe//third_party/go:" + custom + ".BUILD": "BUILD"},
         )
 
 load("@io_bazel_rules_go//go:def.bzl", _go_binary = "go_binary", _go_library = "go_library", _go_test = "go_test")
