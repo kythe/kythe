@@ -91,8 +91,8 @@ message VNameMask {
   bool language = 5;
 }
 
-// An Entry associates a fact with a graph object (node XOR edge).  This is the
-// the primary unit of storage.
+// An Entry is either a fact for a source graph object, XOR an edge from a
+// source to a target.  This is the primary unit of storage for a Kythe indexer.
 message Entry {
   VName source = 1;
 
