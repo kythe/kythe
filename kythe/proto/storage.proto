@@ -91,7 +91,7 @@ message VNameMask {
   bool language = 5;
 }
 
-// An Entry associates a fact with a graph object (node or edge).  This is the
+// An Entry associates a fact with a graph object (node XOR edge).  This is the
 // the primary unit of storage.
 message Entry {
   VName source = 1;
@@ -108,7 +108,7 @@ message Entry {
   //  DIGIT  = [0-9]
   //  PUNCT  = [-.@#$%&_+:()]
   string fact_name = 4;
-  bytes  fact_value = 5;
+  bytes fact_value = 5;
 }
 
 // A collection of Entry instances.
