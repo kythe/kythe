@@ -346,24 +346,34 @@ specific rules that apply to their construction and relationships.
 
 === Entry
 
-An entry is a data structure that associates a single <<TermFact,fact>> with a
-graph object (a node or an edge). An entry is the primary unit of encoding in
-the graph store, and each has the following components:
+An entry is a data structure that either associates a single <<TermFact,fact>>
+with a graph object, or an edge that relates a source graph object with a
+target graph object. An entry is the primary unit of encoding in the graph
+store, and each has the following components:
+
+Fact entry:
 
 [width="50%"]
-|==============================================================
-|source [ticket] | kind | target [ticket] | fact label | value
-|==============================================================
+|=====================================
+|source [ticket] | fact label | value
+|=====================================
+
+Edge entry:
+
+[width="50%"]
+|==============================================
+|source [ticket] | edge_kind | target [ticket]
+|==============================================
 
 where
 
  * *Source.* The <<TermTicket,ticket>> of the source node (must not be empty).
- * *Kind.* An edge label (may be empty). The schema defines which labels are
-   meaningful.
- * *Target.* The <<TermTicket,ticket>> of the target node (may be empty).
- * *Fact.* A fact label (must not be empty). The schema defines which fact labels
-   are meaningful.
- * *Value.* The string value of the fact (may be empty).
+ * *EdgeKind.* An edge label (only used for edge). The schema defines which
+   labels are meaningful.
+ * *Target.* The <<TermTicket,ticket>> of the target node (ionly used for edge).
+ * *Fact.* A fact label (only used for fact). The schema defines which fact
+   labels are meaningful.
+ * *Value.* The string value of the fact (only used for fact, may be empty).
 
 If _Kind_ and _Target_ are set, the entry denotes a fact about an edge in the
 graph; otherwise the entry denotes a fact about a node in the graph. To be
