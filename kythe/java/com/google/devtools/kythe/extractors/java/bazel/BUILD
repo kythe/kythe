@@ -15,6 +15,21 @@ extra_action(
     tools = [":java_extractor"],
 )
 
+action_listener(
+    name = "extract_kzip",
+    extra_actions = [":extra_action_kzip"],
+    mnemonics = ["Javac"],
+    visibility = ["//visibility:public"],
+)
+
+extra_action(
+    name = "extra_action_kzip",
+    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kzip) $(location //kythe/data:vnames_config)",
+    data = ["//kythe/data:vnames_config"],
+    out_templates = ["$(ACTION_ID).java.kzip"],
+    tools = [":java_extractor"],
+)
+
 java_binary(
     name = "java_extractor",
     srcs = ["JavaExtractor.java"],
