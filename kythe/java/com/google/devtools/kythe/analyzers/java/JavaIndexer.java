@@ -19,7 +19,6 @@ package com.google.devtools.kythe.analyzers.java;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
-import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.indexpack.Archive;
@@ -54,7 +53,7 @@ import java.util.function.Supplier;
  */
 public class JavaIndexer {
   public static void main(String[] args) throws AnalysisException, IOException {
-    JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
+    JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
 
     StandaloneConfig config = new StandaloneConfig();
     config.parseCommandLine(args);
