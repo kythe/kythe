@@ -54,7 +54,7 @@ public class JavaExtractor {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   public static void main(String[] args) throws IOException, ExtractionException {
-    JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
+    JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
 
     if (args.length != 3) {
       System.err.println("Usage: java_extractor extra-action-file output-file vname-config");

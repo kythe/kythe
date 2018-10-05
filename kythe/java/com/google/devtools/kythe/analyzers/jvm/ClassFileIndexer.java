@@ -29,7 +29,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
-import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.kzip.KZipException;
@@ -72,7 +71,7 @@ public class ClassFileIndexer {
 
   public static void main(String[] args) throws AnalysisException {
     // Necessary to allow the kzip library to read the any fields in the proto.
-    JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
+    JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
 
     StandaloneConfig config = new StandaloneConfig();
     config.parseCommandLine(args);
