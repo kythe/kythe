@@ -30,7 +30,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:stream_fact_emitter",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
-        "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/jvm:jvm_extractor",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/kzip",
