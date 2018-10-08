@@ -136,7 +136,7 @@ void DecodeIndexFile(const std::string& path,
   close(fd);
 }
 
-/// \brief Reads data from a .kzip file into memory.
+/// \brief Reads a single compilation from a .kzip file into memory.
 /// \param path The path from which the file should be read.
 /// \param virtual_files A vector to be filled with FileData.
 /// \param unit A `CompilationUnit` to be decoded from the .kzip.
@@ -145,13 +145,14 @@ void DecodeKZipFile(const std::string& path,
                     proto::CompilationUnit* unit) {
   StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
   CHECK(reader) << "Couldn't open kzip from " << path;
+  bool compilation_read = false;
   auto status = reader->Scan([&](absl::string_view digest) {
+    CHECK(!compilation_read) << "Found more than 1 compilation in " << path;
     auto compilation = reader->ReadUnit(digest);
     for (const auto& file : compilation->unit().required_input()) {
       auto content = reader->ReadFile(file.info().digest());
-      if (!content.ok()) {
-        return false;
-      }
+      CHECK(content) << "Unable to read file with digest: "
+                     << file.info().digest() << ": " << content.status();
       proto::FileData file_data;
       file_data.set_content(*content);
       file_data.mutable_info()->set_path(file.info().path());
@@ -159,9 +160,11 @@ void DecodeKZipFile(const std::string& path,
       virtual_files->push_back(std::move(file_data));
     }
     *unit = std::move(compilation->unit());
-    return false;
+    compilation_read = true;
+    return true;
   });
   CHECK(status.ok()) << status.ToString();
+  CHECK(compilation_read) << "Missing compilation in " << path;
 }
 
 /// \brief Reads data from an index pack into memory.
