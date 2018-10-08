@@ -27,6 +27,7 @@
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/proto/claim.pb.h"
@@ -135,6 +136,34 @@ void DecodeIndexFile(const std::string& path,
   close(fd);
 }
 
+/// \brief Reads data from a .kzip file into memory.
+/// \param path The path from which the file should be read.
+/// \param virtual_files A vector to be filled with FileData.
+/// \param unit A `CompilationUnit` to be decoded from the .kzip.
+void DecodeKZipFile(const std::string& path,
+                    std::vector<proto::FileData>* virtual_files,
+                    proto::CompilationUnit* unit) {
+  StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
+  CHECK(reader) << "Couldn't open kzip from " << path;
+  auto status = reader->Scan([&](absl::string_view digest) {
+    auto compilation = reader->ReadUnit(digest);
+    for (const auto& file : compilation->unit().required_input()) {
+      auto content = reader->ReadFile(file.info().digest());
+      if (!content.ok()) {
+        return false;
+      }
+      proto::FileData file_data;
+      file_data.set_content(*content);
+      file_data.mutable_info()->set_path(file.info().path());
+      file_data.mutable_info()->set_digest(file.info().digest());
+      virtual_files->push_back(std::move(file_data));
+    }
+    *unit = std::move(compilation->unit());
+    return false;
+  });
+  CHECK(status.ok()) << status.ToString();
+}
+
 /// \brief Reads data from an index pack into memory.
 /// \param cu_hash The hash of the compilation unit to read.
 /// \param index_pack The index pack from which to read.
@@ -203,7 +232,8 @@ bool IndexerContext::HasIndexArguments() {
     CHECK(args_.size() >= 2) << "You must specify a compilation unit.";
   } else {
     for (const auto& arg : args_) {
-      if (llvm::StringRef(arg).endswith(".kindex")) {
+      auto path = llvm::StringRef(arg);
+      if (path.endswith(".kindex") || path.endswith(".kzip")) {
         had_index = true;
       }
     }
@@ -235,6 +265,8 @@ void IndexerContext::LoadDataFromIndex(const std::string& kindex_file_or_cu) {
                       << ": " << error_text;
     DecodeIndexPack(name, llvm::make_unique<IndexPack>(std::move(filesystem)),
                     &job->virtual_files, &job->unit);
+  } else if (llvm::StringRef(kindex_file_or_cu).endswith(".kzip")) {
+    DecodeKZipFile(name, &job->virtual_files, &job->unit);
   } else {
     DecodeIndexFile(name, &job->virtual_files, &job->unit);
   }
