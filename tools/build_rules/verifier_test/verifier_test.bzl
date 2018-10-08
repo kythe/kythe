@@ -243,7 +243,7 @@ java_extract_kzip = rule(
     implementation = _java_extract_kzip_impl,
 )
 
-def _jvm_extract_kindex_impl(ctx):
+def _jvm_extract_kzip_impl(ctx):
     jars = []
     for dep in ctx.attr.deps:
         jars += [dep[KytheJavaJar].jar]
@@ -251,15 +251,15 @@ def _jvm_extract_kindex_impl(ctx):
     extract(
         ctx = ctx,
         srcs = jars,
-        kindex = ctx.outputs.kindex,
+        kzip = ctx.outputs.kzip,
         extractor = ctx.executable.extractor,
         vnames_config = ctx.file.vnames_config,
         opts = ctx.attr.opts,
-        mnemonic = "JvmExtractKindex",
+        mnemonic = "JvmExtractKZip",
     )
     return [KytheVerifierSources(files = [])]
 
-jvm_extract_kindex = rule(
+jvm_extract_kzip = rule(
     attrs = {
         "deps": attr.label_list(
             providers = [KytheJavaJar],
@@ -275,8 +275,8 @@ jvm_extract_kindex = rule(
         ),
         "opts": attr.string_list(),
     },
-    outputs = {"kindex": "%{name}.kindex"},
-    implementation = _jvm_extract_kindex_impl,
+    outputs = {"kzip": "%{name}.kzip"},
+    implementation = _jvm_extract_kzip_impl,
 )
 
 def _index_compilation_impl(ctx):
@@ -503,9 +503,9 @@ def jvm_verifier_test(
         indexer_opts = [],
         verifier_opts = ["--ignore_dups"],
         visibility = None):
-    kindex = _invoke(
-        jvm_extract_kindex,
-        name = name + "_kindex",
+    kzip = _invoke(
+        jvm_extract_kzip,
+        name = name + "_kzip",
         # This is a hack to depend on the .jar producer.
         deps = [d + "_kzip" for d in deps],
         tags = tags,
@@ -517,7 +517,7 @@ def jvm_verifier_test(
         index_compilation,
         name = name + "_entries",
         indexer = indexer,
-        deps = [kindex],
+        deps = [kzip],
         tags = tags,
         opts = indexer_opts,
         visibility = visibility,

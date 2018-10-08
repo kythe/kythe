@@ -24,6 +24,7 @@ import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.indexpack.Archive;
+import com.google.devtools.kythe.util.JsonUtil;
 import java.io.IOException;
 
 /**
@@ -33,6 +34,7 @@ import java.io.IOException;
  */
 public class JarExtractor {
   public static void main(String[] args) throws IOException, ExtractionException {
+    JsonUtil.usingTypeRegistry(JvmExtractor.JSON_TYPE_REGISTRY);
     JvmExtractor.Options options = new JvmExtractor.Options();
     JCommander jc = new JCommander(options, args);
     jc.setProgramName("jar_extractor");
