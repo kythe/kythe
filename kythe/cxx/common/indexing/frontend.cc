@@ -30,6 +30,7 @@
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/proto_conversions.h"
+#include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/claim.pb.h"
 #include "llvm/ADT/STLExtras.h"
 
@@ -396,6 +397,10 @@ IndexerContext::IndexerContext(const std::vector<std::string>& args,
   args_.erase(std::remove(args_.begin(), args_.end(), std::string()),
               args_.end());
   if (HasIndexArguments()) {
+    // This forces the BuildDetails proto descriptor to be added to the pool so
+    // we can deserialize it.
+    proto::BuildDetails needed_for_proto_deserialization;
+
     for (size_t arg = 1; arg < args_.size(); ++arg) {
       LoadDataFromIndex(args[arg]);
     }

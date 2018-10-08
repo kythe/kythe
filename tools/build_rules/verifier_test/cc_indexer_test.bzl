@@ -38,7 +38,7 @@ UNSUPPORTED_FEATURES = [
 CxxCompilationUnits = provider(
     doc = "A bundle of pre-extracted Kythe CompilationUnits for C++.",
     fields = {
-        "files": "Depset of .kindex/.kzip files.",
+        "files": "Depset of .kzip files.",
     },
 )
 
@@ -304,7 +304,7 @@ cc_extract_bundle = rule(
     implementation = _extract_bundle_impl,
 )
 
-def _bazel_extract_kindex_impl(ctx):
+def _bazel_extract_kzip_impl(ctx):
     # TODO(shahms): This is a hack as we get both executable
     #   and .sh from files.scripts but only want the "executable" one.
     #   Unlike `attr.label`, `attr.label_list` lacks an `executable` argument.
@@ -316,22 +316,22 @@ def _bazel_extract_kindex_impl(ctx):
             ctx.file.vnames_config,
             ctx.file.data,
         ] + scripts + ctx.files.srcs,
-        outputs = [ctx.outputs.kindex],
-        mnemonic = "BazelExtractKindex",
+        outputs = [ctx.outputs.kzip],
+        mnemonic = "BazelExtractKZip",
         executable = ctx.executable.extractor,
         arguments = [
             ctx.file.data.path,
-            ctx.outputs.kindex.path,
+            ctx.outputs.kzip.path,
             ctx.file.vnames_config.path,
         ] + [script.path for script in scripts],
     )
     return [
         KytheVerifierSources(files = ctx.files.srcs),
-        CxxCompilationUnits(files = depset([ctx.outputs.kindex])),
+        CxxCompilationUnits(files = depset([ctx.outputs.kzip])),
     ]
 
 # TODO(shahms): Clean up the bazel extraction rules.
-_bazel_extract_kindex = rule(
+_bazel_extract_kzip = rule(
     attrs = {
         "srcs": attr.label_list(
             doc = "Source files to provide via KytheVerifierSources.",
@@ -357,11 +357,9 @@ _bazel_extract_kindex = rule(
             cfg = "host",
         ),
     },
-    doc = "Extracts a Bazel extra action binary proto file into a .kindex.",
-    outputs = {
-        "kindex": "%{name}.kindex",
-    },
-    implementation = _bazel_extract_kindex_impl,
+    doc = "Extracts a Bazel extra action binary proto file into a .kzip.",
+    outputs = {"kzip": "%{name}.kzip"},
+    implementation = _bazel_extract_kzip_impl,
 )
 
 def _cc_index_source(ctx, src):
@@ -404,7 +402,7 @@ def _cc_index_compilation(ctx, compilation):
     return entries
 
 def _cc_index_single_file(ctx, input):
-    if input.extension in ("kindex", "kzip"):
+    if input.extension == "kzip":
         return _cc_index_compilation(ctx, input)
     elif input.extension in ("c", "cc", "m"):
         return _cc_index_source(ctx, input)
@@ -414,7 +412,7 @@ def _cc_index_impl(ctx):
     intermediates = [
         _cc_index_single_file(ctx, src)
         for src in ctx.files.srcs
-        if src.extension in ("m", "c", "cc", "kindex", "kzip")
+        if src.extension in ("m", "c", "cc", "kzip")
     ]
     intermediates += [
         _cc_index_compilation(ctx, kzip)
@@ -459,7 +457,6 @@ cc_index = rule(
                 ".c",
                 ".h",
                 ".m",  # Objective-C is supported by the indexer as well.
-                ".kindex",
                 ".kzip",
             ],
             providers = [CxxCompilationUnits],
@@ -657,8 +654,8 @@ def objc_bazel_extractor_test(name, src, data, size = "small", tags = [], restri
       src: The source file to use with the verifier.
       data: The extracted .xa protocol buffer to index.
     """
-    _bazel_extract_kindex(
-        name = name + "_kindex",
+    _bazel_extract_kzip(
+        name = name + "_kzip",
         srcs = [src],
         data = data,
         extractor = "//kythe/cxx/extractor:objc_extractor_bazel",
@@ -672,7 +669,7 @@ def objc_bazel_extractor_test(name, src, data, size = "small", tags = [], restri
     )
     cc_index(
         name = name + "_entries",
-        srcs = [":" + name + "_kindex"],
+        srcs = [":" + name + "_kzip"],
         tags = tags,
         restricted_to = restricted_to,
         testonly = True,
@@ -693,8 +690,8 @@ def cc_bazel_extractor_test(name, src, data, size = "small", tags = []):
       src: The source file to use with the verifier.
       data: The extracted .xa protocol buffer to index.
     """
-    _bazel_extract_kindex(
-        name = name + "_kindex",
+    _bazel_extract_kzip(
+        name = name + "_kzip",
         srcs = [src],
         data = data,
         tags = tags,
@@ -702,7 +699,7 @@ def cc_bazel_extractor_test(name, src, data, size = "small", tags = []):
     )
     cc_index(
         name = name + "_entries",
-        srcs = [":" + name + "_kindex"],
+        srcs = [":" + name + "_kzip"],
         tags = tags,
         testonly = True,
     )

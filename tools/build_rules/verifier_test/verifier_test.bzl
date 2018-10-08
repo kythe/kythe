@@ -125,21 +125,16 @@ atomize_entries = rule(
 
 def extract(
         ctx,
+        kzip,
         extractor,
         srcs,
         opts,
-        kindex = None,
-        kzip = None,
         deps = [],
         vnames_config = None,
         mnemonic = "ExtractCompilation"):
-    if kzip == None:
-        output = kindex
-    else:
-        output = kzip
     env = {
         "KYTHE_ROOT_DIRECTORY": ".",
-        "KYTHE_OUTPUT_FILE": output.path,
+        "KYTHE_OUTPUT_FILE": kzip.path,
     }
     inputs = [extractor] + srcs + deps
     if vnames_config:
@@ -147,7 +142,7 @@ def extract(
         inputs += [vnames_config]
     ctx.actions.run(
         inputs = inputs,
-        outputs = [output],
+        outputs = [kzip],
         mnemonic = mnemonic,
         executable = extractor,
         arguments = (
@@ -156,7 +151,7 @@ def extract(
         ),
         env = env,
     )
-    return output
+    return kzip
 
 def _java_extract_kzip_impl(ctx):
     jars = []
@@ -317,7 +312,7 @@ index_compilation = rule(
         "deps": attr.label_list(
             mandatory = True,
             allow_empty = False,
-            allow_files = [".kindex", ".kzip"],
+            allow_files = [".kzip"],
         ),
         "tools": attr.label_list(
             cfg = "host",
