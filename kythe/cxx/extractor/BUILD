@@ -220,6 +220,48 @@ extra_action(
     tools = [":objc_extractor_bazel"],
 )
 
+action_listener(
+    name = "extract_kzip",
+    extra_actions = [":extra_action_kzip"],
+    mnemonics = ["CppCompile"],
+    visibility = ["//visibility:public"],
+)
+
+extra_action(
+    name = "extra_action_kzip",
+    cmd = "$(location :cxx_extractor_bazel) \
+        $(EXTRA_ACTION_FILE) \
+        $(output $(ACTION_ID).c++.kzip) \
+        $(location //kythe/data:vnames_config)",
+    data = ["//kythe/data:vnames_config"],
+    out_templates = ["$(ACTION_ID).c++.kzip"],
+    tools = [":cxx_extractor_bazel"],
+)
+
+action_listener(
+    name = "extract_kindex_objc_kzip",
+    extra_actions = [":extra_action_objc_kzip"],
+    mnemonics = ["ObjcCompile"],
+    visibility = ["//visibility:public"],
+)
+
+extra_action(
+    name = "extra_action_objc_kzip",
+    cmd = "$(location :objc_extractor_bazel) \
+        $(EXTRA_ACTION_FILE) \
+        $(output $(ACTION_ID).objc.kzip) \
+        $(location //kythe/data:vnames_config) \
+        $(location //third_party/bazel:get_devdir) \
+        $(location //third_party/bazel:get_sdkroot)",
+    data = [
+        "//kythe/data:vnames_config",
+        "//third_party/bazel:get_devdir",
+        "//third_party/bazel:get_sdkroot",
+    ],
+    out_templates = ["$(ACTION_ID).objc.kzip"],
+    tools = [":objc_extractor_bazel"],
+)
+
 cc_binary(
     name = "cxx_extractor",
     deps = [

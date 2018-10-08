@@ -18,15 +18,14 @@
 
 usage() {
   cat >&2 <<EOF
-Usage: $(basename "$0") [--index_pack] [--java] [--cxx] [--bazel_arg arg] [bazel-root] <output-dir>
+Usage: $(basename "$0") [--java] [--go] [--cxx] [--bazel_arg arg] [bazel-root] <output-dir>
 
 Run the Kythe extractors as Bazel extra actions and copy the outputs to a given directory.  By
-default, both C++ and Java are extracted, but if --java or --cxx are given, then the set of
-extractors used are determined by the flags given.  In other words, giving both --java and --cxx is
-the same as no flags.
+default, C++, Java, and Go are extracted, but if --java, --go, or --cxx are given, then the set of
+extractors used are determined by the flags given.  In other words, giving --java, --go, and --cxx
+is the same as no flags.
 
 Flags:
-  --index_pack: use <output-dir> as the root of an index pack instead of a collection of .kindex files
   --cxx:        turn on the use of the Bazel/Kythe C++ extractor
   --go:         turn on the use of the Bazel/Kythe Go extractor
   --java:       turn on the use of the Bazel/Kythe Java extractor
@@ -39,15 +38,12 @@ ALL=1
 JAVA=
 CXX=
 GO=
-INDEX_PACK=
 BAZEL_ARGS=(--bazelrc=/dev/null build -k)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --help|-h)
       usage ;;
-    --index_pack)
-      INDEX_PACK=1 ;;
     --java)
       ALL=
       JAVA=1 ;;
@@ -92,13 +88,13 @@ if [[ -d bazel-out ]]; then
 fi
 
 if [[ -n "$JAVA" ]]; then
-  BAZEL_ARGS+=(--experimental_action_listener=//kythe/java/com/google/devtools/kythe/extractors/java/bazel:extract_kindex)
+  BAZEL_ARGS+=(--experimental_action_listener=//kythe/java/com/google/devtools/kythe/extractors/java/bazel:extract_kzip)
 fi
 if [[ -n "$CXX" ]]; then
-  BAZEL_ARGS+=(--experimental_action_listener=//kythe/cxx/extractor:extract_kindex)
+  BAZEL_ARGS+=(--experimental_action_listener=//kythe/cxx/extractor:extract_kzip)
 fi
 if [[ -n "$GO" ]]; then
-  BAZEL_ARGS+=(--experimental_action_listener=//kythe/go/extractors/cmd/bazel:extract_kindex_go)
+  BAZEL_ARGS+=(--experimental_action_listener=//kythe/go/extractors/cmd/bazel:extract_kzip_go)
 fi
 
 set -x
@@ -107,18 +103,14 @@ bazel "${BAZEL_ARGS[@]}" //... || \
 set +x
 
 xad="$(find -L bazel-out -type d -name extra_actions)"
-INDICES=($(find "$xad" -name '*.kindex'))
-echo "Found ${#INDICES[@]} .kindex files in $xad"
+INDICES=($(find "$xad" -name '*.kzip'))
+echo "Found ${#INDICES[@]} .kzip files in $xad"
 for idx in "${INDICES[@]}"; do
-  name="$(basename "$idx" .kindex)"
+  name="$(basename "$idx" .kzip)"
   lang="${name##*.}"
   dir="$OUTPUT/$lang"
 
-  if [[ -n "$INDEX_PACK" ]]; then
-      "$ROOT/bazel-bin/kythe/go/platform/tools/indexpack/indexpack" --to_archive "$dir" "$idx"
-  else
-    mkdir -p "$dir"
-    dest="$dir/$(tr '/' '_' <<<"${idx#$xad/}")"
-    cp -vf "$idx" "$dest"
-  fi
+  mkdir -p "$dir"
+  dest="$dir/$(tr '/' '_' <<<"${idx#$xad/}")"
+  cp -vf "$idx" "$dest"
 done
