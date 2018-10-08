@@ -123,10 +123,23 @@ atomize_entries = rule(
     implementation = _atomize_entries_impl,
 )
 
-def extract(ctx, kindex, extractor, srcs, opts, deps = [], vnames_config = None, mnemonic = "ExtractKindex"):
+def extract(
+        ctx,
+        extractor,
+        srcs,
+        opts,
+        kindex = None,
+        kzip = None,
+        deps = [],
+        vnames_config = None,
+        mnemonic = "ExtractCompilation"):
+    if kzip == None:
+        output = kindex
+    else:
+        output = kzip
     env = {
         "KYTHE_ROOT_DIRECTORY": ".",
-        "KYTHE_OUTPUT_FILE": kindex.path,
+        "KYTHE_OUTPUT_FILE": output.path,
     }
     inputs = [extractor] + srcs + deps
     if vnames_config:
@@ -134,7 +147,7 @@ def extract(ctx, kindex, extractor, srcs, opts, deps = [], vnames_config = None,
         inputs += [vnames_config]
     ctx.actions.run(
         inputs = inputs,
-        outputs = [kindex],
+        outputs = [output],
         mnemonic = mnemonic,
         executable = extractor,
         arguments = (
@@ -143,15 +156,15 @@ def extract(ctx, kindex, extractor, srcs, opts, deps = [], vnames_config = None,
         ),
         env = env,
     )
-    return kindex
+    return output
 
-def _java_extract_kindex_impl(ctx):
+def _java_extract_kzip_impl(ctx):
     jars = []
     for dep in ctx.attr.deps:
         jars += [dep[KytheJavaJar].jar]
 
     # Actually compile the sources to be used as a dependency for other tests
-    jar = ctx.new_file(ctx.outputs.kindex, ctx.outputs.kindex.basename + ".jar")
+    jar = ctx.new_file(ctx.outputs.kzip, ctx.outputs.kzip.basename + ".jar")
     info = java_common.compile(
         ctx,
         javac_opts = java_common.default_javac_opts(
@@ -180,20 +193,20 @@ def _java_extract_kindex_impl(ctx):
         args += [src.short_path]
     extract(
         ctx = ctx,
-        kindex = ctx.outputs.kindex,
+        kzip = ctx.outputs.kzip,
         extractor = ctx.executable.extractor,
         vnames_config = ctx.file.vnames_config,
         srcs = ctx.files.srcs,
         opts = args,
         deps = jars + ctx.files.data,
-        mnemonic = "JavaExtractKindex",
+        mnemonic = "JavaExtractKZip",
     )
     return [
         KytheJavaJar(jar = jar),
         KytheVerifierSources(files = ctx.files.srcs),
     ]
 
-java_extract_kindex = rule(
+java_extract_kzip = rule(
     attrs = {
         "srcs": attr.label_list(
             mandatory = True,
@@ -226,10 +239,8 @@ java_extract_kindex = rule(
     },
     fragments = ["java"],
     host_fragments = ["java"],
-    outputs = {
-        "kindex": "%{name}.kindex",
-    },
-    implementation = _java_extract_kindex_impl,
+    outputs = {"kzip": "%{name}.kzip"},
+    implementation = _java_extract_kzip_impl,
 )
 
 def _jvm_extract_kindex_impl(ctx):
@@ -306,7 +317,7 @@ index_compilation = rule(
         "deps": attr.label_list(
             mandatory = True,
             allow_empty = False,
-            allow_files = [".kindex"],
+            allow_files = [".kindex", ".kzip"],
         ),
         "tools": attr.label_list(
             cfg = "host",
@@ -433,12 +444,12 @@ def java_verifier_test(
         extra_goals = [],
         vnames_config = None,
         visibility = None):
-    kindex = _invoke(
-        java_extract_kindex,
-        name = name + "_kindex",
+    kzip = _invoke(
+        java_extract_kzip,
+        name = name + "_kzip",
         srcs = srcs,
         # This is a hack to depend on the .jar producer.
-        deps = [d + "_kindex" for d in deps],
+        deps = [d + "_kzip" for d in deps],
         data = meta,
         tags = tags,
         visibility = visibility,
@@ -465,7 +476,7 @@ def java_verifier_test(
         index_compilation,
         name = name + "_entries",
         indexer = indexer,
-        deps = [kindex],
+        deps = [kzip],
         tags = tags,
         opts = indexer_opts,
         tools = tools,
@@ -496,7 +507,7 @@ def jvm_verifier_test(
         jvm_extract_kindex,
         name = name + "_kindex",
         # This is a hack to depend on the .jar producer.
-        deps = [d + "_kindex" for d in deps],
+        deps = [d + "_kzip" for d in deps],
         tags = tags,
         visibility = visibility,
         testonly = True,
