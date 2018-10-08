@@ -507,7 +507,7 @@ def jvm_verifier_test(
         jvm_extract_kindex,
         name = name + "_kindex",
         # This is a hack to depend on the .jar producer.
-        deps = [d + "_kindex" for d in deps],
+        deps = [d + "_kzip" for d in deps],
         tags = tags,
         visibility = visibility,
         testonly = True,
