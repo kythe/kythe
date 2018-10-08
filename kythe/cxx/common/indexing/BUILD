@@ -102,6 +102,7 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//kythe/cxx/common:kzip_reader",
         "//kythe/proto:claim_cc_proto",
         "@com_google_absl//absl/memory",
     ],
