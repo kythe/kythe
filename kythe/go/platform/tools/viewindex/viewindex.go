@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-// Binary viewindex prints a .kindex as JSON to stdout.
+// Binary viewindex prints a .kindex/.kzip as JSON to stdout.
 //
 // Example:
-//   viewindex compilation.kindex | jq .
+//   viewindex compilation.kzip | jq .
 package main
 
 import (
@@ -44,8 +44,8 @@ import (
 )
 
 func init() {
-	flag.Usage = flagutil.SimpleUsage("Print a .kindex archive as JSON to stdout",
-		"[--files] <kindex-file>")
+	flag.Usage = flagutil.SimpleUsage("Print a .kzip/.kindex archive as JSON to stdout",
+		"[--files] <kzip-file/kindex-file>")
 }
 
 var (
@@ -60,7 +60,7 @@ var (
 func main() {
 	flag.Parse()
 	if len(flag.Args()) == 0 {
-		flagutil.UsageError("missing kindex-file path")
+		flagutil.UsageError("missing kzip/kindex file path")
 	} else if len(flag.Args()) > 1 {
 		flagutil.UsageErrorf("unknown arguments: %v", flag.Args()[1:])
 	}
