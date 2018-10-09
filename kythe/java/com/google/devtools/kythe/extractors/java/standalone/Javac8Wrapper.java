@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.extractors.java.standalone;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.base.Optional;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -49,10 +51,8 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
     fileManager.handleOptions(args.getDeferredFileManagerOptions());
     Options options = Options.instance(context);
 
-    List<String> sources = new ArrayList<>();
-    for (JavaFileObject fo : args.getFileObjects()) {
-      sources.add(fo.getName());
-    }
+    List<String> sources =
+        args.getFileObjects().stream().map(JavaFileObject::getName).collect(toImmutableList());
 
     // Retrieve the list of class paths provided by the -classpath argument.
     List<String> classPaths = splitPaths(options.get(Option.CLASS_PATH));
