@@ -368,12 +368,13 @@ Edge entry:
 where
 
  * *Source.* The <<TermTicket,ticket>> of the source node (must not be empty).
- * *EdgeKind.* An edge label (only used for edge). The schema defines which
-   labels are meaningful.
- * *Target.* The <<TermTicket,ticket>> of the target node (ionly used for edge).
- * *Fact.* A fact label (only used for fact). The schema defines which fact
-   labels are meaningful.
- * *Value.* The string value of the fact (only used for fact, may be empty).
+ * *EdgeKind.* An edge label (may be empty, only used for edge). The schema
+   defines which labels are meaningful.
+ * *Target.* The <<TermTicket,ticket>> of the target node (may be empty, only
+   used for edge).
+ * *Fact.* A fact label (must not be empty, only used for fact). The schema
+   defines which fact labels are meaningful.
+ * *Value.* The string value of the fact (may be empty, only used for fact).
 
 If _Kind_ and _Target_ are set, the entry denotes a fact about an edge in the
 graph; otherwise the entry denotes a fact about a node in the graph. To be
