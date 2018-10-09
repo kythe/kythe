@@ -44,7 +44,8 @@ enum class NodeKindID {
   kTSigma,
   kDoc,
   kTBuiltin,
-  kMeta
+  kMeta,
+  kDiagnostic
 };
 
 /// \brief Known properties of nodes. See the schema for details.
@@ -65,7 +66,10 @@ enum class PropertyID {
   kVariance,
   kParamDefault,
   kTagStatic,
-  kTagDeprecated
+  kTagDeprecated,
+  kDiagnosticMessage,
+  kDiagnosticDetails,
+  kDiagnosticContextOrUrl
 };
 
 /// \brief Known edge kinds. See the schema for details.
@@ -110,7 +114,8 @@ enum class EdgeKindID {
   kBoundedUpper,
   kRefInit,
   kRefInitImplicit,
-  kImputes
+  kImputes,
+  kTagged
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`

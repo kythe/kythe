@@ -31,6 +31,7 @@ static const std::string* const kNodeKindSpellings[] = {
     new std::string("interface"), new std::string("package"),
     new std::string("tsigma"),    new std::string("doc"),
     new std::string("tbuiltin"),  new std::string("meta"),
+    new std::string("diagnostic"),
 };
 
 static const std::string* kEdgeKindSpellings[] = {
@@ -75,6 +76,7 @@ static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/ref/init"),
     new std::string("/kythe/edge/ref/init/implicit"),
     new std::string("/kythe/edge/imputes"),
+    new std::string("/kythe/edge/tagged"),
 };
 
 bool of_spelling(absl::string_view str, EdgeKindID* edge_id) {
@@ -107,6 +109,9 @@ static const std::string* const kPropertySpellings[] = {
     new std::string("/kythe/param/default"),
     new std::string("/kythe/tag/static"),
     new std::string("/kythe/tag/deprecated"),
+    new std::string("/kythe/message"),
+    new std::string("/kythe/details"),
+    new std::string("/kythe/context/url"),
 };
 
 static const std::string* const kEmptyStringSpelling = new std::string("");
