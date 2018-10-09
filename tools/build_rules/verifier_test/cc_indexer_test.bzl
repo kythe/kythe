@@ -38,7 +38,7 @@ UNSUPPORTED_FEATURES = [
 CxxCompilationUnits = provider(
     doc = "A bundle of pre-extracted Kythe CompilationUnits for C++.",
     fields = {
-        "files": "Depset of .kindex files.",
+        "files": "Depset of .kzip files.",
     },
 )
 
@@ -134,7 +134,7 @@ def _transitive_entries(deps):
             compressed += dep[KytheEntries].compressed
     return KytheEntries(files = files, compressed = compressed)
 
-def _cc_extract_kindex_impl(ctx):
+def _cc_extract_kzip_impl(ctx):
     cpp = find_cpp_toolchain(ctx)
     if ctx.attr.add_toolchain_include_directories:
         toolchain_includes = cpp.built_in_include_directories
@@ -143,7 +143,7 @@ def _cc_extract_kindex_impl(ctx):
     outputs = depset([
         extract(
             ctx = ctx,
-            kindex = getattr(ctx.outputs, src.basename),
+            kzip = getattr(ctx.outputs, src.basename),
             extractor = ctx.executable.extractor,
             vnames_config = ctx.file.vnames_config,
             srcs = [src],
@@ -166,10 +166,10 @@ def _cc_extract_kindex_impl(ctx):
         _transitive_entries(ctx.attr.deps),
     ]
 
-def _cc_extract_kindex_outs(name, srcs):
-    return dict([(src.name, "{}/{}.kindex".format(name, src.name)) for src in srcs])
+def _cc_extract_kzip_outs(name, srcs):
+    return dict([(src.name, "{}/{}.kzip".format(name, src.name)) for src in srcs])
 
-cc_extract_kindex = rule(
+cc_extract_kzip = rule(
     attrs = {
         "srcs": attr.label_list(
             doc = "A list of C++ source files to extract.",
@@ -215,7 +215,7 @@ cc_extract_kindex = rule(
         "copts": attr.string_list(
             doc = """Options which are required to compile/index the sources.
 
-            These will be included in the resulting .kindex CompilationUnits.
+            These will be included in the resulting .kzip CompilationUnits.
             """,
         ),
         "extractor": attr.label(
@@ -228,14 +228,14 @@ cc_extract_kindex = rule(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
     },
-    doc = """cc_extract_kindex extracts srcs into CompilationUnits.
+    doc = """cc_extract_kzip extracts srcs into CompilationUnits.
 
-    Each file in srcs will be extracted into a separate .kindex file, based on the name
+    Each file in srcs will be extracted into a separate .kzip file, based on the name
     of the source.
     """,
-    outputs = _cc_extract_kindex_outs,
+    outputs = _cc_extract_kzip_outs,
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
-    implementation = _cc_extract_kindex_impl,
+    implementation = _cc_extract_kzip_impl,
 )
 
 def _extract_bundle_impl(ctx):
@@ -253,11 +253,11 @@ def _extract_bundle_impl(ctx):
             ctx.file.vnames_config,
             bundle,
         ],
-        outputs = [ctx.outputs.kindex],
+        outputs = [ctx.outputs.kzip],
         mnemonic = "ExtractBundle",
         env = {
             "KYTHE_ROOT_DIRECTORY": ".",
-            "KYTHE_OUTPUT_FILE": ctx.outputs.kindex.path,
+            "KYTHE_OUTPUT_FILE": ctx.outputs.kzip.path,
             "KYTHE_VNAMES": ctx.file.vnames_config.path,
         },
         arguments = [
@@ -272,7 +272,7 @@ def _extract_bundle_impl(ctx):
     #   Possibly, just use the bundled source directly as the verifier doesn't actually
     #   care about the expanded source.
     #   Bazel makes it hard to use a glob here.
-    return [CxxCompilationUnits(files = depset([ctx.outputs.kindex]))]
+    return [CxxCompilationUnits(files = depset([ctx.outputs.kzip]))]
 
 cc_extract_bundle = rule(
     attrs = {
@@ -299,14 +299,12 @@ cc_extract_bundle = rule(
             doc = "Additional arguments to pass to the extractor.",
         ),
     },
-    doc = "Extracts a bundled C++ indexer test into a .kindex file.",
-    outputs = {
-        "kindex": "%{name}.kindex",
-    },
+    doc = "Extracts a bundled C++ indexer test into a .kzip file.",
+    outputs = {"kzip": "%{name}.kzip"},
     implementation = _extract_bundle_impl,
 )
 
-def _bazel_extract_kindex_impl(ctx):
+def _bazel_extract_kzip_impl(ctx):
     # TODO(shahms): This is a hack as we get both executable
     #   and .sh from files.scripts but only want the "executable" one.
     #   Unlike `attr.label`, `attr.label_list` lacks an `executable` argument.
@@ -318,22 +316,22 @@ def _bazel_extract_kindex_impl(ctx):
             ctx.file.vnames_config,
             ctx.file.data,
         ] + scripts + ctx.files.srcs,
-        outputs = [ctx.outputs.kindex],
-        mnemonic = "BazelExtractKindex",
+        outputs = [ctx.outputs.kzip],
+        mnemonic = "BazelExtractKZip",
         executable = ctx.executable.extractor,
         arguments = [
             ctx.file.data.path,
-            ctx.outputs.kindex.path,
+            ctx.outputs.kzip.path,
             ctx.file.vnames_config.path,
         ] + [script.path for script in scripts],
     )
     return [
         KytheVerifierSources(files = ctx.files.srcs),
-        CxxCompilationUnits(files = depset([ctx.outputs.kindex])),
+        CxxCompilationUnits(files = depset([ctx.outputs.kzip])),
     ]
 
 # TODO(shahms): Clean up the bazel extraction rules.
-_bazel_extract_kindex = rule(
+_bazel_extract_kzip = rule(
     attrs = {
         "srcs": attr.label_list(
             doc = "Source files to provide via KytheVerifierSources.",
@@ -359,11 +357,9 @@ _bazel_extract_kindex = rule(
             cfg = "host",
         ),
     },
-    doc = "Extracts a Bazel extra action binary proto file into a .kindex.",
-    outputs = {
-        "kindex": "%{name}.kindex",
-    },
-    implementation = _bazel_extract_kindex_impl,
+    doc = "Extracts a Bazel extra action binary proto file into a .kzip.",
+    outputs = {"kzip": "%{name}.kzip"},
+    implementation = _bazel_extract_kzip_impl,
 )
 
 def _cc_index_source(ctx, src):
@@ -386,27 +382,27 @@ def _cc_index_source(ctx, src):
     )
     return entries
 
-def _cc_index_compilation(ctx, kindex):
+def _cc_index_compilation(ctx, compilation):
     if ctx.attr.copts:
         print("Ignoring compiler options:", ctx.attr.copts)
     entries = ctx.actions.declare_file(
-        ctx.label.name + "/" + kindex.basename + ".entries",
+        ctx.label.name + "/" + compilation.basename + ".entries",
     )
     ctx.actions.run(
         mnemonic = "CcIndexCompilation",
         outputs = [entries],
-        inputs = [ctx.executable.indexer, kindex],
+        inputs = [ctx.executable.indexer, compilation],
         executable = ctx.executable.indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-o",
             entries.path,
-            kindex.path,
+            compilation.path,
         ],
     )
     return entries
 
 def _cc_index_single_file(ctx, input):
-    if input.extension == "kindex":
+    if input.extension == "kzip":
         return _cc_index_compilation(ctx, input)
     elif input.extension in ("c", "cc", "m"):
         return _cc_index_source(ctx, input)
@@ -416,14 +412,14 @@ def _cc_index_impl(ctx):
     intermediates = [
         _cc_index_single_file(ctx, src)
         for src in ctx.files.srcs
-        if src.extension in ("m", "c", "cc", "kindex")
+        if src.extension in ("m", "c", "cc", "kzip")
     ]
     intermediates += [
-        _cc_index_compilation(ctx, kindex)
+        _cc_index_compilation(ctx, kzip)
         for dep in ctx.attr.deps
         if CxxCompilationUnits in dep
-        for kindex in dep[CxxCompilationUnits].files
-        if kindex not in ctx.files.deps
+        for kzip in dep[CxxCompilationUnits].files
+        if kzip not in ctx.files.deps
     ]
 
     entries = depset(intermediates)
@@ -439,7 +435,7 @@ def _cc_index_impl(ctx):
         arguments = ["cat"] + [i.path for i in entries] + [ctx.outputs.entries.path],
     )
 
-    sources = depset([src for src in ctx.files.srcs if src.extension != "kindex"])
+    sources = depset([src for src in ctx.files.srcs if src.extension != "kzip"])
     for dep in ctx.attr.srcs:
         if KytheVerifierSources in dep:
             sources += dep[KytheVerifierSources].files
@@ -455,13 +451,13 @@ cc_index = rule(
         # .cc/.h files, added to KytheVerifierSources provider, but not transitively.
         # CxxCompilationUnits, which may also include sources.
         "srcs": attr.label_list(
-            doc = "C++/ObjC source files or extracted .kindex files to index.",
+            doc = "C++/ObjC source files or extracted .kzip files to index.",
             allow_files = [
                 ".cc",
                 ".c",
                 ".h",
                 ".m",  # Objective-C is supported by the indexer as well.
-                ".kindex",
+                ".kzip",
             ],
             providers = [CxxCompilationUnits],
         ),
@@ -517,14 +513,14 @@ def _indexer_test(
         if len(srcs) != 1:
             fail("Bundled indexer tests require exactly one src!")
         cc_extract_bundle(
-            name = name + "_kindex",
+            name = name + "_kzip",
             src = srcs[0],
             testonly = True,
             tags = tags,
             opts = copts,
             restricted_to = restricted_to,
         )
-        srcs = [":" + name + "_kindex"]
+        srcs = [":" + name + "_kzip"]
     cc_index(
         name = name + "_entries",
         srcs = srcs,
@@ -658,8 +654,8 @@ def objc_bazel_extractor_test(name, src, data, size = "small", tags = [], restri
       src: The source file to use with the verifier.
       data: The extracted .xa protocol buffer to index.
     """
-    _bazel_extract_kindex(
-        name = name + "_kindex",
+    _bazel_extract_kzip(
+        name = name + "_kzip",
         srcs = [src],
         data = data,
         extractor = "//kythe/cxx/extractor:objc_extractor_bazel",
@@ -673,7 +669,7 @@ def objc_bazel_extractor_test(name, src, data, size = "small", tags = [], restri
     )
     cc_index(
         name = name + "_entries",
-        srcs = [":" + name + "_kindex"],
+        srcs = [":" + name + "_kzip"],
         tags = tags,
         restricted_to = restricted_to,
         testonly = True,
@@ -694,8 +690,8 @@ def cc_bazel_extractor_test(name, src, data, size = "small", tags = []):
       src: The source file to use with the verifier.
       data: The extracted .xa protocol buffer to index.
     """
-    _bazel_extract_kindex(
-        name = name + "_kindex",
+    _bazel_extract_kzip(
+        name = name + "_kzip",
         srcs = [src],
         data = data,
         tags = tags,
@@ -703,7 +699,7 @@ def cc_bazel_extractor_test(name, src, data, size = "small", tags = []):
     )
     cc_index(
         name = name + "_entries",
-        srcs = [":" + name + "_kindex"],
+        srcs = [":" + name + "_kzip"],
         tags = tags,
         testonly = True,
     )
@@ -726,8 +722,8 @@ def cc_extractor_test(
         restricted_to = ["//buildenv:all"]):
     """C++ verifier test on an extracted source file."""
     args = ["-std=" + std, "-c"]
-    cc_extract_kindex(
-        name = name + "_kindex",
+    cc_extract_kzip(
+        name = name + "_kzip",
         srcs = srcs,
         deps = data,
         tags = tags,
@@ -738,7 +734,7 @@ def cc_extractor_test(
     )
     cc_index(
         name = name + "_entries",
-        srcs = [":" + name + "_kindex"],
+        srcs = [":" + name + "_kzip"],
         deps = data,
         opts = ["--ignore_unimplemented"],
         tags = tags,

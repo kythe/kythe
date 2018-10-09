@@ -76,7 +76,7 @@ public abstract class AbstractJavacWrapper {
    * variables (see class comment).
    */
   public void process(String[] args) {
-    JsonUtil.usingTypeRegistry(JavaCompilationUnitExtractor.JSON_TYPE_REGISTRY);
+    JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
     try {
       if (!passThroughIfAnalysisOnly(args)) {
         String vnamesConfig = System.getenv("KYTHE_VNAMES");

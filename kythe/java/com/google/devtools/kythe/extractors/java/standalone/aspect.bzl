@@ -18,7 +18,7 @@ def _extract_java_aspect(target, ctx):
     if JavaInfo not in target or not hasattr(ctx.rule.attr, "srcs"):
         return struct()
 
-    kindex = ctx.actions.declare_file(ctx.label.name + ".kindex")
+    kzip = ctx.actions.declare_file(ctx.label.name + ".kzip")
 
     info = target[JavaInfo]
     compilation = info.compilation_info
@@ -55,16 +55,16 @@ def _extract_java_aspect(target, ctx):
 
     extract(
         ctx = ctx,
-        kindex = kindex,
+        kzip = kzip,
         extractor = ctx.executable._java_aspect_extractor,
         vnames_config = ctx.file._java_aspect_vnames_config,
         srcs = ctx.rule.files.srcs,
         opts = args,
         deps = list(deps),
-        mnemonic = "JavaExtractKIndex",
+        mnemonic = "JavaExtractKZip",
     )
 
-    return struct(kindex = kindex, output_groups = {"kindex": [kindex]})
+    return struct(kzip = kzip, output_groups = {"kzip": [kzip]})
 
 def _remove_flags(lst, to_remove):
     res = []
@@ -81,19 +81,19 @@ def _remove_flags(lst, to_remove):
 # Aspect to run the javac_extractor on all specified Java targets.
 #
 # Example usage:
-#   bazel build -k --output_groups=kindex \
-#       --aspects //tools/build_rules/verifier_test:verifier_test.bzl%extract_java_aspect \
+#   bazel build -k --output_groups=kzip \
+#       --aspects @io_kythe//tools/build_rules/verifier_test:verifier_test.bzl%extract_java_aspect \
 #       //...
 extract_java_aspect = aspect(
     _extract_java_aspect,
     attr_aspects = ["srcs"],
     attrs = {
         "_java_aspect_vnames_config": attr.label(
-            default = Label("//kythe/data:vnames_config"),
+            default = Label("@io_kythe//kythe/data:vnames_config"),
             allow_single_file = True,
         ),
         "_java_aspect_extractor": attr.label(
-            default = Label("//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor"),
+            default = Label("@io_kythe//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor"),
             executable = True,
             cfg = "host",
         ),

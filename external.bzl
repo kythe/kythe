@@ -1,11 +1,16 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
+load("@io_kythe//:setup.bzl", "maybe")
 
-def maybe(repo_rule, name, **kwargs):
-    """Defines a repository if it does not already exist.
-    """
-    if name not in native.existing_rules():
-        repo_rule(name = name, **kwargs)
+# Rule dependencies
+load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+
+def _rule_dependencies():
+    gazelle_dependencies()
+    go_rules_dependencies()
+    go_register_toolchains()
 
 def _cc_dependencies():
     maybe(
@@ -73,6 +78,97 @@ def _cc_dependencies():
         url = "https://github.com/gflags/gflags/archive/77592648e3f3be87d6c7123eb81cbad75f9aef5a.zip",
     )
 
+    maybe(
+        http_archive,
+        name = "com_github_google_glog",
+        build_file = "@io_kythe//third_party:googlelog.BUILD",
+        sha256 = "ce61883437240d650be724043e8b3c67e257690f876ca9fd53ace2a791cfea6c",
+        strip_prefix = "glog-bac8811710c77ac3718be1c4801f43d37c1aea46",
+        url = "https://github.com/google/glog/archive/bac8811710c77ac3718be1c4801f43d37c1aea46.zip",
+    )
+
+    maybe(
+        http_archive,
+        name = "org_brotli",
+        sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
+        strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9",
+        url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+    )
+
+    maybe(
+        http_archive,
+        name = "com_google_riegeli",
+        sha256 = "6b05427c3fab111af052d166d195052f5336b8517b26a11dbc4fee10cfc75b4e",
+        strip_prefix = "riegeli-bd99099abd41abbe35a10f3bfa35e15b6b2d893a",
+        url = "https://github.com/google/riegeli/archive/bd99099abd41abbe35a10f3bfa35e15b6b2d893a.zip",
+    )
+
+    # A copy of the above archive because com_google_riegeli uses a non-standard name... (╯°□°)╯︵ ┻━┻
+    maybe(
+        http_archive,
+        name = "protobuf_archive",
+        build_file = "@io_kythe//third_party:protobuf.BUILD",
+        sha256 = "08608786f26c2ae4e5ff854560289779314b60179b5df824836303e2c0fae407",
+        strip_prefix = "protobuf-964201af37f8a0009440a52a30a66317724a52c3",
+        urls = ["https://github.com/google/protobuf/archive/964201af37f8a0009440a52a30a66317724a52c3.zip"],
+    )
+
+    maybe(
+        http_archive,
+        name = "org_libmemcached_libmemcached",
+        build_file = "@io_kythe//third_party:libmemcached.BUILD",
+        sha256 = "e22c0bb032fde08f53de9ffbc5a128233041d9f33b5de022c0978a2149885f82",
+        strip_prefix = "libmemcached-1.0.18",
+        url = "https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz",
+    )
+
+    maybe(
+        http_archive,
+        name = "se_haxx_curl",
+        build_file = "@io_kythe//third_party:curl.BUILD",
+        sha256 = "ff3e80c1ca6a068428726cd7dd19037a47cc538ce58ef61c59587191039b2ca6",
+        strip_prefix = "curl-7.49.1",
+        urls = [
+            "http://bazel-mirror.storage.googleapis.com/curl.haxx.se/download/curl-7.49.1.tar.gz",
+            "https://curl.haxx.se/download/curl-7.49.1.tar.gz",
+        ],
+    )
+
+    maybe(
+        http_archive,
+        name = "com_googlesource_code_re2",
+        # Gitiles creates gzip files with an embedded timestamp, so we cannot use
+        # sha256 to validate the archives.  We must rely on the commit hash and https.
+        url = "https://code.googlesource.com/re2/+archive/2c220e7df3c10d42d74cb66290ec89116bb5e6be.tar.gz",
+    )
+
+    maybe(
+        http_archive,
+        name = "com_github_stedolan_jq",
+        build_file = "@io_kythe//third_party:jq.BUILD",
+        sha256 = "998c41babeb57b4304e65b4eb73094279b3ab1e63801b6b4bddd487ce009b39d",
+        strip_prefix = "jq-1.4",
+        url = "https://github.com/stedolan/jq/releases/download/jq-1.4/jq-1.4.tar.gz",
+    )
+
+    maybe(
+        http_archive,
+        name = "com_github_google_snappy",
+        build_file = "@io_kythe//third_party:snappy.BUILD",
+        sha256 = "61e05a0295fd849072668b1f3494801237d809427cfe8fd014cda455036c3ef7",
+        strip_prefix = "snappy-1.1.7",
+        url = "https://github.com/google/snappy/archive/1.1.7.zip",
+    )
+
+    maybe(
+        http_archive,
+        name = "com_github_google_leveldb",
+        build_file = "@io_kythe//third_party:leveldb.BUILD",
+        sha256 = "5b2bd7a91489095ad54bb81ca6544561025b48ec6d19cc955325f96755d88414",
+        strip_prefix = "leveldb-1.20",
+        url = "https://github.com/google/leveldb/archive/v1.20.zip",
+    )
+
 def _java_dependencies():
     maybe(
         # For @com_google_common_flogger
@@ -131,12 +227,319 @@ def _java_dependencies():
         sha1 = "bc6fa6b19424bb9592fe43bbc20178f92d403105",
     )
 
+    maybe(
+        native.maven_jar,
+        name = "junit_junit",
+        artifact = "junit:junit:4.12",
+        sha1 = "2973d150c0dc1fefe998f834810d68f278ea58ec",
+    )
+
+    maybe(
+        native.maven_jar,
+        name = "com_beust_jcommander",
+        artifact = "com.beust:jcommander:1.48",
+        sha1 = "bfcb96281ea3b59d626704f74bc6d625ff51cbce",
+    )
+
+    maybe(
+        native.maven_jar,
+        name = "com_google_truth_truth",
+        artifact = "com.google.truth:truth:0.41",
+        sha1 = "846cd094934911f635ba2dadc016d538b8c30927",
+    )
+
+    maybe(
+        native.maven_jar,
+        name = "com_googlecode_java_diff_utils",
+        artifact = "com.googlecode.java-diff-utils:diffutils:1.3.0",
+        sha1 = "7e060dd5b19431e6d198e91ff670644372f60fbd",
+    )
+
+    maybe(
+        native.maven_jar,
+        name = "com_google_auto_value_auto_value",
+        artifact = "com.google.auto.value:auto-value:1.5.4",
+        sha1 = "65183ddd1e9542d69d8f613fdae91540d04e1476",
+    )
+
+    maybe(
+        native.maven_jar,
+        name = "com_google_auto_service_auto_service",
+        artifact = "com.google.auto.service:auto-service:1.0-rc4",
+        sha1 = "44954d465f3b9065388bbd2fc08a3eb8fd07917c",
+    )
+
+    maybe(
+        native.maven_jar,
+        name = "com_google_auto_auto_common",
+        artifact = "com.google.auto:auto-common:0.10",
+        sha1 = "c8f153ebe04a17183480ab4016098055fb474364",
+    )
+
+    maybe(
+        native.maven_jar,
+        name = "javax_annotation_jsr250_api",
+        artifact = "javax.annotation:jsr250-api:1.0",
+        sha1 = "5025422767732a1ab45d93abfea846513d742dcf",
+    )
+
+    maybe(
+        native.maven_jar,
+        name = "com_google_common_html_types",
+        artifact = "com.google.common.html.types:types:1.0.8",
+        sha1 = "9e9cf7bc4b2a60efeb5f5581fe46d17c068e0777",
+    )
+
 def _go_dependencies():
     maybe(
+        go_repository,
+        name = "com_github_pborman_uuid",
+        commit = "c65b2f87fee37d1c7854c9164a450713c28d50cd",
+        custom = "uuid",
+        importpath = "github.com/pborman/uuid",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_jmhodges_levigo",
+        commit = "c42d9e0ca023e2198120196f842701bb4c55d7b9",
+        custom = "levigo",
+        importpath = "github.com/jmhodges/levigo",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_google_go_cmp",
+        commit = "5411ab924f9ffa6566244a9e504bc347edacffd3",
+        custom = "cmp",
+        importpath = "github.com/google/go-cmp",
+    )
+
+    maybe(
+        go_repository,
+        name = "org_golang_x_sync",
+        commit = "1d60e4601c6fd243af51cc01ddf169918a5407ca",
+        custom = "sync",
+        custom_git = "https://github.com/golang/sync.git",
+        importpath = "golang.org/x/sync",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_sourcegraph_jsonrpc2",
+        commit = "a3d86c792f0f5a0c0c2c4ed9157125e914cb5534",
+        custom = "jsonrpc2",
+        importpath = "github.com/sourcegraph/jsonrpc2",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_golang_snappy",
+        commit = "553a641470496b2327abcac10b36396bd98e45c9",
+        custom = "snappy",
+        importpath = "github.com/golang/snappy",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_sourcegraph_go_langserver",
+        commit = "e526744fd766a8f42e55bd92a3843c2afcdbf08c",
+        custom = "langserver",
+        importpath = "github.com/sourcegraph/go-langserver",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_sergi_go_diff",
+        commit = "da645544ed44df016359bd4c0e3dc60ee3a0da43",
+        custom = "diff",
+        importpath = "github.com/sergi/go-diff",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_google_subcommands",
+        commit = "a3682377147edf596d303faabd89f81977b3f678",
+        custom = "subcommands",
+        importpath = "github.com/google/subcommands",
+    )
+
+    maybe(
+        go_repository,
+        name = "org_golang_x_tools",
+        commit = "48418e5732e1b1e2a10207c8007a5f959e422f20",
+        custom = "x_tools",
+        custom_git = "https://github.com/golang/tools.git",
+        importpath = "golang.org/x/tools",
+    )
+
+    maybe(
+        go_repository,
+        name = "org_golang_x_text",
+        commit = "7922cc490dd5a7dbaa7fd5d6196b49db59ac042f",
+        custom = "x_text",
+        custom_git = "https://github.com/golang/text.git",
+        importpath = "golang.org/x/text",
+    )
+
+    maybe(
+        go_repository,
+        name = "org_golang_x_net",
+        commit = "f73e4c9ed3b7ebdd5f699a16a880c2b1994e50dd",
+        custom = "x_net",
+        custom_git = "https://github.com/golang/net.git",
+        importpath = "golang.org/x/net",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_pkg_errors",
+        commit = "816c9085562cd7ee03e7f8188a1cfd942858cded",
+        custom = "errors",
+        importpath = "github.com/pkg/errors",
+    )
+
+    maybe(
+        go_repository,
+        name = "org_bitbucket_creachadair_stringset",
+        commit = "e974a3c1694da0d5a14216ce46dbceef6a680978",
+        custom = "stringset",
+        custom_git = "https://bitbucket.org/creachadair/stringset.git",
+        importpath = "bitbucket.org/creachadair/stringset",
+    )
+
+    maybe(
+        go_repository,
+        name = "org_bitbucket_creachadair_shell",
+        commit = "3dcd505a7ca5845388111724cc2e094581e92cc6",
+        custom = "shell",
+        custom_git = "https://bitbucket.org/creachadair/shell.git",
+        importpath = "bitbucket.org/creachadair/shell",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_google_go_github",
+        commit = "8ea2e2657df890db8fb434a9274799d641bd698c",
+        custom = "github",
+        importpath = "github.com/google/go-github",
+    )
+
+    maybe(
+        go_repository,
+        name = "org_golang_google_grpc",
+        commit = "d07538b1475ec5b0ac85319e4a6706b2d2d8cab7",
+        custom = "grpc",
+        custom_git = "https://github.com/grpc/grpc-go.git",
+        importpath = "google.golang.org/grpc",
+    )
+
+    maybe(
+        go_repository,
+        name = "org_golang_x_oauth2",
+        commit = "cdc340f7c179dbbfa4afd43b7614e8fcadde4269",
+        custom = "x_oauth2",
+        custom_git = "https://github.com/golang/oauth2.git",
+        importpath = "golang.org/x/oauth2",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_google_go_querystring",
+        commit = "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
+        custom = "querystring",
+        importpath = "github.com/google/go-querystring",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_apache_beam",
+        build_file_proto_mode = "disable",
+        commit = "09857b18ffd8131ffc1baadfd583f708358a32bb",
+        custom = "beam",
+        importpath = "github.com/apache/beam",
+    )
+
+    maybe(
+        go_repository,
+        name = "org_golang_google_api",
+        commit = "3097bf831ede4a24e08a3316254e29ca726383e3",
+        custom = "google_api",
+        custom_git = "https://github.com/google/google-api-go-client.git",
+        importpath = "google.golang.org/api",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_google_cloud_go",
+        commit = "01301d1df8060594708d76bda9062b0205b77e8b",
+        custom = "google_cloud",
+        custom_git = "https://github.com/GoogleCloudPlatform/google-cloud-go.git",
+        importpath = "cloud.google.com/go",
+    )
+
+    maybe(
+        go_repository,
+        name = "io_opencensus_go",
+        commit = "c40611a83b49d279ee5203c85e4fe169dcb158b6",
+        custom = "opencensus",
+        custom_git = "https://github.com/census-instrumentation/opencensus-go.git",
+        importpath = "go.opencensus.io",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_syndtr_goleveldb",
+        commit = "5d6fca44a948d2be89a9702de7717f0168403d3d",
+        importpath = "github.com/syndtr/goleveldb",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_minio_highwayhash",
+        commit = "85fc8a2dacad36a6beb2865793cd81363a496696",
+        custom = "highwayhash",
+        importpath = "github.com/minio/highwayhash",
+    )
+
+    maybe(
+        go_repository,
+        name = "org_golang_x_sys",
+        commit = "6c888cc515d3ed83fc103cf1d84468aad274b0a7",
+        custom = "x_sys",
+        custom_git = "https://github.com/golang/sys.git",
+        importpath = "golang.org/x/sys",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_datadog_zstd",
+        commit = "aebefd9fcb99f22cd691ef778a12ed68f0e6a1ab",
+        custom = "zstd",
+        importpath = "github.com/DataDog/zstd",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_beevik_etree",
+        commit = "9d7e8feddccb4ed1b8afb54e368bd323d2ff652c",
+        custom = "etree",
+        importpath = "github.com/beevik/etree",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_google_orderedcode",
+        commit = "05a79567b685231e7ca5db3adccddf9ae9dd86df",
+        importpath = "github.com/google/orderedcode",
+    )
+
+    maybe(
         http_archive,
-        name = "io_bazel_rules_go",
-        sha256 = "5f3b0304cdf0c505ec9e5b3c4fc4a87b5ca21b13d8ecc780c97df3d1809b9ce6",
-        urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.15.1/rules_go-0.15.1.tar.gz"],
+        name = "org_brotli_go",
+        sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
+        strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9/go",
+        url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
     )
 
 def kythe_dependencies():
@@ -170,3 +573,5 @@ def kythe_dependencies():
         strip_prefix = "bazel-skylib-0.5.0",
         urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.5.0.zip"],
     )
+
+    _rule_dependencies()

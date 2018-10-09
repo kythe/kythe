@@ -78,7 +78,6 @@ java_binary(
         ":analyzer",
         ":plugin",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:stream_fact_emitter",
-        "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
         "//kythe/java/com/google/devtools/kythe/platform/java",

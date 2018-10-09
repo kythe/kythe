@@ -19,6 +19,8 @@ package com.google.devtools.kythe.util;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.io.BaseEncoding;
+import com.google.devtools.kythe.proto.Buildinfo.BuildDetails;
+import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -29,7 +31,6 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.LazyStringArrayList;
@@ -42,8 +43,19 @@ import java.util.ArrayList;
 /** Utility class for working with JSON/{@link Gson}. */
 public class JsonUtil {
 
+  /** Types that may be present in JSON pb files */
+  public static final JsonFormat.TypeRegistry.Builder JSON_TYPE_REGISTRY =
+      JsonFormat.TypeRegistry.newBuilder()
+          .add(JavaDetails.getDescriptor())
+          .add(BuildDetails.getDescriptor());
+
   /** The registry currently in use. */
   private static JsonFormat.TypeRegistry registry;
+
+  /** Use the given {@link JsonFormat.TypeRegistry.Builder} when parsing proto3 Any messages. */
+  public static void usingTypeRegistry(JsonFormat.TypeRegistry.Builder registryBuilder) {
+    usingTypeRegistry(registryBuilder.build());
+  }
 
   /** Use the given {@link JsonFormat.TypeRegistry} when parsing proto3 Any messages. */
   public static void usingTypeRegistry(JsonFormat.TypeRegistry registry) {
