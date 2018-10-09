@@ -159,7 +159,7 @@ def _java_extract_kzip_impl(ctx):
         jars += [dep[KytheJavaJar].jar]
 
     # Actually compile the sources to be used as a dependency for other tests
-    jar = ctx.new_file(ctx.outputs.kzip, ctx.outputs.kzip.basename + ".jar")
+    jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
     info = java_common.compile(
         ctx,
         javac_opts = java_common.default_javac_opts(
