@@ -24,7 +24,9 @@ export SHELL=/bin/bash
 DIR="$(readlink -e "$(dirname "$0")")"
 cd "$DIR/../../.."
 
-bazel --bazelrc=/dev/null build //kythe/docs/... \
+# Use the project's bazelrc so we pick up the default options that Kythe needs
+# to build correctly.
+bazel --bazelrc=.bazelrc build //kythe/docs/... \
     //kythe/docs:schema-overview \
     //kythe/docs/schema \
     //kythe/docs/schema:callgraph \
