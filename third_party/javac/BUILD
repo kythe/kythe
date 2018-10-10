@@ -13,6 +13,15 @@ java_import(
     neverlink = True,
 )
 
+java_import(
+    name = "javac9",
+    jars = [
+        ":jdk_compiler_jar",
+        ":java_compiler_jar",
+    ],
+    neverlink = True,
+)
+
 filegroup(
     name = "javac_jar",
     srcs = ["javac-9-dev-r4023-1.jar"],

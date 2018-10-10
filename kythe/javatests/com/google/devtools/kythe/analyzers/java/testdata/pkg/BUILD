@@ -307,3 +307,17 @@ java_verifier_test(
     ],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/jvm/testdata:__pkg__"],
 )
+
+java_verifier_test(
+    name = "release9_test",
+    size = "small",
+    srcs = [
+        "Classes.java",
+        "Definitions.java",
+    ],
+    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
+    extractor_opts = [
+        "--release",
+        "9",
+    ],
+)

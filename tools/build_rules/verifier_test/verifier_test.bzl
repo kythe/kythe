@@ -174,11 +174,6 @@ def _java_extract_kzip_impl(ctx):
     )
 
     args = ctx.attr.opts + [
-        # TODO(schroederc): properly support --release options
-        "-target",
-        "9",
-        "-source",
-        "9",
         "-encoding",
         "utf-8",
         "-cp",
@@ -433,6 +428,8 @@ def java_verifier_test(
         deps = [],
         size = "small",
         tags = [],
+        extractor = None,
+        extractor_opts = ["-source", "9", "-target", "9"],
         indexer_opts = ["--verbose"],
         verifier_opts = ["--ignore_dups"],
         load_plugin = None,
@@ -446,6 +443,8 @@ def java_verifier_test(
         # This is a hack to depend on the .jar producer.
         deps = [d + "_kzip" for d in deps],
         data = meta,
+        extractor = extractor,
+        opts = extractor_opts,
         tags = tags,
         visibility = visibility,
         vnames_config = vnames_config,
