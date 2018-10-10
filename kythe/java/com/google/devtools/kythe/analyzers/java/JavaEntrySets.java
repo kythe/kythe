@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.flogger.FluentLogger;
@@ -39,7 +41,6 @@ import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.tree.JCTree;
-import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -180,16 +181,10 @@ public class JavaEntrySets extends KytheEntrySets {
   public EntrySet newDocAndEmit(
       Optional<String> subkind, Positions filePositions, String text, Iterable<VName> params) {
     VName fileVName = getFileVName(getDigest(filePositions.getSourceFile()));
-    byte[] encodedText;
-    try {
-      encodedText = text.getBytes("UTF-8");
-    } catch (UnsupportedEncodingException ex) {
-      encodedText = new byte[0];
-    }
     NodeBuilder builder =
         newNode(NodeKind.DOC.getKind(), subkind)
             .setCorpusPath(CorpusPath.fromVName(fileVName))
-            .setProperty("text", encodedText)
+            .setProperty("text", text.getBytes(UTF_8))
             .addSignatureSalt(text);
     params.forEach(builder::addSignatureSalt);
     EntrySet node = emitAndReturn(builder);
