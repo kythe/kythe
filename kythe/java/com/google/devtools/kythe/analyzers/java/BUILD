@@ -91,6 +91,7 @@ java_binary(
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "@com_beust_jcommander//jar",
+        "@com_google_common_flogger//api",
         "@com_google_protobuf//:protobuf_java",
     ],
 )
