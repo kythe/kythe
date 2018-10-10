@@ -1361,6 +1361,7 @@ void KytheGraphObserver::RegisterBuiltins() {
   RegisterTokenBuiltin("SEL", "SEL");
   RegisterTokenBuiltin("id", "id");
   RegisterTokenBuiltin("TypeUnion", "TypeUnion");
+  RegisterTokenBuiltin("__float128", "__float128");
 
   MarkedSource lhs_tycon_builtin;
   auto* lhs_tycon = lhs_tycon_builtin.add_child();
