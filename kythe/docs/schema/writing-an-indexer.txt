@@ -29,12 +29,12 @@ particular language.
 
 In the Kythe pipeline, a language's *indexer* is responsible for building a
 subgraph that represents a particular program. Complete indexers usually accept
-link:https://www.kythe.io/docs/kythe-kzip.html[`.kzip`] files or index packs
-that contain a program, all of its dependencies, and the arguments necessary
-for a compiler or interpreter to understand it. This data is packaged by a
-separate component called an *extractor*. Depending on the language and build
-system involved, it may be possible to use a generic extractor to produce these
-hermetic compilation units. We will not address extraction here.
+link:https://www.kythe.io/docs/kythe-kzip.html[`.kzip`] files that contain a
+program, all of its dependencies, and the arguments necessary for a compiler or
+interpreter to understand it. This data is packaged by a separate component
+called an *extractor*. Depending on the language and build system involved, it
+may be possible to use a generic extractor to produce these hermetic
+compilation units. We will not address extraction here.
 
 For development and testing, it's useful for the indexer to accept program text
 directly as input; this is how we will proceed in these instructions. First,
