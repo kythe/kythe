@@ -49,6 +49,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -101,7 +102,6 @@ public class JavaIndexer {
       }
     } else {
       // java_indexer compilation-file+
-      boolean loggedDeprecationWarning = false;
       for (String compilationPath : config.getCompilation()) {
         if (compilationPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
           // java_indexer kzip-file
@@ -124,11 +124,9 @@ public class JavaIndexer {
           }
         } else {
           // java_indexer kindex-file
-          if (!loggedDeprecationWarning) {
-            logger.atWarning().log(
-                ".kindex files are deprecated; "
-                    + "use kzip files instead: https://kythe.io/docs/kythe-kzip.html");
-          }
+          logger.atWarning().atMostEvery(1, TimeUnit.DAYS).log(
+              ".kindex files are deprecated; "
+                  + "use kzip files instead: https://kythe.io/docs/kythe-kzip.html");
           try {
             CompilationDescription desc = IndexInfoUtils.readKindexInfoFromFile(compilationPath);
             analyzeCompilation(config, plugins, statistics, desc);
