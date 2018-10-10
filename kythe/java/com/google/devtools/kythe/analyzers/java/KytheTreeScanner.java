@@ -521,9 +521,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     VName lambdaNode = entrySets.newLambdaAndEmit(filePositions, lambda).getVName();
     emitAnchor(ctx, EdgeKind.DEFINES, lambdaNode);
 
-    for (Type target : lambda.targets) {
-      VName targetNode = getNode(target.asElement());
-      entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
+    if (lambda.targets != null) {
+      for (Type target : lambda.targets) {
+        VName targetNode = getNode(target.asElement());
+        entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
+      }
     }
 
     scan(lambda.body, ctx);
