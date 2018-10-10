@@ -91,7 +91,7 @@ public class IndexInfoUtils {
     return compilations;
   }
 
-  private static CompilationDescription indexedCompilationToCompilationDescription(
+  public static CompilationDescription indexedCompilationToCompilationDescription(
       IndexedCompilation indexedCompilation, KZip.Reader reader) {
     CompilationUnit unit = indexedCompilation.getUnit();
     Set<FileData> fileContents = new HashSet<>();
