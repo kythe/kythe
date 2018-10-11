@@ -22,7 +22,7 @@
 # Make sure the user has installed the asciidoc gem, otherwise the website will
 # generate successfully but it will be missing tocs, titles, and other
 # attributes.
-if gem list -i asciidoctor &>/dev/null; then
+if ! gem list -i asciidoctor &> /dev/null; then
   echo "You don't have the asciidoctor gem installed."
   echo "Please run 'gem install --user asciidoctor' before executing this script."
   exit 1
