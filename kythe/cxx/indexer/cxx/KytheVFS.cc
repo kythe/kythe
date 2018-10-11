@@ -55,7 +55,7 @@ IndexVFS::~IndexVFS() {
   }
 }
 
-llvm::ErrorOr<clang::vfs::Status> IndexVFS::status(const llvm::Twine& path) {
+llvm::ErrorOr<llvm::vfs::Status> IndexVFS::status(const llvm::Twine& path) {
   if (const auto* record =
           FileRecordForPath(path.str(), BehaviorOnMissing::kReturnError, 0)) {
     return record->status;
@@ -76,7 +76,7 @@ bool IndexVFS::get_vname(const llvm::StringRef& path,
   return false;
 }
 
-llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> IndexVFS::openFileForRead(
+llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>> IndexVFS::openFileForRead(
     const llvm::Twine& path) {
   if (FileRecord* record =
           FileRecordForPath(path.str(), BehaviorOnMissing::kReturnError, 0)) {
@@ -87,9 +87,9 @@ llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> IndexVFS::openFileForRead(
   return make_error_code(llvm::errc::no_such_file_or_directory);
 }
 
-clang::vfs::directory_iterator IndexVFS::dir_begin(
+llvm::vfs::directory_iterator IndexVFS::dir_begin(
     const llvm::Twine& dir, std::error_code& error_code) {
-  return clang::vfs::directory_iterator();
+  return llvm::vfs::directory_iterator();
 }
 
 void IndexVFS::SetVName(const std::string& path, const proto::VName& vname) {
@@ -158,7 +158,7 @@ IndexVFS::FileRecord* IndexVFS::FileRecordForPathRoot(const llvm::Twine& path,
     return nullptr;
   } else {
     name_record = new FileRecord(
-        {clang::vfs::Status(root_name, clang::vfs::getNextVirtualUniqueID(),
+        {llvm::vfs::Status(root_name, llvm::vfs::getNextVirtualUniqueID(),
                             llvm::sys::TimePoint<>(), 0, 0, 0,
                             llvm::sys::fs::file_type::directory_file,
                             llvm::sys::fs::all_read),
@@ -265,7 +265,7 @@ IndexVFS::FileRecord* IndexVFS::AllocOrReturnFileRecord(
   llvm::SmallString<1024> out_path(llvm::StringRef(parent->status.getName()));
   llvm::sys::path::append(out_path, label);
   FileRecord* new_record = new FileRecord{
-      clang::vfs::Status(out_path, clang::vfs::getNextVirtualUniqueID(),
+      llvm::vfs::Status(out_path, llvm::vfs::getNextVirtualUniqueID(),
                          llvm::sys::TimePoint<>(), 0, 0, size, type,
                          llvm::sys::fs::all_read),
       false, label};

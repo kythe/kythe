@@ -18,8 +18,8 @@
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_VFS_H_
 
 #include "clang/Basic/FileManager.h"
-#include "clang/Basic/VirtualFileSystem.h"
 #include "kythe/proto/analysis.pb.h"
+#include "llvm/Support/VirtualFileSystem.h"
 
 namespace kythe {
 
@@ -28,7 +28,7 @@ namespace kythe {
 /// IndexVFS normalizes all paths (using the working directory for
 /// relative paths). This means that foo/bar/../baz is assumed to be the
 /// same as foo/baz.
-class IndexVFS : public clang::vfs::FileSystem {
+class IndexVFS : public llvm::vfs::FileSystem {
  public:
   /// \param working_directory The absolute path to the working directory.
   /// \param virtual_files Files to map.
@@ -36,14 +36,14 @@ class IndexVFS : public clang::vfs::FileSystem {
            const std::vector<proto::FileData>& virtual_files,
            const std::vector<llvm::StringRef>& virtual_dirs);
   ~IndexVFS();
-  /// \brief Implements clang::vfs::FileSystem::status.
-  llvm::ErrorOr<clang::vfs::Status> status(const llvm::Twine& path) override;
-  /// \brief Implements clang::vfs::FileSystem::openFileForRead.
-  llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> openFileForRead(
+  /// \brief Implements llvm::vfs::FileSystem::status.
+  llvm::ErrorOr<llvm::vfs::Status> status(const llvm::Twine& path) override;
+  /// \brief Implements llvm::vfs::FileSystem::openFileForRead.
+  llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>> openFileForRead(
       const llvm::Twine& path) override;
   /// \brief Unimplemented and unused.
-  clang::vfs::directory_iterator dir_begin(
-      const llvm::Twine& dir, std::error_code& error_code) override;
+  llvm::vfs::directory_iterator dir_begin(const llvm::Twine& dir,
+                                          std::error_code& error_code) override;
   /// \brief Associates a vname with a path.
   void SetVName(const std::string& path, const proto::VName& vname);
   /// \brief Returns the vname associated with some `FileEntry`.
@@ -72,7 +72,7 @@ class IndexVFS : public clang::vfs::FileSystem {
   /// \brief Information kept on a file being tracked.
   struct FileRecord {
     /// Clang's VFS status record.
-    clang::vfs::Status status;
+    llvm::vfs::Status status;
     /// Whether `vname` is valid.
     bool has_vname;
     /// This file's name, independent of path.
@@ -85,11 +85,11 @@ class IndexVFS : public clang::vfs::FileSystem {
     llvm::StringRef data;
   };
 
-  /// \brief A clang::vfs::File that wraps a `FileRecord`.
-  class File : public clang::vfs::File {
+  /// \brief A llvm::vfs::File that wraps a `FileRecord`.
+  class File : public llvm::vfs::File {
    public:
     explicit File(FileRecord* record) : record_(record) {}
-    llvm::ErrorOr<clang::vfs::Status> status() override {
+    llvm::ErrorOr<llvm::vfs::Status> status() override {
       return record_->status;
     }
     std::error_code close() override { return std::error_code(); }
