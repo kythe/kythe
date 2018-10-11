@@ -24,7 +24,7 @@
 # attributes.
 if gem list -i asciidoctor &>/dev/null; then
   echo "You don't have the asciidoctor gem installed."
-  echo "Please run 'gem install asciidoctor' before executing this script."
+  echo "Please run 'gem install --user asciidoctor' before executing this script."
   exit 1
 fi
 
