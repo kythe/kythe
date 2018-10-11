@@ -5,6 +5,4 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_binary(
     name = "helloworld",
     srcs = ["helloworld.go"],
-    deps = [
-    ],
 )
