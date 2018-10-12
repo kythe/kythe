@@ -18,7 +18,7 @@ export BUCKET_NAME="your-bucket-name"
 
 ## Hello World Test
 
-To make sure you have done setup correctly, we have a shim binary at
+To make sure you have done setup correctly, we have an example binary at
 `kythe/go/extractors/gcp/helloworld`, which you can run as follows:
 
 ```
