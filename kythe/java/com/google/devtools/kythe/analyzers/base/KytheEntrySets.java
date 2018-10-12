@@ -320,7 +320,8 @@ public class KytheEntrySets {
   /** Returns (and emits) a new abstract node over child. */
   public EntrySet newAbstractAndEmit(
       VName child, List<VName> params, @Nullable MarkedSource markedSource) {
-    NodeBuilder absBuilder = newNode(NodeKind.ABS).addSignatureSalt(child);
+    NodeBuilder absBuilder =
+        newNode(NodeKind.ABS).addSignatureSalt(child).setCorpusPath(CorpusPath.fromVName(child));
     if (markedSource != null) {
       absBuilder.setProperty("code", markedSource);
     }
