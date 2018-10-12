@@ -1,7 +1,7 @@
 package pkg;
 
-//- @Generics defines/binding GAbs
-//- Class childof GAbs
+//- @Generics=vname(_, "kythe", _, _, _) defines/binding GAbs
+//- Class childof GAbs=vname(_, "kythe", _, _, _)
 //- GAbs.node/kind abs
 //- GAbs param.0 TVar
 //- @T defines/binding TVar
