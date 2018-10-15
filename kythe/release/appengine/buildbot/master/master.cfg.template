@@ -90,7 +90,7 @@ c['change_source'].append(GitHubPullrequestPoller(
 ####### SCHEDULERS
 
 bazelMinVersion = '0.16.0'
-bazelMaxVersion = '0.17.2'
+bazelMaxVersion = '0.18.0'
 
 allBuilders = [
     "bazel-"+bazelMinVersion,
