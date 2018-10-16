@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# docker build -t gcr.io/kythe_repo/kythe-builder .
+# docker build -t gcr.io/kythe-repo/kythe-builder .
 FROM gcr.io/cloud-marketplace/google/rbe-ubuntu16-04@sha256:9bd8ba020af33edb5f11eff0af2f63b3bcb168cd6566d7b27c6685e717787928
 
 RUN apt-get update && \
