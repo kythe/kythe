@@ -62,6 +62,7 @@ import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
+import com.sun.tools.javac.tree.JCTree.JCFunctionalExpression;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.tree.JCTree.JCImport;
 import com.sun.tools.javac.tree.JCTree.JCLambda;
@@ -521,16 +522,29 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     VName lambdaNode = entrySets.newLambdaAndEmit(filePositions, lambda).getVName();
     emitAnchor(ctx, EdgeKind.DEFINES, lambdaNode);
 
-    if (lambda.targets != null) {
-      for (Type target : lambda.targets) {
-        VName targetNode = getNode(target.asElement());
-        entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
-      }
+    for (Type target : getTargets(lambda)) {
+      VName targetNode = getNode(target.asElement());
+      entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
     }
 
     scan(lambda.body, ctx);
     scanList(lambda.params, ctx);
     return new JavaNode(lambdaNode);
+  }
+
+  private static Iterable<Type> getTargets(JCFunctionalExpression node) {
+    try {
+      return node.targets != null ? node.targets : com.sun.tools.javac.util.List.nil();
+    } catch (NoSuchFieldError e) {
+      // continue below
+    }
+    try {
+      // Work with the field rename in JDK 11: http://hg.openjdk.java.net/jdk/jdk11/rev/f854b76b6a0c
+      return com.sun.tools.javac.util.List.of(
+          (Type) JCFunctionalExpression.class.getField("target").get(node));
+    } catch (ReflectiveOperationException e) {
+      throw new LinkageError(e.getMessage(), e);
+    }
   }
 
   @Override

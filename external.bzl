@@ -180,9 +180,8 @@ def _java_dependencies():
     maybe(
         git_repository,
         name = "com_google_common_flogger",
-        commit = "f6071d2c5cd6c6c4f5fcd9f74bfec4ca972b0423",
-        # TODO(schroederc): remove usage of fork once https://github.com/google/flogger/pull/37 is closed
-        remote = "https://github.com/schroederc/flogger",
+        commit = "4d3689233be1011fedf7d85ac33d5f61f47f40e3",
+        remote = "https://github.com/google/flogger",
     )
 
     maybe(
