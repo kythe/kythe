@@ -38,6 +38,7 @@ compiler needs to process the compilation (_e.g.,_ header files or type
 snapshots from dependencies).
 
 [[_kindex_format]]
+*Deprecated in favor of link:https://www.kythe.io/docs/kythe-kzip.html[kzip]*
 For a single compilation, we can store this record in a +.kindex+ file, which
 contains a GZip-compressed sequence of length-prefixed binary records (length
 encoded as a protobuf-style

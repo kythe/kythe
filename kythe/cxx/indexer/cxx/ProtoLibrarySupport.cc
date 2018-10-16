@@ -198,7 +198,9 @@ bool ParseTextProtoHandler::ParseMsg(const clang::CXXRecordDecl& MsgDecl,
                      << MsgDecl.getName().str();
           return false;
         }
-        CHECK_GE(Token.line, 0);
+        if (Token.line < 0) {
+          return false;
+        }
         FoundField(*AccessorDecl, GetTokenSourceRange(Token));
         if (!ParseFieldValue(*AccessorDecl)) {
           return false;
@@ -279,7 +281,9 @@ bool ParseTextProtoHandler::ParseFieldValue(
 clang::SourceLocation ParseTextProtoHandler::GetSourceLocation(
     const LineColumnPair& LineColumn) const {
   const auto OffsetIt = LineColumnToOffset.find(LineColumn);
-  CHECK(OffsetIt != LineColumnToOffset.end());
+  if (OffsetIt == LineColumnToOffset.end()) {
+    return clang::SourceLocation();
+  }
   return Context.getSourceManager().getSpellingLoc(
       Literal->getLocationOfByte(OffsetIt->second, Context.getSourceManager(),
                                  LangOpts, Context.getTargetInfo()));
@@ -382,7 +386,9 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
     if (const auto* const CxxConstruct =
             clang::dyn_cast<clang::CXXConstructExpr>(StringpieceCtorExpr)) {
       // StringPiece(StringPiece&&) has a single parameter.
-      CHECK_EQ(CxxConstruct->getNumArgs(), 1);
+      if (CxxConstruct->getNumArgs() != 1) {
+        return;
+      }
       const auto* Arg = CxxConstruct->getArg(0)->IgnoreParenImpCasts();
       if (clang::isa<clang::CXXConstructExpr>(Arg)) {
         Arg = clang::dyn_cast<clang::CXXConstructExpr>(Arg)

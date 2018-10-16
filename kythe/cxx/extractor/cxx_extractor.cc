@@ -26,7 +26,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "clang/Basic/VirtualFileSystem.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/MacroArgs.h"
@@ -51,6 +50,7 @@
 #include "kythe/proto/cxx.pb.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/VirtualFileSystem.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
 #include "third_party/llvm/src/cxx_extractor_preprocessor_utils.h"
 
@@ -1039,7 +1039,7 @@ void CompilationWriter::FillFileInput(
 void CompilationWriter::InsertExtraIncludes(
     kythe::proto::CompilationUnit* unit,
     kythe::proto::CxxCompilationUnitDetails* details) {
-  auto fs = clang::vfs::getRealFileSystem();
+  auto fs = llvm::vfs::getRealFileSystem();
   std::set<std::string> normalized_clang_paths;
   for (const auto& input : unit->required_input()) {
     normalized_clang_paths.insert(
@@ -1325,19 +1325,19 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
 /// for extensions like CUDA) request files separately from the preprocessor.
 /// We still want to keep track of file requests in the preprocessor so we can
 /// record information about transcripts, as these are important for claiming.
-class RecordingFS : public clang::vfs::FileSystem {
+class RecordingFS : public llvm::vfs::FileSystem {
  public:
-  RecordingFS(llvm::IntrusiveRefCntPtr<clang::vfs::FileSystem> base_file_system,
+  RecordingFS(llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> base_file_system,
               CompilationWriter* index_writer)
       : base_file_system_(base_file_system), index_writer_(index_writer) {}
-  llvm::ErrorOr<clang::vfs::Status> status(const llvm::Twine& path) override {
+  llvm::ErrorOr<llvm::vfs::Status> status(const llvm::Twine& path) override {
     auto nested_result = base_file_system_->status(path);
     if (nested_result && nested_result->isDirectory()) {
       index_writer_->DirectoryOpenedForStatus(path.str());
     }
     return nested_result;
   }
-  llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> openFileForRead(
+  llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>> openFileForRead(
       const llvm::Twine& path) override {
     auto nested_result = base_file_system_->openFileForRead(path);
     if (nested_result) {
@@ -1346,7 +1346,7 @@ class RecordingFS : public clang::vfs::FileSystem {
     }
     return nested_result;
   }
-  clang::vfs::directory_iterator dir_begin(
+  llvm::vfs::directory_iterator dir_begin(
       const llvm::Twine& dir, std::error_code& error_code) override {
     return base_file_system_->dir_begin(dir, error_code);
   }
@@ -1358,7 +1358,7 @@ class RecordingFS : public clang::vfs::FileSystem {
   }
 
  private:
-  llvm::IntrusiveRefCntPtr<clang::vfs::FileSystem> base_file_system_;
+  llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> base_file_system_;
   CompilationWriter* index_writer_;
 };
 
@@ -1368,7 +1368,7 @@ bool ExtractorConfiguration::Extract(
   llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
       new clang::FileManager(
           file_system_options_,
-          new RecordingFS(clang::vfs::getRealFileSystem(), &index_writer_)));
+          new RecordingFS(llvm::vfs::getRealFileSystem(), &index_writer_)));
   index_writer_.set_target_name(target_name_);
   index_writer_.set_rule_type(rule_type_);
   index_writer_.set_output_path(compilation_output_path_);

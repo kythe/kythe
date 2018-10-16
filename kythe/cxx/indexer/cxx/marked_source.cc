@@ -82,8 +82,8 @@ std::string Reformat(const clang::LangOptions& lang_options,
   if (*incomplete) {
     return "";
   }
-  llvm::IntrusiveRefCntPtr<clang::vfs::InMemoryFileSystem> InMemoryFileSystem(
-      new clang::vfs::InMemoryFileSystem);
+  llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
+      new llvm::vfs::InMemoryFileSystem);
   clang::FileManager Files(clang::FileSystemOptions(), InMemoryFileSystem);
   clang::DiagnosticsEngine Diagnostics(
       llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs),

@@ -132,6 +132,20 @@ def extract(
         deps = [],
         vnames_config = None,
         mnemonic = "ExtractCompilation"):
+    """Run the extractor tool under an environment to produce the given kzip
+    output file.  The extractor is passed each string from opts after expanding
+    any build artifact locations and then each File's path from the srcs
+    collection.
+
+    Args:
+      kzip: Declared .kzip output File
+      extractor: Executable extractor tool to invoke
+      srcs: Files passed to extractor tool; the compilation's source file inputs
+      opts: List of options passed to the extractor tool before source files
+      deps: Dependencies for the extractor's action (not passed to extractor on command-line)
+      vnames_config: Optional path to a VName configuration file
+      mnemonic: Mnemonic of the extractor's action
+    """
     env = {
         "KYTHE_ROOT_DIRECTORY": ".",
         "KYTHE_OUTPUT_FILE": kzip.path,
@@ -159,7 +173,7 @@ def _java_extract_kzip_impl(ctx):
         jars += [dep[KytheJavaJar].jar]
 
     # Actually compile the sources to be used as a dependency for other tests
-    jar = ctx.new_file(ctx.outputs.kzip, ctx.outputs.kzip.basename + ".jar")
+    jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
     info = java_common.compile(
         ctx,
         javac_opts = java_common.default_javac_opts(
@@ -174,11 +188,6 @@ def _java_extract_kzip_impl(ctx):
     )
 
     args = ctx.attr.opts + [
-        # TODO(schroederc): properly support --release options
-        "-target",
-        "9",
-        "-source",
-        "9",
         "-encoding",
         "utf-8",
         "-cp",
@@ -433,12 +442,28 @@ def java_verifier_test(
         deps = [],
         size = "small",
         tags = [],
+        extractor = None,
+        extractor_opts = ["-source", "9", "-target", "9"],
         indexer_opts = ["--verbose"],
         verifier_opts = ["--ignore_dups"],
         load_plugin = None,
         extra_goals = [],
         vnames_config = None,
         visibility = None):
+    """Extract, analyze, and verify a Java compilation.
+
+    Args:
+      srcs: The compilation's source file inputs; each file's verifier goals will be checked
+      deps: Optional list of java_verifier_test targets to be used as Java compilation dependencies
+      meta: Optional list of Kythe metadata files
+      extractor: Executable extractor tool to invoke (defaults to javac_extractor)
+      extractor_opts: List of options passed to the extractor tool
+      indexer_opts: List of options passed to the indexer tool
+      verifier_opts: List of options passed to the verifier tool
+      load_plugin: Optional Java analyzer plugin to load
+      extra_goals: List of text files containing verifier goals additional to those in srcs
+      vnames_config: Optional path to a VName configuration file
+    """
     kzip = _invoke(
         java_extract_kzip,
         name = name + "_kzip",
@@ -446,6 +471,8 @@ def java_verifier_test(
         # This is a hack to depend on the .jar producer.
         deps = [d + "_kzip" for d in deps],
         data = meta,
+        extractor = extractor,
+        opts = extractor_opts,
         tags = tags,
         visibility = visibility,
         vnames_config = vnames_config,
@@ -498,6 +525,14 @@ def jvm_verifier_test(
         indexer_opts = [],
         verifier_opts = ["--ignore_dups"],
         visibility = None):
+    """Extract, analyze, and verify a JVM compilation.
+
+    Args:
+      srcs: Source files containing verifier goals for the JVM compilation
+      deps: List of java/jvm verifier_test targets to be used as compilation dependencies
+      indexer_opts: List of options passed to the indexer tool
+      verifier_opts: List of options passed to the verifier tool
+    """
     kzip = _invoke(
         jvm_extract_kzip,
         name = name + "_kzip",

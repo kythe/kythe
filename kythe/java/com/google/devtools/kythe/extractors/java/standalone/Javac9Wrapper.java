@@ -36,7 +36,7 @@ import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 
 /** A class that wraps javac to extract compilation information and write it to an index file. */
-public class Javac8Wrapper extends AbstractJavacWrapper {
+public class Javac9Wrapper extends AbstractJavacWrapper {
   @Override
   protected CompilationDescription processCompilation(
       String[] arguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)
@@ -71,8 +71,17 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
             Option.CLASS_PATH, Option.SOURCE_PATH,
             Option.PROCESSOR_PATH, Option.PROCESSOR);
 
-    // Retrieve all other javac options.
     List<String> completeOptions = new ArrayList<>();
+    if (options.isSet(Option.RELEASE)) {
+      // If --release is set, claim it and the associated -source/-target flags.
+      completeOptions.add(Option.RELEASE.getPrimaryName());
+      completeOptions.add(options.get(Option.RELEASE));
+      claimed.add(Option.RELEASE);
+      claimed.add(Option.SOURCE);
+      claimed.add(Option.TARGET);
+    }
+
+    // Retrieve all other javac options.
     for (Option opt : Option.values()) {
       if (!claimed.contains(opt)) {
         String value = options.get(opt);
@@ -124,6 +133,6 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
   }
 
   public static void main(String[] args) {
-    new Javac8Wrapper().process(args);
+    new Javac9Wrapper().process(args);
   }
 }

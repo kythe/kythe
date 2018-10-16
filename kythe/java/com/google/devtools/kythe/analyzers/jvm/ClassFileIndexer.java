@@ -31,7 +31,9 @@ import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
+import com.google.devtools.kythe.platform.kzip.KZip;
 import com.google.devtools.kythe.platform.kzip.KZipException;
+import com.google.devtools.kythe.platform.kzip.KZipReader;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataCache;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
@@ -40,6 +42,7 @@ import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
+import com.google.devtools.kythe.proto.Analysis.IndexedCompilation;
 import com.google.devtools.kythe.proto.Java.JarDetails;
 import com.google.devtools.kythe.proto.Java.JarEntryDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
@@ -54,7 +57,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -97,19 +99,25 @@ public class ClassFileIndexer {
           analyzeCompilation(
               desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()), classVisitor);
         } else if (fileName.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+          boolean foundCompilation = false;
           try {
-            Collection<CompilationDescription> compilationDescriptions =
-                IndexInfoUtils.readKZip(fileName);
-            if (compilationDescriptions.size() != 1) {
-              throw new AnalysisException(
-                  "The kzip file did not contain exactly 1 CompilationDescription. It contained "
-                      + compilationDescriptions.size());
+            KZip.Reader reader = new KZipReader(new File(fileName));
+            for (IndexedCompilation indexedCompilation : reader.scan()) {
+              foundCompilation = true;
+              CompilationDescription desc =
+                  IndexInfoUtils.indexedCompilationToCompilationDescription(
+                      indexedCompilation, reader);
+              analyzeCompilation(
+                  desc.getCompilationUnit(),
+                  new FileDataCache(desc.getFileContents()),
+                  classVisitor);
             }
-            CompilationDescription desc = compilationDescriptions.iterator().next();
-            analyzeCompilation(
-                desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()), classVisitor);
           } catch (KZipException e) {
             throw new AnalysisException("Couldn't open kzip file", e);
+          }
+          if (!config.getIgnoreEmptyKZip() && !foundCompilation) {
+            throw new IllegalArgumentException(
+                "given empty .kzip file \"" + fileName + "\"; try --ignore_empty_kzip");
           }
         } else {
           throw new IllegalArgumentException("unknown file path extension: " + fileName);
@@ -165,9 +173,7 @@ public class ClassFileIndexer {
         }
       }
     }
-    return jarDetails
-        .getJarList()
-        .stream()
+    return jarDetails.getJarList().stream()
         .map(JarDetails.Jar::getVName)
         .collect(ImmutableList.toImmutableList());
   }
@@ -238,6 +244,11 @@ public class ClassFileIndexer {
         description = "Write the entries to this file (or stdout if unspecified)")
     private String outputPath;
 
+    @Parameter(
+        names = "--ignore_empty_kzip",
+        description = "Ignore empty .kzip files; exit successfully with no output")
+    private boolean ignoreEmptyKZip;
+
     public StandaloneConfig() {
       super("classfile-indexer");
     }
@@ -248,6 +259,10 @@ public class ClassFileIndexer {
 
     public final String getOutputPath() {
       return outputPath;
+    }
+
+    public final boolean getIgnoreEmptyKZip() {
+      return ignoreEmptyKZip;
     }
 
     public final List<String> getFilesToIndex() {

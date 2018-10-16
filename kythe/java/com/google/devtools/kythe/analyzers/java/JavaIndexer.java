@@ -18,12 +18,15 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
+import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
+import com.google.devtools.kythe.platform.kzip.KZip;
 import com.google.devtools.kythe.platform.kzip.KZipException;
+import com.google.devtools.kythe.platform.kzip.KZipReader;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataCache;
 import com.google.devtools.kythe.platform.shared.KytheMetadataLoader;
@@ -31,6 +34,8 @@ import com.google.devtools.kythe.platform.shared.MemoryStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.MetadataLoaders;
 import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.ProtobufMetadataLoader;
+import com.google.devtools.kythe.platform.shared.StatisticsCollector;
+import com.google.devtools.kythe.proto.Analysis.IndexedCompilation;
 import com.google.devtools.kythe.util.JsonUtil;
 import java.io.BufferedOutputStream;
 import java.io.EOFException;
@@ -42,16 +47,18 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * Binary to run Kythe's Java index over a single .kindex file, emitting entries to a file or
- * STDOUT.
+ * Binary to run Kythe's Java indexer over one of more .kzip/.kindex files, emitting entries to a
+ * file or STDOUT.
  */
 public class JavaIndexer {
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
   public static void main(String[] args) throws AnalysisException, IOException {
     JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);
 
@@ -83,53 +90,71 @@ public class JavaIndexer {
       statistics = new MemoryStatisticsCollector();
     }
 
-    List<String> compilation = config.getCompilation();
-    if (compilation.size() > 1) {
-      System.err.println("Java indexer received too many arguments; got " + compilation);
-      config.showHelpAndExit();
-    }
-
-    CompilationDescription desc = null;
-    String compilationPath = compilation.get(0);
     if (!Strings.isNullOrEmpty(config.getIndexPackRoot())) {
-      // java_indexer --index_pack=archive-root unit-key
-      desc = new Archive(config.getIndexPackRoot()).readDescription(compilationPath);
+      // java_indexer --index_pack=archive-root unit-key+
+      logger.atWarning().log(
+          "index pack files are deprecated; "
+              + "use kzip files instead: https://kythe.io/docs/kythe-kzip.html");
+      Archive archive = new Archive(config.getIndexPackRoot());
+      for (String unitDigest : config.getCompilation()) {
+        CompilationDescription desc = archive.readDescription(unitDigest);
+        analyzeCompilation(config, plugins, statistics, desc);
+      }
     } else {
-      if (compilationPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
-        // java_indexer kzip-file
-        try {
-          Collection<CompilationDescription> compilationDescriptions =
-              IndexInfoUtils.readKZip(compilationPath);
-          if (config.getIgnoreEmptyKZip() && compilationDescriptions.isEmpty()) {
-            return;
+      // java_indexer compilation-file+
+      for (String compilationPath : config.getCompilation()) {
+        if (compilationPath.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
+          // java_indexer kzip-file
+          boolean foundCompilation = false;
+          try {
+            KZip.Reader reader = new KZipReader(new File(compilationPath));
+            for (IndexedCompilation indexedCompilation : reader.scan()) {
+              foundCompilation = true;
+              CompilationDescription desc =
+                  IndexInfoUtils.indexedCompilationToCompilationDescription(
+                      indexedCompilation, reader);
+              analyzeCompilation(config, plugins, statistics, desc);
+            }
+          } catch (KZipException e) {
+            throw new IllegalArgumentException("Unable to read kzip", e);
           }
-          if (compilationDescriptions.size() != 1) {
+          if (!config.getIgnoreEmptyKZip() && !foundCompilation) {
             throw new IllegalArgumentException(
-                "The kzip did not contain exactly 1 CompilationDescription. It contained "
-                    + compilationDescriptions.size());
+                "given empty .kzip file \"" + compilationPath + "\"; try --ignore_empty_kzip");
           }
-          desc = compilationDescriptions.iterator().next();
-        } catch (KZipException e) {
-          throw new IllegalArgumentException("Unable to read kzip", e);
-        }
-      } else {
-        // java_indexer kindex-file
-        try {
-          desc = IndexInfoUtils.readKindexInfoFromFile(compilationPath);
-        } catch (EOFException e) {
-          if (config.getIgnoreEmptyKIndex()) {
-            return;
+        } else {
+          // java_indexer kindex-file
+          logger.atWarning().atMostEvery(1, TimeUnit.DAYS).log(
+              ".kindex files are deprecated; "
+                  + "use kzip files instead: https://kythe.io/docs/kythe-kzip.html");
+          try {
+            CompilationDescription desc = IndexInfoUtils.readKindexInfoFromFile(compilationPath);
+            analyzeCompilation(config, plugins, statistics, desc);
+          } catch (EOFException e) {
+            if (config.getIgnoreEmptyKIndex()) {
+              return;
+            }
+            throw new IllegalArgumentException(
+                "given empty .kindex file \"" + compilationPath + "\"; try --ignore_empty_kindex",
+                e);
           }
-          throw new IllegalArgumentException(
-              "given empty .kindex file \"" + compilationPath + "\"; try --ignore_empty_kindex", e);
         }
       }
     }
 
-    if (desc == null) {
-      throw new IllegalStateException("Unknown error reading CompilationDescription");
+    if (statistics != null) {
+      statistics.printStatistics(System.err);
     }
+  }
+
+  private static void analyzeCompilation(
+      StandaloneConfig config,
+      List<Supplier<Plugin>> plugins,
+      StatisticsCollector statistics,
+      CompilationDescription desc)
+      throws AnalysisException, IOException {
     if (!desc.getFileContents().iterator().hasNext()) {
+      // Skip empty compilations.
       return;
     }
 
@@ -141,7 +166,7 @@ public class JavaIndexer {
     try (OutputStream stream =
         Strings.isNullOrEmpty(config.getOutputPath())
             ? System.out
-            : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
+            : new BufferedOutputStream(new FileOutputStream(config.getOutputPath(), true))) {
       KytheJavacAnalyzer analyzer =
           new KytheJavacAnalyzer(
               config,
@@ -152,10 +177,6 @@ public class JavaIndexer {
 
       new JavacAnalysisDriver()
           .analyze(analyzer, desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()));
-    }
-
-    if (statistics != null) {
-      statistics.printStatistics(System.err);
     }
   }
 
@@ -184,7 +205,7 @@ public class JavaIndexer {
 
     @Parameter(
         names = {"--index_pack", "-index_pack"},
-        description = "Retrieve the specified compilation from the given index pack")
+        description = "Retrieve the specified compilation from the given index pack (deprecated)")
     private String indexPackRoot;
 
     @Parameter(

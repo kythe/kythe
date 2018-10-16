@@ -160,7 +160,7 @@ void DecodeKZipFile(const std::string& path,
       file_data.mutable_info()->set_digest(file.info().digest());
       virtual_files->push_back(std::move(file_data));
     }
-    *unit = std::move(compilation->unit());
+    *unit = compilation->unit();
     compilation_read = true;
     return true;
   });

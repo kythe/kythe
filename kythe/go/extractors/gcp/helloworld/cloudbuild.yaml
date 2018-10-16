@@ -1,0 +1,13 @@
+steps:
+- name: 'gcr.io/cloud-builders/go'
+  args: ['install', '.']
+  env: ['PROJECT_ROOT=hello']
+- name: 'gcr.io/cloud-builders/go'
+  args: ['build', 'hello']
+  env: ['PROJECT_ROOT=hello']
+- name: 'ubuntu'
+  args: ['./hello']
+artifacts:
+  objects:
+    location: 'gs://${_BUCKET_NAME}/'
+    paths: ['hello']
