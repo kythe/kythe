@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# docker build -t gcr.io/kythe_repo/kythe-builder .
+# docker build -t gcr.io/kythe-repo/kythe-builder .
 FROM ubuntu:xenial
 
 ENV DEBIAN_FRONTEND noninteractive
