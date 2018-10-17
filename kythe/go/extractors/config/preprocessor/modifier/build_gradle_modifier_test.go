@@ -99,7 +99,7 @@ func TestPreprocess(t *testing.T) {
 			}
 
 			// Do the copy if necessary.
-			if err := PreProcessGradleBuild(tfName, tcase.javacWrapper); err != nil {
+			if err := PreProcessBuildGradle(tfName, tcase.javacWrapper); err != nil {
 				t.Fatalf("modifying gradle file %s: %v", tcase.inputFile, err)
 			}
 
