@@ -3,9 +3,8 @@ load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
-    name = "modifier",
+    name = "mvnmod",
     srcs = [
-        "build_gradle_modifier.go",
         "pom_xml_modifier.go",
     ],
     deps = [
@@ -13,11 +12,18 @@ go_library(
     ],
 )
 
+go_library(
+    name = "gradlemod",
+    srcs = [
+        "build_gradle_modifier.go",
+    ],
+)
+
 go_test(
     name = "pom_xml_modifier_test",
     srcs = ["pom_xml_modifier_test.go"],
     data = glob(["testdata/**/*.xml"]),
-    library = ":modifier",
+    library = ":mvnmod",
     deps = [
         "//kythe/go/test/testutil",
     ],
@@ -27,7 +33,7 @@ go_test(
     name = "build_gradle_modifier_test",
     srcs = ["build_gradle_modifier_test.go"],
     data = glob(["testdata/**/*build.gradle"]),
-    library = ":modifier",
+    library = ":gradlemod",
     deps = [
         "//kythe/go/test/testutil",
     ],

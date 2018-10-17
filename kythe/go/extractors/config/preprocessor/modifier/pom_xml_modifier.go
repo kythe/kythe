@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package modifier
+// Package mvnmod adds maven-compiler-plugin to a given pom.xml file, allowing
+// a different javac to be specified at runtime.
+package mvnmod
 
 import (
 	"fmt"

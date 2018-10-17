@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-// Package modifier provides a library for adding maven-compiler-plugin hooks
-// into a pom.xml file, and a gradle compiler fork into a gradle.build file.
-package modifier
+// Package gradlemod provides a library for adding a forked javac executable
+// into a build.gradle file.
+package gradlemod
 
 import (
 	"fmt"

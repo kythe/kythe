@@ -7,6 +7,7 @@ go_binary(
     srcs = ["preprocessor.go"],
     deps = [
         "//kythe/go/extractors/config/constants",
-        "//kythe/go/extractors/config/preprocessor/modifier",
+        "//kythe/go/extractors/config/preprocessor/modifier:gradlemod",
+        "//kythe/go/extractors/config/preprocessor/modifier:mvnmod",
     ],
 )

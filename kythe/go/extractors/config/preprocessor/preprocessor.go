@@ -26,7 +26,8 @@ import (
 	"log"
 
 	"kythe.io/kythe/go/extractors/config/constants"
-	"kythe.io/kythe/go/extractors/config/preprocessor/modifier"
+	"kythe.io/kythe/go/extractors/config/preprocessor/modifier/gradlemod"
+	"kythe.io/kythe/go/extractors/config/preprocessor/modifier/mvnmod"
 )
 
 var (
@@ -42,9 +43,9 @@ func preProcess(buildFile string) error {
 
 	switch builder {
 	case "gradle":
-		return modifier.PreProcessBuildGradle(buildFile, javacWrapper())
+		return gradlemod.PreProcessBuildGradle(buildFile, javacWrapper())
 	case "mvn":
-		return modifier.PreProcessPomXML(buildFile)
+		return mvnmod.PreProcessPomXML(buildFile)
 	default:
 		return fmt.Errorf("unsupported builder type: %s", builder)
 	}
