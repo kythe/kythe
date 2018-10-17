@@ -127,12 +127,12 @@ def _split_flags(kwargs):
     return flags
 
 def _transitive_entries(deps):
-    files, compressed = depset(), depset()
+    files, compressed = [], []
     for dep in deps:
         if KytheEntries in dep:
             files += dep[KytheEntries].files
             compressed += dep[KytheEntries].compressed
-    return KytheEntries(files = files, compressed = compressed)
+    return KytheEntries(files = depset(transitive = files), compressed = depset(transitive = compressed))
 
 def _cc_extract_kzip_impl(ctx):
     cpp = find_cpp_toolchain(ctx)
@@ -241,7 +241,8 @@ cc_extract_kzip = rule(
 def _extract_bundle_impl(ctx):
     bundle = ctx.actions.declare_directory(ctx.label.name + "_unbundled")
     ctx.actions.run(
-        inputs = [ctx.executable.unbundle, ctx.file.src],
+        inputs = [ctx.file.src],
+        tools = [ctx.executable.unbundle],
         outputs = [bundle],
         mnemonic = "Unbundle",
         executable = ctx.executable.unbundle,
@@ -249,10 +250,10 @@ def _extract_bundle_impl(ctx):
     )
     ctx.actions.run_shell(
         inputs = [
-            ctx.executable.extractor,
             ctx.file.vnames_config,
             bundle,
         ],
+        tools = [ctx.executable.extractor],
         outputs = [ctx.outputs.kzip],
         mnemonic = "ExtractBundle",
         env = {
@@ -310,12 +311,12 @@ def _bazel_extract_kzip_impl(ctx):
     #   Unlike `attr.label`, `attr.label_list` lacks an `executable` argument.
     #   Excluding "is_source" files may be overly aggressive, but effective.
     scripts = [s for s in ctx.files.scripts if not s.is_source]
-    ctx.action(
+    ctx.actions.run(
         inputs = [
-            ctx.executable.extractor,
             ctx.file.vnames_config,
             ctx.file.data,
         ] + scripts + ctx.files.srcs,
+        tools = [ctx.executable.extractor],
         outputs = [ctx.outputs.kzip],
         mnemonic = "BazelExtractKZip",
         executable = ctx.executable.extractor,
@@ -326,7 +327,7 @@ def _bazel_extract_kzip_impl(ctx):
         ] + [script.path for script in scripts],
     )
     return [
-        KytheVerifierSources(files = ctx.files.srcs),
+        KytheVerifierSources(files = depset(ctx.files.srcs)),
         CxxCompilationUnits(files = depset([ctx.outputs.kzip])),
     ]
 
@@ -369,7 +370,8 @@ def _cc_index_source(ctx, src):
     ctx.actions.run(
         mnemonic = "CcIndexSource",
         outputs = [entries],
-        inputs = [ctx.executable.indexer] + ctx.files.srcs + ctx.files.deps,
+        inputs = ctx.files.srcs + ctx.files.deps,
+        tools = [ctx.executable.indexer],
         executable = ctx.executable.indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-i",
@@ -391,7 +393,8 @@ def _cc_index_compilation(ctx, compilation):
     ctx.actions.run(
         mnemonic = "CcIndexCompilation",
         outputs = [entries],
-        inputs = [ctx.executable.indexer, compilation],
+        inputs = [compilation],
+        tools = [ctx.executable.indexer],
         executable = ctx.executable.indexer,
         arguments = [ctx.expand_location(o) for o in ctx.attr.opts] + [
             "-o",
@@ -432,15 +435,15 @@ def _cc_index_impl(ctx):
         inputs = entries,
         command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") | gzip -c > "${@:${#@}}"',
         mnemonic = "CompressEntries",
-        arguments = ["cat"] + [i.path for i in entries] + [ctx.outputs.entries.path],
+        arguments = ["cat"] + [i.path for i in entries.to_list()] + [ctx.outputs.entries.path],
     )
 
-    sources = depset([src for src in ctx.files.srcs if src.extension != "kzip"])
+    sources = [depset([src for src in ctx.files.srcs if src.extension != "kzip"])]
     for dep in ctx.attr.srcs:
         if KytheVerifierSources in dep:
-            sources += dep[KytheVerifierSources].files
+            sources += [dep[KytheVerifierSources].files]
     return [
-        KytheVerifierSources(files = sources),
+        KytheVerifierSources(files = depset(transitive = sources)),
         KytheEntries(files = entries, compressed = depset([ctx.outputs.entries])),
     ]
 

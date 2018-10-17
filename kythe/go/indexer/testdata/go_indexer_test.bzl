@@ -54,7 +54,7 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
 
     # Gather any extra data dependencies.
     for target in data:
-        for f in target.files:
+        for f in target.files.to_list():
             cmds.append('ln -s "%s%s" "%s"' % ("../" * ups, f.path, srcdir))
             extras.append(srcdir + "/" + f.path.rsplit("/", 1)[-1])
 
@@ -74,7 +74,7 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
     ]))
 
     f = ctx.new_file(ctx.configuration.bin_dir, script)
-    ctx.file_action(output = f, content = "\n".join(cmds), executable = True)
+    ctx.actions.write(output = f, content = "\n".join(cmds), is_executable = True)
     return f
 
 def _go_extract(ctx):
@@ -101,11 +101,12 @@ def _go_extract(ctx):
         extras += target.files.to_list()
 
     tools = ctx.files._extractor + ctx.files._sdk_files
-    ctx.action(
+    ctx.actions.run(
         mnemonic = "GoExtract",
         executable = script,
         outputs = [output],
-        inputs = srcs + extras + [] + tools,
+        inputs = srcs + extras,
+        tools = tools,
     )
     return struct(kzip = output)
 
@@ -154,11 +155,12 @@ def _go_entries(ctx):
     iargs += [kzip.path, "| gzip >" + output.path]
 
     cmds = ["set -e", "set -o pipefail", " ".join(iargs), ""]
-    ctx.action(
+    ctx.actions.run_shell(
         mnemonic = "GoIndexer",
         command = "\n".join(cmds),
         outputs = [output],
-        inputs = [kzip] + ctx.files._indexer,
+        inputs = [kzip],
+        tools = [ctx.executable._indexer],
     )
     return [KytheEntries(files = depset(), compressed = depset([output]))]
 
@@ -182,7 +184,7 @@ go_entries = rule(
         "_indexer": attr.label(
             default = Label("//kythe/go/indexer/cmd/go_indexer"),
             executable = True,
-            cfg = "data",
+            cfg = "host",
         ),
     },
     outputs = {"entries": "%{name}.entries.gz"},

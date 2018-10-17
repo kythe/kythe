@@ -117,7 +117,7 @@ def _execute(
 
 def _get_tool_paths(repository_ctx, darwin, cc):
     """Compute the path to the various tools."""
-    return {
+    paths = {
         k: _which(repository_ctx, k, "/usr/bin/" + k)
         for k in [
             "ld",
@@ -129,10 +129,12 @@ def _get_tool_paths(repository_ctx, darwin, cc):
             "objdump",
             "strip",
         ]
-    } + {
+    }
+    paths.update({
         "gcc": cc,
         "ar": "/usr/bin/libtool" if darwin else _which(repository_ctx, "ar", "/usr/bin/ar"),
-    }
+    })
+    return paths
 
 def _cplus_include_paths(repository_ctx):
     """Use ${CPLUS_INCLUDE_PATH} to compute the list of flags for cxxflag."""
