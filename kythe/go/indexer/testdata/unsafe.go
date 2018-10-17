@@ -7,5 +7,5 @@ import "unsafe"
 //- @foo defines/binding Foo
 //- Foo.node/kind variable
 //- @unsafe ref Unsafe
-//- @Pointer ref UnsafePointer
+//- @Pointer ref _UnsafePointer
 var foo unsafe.Pointer

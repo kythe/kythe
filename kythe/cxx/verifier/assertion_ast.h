@@ -200,18 +200,28 @@ class AstNode : public ArenaObject {
 /// \brief A range specification that can unify with one or more ranges.
 class Range : public AstNode {
  public:
-  Range(const yy::location& location, size_t begin, size_t end)
+  Range(const yy::location& location, size_t begin, size_t end, Symbol source,
+        Symbol root, Symbol corpus)
       : AstNode(location), begin_(begin), end_(end) {}
   Range* AsRange() override { return this; }
   void Dump(const SymbolTable&, PrettyPrinter*) override;
   size_t begin() const { return begin_; }
   size_t end() const { return end_; }
+  size_t path() const { return path_; }
+  size_t corpus() const { return corpus_; }
+  size_t root() const { return root_; }
 
  private:
   /// The start of the range in bytes.
   size_t begin_;
   /// The end of the range in bytes.
   size_t end_;
+  /// The source file path.
+  Symbol path_;
+  /// The source file root.
+  Symbol root_;
+  /// The source file corpus.
+  Symbol corpus_;
 };
 
 /// \brief A tuple of zero or more elements.

@@ -30,4 +30,4 @@ popd
 
 # Make sure that the indexer can handle <stdin:> paths.
 "${INDEXER}" --ignore_unimplemented=true "${OUT_DIR}/${OUT_INDEX}" | \
-  "${VERIFIER}" "${BASE_DIR}/test_stdin_names_verify.cc"
+  "${VERIFIER}" --nofile_vnames "${BASE_DIR}/test_stdin_names_verify.cc"

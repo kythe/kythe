@@ -34,7 +34,7 @@ func init() {
 	//- @cmd ref Cmd
 	//- @Stdout ref CmdStdout
 	//- @os ref OS
-	//- @Stderr ref OSStderr
+	//- @Stderr ref _OSStderr
 	//-   = vname("var Stderr","golang.org","","os","go")
 	cmd.Stdout = os.Stderr
 

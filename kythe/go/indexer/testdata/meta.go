@@ -13,4 +13,4 @@ func Foobar() {}
 //- FA.loc/end   25
 //- FA defines/binding Foobar
 //- Foobar.node/kind function
-//- Alt=vname(gsig, gcorp, groot, gpath, glang) generates Foobar
+//- _Alt=vname(gsig, gcorp, groot, gpath, glang) generates Foobar

@@ -71,8 +71,8 @@ func Positive(x int) bool {
 //-
 //- TCFunc.pre_text "func "
 //-
-//- TCName child.0 TCContext
-//- TCName child.1 TCIdent
+//- TCName child.0 _TCContext
+//- TCName child.1 _TCIdent
 //-
 //- TCParams.kind "PARAMETER"
 //- TCParams.pre_text "()"
