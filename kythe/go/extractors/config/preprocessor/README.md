@@ -33,7 +33,7 @@ allprojects {
 }
 ```
 
-If the input file already contains reference to
+If the input file already contains a reference to
 `options.forkOptions.executable`, then `gradle_build_modifier.go` does nothing.
 
 #### Future work
@@ -47,12 +47,11 @@ Ideally we find such a library in golang.
 
 ### Maven
 
-Maven's build config is handled by `pom_xml_modifier.go`.  It utilizes the etree
-xml library to parse and modify the mvn `pom.xml` config file in a similar way
-as described above for gradle.  One notable difference between gradle and maven
-here is that gradle actually embeds the refrence to the javac wrapper directly
-into the build file, while the modifications to the maven pom xml file merely
-allow future configuration at runtime.
+Maven's build config is handled by `pom_xml_modifier.go`.  One notable
+difference between gradle and maven here is that gradle actually embeds the
+reference to the javac wrapper directly in the build file, while the
+modifications to the maven pom xml file merely allow future configuration at
+runtime.
 
 The example snippet it drops in is:
 
