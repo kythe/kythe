@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package gradlecmd
+package modifier
 
 import (
 	"io"
@@ -37,11 +37,11 @@ func TestHasKythe(t *testing.T) {
 		// Whether we expect an error.
 		wantError bool
 	}{
-		{fileName: "modified-gradle.build", javacWrapper: "/tmp/javac-wrapper.sh", hasWrapper: true},
-		{fileName: "plain-gradle.build", javacWrapper: "/tmp/javac-wrapper.sh"},
-		{fileName: "other-gradle.build", javacWrapper: "/tmp/javac-wrapper.sh", wantError: true},
-		// Look at other-gradle.build but use the correct javac wrapper.
-		{fileName: "other-gradle.build", javacWrapper: "/different/javac-wrapper.sh", hasWrapper: true},
+		{fileName: "modified-build.gradle", javacWrapper: "/tmp/javac-wrapper.sh", hasWrapper: true},
+		{fileName: "plain-build.gradle", javacWrapper: "/tmp/javac-wrapper.sh"},
+		{fileName: "other-build.gradle", javacWrapper: "/tmp/javac-wrapper.sh", wantError: true},
+		// Look at other-build.gradle but use the correct javac wrapper.
+		{fileName: "other-build.gradle", javacWrapper: "/different/javac-wrapper.sh", hasWrapper: true},
 	}
 
 	for _, tcase := range testcases {
@@ -69,9 +69,9 @@ func TestPreprocess(t *testing.T) {
 		javacWrapper       string
 		expectedOutputFile string
 	}{
-		{"modified-gradle.build", "/tmp/javac-wrapper.sh", "modified-gradle.build"},
-		{"plain-gradle.build", "/tmp/javac-wrapper.sh", "modified-gradle.build"},
-		{"plain-gradle.build", "/different/javac-wrapper.sh", "other-gradle.build"},
+		{"modified-build.gradle", "/tmp/javac-wrapper.sh", "modified-build.gradle"},
+		{"plain-build.gradle", "/tmp/javac-wrapper.sh", "modified-build.gradle"},
+		{"plain-build.gradle", "/different/javac-wrapper.sh", "other-build.gradle"},
 	}
 
 	for _, tcase := range testcases {

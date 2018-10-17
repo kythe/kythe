@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package gradlecmd
+// Package modifier provides a library for adding maven-compiler-plugin hooks
+// into a pom.xml file, and a gradle compiler fork into a gradle.build file.
+package modifier
 
 import (
 	"fmt"
@@ -44,14 +46,14 @@ func kytheMatcher(javacWrapper string) *regexp.Regexp {
 // edge cases which already modify javac.
 var javacMatcher = regexp.MustCompile(`\n\s*options\.forkOptions\.executable\ =`)
 
-// PreProcessGradleBuild takes a gradle.build file and either verifies that it
+// PreProcessBuildGradle takes a gradle.build file and either verifies that it
 // already has the bits necessary to run kythe's javac wrapper, or adds that
 // functionality.
 //
 // Note this potentially modifies the input file, so make a copy beforehand if
 // you need to keep the original.
-func PreProcessGradleBuild(gradleBuildFile, javacWrapper string) error {
-	k, err := hasKytheWrapper(gradleBuildFile, javacWrapper)
+func PreProcessBuildGradle(buildGradleFile, javacWrapper string) error {
+	k, err := hasKytheWrapper(buildGradleFile, javacWrapper)
 	if err != nil {
 		return err
 	}
@@ -59,30 +61,30 @@ func PreProcessGradleBuild(gradleBuildFile, javacWrapper string) error {
 		// Already has the kythe javac-wrapper.
 		return nil
 	}
-	return appendKytheWrapper(gradleBuildFile, javacWrapper)
+	return appendKytheWrapper(buildGradleFile, javacWrapper)
 }
 
-func hasKytheWrapper(gradleBuildFile, javacWrapper string) (bool, error) {
-	bits, err := ioutil.ReadFile(gradleBuildFile)
+func hasKytheWrapper(buildGradleFile, javacWrapper string) (bool, error) {
+	bits, err := ioutil.ReadFile(buildGradleFile)
 	if err != nil {
-		return false, fmt.Errorf("reading file %s: %v", gradleBuildFile, err)
+		return false, fmt.Errorf("reading file %s: %v", buildGradleFile, err)
 	}
 	if kytheMatcher(javacWrapper).Match(bits) {
 		return true, nil
 	}
 	if javacMatcher.Match(bits) {
-		return false, fmt.Errorf("found existing non-kythe javac override for file %s, which we can't handle yet", gradleBuildFile)
+		return false, fmt.Errorf("found existing non-kythe javac override for file %s, which we can't handle yet", buildGradleFile)
 	}
 	return false, nil
 }
 
-func appendKytheWrapper(gradleBuildFile, javacWrapper string) error {
-	f, err := os.OpenFile(gradleBuildFile, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+func appendKytheWrapper(buildGradleFile, javacWrapper string) error {
+	f, err := os.OpenFile(buildGradleFile, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
-		return fmt.Errorf("opening file %s for append: %v", gradleBuildFile, err)
+		return fmt.Errorf("opening file %s for append: %v", buildGradleFile, err)
 	}
 	if _, err := fmt.Fprintf(f, kytheJavacWrapper, javacWrapper); err != nil {
-		return fmt.Errorf("appending javac-wrapper to %s: %v", gradleBuildFile, err)
+		return fmt.Errorf("appending javac-wrapper to %s: %v", buildGradleFile, err)
 	}
 	return f.Close()
 }
