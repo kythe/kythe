@@ -20,8 +20,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type ClaimAssignment struct {
-	CompilationVName     *storage_go_proto.VName `protobuf:"bytes,1,opt,name=compilation_v_name,json=compilationVName" json:"compilation_v_name,omitempty"`
-	DependencyVName      *storage_go_proto.VName `protobuf:"bytes,2,opt,name=dependency_v_name,json=dependencyVName" json:"dependency_v_name,omitempty"`
+	CompilationVName     *storage_go_proto.VName `protobuf:"bytes,1,opt,name=compilation_v_name,json=compilationVName,proto3" json:"compilation_v_name,omitempty"`
+	DependencyVName      *storage_go_proto.VName `protobuf:"bytes,2,opt,name=dependency_v_name,json=dependencyVName,proto3" json:"dependency_v_name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
 	XXX_unrecognized     []byte                  `json:"-"`
 	XXX_sizecache        int32                   `json:"-"`

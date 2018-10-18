@@ -22,11 +22,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type NodeData struct {
-	Kind                 string                        `protobuf:"bytes,1,opt,name=kind" json:"kind,omitempty"`
-	Subkind              string                        `protobuf:"bytes,2,opt,name=subkind" json:"subkind,omitempty"`
-	Locations            []*xref_go_proto.Location     `protobuf:"bytes,3,rep,name=locations" json:"locations,omitempty"`
-	DefinitionAnchor     string                        `protobuf:"bytes,4,opt,name=definition_anchor,json=definitionAnchor" json:"definition_anchor,omitempty"`
-	Code                 *common_go_proto.MarkedSource `protobuf:"bytes,5,opt,name=code" json:"code,omitempty"`
+	Kind                 string                        `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
+	Subkind              string                        `protobuf:"bytes,2,opt,name=subkind,proto3" json:"subkind,omitempty"`
+	Locations            []*xref_go_proto.Location     `protobuf:"bytes,3,rep,name=locations,proto3" json:"locations,omitempty"`
+	DefinitionAnchor     string                        `protobuf:"bytes,4,opt,name=definition_anchor,json=definitionAnchor,proto3" json:"definition_anchor,omitempty"`
+	Code                 *common_go_proto.MarkedSource `protobuf:"bytes,5,opt,name=code,proto3" json:"code,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`
 	XXX_sizecache        int32                         `json:"-"`
@@ -92,9 +92,9 @@ func (m *NodeData) GetCode() *common_go_proto.MarkedSource {
 }
 
 type GraphNode struct {
-	NodeData             *NodeData `protobuf:"bytes,1,opt,name=node_data,json=nodeData" json:"node_data,omitempty"`
-	Predecessors         []string  `protobuf:"bytes,2,rep,name=predecessors" json:"predecessors,omitempty"`
-	Successors           []string  `protobuf:"bytes,3,rep,name=successors" json:"successors,omitempty"`
+	NodeData             *NodeData `protobuf:"bytes,1,opt,name=node_data,json=nodeData,proto3" json:"node_data,omitempty"`
+	Predecessors         []string  `protobuf:"bytes,2,rep,name=predecessors,proto3" json:"predecessors,omitempty"`
+	Successors           []string  `protobuf:"bytes,3,rep,name=successors,proto3" json:"successors,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`
@@ -146,7 +146,7 @@ func (m *GraphNode) GetSuccessors() []string {
 }
 
 type Graph struct {
-	Nodes                map[string]*GraphNode `protobuf:"bytes,1,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Nodes                map[string]*GraphNode `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -184,8 +184,8 @@ func (m *Graph) GetNodes() map[string]*GraphNode {
 }
 
 type NodeFilter struct {
-	IncludedLanguages    []string                  `protobuf:"bytes,1,rep,name=included_languages,json=includedLanguages" json:"included_languages,omitempty"`
-	IncludedFiles        []*storage_go_proto.VName `protobuf:"bytes,2,rep,name=included_files,json=includedFiles" json:"included_files,omitempty"`
+	IncludedLanguages    []string                  `protobuf:"bytes,1,rep,name=included_languages,json=includedLanguages,proto3" json:"included_languages,omitempty"`
+	IncludedFiles        []*storage_go_proto.VName `protobuf:"bytes,2,rep,name=included_files,json=includedFiles,proto3" json:"included_files,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`
@@ -230,7 +230,7 @@ func (m *NodeFilter) GetIncludedFiles() []*storage_go_proto.VName {
 }
 
 type Tickets struct {
-	Tickets              []string `protobuf:"bytes,1,rep,name=tickets" json:"tickets,omitempty"`
+	Tickets              []string `protobuf:"bytes,1,rep,name=tickets,proto3" json:"tickets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -268,8 +268,8 @@ func (m *Tickets) GetTickets() []string {
 }
 
 type TypeHierarchyRequest struct {
-	TypeTicket           string      `protobuf:"bytes,1,opt,name=type_ticket,json=typeTicket" json:"type_ticket,omitempty"`
-	NodeFilter           *NodeFilter `protobuf:"bytes,2,opt,name=node_filter,json=nodeFilter" json:"node_filter,omitempty"`
+	TypeTicket           string      `protobuf:"bytes,1,opt,name=type_ticket,json=typeTicket,proto3" json:"type_ticket,omitempty"`
+	NodeFilter           *NodeFilter `protobuf:"bytes,2,opt,name=node_filter,json=nodeFilter,proto3" json:"node_filter,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -314,8 +314,8 @@ func (m *TypeHierarchyRequest) GetNodeFilter() *NodeFilter {
 }
 
 type TypeHierarchyReply struct {
-	TypeTicket           string   `protobuf:"bytes,1,opt,name=type_ticket,json=typeTicket" json:"type_ticket,omitempty"`
-	Graph                *Graph   `protobuf:"bytes,2,opt,name=graph" json:"graph,omitempty"`
+	TypeTicket           string   `protobuf:"bytes,1,opt,name=type_ticket,json=typeTicket,proto3" json:"type_ticket,omitempty"`
+	Graph                *Graph   `protobuf:"bytes,2,opt,name=graph,proto3" json:"graph,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -360,7 +360,7 @@ func (m *TypeHierarchyReply) GetGraph() *Graph {
 }
 
 type CallersRequest struct {
-	Tickets              []string `protobuf:"bytes,1,rep,name=tickets" json:"tickets,omitempty"`
+	Tickets              []string `protobuf:"bytes,1,rep,name=tickets,proto3" json:"tickets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -398,7 +398,7 @@ func (m *CallersRequest) GetTickets() []string {
 }
 
 type CallersReply struct {
-	Graph                *Graph   `protobuf:"bytes,1,opt,name=graph" json:"graph,omitempty"`
+	Graph                *Graph   `protobuf:"bytes,1,opt,name=graph,proto3" json:"graph,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -436,7 +436,7 @@ func (m *CallersReply) GetGraph() *Graph {
 }
 
 type CalleesRequest struct {
-	Tickets              []string `protobuf:"bytes,1,rep,name=tickets" json:"tickets,omitempty"`
+	Tickets              []string `protobuf:"bytes,1,rep,name=tickets,proto3" json:"tickets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -474,7 +474,7 @@ func (m *CalleesRequest) GetTickets() []string {
 }
 
 type CalleesReply struct {
-	Graph                *Graph   `protobuf:"bytes,1,opt,name=graph" json:"graph,omitempty"`
+	Graph                *Graph   `protobuf:"bytes,1,opt,name=graph,proto3" json:"graph,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -512,7 +512,7 @@ func (m *CalleesReply) GetGraph() *Graph {
 }
 
 type ParametersRequest struct {
-	FunctionTickets      []string `protobuf:"bytes,1,rep,name=function_tickets,json=functionTickets" json:"function_tickets,omitempty"`
+	FunctionTickets      []string `protobuf:"bytes,1,rep,name=function_tickets,json=functionTickets,proto3" json:"function_tickets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -550,9 +550,9 @@ func (m *ParametersRequest) GetFunctionTickets() []string {
 }
 
 type ParametersReply struct {
-	FunctionToParameters  map[string]*Tickets  `protobuf:"bytes,1,rep,name=function_to_parameters,json=functionToParameters" json:"function_to_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	FunctionToReturnValue map[string]string    `protobuf:"bytes,2,rep,name=function_to_return_value,json=functionToReturnValue" json:"function_to_return_value,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	NodeData              map[string]*NodeData `protobuf:"bytes,3,rep,name=node_data,json=nodeData" json:"node_data,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	FunctionToParameters  map[string]*Tickets  `protobuf:"bytes,1,rep,name=function_to_parameters,json=functionToParameters,proto3" json:"function_to_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	FunctionToReturnValue map[string]string    `protobuf:"bytes,2,rep,name=function_to_return_value,json=functionToReturnValue,proto3" json:"function_to_return_value,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	NodeData              map[string]*NodeData `protobuf:"bytes,3,rep,name=node_data,json=nodeData,proto3" json:"node_data,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral  struct{}             `json:"-"`
 	XXX_unrecognized      []byte               `json:"-"`
 	XXX_sizecache         int32                `json:"-"`
@@ -604,7 +604,7 @@ func (m *ParametersReply) GetNodeData() map[string]*NodeData {
 }
 
 type ParentsRequest struct {
-	Tickets              []string `protobuf:"bytes,1,rep,name=tickets" json:"tickets,omitempty"`
+	Tickets              []string `protobuf:"bytes,1,rep,name=tickets,proto3" json:"tickets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -642,7 +642,7 @@ func (m *ParentsRequest) GetTickets() []string {
 }
 
 type ParentsReply struct {
-	InputToParents       map[string]*Tickets `protobuf:"bytes,1,rep,name=input_to_parents,json=inputToParents" json:"input_to_parents,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	InputToParents       map[string]*Tickets `protobuf:"bytes,1,rep,name=input_to_parents,json=inputToParents,proto3" json:"input_to_parents,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -680,7 +680,7 @@ func (m *ParentsReply) GetInputToParents() map[string]*Tickets {
 }
 
 type ChildrenRequest struct {
-	Tickets              []string `protobuf:"bytes,1,rep,name=tickets" json:"tickets,omitempty"`
+	Tickets              []string `protobuf:"bytes,1,rep,name=tickets,proto3" json:"tickets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -718,7 +718,7 @@ func (m *ChildrenRequest) GetTickets() []string {
 }
 
 type ChildrenReply struct {
-	InputToChildren      map[string]*Tickets `protobuf:"bytes,1,rep,name=input_to_children,json=inputToChildren" json:"input_to_children,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	InputToChildren      map[string]*Tickets `protobuf:"bytes,1,rep,name=input_to_children,json=inputToChildren,proto3" json:"input_to_children,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`

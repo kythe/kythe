@@ -19,9 +19,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type CxxCompilationUnitDetails struct {
-	HeaderSearchInfo     *CxxCompilationUnitDetails_HeaderSearchInfo     `protobuf:"bytes,1,opt,name=header_search_info,json=headerSearchInfo" json:"header_search_info,omitempty"`
-	SystemHeaderPrefix   []*CxxCompilationUnitDetails_SystemHeaderPrefix `protobuf:"bytes,2,rep,name=system_header_prefix,json=systemHeaderPrefix" json:"system_header_prefix,omitempty"`
-	StatPath             []*CxxCompilationUnitDetails_StatPath           `protobuf:"bytes,3,rep,name=stat_path,json=statPath" json:"stat_path,omitempty"`
+	HeaderSearchInfo     *CxxCompilationUnitDetails_HeaderSearchInfo     `protobuf:"bytes,1,opt,name=header_search_info,json=headerSearchInfo,proto3" json:"header_search_info,omitempty"`
+	SystemHeaderPrefix   []*CxxCompilationUnitDetails_SystemHeaderPrefix `protobuf:"bytes,2,rep,name=system_header_prefix,json=systemHeaderPrefix,proto3" json:"system_header_prefix,omitempty"`
+	StatPath             []*CxxCompilationUnitDetails_StatPath           `protobuf:"bytes,3,rep,name=stat_path,json=statPath,proto3" json:"stat_path,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                        `json:"-"`
 	XXX_unrecognized     []byte                                          `json:"-"`
 	XXX_sizecache        int32                                           `json:"-"`
@@ -73,9 +73,9 @@ func (m *CxxCompilationUnitDetails) GetStatPath() []*CxxCompilationUnitDetails_S
 }
 
 type CxxCompilationUnitDetails_HeaderSearchDir struct {
-	Path                 string   `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
-	CharacteristicKind   int32    `protobuf:"varint,2,opt,name=characteristic_kind,json=characteristicKind" json:"characteristic_kind,omitempty"`
-	IsFramework          bool     `protobuf:"varint,3,opt,name=is_framework,json=isFramework" json:"is_framework,omitempty"`
+	Path                 string   `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	CharacteristicKind   int32    `protobuf:"varint,2,opt,name=characteristic_kind,json=characteristicKind,proto3" json:"characteristic_kind,omitempty"`
+	IsFramework          bool     `protobuf:"varint,3,opt,name=is_framework,json=isFramework,proto3" json:"is_framework,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -129,9 +129,9 @@ func (m *CxxCompilationUnitDetails_HeaderSearchDir) GetIsFramework() bool {
 }
 
 type CxxCompilationUnitDetails_HeaderSearchInfo struct {
-	FirstAngledDir       int32                                        `protobuf:"varint,1,opt,name=first_angled_dir,json=firstAngledDir" json:"first_angled_dir,omitempty"`
-	FirstSystemDir       int32                                        `protobuf:"varint,2,opt,name=first_system_dir,json=firstSystemDir" json:"first_system_dir,omitempty"`
-	Dir                  []*CxxCompilationUnitDetails_HeaderSearchDir `protobuf:"bytes,3,rep,name=dir" json:"dir,omitempty"`
+	FirstAngledDir       int32                                        `protobuf:"varint,1,opt,name=first_angled_dir,json=firstAngledDir,proto3" json:"first_angled_dir,omitempty"`
+	FirstSystemDir       int32                                        `protobuf:"varint,2,opt,name=first_system_dir,json=firstSystemDir,proto3" json:"first_system_dir,omitempty"`
+	Dir                  []*CxxCompilationUnitDetails_HeaderSearchDir `protobuf:"bytes,3,rep,name=dir,proto3" json:"dir,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                     `json:"-"`
 	XXX_unrecognized     []byte                                       `json:"-"`
 	XXX_sizecache        int32                                        `json:"-"`
@@ -187,8 +187,8 @@ func (m *CxxCompilationUnitDetails_HeaderSearchInfo) GetDir() []*CxxCompilationU
 }
 
 type CxxCompilationUnitDetails_SystemHeaderPrefix struct {
-	Prefix               string   `protobuf:"bytes,1,opt,name=prefix" json:"prefix,omitempty"`
-	IsSystemHeader       bool     `protobuf:"varint,2,opt,name=is_system_header,json=isSystemHeader" json:"is_system_header,omitempty"`
+	Prefix               string   `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	IsSystemHeader       bool     `protobuf:"varint,2,opt,name=is_system_header,json=isSystemHeader,proto3" json:"is_system_header,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -237,7 +237,7 @@ func (m *CxxCompilationUnitDetails_SystemHeaderPrefix) GetIsSystemHeader() bool 
 }
 
 type CxxCompilationUnitDetails_StatPath struct {
-	Path                 string   `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
+	Path                 string   `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

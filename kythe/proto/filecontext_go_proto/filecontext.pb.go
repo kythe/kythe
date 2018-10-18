@@ -19,7 +19,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type ContextDependentVersion struct {
-	Row                  []*ContextDependentVersion_Row `protobuf:"bytes,1,rep,name=row" json:"row,omitempty"`
+	Row                  []*ContextDependentVersion_Row `protobuf:"bytes,1,rep,name=row,proto3" json:"row,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
 	XXX_unrecognized     []byte                         `json:"-"`
 	XXX_sizecache        int32                          `json:"-"`
@@ -57,8 +57,8 @@ func (m *ContextDependentVersion) GetRow() []*ContextDependentVersion_Row {
 }
 
 type ContextDependentVersion_Column struct {
-	Offset               int32    `protobuf:"varint,1,opt,name=offset" json:"offset,omitempty"`
-	LinkedContext        string   `protobuf:"bytes,2,opt,name=linked_context,json=linkedContext" json:"linked_context,omitempty"`
+	Offset               int32    `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
+	LinkedContext        string   `protobuf:"bytes,2,opt,name=linked_context,json=linkedContext,proto3" json:"linked_context,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -103,9 +103,9 @@ func (m *ContextDependentVersion_Column) GetLinkedContext() string {
 }
 
 type ContextDependentVersion_Row struct {
-	SourceContext        string                            `protobuf:"bytes,1,opt,name=source_context,json=sourceContext" json:"source_context,omitempty"`
-	Column               []*ContextDependentVersion_Column `protobuf:"bytes,2,rep,name=column" json:"column,omitempty"`
-	AlwaysProcess        bool                              `protobuf:"varint,3,opt,name=always_process,json=alwaysProcess" json:"always_process,omitempty"`
+	SourceContext        string                            `protobuf:"bytes,1,opt,name=source_context,json=sourceContext,proto3" json:"source_context,omitempty"`
+	Column               []*ContextDependentVersion_Column `protobuf:"bytes,2,rep,name=column,proto3" json:"column,omitempty"`
+	AlwaysProcess        bool                              `protobuf:"varint,3,opt,name=always_process,json=alwaysProcess,proto3" json:"always_process,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                          `json:"-"`
 	XXX_unrecognized     []byte                            `json:"-"`
 	XXX_sizecache        int32                             `json:"-"`

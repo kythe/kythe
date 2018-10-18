@@ -46,15 +46,15 @@ func (LinkRequest_DefinitionKind) EnumDescriptor() ([]byte, []int) {
 }
 
 type LinkRequest struct {
-	Identifier           string                     `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
-	Corpus               []string                   `protobuf:"bytes,2,rep,name=corpus" json:"corpus,omitempty"`
-	Language             []string                   `protobuf:"bytes,3,rep,name=language" json:"language,omitempty"`
-	NodeKind             []string                   `protobuf:"bytes,4,rep,name=node_kind,json=nodeKind" json:"node_kind,omitempty"`
-	Include              []*LinkRequest_Location    `protobuf:"bytes,5,rep,name=include" json:"include,omitempty"`
-	Exclude              []*LinkRequest_Location    `protobuf:"bytes,6,rep,name=exclude" json:"exclude,omitempty"`
-	Params               *LinkRequest_Params        `protobuf:"bytes,7,opt,name=params" json:"params,omitempty"`
-	DefinitionKind       LinkRequest_DefinitionKind `protobuf:"varint,8,opt,name=definition_kind,json=definitionKind,enum=kythe.proto.LinkRequest_DefinitionKind" json:"definition_kind,omitempty"`
-	IncludeNodes         bool                       `protobuf:"varint,9,opt,name=include_nodes,json=includeNodes" json:"include_nodes,omitempty"`
+	Identifier           string                     `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	Corpus               []string                   `protobuf:"bytes,2,rep,name=corpus,proto3" json:"corpus,omitempty"`
+	Language             []string                   `protobuf:"bytes,3,rep,name=language,proto3" json:"language,omitempty"`
+	NodeKind             []string                   `protobuf:"bytes,4,rep,name=node_kind,json=nodeKind,proto3" json:"node_kind,omitempty"`
+	Include              []*LinkRequest_Location    `protobuf:"bytes,5,rep,name=include,proto3" json:"include,omitempty"`
+	Exclude              []*LinkRequest_Location    `protobuf:"bytes,6,rep,name=exclude,proto3" json:"exclude,omitempty"`
+	Params               *LinkRequest_Params        `protobuf:"bytes,7,opt,name=params,proto3" json:"params,omitempty"`
+	DefinitionKind       LinkRequest_DefinitionKind `protobuf:"varint,8,opt,name=definition_kind,json=definitionKind,proto3,enum=kythe.proto.LinkRequest_DefinitionKind" json:"definition_kind,omitempty"`
+	IncludeNodes         bool                       `protobuf:"varint,9,opt,name=include_nodes,json=includeNodes,proto3" json:"include_nodes,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`
@@ -148,9 +148,9 @@ func (m *LinkRequest) GetIncludeNodes() bool {
 }
 
 type LinkRequest_Location struct {
-	Path                 string   `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
-	Root                 string   `protobuf:"bytes,2,opt,name=root" json:"root,omitempty"`
-	Corpus               string   `protobuf:"bytes,3,opt,name=corpus" json:"corpus,omitempty"`
+	Path                 string   `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Root                 string   `protobuf:"bytes,2,opt,name=root,proto3" json:"root,omitempty"`
+	Corpus               string   `protobuf:"bytes,3,opt,name=corpus,proto3" json:"corpus,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -202,7 +202,7 @@ func (m *LinkRequest_Location) GetCorpus() string {
 }
 
 type LinkRequest_Params struct {
-	Count                int32    `protobuf:"varint,1,opt,name=count" json:"count,omitempty"`
+	Count                int32    `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -240,9 +240,9 @@ func (m *LinkRequest_Params) GetCount() int32 {
 }
 
 type Link struct {
-	FileTicket           string                `protobuf:"bytes,1,opt,name=file_ticket,json=fileTicket" json:"file_ticket,omitempty"`
-	Span                 *common_go_proto.Span `protobuf:"bytes,2,opt,name=span" json:"span,omitempty"`
-	Nodes                []*Link_Node          `protobuf:"bytes,3,rep,name=nodes" json:"nodes,omitempty"`
+	FileTicket           string                `protobuf:"bytes,1,opt,name=file_ticket,json=fileTicket,proto3" json:"file_ticket,omitempty"`
+	Span                 *common_go_proto.Span `protobuf:"bytes,2,opt,name=span,proto3" json:"span,omitempty"`
+	Nodes                []*Link_Node          `protobuf:"bytes,3,rep,name=nodes,proto3" json:"nodes,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -294,9 +294,9 @@ func (m *Link) GetNodes() []*Link_Node {
 }
 
 type Link_Node struct {
-	Ticket               string   `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	BaseName             string   `protobuf:"bytes,2,opt,name=base_name,json=baseName" json:"base_name,omitempty"`
-	Identifier           string   `protobuf:"bytes,3,opt,name=identifier" json:"identifier,omitempty"`
+	Ticket               string   `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	BaseName             string   `protobuf:"bytes,2,opt,name=base_name,json=baseName,proto3" json:"base_name,omitempty"`
+	Identifier           string   `protobuf:"bytes,3,opt,name=identifier,proto3" json:"identifier,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -348,7 +348,7 @@ func (m *Link_Node) GetIdentifier() string {
 }
 
 type LinkReply struct {
-	Links                []*Link  `protobuf:"bytes,1,rep,name=links" json:"links,omitempty"`
+	Links                []*Link  `protobuf:"bytes,1,rep,name=links,proto3" json:"links,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
