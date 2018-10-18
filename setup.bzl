@@ -22,5 +22,6 @@ def kythe_rule_repositories():
         http_archive,
         name = "bazel_gazelle",
         strip_prefix = "bazel-gazelle-253128b77088080a348f54d79a28dcd47d99caf9",
+        sha256 = "6e48a5f804ee1f0df84b546aa5c2eb15b3b2e2bcfc75f2bf305323343c2e8b94",
         urls = ["https://github.com/bazelbuild/bazel-gazelle/archive/253128b77088080a348f54d79a28dcd47d99caf9.zip"],
     )
