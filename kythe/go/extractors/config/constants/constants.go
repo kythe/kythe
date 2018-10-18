@@ -18,6 +18,7 @@
 package constants
 
 var (
+	// TODO(#3151): KYTHE_CORPUS probably should not be set via env var.
 	requiredEnv = []string{"KYTHE_CORPUS", "KYTHE_ROOT_DIRECTORY", "KYTHE_OUTPUT_DIRECTORY"}
 	// RequiredJavaEnv is all of the enivornment variables required for
 	// extracting a java corpus, including env vars common for all extractors.
@@ -26,9 +27,20 @@ var (
 		"JAVAC_EXTRACTOR_JAR",
 		// For example /usr/lib/jvm/java-8-openjdk/bin/javac
 		"REAL_JAVAC",
+		// For example with java8, this would be
+		// -Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
+		"KYTHE_JAVA_RUNTIME_OPTIONS",
 		// If set to a file ending in '.kzip', this will cause the extractor to
 		// output a .kzip file instead of multiple .kindex files.
 		// Note this does not obviate the need to set KYTHE_OUTPUT_DIRECTORY.
 		"KYTHE_OUTPUT_FILE",
 	)
+
+	DefaultJavacLocation = "/usr/bin/javac"
+
+	// These are specified in the image
+	// gcr.io/kythe-public/kythe-javac-extractor-artifacts
+	DefaultJavacWrapperLocation  = "/opt/kythe/extractors/javac-wrapper.sh"
+	DefaultJavaExtractorLocation = "/opt/kythe/extractors/javac_extractor.jar"
+	DefaultJava9ToolsLocation    = "/opt/kythe/extractors/java9_tools.jar"
 )
