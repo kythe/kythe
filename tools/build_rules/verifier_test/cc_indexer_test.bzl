@@ -73,7 +73,7 @@ def _compiler_options(ctx, cpp, copts, includes):
         variables = cc_common.create_compile_variables(
             feature_configuration = feature_configuration,
             cc_toolchain = cpp,
-            user_compile_flags = depset(copts),
+            user_compile_flags = copts,
             system_include_directories = depset(includes),
             add_legacy_cxx_options = True,
         )
