@@ -38,7 +38,7 @@ now it is a hard-coded location, but in the future it will be configurable).
 This also assumes you specify `_BUCKET_NAME` as per the Hello World Test above.
 
 ```
-gcloudbuilds submit --config cloudbuild.yaml \
+gcloud builds submit --config cloudbuild.yaml \
 --substitutions=\
 _BUCKET_NAME="$BUCKET_NAME",\
 _REPO_NAME=https://github.com/project-name/repo-name
