@@ -46,7 +46,7 @@ const DefaultConfig = `{
       ]
     },
     {
-      "uri": "gcr.io/kythe_repo/kythe-javac-extractor-artifacts",
+      "uri": "gcr.io/kythe-public/kythe-javac-extractor-artifacts",
       "name": "javac-extractor-artifacts",
       "copy_spec": [
         {

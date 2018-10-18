@@ -37,6 +37,6 @@ sed "$SECRETS_SED" master/master.cfg.template >master/master.cfg
 buildbot checkconfig master
 
 VERSION=v1
-docker build -t gcr.io/kythe_repo/buildbot.$VERSION .
-docker push gcr.io/kythe_repo/buildbot.$VERSION
-gcloud app deploy --image-url=gcr.io/kythe_repo/buildbot.$VERSION --stop-previous-version --version $VERSION
+docker build -t gcr.io/kythe-repo/buildbot.$VERSION .
+docker push gcr.io/kythe-repo/buildbot.$VERSION
+gcloud app deploy --image-url=gcr.io/kythe-repo/buildbot.$VERSION --stop-previous-version --version $VERSION
