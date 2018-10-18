@@ -36,11 +36,19 @@ var (
 		"KYTHE_OUTPUT_FILE",
 	)
 
+	// DefaultJavacLocation points to a common location for a javac binary.
+	// The binary will usually be symlinked here.
 	DefaultJavacLocation = "/usr/bin/javac"
 
 	// These are specified in the image
 	// gcr.io/kythe-public/kythe-javac-extractor-artifacts
-	DefaultJavacWrapperLocation  = "/opt/kythe/extractors/javac-wrapper.sh"
+
+	// DefaultJavacWrapperLocation is the location of the Kythe wrapper around
+	// javac that does extraction.
+	DefaultJavacWrapperLocation = "/opt/kythe/extractors/javac-wrapper.sh"
+	// DefaultJavaExtractorLocation is the location of the actual extractor.
 	DefaultJavaExtractorLocation = "/opt/kythe/extractors/javac_extractor.jar"
-	DefaultJava9ToolsLocation    = "/opt/kythe/extractors/java9_tools.jar"
+	// DefaultJava9ToolsLocation is the location of a jar which allows java9
+	// compatibility for java8.
+	DefaultJava9ToolsLocation = "/opt/kythe/extractors/java9_tools.jar"
 )
