@@ -24,6 +24,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 
 	"kythe.io/kythe/go/extractors/config/constants"
 	"kythe.io/kythe/go/extractors/config/preprocessor/modifier"
@@ -55,14 +56,13 @@ func findBuilder(buildFile string) (string, error) {
 		return *forcedBuilder, nil
 	}
 
-	switch buildFile {
-	case "build.gradle":
+	if strings.HasSuffix(buildFile, "build.gradle") {
 		return "gradle", nil
-	case "pom.xml":
-		return "mvn", nil
-	default:
-		return "", fmt.Errorf("unrecognized or unsupported build file: %s", buildFile)
 	}
+	if strings.HasSuffix(buildFile, "pom.xml") {
+		return "mvn", nil
+	}
+	return "", fmt.Errorf("unrecognized or unsupported build file: %s", buildFile)
 }
 
 func javacWrapper() string {
