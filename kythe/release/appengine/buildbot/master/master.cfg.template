@@ -89,16 +89,17 @@ c['change_source'].append(GitHubPullrequestPoller(
 
 ####### SCHEDULERS
 
-bazelMinVersion = '0.17.1'
+bazelMinVersion = '0.18.0'
 bazelMaxVersion = '0.18.0'
 
 allBuilders = [
-    "bazel-"+bazelMinVersion,
     "bazel-"+bazelMaxVersion,
     "bazel-release",
     "go-1.11-gopath",
     "go-1.11-module"
 ]
+if bazelMinVersion != bazelMaxVersion:
+  allBuilders += ["bazel-"+bazelMinVersion]
 
 c['schedulers'] = []
 c['schedulers'].append(schedulers.SingleBranchScheduler(
@@ -151,14 +152,15 @@ goModuleKytheSteps.addStep(steps.ShellCommand(command="! { git diff --color=alwa
 build_lock = util.WorkerLock("worker_builds", maxCountForWorker={'local-worker': 1})
 
 c['builders'] = []
-c['builders'].append(
-    util.BuilderConfig(
-        name="bazel-"+bazelMinVersion,
-        workernames=["local-worker"],
-        properties={'bazel_version': bazelMinVersion,
-                    'bazel_flags': ['--config=remote']},
-        locks=[build_lock.access('exclusive')],
-        factory=bazelKytheSteps))
+if bazelMinVersion != bazelMaxVersion:
+  c['builders'].append(
+      util.BuilderConfig(
+          name="bazel-"+bazelMinVersion,
+          workernames=["local-worker"],
+          properties={'bazel_version': bazelMinVersion,
+                      'bazel_flags': ['--config=remote']},
+          locks=[build_lock.access('exclusive')],
+          factory=bazelKytheSteps))
 c['builders'].append(
     util.BuilderConfig(
         name="bazel-"+bazelMaxVersion,
