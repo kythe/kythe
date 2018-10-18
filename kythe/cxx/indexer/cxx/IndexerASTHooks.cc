@@ -46,10 +46,10 @@
 #include "clang/Lex/Lexer.h"
 #include "clang/Sema/Lookup.h"
 #include "gflags/gflags.h"
+#include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
-#include "kythe/cxx/indexer/cxx/scope_guard.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 

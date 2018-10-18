@@ -1,7 +1,7 @@
 // This test uses a default import, which should behave like importing
 // a field named "default".
 
-//- @obj ref/imports Def=VName("default", _, _, "testdata/default_export", _)
+//- @obj ref/imports Def=vname("default", _, _, "testdata/default_export", _)
 import obj from './default_export';
 
 //- @obj ref Def

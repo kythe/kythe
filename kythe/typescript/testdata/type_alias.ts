@@ -1,6 +1,6 @@
 export {}
 
-//- @A defines/binding A
+//- @A defines/binding _A
 interface A {
   a: number;
 }

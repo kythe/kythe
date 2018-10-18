@@ -229,6 +229,13 @@ class Range : public AstNode {
   Symbol corpus_;
 };
 
+inline bool operator==(const Range& l, const Range& r) {
+  return l.begin() == r.begin() && l.end() == r.end() && l.path() == r.path() &&
+         l.root() == r.root() && l.corpus() == r.corpus();
+}
+
+inline bool operator!=(const Range& l, const Range& r) { return !(l == r); }
+
 /// \brief A tuple of zero or more elements.
 class Tuple : public AstNode {
  public:

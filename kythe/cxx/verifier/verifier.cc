@@ -22,6 +22,7 @@
 #include "absl/memory/memory.h"
 #include "assertions.h"
 #include "kythe/cxx/common/kythe_uri.h"
+#include "kythe/cxx/common/scope_guard.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -380,9 +381,7 @@ class Solver {
       }
     } else if (Range* sr = s->AsRange()) {
       if (Range* tr = t->AsRange()) {
-        if (sr->begin() == tr->begin() && sr->end() == tr->end() &&
-            sr->path() == tr->path() && sr->root() == tr->root() &&
-            sr->corpus() == tr->corpus()) {
+        if (*sr == *tr) {
           return f();
         }
       }
@@ -699,6 +698,7 @@ bool Verifier::LoadInlineRuleFile(const std::string& filename) {
     LOG(ERROR) << "Can't open " << filename;
     return false;
   }
+  auto guard = MakeScopeGuard([&] { ::close(fd); });
   struct stat fd_stat;
   if (::fstat(fd, &fd_stat) < 0) {
     LOG(ERROR) << "Can't stat " << filename;
@@ -711,7 +711,6 @@ bool Verifier::LoadInlineRuleFile(const std::string& filename) {
     LOG(ERROR) << "Can't read " << filename;
     return false;
   }
-  ::close(fd);
   Symbol content_sym = symbol_table_.intern(content);
   if (file_vnames_) {
     auto vname = content_to_vname_.find(content_sym);
@@ -719,15 +718,16 @@ bool Verifier::LoadInlineRuleFile(const std::string& filename) {
       LOG(ERROR) << "Could not find a file node for " << filename;
       return false;
     }
-    return LoadInMemoryRuleFile(vname->second, content_sym);
+    return LoadInMemoryRuleFile(filename, vname->second, content_sym);
   } else {
     kythe::proto::VName empty;
     auto* vname = ConvertVName(yy::location{}, empty);
-    return LoadInMemoryRuleFile(vname, content_sym);
+    return LoadInMemoryRuleFile(filename, vname, content_sym);
   }
 }
 
-bool Verifier::LoadInMemoryRuleFile(AstNode* vname, Symbol text) {
+bool Verifier::LoadInMemoryRuleFile(const std::string& filename, AstNode* vname,
+                                    Symbol text) {
   Tuple* checked_tuple = nullptr;
   if (auto* app = vname->AsApp()) {
     if (auto* tuple = app->rhs()->AsTuple()) {
@@ -745,7 +745,7 @@ bool Verifier::LoadInMemoryRuleFile(AstNode* vname, Symbol text) {
   vname->Dump(symbol_table_, &printer);
   fake_files_[printer.str()] = text;
   return parser_.ParseInlineRuleString(
-      symbol_table_.text(text), printer.str(),
+      symbol_table_.text(text), filename.empty() ? printer.str() : filename,
       checked_tuple->element(3)->AsIdentifier()->symbol(),
       checked_tuple->element(2)->AsIdentifier()->symbol(),
       checked_tuple->element(1)->AsIdentifier()->symbol(),
@@ -1099,7 +1099,8 @@ bool Verifier::PrepareDatabase() {
         if (EncodedVNameOrIdentEqualTo(last_file_vname, tb->element(0))) {
           if (assertions_from_file_nodes_) {
             if (!LoadInMemoryRuleFile(
-                    tb->element(0), tb->element(4)->AsIdentifier()->symbol())) {
+                    "", tb->element(0),
+                    tb->element(4)->AsIdentifier()->symbol())) {
               is_ok = false;
             }
           } else {

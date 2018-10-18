@@ -4,7 +4,7 @@ export {}
 // the return type.
 //- @Num defines/binding Num
 interface Num {
-  //- @#0num defines/binding NumAttr
+  //- @#0num defines/binding _NumAttr
   num: number;
 }
 

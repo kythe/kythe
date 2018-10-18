@@ -20,6 +20,7 @@
 #include <functional>
 #include <string>
 
+#include "absl/container/flat_hash_map.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -40,9 +41,12 @@ class Verifier {
   explicit Verifier(bool trace_lex = false, bool trace_parse = false);
 
   /// \brief Loads an in-memory source file.
+  /// \param filename The name to use for the file; may be blank.
   /// \param vname The AstNode of the vname for the file.
+  /// \param text The symbol for the text to load
   /// \return false if we failed.
-  bool LoadInMemoryRuleFile(AstNode* vname, Symbol text);
+  bool LoadInMemoryRuleFile(const std::string& filename, AstNode* vname,
+                            Symbol text);
 
   /// \brief Loads a source file with goal comments indicating rules and data.
   /// The VName for the source file will be determined by matching its content
@@ -383,7 +387,7 @@ class Verifier {
   AstNode* marked_source_false_id_;
 
   /// Maps from file content to (verified) VName.
-  std::unordered_map<Symbol, AstNode*> content_to_vname_;
+  absl::flat_hash_map<Symbol, AstNode*> content_to_vname_;
 
   /// Find file vnames by examining file content.
   bool file_vnames_ = true;

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_INDEXER_CXX_SCOPE_GUARD_H
-#define KYTHE_CXX_INDEXER_CXX_SCOPE_GUARD_H
+#ifndef KYTHE_CXX_COMMON_SCOPE_GUARD_H
+#define KYTHE_CXX_COMMON_SCOPE_GUARD_H
 
 #include <utility>
 
@@ -105,4 +105,4 @@ ScopeGuard<ValueRestorer<ValueType>> RestoreValue(ValueType& Value) {
 
 }  // namespace kythe
 
-#endif  // KYTHE_CXX_INDEXER_CXX_SCOPE_GUARD_H
+#endif  // KYTHE_CXX_COMMON_SCOPE_GUARD_H

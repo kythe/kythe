@@ -67,10 +67,12 @@ cc_library(
     deps = [
         ":lexparse",
         "//kythe/cxx/common:kythe_uri",
+        "//kythe/cxx/common:scope_guard",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
