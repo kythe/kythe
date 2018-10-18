@@ -240,9 +240,9 @@ struct IndexerOptions {
   /// \brief Whether to emit all data.
   enum Verbosity Verbosity = kythe::Verbosity::Classic;
   /// \brief Should we emit documentation for forward class decls in ObjC?
-  BehaviorOnFwdDeclComments ObjCFwdDocs;
+  BehaviorOnFwdDeclComments ObjCFwdDocs = BehaviorOnFwdDeclComments::Emit;
   /// \brief Should we emit documentation for forward decls in C++?
-  BehaviorOnFwdDeclComments CppFwdDocs;
+  BehaviorOnFwdDeclComments CppFwdDocs = BehaviorOnFwdDeclComments::Emit;
   /// \brief Whether to allow access to the raw filesystem.
   bool AllowFSAccess = false;
   /// \brief Whether to drop data found to be template instantiation
