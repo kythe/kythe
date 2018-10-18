@@ -9,7 +9,7 @@ KYTHE_IMPORT_BASE = "kythe.io/kythe/proto"
 def _go_proto_src_impl(ctx):
     """Copy the generated source of a go_proto_library."""
     lib = ctx.attr.library
-    for src in lib.actions[0].outputs:
+    for src in lib.actions[0].outputs.to_list():
         out = ctx.outputs.generated
         ctx.actions.run_shell(
             outputs = [out],
