@@ -9,7 +9,7 @@ go_library(
     ],
     deps = [
         "//kythe/go/extractors/config/constants",
-        "//kythe/go/extractors/config/preprocessor/modifier:mvnmod",
+        "//kythe/go/extractors/config/preprocessor/modifier",
         "//kythe/go/extractors/config/runextractor/backup",
         "//kythe/go/util/cmdutil",
         "@com_github_google_subcommands//:go_default_library",

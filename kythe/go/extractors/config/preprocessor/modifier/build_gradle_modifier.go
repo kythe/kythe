@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-// Package gradlemod provides a library for adding a forked javac executable
-// into a build.gradle file.
-package gradlemod
+// Package modifier provides a library for adding a forked javac executable
+// into a build.gradle file or pom.xml file.
+package modifier
 
 import (
 	"fmt"
