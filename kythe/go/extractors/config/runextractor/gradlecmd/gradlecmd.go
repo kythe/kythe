@@ -24,8 +24,9 @@ import (
 	"os"
 	"os/exec"
 
+	"kythe.io/kythe/go/extractors/config/constants"
+	"kythe.io/kythe/go/extractors/config/preprocessor/modifier"
 	"kythe.io/kythe/go/extractors/config/runextractor/backup"
-	"kythe.io/kythe/go/extractors/config/runextractor/constants"
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"github.com/google/subcommands"
@@ -78,7 +79,7 @@ func (g *gradleCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...i
 		return g.Fail("error backing up %s: %v", g.buildFile, err)
 	}
 	defer tf.Release()
-	if err := PreProcessGradleBuild(g.buildFile, g.javacWrapper); err != nil {
+	if err := modifier.PreProcessBuildGradle(g.buildFile, g.javacWrapper); err != nil {
 		return g.Fail("error modifying %s: %v", g.buildFile, err)
 	}
 	if err := exec.Command("gradle", "clean", "build").Run(); err != nil {

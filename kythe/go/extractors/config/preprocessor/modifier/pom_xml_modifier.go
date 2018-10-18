@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mavencmd
+package modifier
 
 import (
 	"fmt"
@@ -23,13 +23,13 @@ import (
 	"github.com/beevik/etree"
 )
 
-// preProcessPomXML takes a pom.xml file and either verifies that it already has
+// PreProcessPomXML takes a pom.xml file and either verifies that it already has
 // the bits necessary to specify a separate compiler on commandline, or adds
 // functionality by dropping in a maven-compiler-plugin to the build.
 //
 // Note this potentially overwrites the input file, even if it returns an error,
 // so make a copy beforehand if you need to keep the original.
-func preProcessPomXML(pomXMLFile string) error {
+func PreProcessPomXML(pomXMLFile string) error {
 	doc := etree.NewDocument()
 	err := doc.ReadFromFile(pomXMLFile)
 	if err != nil {

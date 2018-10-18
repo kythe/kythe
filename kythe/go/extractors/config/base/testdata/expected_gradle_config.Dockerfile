@@ -1,5 +1,5 @@
 FROM openjdk:8 as java
-FROM gcr.io/kythe_repo/kythe-javac-extractor-artifacts as javac-extractor-artifacts
+FROM gcr.io/kythe-public/kythe-javac-extractor-artifacts as javac-extractor-artifacts
 FROM gradle:latest as gradle
 
 FROM debian:jessie

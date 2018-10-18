@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package gradlecmd
+package modifier
 
 import (
 	"io"
@@ -28,7 +28,7 @@ import (
 
 const testDataDir = "testdata"
 
-func TestHasKythe(t *testing.T) {
+func TestBuildGradleHasKythe(t *testing.T) {
 	testcases := []struct {
 		fileName     string
 		javacWrapper string
@@ -37,11 +37,11 @@ func TestHasKythe(t *testing.T) {
 		// Whether we expect an error.
 		wantError bool
 	}{
-		{fileName: "modified-gradle.build", javacWrapper: "/tmp/javac-wrapper.sh", hasWrapper: true},
-		{fileName: "plain-gradle.build", javacWrapper: "/tmp/javac-wrapper.sh"},
-		{fileName: "other-gradle.build", javacWrapper: "/tmp/javac-wrapper.sh", wantError: true},
-		// Look at other-gradle.build but use the correct javac wrapper.
-		{fileName: "other-gradle.build", javacWrapper: "/different/javac-wrapper.sh", hasWrapper: true},
+		{fileName: "modified-build.gradle", javacWrapper: "/tmp/javac-wrapper.sh", hasWrapper: true},
+		{fileName: "plain-build.gradle", javacWrapper: "/tmp/javac-wrapper.sh"},
+		{fileName: "other-build.gradle", javacWrapper: "/tmp/javac-wrapper.sh", wantError: true},
+		// Look at other-build.gradle but use the correct javac wrapper.
+		{fileName: "other-build.gradle", javacWrapper: "/different/javac-wrapper.sh", hasWrapper: true},
 	}
 
 	for _, tcase := range testcases {
@@ -63,15 +63,15 @@ func TestHasKythe(t *testing.T) {
 	}
 }
 
-func TestPreprocess(t *testing.T) {
+func TestBuildGradle(t *testing.T) {
 	testcases := []struct {
 		inputFile          string
 		javacWrapper       string
 		expectedOutputFile string
 	}{
-		{"modified-gradle.build", "/tmp/javac-wrapper.sh", "modified-gradle.build"},
-		{"plain-gradle.build", "/tmp/javac-wrapper.sh", "modified-gradle.build"},
-		{"plain-gradle.build", "/different/javac-wrapper.sh", "other-gradle.build"},
+		{"modified-build.gradle", "/tmp/javac-wrapper.sh", "modified-build.gradle"},
+		{"plain-build.gradle", "/tmp/javac-wrapper.sh", "modified-build.gradle"},
+		{"plain-build.gradle", "/different/javac-wrapper.sh", "other-build.gradle"},
 	}
 
 	for _, tcase := range testcases {
@@ -99,7 +99,7 @@ func TestPreprocess(t *testing.T) {
 			}
 
 			// Do the copy if necessary.
-			if err := PreProcessGradleBuild(tfName, tcase.javacWrapper); err != nil {
+			if err := PreProcessBuildGradle(tfName, tcase.javacWrapper); err != nil {
 				t.Fatalf("modifying gradle file %s: %v", tcase.inputFile, err)
 			}
 
@@ -107,6 +107,55 @@ func TestPreprocess(t *testing.T) {
 			eq, diff := testutil.TrimmedEqual(mustReadBytes(t, tfName), mustReadBytes(t, getPath(t, tcase.expectedOutputFile)))
 			if !eq {
 				t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
+			}
+		})
+	}
+}
+
+func TestPomXML(t *testing.T) {
+	testcases := []struct {
+		inputFile          string
+		expectedOutputFile string
+	}{
+		{"modified-pom.xml", "modified-pom.xml"},
+		{"plain-pom.xml", "modified-pom.xml"},
+		{"other-pom.xml", "modified-pom.xml"},
+	}
+
+	for _, tcase := range testcases {
+		t.Run(tcase.inputFile, func(t *testing.T) {
+			// Copy the file into a temp file.
+			tf, err := ioutil.TempFile("", tcase.inputFile)
+			if err != nil {
+				t.Fatalf("creating temp file: %v", err)
+			}
+			tfName := tf.Name()
+			defer os.Remove(tfName)
+			infile, err := os.Open(getPath(t, tcase.inputFile))
+			if err != nil {
+				t.Fatalf("opening file %s: %v", tcase.inputFile, err)
+			}
+			_, err = io.Copy(tf, infile)
+			if err != nil {
+				t.Fatalf("copying %s: %v", tcase.inputFile, err)
+			}
+			if err := infile.Close(); err != nil {
+				t.Fatalf("closing %s: %v", tcase.inputFile, err)
+			}
+			if err := tf.Close(); err != nil {
+				t.Fatalf("closing temp file: %v", err)
+			}
+
+			// Do the copy if necessary.
+			if err := PreProcessPomXML(tfName); err != nil {
+				t.Fatalf("modifying pom.xml %s: %v", tcase.inputFile, err)
+			}
+
+			// Compare results.
+			eq, diff := testutil.TrimmedEqual(mustReadBytes(t, tfName), mustReadBytes(t, getPath(t, tcase.expectedOutputFile)))
+			if !eq {
+				t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
+				t.Errorf("input: %s", mustReadBytes(t, tfName))
 			}
 		})
 	}
