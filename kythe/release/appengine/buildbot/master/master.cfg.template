@@ -89,7 +89,7 @@ c['change_source'].append(GitHubPullrequestPoller(
 
 ####### SCHEDULERS
 
-bazelMinVersion = '0.16.0'
+bazelMinVersion = '0.17.1'
 bazelMaxVersion = '0.18.0'
 
 allBuilders = [
@@ -155,7 +155,8 @@ c['builders'].append(
     util.BuilderConfig(
         name="bazel-"+bazelMinVersion,
         workernames=["local-worker"],
-        properties={'bazel_version': bazelMinVersion},
+        properties={'bazel_version': bazelMinVersion,
+                    'bazel_flags': ['--config=remote']},
         locks=[build_lock.access('exclusive')],
         factory=bazelKytheSteps))
 c['builders'].append(
