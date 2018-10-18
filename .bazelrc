@@ -8,8 +8,7 @@ build --auto_cpu_environment_group=//buildenv:cpu
 build --experimental_strict_action_env
 
 # By default, compile for Java 8
-build --javacopt='--release 8'
-build --nojava_header_compilation # https://github.com/bazelbuild/bazel/issues/5733
+build --java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
 
 # Ensure that we do not use an older Java version for the --javabase.
 build --javabase=@bazel_tools//tools/jdk:host_jdk
@@ -45,5 +44,3 @@ build:remote --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/ba
 build:remote --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.17.1/cpp:cc-toolchain-clang-x86_64-default
 
 build:remote --javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:jdk10
-build:remote --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk9
-build:remote --java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk9
