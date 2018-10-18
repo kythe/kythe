@@ -41,7 +41,6 @@ class Verifier {
 
   /// \brief Loads an in-memory source file.
   /// \param vname The AstNode of the vname for the file.
-  /// \param corpus The corpus to use for anchors
   /// \return false if we failed.
   bool LoadInMemoryRuleFile(AstNode* vname, Symbol text);
 

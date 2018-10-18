@@ -200,9 +200,14 @@ class AstNode : public ArenaObject {
 /// \brief A range specification that can unify with one or more ranges.
 class Range : public AstNode {
  public:
-  Range(const yy::location& location, size_t begin, size_t end, Symbol source,
+  Range(const yy::location& location, size_t begin, size_t end, Symbol path,
         Symbol root, Symbol corpus)
-      : AstNode(location), begin_(begin), end_(end) {}
+      : AstNode(location),
+        begin_(begin),
+        end_(end),
+        path_(path),
+        root_(root),
+        corpus_(corpus) {}
   Range* AsRange() override { return this; }
   void Dump(const SymbolTable&, PrettyPrinter*) override;
   size_t begin() const { return begin_; }
