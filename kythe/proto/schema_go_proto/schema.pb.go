@@ -409,10 +409,10 @@ func (EdgeKind) EnumDescriptor() ([]byte, []int) {
 }
 
 type Index struct {
-	EdgeKinds            []*Index_EdgeKinds `protobuf:"bytes,1,rep,name=edge_kinds,json=edgeKinds" json:"edge_kinds,omitempty"`
-	NodeKinds            []*Index_NodeKinds `protobuf:"bytes,2,rep,name=node_kinds,json=nodeKinds" json:"node_kinds,omitempty"`
-	Subkinds             []*Index_Subkinds  `protobuf:"bytes,3,rep,name=subkinds" json:"subkinds,omitempty"`
-	FactNames            []*Index_FactNames `protobuf:"bytes,4,rep,name=fact_names,json=factNames" json:"fact_names,omitempty"`
+	EdgeKinds            []*Index_EdgeKinds `protobuf:"bytes,1,rep,name=edge_kinds,json=edgeKinds,proto3" json:"edge_kinds,omitempty"`
+	NodeKinds            []*Index_NodeKinds `protobuf:"bytes,2,rep,name=node_kinds,json=nodeKinds,proto3" json:"node_kinds,omitempty"`
+	Subkinds             []*Index_Subkinds  `protobuf:"bytes,3,rep,name=subkinds,proto3" json:"subkinds,omitempty"`
+	FactNames            []*Index_FactNames `protobuf:"bytes,4,rep,name=fact_names,json=factNames,proto3" json:"fact_names,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -471,8 +471,8 @@ func (m *Index) GetFactNames() []*Index_FactNames {
 }
 
 type Index_EdgeKinds struct {
-	Prefix               string              `protobuf:"bytes,1,opt,name=prefix" json:"prefix,omitempty"`
-	EdgeKind             map[string]EdgeKind `protobuf:"bytes,2,rep,name=edge_kind,json=edgeKind" json:"edge_kind,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value,enum=kythe.proto.schema.EdgeKind"`
+	Prefix               string              `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	EdgeKind             map[string]EdgeKind `protobuf:"bytes,2,rep,name=edge_kind,json=edgeKind,proto3" json:"edge_kind,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3,enum=kythe.proto.schema.EdgeKind"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -517,8 +517,8 @@ func (m *Index_EdgeKinds) GetEdgeKind() map[string]EdgeKind {
 }
 
 type Index_NodeKinds struct {
-	Prefix               string              `protobuf:"bytes,1,opt,name=prefix" json:"prefix,omitempty"`
-	NodeKind             map[string]NodeKind `protobuf:"bytes,2,rep,name=node_kind,json=nodeKind" json:"node_kind,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value,enum=kythe.proto.schema.NodeKind"`
+	Prefix               string              `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	NodeKind             map[string]NodeKind `protobuf:"bytes,2,rep,name=node_kind,json=nodeKind,proto3" json:"node_kind,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3,enum=kythe.proto.schema.NodeKind"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -563,8 +563,8 @@ func (m *Index_NodeKinds) GetNodeKind() map[string]NodeKind {
 }
 
 type Index_Subkinds struct {
-	Prefix               string             `protobuf:"bytes,1,opt,name=prefix" json:"prefix,omitempty"`
-	Subkind              map[string]Subkind `protobuf:"bytes,2,rep,name=subkind" json:"subkind,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value,enum=kythe.proto.schema.Subkind"`
+	Prefix               string             `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Subkind              map[string]Subkind `protobuf:"bytes,2,rep,name=subkind,proto3" json:"subkind,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3,enum=kythe.proto.schema.Subkind"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -609,8 +609,8 @@ func (m *Index_Subkinds) GetSubkind() map[string]Subkind {
 }
 
 type Index_FactNames struct {
-	Prefix               string              `protobuf:"bytes,1,opt,name=prefix" json:"prefix,omitempty"`
-	FactName             map[string]FactName `protobuf:"bytes,2,rep,name=fact_name,json=factName" json:"fact_name,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value,enum=kythe.proto.schema.FactName"`
+	Prefix               string              `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	FactName             map[string]FactName `protobuf:"bytes,2,rep,name=fact_name,json=factName,proto3" json:"fact_name,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3,enum=kythe.proto.schema.FactName"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -655,9 +655,9 @@ func (m *Index_FactNames) GetFactName() map[string]FactName {
 }
 
 type Node struct {
-	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
-	Fact   []*Fact                 `protobuf:"bytes,2,rep,name=fact" json:"fact,omitempty"`
-	Edge   []*Edge                 `protobuf:"bytes,3,rep,name=edge" json:"edge,omitempty"`
+	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	Fact   []*Fact                 `protobuf:"bytes,2,rep,name=fact,proto3" json:"fact,omitempty"`
+	Edge   []*Edge                 `protobuf:"bytes,3,rep,name=edge,proto3" json:"edge,omitempty"`
 	// Types that are valid to be assigned to Kind:
 	//	*Node_KytheKind
 	//	*Node_GenericKind
@@ -695,44 +695,6 @@ func (m *Node) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Node proto.InternalMessageInfo
 
-type isNode_Kind interface {
-	isNode_Kind()
-}
-type isNode_Subkind interface {
-	isNode_Subkind()
-}
-
-type Node_KytheKind struct {
-	KytheKind NodeKind `protobuf:"varint,4,opt,name=kythe_kind,json=kytheKind,enum=kythe.proto.schema.NodeKind,oneof"`
-}
-type Node_GenericKind struct {
-	GenericKind string `protobuf:"bytes,5,opt,name=generic_kind,json=genericKind,oneof"`
-}
-type Node_KytheSubkind struct {
-	KytheSubkind Subkind `protobuf:"varint,6,opt,name=kythe_subkind,json=kytheSubkind,enum=kythe.proto.schema.Subkind,oneof"`
-}
-type Node_GenericSubkind struct {
-	GenericSubkind string `protobuf:"bytes,7,opt,name=generic_subkind,json=genericSubkind,oneof"`
-}
-
-func (*Node_KytheKind) isNode_Kind()         {}
-func (*Node_GenericKind) isNode_Kind()       {}
-func (*Node_KytheSubkind) isNode_Subkind()   {}
-func (*Node_GenericSubkind) isNode_Subkind() {}
-
-func (m *Node) GetKind() isNode_Kind {
-	if m != nil {
-		return m.Kind
-	}
-	return nil
-}
-func (m *Node) GetSubkind() isNode_Subkind {
-	if m != nil {
-		return m.Subkind
-	}
-	return nil
-}
-
 func (m *Node) GetSource() *storage_go_proto.VName {
 	if m != nil {
 		return m.Source
@@ -754,6 +716,29 @@ func (m *Node) GetEdge() []*Edge {
 	return nil
 }
 
+type isNode_Kind interface {
+	isNode_Kind()
+}
+
+type Node_KytheKind struct {
+	KytheKind NodeKind `protobuf:"varint,4,opt,name=kythe_kind,json=kytheKind,proto3,enum=kythe.proto.schema.NodeKind,oneof"`
+}
+
+type Node_GenericKind struct {
+	GenericKind string `protobuf:"bytes,5,opt,name=generic_kind,json=genericKind,proto3,oneof"`
+}
+
+func (*Node_KytheKind) isNode_Kind() {}
+
+func (*Node_GenericKind) isNode_Kind() {}
+
+func (m *Node) GetKind() isNode_Kind {
+	if m != nil {
+		return m.Kind
+	}
+	return nil
+}
+
 func (m *Node) GetKytheKind() NodeKind {
 	if x, ok := m.GetKind().(*Node_KytheKind); ok {
 		return x.KytheKind
@@ -766,6 +751,29 @@ func (m *Node) GetGenericKind() string {
 		return x.GenericKind
 	}
 	return ""
+}
+
+type isNode_Subkind interface {
+	isNode_Subkind()
+}
+
+type Node_KytheSubkind struct {
+	KytheSubkind Subkind `protobuf:"varint,6,opt,name=kythe_subkind,json=kytheSubkind,proto3,enum=kythe.proto.schema.Subkind,oneof"`
+}
+
+type Node_GenericSubkind struct {
+	GenericSubkind string `protobuf:"bytes,7,opt,name=generic_subkind,json=genericSubkind,proto3,oneof"`
+}
+
+func (*Node_KytheSubkind) isNode_Subkind() {}
+
+func (*Node_GenericSubkind) isNode_Subkind() {}
+
+func (m *Node) GetSubkind() isNode_Subkind {
+	if m != nil {
+		return m.Subkind
+	}
+	return nil
 }
 
 func (m *Node) GetKytheSubkind() Subkind {
@@ -889,7 +897,7 @@ func _Node_OneofSizer(msg proto.Message) (n int) {
 }
 
 type Fact struct {
-	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
+	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
 	// Types that are valid to be assigned to Name:
 	//	*Fact_KytheName
 	//	*Fact_GenericName
@@ -924,30 +932,32 @@ func (m *Fact) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Fact proto.InternalMessageInfo
 
+func (m *Fact) GetSource() *storage_go_proto.VName {
+	if m != nil {
+		return m.Source
+	}
+	return nil
+}
+
 type isFact_Name interface {
 	isFact_Name()
 }
 
 type Fact_KytheName struct {
-	KytheName FactName `protobuf:"varint,2,opt,name=kythe_name,json=kytheName,enum=kythe.proto.schema.FactName,oneof"`
-}
-type Fact_GenericName struct {
-	GenericName string `protobuf:"bytes,3,opt,name=generic_name,json=genericName,oneof"`
+	KytheName FactName `protobuf:"varint,2,opt,name=kythe_name,json=kytheName,proto3,enum=kythe.proto.schema.FactName,oneof"`
 }
 
-func (*Fact_KytheName) isFact_Name()   {}
+type Fact_GenericName struct {
+	GenericName string `protobuf:"bytes,3,opt,name=generic_name,json=genericName,proto3,oneof"`
+}
+
+func (*Fact_KytheName) isFact_Name() {}
+
 func (*Fact_GenericName) isFact_Name() {}
 
 func (m *Fact) GetName() isFact_Name {
 	if m != nil {
 		return m.Name
-	}
-	return nil
-}
-
-func (m *Fact) GetSource() *storage_go_proto.VName {
-	if m != nil {
-		return m.Source
 	}
 	return nil
 }
@@ -1039,15 +1049,15 @@ func _Fact_OneofSizer(msg proto.Message) (n int) {
 }
 
 type Edge struct {
-	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
-	Target *storage_go_proto.VName `protobuf:"bytes,2,opt,name=target" json:"target,omitempty"`
+	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	Target *storage_go_proto.VName `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	// Types that are valid to be assigned to Kind:
 	//	*Edge_KytheKind
 	//	*Edge_GenericKind
 	Kind                 isEdge_Kind `protobuf_oneof:"kind"`
-	Ordinal              int32       `protobuf:"varint,5,opt,name=ordinal" json:"ordinal,omitempty"`
-	SourceNode           *Node       `protobuf:"bytes,6,opt,name=source_node,json=sourceNode" json:"source_node,omitempty"`
-	TargetNode           *Node       `protobuf:"bytes,7,opt,name=target_node,json=targetNode" json:"target_node,omitempty"`
+	Ordinal              int32       `protobuf:"varint,5,opt,name=ordinal,proto3" json:"ordinal,omitempty"`
+	SourceNode           *Node       `protobuf:"bytes,6,opt,name=source_node,json=sourceNode,proto3" json:"source_node,omitempty"`
+	TargetNode           *Node       `protobuf:"bytes,7,opt,name=target_node,json=targetNode,proto3" json:"target_node,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -1077,27 +1087,6 @@ func (m *Edge) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Edge proto.InternalMessageInfo
 
-type isEdge_Kind interface {
-	isEdge_Kind()
-}
-
-type Edge_KytheKind struct {
-	KytheKind EdgeKind `protobuf:"varint,3,opt,name=kythe_kind,json=kytheKind,enum=kythe.proto.schema.EdgeKind,oneof"`
-}
-type Edge_GenericKind struct {
-	GenericKind string `protobuf:"bytes,4,opt,name=generic_kind,json=genericKind,oneof"`
-}
-
-func (*Edge_KytheKind) isEdge_Kind()   {}
-func (*Edge_GenericKind) isEdge_Kind() {}
-
-func (m *Edge) GetKind() isEdge_Kind {
-	if m != nil {
-		return m.Kind
-	}
-	return nil
-}
-
 func (m *Edge) GetSource() *storage_go_proto.VName {
 	if m != nil {
 		return m.Source
@@ -1108,6 +1097,29 @@ func (m *Edge) GetSource() *storage_go_proto.VName {
 func (m *Edge) GetTarget() *storage_go_proto.VName {
 	if m != nil {
 		return m.Target
+	}
+	return nil
+}
+
+type isEdge_Kind interface {
+	isEdge_Kind()
+}
+
+type Edge_KytheKind struct {
+	KytheKind EdgeKind `protobuf:"varint,3,opt,name=kythe_kind,json=kytheKind,proto3,enum=kythe.proto.schema.EdgeKind,oneof"`
+}
+
+type Edge_GenericKind struct {
+	GenericKind string `protobuf:"bytes,4,opt,name=generic_kind,json=genericKind,proto3,oneof"`
+}
+
+func (*Edge_KytheKind) isEdge_Kind() {}
+
+func (*Edge_GenericKind) isEdge_Kind() {}
+
+func (m *Edge) GetKind() isEdge_Kind {
+	if m != nil {
+		return m.Kind
 	}
 	return nil
 }

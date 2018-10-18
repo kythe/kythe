@@ -19,9 +19,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type FindRequest struct {
-	Identifier           string   `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
-	Corpus               []string `protobuf:"bytes,2,rep,name=corpus" json:"corpus,omitempty"`
-	Languages            []string `protobuf:"bytes,3,rep,name=languages" json:"languages,omitempty"`
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	Corpus               []string `protobuf:"bytes,2,rep,name=corpus,proto3" json:"corpus,omitempty"`
+	Languages            []string `protobuf:"bytes,3,rep,name=languages,proto3" json:"languages,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -73,7 +73,7 @@ func (m *FindRequest) GetLanguages() []string {
 }
 
 type FindReply struct {
-	Matches              []*FindReply_Match `protobuf:"bytes,1,rep,name=matches" json:"matches,omitempty"`
+	Matches              []*FindReply_Match `protobuf:"bytes,1,rep,name=matches,proto3" json:"matches,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -111,11 +111,11 @@ func (m *FindReply) GetMatches() []*FindReply_Match {
 }
 
 type FindReply_Match struct {
-	Ticket               string   `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	NodeKind             string   `protobuf:"bytes,2,opt,name=node_kind,json=nodeKind" json:"node_kind,omitempty"`
-	NodeSubkind          string   `protobuf:"bytes,3,opt,name=node_subkind,json=nodeSubkind" json:"node_subkind,omitempty"`
-	BaseName             string   `protobuf:"bytes,4,opt,name=base_name,json=baseName" json:"base_name,omitempty"`
-	QualifiedName        string   `protobuf:"bytes,5,opt,name=qualified_name,json=qualifiedName" json:"qualified_name,omitempty"`
+	Ticket               string   `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	NodeKind             string   `protobuf:"bytes,2,opt,name=node_kind,json=nodeKind,proto3" json:"node_kind,omitempty"`
+	NodeSubkind          string   `protobuf:"bytes,3,opt,name=node_subkind,json=nodeSubkind,proto3" json:"node_subkind,omitempty"`
+	BaseName             string   `protobuf:"bytes,4,opt,name=base_name,json=baseName,proto3" json:"base_name,omitempty"`
+	QualifiedName        string   `protobuf:"bytes,5,opt,name=qualified_name,json=qualifiedName,proto3" json:"qualified_name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

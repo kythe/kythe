@@ -20,7 +20,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type JarDetails struct {
-	Jar                  []*JarDetails_Jar `protobuf:"bytes,1,rep,name=jar" json:"jar,omitempty"`
+	Jar                  []*JarDetails_Jar `protobuf:"bytes,1,rep,name=jar,proto3" json:"jar,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -58,7 +58,7 @@ func (m *JarDetails) GetJar() []*JarDetails_Jar {
 }
 
 type JarDetails_Jar struct {
-	VName                *storage_go_proto.VName `protobuf:"bytes,1,opt,name=v_name,json=vName" json:"v_name,omitempty"`
+	VName                *storage_go_proto.VName `protobuf:"bytes,1,opt,name=v_name,json=vName,proto3" json:"v_name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
 	XXX_unrecognized     []byte                  `json:"-"`
 	XXX_sizecache        int32                   `json:"-"`
@@ -96,7 +96,7 @@ func (m *JarDetails_Jar) GetVName() *storage_go_proto.VName {
 }
 
 type JarEntryDetails struct {
-	JarContainer         int32    `protobuf:"varint,1,opt,name=jar_container,json=jarContainer" json:"jar_container,omitempty"`
+	JarContainer         int32    `protobuf:"varint,1,opt,name=jar_container,json=jarContainer,proto3" json:"jar_container,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -134,10 +134,10 @@ func (m *JarEntryDetails) GetJarContainer() int32 {
 }
 
 type JavaDetails struct {
-	Classpath            []string `protobuf:"bytes,1,rep,name=classpath" json:"classpath,omitempty"`
-	Sourcepath           []string `protobuf:"bytes,2,rep,name=sourcepath" json:"sourcepath,omitempty"`
-	Bootclasspath        []string `protobuf:"bytes,3,rep,name=bootclasspath" json:"bootclasspath,omitempty"`
-	ExtraJavacopts       []string `protobuf:"bytes,10,rep,name=extra_javacopts,json=extraJavacopts" json:"extra_javacopts,omitempty"`
+	Classpath            []string `protobuf:"bytes,1,rep,name=classpath,proto3" json:"classpath,omitempty"`
+	Sourcepath           []string `protobuf:"bytes,2,rep,name=sourcepath,proto3" json:"sourcepath,omitempty"`
+	Bootclasspath        []string `protobuf:"bytes,3,rep,name=bootclasspath,proto3" json:"bootclasspath,omitempty"`
+	ExtraJavacopts       []string `protobuf:"bytes,10,rep,name=extra_javacopts,json=extraJavacopts,proto3" json:"extra_javacopts,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

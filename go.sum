@@ -10,8 +10,8 @@ github.com/apache/beam v0.0.0-20180919184632-09857b18ffd8 h1:JvbeJyOqMiAkDs63Ofd
 github.com/apache/beam v0.0.0-20180919184632-09857b18ffd8/go.mod h1:/8NX3Qi8vGstDLLaeaU7+lzVEu/ACaQhYjeefzQ0y1o=
 github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb h1:7UqUs7q4Iir6wMDedPXDB6uaPkuQv0oGrDoTydZyxG0=
 github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb/go.mod h1:r8Aw8JqVegEf0w2fDnATrX9VpkMcyFeM0FhwO62wh+A=
-github.com/golang/protobuf v0.0.0-20171107165515-b4deda0973fb h1:Xy9W6nssiKgvOCRSF7ohlJwwp0pk0BPH0LLS7u0B9to=
-github.com/golang/protobuf v0.0.0-20171107165515-b4deda0973fb/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
+github.com/golang/protobuf v0.0.0-20180814141427-aa810b61a9c7 h1:mQiPaAAvxV1ZZ//PWssC7qi3F3uyxTkdl3cDgzFLBlY=
+github.com/golang/protobuf v0.0.0-20180814141427-aa810b61a9c7/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/snappy v0.0.0-20170215233205-553a64147049 h1:K9KHZbXKpGydfDN0aZrsoHpLJlZsBrGMFWbgLDGnPZk=
 github.com/golang/snappy v0.0.0-20170215233205-553a64147049/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
 github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540 h1:p7yBiLWuNlevGWjy6uvLhyGogmYywbO9M5TKbhZam/o=
@@ -52,8 +52,8 @@ golang.org/x/sys v0.0.0-20180616030259-6c888cc515d3 h1:FCfAlbS73+IQQJktaKGHldMdL
 golang.org/x/sys v0.0.0-20180616030259-6c888cc515d3/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/text v0.0.0-20180410181320-7922cc490dd5 h1:JuX0hiV/F4xp4w8qqbN49Nsatovt4Kckp6J/5EbNi9Y=
 golang.org/x/text v0.0.0-20180410181320-7922cc490dd5/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
-golang.org/x/tools v0.0.0-20180508192217-48418e5732e1 h1:UaQT3e4+v7zvs8/jOjPAjj3QTiaMq+qRDlmeDJWMQ9M=
-golang.org/x/tools v0.0.0-20180508192217-48418e5732e1/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
+golang.org/x/tools v0.0.0-20180928164045-7b71b077e1f4 h1:PQ9BDd+hmQunKOVUn6g+VZlQusJoI1yCJlYOcCx0f3Y=
+golang.org/x/tools v0.0.0-20180928164045-7b71b077e1f4/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
 google.golang.org/api v0.0.0-20180404000327-3097bf831ede h1:IpOSFMKDfs+avkALa1/nT42Cp6cEavc+cJUAg46ovmQ=
 google.golang.org/api v0.0.0-20180404000327-3097bf831ede/go.mod h1:4mhQ8q/RsB7i+udVvVy5NUi08OU8ZlA0gRVgrF7VFY0=
 google.golang.org/genproto v0.0.0-20180716172848-2731d4fa720b h1:mXqBiicV0B+k8wzFNkKeNBRL7LyRV5xG0s+S6ffLb/E=

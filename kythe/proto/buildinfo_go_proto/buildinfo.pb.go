@@ -19,8 +19,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type BuildDetails struct {
-	BuildTarget          string   `protobuf:"bytes,1,opt,name=build_target,json=buildTarget" json:"build_target,omitempty"`
-	RuleType             string   `protobuf:"bytes,2,opt,name=rule_type,json=ruleType" json:"rule_type,omitempty"`
+	BuildTarget          string   `protobuf:"bytes,1,opt,name=build_target,json=buildTarget,proto3" json:"build_target,omitempty"`
+	RuleType             string   `protobuf:"bytes,2,opt,name=rule_type,json=ruleType,proto3" json:"rule_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

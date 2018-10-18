@@ -48,10 +48,10 @@ func (AnalysisResult_Status) EnumDescriptor() ([]byte, []int) {
 }
 
 type AnalysisRequest struct {
-	Compilation          *CompilationUnit `protobuf:"bytes,1,opt,name=compilation" json:"compilation,omitempty"`
-	FileDataService      string           `protobuf:"bytes,2,opt,name=file_data_service,json=fileDataService" json:"file_data_service,omitempty"`
-	Revision             string           `protobuf:"bytes,3,opt,name=revision" json:"revision,omitempty"`
-	BuildId              string           `protobuf:"bytes,4,opt,name=build_id,json=buildId" json:"build_id,omitempty"`
+	Compilation          *CompilationUnit `protobuf:"bytes,1,opt,name=compilation,proto3" json:"compilation,omitempty"`
+	FileDataService      string           `protobuf:"bytes,2,opt,name=file_data_service,json=fileDataService,proto3" json:"file_data_service,omitempty"`
+	Revision             string           `protobuf:"bytes,3,opt,name=revision,proto3" json:"revision,omitempty"`
+	BuildId              string           `protobuf:"bytes,4,opt,name=build_id,json=buildId,proto3" json:"build_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -111,7 +111,7 @@ func (m *AnalysisRequest) GetBuildId() string {
 
 type AnalysisOutput struct {
 	Value                []byte          `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	FinalResult          *AnalysisResult `protobuf:"bytes,10,opt,name=final_result,json=finalResult" json:"final_result,omitempty"`
+	FinalResult          *AnalysisResult `protobuf:"bytes,10,opt,name=final_result,json=finalResult,proto3" json:"final_result,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -156,8 +156,8 @@ func (m *AnalysisOutput) GetFinalResult() *AnalysisResult {
 }
 
 type AnalysisResult struct {
-	Status               AnalysisResult_Status `protobuf:"varint,1,opt,name=status,enum=kythe.proto.AnalysisResult_Status" json:"status,omitempty"`
-	Summary              string                `protobuf:"bytes,2,opt,name=summary" json:"summary,omitempty"`
+	Status               AnalysisResult_Status `protobuf:"varint,1,opt,name=status,proto3,enum=kythe.proto.AnalysisResult_Status" json:"status,omitempty"`
+	Summary              string                `protobuf:"bytes,2,opt,name=summary,proto3" json:"summary,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -202,16 +202,16 @@ func (m *AnalysisResult) GetSummary() string {
 }
 
 type CompilationUnit struct {
-	VName                *storage_go_proto.VName      `protobuf:"bytes,1,opt,name=v_name,json=vName" json:"v_name,omitempty"`
-	RequiredInput        []*CompilationUnit_FileInput `protobuf:"bytes,3,rep,name=required_input,json=requiredInput" json:"required_input,omitempty"`
-	HasCompileErrors     bool                         `protobuf:"varint,4,opt,name=has_compile_errors,json=hasCompileErrors" json:"has_compile_errors,omitempty"`
-	Argument             []string                     `protobuf:"bytes,5,rep,name=argument" json:"argument,omitempty"`
-	SourceFile           []string                     `protobuf:"bytes,6,rep,name=source_file,json=sourceFile" json:"source_file,omitempty"`
-	OutputKey            string                       `protobuf:"bytes,7,opt,name=output_key,json=outputKey" json:"output_key,omitempty"`
-	WorkingDirectory     string                       `protobuf:"bytes,8,opt,name=working_directory,json=workingDirectory" json:"working_directory,omitempty"`
-	EntryContext         string                       `protobuf:"bytes,9,opt,name=entry_context,json=entryContext" json:"entry_context,omitempty"`
-	Environment          []*CompilationUnit_Env       `protobuf:"bytes,10,rep,name=environment" json:"environment,omitempty"`
-	Details              []*any.Any                   `protobuf:"bytes,11,rep,name=details" json:"details,omitempty"`
+	VName                *storage_go_proto.VName      `protobuf:"bytes,1,opt,name=v_name,json=vName,proto3" json:"v_name,omitempty"`
+	RequiredInput        []*CompilationUnit_FileInput `protobuf:"bytes,3,rep,name=required_input,json=requiredInput,proto3" json:"required_input,omitempty"`
+	HasCompileErrors     bool                         `protobuf:"varint,4,opt,name=has_compile_errors,json=hasCompileErrors,proto3" json:"has_compile_errors,omitempty"`
+	Argument             []string                     `protobuf:"bytes,5,rep,name=argument,proto3" json:"argument,omitempty"`
+	SourceFile           []string                     `protobuf:"bytes,6,rep,name=source_file,json=sourceFile,proto3" json:"source_file,omitempty"`
+	OutputKey            string                       `protobuf:"bytes,7,opt,name=output_key,json=outputKey,proto3" json:"output_key,omitempty"`
+	WorkingDirectory     string                       `protobuf:"bytes,8,opt,name=working_directory,json=workingDirectory,proto3" json:"working_directory,omitempty"`
+	EntryContext         string                       `protobuf:"bytes,9,opt,name=entry_context,json=entryContext,proto3" json:"entry_context,omitempty"`
+	Environment          []*CompilationUnit_Env       `protobuf:"bytes,10,rep,name=environment,proto3" json:"environment,omitempty"`
+	Details              []*any.Any                   `protobuf:"bytes,11,rep,name=details,proto3" json:"details,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                     `json:"-"`
 	XXX_unrecognized     []byte                       `json:"-"`
 	XXX_sizecache        int32                        `json:"-"`
@@ -312,10 +312,10 @@ func (m *CompilationUnit) GetDetails() []*any.Any {
 }
 
 type CompilationUnit_FileInput struct {
-	VName                *storage_go_proto.VName                       `protobuf:"bytes,1,opt,name=v_name,json=vName" json:"v_name,omitempty"`
-	Info                 *FileInfo                                     `protobuf:"bytes,2,opt,name=info" json:"info,omitempty"`
-	Context              *filecontext_go_proto.ContextDependentVersion `protobuf:"bytes,3,opt,name=context" json:"context,omitempty"` // Deprecated: Do not use.
-	Details              []*any.Any                                    `protobuf:"bytes,4,rep,name=details" json:"details,omitempty"`
+	VName                *storage_go_proto.VName                       `protobuf:"bytes,1,opt,name=v_name,json=vName,proto3" json:"v_name,omitempty"`
+	Info                 *FileInfo                                     `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
+	Context              *filecontext_go_proto.ContextDependentVersion `protobuf:"bytes,3,opt,name=context,proto3" json:"context,omitempty"` // Deprecated: Do not use.
+	Details              []*any.Any                                    `protobuf:"bytes,4,rep,name=details,proto3" json:"details,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                      `json:"-"`
 	XXX_unrecognized     []byte                                        `json:"-"`
 	XXX_sizecache        int32                                         `json:"-"`
@@ -375,8 +375,8 @@ func (m *CompilationUnit_FileInput) GetDetails() []*any.Any {
 }
 
 type CompilationUnit_Env struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Value                string   `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -421,7 +421,7 @@ func (m *CompilationUnit_Env) GetValue() string {
 }
 
 type FilesRequest struct {
-	Files                []*FileInfo `protobuf:"bytes,1,rep,name=files" json:"files,omitempty"`
+	Files                []*FileInfo `protobuf:"bytes,1,rep,name=files,proto3" json:"files,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -459,8 +459,8 @@ func (m *FilesRequest) GetFiles() []*FileInfo {
 }
 
 type FileInfo struct {
-	Path                 string   `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
-	Digest               string   `protobuf:"bytes,2,opt,name=digest" json:"digest,omitempty"`
+	Path                 string   `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Digest               string   `protobuf:"bytes,2,opt,name=digest,proto3" json:"digest,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -506,8 +506,8 @@ func (m *FileInfo) GetDigest() string {
 
 type FileData struct {
 	Content              []byte    `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	Info                 *FileInfo `protobuf:"bytes,2,opt,name=info" json:"info,omitempty"`
-	Missing              bool      `protobuf:"varint,3,opt,name=missing" json:"missing,omitempty"`
+	Info                 *FileInfo `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
+	Missing              bool      `protobuf:"varint,3,opt,name=missing,proto3" json:"missing,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`
@@ -559,8 +559,8 @@ func (m *FileData) GetMissing() bool {
 }
 
 type CompilationBundle struct {
-	Unit                 *CompilationUnit `protobuf:"bytes,1,opt,name=unit" json:"unit,omitempty"`
-	Files                []*FileData      `protobuf:"bytes,2,rep,name=files" json:"files,omitempty"`
+	Unit                 *CompilationUnit `protobuf:"bytes,1,opt,name=unit,proto3" json:"unit,omitempty"`
+	Files                []*FileData      `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -605,8 +605,8 @@ func (m *CompilationBundle) GetFiles() []*FileData {
 }
 
 type IndexedCompilation struct {
-	Unit                 *CompilationUnit          `protobuf:"bytes,1,opt,name=unit" json:"unit,omitempty"`
-	Index                *IndexedCompilation_Index `protobuf:"bytes,2,opt,name=index" json:"index,omitempty"`
+	Unit                 *CompilationUnit          `protobuf:"bytes,1,opt,name=unit,proto3" json:"unit,omitempty"`
+	Index                *IndexedCompilation_Index `protobuf:"bytes,2,opt,name=index,proto3" json:"index,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`
@@ -651,7 +651,7 @@ func (m *IndexedCompilation) GetIndex() *IndexedCompilation_Index {
 }
 
 type IndexedCompilation_Index struct {
-	Revisions            []string `protobuf:"bytes,1,rep,name=revisions" json:"revisions,omitempty"`
+	Revisions            []string `protobuf:"bytes,1,rep,name=revisions,proto3" json:"revisions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

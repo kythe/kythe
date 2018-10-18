@@ -75,7 +75,7 @@ func (CrossReferences_Callsite_Kind) EnumDescriptor() ([]byte, []int) {
 }
 
 type FileDecorations struct {
-	File *storage_go_proto.VName `protobuf:"bytes,1,opt,name=file" json:"file,omitempty"`
+	File *storage_go_proto.VName `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
 	// Types that are valid to be assigned to Entry:
 	//	*FileDecorations_Index_
 	//	*FileDecorations_Text_
@@ -116,58 +116,74 @@ func (m *FileDecorations) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_FileDecorations proto.InternalMessageInfo
 
+func (m *FileDecorations) GetFile() *storage_go_proto.VName {
+	if m != nil {
+		return m.File
+	}
+	return nil
+}
+
 type isFileDecorations_Entry interface {
 	isFileDecorations_Entry()
 }
 
 type FileDecorations_Index_ struct {
-	Index *FileDecorations_Index `protobuf:"bytes,2,opt,name=index,oneof"`
-}
-type FileDecorations_Text_ struct {
-	Text *FileDecorations_Text `protobuf:"bytes,3,opt,name=text,oneof"`
-}
-type FileDecorations_Target_ struct {
-	Target *FileDecorations_Target `protobuf:"bytes,4,opt,name=target,oneof"`
-}
-type FileDecorations_TargetOverride_ struct {
-	TargetOverride *FileDecorations_TargetOverride `protobuf:"bytes,5,opt,name=target_override,json=targetOverride,oneof"`
-}
-type FileDecorations_TargetNode_ struct {
-	TargetNode *FileDecorations_TargetNode `protobuf:"bytes,6,opt,name=target_node,json=targetNode,oneof"`
-}
-type FileDecorations_TargetDefinition_ struct {
-	TargetDefinition *FileDecorations_TargetDefinition `protobuf:"bytes,7,opt,name=target_definition,json=targetDefinition,oneof"`
-}
-type FileDecorations_DefinitionLocation_ struct {
-	DefinitionLocation *FileDecorations_DefinitionLocation `protobuf:"bytes,8,opt,name=definition_location,json=definitionLocation,oneof"`
-}
-type FileDecorations_Override_ struct {
-	Override *FileDecorations_Override `protobuf:"bytes,9,opt,name=override,oneof"`
-}
-type FileDecorations_Diagnostic_ struct {
-	Diagnostic *FileDecorations_Diagnostic `protobuf:"bytes,10,opt,name=diagnostic,oneof"`
+	Index *FileDecorations_Index `protobuf:"bytes,2,opt,name=index,proto3,oneof"`
 }
 
-func (*FileDecorations_Index_) isFileDecorations_Entry()              {}
-func (*FileDecorations_Text_) isFileDecorations_Entry()               {}
-func (*FileDecorations_Target_) isFileDecorations_Entry()             {}
-func (*FileDecorations_TargetOverride_) isFileDecorations_Entry()     {}
-func (*FileDecorations_TargetNode_) isFileDecorations_Entry()         {}
-func (*FileDecorations_TargetDefinition_) isFileDecorations_Entry()   {}
+type FileDecorations_Text_ struct {
+	Text *FileDecorations_Text `protobuf:"bytes,3,opt,name=text,proto3,oneof"`
+}
+
+type FileDecorations_Target_ struct {
+	Target *FileDecorations_Target `protobuf:"bytes,4,opt,name=target,proto3,oneof"`
+}
+
+type FileDecorations_TargetOverride_ struct {
+	TargetOverride *FileDecorations_TargetOverride `protobuf:"bytes,5,opt,name=target_override,json=targetOverride,proto3,oneof"`
+}
+
+type FileDecorations_TargetNode_ struct {
+	TargetNode *FileDecorations_TargetNode `protobuf:"bytes,6,opt,name=target_node,json=targetNode,proto3,oneof"`
+}
+
+type FileDecorations_TargetDefinition_ struct {
+	TargetDefinition *FileDecorations_TargetDefinition `protobuf:"bytes,7,opt,name=target_definition,json=targetDefinition,proto3,oneof"`
+}
+
+type FileDecorations_DefinitionLocation_ struct {
+	DefinitionLocation *FileDecorations_DefinitionLocation `protobuf:"bytes,8,opt,name=definition_location,json=definitionLocation,proto3,oneof"`
+}
+
+type FileDecorations_Override_ struct {
+	Override *FileDecorations_Override `protobuf:"bytes,9,opt,name=override,proto3,oneof"`
+}
+
+type FileDecorations_Diagnostic_ struct {
+	Diagnostic *FileDecorations_Diagnostic `protobuf:"bytes,10,opt,name=diagnostic,proto3,oneof"`
+}
+
+func (*FileDecorations_Index_) isFileDecorations_Entry() {}
+
+func (*FileDecorations_Text_) isFileDecorations_Entry() {}
+
+func (*FileDecorations_Target_) isFileDecorations_Entry() {}
+
+func (*FileDecorations_TargetOverride_) isFileDecorations_Entry() {}
+
+func (*FileDecorations_TargetNode_) isFileDecorations_Entry() {}
+
+func (*FileDecorations_TargetDefinition_) isFileDecorations_Entry() {}
+
 func (*FileDecorations_DefinitionLocation_) isFileDecorations_Entry() {}
-func (*FileDecorations_Override_) isFileDecorations_Entry()           {}
-func (*FileDecorations_Diagnostic_) isFileDecorations_Entry()         {}
+
+func (*FileDecorations_Override_) isFileDecorations_Entry() {}
+
+func (*FileDecorations_Diagnostic_) isFileDecorations_Entry() {}
 
 func (m *FileDecorations) GetEntry() isFileDecorations_Entry {
 	if m != nil {
 		return m.Entry
-	}
-	return nil
-}
-
-func (m *FileDecorations) GetFile() *storage_go_proto.VName {
-	if m != nil {
-		return m.File
 	}
 	return nil
 }
@@ -443,7 +459,7 @@ func _FileDecorations_OneofSizer(msg proto.Message) (n int) {
 }
 
 type FileDecorations_Index struct {
-	TextEncoding         string   `protobuf:"bytes,1,opt,name=text_encoding,json=textEncoding" json:"text_encoding,omitempty"`
+	TextEncoding         string   `protobuf:"bytes,1,opt,name=text_encoding,json=textEncoding,proto3" json:"text_encoding,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -481,8 +497,8 @@ func (m *FileDecorations_Index) GetTextEncoding() string {
 }
 
 type FileDecorations_Text struct {
-	StartOffset          int32    `protobuf:"varint,1,opt,name=start_offset,json=startOffset" json:"start_offset,omitempty"`
-	EndOffset            int32    `protobuf:"varint,2,opt,name=end_offset,json=endOffset" json:"end_offset,omitempty"`
+	StartOffset          int32    `protobuf:"varint,1,opt,name=start_offset,json=startOffset,proto3" json:"start_offset,omitempty"`
+	EndOffset            int32    `protobuf:"varint,2,opt,name=end_offset,json=endOffset,proto3" json:"end_offset,omitempty"`
 	Text                 []byte   `protobuf:"bytes,3,opt,name=text,proto3" json:"text,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -535,13 +551,13 @@ func (m *FileDecorations_Text) GetText() []byte {
 }
 
 type FileDecorations_Target struct {
-	StartOffset int32 `protobuf:"varint,1,opt,name=start_offset,json=startOffset" json:"start_offset,omitempty"`
-	EndOffset   int32 `protobuf:"varint,2,opt,name=end_offset,json=endOffset" json:"end_offset,omitempty"`
+	StartOffset int32 `protobuf:"varint,1,opt,name=start_offset,json=startOffset,proto3" json:"start_offset,omitempty"`
+	EndOffset   int32 `protobuf:"varint,2,opt,name=end_offset,json=endOffset,proto3" json:"end_offset,omitempty"`
 	// Types that are valid to be assigned to Kind:
 	//	*FileDecorations_Target_KytheKind
 	//	*FileDecorations_Target_GenericKind
 	Kind                 isFileDecorations_Target_Kind `protobuf_oneof:"kind"`
-	Target               *storage_go_proto.VName       `protobuf:"bytes,5,opt,name=target" json:"target,omitempty"`
+	Target               *storage_go_proto.VName       `protobuf:"bytes,5,opt,name=target,proto3" json:"target,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`
 	XXX_sizecache        int32                         `json:"-"`
@@ -571,27 +587,6 @@ func (m *FileDecorations_Target) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_FileDecorations_Target proto.InternalMessageInfo
 
-type isFileDecorations_Target_Kind interface {
-	isFileDecorations_Target_Kind()
-}
-
-type FileDecorations_Target_KytheKind struct {
-	KytheKind schema_go_proto.EdgeKind `protobuf:"varint,3,opt,name=kythe_kind,json=kytheKind,enum=kythe.proto.schema.EdgeKind,oneof"`
-}
-type FileDecorations_Target_GenericKind struct {
-	GenericKind string `protobuf:"bytes,4,opt,name=generic_kind,json=genericKind,oneof"`
-}
-
-func (*FileDecorations_Target_KytheKind) isFileDecorations_Target_Kind()   {}
-func (*FileDecorations_Target_GenericKind) isFileDecorations_Target_Kind() {}
-
-func (m *FileDecorations_Target) GetKind() isFileDecorations_Target_Kind {
-	if m != nil {
-		return m.Kind
-	}
-	return nil
-}
-
 func (m *FileDecorations_Target) GetStartOffset() int32 {
 	if m != nil {
 		return m.StartOffset
@@ -604,6 +599,29 @@ func (m *FileDecorations_Target) GetEndOffset() int32 {
 		return m.EndOffset
 	}
 	return 0
+}
+
+type isFileDecorations_Target_Kind interface {
+	isFileDecorations_Target_Kind()
+}
+
+type FileDecorations_Target_KytheKind struct {
+	KytheKind schema_go_proto.EdgeKind `protobuf:"varint,3,opt,name=kythe_kind,json=kytheKind,proto3,enum=kythe.proto.schema.EdgeKind,oneof"`
+}
+
+type FileDecorations_Target_GenericKind struct {
+	GenericKind string `protobuf:"bytes,4,opt,name=generic_kind,json=genericKind,proto3,oneof"`
+}
+
+func (*FileDecorations_Target_KytheKind) isFileDecorations_Target_Kind() {}
+
+func (*FileDecorations_Target_GenericKind) isFileDecorations_Target_Kind() {}
+
+func (m *FileDecorations_Target) GetKind() isFileDecorations_Target_Kind {
+	if m != nil {
+		return m.Kind
+	}
+	return nil
 }
 
 func (m *FileDecorations_Target) GetKytheKind() schema_go_proto.EdgeKind {
@@ -693,9 +711,9 @@ func _FileDecorations_Target_OneofSizer(msg proto.Message) (n int) {
 }
 
 type FileDecorations_TargetOverride struct {
-	Overridden           *storage_go_proto.VName             `protobuf:"bytes,1,opt,name=overridden" json:"overridden,omitempty"`
-	Kind                 FileDecorations_TargetOverride_Kind `protobuf:"varint,2,opt,name=kind,enum=kythe.proto.serving.xrefs.FileDecorations_TargetOverride_Kind" json:"kind,omitempty"`
-	Overriding           *storage_go_proto.VName             `protobuf:"bytes,3,opt,name=overriding" json:"overriding,omitempty"`
+	Overridden           *storage_go_proto.VName             `protobuf:"bytes,1,opt,name=overridden,proto3" json:"overridden,omitempty"`
+	Kind                 FileDecorations_TargetOverride_Kind `protobuf:"varint,2,opt,name=kind,proto3,enum=kythe.proto.serving.xrefs.FileDecorations_TargetOverride_Kind" json:"kind,omitempty"`
+	Overriding           *storage_go_proto.VName             `protobuf:"bytes,3,opt,name=overriding,proto3" json:"overriding,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                            `json:"-"`
 	XXX_unrecognized     []byte                              `json:"-"`
 	XXX_sizecache        int32                               `json:"-"`
@@ -747,7 +765,7 @@ func (m *FileDecorations_TargetOverride) GetOverriding() *storage_go_proto.VName
 }
 
 type FileDecorations_TargetNode struct {
-	Node                 *schema_go_proto.Node `protobuf:"bytes,1,opt,name=node" json:"node,omitempty"`
+	Node                 *schema_go_proto.Node `protobuf:"bytes,1,opt,name=node,proto3" json:"node,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -785,8 +803,8 @@ func (m *FileDecorations_TargetNode) GetNode() *schema_go_proto.Node {
 }
 
 type FileDecorations_TargetDefinition struct {
-	Target               *storage_go_proto.VName `protobuf:"bytes,1,opt,name=target" json:"target,omitempty"`
-	Definition           *storage_go_proto.VName `protobuf:"bytes,2,opt,name=definition" json:"definition,omitempty"`
+	Target               *storage_go_proto.VName `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	Definition           *storage_go_proto.VName `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
 	XXX_unrecognized     []byte                  `json:"-"`
 	XXX_sizecache        int32                   `json:"-"`
@@ -831,7 +849,7 @@ func (m *FileDecorations_TargetDefinition) GetDefinition() *storage_go_proto.VNa
 }
 
 type FileDecorations_DefinitionLocation struct {
-	Location             *serving_go_proto.ExpandedAnchor `protobuf:"bytes,1,opt,name=location" json:"location,omitempty"`
+	Location             *serving_go_proto.ExpandedAnchor `protobuf:"bytes,1,opt,name=location,proto3" json:"location,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                         `json:"-"`
 	XXX_unrecognized     []byte                           `json:"-"`
 	XXX_sizecache        int32                            `json:"-"`
@@ -869,8 +887,8 @@ func (m *FileDecorations_DefinitionLocation) GetLocation() *serving_go_proto.Exp
 }
 
 type FileDecorations_Override struct {
-	Override             *storage_go_proto.VName       `protobuf:"bytes,1,opt,name=override" json:"override,omitempty"`
-	MarkedSource         *common_go_proto.MarkedSource `protobuf:"bytes,2,opt,name=marked_source,json=markedSource" json:"marked_source,omitempty"`
+	Override             *storage_go_proto.VName       `protobuf:"bytes,1,opt,name=override,proto3" json:"override,omitempty"`
+	MarkedSource         *common_go_proto.MarkedSource `protobuf:"bytes,2,opt,name=marked_source,json=markedSource,proto3" json:"marked_source,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`
 	XXX_sizecache        int32                         `json:"-"`
@@ -915,7 +933,7 @@ func (m *FileDecorations_Override) GetMarkedSource() *common_go_proto.MarkedSour
 }
 
 type FileDecorations_Diagnostic struct {
-	Diagnostic           *common_go_proto.Diagnostic `protobuf:"bytes,1,opt,name=diagnostic" json:"diagnostic,omitempty"`
+	Diagnostic           *common_go_proto.Diagnostic `protobuf:"bytes,1,opt,name=diagnostic,proto3" json:"diagnostic,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
 	XXX_unrecognized     []byte                      `json:"-"`
 	XXX_sizecache        int32                       `json:"-"`
@@ -953,7 +971,7 @@ func (m *FileDecorations_Diagnostic) GetDiagnostic() *common_go_proto.Diagnostic
 }
 
 type CrossReferences struct {
-	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
+	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
 	// Types that are valid to be assigned to Entry:
 	//	*CrossReferences_Index_
 	//	*CrossReferences_Reference_
@@ -991,46 +1009,56 @@ func (m *CrossReferences) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CrossReferences proto.InternalMessageInfo
 
+func (m *CrossReferences) GetSource() *storage_go_proto.VName {
+	if m != nil {
+		return m.Source
+	}
+	return nil
+}
+
 type isCrossReferences_Entry interface {
 	isCrossReferences_Entry()
 }
 
 type CrossReferences_Index_ struct {
-	Index *CrossReferences_Index `protobuf:"bytes,2,opt,name=index,oneof"`
-}
-type CrossReferences_Reference_ struct {
-	Reference *CrossReferences_Reference `protobuf:"bytes,3,opt,name=reference,oneof"`
-}
-type CrossReferences_Relation_ struct {
-	Relation *CrossReferences_Relation `protobuf:"bytes,4,opt,name=relation,oneof"`
-}
-type CrossReferences_Caller_ struct {
-	Caller *CrossReferences_Caller `protobuf:"bytes,5,opt,name=caller,oneof"`
-}
-type CrossReferences_Callsite_ struct {
-	Callsite *CrossReferences_Callsite `protobuf:"bytes,6,opt,name=callsite,oneof"`
-}
-type CrossReferences_RelatedNode_ struct {
-	RelatedNode *CrossReferences_RelatedNode `protobuf:"bytes,7,opt,name=related_node,json=relatedNode,oneof"`
+	Index *CrossReferences_Index `protobuf:"bytes,2,opt,name=index,proto3,oneof"`
 }
 
-func (*CrossReferences_Index_) isCrossReferences_Entry()       {}
-func (*CrossReferences_Reference_) isCrossReferences_Entry()   {}
-func (*CrossReferences_Relation_) isCrossReferences_Entry()    {}
-func (*CrossReferences_Caller_) isCrossReferences_Entry()      {}
-func (*CrossReferences_Callsite_) isCrossReferences_Entry()    {}
+type CrossReferences_Reference_ struct {
+	Reference *CrossReferences_Reference `protobuf:"bytes,3,opt,name=reference,proto3,oneof"`
+}
+
+type CrossReferences_Relation_ struct {
+	Relation *CrossReferences_Relation `protobuf:"bytes,4,opt,name=relation,proto3,oneof"`
+}
+
+type CrossReferences_Caller_ struct {
+	Caller *CrossReferences_Caller `protobuf:"bytes,5,opt,name=caller,proto3,oneof"`
+}
+
+type CrossReferences_Callsite_ struct {
+	Callsite *CrossReferences_Callsite `protobuf:"bytes,6,opt,name=callsite,proto3,oneof"`
+}
+
+type CrossReferences_RelatedNode_ struct {
+	RelatedNode *CrossReferences_RelatedNode `protobuf:"bytes,7,opt,name=related_node,json=relatedNode,proto3,oneof"`
+}
+
+func (*CrossReferences_Index_) isCrossReferences_Entry() {}
+
+func (*CrossReferences_Reference_) isCrossReferences_Entry() {}
+
+func (*CrossReferences_Relation_) isCrossReferences_Entry() {}
+
+func (*CrossReferences_Caller_) isCrossReferences_Entry() {}
+
+func (*CrossReferences_Callsite_) isCrossReferences_Entry() {}
+
 func (*CrossReferences_RelatedNode_) isCrossReferences_Entry() {}
 
 func (m *CrossReferences) GetEntry() isCrossReferences_Entry {
 	if m != nil {
 		return m.Entry
-	}
-	return nil
-}
-
-func (m *CrossReferences) GetSource() *storage_go_proto.VName {
-	if m != nil {
-		return m.Source
 	}
 	return nil
 }
@@ -1228,9 +1256,9 @@ func _CrossReferences_OneofSizer(msg proto.Message) (n int) {
 }
 
 type CrossReferences_Index struct {
-	Node                 *schema_go_proto.Node         `protobuf:"bytes,1,opt,name=node" json:"node,omitempty"`
-	MarkedSource         *common_go_proto.MarkedSource `protobuf:"bytes,2,opt,name=marked_source,json=markedSource" json:"marked_source,omitempty"`
-	MergeWith            []*storage_go_proto.VName     `protobuf:"bytes,3,rep,name=merge_with,json=mergeWith" json:"merge_with,omitempty"`
+	Node                 *schema_go_proto.Node         `protobuf:"bytes,1,opt,name=node,proto3" json:"node,omitempty"`
+	MarkedSource         *common_go_proto.MarkedSource `protobuf:"bytes,2,opt,name=marked_source,json=markedSource,proto3" json:"marked_source,omitempty"`
+	MergeWith            []*storage_go_proto.VName     `protobuf:"bytes,3,rep,name=merge_with,json=mergeWith,proto3" json:"merge_with,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`
 	XXX_sizecache        int32                         `json:"-"`
@@ -1286,7 +1314,7 @@ type CrossReferences_Reference struct {
 	//	*CrossReferences_Reference_KytheKind
 	//	*CrossReferences_Reference_GenericKind
 	Kind                 isCrossReferences_Reference_Kind `protobuf_oneof:"kind"`
-	Location             *serving_go_proto.ExpandedAnchor `protobuf:"bytes,3,opt,name=location" json:"location,omitempty"`
+	Location             *serving_go_proto.ExpandedAnchor `protobuf:"bytes,3,opt,name=location,proto3" json:"location,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                         `json:"-"`
 	XXX_unrecognized     []byte                           `json:"-"`
 	XXX_sizecache        int32                            `json:"-"`
@@ -1321,13 +1349,15 @@ type isCrossReferences_Reference_Kind interface {
 }
 
 type CrossReferences_Reference_KytheKind struct {
-	KytheKind schema_go_proto.EdgeKind `protobuf:"varint,1,opt,name=kythe_kind,json=kytheKind,enum=kythe.proto.schema.EdgeKind,oneof"`
-}
-type CrossReferences_Reference_GenericKind struct {
-	GenericKind string `protobuf:"bytes,2,opt,name=generic_kind,json=genericKind,oneof"`
+	KytheKind schema_go_proto.EdgeKind `protobuf:"varint,1,opt,name=kythe_kind,json=kytheKind,proto3,enum=kythe.proto.schema.EdgeKind,oneof"`
 }
 
-func (*CrossReferences_Reference_KytheKind) isCrossReferences_Reference_Kind()   {}
+type CrossReferences_Reference_GenericKind struct {
+	GenericKind string `protobuf:"bytes,2,opt,name=generic_kind,json=genericKind,proto3,oneof"`
+}
+
+func (*CrossReferences_Reference_KytheKind) isCrossReferences_Reference_Kind() {}
+
 func (*CrossReferences_Reference_GenericKind) isCrossReferences_Reference_Kind() {}
 
 func (m *CrossReferences_Reference) GetKind() isCrossReferences_Reference_Kind {
@@ -1424,13 +1454,13 @@ func _CrossReferences_Reference_OneofSizer(msg proto.Message) (n int) {
 }
 
 type CrossReferences_Relation struct {
-	Node *storage_go_proto.VName `protobuf:"bytes,1,opt,name=node" json:"node,omitempty"`
+	Node *storage_go_proto.VName `protobuf:"bytes,1,opt,name=node,proto3" json:"node,omitempty"`
 	// Types that are valid to be assigned to Kind:
 	//	*CrossReferences_Relation_KytheKind
 	//	*CrossReferences_Relation_GenericKind
 	Kind                 isCrossReferences_Relation_Kind `protobuf_oneof:"kind"`
-	Ordinal              int32                           `protobuf:"varint,4,opt,name=ordinal" json:"ordinal,omitempty"`
-	Reverse              bool                            `protobuf:"varint,5,opt,name=reverse" json:"reverse,omitempty"`
+	Ordinal              int32                           `protobuf:"varint,4,opt,name=ordinal,proto3" json:"ordinal,omitempty"`
+	Reverse              bool                            `protobuf:"varint,5,opt,name=reverse,proto3" json:"reverse,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                        `json:"-"`
 	XXX_unrecognized     []byte                          `json:"-"`
 	XXX_sizecache        int32                           `json:"-"`
@@ -1460,30 +1490,32 @@ func (m *CrossReferences_Relation) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CrossReferences_Relation proto.InternalMessageInfo
 
+func (m *CrossReferences_Relation) GetNode() *storage_go_proto.VName {
+	if m != nil {
+		return m.Node
+	}
+	return nil
+}
+
 type isCrossReferences_Relation_Kind interface {
 	isCrossReferences_Relation_Kind()
 }
 
 type CrossReferences_Relation_KytheKind struct {
-	KytheKind schema_go_proto.EdgeKind `protobuf:"varint,2,opt,name=kythe_kind,json=kytheKind,enum=kythe.proto.schema.EdgeKind,oneof"`
-}
-type CrossReferences_Relation_GenericKind struct {
-	GenericKind string `protobuf:"bytes,3,opt,name=generic_kind,json=genericKind,oneof"`
+	KytheKind schema_go_proto.EdgeKind `protobuf:"varint,2,opt,name=kythe_kind,json=kytheKind,proto3,enum=kythe.proto.schema.EdgeKind,oneof"`
 }
 
-func (*CrossReferences_Relation_KytheKind) isCrossReferences_Relation_Kind()   {}
+type CrossReferences_Relation_GenericKind struct {
+	GenericKind string `protobuf:"bytes,3,opt,name=generic_kind,json=genericKind,proto3,oneof"`
+}
+
+func (*CrossReferences_Relation_KytheKind) isCrossReferences_Relation_Kind() {}
+
 func (*CrossReferences_Relation_GenericKind) isCrossReferences_Relation_Kind() {}
 
 func (m *CrossReferences_Relation) GetKind() isCrossReferences_Relation_Kind {
 	if m != nil {
 		return m.Kind
-	}
-	return nil
-}
-
-func (m *CrossReferences_Relation) GetNode() *storage_go_proto.VName {
-	if m != nil {
-		return m.Node
 	}
 	return nil
 }
@@ -1582,9 +1614,9 @@ func _CrossReferences_Relation_OneofSizer(msg proto.Message) (n int) {
 }
 
 type CrossReferences_Caller struct {
-	Caller               *storage_go_proto.VName          `protobuf:"bytes,1,opt,name=caller" json:"caller,omitempty"`
-	Location             *serving_go_proto.ExpandedAnchor `protobuf:"bytes,2,opt,name=location" json:"location,omitempty"`
-	MarkedSource         *common_go_proto.MarkedSource    `protobuf:"bytes,3,opt,name=marked_source,json=markedSource" json:"marked_source,omitempty"`
+	Caller               *storage_go_proto.VName          `protobuf:"bytes,1,opt,name=caller,proto3" json:"caller,omitempty"`
+	Location             *serving_go_proto.ExpandedAnchor `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
+	MarkedSource         *common_go_proto.MarkedSource    `protobuf:"bytes,3,opt,name=marked_source,json=markedSource,proto3" json:"marked_source,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                         `json:"-"`
 	XXX_unrecognized     []byte                           `json:"-"`
 	XXX_sizecache        int32                            `json:"-"`
@@ -1636,9 +1668,9 @@ func (m *CrossReferences_Caller) GetMarkedSource() *common_go_proto.MarkedSource
 }
 
 type CrossReferences_Callsite struct {
-	Caller               *storage_go_proto.VName          `protobuf:"bytes,1,opt,name=caller" json:"caller,omitempty"`
-	Location             *serving_go_proto.ExpandedAnchor `protobuf:"bytes,2,opt,name=location" json:"location,omitempty"`
-	Kind                 CrossReferences_Callsite_Kind    `protobuf:"varint,3,opt,name=kind,enum=kythe.proto.serving.xrefs.CrossReferences_Callsite_Kind" json:"kind,omitempty"`
+	Caller               *storage_go_proto.VName          `protobuf:"bytes,1,opt,name=caller,proto3" json:"caller,omitempty"`
+	Location             *serving_go_proto.ExpandedAnchor `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
+	Kind                 CrossReferences_Callsite_Kind    `protobuf:"varint,3,opt,name=kind,proto3,enum=kythe.proto.serving.xrefs.CrossReferences_Callsite_Kind" json:"kind,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                         `json:"-"`
 	XXX_unrecognized     []byte                           `json:"-"`
 	XXX_sizecache        int32                            `json:"-"`
@@ -1690,7 +1722,7 @@ func (m *CrossReferences_Callsite) GetKind() CrossReferences_Callsite_Kind {
 }
 
 type CrossReferences_RelatedNode struct {
-	Node                 *schema_go_proto.Node `protobuf:"bytes,1,opt,name=node" json:"node,omitempty"`
+	Node                 *schema_go_proto.Node `protobuf:"bytes,1,opt,name=node,proto3" json:"node,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`

@@ -75,9 +75,9 @@ func (m *StatusRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_StatusRequest proto.InternalMessageInfo
 
 type StatusReply struct {
-	Origins              []*StatusReply_Origin   `protobuf:"bytes,1,rep,name=origins" json:"origins,omitempty"`
-	Languages            []*StatusReply_Language `protobuf:"bytes,2,rep,name=languages" json:"languages,omitempty"`
-	IndexVersion         string                  `protobuf:"bytes,3,opt,name=index_version,json=indexVersion" json:"index_version,omitempty"`
+	Origins              []*StatusReply_Origin   `protobuf:"bytes,1,rep,name=origins,proto3" json:"origins,omitempty"`
+	Languages            []*StatusReply_Language `protobuf:"bytes,2,rep,name=languages,proto3" json:"languages,omitempty"`
+	IndexVersion         string                  `protobuf:"bytes,3,opt,name=index_version,json=indexVersion,proto3" json:"index_version,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
 	XXX_unrecognized     []byte                  `json:"-"`
 	XXX_sizecache        int32                   `json:"-"`
@@ -129,8 +129,8 @@ func (m *StatusReply) GetIndexVersion() string {
 }
 
 type StatusReply_Origin struct {
-	Corpus               string   `protobuf:"bytes,1,opt,name=corpus" json:"corpus,omitempty"`
-	Revision             string   `protobuf:"bytes,2,opt,name=revision" json:"revision,omitempty"`
+	Corpus               string   `protobuf:"bytes,1,opt,name=corpus,proto3" json:"corpus,omitempty"`
+	Revision             string   `protobuf:"bytes,2,opt,name=revision,proto3" json:"revision,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -175,8 +175,8 @@ func (m *StatusReply_Origin) GetRevision() string {
 }
 
 type StatusReply_Language struct {
-	Name                 string                       `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Support              StatusReply_Language_Support `protobuf:"varint,2,opt,name=support,enum=kythe.proto.StatusReply_Language_Support" json:"support,omitempty"`
+	Name                 string                       `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Support              StatusReply_Language_Support `protobuf:"varint,2,opt,name=support,proto3,enum=kythe.proto.StatusReply_Language_Support" json:"support,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                     `json:"-"`
 	XXX_unrecognized     []byte                       `json:"-"`
 	XXX_sizecache        int32                        `json:"-"`

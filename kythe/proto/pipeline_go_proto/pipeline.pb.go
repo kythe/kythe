@@ -22,13 +22,13 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Reference struct {
-	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
+	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
 	// Types that are valid to be assigned to Kind:
 	//	*Reference_KytheKind
 	//	*Reference_GenericKind
 	Kind                 isReference_Kind                 `protobuf_oneof:"kind"`
-	Anchor               *serving_go_proto.ExpandedAnchor `protobuf:"bytes,4,opt,name=anchor" json:"anchor,omitempty"`
-	Scope                *storage_go_proto.VName          `protobuf:"bytes,5,opt,name=scope" json:"scope,omitempty"`
+	Anchor               *serving_go_proto.ExpandedAnchor `protobuf:"bytes,4,opt,name=anchor,proto3" json:"anchor,omitempty"`
+	Scope                *storage_go_proto.VName          `protobuf:"bytes,5,opt,name=scope,proto3" json:"scope,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                         `json:"-"`
 	XXX_unrecognized     []byte                           `json:"-"`
 	XXX_sizecache        int32                            `json:"-"`
@@ -58,30 +58,32 @@ func (m *Reference) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Reference proto.InternalMessageInfo
 
+func (m *Reference) GetSource() *storage_go_proto.VName {
+	if m != nil {
+		return m.Source
+	}
+	return nil
+}
+
 type isReference_Kind interface {
 	isReference_Kind()
 }
 
 type Reference_KytheKind struct {
-	KytheKind schema_go_proto.EdgeKind `protobuf:"varint,2,opt,name=kythe_kind,json=kytheKind,enum=kythe.proto.schema.EdgeKind,oneof"`
-}
-type Reference_GenericKind struct {
-	GenericKind string `protobuf:"bytes,3,opt,name=generic_kind,json=genericKind,oneof"`
+	KytheKind schema_go_proto.EdgeKind `protobuf:"varint,2,opt,name=kythe_kind,json=kytheKind,proto3,enum=kythe.proto.schema.EdgeKind,oneof"`
 }
 
-func (*Reference_KytheKind) isReference_Kind()   {}
+type Reference_GenericKind struct {
+	GenericKind string `protobuf:"bytes,3,opt,name=generic_kind,json=genericKind,proto3,oneof"`
+}
+
+func (*Reference_KytheKind) isReference_Kind() {}
+
 func (*Reference_GenericKind) isReference_Kind() {}
 
 func (m *Reference) GetKind() isReference_Kind {
 	if m != nil {
 		return m.Kind
-	}
-	return nil
-}
-
-func (m *Reference) GetSource() *storage_go_proto.VName {
-	if m != nil {
-		return m.Source
 	}
 	return nil
 }
@@ -180,7 +182,7 @@ func _Reference_OneofSizer(msg proto.Message) (n int) {
 }
 
 type DecorationPiece struct {
-	FileVName *storage_go_proto.VName `protobuf:"bytes,1,opt,name=file_v_name,json=fileVName" json:"file_v_name,omitempty"`
+	FileVName *storage_go_proto.VName `protobuf:"bytes,1,opt,name=file_v_name,json=fileVName,proto3" json:"file_v_name,omitempty"`
 	// Types that are valid to be assigned to Piece:
 	//	*DecorationPiece_File
 	//	*DecorationPiece_Reference
@@ -216,38 +218,44 @@ func (m *DecorationPiece) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DecorationPiece proto.InternalMessageInfo
 
+func (m *DecorationPiece) GetFileVName() *storage_go_proto.VName {
+	if m != nil {
+		return m.FileVName
+	}
+	return nil
+}
+
 type isDecorationPiece_Piece interface {
 	isDecorationPiece_Piece()
 }
 
 type DecorationPiece_File struct {
-	File *serving_go_proto.File `protobuf:"bytes,2,opt,name=file,oneof"`
-}
-type DecorationPiece_Reference struct {
-	Reference *Reference `protobuf:"bytes,3,opt,name=reference,oneof"`
-}
-type DecorationPiece_Node struct {
-	Node *schema_go_proto.Node `protobuf:"bytes,4,opt,name=node,oneof"`
-}
-type DecorationPiece_Definition_ struct {
-	Definition *DecorationPiece_Definition `protobuf:"bytes,5,opt,name=definition,oneof"`
+	File *serving_go_proto.File `protobuf:"bytes,2,opt,name=file,proto3,oneof"`
 }
 
-func (*DecorationPiece_File) isDecorationPiece_Piece()        {}
-func (*DecorationPiece_Reference) isDecorationPiece_Piece()   {}
-func (*DecorationPiece_Node) isDecorationPiece_Piece()        {}
+type DecorationPiece_Reference struct {
+	Reference *Reference `protobuf:"bytes,3,opt,name=reference,proto3,oneof"`
+}
+
+type DecorationPiece_Node struct {
+	Node *schema_go_proto.Node `protobuf:"bytes,4,opt,name=node,proto3,oneof"`
+}
+
+type DecorationPiece_Definition_ struct {
+	Definition *DecorationPiece_Definition `protobuf:"bytes,5,opt,name=definition,proto3,oneof"`
+}
+
+func (*DecorationPiece_File) isDecorationPiece_Piece() {}
+
+func (*DecorationPiece_Reference) isDecorationPiece_Piece() {}
+
+func (*DecorationPiece_Node) isDecorationPiece_Piece() {}
+
 func (*DecorationPiece_Definition_) isDecorationPiece_Piece() {}
 
 func (m *DecorationPiece) GetPiece() isDecorationPiece_Piece {
 	if m != nil {
 		return m.Piece
-	}
-	return nil
-}
-
-func (m *DecorationPiece) GetFileVName() *storage_go_proto.VName {
-	if m != nil {
-		return m.FileVName
 	}
 	return nil
 }
@@ -393,8 +401,8 @@ func _DecorationPiece_OneofSizer(msg proto.Message) (n int) {
 }
 
 type DecorationPiece_Definition struct {
-	Node                 *storage_go_proto.VName          `protobuf:"bytes,1,opt,name=node" json:"node,omitempty"`
-	Definition           *serving_go_proto.ExpandedAnchor `protobuf:"bytes,2,opt,name=definition" json:"definition,omitempty"`
+	Node                 *storage_go_proto.VName          `protobuf:"bytes,1,opt,name=node,proto3" json:"node,omitempty"`
+	Definition           *serving_go_proto.ExpandedAnchor `protobuf:"bytes,2,opt,name=definition,proto3" json:"definition,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                         `json:"-"`
 	XXX_unrecognized     []byte                           `json:"-"`
 	XXX_sizecache        int32                            `json:"-"`
