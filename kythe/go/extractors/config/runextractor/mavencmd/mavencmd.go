@@ -24,8 +24,9 @@ import (
 	"os"
 	"os/exec"
 
+	"kythe.io/kythe/go/extractors/config/constants"
+	"kythe.io/kythe/go/extractors/config/preprocessor/modifier"
 	"kythe.io/kythe/go/extractors/config/runextractor/backup"
-	"kythe.io/kythe/go/extractors/config/runextractor/constants"
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"github.com/google/subcommands"
@@ -78,7 +79,7 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 		return m.Fail("error backing up %s: %v", m.pomXML, err)
 	}
 	defer tf.Release()
-	if err := preProcessPomXML(m.pomXML); err != nil {
+	if err := modifier.PreProcessPomXML(m.pomXML); err != nil {
 		return m.Fail("error modifying maven pom XML %s: %v", m.pomXML, err)
 	}
 	if err := exec.Command("mvn", "clean", "install",
