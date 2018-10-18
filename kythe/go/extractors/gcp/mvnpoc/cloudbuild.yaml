@@ -20,7 +20,8 @@ steps:
     - '-Dmaven.compiler.fork=true'
     - '-Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh'
   env:
-    - 'KYTHE_CORPUS=mvnpoctest','KYTHE_OUTPUT_DIRECTORY=/workspace/out'
+    - 'KYTHE_CORPUS=mvnpoctest'
+    -  'KYTHE_OUTPUT_DIRECTORY=/workspace/out'
     - 'KYTHE_OUTPUT_FILE=/workspace/out/test.kzip'
     - 'KYTHE_ROOT_DIRECTORY=/workspace/code'
     - 'JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar'
