@@ -11,7 +11,24 @@ is in and perform necessary steps.
 
 ## Invoking via docker / Cloud Build
 
-TODO(#3158): Actually fill this out with a Dockerfile and example commands.
+Insert the following step into your Cloud Build to preprocess a `pom.xml` or
+`build.gradle` file for use with Kythe extraction:
+
+```
+- name: 'gcr.io/kythe-public/build-preprocessor'
+  args: ['/workspace/path/to/pom.xml']
+```
+
+If your repo is not copied to `/workspace/` but instead lives in another volume,
+you will have to specify the volume in your build step:
+
+```
+- name: 'gcr.io/kythe-public/build-preprocessor'
+  args: ['/other/volume/pom.xml']
+  volumes:
+    - name: 'volname'
+      path: '/other/volume/'
+```
 
 ## Specific Builders
 
