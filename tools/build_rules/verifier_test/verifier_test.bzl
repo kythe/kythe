@@ -150,12 +150,13 @@ def extract(
         "KYTHE_ROOT_DIRECTORY": ".",
         "KYTHE_OUTPUT_FILE": kzip.path,
     }
-    inputs = [extractor] + srcs + deps
+    inputs = srcs + deps
     if vnames_config:
         env["KYTHE_VNAMES"] = vnames_config.path
         inputs += [vnames_config]
     ctx.actions.run(
         inputs = inputs,
+        tools = [extractor],
         outputs = [kzip],
         mnemonic = mnemonic,
         executable = extractor,
@@ -207,7 +208,7 @@ def _java_extract_kzip_impl(ctx):
     )
     return [
         KytheJavaJar(jar = jar),
-        KytheVerifierSources(files = ctx.files.srcs),
+        KytheVerifierSources(files = depset(ctx.files.srcs)),
     ]
 
 java_extract_kzip = rule(
@@ -261,7 +262,7 @@ def _jvm_extract_kzip_impl(ctx):
         opts = ctx.attr.opts,
         mnemonic = "JvmExtractKZip",
     )
-    return [KytheVerifierSources(files = [])]
+    return [KytheVerifierSources(files = depset())]
 
 jvm_extract_kzip = rule(
     attrs = {
@@ -284,27 +285,28 @@ jvm_extract_kzip = rule(
 )
 
 def _index_compilation_impl(ctx):
-    sources = depset()
+    sources = []
     intermediates = []
     for dep in ctx.attr.deps:
         if KytheVerifierSources in dep:
-            sources += dep[KytheVerifierSources].files
-        for input in dep.files:
-            entries = ctx.new_file(
-                ctx.outputs.entries,
+            sources += [dep[KytheVerifierSources].files]
+        for input in dep.files.to_list():
+            entries = ctx.actions.declare_file(
                 ctx.label.name + input.basename + ".entries",
+                sibling = ctx.outputs.entries,
             )
             intermediates += [entries]
-            ctx.action(
+            ctx.actions.run_shell(
                 outputs = [entries],
-                inputs = [ctx.executable.indexer, input] + ctx.files.tools,
+                inputs = [input],
+                tools = [ctx.executable.indexer] + ctx.files.tools,
                 arguments = ([ctx.executable.indexer.path] +
                              [ctx.expand_location(o) for o in ctx.attr.opts] +
                              [input.path, entries.path]),
                 command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") > "${@:${#@}}"',
                 mnemonic = "IndexCompilation",
             )
-    ctx.action(
+    ctx.actions.run_shell(
         outputs = [ctx.outputs.entries],
         inputs = intermediates,
         command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") | gzip -c > "${@:${#@}}"',
@@ -312,8 +314,8 @@ def _index_compilation_impl(ctx):
         arguments = ["cat"] + [i.path for i in intermediates] + [ctx.outputs.entries.path],
     )
     return [
-        KytheVerifierSources(files = sources),
-        KytheEntries(files = intermediates, compressed = depset([ctx.outputs.entries])),
+        KytheVerifierSources(files = depset(transitive = sources)),
+        KytheEntries(files = depset(intermediates), compressed = depset([ctx.outputs.entries])),
     ]
 
 index_compilation = rule(
@@ -341,26 +343,31 @@ index_compilation = rule(
 )
 
 def _verifier_test_impl(ctx):
-    entries = depset()
-    entries_gz = depset()
-    sources = depset()
+    entries = []
+    entries_gz = []
+    sources = []
     for src in ctx.attr.srcs:
         if KytheVerifierSources in src:
-            sources += src[KytheVerifierSources].files
+            sources += [src[KytheVerifierSources].files]
             if KytheEntries in src:
                 if src[KytheEntries].files:
-                    entries += src[KytheEntries].files
+                    entries += [src[KytheEntries].files]
                 else:
-                    entries_gz += src[KytheEntries].compressed
+                    entries_gz += [src[KytheEntries].compressed]
         else:
-            sources += src.files
+            sources += [depset(src.files)]
 
     for dep in ctx.attr.deps:
         # TODO(shahms): Allow specifying .entries files directly.
         if dep[KytheEntries].files:
-            entries += dep[KytheEntries].files
+            entries += [dep[KytheEntries].files]
         else:
-            entries_gz += dep[KytheEntries].compressed
+            entries_gz += [dep[KytheEntries].compressed]
+
+    # Flatten input lists
+    entries = depset(transitive = entries).to_list()
+    entries_gz = depset(transitive = entries_gz).to_list()
+    sources = depset(transitive = sources).to_list()
 
     if not (entries or entries_gz):
         fail("Missing required entry stream input (check your deps!)")

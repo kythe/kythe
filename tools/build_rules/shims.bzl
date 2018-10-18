@@ -1,4 +1,5 @@
 load("@bazel_gazelle//:deps.bzl", _git_repository = "git_repository", _go_repository = "go_repository")
+load("@io_bazel_rules_go//go:def.bzl", _go_binary = "go_binary", _go_library = "go_library", _go_test = "go_test")
 
 def go_repository(name, commit, importpath, custom = None, custom_git = None, **kwargs):
     """Macro wrapping the Gazelle go_repository rule.  Works identically, except
@@ -20,8 +21,6 @@ def go_repository(name, commit, importpath, custom = None, custom_git = None, **
             remote = custom_git,
             overlay = {"@io_kythe//third_party/go:" + custom + ".BUILD": "BUILD"},
         )
-
-load("@io_bazel_rules_go//go:def.bzl", _go_binary = "go_binary", _go_library = "go_library", _go_test = "go_test")
 
 # Go importpath prefix shared by all Kythe libraries
 go_prefix = "kythe.io/"
