@@ -64,7 +64,7 @@ message PagedEdgeSet {
   repeated EdgeGroup group = 2;
 
   // Total number of edges in all of the EdgePages, including this one.
-  int32 total_edges = 3 [deprecated=true];
+  int32 total_edges = 3 [deprecated = true];
 
   // Page indices for other EdgePages, sorted by edge kind.
   repeated PageIndex page_index = 4;
@@ -176,8 +176,8 @@ message FileDecorations {
   message Override {
     // What kind of override this is.
     enum Kind {
-      OVERRIDES  = 0;
-      EXTENDS    = 1;
+      OVERRIDES = 0;
+      EXTENDS = 1;
     }
 
     // Ticket of overriding node (i.e. a Decoration target for a definition)
@@ -237,8 +237,8 @@ message PagedCrossReferences {
 
     // A group is composed entirely of anchors, related nodes, or callers.
     repeated ExpandedAnchor anchor = 2;
-    repeated RelatedNode related_node = 3; // feature: RELATED_NODES
-    repeated Caller caller = 4; // feature: CALLERS
+    repeated RelatedNode related_node = 3;  // feature: RELATED_NODES
+    repeated Caller caller = 4;             // feature: CALLERS
   }
 
   message Page {
@@ -258,7 +258,7 @@ message PagedCrossReferences {
   Node source_node = 8;
   repeated Group group = 2;
   repeated PageIndex page_index = 3;
-  int32 total_references = 4 [deprecated=true];
+  int32 total_references = 4 [deprecated = true];
 
   // Whether the source node is incomplete.  This changes whether
   // /kythe/edge/defines edges are considered declarations or definitions.
@@ -266,7 +266,7 @@ message PagedCrossReferences {
   bool incomplete = 5;
 
   // The source node's MarkedSource.
-  kythe.proto.common.MarkedSource marked_source = 6; // feature: MARKED_SOURCE
+  kythe.proto.common.MarkedSource marked_source = 6;  // feature: MARKED_SOURCE
 }
 
 // A single node's documentation for the xrefs Documentation API.
@@ -324,9 +324,9 @@ message IdentifierMatch {
 // Used by ExploreService for the Parents and Children APIs.
 message Relatives {
   enum Type {
-    UNKNOWN = 0;  // never a valid value
-    PARENTS = 1;  // the reference node is a childOf each element of 'tickets'
-    CHILDREN = 2; // each element of 'tickets' is a childOf the reference node
+    UNKNOWN = 0;   // never a valid value
+    PARENTS = 1;   // the reference node is a childOf each element of 'tickets'
+    CHILDREN = 2;  // each element of 'tickets' is a childOf the reference node
   }
 
   // Nodes connected to a reference node via childOf edges.

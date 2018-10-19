@@ -70,8 +70,8 @@ public class KZip {
     Iterable<IndexedCompilation> scan();
 
     /**
-     * Returns the compilation record corresponding to the given unit digest. Throws a
-     * {@link KZipException} if the unit cannot be read.
+     * Returns the compilation record corresponding to the given unit digest. Throws a {@link
+     * KZipException} if the unit cannot be read.
      */
     IndexedCompilation readUnit(String unitDigest);
 

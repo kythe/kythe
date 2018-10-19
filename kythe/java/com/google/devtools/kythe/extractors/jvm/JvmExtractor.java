@@ -110,8 +110,7 @@ public class JvmExtractor {
                     JarEntryDetails.newBuilder().setJarContainer(jarIndex).build().toByteString())
                 .build();
         compilation.addAllRequiredInput(
-            ExtractorUtils.toFileInputs(fileVNames, relativizer, jarContents)
-                .stream()
+            ExtractorUtils.toFileInputs(fileVNames, relativizer, jarContents).stream()
                 .map(i -> i.toBuilder().addDetails(jarEntryDetails).build())
                 .collect(Collectors.toList()));
       } else {
@@ -176,22 +175,19 @@ public class JvmExtractor {
    */
   public static class Options {
     @Parameter(
-      names = {"--help", "-h"},
-      description = "Help requested",
-      help = true
-    )
+        names = {"--help", "-h"},
+        description = "Help requested",
+        help = true)
     public boolean help;
 
     @Parameter(
-      names = "--max_required_inputs",
-      description = "Maximum allowed number of required_inputs per CompilationUnit"
-    )
+        names = "--max_required_inputs",
+        description = "Maximum allowed number of required_inputs per CompilationUnit")
     public int maxRequiredInputs = 1024 * 16;
 
     @Parameter(
-      names = "--max_total_file_size",
-      description = "Maximum allowed total size (bytes) of all input files per CompilationUnit"
-    )
+        names = "--max_total_file_size",
+        description = "Maximum allowed total size (bytes) of all input files per CompilationUnit")
     public long maxTotalFileSize = 1024 * 1024 * 64;
 
     @Parameter(names = "--build_target", description = "Name of build target being extracted")
@@ -201,9 +197,8 @@ public class JvmExtractor {
     public String defaultCorpus = System.getenv("KYTHE_CORPUS");
 
     @Parameter(
-      names = "--root_directory",
-      description = "Root directory for compilation (defaults to $PWD)"
-    )
+        names = "--root_directory",
+        description = "Root directory for compilation (defaults to $PWD)")
     public Path rootDirectory =
         Paths.get(Optional.ofNullable(System.getenv("KYTHE_ROOT_DIRECTORY")).orElse(""));
 
