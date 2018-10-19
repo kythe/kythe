@@ -39,8 +39,8 @@ service CompilationAnalyzer {
   rpc Analyze(AnalysisRequest) returns (stream AnalysisOutput) {}
 }
 
-// FileDataServices are used by a CompilationAnalyzer to retrieve the contents of
-// input files required for analysis.
+// FileDataServices are used by a CompilationAnalyzer to retrieve the contents
+// of input files required for analysis.
 service FileDataService {
   // Get returns the contents of one or more files needed for analysis.  It is
   // the server's responsibility to do any caching necessary to make this

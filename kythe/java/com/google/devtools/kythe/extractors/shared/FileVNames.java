@@ -41,8 +41,9 @@ import java.util.Stack;
  * Utility for configuring base {@link VName}s to use for particular file paths. Useful for
  * populating the {@link VName}s for each required input in a {@link CompilationUnit}.
  *
- * JSON format:
- *   <pre>[
+ * <p>JSON format:
+ *
+ * <pre>[
  *     {
  *       "pattern": "pathRegex",
  *       "vname": {
@@ -55,7 +56,7 @@ import java.util.Stack;
  * The {@link VName} template values can contain markers such as @1@ or @2@ that will be replaced by
  * the first or second regex groups in the pathRegex.
  *
- * NOTE: regex syntax is RE2: https://code.google.com/p/re2/wiki/Syntax
+ * <p>NOTE: regex syntax is RE2: https://code.google.com/p/re2/wiki/Syntax
  */
 public class FileVNames {
   private static final Gson GSON =

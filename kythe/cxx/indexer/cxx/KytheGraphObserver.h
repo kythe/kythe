@@ -166,16 +166,14 @@ class KytheGraphObserver : public GraphObserver {
   void Delimit() override { recorder_->PushEntryGroup(); }
   void Undelimit() override { recorder_->PopEntryGroup(); }
 
-  NodeId nodeIdForTappNode(
-      const NodeId& TyconId,
-      absl::Span<const NodeId> params) const override;
+  NodeId nodeIdForTappNode(const NodeId& TyconId,
+                           absl::Span<const NodeId> params) const override;
 
   NodeId recordTappNode(const NodeId& tapp_id, const NodeId& tycon_id,
                         absl::Span<const NodeId> params,
                         unsigned first_default_param) override;
 
-  NodeId nodeIdForTsigmaNode(
-      absl::Span<const NodeId> params) const override;
+  NodeId nodeIdForTsigmaNode(absl::Span<const NodeId> params) const override;
   NodeId recordTsigmaNode(const NodeId& tsigma_id,
                           absl::Span<const NodeId> params) override;
 

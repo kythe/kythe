@@ -103,9 +103,7 @@ public class JavaExtractor {
     }
 
     List<String> javacOpts =
-        jInfo
-            .getJavacOptList()
-            .stream()
+        jInfo.getJavacOptList().stream()
             .filter(
                 // Filter out Bazel-specific flags.  Bazel adds its own flags (such as error-prone
                 // flags) to the javac_opt list that cannot be handled by the standard javac
