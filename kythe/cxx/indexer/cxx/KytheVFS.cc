@@ -87,8 +87,8 @@ llvm::ErrorOr<std::unique_ptr<llvm::vfs::File>> IndexVFS::openFileForRead(
   return make_error_code(llvm::errc::no_such_file_or_directory);
 }
 
-llvm::vfs::directory_iterator IndexVFS::dir_begin(
-    const llvm::Twine& dir, std::error_code& error_code) {
+llvm::vfs::directory_iterator IndexVFS::dir_begin(const llvm::Twine& dir,
+                                                  std::error_code& error_code) {
   return llvm::vfs::directory_iterator();
 }
 
@@ -159,9 +159,9 @@ IndexVFS::FileRecord* IndexVFS::FileRecordForPathRoot(const llvm::Twine& path,
   } else {
     name_record = new FileRecord(
         {llvm::vfs::Status(root_name, llvm::vfs::getNextVirtualUniqueID(),
-                            llvm::sys::TimePoint<>(), 0, 0, 0,
-                            llvm::sys::fs::file_type::directory_file,
-                            llvm::sys::fs::all_read),
+                           llvm::sys::TimePoint<>(), 0, 0, 0,
+                           llvm::sys::fs::file_type::directory_file,
+                           llvm::sys::fs::all_read),
          false, root_name});
     root_name_to_root_map_[root_name] = name_record;
     uid_to_record_map_[PairFromUid(name_record->status.getUniqueID())] =
@@ -266,8 +266,8 @@ IndexVFS::FileRecord* IndexVFS::AllocOrReturnFileRecord(
   llvm::sys::path::append(out_path, label);
   FileRecord* new_record = new FileRecord{
       llvm::vfs::Status(out_path, llvm::vfs::getNextVirtualUniqueID(),
-                         llvm::sys::TimePoint<>(), 0, 0, size, type,
-                         llvm::sys::fs::all_read),
+                        llvm::sys::TimePoint<>(), 0, 0, size, type,
+                        llvm::sys::fs::all_read),
       false, label};
   parent->children.push_back(new_record);
   uid_to_record_map_[PairFromUid(new_record->status.getUniqueID())] =

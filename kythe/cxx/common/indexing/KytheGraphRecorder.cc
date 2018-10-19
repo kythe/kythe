@@ -21,16 +21,16 @@
 namespace kythe {
 
 static const std::string* const kNodeKindSpellings[] = {
-    new std::string("anchor"),    new std::string("file"),
-    new std::string("variable"),  new std::string("talias"),
-    new std::string("tapp"),      new std::string("tnominal"),
-    new std::string("record"),    new std::string("sum"),
-    new std::string("constant"),  new std::string("abs"),
-    new std::string("absvar"),    new std::string("function"),
-    new std::string("lookup"),    new std::string("macro"),
-    new std::string("interface"), new std::string("package"),
-    new std::string("tsigma"),    new std::string("doc"),
-    new std::string("tbuiltin"),  new std::string("meta"),
+    new std::string("anchor"),     new std::string("file"),
+    new std::string("variable"),   new std::string("talias"),
+    new std::string("tapp"),       new std::string("tnominal"),
+    new std::string("record"),     new std::string("sum"),
+    new std::string("constant"),   new std::string("abs"),
+    new std::string("absvar"),     new std::string("function"),
+    new std::string("lookup"),     new std::string("macro"),
+    new std::string("interface"),  new std::string("package"),
+    new std::string("tsigma"),     new std::string("doc"),
+    new std::string("tbuiltin"),   new std::string("meta"),
     new std::string("diagnostic"),
 };
 
