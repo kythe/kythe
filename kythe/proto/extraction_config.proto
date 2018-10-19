@@ -42,8 +42,8 @@ message ExtractionConfiguration {
   message Image {
     // the image's URI to be utilized in the docker FROM command.
     string uri = 1;
-    // A human readable name for the image, should be unique within the composite
-    // image and distinct from the uri.
+    // A human readable name for the image, should be unique within the
+    // composite image and distinct from the uri.
     string name = 2;
     // A list of copy specs to be utilize in the docker COPY command.
     repeated CopySpec copy_spec = 3;
@@ -62,9 +62,9 @@ message ExtractionConfiguration {
     string destination = 2;
   }
 
-  // Represents an image's corresonding environment variable to be incorporated into
-  // the composite image. The data within this message will be utilized as follows:
-  // ENV <name> <value>
+  // Represents an image's corresonding environment variable to be incorporated
+  // into the composite image. The data within this message will be utilized as
+  // follows: ENV <name> <value>
   message EnvVar {
     string name = 1;
     string value = 2;

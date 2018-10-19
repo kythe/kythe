@@ -108,7 +108,7 @@ message Entry {
   //  DIGIT  = [0-9]
   //  PUNCT  = [-.@#$%&_+:()]
   string fact_name = 4;
-  bytes  fact_value = 5;
+  bytes fact_value = 5;
 }
 
 // A collection of Entry instances.
