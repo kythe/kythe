@@ -3,6 +3,11 @@ package(default_visibility = ["//kythe:default_visibility"])
 licenses(["notice"])
 
 cc_library(
+    name = "scope_guard",
+    hdrs = ["scope_guard.h"],
+)
+
+cc_library(
     name = "json_proto",
     srcs = [
         "json_proto.cc",

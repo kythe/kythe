@@ -57,9 +57,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_absl",
-        sha256 = "84c749757edd12da6188a0629a5d26bff8bba72a123b3aa571f4f5d9a03eaee6",
-        strip_prefix = "abseil-cpp-8f612ebb152fb7e05643a2bcf78cb89a8c0641ad",
-        url = "https://github.com/abseil/abseil-cpp/archive/8f612ebb152fb7e05643a2bcf78cb89a8c0641ad.zip",
+        sha256 = "77a39b7084b66582aaa18b42e4e4154df6bee29632875bbcc41d99502f784634",
+        strip_prefix = "abseil-cpp-2019e17a520575ab365b2b5134d71068182c70b8",
+        url = "https://github.com/abseil/abseil-cpp/archive/2019e17a520575ab365b2b5134d71068182c70b8.zip",
     )
 
     maybe(

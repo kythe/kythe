@@ -44,6 +44,7 @@ DEFINE_string(
 DEFINE_bool(convert_marked_source, false,
             "Convert MarkedSource-valued facts to subgraphs.");
 DEFINE_bool(show_anchors, false, "Show anchor locations instead of @s");
+DEFINE_bool(file_vnames, true, "Find file vnames by matching file content.");
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -91,26 +92,8 @@ Example:
     v.ShowAnchors();
   }
 
-  if (!FLAGS_graphviz) {
-    std::vector<std::string> rule_files(argv + 1, argv + argc);
-    if (rule_files.empty() && !FLAGS_use_file_nodes) {
-      fprintf(stderr, "No rule files specified\n");
-      return 1;
-    }
-
-    for (const auto& rule_file : rule_files) {
-      if (rule_file.empty()) {
-        continue;
-      }
-      if (!v.LoadInlineRuleFile(rule_file)) {
-        fprintf(stderr, "Failed loading %s.\n", rule_file.c_str());
-        return 2;
-      }
-    }
-  }
-
-  if (FLAGS_check_for_singletons && v.CheckForSingletonEVars()) {
-    return 1;
+  if (!FLAGS_file_vnames) {
+    v.IgnoreFileVnames();
   }
 
   std::string dbname = "database";
@@ -137,6 +120,32 @@ Example:
       return 1;
     }
     ++facts;
+  }
+
+  if (!v.PrepareDatabase()) {
+    return 1;
+  }
+
+  if (!FLAGS_graphviz) {
+    std::vector<std::string> rule_files(argv + 1, argv + argc);
+    if (rule_files.empty() && !FLAGS_use_file_nodes) {
+      fprintf(stderr, "No rule files specified\n");
+      return 1;
+    }
+
+    for (const auto& rule_file : rule_files) {
+      if (rule_file.empty()) {
+        continue;
+      }
+      if (!v.LoadInlineRuleFile(rule_file)) {
+        fprintf(stderr, "Failed loading %s.\n", rule_file.c_str());
+        return 2;
+      }
+    }
+  }
+
+  if (FLAGS_check_for_singletons && v.CheckForSingletonEVars()) {
+    return 1;
   }
 
   if (FLAGS_show_goals) {

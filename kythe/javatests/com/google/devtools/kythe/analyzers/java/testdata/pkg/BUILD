@@ -304,6 +304,7 @@ java_verifier_test(
     verifier_opts = [
         "--ignore_dups",
         "--convert_marked_source",
+        "--nofile_vnames",
     ],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/jvm/testdata:__pkg__"],
 )

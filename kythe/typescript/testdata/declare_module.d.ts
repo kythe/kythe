@@ -4,11 +4,11 @@
 // the given path, so any symbols within in should be scoped to the
 // appropriate VName.
 declare module 'foo/bar' {
-  //- @x defines/binding X1=VName(_, _, _, "foo/bar", _)
+  //- @x defines/binding _X1=vname(_, _, _, "foo/bar", _)
   let x;
 }
 
 declare module foobar {
-  //- @x defines/binding X2=VName(_, _, _, "testdata/declare_module", _)
+  //- @x defines/binding _X2=vname(_, _, _, "testdata/declare_module", _)
   let x;
 }

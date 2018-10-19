@@ -9,13 +9,13 @@ package functions
 //
 //- @"func(b bool) {}" defines
 //-   Anon1 = vname("package.<init>@59$1", "test", _, "fun", "go")
-//- Anon1 param.0 AnonPB
+//- Anon1 param.0 _AnonPB
 //- Anon1.node/kind function
 var _ = func(b bool) {}
 
 //- @"func(z int) {}" defines
 //-   Anon2 = vname("package.<init>@59$2", "test", _, "fun", "go")
-//- Anon2 param.0 AnonPZ
+//- Anon2 param.0 _AnonPZ
 //- Anon2.node/kind function
 var _ = func(z int) {}
 
@@ -48,14 +48,14 @@ type T struct{}
 //- @output defines/binding MethOutput
 //- MethOutput.node/kind variable
 //- MethOutput childof Meth
-//- Meth childof Struct
+//- Meth childof _Struct
 func (recv *T) M(input int) (output int) { return 34 }
 
 //- @outer defines/binding Outer
 //- Outer.node/kind function
 func outer() {
 	//- @"func(q bool) {}" defines Inner = vname("func outer$1", _, _, _, _)
-	//- Inner param.0 InnerPQ
+	//- Inner param.0 _InnerPQ
 	//- Inner.node/kind function
 	_ = func(q bool) {}
 }
@@ -63,5 +63,5 @@ func outer() {
 //- @ignore defines/binding Ignore
 //- Ignore param.0 Unnamed
 //- Unnamed.node/kind variable
-//- !{X defines/binding Unnamed}
+//- !{_X defines/binding Unnamed}
 func ignore(_ int) bool { return false }

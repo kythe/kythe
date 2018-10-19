@@ -4,5 +4,5 @@
 //- Pkg.node/kind package
 package anchors
 
-//- @x=vname(_,_,_,_,"go") defines/binding X
+//- @x=vname(_,_,_,_,"go") defines/binding _X
 var x int

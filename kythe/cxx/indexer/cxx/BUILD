@@ -116,10 +116,10 @@ cc_library(
         ":indexer_library_support",
         ":marked_source",
         ":node_set",
-        ":scope_guard",
         ":semantic_hash",
         ":type_map",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:scope_guard",
         "//kythe/cxx/common:supported_language",
         "//kythe/cxx/common/indexing:lib",
         "//third_party/llvm",
@@ -134,7 +134,7 @@ cc_library(
     srcs = ["indexed_parent_map.cc"],
     hdrs = ["indexed_parent_map.h"],
     deps = [
-        ":scope_guard",
+        "//kythe/cxx/common:scope_guard",
         "//third_party/llvm",
         "@com_github_google_glog//:glog",
     ],
@@ -342,11 +342,6 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
     ],
-)
-
-cc_library(
-    name = "scope_guard",
-    hdrs = ["scope_guard.h"],
 )
 
 cc_library(

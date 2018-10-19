@@ -41,6 +41,12 @@ void Identifier::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
 
 void Range::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
   printer->Print("Range(");
+  printer->Print(symbol_table.PrettyText(corpus_));
+  printer->Print(",");
+  printer->Print(symbol_table.PrettyText(root_));
+  printer->Print(",");
+  printer->Print(symbol_table.PrettyText(path_));
+  printer->Print(",");
   printer->Print(std::to_string(begin_));
   printer->Print(",");
   printer->Print(std::to_string(end_));
@@ -68,7 +74,12 @@ void App::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
 
 bool AssertionParser::ParseInlineRuleString(const std::string& content,
                                             const std::string& fake_filename,
+                                            Symbol path, Symbol root,
+                                            Symbol corpus,
                                             const RE2& goal_comment_regex) {
+  path_ = path;
+  root_ = root;
+  corpus_ = corpus;
   had_errors_ = false;
   files_.push_back(fake_filename);
   ResetLine();
@@ -81,7 +92,12 @@ bool AssertionParser::ParseInlineRuleString(const std::string& content,
 }
 
 bool AssertionParser::ParseInlineRuleFile(const std::string& filename,
+                                          Symbol path, Symbol root,
+                                          Symbol corpus,
                                           const RE2& goal_comment_regex) {
+  path_ = path;
+  root_ = root;
+  corpus_ = corpus;
   files_.push_back(filename);
   had_errors_ = false;
   ResetLine();
@@ -446,7 +462,8 @@ bool AssertionParser::ResolveLocations(const yy::location& end_of_line,
                                  location, verifier_.eq_id(),
                                  {new (verifier_.arena())
                                       Range(location, line_start + col,
-                                            line_start + col + token.size()),
+                                            line_start + col + token.size(),
+                                            path_, root_, corpus_),
                                   evar}));
         break;
     }

@@ -62,7 +62,8 @@ class AssertionParser {
   /// \param goal_comment_regex Lines matching this regex are goals. Goals
   /// will be read from the regex's first capture group.
   /// \return true if there were no errors
-  bool ParseInlineRuleFile(const std::string& filename,
+  bool ParseInlineRuleFile(const std::string& filename, Symbol path,
+                           Symbol root, Symbol corpus,
                            const RE2& goal_comment_regex);
 
   /// \brief Loads a string containing rules in marked comments.
@@ -72,7 +73,8 @@ class AssertionParser {
   /// will be read from the regex's first capture group.
   /// \return true if there were no errors
   bool ParseInlineRuleString(const std::string& content,
-                             const std::string& fake_filename,
+                             const std::string& fake_filename, Symbol path,
+                             Symbol root, Symbol corpus,
                              const RE2& goal_comment_regex);
 
   /// \brief The name of the current file being read. It is safe to take
@@ -331,6 +333,12 @@ class AssertionParser {
   bool trace_parse_;
   /// Should we inspect every user-provided EVar?
   bool default_inspect_ = false;
+  /// The current file's path.
+  Symbol path_;
+  /// The current file's root.
+  Symbol root_;
+  /// The current file's corpus.
+  Symbol corpus_;
 };
 
 }  // namespace verifier

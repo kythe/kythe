@@ -18,7 +18,7 @@ x = new Map<string, IFace>();
 // Create a generic type and instantiate it.
 //- @Container defines/binding Container
 //- @T defines/binding ContainerT
-//- T.node/kind absvar
+//- ContainerT.node/kind absvar
 interface Container<T> {
   //- @T ref ContainerT
   //- !{@T ref Container}

@@ -20,6 +20,7 @@
 #include <functional>
 #include <string>
 
+#include "absl/container/flat_hash_map.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -40,17 +41,22 @@ class Verifier {
   explicit Verifier(bool trace_lex = false, bool trace_parse = false);
 
   /// \brief Loads an in-memory source file.
+  /// \param filename The name to use for the file; may be blank.
   /// \param vname The AstNode of the vname for the file.
   /// \param text The symbol for the text to load
   /// \return false if we failed.
-  bool LoadInMemoryRuleFile(AstNode* vname, Symbol text);
+  bool LoadInMemoryRuleFile(const std::string& filename, AstNode* vname,
+                            Symbol text);
 
   /// \brief Loads a source file with goal comments indicating rules and data.
+  /// The VName for the source file will be determined by matching its content
+  /// against file nodes.
   /// \param filename The filename to load
   /// \return false if we failed
   bool LoadInlineRuleFile(const std::string& filename);
 
   /// \brief Loads a text proto with goal comments indicating rules and data.
+  /// The VName for the source file will be blank.
   /// \param file_data The data to load
   /// \return false if we failed
   bool LoadInlineProtoFile(const std::string& file_data);
@@ -180,6 +186,9 @@ class Verifier {
   /// \brief Check for singleton EVars.
   /// \return true if there were singletons.
   bool CheckForSingletonEVars() { return parser_.CheckForSingletonEVars(); }
+
+  /// \brief Don't search for file vnames.
+  void IgnoreFileVnames() { file_vnames_ = false; }
 
  private:
   /// \brief Generate a VName that will not conflict with any other VName.
@@ -376,6 +385,12 @@ class Verifier {
 
   /// Identifier for MarkedSource false values.
   AstNode* marked_source_false_id_;
+
+  /// Maps from file content to (verified) VName.
+  absl::flat_hash_map<Symbol, AstNode*> content_to_vname_;
+
+  /// Find file vnames by examining file content.
+  bool file_vnames_ = true;
 };
 
 }  // namespace verifier

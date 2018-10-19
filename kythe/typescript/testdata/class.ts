@@ -22,7 +22,7 @@ interface IExtended extends IFace {}
 //- @Class defines/binding ClassCtor
 //- ClassCtor.node/kind function
 //- ClassCtor.subkind constructor
-//- @IFace ref Iface
+//- @IFace ref IFace
 class Class implements IFace {
     //- @member defines/binding Member
     //- Member.node/kind variable
@@ -55,7 +55,7 @@ class Class implements IFace {
     }
 
     // TODO: ensure the method is linked to the interface too.
-    //- @ifaceMethod defines/binding ClassIFaceMethod
+    //- @ifaceMethod defines/binding _ClassIFaceMethod
     ifaceMethod(): void {}
 }
 
