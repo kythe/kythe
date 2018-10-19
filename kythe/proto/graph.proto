@@ -104,9 +104,8 @@ message EdgesRequest {
   // The server is allowed to return fewer edges than the requested page_size,
   // even if more are available, save that it must return at least 1 edge if
   // any are available at all.
-  int32  page_size  = 8;
+  int32 page_size = 8;
   string page_token = 9;
-
 
   // TODO(fromberger): Should this interface support automatic indirection
   // through "name" nodes?

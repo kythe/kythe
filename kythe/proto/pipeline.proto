@@ -32,7 +32,7 @@ message Reference {
   }
   kythe.proto.serving.ExpandedAnchor anchor = 4;
 
-  kythe.proto.VName scope = 5; // anchor scope
+  kythe.proto.VName scope = 5;  // anchor scope
 }
 
 // A DecorationPiece is an independent component of a larger

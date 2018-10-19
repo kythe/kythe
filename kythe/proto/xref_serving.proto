@@ -86,9 +86,9 @@ message FileDecorations {
   // Columnar key: 20-target-kind-override
   message TargetOverride {
     enum Kind {
-      UNKNOWN   = 0;
+      UNKNOWN = 0;
       OVERRIDES = 1;
-      EXTENDS   = 2;
+      EXTENDS = 2;
     }
 
     // File decorations target node marked as overridden.
@@ -215,8 +215,8 @@ message CrossReferences {
     Kind kind = 3;
 
     enum Kind {
-      UNKNOWN  = 0;
-      DIRECT   = 1;
+      UNKNOWN = 0;
+      DIRECT = 1;
       OVERRIDE = 2;
     }
   }
