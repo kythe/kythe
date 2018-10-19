@@ -19,9 +19,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type ExtractionConfiguration struct {
-	RequiredImage        []*ExtractionConfiguration_Image      `protobuf:"bytes,1,rep,name=required_image,json=requiredImage" json:"required_image,omitempty"`
-	RunCommand           []*ExtractionConfiguration_RunCommand `protobuf:"bytes,2,rep,name=run_command,json=runCommand" json:"run_command,omitempty"`
-	EntryPoint           []string                              `protobuf:"bytes,3,rep,name=entry_point,json=entryPoint" json:"entry_point,omitempty"`
+	RequiredImage        []*ExtractionConfiguration_Image      `protobuf:"bytes,1,rep,name=required_image,json=requiredImage,proto3" json:"required_image,omitempty"`
+	RunCommand           []*ExtractionConfiguration_RunCommand `protobuf:"bytes,2,rep,name=run_command,json=runCommand,proto3" json:"run_command,omitempty"`
+	EntryPoint           []string                              `protobuf:"bytes,3,rep,name=entry_point,json=entryPoint,proto3" json:"entry_point,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                              `json:"-"`
 	XXX_unrecognized     []byte                                `json:"-"`
 	XXX_sizecache        int32                                 `json:"-"`
@@ -73,10 +73,10 @@ func (m *ExtractionConfiguration) GetEntryPoint() []string {
 }
 
 type ExtractionConfiguration_Image struct {
-	Uri                  string                              `protobuf:"bytes,1,opt,name=uri" json:"uri,omitempty"`
-	Name                 string                              `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
-	CopySpec             []*ExtractionConfiguration_CopySpec `protobuf:"bytes,3,rep,name=copy_spec,json=copySpec" json:"copy_spec,omitempty"`
-	EnvVar               []*ExtractionConfiguration_EnvVar   `protobuf:"bytes,4,rep,name=env_var,json=envVar" json:"env_var,omitempty"`
+	Uri                  string                              `protobuf:"bytes,1,opt,name=uri,proto3" json:"uri,omitempty"`
+	Name                 string                              `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	CopySpec             []*ExtractionConfiguration_CopySpec `protobuf:"bytes,3,rep,name=copy_spec,json=copySpec,proto3" json:"copy_spec,omitempty"`
+	EnvVar               []*ExtractionConfiguration_EnvVar   `protobuf:"bytes,4,rep,name=env_var,json=envVar,proto3" json:"env_var,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                            `json:"-"`
 	XXX_unrecognized     []byte                              `json:"-"`
 	XXX_sizecache        int32                               `json:"-"`
@@ -135,8 +135,8 @@ func (m *ExtractionConfiguration_Image) GetEnvVar() []*ExtractionConfiguration_E
 }
 
 type ExtractionConfiguration_CopySpec struct {
-	Source               string   `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
-	Destination          string   `protobuf:"bytes,2,opt,name=destination" json:"destination,omitempty"`
+	Source               string   `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	Destination          string   `protobuf:"bytes,2,opt,name=destination,proto3" json:"destination,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -181,8 +181,8 @@ func (m *ExtractionConfiguration_CopySpec) GetDestination() string {
 }
 
 type ExtractionConfiguration_EnvVar struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Value                string   `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -227,8 +227,8 @@ func (m *ExtractionConfiguration_EnvVar) GetValue() string {
 }
 
 type ExtractionConfiguration_RunCommand struct {
-	Command              string   `protobuf:"bytes,1,opt,name=command" json:"command,omitempty"`
-	Arg                  []string `protobuf:"bytes,2,rep,name=arg" json:"arg,omitempty"`
+	Command              string   `protobuf:"bytes,1,opt,name=command,proto3" json:"command,omitempty"`
+	Arg                  []string `protobuf:"bytes,2,rep,name=arg,proto3" json:"arg,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

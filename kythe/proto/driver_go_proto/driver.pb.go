@@ -22,7 +22,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type InitRequest struct {
-	Protocol             string   `protobuf:"bytes,1,opt,name=protocol" json:"protocol,omitempty"`
+	Protocol             string   `protobuf:"bytes,1,opt,name=protocol,proto3" json:"protocol,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -60,7 +60,7 @@ func (m *InitRequest) GetProtocol() string {
 }
 
 type InitReply struct {
-	Protocol             string   `protobuf:"bytes,1,opt,name=protocol" json:"protocol,omitempty"`
+	Protocol             string   `protobuf:"bytes,1,opt,name=protocol,proto3" json:"protocol,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -98,7 +98,7 @@ func (m *InitReply) GetProtocol() string {
 }
 
 type AnalyzeRequest struct {
-	Language             string   `protobuf:"bytes,1,opt,name=language" json:"language,omitempty"`
+	Language             string   `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -136,8 +136,8 @@ func (m *AnalyzeRequest) GetLanguage() string {
 }
 
 type AnalyzeReply struct {
-	Id                   int64                              `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
-	Unit                 *analysis_go_proto.CompilationUnit `protobuf:"bytes,2,opt,name=unit" json:"unit,omitempty"`
+	Id                   int64                              `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Unit                 *analysis_go_proto.CompilationUnit `protobuf:"bytes,2,opt,name=unit,proto3" json:"unit,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                           `json:"-"`
 	XXX_unrecognized     []byte                             `json:"-"`
 	XXX_sizecache        int32                              `json:"-"`
@@ -182,9 +182,9 @@ func (m *AnalyzeReply) GetUnit() *analysis_go_proto.CompilationUnit {
 }
 
 type FileRequest struct {
-	Id                   int64    `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
-	Path                 string   `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
-	Digest               string   `protobuf:"bytes,3,opt,name=digest" json:"digest,omitempty"`
+	Id                   int64    `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Path                 string   `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Digest               string   `protobuf:"bytes,3,opt,name=digest,proto3" json:"digest,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -236,8 +236,8 @@ func (m *FileRequest) GetDigest() string {
 }
 
 type FileReply struct {
-	Path                 string   `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
-	Digest               string   `protobuf:"bytes,2,opt,name=digest" json:"digest,omitempty"`
+	Path                 string   `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Digest               string   `protobuf:"bytes,2,opt,name=digest,proto3" json:"digest,omitempty"`
 	Data                 []byte   `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -290,9 +290,9 @@ func (m *FileReply) GetData() []byte {
 }
 
 type OutRequest struct {
-	Id                   int64                     `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	Id                   int64                     `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Output               [][]byte                  `protobuf:"bytes,2,rep,name=output,proto3" json:"output,omitempty"`
-	Entries              []*storage_go_proto.Entry `protobuf:"bytes,3,rep,name=entries" json:"entries,omitempty"`
+	Entries              []*storage_go_proto.Entry `protobuf:"bytes,3,rep,name=entries,proto3" json:"entries,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`
@@ -344,8 +344,8 @@ func (m *OutRequest) GetEntries() []*storage_go_proto.Entry {
 }
 
 type LogRequest struct {
-	Id                   int64                       `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
-	Message              *common_go_proto.Diagnostic `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
+	Id                   int64                       `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Message              *common_go_proto.Diagnostic `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
 	XXX_unrecognized     []byte                      `json:"-"`
 	XXX_sizecache        int32                       `json:"-"`

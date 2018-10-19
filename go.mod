@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/zstd v0.0.0-20180321192404-aebefd9fcb99
 	github.com/apache/beam v0.0.0-20180919184632-09857b18ffd8
 	github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb
-	github.com/golang/protobuf v0.0.0-20171107165515-b4deda0973fb
+	github.com/golang/protobuf v0.0.0-20180814141427-aa810b61a9c7
 	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
 	github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540
 	github.com/google/go-cmp v0.0.0-20180328201512-5411ab924f9f
@@ -29,7 +29,7 @@ require (
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
 	golang.org/x/sys v0.0.0-20180616030259-6c888cc515d3
 	golang.org/x/text v0.0.0-20180410181320-7922cc490dd5
-	golang.org/x/tools v0.0.0-20180508192217-48418e5732e1
+	golang.org/x/tools v0.0.0-20180928164045-7b71b077e1f4
 	google.golang.org/api v0.0.0-20180404000327-3097bf831ede
 	google.golang.org/genproto v0.0.0-20180716172848-2731d4fa720b // indirect
 	google.golang.org/grpc v0.0.0-20180510165436-d07538b1475e

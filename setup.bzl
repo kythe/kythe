@@ -14,13 +14,14 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "io_bazel_rules_go",
-        sha256 = "7519e9e1c716ae3c05bd2d984a42c3b02e690c5df728dc0a84b23f90c355c5a1",
-        urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.15.4/rules_go-0.15.4.tar.gz"],
+        url = "https://github.com/bazelbuild/rules_go/releases/download/0.16.0/rules_go-0.16.0.tar.gz",
+        sha256 = "ee5fe78fe417c685ecb77a0a725dc9f6040ae5beb44a0ba4ddb55453aad23a8a",
     )
 
     maybe(
         http_archive,
         name = "bazel_gazelle",
-        sha256 = "c0a5739d12c6d05b6c1ad56f2200cb0b57c5a70e03ebd2f7b87ce88cabf09c7b",
-        urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/0.14.0/bazel-gazelle-0.14.0.tar.gz"],
+        strip_prefix = "bazel-gazelle-253128b77088080a348f54d79a28dcd47d99caf9",
+        sha256 = "6e48a5f804ee1f0df84b546aa5c2eb15b3b2e2bcfc75f2bf305323343c2e8b94",
+        urls = ["https://github.com/bazelbuild/bazel-gazelle/archive/253128b77088080a348f54d79a28dcd47d99caf9.zip"],
     )

@@ -219,9 +219,9 @@ func (CrossReferencesRequest_CallerKind) EnumDescriptor() ([]byte, []int) {
 }
 
 type Location struct {
-	Ticket               string                `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	Kind                 Location_Kind         `protobuf:"varint,2,opt,name=kind,enum=kythe.proto.Location_Kind" json:"kind,omitempty"`
-	Span                 *common_go_proto.Span `protobuf:"bytes,5,opt,name=span" json:"span,omitempty"`
+	Ticket               string                `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	Kind                 Location_Kind         `protobuf:"varint,2,opt,name=kind,proto3,enum=kythe.proto.Location_Kind" json:"kind,omitempty"`
+	Span                 *common_go_proto.Span `protobuf:"bytes,5,opt,name=span,proto3" json:"span,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -273,16 +273,16 @@ func (m *Location) GetSpan() *common_go_proto.Span {
 }
 
 type DecorationsRequest struct {
-	Location             *Location                   `protobuf:"bytes,1,opt,name=location" json:"location,omitempty"`
-	SpanKind             DecorationsRequest_SpanKind `protobuf:"varint,10,opt,name=span_kind,json=spanKind,enum=kythe.proto.DecorationsRequest_SpanKind" json:"span_kind,omitempty"`
+	Location             *Location                   `protobuf:"bytes,1,opt,name=location,proto3" json:"location,omitempty"`
+	SpanKind             DecorationsRequest_SpanKind `protobuf:"varint,10,opt,name=span_kind,json=spanKind,proto3,enum=kythe.proto.DecorationsRequest_SpanKind" json:"span_kind,omitempty"`
 	DirtyBuffer          []byte                      `protobuf:"bytes,2,opt,name=dirty_buffer,json=dirtyBuffer,proto3" json:"dirty_buffer,omitempty"`
-	SourceText           bool                        `protobuf:"varint,3,opt,name=source_text,json=sourceText" json:"source_text,omitempty"`
-	References           bool                        `protobuf:"varint,4,opt,name=references" json:"references,omitempty"`
-	TargetDefinitions    bool                        `protobuf:"varint,6,opt,name=target_definitions,json=targetDefinitions" json:"target_definitions,omitempty"`
-	Filter               []string                    `protobuf:"bytes,5,rep,name=filter" json:"filter,omitempty"`
-	ExtendsOverrides     bool                        `protobuf:"varint,7,opt,name=extends_overrides,json=extendsOverrides" json:"extends_overrides,omitempty"`
-	Diagnostics          bool                        `protobuf:"varint,8,opt,name=diagnostics" json:"diagnostics,omitempty"`
-	Snippets             SnippetsKind                `protobuf:"varint,9,opt,name=snippets,enum=kythe.proto.SnippetsKind" json:"snippets,omitempty"`
+	SourceText           bool                        `protobuf:"varint,3,opt,name=source_text,json=sourceText,proto3" json:"source_text,omitempty"`
+	References           bool                        `protobuf:"varint,4,opt,name=references,proto3" json:"references,omitempty"`
+	TargetDefinitions    bool                        `protobuf:"varint,6,opt,name=target_definitions,json=targetDefinitions,proto3" json:"target_definitions,omitempty"`
+	Filter               []string                    `protobuf:"bytes,5,rep,name=filter,proto3" json:"filter,omitempty"`
+	ExtendsOverrides     bool                        `protobuf:"varint,7,opt,name=extends_overrides,json=extendsOverrides,proto3" json:"extends_overrides,omitempty"`
+	Diagnostics          bool                        `protobuf:"varint,8,opt,name=diagnostics,proto3" json:"diagnostics,omitempty"`
+	Snippets             SnippetsKind                `protobuf:"varint,9,opt,name=snippets,proto3,enum=kythe.proto.SnippetsKind" json:"snippets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
 	XXX_unrecognized     []byte                      `json:"-"`
 	XXX_sizecache        int32                       `json:"-"`
@@ -383,14 +383,14 @@ func (m *DecorationsRequest) GetSnippets() SnippetsKind {
 }
 
 type DecorationsReply struct {
-	Location             *Location                              `protobuf:"bytes,1,opt,name=location" json:"location,omitempty"`
+	Location             *Location                              `protobuf:"bytes,1,opt,name=location,proto3" json:"location,omitempty"`
 	SourceText           []byte                                 `protobuf:"bytes,2,opt,name=source_text,json=sourceText,proto3" json:"source_text,omitempty"`
-	Encoding             string                                 `protobuf:"bytes,3,opt,name=encoding" json:"encoding,omitempty"`
-	Reference            []*DecorationsReply_Reference          `protobuf:"bytes,4,rep,name=reference" json:"reference,omitempty"`
-	Diagnostic           []*common_go_proto.Diagnostic          `protobuf:"bytes,5,rep,name=diagnostic" json:"diagnostic,omitempty"`
-	Nodes                map[string]*common_go_proto.NodeInfo   `protobuf:"bytes,15,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	DefinitionLocations  map[string]*Anchor                     `protobuf:"bytes,16,rep,name=definition_locations,json=definitionLocations" json:"definition_locations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	ExtendsOverrides     map[string]*DecorationsReply_Overrides `protobuf:"bytes,17,rep,name=extends_overrides,json=extendsOverrides" json:"extends_overrides,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Encoding             string                                 `protobuf:"bytes,3,opt,name=encoding,proto3" json:"encoding,omitempty"`
+	Reference            []*DecorationsReply_Reference          `protobuf:"bytes,4,rep,name=reference,proto3" json:"reference,omitempty"`
+	Diagnostic           []*common_go_proto.Diagnostic          `protobuf:"bytes,5,rep,name=diagnostic,proto3" json:"diagnostic,omitempty"`
+	Nodes                map[string]*common_go_proto.NodeInfo   `protobuf:"bytes,15,rep,name=nodes,proto3" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DefinitionLocations  map[string]*Anchor                     `protobuf:"bytes,16,rep,name=definition_locations,json=definitionLocations,proto3" json:"definition_locations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	ExtendsOverrides     map[string]*DecorationsReply_Overrides `protobuf:"bytes,17,rep,name=extends_overrides,json=extendsOverrides,proto3" json:"extends_overrides,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                               `json:"-"`
 	XXX_unrecognized     []byte                                 `json:"-"`
 	XXX_sizecache        int32                                  `json:"-"`
@@ -477,10 +477,10 @@ func (m *DecorationsReply) GetExtendsOverrides() map[string]*DecorationsReply_Ov
 }
 
 type DecorationsReply_Reference struct {
-	TargetTicket         string                `protobuf:"bytes,2,opt,name=target_ticket,json=targetTicket" json:"target_ticket,omitempty"`
-	Kind                 string                `protobuf:"bytes,3,opt,name=kind" json:"kind,omitempty"`
-	TargetDefinition     string                `protobuf:"bytes,4,opt,name=target_definition,json=targetDefinition" json:"target_definition,omitempty"`
-	Span                 *common_go_proto.Span `protobuf:"bytes,5,opt,name=span" json:"span,omitempty"`
+	TargetTicket         string                `protobuf:"bytes,2,opt,name=target_ticket,json=targetTicket,proto3" json:"target_ticket,omitempty"`
+	Kind                 string                `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	TargetDefinition     string                `protobuf:"bytes,4,opt,name=target_definition,json=targetDefinition,proto3" json:"target_definition,omitempty"`
+	Span                 *common_go_proto.Span `protobuf:"bytes,5,opt,name=span,proto3" json:"span,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -539,10 +539,10 @@ func (m *DecorationsReply_Reference) GetSpan() *common_go_proto.Span {
 }
 
 type DecorationsReply_Override struct {
-	Target               string                         `protobuf:"bytes,1,opt,name=target" json:"target,omitempty"`
-	TargetDefinition     string                         `protobuf:"bytes,5,opt,name=target_definition,json=targetDefinition" json:"target_definition,omitempty"`
-	Kind                 DecorationsReply_Override_Kind `protobuf:"varint,2,opt,name=kind,enum=kythe.proto.DecorationsReply_Override_Kind" json:"kind,omitempty"`
-	MarkedSource         *common_go_proto.MarkedSource  `protobuf:"bytes,4,opt,name=marked_source,json=markedSource" json:"marked_source,omitempty"`
+	Target               string                         `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	TargetDefinition     string                         `protobuf:"bytes,5,opt,name=target_definition,json=targetDefinition,proto3" json:"target_definition,omitempty"`
+	Kind                 DecorationsReply_Override_Kind `protobuf:"varint,2,opt,name=kind,proto3,enum=kythe.proto.DecorationsReply_Override_Kind" json:"kind,omitempty"`
+	MarkedSource         *common_go_proto.MarkedSource  `protobuf:"bytes,4,opt,name=marked_source,json=markedSource,proto3" json:"marked_source,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
 	XXX_unrecognized     []byte                         `json:"-"`
 	XXX_sizecache        int32                          `json:"-"`
@@ -601,7 +601,7 @@ func (m *DecorationsReply_Override) GetMarkedSource() *common_go_proto.MarkedSou
 }
 
 type DecorationsReply_Overrides struct {
-	Override             []*DecorationsReply_Override `protobuf:"bytes,1,rep,name=override" json:"override,omitempty"`
+	Override             []*DecorationsReply_Override `protobuf:"bytes,1,rep,name=override,proto3" json:"override,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                     `json:"-"`
 	XXX_unrecognized     []byte                       `json:"-"`
 	XXX_sizecache        int32                        `json:"-"`
@@ -639,18 +639,18 @@ func (m *DecorationsReply_Overrides) GetOverride() []*DecorationsReply_Override 
 }
 
 type CrossReferencesRequest struct {
-	Ticket               []string                               `protobuf:"bytes,1,rep,name=ticket" json:"ticket,omitempty"`
-	DefinitionKind       CrossReferencesRequest_DefinitionKind  `protobuf:"varint,2,opt,name=definition_kind,json=definitionKind,enum=kythe.proto.CrossReferencesRequest_DefinitionKind" json:"definition_kind,omitempty"`
-	DeclarationKind      CrossReferencesRequest_DeclarationKind `protobuf:"varint,7,opt,name=declaration_kind,json=declarationKind,enum=kythe.proto.CrossReferencesRequest_DeclarationKind" json:"declaration_kind,omitempty"`
-	ReferenceKind        CrossReferencesRequest_ReferenceKind   `protobuf:"varint,3,opt,name=reference_kind,json=referenceKind,enum=kythe.proto.CrossReferencesRequest_ReferenceKind" json:"reference_kind,omitempty"`
-	CallerKind           CrossReferencesRequest_CallerKind      `protobuf:"varint,12,opt,name=caller_kind,json=callerKind,enum=kythe.proto.CrossReferencesRequest_CallerKind" json:"caller_kind,omitempty"`
-	Filter               []string                               `protobuf:"bytes,5,rep,name=filter" json:"filter,omitempty"`
-	RelatedNodeKind      []string                               `protobuf:"bytes,14,rep,name=related_node_kind,json=relatedNodeKind" json:"related_node_kind,omitempty"`
-	AnchorText           bool                                   `protobuf:"varint,6,opt,name=anchor_text,json=anchorText" json:"anchor_text,omitempty"`
-	NodeDefinitions      bool                                   `protobuf:"varint,8,opt,name=node_definitions,json=nodeDefinitions" json:"node_definitions,omitempty"`
-	PageSize             int32                                  `protobuf:"varint,10,opt,name=page_size,json=pageSize" json:"page_size,omitempty"`
-	PageToken            string                                 `protobuf:"bytes,11,opt,name=page_token,json=pageToken" json:"page_token,omitempty"`
-	Snippets             SnippetsKind                           `protobuf:"varint,13,opt,name=snippets,enum=kythe.proto.SnippetsKind" json:"snippets,omitempty"`
+	Ticket               []string                               `protobuf:"bytes,1,rep,name=ticket,proto3" json:"ticket,omitempty"`
+	DefinitionKind       CrossReferencesRequest_DefinitionKind  `protobuf:"varint,2,opt,name=definition_kind,json=definitionKind,proto3,enum=kythe.proto.CrossReferencesRequest_DefinitionKind" json:"definition_kind,omitempty"`
+	DeclarationKind      CrossReferencesRequest_DeclarationKind `protobuf:"varint,7,opt,name=declaration_kind,json=declarationKind,proto3,enum=kythe.proto.CrossReferencesRequest_DeclarationKind" json:"declaration_kind,omitempty"`
+	ReferenceKind        CrossReferencesRequest_ReferenceKind   `protobuf:"varint,3,opt,name=reference_kind,json=referenceKind,proto3,enum=kythe.proto.CrossReferencesRequest_ReferenceKind" json:"reference_kind,omitempty"`
+	CallerKind           CrossReferencesRequest_CallerKind      `protobuf:"varint,12,opt,name=caller_kind,json=callerKind,proto3,enum=kythe.proto.CrossReferencesRequest_CallerKind" json:"caller_kind,omitempty"`
+	Filter               []string                               `protobuf:"bytes,5,rep,name=filter,proto3" json:"filter,omitempty"`
+	RelatedNodeKind      []string                               `protobuf:"bytes,14,rep,name=related_node_kind,json=relatedNodeKind,proto3" json:"related_node_kind,omitempty"`
+	AnchorText           bool                                   `protobuf:"varint,6,opt,name=anchor_text,json=anchorText,proto3" json:"anchor_text,omitempty"`
+	NodeDefinitions      bool                                   `protobuf:"varint,8,opt,name=node_definitions,json=nodeDefinitions,proto3" json:"node_definitions,omitempty"`
+	PageSize             int32                                  `protobuf:"varint,10,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken            string                                 `protobuf:"bytes,11,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	Snippets             SnippetsKind                           `protobuf:"varint,13,opt,name=snippets,proto3,enum=kythe.proto.SnippetsKind" json:"snippets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                               `json:"-"`
 	XXX_unrecognized     []byte                                 `json:"-"`
 	XXX_sizecache        int32                                  `json:"-"`
@@ -765,13 +765,13 @@ func (m *CrossReferencesRequest) GetSnippets() SnippetsKind {
 }
 
 type Anchor struct {
-	Ticket               string                `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	Kind                 string                `protobuf:"bytes,2,opt,name=kind" json:"kind,omitempty"`
-	Parent               string                `protobuf:"bytes,3,opt,name=parent" json:"parent,omitempty"`
-	Span                 *common_go_proto.Span `protobuf:"bytes,10,opt,name=span" json:"span,omitempty"`
-	Text                 string                `protobuf:"bytes,6,opt,name=text" json:"text,omitempty"`
-	Snippet              string                `protobuf:"bytes,7,opt,name=snippet" json:"snippet,omitempty"`
-	SnippetSpan          *common_go_proto.Span `protobuf:"bytes,11,opt,name=snippet_span,json=snippetSpan" json:"snippet_span,omitempty"`
+	Ticket               string                `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	Kind                 string                `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Parent               string                `protobuf:"bytes,3,opt,name=parent,proto3" json:"parent,omitempty"`
+	Span                 *common_go_proto.Span `protobuf:"bytes,10,opt,name=span,proto3" json:"span,omitempty"`
+	Text                 string                `protobuf:"bytes,6,opt,name=text,proto3" json:"text,omitempty"`
+	Snippet              string                `protobuf:"bytes,7,opt,name=snippet,proto3" json:"snippet,omitempty"`
+	SnippetSpan          *common_go_proto.Span `protobuf:"bytes,11,opt,name=snippet_span,json=snippetSpan,proto3" json:"snippet_span,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -851,8 +851,8 @@ func (m *Anchor) GetSnippetSpan() *common_go_proto.Span {
 }
 
 type Printable struct {
-	RawText              string                  `protobuf:"bytes,1,opt,name=raw_text,json=rawText" json:"raw_text,omitempty"`
-	Link                 []*common_go_proto.Link `protobuf:"bytes,2,rep,name=link" json:"link,omitempty"`
+	RawText              string                  `protobuf:"bytes,1,opt,name=raw_text,json=rawText,proto3" json:"raw_text,omitempty"`
+	Link                 []*common_go_proto.Link `protobuf:"bytes,2,rep,name=link,proto3" json:"link,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
 	XXX_unrecognized     []byte                  `json:"-"`
 	XXX_sizecache        int32                   `json:"-"`
@@ -897,11 +897,11 @@ func (m *Printable) GetLink() []*common_go_proto.Link {
 }
 
 type CrossReferencesReply struct {
-	Total                *CrossReferencesReply_Total                        `protobuf:"bytes,5,opt,name=total" json:"total,omitempty"`
-	CrossReferences      map[string]*CrossReferencesReply_CrossReferenceSet `protobuf:"bytes,1,rep,name=cross_references,json=crossReferences" json:"cross_references,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Nodes                map[string]*common_go_proto.NodeInfo               `protobuf:"bytes,2,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	DefinitionLocations  map[string]*Anchor                                 `protobuf:"bytes,3,rep,name=definition_locations,json=definitionLocations" json:"definition_locations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	NextPageToken        string                                             `protobuf:"bytes,10,opt,name=next_page_token,json=nextPageToken" json:"next_page_token,omitempty"`
+	Total                *CrossReferencesReply_Total                        `protobuf:"bytes,5,opt,name=total,proto3" json:"total,omitempty"`
+	CrossReferences      map[string]*CrossReferencesReply_CrossReferenceSet `protobuf:"bytes,1,rep,name=cross_references,json=crossReferences,proto3" json:"cross_references,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Nodes                map[string]*common_go_proto.NodeInfo               `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DefinitionLocations  map[string]*Anchor                                 `protobuf:"bytes,3,rep,name=definition_locations,json=definitionLocations,proto3" json:"definition_locations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	NextPageToken        string                                             `protobuf:"bytes,10,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                           `json:"-"`
 	XXX_unrecognized     []byte                                             `json:"-"`
 	XXX_sizecache        int32                                              `json:"-"`
@@ -967,9 +967,9 @@ func (m *CrossReferencesReply) GetNextPageToken() string {
 }
 
 type CrossReferencesReply_RelatedNode struct {
-	Ticket               string   `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	RelationKind         string   `protobuf:"bytes,2,opt,name=relation_kind,json=relationKind" json:"relation_kind,omitempty"`
-	Ordinal              int32    `protobuf:"varint,3,opt,name=ordinal" json:"ordinal,omitempty"`
+	Ticket               string   `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	RelationKind         string   `protobuf:"bytes,2,opt,name=relation_kind,json=relationKind,proto3" json:"relation_kind,omitempty"`
+	Ordinal              int32    `protobuf:"varint,3,opt,name=ordinal,proto3" json:"ordinal,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1021,10 +1021,10 @@ func (m *CrossReferencesReply_RelatedNode) GetOrdinal() int32 {
 }
 
 type CrossReferencesReply_RelatedAnchor struct {
-	Anchor               *Anchor                       `protobuf:"bytes,1,opt,name=anchor" json:"anchor,omitempty"`
-	MarkedSource         *common_go_proto.MarkedSource `protobuf:"bytes,5,opt,name=marked_source,json=markedSource" json:"marked_source,omitempty"`
-	Site                 []*Anchor                     `protobuf:"bytes,3,rep,name=site" json:"site,omitempty"`
-	Ticket               string                        `protobuf:"bytes,4,opt,name=ticket" json:"ticket,omitempty"`
+	Anchor               *Anchor                       `protobuf:"bytes,1,opt,name=anchor,proto3" json:"anchor,omitempty"`
+	MarkedSource         *common_go_proto.MarkedSource `protobuf:"bytes,5,opt,name=marked_source,json=markedSource,proto3" json:"marked_source,omitempty"`
+	Site                 []*Anchor                     `protobuf:"bytes,3,rep,name=site,proto3" json:"site,omitempty"`
+	Ticket               string                        `protobuf:"bytes,4,opt,name=ticket,proto3" json:"ticket,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`
 	XXX_sizecache        int32                         `json:"-"`
@@ -1083,13 +1083,13 @@ func (m *CrossReferencesReply_RelatedAnchor) GetTicket() string {
 }
 
 type CrossReferencesReply_CrossReferenceSet struct {
-	Ticket               string                                `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	MarkedSource         *common_go_proto.MarkedSource         `protobuf:"bytes,8,opt,name=marked_source,json=markedSource" json:"marked_source,omitempty"`
-	Definition           []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,2,rep,name=definition" json:"definition,omitempty"`
-	Declaration          []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,5,rep,name=declaration" json:"declaration,omitempty"`
-	Reference            []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,3,rep,name=reference" json:"reference,omitempty"`
-	Caller               []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,6,rep,name=caller" json:"caller,omitempty"`
-	RelatedNode          []*CrossReferencesReply_RelatedNode   `protobuf:"bytes,10,rep,name=related_node,json=relatedNode" json:"related_node,omitempty"`
+	Ticket               string                                `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	MarkedSource         *common_go_proto.MarkedSource         `protobuf:"bytes,8,opt,name=marked_source,json=markedSource,proto3" json:"marked_source,omitempty"`
+	Definition           []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,2,rep,name=definition,proto3" json:"definition,omitempty"`
+	Declaration          []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,5,rep,name=declaration,proto3" json:"declaration,omitempty"`
+	Reference            []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,3,rep,name=reference,proto3" json:"reference,omitempty"`
+	Caller               []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,6,rep,name=caller,proto3" json:"caller,omitempty"`
+	RelatedNode          []*CrossReferencesReply_RelatedNode   `protobuf:"bytes,10,rep,name=related_node,json=relatedNode,proto3" json:"related_node,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                              `json:"-"`
 	XXX_unrecognized     []byte                                `json:"-"`
 	XXX_sizecache        int32                                 `json:"-"`
@@ -1171,12 +1171,12 @@ func (m *CrossReferencesReply_CrossReferenceSet) GetRelatedNode() []*CrossRefere
 }
 
 type CrossReferencesReply_Total struct {
-	Definitions            int64            `protobuf:"varint,1,opt,name=definitions" json:"definitions,omitempty"`
-	Declarations           int64            `protobuf:"varint,2,opt,name=declarations" json:"declarations,omitempty"`
-	References             int64            `protobuf:"varint,3,opt,name=references" json:"references,omitempty"`
-	Documentation          int64            `protobuf:"varint,4,opt,name=documentation" json:"documentation,omitempty"`
-	Callers                int64            `protobuf:"varint,5,opt,name=callers" json:"callers,omitempty"`
-	RelatedNodesByRelation map[string]int64 `protobuf:"bytes,6,rep,name=related_nodes_by_relation,json=relatedNodesByRelation" json:"related_nodes_by_relation,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	Definitions            int64            `protobuf:"varint,1,opt,name=definitions,proto3" json:"definitions,omitempty"`
+	Declarations           int64            `protobuf:"varint,2,opt,name=declarations,proto3" json:"declarations,omitempty"`
+	References             int64            `protobuf:"varint,3,opt,name=references,proto3" json:"references,omitempty"`
+	Documentation          int64            `protobuf:"varint,4,opt,name=documentation,proto3" json:"documentation,omitempty"`
+	Callers                int64            `protobuf:"varint,5,opt,name=callers,proto3" json:"callers,omitempty"`
+	RelatedNodesByRelation map[string]int64 `protobuf:"bytes,6,rep,name=related_nodes_by_relation,json=relatedNodesByRelation,proto3" json:"related_nodes_by_relation,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral   struct{}         `json:"-"`
 	XXX_unrecognized       []byte           `json:"-"`
 	XXX_sizecache          int32            `json:"-"`
@@ -1249,9 +1249,9 @@ func (m *CrossReferencesReply_Total) GetRelatedNodesByRelation() map[string]int6
 }
 
 type DocumentationRequest struct {
-	Ticket               []string `protobuf:"bytes,1,rep,name=ticket" json:"ticket,omitempty"`
-	Filter               []string `protobuf:"bytes,2,rep,name=filter" json:"filter,omitempty"`
-	IncludeChildren      bool     `protobuf:"varint,3,opt,name=include_children,json=includeChildren" json:"include_children,omitempty"`
+	Ticket               []string `protobuf:"bytes,1,rep,name=ticket,proto3" json:"ticket,omitempty"`
+	Filter               []string `protobuf:"bytes,2,rep,name=filter,proto3" json:"filter,omitempty"`
+	IncludeChildren      bool     `protobuf:"varint,3,opt,name=include_children,json=includeChildren,proto3" json:"include_children,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1303,9 +1303,9 @@ func (m *DocumentationRequest) GetIncludeChildren() bool {
 }
 
 type DocumentationReply struct {
-	Document             []*DocumentationReply_Document       `protobuf:"bytes,1,rep,name=document" json:"document,omitempty"`
-	Nodes                map[string]*common_go_proto.NodeInfo `protobuf:"bytes,2,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	DefinitionLocations  map[string]*Anchor                   `protobuf:"bytes,3,rep,name=definition_locations,json=definitionLocations" json:"definition_locations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Document             []*DocumentationReply_Document       `protobuf:"bytes,1,rep,name=document,proto3" json:"document,omitempty"`
+	Nodes                map[string]*common_go_proto.NodeInfo `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DefinitionLocations  map[string]*Anchor                   `protobuf:"bytes,3,rep,name=definition_locations,json=definitionLocations,proto3" json:"definition_locations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
 	XXX_unrecognized     []byte                               `json:"-"`
 	XXX_sizecache        int32                                `json:"-"`
@@ -1357,10 +1357,10 @@ func (m *DocumentationReply) GetDefinitionLocations() map[string]*Anchor {
 }
 
 type DocumentationReply_Document struct {
-	Ticket               string                         `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	Text                 *Printable                     `protobuf:"bytes,2,opt,name=text" json:"text,omitempty"`
-	MarkedSource         *common_go_proto.MarkedSource  `protobuf:"bytes,8,opt,name=marked_source,json=markedSource" json:"marked_source,omitempty"`
-	Children             []*DocumentationReply_Document `protobuf:"bytes,9,rep,name=children" json:"children,omitempty"`
+	Ticket               string                         `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	Text                 *Printable                     `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	MarkedSource         *common_go_proto.MarkedSource  `protobuf:"bytes,8,opt,name=marked_source,json=markedSource,proto3" json:"marked_source,omitempty"`
+	Children             []*DocumentationReply_Document `protobuf:"bytes,9,rep,name=children,proto3" json:"children,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
 	XXX_unrecognized     []byte                         `json:"-"`
 	XXX_sizecache        int32                          `json:"-"`
