@@ -41,25 +41,26 @@ import javax.lang.model.element.Element;
  */
 public class BlockAnonymousSignatureGenerator
     extends TreeScanner<Void, BlockAnonymousSignatureGenerator.BlockAnonymousData> {
-  // Blocks are numbered sequentially from zero within a class scope or a method scope.
-  // Here is an example of block numbering:
   /*
-   class A {// block 0
-   {// block 1
-   {// block 2
-   }
-   }
-   {// block 3
-   }
-   void method() {// block 0
-   {// block 1
-   }
-   if (true) {// block 2
-
-   } else {// block 3
-   }
-   }
-   }
+   * Blocks are numbered sequentially from zero within a class scope or a method scope.
+   * Here is an example of block numbering:
+   * <code><pre>
+   *  class A {// block 0
+   *    {// block 1
+   *      {// block 2
+   *      }
+   *    }
+   *    {// block 3
+   *    }
+   *    void method() {// block 0
+   *      {// block 1
+   *      }
+   *      if (true) {// block 2
+   *      } else {// block 3
+   *      }
+   *    }
+   *  }
+   *  </code></pre>
    */
 
   static class BlockAnonymousData {

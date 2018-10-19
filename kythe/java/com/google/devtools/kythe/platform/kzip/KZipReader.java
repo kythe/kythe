@@ -73,12 +73,11 @@ public final class KZipReader implements KZip.Reader {
   public Iterable<Analysis.IndexedCompilation> scan() {
     String unitPrefix = KZip.getUnitsPath(rootPrefix, "/");
     return () ->
-    zipFile
-        .stream()
-        .filter(entry -> !entry.isDirectory())
-        .filter(entry -> entry.getName().startsWith(unitPrefix))
-        .map(this::readUnit)
-        .iterator();
+        zipFile.stream()
+            .filter(entry -> !entry.isDirectory())
+            .filter(entry -> entry.getName().startsWith(unitPrefix))
+            .map(this::readUnit)
+            .iterator();
   }
 
   @Override
