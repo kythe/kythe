@@ -37,7 +37,10 @@ case $file in
     fi ;;
 esac
 
-case $name in
+# Ensure consistent code style
+case $file in
+  */testdata/*)
+    ;; # skip style checks over testdata
   BUILD|*.BUILD|*.bzl)
     if command -v buildifier &>/dev/null; then
       buildifier --mode=check "$file" | sed 's/^/buildifier::error:1 /'
@@ -46,6 +49,20 @@ case $name in
     if command -v shellcheck &>/dev/null && command -v jq &>/dev/null; then
       shellcheck -f json "$file" | \
         jq -r '.[] | "shellcheck::" + (if .level == "info" then "advice" else .level end) + ":" + (.line | tostring) + " " + .message'
+    fi ;;
+  *.java)
+    if command -v google-java-format &>/dev/null; then
+      google-java-format -n "$file" | sed 's/^/google-java-format::error:1 /'
+    fi ;;
+  *.go)
+    if command -v gofmt &>/dev/null; then
+      gofmt -l "$file" | sed 's/^/gofmt::error:1 /'
+    fi ;;
+  *.h|*.cc|*.c|*.proto|*.js)
+    if command -v clang-format &>/dev/null; then
+      if clang-format --output-replacements-xml "$file" | grep -q '<replacement '; then
+        echo "clang-format::error:1 $file"
+      fi
     fi ;;
 esac
 
