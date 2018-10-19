@@ -292,6 +292,17 @@ def _java_dependencies():
 def _go_dependencies():
     maybe(
         go_repository,
+        name = "com_github_golang_protobuf",
+        commit = "aa810b61a9c79d51363740d207bb46cf8e620ed5",
+        build_file_proto_mode = "disable_global",
+        custom = "protobuf",
+        importpath = "github.com/golang/protobuf",
+        patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
+        patch_args = ["-p1"],
+    )
+
+    maybe(
+        go_repository,
         name = "com_github_pborman_uuid",
         commit = "c65b2f87fee37d1c7854c9164a450713c28d50cd",
         custom = "uuid",
@@ -366,9 +377,11 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_tools",
-        commit = "48418e5732e1b1e2a10207c8007a5f959e422f20",
+        commit = "7b71b077e1f4a3d5f15ca417a16c3b4dbb629b8b",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
+        patches = ["@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch"],
+        patch_args = ["-p1"],
         importpath = "golang.org/x/tools",
     )
 

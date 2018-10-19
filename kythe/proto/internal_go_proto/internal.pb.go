@@ -20,9 +20,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Source struct {
-	Ticket               string                       `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	Facts                map[string][]byte            `protobuf:"bytes,2,rep,name=facts" json:"facts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	EdgeGroups           map[string]*Source_EdgeGroup `protobuf:"bytes,3,rep,name=edge_groups,json=edgeGroups" json:"edge_groups,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Ticket               string                       `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	Facts                map[string][]byte            `protobuf:"bytes,2,rep,name=facts,proto3" json:"facts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	EdgeGroups           map[string]*Source_EdgeGroup `protobuf:"bytes,3,rep,name=edge_groups,json=edgeGroups,proto3" json:"edge_groups,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                     `json:"-"`
 	XXX_unrecognized     []byte                       `json:"-"`
 	XXX_sizecache        int32                        `json:"-"`
@@ -74,8 +74,8 @@ func (m *Source) GetEdgeGroups() map[string]*Source_EdgeGroup {
 }
 
 type Source_Edge struct {
-	Ticket               string   `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	Ordinal              int32    `protobuf:"varint,2,opt,name=ordinal" json:"ordinal,omitempty"`
+	Ticket               string   `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	Ordinal              int32    `protobuf:"varint,2,opt,name=ordinal,proto3" json:"ordinal,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -120,7 +120,7 @@ func (m *Source_Edge) GetOrdinal() int32 {
 }
 
 type Source_EdgeGroup struct {
-	Edges                []*Source_Edge `protobuf:"bytes,1,rep,name=edges" json:"edges,omitempty"`
+	Edges                []*Source_Edge `protobuf:"bytes,1,rep,name=edges,proto3" json:"edges,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -158,10 +158,10 @@ func (m *Source_EdgeGroup) GetEdges() []*Source_Edge {
 }
 
 type PageToken struct {
-	Index                int32             `protobuf:"varint,1,opt,name=index" json:"index,omitempty"`
-	SecondaryToken       []string          `protobuf:"bytes,2,rep,name=secondary_token,json=secondaryToken" json:"secondary_token,omitempty"`
-	SubTokens            map[string]string `protobuf:"bytes,3,rep,name=sub_tokens,json=subTokens" json:"sub_tokens,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Indices              map[string]int32  `protobuf:"bytes,4,rep,name=indices" json:"indices,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	Index                int32             `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	SecondaryToken       []string          `protobuf:"bytes,2,rep,name=secondary_token,json=secondaryToken,proto3" json:"secondary_token,omitempty"`
+	SubTokens            map[string]string `protobuf:"bytes,3,rep,name=sub_tokens,json=subTokens,proto3" json:"sub_tokens,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Indices              map[string]int32  `protobuf:"bytes,4,rep,name=indices,proto3" json:"indices,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -220,11 +220,11 @@ func (m *PageToken) GetIndices() map[string]int32 {
 }
 
 type CrossReference struct {
-	SourceDecoration     *CrossReference_Decoration       `protobuf:"bytes,1,opt,name=source_decoration,json=sourceDecoration" json:"source_decoration,omitempty"`
-	Referent             *serving_go_proto.Node           `protobuf:"bytes,2,opt,name=referent" json:"referent,omitempty"`
-	TargetDecoration     *CrossReference_Decoration       `protobuf:"bytes,3,opt,name=target_decoration,json=targetDecoration" json:"target_decoration,omitempty"`
-	SourceAnchor         *serving_go_proto.ExpandedAnchor `protobuf:"bytes,4,opt,name=source_anchor,json=sourceAnchor" json:"source_anchor,omitempty"`
-	TargetAnchor         *serving_go_proto.ExpandedAnchor `protobuf:"bytes,5,opt,name=target_anchor,json=targetAnchor" json:"target_anchor,omitempty"`
+	SourceDecoration     *CrossReference_Decoration       `protobuf:"bytes,1,opt,name=source_decoration,json=sourceDecoration,proto3" json:"source_decoration,omitempty"`
+	Referent             *serving_go_proto.Node           `protobuf:"bytes,2,opt,name=referent,proto3" json:"referent,omitempty"`
+	TargetDecoration     *CrossReference_Decoration       `protobuf:"bytes,3,opt,name=target_decoration,json=targetDecoration,proto3" json:"target_decoration,omitempty"`
+	SourceAnchor         *serving_go_proto.ExpandedAnchor `protobuf:"bytes,4,opt,name=source_anchor,json=sourceAnchor,proto3" json:"source_anchor,omitempty"`
+	TargetAnchor         *serving_go_proto.ExpandedAnchor `protobuf:"bytes,5,opt,name=target_anchor,json=targetAnchor,proto3" json:"target_anchor,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                         `json:"-"`
 	XXX_unrecognized     []byte                           `json:"-"`
 	XXX_sizecache        int32                            `json:"-"`
@@ -290,9 +290,9 @@ func (m *CrossReference) GetTargetAnchor() *serving_go_proto.ExpandedAnchor {
 }
 
 type CrossReference_Decoration struct {
-	File                 *serving_go_proto.File      `protobuf:"bytes,1,opt,name=file" json:"file,omitempty"`
-	Anchor               *serving_go_proto.RawAnchor `protobuf:"bytes,2,opt,name=anchor" json:"anchor,omitempty"`
-	Kind                 string                      `protobuf:"bytes,3,opt,name=kind" json:"kind,omitempty"`
+	File                 *serving_go_proto.File      `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
+	Anchor               *serving_go_proto.RawAnchor `protobuf:"bytes,2,opt,name=anchor,proto3" json:"anchor,omitempty"`
+	Kind                 string                      `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
 	XXX_unrecognized     []byte                      `json:"-"`
 	XXX_sizecache        int32                       `json:"-"`
@@ -344,8 +344,8 @@ func (m *CrossReference_Decoration) GetKind() string {
 }
 
 type SortedKeyValue struct {
-	Key                  string   `protobuf:"bytes,1,opt,name=key" json:"key,omitempty"`
-	SortKey              string   `protobuf:"bytes,2,opt,name=sort_key,json=sortKey" json:"sort_key,omitempty"`
+	Key                  string   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	SortKey              string   `protobuf:"bytes,2,opt,name=sort_key,json=sortKey,proto3" json:"sort_key,omitempty"`
 	Value                []byte   `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -398,8 +398,8 @@ func (m *SortedKeyValue) GetValue() []byte {
 }
 
 type Path struct {
-	Pivot                *Path_Node   `protobuf:"bytes,1,opt,name=pivot" json:"pivot,omitempty"`
-	Edges                []*Path_Edge `protobuf:"bytes,2,rep,name=edges" json:"edges,omitempty"`
+	Pivot                *Path_Node   `protobuf:"bytes,1,opt,name=pivot,proto3" json:"pivot,omitempty"`
+	Edges                []*Path_Edge `protobuf:"bytes,2,rep,name=edges,proto3" json:"edges,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`
@@ -449,9 +449,9 @@ type Path_Node struct {
 	//	*Path_Node_ExpandedAnchor
 	//	*Path_Node_File
 	Specialization       isPath_Node_Specialization `protobuf_oneof:"specialization"`
-	Ticket               string                     `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	NodeKind             string                     `protobuf:"bytes,2,opt,name=node_kind,json=nodeKind" json:"node_kind,omitempty"`
-	Original             *serving_go_proto.Node     `protobuf:"bytes,3,opt,name=original" json:"original,omitempty"`
+	Ticket               string                     `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	NodeKind             string                     `protobuf:"bytes,2,opt,name=node_kind,json=nodeKind,proto3" json:"node_kind,omitempty"`
+	Original             *serving_go_proto.Node     `protobuf:"bytes,3,opt,name=original,proto3" json:"original,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`
@@ -486,18 +486,22 @@ type isPath_Node_Specialization interface {
 }
 
 type Path_Node_RawAnchor struct {
-	RawAnchor *serving_go_proto.RawAnchor `protobuf:"bytes,10,opt,name=raw_anchor,json=rawAnchor,oneof"`
-}
-type Path_Node_ExpandedAnchor struct {
-	ExpandedAnchor *serving_go_proto.ExpandedAnchor `protobuf:"bytes,11,opt,name=expanded_anchor,json=expandedAnchor,oneof"`
-}
-type Path_Node_File struct {
-	File *serving_go_proto.File `protobuf:"bytes,12,opt,name=file,oneof"`
+	RawAnchor *serving_go_proto.RawAnchor `protobuf:"bytes,10,opt,name=raw_anchor,json=rawAnchor,proto3,oneof"`
 }
 
-func (*Path_Node_RawAnchor) isPath_Node_Specialization()      {}
+type Path_Node_ExpandedAnchor struct {
+	ExpandedAnchor *serving_go_proto.ExpandedAnchor `protobuf:"bytes,11,opt,name=expanded_anchor,json=expandedAnchor,proto3,oneof"`
+}
+
+type Path_Node_File struct {
+	File *serving_go_proto.File `protobuf:"bytes,12,opt,name=file,proto3,oneof"`
+}
+
+func (*Path_Node_RawAnchor) isPath_Node_Specialization() {}
+
 func (*Path_Node_ExpandedAnchor) isPath_Node_Specialization() {}
-func (*Path_Node_File) isPath_Node_Specialization()           {}
+
+func (*Path_Node_File) isPath_Node_Specialization() {}
 
 func (m *Path_Node) GetSpecialization() isPath_Node_Specialization {
 	if m != nil {
@@ -642,9 +646,9 @@ func _Path_Node_OneofSizer(msg proto.Message) (n int) {
 }
 
 type Path_Edge struct {
-	Kind                 string     `protobuf:"bytes,1,opt,name=kind" json:"kind,omitempty"`
-	Ordinal              int32      `protobuf:"varint,2,opt,name=ordinal" json:"ordinal,omitempty"`
-	Target               *Path_Node `protobuf:"bytes,3,opt,name=target" json:"target,omitempty"`
+	Kind                 string     `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
+	Ordinal              int32      `protobuf:"varint,2,opt,name=ordinal,proto3" json:"ordinal,omitempty"`
+	Target               *Path_Node `protobuf:"bytes,3,opt,name=target,proto3" json:"target,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
 	XXX_unrecognized     []byte     `json:"-"`
 	XXX_sizecache        int32      `json:"-"`

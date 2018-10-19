@@ -20,8 +20,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type NodesRequest struct {
-	Ticket               []string `protobuf:"bytes,1,rep,name=ticket" json:"ticket,omitempty"`
-	Filter               []string `protobuf:"bytes,2,rep,name=filter" json:"filter,omitempty"`
+	Ticket               []string `protobuf:"bytes,1,rep,name=ticket,proto3" json:"ticket,omitempty"`
+	Filter               []string `protobuf:"bytes,2,rep,name=filter,proto3" json:"filter,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -66,7 +66,7 @@ func (m *NodesRequest) GetFilter() []string {
 }
 
 type NodesReply struct {
-	Nodes                map[string]*common_go_proto.NodeInfo `protobuf:"bytes,1,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Nodes                map[string]*common_go_proto.NodeInfo `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
 	XXX_unrecognized     []byte                               `json:"-"`
 	XXX_sizecache        int32                                `json:"-"`
@@ -104,11 +104,11 @@ func (m *NodesReply) GetNodes() map[string]*common_go_proto.NodeInfo {
 }
 
 type EdgesRequest struct {
-	Ticket               []string `protobuf:"bytes,1,rep,name=ticket" json:"ticket,omitempty"`
-	Kind                 []string `protobuf:"bytes,2,rep,name=kind" json:"kind,omitempty"`
-	Filter               []string `protobuf:"bytes,3,rep,name=filter" json:"filter,omitempty"`
-	PageSize             int32    `protobuf:"varint,8,opt,name=page_size,json=pageSize" json:"page_size,omitempty"`
-	PageToken            string   `protobuf:"bytes,9,opt,name=page_token,json=pageToken" json:"page_token,omitempty"`
+	Ticket               []string `protobuf:"bytes,1,rep,name=ticket,proto3" json:"ticket,omitempty"`
+	Kind                 []string `protobuf:"bytes,2,rep,name=kind,proto3" json:"kind,omitempty"`
+	Filter               []string `protobuf:"bytes,3,rep,name=filter,proto3" json:"filter,omitempty"`
+	PageSize             int32    `protobuf:"varint,8,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken            string   `protobuf:"bytes,9,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -174,7 +174,7 @@ func (m *EdgesRequest) GetPageToken() string {
 }
 
 type EdgeSet struct {
-	Groups               map[string]*EdgeSet_Group `protobuf:"bytes,2,rep,name=groups" json:"groups,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Groups               map[string]*EdgeSet_Group `protobuf:"bytes,2,rep,name=groups,proto3" json:"groups,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`
@@ -212,7 +212,7 @@ func (m *EdgeSet) GetGroups() map[string]*EdgeSet_Group {
 }
 
 type EdgeSet_Group struct {
-	Edge                 []*EdgeSet_Group_Edge `protobuf:"bytes,2,rep,name=edge" json:"edge,omitempty"`
+	Edge                 []*EdgeSet_Group_Edge `protobuf:"bytes,2,rep,name=edge,proto3" json:"edge,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -250,8 +250,8 @@ func (m *EdgeSet_Group) GetEdge() []*EdgeSet_Group_Edge {
 }
 
 type EdgeSet_Group_Edge struct {
-	TargetTicket         string   `protobuf:"bytes,1,opt,name=target_ticket,json=targetTicket" json:"target_ticket,omitempty"`
-	Ordinal              int32    `protobuf:"varint,2,opt,name=ordinal" json:"ordinal,omitempty"`
+	TargetTicket         string   `protobuf:"bytes,1,opt,name=target_ticket,json=targetTicket,proto3" json:"target_ticket,omitempty"`
+	Ordinal              int32    `protobuf:"varint,2,opt,name=ordinal,proto3" json:"ordinal,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -296,10 +296,10 @@ func (m *EdgeSet_Group_Edge) GetOrdinal() int32 {
 }
 
 type EdgesReply struct {
-	EdgeSets             map[string]*EdgeSet                  `protobuf:"bytes,1,rep,name=edge_sets,json=edgeSets" json:"edge_sets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Nodes                map[string]*common_go_proto.NodeInfo `protobuf:"bytes,2,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	TotalEdgesByKind     map[string]int64                     `protobuf:"bytes,5,rep,name=total_edges_by_kind,json=totalEdgesByKind" json:"total_edges_by_kind,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	NextPageToken        string                               `protobuf:"bytes,9,opt,name=next_page_token,json=nextPageToken" json:"next_page_token,omitempty"`
+	EdgeSets             map[string]*EdgeSet                  `protobuf:"bytes,1,rep,name=edge_sets,json=edgeSets,proto3" json:"edge_sets,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Nodes                map[string]*common_go_proto.NodeInfo `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TotalEdgesByKind     map[string]int64                     `protobuf:"bytes,5,rep,name=total_edges_by_kind,json=totalEdgesByKind,proto3" json:"total_edges_by_kind,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	NextPageToken        string                               `protobuf:"bytes,9,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
 	XXX_unrecognized     []byte                               `json:"-"`
 	XXX_sizecache        int32                                `json:"-"`

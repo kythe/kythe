@@ -19,11 +19,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type VName struct {
-	Signature            string   `protobuf:"bytes,1,opt,name=signature" json:"signature,omitempty"`
-	Corpus               string   `protobuf:"bytes,2,opt,name=corpus" json:"corpus,omitempty"`
-	Root                 string   `protobuf:"bytes,3,opt,name=root" json:"root,omitempty"`
-	Path                 string   `protobuf:"bytes,4,opt,name=path" json:"path,omitempty"`
-	Language             string   `protobuf:"bytes,5,opt,name=language" json:"language,omitempty"`
+	Signature            string   `protobuf:"bytes,1,opt,name=signature,proto3" json:"signature,omitempty"`
+	Corpus               string   `protobuf:"bytes,2,opt,name=corpus,proto3" json:"corpus,omitempty"`
+	Root                 string   `protobuf:"bytes,3,opt,name=root,proto3" json:"root,omitempty"`
+	Path                 string   `protobuf:"bytes,4,opt,name=path,proto3" json:"path,omitempty"`
+	Language             string   `protobuf:"bytes,5,opt,name=language,proto3" json:"language,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -89,11 +89,11 @@ func (m *VName) GetLanguage() string {
 }
 
 type VNameMask struct {
-	Signature            bool     `protobuf:"varint,1,opt,name=signature" json:"signature,omitempty"`
-	Corpus               bool     `protobuf:"varint,2,opt,name=corpus" json:"corpus,omitempty"`
-	Root                 bool     `protobuf:"varint,3,opt,name=root" json:"root,omitempty"`
-	Path                 bool     `protobuf:"varint,4,opt,name=path" json:"path,omitempty"`
-	Language             bool     `protobuf:"varint,5,opt,name=language" json:"language,omitempty"`
+	Signature            bool     `protobuf:"varint,1,opt,name=signature,proto3" json:"signature,omitempty"`
+	Corpus               bool     `protobuf:"varint,2,opt,name=corpus,proto3" json:"corpus,omitempty"`
+	Root                 bool     `protobuf:"varint,3,opt,name=root,proto3" json:"root,omitempty"`
+	Path                 bool     `protobuf:"varint,4,opt,name=path,proto3" json:"path,omitempty"`
+	Language             bool     `protobuf:"varint,5,opt,name=language,proto3" json:"language,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -159,10 +159,10 @@ func (m *VNameMask) GetLanguage() bool {
 }
 
 type Entry struct {
-	Source               *VName   `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
-	EdgeKind             string   `protobuf:"bytes,2,opt,name=edge_kind,json=edgeKind" json:"edge_kind,omitempty"`
-	Target               *VName   `protobuf:"bytes,3,opt,name=target" json:"target,omitempty"`
-	FactName             string   `protobuf:"bytes,4,opt,name=fact_name,json=factName" json:"fact_name,omitempty"`
+	Source               *VName   `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	EdgeKind             string   `protobuf:"bytes,2,opt,name=edge_kind,json=edgeKind,proto3" json:"edge_kind,omitempty"`
+	Target               *VName   `protobuf:"bytes,3,opt,name=target,proto3" json:"target,omitempty"`
+	FactName             string   `protobuf:"bytes,4,opt,name=fact_name,json=factName,proto3" json:"fact_name,omitempty"`
 	FactValue            []byte   `protobuf:"bytes,5,opt,name=fact_value,json=factValue,proto3" json:"fact_value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -229,7 +229,7 @@ func (m *Entry) GetFactValue() []byte {
 }
 
 type Entries struct {
-	Entries              []*Entry `protobuf:"bytes,1,rep,name=entries" json:"entries,omitempty"`
+	Entries              []*Entry `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -267,8 +267,8 @@ func (m *Entries) GetEntries() []*Entry {
 }
 
 type ReadRequest struct {
-	Source               *VName   `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
-	EdgeKind             string   `protobuf:"bytes,2,opt,name=edge_kind,json=edgeKind" json:"edge_kind,omitempty"`
+	Source               *VName   `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	EdgeKind             string   `protobuf:"bytes,2,opt,name=edge_kind,json=edgeKind,proto3" json:"edge_kind,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -313,8 +313,8 @@ func (m *ReadRequest) GetEdgeKind() string {
 }
 
 type WriteRequest struct {
-	Source               *VName                 `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
-	Update               []*WriteRequest_Update `protobuf:"bytes,2,rep,name=update" json:"update,omitempty"`
+	Source               *VName                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	Update               []*WriteRequest_Update `protobuf:"bytes,2,rep,name=update,proto3" json:"update,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`
@@ -359,9 +359,9 @@ func (m *WriteRequest) GetUpdate() []*WriteRequest_Update {
 }
 
 type WriteRequest_Update struct {
-	EdgeKind             string   `protobuf:"bytes,1,opt,name=edge_kind,json=edgeKind" json:"edge_kind,omitempty"`
-	Target               *VName   `protobuf:"bytes,2,opt,name=target" json:"target,omitempty"`
-	FactName             string   `protobuf:"bytes,3,opt,name=fact_name,json=factName" json:"fact_name,omitempty"`
+	EdgeKind             string   `protobuf:"bytes,1,opt,name=edge_kind,json=edgeKind,proto3" json:"edge_kind,omitempty"`
+	Target               *VName   `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
+	FactName             string   `protobuf:"bytes,3,opt,name=fact_name,json=factName,proto3" json:"fact_name,omitempty"`
 	FactValue            []byte   `protobuf:"bytes,4,opt,name=fact_value,json=factValue,proto3" json:"fact_value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -451,9 +451,9 @@ func (m *WriteReply) XXX_DiscardUnknown() {
 var xxx_messageInfo_WriteReply proto.InternalMessageInfo
 
 type ScanRequest struct {
-	Target               *VName   `protobuf:"bytes,1,opt,name=target" json:"target,omitempty"`
-	EdgeKind             string   `protobuf:"bytes,2,opt,name=edge_kind,json=edgeKind" json:"edge_kind,omitempty"`
-	FactPrefix           string   `protobuf:"bytes,3,opt,name=fact_prefix,json=factPrefix" json:"fact_prefix,omitempty"`
+	Target               *VName   `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	EdgeKind             string   `protobuf:"bytes,2,opt,name=edge_kind,json=edgeKind,proto3" json:"edge_kind,omitempty"`
+	FactPrefix           string   `protobuf:"bytes,3,opt,name=fact_prefix,json=factPrefix,proto3" json:"fact_prefix,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -505,8 +505,8 @@ func (m *ScanRequest) GetFactPrefix() string {
 }
 
 type CountRequest struct {
-	Index                int64    `protobuf:"varint,1,opt,name=index" json:"index,omitempty"`
-	Shards               int64    `protobuf:"varint,2,opt,name=shards" json:"shards,omitempty"`
+	Index                int64    `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	Shards               int64    `protobuf:"varint,2,opt,name=shards,proto3" json:"shards,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -551,7 +551,7 @@ func (m *CountRequest) GetShards() int64 {
 }
 
 type CountReply struct {
-	Entries              int64    `protobuf:"varint,1,opt,name=entries" json:"entries,omitempty"`
+	Entries              int64    `protobuf:"varint,1,opt,name=entries,proto3" json:"entries,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -589,8 +589,8 @@ func (m *CountReply) GetEntries() int64 {
 }
 
 type ShardRequest struct {
-	Index                int64    `protobuf:"varint,1,opt,name=index" json:"index,omitempty"`
-	Shards               int64    `protobuf:"varint,2,opt,name=shards" json:"shards,omitempty"`
+	Index                int64    `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	Shards               int64    `protobuf:"varint,2,opt,name=shards,proto3" json:"shards,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

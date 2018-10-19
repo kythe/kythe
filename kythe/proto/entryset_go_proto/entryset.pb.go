@@ -19,10 +19,10 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type EntrySet struct {
-	Nodes                []*EntrySet_Node      `protobuf:"bytes,1,rep,name=nodes" json:"nodes,omitempty"`
-	FactGroups           []*EntrySet_FactGroup `protobuf:"bytes,2,rep,name=fact_groups,json=factGroups" json:"fact_groups,omitempty"`
-	EdgeGroups           []*EntrySet_EdgeGroup `protobuf:"bytes,3,rep,name=edge_groups,json=edgeGroups" json:"edge_groups,omitempty"`
-	Symbols              []*EntrySet_String    `protobuf:"bytes,4,rep,name=symbols" json:"symbols,omitempty"`
+	Nodes                []*EntrySet_Node      `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	FactGroups           []*EntrySet_FactGroup `protobuf:"bytes,2,rep,name=fact_groups,json=factGroups,proto3" json:"fact_groups,omitempty"`
+	EdgeGroups           []*EntrySet_EdgeGroup `protobuf:"bytes,3,rep,name=edge_groups,json=edgeGroups,proto3" json:"edge_groups,omitempty"`
+	Symbols              []*EntrySet_String    `protobuf:"bytes,4,rep,name=symbols,proto3" json:"symbols,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -81,11 +81,11 @@ func (m *EntrySet) GetSymbols() []*EntrySet_String {
 }
 
 type EntrySet_Node struct {
-	Corpus               int32    `protobuf:"varint,1,opt,name=corpus" json:"corpus,omitempty"`
-	Language             int32    `protobuf:"varint,2,opt,name=language" json:"language,omitempty"`
-	Path                 int32    `protobuf:"varint,3,opt,name=path" json:"path,omitempty"`
-	Root                 int32    `protobuf:"varint,4,opt,name=root" json:"root,omitempty"`
-	Signature            int32    `protobuf:"varint,5,opt,name=signature" json:"signature,omitempty"`
+	Corpus               int32    `protobuf:"varint,1,opt,name=corpus,proto3" json:"corpus,omitempty"`
+	Language             int32    `protobuf:"varint,2,opt,name=language,proto3" json:"language,omitempty"`
+	Path                 int32    `protobuf:"varint,3,opt,name=path,proto3" json:"path,omitempty"`
+	Root                 int32    `protobuf:"varint,4,opt,name=root,proto3" json:"root,omitempty"`
+	Signature            int32    `protobuf:"varint,5,opt,name=signature,proto3" json:"signature,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -151,8 +151,8 @@ func (m *EntrySet_Node) GetSignature() int32 {
 }
 
 type EntrySet_Fact struct {
-	Name                 int32    `protobuf:"varint,1,opt,name=name" json:"name,omitempty"`
-	Value                int32    `protobuf:"varint,2,opt,name=value" json:"value,omitempty"`
+	Name                 int32    `protobuf:"varint,1,opt,name=name,proto3" json:"name,omitempty"`
+	Value                int32    `protobuf:"varint,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -197,7 +197,7 @@ func (m *EntrySet_Fact) GetValue() int32 {
 }
 
 type EntrySet_FactGroup struct {
-	Facts                []*EntrySet_Fact `protobuf:"bytes,1,rep,name=facts" json:"facts,omitempty"`
+	Facts                []*EntrySet_Fact `protobuf:"bytes,1,rep,name=facts,proto3" json:"facts,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -235,8 +235,8 @@ func (m *EntrySet_FactGroup) GetFacts() []*EntrySet_Fact {
 }
 
 type EntrySet_Edge struct {
-	Kind                 int32    `protobuf:"varint,1,opt,name=kind" json:"kind,omitempty"`
-	Target               int32    `protobuf:"varint,2,opt,name=target" json:"target,omitempty"`
+	Kind                 int32    `protobuf:"varint,1,opt,name=kind,proto3" json:"kind,omitempty"`
+	Target               int32    `protobuf:"varint,2,opt,name=target,proto3" json:"target,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -281,7 +281,7 @@ func (m *EntrySet_Edge) GetTarget() int32 {
 }
 
 type EntrySet_EdgeGroup struct {
-	Edges                []*EntrySet_Edge `protobuf:"bytes,1,rep,name=edges" json:"edges,omitempty"`
+	Edges                []*EntrySet_Edge `protobuf:"bytes,1,rep,name=edges,proto3" json:"edges,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -319,7 +319,7 @@ func (m *EntrySet_EdgeGroup) GetEdges() []*EntrySet_Edge {
 }
 
 type EntrySet_String struct {
-	Prefix               int32    `protobuf:"varint,1,opt,name=prefix" json:"prefix,omitempty"`
+	Prefix               int32    `protobuf:"varint,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
 	Suffix               []byte   `protobuf:"bytes,2,opt,name=suffix,proto3" json:"suffix,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

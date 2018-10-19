@@ -92,7 +92,7 @@ func (MarkedSource_Kind) EnumDescriptor() ([]byte, []int) {
 }
 
 type Fact struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Value                []byte   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -138,9 +138,9 @@ func (m *Fact) GetValue() []byte {
 }
 
 type Point struct {
-	ByteOffset           int32    `protobuf:"varint,1,opt,name=byte_offset,json=byteOffset" json:"byte_offset,omitempty"`
-	LineNumber           int32    `protobuf:"varint,2,opt,name=line_number,json=lineNumber" json:"line_number,omitempty"`
-	ColumnOffset         int32    `protobuf:"varint,3,opt,name=column_offset,json=columnOffset" json:"column_offset,omitempty"`
+	ByteOffset           int32    `protobuf:"varint,1,opt,name=byte_offset,json=byteOffset,proto3" json:"byte_offset,omitempty"`
+	LineNumber           int32    `protobuf:"varint,2,opt,name=line_number,json=lineNumber,proto3" json:"line_number,omitempty"`
+	ColumnOffset         int32    `protobuf:"varint,3,opt,name=column_offset,json=columnOffset,proto3" json:"column_offset,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -192,8 +192,8 @@ func (m *Point) GetColumnOffset() int32 {
 }
 
 type Span struct {
-	Start                *Point   `protobuf:"bytes,1,opt,name=start" json:"start,omitempty"`
-	End                  *Point   `protobuf:"bytes,2,opt,name=end" json:"end,omitempty"`
+	Start                *Point   `protobuf:"bytes,1,opt,name=start,proto3" json:"start,omitempty"`
+	End                  *Point   `protobuf:"bytes,2,opt,name=end,proto3" json:"end,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -238,8 +238,8 @@ func (m *Span) GetEnd() *Point {
 }
 
 type NodeInfo struct {
-	Facts                map[string][]byte `protobuf:"bytes,2,rep,name=facts" json:"facts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Definition           string            `protobuf:"bytes,5,opt,name=definition" json:"definition,omitempty"`
+	Facts                map[string][]byte `protobuf:"bytes,2,rep,name=facts,proto3" json:"facts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Definition           string            `protobuf:"bytes,5,opt,name=definition,proto3" json:"definition,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -284,10 +284,10 @@ func (m *NodeInfo) GetDefinition() string {
 }
 
 type Diagnostic struct {
-	Span                 *Span    `protobuf:"bytes,1,opt,name=span" json:"span,omitempty"`
-	Message              string   `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
-	Details              string   `protobuf:"bytes,3,opt,name=details" json:"details,omitempty"`
-	ContextUrl           string   `protobuf:"bytes,4,opt,name=context_url,json=contextUrl" json:"context_url,omitempty"`
+	Span                 *Span    `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
+	Message              string   `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Details              string   `protobuf:"bytes,3,opt,name=details,proto3" json:"details,omitempty"`
+	ContextUrl           string   `protobuf:"bytes,4,opt,name=context_url,json=contextUrl,proto3" json:"context_url,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -346,8 +346,8 @@ func (m *Diagnostic) GetContextUrl() string {
 }
 
 type ResolvedDiagnostic struct {
-	CorpusPath           *CorpusPath `protobuf:"bytes,1,opt,name=corpus_path,json=corpusPath" json:"corpus_path,omitempty"`
-	Diagnostic           *Diagnostic `protobuf:"bytes,2,opt,name=diagnostic" json:"diagnostic,omitempty"`
+	CorpusPath           *CorpusPath `protobuf:"bytes,1,opt,name=corpus_path,json=corpusPath,proto3" json:"corpus_path,omitempty"`
+	Diagnostic           *Diagnostic `protobuf:"bytes,2,opt,name=diagnostic,proto3" json:"diagnostic,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -392,9 +392,9 @@ func (m *ResolvedDiagnostic) GetDiagnostic() *Diagnostic {
 }
 
 type CorpusPath struct {
-	Corpus               string   `protobuf:"bytes,1,opt,name=corpus" json:"corpus,omitempty"`
-	Root                 string   `protobuf:"bytes,2,opt,name=root" json:"root,omitempty"`
-	Path                 string   `protobuf:"bytes,3,opt,name=path" json:"path,omitempty"`
+	Corpus               string   `protobuf:"bytes,1,opt,name=corpus,proto3" json:"corpus,omitempty"`
+	Root                 string   `protobuf:"bytes,2,opt,name=root,proto3" json:"root,omitempty"`
+	Path                 string   `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -446,8 +446,8 @@ func (m *CorpusPath) GetPath() string {
 }
 
 type Link struct {
-	Definition           []string  `protobuf:"bytes,3,rep,name=definition" json:"definition,omitempty"`
-	Kind                 Link_Kind `protobuf:"varint,2,opt,name=kind,enum=kythe.proto.common.Link_Kind" json:"kind,omitempty"` // Deprecated: Do not use.
+	Definition           []string  `protobuf:"bytes,3,rep,name=definition,proto3" json:"definition,omitempty"`
+	Kind                 Link_Kind `protobuf:"varint,2,opt,name=kind,proto3,enum=kythe.proto.common.Link_Kind" json:"kind,omitempty"` // Deprecated: Do not use.
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`
@@ -493,15 +493,15 @@ func (m *Link) GetKind() Link_Kind {
 }
 
 type MarkedSource struct {
-	Kind                 MarkedSource_Kind `protobuf:"varint,1,opt,name=kind,enum=kythe.proto.common.MarkedSource_Kind" json:"kind,omitempty"`
-	PreText              string            `protobuf:"bytes,2,opt,name=pre_text,json=preText" json:"pre_text,omitempty"`
-	Child                []*MarkedSource   `protobuf:"bytes,3,rep,name=child" json:"child,omitempty"`
-	PostChildText        string            `protobuf:"bytes,4,opt,name=post_child_text,json=postChildText" json:"post_child_text,omitempty"`
-	PostText             string            `protobuf:"bytes,5,opt,name=post_text,json=postText" json:"post_text,omitempty"`
-	LookupIndex          uint32            `protobuf:"varint,6,opt,name=lookup_index,json=lookupIndex" json:"lookup_index,omitempty"`
-	DefaultChildrenCount uint32            `protobuf:"varint,7,opt,name=default_children_count,json=defaultChildrenCount" json:"default_children_count,omitempty"`
-	AddFinalListToken    bool              `protobuf:"varint,10,opt,name=add_final_list_token,json=addFinalListToken" json:"add_final_list_token,omitempty"`
-	Link                 []*Link           `protobuf:"bytes,11,rep,name=link" json:"link,omitempty"`
+	Kind                 MarkedSource_Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=kythe.proto.common.MarkedSource_Kind" json:"kind,omitempty"`
+	PreText              string            `protobuf:"bytes,2,opt,name=pre_text,json=preText,proto3" json:"pre_text,omitempty"`
+	Child                []*MarkedSource   `protobuf:"bytes,3,rep,name=child,proto3" json:"child,omitempty"`
+	PostChildText        string            `protobuf:"bytes,4,opt,name=post_child_text,json=postChildText,proto3" json:"post_child_text,omitempty"`
+	PostText             string            `protobuf:"bytes,5,opt,name=post_text,json=postText,proto3" json:"post_text,omitempty"`
+	LookupIndex          uint32            `protobuf:"varint,6,opt,name=lookup_index,json=lookupIndex,proto3" json:"lookup_index,omitempty"`
+	DefaultChildrenCount uint32            `protobuf:"varint,7,opt,name=default_children_count,json=defaultChildrenCount,proto3" json:"default_children_count,omitempty"`
+	AddFinalListToken    bool              `protobuf:"varint,10,opt,name=add_final_list_token,json=addFinalListToken,proto3" json:"add_final_list_token,omitempty"`
+	Link                 []*Link           `protobuf:"bytes,11,rep,name=link,proto3" json:"link,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -595,8 +595,8 @@ func (m *MarkedSource) GetLink() []*Link {
 }
 
 type SymbolInfo struct {
-	BaseName             string   `protobuf:"bytes,1,opt,name=base_name,json=baseName" json:"base_name,omitempty"`
-	QualifiedName        string   `protobuf:"bytes,2,opt,name=qualified_name,json=qualifiedName" json:"qualified_name,omitempty"`
+	BaseName             string   `protobuf:"bytes,1,opt,name=base_name,json=baseName,proto3" json:"base_name,omitempty"`
+	QualifiedName        string   `protobuf:"bytes,2,opt,name=qualified_name,json=qualifiedName,proto3" json:"qualified_name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

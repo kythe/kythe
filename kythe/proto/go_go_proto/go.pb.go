@@ -19,13 +19,13 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type GoDetails struct {
-	Goos                 string   `protobuf:"bytes,1,opt,name=goos" json:"goos,omitempty"`
-	Goarch               string   `protobuf:"bytes,2,opt,name=goarch" json:"goarch,omitempty"`
-	Goroot               string   `protobuf:"bytes,3,opt,name=goroot" json:"goroot,omitempty"`
-	Gopath               string   `protobuf:"bytes,4,opt,name=gopath" json:"gopath,omitempty"`
-	Compiler             string   `protobuf:"bytes,5,opt,name=compiler" json:"compiler,omitempty"`
-	BuildTags            []string `protobuf:"bytes,6,rep,name=build_tags,json=buildTags" json:"build_tags,omitempty"`
-	CgoEnabled           bool     `protobuf:"varint,7,opt,name=cgo_enabled,json=cgoEnabled" json:"cgo_enabled,omitempty"`
+	Goos                 string   `protobuf:"bytes,1,opt,name=goos,proto3" json:"goos,omitempty"`
+	Goarch               string   `protobuf:"bytes,2,opt,name=goarch,proto3" json:"goarch,omitempty"`
+	Goroot               string   `protobuf:"bytes,3,opt,name=goroot,proto3" json:"goroot,omitempty"`
+	Gopath               string   `protobuf:"bytes,4,opt,name=gopath,proto3" json:"gopath,omitempty"`
+	Compiler             string   `protobuf:"bytes,5,opt,name=compiler,proto3" json:"compiler,omitempty"`
+	BuildTags            []string `protobuf:"bytes,6,rep,name=build_tags,json=buildTags,proto3" json:"build_tags,omitempty"`
+	CgoEnabled           bool     `protobuf:"varint,7,opt,name=cgo_enabled,json=cgoEnabled,proto3" json:"cgo_enabled,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

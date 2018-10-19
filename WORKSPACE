@@ -55,16 +55,6 @@ bind(
     actual = "@net_zlib//:zlib",
 )
 
-# Kept for third_party license
-# TODO(schroederc): override bazel_rules_go dep once
-#                   https://github.com/bazelbuild/rules_go/issues/1533 is fixed
-new_git_repository(
-    name = "go_protobuf",
-    build_file = "@io_kythe//third_party/go:protobuf.BUILD",
-    commit = "b4deda0973fb4c70b50d226b1af49f3da59f5265",
-    remote = "https://github.com/golang/protobuf.git",
-)
-
 load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
 
 external_tools_configure()

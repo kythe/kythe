@@ -49,7 +49,7 @@ func (m *CorpusRootsRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_CorpusRootsRequest proto.InternalMessageInfo
 
 type CorpusRootsReply struct {
-	Corpus               []*CorpusRootsReply_Corpus `protobuf:"bytes,1,rep,name=corpus" json:"corpus,omitempty"`
+	Corpus               []*CorpusRootsReply_Corpus `protobuf:"bytes,1,rep,name=corpus,proto3" json:"corpus,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`
@@ -87,8 +87,8 @@ func (m *CorpusRootsReply) GetCorpus() []*CorpusRootsReply_Corpus {
 }
 
 type CorpusRootsReply_Corpus struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Root                 []string `protobuf:"bytes,2,rep,name=root" json:"root,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Root                 []string `protobuf:"bytes,2,rep,name=root,proto3" json:"root,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -133,9 +133,9 @@ func (m *CorpusRootsReply_Corpus) GetRoot() []string {
 }
 
 type DirectoryRequest struct {
-	Corpus               string   `protobuf:"bytes,1,opt,name=corpus" json:"corpus,omitempty"`
-	Root                 string   `protobuf:"bytes,2,opt,name=root" json:"root,omitempty"`
-	Path                 string   `protobuf:"bytes,3,opt,name=path" json:"path,omitempty"`
+	Corpus               string   `protobuf:"bytes,1,opt,name=corpus,proto3" json:"corpus,omitempty"`
+	Root                 string   `protobuf:"bytes,2,opt,name=root,proto3" json:"root,omitempty"`
+	Path                 string   `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -187,8 +187,8 @@ func (m *DirectoryRequest) GetPath() string {
 }
 
 type DirectoryReply struct {
-	Subdirectory         []string `protobuf:"bytes,1,rep,name=subdirectory" json:"subdirectory,omitempty"`
-	File                 []string `protobuf:"bytes,2,rep,name=file" json:"file,omitempty"`
+	Subdirectory         []string `protobuf:"bytes,1,rep,name=subdirectory,proto3" json:"subdirectory,omitempty"`
+	File                 []string `protobuf:"bytes,2,rep,name=file,proto3" json:"file,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
