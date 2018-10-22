@@ -97,7 +97,7 @@ public class JvmExtractor {
       if (path.toString().endsWith(JAR_FILE_EXT)) {
         VName jarVName = ExtractorUtils.lookupVName(fileVNames, relativizer, path.toString());
         int jarIndex = jarDetails.getJarCount();
-        JarDetails.Jar.Builder jar = jarDetails.addJarBuilder().setVName(jarVName);
+        jarDetails.addJarBuilder().setVName(jarVName);
         List<FileData> jarContents = new ArrayList<>();
         for (FileData file : extractClassFiles(path)) {
           jarContents.add(file);
