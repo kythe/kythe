@@ -174,13 +174,13 @@ def _java_dependencies():
         # For @com_google_common_flogger
         http_archive,
         name = "google_bazel_common",
-        strip_prefix = "bazel-common-e7580d1db7466e6c8403f7826b7558ea5e99bbfd",
-        urls = ["https://github.com/google/bazel-common/archive/e7580d1db7466e6c8403f7826b7558ea5e99bbfd.zip"],
+        strip_prefix = "bazel-common-b3778739a9c67eaefe0725389f03cf821392ac67",
+        urls = ["https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip"],
     )
     maybe(
         git_repository,
         name = "com_google_common_flogger",
-        commit = "4d3689233be1011fedf7d85ac33d5f61f47f40e3",
+        commit = "ca8ad22bc1479b5675118308f88ef3fff7d26c1f",
         remote = "https://github.com/google/flogger",
     )
 
