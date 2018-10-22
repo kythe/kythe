@@ -15,4 +15,8 @@
 # limitations under the License.
 
 # Check commit message: https://www.conventionalcommits.org/en/v1.0.0-beta.2/
+if ! which commitlint; then
+  echo "FAILURE: commitlint not installed"
+  exit 1
+fi
 command -v commitlint &>/dev/null && commitlint --edit "$1"
