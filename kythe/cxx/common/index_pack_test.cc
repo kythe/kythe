@@ -481,9 +481,8 @@ TEST(IndexPack, PosixAddContent) {
                                       const std::string& content) {
     return posix->AddFileContent(
         kind,
-        [&hash, &content, &error_text](
-            google::protobuf::io::ZeroCopyOutputStream* stream,
-            std::string* file_name, std::string* error_text) {
+        [&hash, &content](google::protobuf::io::ZeroCopyOutputStream* stream,
+                          std::string* file_name, std::string* error_text) {
           *file_name = hash;
           return TemporaryFilesystem::WriteToStream(content, stream);
         },
