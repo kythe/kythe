@@ -77,9 +77,9 @@ typo in the repo name, instead of telling you "repo doesn't exist" or something,
 the failure message is the above error about "could not read Username".
 
 If you have verified that the repo name is spelled correctly, then you may be
-trying to access a private git repo.  This is still possible, but you need to
-follow some extra steps.  This will involve using Cloud KMS, and the steps are
-described in this
+trying to access a private git repo.  It is possible to clone out of a private
+git repo, but you need to follow some extra steps.  This will involve using
+Cloud KMS, and the steps are described in this
 [Cloud Build Help
 Doc](https://cloud.google.com/cloud-build/docs/access-private-github-repos).
 This will involve adding extra steps to your `.yaml` file for decrypting a
