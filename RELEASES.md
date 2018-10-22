@@ -1,7 +1,26 @@
 # Release Notes
 
 ## [Unreleased]
-Nothing to report yet.
+
+### Added
+ - KZip support has been added to all core extractors/indexers
+ - `cxx_indexer`: define a deprecated tag and use it for C++ (#2982)
+ - `java_indexer`: analyze default annotation values (#3004)
+
+### Changed
+ - `java_indexer`: do not include Symbol modifiers in hashes (#3139)
+ - `javac_extractor`: migrate javac_extractor to use ambient langtools (#3093)
+
+### Deprecated
+ - Index packs and `.kindex` files have been deprecated in favor of `.kzip` files
+
+### Fixed
+ - `go_indexer`: mark result parameters as part of the TYPE in MarkedSource (#3021)
+ - `java_indexer`: avoid NPE with erroneous compilations missing identifier Symbols (#3007)
+ - `java_indexer`: guard against null inferred lambda types (#3132)
+ - `java_indexer`: support JDK 11 API change (#3149)
+ - `javac_extractor`: ignore JDK 9 modules as well as JDK 8 jars (#2889)
+ - `javac_extractor`: pass through -processorpath; don't delete gensrcdir early (#3063)
 
 ## [v0.0.28] - 2018-07-18
 
