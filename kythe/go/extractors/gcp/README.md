@@ -22,7 +22,7 @@ To make sure you have done setup correctly, we have an example binary at
 `kythe/go/extractors/gcp/helloworld`, which you can run as follows:
 
 ```
-gcloud builds submit --config cloudbuild.yaml --substitutions=_BUCKET_NAME="$BUCKET_NAME" .
+gcloud builds submit --config examples/helloworld.yaml --substitutions=_BUCKET_NAME="$BUCKET_NAME" examples/
 ```
 
 If that fails, you have to go back up to the [Cloud Build](#cloud-build) section
@@ -38,10 +38,11 @@ now it is a hard-coded location, but in the future it will be configurable).
 This also assumes you specify `_BUCKET_NAME` as per the Hello World Test above.
 
 ```
-gcloud builds submit --config cloudbuild.yaml \
+gcloud builds submit --config examples/mvn.yaml \
 --substitutions=\
 _BUCKET_NAME="$BUCKET_NAME",\
-_REPO_NAME=https://github.com/project-name/repo-name
+_REPO_NAME=https://github.com/project-name/repo-name\
+--no-source
 ```
 
 This Cloud Build uses two artifacts in gcr.io/kythe-public:
@@ -60,3 +61,28 @@ gcr.io/kythe-public/build-preprocessor is just
 [kythe/go/extractors/config/preprocessor](https://github.com/google/kythe/blob/master/kythe/go/extractors/config/preprocessor/preprocessor.go),
 which we use to preprocess the `pom.xml` build configuration to be able to
 specify all of the above custom javac extraction logic.
+
+## Troubleshooting
+
+### Generic failure to use gcloud
+
+Make sure you've followed the setup setps above in [Cloud Build](#cloud-build),
+especially `gcloud auth login`.
+
+### Step #N: fatal: could not read Username for 'https://github.com': No such device or address
+
+This, confusingly, could be two completely separate errors.  First, and simpler
+to check, you could have just spelled the repo incorrectly.  If you have a
+typo in the repo name, instead of telling you "repo doesn't exist" or something,
+the failure message is the above error about "could not read Username".
+
+If you have verified that the repo name is spelled correctly, then you may be
+trying to access a private git repo.  It is possible to clone out of a private
+git repo, but you need to follow some extra steps.  This will involve using
+Cloud KMS, and the steps are described in this
+[Cloud Build Help
+Doc](https://cloud.google.com/cloud-build/docs/access-private-github-repos).
+This will involve adding extra steps to your `.yaml` file for decrypting a
+provided key and using it to authenticate with git.  Finally, your existing git
+clone step will need to be modified to use the same root volume as your two new
+steps.
