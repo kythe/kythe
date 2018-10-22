@@ -7,6 +7,7 @@ exports_files(
 
 jvm_verifier_test(
     name = "jvm_nodes_tests",
+    size = "large",
     srcs = [
         "jvm_edges.kythe_verifier.txt",
         "jvm_nodes.kythe_verifier.txt",
