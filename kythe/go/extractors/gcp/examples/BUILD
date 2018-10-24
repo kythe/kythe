@@ -8,8 +8,8 @@ go_binary(
 )
 
 go_binary(
-    name = "rest_test",
-    srcs = ["rest_test.go"],
+    name = "rest_auth_check",
+    srcs = ["rest_auth_check.go"],
     deps = [
         "@org_golang_google_api//cloudbuild/v1:go_default_library",
         "@org_golang_x_oauth2//google:go_default_library",

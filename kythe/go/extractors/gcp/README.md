@@ -103,8 +103,8 @@ If not, you can use these steps to create new credentials:
 To test, run
 
 ```
-bazel build kythe/go/extractors/gcp/examples:rest_test
-./bazel-bin/kythe/go/extractors/gcp/examples/rest_test -project_id=some-project
+bazel build kythe/go/extractors/gcp/examples:rest_auth_check
+./bazel-bin/kythe/go/extractors/gcp/examples/rest_auth_check -project_id=some-project
 ```
 
 If that returns with a 403 error, you likely did the authentication steps above
