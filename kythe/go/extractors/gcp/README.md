@@ -40,7 +40,7 @@ This also assumes you specify `_BUCKET_NAME` as per the Hello World Test above.
 ```
 gcloud builds submit --config examples/mvn.yaml \
 --substitutions=\
-_BUCKET_NAME="$BUCKET_NAME",\
+_BUCKET_NAME=$BUCKET_NAME,\
 _REPO_NAME=https://github.com/project-name/repo-name\
 --no-source
 ```
@@ -61,6 +61,18 @@ gcr.io/kythe-public/build-preprocessor is just
 [kythe/go/extractors/config/preprocessor](https://github.com/google/kythe/blob/master/kythe/go/extractors/config/preprocessor/preprocessor.go),
 which we use to preprocess the `pom.xml` build configuration to be able to
 specify all of the above custom javac extraction logic.
+
+## Gradle Proof of Concept
+
+Gradle is extracted similarly:
+
+```
+gcloud builds submit --config examples/gradle.yaml \
+--substitutions=\
+_BUCKET_NAME=$BUCKET_NAME,\
+_REPO_NAME=https://github.com/project-name/repo-name\
+--no-source
+```
 
 ## Troubleshooting
 
