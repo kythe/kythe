@@ -40,12 +40,14 @@ const (
 
 // Node subkinds
 const (
-	Class     = "class"
-	Struct    = "struct"
-	Union     = "union"
-	Enum      = "enum"
-	EnumClass = "enumClass"
-	Implicit  = "implicit"
-	Field     = "field"
-	Type      = "type"
+	Class          = "class"
+	Enum           = "enum"
+	EnumClass      = "enumClass"
+	Field          = "field"
+	Implicit       = "implicit"
+	Local          = "local"
+	LocalParameter = "local/parameter"
+	Struct         = "struct"
+	Type           = "type"
+	Union          = "union"
 )
