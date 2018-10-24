@@ -269,7 +269,10 @@ func (n *CoGBK) FinishBundle(ctx context.Context) error {
 			if err := iter.Close(); err != nil {
 				return fmt.Errorf("error closing disksort.Iterator: %v", err)
 			}
-			return nil
+			if *verbose {
+				log.Printf("CoGBK = %d", totalKeys)
+			}
+			return n.Out.FinishBundle(ctx)
 		} else if iterErr != nil {
 			return fmt.Errorf("error reading disksort.Iterator: %v", iterErr)
 		}
@@ -322,11 +325,6 @@ func (n *CoGBK) FinishBundle(ctx context.Context) error {
 			}
 		}
 	}
-
-	if *verbose {
-		log.Printf("CoGBK = %d", totalKeys)
-	}
-	return n.Out.FinishBundle(ctx)
 }
 
 func (n *CoGBK) Down(ctx context.Context) error {
