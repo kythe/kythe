@@ -1,21 +1,26 @@
 steps:
 - name: 'gcr.io/cloud-builders/git'
   args: ['clone', '${_REPO_NAME}', '/workspace/code']
+  id: 'CLONE'
 - name: 'ubuntu'
   args: ['mkdir', '/workspace/out']
+  waitFor: ['-']
 - name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts'
   volumes:
     - name: 'kythe_extractors'
       path: '/opt/kythe/extractors/'
+  waitFor: ['-']
 - name: 'gcr.io/kythe-public/build-preprocessor'
   args: ['/workspace/code/build.gradle']
+  waitFor:
+    - 'CLONE'
 - name: 'gcr.io/cloud-builders/gradle'
   args:
     - 'clean'
     - 'build'
-      - '-s'
-      - '-S'
-      - '-d'
+    - '-s'
+    - '-S'
+    - '-d'
     - '-b'
     - '/workspace/code/build.gradle'
   env:
