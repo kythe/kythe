@@ -69,7 +69,7 @@ func javacWrapper() string {
 	if *javac != "" {
 		return *javac
 	}
-	return constants.DefaultJavacLocation
+	return constants.DefaultJavacWrapperLocation
 }
 
 func main() {
