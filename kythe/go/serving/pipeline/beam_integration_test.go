@@ -348,10 +348,17 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 			Name:  &scpb.Fact_KytheName{scpb.FactName_CODE},
 			Value: encodeMarkedSource(ms),
 		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_EXTENDS},
+			Target: &spb.VName{Signature: "interface"},
+		}},
+	}, {
+		Source: &spb.VName{Signature: "interface"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_INTERFACE},
 	}}
 
-	p, s, nodes := ptest.CreateList(testNodes)
-	xrefs := FromNodes(s, nodes).SplitCrossReferences()
+	p, s, rawNodes := ptest.CreateList(testNodes)
+	xrefs := FromNodes(s, rawNodes).SplitCrossReferences()
 
 	db := inmemory.NewKeyValueDB()
 	w, err := db.Writer(ctx)
@@ -434,6 +441,35 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 						},
 					},
 				}},
+			},
+		},
+	}))
+
+	t.Run("related_nodes", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket: []string{ticket},
+		Filter: []string{"**"},
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				RelatedNode: []*xpb.CrossReferencesReply_RelatedNode{{
+					Ticket:       "kythe:#interface",
+					RelationKind: edges.Extends,
+				}},
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: {
+				Facts: map[string][]byte{
+					facts.NodeKind: []byte(nodes.Record),
+					facts.Code:     encodeMarkedSource(ms),
+				},
+			},
+			"kythe:#interface": {
+				Facts: map[string][]byte{
+					facts.NodeKind: []byte(nodes.Interface),
+				},
 			},
 		},
 	}))
