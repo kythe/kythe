@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-// Binary rest_test checks whether or not you can access a project via cloud
-// build rest api:
+// Binary rest_auth_check checks whether or not you can access a project via
+// cloud build REST API:
 // https://cloud.google.com/cloud-build/docs/api/reference/rest/
 //
 // Usage:
-// go build rest_test
-// ./rest_test -project_id=some-project-id
+// go build rest_auth_check
+// ./rest_auth_check -project_id=some-project-id
 //
 // For authentication steps, see kythe/go/extractors/gcp/README.md
 package main
