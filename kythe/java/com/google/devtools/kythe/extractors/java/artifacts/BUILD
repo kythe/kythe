@@ -9,7 +9,6 @@ docker_build(
     name = "artifacts",
     src = "Dockerfile",
     data = [
-        "//kythe/go/extractors/config/runextractor",
         "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac-wrapper.sh",
         "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar",
         "//third_party/javac:javac_jar",
