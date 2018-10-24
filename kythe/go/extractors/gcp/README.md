@@ -22,7 +22,7 @@ To make sure you have done setup correctly, we have an example binary at
 `kythe/go/extractors/gcp/helloworld`, which you can run as follows:
 
 ```
-gcloud builds submit --config examples/helloworld.yaml --substitutions=_BUCKET_NAME="$BUCKET_NAME" examples/
+gcloud builds submit --config examples/helloworld/helloworld.yaml --substitutions=_BUCKET_NAME="$BUCKET_NAME" examples/helloworld
 ```
 
 If that fails, you have to go back up to the [Cloud Build](#cloud-build) section
@@ -103,8 +103,8 @@ If not, you can use these steps to create new credentials:
 To test, run
 
 ```
-bazel build kythe/go/extractors/gcp/examples:rest_auth_check
-./bazel-bin/kythe/go/extractors/gcp/examples/rest_auth_check -project_id=some-project
+bazel build kythe/go/extractors/gcp/examples/restcheck:rest_auth_check
+./bazel-bin/kythe/go/extractors/gcp/examples/restcheck/rest_auth_check -project_id=some-project
 ```
 
 If that returns with a 403 error, you likely did the authentication steps above
