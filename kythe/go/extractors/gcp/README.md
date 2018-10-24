@@ -85,20 +85,20 @@ You will need access to your project's service credentials:
 
 https://cloud.google.com/docs/authentication/production#obtaining_and_providing_service_account_credentials_manually
 
-That link has some info, though it doesn't explain where exactly to go, so
-follow these:
+If your team already has credentials made for this purpose, see if you can
+re-use them.
+
+If not, you can use these steps to create new credentials:
 
 1. In your GCP console, click on the top left hamburger icon
 2. Click on APIs & Services
 3. In the dropdown, click on Credentials
-4. Now you can mostly follow the instructions from the above link, however note:
+4. Now you can mostly follow the instructions from the [above link](https://cloud.google.com/docs/authentication/production#obtaining_and_providing_service_account_credentials_manually),
+   however note:
 5. When making a service account key, you can select the Cloud Build roles,
    instead of "project owner", to have better limiting of resources.
 6. You will still download the json file and set environment variable
    `GOOGLE_APPLICATION_CREDENTIALS` as described in the above link.
-
-Or, if your team already has credentials made for this purpose, see if you can
-re-use them.
 
 To test, run
 
