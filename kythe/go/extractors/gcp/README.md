@@ -22,7 +22,7 @@ To make sure you have done setup correctly, we have an example binary at
 `kythe/go/extractors/gcp/helloworld`, which you can run as follows:
 
 ```
-gcloud builds submit --config examples/helloworld.yaml --substitutions=_BUCKET_NAME="$BUCKET_NAME" examples/
+gcloud builds submit --config examples/helloworld/helloworld.yaml --substitutions=_BUCKET_NAME="$BUCKET_NAME" examples/helloworld
 ```
 
 If that fails, you have to go back up to the [Cloud Build](#cloud-build) section
@@ -73,6 +73,42 @@ _BUCKET_NAME=$BUCKET_NAME,\
 _REPO_NAME=https://github.com/project-name/repo-name\
 --no-source
 ```
+
+## Cloud Build REST API
+
+Cloud Build has a REST API described at
+https://cloud.google.com/cloud-build/docs/api/reference/rest/.  For Kythe
+extraction, we have a test binary that lets you isolate authentication problems
+before dealing with real builds.
+
+You will need access to your project's service credentials:
+
+https://cloud.google.com/docs/authentication/production#obtaining_and_providing_service_account_credentials_manually
+
+If your team already has credentials made for this purpose, see if you can
+re-use them.
+
+If not, you can use these steps to create new credentials:
+
+1. In your GCP console, click on the top left hamburger icon
+2. Click on APIs & Services
+3. In the dropdown, click on Credentials
+4. Now you can mostly follow the instructions from the [above link](https://cloud.google.com/docs/authentication/production#obtaining_and_providing_service_account_credentials_manually),
+   however note:
+5. When making a service account key, you can select the Cloud Build roles,
+   instead of "project owner", to have better limiting of resources.
+6. You will still download the json file and set environment variable
+   `GOOGLE_APPLICATION_CREDENTIALS` as described in the above link.
+
+To test, run
+
+```
+bazel build kythe/go/extractors/gcp/examples/restcheck:rest_auth_check
+./bazel-bin/kythe/go/extractors/gcp/examples/restcheck/rest_auth_check -project_id=some-project
+```
+
+If that returns with a 403 error, you likely did the authentication steps above
+incorrectly.
 
 ## Troubleshooting
 
