@@ -42,6 +42,7 @@ import (
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
+	xspb "kythe.io/kythe/proto/xref_serving_go_proto"
 )
 
 func init() {
@@ -49,6 +50,7 @@ func init() {
 	beam.RegisterFunction(completeDocument)
 	beam.RegisterFunction(defToDecorPiece)
 	beam.RegisterFunction(edgeTargets)
+	beam.RegisterFunction(edgeToCrossRefRelation)
 	beam.RegisterFunction(fileToDecorPiece)
 	beam.RegisterFunction(groupCrossRefs)
 	beam.RegisterFunction(groupEdges)
@@ -101,6 +103,7 @@ type KytheBeam struct {
 	nodes      beam.PCollection // *scpb.Node
 	files      beam.PCollection // *srvpb.File
 	refs       beam.PCollection // *ppb.Reference
+	edges      beam.PCollection // *gspb.Edges
 
 	markedSources beam.PCollection // KV<*spb.VName, *cpb.MarkedSource>
 }
@@ -130,12 +133,49 @@ func (k *KytheBeam) SplitCrossReferences() beam.PCollection {
 		// TODO(schroederc): merge_with
 	))
 
+	// TODO(schroederc): need to add definitions to related nodes
+	// TODO(schroederc): remove "anchor" edges
+	relations := beam.ParDo(s, edgeToCrossRefRelation, k.edgeRelations())
+
 	return beam.ParDo(s, encodeCrossRef, beam.Flatten(s,
 		idx,
 		refs,
-		// TODO(schroederc): related nodes
+		relations,
 		// TODO(schroederc): callers
 	))
+}
+
+func edgeToCrossRefRelation(eg *gspb.Edges, emit func(*xspb.CrossReferences)) error {
+	switch e := eg.Entry.(type) {
+	case *gspb.Edges_Edge_:
+		edge := e.Edge
+		r := &xspb.CrossReferences_Relation{
+			Ordinal: edge.Ordinal,
+			Reverse: edge.Reverse,
+			Node:    edge.Target,
+		}
+		if k := edge.GetGenericKind(); k != "" {
+			r.Kind = &xspb.CrossReferences_Relation_GenericKind{k}
+		} else {
+			r.Kind = &xspb.CrossReferences_Relation_KytheKind{edge.GetKytheKind()}
+		}
+		emit(&xspb.CrossReferences{
+			Source: eg.Source,
+			Entry:  &xspb.CrossReferences_Relation_{r},
+		})
+		return nil
+	case *gspb.Edges_Target_:
+		target := e.Target
+		emit(&xspb.CrossReferences{
+			Source: eg.Source,
+			Entry: &xspb.CrossReferences_RelatedNode_{&xspb.CrossReferences_RelatedNode{
+				Node: target.Node,
+			}},
+		})
+		return nil
+	default:
+		return fmt.Errorf("unexpected Edges entry: %T", e)
+	}
 }
 
 // CrossReferences returns a Kythe file decorations table derived from the Kythe
@@ -575,26 +615,35 @@ func (k *KytheBeam) Edges() (beam.PCollection, beam.PCollection) {
 	return beam.ParDo2(s, groupEdges, beam.CoGroupByKey(s, nodes, edges, rev))
 }
 
+// edgeRelations returns a beam.PCollection of gspb.Edges for all Kythe graph
+// relations.
+func (k *KytheBeam) edgeRelations() beam.PCollection {
+	if !k.edges.IsValid() {
+		s := k.s.Scope("Relations")
+
+		nodeEdges := beam.ParDo(s, &nodes.Filter{IncludeFacts: []string{}}, k.nodes)
+		sourceNodes := beam.ParDo(s, moveSourceToKey, k.nodes)
+
+		targetNodes := beam.ParDo(s, encodeEdgeTarget, beam.CoGroupByKey(s,
+			sourceNodes,
+			beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, edgeTargets, nodeEdges)))))
+		edges := beam.ParDo(s, encodeEdges, nodeEdges)
+
+		k.edges = beam.Flatten(s, edges, targetNodes)
+	}
+	return k.edges
+}
+
 // SplitEdges returns a columnar Kythe edges table derived from the Kythe input
 // graph.  The beam.PCollection have elements of type KV<[]byte, []byte>.
 func (k *KytheBeam) SplitEdges() beam.PCollection {
 	s := k.s.Scope("SplitEdges")
 
-	nodeEdges := beam.ParDo(s, &nodes.Filter{IncludeFacts: []string{}}, k.nodes)
-
-	sourceNodes := beam.ParDo(s, moveSourceToKey, k.nodes)
-	targetNodes := beam.ParDo(s, encodeEdgeTarget, beam.CoGroupByKey(s,
-		sourceNodes,
-		beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, edgeTargets, nodeEdges)))))
-
 	idx := beam.ParDo(s, combineEdgesIndex,
 		// TODO(schroederc): counts; also needed for presence with only rev edges
 		beam.ParDo(s, keyNode, beam.ParDo(s, &nodes.Filter{IncludeEdges: []string{}}, k.Nodes())))
 
-	edges := beam.ParDo(s, encodeEdges, nodeEdges)
-
-	return beam.ParDo(s, encodeEdgesEntry, beam.Flatten(s,
-		idx, edges, targetNodes))
+	return beam.ParDo(s, encodeEdgesEntry, beam.Flatten(s, idx, k.edgeRelations()))
 }
 
 func edgeTargets(n *scpb.Node, emit func(*scpb.Edge)) {
