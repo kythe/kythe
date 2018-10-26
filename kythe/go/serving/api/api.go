@@ -89,9 +89,10 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		}
 		api.closer = func(ctx context.Context) error { return db.Close(ctx) }
 
-		api.xs = xsrv.NewService(context.Background(), db)
+		ctx := context.Background()
+		api.xs = xsrv.NewService(ctx, db)
+		api.gs = gsrv.NewService(ctx, db)
 		tbl := &table.KVProto{db}
-		api.gs = gsrv.NewCombinedTable(tbl)
 		api.ft = &ftsrv.Table{tbl, true}
 		api.id = &identifiers.Table{tbl}
 	} else {

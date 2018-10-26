@@ -21,11 +21,16 @@ import (
 	"strings"
 	"testing"
 
+	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/services/xrefs"
+	gsrv "kythe.io/kythe/go/serving/graph"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/inmemory"
 	"kythe.io/kythe/go/storage/keyvalue"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
@@ -33,6 +38,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 	xpb "kythe.io/kythe/proto/xref_go_proto"
@@ -433,6 +439,159 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 	}))
 }
 
+func TestServingSimpleEdges(t *testing.T) {
+	src := &spb.VName{Path: "path", Signature: "signature"}
+	testNodes := []*scpb.Node{{
+		Source: &spb.VName{Path: "path"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("blah blah\n"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT_ENCODING},
+			Value: []byte("ascii"),
+		}},
+	}, {
+		Source: &spb.VName{Path: "path", Signature: "anchor1"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("5"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("9"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
+			Target: src,
+		}},
+	}, {
+		Source:  src,
+		Kind:    &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Subkind: &scpb.Node_KytheSubkind{scpb.Subkind_CLASS},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_EXTENDS},
+			Target: &spb.VName{Signature: "interface1"},
+		}, {
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_EXTENDS},
+			Target: &spb.VName{Signature: "interface2"},
+		}},
+	}, {
+		Source:  &spb.VName{Signature: "child"},
+		Kind:    &scpb.Node_KytheKind{scpb.NodeKind_RECORD},
+		Subkind: &scpb.Node_KytheSubkind{scpb.Subkind_CLASS},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
+			Target: src,
+		}},
+	}, {
+		Source: &spb.VName{Signature: "interface"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_INTERFACE},
+	}}
+
+	p, s, rawNodes := ptest.CreateList(testNodes)
+	edgeEntries := FromNodes(s, rawNodes).SplitEdges()
+
+	db := inmemory.NewKeyValueDB()
+	w, err := db.Writer(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Mark table as columnar
+	if err := w.Write([]byte(gsrv.ColumnarTableKeyMarker), []byte{}); err != nil {
+		t.Fatal(err)
+	}
+	// Write columnar data to inmemory.KeyValueDB
+	beam.ParDo(s, &writeTo{w}, edgeEntries)
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	} else if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	gs := gsrv.NewService(ctx, db)
+	ticket := kytheuri.ToString(src)
+
+	t.Run("source_node", makeEdgesTestCase(ctx, gs, &gpb.EdgesRequest{
+		Ticket: []string{ticket},
+		Kind:   []string{"non_existent_kind"},
+		Filter: []string{"**"},
+	}, &gpb.EdgesReply{
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: &cpb.NodeInfo{
+				Facts: map[string][]byte{
+					facts.NodeKind: []byte(nodes.Record),
+					facts.Subkind:  []byte(nodes.Class),
+				},
+			},
+		},
+	}))
+
+	t.Run("edges", makeEdgesTestCase(ctx, gs, &gpb.EdgesRequest{
+		Ticket: []string{ticket},
+	}, &gpb.EdgesReply{
+		EdgeSets: map[string]*gpb.EdgeSet{
+			ticket: {
+				Groups: map[string]*gpb.EdgeSet_Group{
+					edges.Extends: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:#interface1",
+						}, {
+							TargetTicket: "kythe:#interface2",
+						}},
+					},
+					"%" + edges.Ref: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:?path=path#anchor1",
+						}},
+					},
+					"%" + edges.ChildOf: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:#child",
+						}},
+					},
+				},
+			},
+		},
+	}))
+
+	t.Run("edge_targets", makeEdgesTestCase(ctx, gs, &gpb.EdgesRequest{
+		Ticket: []string{ticket},
+		Filter: []string{facts.NodeKind},
+	}, &gpb.EdgesReply{
+		EdgeSets: map[string]*gpb.EdgeSet{
+			ticket: {
+				Groups: map[string]*gpb.EdgeSet_Group{
+					edges.Extends: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:#interface1",
+						}, {
+							TargetTicket: "kythe:#interface2",
+						}},
+					},
+					"%" + edges.Ref: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:?path=path#anchor1",
+						}},
+					},
+					"%" + edges.ChildOf: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:#child",
+						}},
+					},
+				},
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket:                     &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+			"kythe:?path=path#anchor1": &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Anchor)}},
+			"kythe:#child":             &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+		},
+	}))
+}
+
 type writeTo struct{ w keyvalue.Writer }
 
 func (p *writeTo) ProcessElement(ctx context.Context, k, v []byte, emit func([]byte)) error {
@@ -459,6 +618,18 @@ func makeXRefTestCase(ctx context.Context, xs xrefs.Service, req *xpb.CrossRefer
 		}
 		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
 			t.Fatalf("CrossReferencesReply differences: (- expected; + found)\n%s", diff)
+		}
+	}
+}
+
+func makeEdgesTestCase(ctx context.Context, gs graph.Service, req *gpb.EdgesRequest, expected *gpb.EdgesReply) func(*testing.T) {
+	return func(t *testing.T) {
+		reply, err := gs.Edges(ctx, req)
+		if err != nil {
+			t.Fatalf("Edges error: %v", err)
+		}
+		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+			t.Fatalf("EdgesReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
 }

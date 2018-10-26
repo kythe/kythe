@@ -4,13 +4,25 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "graph",
-    srcs = ["graph.go"],
+    srcs = [
+        "columnar.go",
+        "graph.go",
+    ],
     deps = [
+        "//kythe/go/services/graph",
         "//kythe/go/services/xrefs",
+        "//kythe/go/serving/graph/columnar",
+        "//kythe/go/storage/keyvalue",
         "//kythe/go/storage/table",
+        "//kythe/go/util/keys",
+        "//kythe/go/util/kytheuri",
+        "//kythe/go/util/schema",
+        "//kythe/go/util/schema/facts",
         "//kythe/proto:common_go_proto",
         "//kythe/proto:graph_go_proto",
+        "//kythe/proto:graph_serving_go_proto",
         "//kythe/proto:internal_go_proto",
+        "//kythe/proto:schema_go_proto",
         "//kythe/proto:serving_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
@@ -33,5 +45,20 @@ go_test(
         "@org_golang_x_text//encoding:go_default_library",
         "@org_golang_x_text//encoding/unicode:go_default_library",
         "@org_golang_x_text//transform:go_default_library",
+    ],
+)
+
+go_test(
+    name = "columnar_test",
+    size = "small",
+    srcs = ["columnar_test.go"],
+    library = ":graph",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//kythe/go/storage/inmemory",
+        "//kythe/go/util/schema/edges",
+        "//kythe/go/util/schema/nodes",
+        "//kythe/proto:storage_go_proto",
+        "@com_github_google_go_cmp//cmp:go_default_library",
     ],
 )

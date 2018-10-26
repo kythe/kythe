@@ -74,6 +74,8 @@ func (n *CoGBK) Up(ctx context.Context) error {
 	}
 
 	s, err := disksort.NewMergeSorter(disksort.MergeOptions{
+		// TODO(schroederc): limit memory usage across GBKs
+		MaxInMemory:    2048,
 		CompressShards: true,
 		Marshaler:      iterValueMarshaler{},
 		Lesser:         sortutil.LesserFunc(iterValueLess),

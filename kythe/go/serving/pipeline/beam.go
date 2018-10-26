@@ -33,9 +33,11 @@ import (
 	"kythe.io/kythe/go/util/span"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
+	"github.com/apache/beam/sdks/go/pkg/beam/transforms/filter"
 	"github.com/golang/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
+	gspb "kythe.io/kythe/proto/graph_serving_go_proto"
 	ppb "kythe.io/kythe/proto/pipeline_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -43,8 +45,10 @@ import (
 )
 
 func init() {
+	beam.RegisterFunction(combineEdgesIndex)
 	beam.RegisterFunction(completeDocument)
 	beam.RegisterFunction(defToDecorPiece)
+	beam.RegisterFunction(edgeTargets)
 	beam.RegisterFunction(fileToDecorPiece)
 	beam.RegisterFunction(groupCrossRefs)
 	beam.RegisterFunction(groupEdges)
@@ -60,6 +64,7 @@ func init() {
 	beam.RegisterFunction(parseMarkedSource)
 	beam.RegisterFunction(refToDecorPiece)
 	beam.RegisterFunction(reverseEdge)
+	beam.RegisterFunction(splitEdge)
 	beam.RegisterFunction(toDefinition)
 	beam.RegisterFunction(toEnclosingFile)
 	beam.RegisterFunction(toFiles)
@@ -70,9 +75,9 @@ func init() {
 
 	beam.RegisterType(reflect.TypeOf((*cpb.MarkedSource)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.DecorationPiece)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*ppb.Reference)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*scpb.Edge)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*scpb.Node)(nil)).Elem())
-	beam.RegisterType(reflect.TypeOf((*ppb.Reference)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.Entry)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*spb.VName)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*srvpb.CorpusRoots)(nil)).Elem())
@@ -570,12 +575,53 @@ func (k *KytheBeam) Edges() (beam.PCollection, beam.PCollection) {
 	return beam.ParDo2(s, groupEdges, beam.CoGroupByKey(s, nodes, edges, rev))
 }
 
+// SplitEdges returns a columnar Kythe edges table derived from the Kythe input
+// graph.  The beam.PCollection have elements of type KV<[]byte, []byte>.
+func (k *KytheBeam) SplitEdges() beam.PCollection {
+	s := k.s.Scope("SplitEdges")
+
+	nodeEdges := beam.ParDo(s, &nodes.Filter{IncludeFacts: []string{}}, k.nodes)
+
+	sourceNodes := beam.ParDo(s, moveSourceToKey, k.nodes)
+	targetNodes := beam.ParDo(s, encodeEdgeTarget, beam.CoGroupByKey(s,
+		sourceNodes,
+		beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, edgeTargets, nodeEdges)))))
+
+	idx := beam.ParDo(s, combineEdgesIndex,
+		// TODO(schroederc): counts; also needed for presence with only rev edges
+		beam.ParDo(s, keyNode, beam.ParDo(s, &nodes.Filter{IncludeEdges: []string{}}, k.Nodes())))
+
+	edges := beam.ParDo(s, encodeEdges, nodeEdges)
+
+	return beam.ParDo(s, encodeEdgesEntry, beam.Flatten(s,
+		idx, edges, targetNodes))
+}
+
+func edgeTargets(n *scpb.Node, emit func(*scpb.Edge)) {
+	for _, e := range n.Edge {
+		emit(&scpb.Edge{Source: n.Source, Target: e.Target})
+		emit(&scpb.Edge{Target: n.Source, Source: e.Target})
+	}
+}
+
+func splitEdge(e *scpb.Edge) (*spb.VName, *spb.VName) { return e.Source, e.Target }
+
+func combineEdgesIndex(src *spb.VName, node *scpb.Node) *gspb.Edges {
+	return &gspb.Edges{
+		Source: src,
+		Entry: &gspb.Edges_Index_{&gspb.Edges_Index{
+			Node: node,
+		}},
+	}
+}
+
 // nodeToReverseEdges emits an *scpb.Edge with its SourceNode populated for each of n's edges.  The
 // key for each *scpb.Edge is its Target VName.
 func nodeToReverseEdges(n *scpb.Node, emit func(*spb.VName, *scpb.Edge)) {
+	node := nodeWithoutEdges(n)
 	for _, e := range n.Edge {
 		emit(e.Target, &scpb.Edge{
-			SourceNode: n,
+			SourceNode: node,
 			Target:     e.Target,
 			Kind:       e.Kind,
 			Ordinal:    e.Ordinal,
@@ -596,12 +642,24 @@ func nodeToEdges(n *scpb.Node, emit func(*spb.VName, *scpb.Edge)) {
 	}
 }
 
+func nodeWithoutEdges(n *scpb.Node) *scpb.Node {
+	return &scpb.Node{
+		Source:  n.Source,
+		Kind:    n.Kind,
+		Subkind: n.Subkind,
+		Fact:    n.Fact,
+	}
+}
+
 // reverseEdge emits the reverse of each *scpb.Edge, embedding the associated TargetNode.
 func reverseEdge(src *spb.VName, nodeStream func(**scpb.Node) bool, edgeStream func(**scpb.Edge) bool, emit func(*spb.VName, *scpb.Edge)) {
 	var node *scpb.Node
 	if !nodeStream(&node) {
-		node = &scpb.Node{Source: src}
+		node = &scpb.Node{}
+	} else {
+		node = nodeWithoutEdges(node)
 	}
+	node.Source = src
 
 	var e *scpb.Edge
 	for edgeStream(&e) {

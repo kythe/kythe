@@ -169,7 +169,7 @@ func (p *kvPrefixIterator) Close() error {
 func (k *KeyValueDB) ScanPrefix(ctx context.Context, prefix []byte, opts *keyvalue.Options) (keyvalue.Iterator, error) {
 	k.mu.RLock()
 	p := string(prefix)
-	i := sort.Search(len(k.keys), func(i int) bool { return strings.HasPrefix(k.keys[i], p) })
+	i := sort.Search(len(k.keys), func(i int) bool { return strings.Compare(k.keys[i], p) >= 0 })
 	return &kvPrefixIterator{k, p, i}, nil
 }
 

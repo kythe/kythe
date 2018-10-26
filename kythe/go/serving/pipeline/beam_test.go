@@ -742,7 +742,9 @@ func TestCrossReferences_registrations(t *testing.T) {
 func TestEdges_registrations(t *testing.T) {
 	testNodes := []*scpb.Node{{}}
 	p, s, nodes := ptest.CreateList(testNodes)
-	FromNodes(s, nodes).Edges()
+	k := FromNodes(s, nodes)
+	k.Edges()
+	k.SplitEdges()
 	beamtest.CheckRegistrations(t, p)
 }
 

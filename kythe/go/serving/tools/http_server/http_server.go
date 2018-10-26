@@ -86,8 +86,7 @@ func main() {
 	}
 	defer db.Close(ctx)
 	xs = xsrv.NewService(ctx, db)
-	tbl := &table.KVProto{db}
-	gs = gsrv.NewCombinedTable(tbl)
+	gs = gsrv.NewService(ctx, db)
 	if *maxTicketsPerRequest > 0 {
 		xs = xrefs.BoundedRequests{
 			Service:    xs,
@@ -98,6 +97,7 @@ func main() {
 			MaxTickets: *maxTicketsPerRequest,
 		}
 	}
+	tbl := &table.KVProto{db}
 	ft = &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
 
 	if *httpListeningAddr != "" || *tlsListeningAddr != "" {

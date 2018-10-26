@@ -20,12 +20,14 @@ import (
 	"fmt"
 	"reflect"
 
+	gcolumnar "kythe.io/kythe/go/serving/graph/columnar"
 	"kythe.io/kythe/go/serving/xrefs/columnar"
 	"kythe.io/kythe/go/util/kytheuri"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
+	gspb "kythe.io/kythe/proto/graph_serving_go_proto"
 	ppb "kythe.io/kythe/proto/pipeline_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -36,8 +38,12 @@ import (
 func init() {
 	beam.RegisterFunction(encodeCrossRef)
 	beam.RegisterFunction(encodeDecorPiece)
-	beam.RegisterFunction(refToCrossRef)
+	beam.RegisterFunction(encodeEdgeTarget)
+	beam.RegisterFunction(encodeEdges)
+	beam.RegisterFunction(encodeEdgesEntry)
 	beam.RegisterFunction(nodeToCrossRef)
+	beam.RegisterFunction(refToCrossRef)
+	beam.RegisterType(reflect.TypeOf((*gspb.Edges)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*xspb.CrossReferences)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*xspb.FileDecorations)(nil)).Elem())
 }
@@ -188,5 +194,62 @@ func encodeDecorDef(file *spb.VName, def *ppb.DecorationPiece_Definition, emit f
 		return err
 	}
 	emit(e.Key, e.Value)
+	return nil
+}
+
+func encodeEdgesEntry(e *gspb.Edges, emit func([]byte, []byte)) error {
+	kv, err := gcolumnar.EncodeEdgesEntry(gcolumnar.EdgesKeyPrefix, e)
+	if err != nil {
+		return err
+	}
+	emit(kv.Key, kv.Value)
+	return nil
+}
+
+func encodeEdgeTarget(src *spb.VName, nodeStream func(**scpb.Node) bool, targetStream func(**spb.VName) bool, emit func(*gspb.Edges)) {
+	var node *scpb.Node
+	if !nodeStream(&node) {
+		node = &scpb.Node{}
+	} else {
+		node = nodeWithoutEdges(node)
+	}
+	node.Source = src
+
+	var target *spb.VName
+	for targetStream(&target) {
+		emit(&gspb.Edges{
+			Source: target,
+			Entry: &gspb.Edges_Target_{&gspb.Edges_Target{
+				Node: node,
+			}},
+		})
+	}
+}
+
+func encodeEdges(n *scpb.Node, emit func(*gspb.Edges)) error {
+	for _, e := range n.Edge {
+		edge := &gspb.Edges_Edge{
+			Target:  e.Target,
+			Ordinal: e.Ordinal,
+		}
+		if k := e.GetGenericKind(); k != "" {
+			edge.Kind = &gspb.Edges_Edge_GenericKind{k}
+		} else {
+			edge.Kind = &gspb.Edges_Edge_KytheKind{e.GetKytheKind()}
+		}
+		emit(&gspb.Edges{
+			Source: n.Source,
+			Entry:  &gspb.Edges_Edge_{edge},
+		})
+		emit(&gspb.Edges{
+			Source: e.Target,
+			Entry: &gspb.Edges_Edge_{&gspb.Edges_Edge{
+				Target:  n.Source,
+				Kind:    edge.Kind,
+				Ordinal: e.Ordinal,
+				Reverse: true,
+			}},
+		})
+	}
 	return nil
 }

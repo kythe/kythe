@@ -484,6 +484,24 @@ go_kythe_proto(
 )
 
 proto_library(
+    name = "graph_serving_proto",
+    srcs = ["graph_serving.proto"],
+    visibility = ["//kythe/go/serving:__subpackages__"],
+    deps = [
+        ":schema_proto",
+        ":storage_proto",
+    ],
+)
+
+go_kythe_proto(
+    proto = ":graph_serving_proto",
+    deps = [
+        ":schema_go_proto",
+        ":storage_go_proto",
+    ],
+)
+
+proto_library(
     name = "link_proto",
     srcs = ["link.proto"],
     deps = [":common_proto"],
