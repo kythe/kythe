@@ -211,7 +211,7 @@ func encodeEdgeTarget(src *spb.VName, nodeStream func(**scpb.Node) bool, targetS
 	if !nodeStream(&node) {
 		node = &scpb.Node{}
 	} else {
-		node = &scpb.Node{Fact: node.Fact}
+		node = nodeWithoutEdges(node)
 	}
 	node.Source = src
 

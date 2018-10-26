@@ -556,6 +556,40 @@ func TestServingSimpleEdges(t *testing.T) {
 			},
 		},
 	}))
+
+	t.Run("edge_targets", makeEdgesTestCase(ctx, gs, &gpb.EdgesRequest{
+		Ticket: []string{ticket},
+		Filter: []string{facts.NodeKind},
+	}, &gpb.EdgesReply{
+		EdgeSets: map[string]*gpb.EdgeSet{
+			ticket: {
+				Groups: map[string]*gpb.EdgeSet_Group{
+					edges.Extends: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:#interface1",
+						}, {
+							TargetTicket: "kythe:#interface2",
+						}},
+					},
+					"%" + edges.Ref: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:?path=path#anchor1",
+						}},
+					},
+					"%" + edges.ChildOf: {
+						Edge: []*gpb.EdgeSet_Group_Edge{{
+							TargetTicket: "kythe:#child",
+						}},
+					},
+				},
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket:                     &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+			"kythe:?path=path#anchor1": &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Anchor)}},
+			"kythe:#child":             &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+		},
+	}))
 }
 
 type writeTo struct{ w keyvalue.Writer }
