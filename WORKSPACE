@@ -22,11 +22,11 @@ clang_configure()
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "529f6763716f91e5b62bd14eeb5389b376126ecb276b127a78c95f8721280c11",
-    strip_prefix = "bazel-toolchains-f95842b60173ce5f931ae7341488b6cb2610fd94",
+    sha256 = "4ab012a06e80172b1d2cc68a69f12237ba2c4eb47ba34cb8099830d3b8c43dbc",
+    strip_prefix = "bazel-toolchains-646207624ed58c9dc658a135e40e578f8bbabf64",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/f95842b60173ce5f931ae7341488b6cb2610fd94.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/archive/f95842b60173ce5f931ae7341488b6cb2610fd94.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/646207624ed58c9dc658a135e40e578f8bbabf64.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/646207624ed58c9dc658a135e40e578f8bbabf64.tar.gz",
     ],
 )
 
