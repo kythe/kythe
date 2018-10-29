@@ -5,7 +5,7 @@ require (
 	bitbucket.org/creachadair/stringset v0.0.0-20180426154347-e974a3c1694d
 	cloud.google.com/go v0.0.0-20180405132441-01301d1df806
 	github.com/DataDog/zstd v0.0.0-20180321192404-aebefd9fcb99
-	github.com/apache/beam v0.0.0-20180919184632-09857b18ffd8
+	github.com/apache/beam v0.0.0-20181024230410-cdd3458380a6
 	github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb
 	github.com/golang/protobuf v0.0.0-20180814141427-aa810b61a9c7
 	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
