@@ -74,6 +74,7 @@ func (n *CoGBK) Up(ctx context.Context) error {
 	}
 
 	s, err := disksort.NewMergeSorter(disksort.MergeOptions{
+		Name: fmt.Sprintf("beam.%s.%s", n.Edge.Name(), n.Edge.Scope()),
 		// TODO(schroederc): limit memory usage across GBKs
 		MaxInMemory:    2048,
 		CompressShards: true,

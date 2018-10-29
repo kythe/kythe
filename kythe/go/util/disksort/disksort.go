@@ -29,6 +29,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/util/sortutil"
@@ -96,6 +97,9 @@ const DefaultMaxInMemory = 32000
 
 // MergeOptions specifies how to sort elements.
 type MergeOptions struct {
+	// Name is optionally used as part of the path for temporary file shards.
+	Name string
+
 	// Lesser is the comparison function for sorting the given elements.
 	Lesser sortutil.Lesser
 	// Marshaler is used for encoding/decoding elements in temporary file shards.
@@ -123,7 +127,11 @@ func NewMergeSorter(opts MergeOptions) (Interface, error) {
 		return nil, errors.New("missing Marshaler")
 	}
 
-	dir, err := ioutil.TempDir(opts.WorkDir, "external.merge.sort")
+	name := strings.Replace(opts.Name, string(filepath.Separator), ".", -1)
+	if name == "" {
+		name = "external.merge.sort"
+	}
+	dir, err := ioutil.TempDir(opts.WorkDir, name)
 	if err != nil {
 		return nil, fmt.Errorf("error creating temporary work directory: %v", err)
 	}
