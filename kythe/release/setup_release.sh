@@ -85,7 +85,7 @@ if ! diff -q <(git diff --name-only) <(echo RELEASES.md; echo kythe/release/BUIL
 fi
 
 git checkout -b "release-$version"
-git commit -am "Setup release $version"
+git commit -am "chore: setup release $version"
 
 # Build and test the Kythe release archive.
 bazel --bazelrc=/dev/null test --stamp -c opt \
