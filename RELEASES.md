@@ -1,6 +1,9 @@
 # Release Notes
 
 ## [Unreleased]
+Nothing to report yet.
+
+## [v0.0.29] - 2018-10-29
 
 ### Added
  - KZip support has been added to all core extractors/indexers
@@ -361,7 +364,8 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/google/kythe/compare/v0.0.28...HEAD
+[Unreleased] https://github.com/google/kythe/compare/v0.0.29...HEAD
+[v0.0.29] https://github.com/google/kythe/compare/v0.0.28...v0.0.29
 [v0.0.28]: https://github.com/google/kythe/compare/v0.0.27...v0.0.28
 [v0.0.27]: https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 [v0.0.26]: https://github.com/google/kythe/compare/v0.0.25...v0.0.26
