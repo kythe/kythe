@@ -10,6 +10,7 @@
 ### Changed
  - `java_indexer`: do not include Symbol modifiers in hashes (#3139)
  - `javac_extractor`: migrate javac_extractor to use ambient langtools (#3093)
+ - `verifier`: recover file VNames using file content; reorder singleton checking (#3166)
 
 ### Deprecated
  - Index packs and `.kindex` files have been deprecated in favor of `.kzip` files
