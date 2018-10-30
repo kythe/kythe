@@ -225,7 +225,7 @@ java_extract_kzip = rule(
             allow_files = True,
         ),
         "vnames_config": attr.label(
-            default = Label("//kythe/data:vnames_config"),
+            default = Label("//external:vnames_config"),
             allow_single_file = True,
         ),
         "extractor": attr.label(
@@ -275,7 +275,7 @@ jvm_extract_kzip = rule(
             cfg = "host",
         ),
         "vnames_config": attr.label(
-            default = Label("//kythe/data:vnames_config"),
+            default = Label("//external:vnames_config"),
             allow_single_file = True,
         ),
         "opts": attr.string_list(),
