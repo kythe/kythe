@@ -19,6 +19,7 @@ filegroup(
         "graph.proto",
         "identifier.proto",
         "java.proto",
+        "repo.proto",
         "status_service.proto",
         "storage.proto",
         "storage_service.proto",
@@ -587,6 +588,16 @@ go_proto_library(
     importpath = "kythe.io/kythe/proto/extraction_config_go_proto",
     proto = ":extraction_config_proto",
 )
+
+proto_library(
+    name = "repo_proto",
+    srcs = ["repo.proto"],
+    visibility = [
+        "//kythe:proto_visibility",
+    ],
+)
+
+go_kythe_proto(proto = ":repo_proto")
 
 proto_library(
     name = "pipeline_proto",
