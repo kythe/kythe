@@ -52,6 +52,7 @@ func init() {
 	beam.RegisterFunction(edgeTargets)
 	beam.RegisterFunction(edgeToCrossRefRelation)
 	beam.RegisterFunction(fileToDecorPiece)
+	beam.RegisterFunction(filterAnchorNodes)
 	beam.RegisterFunction(groupCrossRefs)
 	beam.RegisterFunction(groupEdges)
 	beam.RegisterFunction(keyByPath)
@@ -134,7 +135,6 @@ func (k *KytheBeam) SplitCrossReferences() beam.PCollection {
 	))
 
 	// TODO(schroederc): need to add definitions to related nodes
-	// TODO(schroederc): remove "anchor" edges
 	relations := beam.ParDo(s, edgeToCrossRefRelation, k.edgeRelations())
 
 	return beam.ParDo(s, encodeCrossRef, beam.Flatten(s,
@@ -621,7 +621,7 @@ func (k *KytheBeam) edgeRelations() beam.PCollection {
 	if !k.edges.IsValid() {
 		s := k.s.Scope("Relations")
 
-		nodeEdges := beam.ParDo(s, &nodes.Filter{IncludeFacts: []string{}}, k.nodes)
+		nodeEdges := beam.Seq(s, k.nodes, filterAnchorNodes, &nodes.Filter{IncludeFacts: []string{}})
 		sourceNodes := beam.ParDo(s, moveSourceToKey, k.nodes)
 
 		targetNodes := beam.ParDo(s, encodeEdgeTarget, beam.CoGroupByKey(s,
@@ -644,6 +644,13 @@ func (k *KytheBeam) SplitEdges() beam.PCollection {
 		beam.ParDo(s, keyNode, beam.ParDo(s, &nodes.Filter{IncludeEdges: []string{}}, k.Nodes())))
 
 	return beam.ParDo(s, encodeEdgesEntry, beam.Flatten(s, idx, k.edgeRelations()))
+}
+
+func filterAnchorNodes(n *scpb.Node, emit func(*scpb.Node)) {
+	if n.GetKytheKind() == scpb.NodeKind_ANCHOR {
+		return
+	}
+	emit(n)
 }
 
 func edgeTargets(n *scpb.Node, emit func(*scpb.Edge)) {

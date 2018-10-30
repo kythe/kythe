@@ -578,11 +578,6 @@ func TestServingSimpleEdges(t *testing.T) {
 							TargetTicket: "kythe:#interface2",
 						}},
 					},
-					"%" + edges.Ref: {
-						Edge: []*gpb.EdgeSet_Group_Edge{{
-							TargetTicket: "kythe:?path=path#anchor1",
-						}},
-					},
 					"%" + edges.ChildOf: {
 						Edge: []*gpb.EdgeSet_Group_Edge{{
 							TargetTicket: "kythe:#child",
@@ -607,11 +602,6 @@ func TestServingSimpleEdges(t *testing.T) {
 							TargetTicket: "kythe:#interface2",
 						}},
 					},
-					"%" + edges.Ref: {
-						Edge: []*gpb.EdgeSet_Group_Edge{{
-							TargetTicket: "kythe:?path=path#anchor1",
-						}},
-					},
 					"%" + edges.ChildOf: {
 						Edge: []*gpb.EdgeSet_Group_Edge{{
 							TargetTicket: "kythe:#child",
@@ -621,9 +611,8 @@ func TestServingSimpleEdges(t *testing.T) {
 			},
 		},
 		Nodes: map[string]*cpb.NodeInfo{
-			ticket:                     &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
-			"kythe:?path=path#anchor1": &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Anchor)}},
-			"kythe:#child":             &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+			ticket:         &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+			"kythe:#child": &cpb.NodeInfo{Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
 		},
 	}))
 }
