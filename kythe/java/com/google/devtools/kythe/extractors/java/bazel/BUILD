@@ -9,8 +9,8 @@ action_listener(
 
 extra_action(
     name = "extra_action",
-    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kindex) $(location //kythe/data:vnames_config)",
-    data = ["//kythe/data:vnames_config"],
+    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kindex) $(location //external:vnames_config)",
+    data = ["//external:vnames_config"],
     out_templates = ["$(ACTION_ID).java.kindex"],
     tools = [":java_extractor"],
 )
@@ -24,8 +24,8 @@ action_listener(
 
 extra_action(
     name = "extra_action_kzip",
-    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kzip) $(location //kythe/data:vnames_config)",
-    data = ["//kythe/data:vnames_config"],
+    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kzip) $(location //external:vnames_config)",
+    data = ["//external:vnames_config"],
     out_templates = ["$(ACTION_ID).java.kzip"],
     tools = [":java_extractor"],
 )

@@ -554,6 +554,43 @@ def _go_dependencies():
         url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
     )
 
+def _bindings():
+    maybe(
+        native.bind,
+        name = "vnames_config",
+        actual = "@io_kythe//kythe/data:vnames_config",
+    )
+
+    maybe(
+        native.bind,
+        name = "libuuid",
+        actual = "@io_kythe//third_party:libuuid",
+    )
+
+    maybe(
+        native.bind,
+        name = "libmemcached",
+        actual = "@org_libmemcached_libmemcached//:libmemcached",
+    )
+
+    maybe(
+        native.bind,
+        name = "guava",  # required by @com_google_protobuf
+        actual = "@io_kythe//third_party/guava",
+    )
+
+    maybe(
+        native.bind,
+        name = "gson",  # required by @com_google_protobuf
+        actual = "@com_google_code_gson_gson//jar",
+    )
+
+    maybe(
+        native.bind,
+        name = "zlib",  # required by @com_google_protobuf
+        actual = "@net_zlib//:zlib",
+    )
+
 def kythe_dependencies():
     """Defines external repositories for Kythe dependencies.
 
@@ -587,3 +624,4 @@ def kythe_dependencies():
     )
 
     _rule_dependencies()
+    _bindings()

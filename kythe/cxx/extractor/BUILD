@@ -190,8 +190,8 @@ extra_action(
     cmd = "$(location :cxx_extractor_bazel) \
         $(EXTRA_ACTION_FILE) \
         $(output $(ACTION_ID).c++.kindex) \
-        $(location //kythe/data:vnames_config)",
-    data = ["//kythe/data:vnames_config"],
+        $(location //external:vnames_config)",
+    data = ["//external:vnames_config"],
     out_templates = ["$(ACTION_ID).c++.kindex"],
     tools = [":cxx_extractor_bazel"],
 )
@@ -208,11 +208,11 @@ extra_action(
     cmd = "$(location :objc_extractor_bazel) \
         $(EXTRA_ACTION_FILE) \
         $(output $(ACTION_ID).objc.kindex) \
-        $(location //kythe/data:vnames_config) \
+        $(location //external:vnames_config) \
         $(location //third_party/bazel:get_devdir) \
         $(location //third_party/bazel:get_sdkroot)",
     data = [
-        "//kythe/data:vnames_config",
+        "//external:vnames_config",
         "//third_party/bazel:get_devdir",
         "//third_party/bazel:get_sdkroot",
     ],
@@ -232,8 +232,8 @@ extra_action(
     cmd = "$(location :cxx_extractor_bazel) \
         $(EXTRA_ACTION_FILE) \
         $(output $(ACTION_ID).c++.kzip) \
-        $(location //kythe/data:vnames_config)",
-    data = ["//kythe/data:vnames_config"],
+        $(location //external:vnames_config)",
+    data = ["//external:vnames_config"],
     out_templates = ["$(ACTION_ID).c++.kzip"],
     tools = [":cxx_extractor_bazel"],
 )
@@ -250,11 +250,11 @@ extra_action(
     cmd = "$(location :objc_extractor_bazel) \
         $(EXTRA_ACTION_FILE) \
         $(output $(ACTION_ID).objc.kzip) \
-        $(location //kythe/data:vnames_config) \
+        $(location //external:vnames_config) \
         $(location //third_party/bazel:get_devdir) \
         $(location //third_party/bazel:get_sdkroot)",
     data = [
-        "//kythe/data:vnames_config",
+        "//external:vnames_config",
         "//third_party/bazel:get_devdir",
         "//third_party/bazel:get_sdkroot",
     ],

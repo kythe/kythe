@@ -89,7 +89,7 @@ extract_java_aspect = aspect(
     attr_aspects = ["srcs"],
     attrs = {
         "_java_aspect_vnames_config": attr.label(
-            default = Label("@io_kythe//kythe/data:vnames_config"),
+            default = Label("//external:vnames_config"),
             allow_single_file = True,
         ),
         "_java_aspect_extractor": attr.label(
