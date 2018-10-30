@@ -54,6 +54,16 @@ func WriteLevelDB(s beam.Scope, path string, numShards int, tables ...beam.PColl
 	filesystem.ValidateScheme(path)
 	s = s.Scope("WriteLevelDB")
 
+	tableMetadata := writeShards(s, path, numShards, tables...)
+
+	// Write all SSTable metadata to the LevelDB's MANIFEST journal.
+	s = s.Scope("Manifest")
+	beam.ParDo(s, &writeManifest{Path: path}, beam.GroupByKey(s, beam.AddFixedKey(s, tableMetadata)))
+}
+
+func writeShards(s beam.Scope, path string, numShards int, tables ...beam.PCollection) beam.PCollection {
+	s = s.Scope("Shards")
+
 	// Encode each PCollection of KVs into ([]byte, []byte) key-values (*keyValue)
 	// and flatten all entries into a single PCollection.
 	var encodings []beam.PCollection
@@ -68,10 +78,7 @@ func WriteLevelDB(s beam.Scope, path string, numShards int, tables ...beam.PColl
 
 	// Write each shard to a separate SSTable.  The resulting PCollection contains
 	// each SSTable's metadata (*tableMetadata).
-	tableMetadata := beam.ParDo(s, &writeTable{path}, shards)
-
-	// Write all SSTable metadata to the LevelDB's MANIFEST journal.
-	beam.ParDo(s, &writeManifest{Path: path}, beam.GroupByKey(s, beam.AddFixedKey(s, tableMetadata)))
+	return beam.ParDo(s, &writeTable{path}, shards)
 }
 
 type writeManifest struct{ Path string }
