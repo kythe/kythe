@@ -75,11 +75,12 @@ func (n *CoGBK) Up(ctx context.Context) error {
 
 	s, err := disksort.NewMergeSorter(disksort.MergeOptions{
 		Name: fmt.Sprintf("beam.%s.%s", n.Edge.Name(), n.Edge.Scope()),
-		// TODO(schroederc): limit memory usage across GBKs
-		MaxInMemory:    2048,
-		CompressShards: true,
-		Marshaler:      iterValueMarshaler{},
-		Lesser:         sortutil.LesserFunc(iterValueLess),
+
+		MaxInMemory:      1024 * 1024,
+		MaxBytesInMemory: 1024 * 1024 * 256,
+		CompressShards:   true,
+		Marshaler:        iterValueMarshaler{},
+		Lesser:           sortutil.LesserFunc(iterValueLess),
 	})
 	if err != nil {
 		return fmt.Errorf("error creating MergeSorter: %v", err)
@@ -213,6 +214,8 @@ type iterValue struct {
 	Index int
 	Value []byte
 }
+
+func (v *iterValue) Size() int { return len(v.Key) + len(v.Value) + 3*binary.MaxVarintLen64 }
 
 func (v *iterValue) String() string {
 	return fmt.Sprintf("key=%q index=%d len(val)=%d", string(v.Key), v.Index, len(v.Value))

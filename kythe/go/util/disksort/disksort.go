@@ -88,12 +88,18 @@ type mergeSorter struct {
 	workDir string
 	shards  []string
 
+	bufferSize int
+
 	finalized bool
 }
 
 // DefaultMaxInMemory is the default number of elements to keep in-memory during
 // a merge sort.
 const DefaultMaxInMemory = 32000
+
+// DefaultMaxBytesInMemory is the default maximum total size of elements to keep
+// in-memory during a merge sort.
+const DefaultMaxBytesInMemory = 1024 * 1024 * 256
 
 // MergeOptions specifies how to sort elements.
 type MergeOptions struct {
@@ -114,10 +120,18 @@ type MergeOptions struct {
 	// is used.
 	MaxInMemory int
 
+	// MaxBytesInMemory is the maximum total size of elements to keep in-memory
+	// before paging them to a temporary file shard.  An element's size is
+	// determined by its `Size() int` method. If non-positive,
+	// DefaultMaxBytesInMemory is used.
+	MaxBytesInMemory int
+
 	// CompressShards determines whether the temporary file shards should be
 	// compressed.
 	CompressShards bool
 }
+
+type sizer interface{ Size() int }
 
 // NewMergeSorter returns a new disk sorter using a mergesort algorithm.
 func NewMergeSorter(opts MergeOptions) (Interface, error) {
@@ -138,6 +152,9 @@ func NewMergeSorter(opts MergeOptions) (Interface, error) {
 
 	if opts.MaxInMemory <= 0 {
 		opts.MaxInMemory = DefaultMaxInMemory
+	}
+	if opts.MaxBytesInMemory <= 0 {
+		opts.MaxBytesInMemory = DefaultMaxBytesInMemory
 	}
 
 	return &mergeSorter{
@@ -160,7 +177,11 @@ func (m *mergeSorter) Add(i interface{}) error {
 	}
 
 	m.buffer = append(m.buffer, i)
-	if len(m.buffer) >= m.opts.MaxInMemory {
+	if sizer, ok := i.(sizer); ok {
+		m.bufferSize += sizer.Size()
+	}
+
+	if len(m.buffer) >= m.opts.MaxInMemory || m.bufferSize >= m.opts.MaxBytesInMemory {
 		return m.dumpShard()
 	}
 	return nil
@@ -340,6 +361,7 @@ const shardFileMode = 0600 | os.ModeExclusive | os.ModeAppend | os.ModeTemporary
 func (m *mergeSorter) dumpShard() (err error) {
 	defer func() {
 		m.buffer = make([]interface{}, 0, m.opts.MaxInMemory)
+		m.bufferSize = 0
 	}()
 
 	// Create a new shard file
