@@ -18,7 +18,6 @@ package pipeline
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"kythe.io/kythe/go/services/graph"
@@ -27,6 +26,7 @@ import (
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/inmemory"
 	"kythe.io/kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
@@ -35,7 +35,6 @@ import (
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/testing/ptest"
 	"github.com/golang/protobuf/proto"
-	"github.com/google/go-cmp/cmp"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	gpb "kythe.io/kythe/proto/graph_go_proto"
@@ -629,7 +628,7 @@ func makeDecorTestCase(ctx context.Context, xs xrefs.Service, req *xpb.Decoratio
 		if err != nil {
 			t.Fatalf("Decorations error: %v", err)
 		}
-		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
 			t.Fatalf("DecorationsReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
@@ -641,7 +640,7 @@ func makeXRefTestCase(ctx context.Context, xs xrefs.Service, req *xpb.CrossRefer
 		if err != nil {
 			t.Fatalf("CrossReferences error: %v", err)
 		}
-		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
 			t.Fatalf("CrossReferencesReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
@@ -653,17 +652,8 @@ func makeEdgesTestCase(ctx context.Context, gs graph.Service, req *gpb.EdgesRequ
 		if err != nil {
 			t.Fatalf("Edges error: %v", err)
 		}
-		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
 			t.Fatalf("EdgesReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
 }
-
-var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
-		}
-	}
-	return false
-}, cmp.Ignore())

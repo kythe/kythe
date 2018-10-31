@@ -18,16 +18,14 @@ package xrefs
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/xrefs/columnar"
 	"kythe.io/kythe/go/storage/inmemory"
 	"kythe.io/kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
-
-	"github.com/google/go-cmp/cmp"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
@@ -145,7 +143,7 @@ func TestServingDecorations(t *testing.T) {
 		}
 
 		expectedLoc := &xpb.Location{Ticket: fileTicket}
-		if diff := cmp.Diff(expectedLoc, reply.Location, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expectedLoc, reply.Location); diff != "" {
 			t.Fatalf("Location differences: (- expected; + found)\n%s", diff)
 		}
 	})
@@ -300,7 +298,7 @@ func makeDecorTestCase(ctx context.Context, xs xrefs.Service, req *xpb.Decoratio
 		if err != nil {
 			t.Fatalf("Decorations error: %v", err)
 		}
-		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
 			t.Fatalf("DecorationsReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
@@ -562,17 +560,8 @@ func makeXRefTestCase(ctx context.Context, xs xrefs.Service, req *xpb.CrossRefer
 		if err != nil {
 			t.Fatalf("CrossReferences error: %v", err)
 		}
-		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
 			t.Fatalf("CrossReferencesReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
 }
-
-var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
-		}
-	}
-	return false
-}, cmp.Ignore())

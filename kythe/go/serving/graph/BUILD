@@ -56,9 +56,9 @@ go_test(
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/go/storage/inmemory",
+        "//kythe/go/util/compare",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:storage_go_proto",
-        "@com_github_google_go_cmp//cmp:go_default_library",
     ],
 )
