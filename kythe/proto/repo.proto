@@ -20,11 +20,11 @@ package kythe.proto.repo;
 
 // Represents configuration data on how to extract a repo.
 message Config {
-  repeated BuildTarget target = 1;
+  repeated ExtractionHints extraction = 1;
 }
 
-// A single target in this repo to extract.
-message BuildTarget {
+// Settings specific to extracting a single root and build system in this repo.
+message ExtractionHints {
   BuildSystem build_system = 1;
   // The root of this extraction target, relative to the repo's root.
   // The build config (e.g. pom.xml) should live in this directory.
@@ -42,6 +42,11 @@ enum BuildSystem {
 }
 
 message JavaOptions {
-  // The java version supported, such as "1.8".
-  string java_version = 1;
+  enum Version {
+    UNKNOWN = 0;
+
+    JAVA_1_8 = 1;
+  }
+  // The java version supported, such as 1.8.
+  Version version = 1;
 }
