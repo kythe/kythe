@@ -319,12 +319,21 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 			switch e := e.Entry.(type) {
 			case *xspb.CrossReferences_Reference_:
 				ref := e.Reference
-				if xrefs.IsRefKind(req.ReferenceKind, getRefKind(ref)) {
+				kind := getRefKind(ref)
+				var anchors *[]*xpb.CrossReferencesReply_RelatedAnchor
+				switch {
+				case xrefs.IsDefKind(req.DefinitionKind, kind, false):
+					anchors = &set.Definition
+				case xrefs.IsDeclKind(req.DeclarationKind, kind, false):
+					anchors = &set.Declaration
+				case xrefs.IsRefKind(req.ReferenceKind, kind):
+					anchors = &set.Reference
+				}
+				if anchors != nil {
 					a := a2a(ref.Location, emitSnippets).Anchor
 					a.Ticket = ""
-					set.Reference = append(set.Reference, &xpb.CrossReferencesReply_RelatedAnchor{
-						Anchor: a,
-					})
+					ra := &xpb.CrossReferencesReply_RelatedAnchor{Anchor: a}
+					*anchors = append(*anchors, ra)
 				}
 			case *xspb.CrossReferences_Relation_:
 				if len(patterns) == 0 {

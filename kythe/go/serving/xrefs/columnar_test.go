@@ -360,6 +360,42 @@ func TestServingCrossReferences(t *testing.T) {
 		}},
 	}, {
 		Source: src,
+		Entry: &xspb.CrossReferences_Reference_{&xspb.CrossReferences_Reference{
+			Kind: &xspb.CrossReferences_Reference_KytheKind{scpb.EdgeKind_DEFINES},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=path1#def1",
+				Span:   span,
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Reference_{&xspb.CrossReferences_Reference{
+			Kind: &xspb.CrossReferences_Reference_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=path2#def2",
+				Span:   span,
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Reference_{&xspb.CrossReferences_Reference{
+			Kind: &xspb.CrossReferences_Reference_GenericKind{"#internal/ref/declare"},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=path1#decl1",
+				Span:   span,
+			},
+		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_Reference_{&xspb.CrossReferences_Reference{
+			Kind: &xspb.CrossReferences_Reference_GenericKind{"#internal/ref/declare"},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:?path=path2#decl2",
+				Span:   span,
+			},
+		}},
+	}, {
+		Source: src,
 		Entry: &xspb.CrossReferences_Caller_{&xspb.CrossReferences_Caller{
 			Caller: &spb.VName{Signature: "caller"},
 			Location: &srvpb.ExpandedAnchor{
@@ -424,6 +460,30 @@ func TestServingCrossReferences(t *testing.T) {
 		},
 	}}
 
+	defs := []*xpb.CrossReferencesReply_RelatedAnchor{{
+		Anchor: &xpb.Anchor{
+			Parent: "kythe:?path=path1",
+			Span:   span,
+		},
+	}, {
+		Anchor: &xpb.Anchor{
+			Parent: "kythe:?path=path2",
+			Span:   span,
+		},
+	}}
+
+	decls := []*xpb.CrossReferencesReply_RelatedAnchor{{
+		Anchor: &xpb.Anchor{
+			Parent: "kythe:?path=path1",
+			Span:   span,
+		},
+	}, {
+		Anchor: &xpb.Anchor{
+			Parent: "kythe:?path=path2",
+			Span:   span,
+		},
+	}}
+
 	ticket := kytheuri.ToString(src)
 
 	t.Run("requested_node", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
@@ -455,6 +515,58 @@ func TestServingCrossReferences(t *testing.T) {
 				Ticket:       ticket,
 				MarkedSource: ms,
 				Reference:    refs,
+			},
+		},
+	}))
+
+	t.Run("decls", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:          []string{ticket},
+		DeclarationKind: xpb.CrossReferencesRequest_ALL_DECLARATIONS,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Declaration:  decls,
+			},
+		},
+	}))
+
+	t.Run("defs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_ALL_DEFINITIONS,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Definition:   defs,
+			},
+		},
+	}))
+
+	t.Run("full_defs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_FULL_DEFINITIONS,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Definition:   defs[0:1],
+			},
+		},
+	}))
+
+	t.Run("bindings", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Definition:   defs[1:2],
 			},
 		},
 	}))
