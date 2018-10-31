@@ -20,12 +20,12 @@
 # be set to the new (matched) strings.
 
 # llvm
-MIN_LLVM_SHA="765115422bec0e68b94c922f376c08e430b1556f"
-MIN_LLVM_REV="344140"
+MIN_LLVM_SHA="4f27756950035dc48483bc22392180e7f3030f33"
+MIN_LLVM_REV="345691"
 # clang
 # NOTE: when updating Clang, make sure to adjust the path in
 # //third_party/llvm/BUILD:clang_builtin_headers_resources
-MIN_CLANG_SHA="ef858170ac4ee33edebe4afdadaec624325e7aa3"
-MIN_CLANG_REV="344140"
+MIN_CLANG_SHA="3b778bc3cec73f904457d70d6f956e1aafe1b550"
+MIN_CLANG_REV="345691"
 
 FULL_SHA="${MIN_LLVM_SHA}-${MIN_CLANG_SHA}"
