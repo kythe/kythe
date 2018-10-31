@@ -197,7 +197,7 @@ class RunningHash {
     Update(options.Freestanding ? "freestanding" : "not_freestanding");
     Update(options.GNUMode ? "GNUmode" : "not_GNUMode");
     Update(options.MicrosoftExt ? "MSMode" : "not_MSMode");
-    Update(options.ObjC1 ? "ObjC1" : "not_ObjC1");
+    Update(options.ObjC ? "ObjC" : "not_ObjC");
   }
   /// \brief Update the hash with some unsigned integer.
   /// \param u The unsigned integer to include in the hash.
