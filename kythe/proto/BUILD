@@ -19,7 +19,6 @@ filegroup(
         "graph.proto",
         "identifier.proto",
         "java.proto",
-        "repo.proto",
         "status_service.proto",
         "storage.proto",
         "storage_service.proto",
