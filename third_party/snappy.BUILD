@@ -9,9 +9,9 @@ filegroup(
 
 genrule(
     name = "snappy-stubs-public",
-    srcs = ["@//third_party/snappy:snappy-stubs-public.h"],
+    srcs = ["@io_kythe//third_party/snappy:snappy-stubs-public.h"],
     outs = ["snappy-stubs-public.h"],
-    cmd = "cat $(location @//third_party/snappy:snappy-stubs-public.h) > $@",
+    cmd = "cat $(location @io_kythe//third_party/snappy:snappy-stubs-public.h) > $@",
 )
 
 cc_library(
