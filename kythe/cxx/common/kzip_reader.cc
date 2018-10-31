@@ -179,6 +179,9 @@ StatusOr<IndexReader> KzipReader::FromSource(zip_source_t* source) {
       return IndexReader(
           absl::WrapUnique(new KzipReader(std::move(archive), *root)));
     } else {
+      // Ensure source is retained when `archive` is deleted.
+      // It is the callers responsitility to free it on error.
+      zip_source_keep(source);
       return root.status();
     }
   }
