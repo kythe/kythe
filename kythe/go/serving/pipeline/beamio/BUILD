@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "beamio",
     srcs = [
+        "beamio.go",
         "entries.go",
         "leveldb.go",
     ],
