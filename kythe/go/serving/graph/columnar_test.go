@@ -18,19 +18,17 @@ package graph
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/serving/graph/columnar"
 	"kythe.io/kythe/go/storage/inmemory"
 	"kythe.io/kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	kinds "kythe.io/kythe/go/util/schema/nodes"
-
-	"github.com/google/go-cmp/cmp"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	gpb "kythe.io/kythe/proto/graph_go_proto"
@@ -404,7 +402,7 @@ func makeEdgesTestCase(ctx context.Context, gs graph.Service, req *gpb.EdgesRequ
 		if err != nil {
 			t.Fatalf("Edges error: %v", err)
 		}
-		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
 			t.Fatalf("EdgesReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
@@ -416,17 +414,8 @@ func makeNodesTestCase(ctx context.Context, gs graph.Service, req *gpb.NodesRequ
 		if err != nil {
 			t.Fatalf("Nodes error: %v", err)
 		}
-		if diff := cmp.Diff(expected, reply, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expected, reply); diff != "" {
 			t.Fatalf("NodesReply differences: (- expected; + found)\n%s", diff)
 		}
 	}
 }
-
-var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
-		}
-	}
-	return false
-}, cmp.Ignore())

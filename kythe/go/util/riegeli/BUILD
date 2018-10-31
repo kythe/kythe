@@ -30,7 +30,7 @@ go_test(
     library = ":riegeli",
     deps = [
         ":riegeli_test_go_proto",
-        "@com_github_google_go_cmp//cmp:go_default_library",
+        "//kythe/go/util/compare",
     ],
 )
 
@@ -49,9 +49,9 @@ go_test(
     library = ":riegeli",
     deps = [
         "//kythe/go/storage/stream",
+        "//kythe/go/util/compare",
         "//kythe/proto:storage_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_google_go_cmp//cmp:go_default_library",
     ],
 )
 

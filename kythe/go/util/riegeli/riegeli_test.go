@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strings"
 	"testing"
 
+	"kythe.io/kythe/go/util/compare"
+
 	"github.com/golang/protobuf/proto"
-	"github.com/google/go-cmp/cmp"
 
 	rtpb "kythe.io/kythe/go/util/riegeli/riegeli_test_go_proto"
 	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
@@ -202,7 +202,7 @@ func testReadWriteProtos(t *testing.T, opts *WriterOptions) {
 		var found rtpb.Complex
 		if err := rd.NextProto(&found); err != nil {
 			t.Fatalf("Read error: %v", err)
-		} else if diff := cmp.Diff(&found, expected, ignoreProtoXXXFields); diff != "" {
+		} else if diff := compare.ProtoDiff(&found, expected); diff != "" {
 			t.Errorf("Unexpected record:  (-: found; +: expected)\n%s", diff)
 		}
 	}
@@ -359,19 +359,10 @@ func TestRecordsMetadata(t *testing.T) {
 	found, err := rd.RecordsMetadata()
 	if err != nil {
 		log.Fatal(err)
-	} else if diff := cmp.Diff(found, expected, ignoreProtoXXXFields); diff != "" {
+	} else if diff := compare.ProtoDiff(found, expected); diff != "" {
 		t.Errorf("Unexpected RecordsMetadata:  (-: found; +: expected)\n%s", diff)
 	}
 }
 
 // TODO(schroederc): test transposed chunks
 // TODO(schroederc): test padding
-
-var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
-		}
-	}
-	return false
-}, cmp.Ignore())
