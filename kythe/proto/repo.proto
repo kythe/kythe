@@ -20,11 +20,11 @@ package kythe.proto.repo;
 
 // Represents configuration data on how to extract a repo.
 message Config {
-  repeated ExtractionHints extraction = 1;
+  repeated ExtractionHint extractions = 1;
 }
 
 // Settings specific to extracting a single root and build system in this repo.
-message ExtractionHints {
+message ExtractionHint {
   BuildSystem build_system = 1;
   // The root of this extraction target, relative to the repo's root.
   // The build config (e.g. pom.xml) should live in this directory.
