@@ -20,6 +20,7 @@ package inmemory
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -159,6 +160,17 @@ func (p *kvPrefixIterator) Next() (key, val []byte, err error) {
 	return []byte(k), []byte(v), nil
 }
 
+// Seek implements part of the keyvalue.Iterator interface.
+func (p *kvPrefixIterator) Seek(k []byte) error {
+	s := string(k)
+	i := sort.Search(len(p.db.keys), func(i int) bool { return strings.Compare(p.db.keys[i], s) >= 0 })
+	if i < p.idx {
+		return fmt.Errorf("given key before current iterator position: %q", k)
+	}
+	p.idx = i
+	return nil
+}
+
 // Close implements part of the keyvalue.Iterator interface.
 func (p *kvPrefixIterator) Close() error {
 	p.db.mu.RUnlock()
@@ -189,6 +201,17 @@ func (p *kvRangeIterator) Next() (key, val []byte, err error) {
 	v := p.db.db[k]
 	p.idx++
 	return []byte(k), []byte(v), nil
+}
+
+// Seek implements part of the keyvalue.Iterator interface.
+func (p *kvRangeIterator) Seek(k []byte) error {
+	s := string(k)
+	i := sort.Search(len(p.db.keys), func(i int) bool { return strings.Compare(p.db.keys[i], s) >= 0 })
+	if i < p.idx {
+		return fmt.Errorf("given key before current iterator position: %q", k)
+	}
+	p.idx = i
+	return nil
 }
 
 // Close implements part of the keyvalue.Iterator interface.
