@@ -260,3 +260,15 @@ func (i iterator) Next() ([]byte, []byte, error) {
 	i.it.Next()
 	return key, val, nil
 }
+
+// Seek implements part of the keyvalue.Iterator interface.
+func (i *iterator) Seek(k []byte) error {
+	i.it.Seek(k)
+	if !i.it.Valid() {
+		if err := i.it.GetError(); err != nil {
+			return err
+		}
+		return io.EOF
+	}
+	return nil
+}
