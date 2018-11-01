@@ -2510,7 +2510,7 @@ fact_value: ""
   bool path = false;
   bool language = false;
   ASSERT_TRUE(v.VerifyAllGoals(
-      [&signature, &corpus, &root, &path, &language](
+      [&signature, &corpus, &root, &language](
           Verifier* cxt, const AssertionParser::Inspection& inspection) {
         if (AstNode* node = inspection.evar->current()) {
           if (Identifier* ident = node->AsIdentifier()) {
