@@ -550,9 +550,7 @@ class Solver {
         highest_goal_reached_ = 0;
         highest_group_reached_ = cur;
       }
-      ThunkRet result = SolveGoalArray(
-          group, 0, cut,
-          [this, context, group, cur, cut, &f]() { return cut; });
+      ThunkRet result = SolveGoalArray(group, 0, cut, [cut]() { return cut; });
       // Lots of unwinding later...
       if (result == cut) {
         // That last goal group succeeded.
