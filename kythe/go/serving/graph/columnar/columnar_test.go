@@ -18,12 +18,10 @@ package columnar
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/keys"
-
-	"github.com/google/go-cmp/cmp"
 
 	gspb "kythe.io/kythe/proto/graph_serving_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
@@ -71,18 +69,9 @@ func TestEdgesEncodingRoundtrip(t *testing.T) {
 			found, err := DecodeEdgesEntry(&src, string(key), kv.Value)
 			if err != nil {
 				t.Errorf("Error decoding %T: %v", test.Entry, err)
-			} else if diff := cmp.Diff(test, found, ignoreProtoXXXFields); diff != "" {
+			} else if diff := compare.ProtoDiff(test, found); diff != "" {
 				t.Errorf("%T roundtrip differences: (- expected; + found)\n%s", test.Entry, diff)
 			}
 		})
 	}
 }
-
-var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
-		}
-	}
-	return false
-}, cmp.Ignore())

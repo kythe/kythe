@@ -201,7 +201,7 @@ cc_extract_kzip = rule(
         ),
         "vnames_config": attr.label(
             doc = "vnames_config file to be used by the extractor.",
-            default = Label("//kythe/data:vnames_config"),
+            default = Label("//external:vnames_config"),
             allow_single_file = [".json"],
         ),
         "opts": attr.string_list(
@@ -349,7 +349,7 @@ _bazel_extract_kzip = rule(
             allow_files = True,
         ),
         "vnames_config": attr.label(
-            default = Label("//kythe/data:vnames_config"),
+            default = Label("//external:vnames_config"),
             allow_single_file = True,
         ),
         "extractor": attr.label(

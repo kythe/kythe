@@ -37,6 +37,8 @@ class KzipReader : public IndexReaderInterface {
   /// `zip_source_t` is reference counted, see
   /// https://libzip.org/documentation/zip_source.html
   /// for detailed ownership semantics.
+  /// Following from that, a reference will be retained on success,
+  /// but the caller is responsible for `source` on error.
   static StatusOr<IndexReader> FromSource(zip_source_t* source);
 
   Status Scan(const ScanCallback& callback) override;

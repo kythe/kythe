@@ -30,31 +30,6 @@ http_archive(
     ],
 )
 
-bind(
-    name = "libuuid",
-    actual = "//third_party:libuuid",
-)
-
-bind(
-    name = "libmemcached",
-    actual = "@org_libmemcached_libmemcached//:libmemcached",
-)
-
-bind(
-    name = "guava",  # required by @com_google_protobuf
-    actual = "//third_party/guava",
-)
-
-bind(
-    name = "gson",  # required by @com_google_protobuf
-    actual = "@com_google_code_gson_gson//jar",
-)
-
-bind(
-    name = "zlib",  # required by @com_google_protobuf
-    actual = "@net_zlib//:zlib",
-)
-
 load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
 
 external_tools_configure()

@@ -15,5 +15,5 @@ go_test(
     name = "keys_test",
     srcs = ["keys_test.go"],
     library = ":keys",
-    deps = ["@com_github_google_go_cmp//cmp:go_default_library"],
+    deps = ["//kythe/go/util/compare"],
 )

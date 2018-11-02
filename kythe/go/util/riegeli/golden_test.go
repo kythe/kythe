@@ -26,10 +26,10 @@ import (
 	"testing"
 
 	"kythe.io/kythe/go/storage/stream"
+	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/riegeli"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/go-cmp/cmp"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
@@ -128,7 +128,7 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile, expectedOptions string) {
 	md, err := riegeliReader.RecordsMetadata()
 	if err != nil {
 		t.Fatalf("Error reading RecordsMetadata: %v", err)
-	} else if diff := cmp.Diff(md, &expectedMetadata, ignoreProtoXXXFields); diff != "" {
+	} else if diff := compare.ProtoDiff(md, &expectedMetadata); diff != "" {
 		t.Errorf("Bad RecordsMetadata: (-: found; +: expected)\n%s", diff)
 	}
 
@@ -157,7 +157,7 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile, expectedOptions string) {
 			t.Fatalf("Error reading Riegeli golden data: %v", err)
 		}
 
-		if diff := cmp.Diff(expected, found, ignoreProtoXXXFields); diff != "" {
+		if diff := compare.ProtoDiff(expected, found); diff != "" {
 			t.Errorf("Unexpected record:  (-: found; +: expected)\n%s", diff)
 		}
 	}
@@ -181,17 +181,8 @@ func checkGoldenData(t *testing.T, goldenRiegeliFile, expectedOptions string) {
 		var found spb.Entry
 		if err := riegeliReader.NextProto(&found); err != nil {
 			t.Fatalf("Error reading record at %v: %v", pos, err)
-		} else if diff := cmp.Diff(expected, &found, ignoreProtoXXXFields); diff != "" {
+		} else if diff := compare.ProtoDiff(expected, &found); diff != "" {
 			t.Errorf("Unexpected record:  (-: found; +: expected)\n%s", diff)
 		}
 	}
 }
-
-var ignoreProtoXXXFields = cmp.FilterPath(func(p cmp.Path) bool {
-	for _, s := range p {
-		if strings.HasPrefix(s.String(), ".XXX_") {
-			return true
-		}
-	}
-	return false
-}, cmp.Ignore())

@@ -21,20 +21,21 @@ usage() {
   cat <<EOF
 Usage: kythe-index.sh (--all | [--extract] [--analyze] [--postprocess] [--serve])
                       [--graphstore path] [--serving_table path] [--serving_addr host:port]
-                      [--bazel-root path] [--kythe-release path]
+                      [--bazel_root path] [--kythe_repo path] [--webui path]
 
 Utility script to run the Kythe toolset over the Bazel repository.  This script can run each
 component of Kythe separately with the --extract, --analyze, --postprocess, and --serve flags or all
 together with the --all flag.
 
 Paths to output artifacts are controlled with the --graphstore and --serving_table flags.  Their
-defaults are /tmp/gs.bazel and /tmp/serving.bazel, respectively.
+defaults are $TMPDIR/gs.bazel and $TMPDIR/serving.bazel, respectively.
 
-The --serving_addr flag controls the listening address of the Kythe http_server.  It's default is
-localhost:8888.
+The --serving_addr flag controls the listening address of the Kythe http_server.
+It's default is localhost:8888.  Any --webui path provided will be passed to the
+http_server as its --public_resources flag.
 
-The --bazel-root and --kythe-release flags control which Bazel repository to index and at what path
-are the Kythe tools.  They default to $PWD and /opt/kythe, respectively.
+The --bazel_root and --kythe_repo flags control which Bazel repository to index
+(default: $PWD) and an optional override for the Kythe repository.
 EOF
 }
 
@@ -48,12 +49,15 @@ if ! command -v bazel >/dev/null; then
   exit 1
 fi
 
-KYTHE_RELEASE=/opt/kythe
+TMPDIR=${TMPDIR:-"/tmp"}
+
+BAZEL_ARGS=()
 BAZEL_ROOT="$PWD"
 
-GRAPHSTORE=/tmp/gs.bazel
-SERVING_TABLE=/tmp/serving.bazel
+GRAPHSTORE="$TMPDIR"/gs.bazel
+SERVING_TABLE="$TMPDIR"/serving.bazel
 SERVING_ADDR=localhost:8888
+WEBUI=()
 
 EXTRACT=
 ANALYZE=
@@ -70,11 +74,11 @@ while [[ $# -gt 0 ]]; do
       ANALYZE=1
       POSTPROCESS=1
       SERVE=1 ;;
-    --bazel-root)
+    --bazel_root)
       BAZEL_ROOT="$(realpath -s "$2")"
       shift ;;
-    --kythe-release)
-      KYTHE_RELEASE="$(realpath -s "$2")"
+    --kythe_repo)
+      BAZEL_ARGS=("${BAZEL_ARGS[@]}" --override_repository "io_kythe=$(realpath -s "$2")")
       shift ;;
     --graphstore|-g)
       GRAPHSTORE="$2"
@@ -84,6 +88,9 @@ while [[ $# -gt 0 ]]; do
       shift ;;
     --serving_addr|-l)
       SERVING_ADDR="$2"
+      shift ;;
+    --webui|-w)
+      WEBUI=(--public_resources "$2")
       shift ;;
     --extract)
       EXTRACT=1 ;;
@@ -101,23 +108,22 @@ while [[ $# -gt 0 ]]; do
 done
 
 cd "$BAZEL_ROOT"
+KYTHE_BIN="$BAZEL_ROOT/bazel-bin/external/io_kythe"
 
-if [[ ! -f third_party/kythe/BUILD ]]; then
+if ! grep -q 'Kythe extraction setup' WORKSPACE; then
   echo "ERROR: $BAZEL_ROOT is not a correctly configured Bazel repository" >&2
-  echo "Please pass the --bazel-root flag after running setup-bazel-repo.sh on an existing Bazel repository." >&2
+  echo "Please pass the --bazel_root flag after running setup-bazel-repo.sh on an existing Bazel repository." >&2
   echo "Example: setup-bazel-repo.sh $BAZEL_ROOT" >&2
   exit 1
 fi
 
 if [[ -n "$EXTRACT" ]]; then
   echo "Extracting Bazel compilations..."
-  rm -rf bazel-out/*/extra_actions/third_party/kythe/
-  set +e
-  bazel build \
-    --experimental_action_listener=//third_party/kythe:java_extract_kindex \
-    --experimental_action_listener=//third_party/kythe:cxx_extract_kindex \
-    //src/{main,test}/...
-  set -e
+  rm -rf bazel-out/*/extra_actions/external/io_kythe/
+  bazel build "${BAZEL_ARGS[@]}" \
+    --keep_going --output_groups=compilation_outputs \
+    --experimental_action_listener=@io_kythe//kythe/java/com/google/devtools/kythe/extractors/java/bazel:extract_kzip \
+    //src/{main,test}/... || true
 fi
 
 if [[ -n "$ANALYZE" ]]; then
@@ -126,11 +132,12 @@ if [[ -n "$ANALYZE" ]]; then
 
   rm -rf "$GRAPHSTORE"
 
-  cd /tmp
-  find -L "$BAZEL_ROOT"/bazel-out/*/extra_actions/third_party/kythe/java_extra_action -name '*.kindex' | \
-    parallel -L1 "$KYTHE_RELEASE"/indexers/java_indexer.jar | \
-    "$KYTHE_RELEASE"/tools/dedup_stream | \
-    "$KYTHE_RELEASE"/tools/write_entries --graphstore "$GRAPHSTORE"
+  bazel build "${BAZEL_ARGS[@]}" \
+    @io_kythe//kythe/java/com/google/devtools/kythe/analyzers/java:indexer \
+    @io_kythe//kythe/go/platform/tools/dedup_stream
+  find -L "$BAZEL_ROOT"/bazel-out/*/extra_actions/external/io_kythe/kythe/java/com/google/devtools/kythe/extractors/java/bazel/extra_action_kzip -name '*.kzip' | \
+    parallel -L1 "$KYTHE_BIN"/kythe/java/com/google/devtools/kythe/analyzers/java/indexer | \
+    "$KYTHE_BIN"/kythe/go/platform/tools/dedup_stream/dedup_stream >"$GRAPHSTORE"
   cd "$ROOT"
 fi
 
@@ -140,15 +147,21 @@ if [[ -n "$POSTPROCESS" ]]; then
 
   rm -rf "$SERVING_TABLE"
 
-  "$KYTHE_RELEASE"/tools/write_tables --graphstore "$GRAPHSTORE" --out "$SERVING_TABLE"
+  bazel build -c opt "${BAZEL_ARGS[@]}" \
+    @io_kythe//kythe/go/serving/tools/write_tables
+  "$KYTHE_BIN"/kythe/go/serving/tools/write_tables/write_tables \
+    --entries "$GRAPHSTORE" --out "$SERVING_TABLE" \
+    --experimental_beam_pipeline --experimental_beam_columnar_data
 fi
 
 if [[ -n "$SERVE" ]]; then
   echo "Launching Kythe server"
   echo "Address: http://$SERVING_ADDR"
 
-  "$KYTHE_RELEASE"/tools/http_server \
+  bazel build "${BAZEL_ARGS[@]}" \
+    @io_kythe//kythe/go/serving/tools/http_server
+  "$KYTHE_BIN"/kythe/go/serving/tools/http_server/http_server \
+    "${WEBUI[@]}" \
     --listen "$SERVING_ADDR" \
-    --public_resources "$KYTHE_RELEASE"/web/ui \
     --serving_table "$SERVING_TABLE"
 fi
