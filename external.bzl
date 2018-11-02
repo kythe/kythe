@@ -222,8 +222,8 @@ def _java_dependencies():
     maybe(
         native.maven_jar,
         name = "org_ow2_asm_asm",
-        artifact = "org.ow2.asm:asm:6.0",
-        sha1 = "bc6fa6b19424bb9592fe43bbc20178f92d403105",
+        artifact = "org.ow2.asm:asm:7.0",
+        sha1 = "d74d4ba0dee443f68fb2dcb7fcdb945a2cd89912",
     )
 
     maybe(
