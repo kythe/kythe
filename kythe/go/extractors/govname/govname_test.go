@@ -38,7 +38,7 @@ func TestForPackage(t *testing.T) {
 		{path: "golang.org/x/net/context", ticket: "kythe://golang.org/x/net?lang=go?path=context#package"},
 		{path: "code.google.com/p/foo.bar/baz", ticket: "kythe://code.google.com/p/foo?lang=go?path=baz?root=bar#package"},
 		{path: "fuzzy1.googlecode.com/alpha", ticket: "kythe://fuzzy1.googlecode.com?lang=go?path=alpha#package"},
-		{path: "github.com/google/kythe/foo", ticket: "kythe://github.com/google/kythe?lang=go?path=foo#package"},
+		{path: "github.com/kythe/kythe/foo", ticket: "kythe://github.com/kythe/kythe?lang=go?path=foo#package"},
 		{path: "bitbucket.org/zut/alors/non", ticket: "kythe://bitbucket.org/zut/alors?lang=go?path=non#package"},
 		{path: "launchpad.net/~frood/blee/blor", ticket: "kythe://launchpad.net/~frood/blee?lang=go?path=blor#package"},
 

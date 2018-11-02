@@ -829,7 +829,7 @@ cc_indexer_test(
     ignore_dups = True,
     tags = [
         "basic",
-        "manual",  # https://github.com/google/kythe/issues/2899
+        "manual",  # https://github.com/kythe/kythe/issues/2899
     ],
 )
 
@@ -1675,7 +1675,7 @@ cc_indexer_test(
     check_for_singletons = True,
     ignore_dups = True,
     tags = [
-        "manual",  # https://github.com/google/kythe/issues/2894
+        "manual",  # https://github.com/kythe/kythe/issues/2894
         "rec",
     ],
 )

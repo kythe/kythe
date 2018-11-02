@@ -3947,7 +3947,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForEnum(clang::EnumTypeLoc TL) {
   // If there is no visible definition, Id will be a tnominal node
   // whereas it is more useful to decorate the span as a reference
   // to the visible declaration.
-  // See https://github.com/google/kythe/issues/2329
+  // See https://github.com/kythe/kythe/issues/2329
   return {BuildNominalNodeIdForDecl(Decl), BuildNodeIdForDecl(Decl)};
 }
 
@@ -4002,7 +4002,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForNonSpecializedRecordDecl(
     // If there is no visible definition, Id will be a tnominal node
     // whereas it is more useful to decorate the span as a reference
     // to the visible declaration.
-    // See https://github.com/google/kythe/issues/2329
+    // See https://github.com/kythe/kythe/issues/2329
     return {BuildNominalNodeIdForDecl(Decl), BuildNodeIdForDecl(Decl)};
   }
 }

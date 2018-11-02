@@ -58,7 +58,7 @@ gcr.io/kythe-public/kythe-javac-extractor-artifacts created from
 * `javac9_tools.jar` which contains javac langtools for JDK 9, but targets JRE 8
 
 gcr.io/kythe-public/build-preprocessor is just
-[kythe/go/extractors/config/preprocessor](https://github.com/google/kythe/blob/master/kythe/go/extractors/config/preprocessor/preprocessor.go),
+[kythe/go/extractors/config/preprocessor](https://github.com/kythe/kythe/blob/master/kythe/go/extractors/config/preprocessor/preprocessor.go),
 which we use to preprocess the `pom.xml` build configuration to be able to
 specify all of the above custom javac extraction logic.
 

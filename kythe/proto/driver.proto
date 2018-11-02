@@ -26,7 +26,7 @@ import "kythe/proto/storage.proto";
 // format in the spec. The encoding rules are defined by:
 // https://developers.google.com/protocol-buffers/docs/proto3#json.
 //
-// Spec: https://github.com/google/kythe/blob/master/kythe/docs/rfc/2966.md
+// Spec: https://github.com/kythe/kythe/blob/master/kythe/docs/rfc/2966.md
 package kythe.driver;
 
 // A request from the analyzer to establish the version of the driver protocol.

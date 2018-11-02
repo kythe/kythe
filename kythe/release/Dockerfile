@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM google/kythe-base
+FROM kythe/kythe-base
 
 # Usage: see kythe.sh
 # Volumes:

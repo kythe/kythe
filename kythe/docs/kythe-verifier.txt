@@ -23,8 +23,8 @@ Here we describe the *verifier*, a standalone component that checks that a
 == Recommended use
 
 For examples of tests that use the verifier, please see
-https://github.com/google/kythe/tree/master/kythe/cxx/indexer/cxx/testdata/basic[//kythe/cxx/indexer/cxx/testdata/basic]
-or https://github.com/google/kythe/tree/master/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg[//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg].
+https://github.com/kythe/kythe/tree/master/kythe/cxx/indexer/cxx/testdata/basic[//kythe/cxx/indexer/cxx/testdata/basic]
+or https://github.com/kythe/kythe/tree/master/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg[//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg].
 It is best to keep the size of a single test small and to develop assertions
 while frequently checking the graph produced by `--annotated_graphviz`.
 

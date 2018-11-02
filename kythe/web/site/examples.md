@@ -15,7 +15,7 @@ TODO(schroederc):
 {% endcomment %}
 
 This document assumes that the latest release archive from
-[https://github.com/google/kythe/releases](https://github.com/google/kythe/releases)
+[https://github.com/kythe/kythe/releases](https://github.com/kythe/kythe/releases)
 has been unpacked into /opt/kythe/.  See /opt/kythe/README for more information.
 
 ## Extracting Compilations
@@ -70,10 +70,10 @@ find -L bazel-out -name '*.kindex'
 {% endhighlight %}
 
 The provided utility script,
-[https://github.com/google/kythe/blob/master/kythe/extractors/bazel/extract.sh]({{site.data.development.source_browser}}/kythe/extractors/bazel/extract.sh),
+[https://github.com/kythe/kythe/blob/master/kythe/extractors/bazel/extract.sh]({{site.data.development.source_browser}}/kythe/extractors/bazel/extract.sh),
 does a full extraction using Bazel and then moves the compilations into the
 directory structure used by the
-[google/kythe]({{site.data.development.source_browser}}/kythe/release/kythe.sh)
+[kythe/kythe]({{site.data.development.source_browser}}/kythe/release/kythe.sh)
 Docker image.
 
 ## Indexing Compilations
@@ -136,7 +136,7 @@ docker run --rm \
   -v "${PWD}:/repo" \
   -v "${PWD}/.kythe_compilations:/compilations" \
   -v "${PWD}/.kythe_graphstore:/graphstore" \
-  google/kythe --index
+  kythe/kythe --index
 
 # Generate corresponding serving tables
 /opt/kythe/tools/write_tables --graphstore .kythe_graphstore --out .kythe_serving

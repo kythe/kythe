@@ -24,7 +24,7 @@ usage: kythe [--repo git-url] [--extract extractor] [--index]
              [--files config-path] [--files-excludes re1,re2]
 
 example: docker run --rm -t -v "$HOME/repo:/repo" -v "$HOME/gs:/graphstore" \
-           google/kythe --extract maven --index --files --files-excludes '(^|/)\.,^third_party'
+           kythe/kythe --extract maven --index --files --files-excludes '(^|/)\.,^third_party'
 
 Extraction:
   If given an --extract type, the compilations in the mounted /repo VOLUME (or the given --repo

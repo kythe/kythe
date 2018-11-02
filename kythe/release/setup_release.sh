@@ -23,7 +23,7 @@
 #      release $VERSION and builds the optimized release archive.
 #      $ ./kythe/release/setup_release.sh
 #   2) Open a Pull Request for review
-#   3) "Draft a new release" at https://github.com/google/kythe/releases
+#   3) "Draft a new release" at https://github.com/kythe/kythe/releases
 #   4) Set tag version / release title to the new $VERSION
 #   5) Set description to newest section of RELEASES.md
 #   6) Upload bazel-genfiles/kythe/release/kythe-$VERSION.tar.gz{,.sha256}
@@ -69,7 +69,7 @@ s/HEAD/$version/
 3i Nothing to report yet.
 3i
 /^\[$version\]/i \
-[Unreleased] https://github.com/google/kythe/compare/${version}...HEAD" RELEASES.md
+[Unreleased] https://github.com/kythe/kythe/compare/${version}...HEAD" RELEASES.md
 sed -ri "s/^release_version = .+/release_version = \"$version\"/" kythe/release/BUILD
 
 if ! diff -q <(git diff --name-only) <(echo RELEASES.md; echo kythe/release/BUILD) >/dev/null; then
