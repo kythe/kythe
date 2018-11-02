@@ -589,6 +589,16 @@ go_proto_library(
 )
 
 proto_library(
+    name = "repo_proto",
+    srcs = ["repo.proto"],
+    visibility = [
+        "//kythe:proto_visibility",
+    ],
+)
+
+go_kythe_proto(proto = ":repo_proto")
+
+proto_library(
     name = "pipeline_proto",
     srcs = ["pipeline.proto"],
     deps = [
