@@ -68,6 +68,7 @@ func KytheToYAML(input string) ([]byte, error) {
 // necessary cloudbuild.Build with BuildSteps for running kythe extraction.
 func KytheToBuild(conf rpb.Config) (cloudbuild.Build, error) {
 	build := cloudbuild.Build{}
+	initializeArtifacts(&build)
 	build.Artifacts.Objects.Location = fmt.Sprintf("gs://%s/", outputGsBucket)
 	build.Artifacts.Objects.Paths = append(build.Artifacts.Objects.Paths, path.Join(outputDirectory, outputFilePattern))
 	build.Steps = append(build.Steps, commonSteps()...)
@@ -97,7 +98,7 @@ func KytheToBuild(conf rpb.Config) (cloudbuild.Build, error) {
 		return build, fmt.Errorf("unsupported build system %s", bs)
 	}
 
-	return build, fmt.Errorf("unimplemented")
+	return build, nil
 }
 
 func readConfigFile(input string) (rpb.Config, error) {
@@ -110,4 +111,9 @@ func readConfigFile(input string) (rpb.Config, error) {
 		return conf, fmt.Errorf("parsing json file %s: %v", input, err)
 	}
 	return conf, nil
+}
+
+func initializeArtifacts(build *cloudbuild.Build) {
+	build.Artifacts = &cloudbuild.Artifacts{}
+	build.Artifacts.Objects = &cloudbuild.ArtifactObjects{}
 }

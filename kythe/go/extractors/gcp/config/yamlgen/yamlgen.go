@@ -20,6 +20,7 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"log"
 
 	"kythe.io/kythe/go/extractors/gcp/config"
@@ -33,8 +34,12 @@ var (
 func main() {
 	flag.Parse()
 
-	_, err := config.KytheToYAML(*input)
+	yamlData, err := config.KytheToYAML(*input)
 	if err != nil {
-		log.Fatalf("failure converting %s to %s", *input, *output)
+		log.Fatalf("failure converting %s to %s: %v", *input, *output, err)
+	}
+
+	if err := ioutil.WriteFile(*output, yamlData, 0644); err != nil {
+		log.Fatalf("failure writing data to %s: %v", *output, err)
 	}
 }
