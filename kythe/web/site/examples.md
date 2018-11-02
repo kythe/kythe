@@ -136,7 +136,7 @@ docker run --rm \
   -v "${PWD}:/repo" \
   -v "${PWD}/.kythe_compilations:/compilations" \
   -v "${PWD}/.kythe_graphstore:/graphstore" \
-  kythe/kythe --index
+  google/kythe --index
 
 # Generate corresponding serving tables
 /opt/kythe/tools/write_tables --graphstore .kythe_graphstore --out .kythe_serving

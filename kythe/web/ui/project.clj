@@ -1,4 +1,4 @@
-(defproject com.kythe/kythe-xrefs-ui "0.1.0"
+(defproject com.google/kythe-xrefs-ui "0.1.0"
   :description "Browser UI for a Kythe xrefs server. Decorates files with anchors for cross-references and node information"
   :url "https://kythe.io"
   :mailing-list {:name "Kythe Community"

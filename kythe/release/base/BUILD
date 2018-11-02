@@ -13,7 +13,7 @@ exports_files(
 docker_build(
     name = "base",
     data = ["fix_permissions.sh"],
-    image_name = "kythe/kythe-base",
+    image_name = "google/kythe-base",
     tags = ["manual"],
     use_cache = True,
 )

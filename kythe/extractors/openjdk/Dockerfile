@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM kythe/kythe-base
+FROM google/kythe-base
 # TODO(schroederc): reuse //kythe/java/com/google/devtools/kythe/extractors/java/standalone:docker
 
 # Output location for .kindex files
