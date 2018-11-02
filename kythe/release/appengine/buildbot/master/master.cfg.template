@@ -51,7 +51,7 @@ def pullRequestFilter(pr):
       return False
 
   # Allow all Kythe maintainer Pull Requests
-  url = 'https://api.github.com/teams/1222120/memberships/'+pr['user']['login']
+  url = 'https://api.github.com/teams/2988296/memberships/'+pr['user']['login']
   req = urllib.request.Request(
       url, headers={'User-Agent': 'Buildbot', 'Authorization': 'token @secret{github_token}'})
   try:
