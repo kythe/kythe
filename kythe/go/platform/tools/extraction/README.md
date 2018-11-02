@@ -3,7 +3,7 @@
 ## `extractrepo.go`
 
 This tool runs a Kythe extraction on a specified repository using an extraction
-configuration as defined in [kythe.proto.ExtractionConfiguration](https://github.com/google/kythe/blob/master/kythe/proto/extraction_config.proto).
+configuration as defined in [kythe.proto.ExtractionConfiguration](https://github.com/kythe/kythe/blob/master/kythe/proto/extraction_config.proto).
 It makes a local clone of the repository via the specified repository URI, and
 runs an extraction on its contents. It will accept an extraction configuration
 file specified as a CLI argument, otherwise it will search the root of repository
@@ -64,7 +64,7 @@ contanier registry from within the executing host environment.
 `repotester -repos <repo_list> -config <config_file_path>`
 
 `repo_list` can be a comma separated list of github repo urls, e.g.
-`"https://github.com/google/kythe,https://github.com/google/go-github"`.
+`"https://github.com/kythe/kythe,https://github.com/google/go-github"`.
 
 If you are managing a long list of repos, you can also sepecify a file with one
 repo per line, and instead call:

@@ -18,7 +18,7 @@ description = "A cargo subcommand for generating and viewing Kythe graphs of car
 version = "0.1.0"
 authors = ["John Renner <john@jrenner.net>"]
 license = "Apache-2.0"
-repository = "https://github.com/google/kythe" 
+repository = "https://github.com/kythe/kythe" 
 keywords = ["kythe", "index", "cargo", "subcommand"]
 readme = "README.md"
 

@@ -5,10 +5,10 @@
     "want": null
   },
   {
-    "input": "bazel-out/foo/bin/nonce~/github.com/google/kythe/blah.a",
+    "input": "bazel-out/foo/bin/nonce~/github.com/kythe/kythe/blah.a",
     "match": true,
     "want": {
-      "corpus": "github.com/google/kythe",
+      "corpus": "github.com/kythe/kythe",
       "path": "blah"
     }
   },

@@ -32,7 +32,7 @@ The schema provides a link:/docs/schema#code[code] fact, when attached to an
 arbitrary semantic node in the Kythe graph, instructs clients on how that node
 can be presented to users. The fact's value is a serialized `MarkedSource`
 protocol buffer message, defined in
-link:https://github.com/google/kythe/blob/master/kythe/proto/common.proto[common.proto].
+link:https://github.com/kythe/kythe/blob/master/kythe/proto/common.proto[common.proto].
 Unlike most facts in the Kythe graph, `MarkedSource` is a structured message
 rather than a plain string, because clients have differing requirements for the
 amount and level of detail they display. By including or excluding various
@@ -81,7 +81,7 @@ to themselves and their children, so a message with the `TYPE` kind applies the
 type nature to itself and its subtree. When tools render `MarkedSource`, they
 include or exclude parts of the parse tree by inspecting kinds. For a full
 listing of valid kinds, refer to the message definition in
-link:https://github.com/google/kythe/blob/master/kythe/proto/xref.proto[xref.proto].
+link:https://github.com/kythe/kythe/blob/master/kythe/proto/xref.proto[xref.proto].
 
 Renderers traverse the tree in order. If a message is elected to be rendered,
 its `pre_text` is appended when it is first visited. Each of the message's

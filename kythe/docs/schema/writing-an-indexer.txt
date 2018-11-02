@@ -21,7 +21,7 @@ Writing a New Indexer
 
 This document is an overview of the steps to take to add support for a new
 language to Kythe. We assume that you have the
-link:https://github.com/google/kythe/releases[Kythe release package] extracted
+link:https://github.com/kythe/kythe/releases[Kythe release package] extracted
 to `/opt/kythe`. You can also build the tools from source (but it is not
 necessary to build Kythe to provide it with graph data). Sample code snippets
 are written in JavaScript, but this document is not about indexing any
@@ -62,7 +62,7 @@ directories `//graphstore` and `//tables`.
 #!/bin/bash -e
 set -o pipefail
 BROWSE_PORT="${BROWSE_PORT:-8080}"
-# You can find prebuilt binaries at https://github.com/google/kythe/releases.
+# You can find prebuilt binaries at https://github.com/kythe/kythe/releases.
 # This script assumes that they are installed to /opt/kythe.
 # If you build the tools yourself or install them to a different location,
 # make sure to pass the correct public_resources directory to http_server.
@@ -80,7 +80,7 @@ mkdir -p graphstore tables
 ----
 
 TIP: The
-link:https://github.com/google/kythe/blob/master/kythe/proto/storage.proto[protocol buffer]
+link:https://github.com/kythe/kythe/blob/master/kythe/proto/storage.proto[protocol buffer]
 encoding of Kythe facts is more efficient than the JSON encoding we're using
 here. Kythe supports JSON because some languages do not have good support for
 protocol buffers. This only comes into play for languages that emit a large
@@ -439,7 +439,7 @@ standard in and passes them (and its arguments) to the verifier:
 ----
 #!/bin/bash -e
 set -o pipefail
-# You can find prebuilt binaries at https://github.com/google/kythe/releases.
+# You can find prebuilt binaries at https://github.com/kythe/kythe/releases.
 # This script assumes that they are installed to /opt/kythe.
 # Read JSON entries from standard in and pass them to the verifier.
 # The entrystream tool turns the JSON into length-delimited protocol buffers,

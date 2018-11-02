@@ -24,13 +24,13 @@ import (
 
 const (
 	phabricatorURL = "https://phabricator-dot-kythe-repo.appspot.com"
-	repoURL        = "https://github.com/google/kythe/tree/master"
+	repoURL        = "https://github.com/kythe/kythe/tree/master"
 	staticRoot     = "site"
 
 	goGetHTML = `<html>
   <head>
     <meta charset="utf-8">
-    <meta name="go-import" content="kythe.io git https://github.com/google/kythe">
+    <meta name="go-import" content="kythe.io git https://github.com/kythe/kythe">
     <meta name="go-source" content="kythe.io https://kythe.io https://kythe.io/repo{/dir} https://kythe.io/repo{/dir}/{file}${line}">
   </head>
   <body>

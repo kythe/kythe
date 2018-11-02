@@ -115,7 +115,7 @@ by the following environment variables:
     KYTHE_OUTPUT_DIRECTORY (required): output directory for resulting .kindex
         files
     KYTHE_VNAMES: path to a JSON-encoded VNames configuration file.  See
-        https://godoc.org/github.com/google/kythe/kythe/go/util/vnameutil for
+        https://godoc.org/github.com/kythe/kythe/kythe/go/util/vnameutil for
         more details on the file's format and
         https://kythe.io/repo/kythe/data/vnames.json for an example.
     KYTHE_CORPUS: the name of the corpus for all constructed VNames (only used if

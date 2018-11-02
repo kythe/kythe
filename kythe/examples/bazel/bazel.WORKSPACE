@@ -8,7 +8,7 @@ bind(
 http_archive(
     name = "io_kythe",
     strip_prefix = "kythe-master",
-    urls = ["https://github.com/google/kythe/archive/master.zip"],
+    urls = ["https://github.com/kythe/kythe/archive/master.zip"],
 )
 
 load("@io_kythe//:setup.bzl", "kythe_rule_repositories")

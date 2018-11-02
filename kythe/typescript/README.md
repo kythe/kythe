@@ -11,7 +11,7 @@ You also need an install of the kythe tools like `entrystream` and `verifier`,
 and point the `KYTHE` environment variable at the path to it.  You can either
 get these by [building Kythe](http://kythe.io/getting-started) or by downloading
 the Kythe binaries from the [Kythe
-releases](https://github.com/google/kythe/releases) page.
+releases](https://github.com/kythe/kythe/releases) page.
 
 ### Commands
 

@@ -14,7 +14,7 @@ after we clone from git, it will append 'kythe' as the last directory).
 
 {% highlight bash %}
 cd ~/my/code/dir
-git clone https://github.com/google/kythe.git
+git clone https://github.com/kythe/kythe.git
 {% endhighlight %}
 
 Also set the env var `KYTHE_DIR=~/my/code/dir/kythe` in your `.bashrc`
@@ -22,7 +22,7 @@ while you're at it.
 
 If you use ssh to authenticate to github:
 {% highlight bash %}
-git clone git@github.com:google/kythe.git
+git clone git@github.com:kythe/kythe.git
 {% endhighlight %}
 
 ### External Dependencies
@@ -168,7 +168,7 @@ sudo apt-get install libleveldb-dev libsnappy-dev
 go get kythe.io/kythe/...
 
 # Using the vendored versions of the needed third_party Go libraries
-git clone https://github.com/google/kythe.git
+git clone https://github.com/kythe/kythe.git
 GOPATH=$GOPATH:$PWD/kythe/third_party/go go get kythe.io/kythe/...
 {% endhighlight %}
 

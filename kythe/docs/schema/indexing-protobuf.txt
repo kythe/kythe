@@ -32,7 +32,7 @@ document describes how to encode information about generated code to permit
 cross-language links.
 
 TIP: You can find an example implementation at
-link:https://github.com/google/kythe/tree/master/kythe/examples/proto[GitHub].
+link:https://github.com/kythe/kythe/tree/master/kythe/examples/proto[GitHub].
 The current sample web UI does not interpret the parts of the schema we will
 use; this is a work in progress.
 
