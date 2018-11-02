@@ -26,8 +26,8 @@ import (
 	"log"
 	"strings"
 
-	"kythe.io/kythe/go/extractors/config/constants"
 	"kythe.io/kythe/go/extractors/config/preprocessor/modifier"
+	"kythe.io/kythe/go/extractors/constants"
 )
 
 var (

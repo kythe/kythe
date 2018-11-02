@@ -1,0 +1,20 @@
+load("//tools:build_rules/shims.bzl", "go_library")
+
+package(default_visibility = ["//kythe:default_visibility"])
+
+go_library(
+    name = "config",
+    srcs = [
+        "common.go",
+        "converter.go",
+        "gradle.go",
+        "maven.go",
+    ],
+    deps = [
+        "//kythe/go/extractors/constants",
+        "//kythe/proto:repo_go_proto",
+        "@com_github_ghodss_yaml//:go_default_library",
+        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
+        "@org_golang_google_api//cloudbuild/v1:go_default_library",
+    ],
+)

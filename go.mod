@@ -7,6 +7,7 @@ require (
 	github.com/DataDog/zstd v0.0.0-20180321192404-aebefd9fcb99
 	github.com/apache/beam v0.0.0-20181024230410-cdd3458380a6
 	github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb
+	github.com/ghodss/yaml v1.0.0
 	github.com/golang/protobuf v0.0.0-20180814141427-aa810b61a9c7
 	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
 	github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540
@@ -33,4 +34,5 @@ require (
 	google.golang.org/api v0.0.0-20180404000327-3097bf831ede
 	google.golang.org/genproto v0.0.0-20180716172848-2731d4fa720b // indirect
 	google.golang.org/grpc v0.0.0-20180510165436-d07538b1475e
+	gopkg.in/yaml.v2 v2.2.1 // indirect
 )

@@ -547,6 +547,22 @@ def _go_dependencies():
     )
 
     maybe(
+        go_repository,
+        name = "com_github_ghodss_yaml",
+        commit = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7",
+        custom = "ghodss_yaml",
+        importpath = "github.com/ghodss/yaml",
+    )
+
+    maybe(
+        go_repository,
+        name = "in_gopkg_yaml_v2",
+        commit = "5420a8b6744d3b0345ab293f6fcba19c978f1183",
+        custom = "yaml",
+        importpath = "gopkg.in/yaml.v2",
+    )
+
+    maybe(
         http_archive,
         name = "org_brotli_go",
         sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",

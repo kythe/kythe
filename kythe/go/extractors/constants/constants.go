@@ -36,12 +36,26 @@ var (
 		"KYTHE_OUTPUT_FILE",
 	)
 
+	// KytheBuildPreprocessorImage is defiend in
+	// kythe/go/extractors/config/preprocessor, and is published to GCR.
+	KytheBuildPreprocessorImage = "gcr.io/kythe-public/build-preprocessor"
+
 	// DefaultJavacLocation points to a common location for a javac binary.
 	// The binary will usually be symlinked here.
 	DefaultJavacLocation = "/usr/bin/javac"
 
+	// DefaultExtractorsDir is the canonical directory for extractors that any
+	// kythe docker image will use.  This can be useful if you need to load that
+	// volume to get access to kythe extractors.
+	DefaultExtractorsDir = "/opt/kythe/extractors"
+
 	// These are specified in the image
 	// gcr.io/kythe-public/kythe-javac-extractor-artifacts
+
+	// KytheJavacExtractorArtifactsImage is defined in
+	// kythe/java/com/google/devtools/kythe/extractors/java/artifacts, and
+	// published to GCR.
+	KytheJavacExtractorArtifactsImage = "gcr.io/kythe-public/kythe-javac-extractor-artifacts"
 
 	// DefaultJavacWrapperLocation is the location of the Kythe wrapper around
 	// javac that does extraction.
@@ -51,4 +65,14 @@ var (
 	// DefaultJava9ToolsLocation is the location of a jar which allows java9
 	// compatibility for java8.
 	DefaultJava9ToolsLocation = "/opt/kythe/extractors/java9_tools.jar"
+
+	// Google Cloud Builders described at
+	// https://cloud.google.com/cloud-build/docs/cloud-builders.
+
+	// GCRGitImage an image that runs git.
+	GCRGitImage = "gcr.io/cloud-builders/git"
+	// GCRGradleImage is an image wrapped around java8, which runs gradle.
+	GCRGradleImage = "gcr.io/cloud-builders/gradle"
+	// GCRMvnImage is an image wrapped around java8, which runs mvn.
+	GCRMvnImage = "gcr.io/cloud-builders/mvn"
 )
