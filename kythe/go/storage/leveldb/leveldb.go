@@ -48,6 +48,25 @@ type levelDB struct {
 	writeOpts     *levigo.WriteOptions
 }
 
+// CompactRange runs a manual compaction on the Range of keys given.
+// If r == nil, the entire table will be compacted.
+func CompactRange(path string, r *keyvalue.Range) error {
+	options := levigo.NewOptions()
+	defer options.Close()
+	db, err := levigo.Open(path, options)
+	if err != nil {
+		return err
+	}
+	lr := levigo.Range{}
+	if r != nil {
+		lr.Start = r.Start
+		lr.Limit = r.End
+	}
+	db.CompactRange(lr)
+	db.Close()
+	return nil
+}
+
 // DefaultOptions is the default Options struct passed to Open when not
 // otherwise given one.
 var DefaultOptions = &Options{
