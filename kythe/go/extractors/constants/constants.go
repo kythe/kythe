@@ -18,31 +18,10 @@
 package constants
 
 var (
-	// TODO(#3151): KYTHE_CORPUS probably should not be set via env var.
-	requiredEnv = []string{"KYTHE_CORPUS", "KYTHE_ROOT_DIRECTORY", "KYTHE_OUTPUT_DIRECTORY"}
-	// RequiredJavaEnv is all of the enivornment variables required for
-	// extracting a java corpus, including env vars common for all extractors.
-	RequiredJavaEnv = append(requiredEnv,
-		// For example java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar
-		"JAVAC_EXTRACTOR_JAR",
-		// For example /usr/lib/jvm/java-8-openjdk/bin/javac
-		"REAL_JAVAC",
-		// For example with java8, this would be
-		// -Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
-		"KYTHE_JAVA_RUNTIME_OPTIONS",
-		// If set to a file ending in '.kzip', this will cause the extractor to
-		// output a .kzip file instead of multiple .kindex files.
-		// Note this does not obviate the need to set KYTHE_OUTPUT_DIRECTORY.
-		"KYTHE_OUTPUT_FILE",
-	)
 
 	// KytheBuildPreprocessorImage is defiend in
 	// kythe/go/extractors/config/preprocessor, and is published to GCR.
 	KytheBuildPreprocessorImage = "gcr.io/kythe-public/build-preprocessor"
-
-	// DefaultJavacLocation points to a common location for a javac binary.
-	// The binary will usually be symlinked here.
-	DefaultJavacLocation = "/usr/bin/javac"
 
 	// DefaultExtractorsDir is the canonical directory for extractors that any
 	// kythe docker image will use.  This can be useful if you need to load that
@@ -75,4 +54,28 @@ var (
 	GCRGradleImage = "gcr.io/cloud-builders/gradle"
 	// GCRMvnImage is an image wrapped around java8, which runs mvn.
 	GCRMvnImage = "gcr.io/cloud-builders/mvn"
+
+	// DefaultJavacLocation points to a common location for a javac binary.
+	// The binary will usually be symlinked here.
+	DefaultJavacLocation = "/usr/bin/javac"
+
+	// TODO(danielmoy): If we ever get rid of the runextractor stack, these
+	// constants can probably be deleted:
+	// TODO(#3151): KYTHE_CORPUS probably should not be set via env var.
+	requiredEnv = []string{"KYTHE_CORPUS", "KYTHE_ROOT_DIRECTORY", "KYTHE_OUTPUT_DIRECTORY"}
+	// RequiredJavaEnv is all of the enivornment variables required for
+	// extracting a java corpus, including env vars common for all extractors.
+	RequiredJavaEnv = append(requiredEnv,
+		// For example java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar
+		"JAVAC_EXTRACTOR_JAR",
+		// For example /usr/lib/jvm/java-8-openjdk/bin/javac
+		"REAL_JAVAC",
+		// For example with java8, this would be
+		// -Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
+		"KYTHE_JAVA_RUNTIME_OPTIONS",
+		// If set to a file ending in '.kzip', this will cause the extractor to
+		// output a .kzip file instead of multiple .kindex files.
+		// Note this does not obviate the need to set KYTHE_OUTPUT_DIRECTORY.
+		"KYTHE_OUTPUT_FILE",
+	)
 )
