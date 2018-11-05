@@ -28,7 +28,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/cloudbuild/v1"
 )
 
 // Constants that map input/output substitutions.
@@ -46,8 +46,8 @@ const (
 	javaVolumeName  = "kythe_extractors"
 )
 
-// KytheToYAML takes an input file, parses it as a JSON defined
-// kythe.proto.extraction.RepoConfig, and converts it to YAML.
+// KytheToYAML takes an input JSON file defined in
+// kythe.proto.extraction.RepoConfig format, and returns it as marshalled YAML.
 func KytheToYAML(input string) ([]byte, error) {
 	configProto, err := readConfigFile(input)
 	if err != nil {
@@ -64,50 +64,57 @@ func KytheToYAML(input string) ([]byte, error) {
 	return yaml.JSONToYAML(json)
 }
 
-// KytheToBuild takes a kythe.proto.extraction.RepoConfig and generates the
+// KytheToBuild takes a kythe.proto.extraction.RepoConfig and returns the
 // necessary cloudbuild.Build with BuildSteps for running kythe extraction.
-func KytheToBuild(conf rpb.Config) (cloudbuild.Build, error) {
-	build := cloudbuild.Build{}
-	initializeArtifacts(&build)
-	build.Artifacts.Objects.Location = fmt.Sprintf("gs://%s/", outputGsBucket)
-	build.Artifacts.Objects.Paths = append(build.Artifacts.Objects.Paths, path.Join(outputDirectory, outputFilePattern))
-	build.Steps = append(build.Steps, commonSteps()...)
-
+func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 	if len(conf.Extractions) == 0 {
-		return build, fmt.Errorf("config has no extraction specified")
+		return nil, fmt.Errorf("config has no extraction specified")
 	} else if len(conf.Extractions) > 1 {
-		return build, fmt.Errorf("we don't yet support multiple extraction in a single repo")
+		return nil, fmt.Errorf("we don't yet support multiple extraction in a single repo")
+	}
+
+	build := &cloudbuild.Build{
+		Artifacts: &cloudbuild.Artifacts{
+			Objects: &cloudbuild.ArtifactObjects{
+				Location: fmt.Sprintf("gs://%s/", outputGsBucket),
+				Paths:    []string{path.Join(outputDirectory, outputFilePattern)},
+			},
+		},
+		Steps: commonSteps(),
 	}
 
 	hints := conf.Extractions[0]
-	bs := hints.BuildSystem
 
 	// TODO(danielmoy): when we support bazel, we probably want to pull out the
 	// switch cases here into something a bit easier to read.
 	// I imagine something like a proper interface that each build system can
 	// override, which would provide things like artifactPaths(), steps().
-	switch bs {
+	switch hints.BuildSystem {
 	case rpb.BuildSystem_MAVEN:
-		build.Steps = append(build.Steps, javaArtifactsStep())
-		build.Steps = append(build.Steps, mavenStep(hints))
+		build.Steps = append(build.Steps,
+			javaArtifactsStep(),
+			mavenStep(hints))
 		build.Artifacts.Objects.Paths = append(build.Artifacts.Objects.Paths, path.Join(outputDirectory, "javac-extractor.err"))
 	case rpb.BuildSystem_GRADLE:
-		//build.Steps = append(build.Steps, GradleSteps())
+		build.Steps = append(build.Steps,
+			javaArtifactsStep(),
+			gradleStep(hints))
 		build.Artifacts.Objects.Paths = append(build.Artifacts.Objects.Paths, path.Join(outputDirectory, "javac-extractor.err"))
 	default:
-		return build, fmt.Errorf("unsupported build system %s", bs)
+		return build, fmt.Errorf("unsupported build system %s", hints.BuildSystem)
 	}
 
 	return build, nil
 }
 
-func readConfigFile(input string) (rpb.Config, error) {
-	var conf rpb.Config
+func readConfigFile(input string) (*rpb.Config, error) {
+	conf := &rpb.Config{}
 	file, err := os.Open(input)
 	if err != nil {
 		return conf, fmt.Errorf("opening input file %s: %v", input, err)
 	}
-	if err := jsonpb.Unmarshal(file, &conf); err != nil {
+	defer file.Close()
+	if err := jsonpb.Unmarshal(file, conf); err != nil {
 		return conf, fmt.Errorf("parsing json file %s: %v", input, err)
 	}
 	return conf, nil

@@ -24,7 +24,7 @@ import (
 
 	rpb "kythe.io/kythe/proto/repo_go_proto"
 
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/cloudbuild/v1"
 )
 
 func gradleStep(conf *rpb.ExtractionHint) *cloudbuild.BuildStep {

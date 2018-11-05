@@ -19,7 +19,7 @@ package config
 import (
 	"kythe.io/kythe/go/extractors/constants"
 
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/cloudbuild/v1"
 )
 
 const cloneStepID = "CLONE"

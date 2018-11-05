@@ -28,7 +28,7 @@ import (
 
 var (
 	input  = flag.String("input", "", "The input config proto to read.")
-	output = flag.String("output", "cloudbuild.yaml", "The output yaml file to write.")
+	output = flag.String("output", "", "The output yaml file to write.")
 )
 
 func main() {
@@ -41,5 +41,20 @@ func main() {
 
 	if err := ioutil.WriteFile(*output, yamlData, 0644); err != nil {
 		log.Fatalf("failure writing data to %s: %v", *output, err)
+	}
+}
+
+func verifyFlags() {
+	failed := false
+	if *input == "" {
+		log.Println("Must specify --input on commandline")
+		failed = true
+	}
+	if *output == "" {
+		log.Println("Must specify --output on commandline")
+		failed = true
+	}
+	if failed {
+		log.Fatalln("Flags not set properly.")
 	}
 }
