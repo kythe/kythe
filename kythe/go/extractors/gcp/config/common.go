@@ -36,13 +36,13 @@ const cloneStepID = "CLONE"
 func commonSteps() []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{
 		&cloudbuild.BuildStep{
-			Name:    constants.GCRGitImage,
-			Args:    []string{"git", repoName, "/workspace/code"},
+			Name:    constants.GCRGitImage, // This triggers with command 'git'.
+			Args:    []string{"clone", repoName, "/workspace/code"},
 			Id:      cloneStepID,
 			WaitFor: []string{"-"},
 		},
 		&cloudbuild.BuildStep{
-			Name:    "ubuntu",
+			Name:    "ubuntu", // This, however, has no entrypoint command.
 			Args:    []string{"mkdir", "/workspace/out"},
 			WaitFor: []string{"-"},
 		},
