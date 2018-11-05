@@ -61,7 +61,7 @@ func mavenStep(conf *rpb.ExtractionHint) *cloudbuild.BuildStep {
 			"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
 			"REAL_JAVAC=" + constants.DefaultJavacLocation,
 			"TMPDIR=" + outputDirectory,
-			"KYTHE_JAVAC_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
+			"KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
 		},
 	}
 }

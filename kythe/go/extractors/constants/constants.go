@@ -64,7 +64,7 @@ var (
 	DefaultJavaExtractorLocation = "/opt/kythe/extractors/javac_extractor.jar"
 	// DefaultJava9ToolsLocation is the location of a jar which allows java9
 	// compatibility for java8.
-	DefaultJava9ToolsLocation = "/opt/kythe/extractors/java9_tools.jar"
+	DefaultJava9ToolsLocation = "/opt/kythe/extractors/javac9_tools.jar"
 
 	// Google Cloud Builders described at
 	// https://cloud.google.com/cloud-build/docs/cloud-builders.
