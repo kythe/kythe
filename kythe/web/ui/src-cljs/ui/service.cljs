@@ -78,6 +78,7 @@
      {:params (merge {:definition_kind    "BINDING_DEFINITIONS"
                       :declaration_kind   "ALL_DECLARATIONS"
                       :reference_kind     "NON_CALL_REFERENCES"
+                      :caller_kind        "OVERRIDE_CALLERS"
                       :snippets           "DEFAULT"
                       :filter [schema/node-kind-fact]
                       :anchor_text true
