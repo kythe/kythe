@@ -159,7 +159,7 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 	p, s := beam.NewPipelineWithRoot()
 	entries := beamio.ReadEntries(s, *entriesFile)
 	k := pipeline.FromEntries(s, entries)
-	shards := 8 // TODO(schroederc): better determine number of shards
+	shards := 128 // TODO(schroederc): better determine number of shards
 	if *experimentalColumnarData {
 		beamio.WriteLevelDB(s, *tablePath, shards,
 			createColumnarMetadata(s),
