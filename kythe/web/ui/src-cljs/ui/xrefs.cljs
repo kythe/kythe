@@ -125,6 +125,8 @@
            (display-related-anchors "Definitions:" (:definition (:cross-references state)) file-to-view)
            (display-related-anchors "Declarations:" (:declaration (:cross-references state)) file-to-view)
            (display-related-anchors "Documentation:" (:documentation (:cross-references state)) file-to-view)
+           ;; TODO(schroederc): list callsites within each caller
+           (display-related-anchors "Callers:" (:caller (:cross-references state)) file-to-view)
            (display-related-anchors "References:" (:reference (:cross-references state)) file-to-view)
            (when (:related_node (:cross-references state))
              (dom/ul nil
