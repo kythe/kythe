@@ -17,6 +17,7 @@
 package beamio
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -65,7 +66,7 @@ func TestReadEntries(t *testing.T) {
 
 	p, s := beam.NewPipelineWithRoot()
 
-	coll := ReadEntries(s, f.Name())
+	coll := ReadEntries(context.Background(), s, f.Name())
 
 	var found []*spb.Entry
 	beam.ParDo(s, func(e *spb.Entry, emit func(*spb.Entry)) { found = append(found, e) }, coll)
