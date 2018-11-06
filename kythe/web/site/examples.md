@@ -74,8 +74,8 @@ Docker image.
 
 All Kythe indexers analyze compilations emitted from
 [extractors](#extracting-compilations) as either a
-[.kzip file]({{site.baseurl}}/docs/docs/kythe-kzip.html).  The indexers will
-then emit a [delimited
+[.kzip file]({{site.baseurl}}/docs/kythe-kzip.html).  The indexers will then
+emit a [delimited
 stream]({{site.data.development.source_browser}}/kythe/go/platform/delimited/delimited.go)
 of [entry protobufs]({{site.baseurl}}/docs/kythe-storage.html#_entry) that can
 then be stored in a [GraphStore]({{site.baseurl}}/docs/kythe-storage.html).
@@ -85,9 +85,6 @@ then be stored in a [GraphStore]({{site.baseurl}}/docs/kythe-storage.html).
 # /opt/kythe/indexers/cxx_indexer --ignore_unimplemented <kzip-file> > entries
 /opt/kythe/indexers/cxx_indexer --ignore_unimplemented \
   .kythe_compilations/c++/kythe_cxx_indexer_cxx_libIndexerASTHooks.cc.c++.kzip > entries
-# /opt/kythe/indexers/cxx_indexer --ignore_unimplemented --index_pack=<root> <unit-hash> > entries
-/opt/kythe/indexers/cxx_indexer --ignore_unimplemented \
-  --index_pack=.kythe_indexpack f0dcfd6fe90919e957f635ec568a793554905012aea803589cdbec625d72de4d > entries
 
 # Indexing a Java compilation
 # java -Xbootclasspath/p:third_party/javac/javac*.jar \
@@ -96,12 +93,6 @@ then be stored in a [GraphStore]({{site.baseurl}}/docs/kythe-storage.html).
 java -Xbootclasspath/p:third_party/javac/javac*.jar \
   com.google.devtools.kythe.analyzers.java.JavaIndexer \
   $PWD/.kythe_compilations/java/kythe_java_com_google_devtools_kythe_analyzers_java_analyzer.java.kzip > entries
-# java -Xbootclasspath/p:third_party/javac/javac*.jar \
-#   com.google.devtools.kythe.analyzers.java.JavaIndexer \
-#   --index_path=<root> <unit-hash> > entries
-java -Xbootclasspath/p:third_party/javac/javac*.jar \
-  com.google.devtools.kythe.analyzers.java.JavaIndexer \
-  --index_pack=$PWD/.kythe_indexpack b3759d74b6ee8ba97312cf8b1b47c4263504a56ca9ab63e8f3af98298ccf9fd6 > entries
 # NOTE: https://kythe.io/phabricator/T40 -- the Java indexer should not be run in
 #       the KYTHE_ROOT_DIRECTORY used during extraction
 
@@ -126,7 +117,7 @@ mkdir -p .kythe_{graphstore,compilations}
 
 # Index the compilations, producing a GraphStore containing a Kythe index
 bazel build //kythe/release:docker
-docker run --rm -ti \
+docker run --rm \
   -v "${PWD}:/repo" \
   -v "${PWD}/.kythe_compilations:/compilations" \
   -v "${PWD}/.kythe_graphstore:/graphstore" \

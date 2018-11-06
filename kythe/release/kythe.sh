@@ -20,8 +20,7 @@ export SHELL=/bin/bash
 usage() {
   cat >&2 <<EOF
 usage: kythe [--repo git-url] [--extract extractor] [--index]
-             [--index_pack] [--ignore-unhandled]
-             [--files config-path] [--files-excludes re1,re2]
+             [--ignore-unhandled] [--files config-path] [--files-excludes re1,re2]
 
 example: docker run --rm -t -v "$HOME/repo:/repo" -v "$HOME/gs:/graphstore" \
            google/kythe --extract maven --index --files --files-excludes '(^|/)\.,^third_party'
