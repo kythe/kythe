@@ -678,6 +678,18 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Assign `ND` (whose node ID is `TargetNode`) a USR if USRs are
   /// enabled.
+  ///
+  /// USRs are added only for NamedDecls that:
+  ///   * are FunctionDecls
+  ///   * are not under implicit template instantiations
+  ///   * are not in a DeclContext inside a function body
+  ///   * can actually be assigned USRs from Clang
+  ///
+  /// Similar to the way we deal with JVM names, the corpus, path,
+  /// and root fields of a usr vname are cleared. Clients are permitted
+  /// to write their own USR tickets. The USR value itself is encoded
+  /// in capital hex (to match Clang's own internal USR stringification,
+  /// modulo the configurable size of the SHA1 prefix).
   void AssignUSR(const GraphObserver::NodeId& TargetNode,
                  const clang::NamedDecl* ND);
 
