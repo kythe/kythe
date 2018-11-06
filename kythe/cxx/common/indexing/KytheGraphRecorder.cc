@@ -31,8 +31,7 @@ static const std::string* const kNodeKindSpellings[] = {
     new std::string("interface"),  new std::string("package"),
     new std::string("tsigma"),     new std::string("doc"),
     new std::string("tbuiltin"),   new std::string("meta"),
-    new std::string("diagnostic"),
-};
+    new std::string("diagnostic"), new std::string("clang/usr")};
 
 static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines"),
@@ -77,6 +76,7 @@ static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/ref/init/implicit"),
     new std::string("/kythe/edge/imputes"),
     new std::string("/kythe/edge/tagged"),
+    new std::string("/clang/usr"),
 };
 
 bool of_spelling(absl::string_view str, EdgeKindID* edge_id) {
