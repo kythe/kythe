@@ -104,6 +104,9 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   /// \param B Behavior to use.
   void setCppFwdDeclEmitDocs(BehaviorOnFwdDeclComments B) { CppFwdDocs = B; }
 
+  /// \brief Use this many raw bytes for USRs.
+  void setUsrByteSize(int S) { UsrByteSize = S; }
+
  private:
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
       clang::CompilerInstance& CI, llvm::StringRef Filename) override {
@@ -143,7 +146,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
     }
     return llvm::make_unique<IndexerASTConsumer>(
         Observer, IgnoreUnimplemented, TemplateMode, Verbosity, ObjCFwdDocs,
-        CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist);
+        CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist, UsrByteSize);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance& CI) override {
@@ -181,6 +184,9 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   /// \return a new worklist for the given visitor.
   std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
       CreateWorklist;
+  /// \brief The number of (raw) bytes to use to represent a USR. If 0,
+  /// no USRs will be recorded.
+  int UsrByteSize = 0;
 };
 
 /// \brief Allows stdin to be replaced with a mapped file.
@@ -255,6 +261,9 @@ struct IndexerOptions {
   /// as possible.
   /// \return true if indexing should be cancelled.
   std::function<bool()> ShouldStopIndexing = [] { return false; };
+  /// \brief The number of (raw) bytes to use to represent a USR. If 0,
+  /// no USRs will be recorded.
+  int UsrByteSize = 0;
 };
 
 /// \brief Indexes `Unit`, reading from `Files` in the assumed and writing

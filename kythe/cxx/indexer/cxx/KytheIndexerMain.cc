@@ -46,6 +46,8 @@ DEFINE_bool(experimental_drop_objc_fwd_class_docs, false,
             "Drop comments for Objective-C forward class declarations.");
 DEFINE_bool(experimental_drop_cpp_fwd_decl_docs, false,
             "Drop comments for C++ forward declarations.");
+DEFINE_int32(experimental_usr_byte_size, 0,
+             "Use this many bytes to represent a USR (or don't at all if 0).");
 
 namespace kythe {
 
@@ -73,6 +75,9 @@ int main(int argc, char* argv[]) {
   options.CppFwdDocs = FLAGS_experimental_drop_cpp_fwd_decl_docs
                            ? kythe::BehaviorOnFwdDeclComments::Ignore
                            : kythe::BehaviorOnFwdDeclComments::Emit;
+  options.UsrByteSize = FLAGS_experimental_usr_byte_size <= 0
+                            ? 0
+                            : FLAGS_experimental_usr_byte_size;
   options.DropInstantiationIndependentData =
       FLAGS_experimental_drop_instantiation_independent_data;
   options.AllowFSAccess = context.allow_filesystem_access();
