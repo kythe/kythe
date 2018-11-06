@@ -57,6 +57,7 @@ _INDEXER_FLAGS = {
     "experimental_drop_instantiation_independent_data": False,
     "experimental_drop_objc_fwd_class_docs": False,
     "experimental_drop_cpp_fwd_decl_docs": False,
+    "experimental_usr_byte_size": 0,
 }
 
 def _compiler_options(ctx, cpp, copts, includes):
@@ -586,6 +587,7 @@ def cc_indexer_test(
         template instantiations.
       experimental_drop_instantiation_independent_data: Whether the indexer should
         drop extraneous instantiation independent data.
+      experimental_usr_byte_size: How many bytes of a USR to use.
     """
     _indexer_test(
         name = name,
@@ -635,6 +637,7 @@ def objc_indexer_test(
         template instantiations.
       experimental_drop_instantiation_independent_data: Whether the indexer should
         drop extraneous instantiation independent data.
+      experimental_usr_byte_size: How many bytes of a USR to use.
     """
     _indexer_test(
         name = name,

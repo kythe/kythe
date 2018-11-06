@@ -92,7 +92,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
                     BehaviorOnFwdDeclComments ObjC,
                     BehaviorOnFwdDeclComments Cpp, const LibrarySupports& S,
                     clang::Sema& Sema, std::function<bool()> ShouldStopIndexing,
-                    GraphObserver* GO = nullptr)
+                    GraphObserver* GO = nullptr, int UsrByteSize = 0)
       : IgnoreUnimplemented(B),
         TemplateMode(T),
         Verbosity(V),
@@ -103,7 +103,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
         Supports(S),
         Sema(Sema),
         MarkedSources(&Sema, &Observer),
-        ShouldStopIndexing(std::move(ShouldStopIndexing)) {}
+        ShouldStopIndexing(std::move(ShouldStopIndexing)),
+        UsrByteSize(UsrByteSize) {}
 
   bool VisitDecl(const clang::Decl* Decl);
   bool VisitFieldDecl(const clang::FieldDecl* Decl);
@@ -675,6 +676,23 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool AddNameToStream(llvm::raw_string_ostream& Ostream,
                        const clang::NamedDecl* ND);
 
+  /// \brief Assign `ND` (whose node ID is `TargetNode`) a USR if USRs are
+  /// enabled.
+  ///
+  /// USRs are added only for NamedDecls that:
+  ///   * are FunctionDecls
+  ///   * are not under implicit template instantiations
+  ///   * are not in a DeclContext inside a function body
+  ///   * can actually be assigned USRs from Clang
+  ///
+  /// Similar to the way we deal with JVM names, the corpus, path,
+  /// and root fields of a usr vname are cleared. Clients are permitted
+  /// to write their own USR tickets. The USR value itself is encoded
+  /// in capital hex (to match Clang's own internal USR stringification,
+  /// modulo the configurable size of the SHA1 prefix).
+  void AssignUSR(const GraphObserver::NodeId& TargetNode,
+                 const clang::NamedDecl* ND);
+
   GraphObserver::NodeId ApplyBuiltinTypeConstructor(
       const char* BuiltinName, const GraphObserver::NodeId& Param);
 
@@ -898,6 +916,10 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Comments we've already visited.
   std::unordered_set<const clang::RawComment*> VisitedComments;
+
+  /// \brief The number of (raw) bytes to use to represent a USR. If 0,
+  /// no USRs will be recorded.
+  int UsrByteSize = 0;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
@@ -909,7 +931,8 @@ class IndexerASTConsumer : public clang::SemaConsumer {
       BehaviorOnFwdDeclComments Cpp, const LibrarySupports& S,
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
-          CreateWorklist)
+          CreateWorklist,
+      int UsrByteSize)
       : Observer(GO),
         IgnoreUnimplemented(B),
         TemplateMode(T),
@@ -918,13 +941,14 @@ class IndexerASTConsumer : public clang::SemaConsumer {
         CppFwdDocs(Cpp),
         Supports(S),
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
-        CreateWorklist(std::move(CreateWorklist)) {}
+        CreateWorklist(std::move(CreateWorklist)),
+        UsrByteSize(UsrByteSize) {}
 
   void HandleTranslationUnit(clang::ASTContext& Context) override {
     CHECK(Sema != nullptr);
     IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
                               Verbosity, ObjCFwdDocs, CppFwdDocs, Supports,
-                              *Sema, ShouldStopIndexing, Observer);
+                              *Sema, ShouldStopIndexing, Observer, UsrByteSize);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
       Visitor.Work(Context.getTranslationUnitDecl(), CreateWorklist(&Visitor));
@@ -956,6 +980,9 @@ class IndexerASTConsumer : public clang::SemaConsumer {
   /// \return a new worklist for the given visitor.
   std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
       CreateWorklist;
+  /// \brief The number of (raw) bytes to use to represent a USR. If 0,
+  /// no USRs will be recorded.
+  int UsrByteSize = 0;
 };
 
 }  // namespace kythe

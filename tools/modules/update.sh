@@ -130,7 +130,7 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
         clangFrontend clang-headers clangLex clangParse clangRewrite clangSema \
         clangSerialization clangTooling LLVMAArch64Info LLVMARMInfo \
         LLVMBitReader LLVMCore LLVMMC LLVMMCParser LLVMMipsInfo LLVMOption \
-        LLVMBinaryFormat \
+        LLVMBinaryFormat clangIndex \
         LLVMPowerPCInfo LLVMProfileData LLVMX86Info clangFormat clangToolingCore
     cd ..
   fi
