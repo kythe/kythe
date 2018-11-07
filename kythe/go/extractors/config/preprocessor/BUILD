@@ -7,8 +7,8 @@ go_binary(
     name = "preprocessor",
     srcs = ["preprocessor.go"],
     deps = [
-        "//kythe/go/extractors/config/constants",
         "//kythe/go/extractors/config/preprocessor/modifier",
+        "//kythe/go/extractors/constants",
     ],
 )
 
