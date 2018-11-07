@@ -10,8 +10,6 @@ github.com/apache/beam v0.0.0-20181105183121-f1a46474e4c1 h1:9D6/sca/IAdMlAhi1pc
 github.com/apache/beam v0.0.0-20181105183121-f1a46474e4c1/go.mod h1:/8NX3Qi8vGstDLLaeaU7+lzVEu/ACaQhYjeefzQ0y1o=
 github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb h1:7UqUs7q4Iir6wMDedPXDB6uaPkuQv0oGrDoTydZyxG0=
 github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb/go.mod h1:r8Aw8JqVegEf0w2fDnATrX9VpkMcyFeM0FhwO62wh+A=
-github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
-github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4 h1:PaTU+9BARuIOAz1ixvps39DJjfq/SxOj3axzIlh7nFo=
 github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/golang/protobuf v0.0.0-20180814141427-aa810b61a9c7 h1:mQiPaAAvxV1ZZ//PWssC7qi3F3uyxTkdl3cDgzFLBlY=
@@ -67,5 +65,3 @@ google.golang.org/grpc v0.0.0-20180510165436-d07538b1475e/go.mod h1:yo6s7OP7yaDg
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.1-0.20180326061214-4fc5987536ef h1:KngkwkexysX8F+cPblZfFFu3eAF/xsJJej9Jt93h3qI=
 gopkg.in/yaml.v2 v2.2.1-0.20180326061214-4fc5987536ef/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
-gopkg.in/yaml.v2 v2.2.1 h1:mUhvW9EsL+naU5Q3cakzfE91YhliOondGd6ZrsDBHQE=
-gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
