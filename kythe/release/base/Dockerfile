@@ -12,41 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:jessie
+FROM debian:stretch
 
 ENV DEBIAN_FRONTEND noninteractive
-
-RUN echo "deb http://http.debian.net/debian jessie-backports main" >> /etc/apt/sources.list
 
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
       curl ca-certificates \
       less parallel jq net-tools locales zsh wget unzip libssl-dev \
-      openjdk-8-jdk clang-3.5 ca-certificates-java uuid-dev flex \
+      openjdk-8-jdk clang-3.8 ca-certificates-java uuid-dev flex \
+      maven bison golang \
       libsasl2-dev && \
     apt-get clean
-
-# Maven
-ENV MAVEN_VERSION 3.1.0
-RUN wget http://archive.apache.org/dist/maven/binaries/apache-maven-$MAVEN_VERSION-bin.zip && \
-    unzip apache-maven-$MAVEN_VERSION-bin.zip && \
-    rm apache-maven-$MAVEN_VERSION-bin.zip
-ENV PATH /apache-maven-$MAVEN_VERSION/bin:$PATH
-
-# Bison
-RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison_2.3.dfsg-5_amd64.deb -O /tmp/bison_2.3.deb && \
-    dpkg -i /tmp/bison_2.3.deb && \
-    rm -f /tmp/bison_2.3.deb
-
-# Go
-RUN wget https://storage.googleapis.com/golang/go1.4.linux-amd64.tar.gz -O /tmp/go.tar.gz && \
-    tar xzf /tmp/go.tar.gz -C /usr/local/ && \
-    rm -f /tmp/go.tar.gz
-ENV PATH=/usr/local/go/bin:$PATH
-
-# fix HOME=/ issue in old Docker versions
-ENV HOME /root
 
 # Setup Kythe directory structure
 RUN mkdir -p /kythe/{bin,lib}/

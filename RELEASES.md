@@ -46,7 +46,7 @@ Nothing to report yet.
  - Java/JVM indexers: obtain JVM (a.k.a. "external") names in a principled way
 
 [Apache Beam]: https://beam.apache.org/
-[ExploreService]: https://github.com/google/kythe/blob/master/kythe/proto/explore.proto
+[ExploreService]: https://github.com/kythe/kythe/blob/master/kythe/proto/explore.proto
 [Riegeli]: https://github.com/google/riegeli
 
 ## [v0.0.27] - 2018-07-01
@@ -54,7 +54,7 @@ Nothing to report yet.
 Due to the period of time between this release and v0.0.26, many relevant
 changes and fixes may not appear in the following list.  For a complete list of
 changes, please check the commit logs:
-https://github.com/google/kythe/compare/v0.0.26...v0.0.27
+https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 ### Added
  - First release of Go indexer and Go extractors.
@@ -364,33 +364,33 @@ https://github.com/google/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/google/kythe/compare/v0.0.29...HEAD
-[v0.0.29] https://github.com/google/kythe/compare/v0.0.28...v0.0.29
-[v0.0.28]: https://github.com/google/kythe/compare/v0.0.27...v0.0.28
-[v0.0.27]: https://github.com/google/kythe/compare/v0.0.26...v0.0.27
-[v0.0.26]: https://github.com/google/kythe/compare/v0.0.25...v0.0.26
-[v0.0.25]: https://github.com/google/kythe/compare/v0.0.24...v0.0.25
-[v0.0.24]: https://github.com/google/kythe/compare/v0.0.23...v0.0.24
-[v0.0.23]: https://github.com/google/kythe/compare/v0.0.22...v0.0.23
-[v0.0.22]: https://github.com/google/kythe/compare/v0.0.21...v0.0.22
-[v0.0.21]: https://github.com/google/kythe/compare/v0.0.20...v0.0.21
-[v0.0.20]: https://github.com/google/kythe/compare/v0.0.19...v0.0.20
-[v0.0.19]: https://github.com/google/kythe/compare/v0.0.18...v0.0.19
-[v0.0.18]: https://github.com/google/kythe/compare/v0.0.17...v0.0.18
-[v0.0.17]: https://github.com/google/kythe/compare/v0.0.16...v0.0.17
-[v0.0.16]: https://github.com/google/kythe/compare/v0.0.15...v0.0.16
-[v0.0.15]: https://github.com/google/kythe/compare/v0.0.14...v0.0.15
-[v0.0.14]: https://github.com/google/kythe/compare/v0.0.13...v0.0.14
-[v0.0.13]: https://github.com/google/kythe/compare/v0.0.12...v0.0.13
-[v0.0.12]: https://github.com/google/kythe/compare/v0.0.11...v0.0.12
-[v0.0.11]: https://github.com/google/kythe/compare/v0.0.10...v0.0.11
-[v0.0.10]: https://github.com/google/kythe/compare/v0.0.9...v0.0.10
-[v0.0.9]: https://github.com/google/kythe/compare/v0.0.8...v0.0.9
-[v0.0.8]: https://github.com/google/kythe/compare/v0.0.7...v0.0.8
-[v0.0.7]: https://github.com/google/kythe/compare/v0.0.6...v0.0.7
-[v0.0.6]: https://github.com/google/kythe/compare/v0.0.5...v0.0.6
-[v0.0.5]: https://github.com/google/kythe/compare/v0.0.4...v0.0.5
-[v0.0.4]: https://github.com/google/kythe/compare/v0.0.3...v0.0.4
-[v0.0.3]: https://github.com/google/kythe/compare/v0.0.2...v0.0.3
-[v0.0.2]: https://github.com/google/kythe/compare/v0.0.1...v0.0.2
-[v0.0.1]: https://github.com/google/kythe/compare/d3b7a50...v0.0.1
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.29...HEAD
+[v0.0.29] https://github.com/kythe/kythe/compare/v0.0.28...v0.0.29
+[v0.0.28]: https://github.com/kythe/kythe/compare/v0.0.27...v0.0.28
+[v0.0.27]: https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
+[v0.0.26]: https://github.com/kythe/kythe/compare/v0.0.25...v0.0.26
+[v0.0.25]: https://github.com/kythe/kythe/compare/v0.0.24...v0.0.25
+[v0.0.24]: https://github.com/kythe/kythe/compare/v0.0.23...v0.0.24
+[v0.0.23]: https://github.com/kythe/kythe/compare/v0.0.22...v0.0.23
+[v0.0.22]: https://github.com/kythe/kythe/compare/v0.0.21...v0.0.22
+[v0.0.21]: https://github.com/kythe/kythe/compare/v0.0.20...v0.0.21
+[v0.0.20]: https://github.com/kythe/kythe/compare/v0.0.19...v0.0.20
+[v0.0.19]: https://github.com/kythe/kythe/compare/v0.0.18...v0.0.19
+[v0.0.18]: https://github.com/kythe/kythe/compare/v0.0.17...v0.0.18
+[v0.0.17]: https://github.com/kythe/kythe/compare/v0.0.16...v0.0.17
+[v0.0.16]: https://github.com/kythe/kythe/compare/v0.0.15...v0.0.16
+[v0.0.15]: https://github.com/kythe/kythe/compare/v0.0.14...v0.0.15
+[v0.0.14]: https://github.com/kythe/kythe/compare/v0.0.13...v0.0.14
+[v0.0.13]: https://github.com/kythe/kythe/compare/v0.0.12...v0.0.13
+[v0.0.12]: https://github.com/kythe/kythe/compare/v0.0.11...v0.0.12
+[v0.0.11]: https://github.com/kythe/kythe/compare/v0.0.10...v0.0.11
+[v0.0.10]: https://github.com/kythe/kythe/compare/v0.0.9...v0.0.10
+[v0.0.9]: https://github.com/kythe/kythe/compare/v0.0.8...v0.0.9
+[v0.0.8]: https://github.com/kythe/kythe/compare/v0.0.7...v0.0.8
+[v0.0.7]: https://github.com/kythe/kythe/compare/v0.0.6...v0.0.7
+[v0.0.6]: https://github.com/kythe/kythe/compare/v0.0.5...v0.0.6
+[v0.0.5]: https://github.com/kythe/kythe/compare/v0.0.4...v0.0.5
+[v0.0.4]: https://github.com/kythe/kythe/compare/v0.0.3...v0.0.4
+[v0.0.3]: https://github.com/kythe/kythe/compare/v0.0.2...v0.0.3
+[v0.0.2]: https://github.com/kythe/kythe/compare/v0.0.1...v0.0.2
+[v0.0.1]: https://github.com/kythe/kythe/compare/d3b7a50...v0.0.1

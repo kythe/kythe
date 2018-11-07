@@ -31,7 +31,7 @@ import org.objectweb.asm.Opcodes;
 
 /** JVM class visitor emitting Kythe graph facts. */
 public final class KytheClassVisitor extends ClassVisitor {
-  private static final int ASM_API_LEVEL = Opcodes.ASM6;
+  private static final int ASM_API_LEVEL = Opcodes.ASM7;
 
   private final JvmGraph jvmGraph;
   private final KytheEntrySets entrySets;
@@ -100,7 +100,7 @@ public final class KytheClassVisitor extends ClassVisitor {
       entrySets.emitEdge(
           classVName,
           EdgeKind.EXTENDS,
-          jvmGraph.getReferenceVName(JvmGraph.Type.referenceType(superName)));
+          JvmGraph.getReferenceVName(JvmGraph.Type.referenceType(superName)));
     }
     for (String iface : interfaces) {
       entrySets.emitEdge(
@@ -115,9 +115,9 @@ public final class KytheClassVisitor extends ClassVisitor {
   public void visitInnerClass(String name, String outerName, String innerName, int access) {
     if (outerName != null) { // avoid anonymous/local classes
       entrySets.emitEdge(
-          jvmGraph.getReferenceVName(JvmGraph.Type.referenceType(name)),
+          JvmGraph.getReferenceVName(JvmGraph.Type.referenceType(name)),
           EdgeKind.CHILDOF,
-          jvmGraph.getReferenceVName(JvmGraph.Type.referenceType(outerName)));
+          JvmGraph.getReferenceVName(JvmGraph.Type.referenceType(outerName)));
     }
     super.visitInnerClass(name, outerName, innerName, access);
   }

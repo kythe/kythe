@@ -46,11 +46,15 @@ import (
 )
 
 func init() {
+	beam.RegisterFunction(bareRevEdge)
+	beam.RegisterFunction(callEdge)
 	beam.RegisterFunction(combineEdgesIndex)
 	beam.RegisterFunction(completeDocument)
+	beam.RegisterFunction(constructCaller)
 	beam.RegisterFunction(defToDecorPiece)
 	beam.RegisterFunction(edgeTargets)
 	beam.RegisterFunction(edgeToCrossRefRelation)
+	beam.RegisterFunction(emitRelatedDefs)
 	beam.RegisterFunction(fileToDecorPiece)
 	beam.RegisterFunction(filterAnchorNodes)
 	beam.RegisterFunction(groupCrossRefs)
@@ -65,6 +69,7 @@ func init() {
 	beam.RegisterFunction(nodeToEdges)
 	beam.RegisterFunction(nodeToReverseEdges)
 	beam.RegisterFunction(parseMarkedSource)
+	beam.RegisterFunction(refToCallsite)
 	beam.RegisterFunction(refToDecorPiece)
 	beam.RegisterFunction(reverseEdge)
 	beam.RegisterFunction(splitEdge)
@@ -134,15 +139,95 @@ func (k *KytheBeam) SplitCrossReferences() beam.PCollection {
 		// TODO(schroederc): merge_with
 	))
 
-	// TODO(schroederc): need to add definitions to related nodes
-	relations := beam.ParDo(s, edgeToCrossRefRelation, k.edgeRelations())
+	callsites := beam.ParDo(s, refToCallsite, k.References())
+	// TODO(schroederc): override callers
+	callers := beam.ParDo(s, constructCaller, beam.CoGroupByKey(s,
+		k.directDefinitions(),
+		k.getMarkedSources(),
+		beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, callEdge, callsites))),
+	))
+
+	edges := k.edgeRelations()
+	relatedDefs := beam.ParDo(s, emitRelatedDefs, beam.CoGroupByKey(s,
+		k.directDefinitions(),
+		beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, bareRevEdge, edges))),
+	))
+	relations := beam.ParDo(s, edgeToCrossRefRelation, edges)
 
 	return beam.ParDo(s, encodeCrossRef, beam.Flatten(s,
 		idx,
 		refs,
 		relations,
-		// TODO(schroederc): callers
+		relatedDefs,
+		callers,
+		callsites,
 	))
+}
+
+func emitRelatedDefs(target *spb.VName, defStream func(**srvpb.ExpandedAnchor) bool, srcStream func(**spb.VName) bool, emit func(*xspb.CrossReferences)) {
+	var def *srvpb.ExpandedAnchor
+	if !defStream(&def) {
+		return // no related node definition found
+	}
+	nodeDef := &xspb.CrossReferences_NodeDefinition_{&xspb.CrossReferences_NodeDefinition{
+		Node:     target,
+		Location: def,
+	}}
+
+	var src *spb.VName
+	for srcStream(&src) {
+		emit(&xspb.CrossReferences{Source: src, Entry: nodeDef})
+	}
+}
+
+func bareRevEdge(eg *gspb.Edges, emit func(*scpb.Edge)) error {
+	switch e := eg.Entry.(type) {
+	case *gspb.Edges_Edge_:
+		edge := e.Edge
+		emit(&scpb.Edge{Target: eg.Source, Source: edge.Target})
+	}
+	return nil
+}
+
+func constructCaller(caller *spb.VName, defStream func(**srvpb.ExpandedAnchor) bool, msStream func(**cpb.MarkedSource) bool, calleeStream func(**spb.VName) bool, emit func(*xspb.CrossReferences)) {
+	var def *srvpb.ExpandedAnchor
+	if !defStream(&def) {
+		return // no caller definition found
+	}
+	var ms *cpb.MarkedSource
+	for msStream(&ms) {
+		break
+	}
+
+	var callee *spb.VName
+	for calleeStream(&callee) {
+		emit(&xspb.CrossReferences{
+			Source: callee,
+			Entry: &xspb.CrossReferences_Caller_{&xspb.CrossReferences_Caller{
+				Caller:       caller,
+				Location:     def,
+				MarkedSource: ms,
+			}},
+		})
+	}
+}
+
+func refToCallsite(r *ppb.Reference, emit func(*xspb.CrossReferences)) {
+	if r.GetKytheKind() != scpb.EdgeKind_REF_CALL || r.Scope == nil {
+		return
+	}
+	emit(&xspb.CrossReferences{
+		Source: r.Source,
+		Entry: &xspb.CrossReferences_Callsite_{&xspb.CrossReferences_Callsite{
+			Kind:     xspb.CrossReferences_Callsite_DIRECT,
+			Caller:   r.Scope,
+			Location: r.Anchor,
+		}},
+	})
+}
+
+func callEdge(x *xspb.CrossReferences) *scpb.Edge {
+	return &scpb.Edge{Source: x.GetCallsite().GetCaller(), Target: x.GetSource()}
 }
 
 func edgeToCrossRefRelation(eg *gspb.Edges, emit func(*xspb.CrossReferences)) error {
@@ -524,6 +609,7 @@ func normalizeAnchors(file *srvpb.File, anchor func(**scpb.Node) bool, emit func
 		var parent *spb.VName
 		for _, e := range n.Edge {
 			if e.GetKytheKind() == scpb.EdgeKind_CHILD_OF {
+				// There should only be a single parent for each anchor.
 				parent = e.Target
 				break
 			}

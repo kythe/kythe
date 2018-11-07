@@ -381,7 +381,7 @@ digraph FactDocStyle {
 ----
 
 Here we look at
-https://github.com/google/kythe/blob/master/kythe/java/com/google/devtools/kythe/platform/shared/FileDataCache.java[`FileDataCache.java`]
+https://github.com/kythe/kythe/blob/master/kythe/java/com/google/devtools/kythe/platform/shared/FileDataCache.java[`FileDataCache.java`]
 to get the two different types of documents alluded to above. The left half of
 the graph describes the javadoc string for the top level `FileDataCache` class,
 with a text fact pointing to a node with the actual comment of the javadoc. It

@@ -222,8 +222,8 @@ def _java_dependencies():
     maybe(
         native.maven_jar,
         name = "org_ow2_asm_asm",
-        artifact = "org.ow2.asm:asm:6.0",
-        sha1 = "bc6fa6b19424bb9592fe43bbc20178f92d403105",
+        artifact = "org.ow2.asm:asm:7.0",
+        sha1 = "d74d4ba0dee443f68fb2dcb7fcdb945a2cd89912",
     )
 
     maybe(
@@ -377,7 +377,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_tools",
-        commit = "7b71b077e1f4a3d5f15ca417a16c3b4dbb629b8b",
+        commit = "3e7aa9e59977626dc60433e9aeadf1bb63d28295",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
         patches = ["@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch"],
@@ -467,7 +467,7 @@ def _go_dependencies():
         go_repository,
         name = "com_github_apache_beam",
         build_file_proto_mode = "disable",
-        commit = "cdd3458380a675ecc34844cd821c3a6067242f2c",
+        commit = "f1a46474e4c13cab82322cda86f1793e56bea31d",
         custom = "beam",
         importpath = "github.com/apache/beam",
     )

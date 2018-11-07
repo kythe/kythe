@@ -101,7 +101,7 @@ case "$1" in
     cd "$TMP"
 
     echo "Building LLVM in $TMP"
-    git clone https://github.com/google/kythe.git
+    git clone https://github.com/kythe/kythe.git
     cd kythe
     ./tools/modules/update.sh
 

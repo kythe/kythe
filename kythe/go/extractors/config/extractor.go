@@ -36,7 +36,7 @@ const kytheExtractionConfigFile = ".kythe-extraction-config"
 // repositories.
 type Repo struct {
 	// Either GitRepo or LocalRepo should be set, not both.
-	// A remote git repo, e.g. https://github.com/google/kythe.
+	// A remote git repo, e.g. https://github.com/kythe/kythe.
 	Git string
 
 	// A local copy of a repository.

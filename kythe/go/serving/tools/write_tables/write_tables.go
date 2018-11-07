@@ -23,6 +23,7 @@ import (
 	"errors"
 	"flag"
 	"log"
+	"time"
 
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graphstore"
@@ -61,6 +62,7 @@ var (
 
 	experimentalBeamPipeline = flag.Bool("experimental_beam_pipeline", false, "Whether to use the Beam experimental pipeline implementation")
 	experimentalColumnarData = flag.Bool("experimental_beam_columnar_data", false, "Whether to emit columnar data from the Beam pipeline implementation")
+	compactTable             = flag.Bool("compact_table", false, "Whether to compact the output LevelDB after its creation")
 )
 
 func init() {
@@ -77,6 +79,11 @@ func main() {
 	if *experimentalBeamPipeline {
 		if err := runExperimentalBeamPipeline(ctx); err != nil {
 			log.Fatalf("Pipeline error: %v", err)
+		}
+		if *compactTable {
+			if err := compactLevelDB(*tablePath); err != nil {
+				log.Fatalf("Error compacting LevelDB: %v", err)
+			}
 		}
 		return
 	}
@@ -123,6 +130,17 @@ func main() {
 	}); err != nil {
 		log.Fatal("FATAL ERROR: ", err)
 	}
+
+	if *compactTable {
+		if err := compactLevelDB(*tablePath); err != nil {
+			log.Fatalf("Error compacting LevelDB: %v", err)
+		}
+	}
+}
+
+func compactLevelDB(path string) error {
+	defer func(start time.Time) { log.Printf("Compaction completed in %s", time.Since(start)) }(time.Now())
+	return leveldb.CompactRange(*tablePath, nil)
 }
 
 func runExperimentalBeamPipeline(ctx context.Context) error {
@@ -139,9 +157,9 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 	}
 
 	p, s := beam.NewPipelineWithRoot()
-	entries := beamio.ReadEntries(s, *entriesFile)
+	entries := beamio.ReadEntries(ctx, s, *entriesFile)
 	k := pipeline.FromEntries(s, entries)
-	shards := 8 // TODO(schroederc): better determine number of shards
+	shards := 128 // TODO(schroederc): better determine number of shards
 	if *experimentalColumnarData {
 		beamio.WriteLevelDB(s, *tablePath, shards,
 			createColumnarMetadata(s),

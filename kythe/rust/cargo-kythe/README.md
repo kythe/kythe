@@ -17,7 +17,7 @@ cargo install cargo-kythe
 
 `cargo-kythe` reads an environment variable `KYTHE_DIR` to determine the path to
 the local installation of kythe. You will probably need to download it from
-[google/kythe](https://github.com/google/kythe/releases)
+[kythe/kythe](https://github.com/kythe/kythe/releases)
 
 To index the top level package:
 

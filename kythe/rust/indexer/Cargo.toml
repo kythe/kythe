@@ -18,7 +18,7 @@ description = "A plugin for generating knowledge graphs of Rust code"
 version = "0.1.0"
 authors = ["John Renner <john@jrenner.net>"]
 license = "Apache-2.0"
-repository = "https://github.com/google/kythe" 
+repository = "https://github.com/kythe/kythe" 
 keywords = ["kythe", "index", "plugin"]
 readme = "README.md"
 

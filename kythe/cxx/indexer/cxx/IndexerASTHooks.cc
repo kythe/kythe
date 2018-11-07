@@ -43,6 +43,7 @@
 #include "clang/AST/TemplateName.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
+#include "clang/Index/USRGeneration.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/Sema/Lookup.h"
 #include "gflags/gflags.h"
@@ -3006,6 +3007,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                                 Subkind, absl::nullopt);
     Observer.recordMarkedSource(OuterNode,
                                 Marks.GenerateMarkedSource(OuterNode));
+    AssignUSR(OuterNode, Decl);
     return true;
   }
   if (NameRangeInContext) {
@@ -3034,6 +3036,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                               GraphObserver::Completeness::Definition, Subkind,
                               absl::nullopt);
   Observer.recordMarkedSource(OuterNode, Marks.GenerateMarkedSource(OuterNode));
+  AssignUSR(OuterNode, Decl);
   return true;
 }
 
@@ -3257,6 +3260,16 @@ bool IndexerASTVisitor::AddNameToStream(llvm::raw_string_ostream& Ostream,
     }
   }
   return true;
+}
+
+void IndexerASTVisitor::AssignUSR(const GraphObserver::NodeId& TargetNode,
+                                  const clang::NamedDecl* ND) {
+  if (UsrByteSize <= 0 || Job->UnderneathImplicitTemplateInstantiation) return;
+  const auto* DC = ND->getDeclContext();
+  if (DC->isFunctionOrMethod()) return;
+  llvm::SmallString<128> Usr;
+  if (clang::index::generateUSRForDecl(ND, Usr)) return;
+  Observer.assignUsr(TargetNode, Usr, UsrByteSize);
 }
 
 GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
@@ -3947,7 +3960,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForEnum(clang::EnumTypeLoc TL) {
   // If there is no visible definition, Id will be a tnominal node
   // whereas it is more useful to decorate the span as a reference
   // to the visible declaration.
-  // See https://github.com/google/kythe/issues/2329
+  // See https://github.com/kythe/kythe/issues/2329
   return {BuildNominalNodeIdForDecl(Decl), BuildNodeIdForDecl(Decl)};
 }
 
@@ -4002,7 +4015,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForNonSpecializedRecordDecl(
     // If there is no visible definition, Id will be a tnominal node
     // whereas it is more useful to decorate the span as a reference
     // to the visible declaration.
-    // See https://github.com/google/kythe/issues/2329
+    // See https://github.com/kythe/kythe/issues/2329
     return {BuildNominalNodeIdForDecl(Decl), BuildNodeIdForDecl(Decl)};
   }
 }

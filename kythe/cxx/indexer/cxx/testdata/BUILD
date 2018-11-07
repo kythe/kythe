@@ -686,6 +686,15 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "usr",
+    srcs = ["basic/usr.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "vardecl_double_shadowed_local_anchor",
     srcs = ["basic/vardecl_double_shadowed_local_anchor.cc"],
     check_for_singletons = True,
@@ -829,7 +838,7 @@ cc_indexer_test(
     ignore_dups = True,
     tags = [
         "basic",
-        "manual",  # https://github.com/google/kythe/issues/2899
+        "manual",  # https://github.com/kythe/kythe/issues/2899
     ],
 )
 
@@ -1675,7 +1684,7 @@ cc_indexer_test(
     check_for_singletons = True,
     ignore_dups = True,
     tags = [
-        "manual",  # https://github.com/google/kythe/issues/2894
+        "manual",  # https://github.com/kythe/kythe/issues/2894
         "rec",
     ],
 )

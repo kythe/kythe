@@ -337,7 +337,30 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 			Value: []byte("9"),
 		}},
 		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+			Target: &spb.VName{Signature: "caller"},
+		}, {
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+			Target: &spb.VName{Signature: "interface"},
+		}, {
 			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
+			Target: src,
+		}},
+	}, {
+		Source: &spb.VName{Path: "path", Signature: "anchor2"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("0"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("4"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_CHILD_OF},
+			Target: &spb.VName{Signature: "caller"},
+		}, {
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF_CALL},
 			Target: src,
 		}},
 	}, {
@@ -404,9 +427,9 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 		},
 	}))
 
-	t.Run("refs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+	t.Run("non_call_refs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
 		Ticket:        []string{ticket},
-		ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
+		ReferenceKind: xpb.CrossReferencesRequest_NON_CALL_REFERENCES,
 	}, &xpb.CrossReferencesReply{
 		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 			ticket: {
@@ -469,6 +492,234 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 				Facts: map[string][]byte{
 					facts.NodeKind: []byte(nodes.Interface),
 				},
+			},
+		},
+	}))
+
+	t.Run("node_definitions", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:          []string{ticket},
+		Filter:          []string{facts.NodeKind},
+		NodeDefinitions: true,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				RelatedNode: []*xpb.CrossReferencesReply_RelatedNode{{
+					Ticket:       "kythe:#interface",
+					RelationKind: edges.Extends,
+				}},
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: {Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+			"kythe:#interface": {
+				Facts:      map[string][]byte{facts.NodeKind: []byte(nodes.Interface)},
+				Definition: "kythe:?path=path#anchor1",
+			},
+		},
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=path#anchor1": {
+				Ticket: "kythe:?path=path#anchor1",
+				Parent: "kythe:?path=path",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   5,
+						ColumnOffset: 5,
+						LineNumber:   1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						ColumnOffset: 9,
+						LineNumber:   1,
+					},
+				},
+				Snippet: "blah blah",
+				SnippetSpan: &cpb.Span{
+					Start: &cpb.Point{
+						LineNumber: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						ColumnOffset: 9,
+						LineNumber:   1,
+					},
+				},
+			},
+		},
+	}))
+
+	t.Run("call_refs", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:        []string{ticket},
+		ReferenceKind: xpb.CrossReferencesRequest_CALL_REFERENCES,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{
+					Anchor: &xpb.Anchor{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   0,
+								ColumnOffset: 0,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   4,
+								ColumnOffset: 4,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					},
+				}},
+			},
+		},
+	}))
+
+	t.Run("direct_callers", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:     []string{ticket},
+		CallerKind: xpb.CrossReferencesRequest_DIRECT_CALLERS,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Caller: []*xpb.CrossReferencesReply_RelatedAnchor{{
+					Ticket: "kythe:#caller",
+					Anchor: &xpb.Anchor{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   5,
+								ColumnOffset: 5,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					},
+					Site: []*xpb.Anchor{{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   0,
+								ColumnOffset: 0,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   4,
+								ColumnOffset: 4,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					}},
+				}},
+			},
+		},
+	}))
+
+	// TODO(schroederc): add override caller
+	t.Run("override_callers", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:     []string{ticket},
+		CallerKind: xpb.CrossReferencesRequest_OVERRIDE_CALLERS,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				Caller: []*xpb.CrossReferencesReply_RelatedAnchor{{
+					Ticket: "kythe:#caller",
+					Anchor: &xpb.Anchor{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   5,
+								ColumnOffset: 5,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					},
+					Site: []*xpb.Anchor{{
+						Parent: "kythe:?path=path",
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   0,
+								ColumnOffset: 0,
+								LineNumber:   1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   4,
+								ColumnOffset: 4,
+								LineNumber:   1,
+							},
+						},
+						Snippet: "blah blah",
+						SnippetSpan: &cpb.Span{
+							Start: &cpb.Point{
+								LineNumber: 1,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								ColumnOffset: 9,
+								LineNumber:   1,
+							},
+						},
+					}},
+				}},
 			},
 		},
 	}))

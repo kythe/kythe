@@ -26,6 +26,7 @@ import (
 	"kythe.io/kythe/go/storage/keyvalue"
 	"kythe.io/kythe/go/util/compare"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/schema/facts"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
@@ -439,6 +440,15 @@ func TestServingCrossReferences(t *testing.T) {
 				Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FUNCTION},
 			},
 		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_NodeDefinition_{&xspb.CrossReferences_NodeDefinition{
+			Node: &spb.VName{Signature: "relatedNode"},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:#relatedNodeDef",
+				Span:   span,
+			},
+		}},
 	}}
 	for _, xr := range xrefs {
 		mustWriteXRef(t, w, xr)
@@ -597,6 +607,37 @@ func TestServingCrossReferences(t *testing.T) {
 				Facts: map[string][]byte{
 					"/kythe/node/kind": []byte("function"),
 				},
+			},
+		},
+	}))
+
+	t.Run("node_definitions", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:          []string{ticket},
+		Filter:          []string{facts.NodeKind},
+		NodeDefinitions: true,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				RelatedNode: []*xpb.CrossReferencesReply_RelatedNode{{
+					Ticket:       "kythe:#relatedNode",
+					RelationKind: "%/kythe/edge/childof",
+				}},
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: {Facts: map[string][]byte{"/kythe/node/kind": []byte("record")}},
+			"kythe:#relatedNode": {
+				Facts:      map[string][]byte{"/kythe/node/kind": []byte("function")},
+				Definition: "kythe:#relatedNodeDef",
+			},
+		},
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:#relatedNodeDef": {
+				Ticket: "kythe:#relatedNodeDef",
+				Parent: "kythe:",
+				Span:   span,
 			},
 		},
 	}))

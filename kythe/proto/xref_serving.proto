@@ -27,7 +27,7 @@ import "kythe/proto/storage.proto";
 
 // Columnar protocol buffer format for FileDecorations.
 //
-// Design: https://github.com/google/kythe/blob/master/kythe/docs/rfc/2909.md
+// Design: https://github.com/kythe/kythe/blob/master/kythe/docs/rfc/2909.md
 //
 // Columnar key prefix: "fd"-file
 message FileDecorations {
@@ -138,7 +138,7 @@ message FileDecorations {
 
 // Columnar protocol buffer format for CrossReferences.
 //
-// Design: https://github.com/google/kythe/blob/master/kythe/docs/rfc/2909.md
+// Design: https://github.com/kythe/kythe/blob/master/kythe/docs/rfc/2909.md
 //
 // Columnar key prefix: "xr"-source
 message CrossReferences {
@@ -151,6 +151,7 @@ message CrossReferences {
     Caller caller = 5;
     Callsite callsite = 6;
     RelatedNode related_node = 7;
+    NodeDefinition node_definition = 8;
   }
 
   // Index for columnar cross-references data.
@@ -226,5 +227,13 @@ message CrossReferences {
   // Columnar key: 30-node
   message RelatedNode {
     kythe.proto.schema.Node node = 1;
+  }
+
+  // Definition location for each RelatedNode
+  //
+  // Columnar key: 40-node
+  message NodeDefinition {
+    kythe.proto.VName node = 1;
+    kythe.proto.serving.ExpandedAnchor location = 2;
   }
 }

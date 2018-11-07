@@ -38,7 +38,7 @@ ALL=1
 JAVA=
 CXX=
 GO=
-BAZEL_ARGS=(--bazelrc=/dev/null build -k)
+BAZEL_ARGS=(build -k --output_groups=compilation_outputs)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

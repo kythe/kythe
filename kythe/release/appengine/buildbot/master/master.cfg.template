@@ -51,7 +51,7 @@ def pullRequestFilter(pr):
       return False
 
   # Allow all Kythe maintainer Pull Requests
-  url = 'https://api.github.com/teams/1222120/memberships/'+pr['user']['login']
+  url = 'https://api.github.com/teams/2988296/memberships/'+pr['user']['login']
   req = urllib.request.Request(
       url, headers={'User-Agent': 'Buildbot', 'Authorization': 'token @secret{github_token}'})
   try:
@@ -74,12 +74,12 @@ def pullRequestFilter(pr):
   return signed_cla and requested
 
 c['change_source'] = []
-# Track github.com/google/kythe master
+# Track github.com/kythe/kythe master
 c['change_source'].append(changes.GitPoller(
-    'git://github.com/google/kythe.git',
+    'git://github.com/kythe/kythe.git',
     workdir='kythe-workdir', branches=['master'],
     category=None, pollAtLaunch=True, pollInterval=300))
-# Track github.com/google/kythe pull requests
+# Track github.com/kythe/kythe pull requests
 c['change_source'].append(GitHubPullrequestPoller(
     owner='google', repo='kythe',
     pullrequest_filter=pullRequestFilter,
@@ -120,7 +120,7 @@ c['schedulers'].append(schedulers.ForceScheduler(name="force", builderNames=allB
 llvm_lock = util.WorkerLock("llvm_builds", maxCount=1)
 
 bazelKytheSteps = util.BuildFactory()
-bazelKytheSteps.addStep(steps.GitHub(repourl=util.Property('repository', 'git://github.com/google/kythe.git'),
+bazelKytheSteps.addStep(steps.GitHub(repourl=util.Property('repository', 'git://github.com/kythe/kythe.git'),
 				     mode='incremental'))
 bazelBinEnv = {'DEFAULT_BAZEL': '/bin/false', 'BAZEL_VERSION': util.Property('bazel_version', bazelMaxVersion)}
 bazelKytheSteps.addStep(steps.ShellCommand(
@@ -135,7 +135,7 @@ bazelKytheSteps.addStep(steps.ShellCommand(
     env=bazelBinEnv))
 
 goKytheSteps = util.BuildFactory()
-goKytheSteps.addStep(steps.GitHub(repourl=util.Property('repository', 'git://github.com/google/kythe.git'),
+goKytheSteps.addStep(steps.GitHub(repourl=util.Property('repository', 'git://github.com/kythe/kythe.git'),
 				  workdir='src/kythe.io',
 				  mode='incremental'))
 goKytheSteps.addStep(steps.ShellCommand(command=["go", "get", "-t", "kythe.io/kythe/go/..."],
@@ -145,7 +145,7 @@ goKytheSteps.addStep(steps.ShellCommand(command=["go", "test", "kythe.io/kythe/g
                                         env={"GOPATH": util.Property('builddir')}))
 
 goModuleKytheSteps = util.BuildFactory()
-goModuleKytheSteps.addStep(steps.GitHub(repourl=util.Property('repository', 'git://github.com/google/kythe.git'),
+goModuleKytheSteps.addStep(steps.GitHub(repourl=util.Property('repository', 'git://github.com/kythe/kythe.git'),
                                         mode='incremental'))
 goModuleKytheSteps.addStep(steps.ShellCommand(command=["go", "test", "./kythe/..."],
                                               haltOnFailure=True))

@@ -60,13 +60,15 @@
   {:facts (into {}
                 (map (juxt first
                            (comp util/fix-encoding b64/decodeString second))
-                     (:facts node)))})
+                     (:facts node)))
+   :definition (:definition node)})
 
 (defn- unwrap-xrefs-response [resp]
   {:cross-references (if (= 1 (count (:cross_references resp)))
                        (second (first (:cross_references resp)))
                        (:cross_references resp))
    :nodes (into {} (map (juxt first (comp unwrap-node second)) (:nodes resp)))
+   :definition_locations (:definition_locations resp)
    :next (:next_page_token resp)})
 
 (defn get-xrefs
@@ -78,7 +80,9 @@
      {:params (merge {:definition_kind    "BINDING_DEFINITIONS"
                       :declaration_kind   "ALL_DECLARATIONS"
                       :reference_kind     "NON_CALL_REFERENCES"
+                      :caller_kind        "OVERRIDE_CALLERS"
                       :snippets           "DEFAULT"
+                      :node_definitions true
                       :filter [schema/node-kind-fact]
                       :anchor_text true
                       :page_size 20}
