@@ -549,7 +549,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_ghodss_yaml",
-        commit = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7",
+        commit = "c7ce16629ff4cd059ed96ed06419dd3856fd3577",
         custom = "ghodss_yaml",
         importpath = "github.com/ghodss/yaml",
     )
@@ -557,7 +557,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "in_gopkg_yaml_v2",
-        commit = "5420a8b6744d3b0345ab293f6fcba19c978f1183",
+        commit = "4fc5987536ef307a24ca299aee7ae301cde3d221",
         custom = "yaml",
         importpath = "gopkg.in/yaml.v2",
     )
