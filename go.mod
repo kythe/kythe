@@ -5,9 +5,9 @@ require (
 	bitbucket.org/creachadair/stringset v0.0.0-20180426154347-e974a3c1694d
 	cloud.google.com/go v0.0.0-20180405132441-01301d1df806
 	github.com/DataDog/zstd v0.0.0-20180321192404-aebefd9fcb99
-	github.com/apache/beam v0.0.0-20181024230410-cdd3458380a6
+	github.com/apache/beam v0.0.0-20181105183121-f1a46474e4c1
 	github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb
-	github.com/ghodss/yaml v1.0.0-20170327165444-0ca9ea5df545
+	github.com/ghodss/yaml v1.0.0
 	github.com/golang/protobuf v0.0.0-20180814141427-aa810b61a9c7
 	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
 	github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540
@@ -34,5 +34,5 @@ require (
 	google.golang.org/api v0.0.0-20180404000327-3097bf831ede
 	google.golang.org/genproto v0.0.0-20180716172848-2731d4fa720b // indirect
 	google.golang.org/grpc v0.0.0-20180510165436-d07538b1475e
-	gopkg.in/yaml.v2 v2.2.1-20180328165020-5420a8b6744d // indirect
+	gopkg.in/yaml.v2 v2.2.1
 )
