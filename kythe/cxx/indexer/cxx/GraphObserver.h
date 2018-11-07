@@ -537,6 +537,13 @@ class GraphObserver {
       FunctionSubkind Subkind,
       const absl::optional<MarkedSource>& MarkedSource) {}
 
+  /// \brief Assigns a USR to node.
+  /// \param Node The target node.
+  /// \param Usr The raw USR.
+  /// \param ByteSize Number of significant bytes to use.
+  virtual void assignUsr(const NodeId& Node, llvm::StringRef Usr,
+                         int ByteSize) {}
+
   /// \brief Describes whether an enum is scoped (`enum class`).
   enum class EnumKind {
     Scoped,   ///< This enum is scoped (an `enum class`).

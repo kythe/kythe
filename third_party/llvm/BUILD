@@ -39,6 +39,7 @@ cc_library(
         "llvm/build/lib/libclangLex.a",
         "llvm/build/lib/libclangBasic.a",
         "llvm/build/lib/libclangAnalysis.a",
+        "llvm/build/lib/libclangIndex.a",
         "llvm/build/lib/libLLVMMipsInfo.a",
         "llvm/build/lib/libLLVMAArch64Info.a",
         "llvm/build/lib/libLLVMARMInfo.a",
