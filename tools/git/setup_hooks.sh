@@ -34,5 +34,5 @@ setup_hook() {
   fi
 }
 
-setup_hook pre-commit
+setup_hook pre-push
 setup_hook commit-msg
