@@ -46,6 +46,7 @@ import (
 )
 
 func init() {
+	beam.RegisterFunction(bareRevEdge)
 	beam.RegisterFunction(callEdge)
 	beam.RegisterFunction(combineEdgesIndex)
 	beam.RegisterFunction(completeDocument)
@@ -53,6 +54,7 @@ func init() {
 	beam.RegisterFunction(defToDecorPiece)
 	beam.RegisterFunction(edgeTargets)
 	beam.RegisterFunction(edgeToCrossRefRelation)
+	beam.RegisterFunction(emitRelatedDefs)
 	beam.RegisterFunction(fileToDecorPiece)
 	beam.RegisterFunction(filterAnchorNodes)
 	beam.RegisterFunction(groupCrossRefs)
@@ -145,16 +147,46 @@ func (k *KytheBeam) SplitCrossReferences() beam.PCollection {
 		beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, callEdge, callsites))),
 	))
 
-	// TODO(schroederc): need to add definitions to related nodes
-	relations := beam.ParDo(s, edgeToCrossRefRelation, k.edgeRelations())
+	edges := k.edgeRelations()
+	relatedDefs := beam.ParDo(s, emitRelatedDefs, beam.CoGroupByKey(s,
+		k.directDefinitions(),
+		beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, bareRevEdge, edges))),
+	))
+	relations := beam.ParDo(s, edgeToCrossRefRelation, edges)
 
 	return beam.ParDo(s, encodeCrossRef, beam.Flatten(s,
 		idx,
 		refs,
 		relations,
+		relatedDefs,
 		callers,
 		callsites,
 	))
+}
+
+func emitRelatedDefs(target *spb.VName, defStream func(**srvpb.ExpandedAnchor) bool, srcStream func(**spb.VName) bool, emit func(*xspb.CrossReferences)) {
+	var def *srvpb.ExpandedAnchor
+	if !defStream(&def) {
+		return // no related node definition found
+	}
+	nodeDef := &xspb.CrossReferences_NodeDefinition_{&xspb.CrossReferences_NodeDefinition{
+		Node:     target,
+		Location: def,
+	}}
+
+	var src *spb.VName
+	for srcStream(&src) {
+		emit(&xspb.CrossReferences{Source: src, Entry: nodeDef})
+	}
+}
+
+func bareRevEdge(eg *gspb.Edges, emit func(*scpb.Edge)) error {
+	switch e := eg.Entry.(type) {
+	case *gspb.Edges_Edge_:
+		edge := e.Edge
+		emit(&scpb.Edge{Target: eg.Source, Source: edge.Target})
+	}
+	return nil
 }
 
 func constructCaller(caller *spb.VName, defStream func(**srvpb.ExpandedAnchor) bool, msStream func(**cpb.MarkedSource) bool, calleeStream func(**spb.VName) bool, emit func(*xspb.CrossReferences)) {

@@ -217,6 +217,18 @@ func TestCrossReferencesEncodingRoundtrip(t *testing.T) {
 				Source: &spb.VName{Signature: "relatedNode"},
 			},
 		}},
+	}, {
+		Source: src,
+		Entry: &xspb.CrossReferences_NodeDefinition_{&xspb.CrossReferences_NodeDefinition{
+			Node: &spb.VName{Signature: "relatedNode"},
+			Location: &srvpb.ExpandedAnchor{
+				Ticket: "kythe:#relatedNodeDef",
+				Span: &cpb.Span{
+					Start: &cpb.Point{ByteOffset: 32},
+					End:   &cpb.Point{ByteOffset: 256},
+				},
+			},
+		}},
 	}}
 
 	for _, test := range tests {

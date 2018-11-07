@@ -151,6 +151,7 @@ message CrossReferences {
     Caller caller = 5;
     Callsite callsite = 6;
     RelatedNode related_node = 7;
+    NodeDefinition node_definition = 8;
   }
 
   // Index for columnar cross-references data.
@@ -226,5 +227,13 @@ message CrossReferences {
   // Columnar key: 30-node
   message RelatedNode {
     kythe.proto.schema.Node node = 1;
+  }
+
+  // Definition location for each RelatedNode
+  //
+  // Columnar key: 40-node
+  message NodeDefinition {
+    kythe.proto.VName node = 1;
+    kythe.proto.serving.ExpandedAnchor location = 2;
   }
 }
