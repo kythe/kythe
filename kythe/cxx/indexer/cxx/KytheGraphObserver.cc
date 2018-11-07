@@ -874,16 +874,17 @@ void KytheGraphObserver::recordFunctionNode(
 
 void KytheGraphObserver::assignUsr(const NodeId& node, llvm::StringRef usr,
                                    int byte_size) {
-  usr = usr.take_front(byte_size);
+  if (byte_size < 0) return;
   auto hash = llvm::SHA1::hash(llvm::arrayRefFromStringRef(usr));
   auto hex = llvm::toHex(
-      llvm::StringRef(reinterpret_cast<const char*>(hash.data()), hash.size()));
+      llvm::StringRef(reinterpret_cast<const char*>(hash.data()),
+                      std::min(hash.size(), static_cast<size_t>(byte_size))));
   VNameRef node_vname = VNameRefFromNodeId(node);
   VNameRef usr_vname;
   usr_vname.signature = hex;
   usr_vname.language = "usr";
-  recorder_->AddProperty(usr_vname, NodeKindID::kUsr);
-  recorder_->AddEdge(usr_vname, EdgeKindID::kUsr, node_vname);
+  recorder_->AddProperty(usr_vname, NodeKindID::kClangUsr);
+  recorder_->AddEdge(usr_vname, EdgeKindID::kClangUsr, node_vname);
 }
 
 void KytheGraphObserver::recordAbsNode(const NodeId& node_id) {
