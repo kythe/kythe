@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # TODO(#3173): remove need for arcanist
-arc lint
+arc lint --rev HEAD
 
 # TODO(#3173): remove need for arcanist
-WAIT_FOR_BAZEL=1 USE_BAZELRC=1 arc unit
+WAIT_FOR_BAZEL=1 USE_BAZELRC=1 arc unit --rev HEAD
