@@ -137,18 +137,23 @@ void DecodeIndexFile(const std::string& path,
   close(fd);
 }
 
-/// \brief Reads a single compilation from a .kzip file into memory.
+/// \brief Reads all compilations from a .kzip file into memory.
 /// \param path The path from which the file should be read.
-/// \param virtual_files A vector to be filled with FileData.
-/// \param unit A `CompilationUnit` to be decoded from the .kzip.
-void DecodeKZipFile(const std::string& path,
-                    std::vector<proto::FileData>* virtual_files,
-                    proto::CompilationUnit* unit) {
+/// \param jobs A vector to add a job to for each compilation in the kzip.
+/// \param silent The silent flag is copied to each of the jobs created from the
+/// kzip file.
+void DecodeKZipFile(const std::string& path, std::vector<IndexerJob>* jobs,
+                    bool silent) {
   StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
   CHECK(reader) << "Couldn't open kzip from " << path;
   bool compilation_read = false;
   auto status = reader->Scan([&](absl::string_view digest) {
-    CHECK(!compilation_read) << "Found more than 1 compilation in " << path;
+    // TODO(#3233): Process compilation units as they're read rather than
+    // storing them all in memory and processing later.
+    jobs->emplace_back();
+    auto* job = &jobs->back();
+    job->silent = silent;
+
     auto compilation = reader->ReadUnit(digest);
     for (const auto& file : compilation->unit().required_input()) {
       auto content = reader->ReadFile(file.info().digest());
@@ -158,9 +163,9 @@ void DecodeKZipFile(const std::string& path,
       file_data.set_content(*content);
       file_data.mutable_info()->set_path(file.info().path());
       file_data.mutable_info()->set_digest(file.info().digest());
-      virtual_files->push_back(std::move(file_data));
+      job->virtual_files.push_back(std::move(file_data));
     }
-    *unit = compilation->unit();
+    job->unit = compilation->unit();
     compilation_read = true;
     return true;
   });
@@ -202,15 +207,15 @@ std::string IndexerContext::UsageMessage(const std::string& program_title,
                                          const std::string& program_name) {
   std::string message = "Command-line frontend for " + program_title;
   message.append(R"(.
-Invokes the program on a single compilation unit. By default reads source text
-from stdin and writes binary Kythe artifacts to stdout as a sequence of Entry
+Invokes the program on compilation unit(s). By default reads source text from
+stdin and writes binary Kythe artifacts to stdout as a sequence of Entry
 protos. Command-line arguments may be passed to the underlying compiler, if
 one should exist, as positional parameters.
 
 If -index_pack is not specified, there may be a positional parameter specified
-that ends in .kindex. If one exists, no other positional parameters may be
-specified, nor may an additional input parameter be specified. Input will
-be read from the index file.
+that ends in .kzip or .kindex (deprecated). If one exists, no other positional
+parameters may be specified, nor may an additional input parameter be specified.
+Input will be read from the index file.
 
 If -index_pack is specified, there must be exactly one positional parameter.
 This parameter should be the compilation unit ID from the mounted index pack
@@ -250,17 +255,17 @@ bool IndexerContext::HasIndexArguments() {
   return had_index;
 }
 
-void IndexerContext::LoadDataFromIndex(const std::string& kindex_file_or_cu) {
-  jobs_.emplace_back();
-  auto* job = &jobs_.back();
-  std::string name = strip_silent_input_prefix(kindex_file_or_cu);
+void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu) {
+  std::string name = strip_silent_input_prefix(file_or_cu);
+  const bool silent = !name.empty();
   if (name.empty()) {
-    job->silent = false;
-    name = kindex_file_or_cu;
-  } else {
-    job->silent = true;
+    name = file_or_cu;
   }
   if (!FLAGS_index_pack.empty()) {
+    jobs_.emplace_back();
+    auto* job = &jobs_.back();
+    job->silent = silent;
+
     std::string error_text;
     auto filesystem = kythe::IndexPackPosixFilesystem::Open(
         FLAGS_index_pack, kythe::IndexPackFilesystem::OpenMode::kReadOnly,
@@ -269,16 +274,13 @@ void IndexerContext::LoadDataFromIndex(const std::string& kindex_file_or_cu) {
                       << ": " << error_text;
     DecodeIndexPack(name, llvm::make_unique<IndexPack>(std::move(filesystem)),
                     &job->virtual_files, &job->unit);
-  } else if (llvm::StringRef(kindex_file_or_cu).endswith(".kzip")) {
-    DecodeKZipFile(name, &job->virtual_files, &job->unit);
+  } else if (llvm::StringRef(file_or_cu).endswith(".kzip")) {
+    DecodeKZipFile(name, &jobs_, silent);
   } else {
+    jobs_.emplace_back();
+    auto* job = &jobs_.back();
+    job->silent = silent;
     DecodeIndexFile(name, &job->virtual_files, &job->unit);
-  }
-  job->working_directory = job->unit.working_directory();
-  if (!llvm::sys::path::is_absolute(job->working_directory)) {
-    llvm::SmallString<1024> stored_wd;
-    CHECK(!llvm::sys::fs::make_absolute(stored_wd));
-    job->working_directory = stored_wd.str();
   }
 }
 
@@ -403,6 +405,16 @@ IndexerContext::IndexerContext(const std::vector<std::string>& args,
 
     for (size_t arg = 1; arg < args_.size(); ++arg) {
       LoadDataFromIndex(args[arg]);
+
+      // Set the working_directory for each job from the corresponding unit.
+      for (auto& job : jobs_) {
+        job.working_directory = job.unit.working_directory();
+        if (!llvm::sys::path::is_absolute(job.working_directory)) {
+          llvm::SmallString<1024> stored_wd;
+          CHECK(!llvm::sys::fs::make_absolute(stored_wd));
+          job.working_directory = stored_wd.str();
+        }
+      }
     }
   } else {
     LoadDataFromUnpackedFile(default_filename);

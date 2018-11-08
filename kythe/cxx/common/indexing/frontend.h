@@ -88,9 +88,9 @@ class IndexerContext {
   /// \return true if there are index/kindex arguments; false otherwise.
   bool HasIndexArguments();
   /// \brief Loads from an index pack or .kindex.
-  /// \param kindex_file_or_cu The name of the .kindex (with extension) or
-  /// the compilation unit hash.
-  void LoadDataFromIndex(const std::string& kindex_file_or_cu);
+  /// \param file_or_cu The name of the .kzip or .kindex (with extension) or the
+  /// compilation unit hash.
+  void LoadDataFromIndex(const std::string& file_or_cu);
   /// \brief Load data from an unpacked file.
   /// \param default_filename The filename to use if we're reading from stdin.
   void LoadDataFromUnpackedFile(const std::string& default_filename);
