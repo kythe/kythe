@@ -94,12 +94,12 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 		build.Steps = append(build.Steps,
 			javaArtifactsStep(),
 			mavenStep(hints))
-		build.Artifacts.Objects.Paths = append(build.Artifacts.Objects.Paths, path.Join(outputDirectory, "javac-extractor.err"))
+		build.Artifacts.Objects.Paths = append([]string{path.Join(outputDirectory, "javac-extractor.err")}, build.Artifacts.Objects.Paths...)
 	case rpb.BuildSystem_GRADLE:
 		build.Steps = append(build.Steps,
 			javaArtifactsStep(),
 			gradleStep(hints))
-		build.Artifacts.Objects.Paths = append(build.Artifacts.Objects.Paths, path.Join(outputDirectory, "javac-extractor.err"))
+		build.Artifacts.Objects.Paths = append([]string{path.Join(outputDirectory, "javac-extractor.err")}, build.Artifacts.Objects.Paths...)
 	default:
 		return build, fmt.Errorf("unsupported build system %s", hints.BuildSystem)
 	}
