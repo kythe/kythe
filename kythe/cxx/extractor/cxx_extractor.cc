@@ -948,7 +948,7 @@ void KindexWriterSink::OpenIndex(const std::string& hash) {
 }
 
 KindexWriterSink::~KindexWriterSink() {
-  CHECK(!coded_stream_->HadError())
+  CHECK(!(coded_stream_ && coded_stream_->HadError()))
       << "Errors encountered writing to " << open_path_;
   coded_stream_.reset();
   gzip_stream_.reset();
