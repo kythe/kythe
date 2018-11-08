@@ -24,9 +24,9 @@ import (
 	"os"
 	"os/exec"
 
-	"kythe.io/kythe/go/extractors/config/constants"
 	"kythe.io/kythe/go/extractors/config/preprocessor/modifier"
 	"kythe.io/kythe/go/extractors/config/runextractor/backup"
+	"kythe.io/kythe/go/extractors/constants"
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"github.com/google/subcommands"

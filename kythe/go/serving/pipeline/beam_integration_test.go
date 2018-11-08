@@ -340,6 +340,9 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
 			Target: &spb.VName{Signature: "caller"},
 		}, {
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_DEFINES_BINDING},
+			Target: &spb.VName{Signature: "interface"},
+		}, {
 			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
 			Target: src,
 		}},
@@ -488,6 +491,59 @@ func TestServingSimpleCrossReferences(t *testing.T) {
 			"kythe:#interface": {
 				Facts: map[string][]byte{
 					facts.NodeKind: []byte(nodes.Interface),
+				},
+			},
+		},
+	}))
+
+	t.Run("node_definitions", makeXRefTestCase(ctx, xs, &xpb.CrossReferencesRequest{
+		Ticket:          []string{ticket},
+		Filter:          []string{facts.NodeKind},
+		NodeDefinitions: true,
+	}, &xpb.CrossReferencesReply{
+		CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
+			ticket: {
+				Ticket:       ticket,
+				MarkedSource: ms,
+				RelatedNode: []*xpb.CrossReferencesReply_RelatedNode{{
+					Ticket:       "kythe:#interface",
+					RelationKind: edges.Extends,
+				}},
+			},
+		},
+		Nodes: map[string]*cpb.NodeInfo{
+			ticket: {Facts: map[string][]byte{facts.NodeKind: []byte(nodes.Record)}},
+			"kythe:#interface": {
+				Facts:      map[string][]byte{facts.NodeKind: []byte(nodes.Interface)},
+				Definition: "kythe:?path=path#anchor1",
+			},
+		},
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=path#anchor1": {
+				Ticket: "kythe:?path=path#anchor1",
+				Parent: "kythe:?path=path",
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   5,
+						ColumnOffset: 5,
+						LineNumber:   1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						ColumnOffset: 9,
+						LineNumber:   1,
+					},
+				},
+				Snippet: "blah blah",
+				SnippetSpan: &cpb.Span{
+					Start: &cpb.Point{
+						LineNumber: 1,
+					},
+					End: &cpb.Point{
+						ByteOffset:   9,
+						ColumnOffset: 9,
+						LineNumber:   1,
+					},
 				},
 			},
 		},

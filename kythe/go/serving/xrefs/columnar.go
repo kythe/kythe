@@ -256,6 +256,9 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 	if len(patterns) > 0 {
 		reply.Nodes = make(map[string]*cpb.NodeInfo)
 	}
+	if req.NodeDefinitions {
+		reply.DefinitionLocations = make(map[string]*xpb.Anchor)
+	}
 	emitSnippets := req.Snippets != xpb.SnippetsKind_NONE
 
 	// TODO(schroederc): implement paging xrefs in large CrossReferencesReply messages
@@ -360,6 +363,18 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 				relatedNode := kytheuri.ToString(e.RelatedNode.Node.Source)
 				if relatedNodes.Contains(relatedNode) {
 					addXRefNode(reply, patterns, e.RelatedNode.Node)
+				}
+			case *xspb.CrossReferences_NodeDefinition_:
+				if !req.NodeDefinitions || len(reply.Nodes) == 0 {
+					continue
+				}
+
+				relatedNode := kytheuri.ToString(e.NodeDefinition.Node)
+				if node := reply.Nodes[relatedNode]; node != nil {
+					loc := e.NodeDefinition.Location
+					node.Definition = loc.Ticket
+					a := a2a(loc, emitSnippets).Anchor
+					reply.DefinitionLocations[loc.Ticket] = a
 				}
 			case *xspb.CrossReferences_Caller_:
 				if req.CallerKind == xpb.CrossReferencesRequest_NO_CALLERS {

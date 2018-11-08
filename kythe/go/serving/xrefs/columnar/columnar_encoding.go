@@ -377,11 +377,12 @@ func decodeDecorDiagnostic(file *spb.VName, key string, val []byte) (*xspb.FileD
 // Columnar file decorations group numbers.
 // See: kythe/proto/xref_serving.proto
 const (
-	columnarXRefsIndexGroup       = -1 // no group number
-	columnarXRefsReferenceGroup   = 0
-	columnarXRefsRelationGroup    = 10
-	columnarXRefsCallerGroup      = 20
-	columnarXRefsRelatedNodeGroup = 30
+	columnarXRefsIndexGroup          = -1 // no group number
+	columnarXRefsReferenceGroup      = 0
+	columnarXRefsRelationGroup       = 10
+	columnarXRefsCallerGroup         = 20
+	columnarXRefsRelatedNodeGroup    = 30
+	columnarXRefsNodeDefinitionGroup = 40
 )
 
 // EncodeCrossReferencesEntry encodes a columnar CrossReferences entry.
@@ -399,6 +400,8 @@ func EncodeCrossReferencesEntry(keyPrefix []byte, xr *xspb.CrossReferences) (*KV
 		return encodeXRefCallsite(keyPrefix, xr.Source, e.Callsite)
 	case *xspb.CrossReferences_RelatedNode_:
 		return encodeXRefRelatedNode(keyPrefix, xr.Source, e.RelatedNode)
+	case *xspb.CrossReferences_NodeDefinition_:
+		return encodeXRefNodeDefinition(keyPrefix, xr.Source, e.NodeDefinition)
 	default:
 		return nil, fmt.Errorf("unknown CrossReferences entry: %T", e)
 	}
@@ -504,6 +507,18 @@ func encodeXRefRelatedNode(prefix []byte, src *spb.VName, n *xspb.CrossReference
 	return &KV{key, val}, nil
 }
 
+func encodeXRefNodeDefinition(prefix []byte, src *spb.VName, def *xspb.CrossReferences_NodeDefinition) (*KV, error) {
+	key, err := keys.Append(prefix, src, columnarXRefsNodeDefinitionGroup, def.Node)
+	if err != nil {
+		return nil, err
+	}
+	val, err := proto.Marshal(&xspb.CrossReferences_NodeDefinition{Location: def.Location})
+	if err != nil {
+		return nil, err
+	}
+	return &KV{key, val}, nil
+}
+
 // DecodeCrossReferencesEntry decodes a columnar CrossReferences entry.
 func DecodeCrossReferencesEntry(src *spb.VName, key string, val []byte) (*xspb.CrossReferences, error) {
 	kind := columnarXRefsIndexGroup
@@ -525,6 +540,8 @@ func DecodeCrossReferencesEntry(src *spb.VName, key string, val []byte) (*xspb.C
 		return decodeXRefCallerOrCallsite(src, key, val)
 	case columnarXRefsRelatedNodeGroup:
 		return decodeXRefRelatedNode(src, key, val)
+	case columnarXRefsNodeDefinitionGroup:
+		return decodeXRefNodeDefinition(src, key, val)
 	default:
 		return nil, fmt.Errorf("unknown group kind: %d", kind)
 	}
@@ -640,5 +657,25 @@ func decodeXRefRelatedNode(src *spb.VName, key string, val []byte) (*xspb.CrossR
 	return &xspb.CrossReferences{
 		Source: src,
 		Entry:  &xspb.CrossReferences_RelatedNode_{&rn},
+	}, nil
+}
+
+func decodeXRefNodeDefinition(src *spb.VName, key string, val []byte) (*xspb.CrossReferences, error) {
+	var node spb.VName
+	key, err := keys.Parse(key, &node)
+	if err != nil {
+		return nil, err
+	}
+	if len(key) != 0 {
+		return nil, fmt.Errorf("unexpected trailing key: %q", key)
+	}
+	var def xspb.CrossReferences_NodeDefinition
+	if err := proto.Unmarshal(val, &def); err != nil {
+		return nil, err
+	}
+	def.Node = &node
+	return &xspb.CrossReferences{
+		Source: src,
+		Entry:  &xspb.CrossReferences_NodeDefinition_{&def},
 	}, nil
 }
