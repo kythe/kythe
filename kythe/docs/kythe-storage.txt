@@ -651,23 +651,23 @@ repository:
 write_entries::
   A tool that writes a stream of Kythe entries stored as protobuf messages to
   an arbitrary graph store service.
-  [link:/repo/kythe/go/storage/tools/write_entries.go[source]]
+  [link:/repo/kythe/go/storage/tools/write_entries/write_entries.go[source]]
 
 read_entries::
   A tool that scans a Kythe graph store, printing each entry to standard output.
-  [link:/repo/kythe/go/storage/tools/read_entries.go[source]]
+  [link:/repo/kythe/go/storage/tools/read_entries/read_entries.go[source]]
 
 triples::
   A tool to convert a stream of Kythe entries into
   link:http://en.wikipedia.org/wiki/N-Triples[triples].
-  [link:/repo/kythe/go/storage/tools/triples.go[source]]
+  [link:/repo/kythe/go/storage/tools/triples/triples.go[source]]
 
 directory_indexer::
   A tool to generate Kythe entries representing a directory tree.
-  [link:/repo/kythe/go/storage/tools/directory_indexer.go[source]]
+  [link:/repo/kythe/go/storage/tools/directory_indexer/directory_indexer.go[source]]
 
 leveldb::
   An implementation of a graph store using link:http://leveldb.org[LevelDB]
-  (via link:http://github.com/jmjodges/levigo[levigo]).
+  (via link:http://github.com/jmhodges/levigo[levigo]).
   [link:/repo/kythe/go/storage/leveldb/leveldb.go[source]]
 

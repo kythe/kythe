@@ -42,7 +42,7 @@ java -Xbootclasspath/p:third_party/javac/javac*.jar \
 ## Extracting Compilations using Bazel
 
 Kythe uses Bazel to build itself and has implemented Bazel
-[action_listener](http://bazel.io/docs/build-encyclopedia.html#action_listener)s
+[action_listener](https://docs.bazel.build/versions/master/be/extra-actions.html#action_listener)s
 that use Kythe's Java and C++ extractors.  This effectively allows Bazel to
 extract each compilation as it is run during the build.
 

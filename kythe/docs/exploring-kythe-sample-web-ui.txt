@@ -107,6 +107,6 @@ http://www.kythe.io/docs/schema/#param[/kythe/edge/param]:: declared parameters
 
 These examples are just a taste of the data exposed in our sample web UI.  With
 other specialized interfaces such as the
-https://kythe.io/repo/kythe/go/serving/tools/kythe.go[Kythe command-line],
+https://kythe.io/repo/kythe/go/serving/tools/kythe/kythe.go[Kythe command-line],
 Kythe's data can lead to some very useful tools for viewing, editing, and
 grokking source code across multiple languages.
