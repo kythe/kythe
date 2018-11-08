@@ -41,9 +41,6 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deprecation = "Please use :kzip_{reader,writer}",
-    visibility = [
-        "//kythe:default_visibility",
-    ],
     deps = [
         ":lib",
         "//external:libuuid",
