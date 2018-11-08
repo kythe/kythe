@@ -148,6 +148,8 @@ void DecodeKZipFile(const std::string& path, std::vector<IndexerJob>* jobs,
   CHECK(reader) << "Couldn't open kzip from " << path;
   bool compilation_read = false;
   auto status = reader->Scan([&](absl::string_view digest) {
+    // TODO(#3233): Process compilation units as they're read rather than
+    // storing them all in memory and processing later.
     jobs->emplace_back();
     auto* job = &jobs->back();
     job->silent = silent;
