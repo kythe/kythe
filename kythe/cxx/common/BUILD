@@ -43,7 +43,6 @@ cc_library(
     deprecation = "Please use :kzip_{reader,writer}",
     visibility = [
         "//kythe:default_visibility",
-        "//third_party/llvm/src:__pkg__",
     ],
     deps = [
         ":lib",
@@ -85,16 +84,38 @@ cc_library(
 )
 
 cc_library(
-    name = "lib",
+    name = "cxx_details",
     srcs = [
         "cxx_details.cc",
+    ],
+    hdrs = [
+        "cxx_details.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    visibility = [
+        "//kythe:default_visibility",
+        "//third_party/llvm/src:__pkg__",
+    ],
+    deps = [
+        "//kythe/proto:cxx_cc_proto",
+        "//third_party/llvm",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "lib",
+    srcs = [
         "file_vname_generator.cc",
         "kythe_metadata_file.cc",
         "path_utils.cc",
         "protobuf_metadata_file.cc",
     ],
     hdrs = [
-        "cxx_details.h",
         "file_vname_generator.h",
         "kythe_metadata_file.h",
         "path_utils.h",
@@ -109,14 +130,12 @@ cc_library(
     ],
     visibility = [
         "//kythe:default_visibility",
-        "//third_party/llvm/src:__pkg__",
     ],
     deps = [
         ":json_proto",
         "//external:zlib",
         "//kythe/cxx/common/schema:edges",
         "//kythe/proto:analysis_cc_proto",
-        "//kythe/proto:cxx_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "//third_party/llvm",
         "@com_github_gflags_gflags//:gflags",
@@ -223,7 +242,6 @@ cc_library(
         ":index_pack",
         "//external:zlib",
         "//third_party:gtest",
-        "//third_party/llvm",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
