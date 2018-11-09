@@ -36,7 +36,7 @@ cc_binary(
     ],
     deps = [
         "//kythe/cxx/common:lib",
-        "//kythe/cxx/common/indexing:lib",
+        "//kythe/cxx/common/indexing:caching_output",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:cc_wkt_protos",
     ],

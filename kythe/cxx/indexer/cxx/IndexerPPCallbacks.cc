@@ -24,7 +24,7 @@
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
 #include "glog/logging.h"
-#include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/extractor/path_utils.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 

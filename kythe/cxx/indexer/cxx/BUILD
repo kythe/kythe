@@ -1,6 +1,58 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 cc_library(
+    name = "kythe_claim_client",
+    srcs = [
+        "KytheClaimClient.cc",
+    ],
+    hdrs = [
+        "KytheClaimClient.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        "//external:libmemcached",
+        "//kythe/cxx/common:index_pack",
+        "//kythe/cxx/common:json_proto",
+        "//kythe/cxx/common:lib",
+        "//kythe/cxx/common/indexing:caching_output",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:storage_cc_proto",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "frontend",
+    srcs = [
+        "frontend.cc",
+    ],
+    hdrs = [
+        "frontend.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":kythe_claim_client",
+        "//kythe/cxx/common:kzip_reader",
+        "//kythe/cxx/extractor:path_utils",
+        "//kythe/proto:buildinfo_cc_proto",
+        "//kythe/proto:claim_cc_proto",
+        "@com_google_absl//absl/memory",
+    ],
+)
+
+cc_library(
     name = "semantic_hash",
     srcs = ["semantic_hash.cc"],
     hdrs = ["semantic_hash.h"],
@@ -84,7 +136,8 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//kythe/cxx/common/indexing:lib",
+        ":kythe_claim_client",
+        "//kythe/cxx/extractor:path_utils",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
@@ -114,14 +167,14 @@ cc_library(
         ":indexed_parent_iterator",
         ":indexed_parent_map",
         ":indexer_library_support",
+        ":kythe_claim_client",
         ":marked_source",
         ":node_set",
         ":semantic_hash",
         ":type_map",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:scope_guard",
-        "//kythe/cxx/common:supported_language",
-        "//kythe/cxx/common/indexing:lib",
+        "//kythe/cxx/extractor:supported_language",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
@@ -170,9 +223,9 @@ cc_library(
     ],
     deps = [
         ":graph_observer",
+        ":kythe_claim_client",
         "//kythe/cxx/common:lib",
-        "//kythe/cxx/common:supported_language",
-        "//kythe/cxx/common/indexing:lib",
+        "//kythe/cxx/extractor:supported_language",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
@@ -218,11 +271,11 @@ cc_library(
     deps = [
         ":graph_observer",
         ":indexer_ast_hooks",
+        ":kythe_claim_client",
         ":vfs",
         "//kythe/cxx/common:lib",
-        "//kythe/cxx/common:supported_language",
-        "//kythe/cxx/common/indexing:lib",
         "//kythe/cxx/common/schema:edges",
+        "//kythe/cxx/extractor:supported_language",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
@@ -247,7 +300,7 @@ cc_library(
     deps = [
         ":clang_utils",
         ":graph_observer",
-        "//kythe/cxx/common/indexing:lib",
+        ":kythe_claim_client",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
@@ -322,17 +375,17 @@ cc_library(
         ":graph_observer",
         ":imputed_constructor_library_support",
         ":indexer_pp_callbacks",
+        ":kythe_claim_client",
         ":kythe_graph_observer",
         ":marked_source",
         ":proto_library_support",
         ":vfs",
         "//external:libmemcached",
-        "//kythe/cxx/common:cxx_details",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
-        "//kythe/cxx/common:supported_language",
-        "//kythe/cxx/common/indexing:lib",
+        "//kythe/cxx/extractor:cxx_details",
+        "//kythe/cxx/extractor:supported_language",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:cxx_cc_proto",
@@ -356,10 +409,10 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":frontend",
         ":lib",
         "//external:zlib",
         "//kythe/cxx/common:lib",
-        "//kythe/cxx/common/indexing:frontend",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
