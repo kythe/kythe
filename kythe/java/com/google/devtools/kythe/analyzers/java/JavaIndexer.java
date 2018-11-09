@@ -70,7 +70,6 @@ public class JavaIndexer {
       URLClassLoader classLoader = new URLClassLoader(new URL[] {fileURL(config.getPlugin())});
       for (Plugin plugin : ServiceLoader.load(Plugin.class, classLoader)) {
         final Class<? extends Plugin> clazz = plugin.getClass();
-        System.err.println("Registering plugin: " + clazz);
         plugins.add(
             () -> {
               try {
