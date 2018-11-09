@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_COMMON_PATH_UTILS_H_
-#define KYTHE_CXX_COMMON_PATH_UTILS_H_
+#ifndef KYTHE_CXX_EXTRACTOR_PATH_UTILS_H_
+#define KYTHE_CXX_EXTRACTOR_PATH_UTILS_H_
 
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
@@ -64,4 +64,4 @@ const clang::FileEntry* LookupFileForIncludePragma(
     llvm::SmallVectorImpl<char>* filename);
 }  // namespace kythe
 
-#endif  // KYTHE_CXX_COMMON_PATH_UTILS_H_
+#endif  // KYTHE_CXX_EXTRACTOR_PATH_UTILS_H_

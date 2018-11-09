@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_COMMON_KYTHE_LANGUAGE_H_
-#define KYTHE_CXX_COMMON_KYTHE_LANGUAGE_H_
+#ifndef KYTHE_CXX_EXTRACTOR_LANGUAGE_H_
+#define KYTHE_CXX_EXTRACTOR_LANGUAGE_H_
 
 #include <string>
 
@@ -36,4 +36,4 @@ std::string ToString(Language l);
 };  // namespace supported_language
 };  // namespace kythe
 
-#endif  // KYTHE_CXX_COMMON_KYTHE_LANGUAGE_H_
+#endif  // KYTHE_CXX_EXTRACTOR_LANGUAGE_H_
