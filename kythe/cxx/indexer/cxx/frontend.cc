@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kythe/cxx/common/indexing/frontend.h"
+#include "kythe/cxx/indexer/cxx/frontend.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -28,8 +28,8 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/kzip_reader.h"
-#include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/proto_conversions.h"
+#include "kythe/cxx/extractor/path_utils.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/claim.pb.h"
 #include "llvm/ADT/STLExtras.h"

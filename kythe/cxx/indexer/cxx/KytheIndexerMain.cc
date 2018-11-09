@@ -25,12 +25,12 @@
 
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
-#include "kythe/cxx/common/indexing/frontend.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
 #include "kythe/cxx/indexer/cxx/GoogleFlagsLibrarySupport.h"
 #include "kythe/cxx/indexer/cxx/ImputedConstructorSupport.h"
 #include "kythe/cxx/indexer/cxx/IndexerFrontendAction.h"
 #include "kythe/cxx/indexer/cxx/ProtoLibrarySupport.h"
+#include "kythe/cxx/indexer/cxx/frontend.h"
 #include "kythe/cxx/indexer/cxx/indexer_worklist.h"
 
 DEFINE_bool(index_template_instantiations, true,

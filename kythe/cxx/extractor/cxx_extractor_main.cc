@@ -38,7 +38,7 @@
 
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
-#include "kythe/cxx/common/language.h"
+#include "kythe/cxx/extractor/language.h"
 
 #include "cxx_extractor.h"
 

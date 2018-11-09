@@ -64,15 +64,6 @@ cc_library(
 )
 
 cc_library(
-    name = "path_utils",
-    srcs = ["path_utils.cc"],
-    hdrs = ["path_utils.h"],
-    deps = [
-        ":lib",
-    ],
-)
-
-cc_library(
     name = "vname_ordering",
     hdrs = ["vname_ordering.h"],
     deps = [
@@ -81,41 +72,15 @@ cc_library(
 )
 
 cc_library(
-    name = "cxx_details",
-    srcs = [
-        "cxx_details.cc",
-    ],
-    hdrs = [
-        "cxx_details.h",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    visibility = [
-        "//kythe:default_visibility",
-        "//third_party/llvm/src:__pkg__",
-    ],
-    deps = [
-        "//kythe/proto:cxx_cc_proto",
-        "//third_party/llvm",
-        "@com_github_google_glog//:glog",
-    ],
-)
-
-cc_library(
     name = "lib",
     srcs = [
         "file_vname_generator.cc",
         "kythe_metadata_file.cc",
-        "path_utils.cc",
         "protobuf_metadata_file.cc",
     ],
     hdrs = [
         "file_vname_generator.h",
         "kythe_metadata_file.h",
-        "path_utils.h",
         "proto_conversions.h",
         "protobuf_metadata_file.h",
         "vname_ordering.h",
@@ -197,32 +162,6 @@ cc_test(
     size = "small",
     deps = [
         ":file_vname_generator_testlib",
-    ],
-)
-
-cc_library(
-    name = "path_utils_testlib",
-    testonly = 1,
-    srcs = [
-        "path_utils_test.cc",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":path_utils",
-        "//third_party:gtest",
-        "//third_party/llvm",
-    ],
-)
-
-cc_test(
-    name = "path_utils_test",
-    size = "small",
-    deps = [
-        ":path_utils_testlib",
     ],
 )
 
@@ -328,13 +267,6 @@ cc_test(
     name = "kythe_uri_test",
     size = "small",
     deps = [":kythe_uri_testlib"],
-)
-
-cc_library(
-    name = "supported_language",
-    srcs = ["language.cc"],
-    hdrs = ["language.h"],
-    deps = ["//third_party/llvm"],
 )
 
 cc_library(

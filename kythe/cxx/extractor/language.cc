@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kythe/cxx/common/language.h"
+#include "kythe/cxx/extractor/language.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <string>

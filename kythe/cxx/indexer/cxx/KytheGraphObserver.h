@@ -26,11 +26,11 @@
 #include "glog/logging.h"
 
 #include "GraphObserver.h"
-#include "kythe/cxx/common/indexing/KytheClaimClient.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
-#include "kythe/cxx/common/language.h"
+#include "kythe/cxx/extractor/language.h"
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
+#include "kythe/cxx/indexer/cxx/KytheClaimClient.h"
 #include "kythe/cxx/indexer/cxx/KytheVFS.h"
 #include "kythe/proto/storage.pb.h"
 

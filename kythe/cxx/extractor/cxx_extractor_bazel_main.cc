@@ -26,7 +26,7 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
-#include "kythe/cxx/common/language.h"
+#include "kythe/cxx/extractor/language.h"
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
 
 #include "cxx_extractor.h"

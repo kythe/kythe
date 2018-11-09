@@ -17,10 +17,9 @@
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 
 #include <algorithm>
+#include <sstream>
 
 #include <libmemcached/memcached.h>
-
-#include "llvm/Support/raw_ostream.h"
 
 namespace kythe {
 
@@ -76,8 +75,7 @@ bool MemcachedHashCache::SawHash(const Hash& hash) {
 }
 
 std::string FileOutputStream::Stats::ToString() const {
-  std::string out;
-  llvm::raw_string_ostream ostream(out);
+  std::stringstream ostream;
   ostream << buffers_merged_ << " merged " << buffers_split_ << " split "
           << buffers_retired_ << " retired " << hashes_matched_ << " matches "
           << (buffers_retired_ ? (total_bytes_ / buffers_retired_) : 0)
