@@ -32,27 +32,6 @@ cc_library(
 )
 
 cc_library(
-    name = "index_pack",
-    srcs = ["index_pack.cc"],
-    hdrs = ["index_pack.h"],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deprecation = "Please use :kzip_{reader,writer}",
-    deps = [
-        ":lib",
-        "//external:libuuid",
-        "//external:zlib",
-        "//kythe/proto:analysis_cc_proto",
-        "@boringssl//:crypto",
-        "@com_google_absl//absl/memory",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_library(
     name = "kythe_uri",
     srcs = ["kythe_uri.cc"],
     hdrs = ["kythe_uri.h"],
@@ -81,7 +60,6 @@ cc_library(
     hdrs = [
         "file_vname_generator.h",
         "kythe_metadata_file.h",
-        "proto_conversions.h",
         "protobuf_metadata_file.h",
         "vname_ordering.h",
     ],
@@ -99,10 +77,10 @@ cc_library(
         "//kythe/cxx/common/schema:edges",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:storage_cc_proto",
-        "//third_party/llvm",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
+        "@com_google_absl//absl/base",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:cc_wkt_protos",
@@ -163,33 +141,6 @@ cc_test(
     deps = [
         ":file_vname_generator_testlib",
     ],
-)
-
-cc_library(
-    name = "index_pack_testlib",
-    testonly = 1,
-    srcs = ["index_pack_test.cc"],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":index_pack",
-        "//external:zlib",
-        "//third_party:gtest",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
-        "@com_github_tencent_rapidjson//:rapidjson",
-        "@com_google_absl//absl/memory",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_test(
-    name = "index_pack_test",
-    size = "small",
-    deps = [":index_pack_testlib"],
 )
 
 cc_library(

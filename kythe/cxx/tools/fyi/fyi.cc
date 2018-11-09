@@ -26,9 +26,9 @@
 #include "clang/Sema/ExternalSemaSource.h"
 #include "clang/Sema/Sema.h"
 #include "kythe/cxx/common/kythe_uri.h"
-#include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/cxx/common/schema/edges.h"
 #include "kythe/cxx/common/schema/facts.h"
+#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
@@ -409,7 +409,7 @@ class Action : public clang::ASTFrontendAction,
     // We've found at least one interesting name in the graph. Now we need
     // to figure out which nodes those names are bound to.
     named_edges_request.add_kind(
-        ToStringRef(absl::StrCat("%", kythe::common::schema::kNamed)));
+        absl::StrCat("%", kythe::common::schema::kNamed));
     proto::EdgesReply named_edges_reply;
     std::string error_text;
     if (!factory_.xrefs_->Edges(named_edges_request, &named_edges_reply,
@@ -438,7 +438,7 @@ class Action : public clang::ASTFrontendAction,
       return clang::TypoCorrection();
     }
     childof_request.add_filter(kythe::common::schema::kFactNodeKind);
-    childof_request.add_kind(ToStringRef(kythe::common::schema::kChildOf));
+    childof_request.add_kind(kythe::common::schema::kChildOf);
     if (!factory_.xrefs_->Edges(childof_request, &childof_reply, &error_text)) {
       fprintf(stderr, "Xrefs error (childof): %s\n", error_text.c_str());
       return clang::TypoCorrection();

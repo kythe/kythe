@@ -28,9 +28,9 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/file_vname_generator.h"
-#include "kythe/cxx/common/index_pack.h"
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/extractor/cxx_details.h"
+#include "kythe/cxx/extractor/index_pack.h"
 #include "kythe/cxx/extractor/language.h"
 #include "kythe/proto/analysis.pb.h"
 

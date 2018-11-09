@@ -15,10 +15,10 @@ cc_library(
     ],
     deps = [
         "//external:libmemcached",
-        "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common/indexing:caching_output",
+        "//kythe/cxx/extractor:index_pack",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
@@ -43,6 +43,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":clang_utils",
         ":kythe_claim_client",
         "//kythe/cxx/common:kzip_reader",
         "//kythe/cxx/extractor:path_utils",
@@ -70,6 +71,7 @@ cc_library(
     ],
     hdrs = [
         "clang_utils.h",
+        "proto_conversions.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -344,6 +346,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":clang_utils",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_cc_proto",
@@ -381,10 +384,10 @@ cc_library(
         ":proto_library_support",
         ":vfs",
         "//external:libmemcached",
-        "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/extractor:cxx_details",
+        "//kythe/cxx/extractor:index_pack",
         "//kythe/cxx/extractor:supported_language",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",

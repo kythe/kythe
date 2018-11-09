@@ -20,6 +20,7 @@ cc_library(
         "//kythe/cxx/common:net_client",
         "//kythe/cxx/common/schema:edges",
         "//kythe/cxx/common/schema:facts",
+        "//kythe/cxx/indexer/cxx:clang_utils",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_gflags_gflags//:gflags",

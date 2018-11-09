@@ -18,6 +18,7 @@
 
 #include <sstream>
 
+#include "absl/strings/match.h"
 #include "glog/logging.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/zero_copy_stream.h"
@@ -39,9 +40,10 @@ proto::VName ProtobufMetadataSupport::VNameForAnnotation(
 
 std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     const std::string& raw_filename, const std::string& filename,
-    const llvm::MemoryBuffer* buffer) {
-  llvm::StringRef file_ref(filename);
-  if (!file_ref.endswith(".pb.h.meta") && !file_ref.endswith(".proto.h.meta")) {
+    absl::string_view buffer) {
+  absl::string_view file_ref(filename);
+  if (!absl::EndsWith(filename, ".pb.h.meta") &&
+      !absl::EndsWith(filename, ".proto.h.meta")) {
     return nullptr;
   }
   proto::VName context_vname;
@@ -49,7 +51,7 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     LOG(WARNING) << "Failed getting VName for metadata: " << raw_filename;
   }
   google::protobuf::GeneratedCodeInfo info;
-  if (!info.ParseFromArray(buffer->getBufferStart(), buffer->getBufferSize())) {
+  if (!info.ParseFromArray(buffer.data(), buffer.size())) {
     LOG(WARNING) << "Failed ParseFromArray: " << raw_filename;
     return nullptr;
   }
