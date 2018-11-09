@@ -327,6 +327,7 @@ cc_library(
         ":proto_library_support",
         ":vfs",
         "//external:libmemcached",
+        "//kythe/cxx/common:cxx_details",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
