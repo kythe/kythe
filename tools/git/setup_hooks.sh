@@ -20,15 +20,16 @@ setup_hook() {
   local hook="$1"
   local path=".git/hooks/$hook"
   local script="tools/git/${hook}.sh"
+  local stmt="if [[ -r '$script' ]]; then './$script' \"\$@\"; fi"
 
   if [[ ! -r "$path" ]]; then
     echo "Creating $path" >&2
     echo "#!/bin/bash -e" > "$path"
-    echo "test -r '$script' && './$script' \"\$@\"" >> "$path"
+    echo "$stmt" >> "$path"
     chmod +x "$path"
   elif ! grep -q "$script" "$path"; then
     echo "Appending $script to $path" >&2
-    echo "test -r '$script' && './$script' \"\$@\"" >> "$path"
+    echo "$stmt" >> "$path"
   else
     echo "$path already contains reference to $script" >&2
   fi
