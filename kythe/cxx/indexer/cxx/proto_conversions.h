@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_COMMON_PROTO_CONVERSIONS_H_
-#define KYTHE_CXX_COMMON_PROTO_CONVERSIONS_H_
+#ifndef KYTHE_CXX_INDEXER_CXX_PROTO_CONVERSIONS_H_
+#define KYTHE_CXX_INDEXER_CXX_PROTO_CONVERSIONS_H_
 
 #include "llvm/ADT/StringRef.h"
 
@@ -30,4 +30,4 @@ inline llvm::StringRef ToStringRef(const google::protobuf::string& string) {
 }
 }  // namespace kythe
 
-#endif  // KYTHE_CXX_COMMON_PROTO_CONVERSIONS_H_
+#endif  // KYTHE_CXX_INDEXER_CXX_PROTO_CONVERSIONS_H_
