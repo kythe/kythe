@@ -28,8 +28,8 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/kzip_reader.h"
-#include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/cxx/extractor/path_utils.h"
+#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/claim.pb.h"
 #include "llvm/ADT/STLExtras.h"
@@ -349,8 +349,8 @@ void IndexerContext::InitializeClaimClient() {
 void IndexerContext::NormalizeFileVNames() {
   for (auto& job : jobs_) {
     for (auto& input : *job.unit.mutable_required_input()) {
-      input.mutable_v_name()->set_path(
-          CleanPath(ToStringRef(input.v_name().path())));
+      input.mutable_v_name()->set_path(CleanPath(llvm::StringRef(
+          input.v_name().path().data(), input.v_name().path().size())));
       input.mutable_v_name()->clear_signature();
     }
   }

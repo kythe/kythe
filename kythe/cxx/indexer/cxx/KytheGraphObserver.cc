@@ -1069,8 +1069,11 @@ void KytheGraphObserver::applyMetadataFile(clang::FileID id,
             file->getName().str().c_str());
     return;
   }
-  if (auto metadata =
-          meta_supports_->ParseFile(file->getName(), buffer, search_string)) {
+  if (auto metadata = meta_supports_->ParseFile(
+          file->getName(),
+          absl::string_view(buffer->getBuffer().data(),
+                            buffer->getBufferSize()),
+          search_string)) {
     meta_.emplace(id, std::move(metadata));
   }
 }

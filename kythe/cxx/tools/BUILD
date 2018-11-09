@@ -32,8 +32,8 @@ cc_library(
     ],
     deps = [
         "//external:zlib",
-        "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/extractor:index_pack",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:claim_cc_proto",
         "@com_github_gflags_gflags//:gflags",
@@ -54,7 +54,7 @@ cc_library(
     ],
     deps = [
         "//external:zlib",
-        "//kythe/cxx/common:index_pack",
+        "//kythe/cxx/extractor:index_pack",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:claim_cc_proto",
         "@com_github_gflags_gflags//:gflags",

@@ -1,6 +1,55 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 cc_library(
+    name = "index_pack",
+    srcs = ["index_pack.cc"],
+    hdrs = ["index_pack.h"],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deprecation = "Please use :kzip_{reader,writer}",
+    deps = [
+        "//external:libuuid",
+        "//external:zlib",
+        "//kythe/cxx/common:lib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party/llvm",
+        "@boringssl//:crypto",
+        "@com_google_absl//absl/memory",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "index_pack_testlib",
+    testonly = 1,
+    srcs = ["index_pack_test.cc"],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":index_pack",
+        "//external:zlib",
+        "//third_party:gtest",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_github_tencent_rapidjson//:rapidjson",
+        "@com_google_absl//absl/memory",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "index_pack_test",
+    size = "small",
+    deps = [":index_pack_testlib"],
+)
+
+cc_library(
     name = "cxx_details",
     srcs = [
         "cxx_details.cc",
@@ -127,14 +176,15 @@ cc_library(
     ],
     deps = [
         ":command_line_utils",
+        ":index_pack",
         ":path_utils",
         ":supported_language",
         "//external:zlib",
-        "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:index_writer",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:kzip_writer",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/indexer/cxx:clang_utils",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
         "//kythe/proto:cxx_cc_proto",
