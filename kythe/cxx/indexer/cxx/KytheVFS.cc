@@ -37,7 +37,7 @@ IndexVFS::IndexVFS(const std::string& working_directory,
   assert(llvm::sys::path::is_absolute(working_directory) &&
          "Working directory must be absolute.");
   for (const auto& data : virtual_files_) {
-    if (auto* record = FileRecordForPath(data.info().path(),
+    if (auto* record = FileRecordForPath(ToStringRef(data.info().path()),
                                          BehaviorOnMissing::kCreateFile,
                                          data.content().size())) {
       record->data =

@@ -214,7 +214,7 @@ bool KytheMetadataSupport::LoadMetaElement(const rapidjson::Value& value,
 std::unique_ptr<MetadataFile> KytheMetadataSupport::LoadFromJSON(
     absl::string_view json) {
   rapidjson::Document document;
-  document.Parse(std::string(json).c_str());
+  document.Parse(json.data(), json.size());
   if (document.HasParseError()) {
     LOG(WARNING) << rapidjson::GetParseError_En(document.GetParseError())
                  << " near offset " << document.GetErrorOffset();
