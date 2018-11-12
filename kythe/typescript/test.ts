@@ -38,12 +38,13 @@ const KYTHE_PATH = process.env.KYTHE || '/opt/kythe';
  * across each test.
  */
 function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
-  let compilerHost = ts.createCompilerHost(options);
+  const compilerHost = ts.createCompilerHost(options);
 
-  let libPath = compilerHost.getDefaultLibFileName(options);
-  let libSource = compilerHost.getSourceFile(libPath, ts.ScriptTarget.ES2015)!;
+  const libPath = compilerHost.getDefaultLibFileName(options);
+  const libSource =
+      compilerHost.getSourceFile(libPath, ts.ScriptTarget.ES2015)!;
 
-  let hostGetSourceFile = compilerHost.getSourceFile;
+  const hostGetSourceFile = compilerHost.getSourceFile;
   compilerHost.getSourceFile =
       (fileName: string, languageVersion: ts.ScriptTarget,
        onError?: (message: string) => void): ts.SourceFile|undefined => {
@@ -61,9 +62,9 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
 function verify(
     host: ts.CompilerHost, options: ts.CompilerOptions,
     test: string): Promise<void> {
-  let program = ts.createProgram([test], options, host);
+  const program = ts.createProgram([test], options, host);
 
-  let verifier = child_process.spawn(
+  const verifier = child_process.spawn(
       `${KYTHE_PATH}/tools/entrystream --read_json |` +
           `${KYTHE_PATH}/tools/verifier ${test}`,
       [], {
@@ -88,13 +89,14 @@ function verify(
 }
 
 function testLoadTsConfig() {
-  let config = indexer.loadTsConfig('testdata/tsconfig-files.json', 'testdata');
+  const config =
+      indexer.loadTsConfig('testdata/tsconfig-files.json', 'testdata');
   // We expect the paths that were loaded to be absolute.
   assert.deepEqual(config.fileNames, [path.resolve('testdata/alt.ts')]);
 }
 
 async function testIndexer(args: string[]) {
-  let config = indexer.loadTsConfig('testdata/tsconfig.json', 'testdata');
+  const config = indexer.loadTsConfig('testdata/tsconfig.json', 'testdata');
   let testPaths = args.map(path.resolve);
   if (args.length === 0) {
     // If no tests were passed on the command line, run all the .ts files found
@@ -102,10 +104,10 @@ async function testIndexer(args: string[]) {
     testPaths = config.fileNames;
   }
 
-  let host = createTestCompilerHost(config.options);
+  const host = createTestCompilerHost(config.options);
   for (const test of testPaths) {
     const testName = path.relative(config.options.rootDir!, test);
-    let start = new Date().valueOf();
+    const start = new Date().valueOf();
     process.stdout.write(`${testName}: `);
     try {
       await verify(host, config.options, test);
@@ -113,7 +115,7 @@ async function testIndexer(args: string[]) {
       console.log('FAIL');
       throw e;
     }
-    let time = new Date().valueOf() - start;
+    const time = new Date().valueOf() - start;
     console.log('PASS', time + 'ms');
   }
   return 0;
