@@ -69,10 +69,7 @@ enum TSNamespace {
 
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Vistor {
-  /** The file we're visiting. */
-  file: ts.SourceFile;
-
-  /** kFile is the VName for the source file. */
+  /** kFile is the VName for the 'file' node representing the source file. */
   kFile: VName;
 
   /**
@@ -113,7 +110,7 @@ class Vistor {
 
   constructor(
       /** Corpus name for produced VNames. */
-      private corpus: string, program: ts.Program,
+      private corpus: string, program: ts.Program, private file: ts.SourceFile,
       private getOffsetTable: (path: string) => utf8.OffsetTable) {
     this.typeChecker = program.getTypeChecker();
 
@@ -122,6 +119,11 @@ class Vistor {
     rootDirs = rootDirs.map(d => d + '/');
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
+
+    this.kFile = this.newVName(
+        /* empty signature */ '',
+        path.relative(this.sourceRoot, file.fileName));
+    this.kFile.language = '';
   }
 
   /**
@@ -1004,19 +1006,12 @@ class Vistor {
     }
   }
 
-  /** indexFile is the main entry point, starting the recursive visit. */
-  indexFile(file: ts.SourceFile) {
-    this.file = file;
-
-    // Emit a "file" node, containing the source text.
-    this.kFile = this.newVName(
-        /* empty signature */ '',
-        path.relative(this.sourceRoot, file.fileName));
-    this.kFile.language = '';
+  /** index is the main entry point, starting the recursive visit. */
+  index() {
     this.emitFact(this.kFile, 'node/kind', 'file');
-    this.emitFact(this.kFile, 'text', file.text);
+    this.emitFact(this.kFile, 'text', this.file.text);
 
-    ts.forEachChild(file, n => this.visit(n));
+    ts.forEachChild(this.file, n => this.visit(n));
   }
 }
 
@@ -1078,13 +1073,14 @@ export function index(
 
   for (const path of paths) {
     const sourceFile = program.getSourceFile(path);
-    const visitor = new Vistor(corpus, program, getOffsetTable);
+    if (!sourceFile) {
+      throw new Error(`requested indexing ${path} not found in program`);
+    }
+    const visitor = new Vistor(corpus, program, sourceFile, getOffsetTable);
     if (emit != null) {
       visitor.emit = emit;
     }
-    // N.B. The assertion here is redundant for TS 2.6, but will be
-    // required with TS 2.7.
-    visitor.indexFile(sourceFile!);
+    visitor.index();
   }
 }
 
