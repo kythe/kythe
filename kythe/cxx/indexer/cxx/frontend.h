@@ -42,9 +42,6 @@ struct IndexerJob {
   std::string working_directory;
   /// If set, this job should not produce any output.
   bool silent = false;
-  /// If true, the indexer is permitted to touch the local filesystem for this
-  /// job.
-  bool allow_filesystem_access = false;
 };
 
 /// \brief Handles common tasks related to invoking a Kythe indexer from the
@@ -68,6 +65,12 @@ class IndexerContext {
 
   /// \brief If non-null, the hash cache to use. Owned by `IndexerContext`.
   HashCache* hash_cache() const { return hash_cache_.get(); }
+  /// \brief If true, the indexer is permitted to touch the local filesystem.
+  bool allow_filesystem_access() const {
+    // Only allow filesystem access for unpacked inputs. Indexes already contain
+    // all the necessary files.
+    return unpacked_inputs_;
+  }
   /// \brief If true, the indexer should handle unknown elements gracefully.
   bool ignore_unimplemented() const { return ignore_unimplemented_; }
   /// \brief The claim client to use for this compilation. Not null.
@@ -127,6 +130,8 @@ class IndexerContext {
   std::unique_ptr<kythe::KytheClaimClient> claim_client_;
   /// The hash cache to use during analysis (or null).
   std::unique_ptr<HashCache> hash_cache_;
+  /// Whether the args specify an unpacked input file as opposed to an index.
+  bool unpacked_inputs_ = false;
   /// Whether to ignore missing cases during analysis.
   bool ignore_unimplemented_ = false;
 };

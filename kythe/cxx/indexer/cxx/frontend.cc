@@ -317,7 +317,6 @@ void IndexerContext::LoadDataFromUnpackedFile(
     const std::string& default_filename,
     const CompilationVisitCallback& visit) {
   IndexerJob job;
-  job.allow_filesystem_access = true;
   int read_fd = STDIN_FILENO;
   std::string source_file_name = default_filename;
   llvm::SmallString<1024> cwd;
@@ -421,6 +420,8 @@ IndexerContext::IndexerContext(const std::vector<std::string>& args,
       ignore_unimplemented_(FLAGS_ignore_unimplemented) {
   args_.erase(std::remove(args_.begin(), args_.end(), std::string()),
               args_.end());
+  // Only allow filesystem access for unpacked inputs
+  unpacked_inputs_ = !HasIndexArguments();
 
   InitializeClaimClient();
   OpenOutputStreams();
@@ -435,12 +436,12 @@ void IndexerContext::EnumerateCompilations(
   // we can deserialize it.
   proto::BuildDetails needed_for_proto_deserialization;
 
-  if (HasIndexArguments()) {
+  if (unpacked_inputs_) {
+    LoadDataFromUnpackedFile(default_filename_, visit);
+  } else {
     for (size_t arg = 1; arg < args_.size(); ++arg) {
       LoadDataFromIndex(args_[arg], visit);
     }
-  } else {
-    LoadDataFromUnpackedFile(default_filename_, visit);
   }
 }
 
