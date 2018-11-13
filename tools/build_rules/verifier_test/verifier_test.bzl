@@ -49,12 +49,12 @@ def _atomize_entries_impl(ctx):
     sorted_entries = ctx.new_file(ctx.outputs.entries, ctx.label.name + "_sorted_entries")
     ctx.action(
         outputs = [sorted_entries],
-        inputs = [zcat, entrystream] + list(inputs),
+        inputs = [zcat, entrystream] + inputs.to_list(),
         mnemonic = "SortEntries",
         command = '("$1" "${@:4}" | "$2" --sort) > "$3" || rm -f "$3"',
         arguments = (
             [zcat.path, entrystream.path, sorted_entries.path] +
-            [s.path for s in inputs]
+            [s.path for s in inputs.to_list()]
         ),
     )
     leveldb = ctx.new_file(ctx.outputs.entries, ctx.label.name + "_serving_tables")
