@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
   bool had_errors = false;
   NullOutputStream null_stream;
 
-  for (auto& job : *context.jobs()) {
+  context.EnumerateCompilations([&](IndexerJob& job) {
     options.EffectiveWorkingDirectory = job.working_directory;
 
     kythe::MetadataSupports meta_supports;
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
       fprintf(stderr, "Error: %s\n", result.c_str());
       had_errors = true;
     }
-  }
+  });
 
   return (had_errors ? 1 : 0);
 }
