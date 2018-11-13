@@ -60,7 +60,7 @@ def _extract_java_aspect(target, ctx):
         vnames_config = ctx.file._java_aspect_vnames_config,
         srcs = ctx.rule.files.srcs,
         opts = args,
-        deps = list(deps),
+        deps = deps.to_list(),
         mnemonic = "JavaExtractKZip",
     )
 
