@@ -420,7 +420,6 @@ IndexerContext::IndexerContext(const std::vector<std::string>& args,
       ignore_unimplemented_(FLAGS_ignore_unimplemented) {
   args_.erase(std::remove(args_.begin(), args_.end(), std::string()),
               args_.end());
-  // Only allow filesystem access for unpacked inputs
   unpacked_inputs_ = !HasIndexArguments();
 
   InitializeClaimClient();
