@@ -80,7 +80,6 @@ int main(int argc, char* argv[]) {
                             : FLAGS_experimental_usr_byte_size;
   options.DropInstantiationIndependentData =
       FLAGS_experimental_drop_instantiation_independent_data;
-  options.AllowFSAccess = context.allow_filesystem_access();
   if (FLAGS_report_profiling_events) {
     options.ReportProfileEvent = [](const char* counter, ProfilingEvent event) {
       fprintf(stderr, "%s: %s\n", counter,
@@ -91,8 +90,9 @@ int main(int argc, char* argv[]) {
   bool had_errors = false;
   NullOutputStream null_stream;
 
-  for (auto& job : *context.jobs()) {
+  context.EnumerateCompilations([&](IndexerJob& job) {
     options.EffectiveWorkingDirectory = job.working_directory;
+    options.AllowFSAccess = job.allow_filesystem_access;
 
     kythe::MetadataSupports meta_supports;
     meta_supports.Add(llvm::make_unique<ProtobufMetadataSupport>());
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
       fprintf(stderr, "Error: %s\n", result.c_str());
       had_errors = true;
     }
-  }
+  });
 
   return (had_errors ? 1 : 0);
 }

@@ -41,7 +41,10 @@ struct IndexerJob {
   /// not exist on the local filesystem.
   std::string working_directory;
   /// If set, this job should not produce any output.
-  bool silent;
+  bool silent = false;
+  /// If true, the indexer is permitted to touch the local filesystem for this
+  /// job.
+  bool allow_filesystem_access = false;
 };
 
 /// \brief Handles common tasks related to invoking a Kythe indexer from the
@@ -56,14 +59,17 @@ class IndexerContext {
                  const std::string& default_filename);
   ~IndexerContext();
 
+  /// \brief A callback used when enumerating compilations.
+  typedef std::function<void(IndexerJob&)> CompilationVisitCallback;
+  /// \brief Reads compilations from the file(s) specified in the constructor
+  /// and calls the callback for each one.
+  /// \param visit A callback to call for each compilation unit.
+  void EnumerateCompilations(CompilationVisitCallback visit);
+
   /// \brief If non-null, the hash cache to use. Owned by `IndexerContext`.
   HashCache* hash_cache() const { return hash_cache_.get(); }
-  /// \brief If true, the indexer is permitted to touch the local filesystem.
-  bool allow_filesystem_access() const { return allow_filesystem_access_; }
   /// \brief If true, the indexer should handle unknown elements gracefully.
   bool ignore_unimplemented() const { return ignore_unimplemented_; }
-  /// \brief Indexer jobs to complete.
-  std::vector<IndexerJob>* jobs() { return &jobs_; }
   /// \brief The claim client to use for this compilation. Not null.
   KytheClaimClient* claim_client() const {
     CHECK(claim_client_ != nullptr);
@@ -90,15 +96,16 @@ class IndexerContext {
   /// \brief Loads from an index pack or .kindex.
   /// \param file_or_cu The name of the .kzip or .kindex (with extension) or the
   /// compilation unit hash.
-  void LoadDataFromIndex(const std::string& file_or_cu);
+  /// \param visit A callback to call for each compilation unit.
+  void LoadDataFromIndex(const std::string& file_or_cu,
+                         CompilationVisitCallback visit);
   /// \brief Load data from an unpacked file.
   /// \param default_filename The filename to use if we're reading from stdin.
-  void LoadDataFromUnpackedFile(const std::string& default_filename);
+  /// \param visit A callback to call for each compilation unit.
+  void LoadDataFromUnpackedFile(const std::string& default_filename,
+                                CompilationVisitCallback visit);
   /// \brief Initialize a claim client.
   void InitializeClaimClient();
-  /// \brief Normalize input file vnames by cleaning paths and clearing
-  /// signatures.
-  void NormalizeFileVNames();
   /// \brief Prepare to write to output.
   void OpenOutputStreams();
   /// \brief Flush output.
@@ -108,8 +115,8 @@ class IndexerContext {
 
   /// Command-line arguments, pruned of empty strings and gflags.
   std::vector<std::string> args_;
-  /// Indexer jobs to complete.
-  std::vector<IndexerJob> jobs_;
+  /// Default_filename The filename to use if we're reading from stdin.
+  std::string default_filename_;
   /// The file descriptor to which we're writing output.
   int write_fd_ = -1;
   /// Wraps `write_fd_`.
@@ -120,8 +127,6 @@ class IndexerContext {
   std::unique_ptr<kythe::KytheClaimClient> claim_client_;
   /// The hash cache to use during analysis (or null).
   std::unique_ptr<HashCache> hash_cache_;
-  /// Whether access to the local filesystem is allowed during analysis.
-  bool allow_filesystem_access_ = false;
   /// Whether to ignore missing cases during analysis.
   bool ignore_unimplemented_ = false;
 };
