@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
   bool had_errors = false;
   NullOutputStream null_stream;
 
-  IndexerContext::CompilationVisitCallback callback = [&](IndexerJob& job) {
+  context.EnumerateCompilations([&](IndexerJob& job) {
     options.EffectiveWorkingDirectory = job.working_directory;
     options.AllowFSAccess = job.allow_filesystem_access;
 
@@ -117,8 +117,7 @@ int main(int argc, char* argv[]) {
       fprintf(stderr, "Error: %s\n", result.c_str());
       had_errors = true;
     }
-  };
-  context.EnumerateCompilations(callback);
+  });
 
   return (had_errors ? 1 : 0);
 }
