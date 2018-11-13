@@ -27,8 +27,7 @@ import (
 
 const testDataDir = "testdata"
 
-func TestFoo(t *testing.T) {
-	// Do nothing intentionally
+func TestYAMLConversion(t *testing.T) {
 	testcases := []testcase{
 		{"mvn"},
 		{"gradle"},
