@@ -60,11 +60,11 @@ class IndexerContext {
   ~IndexerContext();
 
   /// \brief A callback used when enumerating compilations.
-  typedef std::function<void(IndexerJob&)> CompilationVisitCallback;
+  using CompilationVisitCallback = std::function<void(IndexerJob&)>;
   /// \brief Reads compilations from the file(s) specified in the constructor
   /// and calls the callback for each one.
   /// \param visit A callback to call for each compilation unit.
-  void EnumerateCompilations(CompilationVisitCallback visit);
+  void EnumerateCompilations(CompilationVisitCallback& visit);
 
   /// \brief If non-null, the hash cache to use. Owned by `IndexerContext`.
   HashCache* hash_cache() const { return hash_cache_.get(); }
@@ -98,12 +98,12 @@ class IndexerContext {
   /// compilation unit hash.
   /// \param visit A callback to call for each compilation unit.
   void LoadDataFromIndex(const std::string& file_or_cu,
-                         CompilationVisitCallback visit);
+                         CompilationVisitCallback& visit);
   /// \brief Load data from an unpacked file.
   /// \param default_filename The filename to use if we're reading from stdin.
   /// \param visit A callback to call for each compilation unit.
   void LoadDataFromUnpackedFile(const std::string& default_filename,
-                                CompilationVisitCallback visit);
+                                CompilationVisitCallback& visit);
   /// \brief Initialize a claim client.
   void InitializeClaimClient();
   /// \brief Prepare to write to output.

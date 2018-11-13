@@ -165,7 +165,7 @@ void DecodeIndexFile(const std::string& path,
 /// \param silent The silent flag is copied to each of the jobs created from the
 /// kzip file.
 void DecodeKZipFile(const std::string& path, bool silent,
-                    IndexerContext::CompilationVisitCallback visit) {
+                    IndexerContext::CompilationVisitCallback& visit) {
   StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
   CHECK(reader) << "Couldn't open kzip from " << path;
   bool compilation_read = false;
@@ -280,7 +280,7 @@ bool IndexerContext::HasIndexArguments() {
 }
 
 void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu,
-                                       CompilationVisitCallback visit) {
+                                       CompilationVisitCallback& visit) {
   std::string name = strip_silent_input_prefix(file_or_cu);
   const bool silent = !name.empty();
   if (name.empty()) {
@@ -314,7 +314,7 @@ void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu,
 }
 
 void IndexerContext::LoadDataFromUnpackedFile(
-    const std::string& default_filename, CompilationVisitCallback visit) {
+    const std::string& default_filename, CompilationVisitCallback& visit) {
   IndexerJob job;
   job.allow_filesystem_access = true;
   int read_fd = STDIN_FILENO;
@@ -428,7 +428,7 @@ IndexerContext::IndexerContext(const std::vector<std::string>& args,
 
 IndexerContext::~IndexerContext() { CloseOutputStreams(); }
 
-void IndexerContext::EnumerateCompilations(CompilationVisitCallback visit) {
+void IndexerContext::EnumerateCompilations(CompilationVisitCallback& visit) {
   // This forces the BuildDetails proto descriptor to be added to the pool so
   // we can deserialize it.
   proto::BuildDetails needed_for_proto_deserialization;
