@@ -34,7 +34,7 @@ func (m gradleGenerator) preArtifacts() []string {
 	return []string{path.Join(outputDirectory, "javac-extractor.err")}
 }
 
-// steps implements parts of buildStepGenerator
+// steps implements parts of buildSystemElaborator
 func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),

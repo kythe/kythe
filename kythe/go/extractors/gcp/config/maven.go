@@ -29,12 +29,12 @@ import (
 
 type mavenGenerator struct{}
 
-// preArtifacts implements part of buildStepGenerator
+// preArtifacts implements part of buildSystemElaborator
 func (m mavenGenerator) preArtifacts() []string {
 	return []string{path.Join(outputDirectory, "javac-extractor.err")}
 }
 
-// steps implements parts of buildStepGenerator
+// steps implements parts of buildSystemElaborator
 func (m mavenGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),

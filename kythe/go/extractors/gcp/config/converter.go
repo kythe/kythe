@@ -110,13 +110,13 @@ func readConfigFile(input string) (*rpb.Config, error) {
 	return conf, nil
 }
 
-// buildStepGenerator encapsulates the logic for adding extra build steps for a
+// buildSystemElaborator encapsulates the logic for adding extra build steps for a
 // specific type of build system (maven, gradle, etc).
 // TODO(danielmoy): we will almost certainly need to support more fine-grained
 // steps and/or artifacts.  For example now artifacts are prepended, we might
 // need ones that are appended.  We might need build steps that occur before or
 // directly after cloning, but before other common steps.
-type buildStepGenerator interface {
+type buildSystemElaborator interface {
 	// preArtifacts should be prepended to the list of artifacts returned from
 	// the cloudbuild invocation.
 	preArtifacts() []string
@@ -125,7 +125,7 @@ type buildStepGenerator interface {
 	steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep
 }
 
-func generator(b rpb.BuildSystem) (buildStepGenerator, error) {
+func generator(b rpb.BuildSystem) (buildSystemElaborator, error) {
 	switch b {
 	case rpb.BuildSystem_MAVEN:
 		return &mavenGenerator{}, nil
