@@ -132,6 +132,10 @@ this script and setting the following Maven options:
 
 Read `extractors/javac-wrapper.sh` for more details on its usage.
 
+`extractors/go_extractor` extracts from an existing build and doesn't build any
+code itself. `-i` needs to be passed to the build to ensure that '-a' is
+preserved. See the Examples for usage.
+
 ### Examples:
 
     export KYTHE_ROOT_DIRECTORY="$PWD"
@@ -146,13 +150,19 @@ Read `extractors/javac-wrapper.sh` for more details on its usage.
 
     extractors/cxx_extractor -Ithird_party/include some.cc
 
+    cd $GOPATH/src
+    # Build the tests along with the package.
+    go test -i github.com/MyOrg/my-package
+    $KYTHE_ROOT_DIRECTORY/extractors/go_extractor github.com/MyOrg/my-package \
+      --output $KYTHE_OUTPUT_DIRECTORY/extracted.kzip
+
 ## Indexers
 
 `indexers/cxx_indexer`, `indexers/go_indexer`, and `indexers/java_indexer.jar`
-analyze the .kindex files produced by the extractors and emit a stream of
-protobuf wire-encoded facts (entries) that conform to https://kythe.io/schema.
-The output stream can be processed by many of the accompanying binaries in the
-`tools/` directory.
+analyze the .kindex  or .kzip files produced by the extractors and emit a stream
+of protobuf wire-encoded facts (entries) that conform to
+https://kythe.io/schema. The output stream can be processed by many of the
+accompanying binaries in the `tools/` directory.
 
 ### Examples
 
@@ -163,3 +173,7 @@ The output stream can be processed by many of the accompanying binaries in the
     indexers/cxx_indexers \
       /tmp/kythe/579d266e5914257a9bd4458eb9b218690280ae15123d642025f224d10f64e6f3.kindex \
       > cxx.entries
+
+    indexers/go_indexer \
+      /tmp/kythe/579d266e5914257a9bd4458eb9b218690280ae15123d642025f224d10f64e6f3.kindex \
+      > go.entries
