@@ -348,6 +348,7 @@ void IndexerContext::LoadDataFromUnpackedFile(
   file_data.mutable_info()->set_path(source_file_name);
   file_data.set_content(source_data.str());
   job.virtual_files.push_back(std::move(file_data));
+  job.unit.add_source_file(source_file_name);
   for (const auto& arg : args_) {
     job.unit.add_argument(arg);
   }
