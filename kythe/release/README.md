@@ -159,8 +159,8 @@ preserved. See the Examples for usage.
 ## Indexers
 
 `indexers/cxx_indexer`, `indexers/go_indexer`, and `indexers/java_indexer.jar`
-analyze the .kindex  or .kzip files produced by the extractors and emit a stream
-of protobuf wire-encoded facts (entries) that conform to
+analyze the .kzip files produced by the extractors and emit a stream of
+protobuf wire-encoded facts (entries) that conform to
 https://kythe.io/schema. The output stream can be processed by many of the
 accompanying binaries in the `tools/` directory.
 
