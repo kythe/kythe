@@ -80,30 +80,20 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 				Paths:    []string{path.Join(outputDirectory, outputFilePattern)},
 			},
 		},
+		// TODO(danielmoy): this should probably also be a stepper, or at least
+		// if there is refactoring work done as described below to make steps
+		// more granular, this will have to hook into that logic.
 		Steps: commonSteps(),
 	}
 
 	hints := conf.Extractions[0]
 
-	// TODO(danielmoy): when we support bazel, we probably want to pull out the
-	// switch cases here into something a bit easier to read.
-	// I imagine something like a proper interface that each build system can
-	// override, which would provide things like artifactPaths(), steps().
-	switch hints.BuildSystem {
-	case rpb.BuildSystem_MAVEN:
-		build.Steps = append(build.Steps,
-			javaArtifactsStep(),
-			mavenStep(hints))
-		build.Artifacts.Objects.Paths = append([]string{path.Join(outputDirectory, "javac-extractor.err")}, build.Artifacts.Objects.Paths...)
-	case rpb.BuildSystem_GRADLE:
-		build.Steps = append(build.Steps,
-			javaArtifactsStep(),
-			gradleStep(hints))
-		build.Artifacts.Objects.Paths = append([]string{path.Join(outputDirectory, "javac-extractor.err")}, build.Artifacts.Objects.Paths...)
-	default:
-		return build, fmt.Errorf("unsupported build system %s", hints.BuildSystem)
+	st, err := stepper(hints.BuildSystem)
+	if err != nil {
+		return build, err
 	}
-
+	build.Artifacts.Objects.Paths = append(st.artifactsPre(), build.Artifacts.Objects.Paths...)
+	build.Steps = append(build.Steps, st.steps(hints)...)
 	return build, nil
 }
 
@@ -120,7 +110,28 @@ func readConfigFile(input string) (*rpb.Config, error) {
 	return conf, nil
 }
 
-func initializeArtifacts(build *cloudbuild.Build) {
-	build.Artifacts = &cloudbuild.Artifacts{}
-	build.Artifacts.Objects = &cloudbuild.ArtifactObjects{}
+// buildSystemStepper encapsulates the logic for adding extra build steps for a
+// specific type of build system (maven, gradle, etc).
+// TODO(danielmoy): we will almost certainly need to support more fine-grained
+// steps and/or artifacts.  For example now artifacts are prepended, we might
+// need ones that are appended.  We might need build steps that occur before or
+// directly after cloning, but before other common steps.
+type buildSystemStepper interface {
+	// artifactsPre should be prepended to the list of artifacts returned from
+	// the cloudbuild invocation.
+	artifactsPre() []string
+	steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep
+}
+
+func stepper(b rpb.BuildSystem) (buildSystemStepper, error) {
+	switch b {
+	case rpb.BuildSystem_MAVEN:
+		return &mavenStepper{}, nil
+	case rpb.BuildSystem_GRADLE:
+		return &gradleStepper{}, nil
+	//case rpb.BuildSystem_BAZEL:
+	//		return bazelSteps
+	default:
+		return nil, fmt.Errorf("unsupported build system %s", b)
+	}
 }

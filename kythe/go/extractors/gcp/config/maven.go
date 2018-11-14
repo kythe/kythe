@@ -27,41 +27,52 @@ import (
 	"google.golang.org/api/cloudbuild/v1"
 )
 
-func mavenStep(conf *rpb.ExtractionHint) *cloudbuild.BuildStep {
-	return &cloudbuild.BuildStep{
-		Name: constants.GCRMvnImage,
-		Args: []string{
-			"clean",
-			// TODO(#3126): If compile-test has to be done as a separate
-			// step, then we also need to fix this in the same way as we do
-			// for multiple repo support.  Probably this would need to be
-			// done with multiple steps (but making sure to not clobber
-			// output).
-			// The alternative here is to fall back to using clean install,
-			// which should also work.
-			"compile",
-			"-X", // For debugging output.
-			"-f",
-			path.Join(codeDirectory, conf.Root, "pom.xml"),
-			"-Dmaven.compiler.forceJavacCompilerUse=true",
-			"-Dmaven.compiler.fork=true",
-			"-Dmaven.compiler.executable=" + constants.DefaultJavacWrapperLocation,
-		},
-		Volumes: []*cloudbuild.Volume{
-			&cloudbuild.Volume{
-				Name: javaVolumeName,
-				Path: constants.DefaultExtractorsDir,
+type mavenStepper struct{}
+
+// artifactsPre implements part of stepper
+func (m mavenStepper) artifactsPre() []string {
+	return []string{path.Join(outputDirectory, "javac-extractor.err")}
+}
+
+// steps implements parts of stepper
+func (m mavenStepper) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
+	return []*cloudbuild.BuildStep{
+		javaExtractorsStep(),
+		&cloudbuild.BuildStep{
+			Name: constants.GCRMvnImage,
+			Args: []string{
+				"clean",
+				// TODO(#3126): If compile-test has to be done as a separate
+				// step, then we also need to fix this in the same way as we do
+				// for multiple repo support.  Probably this would need to be
+				// done with multiple steps (but making sure to not clobber
+				// output).
+				// The alternative here is to fall back to using clean install,
+				// which should also work.
+				"compile",
+				"-X", // For debugging output.
+				"-f",
+				path.Join(codeDirectory, conf.Root, "pom.xml"),
+				"-Dmaven.compiler.forceJavacCompilerUse=true",
+				"-Dmaven.compiler.fork=true",
+				"-Dmaven.compiler.executable=" + constants.DefaultJavacWrapperLocation,
 			},
-		},
-		Env: []string{
-			"KYTHE_CORPUS=" + corpus,
-			"KYTHE_OUTPUT_DIRECTORY=" + outputDirectory,
-			fmt.Sprintf("KYTHE_OUTPUT_FILE=%s", path.Join(outputDirectory, outputFilePattern)),
-			"KYTHE_ROOT_DIRECTORY=" + codeDirectory,
-			"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
-			"REAL_JAVAC=" + constants.DefaultJavacLocation,
-			"TMPDIR=" + outputDirectory,
-			"KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
+			Volumes: []*cloudbuild.Volume{
+				&cloudbuild.Volume{
+					Name: javaVolumeName,
+					Path: constants.DefaultExtractorsDir,
+				},
+			},
+			Env: []string{
+				"KYTHE_CORPUS=" + corpus,
+				"KYTHE_OUTPUT_DIRECTORY=" + outputDirectory,
+				fmt.Sprintf("KYTHE_OUTPUT_FILE=%s", path.Join(outputDirectory, outputFilePattern)),
+				"KYTHE_ROOT_DIRECTORY=" + codeDirectory,
+				"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
+				"REAL_JAVAC=" + constants.DefaultJavacLocation,
+				"TMPDIR=" + outputDirectory,
+				"KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
+			},
 		},
 	}
 }
