@@ -80,7 +80,7 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 				Paths:    []string{path.Join(outputDirectory, outputFilePattern)},
 			},
 		},
-		// TODO(danielmoy): this should probably also be a stepper, or at least
+		// TODO(danielmoy): this should probably also be a generator, or at least
 		// if there is refactoring work done as described below to make steps
 		// more granular, this will have to hook into that logic.
 		Steps: commonSteps(),
@@ -88,12 +88,12 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 
 	hints := conf.Extractions[0]
 
-	st, err := stepper(hints.BuildSystem)
+	g, err := generator(hints.BuildSystem)
 	if err != nil {
-		return build, err
+		return nil, err
 	}
-	build.Artifacts.Objects.Paths = append(st.artifactsPre(), build.Artifacts.Objects.Paths...)
-	build.Steps = append(build.Steps, st.steps(hints)...)
+	build.Artifacts.Objects.Paths = append(g.preArtifacts(), build.Artifacts.Objects.Paths...)
+	build.Steps = append(build.Steps, g.steps(hints)...)
 	return build, nil
 }
 
@@ -101,34 +101,36 @@ func readConfigFile(input string) (*rpb.Config, error) {
 	conf := &rpb.Config{}
 	file, err := os.Open(input)
 	if err != nil {
-		return conf, fmt.Errorf("opening input file %s: %v", input, err)
+		return nil, fmt.Errorf("opening input file %s: %v", input, err)
 	}
 	defer file.Close()
 	if err := jsonpb.Unmarshal(file, conf); err != nil {
-		return conf, fmt.Errorf("parsing json file %s: %v", input, err)
+		return nil, fmt.Errorf("parsing json file %s: %v", input, err)
 	}
 	return conf, nil
 }
 
-// buildSystemStepper encapsulates the logic for adding extra build steps for a
+// buildStepGenerator encapsulates the logic for adding extra build steps for a
 // specific type of build system (maven, gradle, etc).
 // TODO(danielmoy): we will almost certainly need to support more fine-grained
 // steps and/or artifacts.  For example now artifacts are prepended, we might
 // need ones that are appended.  We might need build steps that occur before or
 // directly after cloning, but before other common steps.
-type buildSystemStepper interface {
-	// artifactsPre should be prepended to the list of artifacts returned from
+type buildStepGenerator interface {
+	// preArtifacts should be prepended to the list of artifacts returned from
 	// the cloudbuild invocation.
-	artifactsPre() []string
+	preArtifacts() []string
+	// steps is a list of cloudbuild steps specific for this builder for
+	// extraction.
 	steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep
 }
 
-func stepper(b rpb.BuildSystem) (buildSystemStepper, error) {
+func generator(b rpb.BuildSystem) (buildStepGenerator, error) {
 	switch b {
 	case rpb.BuildSystem_MAVEN:
-		return &mavenStepper{}, nil
+		return &mavenGenerator{}, nil
 	case rpb.BuildSystem_GRADLE:
-		return &gradleStepper{}, nil
+		return &gradleGenerator{}, nil
 	//case rpb.BuildSystem_BAZEL:
 	//		return bazelSteps
 	default:

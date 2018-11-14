@@ -27,15 +27,15 @@ import (
 	"google.golang.org/api/cloudbuild/v1"
 )
 
-type mavenStepper struct{}
+type mavenGenerator struct{}
 
-// artifactsPre implements part of stepper
-func (m mavenStepper) artifactsPre() []string {
+// preArtifacts implements part of buildStepGenerator
+func (m mavenGenerator) preArtifacts() []string {
 	return []string{path.Join(outputDirectory, "javac-extractor.err")}
 }
 
-// steps implements parts of stepper
-func (m mavenStepper) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
+// steps implements parts of buildStepGenerator
+func (m mavenGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),
 		&cloudbuild.BuildStep{

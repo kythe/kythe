@@ -27,14 +27,14 @@ import (
 	"google.golang.org/api/cloudbuild/v1"
 )
 
-type gradleStepper struct{}
+type gradleGenerator struct{}
 
-// artifactsPre implements part of stepper
-func (m gradleStepper) artifactsPre() []string {
+// preArtifacts implements part of stepper
+func (m gradleGenerator) preArtifacts() []string {
 	return []string{path.Join(outputDirectory, "javac-extractor.err")}
 }
 
-func (m gradleStepper) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
+func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),
 		&cloudbuild.BuildStep{
