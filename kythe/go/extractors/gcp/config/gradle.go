@@ -29,11 +29,12 @@ import (
 
 type gradleGenerator struct{}
 
-// preArtifacts implements part of stepper
+// preArtifacts implements part of buildStepsGenerator
 func (m gradleGenerator) preArtifacts() []string {
 	return []string{path.Join(outputDirectory, "javac-extractor.err")}
 }
 
+// steps implements parts of buildStepGenerator
 func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),
