@@ -51,7 +51,7 @@ func (m mavenGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep 
 				// which should also work.
 				"compile",
 				"-X", // For debugging output.
-				"-f",
+				"-f", // Points diretly at a specific pom.xml file:
 				path.Join(codeDirectory, conf.Root, "pom.xml"),
 				"-Dmaven.compiler.forceJavacCompilerUse=true",
 				"-Dmaven.compiler.fork=true",

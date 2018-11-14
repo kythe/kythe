@@ -53,7 +53,7 @@ func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep
 				"-s", // Prints stacktraces for user exceptions.
 				"-S", // Prints verbose stacktraces.
 				"-d", // Logs in debug mode.
-				"-b",
+				"-b", // Points directly at a specific build.gradle file:
 				path.Join(codeDirectory, conf.Root, "build.gradle"),
 			},
 			Volumes: []*cloudbuild.Volume{
