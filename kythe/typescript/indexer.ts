@@ -102,12 +102,6 @@ class Vistor {
    */
   rootDirs: string[];
 
-  /**
-   * Tracks whether we've emitted the module anchor yet;
-   * see emitModuleAnchorForFirstExport.
-   */
-  emittedModuleAnchor = false;
-
   constructor(
       /** Corpus name for produced VNames. */
       private corpus: string, program: ts.Program, private file: ts.SourceFile,
@@ -624,24 +618,20 @@ class Vistor {
   }
 
   /**
-   * When we first encounter an 'export' statement (making the file a
-   * module), we tag the 'export' as anchoring the module.
+   * When a file imports another file, with syntax like
+   *   import * as x from 'some/path';
+   * we wants 'some/path' to refer to a VName that just means "the entire
+   * file".  It doesn't refer to any text in particular, so we just mark
+   * the first letter in the file as the anchor for this.
    */
-  emitModuleAnchorForFirstExport(node: ts.Node) {
-    // Emit metadata defining only the first export in the file to be
-    // the source of the module, so check if we've emitted the module
-    // anchor before.
-    if (this.emittedModuleAnchor) return;
-
-    // Emit a "record" node, representing the module object.
+  emitModuleAnchor(sf: ts.SourceFile) {
     const kMod = this.newVName('module', this.moduleName(this.file.fileName));
     this.emitFact(kMod, 'node/kind', 'record');
     this.emitEdge(this.kFile, 'childof', kMod);
 
-    // Emit the anchor, bound to the "export" keyword
-    const anchor = this.newAnchor(node.getFirstToken(this.file));
+    // Emit the anchor, bound to the beginning of the file.
+    const anchor = this.newAnchor(this.file, 0, 1);
     this.emitEdge(anchor, 'defines/binding', kMod);
-    this.emittedModuleAnchor = true;
   }
 
   /**
@@ -676,7 +666,6 @@ class Vistor {
    * and that case is handled as part of the ordinary declaration handling.
    */
   visitExportDeclaration(decl: ts.ExportDeclaration) {
-    this.emitModuleAnchorForFirstExport(decl);
     if (decl.exportClause) {
       for (const exp of decl.exportClause.elements) {
         const localSym = this.getSymbolAtLocation(exp.name);
@@ -941,11 +930,6 @@ class Vistor {
 
   /** visit is the main dispatch for visiting AST nodes. */
   visit(node: ts.Node): void {
-    // Ensure that the first 'export' seen in the file gets tagged as
-    // the anchor attributed as the definition site for the module.
-    if (ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Export) {
-      this.emitModuleAnchorForFirstExport(node);
-    }
     switch (node.kind) {
       case ts.SyntaxKind.ImportDeclaration:
         return this.visitImportDeclaration(node as ts.ImportDeclaration);
@@ -1010,6 +994,8 @@ class Vistor {
   index() {
     this.emitFact(this.kFile, 'node/kind', 'file');
     this.emitFact(this.kFile, 'text', this.file.text);
+
+    this.emitModuleAnchor(this.file);
 
     ts.forEachChild(this.file, n => this.visit(n));
   }
