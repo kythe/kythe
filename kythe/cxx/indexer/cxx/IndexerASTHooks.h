@@ -148,6 +148,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool TraverseDependentAddressSpaceTypeLoc(
       clang::DependentAddressSpaceTypeLoc TL);
 
+  bool TraverseMemberPointerTypeLoc(clang::MemberPointerTypeLoc TL);
+
   // Emit edges for an anchor pointing to the indicated type.
   bool EmitTypeLocNodes(clang::TypeLoc TL);
 
@@ -263,6 +265,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForInjectedClassName(clang::InjectedClassNameTypeLoc TL);
   NodeSet BuildNodeSetForTemplateTypeParm(clang::TemplateTypeParmTypeLoc TL);
   NodeSet BuildNodeSetForPointer(clang::PointerTypeLoc TL);
+  NodeSet BuildNodeSetForMemberPointer(clang::MemberPointerTypeLoc TL);
   NodeSet BuildNodeSetForLValueReference(clang::LValueReferenceTypeLoc TL);
   NodeSet BuildNodeSetForRValueReference(clang::RValueReferenceTypeLoc TL);
 
