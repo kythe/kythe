@@ -33,3 +33,14 @@ http_archive(
 load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
 
 external_tools_configure()
+
+load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
+load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
+
+node_repositories(package_json = ["//:package.json"])
+
+npm_install(
+    name = "npm",
+    package_json = "//:package.json",
+    package_lock_json = "//:package-lock.json",
+)
