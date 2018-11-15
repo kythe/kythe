@@ -6,11 +6,13 @@ load("@io_kythe//:setup.bzl", "maybe")
 # Rule dependencies
 load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
 
 def _rule_dependencies():
     gazelle_dependencies()
     go_rules_dependencies()
     go_register_toolchains()
+    rules_nodejs_dependencies()
 
 def _cc_dependencies():
     maybe(
