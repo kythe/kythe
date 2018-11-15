@@ -1427,6 +1427,7 @@ void KytheGraphObserver::RegisterBuiltins() {
     auto* class_type = mem_ptr_tycon_builtin.add_child();
     class_type->set_kind(MarkedSource::LOOKUP_BY_PARAM);
     class_type->set_lookup_index(2);
+    class_type->set_pre_text(" ");
     class_type->set_post_text("::");
     auto* ident = mem_ptr_tycon_builtin.add_child();
     ident->set_kind(MarkedSource::IDENTIFIER);
