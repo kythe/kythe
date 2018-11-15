@@ -1838,6 +1838,20 @@ bool IndexerASTVisitor::TraverseDependentAddressSpaceTypeLoc(
   return Base::TraverseDependentAddressSpaceTypeLoc(TL);
 }
 
+bool IndexerASTVisitor::TraverseMemberPointerTypeLoc(
+    clang::MemberPointerTypeLoc TL) {
+  // TODO(shahms): Fix this upstream. RecursiveASTVisitor calls:
+  //   TraverseType(Class);
+  //   TraverseTypeLoc(Pointee);
+  // Rather than TraverseTypeLoc on both.
+  if (auto* TSI = TL.getClassTInfo()) {
+    return TraverseTypeLoc(TSI->getTypeLoc()) &&
+           TraverseTypeLoc(TL.getPointeeLoc());
+  } else {
+    return Base::TraverseMemberPointerTypeLoc(TL);
+  }
+}
+
 bool IndexerASTVisitor::VisitDesignatedInitExpr(
     const clang::DesignatedInitExpr* DIE) {
   for (const auto& D : DIE->designators()) {
@@ -4054,6 +4068,17 @@ NodeSet IndexerASTVisitor::BuildNodeSetForPointer(clang::PointerTypeLoc TL) {
   return NodeSet::Empty();
 }
 
+NodeSet IndexerASTVisitor::BuildNodeSetForMemberPointer(
+    clang::MemberPointerTypeLoc TL) {
+  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
+    if (auto ClassID = BuildNodeIdForType(clang::QualType(TL.getClass(), 0))) {
+      auto tapp = Observer.getNodeIdForBuiltinType("mptr");
+      return Observer.recordTappNode(tapp, {*PointeeID, *ClassID});
+    }
+  }
+  return NodeSet::Empty();
+}
+
 NodeSet IndexerASTVisitor::BuildNodeSetForLValueReference(
     clang::LValueReferenceTypeLoc TL) {
   if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
@@ -4401,6 +4426,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::TypeLoc& TL) {
       DELEGATE_TYPE(ObjCTypeParam);
       DELEGATE_TYPE(ObjCObject);
       DELEGATE_TYPE(Pointer);
+      DELEGATE_TYPE(MemberPointer);
       DELEGATE_TYPE(LValueReference);
       DELEGATE_TYPE(RValueReference);
       DELEGATE_TYPE(Auto);
@@ -4429,7 +4455,6 @@ NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::TypeLoc& TL) {
       DELEGATE_TYPE(DependentAddressSpace);
       UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
       UNSUPPORTED_CLANG_TYPE(Complex);
-      UNSUPPORTED_CLANG_TYPE(MemberPointer);
       UNSUPPORTED_CLANG_TYPE(VariableArray);
       UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
       UNSUPPORTED_CLANG_TYPE(Vector);

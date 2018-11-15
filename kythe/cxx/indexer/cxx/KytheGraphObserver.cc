@@ -1383,53 +1383,75 @@ void KytheGraphObserver::RegisterBuiltins() {
   RegisterTokenBuiltin("TypeUnion", "TypeUnion");
   RegisterTokenBuiltin("__float128", "__float128");
 
-  MarkedSource lhs_tycon_builtin;
-  auto* lhs_tycon = lhs_tycon_builtin.add_child();
-  auto* lookup = lhs_tycon_builtin.add_child();
-  lookup->set_kind(MarkedSource::LOOKUP_BY_PARAM);
-  lookup->set_lookup_index(1);
-  lhs_tycon->set_kind(MarkedSource::IDENTIFIER);
-  lhs_tycon->set_pre_text("const ");
-  RegisterBuiltin("const", lhs_tycon_builtin);
-  lhs_tycon->set_pre_text("volatile ");
-  RegisterBuiltin("volatile", lhs_tycon_builtin);
-  lhs_tycon->set_pre_text("restrict ");
-  RegisterBuiltin("restrict", lhs_tycon_builtin);
+  {
+    MarkedSource lhs_tycon_builtin;
+    auto* lhs_tycon = lhs_tycon_builtin.add_child();
+    auto* lookup = lhs_tycon_builtin.add_child();
+    lookup->set_kind(MarkedSource::LOOKUP_BY_PARAM);
+    lookup->set_lookup_index(1);
+    lhs_tycon->set_kind(MarkedSource::IDENTIFIER);
+    lhs_tycon->set_pre_text("const ");
+    RegisterBuiltin("const", lhs_tycon_builtin);
+    lhs_tycon->set_pre_text("volatile ");
+    RegisterBuiltin("volatile", lhs_tycon_builtin);
+    lhs_tycon->set_pre_text("restrict ");
+    RegisterBuiltin("restrict", lhs_tycon_builtin);
+  }
 
-  MarkedSource rhs_tycon_builtin;
-  lookup = rhs_tycon_builtin.add_child();
-  auto* rhs_tycon = rhs_tycon_builtin.add_child();
-  lookup->set_kind(MarkedSource::LOOKUP_BY_PARAM);
-  lookup->set_lookup_index(1);
-  rhs_tycon->set_kind(MarkedSource::IDENTIFIER);
-  rhs_tycon->set_pre_text("*");
-  RegisterBuiltin("ptr", rhs_tycon_builtin);
-  rhs_tycon->set_pre_text("&");
-  RegisterBuiltin("lvr", rhs_tycon_builtin);
-  rhs_tycon->set_pre_text("&&");
-  RegisterBuiltin("rvr", rhs_tycon_builtin);
-  rhs_tycon->set_pre_text("[incomplete]");
-  RegisterBuiltin("iarr", rhs_tycon_builtin);
-  rhs_tycon->set_pre_text("[const]");
-  RegisterBuiltin("carr", rhs_tycon_builtin);
-  rhs_tycon->set_pre_text("[dependent]");
-  RegisterBuiltin("darr", rhs_tycon_builtin);
+  {
+    MarkedSource rhs_tycon_builtin;
+    auto* lookup = rhs_tycon_builtin.add_child();
+    auto* rhs_tycon = rhs_tycon_builtin.add_child();
+    lookup->set_kind(MarkedSource::LOOKUP_BY_PARAM);
+    lookup->set_lookup_index(1);
+    rhs_tycon->set_kind(MarkedSource::IDENTIFIER);
+    rhs_tycon->set_pre_text("*");
+    RegisterBuiltin("ptr", rhs_tycon_builtin);
+    rhs_tycon->set_pre_text("&");
+    RegisterBuiltin("lvr", rhs_tycon_builtin);
+    rhs_tycon->set_pre_text("&&");
+    RegisterBuiltin("rvr", rhs_tycon_builtin);
+    rhs_tycon->set_pre_text("[incomplete]");
+    RegisterBuiltin("iarr", rhs_tycon_builtin);
+    rhs_tycon->set_pre_text("[const]");
+    RegisterBuiltin("carr", rhs_tycon_builtin);
+    rhs_tycon->set_pre_text("[dependent]");
+    RegisterBuiltin("darr", rhs_tycon_builtin);
+  }
 
-  MarkedSource function_tycon_builtin;
-  auto* return_type = function_tycon_builtin.add_child();
-  return_type->set_kind(MarkedSource::LOOKUP_BY_PARAM);
-  return_type->set_lookup_index(1);
-  auto* args = function_tycon_builtin.add_child();
-  args->set_kind(MarkedSource::PARAMETER_LOOKUP_BY_PARAM);
-  args->set_pre_text("(");
-  args->set_post_child_text(", ");
-  args->set_post_text(")");
-  args->set_lookup_index(2);
-  RegisterBuiltin("fn", function_tycon_builtin);
-  auto* vararg_keyword = function_tycon_builtin.add_child();
-  vararg_keyword->set_kind(MarkedSource::IDENTIFIER);
-  vararg_keyword->set_pre_text("vararg");
-  RegisterBuiltin("fnvararg", function_tycon_builtin);
+  {
+    MarkedSource mem_ptr_tycon_builtin;
+    auto* pointee_type = mem_ptr_tycon_builtin.add_child();
+    pointee_type->set_kind(MarkedSource::LOOKUP_BY_PARAM);
+    pointee_type->set_lookup_index(1);
+    auto* class_type = mem_ptr_tycon_builtin.add_child();
+    class_type->set_kind(MarkedSource::LOOKUP_BY_PARAM);
+    class_type->set_lookup_index(2);
+    class_type->set_pre_text(" ");
+    class_type->set_post_text("::");
+    auto* ident = mem_ptr_tycon_builtin.add_child();
+    ident->set_kind(MarkedSource::IDENTIFIER);
+    ident->set_pre_text("*");
+    RegisterBuiltin("mptr", mem_ptr_tycon_builtin);
+  }
+
+  {
+    MarkedSource function_tycon_builtin;
+    auto* return_type = function_tycon_builtin.add_child();
+    return_type->set_kind(MarkedSource::LOOKUP_BY_PARAM);
+    return_type->set_lookup_index(1);
+    auto* args = function_tycon_builtin.add_child();
+    args->set_kind(MarkedSource::PARAMETER_LOOKUP_BY_PARAM);
+    args->set_pre_text("(");
+    args->set_post_child_text(", ");
+    args->set_post_text(")");
+    args->set_lookup_index(2);
+    RegisterBuiltin("fn", function_tycon_builtin);
+    auto* vararg_keyword = function_tycon_builtin.add_child();
+    vararg_keyword->set_kind(MarkedSource::IDENTIFIER);
+    vararg_keyword->set_pre_text("vararg");
+    RegisterBuiltin("fnvararg", function_tycon_builtin);
+  }
 }
 
 void KytheGraphObserver::EmitBuiltin(Builtin* builtin) const {
