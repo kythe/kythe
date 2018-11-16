@@ -30,13 +30,13 @@ mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 #   com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper \
 #   <javac_arguments>
 java -Xbootclasspath/p:third_party/javac/javac*.jar \
-  com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper \
-  kythe/java/com/google/devtools/kythe/common/*.java
+  -jar /opt/kythe/extractors/javac_extractor.jar \
+  com.google.devtools.kythe.extractors.java.standalone.Javac9Wrapper \
+  kythe/java/com/google/devtools/kythe/platform/kzip/*.java
 
 # Extract a C++ compilation
 # /opt/kythe/extractors/cxx_extractor <arguments>
-/opt/kythe/extractors/cxx_extractor kythe/cxx/common/net_client.cc \
-  -I. -Ibazel-genfiles -Ithird_party/googlelog/src -Ithird_party/rapidjson/include -Ithird_party/proto/src
+/opt/kythe/extractors/cxx_extractor -x c++ kythe/cxx/common/scope_guard.h
 {% endhighlight %}
 
 ## Extracting Compilations using Bazel
@@ -57,6 +57,7 @@ same for C++.
 bazel test \
   --experimental_action_listener=//kythe/java/com/google/devtools/kythe/extractors/java/bazel:extract_kzip \
   --experimental_action_listener=//kythe/cxx/extractor:extract_kzip \
+  --experimental_extra_action_top_level_only \
   //...
 
 # Find the extracted .kzip files
@@ -93,7 +94,7 @@ then be stored in a [GraphStore]({{site.baseurl}}/docs/kythe-storage.html).
 java -Xbootclasspath/p:third_party/javac/javac*.jar \
   com.google.devtools.kythe.analyzers.java.JavaIndexer \
   $PWD/.kythe_compilations/java/kythe_java_com_google_devtools_kythe_analyzers_java_analyzer.java.kzip > entries
-# NOTE: https://kythe.io/phabricator/T40 -- the Java indexer should not be run in
+# NOTE: https://github.com/kythe/kythe/issues/491 -- the Java indexer should not be run in
 #       the KYTHE_ROOT_DIRECTORY used during extraction
 
 # View indexer's output entry stream as JSON
