@@ -94,8 +94,6 @@ then be stored in a [GraphStore]({{site.baseurl}}/docs/kythe-storage.html).
 java -Xbootclasspath/p:third_party/javac/javac*.jar \
   com.google.devtools.kythe.analyzers.java.JavaIndexer \
   $PWD/.kythe_compilations/java/kythe_java_com_google_devtools_kythe_analyzers_java_analyzer.java.kzip > entries
-# NOTE: https://github.com/kythe/kythe/issues/491 -- the Java indexer should not be run in
-#       the KYTHE_ROOT_DIRECTORY used during extraction
 
 # View indexer's output entry stream as JSON
 /opt/kythe/tools/entrystream --write_format=json < entries
