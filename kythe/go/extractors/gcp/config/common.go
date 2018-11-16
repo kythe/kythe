@@ -59,7 +59,7 @@ func preprocessorStep(build string) *cloudbuild.BuildStep {
 
 // TODO(#3095): This step needs to be configurable by the java version used for
 // a given BuildTarget.
-func javaArtifactsStep() *cloudbuild.BuildStep {
+func javaExtractorsStep() *cloudbuild.BuildStep {
 	return &cloudbuild.BuildStep{
 		Name: constants.KytheJavacExtractorArtifactsImage,
 		Volumes: []*cloudbuild.Volume{
