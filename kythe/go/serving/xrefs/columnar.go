@@ -219,7 +219,10 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 		case *xspb.FileDecorations_Override_:
 			// TODO(schroederc): handle
 		case *xspb.FileDecorations_Diagnostic_:
-			// TODO(schroederc): handle
+			if !req.Diagnostics {
+				continue
+			}
+			reply.Diagnostic = append(reply.Diagnostic, e.Diagnostic.Diagnostic)
 		default:
 			return nil, fmt.Errorf("unknown FileDecorations entry: %T", e)
 		}

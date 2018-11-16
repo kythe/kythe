@@ -66,6 +66,10 @@ func TestServingSimpleDecorations(t *testing.T) {
 			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT_ENCODING},
 			Value: []byte("ascii"),
 		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_TAGGED},
+			Target: &spb.VName{Signature: "diagnostic"},
+		}},
 	}, {
 		Source: &spb.VName{Path: "path", Signature: "anchor1"},
 		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
@@ -117,6 +121,19 @@ func TestServingSimpleDecorations(t *testing.T) {
 		Fact: []*scpb.Fact{{
 			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
 			Value: []byte("def\n"),
+		}},
+	}, {
+		Source: &spb.VName{Signature: "diagnostic"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_DIAGNOSTIC},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_MESSAGE},
+			Value: []byte("msg"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_DETAILS},
+			Value: []byte("dtails"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_CONTEXT_URL},
+			Value: []byte("https://kythe.io/schema"),
 		}},
 	}}
 
@@ -305,9 +322,21 @@ func TestServingSimpleDecorations(t *testing.T) {
 		},
 	}))
 
+	// TODO(schroederc): test diagnostics (w/ span)
+	t.Run("diagnostics", makeDecorTestCase(ctx, xs, &xpb.DecorationsRequest{
+		Location:    &xpb.Location{Ticket: fileTicket},
+		Diagnostics: true,
+	}, &xpb.DecorationsReply{
+		Location: &xpb.Location{Ticket: fileTicket},
+		Diagnostic: []*cpb.Diagnostic{{
+			Message:    "msg",
+			Details:    "dtails",
+			ContextUrl: "https://kythe.io/schema",
+		}},
+	}))
+
 	// TODO(schroederc): test split file contents
 	// TODO(schroederc): test overrides
-	// TODO(schroederc): test diagnostics (w/ or w/o span)
 }
 
 func TestServingSimpleCrossReferences(t *testing.T) {
