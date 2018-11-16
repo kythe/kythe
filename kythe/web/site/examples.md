@@ -31,7 +31,7 @@ mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 #   <javac_arguments>
 java -Xbootclasspath/p:third_party/javac/javac*.jar \
   -jar /opt/kythe/extractors/javac_extractor.jar \
-  com.google.devtools.kythe.extractors.java.standalone.Javac9Wrapper \
+  com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper \
   kythe/java/com/google/devtools/kythe/platform/kzip/*.java
 
 # Extract a C++ compilation
