@@ -7,6 +7,14 @@ load("@io_kythe//:setup.bzl", "maybe")
 load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
+load(
+    "@io_bazel_rules_docker//container:container.bzl",
+    _container_repositories = "repositories",
+)
+load(
+    "@io_bazel_rules_docker//go:image.bzl",
+    _go_image_repos = "repositories",
+)
 
 def _rule_dependencies():
     gazelle_dependencies()
@@ -609,6 +617,11 @@ def _bindings():
         actual = "@net_zlib//:zlib",
     )
 
+def _docker_dependencies():
+    _container_repositories()
+
+    _go_image_repos()
+
 def kythe_dependencies():
     """Defines external repositories for Kythe dependencies.
 
@@ -617,6 +630,7 @@ def kythe_dependencies():
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
+    _docker_dependencies()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
