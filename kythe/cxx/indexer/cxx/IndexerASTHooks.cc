@@ -3290,19 +3290,9 @@ void IndexerASTVisitor::AssignUSR(const GraphObserver::NodeId& TargetNode,
                                   const clang::NamedDecl* ND) {
   if (UsrByteSize <= 0 || Job->UnderneathImplicitTemplateInstantiation) return;
   const auto* DC = ND->getDeclContext();
-  if (DC->isFunctionOrMethod()) {
-    fprintf(stderr, "rejecting usr because local\n");
-    ND->dump();
-    return;
-  }
+  if (DC->isFunctionOrMethod()) return;
   llvm::SmallString<128> Usr;
-  if (clang::index::generateUSRForDecl(ND, Usr)) {
-    fprintf(stderr, "rejecting usr because can't make it\n");
-    ND->dump();
-    return;
-  }
-  fprintf(stderr, "makin a usr for\n");
-  ND->dump();
+  if (clang::index::generateUSRForDecl(ND, Usr)) return;
   Observer.assignUsr(TargetNode, Usr, UsrByteSize);
 }
 
