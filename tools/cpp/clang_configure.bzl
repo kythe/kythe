@@ -716,6 +716,7 @@ def _impl(repository_ctx):
     repository_ctx.file("tools/cpp/empty.cc", "int main() {}")
     repository_ctx.symlink(Label("@bazel_tools//tools/cpp:dummy_toolchain.bzl"), "dummy_toolchain.bzl")
     cpu_value = _get_cpu_value(repository_ctx)
+    cc_toolchain_identifier = _get_env_var(repository_ctx, "CC_TOOLCHAIN_NAME", "local", False)
     if cpu_value == "freebsd":
         # This is defaulting to the static crosstool, we should eventually do those platform too.
         # Theorically, FreeBSD should be straightforward to add but we cannot run it in a docker
@@ -767,6 +768,7 @@ def _impl(repository_ctx):
             if path:
                 cxx_include_directories.append(("cxx_builtin_include_directory: \"%s\"" % path))
         _tpl(repository_ctx, "CROSSTOOL", {
+            "%{cc_toolchain_identifier}": cc_toolchain_identifier,
             "%{cpu}": cpu_value,
             "%{default_toolchain_name}": "msvc_x64",
             "%{toolchain_name}": "msys_x64",
@@ -794,6 +796,7 @@ def _impl(repository_ctx):
         opt_content = _opt_content(darwin)
         dbg_content = _dbg_content()
         _tpl(repository_ctx, "BUILD", {
+            "%{cc_toolchain_identifier}": cc_toolchain_identifier,
             "%{name}": cpu_value,
             "%{supports_param_files}": "0" if darwin else "1",
             "%{cc_compiler_deps}": ":cc_wrapper" if darwin else ":empty",
@@ -806,6 +809,7 @@ def _impl(repository_ctx):
             "cc_wrapper.sh",
         )
         _tpl(repository_ctx, "CROSSTOOL", {
+            "%{cc_toolchain_identifier}": cc_toolchain_identifier,
             "%{cpu}": cpu_value,
             "%{default_toolchain_name}": _get_env_var(repository_ctx, "CC_TOOLCHAIN_NAME", "local", False),
             "%{toolchain_name}": _get_env_var(repository_ctx, "CC_TOOLCHAIN_NAME", "local", False),
