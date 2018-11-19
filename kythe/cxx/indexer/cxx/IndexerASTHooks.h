@@ -683,7 +683,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// enabled.
   ///
   /// USRs are added only for NamedDecls that:
-  ///   * are FunctionDecls
   ///   * are not under implicit template instantiations
   ///   * are not in a DeclContext inside a function body
   ///   * can actually be assigned USRs from Clang
@@ -695,6 +694,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// modulo the configurable size of the SHA1 prefix).
   void AssignUSR(const GraphObserver::NodeId& TargetNode,
                  const clang::NamedDecl* ND);
+
+  /// Assigns a USR to an alias.
+  void AssignUSR(const GraphObserver::NameId& TargetName,
+                 const GraphObserver::NodeId& AliasedType,
+                 const clang::NamedDecl* ND) {
+    AssignUSR(Observer.nodeIdForTypeAliasNode(TargetName, AliasedType), ND);
+  }
 
   GraphObserver::NodeId ApplyBuiltinTypeConstructor(
       const char* BuiltinName, const GraphObserver::NodeId& Param);
