@@ -1,4 +1,4 @@
-load("@//tools:build_rules/expand_template.bzl", "expand_template")
+load("@io_kythe//tools:build_rules/expand_template.bzl", "expand_template")
 
 package(
     default_visibility = ["//visibility:private"],
@@ -6,7 +6,7 @@ package(
 
 genrule(
     name = "configure",
-    srcs = ["@//third_party:libmemcached.mem_config.h"],
+    srcs = ["@io_kythe//third_party:libmemcached.mem_config.h"],
     outs = ["mem_config.h"],
     cmd = "cp \"$<\" \"$@\"",
 )
@@ -290,7 +290,7 @@ cc_library(
             "-DHAVE_MSG_NOSIGNAL=1",
             "-DSTRERROR_R_CHAR_P=1",
         ],
-        "@//:darwin": [],
+        "@io_kythe//:darwin": [],
     }),
     includes = ["headers"],
     visibility = ["//visibility:public"],

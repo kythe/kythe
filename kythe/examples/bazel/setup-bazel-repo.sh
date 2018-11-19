@@ -44,4 +44,7 @@ if grep -q 'Kythe extraction setup' WORKSPACE; then
   exit 1
 fi
 
+# TODO(#3272): Kythe's protobuf dependency conflicts with Bazel's vendoring
+sed -i 's/"com_google_protobuf"/"com_google_protobuf_vendored"/' WORKSPACE
+
 cat "${EXAMPLE_ROOT}/bazel.WORKSPACE" >> WORKSPACE
