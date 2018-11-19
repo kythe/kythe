@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_COMMON_CXX_DETAILS_H_
-#define KYTHE_CXX_COMMON_CXX_DETAILS_H_
+#ifndef KYTHE_CXX_EXTRACTOR_CXX_DETAILS_H_
+#define KYTHE_CXX_EXTRACTOR_CXX_DETAILS_H_
 
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/HeaderSearch.h"
@@ -63,4 +63,4 @@ struct HeaderSearchInfo {
 extern const char kCxxCompilationUnitDetailsURI[];
 }  // namespace kythe
 
-#endif  // KYTHE_CXX_COMMON_CXX_DETAILS_H_
+#endif  // KYTHE_CXX_EXTRACTOR_CXX_DETAILS_H_

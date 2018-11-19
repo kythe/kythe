@@ -20,8 +20,8 @@
 #include "kythe/proto/storage.pb.h"
 
 #include "absl/memory/memory.h"
-#include "llvm/ADT/StringRef.h"
-#include "llvm/Support/MemoryBuffer.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 #include "rapidjson/document.h"
 
 #include <map>
@@ -87,7 +87,7 @@ class MetadataSupport {
   /// \return A `MetadataFile` on success; otherwise, null.
   virtual std::unique_ptr<kythe::MetadataFile> ParseFile(
       const std::string& raw_filename, const std::string& filename,
-      const llvm::MemoryBuffer* buffer) {
+      absl::string_view buffer) {
     return nullptr;
   }
 
@@ -122,7 +122,7 @@ class MetadataSupports {
   }
 
   std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string& filename, const llvm::MemoryBuffer* buffer,
+      const std::string& filename, absl::string_view buffer,
       const std::string& search_string) const;
 
   void UseVNameLookup(VNameLookup lookup) const;
@@ -136,12 +136,12 @@ class KytheMetadataSupport : public MetadataSupport {
  public:
   std::unique_ptr<kythe::MetadataFile> ParseFile(
       const std::string& raw_filename, const std::string& filename,
-      const llvm::MemoryBuffer* buffer) override;
+      absl::string_view buffer) override;
 
  private:
   /// \brief Load the JSON-encoded metadata from `json`.
   /// \return null on failure.
-  static std::unique_ptr<MetadataFile> LoadFromJSON(llvm::StringRef json);
+  static std::unique_ptr<MetadataFile> LoadFromJSON(absl::string_view json);
   /// \brief Load the metadata rule from `value` into the Rule `rule`.
   /// \return false on failure.
   static bool LoadMetaElement(const rapidjson::Value& value,

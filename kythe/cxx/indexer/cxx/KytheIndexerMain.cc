@@ -25,12 +25,12 @@
 
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
-#include "kythe/cxx/common/indexing/frontend.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
 #include "kythe/cxx/indexer/cxx/GoogleFlagsLibrarySupport.h"
 #include "kythe/cxx/indexer/cxx/ImputedConstructorSupport.h"
 #include "kythe/cxx/indexer/cxx/IndexerFrontendAction.h"
 #include "kythe/cxx/indexer/cxx/ProtoLibrarySupport.h"
+#include "kythe/cxx/indexer/cxx/frontend.h"
 #include "kythe/cxx/indexer/cxx/indexer_worklist.h"
 
 DEFINE_bool(index_template_instantiations, true,
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
   bool had_errors = false;
   NullOutputStream null_stream;
 
-  for (auto& job : *context.jobs()) {
+  context.EnumerateCompilations([&](IndexerJob& job) {
     options.EffectiveWorkingDirectory = job.working_directory;
 
     kythe::MetadataSupports meta_supports;
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
       fprintf(stderr, "Error: %s\n", result.c_str());
       had_errors = true;
     }
-  }
+  });
 
   return (had_errors ? 1 : 0);
 }

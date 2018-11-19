@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_COMMON_INDEX_PACK_H_
-#define KYTHE_CXX_COMMON_INDEX_PACK_H_
+#ifndef KYTHE_CXX_EXTRACTOR_INDEX_PACK_H_
+#define KYTHE_CXX_EXTRACTOR_INDEX_PACK_H_
 
 #include <functional>
 #include <memory>
@@ -254,4 +254,4 @@ class IndexPack {
 };
 }  // namespace kythe
 
-#endif  // KYTHE_CXX_COMMON_INDEX_PACK_H_
+#endif  // KYTHE_CXX_EXTRACTOR_INDEX_PACK_H_

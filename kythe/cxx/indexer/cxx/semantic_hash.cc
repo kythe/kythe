@@ -60,8 +60,9 @@ uint64_t SemanticHash::Hash(const clang::TemplateArgument& arg) const {
     case TemplateArgument::Type:
       return Hash(arg.getAsType()) ^ 0x2020202002020202LL;
     case TemplateArgument::Declaration:
-      CHECK(ignore_unimplemented_) << "SemanticHash(Declaration)";
-      return 0;
+      return Hash(arg.getParamTypeForDecl()) ^
+             std::hash<std::string>()(
+                 arg.getAsDecl()->getQualifiedNameAsString());
     case TemplateArgument::NullPtr:
       return 0;
     case TemplateArgument::Integral: {

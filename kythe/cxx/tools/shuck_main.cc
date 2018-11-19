@@ -42,7 +42,7 @@
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "kythe/cxx/common/index_pack.h"
+#include "kythe/cxx/extractor/index_pack.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
 

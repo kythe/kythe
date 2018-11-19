@@ -38,7 +38,6 @@ following are necessary to run the installed hooks:
 - arcanist
 - buildifier
 - clang-format
-- commitlint (and `@commitlint/config-conventional`)
 - gofmt
 - google-java-format
 - jq

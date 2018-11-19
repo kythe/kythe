@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kythe/cxx/common/indexing/frontend.h"
+#include "kythe/cxx/indexer/cxx/frontend.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -28,8 +28,8 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/kzip_reader.h"
-#include "kythe/cxx/common/path_utils.h"
-#include "kythe/cxx/common/proto_conversions.h"
+#include "kythe/cxx/extractor/path_utils.h"
+#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/claim.pb.h"
 #include "llvm/ADT/STLExtras.h"
@@ -103,6 +103,28 @@ void DecodeStaticClaimTable(const std::string& path,
   close(fd);
 }
 
+/// \brief Normalize input file vnames by cleaning paths and clearing
+/// signatures.
+void MaybeNormalizeFileVNames(IndexerJob* job) {
+  if (!FLAGS_normalize_file_vnames) {
+    return;
+  }
+  for (auto& input : *job->unit.mutable_required_input()) {
+    input.mutable_v_name()->set_path(CleanPath(llvm::StringRef(
+        input.v_name().path().data(), input.v_name().path().size())));
+    input.mutable_v_name()->clear_signature();
+  }
+}
+
+void UpdateJobWdirFromUnit(IndexerJob* job) {
+  job->working_directory = job->unit.working_directory();
+  if (!llvm::sys::path::is_absolute(job->working_directory)) {
+    llvm::SmallString<1024> stored_wd;
+    CHECK(!llvm::sys::fs::make_absolute(stored_wd));
+    job->working_directory = stored_wd.str();
+  }
+}
+
 /// \brief Reads data from a .kindex file into memory.
 /// \param path The path from which the file should be read.
 /// \param virtual_files A vector to be filled with FileData.
@@ -142,17 +164,14 @@ void DecodeIndexFile(const std::string& path,
 /// \param jobs A vector to add a job to for each compilation in the kzip.
 /// \param silent The silent flag is copied to each of the jobs created from the
 /// kzip file.
-void DecodeKZipFile(const std::string& path, std::vector<IndexerJob>* jobs,
-                    bool silent) {
+void DecodeKZipFile(const std::string& path, bool silent,
+                    const IndexerContext::CompilationVisitCallback& visit) {
   StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
   CHECK(reader) << "Couldn't open kzip from " << path;
   bool compilation_read = false;
   auto status = reader->Scan([&](absl::string_view digest) {
-    // TODO(#3233): Process compilation units as they're read rather than
-    // storing them all in memory and processing later.
-    jobs->emplace_back();
-    auto* job = &jobs->back();
-    job->silent = silent;
+    IndexerJob job;
+    job.silent = silent;
 
     auto compilation = reader->ReadUnit(digest);
     for (const auto& file : compilation->unit().required_input()) {
@@ -163,9 +182,14 @@ void DecodeKZipFile(const std::string& path, std::vector<IndexerJob>* jobs,
       file_data.set_content(*content);
       file_data.mutable_info()->set_path(file.info().path());
       file_data.mutable_info()->set_digest(file.info().digest());
-      job->virtual_files.push_back(std::move(file_data));
+      job.virtual_files.push_back(std::move(file_data));
     }
-    job->unit = compilation->unit();
+    job.unit = compilation->unit();
+
+    UpdateJobWdirFromUnit(&job);
+    MaybeNormalizeFileVNames(&job);
+    visit(job);
+
     compilation_read = true;
     return true;
   });
@@ -255,16 +279,16 @@ bool IndexerContext::HasIndexArguments() {
   return had_index;
 }
 
-void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu) {
+void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu,
+                                       const CompilationVisitCallback& visit) {
   std::string name = strip_silent_input_prefix(file_or_cu);
   const bool silent = !name.empty();
   if (name.empty()) {
     name = file_or_cu;
   }
   if (!FLAGS_index_pack.empty()) {
-    jobs_.emplace_back();
-    auto* job = &jobs_.back();
-    job->silent = silent;
+    IndexerJob job;
+    job.silent = silent;
 
     std::string error_text;
     auto filesystem = kythe::IndexPackPosixFilesystem::Open(
@@ -273,27 +297,31 @@ void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu) {
     CHECK(filesystem) << "Couldn't open index pack from " << FLAGS_index_pack
                       << ": " << error_text;
     DecodeIndexPack(name, llvm::make_unique<IndexPack>(std::move(filesystem)),
-                    &job->virtual_files, &job->unit);
+                    &job.virtual_files, &job.unit);
+    UpdateJobWdirFromUnit(&job);
+    MaybeNormalizeFileVNames(&job);
+    visit(job);
   } else if (llvm::StringRef(file_or_cu).endswith(".kzip")) {
-    DecodeKZipFile(name, &jobs_, silent);
+    DecodeKZipFile(name, silent, visit);
   } else {
-    jobs_.emplace_back();
-    auto* job = &jobs_.back();
-    job->silent = silent;
-    DecodeIndexFile(name, &job->virtual_files, &job->unit);
+    IndexerJob job;
+    job.silent = silent;
+    DecodeIndexFile(name, &job.virtual_files, &job.unit);
+    UpdateJobWdirFromUnit(&job);
+    MaybeNormalizeFileVNames(&job);
+    visit(job);
   }
 }
 
 void IndexerContext::LoadDataFromUnpackedFile(
-    const std::string& default_filename) {
-  jobs_.emplace_back();
-  auto* job = &jobs_.back();
-  allow_filesystem_access_ = true;
+    const std::string& default_filename,
+    const CompilationVisitCallback& visit) {
+  IndexerJob job;
   int read_fd = STDIN_FILENO;
   std::string source_file_name = default_filename;
   llvm::SmallString<1024> cwd;
   CHECK(!llvm::sys::fs::current_path(cwd));
-  job->working_directory = cwd.str();
+  job.working_directory = cwd.str();
   if (FLAGS_i != "-") {
     read_fd = open(FLAGS_i.c_str(), O_RDONLY);
     if (read_fd == -1) {
@@ -319,11 +347,14 @@ void IndexerContext::LoadDataFromUnpackedFile(
   proto::FileData file_data;
   file_data.mutable_info()->set_path(source_file_name);
   file_data.set_content(source_data.str());
-  job->virtual_files.push_back(std::move(file_data));
+  job.virtual_files.push_back(std::move(file_data));
+  job.unit.add_source_file(source_file_name);
   for (const auto& arg : args_) {
-    job->unit.add_argument(arg);
+    job.unit.add_argument(arg);
   }
-  job->unit.mutable_v_name()->set_corpus(FLAGS_icorpus);
+  job.unit.mutable_v_name()->set_corpus(FLAGS_icorpus);
+  MaybeNormalizeFileVNames(&job);
+  visit(job);
 }
 
 void IndexerContext::InitializeClaimClient() {
@@ -343,16 +374,6 @@ void IndexerContext::InitializeClaimClient() {
     }
     static_claims->set_process_unknown_status(FLAGS_claim_unknown);
     claim_client_ = std::move(static_claims);
-  }
-}
-
-void IndexerContext::NormalizeFileVNames() {
-  for (auto& job : jobs_) {
-    for (auto& input : *job.unit.mutable_required_input()) {
-      input.mutable_v_name()->set_path(
-          CleanPath(ToStringRef(input.v_name().path())));
-      input.mutable_v_name()->clear_signature();
-    }
   }
 }
 
@@ -395,38 +416,33 @@ void IndexerContext::OpenHashCache() {
 
 IndexerContext::IndexerContext(const std::vector<std::string>& args,
                                const std::string& default_filename)
-    : args_(args), ignore_unimplemented_(FLAGS_ignore_unimplemented) {
+    : args_(args),
+      default_filename_(default_filename),
+      ignore_unimplemented_(FLAGS_ignore_unimplemented) {
   args_.erase(std::remove(args_.begin(), args_.end(), std::string()),
               args_.end());
-  if (HasIndexArguments()) {
-    // This forces the BuildDetails proto descriptor to be added to the pool so
-    // we can deserialize it.
-    proto::BuildDetails needed_for_proto_deserialization;
+  unpacked_inputs_ = !HasIndexArguments();
 
-    for (size_t arg = 1; arg < args_.size(); ++arg) {
-      LoadDataFromIndex(args[arg]);
-
-      // Set the working_directory for each job from the corresponding unit.
-      for (auto& job : jobs_) {
-        job.working_directory = job.unit.working_directory();
-        if (!llvm::sys::path::is_absolute(job.working_directory)) {
-          llvm::SmallString<1024> stored_wd;
-          CHECK(!llvm::sys::fs::make_absolute(stored_wd));
-          job.working_directory = stored_wd.str();
-        }
-      }
-    }
-  } else {
-    LoadDataFromUnpackedFile(default_filename);
-  }
-  if (FLAGS_normalize_file_vnames) {
-    NormalizeFileVNames();
-  }
   InitializeClaimClient();
   OpenOutputStreams();
   OpenHashCache();
 }
 
 IndexerContext::~IndexerContext() { CloseOutputStreams(); }
+
+void IndexerContext::EnumerateCompilations(
+    const CompilationVisitCallback& visit) {
+  // This forces the BuildDetails proto descriptor to be added to the pool so
+  // we can deserialize it.
+  proto::BuildDetails needed_for_proto_deserialization;
+
+  if (unpacked_inputs_) {
+    LoadDataFromUnpackedFile(default_filename_, visit);
+  } else {
+    for (size_t arg = 1; arg < args_.size(); ++arg) {
+      LoadDataFromIndex(args_[arg], visit);
+    }
+  }
+}
 
 }  // namespace kythe

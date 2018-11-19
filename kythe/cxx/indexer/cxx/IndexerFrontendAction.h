@@ -36,8 +36,8 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
-#include "kythe/cxx/common/cxx_details.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
+#include "kythe/cxx/extractor/cxx_details.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 

@@ -16,7 +16,7 @@
 
 #include "KytheVFS.h"
 
-#include "kythe/cxx/common/proto_conversions.h"
+#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 
 #include "absl/memory/memory.h"
 #include "llvm/Support/Errc.h"
@@ -187,8 +187,10 @@ IndexVFS::FileRecord* IndexVFS::FileRecordForPath(llvm::StringRef path,
 
   llvm::SmallString<1024> path_storage;
   if (llvm::sys::path::is_relative(path)) {
-    llvm::sys::path::append(path_storage, ToStringRef(working_directory_),
-                            path);
+    llvm::sys::path::append(
+        path_storage,
+        llvm::StringRef(working_directory_.data(), working_directory_.size()),
+        path);
     path = llvm::StringRef(path_storage);
   }
 

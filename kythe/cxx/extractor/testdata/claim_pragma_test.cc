@@ -11,7 +11,7 @@
 #include "google/protobuf/util/field_comparator.h"
 #include "google/protobuf/util/message_differencer.h"
 #include "gtest/gtest.h"
-#include "kythe/cxx/common/language.h"
+#include "kythe/cxx/extractor/language.h"
 
 namespace kythe {
 namespace {

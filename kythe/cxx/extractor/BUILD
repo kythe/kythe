@@ -1,6 +1,122 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 cc_library(
+    name = "index_pack",
+    srcs = ["index_pack.cc"],
+    hdrs = ["index_pack.h"],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deprecation = "Please use :kzip_{reader,writer}",
+    deps = [
+        "//external:libuuid",
+        "//external:zlib",
+        "//kythe/cxx/common:lib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party/llvm",
+        "@boringssl//:crypto",
+        "@com_google_absl//absl/memory",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "index_pack_testlib",
+    testonly = 1,
+    srcs = ["index_pack_test.cc"],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":index_pack",
+        "//external:zlib",
+        "//third_party:gtest",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_github_tencent_rapidjson//:rapidjson",
+        "@com_google_absl//absl/memory",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "index_pack_test",
+    size = "small",
+    deps = [":index_pack_testlib"],
+)
+
+cc_library(
+    name = "cxx_details",
+    srcs = [
+        "cxx_details.cc",
+    ],
+    hdrs = [
+        "cxx_details.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    visibility = [
+        "//kythe:default_visibility",
+        "//third_party/llvm/src:__pkg__",
+    ],
+    deps = [
+        "//kythe/proto:cxx_cc_proto",
+        "//third_party/llvm",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "path_utils",
+    srcs = ["path_utils.cc"],
+    hdrs = ["path_utils.h"],
+    deps = [
+        "//kythe/cxx/common:lib",
+        "//third_party/llvm",
+    ],
+)
+
+cc_library(
+    name = "path_utils_testlib",
+    testonly = 1,
+    srcs = [
+        "path_utils_test.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":path_utils",
+        "//third_party:gtest",
+        "//third_party/llvm",
+    ],
+)
+
+cc_test(
+    name = "path_utils_test",
+    size = "small",
+    deps = [
+        ":path_utils_testlib",
+    ],
+)
+
+cc_library(
+    name = "supported_language",
+    srcs = ["language.cc"],
+    hdrs = ["language.h"],
+    deps = ["//third_party/llvm"],
+)
+
+cc_library(
     name = "command_line_utils",
     srcs = [
         "CommandLineUtils.cc",
@@ -60,13 +176,15 @@ cc_library(
     ],
     deps = [
         ":command_line_utils",
+        ":index_pack",
+        ":path_utils",
+        ":supported_language",
         "//external:zlib",
-        "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:index_writer",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:kzip_writer",
         "//kythe/cxx/common:lib",
-        "//kythe/cxx/common:supported_language",
+        "//kythe/cxx/indexer/cxx:clang_utils",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
         "//kythe/proto:cxx_cc_proto",
@@ -98,8 +216,8 @@ cc_library(
     ],
     deps = [
         ":lib",
+        ":supported_language",
         "//external:zlib",
-        "//kythe/cxx/common:supported_language",
         "//kythe/proto:analysis_cc_proto",
         "//third_party/llvm",
         "@com_github_gflags_gflags//:gflags",
@@ -121,8 +239,8 @@ cc_library(
     ],
     deps = [
         ":lib",
+        ":supported_language",
         "//external:zlib",
-        "//kythe/cxx/common:supported_language",
         "//third_party/bazel:extra_actions_base_cc_proto",
         "//third_party/llvm",
         "@com_github_gflags_gflags//:gflags",
@@ -145,8 +263,8 @@ cc_library(
     deps = [
         ":lib",
         ":objc_bazel_support_library",
+        ":supported_language",
         "//external:zlib",
-        "//kythe/cxx/common:supported_language",
         "//third_party/bazel:extra_actions_base_cc_proto",
         "//third_party/llvm",
         "@com_github_gflags_gflags//:gflags",

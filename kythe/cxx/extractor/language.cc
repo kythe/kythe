@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 The Kythe Authors. All rights reserved.
+ * Copyright 2017 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_COMMON_PROTO_CONVERSIONS_H_
-#define KYTHE_CXX_COMMON_PROTO_CONVERSIONS_H_
-
+#include "kythe/cxx/extractor/language.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <string>
 
 namespace kythe {
-/// \brief Wrap a protobuf string in a StringRef.
-/// \param string The string to wrap.
-/// \return The wrapped string (which should not outlive `string`).
-inline llvm::StringRef ToStringRef(const google::protobuf::string& string) {
-  return llvm::StringRef(string.c_str(), string.size());
-}
-}  // namespace kythe
+namespace supported_language {
 
-#endif  // KYTHE_CXX_COMMON_PROTO_CONVERSIONS_H_
+const char* const kIndexerLang = "c++";
+
+constexpr char kCpp[] = "c++";
+constexpr char kObjectiveC[] = "objectivec";
+
+std::string ToString(Language l) {
+  switch (l) {
+    case Language::kCpp:
+      return std::string(kCpp);
+    case Language::kObjectiveC:
+      return std::string(kObjectiveC);
+  }
+}
+
+}  // namespace supported_language
+}  // namespace kythe

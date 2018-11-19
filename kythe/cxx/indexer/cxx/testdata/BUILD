@@ -1759,6 +1759,13 @@ cc_indexer_test(
     tags = ["rec"],
 )
 
+cc_indexer_test(
+    name = "rec_class_member_ptr",
+    srcs = ["rec/rec_class_member_ptr.cc"],
+    check_for_singletons = True,
+    tags = ["rec"],
+)
+
 test_suite(
     name = "indexer_rec",
     tags = ["rec"],
@@ -1767,6 +1774,13 @@ test_suite(
 cc_indexer_test(
     name = "template_alias",
     srcs = ["template/template_alias.cc"],
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_decl_arg",
+    srcs = ["template/template_decl_arg.cc"],
+    ignore_dups = True,
     tags = ["template"],
 )
 

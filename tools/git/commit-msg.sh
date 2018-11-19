@@ -15,8 +15,4 @@
 # limitations under the License.
 
 # Check commit message: https://www.conventionalcommits.org/en/v1.0.0-beta.2/
-if ! which commitlint &>/dev/null; then
-  echo "FAILURE: commitlint not installed" >&2
-  exit 1
-fi
-commitlint --edit "$1"
+bazel run --run_under "cd '$PWD' && " @io_kythe//tools/git:commitlint -- --edit "$1"

@@ -43,8 +43,8 @@
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "google/protobuf/message.h"
-#include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
+#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 
 DEFINE_string(parseprotohelper_full_name,
               "proto2::contrib::parse_proto::internal::ParseProtoHelper",

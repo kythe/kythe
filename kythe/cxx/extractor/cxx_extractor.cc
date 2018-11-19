@@ -41,10 +41,10 @@
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_writer.h"
-#include "kythe/cxx/common/language.h"
-#include "kythe/cxx/common/path_utils.h"
-#include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/cxx/extractor/CommandLineUtils.h"
+#include "kythe/cxx/extractor/language.h"
+#include "kythe/cxx/extractor/path_utils.h"
+#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
@@ -56,6 +56,9 @@
 
 namespace kythe {
 namespace {
+llvm::StringRef ToStringRef(absl::string_view sv) {
+  return {sv.data(), sv.size()};
+}
 
 // We need "the lowercase ascii hex SHA-256 digest of the file contents."
 constexpr char kHexDigits[] = "0123456789abcdef";

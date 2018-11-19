@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kythe/cxx/common/cxx_details.h"
+#include "kythe/cxx/extractor/cxx_details.h"
 #include "glog/logging.h"
 
 namespace kythe {

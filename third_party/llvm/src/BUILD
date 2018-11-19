@@ -19,7 +19,7 @@ cc_library(
     ],
     deps = [
         "//external:zlib",
-        "//kythe/cxx/common:cxx_details",
+        "//kythe/cxx/extractor:cxx_details",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "//third_party/llvm",
