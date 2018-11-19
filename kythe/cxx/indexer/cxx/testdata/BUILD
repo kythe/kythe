@@ -686,10 +686,51 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
-    name = "usr",
-    srcs = ["basic/usr.cc"],
+    name = "usr_alias",
+    srcs = ["basic/usr_alias.cc"],
     check_for_singletons = True,
     experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
+    name = "usr_enum",
+    srcs = ["basic/usr_enum.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
+    name = "usr_function",
+    srcs = ["basic/usr_function.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
+    name = "usr_record",
+    srcs = ["basic/usr_record.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
+    name = "usr_var",
+    srcs = ["basic/usr_var.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
     ignore_unimplemented = True,
     tags = ["basic"],
 )
