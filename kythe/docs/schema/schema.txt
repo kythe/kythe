@@ -1116,6 +1116,18 @@ Notes::
   First-level macro expansions (like those written down in the source file)
   are recorded with the <<refexpands,[ref/expands]>> edge.
 
+[kythe,C++,"Macros can expand other macros."]
+--------------------------------------------------------------------------------
+//- @MB defines/binding MacroB
+#define MB x
+//- @MA defines/binding MacroA
+#define MA MB
+//- @MA ref/expands/transitive MacroB
+//- @MA ref/expands MacroA
+//- !{ @MA ref/expands/transitive MacroA }
+int MA;
+--------------------------------------------------------------------------------
+
 [[reffile]]
 ref/file
 ~~~~~~~~
@@ -1132,18 +1144,6 @@ Points toward::
   <<file>>
 Ordinals are used::
   never
-
-[kythe,C++,"Macros can expand other macros."]
---------------------------------------------------------------------------------
-//- @MB defines/binding MacroB
-#define MB x
-//- @MA defines/binding MacroA
-#define MA MB
-//- @MA ref/expands/transitive MacroB
-//- @MA ref/expands MacroA
-//- !{ @MA ref/expands/transitive MacroA }
-int MA;
---------------------------------------------------------------------------------
 
 [[refimports]]
 ref/imports
