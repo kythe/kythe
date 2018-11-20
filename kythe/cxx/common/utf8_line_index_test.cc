@@ -18,15 +18,15 @@
 
 #include <algorithm>
 
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "glog/logging.h"
+#include "gtest/gtest.h"
 
 namespace {
 
-using ::grok::UTF8LineIndex;
 using ::grok::CharacterPosition;
+using ::grok::UTF8LineIndex;
 
 // Returns whether a UTF-8 byte is a continuation byte, i.e., a byte other
 // than the first byte of the encoding of a character.
@@ -41,8 +41,7 @@ void CheckRoundTrips(const UTF8LineIndex& index) {
     if (IsUTF8ContinuationByte(content[byte_offset])) continue;
     CharacterPosition position(index.ComputePositionForByteOffset(byte_offset));
     EXPECT_TRUE(position.is_valid())
-        << " at byte offset: " << byte_offset
-        << " in " << content;
+        << " at byte offset: " << byte_offset << " in " << content;
     EXPECT_EQ(byte_offset, index.ComputeByteOffset(position.line_number,
                                                    position.column_number));
   }
@@ -80,8 +79,7 @@ TEST(UTF8LineIndexTest, WorksForSingleLineAsciiFile) {
   UTF8LineIndex index(&single_line_content);
   // The whole "file" is on line 1.
   for (int i = 0; i < single_line_content.size(); ++i) {
-    EXPECT_EQ(1, index.LineNumber(i))
-        << "i = " << i;
+    EXPECT_EQ(1, index.LineNumber(i)) << "i = " << i;
     EXPECT_EQ(i, index.ComputePositionForByteOffset(i).column_number);
   }
   EXPECT_EQ(1, index.line_count());
@@ -202,10 +200,11 @@ TEST(UTF8LineIndexTest, WorksWithDoubleByteCharacters) {
 }
 
 TEST(UTF8LineIndexTest, CRLFIsASingleLineEnd) {
-  const std::string four_empty_lines("\n"
-                                "\r"
-                                "\r\n"
-                                "\r\n");
+  const std::string four_empty_lines(
+      "\n"
+      "\r"
+      "\r\n"
+      "\r\n");
   UTF8LineIndex index(&four_empty_lines);
   CheckRoundTrips(index);
 
@@ -237,9 +236,10 @@ TEST(UTF8LineIndexTest, GetLineFromEmptyFile) {
   EXPECT_EQ("", empty_index.GetLine(999));
 }
 
-TEST(UTF8LineIndexTest, GetLineFromUnterminatedFile) {\
-  const std::string unterminated_file("Hello world.\n"
-                                 "Goodbye, unterminated world.");
+TEST(UTF8LineIndexTest, GetLineFromUnterminatedFile) {
+  const std::string unterminated_file(
+      "Hello world.\n"
+      "Goodbye, unterminated world.");
   UTF8LineIndex unterminated_index(&unterminated_file);
   CheckRoundTrips(unterminated_index);
 
@@ -268,8 +268,9 @@ TEST(UTF8LineIndexTest, ComputeByteOffsetAtEndOfUnterminatedFile) {
   // This is a regression test; migrating from ::string storage to using a
   // StringPiece means that peeking past the end of the buffer isn't allowed
   // anymore, and this aborted in ComputeByteOffset previously.
-  const std::string unterminated_file("Hello world.\n"
-                                 "Goodbye, unterminated world.");
+  const std::string unterminated_file(
+      "Hello world.\n"
+      "Goodbye, unterminated world.");
   UTF8LineIndex index(&unterminated_file);
   EXPECT_EQ(unterminated_file.length(),
             index.ComputeByteOffset(2, strlen("Goodbye, unterminated world.")));

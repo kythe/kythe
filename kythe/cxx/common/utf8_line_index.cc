@@ -18,9 +18,9 @@
 
 #include <ostream>
 
-#include "glog/logging.h"
 #include "absl/algorithm/container.h"
 #include "absl/strings/string_view.h"
+#include "glog/logging.h"
 
 namespace grok {
 
@@ -32,9 +32,7 @@ std::ostream& operator<<(std::ostream& dest,
   return dest;
 }
 
-bool IsUTF8ContinuationByte(int byte) {
-  return ((byte & 0xC0) == 0x80);
-}
+bool IsUTF8ContinuationByte(int byte) { return ((byte & 0xC0) == 0x80); }
 
 bool IsUTF8EndOfLineByte(int byte_offset, absl::string_view content) {
   // If/when we were using a string, checking for the past-the-end byte
@@ -44,8 +42,7 @@ bool IsUTF8EndOfLineByte(int byte_offset, absl::string_view content) {
                                             content[byte_offset + 1] != '\n')));
 }
 
-UTF8LineIndex::UTF8LineIndex(const std::string* content)
-    : content_(*content) {
+UTF8LineIndex::UTF8LineIndex(const std::string* content) : content_(*content) {
   CHECK(content != nullptr);
   IndexContent();
 }
@@ -178,9 +175,9 @@ absl::string_view UTF8LineIndex::GetSubstrFromLine(
 
   absl::string_view line = GetLine(line_number);
 
-  int start_byte_offset = -1;   // a negative number means not being set yet
+  int start_byte_offset = -1;  // a negative number means not being set yet
   int code_point_number = 0;
-  int byte_offset = 0;          // will point to the end of substr
+  int byte_offset = 0;  // will point to the end of substr
   for (; byte_offset < line.size(); ++byte_offset) {
     if (code_point_number == start_position_in_code_points &&
         // Set the start offset only once in case the start code point is
