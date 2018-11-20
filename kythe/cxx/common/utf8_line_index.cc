@@ -45,7 +45,8 @@ bool IsUTF8EndOfLineByte(int byte_offset, absl::string_view content) {
 }
 
 UTF8LineIndex::UTF8LineIndex(const std::string* content)
-    : content_(*ABSL_DIE_IF_NULL(content)) {
+    : content_(*content) {
+  CHECK(content != nullptr);
   IndexContent();
 }
 
