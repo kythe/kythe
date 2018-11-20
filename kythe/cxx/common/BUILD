@@ -362,3 +362,25 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "utf8_line_index",
+    srcs = ["utf8_line_index.cc"],
+    hdrs = ["utf8_line_index.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "utf8_line_index_test",
+    size = "small",
+    srcs = ["utf8_line_index_test.cc"],
+    deps = [
+        ":utf8_line_index",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+    ],
+)
