@@ -602,6 +602,7 @@ proto_library(
     name = "pipeline_proto",
     srcs = ["pipeline.proto"],
     deps = [
+        ":common_proto",
         ":schema_proto",
         ":serving_proto",
         ":storage_proto",
@@ -611,6 +612,7 @@ proto_library(
 go_kythe_proto(
     proto = ":pipeline_proto",
     deps = [
+        ":common_go_proto",
         ":schema_go_proto",
         ":serving_go_proto",
         ":storage_go_proto",

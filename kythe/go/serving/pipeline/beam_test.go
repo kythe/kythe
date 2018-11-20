@@ -259,6 +259,82 @@ func TestDecorations_decoration(t *testing.T) {
 	}
 }
 
+func TestDecorations_diagnostics(t *testing.T) {
+	testNodes := []*scpb.Node{{
+		Source: &spb.VName{Path: "path", Signature: "anchor1"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_START},
+			Value: []byte("5"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
+			Value: []byte("9"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_TAGGED},
+			Target: &spb.VName{Signature: "diagnostic"},
+		}},
+	}, {
+		Source: &spb.VName{Path: "path"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_TEXT},
+			Value: []byte("some text\n"),
+		}},
+		Edge: []*scpb.Edge{{
+			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_TAGGED},
+			Target: &spb.VName{Signature: "diagnostic"},
+		}},
+	}, {
+		Source: &spb.VName{Signature: "diagnostic"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_DIAGNOSTIC},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_MESSAGE},
+			Value: []byte("msg"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_DETAILS},
+			Value: []byte("deets"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_CONTEXT_URL},
+			Value: []byte("https://kythe.io"),
+		}},
+	}}
+
+	expected := []*srvpb.FileDecorations{{
+		File: &srvpb.File{Text: []byte("some text\n")},
+		Diagnostic: []*cpb.Diagnostic{{
+			Message:    "msg",
+			Details:    "deets",
+			ContextUrl: "https://kythe.io",
+		}, {
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   5,
+					LineNumber:   1,
+					ColumnOffset: 5,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
+			Message:    "msg",
+			Details:    "deets",
+			ContextUrl: "https://kythe.io",
+		}},
+	}}
+
+	p, s, nodes := ptest.CreateList(testNodes)
+	decor := FromNodes(s, nodes).Decorations()
+	debug.Print(s, decor)
+	passert.Equals(s, beam.DropKey(s, decor), beam.CreateList(s, expected))
+
+	if err := ptest.Run(p); err != nil {
+		t.Fatalf("Pipeline error: %+v", err)
+	}
+}
+
 func TestDecorations_targetDefinition(t *testing.T) {
 	testNodes := []*scpb.Node{{
 		Source: &spb.VName{Path: "path", Signature: "anchor1"},
