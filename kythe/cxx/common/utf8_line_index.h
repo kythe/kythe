@@ -1,13 +1,18 @@
-// Copyright 2012 Google Inc. All Rights Reserved.
-// Author: jdennett@google.com (James Dennett)
-// Based on Java version written by stevey@google.com, via an earlier
-// C++ version (line_offsets.h) by rbraunstein@google.com.
-//
-// Defines the class UTF8LineIndex to quickly translate byte offsets within
-// a file to line/column positions and UTF-8 character offsets (and back).
-//
-// For wrappers which translate to/from protobufs, see the file
-// line_index_utils.h.
+/*
+ * Copyright 2018 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef DEVTOOLS_GROK_UTIL_UTF8_LINE_INDEX_H_
 #define DEVTOOLS_GROK_UTIL_UTF8_LINE_INDEX_H_
