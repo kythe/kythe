@@ -36,15 +36,10 @@ bool IsUTF8ContinuationByte(int byte) { return ((byte & 0xC0) == 0x80); }
 
 bool IsUTF8EndOfLineByte(int byte_offset, absl::string_view content) {
   // If/when we were using a string, checking for the past-the-end byte
-  // was safe.  Now that we use StringPiece we have to avoid that.
+  // was safe.  Now that we use string_view we have to avoid that.
   return (content[byte_offset] == '\n' ||
           (content[byte_offset] == '\r' && (byte_offset + 1 == content.size() ||
                                             content[byte_offset + 1] != '\n')));
-}
-
-UTF8LineIndex::UTF8LineIndex(const std::string* content) : content_(*content) {
-  CHECK(content != nullptr);
-  IndexContent();
 }
 
 UTF8LineIndex::UTF8LineIndex(absl::string_view content) : content_(content) {

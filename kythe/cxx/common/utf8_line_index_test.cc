@@ -266,7 +266,7 @@ TEST(UTF8LineIndexTest, GetLineFromSmallFile) {
 
 TEST(UTF8LineIndexTest, ComputeByteOffsetAtEndOfUnterminatedFile) {
   // This is a regression test; migrating from ::string storage to using a
-  // StringPiece means that peeking past the end of the buffer isn't allowed
+  // string_view means that peeking past the end of the buffer isn't allowed
   // anymore, and this aborted in ComputeByteOffset previously.
   const std::string unterminated_file(
       "Hello world.\n"

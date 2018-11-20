@@ -76,15 +76,6 @@ class UTF8LineIndex {
   //
   // The content must be less than 2GB long.
   //
-  // Complexity: O(content->size())
-  explicit UTF8LineIndex(const std::string* content);
-
-  // Creates a UTF8LineIndex for a file.  The index retains a reference to
-  // the file content, which must therefore remain valid (and unchanged) so
-  // long as this index is in use.
-  //
-  // The content must be less than 2GB long.
-  //
   // Complexity: O(content.size())
   explicit UTF8LineIndex(absl::string_view content);
 
