@@ -37,8 +37,6 @@ bool IsUTF8EndOfLineByte(int byte_offset, absl::string_view content);
 // way.  By encoding-independent, we mean that if the file were re-encoded in
 // a different way (e.g., UCS-32 instead of UTF-8), the CharacterPosition
 // would be unchanged.
-//
-// Note: This holds the same data as grok.proto.Position.
 struct CharacterPosition {
   // n-th character in file, 0-based, or -1 if this position is invalid.
   int character_number;
@@ -131,7 +129,7 @@ class UTF8LineIndex {
   // in the line from the start position as the desired length, returns
   // the rest of the line including the end-of-line marker.
   //
-  // TODO(shukang): Optimize this function for the case of ASCII.
+  // TODO: Optimize this function for the case of ASCII.
   absl::string_view GetSubstrFromLine(int line_number,
                                       int start_position_in_code_points,
                                       int length_in_code_points) const;
