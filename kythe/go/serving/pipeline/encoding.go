@@ -94,8 +94,10 @@ func encodeDecorPiece(file *spb.VName, p *ppb.DecorationPiece, emit func([]byte,
 		return encodeDecorNode(file, p.Node, emit)
 	case *ppb.DecorationPiece_Definition_:
 		return encodeDecorDef(file, p.Definition, emit)
+	case *ppb.DecorationPiece_Diagnostic:
+		return encodeDecorDiagnostic(file, p.Diagnostic, emit)
 	default:
-		// TODO(schroederc): add diagnostics/overrides
+		// TODO(schroederc): add overrides
 		return fmt.Errorf("unknown DecorationPiece: %T", p)
 	}
 }
@@ -188,6 +190,20 @@ func encodeDecorDef(file *spb.VName, def *ppb.DecorationPiece_Definition, emit f
 		File: file,
 		Entry: &xspb.FileDecorations_DefinitionLocation_{&xspb.FileDecorations_DefinitionLocation{
 			Location: def.Definition,
+		}},
+	})
+	if err != nil {
+		return err
+	}
+	emit(e.Key, e.Value)
+	return nil
+}
+
+func encodeDecorDiagnostic(file *spb.VName, d *cpb.Diagnostic, emit func([]byte, []byte)) error {
+	e, err := columnar.EncodeDecorationsEntry(columnar.DecorationsKeyPrefix, &xspb.FileDecorations{
+		File: file,
+		Entry: &xspb.FileDecorations_Diagnostic_{&xspb.FileDecorations_Diagnostic{
+			Diagnostic: d,
 		}},
 	})
 	if err != nil {
