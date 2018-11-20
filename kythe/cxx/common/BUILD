@@ -365,23 +365,12 @@ cc_library(
 
 cc_library(
     name = "utf8_line_index",
-    srcs = [
-        "utf8_line_index.cc",
-    ],
-    hdrs = [
-        "utf8_line_index.h",
-    ],
-    visibility = [
-        "//devtools/grok/kythe/cxx:__subpackages__",
-        "//devtools/staticanalysis/pipeline/cxx:__pkg__",
-        "//hardware/chips/infra/verikythe:__pkg__",
-        "//storage/rvl/devtools/codeanalysis:__pkg__",
-        "//storage/rvl/devtools/staticanalysis:__pkg__",
-    ],
+    srcs = ["utf8_line_index.cc"],
+    hdrs = ["utf8_line_index.h"],
     deps = [
-        "//base",
-        "//third_party/absl/algorithm:container",
-        "//third_party/absl/strings",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -391,8 +380,7 @@ cc_test(
     srcs = ["utf8_line_index_test.cc"],
     deps = [
         ":utf8_line_index",
-        "//strings",
-        "//testing/base/public:gunit_main",
-        "//third_party/absl/strings",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
     ],
 )

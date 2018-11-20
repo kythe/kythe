@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "devtools/grok/util/utf8_line_index.h"
+#include "kythe/cxx/common/utf8_line_index.h"
 
 #include <ostream>
 
-#include "base/logging.h"
-#include "third_party/absl/algorithm/container.h"
-#include "third_party/absl/strings/string_view.h"
+#include "glog/logging.h"
+#include "absl/algorithm/container.h"
+#include "absl/strings/string_view.h"
 
 namespace grok {
 
@@ -44,7 +44,7 @@ bool IsUTF8EndOfLineByte(int byte_offset, absl::string_view content) {
                                             content[byte_offset + 1] != '\n')));
 }
 
-UTF8LineIndex::UTF8LineIndex(const string* content)
+UTF8LineIndex::UTF8LineIndex(const std::string* content)
     : content_(*ABSL_DIE_IF_NULL(content)) {
   IndexContent();
 }
