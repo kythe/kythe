@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-#include "devtools/grok/util/utf8_line_index.h"
+#include "kythe/cxx/common/utf8_line_index.h"
 
 #include <algorithm>
 
-#include "strings/join.h"
-#include "testing/base/public/gunit.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/string_view.h"
+#include "gtest/gtest.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 
 namespace {
 
