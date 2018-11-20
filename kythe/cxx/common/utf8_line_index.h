@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef DEVTOOLS_GROK_UTIL_UTF8_LINE_INDEX_H_
-#define DEVTOOLS_GROK_UTIL_UTF8_LINE_INDEX_H_
+#ifndef KYTHE_CXX_COMMON_UTF8_LINE_INDEX_H_
+#define KYTHE_CXX_COMMON_UTF8_LINE_INDEX_H_
 
 #include <iosfwd>
 #include <string>
@@ -23,7 +23,7 @@
 
 #include "absl/strings/string_view.h"
 
-namespace grok {
+namespace kythe {
 
 // Returns whether a UTF-8 byte is a continuation byte, i.e., a byte other
 // than the first byte of the encoding of a character.
@@ -176,6 +176,6 @@ class UTF8LineIndex {
   std::vector<int> line_begin_character_offsets_;
 };
 
-}  // namespace grok
+}  // namespace kythe
 
-#endif  // DEVTOOLS_GROK_UTIL_UTF8_LINE_INDEX_H_
+#endif  // KYTHE_CXX_COMMON_UTF8_LINE_INDEX_H_

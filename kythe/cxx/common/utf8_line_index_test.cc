@@ -25,8 +25,8 @@
 
 namespace {
 
-using ::grok::CharacterPosition;
-using ::grok::UTF8LineIndex;
+using ::kythe::CharacterPosition;
+using ::kythe::UTF8LineIndex;
 
 // Returns whether a UTF-8 byte is a continuation byte, i.e., a byte other
 // than the first byte of the encoding of a character.

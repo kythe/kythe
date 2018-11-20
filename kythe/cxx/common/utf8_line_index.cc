@@ -22,7 +22,7 @@
 #include "absl/strings/string_view.h"
 #include "glog/logging.h"
 
-namespace grok {
+namespace kythe {
 
 std::ostream& operator<<(std::ostream& dest,
                          const CharacterPosition& position) {
@@ -204,4 +204,4 @@ absl::string_view UTF8LineIndex::GetSubstrFromLine(
   }
 }
 
-}  // namespace grok
+}  // namespace kythe
