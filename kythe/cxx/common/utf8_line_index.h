@@ -61,8 +61,7 @@ struct CharacterPosition {
 };
 
 // Writes a debug representation of a CharacterPosition to an ostream.
-std::ostream& operator<<(std::ostream& dest,
-                         const CharacterPosition& position);
+std::ostream& operator<<(std::ostream& dest, const CharacterPosition& position);
 
 // For a given text file, maps between byte offsets and CharacterPositions
 // (character number, line number, column number).
