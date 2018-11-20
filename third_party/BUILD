@@ -2,6 +2,9 @@ package(default_visibility = ["//visibility:public"])
 
 # This filegroup should include all licenses of third_party libraries
 # distributed in Kythe binary releases.
+# Note: many of the licenses are vendored for external repo deps; double-check
+# %workspace%/external.bzl to ensure that any license deleted is actually
+# unused.
 filegroup(
     name = "licenses",
     srcs = ["README"] + [
@@ -26,6 +29,7 @@ filegroup(
         "//third_party/re2:LICENSE",
         "//third_party/re2j:LICENSE",
         "//third_party/riegeli:LICENSE",
+        "//third_party/safe_html_types:LICENSE",
         "//third_party/truth:LICENSE",
         "//third_party/zlib:README",
         "@com_github_google_leveldb//:license",

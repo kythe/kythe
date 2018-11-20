@@ -2060,6 +2060,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   std::vector<LibrarySupport::Completion> Completions;
   if (!IsDefinition(Decl)) {
+    AssignUSR(BodyDeclNode, Decl);
     Observer.recordVariableNode(
         BodyDeclNode, GraphObserver::Completeness::Incomplete,
         GraphObserver::VariableSubkind::None, absl::nullopt);
@@ -2098,6 +2099,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
       Completions.push_back(LibrarySupport::Completion{NextDecl, TargetDecl});
     }
   }
+  AssignUSR(BodyDeclNode, Decl);
   Observer.recordVariableNode(
       BodyDeclNode, GraphObserver::Completeness::Definition,
       GraphObserver::VariableSubkind::None, absl::nullopt);
@@ -2180,6 +2182,7 @@ bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl* Decl) {
   Observer.recordVariableNode(DeclNode, GraphObserver::Completeness::Definition,
                               GraphObserver::VariableSubkind::Field,
                               Marks.GenerateMarkedSource(DeclNode));
+  AssignUSR(DeclNode, Decl);
   if (const auto* TSI = Decl->getTypeSourceInfo()) {
     // TODO(zarko): Record storage classes for fields.
     AscribeSpelledType(TSI->getTypeLoc(), Decl->getType(), DeclNode);
@@ -2205,6 +2208,7 @@ bool IndexerASTVisitor::VisitEnumConstantDecl(
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
       absl::nullopt);
+  AssignUSR(DeclNode, Decl);
   Observer.recordIntegerConstantNode(DeclNode, Decl->getInitVal());
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
@@ -2243,6 +2247,7 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl* Decl) {
   if (Decl->getDefinition() != Decl) {
     // TODO(jdennett): Should we use Type::isIncompleteType() instead of doing
     // something enum-specific here?
+    AssignUSR(DeclNode, Decl);
     Observer.recordEnumNode(
         DeclNode,
         HasSpecifiedStorageType ? GraphObserver::Completeness::Complete
@@ -2267,6 +2272,7 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl* Decl) {
       }
     }
   }
+  AssignUSR(DeclNode, Decl);
   Observer.recordEnumNode(DeclNode, GraphObserver::Completeness::Definition,
                           Decl->isScoped() ? GraphObserver::EnumKind::Scoped
                                            : GraphObserver::EnumKind::Unscoped);
@@ -2703,6 +2709,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
   // there is a subtle difference.
   // TODO(zarko): Add edges to previous decls.
   if (Decl->getDefinition() != Decl) {
+    AssignUSR(BodyDeclNode, Decl);
     Observer.recordRecordNode(BodyDeclNode, RK,
                               GraphObserver::Completeness::Incomplete,
                               absl::nullopt);
@@ -2745,6 +2752,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl* Decl) {
       }
     }
   }
+  AssignUSR(BodyDeclNode, Decl);
   Observer.recordRecordNode(
       BodyDeclNode, RK, GraphObserver::Completeness::Definition, absl::nullopt);
   Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
@@ -3066,6 +3074,7 @@ IndexerASTVisitor::BuildNodeIdForTypedefNameDecl(
     auto Marks = MarkedSources.Generate(Decl);
     Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
     GraphObserver::NameId AliasNameId(BuildNameIdForDecl(Decl));
+    AssignUSR(AliasNameId, AliasedTypeId.value(), Decl);
     return Observer.recordTypeAliasNode(
         AliasNameId, AliasedTypeId.value(),
         BuildNodeIdForType(FollowAliasChain(Decl)),
@@ -3141,6 +3150,7 @@ bool IndexerASTVisitor::VisitCTypedef(const clang::TypedefNameDecl* Decl) {
         RangeInCurrentContext(Decl->isImplicit(), OuterNodeId, Range),
         OuterNodeId, absl::nullopt);
     AddChildOfEdgeToDeclContext(Decl, OuterNodeId);
+    AssignUSR(OuterNodeId, Decl);
   }
   return true;
 }
@@ -4224,6 +4234,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypedef(clang::TypedefTypeLoc TL) {
     // Or is always using the cached id sufficient?
     NodeId ID = Observer.nodeIdForTypeAliasNode(AliasID, *AliasedTypeID);
     auto Marks = MarkedSources.Generate(TL.getTypedefNameDecl());
+    AssignUSR(ID, TL.getTypedefNameDecl());
     return Observer.recordTypeAliasNode(
         ID, *AliasedTypeID,
         BuildNodeIdForType(FollowAliasChain(TL.getTypedefNameDecl())),
@@ -4620,6 +4631,7 @@ bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
       AliasID, AliasedTypeID, AliasedTypeID,
       Marks.GenerateMarkedSource(
           Observer.nodeIdForTypeAliasNode(AliasID, AliasedTypeID)));
+  AssignUSR(AliasID, AliasedTypeID, Decl);
 
   // Record the definition of this type alias
   MaybeRecordDefinitionRange(ExplicitRangeInCurrentContext(AliasRange),
@@ -4663,6 +4675,7 @@ bool IndexerASTVisitor::VisitObjCImplementationDecl(
   } else {
     LogErrorWithASTDump("Missing class interface", ImplDecl);
   }
+  AssignUSR(DeclNode, ImplDecl);
   Observer.recordRecordNode(DeclNode, GraphObserver::RecordKind::Class,
                             GraphObserver::Completeness::Definition,
                             Marks.GenerateMarkedSource(DeclNode));
@@ -4689,6 +4702,7 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
   FileID ImplDeclFile =
       Observer.getSourceManager()->getFileID(ImplDecl->getCategoryNameLoc());
 
+  AssignUSR(ImplDeclNode, ImplDecl);
   Observer.recordRecordNode(ImplDeclNode, GraphObserver::RecordKind::Category,
                             GraphObserver::Completeness::Definition,
                             Marks.GenerateMarkedSource(ImplDeclNode));
@@ -4854,6 +4868,7 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
   auto Completeness = IsObjCForwardDecl(Decl)
                           ? GraphObserver::Completeness::Incomplete
                           : GraphObserver::Completeness::Complete;
+  AssignUSR(BodyDeclNode, Decl);
   Observer.recordRecordNode(BodyDeclNode, GraphObserver::RecordKind::Class,
                             Completeness, absl::nullopt);
   Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
@@ -4883,6 +4898,7 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
       absl::nullopt);
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
+  AssignUSR(DeclNode, Decl);
   Observer.recordRecordNode(DeclNode, GraphObserver::RecordKind::Category,
                             GraphObserver::Completeness::Complete,
                             Marks.GenerateMarkedSource(DeclNode));
@@ -5173,6 +5189,7 @@ bool IndexerASTVisitor::VisitObjCPropertyDecl(
       // TODO(salguarnieri) Think about making a new subkind for properties.
       GraphObserver::VariableSubkind::Field,
       Marks.GenerateMarkedSource(DeclNode));
+  AssignUSR(DeclNode, Decl);
   if (const auto* TSI = Decl->getTypeSourceInfo()) {
     // TODO(zarko): Record storage classes for fields.
     AscribeSpelledType(TSI->getTypeLoc(), Decl->getType(), DeclNode);

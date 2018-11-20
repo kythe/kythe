@@ -1,4 +1,4 @@
-// We index USRs.
+// We index USRs for functions.
 
 //- @foo defines/binding Foo
 //- FooUsr /clang/usr Foo
