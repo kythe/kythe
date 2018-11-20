@@ -79,7 +79,7 @@ CharacterPosition UTF8LineIndex::ComputePositionForByteOffset(
 
   // Error cases: before the start of the file, or after the past-the-end
   // position.  In either of those cases we return an invalid position.
-  if (byte_offset < 0 || byte_offset > static_cast<int64>(content_.size()))
+  if (byte_offset < 0 || byte_offset > static_cast<int64_t>(content_.size()))
     return position;
 
   // We special-case asking for a position at the start of the file in part
@@ -91,7 +91,7 @@ CharacterPosition UTF8LineIndex::ComputePositionForByteOffset(
     return position;
   }
 
-  if (byte_offset < static_cast<int64>(content_.size())) {
+  if (byte_offset < static_cast<int64_t>(content_.size())) {
     position.line_number = LineNumber(byte_offset);
     auto line_begin_byte_offset =
         line_begin_byte_offsets_[position.line_number - 1];
@@ -146,7 +146,7 @@ int UTF8LineIndex::ComputeByteOffset(int line, int column) const {
     // Skip over one character for each column, however many bytes that is.
     // In other words: skip the first byte and then skip any continuation bytes.
     ++byte_offset;
-    while ((byte_offset < static_cast<int64>(content_.size())) &&
+    while ((byte_offset < static_cast<int64_t>(content_.size())) &&
            IsUTF8ContinuationByte(content_[byte_offset])) {
       ++byte_offset;
     }
