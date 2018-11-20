@@ -362,3 +362,37 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "utf8_line_index",
+    srcs = [
+        "utf8_line_index.cc",
+    ],
+    hdrs = [
+        "utf8_line_index.h",
+    ],
+    visibility = [
+        "//devtools/grok/kythe/cxx:__subpackages__",
+        "//devtools/staticanalysis/pipeline/cxx:__pkg__",
+        "//hardware/chips/infra/verikythe:__pkg__",
+        "//storage/rvl/devtools/codeanalysis:__pkg__",
+        "//storage/rvl/devtools/staticanalysis:__pkg__",
+    ],
+    deps = [
+        "//base",
+        "//third_party/absl/algorithm:container",
+        "//third_party/absl/strings",
+    ],
+)
+
+cc_test(
+    name = "utf8_line_index_test",
+    size = "small",
+    srcs = ["utf8_line_index_test.cc"],
+    deps = [
+        ":utf8_line_index",
+        "//strings",
+        "//testing/base/public:gunit_main",
+        "//third_party/absl/strings",
+    ],
+)
