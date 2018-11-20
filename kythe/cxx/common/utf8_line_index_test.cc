@@ -47,7 +47,7 @@ void CheckRoundTrips(const UTF8LineIndex& index) {
                                                    position.column_number));
   }
 
-  string joined_lines;
+  std::string joined_lines;
   for (int line_number = 1; line_number <= index.line_count(); ++line_number) {
     absl::StrAppend(&joined_lines, index.GetLine(line_number));
   }
@@ -58,7 +58,7 @@ TEST(UTF8LineIndexTest, WorksForAnEmptyFile) {
   // All we expect for an empty input is that this doesn't crash, reports
   // that an empty file contains one line, gives a sane response for the
   // past-the-end position, and handles bad requests robustly.
-  const string empty_file_content("");
+  const std::string empty_file_content("");
   UTF8LineIndex index(&empty_file_content);
 
   EXPECT_EQ(1, index.line_count());
@@ -76,7 +76,7 @@ TEST(UTF8LineIndexTest, WorksForAnEmptyFile) {
 }
 
 TEST(UTF8LineIndexTest, WorksForSingleLineAsciiFile) {
-  const string single_line_content("Hello World!\n");
+  const std::string single_line_content("Hello World!\n");
   UTF8LineIndex index(&single_line_content);
   // The whole "file" is on line 1.
   for (int i = 0; i < single_line_content.size(); ++i) {
@@ -94,7 +94,7 @@ TEST(UTF8LineIndexTest, WorksForSingleLineAsciiFile) {
 }
 
 TEST(UTF8LineIndexTest, WorksForFileWithEmptyFirstLine) {
-  const string content_with_empty_first_line("\nSecond line\n");
+  const std::string content_with_empty_first_line("\nSecond line\n");
   UTF8LineIndex index(&content_with_empty_first_line);
   // The initial newline counts as part of line 1.
   EXPECT_EQ(1, index.LineNumber(0));
@@ -107,13 +107,13 @@ TEST(UTF8LineIndexTest, WorksForFileWithEmptyFirstLine) {
 
 // Tests lines terminated with just CR (0x0D).
 TEST(UTF8LineIndexTest, WorksForMacStyleLineEnds) {
-  const string mac_style_file_content("Mac\rStyle\rLines\r");
+  const std::string mac_style_file_content("Mac\rStyle\rLines\r");
   UTF8LineIndex index(&mac_style_file_content);
   CheckRoundTrips(index);
 }
 
 TEST(UTF8LineIndexTest, WorksForPlainASCIIFile) {
-  const string ascii_content("Now is the {\nWinter of}\nyour disc\n");
+  const std::string ascii_content("Now is the {\nWinter of}\nyour disc\n");
   UTF8LineIndex index(&ascii_content);
   CheckRoundTrips(index);
 
@@ -134,11 +134,11 @@ TEST(UTF8LineIndexTest, WorksForPlainASCIIFile) {
   EXPECT_EQ(8, position_of_c.column_number);
   EXPECT_EQ(ascii_content.find('c'),
             index.ComputeByteOffset(position_of_c.line_number,
-                                    string("your disc").find('c')));
+                                    std::string("your disc").find('c')));
 }
 
 TEST(UTF8LineIndexTest, WorksForFileWithMissingTerminalLineEnd) {
-  const string ascii_content("Now is the {\nWinter of}\nyour disc");
+  const std::string ascii_content("Now is the {\nWinter of}\nyour disc");
   UTF8LineIndex index(&ascii_content);
   CheckRoundTrips(index);
   EXPECT_EQ(3, index.line_count());
@@ -161,7 +161,7 @@ TEST(UTF8LineIndexTest, WorksForFileWithMissingTerminalLineEnd) {
 
 // TODO(jdennett): Split WorksWithDoubleByteCharacters out into smaller tests.
 TEST(UTF8LineIndexTest, WorksWithDoubleByteCharacters) {
-  const string text_with_double_byte_characters =
+  const std::string text_with_double_byte_characters =
       "$1 = £0.6354\n"
       "£1 = $1.5739\n";
   UTF8LineIndex index(&text_with_double_byte_characters);
@@ -202,7 +202,7 @@ TEST(UTF8LineIndexTest, WorksWithDoubleByteCharacters) {
 }
 
 TEST(UTF8LineIndexTest, CRLFIsASingleLineEnd) {
-  const string four_empty_lines("\n"
+  const std::string four_empty_lines("\n"
                                 "\r"
                                 "\r\n"
                                 "\r\n");
@@ -217,7 +217,7 @@ TEST(UTF8LineIndexTest, CRLFIsASingleLineEnd) {
 }
 
 TEST(UTF8LineIndexTest, KeepFrombergerHappy) {
-  const string michael("abc\r\ndef");
+  const std::string michael("abc\r\ndef");
   UTF8LineIndex index(&michael);
   CheckRoundTrips(index);
 
@@ -228,7 +228,7 @@ TEST(UTF8LineIndexTest, KeepFrombergerHappy) {
 }
 
 TEST(UTF8LineIndexTest, GetLineFromEmptyFile) {
-  const string empty_file;
+  const std::string empty_file;
   UTF8LineIndex empty_index(&empty_file);
   EXPECT_EQ("", empty_index.GetLine(-1));
   EXPECT_EQ("", empty_index.GetLine(0));
@@ -238,7 +238,7 @@ TEST(UTF8LineIndexTest, GetLineFromEmptyFile) {
 }
 
 TEST(UTF8LineIndexTest, GetLineFromUnterminatedFile) {\
-  const string unterminated_file("Hello world.\n"
+  const std::string unterminated_file("Hello world.\n"
                                  "Goodbye, unterminated world.");
   UTF8LineIndex unterminated_index(&unterminated_file);
   CheckRoundTrips(unterminated_index);
@@ -250,7 +250,7 @@ TEST(UTF8LineIndexTest, GetLineFromUnterminatedFile) {\
 }
 
 TEST(UTF8LineIndexTest, GetLineFromSmallFile) {
-  const string small_file("\nline two\nline three\r\n");
+  const std::string small_file("\nline two\nline three\r\n");
   UTF8LineIndex small_index(&small_file);
   CheckRoundTrips(small_index);
 
@@ -268,7 +268,7 @@ TEST(UTF8LineIndexTest, ComputeByteOffsetAtEndOfUnterminatedFile) {
   // This is a regression test; migrating from ::string storage to using a
   // StringPiece means that peeking past the end of the buffer isn't allowed
   // anymore, and this aborted in ComputeByteOffset previously.
-  const string unterminated_file("Hello world.\n"
+  const std::string unterminated_file("Hello world.\n"
                                  "Goodbye, unterminated world.");
   UTF8LineIndex index(&unterminated_file);
   EXPECT_EQ(unterminated_file.length(),
