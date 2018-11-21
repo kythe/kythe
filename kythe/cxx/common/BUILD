@@ -2,6 +2,8 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 licenses(["notice"])
 
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+
 cc_library(
     name = "scope_guard",
     hdrs = ["scope_guard.h"],
@@ -35,6 +37,7 @@ cc_library(
     name = "kythe_uri",
     srcs = ["kythe_uri.cc"],
     hdrs = ["kythe_uri.h"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":vname_ordering",
         "//kythe/proto:storage_cc_proto",
@@ -45,6 +48,7 @@ cc_library(
 cc_library(
     name = "vname_ordering",
     hdrs = ["vname_ordering.h"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         "//kythe/proto:storage_cc_proto",
     ],
@@ -68,9 +72,7 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    visibility = [
-        "//kythe:default_visibility",
-    ],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":json_proto",
         "//external:zlib",
