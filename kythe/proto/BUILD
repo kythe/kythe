@@ -2,6 +2,7 @@ package(default_visibility = ["//kythe:proto_visibility"])
 
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load(":go.bzl", "go_kythe_proto")
+load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
 
 filegroup(
     name = "public",
@@ -45,6 +46,7 @@ proto_library(
 
 cc_proto_library(
     name = "common_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":common_proto"],
 )
 
@@ -52,7 +54,7 @@ go_kythe_proto(proto = ":common_proto")
 
 java_proto_library(
     name = "common_java_proto",
-    visibility = ["//visibility:public"],
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":common_proto"],
 )
 
@@ -68,6 +70,7 @@ proto_library(
 
 cc_proto_library(
     name = "storage_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":storage_proto"],
 )
 
@@ -75,7 +78,7 @@ go_kythe_proto(proto = ":storage_proto")
 
 java_proto_library(
     name = "storage_java_proto",
-    visibility = ["//visibility:public"],
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":storage_proto"],
 )
 
@@ -136,7 +139,7 @@ go_kythe_proto(
 
 java_proto_library(
     name = "analysis_java_proto",
-    visibility = ["//visibility:public"],
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":analysis_proto"],
 )
 
@@ -350,6 +353,7 @@ proto_library(
 
 cc_proto_library(
     name = "xref_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":xref_proto"],
 )
 
