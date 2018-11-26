@@ -29,12 +29,6 @@ std::string CleanPath(llvm::StringRef in_path) {
   return out_path.str();
 }
 
-std::string JoinPath(llvm::StringRef a, llvm::StringRef b) {
-  llvm::SmallString<1024> out_path = a;
-  llvm::sys::path::append(out_path, b);
-  return out_path.str();
-}
-
 std::string MakeCleanAbsolutePath(const std::string& in_path) {
   std::string abs_path = clang::tooling::getAbsolutePath(in_path);
   return CleanPath(abs_path);

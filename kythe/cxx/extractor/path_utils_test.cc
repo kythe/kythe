@@ -81,12 +81,6 @@ TEST(PathUtilsTest, CleanPath) {
   EXPECT_EQ("..", CleanPath("a/../../"));
 }
 
-TEST(PathUtilsTest, JoinPath) {
-  EXPECT_EQ("a/c", JoinPath("a", "c"));
-  EXPECT_EQ("a/c", JoinPath("a/", "c"));
-  EXPECT_EQ("a/c", JoinPath("a", "/c"));
-}
-
 }  // anonymous namespace
 }  // namespace kythe
 

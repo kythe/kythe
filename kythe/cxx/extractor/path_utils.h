@@ -49,9 +49,6 @@ std::string MakeCleanAbsolutePath(const std::string& in_path);
 /// \param in_path The path to convert.
 std::string CleanPath(llvm::StringRef in_path);
 
-/// \brief Append path `b` to path `a`, cleaning and returning the result.
-std::string JoinPath(llvm::StringRef a, llvm::StringRef b);
-
 /// \brief Looks up a file for an #include-ish pragma.
 /// \param preprocessor The preprocessor to use to consume the filename tokens.
 /// \param search_path The path used to find the file in the filesystem.
