@@ -33,7 +33,7 @@ _go_proto_src = rule(
     },
 )
 
-def go_kythe_proto(proto = None, deps = [], importpath = None):
+def go_kythe_proto(proto = None, deps = [], importpath = None, visibility=None):
     """Helper for go_proto_library for kythe project.
 
     A shorthand for a go_proto_library with its import path set to the
@@ -71,6 +71,7 @@ def go_kythe_proto(proto = None, deps = [], importpath = None):
         deps = deps,
         importpath = importpath,
         proto = proto,
+        visibility=visibility,
     )
 
     # Copy the generated source from the proto library so we can compare it to
