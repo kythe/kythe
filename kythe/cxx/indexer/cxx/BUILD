@@ -46,7 +46,7 @@ cc_library(
         ":clang_utils",
         ":kythe_claim_client",
         "//kythe/cxx/common:kzip_reader",
-        "//kythe/cxx/extractor:path_utils",
+        "//kythe/cxx/common:path_utils",
         "//kythe/proto:buildinfo_cc_proto",
         "//kythe/proto:claim_cc_proto",
         "@com_google_absl//absl/memory",

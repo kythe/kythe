@@ -39,9 +39,28 @@ cc_library(
     hdrs = ["kythe_uri.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        ":path_utils",
         ":vname_ordering",
         "//kythe/proto:storage_cc_proto",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "path_utils",
+    srcs = ["path_utils.cc"],
+    hdrs = ["path_utils.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "path_utils_test",
+    srcs = ["path_utils_test.cc"],
+    deps = [
+        ":path_utils",
+        "//third_party:gtest_main",
     ],
 )
 

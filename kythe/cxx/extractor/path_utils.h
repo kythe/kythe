@@ -28,6 +28,7 @@ class Preprocessor;
 }  // namespace clang
 
 namespace kythe {
+namespace cxx_extractor {
 /// \brief Relativize `to_relativize` with respect to `relativize_against`.
 ///
 /// If `to_relativize` does not name a path that is a child of
@@ -49,9 +50,6 @@ std::string MakeCleanAbsolutePath(const std::string& in_path);
 /// \param in_path The path to convert.
 std::string CleanPath(llvm::StringRef in_path);
 
-/// \brief Append path `b` to path `a`, cleaning and returning the result.
-std::string JoinPath(llvm::StringRef a, llvm::StringRef b);
-
 /// \brief Looks up a file for an #include-ish pragma.
 /// \param preprocessor The preprocessor to use to consume the filename tokens.
 /// \param search_path The path used to find the file in the filesystem.
@@ -62,6 +60,7 @@ const clang::FileEntry* LookupFileForIncludePragma(
     clang::Preprocessor* preprocessor, llvm::SmallVectorImpl<char>* search_path,
     llvm::SmallVectorImpl<char>* relative_path,
     llvm::SmallVectorImpl<char>* filename);
+}  // namespace cxx_extractor
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_EXTRACTOR_PATH_UTILS_H_

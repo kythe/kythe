@@ -60,6 +60,9 @@ llvm::StringRef ToStringRef(absl::string_view sv) {
   return {sv.data(), sv.size()};
 }
 
+using cxx_extractor::RelativizePath;
+using cxx_extractor::LookupFileForIncludePragma;
+
 // We need "the lowercase ascii hex SHA-256 digest of the file contents."
 constexpr char kHexDigits[] = "0123456789abcdef";
 
