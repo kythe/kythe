@@ -51,13 +51,7 @@ absl::string_view PathPrefix(absl::string_view path) {
 }  // namespace
 
 std::string JoinPath(absl::string_view a, absl::string_view b) {
-  if (absl::EndsWith(a, "/")) {
-    a.remove_suffix(1);
-  }
-  if (absl::StartsWith(b, "/")) {
-    b.remove_prefix(1);
-  }
-  return absl::StrCat(a, "/", b);
+  return absl::StrCat(absl::StripSuffix(a, "/"), "/", absl::StripPrefix(b, "/"));
 }
 
 std::string CleanPath(absl::string_view input) {
