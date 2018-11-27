@@ -23,6 +23,7 @@
 #include "llvm/Support/Path.h"
 
 namespace kythe {
+namespace cxx_extractor {
 std::string CleanPath(llvm::StringRef in_path) {
   llvm::SmallString<1024> out_path = in_path;
   llvm::sys::path::remove_dots(out_path, true);
@@ -114,4 +115,5 @@ const clang::FileEntry* LookupFileForIncludePragma(
   return file;
 }
 
+}  // namespace cxx_extractor
 }  // namespace kythe

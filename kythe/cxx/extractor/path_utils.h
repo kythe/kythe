@@ -28,6 +28,7 @@ class Preprocessor;
 }  // namespace clang
 
 namespace kythe {
+namespace cxx_extractor {
 /// \brief Relativize `to_relativize` with respect to `relativize_against`.
 ///
 /// If `to_relativize` does not name a path that is a child of
@@ -59,6 +60,7 @@ const clang::FileEntry* LookupFileForIncludePragma(
     clang::Preprocessor* preprocessor, llvm::SmallVectorImpl<char>* search_path,
     llvm::SmallVectorImpl<char>* relative_path,
     llvm::SmallVectorImpl<char>* filename);
+}  // namespace cxx_extractor
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_EXTRACTOR_PATH_UTILS_H_

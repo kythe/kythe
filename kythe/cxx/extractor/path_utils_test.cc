@@ -24,6 +24,7 @@
 #include "llvm/Support/Path.h"
 
 namespace kythe {
+namespace cxx_extractor {
 namespace {
 
 TEST(PathUtilsTest, RelativizePath) {
@@ -82,6 +83,7 @@ TEST(PathUtilsTest, CleanPath) {
 }
 
 }  // anonymous namespace
+}  // namespace cxx_extractor
 }  // namespace kythe
 
 int main(int argc, char** argv) {
