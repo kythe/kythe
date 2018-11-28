@@ -36,7 +36,7 @@ import (
 
 // Defaults for the WriterOptions.
 const (
-	DefaultChunkSize = 1 << 20
+	DefaultChunkSize uint64 = 1 << 20
 
 	DefaultBrotliLevel = 9
 	DefaultZSTDLevel   = 9
@@ -178,6 +178,16 @@ func ParseOptions(s string) (*WriterOptions, error) {
 			default:
 				return nil, fmt.Errorf("malformed option: %q", opt)
 			}
+		case chunkSizeOption:
+			chunkSize := DefaultChunkSize
+			if len(kv) != 1 {
+				var err error
+				chunkSize, err = strconv.ParseUint(kv[1], 10, 0)
+				if err != nil {
+					return nil, fmt.Errorf("malformed option: %q: %v", opt, err)
+				}
+			}
+			opts.ChunkSize = chunkSize
 		case uncompressedOption:
 			if len(kv) != 1 {
 				return nil, fmt.Errorf("malformed option: %q", opt)
