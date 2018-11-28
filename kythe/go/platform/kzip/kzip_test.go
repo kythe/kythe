@@ -269,3 +269,90 @@ func TestScanHelper(t *testing.T) {
 		t.Errorf("Scan found %d units, want 1", numUnits)
 	}
 }
+
+func TestScanError(t *testing.T) {
+	buf := bytes.NewBuffer(nil)
+	w, err := kzip.NewWriter(buf)
+	if err != nil {
+		t.Fatalf("Creating kzip writer: %v", err)
+	}
+
+	const fileData = "fweep"
+	fdigest, err := w.AddFile(strings.NewReader(fileData))
+	if err != nil {
+		t.Fatalf("AddFile failed: %v", err)
+	}
+
+	if _, err := w.AddUnit(&apb.CompilationUnit{
+		OutputKey: fdigest,
+	}, &apb.IndexedCompilation_Index{
+		Revisions: []string{"alphawozzle"},
+	}); err != nil {
+		t.Fatalf("AddUnit failed: %v", err)
+	}
+
+	if _, err := w.AddUnit(&apb.CompilationUnit{
+		OutputKey: fdigest + "2",
+	}, &apb.IndexedCompilation_Index{
+		Revisions: []string{"alphawozzle"},
+	}); err != nil {
+		t.Fatalf("AddUnit failed: %v", err)
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("Closing kzip: %v", err)
+	}
+
+	expected := errors.New("expected error")
+	var unitCount int
+	if err := kzip.Scan(bytes.NewReader(buf.Bytes()), func(r *kzip.Reader, unit *kzip.Unit) error {
+		unitCount++
+		return expected
+	}); err == nil {
+		t.Errorf("Scan succeeded unexpectedly")
+	} else if err != expected {
+		t.Errorf("Scan failed unexpectedly: %v", err)
+	} else if unitCount != 1 {
+		t.Errorf("Scanned %d units; expected: 1", unitCount)
+	}
+}
+
+func TestScanConcurrency(t *testing.T) {
+	buf := bytes.NewBuffer(nil)
+	w, err := kzip.NewWriter(buf)
+	if err != nil {
+		t.Fatalf("Creating kzip writer: %v", err)
+	}
+
+	const fileData = "fweep"
+	fdigest, err := w.AddFile(strings.NewReader(fileData))
+	if err != nil {
+		t.Fatalf("AddFile failed: %v", err)
+	}
+
+	const N = 128
+	for i := 0; i < N; i++ {
+		if _, err := w.AddUnit(&apb.CompilationUnit{
+			OutputKey: fmt.Sprintf("%s%d", fdigest, i),
+		}, &apb.IndexedCompilation_Index{
+			Revisions: []string{"alphawozzle"},
+		}); err != nil {
+			t.Fatalf("AddUnit %d failed: %v", i, err)
+		}
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("Closing kzip: %v", err)
+	}
+
+	var numUnits int
+	if err := kzip.Scan(bytes.NewReader(buf.Bytes()), func(r *kzip.Reader, unit *kzip.Unit) error {
+		numUnits++
+		return nil
+	}, kzip.ReadConcurrency(16)); err != nil {
+		t.Errorf("Scan failed: %v", err)
+	}
+	if numUnits != N {
+		t.Errorf("Scan found %d units, want %d", numUnits, N)
+	}
+}
