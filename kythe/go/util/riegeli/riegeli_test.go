@@ -45,6 +45,7 @@ func TestParseOptions(t *testing.T) {
 		"brotli,transpose",
 		"transpose,uncompressed",
 		"brotli:5,transpose",
+		"chunk_size:524288",
 	}
 
 	for _, test := range tests {
