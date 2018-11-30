@@ -24,6 +24,7 @@
 #include "llvm/Support/Path.h"
 
 namespace kythe {
+namespace cxx_extractor {
 namespace {
 
 TEST(PathUtilsTest, RelativizePath) {
@@ -81,13 +82,8 @@ TEST(PathUtilsTest, CleanPath) {
   EXPECT_EQ("..", CleanPath("a/../../"));
 }
 
-TEST(PathUtilsTest, JoinPath) {
-  EXPECT_EQ("a/c", JoinPath("a", "c"));
-  EXPECT_EQ("a/c", JoinPath("a/", "c"));
-  EXPECT_EQ("a/c", JoinPath("a", "/c"));
-}
-
 }  // anonymous namespace
+}  // namespace cxx_extractor
 }  // namespace kythe
 
 int main(int argc, char** argv) {

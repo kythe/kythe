@@ -2,6 +2,8 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 licenses(["notice"])
 
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+
 cc_library(
     name = "scope_guard",
     hdrs = ["scope_guard.h"],
@@ -35,7 +37,9 @@ cc_library(
     name = "kythe_uri",
     srcs = ["kythe_uri.cc"],
     hdrs = ["kythe_uri.h"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
+        ":path_utils",
         ":vname_ordering",
         "//kythe/proto:storage_cc_proto",
         "@com_google_absl//absl/strings",
@@ -43,8 +47,27 @@ cc_library(
 )
 
 cc_library(
+    name = "path_utils",
+    srcs = ["path_utils.cc"],
+    hdrs = ["path_utils.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "path_utils_test",
+    srcs = ["path_utils_test.cc"],
+    deps = [
+        ":path_utils",
+        "//third_party:gtest_main",
+    ],
+)
+
+cc_library(
     name = "vname_ordering",
     hdrs = ["vname_ordering.h"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         "//kythe/proto:storage_cc_proto",
     ],
@@ -68,9 +91,7 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    visibility = [
-        "//kythe:default_visibility",
-    ],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":json_proto",
         "//external:zlib",
@@ -359,6 +380,28 @@ cc_library(
     hdrs = ["testutil.h"],
     deps = [
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "utf8_line_index",
+    srcs = ["utf8_line_index.cc"],
+    hdrs = ["utf8_line_index.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "utf8_line_index_test",
+    size = "small",
+    srcs = ["utf8_line_index_test.cc"],
+    deps = [
+        ":utf8_line_index",
+        "//third_party:gtest_main",
         "@com_google_absl//absl/strings",
     ],
 )

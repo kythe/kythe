@@ -64,6 +64,7 @@ package kzip
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -80,6 +81,7 @@ import (
 	"kythe.io/kythe/go/platform/kcd/kythe"
 
 	"github.com/golang/protobuf/jsonpb"
+	"golang.org/x/sync/errgroup"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 
@@ -181,32 +183,97 @@ func (r *Reader) Lookup(unitDigest string) (*Unit, error) {
 	return nil, ErrDigestNotFound
 }
 
+// A ScanOption configures the behavior of scanning a kzip file.
+type ScanOption interface{ isScanOption() }
+
+type readConcurrency int
+
+func (readConcurrency) isScanOption() {}
+
+// ReadConcurrency returns a ScanOption that configures the max concurrency of
+// reading compilation units within a kzip archive.
+func ReadConcurrency(n int) ScanOption {
+	return readConcurrency(n)
+}
+
 // Scan scans all the compilations stored in the archive, and invokes f for
 // each compilation record. If f reports an error, the scan is terminated and
-// that error is propagated to the caller of Scan.
-func (r *Reader) Scan(f func(*Unit) error) error {
+// that error is propagated to the caller of Scan.  At most 1 invocation of f
+// will occur at any one time.
+func (r *Reader) Scan(f func(*Unit) error, opts ...ScanOption) error {
+	concurrency := 1
+	for _, opt := range opts {
+		switch opt := opt.(type) {
+		case readConcurrency:
+			if n := int(opt); n > 0 {
+				concurrency = n
+			}
+		default:
+			return fmt.Errorf("unknown ScanOption type: %T", opt)
+		}
+	}
+
 	prefix := r.unitPath("") + "/"
 	pos := r.firstIndex(prefix)
 	if pos < 0 {
 		return nil
 	}
-	for _, file := range r.zip.File[pos:] {
-		if !strings.HasPrefix(file.Name, prefix) {
-			break
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	g, ctx := errgroup.WithContext(ctx)
+
+	files := make(chan *zip.File)
+	g.Go(func() error {
+		defer close(files)
+		for _, file := range r.zip.File[pos:] {
+			if !strings.HasPrefix(file.Name, prefix) {
+				break
+			} else if file.Name == prefix {
+				continue // tolerate an empty units directory entry
+			}
+			select {
+			case <-ctx.Done():
+				return nil
+			case files <- file:
+			}
 		}
-		digest := strings.TrimPrefix(file.Name, prefix)
-		if digest == "" {
-			continue // tolerate an empty units directory entry
-		}
-		unit, err := readUnit(digest, file)
-		if err != nil {
-			return err
-		}
-		if err := f(unit); err != nil {
-			return err
+		return nil
+	})
+
+	units := make(chan *Unit)
+	var wg sync.WaitGroup
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		g.Go(func() error {
+			defer wg.Done()
+			for file := range files {
+				digest := strings.TrimPrefix(file.Name, prefix)
+				unit, err := readUnit(digest, file)
+				if err != nil {
+					return err
+				}
+				select {
+				case <-ctx.Done():
+					return nil
+				case units <- unit:
+				}
+			}
+			return nil
+		})
+	}
+	go func() { wg.Wait(); close(units) }()
+	for unit := range units {
+		select {
+		case <-ctx.Done():
+			return g.Wait()
+		default:
+			if err := f(unit); err != nil {
+				return err
+			}
 		}
 	}
-	return nil
+	return g.Wait()
 }
 
 // Open opens a reader on the contents of the specified file digest.  If the
@@ -378,7 +445,7 @@ func newFileHeader(parts ...string) *zip.FileHeader {
 // Scan is a convenience function that creates a *Reader from f and invokes its
 // Scan method with the given callback. Each invocation of scan is passed the
 // reader associated with f, along with the current compilation unit.
-func Scan(f File, scan func(*Reader, *Unit) error) error {
+func Scan(f File, scan func(*Reader, *Unit) error, opts ...ScanOption) error {
 	size, err := f.Seek(0, io.SeekEnd)
 	if err != nil {
 		return fmt.Errorf("getting file size: %v", err)
@@ -389,7 +456,7 @@ func Scan(f File, scan func(*Reader, *Unit) error) error {
 	}
 	return r.Scan(func(unit *Unit) error {
 		return scan(r, unit)
-	})
+	}, opts...)
 }
 
 // A File represents the file capabilities needed to scan a kzip file.

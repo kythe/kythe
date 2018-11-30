@@ -2221,7 +2221,7 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl* Decl) {
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  if (Decl->isThisDeclarationADefinition() && Decl->hasBody()) {
+  if (Decl->isThisDeclarationADefinition() && Decl->getBody() != nullptr) {
     Marks.set_marked_source_end(Decl->getBody()->getSourceRange().getBegin());
   } else {
     Marks.set_marked_source_end(GetLocForEndOfToken(
@@ -2893,7 +2893,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   if (!DeclLoc.isMacroID() && Decl->isThisDeclarationADefinition() &&
-      Decl->hasBody()) {
+      Decl->getBody() != nullptr) {
     Marks.set_marked_source_end(Decl->getBody()->getSourceRange().getBegin());
   } else {
     Marks.set_marked_source_end(GetLocForEndOfToken(

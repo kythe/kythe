@@ -52,10 +52,12 @@ func init() {
 	beam.RegisterFunction(completeDocument)
 	beam.RegisterFunction(constructCaller)
 	beam.RegisterFunction(defToDecorPiece)
+	beam.RegisterFunction(diagToDecor)
 	beam.RegisterFunction(edgeTargets)
 	beam.RegisterFunction(edgeToCrossRefRelation)
 	beam.RegisterFunction(emitRelatedDefs)
 	beam.RegisterFunction(fileToDecorPiece)
+	beam.RegisterFunction(fileToTags)
 	beam.RegisterFunction(filterAnchorNodes)
 	beam.RegisterFunction(groupCrossRefs)
 	beam.RegisterFunction(groupEdges)
@@ -65,22 +67,26 @@ func init() {
 	beam.RegisterFunction(moveSourceToKey)
 	beam.RegisterFunction(nodeToChildren)
 	beam.RegisterFunction(nodeToDecorPiece)
+	beam.RegisterFunction(nodeToDiagnostic)
 	beam.RegisterFunction(nodeToDocs)
 	beam.RegisterFunction(nodeToEdges)
 	beam.RegisterFunction(nodeToReverseEdges)
 	beam.RegisterFunction(parseMarkedSource)
 	beam.RegisterFunction(refToCallsite)
+	beam.RegisterFunction(refToCrossRef)
 	beam.RegisterFunction(refToDecorPiece)
+	beam.RegisterFunction(refToTag)
 	beam.RegisterFunction(reverseEdge)
 	beam.RegisterFunction(splitEdge)
+	beam.RegisterFunction(targetToFile)
 	beam.RegisterFunction(toDefinition)
-	beam.RegisterFunction(toEnclosingFile)
 	beam.RegisterFunction(toFiles)
 	beam.RegisterFunction(toRefs)
 
 	beam.RegisterType(reflect.TypeOf((*combineDecorPieces)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ticketKey)(nil)).Elem())
 
+	beam.RegisterType(reflect.TypeOf((*cpb.Diagnostic)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*cpb.MarkedSource)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.DecorationPiece)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*ppb.Reference)(nil)).Elem())
@@ -313,19 +319,99 @@ func keyRef(r *ppb.Reference) (*spb.VName, *ppb.Reference) {
 }
 
 func (k *KytheBeam) decorationPieces(s beam.Scope) beam.PCollection {
-	targets := beam.ParDo(s, toEnclosingFile, k.References())
+	decor := beam.ParDo(s, refToDecorPiece, k.References())
+
+	targets := beam.ParDo(s, targetToFile, decor)
 	bareNodes := beam.ParDo(s, &nodes.Filter{IncludeEdges: []string{}}, k.nodes)
 
-	decor := beam.ParDo(s, refToDecorPiece, k.References())
 	files := beam.ParDo(s, fileToDecorPiece, k.getFiles())
-	nodes := beam.ParDo(s, nodeToDecorPiece,
+	targetNodes := beam.ParDo(s, nodeToDecorPiece,
 		beam.CoGroupByKey(s, beam.ParDo(s, moveSourceToKey, bareNodes), targets))
 	defs := beam.ParDo(s, defToDecorPiece,
 		beam.CoGroupByKey(s, k.directDefinitions(), targets))
 	// TODO(schroederc): overrides
-	// TODO(schroederc): diagnostics
+	decorDiagnostics := k.diagnostics()
 
-	return beam.Flatten(s, decor, files, nodes, defs)
+	return beam.Flatten(s, decor, files, targetNodes, defs, decorDiagnostics)
+}
+
+func (k *KytheBeam) diagnostics() beam.PCollection {
+	s := k.s.Scope("Diagnostics")
+	diagnostics := beam.Seq(s, k.Nodes(), &nodes.Filter{
+		FilterByKind: []string{kinds.Diagnostic},
+		IncludeFacts: []string{facts.Message, facts.Details, facts.ContextURL},
+	}, nodeToDiagnostic)
+	refTags := beam.ParDo(s, refToTag, k.References())
+	fileTags := beam.Seq(s, k.Nodes(), &nodes.Filter{
+		FilterByKind: []string{kinds.File},
+		IncludeFacts: []string{},
+		IncludeEdges: []string{edges.Tagged},
+	}, fileToTags)
+	return beam.ParDo(s, diagToDecor, beam.CoGroupByKey(s, diagnostics, refTags, fileTags))
+}
+
+func fileToTags(n *scpb.Node, emit func(*spb.VName, *spb.VName)) {
+	for _, e := range n.Edge {
+		emit(e.Target, n.Source)
+	}
+}
+
+func diagToDecor(src *spb.VName, diagStream func(**cpb.Diagnostic) bool, refTagStream func(**srvpb.ExpandedAnchor) bool, fileTagStream func(**spb.VName) bool, emit func(*spb.VName, *ppb.DecorationPiece)) error {
+	var d *cpb.Diagnostic
+	if !diagStream(&d) {
+		return nil
+	}
+
+	var ref *srvpb.ExpandedAnchor
+	for refTagStream(&ref) {
+		uri, err := kytheuri.Parse(ref.Ticket)
+		if err != nil {
+			return err
+		}
+		file := &spb.VName{
+			Corpus: uri.Corpus,
+			Root:   uri.Root,
+			Path:   uri.Path,
+		}
+		diagWithSpan := *d
+		diagWithSpan.Span = ref.Span
+		emit(file, &ppb.DecorationPiece{
+			Piece: &ppb.DecorationPiece_Diagnostic{
+				Diagnostic: &diagWithSpan,
+			},
+		})
+	}
+
+	var file *spb.VName
+	for fileTagStream(&file) {
+		emit(file, &ppb.DecorationPiece{
+			Piece: &ppb.DecorationPiece_Diagnostic{Diagnostic: d},
+		})
+	}
+
+	return nil
+}
+
+func refToTag(r *ppb.Reference, emit func(*spb.VName, *srvpb.ExpandedAnchor)) {
+	if r.GetKytheKind() != scpb.EdgeKind_TAGGED {
+		return
+	}
+	emit(r.Source, r.Anchor)
+}
+
+func nodeToDiagnostic(n *scpb.Node) (*spb.VName, *cpb.Diagnostic) {
+	d := &cpb.Diagnostic{}
+	for _, f := range n.Fact {
+		switch f.GetKytheName() {
+		case scpb.FactName_MESSAGE:
+			d.Message = string(f.Value)
+		case scpb.FactName_DETAILS:
+			d.Details = string(f.Value)
+		case scpb.FactName_CONTEXT_URL:
+			d.ContextUrl = string(f.Value)
+		}
+	}
+	return n.Source, d
 }
 
 // SplitDecorations returns a columnar Kythe file decorations table derived from
@@ -351,13 +437,8 @@ func (t *ticketKey) ProcessElement(key *spb.VName, val beam.T) (string, beam.T) 
 	return t.Prefix + kytheuri.ToString(key), val
 }
 
-func toEnclosingFile(r *ppb.Reference) (*spb.VName, *spb.VName, error) {
-	anchor, err := kytheuri.ToVName(r.Anchor.Ticket)
-	if err != nil {
-		return nil, nil, err
-	}
-	file := fileVName(anchor)
-	return r.Source, file, nil
+func targetToFile(file *spb.VName, p *ppb.DecorationPiece) (*spb.VName, *spb.VName, error) {
+	return p.GetReference().Source, file, nil
 }
 
 // combineDecorPieces combines *ppb.DecorationPieces into a single *srvpb.FileDecorations.
@@ -398,6 +479,8 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 			Ticket:             kytheuri.ToString(def.Node),
 			DefinitionLocation: &srvpb.ExpandedAnchor{Ticket: def.Definition.Ticket},
 		})
+	case *ppb.DecorationPiece_Diagnostic:
+		accum.Diagnostic = append(accum.Diagnostic, p.Diagnostic)
 	default:
 		panic(fmt.Errorf("unhandled DecorationPiece: %T", p))
 	}
@@ -460,6 +543,13 @@ func (c *combineDecorPieces) ExtractOutput(fd *srvpb.FileDecorations) *srvpb.Fil
 		return fd.Decoration[i].Target < fd.Decoration[j].Target
 	})
 	sort.Slice(fd.Target, func(i, j int) bool { return fd.Target[i].Ticket < fd.Target[j].Ticket })
+
+	sort.Slice(fd.Diagnostic, func(i, j int) bool {
+		a, b := fd.Diagnostic[i], fd.Diagnostic[j]
+		return compare.Compare(a.Span.GetStart().GetByteOffset(), b.Span.GetStart().GetByteOffset()).
+			AndThen(a.Span.GetEnd().GetByteOffset(), b.Span.GetEnd().GetByteOffset()).
+			AndThen(a.Message, b.Message) == compare.LT
+	})
 	return fd
 }
 
@@ -467,18 +557,31 @@ func fileToDecorPiece(src *spb.VName, f *srvpb.File) (*spb.VName, *ppb.Decoratio
 	return src, &ppb.DecorationPiece{Piece: &ppb.DecorationPiece_File{f}}
 }
 
-func refToDecorPiece(r *ppb.Reference) (*spb.VName, *ppb.DecorationPiece, error) {
-	_, file, err := toEnclosingFile(r)
-	if err != nil {
-		return nil, nil, err
+func refToDecorPiece(r *ppb.Reference, emit func(*spb.VName, *ppb.DecorationPiece)) error {
+	if r.GetKytheKind() == scpb.EdgeKind_TAGGED {
+		return nil
 	}
-	return file, &ppb.DecorationPiece{
+	p := &ppb.DecorationPiece{
 		Piece: &ppb.DecorationPiece_Reference{&ppb.Reference{
 			Source: r.Source,
 			Kind:   r.Kind,
 			Anchor: r.Anchor,
 		}},
-	}, nil
+	}
+	file, err := anchorToFileVName(r.Anchor.Ticket)
+	if err != nil {
+		return err
+	}
+	emit(file, p)
+	return nil
+}
+
+func anchorToFileVName(anchorTicket string) (*spb.VName, error) {
+	anchor, err := kytheuri.ToVName(anchorTicket)
+	if err != nil {
+		return nil, err
+	}
+	return fileVName(anchor), nil
 }
 
 func fileVName(anchor *spb.VName) *spb.VName {

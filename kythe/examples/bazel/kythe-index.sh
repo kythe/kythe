@@ -122,6 +122,8 @@ if [[ -n "$EXTRACT" ]]; then
   rm -rf bazel-out/*/extra_actions/external/io_kythe/
   bazel build "${BAZEL_ARGS[@]}" \
     --keep_going --output_groups=compilation_outputs \
+    --experimental_extra_action_top_level_only \
+    --experimental_action_listener=@io_kythe//kythe/cxx/extractor:extract_kzip \
     --experimental_action_listener=@io_kythe//kythe/java/com/google/devtools/kythe/extractors/java/bazel:extract_kzip \
     //src/{main,test}/... || true
 fi
@@ -133,11 +135,15 @@ if [[ -n "$ANALYZE" ]]; then
   rm -rf "$GRAPHSTORE"
 
   bazel build "${BAZEL_ARGS[@]}" \
+    @io_kythe//kythe/cxx/indexer/cxx:indexer \
     @io_kythe//kythe/java/com/google/devtools/kythe/analyzers/java:indexer \
     @io_kythe//kythe/go/platform/tools/dedup_stream
   find -L "$BAZEL_ROOT"/bazel-out/*/extra_actions/external/io_kythe/kythe/java/com/google/devtools/kythe/extractors/java/bazel/extra_action_kzip -name '*.kzip' | \
     parallel -L1 "$KYTHE_BIN"/kythe/java/com/google/devtools/kythe/analyzers/java/indexer | \
     "$KYTHE_BIN"/kythe/go/platform/tools/dedup_stream/dedup_stream >"$GRAPHSTORE"
+  find -L "$BAZEL_ROOT"/bazel-out/*/extra_actions/external/io_kythe/kythe/cxx/extractor/extra_action_kzip -name '*.kzip' | \
+    parallel -L1 "$KYTHE_BIN"/kythe/cxx/indexer/cxx/indexer | \
+    "$KYTHE_BIN"/kythe/go/platform/tools/dedup_stream/dedup_stream >>"$GRAPHSTORE"
   cd "$ROOT"
 fi
 

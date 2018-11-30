@@ -534,8 +534,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   private static Iterable<Type> getTargets(JCFunctionalExpression node) {
     try {
-      return node.targets != null ? node.targets : com.sun.tools.javac.util.List.nil();
-    } catch (NoSuchFieldError e) {
+      @SuppressWarnings("unchecked")
+      Iterable<Type> targets =
+          (Iterable<Type>) JCFunctionalExpression.class.getField("targets").get(node);
+      return targets != null ? targets : ImmutableList.of();
+    } catch (ReflectiveOperationException e) {
       // continue below
     }
     try {

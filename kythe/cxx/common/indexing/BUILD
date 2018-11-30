@@ -52,4 +52,5 @@ cc_library(
     hdrs = [
         "RecordingOutputStream.h",
     ],
+    deps = [":output"],
 )
