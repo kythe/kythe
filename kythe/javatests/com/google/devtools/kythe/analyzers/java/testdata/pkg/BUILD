@@ -317,8 +317,4 @@ java_verifier_test(
         "Definitions.java",
     ],
     extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
-    extractor_opts = [
-        "--release",
-        "9",
-    ],
 )

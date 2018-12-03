@@ -33,10 +33,6 @@ java_binary(
         "//third_party/javac:java_compiler_jar",
         "//third_party/javac:jdk_compiler_jar",
     ],
-    javacopts = [
-        "--release",
-        "9",
-    ],
     jvm_flags = [
         "--add-opens=jdk.compiler/com.sun.tools.javac.api=java.compiler",
         "--patch-module=java.compiler=$${RUNPATH}$(location //third_party/javac:java_compiler_jar)",
