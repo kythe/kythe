@@ -31,5 +31,5 @@ def kythe_rule_repositories():
         git_repository,
         name = "build_bazel_rules_nodejs",
         remote = "https://github.com/bazelbuild/rules_nodejs.git",
-        tag = "0.16.0",
+        tag = "0.16.2",
     )
