@@ -32,7 +32,7 @@ authorize it, associate it with a valid project id, create a test gs bucket.
 ## Maven Proof of Concept
 
 To extract a maven repository using Kythe on Cloud Build, use
-`mvnpoc/cloudbuild.yaml`.  This assumes that you will specify a maven repository
+`examples/mvn.yaml`.  This assumes that you will specify a maven repository
 in `_REPO_NAME`, and that the repository has a top-level `pom.xml` file (right
 now it is a hard-coded location, but in the future it will be configurable).
 This also assumes you specify `_BUCKET_NAME` as per the Hello World Test above.
@@ -73,6 +73,28 @@ _BUCKET_NAME=$BUCKET_NAME,\
 _REPO_NAME=https://github.com/project-name/repo-name\
 --no-source
 ```
+
+## Bazel Proof of Concept
+
+**Not yet working on Google Cloud Build - see
+`kythe/examples/bazel` for a local script.**
+
+To extract a bazel repository using Kythe on Cloud Build, use
+`examples/bazel.yaml`.
+
+```
+gcloud builds submit --config examples/bazel.yaml \
+--substitutions=\
+_REPO_NAME=https://github.com/project-name/repo-name,\
+_BUILD_TARGET=//src/...\
+--no-source
+```
+
+### Extractor Artifacts
+
+gcr.io/kythe-public/kythe-bazel-extractor-artifacts created from
+`kythe/go/extractors/gcp/bazel:artifacts` contains a script for modifying a bazel
+WORKSPACE, similar to the build preprocessing logic in maven/gradle.
 
 ## Cloud Build REST API
 

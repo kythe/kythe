@@ -1,0 +1,25 @@
+steps:
+- name: 'gcr.io/cloud-builders/git'
+  args: ['clone', '${_REPO_NAME}', '/workspace/code']
+- name: 'ubuntu'
+  args:
+    - '/opt/kythe/extractors/setup-bazel-repo.sh'
+    - '/workspace/code/WORKSPACE'
+- name: 'gcr.io/cloud-builders/bazel'
+  args:
+    - 'build'
+    - '--keep_going'
+    - '--output_groups=compilation_outputs'
+    - '--experimental_extra_action_top_level_only'
+    - '--experimental_action_listener=@io_kythe//kythe/cxx/extractor:extract_kzip'
+    - '--experimental_action_listener=@io_kythe//kythe/java/com/google/devtools/kythe/extractors/java/bazel:extract_kzip'
+    - '${_BUILD_TARGET}'
+  dir: '/workspace/code'
+# TODO(danielmoy): we need a step to upload the resulting kzips to a specified
+# GCS bucket.
+- name: 'ubuntu'
+  args:
+    - 'find'
+    - '.'
+    - '-name'
+    - '*.kzip'
