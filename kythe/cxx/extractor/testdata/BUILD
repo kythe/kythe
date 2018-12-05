@@ -123,25 +123,8 @@ shell_tool_test(
     tools = {
         "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
         "INDEXER": "//kythe/cxx/indexer/cxx:indexer",
-        "INDEXPACK": "//kythe/go/platform/tools/indexpack",
         "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
         "VERIFIER": "//kythe/cxx/verifier",
-    },
-)
-
-shell_tool_test(
-    name = "index_pack",
-    data = [
-        "skip_functions.sh",
-        "test_common.sh",
-        "transcript_a.h",
-        "transcript_b.h",
-        "transcript_main.cc",
-    ],
-    scriptfile = "test_index_pack.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
     },
 )
 
