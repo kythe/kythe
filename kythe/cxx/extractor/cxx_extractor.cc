@@ -41,6 +41,7 @@
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_writer.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/extractor/CommandLineUtils.h"
 #include "kythe/cxx/extractor/language.h"
 #include "kythe/cxx/extractor/path_utils.h"
@@ -909,62 +910,27 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
 
 }  // anonymous namespace
 
-void KindexWriterSink::OpenIndex(const std::string& hash) {
-  using namespace google::protobuf::io;
-  CHECK(open_path_.empty() && fd_ < 0)
-      << "Reopening a KindexWriterSink (old fd:" << fd_
-      << " old path: " << open_path_ << ")";
-  std::string file_path = single_file_ ? path_ : path_ + "/" + hash + ".kindex";
-  // Open with read/write for all. The exact permissions required may depend on
-  // the backend implementation running the extractor.
-  fd_ = ::open(file_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-  CHECK_GE(fd_, 0) << "Couldn't open output file " << file_path;
-  open_path_ = file_path;
-  file_stream_ = absl::make_unique<FileOutputStream>(fd_);
-  GzipOutputStream::Options options;
-  // Accept the default compression level and compression strategy.
-  options.format = GzipOutputStream::GZIP;
-  gzip_stream_ =
-      absl::make_unique<GzipOutputStream>(file_stream_.get(), options);
-  coded_stream_ = absl::make_unique<CodedOutputStream>(gzip_stream_.get());
-}
+KzipWriterSink::KzipWriterSink(const std::string& path, bool single_file)
+    : path_(path), single_file_(single_file) {}
 
-KindexWriterSink::~KindexWriterSink() {
-  CHECK(!(coded_stream_ && coded_stream_->HadError()))
-      << "Errors encountered writing to " << open_path_;
-  coded_stream_.reset();
-  gzip_stream_.reset();
-  file_stream_.reset();
-  close(fd_);
+void KzipWriterSink::OpenIndex(const std::string& unit_hash) {
+  CHECK(writer_ == nullptr) << "OpenIndex() called twice";
+  std::string path =
+      single_file_ ? path_ : JoinPath(path_, unit_hash + ".kzip");
+  writer_ = absl::make_unique<IndexWriter>(OpenKzipWriterOrDie(path));
 }
-
-void KindexWriterSink::WriteHeader(
-    const kythe::proto::CompilationUnit& header) {
-  coded_stream_->WriteVarint32(header.ByteSizeLong());
-  CHECK(header.SerializeToCodedStream(coded_stream_.get()))
-      << "Couldn't write header to " << open_path_;
-}
-
-void KindexWriterSink::WriteFileContent(const kythe::proto::FileData& content) {
-  coded_stream_->WriteVarint32(content.ByteSize());
-  CHECK(content.SerializeToCodedStream(coded_stream_.get()))
-      << "Couldn't write content to " << open_path_;
-}
-
-KzipWriterSink::KzipWriterSink(const std::string& path)
-    : writer_(OpenKzipWriterOrDie(path)) {}
 
 void KzipWriterSink::WriteHeader(const kythe::proto::CompilationUnit& header) {
   kythe::proto::IndexedCompilation compilation;
   *compilation.mutable_unit() = header;
-  auto digest = writer_.WriteUnit(compilation);
+  auto digest = writer_->WriteUnit(compilation);
   if (!digest.ok()) {
     LOG(ERROR) << "Error adding compilation: " << digest.status();
   }
 }
 
 void KzipWriterSink::WriteFileContent(const kythe::proto::FileData& file) {
-  if (auto digest = writer_.WriteFile(file.content())) {
+  if (auto digest = writer_->WriteFile(file.content())) {
     if (!file.info().digest().empty() && file.info().digest() != *digest) {
       LOG(WARNING) << "Wrote FileData with mismatched digests: "
                    << file.info().ShortDebugString() << " != " << *digest;
@@ -975,9 +941,11 @@ void KzipWriterSink::WriteFileContent(const kythe::proto::FileData& file) {
 }
 
 KzipWriterSink::~KzipWriterSink() {
-  auto status = writer_.Close();
-  if (!status.ok()) {
-    LOG(ERROR) << "Error closing kzip output: " << status;
+  if (writer_ != nullptr) {
+    auto status = writer_->Close();
+    if (!status.ok()) {
+      LOG(ERROR) << "Error closing kzip output: " << status;
+    }
   }
 }
 
@@ -1372,12 +1340,12 @@ bool ExtractorConfiguration::Extract(
 
 bool ExtractorConfiguration::Extract(supported_language::Language lang) {
   std::unique_ptr<CompilationWriterSink> sink;
-  if (!output_file_.empty() && absl::EndsWith(output_file_, ".kzip")) {
-    sink = absl::make_unique<KzipWriterSink>(output_file_);
+  if (!output_file_.empty()) {
+    CHECK(absl::EndsWith(output_file_, ".kzip"))
+        << "Output file must have '.kzip' extension";
+    sink = absl::make_unique<KzipWriterSink>(output_file_, true);
   } else {
-    sink = absl::make_unique<KindexWriterSink>(
-        output_file_.empty() ? output_directory_ : output_file_,
-        !output_file_.empty());
+    sink = absl::make_unique<KzipWriterSink>(output_directory_, false);
   }
 
   return Extract(lang, std::move(sink));
