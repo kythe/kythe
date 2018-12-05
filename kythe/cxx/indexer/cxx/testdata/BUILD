@@ -29,27 +29,6 @@ sh_test(
     ],
 )
 
-shell_tool_test(
-    name = "index_pack",
-    data = [
-        "kindex_repo_test.header",
-        "kindex_repo_test.main",
-        "kindex_repo_test.unit",
-        "kindex_repo_test.verify",
-        "kindex_test.header",
-        "kindex_test.main",
-        "kindex_test.unit",
-        "kindex_test.verify",
-    ],
-    scriptfile = "test_index_pack.sh",
-    tools = {
-        "INDEXER": "//kythe/cxx/indexer/cxx:indexer",
-        "INDEX_PACK_BIN": "//kythe/go/platform/tools/indexpack",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-        "VERIFIER": "//kythe/cxx/verifier",
-    },
-)
-
 cc_indexer_test(
     name = "static_variable_test",
     srcs = ["basic/static_variable.cc"],

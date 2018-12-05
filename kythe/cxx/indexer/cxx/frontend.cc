@@ -42,7 +42,6 @@ DEFINE_bool(flush_after_each_entry, true,
             "Flush output after writing each entry.");
 DEFINE_string(static_claim, "", "Use a static claim table.");
 DEFINE_bool(claim_unknown, true, "Process files with unknown claim status.");
-DEFINE_string(index_pack, "", "Mount an index pack rooted at this directory.");
 DEFINE_string(cache, "", "Use a memcache instance (ex: \"--SERVER=foo:1234\")");
 DEFINE_int32(min_size, 4096, "Minimum size of an entry bundle");
 DEFINE_int32(max_size, 1024 * 32, "Maximum size of an entry bundle");
@@ -195,35 +194,6 @@ void DecodeKZipFile(const std::string& path, bool silent,
   CHECK(status.ok()) << status.ToString();
   CHECK(compilation_read) << "Missing compilation in " << path;
 }
-
-/// \brief Reads data from an index pack into memory.
-/// \param cu_hash The hash of the compilation unit to read.
-/// \param index_pack The index pack from which to read.
-/// \param virtual_files A vector to be filled with FileData.
-/// \param unit A `CompilationUnit` to be decoded from the index pack.
-void DecodeIndexPack(const std::string& cu_hash,
-                     std::unique_ptr<IndexPack> index_pack,
-                     std::vector<proto::FileData>* virtual_files,
-                     proto::CompilationUnit* unit) {
-  std::string error_text;
-  CHECK(index_pack->ReadCompilationUnit(cu_hash, unit, &error_text))
-      << "Could not read " << cu_hash << ": " << error_text;
-  for (const auto& input : unit->required_input()) {
-    const auto& info = input.info();
-    CHECK(!info.path().empty());
-    CHECK(!info.digest().empty())
-        << "Required input " << info.path() << " is missing its digest.";
-    std::string read_data;
-    CHECK(index_pack->ReadFileData(info.digest(), &read_data))
-        << "Could not read " << info.path() << " (digest " << info.digest()
-        << ") from the index pack: " << read_data;
-    proto::FileData file_data;
-    file_data.set_content(read_data);
-    file_data.mutable_info()->set_path(info.path());
-    file_data.mutable_info()->set_digest(info.digest());
-    virtual_files->push_back(std::move(file_data));
-  }
-}
 }  // anonymous namespace
 
 std::string IndexerContext::UsageMessage(const std::string& program_title,
@@ -235,22 +205,16 @@ stdin and writes binary Kythe artifacts to stdout as a sequence of Entry
 protos. Command-line arguments may be passed to the underlying compiler, if
 one should exist, as positional parameters.
 
-If -index_pack is not specified, there may be a positional parameter specified
-that ends in .kzip or .kindex (deprecated). If one exists, no other positional
-parameters may be specified, nor may an additional input parameter be specified.
-Input will be read from the index file.
+There may be a positional parameter specified that ends in .kzip or .kindex
+(deprecated). If one exists, no other positional parameters may be specified,
+nor may an additional input parameter be specified. Input will be read from the
+index file.
 
-If -index_pack is specified, there must be exactly one positional parameter.
-This parameter should be the compilation unit ID from the mounted index pack
-that is meant to be indexed. No additional input parameters may be specified.
-
-If -test_claim is specified, you may specify that one or more kindex or index
-pack inputs should not produce any output by prepending the prefix "silent:"
-to the input's name.
+If -test_claim is specified, you may specify that one or more kindex inputs
+should not produce any output by prepending the prefix "silent:" to the input's
+name.
 
 Examples:)");
-  message.append(program_name +
-                 " -index_pack path/to/pack/root 660f1f840000000000\n");
   message.append(program_name + " some/index.kindex\n");
   message.append(program_name + " -i foo.cc -o foo.bin -- -DINDEXING\n");
   message.append(program_name + " -i foo.cc | verifier foo.cc");
@@ -258,24 +222,16 @@ Examples:)");
 }
 
 bool IndexerContext::HasIndexArguments() {
-  bool had_index = false;
-  if (!FLAGS_index_pack.empty()) {
-    had_index = true;
-    CHECK(args_.size() >= 2) << "You must specify a compilation unit.";
-  } else {
-    for (const auto& arg : args_) {
-      auto path = llvm::StringRef(arg);
-      if (path.endswith(".kindex") || path.endswith(".kzip")) {
-        had_index = true;
-      }
+  for (const auto& arg : args_) {
+    auto path = llvm::StringRef(arg);
+    if (path.endswith(".kindex") || path.endswith(".kzip")) {
+      CHECK_EQ("-", FLAGS_i)
+          << "No other input is allowed when reading from an index file or an "
+          << "index pack.";
+      return true;
     }
   }
-  if (had_index) {
-    CHECK_EQ("-", FLAGS_i)
-        << "No other input is allowed when reading from an index file or an "
-        << "index pack.";
-  }
-  return had_index;
+  return false;
 }
 
 void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu,
@@ -285,22 +241,7 @@ void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu,
   if (name.empty()) {
     name = file_or_cu;
   }
-  if (!FLAGS_index_pack.empty()) {
-    IndexerJob job;
-    job.silent = silent;
-
-    std::string error_text;
-    auto filesystem = kythe::IndexPackPosixFilesystem::Open(
-        FLAGS_index_pack, kythe::IndexPackFilesystem::OpenMode::kReadOnly,
-        &error_text);
-    CHECK(filesystem) << "Couldn't open index pack from " << FLAGS_index_pack
-                      << ": " << error_text;
-    DecodeIndexPack(name, llvm::make_unique<IndexPack>(std::move(filesystem)),
-                    &job.virtual_files, &job.unit);
-    UpdateJobWdirFromUnit(&job);
-    MaybeNormalizeFileVNames(&job);
-    visit(job);
-  } else if (llvm::StringRef(file_or_cu).endswith(".kzip")) {
+  if (llvm::StringRef(file_or_cu).endswith(".kzip")) {
     DecodeKZipFile(name, silent, visit);
   } else {
     IndexerJob job;
