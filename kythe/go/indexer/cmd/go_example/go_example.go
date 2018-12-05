@@ -72,15 +72,16 @@ func main() {
 	}
 
 	ctx := context.Background()
-	base, err := ioutil.TempDir("", "src")
+	base, err := ioutil.TempDir("", "go_example")
 	if err != nil {
 		log.Fatalf("Error creating temporary directory: %v", err)
 	}
 	defer os.RemoveAll(base) // best-effort
-	dir := filepath.Join(base, *importPath)
+	dir := filepath.Join(base, "src", *importPath)
 	if err := vfs.MkdirAll(ctx, dir, 0755); err != nil {
 		log.Fatalf("Error creating output directory: %v", err)
 	}
+	bc.GOPATH = base
 
 	for _, path := range flag.Args() {
 		if err := copyFile(ctx, path, dir); err != nil {
@@ -92,7 +93,7 @@ func main() {
 	if err := os.Chdir(base); err != nil {
 		log.Fatalf("Error changing directory to %q: %v", dir, err)
 	}
-	pkg, err := ext.ImportDir(*importPath)
+	pkg, err := ext.Locate(*importPath)
 	if err != nil {
 		log.Fatalf("Error locating package: %v", err)
 	}
