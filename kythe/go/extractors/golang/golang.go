@@ -440,6 +440,11 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 			Path:   trimmed,
 		}
 		if vn.Corpus == "" {
+			// If no global corpus is specified, use the package's corpus for each of
+			// its files.  The package corpus is based on the rules in
+			// kythe/go/extractors/govname and is usually either the package's
+			// repository root (e.g. github.com/golang/protobuf) or a custom top-level
+			// domain (e.g. k8s.io).
 			vn.Corpus = p.VName.Corpus
 			components := strings.SplitN(vn.Path, string(filepath.Separator), 2)
 			vn.Path = strings.TrimPrefix(components[1], vn.Corpus+"/")
