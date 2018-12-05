@@ -114,7 +114,6 @@ cc_test(
 shell_tool_test(
     name = "stdin_names",
     data = [
-        "skip_functions.sh",
         "stdin.vnames",
         "test_common.sh",
         "test_stdin_names_verify.cc",
@@ -123,7 +122,6 @@ shell_tool_test(
     tools = {
         "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
         "INDEXER": "//kythe/cxx/indexer/cxx:indexer",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
         "VERIFIER": "//kythe/cxx/verifier",
     },
 )
