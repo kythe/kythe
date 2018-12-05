@@ -176,7 +176,6 @@ cc_library(
     ],
     deps = [
         ":command_line_utils",
-        ":index_pack",
         ":path_utils",
         ":supported_language",
         "//external:zlib",
