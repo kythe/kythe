@@ -12,7 +12,7 @@ import "fmt"
 //- A childof PkgInit=vname("package.<init>@107", "test", _, "pkginit", "go")
 //- PkgInit.node/kind function
 //-
-//- InitDef=vname(_, _, "", "src/test/pkginit/packageinit.go", "go")
+//- InitDef=vname(_, "test", "", "pkginit/packageinit.go", "go")
 //-     defines PkgInit
 //- InitDef.node/kind anchor
 //- InitDef.loc/start 0
