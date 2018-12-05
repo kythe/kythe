@@ -435,11 +435,20 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 			path = filepath.Join(base, name)
 		}
 		trimmed := strings.TrimPrefix(path, root+"/")
+		vn := &spb.VName{
+			Corpus: p.ext.Corpus,
+			Path:   trimmed,
+		}
+		if vn.Corpus == "" {
+			vn.Corpus = p.VName.Corpus
+			components := strings.SplitN(vn.Path, string(filepath.Separator), 2)
+			vn.Path = strings.TrimPrefix(components[1], vn.Corpus+"/")
+			if components[0] != "src" {
+				vn.Root = components[0]
+			}
+		}
 		cu.RequiredInput = append(cu.RequiredInput, &apb.CompilationUnit_FileInput{
-			VName: &spb.VName{
-				Corpus: p.ext.Corpus,
-				Path:   trimmed,
-			},
+			VName: vn,
 			Info: &apb.FileInfo{
 				Path:   trimmed,
 				Digest: path, // provisional, until the file is loaded
