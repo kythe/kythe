@@ -30,7 +30,6 @@
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/extractor/cxx_details.h"
-#include "kythe/cxx/extractor/index_pack.h"
 #include "kythe/cxx/extractor/language.h"
 #include "kythe/proto/analysis.pb.h"
 
@@ -112,21 +111,6 @@ class CompilationWriterSink {
   /// \brief Writes a `FileData` record to the indexfile.
   virtual void WriteFileContent(const kythe::proto::FileData& content) = 0;
   virtual ~CompilationWriterSink() = default;
-};
-
-/// \brief Writes extracted data to an index pack.
-class IndexPackWriterSink : public CompilationWriterSink {
- public:
-  explicit IndexPackWriterSink(const std::string& path) : path_(path) {}
-  void OpenIndex(const std::string& unit_hash) override;
-  void WriteHeader(const kythe::proto::CompilationUnit& header) override;
-  void WriteFileContent(const kythe::proto::FileData& content) override;
-
- private:
-  /// The open index pack, if any.
-  std::unique_ptr<IndexPack> pack_;
-  /// The output directory to use.
-  std::string path_;
 };
 
 /// \brief An `CompilationWriterSink` that writes to physical .kindex files.
@@ -328,8 +312,6 @@ class ExtractorConfiguration {
   CompilationWriter index_writer_;
   /// True if we should use our internal system headers; false if not.
   bool map_builtin_resources_ = true;
-  /// True if we should use index packs; false if not.
-  bool using_index_packs_ = false;
   /// The directory to use for index files.
   std::string output_directory_ = ".";
   /// If nonempty, emit kindex/kzip files to this exact path.

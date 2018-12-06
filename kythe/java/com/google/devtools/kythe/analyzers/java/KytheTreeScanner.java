@@ -658,6 +658,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           JavaNode lastMember = null;
           for (Symbol member : cls.members().getSymbolsByName(field.name)) {
             try {
+              if (!member.isStatic()) {
+                continue;
+              }
+
               // Ensure member symbol's type is complete.  If the extractor finds that a static
               // member isn't used (due to overloads), the symbol's dependent type classes won't
               // be saved in the CompilationUnit and this will throw an exception.

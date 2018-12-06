@@ -60,8 +60,8 @@ llvm::StringRef ToStringRef(absl::string_view sv) {
   return {sv.data(), sv.size()};
 }
 
-using cxx_extractor::RelativizePath;
 using cxx_extractor::LookupFileForIncludePragma;
+using cxx_extractor::RelativizePath;
 
 // We need "the lowercase ascii hex SHA-256 digest of the file contents."
 constexpr char kHexDigits[] = "0123456789abcdef";
@@ -909,30 +909,6 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
 
 }  // anonymous namespace
 
-void IndexPackWriterSink::OpenIndex(const std::string& hash) {
-  CHECK(!pack_) << "Opening multiple index packs.";
-  std::string error_text;
-  auto filesystem = IndexPackPosixFilesystem::Open(
-      path_, IndexPackFilesystem::OpenMode::kReadWrite, &error_text);
-  CHECK(filesystem) << "Couldn't open index pack in " << path_ << ": "
-                    << error_text;
-  pack_ = absl::make_unique<IndexPack>(std::move(filesystem));
-}
-
-void IndexPackWriterSink::WriteHeader(
-    const kythe::proto::CompilationUnit& header) {
-  CHECK(pack_) << "Index pack not opened.";
-  std::string error_text;
-  CHECK(pack_->AddCompilationUnit(header, &error_text)) << error_text;
-}
-
-void IndexPackWriterSink::WriteFileContent(
-    const kythe::proto::FileData& content) {
-  CHECK(pack_) << "Index pack not opened.";
-  std::string error_text;
-  CHECK(pack_->AddFileData(content, &error_text)) << error_text;
-}
-
 void KindexWriterSink::OpenIndex(const std::string& hash) {
   using namespace google::protobuf::io;
   CHECK(open_path_.empty() && fd_ < 0)
@@ -1308,9 +1284,6 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   if (const char* env_root_directory = getenv("KYTHE_ROOT_DIRECTORY")) {
     index_writer_.set_root_directory(env_root_directory);
   }
-  if (const char* env_index_pack = getenv("KYTHE_INDEX_PACK")) {
-    using_index_packs_ = (strlen(env_index_pack) != 0);
-  }
   if (const char* env_output_directory = getenv("KYTHE_OUTPUT_DIRECTORY")) {
     output_directory_ = env_output_directory;
   }
@@ -1399,9 +1372,7 @@ bool ExtractorConfiguration::Extract(
 
 bool ExtractorConfiguration::Extract(supported_language::Language lang) {
   std::unique_ptr<CompilationWriterSink> sink;
-  if (using_index_packs_) {
-    sink = absl::make_unique<IndexPackWriterSink>(output_directory_);
-  } else if (!output_file_.empty() && absl::EndsWith(output_file_, ".kzip")) {
+  if (!output_file_.empty() && absl::EndsWith(output_file_, ".kzip")) {
     sink = absl::make_unique<KzipWriterSink>(output_file_);
   } else {
     sink = absl::make_unique<KindexWriterSink>(
