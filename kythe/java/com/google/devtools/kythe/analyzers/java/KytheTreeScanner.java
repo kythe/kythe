@@ -43,7 +43,9 @@ import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
+import com.sun.source.tree.Scope;
 import com.sun.source.tree.Tree.Kind;
+import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
@@ -655,10 +657,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         if (cls != null) {
           // Import is a class member; emit usages for all matching (by name) class members.
           ctx = ctx.down(field);
+
+          JavacTrees trees = JavacTrees.instance(javaContext);
+          Type.ClassType classType = (Type.ClassType) cls.asType();
+          Scope scope = trees.getScope(treePath);
+
           JavaNode lastMember = null;
           for (Symbol member : cls.members().getSymbolsByName(field.name)) {
             try {
-              if (!member.isStatic()) {
+              if (!member.isStatic() || !trees.isAccessible(scope, member, classType)) {
                 continue;
               }
 
