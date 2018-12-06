@@ -11,6 +11,10 @@ import static java.util.Objects.hashCode;
 //- @staticMethod ref/imports StaticInt
 import static pkg.StaticMethods.staticMethod;
 
+//- @member ref/imports MemberFunc
+//- !{ @member ref/imports PrivateMember }
+import static pkg.StaticMethods.member;
+
 //- @"java.util" ref UtilPackage
 //- UtilPackage.node/kind package
 //- @List ref/imports ListI
