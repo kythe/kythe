@@ -34,7 +34,10 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
 #include "google/protobuf/text_format.h"
+#include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/buildinfo.pb.h"
+#include "kythe/proto/cxx.pb.h"
 #include "kythe/proto/filecontext.pb.h"
 
 DEFINE_string(assemble, "", "Assemble positional args into output file");
@@ -83,6 +86,59 @@ void CanonicalizeHash(std::map<google::protobuf::string, size_t>* hashes,
       google::protobuf::string("hash" + std::to_string(inserted.first->second));
 }
 
+void DumpCompilationUnit(const std::string& path,
+                         kythe::proto::CompilationUnit* unit) {
+  using namespace google::protobuf::io;
+  std::map<google::protobuf::string, size_t> hash_table;
+  std::string out_path = path + "_UNIT";
+  int out_fd =
+      open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+  CHECK_GE(out_fd, 0) << "Couldn't open " << out_path << " for writing.";
+  if (FLAGS_suppress_details) {
+    unit->clear_details();
+  }
+  if (FLAGS_canonicalize_hashes) {
+    CanonicalizeHash(&hash_table, unit->mutable_entry_context());
+    for (auto& input : *unit->mutable_required_input()) {
+      for (auto& row : MutableContextRows(&input)) {
+        CanonicalizeHash(&hash_table, row.mutable_source_context());
+        for (auto& column : *row.mutable_column()) {
+          CanonicalizeHash(&hash_table, column.mutable_linked_context());
+        }
+      }
+      // TODO(shahms): Remove this when the indexers are updated.
+      if (input.has_context()) {
+        for (auto& row : *input.mutable_context()->mutable_row()) {
+          CanonicalizeHash(&hash_table, row.mutable_source_context());
+          for (auto& column : *row.mutable_column()) {
+            CanonicalizeHash(&hash_table, column.mutable_linked_context());
+          }
+        }
+      }
+    }
+  }
+  FileOutputStream file_output_stream(out_fd);
+  google::protobuf::TextFormat::Printer printer;
+  printer.SetExpandAny(true);
+  CHECK(printer.Print(*unit, &file_output_stream));
+  CHECK(file_output_stream.Close());
+}
+
+void DumpFileData(const std::string& path,
+                  const kythe::proto::FileData& content) {
+  using namespace google::protobuf::io;
+  CHECK(content.has_info() && !content.info().digest().empty());
+  std::string out_path = path + "_" + content.info().digest();
+  int out_fd =
+      open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+  CHECK_GE(out_fd, 0) << "Couldn't open " << out_path << " for writing.";
+  FileOutputStream file_output_stream(out_fd);
+  google::protobuf::TextFormat::Printer printer;
+  printer.SetExpandAny(true);
+  CHECK(printer.Print(content, &file_output_stream));
+  CHECK(file_output_stream.Close());
+}
+
 void DumpIndexFile(const std::string& path) {
   using namespace google::protobuf::io;
   int in_fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
@@ -91,7 +147,6 @@ void DumpIndexFile(const std::string& path) {
   GzipInputStream gzip_input_stream(&file_input_stream);
   google::protobuf::uint32 byte_size;
   bool decoded_unit = false;
-  std::map<google::protobuf::string, size_t> hash_table;
   for (;;) {
     CodedInputStream coded_input_stream(&gzip_input_stream);
     coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
@@ -102,55 +157,38 @@ void DumpIndexFile(const std::string& path) {
     if (!decoded_unit) {
       kythe::proto::CompilationUnit unit;
       CHECK(unit.ParseFromCodedStream(&coded_input_stream));
-      std::string out_path = path + "_UNIT";
-      int out_fd = open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
-                        S_IREAD | S_IWRITE);
-      CHECK_GE(out_fd, 0) << "Couldn't open " << out_path << " for writing.";
-      if (FLAGS_suppress_details) {
-        unit.clear_details();
-      }
-      if (FLAGS_canonicalize_hashes) {
-        CanonicalizeHash(&hash_table, unit.mutable_entry_context());
-        for (auto& input : *unit.mutable_required_input()) {
-          for (auto& row : MutableContextRows(&input)) {
-            CanonicalizeHash(&hash_table, row.mutable_source_context());
-            for (auto& column : *row.mutable_column()) {
-              CanonicalizeHash(&hash_table, column.mutable_linked_context());
-            }
-          }
-          // TODO(shahms): Remove this when the indexers are updated.
-          if (input.has_context()) {
-            for (auto& row : *input.mutable_context()->mutable_row()) {
-              CanonicalizeHash(&hash_table, row.mutable_source_context());
-              for (auto& column : *row.mutable_column()) {
-                CanonicalizeHash(&hash_table, column.mutable_linked_context());
-              }
-            }
-          }
-        }
-      }
-      FileOutputStream file_output_stream(out_fd);
-      google::protobuf::TextFormat::Printer printer;
-      printer.SetExpandAny(true);
-      CHECK(printer.Print(unit, &file_output_stream));
-      CHECK(file_output_stream.Close());
+      DumpCompilationUnit(path, &unit);
       decoded_unit = true;
     } else {
       kythe::proto::FileData content;
       CHECK(content.ParseFromCodedStream(&coded_input_stream));
-      CHECK(content.has_info() && !content.info().digest().empty());
-      std::string out_path = path + "_" + content.info().digest();
-      int out_fd = open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
-                        S_IREAD | S_IWRITE);
-      CHECK_GE(out_fd, 0) << "Couldn't open " << out_path << " for writing.";
-      FileOutputStream file_output_stream(out_fd);
-      google::protobuf::TextFormat::Printer printer;
-      printer.SetExpandAny(true);
-      CHECK(printer.Print(content, &file_output_stream));
-      CHECK(file_output_stream.Close());
+      DumpFileData(path, content);
     }
   }
   CHECK(file_input_stream.Close());
+}
+
+void DumpKzipFile(const std::string& path) {
+  kythe::StatusOr<kythe::IndexReader> reader = kythe::KzipReader::Open(path);
+  CHECK(reader) << "Couldn't open kzip from " << path;
+  auto status = reader->Scan([&](absl::string_view digest) {
+    auto compilation = reader->ReadUnit(digest);
+    CHECK(compilation) << "Couldn't get compilation for " << digest << ": "
+                       << compilation.status();
+    DumpCompilationUnit(path, compilation->mutable_unit());
+    for (const auto& file : compilation->unit().required_input()) {
+      auto content = reader->ReadFile(file.info().digest());
+      CHECK(content) << "Unable to read file with digest: "
+                     << file.info().digest() << ": " << content.status();
+      kythe::proto::FileData file_data;
+      file_data.set_content(*content);
+      file_data.mutable_info()->set_path(file.info().path());
+      file_data.mutable_info()->set_digest(file.info().digest());
+      DumpFileData(path, file_data);
+    }
+    return true;
+  });
+  CHECK(status.ok()) << status.ToString();
 }
 
 void BuildIndexFile(const std::string& outfile,
@@ -195,10 +233,12 @@ void BuildIndexFile(const std::string& outfile,
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
+  kythe::proto::CxxCompilationUnitDetails link_cxx_details;
+  kythe::proto::BuildDetails link_build_details;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.1");
   gflags::SetUsageMessage(R"(kindex_tool: work with .kindex files
-kindex_tool -explode some/file.kindex
+kindex_tool -explode some/file.kindex (or .kzip)
   dumps some/file.kindex to some/file.kindex_UNIT, some/file.kindex_sha2...
   as ascii protobufs
 
@@ -207,7 +247,11 @@ kindex_tool -assemble some/file.kindex some/unit some/content...
   any other input files as FileData)");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (!FLAGS_explode.empty()) {
-    DumpIndexFile(FLAGS_explode);
+    if (FLAGS_explode.find(".kzip") == FLAGS_explode.size() - 5) {
+      DumpKzipFile(FLAGS_explode);
+    } else {
+      DumpIndexFile(FLAGS_explode);
+    }
   } else if (!FLAGS_assemble.empty()) {
     CHECK(argc >= 2) << "Need at least the unit.";
     std::vector<std::string> constituent_parts(argv + 1, argv + argc);

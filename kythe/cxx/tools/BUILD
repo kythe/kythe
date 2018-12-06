@@ -12,7 +12,10 @@ cc_library(
     ],
     deps = [
         "//external:zlib",
+        "//kythe/cxx/common:kzip_reader",
         "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:buildinfo_cc_proto",
+        "//kythe/proto:cxx_cc_proto",
         "//kythe/proto:filecontext_cc_proto",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
