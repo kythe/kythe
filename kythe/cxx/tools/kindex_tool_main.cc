@@ -26,6 +26,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/match.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -79,8 +81,9 @@ class MutableContextRows {
 };
 
 /// \brief Gives each `hash` a unique, shorter ID based on visitation order.
-void CanonicalizeHash(std::map<google::protobuf::string, size_t>* hashes,
-                      google::protobuf::string* hash) {
+void CanonicalizeHash(
+    absl::flat_hash_map<google::protobuf::string, size_t>* hashes,
+    google::protobuf::string* hash) {
   auto inserted = hashes->insert({*hash, hashes->size()});
   *hash =
       google::protobuf::string("hash" + std::to_string(inserted.first->second));
@@ -88,8 +91,7 @@ void CanonicalizeHash(std::map<google::protobuf::string, size_t>* hashes,
 
 void DumpCompilationUnit(const std::string& path,
                          kythe::proto::CompilationUnit* unit) {
-  using namespace google::protobuf::io;
-  std::map<google::protobuf::string, size_t> hash_table;
+  absl::flat_hash_map<google::protobuf::string, size_t> hash_table;
   std::string out_path = path + "_UNIT";
   int out_fd =
       open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
@@ -117,7 +119,7 @@ void DumpCompilationUnit(const std::string& path,
       }
     }
   }
-  FileOutputStream file_output_stream(out_fd);
+  google::protobuf::io::FileOutputStream file_output_stream(out_fd);
   google::protobuf::TextFormat::Printer printer;
   printer.SetExpandAny(true);
   CHECK(printer.Print(*unit, &file_output_stream));
@@ -126,13 +128,12 @@ void DumpCompilationUnit(const std::string& path,
 
 void DumpFileData(const std::string& path,
                   const kythe::proto::FileData& content) {
-  using namespace google::protobuf::io;
   CHECK(content.has_info() && !content.info().digest().empty());
   std::string out_path = path + "_" + content.info().digest();
   int out_fd =
       open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
   CHECK_GE(out_fd, 0) << "Couldn't open " << out_path << " for writing.";
-  FileOutputStream file_output_stream(out_fd);
+  google::protobuf::io::FileOutputStream file_output_stream(out_fd);
   google::protobuf::TextFormat::Printer printer;
   printer.SetExpandAny(true);
   CHECK(printer.Print(content, &file_output_stream));
@@ -140,15 +141,15 @@ void DumpFileData(const std::string& path,
 }
 
 void DumpIndexFile(const std::string& path) {
-  using namespace google::protobuf::io;
   int in_fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
   CHECK_GE(in_fd, 0) << "Couldn't open input file " << path;
-  FileInputStream file_input_stream(in_fd);
-  GzipInputStream gzip_input_stream(&file_input_stream);
+  google::protobuf::io::FileInputStream file_input_stream(in_fd);
+  google::protobuf::io::GzipInputStream gzip_input_stream(&file_input_stream);
   google::protobuf::uint32 byte_size;
   bool decoded_unit = false;
   for (;;) {
-    CodedInputStream coded_input_stream(&gzip_input_stream);
+    google::protobuf::io::CodedInputStream coded_input_stream(
+        &gzip_input_stream);
     coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
     if (!coded_input_stream.ReadVarint32(&byte_size)) {
       break;
@@ -194,21 +195,21 @@ void DumpKzipFile(const std::string& path) {
 void BuildIndexFile(const std::string& outfile,
                     const std::vector<std::string>& elements) {
   CHECK(!elements.empty()) << "Need at least a CompilationUnit!";
-  using namespace google::protobuf::io;
   int out_fd =
       open(outfile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
   CHECK(out_fd >= 0) << "Couldn't open " << outfile << " for writing.";
   {
-    FileOutputStream file_output_stream(out_fd);
-    GzipOutputStream::Options options;
-    options.format = GzipOutputStream::GZIP;
-    GzipOutputStream gzip_stream(&file_output_stream, options);
-    CodedOutputStream coded_stream(&gzip_stream);
+    google::protobuf::io::FileOutputStream file_output_stream(out_fd);
+    google::protobuf::io::GzipOutputStream::Options options;
+    options.format = google::protobuf::io::GzipOutputStream::GZIP;
+    google::protobuf::io::GzipOutputStream gzip_stream(&file_output_stream,
+                                                       options);
+    google::protobuf::io::CodedOutputStream coded_stream(&gzip_stream);
 
     kythe::proto::CompilationUnit unit;
     int in_fd = open(elements[0].c_str(), O_RDONLY, S_IREAD | S_IWRITE);
     CHECK_GE(in_fd, 0) << "Couldn't open input file " << elements[0];
-    FileInputStream file_input_stream(in_fd);
+    google::protobuf::io::FileInputStream file_input_stream(in_fd);
     CHECK(google::protobuf::TextFormat::Parse(&file_input_stream, &unit));
     coded_stream.WriteVarint32(unit.ByteSize());
     CHECK(unit.SerializeToCodedStream(&coded_stream));
@@ -218,7 +219,7 @@ void BuildIndexFile(const std::string& outfile,
       kythe::proto::FileData content;
       int in_fd = open(elements[i].c_str(), O_RDONLY, S_IREAD | S_IWRITE);
       CHECK_GE(in_fd, 0) << "Couldn't open input file " << elements[i];
-      FileInputStream file_input_stream(in_fd);
+      google::protobuf::io::FileInputStream file_input_stream(in_fd);
       CHECK(google::protobuf::TextFormat::Parse(&file_input_stream, &content));
       coded_stream.WriteVarint32(content.ByteSize());
       CHECK(content.SerializeToCodedStream(&coded_stream));
@@ -247,7 +248,7 @@ kindex_tool -assemble some/file.kindex some/unit some/content...
   any other input files as FileData)");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (!FLAGS_explode.empty()) {
-    if (FLAGS_explode.find(".kzip") == FLAGS_explode.size() - 5) {
+    if (absl::EndsWith(FLAGS_explode, ".kzip")) {
       DumpKzipFile(FLAGS_explode);
     } else {
       DumpIndexFile(FLAGS_explode);
