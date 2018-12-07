@@ -910,13 +910,15 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
 
 }  // anonymous namespace
 
-KzipWriterSink::KzipWriterSink(const std::string& path, bool single_file)
-    : path_(path), single_file_(single_file) {}
+KzipWriterSink::KzipWriterSink(const std::string& path,
+                               OutputPathType path_type)
+    : path_(path), path_type_(path_type) {}
 
 void KzipWriterSink::OpenIndex(const std::string& unit_hash) {
   CHECK(writer_ == nullptr) << "OpenIndex() called twice";
-  std::string path =
-      single_file_ ? path_ : JoinPath(path_, unit_hash + ".kzip");
+  std::string path = path_type_ == OutputPathType::SingleFile
+                         ? path_
+                         : JoinPath(path_, unit_hash + ".kzip");
   writer_ = absl::make_unique<IndexWriter>(OpenKzipWriterOrDie(path));
 }
 
@@ -1343,9 +1345,11 @@ bool ExtractorConfiguration::Extract(supported_language::Language lang) {
   if (!output_file_.empty()) {
     CHECK(absl::EndsWith(output_file_, ".kzip"))
         << "Output file must have '.kzip' extension";
-    sink = absl::make_unique<KzipWriterSink>(output_file_, true);
+    sink = absl::make_unique<KzipWriterSink>(
+        output_file_, KzipWriterSink::OutputPathType::SingleFile);
   } else {
-    sink = absl::make_unique<KzipWriterSink>(output_directory_, false);
+    sink = absl::make_unique<KzipWriterSink>(
+        output_directory_, KzipWriterSink::OutputPathType::Directory);
   }
 
   return Extract(lang, std::move(sink));

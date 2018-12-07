@@ -117,12 +117,16 @@ class CompilationWriterSink {
 /// See https://www.kythe.io/docs/kythe-kzip.html for a description.
 class KzipWriterSink : public CompilationWriterSink {
  public:
+  enum class OutputPathType {
+    Directory,
+    SingleFile,
+  };
   /// \param path The file to which to write.
-  /// \param single_file If true, the kzip is written to the specified path
+  /// \param path_type If SingleFile, the kzip is written to the specified path
   /// directly. Otherwise the path is interpreted as a directory and the kzip is
   /// written within it using a filename derived from an identifying hash of the
   /// compilation unit.
-  explicit KzipWriterSink(const std::string& path, bool single_file);
+  explicit KzipWriterSink(const std::string& path, OutputPathType path_type);
   void OpenIndex(const std::string& unit_hash) override;
   void WriteHeader(const kythe::proto::CompilationUnit& header) override;
   void WriteFileContent(const kythe::proto::FileData& content) override;
@@ -130,7 +134,7 @@ class KzipWriterSink : public CompilationWriterSink {
 
  private:
   std::string path_;
-  bool single_file_;
+  OutputPathType path_type_;
   std::unique_ptr<IndexWriter> writer_;
 };
 
