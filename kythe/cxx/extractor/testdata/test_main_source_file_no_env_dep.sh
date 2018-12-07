@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
 # _without.UNIT file should equal the main source file transcript for the
 # _with.UNIT file.
 # It should be run from the Kythe root.
+set -e
 TEST_NAME="test_main_source_file_no_env_dep"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh

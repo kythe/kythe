@@ -1,5 +1,6 @@
-#!/bin/bash -e
+#!/bin/bash
 # This script checks that the claiming tool works on index packs.
+set -e
 BASE_DIR="$PWD/kythe/cxx/tools/testdata"
 OUT_DIR="$TEST_TMPDIR"
 : ${KINDEX_TOOL_BIN?:missing kindex_tool}

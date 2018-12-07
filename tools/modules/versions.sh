@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
 # git-svn sha. (The svn revision will appear in the git log entry.) When a
 # checkout is updated to a new minimum version, both its _SHA and _REV should
 # be set to the new (matched) strings.
+set -e
 
 # llvm
 MIN_LLVM_SHA="3fe1b12fca949399a3334a072ee7f96e2b6f557e"

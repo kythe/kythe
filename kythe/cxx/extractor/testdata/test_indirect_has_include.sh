@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright 2017 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
 # This test checks that the extractor handles __has_include with redundant
 # file output.
 # It should be run from the Kythe root.
+set -e
 TEST_NAME="test_indirect_has_include"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
