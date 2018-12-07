@@ -25,11 +25,12 @@ kwazthis() { "$KWAZTHIS" --local_repo=NONE --api "http://$LISTEN_AT" "$@" | tee 
 
 FILE_PATH=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Generics.java
 
-JSON=$(kwazthis --corpus kythe --path $FILE_PATH --offset 934)
-jq --slurp 'length == 3'
+JSON=$(kwazthis --corpus kythe --path $FILE_PATH --offset 965)
+jq --slurp 'length == 4'
 # .[0] is Generics class def
 # .[1] is f method def
 # .[2] is gs variable def
+# .[3] is gs variable defines/binding
 jq --slurp '.[] | (.kind == "ref" or .kind == "defines" or .kind == "defines/binding")'
 jq --slurp '.[].node.ticket
         and .[].node.ticket != ""'
