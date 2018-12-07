@@ -21,6 +21,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "absl/types/optional.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -135,7 +136,7 @@ class KzipWriterSink : public CompilationWriterSink {
  private:
   std::string path_;
   OutputPathType path_type_;
-  std::unique_ptr<IndexWriter> writer_;
+  absl::optional<IndexWriter> writer_;
 };
 
 /// \brief Collects information about compilation arguments and targets and

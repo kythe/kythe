@@ -915,11 +915,11 @@ KzipWriterSink::KzipWriterSink(const std::string& path,
     : path_(path), path_type_(path_type) {}
 
 void KzipWriterSink::OpenIndex(const std::string& unit_hash) {
-  CHECK(writer_ == nullptr) << "OpenIndex() called twice";
+  CHECK(!writer_.has_value()) << "OpenIndex() called twice";
   std::string path = path_type_ == OutputPathType::SingleFile
                          ? path_
                          : JoinPath(path_, unit_hash + ".kzip");
-  writer_ = absl::make_unique<IndexWriter>(OpenKzipWriterOrDie(path));
+  writer_ = IndexWriter(OpenKzipWriterOrDie(path));
 }
 
 void KzipWriterSink::WriteHeader(const kythe::proto::CompilationUnit& header) {
@@ -943,7 +943,7 @@ void KzipWriterSink::WriteFileContent(const kythe::proto::FileData& file) {
 }
 
 KzipWriterSink::~KzipWriterSink() {
-  if (writer_ != nullptr) {
+  if (writer_) {
     auto status = writer_->Close();
     if (!status.ok()) {
       LOG(ERROR) << "Error closing kzip output: " << status;
