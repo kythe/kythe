@@ -27,7 +27,6 @@ import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
-import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.util.JsonUtil;
@@ -122,18 +121,25 @@ public abstract class AbstractJavacWrapper {
       if (outputFile.endsWith(IndexInfoUtils.KZIP_FILE_EXT)) {
         IndexInfoUtils.writeKzipToFile(indexInfo, outputFile);
       } else {
-        IndexInfoUtils.writeKindexToFile(indexInfo, outputFile);
+        System.err.printf("Unsupported output file: %s%n", outputFile);
+        System.exit(2);
       }
       return;
     }
 
     String outputDir = readEnvironmentVariable("KYTHE_OUTPUT_DIRECTORY");
-    if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
-      writeIndexInfoToFile(outputDir, indexInfo);
-      return;
-    }
-
-    new Archive(outputDir).writeDescription(indexInfo);
+    // Just rely on the underlying compilation unit's signature to get the filename, if we're not
+    // writing to a single kzip file.
+    String name =
+        indexInfo
+            .getCompilationUnit()
+            .getVName()
+            .getSignature()
+            .trim()
+            .replaceAll("^/+|/+$", "")
+            .replace('/', '_');
+    String path = IndexInfoUtils.getKzipPath(outputDir, name).toString();
+    IndexInfoUtils.writeKzipToFile(indexInfo, path);
   }
 
   private static String[] getCleanedUpArguments(String[] args) throws IOException {
@@ -162,20 +168,6 @@ public abstract class AbstractJavacWrapper {
     }
     String[] cleanedUpArgsArray = new String[cleanedUpArgs.size()];
     return cleanedUpArgs.toArray(cleanedUpArgsArray);
-  }
-
-  private static void writeIndexInfoToFile(String rootDirectory, CompilationDescription indexInfo)
-      throws IOException {
-    String name =
-        indexInfo
-            .getCompilationUnit()
-            .getVName()
-            .getSignature()
-            .trim()
-            .replaceAll("^/+|/+$", "")
-            .replace('/', '_');
-    String path = IndexInfoUtils.getKindexPath(rootDirectory, name).toString();
-    IndexInfoUtils.writeKindexToFile(indexInfo, path);
   }
 
   private boolean passThroughIfAnalysisOnly(String[] args) throws Exception {
