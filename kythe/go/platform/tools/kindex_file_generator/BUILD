@@ -6,6 +6,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_binary(
     name = "kindex_file_generator",
     srcs = ["kindex_file_generator.go"],
+    deprecation = "Please use //kythe/go/platform/kzip",
     deps = [
         "//kythe/go/platform/kindex",
         "//kythe/go/util/kytheuri",

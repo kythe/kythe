@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_binary(
     name = "indexpack",
     srcs = ["indexpack.go"],
+    deprecation = "Please use //kythe/go/platform/kzip",
     deps = [
         "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kindex",
