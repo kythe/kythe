@@ -1,5 +1,5 @@
-#!/bin/bash -e
-set -o pipefail
+#!/bin/bash
+set -eo pipefail
 
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #

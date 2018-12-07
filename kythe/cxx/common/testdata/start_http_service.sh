@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,6 +40,8 @@
 #   "//kythe/go/storage/tools:write_tables",
 #   "//kythe/go/storage/tools:write_entries",
 #   "//kythe/go/test/tools:http_server",
+
+set -e
 
 : ${KYTHE_WRITE_TABLES?:missing write_tables}
 : ${KYTHE_WRITE_ENTRIES?:missing write_entries}
