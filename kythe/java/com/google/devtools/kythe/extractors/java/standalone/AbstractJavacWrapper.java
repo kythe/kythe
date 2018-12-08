@@ -52,10 +52,11 @@ import java.util.List;
  * <p>KYTHE_ROOT_DIRECTORY: required root path for file inputs; the {@link FileData} paths stored in
  * the {@link CompilationUnit} will be made to be relative to this directory
  *
- * <p>KYTHE_OUTPUT_FILE: if set to a non-empty value, write the resulting .kindex file to this path
+ * <p>KYTHE_OUTPUT_FILE: if set to a non-empty value, write the resulting .kzip file to this path
  * instead of using KYTHE_OUTPUT_DIRECTORY
  *
- * <p>KYTHE_OUTPUT_DIRECTORY: required directory path to store the resulting .kindex file
+ * <p>KYTHE_OUTPUT_DIRECTORY: directory path to store the resulting .kzip file, if KYTHE_OUTPUT_FILE
+ * is not set
  *
  * <p>KYTHE_INDEX_PACK: if set to a non-empty value, interpret KYTHE_OUTPUT_DIRECTORY as the root of
  * an indexpack instead of a collection of .kindex files

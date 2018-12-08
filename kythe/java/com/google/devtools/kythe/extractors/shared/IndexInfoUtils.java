@@ -129,6 +129,7 @@ public class IndexInfoUtils {
 
   public static void writeKzipToFile(CompilationDescription description, String path)
       throws IOException {
+    Paths.get(path).getParent().toFile().mkdirs();
     try (KZip.Writer writer = new KZipWriter(new File(path))) {
       Analysis.IndexedCompilation indexedCompilation =
           Analysis.IndexedCompilation.newBuilder()
