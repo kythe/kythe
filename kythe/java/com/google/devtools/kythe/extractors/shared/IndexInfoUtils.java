@@ -142,10 +142,6 @@ public class IndexInfoUtils {
     }
   }
 
-  public static Path getKindexPath(String rootDirectory, String basename) {
-    return Paths.get(rootDirectory, basename + KINDEX_FILE_EXT);
-  }
-
   public static Path getKzipPath(String rootDirectory, String basename) {
     return Paths.get(rootDirectory, basename + KZIP_FILE_EXT);
   }
