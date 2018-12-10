@@ -1558,6 +1558,9 @@ Facts::
     The starting byte offset (from 0) of the snippet for this anchor (optional).
   snippet/end:::
     The ending byte offset (from 0) of the snippet for this anchor (optional).
+  build/config:::
+    A short name describing the build configuration or platform this anchor
+    targets (optional).
   subkind::
     If set to `implicit`, this anchor should not also have `loc/start` or
     `loc/end` facts. It is an artifact of some internal process that may still
