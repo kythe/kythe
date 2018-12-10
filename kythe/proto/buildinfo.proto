@@ -29,4 +29,9 @@ message BuildDetails {
 
   // If known, the name or mnemonic of the generating rule.
   string rule_type = 2;
+
+  // A pithy, user-meaningful description of the configuration or platform
+  // this compilation is targeting, e.g. "android", "linux",
+  // "mips-dec-ultrix4.2", etc.
+  string build_config = 3;
 }
