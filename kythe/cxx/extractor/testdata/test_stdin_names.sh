@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-set -o pipefail
+set -eo pipefail
 TEST_NAME="test_stdin_names"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 rm -rf -- "${OUT_DIR}/*"

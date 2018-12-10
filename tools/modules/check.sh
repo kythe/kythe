@@ -15,6 +15,7 @@
 #
 # This script checks that required libraries have been checked out at the
 # versions we expect.
+set -e
 
 LLVM_REPO='third_party/llvm/llvm'
 . "$(dirname "$0")/versions.sh"

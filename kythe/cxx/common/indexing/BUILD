@@ -1,5 +1,7 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+
 cc_library(
     name = "output",
     srcs = [
@@ -9,9 +11,7 @@ cc_library(
         "KytheGraphRecorder.h",
         "KytheOutputStream.h",
     ],
-    visibility = [
-        "//visibility:public",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
@@ -32,6 +32,7 @@ cc_library(
     hdrs = [
         "KytheCachingOutput.h",
     ],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":output",
         "//external:libmemcached",

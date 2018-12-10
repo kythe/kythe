@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,7 @@
 #   compile_commands.json.in -- shared compilation database
 #     will substitute "OUT_DIR" for the test output directory
 
-set -o pipefail
+set -eo pipefail
 : ${FYI?:missing fyi}
 TEST_NAME="$1"
 BASE_DIR="$PWD/kythe/cxx/tools/fyi/testdata"

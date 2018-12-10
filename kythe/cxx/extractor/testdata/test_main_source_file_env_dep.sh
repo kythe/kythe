@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright 2015 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,7 @@
 # Specifically, the main source file transcript for the _without.UNIT file
 # should differ from the main source file transcript for the _with.UNIT file.
 # It should be run from the Kythe root.
+set -e
 TEST_NAME="test_main_source_file_env_dep"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
@@ -30,10 +31,10 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}/with" \
     "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor/testdata -DMACRO \
     ./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc
-[[ $(ls -1 "${OUT_DIR}"/with/*.kindex | wc -l) -eq 1 ]]
-INDEX_PATH_WITH_MACRO=$(ls -1 "${OUT_DIR}"/with/*.kindex)
-[[ $(ls -1 "${OUT_DIR}"/without/*.kindex | wc -l) -eq 1 ]]
-INDEX_PATH_WITHOUT_MACRO=$(ls -1 "${OUT_DIR}"/without/*.kindex)
+[[ $(ls -1 "${OUT_DIR}"/with/*.kzip | wc -l) -eq 1 ]]
+INDEX_PATH_WITH_MACRO=$(ls -1 "${OUT_DIR}"/with/*.kzip)
+[[ $(ls -1 "${OUT_DIR}"/without/*.kzip | wc -l) -eq 1 ]]
+INDEX_PATH_WITHOUT_MACRO=$(ls -1 "${OUT_DIR}"/without/*.kzip)
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITH_MACRO}"
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITHOUT_MACRO}"
 

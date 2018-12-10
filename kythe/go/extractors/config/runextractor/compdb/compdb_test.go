@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/kzip"
 )
 
 const (
@@ -55,7 +55,7 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 	root := setupEnvironment(t)
 	defer os.Chdir(root)
 
-	extractor, err := filepath.Abs("kythe/cxx/extractor/cxx_extractor")
+	extractor, err := filepath.Abs(extractorPath)
 	if err != nil {
 		t.Fatalf("Unable to get absolute path to extractor: %v", err)
 	}
@@ -77,12 +77,14 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 			return err
 		}
 		defer reader.Close()
-		comp, err := kindex.New(reader)
+		err = kzip.Scan(reader, func(r *kzip.Reader, unit *kzip.Unit) error {
+			if !reflect.DeepEqual(unit.Proto.SourceFile, []string{"test_file.cc"}) {
+				t.Fatalf("Invalid source_file: %v", unit.Proto.SourceFile)
+			}
+			return nil
+		})
 		if err != nil {
 			return err
-		}
-		if !reflect.DeepEqual(comp.Proto.SourceFile, []string{"test_file.cc"}) {
-			t.Fatalf("Invalid source_file: %v", comp.Proto.SourceFile)
 		}
 		return nil
 	})

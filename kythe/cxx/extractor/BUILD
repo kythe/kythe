@@ -1,5 +1,7 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+
 cc_library(
     name = "index_pack",
     srcs = ["index_pack.cc"],
@@ -10,6 +12,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deprecation = "Please use :kzip_{reader,writer}",
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         "//external:libuuid",
         "//external:zlib",
@@ -183,6 +186,7 @@ cc_library(
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:kzip_writer",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:path_utils",
         "//kythe/cxx/indexer/cxx:clang_utils",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",

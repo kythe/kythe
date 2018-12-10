@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 #
 # Copyright 2014 The Kythe Authors. All rights reserved.
 #
@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 # This script tests the indexpack binary. It requires the jq command (≥ 1.4).
+set -e
 
 kindex_contents() {
   $viewindex --files "$1" | $jq -c -S .

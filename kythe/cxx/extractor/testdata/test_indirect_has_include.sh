@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # Copyright 2017 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
 # This test checks that the extractor handles __has_include with redundant
 # file output.
 # It should be run from the Kythe root.
+set -e
 TEST_NAME="test_indirect_has_include"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
@@ -23,8 +24,8 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "./${EXTRACTOR}" --with_executable "/usr/bin/clang++" \
     -I./kythe/cxx/extractor \
     ./kythe/cxx/extractor/testdata/indirect_has_include_test.cc
-[[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]
-INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
+[[ $(ls -1 "${OUT_DIR}"/*.kzip | wc -l) -eq 1 ]]
+INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kzip)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
 
 # Remove lines that will change depending on the machine the test is run on.
