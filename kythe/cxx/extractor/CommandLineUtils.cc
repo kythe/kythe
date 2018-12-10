@@ -217,6 +217,7 @@ std::vector<std::string> GCCArgsToClangArgs(
       "|-f(no-)?rounding-math"
       "|-f(no-)?ripa"
       "|-f(no-)?ripa-disallow-asm-modules"
+      "|-f(no-)?sanitize.*"
       "|-f(no-)?see"
       "|-f(no-)?strict-enum-precision"
       "|-f(no-)?tracer"
