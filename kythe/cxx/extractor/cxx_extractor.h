@@ -21,6 +21,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "absl/types/optional.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -113,49 +114,29 @@ class CompilationWriterSink {
   virtual ~CompilationWriterSink() = default;
 };
 
-/// \brief An `CompilationWriterSink` that writes to physical .kindex files.
-class KindexWriterSink : public CompilationWriterSink {
- public:
-  /// \param path The file to which to write.
-  /// \param single_file Whether to write to the single file or as a directory.
-  explicit KindexWriterSink(const std::string& path, bool single_file)
-      : path_(path), single_file_(single_file) {}
-  void OpenIndex(const std::string& unit_hash) override;
-  void WriteHeader(const kythe::proto::CompilationUnit& header) override;
-  void WriteFileContent(const kythe::proto::FileData& content) override;
-  ~KindexWriterSink();
-
- private:
-  /// The file descriptor in use, opened in `OpenIndex` and closed in the dtor
-  /// after `file_stream_` is destroyed. Owned by this object.
-  int fd_ = -1;
-  /// Wraps `fd_`. Destroyed after `gzip_stream_`.
-  std::unique_ptr<google::protobuf::io::FileOutputStream> file_stream_;
-  /// Wraps `file_stream_`. Destroyed after `coded_stream_`.
-  std::unique_ptr<google::protobuf::io::GzipOutputStream> gzip_stream_;
-  /// Wraps `gzip_stream_`. Destroyed first in the destructor.
-  std::unique_ptr<google::protobuf::io::CodedOutputStream> coded_stream_;
-  /// The path to the file whose handle is held by `fd_`.
-  std::string open_path_;
-  /// The path to use.
-  std::string path_;
-  /// Whether to use a single file or directory.
-  bool single_file_ = false;
-};
-
 /// \brief A `CompilationWriterSink` which writes to .kzip files.\
 /// See https://www.kythe.io/docs/kythe-kzip.html for a description.
 class KzipWriterSink : public CompilationWriterSink {
  public:
+  enum class OutputPathType {
+    Directory,
+    SingleFile,
+  };
   /// \param path The file to which to write.
-  explicit KzipWriterSink(const std::string& path);
-  void OpenIndex(const std::string&) override {}
+  /// \param path_type If SingleFile, the kzip is written to the specified path
+  /// directly. Otherwise the path is interpreted as a directory and the kzip is
+  /// written within it using a filename derived from an identifying hash of the
+  /// compilation unit.
+  explicit KzipWriterSink(const std::string& path, OutputPathType path_type);
+  void OpenIndex(const std::string& unit_hash) override;
   void WriteHeader(const kythe::proto::CompilationUnit& header) override;
   void WriteFileContent(const kythe::proto::FileData& content) override;
   ~KzipWriterSink() override;
 
  private:
-  IndexWriter writer_;
+  std::string path_;
+  OutputPathType path_type_;
+  absl::optional<IndexWriter> writer_;
 };
 
 /// \brief Collects information about compilation arguments and targets and
@@ -285,7 +266,7 @@ class ExtractorConfiguration {
   void InitializeFromEnvironment();
   /// \brief Load the VName config file from `path` or terminate.
   void SetVNameConfig(const std::string& path);
-  /// \brief If a kindex file will be written, write it here.
+  /// \brief If a kzip file will be written, write it here.
   void SetOutputFile(const std::string& path) { output_file_ = path; }
   /// \brief Record the name of the target that generated this compilation.
   void SetTargetName(const std::string& target) { target_name_ = target; }
@@ -314,7 +295,7 @@ class ExtractorConfiguration {
   bool map_builtin_resources_ = true;
   /// The directory to use for index files.
   std::string output_directory_ = ".";
-  /// If nonempty, emit kindex/kzip files to this exact path.
+  /// If nonempty, emit kzip files to this exact path.
   std::string output_file_;
   /// If nonempty, the name of the target that generated this compilation.
   std::string target_name_;

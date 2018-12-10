@@ -23,8 +23,8 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor \
     ./kythe/cxx/extractor/testdata/metadata.cc
-[[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]
-INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
+[[ $(ls -1 "${OUT_DIR}"/*.kzip | wc -l) -eq 1 ]]
+INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kzip)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
 
 # Remove lines that will change depending on the machine the test is run on.

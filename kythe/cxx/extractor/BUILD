@@ -186,6 +186,7 @@ cc_library(
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:kzip_writer",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:path_utils",
         "//kythe/cxx/indexer/cxx:clang_utils",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
