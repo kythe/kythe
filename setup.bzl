@@ -15,8 +15,8 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "io_bazel_rules_go",
-        url = "https://github.com/bazelbuild/rules_go/releases/download/0.16.1/rules_go-0.16.1.tar.gz",
-        sha256 = "f5127a8f911468cd0b2d7a141f17253db81177523e4429796e14d429f5444f5f",
+        url = "https://github.com/bazelbuild/rules_go/releases/download/0.16.3/rules_go-0.16.3.tar.gz",
+        sha256 = "b7a62250a3a73277ade0ce306d22f122365b513f5402222403e507f2f997d421",
     )
 
     maybe(
