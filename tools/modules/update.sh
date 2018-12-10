@@ -22,21 +22,24 @@
 # repositories are at the correct version and will configure and build them.
 
 wget_copy_archive() {
+  # The dependency to download (llvm, clang).
   local target="$1"
-  local dir="$2"
+  # The directory to download the dependency into.
+  local dir="${2:?missing directory}"
+  # The specific version of the dependency to use.
   local sha="$3"
 
   if [[ ! -f "$dir/$sha.sentinel" ]]; then
     wget "https://github.com/llvm-mirror/$target/archive/$sha.zip"
+    trap 'rm "$sha.zip"' EXIT ERR INT
     rm -rf "$dir"
     mkdir -p "$dir"
     local tmpdir=$(mktemp -d)
+    trap 'rm -rf "$tmpdir"' EXIT ERR INT
     unzip "$sha.zip" -d "$tmpdir/"
     # This relies on the behavior of github to always produce a zip archive with
     # a subdirectory named "repo-###sha###" that contains the repo inside it.
     mv -T "$tmpdir/$target-$sha" "$dir"
-    rmdir "$tmpdir"
-    rm "$sha.zip"
     # Leave an empty file so that we know what version we have checked out.
     touch "$dir/$sha.sentinel"
   fi

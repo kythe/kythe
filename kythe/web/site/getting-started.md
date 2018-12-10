@@ -61,7 +61,8 @@ apt-get install \
     asciidoc asciidoctor source-highlight graphviz \
     gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.5 bison \
     openjdk-8-jdk \
-    parallel
+    parallel \
+    wget
 
 # https://golang.org/dl/ for Golang installation
 # https://docs.docker.com/installation/debian/#debian-jessie-80-64-bit for Docker installation
