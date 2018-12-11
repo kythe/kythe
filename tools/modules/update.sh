@@ -100,7 +100,6 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
       -exec rm -rf \{} \;
   if [[ ! -d "$vbuild_dir" ]]; then
     mkdir -p "$vbuild_dir"
-    llvm_cleanup
     trap "rm -rf '$LLVM_REPO/$vbuild_dir'" ERR INT
     cd "$vbuild_dir"
     CXX=$(basename "${BAZEL_CC}" | sed -E 's/(cc)?(-.*)?$/++\2/')
