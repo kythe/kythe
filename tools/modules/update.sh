@@ -21,8 +21,27 @@
 # If the argument `--build_only` is passed, the script will assume that the
 # repositories are at the correct version and will configure and build them.
 
+ZIPFILES=()
+TMPDIRS=()
+
+trap_cleanup() {
+  ZIPFILES+=("$1")
+  TMPDIRS+=("${2?:missing directory}")
+  trap wget_cleanup EXIT
+}
+
+wget_cleanup() {
+  cd "$ROOT"
+  for file in "${ZIPFILES[@]}"; do
+    rm "$file"
+  done
+  for dir in "${TMPDIRS[@]}"; do
+    rm -rf "$dir"
+  done
+}
+
 wget_copy_archive() {
-  # The dependency to download (llvm, clang).
+  # The dependency to download from llvm-mirror (llvm, clang).
   local target="$1"
   # The directory to download the dependency into.
   local dir="${2:?missing directory}"
@@ -30,16 +49,14 @@ wget_copy_archive() {
   local sha="$3"
 
   if [[ ! -f "$dir/$sha.sentinel" ]]; then
-    wget "https://github.com/llvm-mirror/$target/archive/$sha.zip"
-    trap 'rm "$sha.zip"' EXIT ERR INT
     rm -rf "$dir"
-    mkdir -p "$dir"
+    wget "https://github.com/llvm-mirror/$target/archive/$sha.zip"
     local tmpdir=$(mktemp -d)
-    trap 'rm -rf "$tmpdir"' EXIT ERR INT
+    trap_cleanup $sha.zip $tmpdir
     unzip "$sha.zip" -d "$tmpdir/"
     # This relies on the behavior of github to always produce a zip archive with
     # a subdirectory named "repo-###sha###" that contains the repo inside it.
-    mv -T "$tmpdir/$target-$sha" "$dir"
+    mv "$tmpdir/$target-$sha" "$dir"
     # Leave an empty file so that we know what version we have checked out.
     touch "$dir/$sha.sentinel"
   fi

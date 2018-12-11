@@ -44,6 +44,7 @@ Kythe relies on the following external dependencies:
 * libssl-dev
 * bison-3.0.4 (2.3 is also acceptable)
 * flex-2.5
+* wget
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
 * [leiningen](http://leiningen.org/) (used to build `kythe/web/ui`)
 * [ninja](https://ninja-build.org/) (optional; improves LLVM build speed)
