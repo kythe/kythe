@@ -173,7 +173,7 @@ public class KytheEntrySets {
       return null;
     }
     EntrySet.Builder builder =
-        newNode(NodeKind.ANCHOR)
+        newNode(loc.getStart() == loc.getEnd() ? NodeKind.ANCHOR_IMPLICIT : NodeKind.ANCHOR)
             .setCorpusPath(CorpusPath.fromVName(fileVName))
             .addSignatureSalt(fileVName)
             .setProperty("loc/start", "" + loc.getStart())
