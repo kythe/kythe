@@ -48,8 +48,10 @@ Kythe relies on the following external dependencies:
 * source-highlight
 * uuid-dev
 
-You will need to ensure they exist using your favorite method (apt-get, brew,
-etc.).
+You will need to ensure these packages are installed on the system where you
+intend to build Kythe. There are instructions for using `apt-get` below.
+If you are using macOS, see [Instructions for macOS](install-macos.md).
+
 
 #### Installing Debian Jessie Packages
 
