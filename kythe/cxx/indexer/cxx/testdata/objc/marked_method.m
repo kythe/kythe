@@ -14,17 +14,17 @@
 //- FCDeclRoot child.1 FCDeclParen
 //- FCDeclParen.pre_text ") "
 //- FCDeclRoot child.2 FCDeclIdentRoot
-//- FCDeclIdentRoot child.0 FCDeclIdentPrefix
+//- FCDeclIdentRoot child.0 _
 //- FCDeclIdentRoot child.1 FCDeclIdent
 //- FCDeclIdent.pre_text "foofunc:"
 //- @fooP1 defines/binding FooDeclArg1
-//- FooArg1 code ACDeclRoot
+//- FooDeclArg1 code ACDeclRoot
 //- ACDeclRoot child.0 ACDeclType
 //- ACDeclType.kind "TYPE"
 //- ACDeclType.pre_text "Data *"
-//- ACDeclRoot child.1 ACSpace
-//- ACDeclRoot child.2 ACIdent
-//- ACDeclIdent child.0 ACContext
+//- ACDeclRoot child.1 _
+//- ACDeclRoot child.2 ACDeclIdent
+//- ACDeclIdent child.0 ACDeclContext
 //- ACDeclContext.kind "CONTEXT"
 //- ACDeclContext child.0 ACDeclContextIdent
 //- ACDeclContextIdent.kind "IDENTIFIER"
@@ -53,15 +53,15 @@
 //- FCDefnRoot child.1 FCDefnParen
 //- FCDefnParen.pre_text ") "
 //- FCDefnRoot child.2 FCDefnIdentRoot
-//- FCDefnIdentRoot child.0 FCDefnIdentPrefix
+//- FCDefnIdentRoot child.0 _
 //- FCDefnIdentRoot child.1 FCDefnIdent
 //- FCDefnIdent.pre_text "foofunc:"
 //- @fooP1 defines/binding FooDArg1
-//- FooDArg1 code ACDRoot
-//- ACDefnefnRoot child.0 ACDType
+//- FooDArg1 code ACDefnRoot
+//- ACDefnRoot child.0 ACDefnType
 //- ACDefnType.kind "TYPE"
 //- ACDefnType.pre_text "Data *"
-//- ACDefnefnRoot child.1 ACDSpace
+//- ACDefnRoot child.1 _
 //- ACDefnRoot child.2 ACDefnIdent
 //- ACDefnIdent child.0 ACDefnContext
 //- ACDefnContext.kind "CONTEXT"
