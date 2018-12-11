@@ -2554,6 +2554,17 @@ cc_indexer_test(
 )
 
 objc_indexer_test(
+    name = "objc_marked_source_category",
+    srcs = ["objc/categories/marked_category.m"],
+    check_for_singletons = True,
+    convert_marked_source = True,
+    tags = [
+        "marked_source",
+        "objc",
+    ],
+)
+
+objc_indexer_test(
     name = "objc_marked_source_class",
     srcs = ["objc/marked_class.m"],
     convert_marked_source = True,
@@ -2567,6 +2578,7 @@ objc_indexer_test(
     name = "objc_marked_source_method",
     srcs = ["objc/marked_method.m"],
     convert_marked_source = True,
+    check_for_singletons = True,
     tags = [
         "marked_source",
         "objc",

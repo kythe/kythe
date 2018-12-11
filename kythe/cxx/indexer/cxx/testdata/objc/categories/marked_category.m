@@ -1,10 +1,13 @@
-// Test marked source with attributes for methods.
-//
-// TODO: Do something meaningful with selectors/arguments.
-
+// Test marked source with attributes for category methods.
 @class Data;
 
-@interface Box
+@interface Base
+@end
+
+@implementation Base
+@end
+
+@interface Base (Cat)
 
 //- @foofunc defines/binding FooFuncDecl
 //- FooFuncDecl code FCDeclRoot
@@ -28,7 +31,7 @@
 //- ACDeclContext.kind "CONTEXT"
 //- ACDeclContext child.0 ACDeclContextIdent
 //- ACDeclContextIdent.kind "IDENTIFIER"
-//- ACDeclContextIdent.pre_text "Box"
+//- ACDeclContextIdent.pre_text "Base(Cat)"
 //- ACDeclContext child.1 ACDeclContextIdentName
 //- ACDeclContextIdentName.kind "IDENTIFIER"
 //- ACDeclContextIdentName.pre_text "foofunc:"
@@ -37,13 +40,9 @@
 //- ACDeclIdentToken.pre_text "fooP1"
 - (int) foofunc:(Data *)fooP1;
 
-- (int) barfunc:(Data *)fooP1 moreargs:(int)arg2;
-
-- (int) noargs;
-
 @end
 
-@implementation Box
+@implementation Base (Cat)
 
 //- @foofunc defines/binding FooFuncDefn
 //- FooFuncDefn code FCDefnRoot
@@ -67,7 +66,7 @@
 //- ACDefnContext.kind "CONTEXT"
 //- ACDefnContext child.0 ACDefnContextIdent
 //- ACDefnContextIdent.kind "IDENTIFIER"
-//- ACDefnContextIdent.pre_text "Box"
+//- ACDefnContextIdent.pre_text "Base(Cat)"
 //- ACDefnContext child.1 ACDefnContextIdentName
 //- ACDefnContextIdentName.kind "IDENTIFIER"
 //- ACDefnContextIdentName.pre_text "foofunc:"
@@ -75,15 +74,7 @@
 //- ACDefnIdentToken.kind "IDENTIFIER"
 //- ACDefnIdentToken.pre_text "fooP1"
 - (int) foofunc:(Data *)fooP1 {
-  return 0;
-}
-
-- (int) barfunc:(Data *)fooP1 moreargs:(int)arg2 {
-  return 0;
-}
-
-- (int) noargs {
-  return 0;
+  return 20;
 }
 
 @end
