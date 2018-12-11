@@ -27,7 +27,7 @@ TMPDIRS=()
 trap_cleanup() {
   ZIPFILES+=("$1")
   TMPDIRS+=("${2?:missing directory}")
-  trap wget_cleanup EXIT
+  trap wget_cleanup EXIT ERR INT
 }
 
 wget_cleanup() {
