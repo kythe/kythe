@@ -21,16 +21,17 @@
 # If the argument `--build_only` is passed, the script will assume that the
 # repositories are at the correct version and will configure and build them.
 
+# This section is used for cleanup during/after fetching.
 ZIPFILES=()
 TMPDIRS=()
 
-trap_cleanup() {
+wget_cleanup() {
   ZIPFILES+=("$1")
   TMPDIRS+=("${2?:missing directory}")
-  trap wget_cleanup EXIT ERR INT
+  trap trap_cleanup EXIT ERR INT
 }
 
-wget_cleanup() {
+trap_cleanup() {
   cd "$ROOT"
   for file in "${ZIPFILES[@]}"; do
     rm "$file"
@@ -52,7 +53,7 @@ wget_copy_archive() {
     rm -rf "$dir"
     wget "https://github.com/llvm-mirror/$target/archive/$sha.zip"
     local tmpdir=$(mktemp -d)
-    trap_cleanup $sha.zip $tmpdir
+    wget_cleanup $sha.zip $tmpdir
     unzip "$sha.zip" -d "$tmpdir/"
     # This relies on the behavior of github to always produce a zip archive with
     # a subdirectory named "repo-###sha###" that contains the repo inside it.
@@ -86,6 +87,9 @@ if [[ -z "$1" || "$1" == "--fetch_only" ]]; then
   wget_copy_archive "llvm" "$LLVM_REPO" "$MIN_LLVM_SHA"
   wget_copy_archive "clang" "$LLVM_REPO/tools/clang" "$MIN_CLANG_SHA"
   rm -rf "$LLVM_REPO/tools/clang/tools/extra"
+  # Do cleanup, and clear the trap for later use.
+  trap_cleanup
+  trap - EXIT ERR INT
 fi
 
 if [[ -z "$1" || "$1" == "--build_only" ]]; then
@@ -96,6 +100,7 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
       -exec rm -rf \{} \;
   if [[ ! -d "$vbuild_dir" ]]; then
     mkdir -p "$vbuild_dir"
+    llvm_cleanup
     trap "rm -rf '$LLVM_REPO/$vbuild_dir'" ERR INT
     cd "$vbuild_dir"
     CXX=$(basename "${BAZEL_CC}" | sed -E 's/(cc)?(-.*)?$/++\2/')
