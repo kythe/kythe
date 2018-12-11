@@ -611,14 +611,11 @@ def kythe_dependencies():
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
     #
-    # N.B. We have a near-clone of the protobuf BUILD file overriding upstream so
-    # that we can set the unexported config variable to enable zlib. Without this,
-    # protobuf silently yields link errors.
+    # TODO(schroederc): update to 3.7.0 once released
     protobuf_archive = {
-        "build_file": "@io_kythe//third_party:protobuf.BUILD",
-        "sha256": "eb78d5527146ada6c68e7d6cd89edf1ee7743fb1731e5ec5c59acea27ae2833d",
-        "strip_prefix": "protobuf-d52f2bb9e45f6f92743ef632add29f6b15832d3b",
-        "urls": ["https://github.com/protocolbuffers/protobuf/archive/d52f2bb9e45f6f92743ef632add29f6b15832d3b.zip"],
+        "sha256": "2cf824dca722d31ce0402e4611ed98ac1c9808f5b3f8b9cef5d445f305200731",
+        "strip_prefix": "protobuf-c4fb353fc8d560bcf206a3154d87c44057c6fa80",
+        "urls": ["https://github.com/protocolbuffers/protobuf/archive/c4fb353fc8d560bcf206a3154d87c44057c6fa80.zip"],
     }
     maybe(http_archive, name = "com_google_protobuf", **protobuf_archive)
     maybe(http_archive, name = "protobuf_archive", **protobuf_archive)
