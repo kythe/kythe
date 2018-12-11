@@ -29,24 +29,24 @@ git clone git@github.com:kythe/kythe.git
 
 Kythe relies on the following external dependencies:
 
-* go >=1.7
-* clang >=3.6
-* cmake >= 3.4.3
-* node.js
 * asciidoc
-* jdk >=8
+* bison-3.0.4 (2.3 is also acceptable)
+* clang >= 3.6
+* cmake >= 3.4.3
+* [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
+* flex-2.5
+* go >= 1.7
+* graphviz
+* jdk >= 8
+* [leiningen](http://leiningen.org/) (used to build `//kythe/web/ui`)
+* libcurl4-openssl-dev
+* libncurses-dev
+* libssl-dev
+* [ninja](https://ninja-build.org/) (optional; improves LLVM build speed)
+* node.js
 * parallel
 * source-highlight
-* graphviz
-* libncurses-dev
-* libcurl4-openssl-dev
 * uuid-dev
-* libssl-dev
-* bison-3.0.4 (2.3 is also acceptable)
-* flex-2.5
-* [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
-* [leiningen](http://leiningen.org/) (used to build `kythe/web/ui`)
-* [ninja](https://ninja-build.org/) (optional; improves LLVM build speed)
 
 You will need to ensure they exist using your favorite method (apt-get, brew,
 etc.).
