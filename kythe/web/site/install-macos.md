@@ -17,7 +17,7 @@ follow all the other Getting Started instructions to get a working Kythe build.
 **Xcode**: To build on macOS, you will need Xcode installed. You can do this
 from the terminal by running:
 
-{% highligh bash %}
+{% highlight bash %}
 softwareupdate --install Xcode
 {% endhighlight %}
 
