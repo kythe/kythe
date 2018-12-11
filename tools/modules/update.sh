@@ -22,20 +22,15 @@
 # repositories are at the correct version and will configure and build them.
 
 # This section is used for cleanup during/after fetching.
-ZIPFILES=()
 TMPDIRS=()
 
 wget_cleanup() {
-  ZIPFILES+=("$1")
-  TMPDIRS+=("${2?:missing directory}")
+  TMPDIRS+=("${1?:missing directory}")
   trap trap_cleanup EXIT ERR INT
 }
 
 trap_cleanup() {
   cd "$ROOT"
-  for file in "${ZIPFILES[@]}"; do
-    rm "$file"
-  done
   for dir in "${TMPDIRS[@]}"; do
     rm -rf "$dir"
   done
@@ -51,10 +46,10 @@ wget_copy_archive() {
 
   if [[ ! -f "$dir/$sha.sentinel" ]]; then
     rm -rf "$dir"
-    wget "https://github.com/llvm-mirror/$target/archive/$sha.zip"
     local tmpdir=$(mktemp -d)
-    wget_cleanup $sha.zip $tmpdir
-    unzip "$sha.zip" -d "$tmpdir/"
+    wget -O "$tmpdir/$sha.zip" "https://github.com/llvm-mirror/$target/archive/$sha.zip"
+    wget_cleanup $tmpdir
+    unzip "$tmpdir/$sha.zip" -d "$tmpdir/"
     # This relies on the behavior of github to always produce a zip archive with
     # a subdirectory named "repo-###sha###" that contains the repo inside it.
     mv "$tmpdir/$target-$sha" "$dir"
