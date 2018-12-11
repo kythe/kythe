@@ -104,7 +104,3 @@ in the Preferences and select Check for Updates manually if you prefer).
 
 [ext]: https://kythe.io/getting-started/#external-dependencies
 [dock]: https://store.docker.com/editions/community/docker-ce-desktop-mac
-
-
-
-
