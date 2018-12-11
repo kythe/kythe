@@ -7,7 +7,8 @@ permalink: /getting-started-macos/
 * toc
 {:toc}
 
-This document extends the [Getting Started guide](getting-started.md) to cover
+This document extends the
+[Getting Started guide]({{site.baseuri}}/getting-started) to cover
 installation of external dependencies on a macOS system. You will still need to
 follow all the other Getting Started instructions to get a working Kythe build.
 
@@ -66,8 +67,8 @@ installed.
 ## Verifying the Installation
 
 Once you have finished setting up your macOS installation (including
-[the parts that aren't macOS specific](getting-started.md)), you can verify
-that everything works by running:
+[the parts that aren't macOS specific]({{site.baseuri}}/getting-started)),
+you can verify that everything works by running:
 
 {% highlight bash %}
 cd $KYTHE_DIR
@@ -103,5 +104,5 @@ brew upgrade bazelbuild/tap/bazel
 The Docker application automatically checks for updates (you can disable this
 in the Preferences and select Check for Updates manually if you prefer).
 
-[ext]: https://kythe.io/getting-started/#external-dependencies
+[ext]: {{site.baseuri}}/getting-started#external-dependencies
 [dock]: https://store.docker.com/editions/community/docker-ce-desktop-mac
