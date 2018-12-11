@@ -65,8 +65,8 @@ installed.
 
 ## Verifying the Installation
 
-Once you have finished setting up your macOS installation, you can verify that
-everything works by running:
+Once you have finished setting up your macOS installation (including the parts
+that aren't macOS specific), you can verify that everything works by running:
 
 {% highlight bash %}
 cd $KYTHE_DIR
