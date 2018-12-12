@@ -1,0 +1,35 @@
+// Test proto that defines several messages in a package not used by other
+// test files, permitting us to import these and refer by package.msg syntax.
+
+syntax = "proto2";
+
+//- @"package itsapackage;" ref OtherPackage
+package itsapackage;
+option java_package = "io.kythe";
+
+//- @Foo defines/binding FooMessage
+//- FooMessage childof OtherPackage
+message Foo {
+  //- @foo_data defines/binding FooDataField
+  //- FooDataField childof FooMessage
+  optional string foo_data = 1;
+
+  extensions 999 to max;
+}
+
+//- @Bar defines/binding BarMessage
+//- BarMessage childof OtherPackage
+message Bar {
+  //- @bar_data defines/binding BarDataField
+  //- BarDataField childof BarMessage
+  optional string bar_data = 1;
+}
+
+//- @Baz defines/binding BazMessage
+//- BazMessage childof OtherPackage
+message Baz {
+  //- @baz_data defines/binding BazDataField
+  //- BazDataField childof BazMessage
+  optional string baz_data = 1;
+}
+

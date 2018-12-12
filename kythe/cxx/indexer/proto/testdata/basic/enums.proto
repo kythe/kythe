@@ -1,0 +1,82 @@
+// Test proto for enums.
+
+syntax = "proto2";
+
+//- @"package proto_kythe_test;" ref PackageNode
+package proto_kythe_test;
+
+//- @EnumMessage defines/binding EnumMessageNode
+message EnumMessage {
+  //- @EnumTest defines/binding EnumTestNode
+  //- EnumTestNode childof EnumMessageNode
+  //- EnumTestNode.node/kind sum
+  //- EnumTest code ETRoot
+  //- ETRoot child.0 ETContext
+  //- ETRoot child.1 ETIdent
+  //- ETContext child.1 ETContext1
+  //- ETContext1.pre_text "EnumMessage"
+  //- ETIdent.pre_text "EnumTest"
+  enum EnumTest {
+    //- @PROTO defines/binding ValueProtoNode
+    //- ValueProtoNode childof EnumTest
+    PROTO = 1;
+    //- @KYTHE defines/binding ValueKytheNode
+    //- ValueKytheNode childof EnumTest
+    //- ValueKytheNode code VKRoot
+    //- VKRoot child.0 VKContext
+    //- VKRoot child.1 VKIdent
+    //- VKIdent.pre_text "KYTHE"
+    //- VKContext child.0 VKContext0
+    //- VKContext child.1 VKContext1
+    //- VKContext child.2 VKContext2
+    //- VKContext0.pre_text "proto_kythe_test"
+    //- VKContext1.pre_text "EnumMessage"
+    //- VKContext2.pre_text "EnumTest"
+    KYTHE = 2;
+    //- @TEST defines/binding ValueTestNode
+    //- ValueTestNode childof EnumTest
+    TEST = 3;
+    //- @FOR defines/binding ValueForNode
+    //- ValueForNode childof EnumTest
+    FOR = 4;
+    //- @ENUMS defines/binding ValueEnumsNode
+    //- ValueEnumsNode childof EnumTest
+    ENUMS = 5;
+  }
+
+  //- @EnumTest ref EnumTestNode
+  optional EnumTest enum_field = 1;
+}
+
+//- @TopLevel defines/binding TopLevelNode
+//- TopLevelNode childof PackageNode
+//- TopLevelNode.node/kind sum
+//- TopLevelNode code TLRoot
+//- TLRoot child.0 TLContext
+//- TLRoot child.1 TLIdent
+//- TLIdent.pre_text "TopLevel"
+//- TLContext child.0 TLContext0
+//- TLContext0.pre_text "proto_kythe_test"
+enum TopLevel {
+  //- @NORTH defines/binding ValueNorthNode
+  //- ValueNorthNode childof TopLevelNode
+  //- ValueNorthNode code VNRoot
+  //- VNRoot child.0 VNContext
+  //- VNRoot child.1 VNIdent
+  //- VNIdent.pre_text "NORTH"
+  //- VNContext child.0 VNContext0
+  //- VNContext0.pre_text "proto_kythe_test"
+  //- VNContext child.1 VNContext1
+  //- VNContext1.pre_text "TopLevel"
+  NORTH = 8;
+  //- @SOUTH defines/binding ValueSouthNode
+  //- ValueSouthNode childof TopLevelNode
+  SOUTH = 2;
+  //- @EAST defines/binding ValueEastNode
+  //- ValueEastNode childof TopLevelNode
+  EAST = 6;
+  //- @WEST defines/binding ValueWestNode
+  //- ValueWestNode childof TopLevelNode
+  WEST = 4;
+}
+

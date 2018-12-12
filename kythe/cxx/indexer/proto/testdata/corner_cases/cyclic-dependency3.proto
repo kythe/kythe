@@ -1,0 +1,12 @@
+// Copyright 2010 Google Inc. All Rights Reserved.
+// Author: iabhishek@google.com (Abhishek Iyer)
+
+syntax = "proto2";
+
+import "corner_cases/cyclic-dependency1.proto";
+
+package proto_kythe_test;
+
+message CyclicDependency3 {
+  required CyclicDependency1 test3 = 1;
+}

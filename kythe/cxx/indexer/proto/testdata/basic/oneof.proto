@@ -1,0 +1,45 @@
+// Test proto for oneofs.
+
+syntax = "proto2";
+
+package proto_kythe_test;
+
+//- @Container defines/binding ContainerMessage
+message Container {
+  //- @normal_field defines/binding NormalField
+  //- NormalField childof ContainerMessage
+  //- !{ NormalField childof NamedVariantType }
+  optional bool normal_field = 1;
+
+  //- @variant_name defines/binding NamedVariantType
+  //- NamedVariantType.node/kind sum
+  //- NamedVariantType code NVRoot
+  //- NVRoot child.0 NVContext
+  //- NVRoot child.1 NVIdent
+  //- NVIdent.pre_text "variant_name"
+  //- NVContext child.0 NVContext0
+  //- NVContext child.1 NVContext1
+  //- NVContext0.pre_text "proto_kythe_test"
+  //- NVContext1.pre_text "Container"
+  oneof variant_name {
+    //- @text defines/binding TextVariant
+    //- TextVariant childof ContainerMessage
+    //- TextVariant childof NamedVariantType
+    //- TextVariant code TVRoot
+    //- TVRoot child.0 TVContext
+    //- TVRoot child.1 TVIdent
+    //- TVIdent.pre_text "text"
+    //- TVContext child.0 TVContext0
+    //- TVContext child.1 TVContext1
+    //- TVContext child.2 TVContext2
+    //- TVContext0.pre_text "proto_kythe_test"
+    //- TVContext1.pre_text "Container"
+    //- TVContext2.pre_text "variant_name"
+    string text = 2;
+
+    //- @number defines/binding NumberVariant
+    //- NumberVariant childof ContainerMessage
+    //- NumberVariant childof NamedVariantType
+    int64 number = 3;
+  }
+}

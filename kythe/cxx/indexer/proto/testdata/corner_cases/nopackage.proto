@@ -1,0 +1,19 @@
+// Test to make sure a proto without packages is parsable.
+
+syntax = "proto2";
+
+//- !{ _PackageNode.node/kind package }
+
+//- @Extendee defines/binding RootExtendeeNode
+//- !{ RootExtendeeNode childof _AnythingAtAll }
+message Extendee {
+  extensions 999 to max;
+}
+
+//- @Extendee ref RootExtendeeNode
+extend Extendee {
+  //- @no_package_ext defines/binding RootExtField
+  //- RootExtField completes RootExtendeeNode
+  //- !{ RootExtField childof _SomeMessage }
+  optional string no_package_ext = 1000;
+}

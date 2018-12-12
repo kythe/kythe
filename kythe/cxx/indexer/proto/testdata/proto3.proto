@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package kythe.test;
+
+//- @Value defines/binding ValueMessage
+message Value {}
+
+//- @Proto3Message defines/binding Proto3Message
+message Proto3Message {
+  //- @map_field defines/binding MapField
+  //- MapField childof Proto3Message
+  //- MapField.node/kind variable
+  //- @Value ref ValueMessage
+  map < string , Value > map_field = 42;
+}

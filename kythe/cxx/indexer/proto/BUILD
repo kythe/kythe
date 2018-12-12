@@ -1,0 +1,106 @@
+package(
+    features = [
+        "layering_check",
+        "parse_headers",
+    ],
+)
+
+cc_library(
+    name = "proto_graph_builder",
+    srcs = ["proto_graph_builder.cc"],
+    hdrs = ["proto_graph_builder.h"],
+    deps = [
+        ":comments",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@io_kythe//kythe/cxx/common:kythe_uri",
+        "@io_kythe//kythe/cxx/common:lib",
+        "@io_kythe//kythe/cxx/common:vname_ordering",
+        "@io_kythe//kythe/cxx/common/indexing:output",
+        "@io_kythe//kythe/proto:common_cc_proto",
+        "@io_kythe//kythe/proto:storage_cc_proto",
+        "@io_kythe//kythe/proto:xref_cc_proto",
+    ],
+)
+
+cc_library(
+    name = "proto_analyzer",
+    srcs = [
+        "file_descriptor_walker.cc",
+        "indexer_frontend.cc",
+        "marked_source.cc",
+        "proto_analyzer.cc",
+    ],
+    hdrs = [
+        "file_descriptor_walker.h",
+        "indexer_frontend.h",
+        "marked_source.h",
+        "proto_analyzer.h",
+    ],
+    copts = [
+        "-Wno-unused-variable",
+    ],
+    deps = [
+        ":proto_graph_builder",
+        "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/container:node_hash_set",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_protobuf//:protobuf",
+        "@io_kythe//kythe/cxx/common:kythe_uri",
+        "@io_kythe//kythe/cxx/common:lib",
+        "@io_kythe//kythe/cxx/common:path_utils",
+        "@io_kythe//kythe/cxx/common:status_or",
+        "@io_kythe//kythe/cxx/common:utf8_line_index",
+        "@io_kythe//kythe/cxx/common/indexing:output",
+        "@io_kythe//kythe/proto:analysis_cc_proto",
+        "@io_kythe//kythe/proto:common_cc_proto",
+        "@io_kythe//kythe/proto:storage_cc_proto",
+        "@io_kythe//kythe/proto:xref_cc_proto",
+    ],
+)
+
+cc_binary(
+    name = "indexer",
+    visibility = ["//visibility:public"],
+    deps = [":cmdlib"],
+)
+
+cc_library(
+    name = "cmdlib",
+    srcs = ["kythe_indexer_main.cc"],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":proto_analyzer",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@io_kythe//kythe/cxx/common:json_proto",
+        "@io_kythe//kythe/cxx/common:kzip_reader",
+        "@io_kythe//kythe/cxx/common:lib",
+        "@io_kythe//kythe/cxx/common/indexing:caching_output",
+        "@io_kythe//kythe/cxx/common/indexing:output",
+        "@io_kythe//kythe/proto:analysis_cc_proto",
+    ],
+)
+
+cc_library(
+    name = "comments",
+    srcs = ["comments.cc"],
+    hdrs = ["comments.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "comments_test",
+    srcs = ["comments_test.cc"],
+    deps = [
+        ":comments",
+        "@io_kythe//third_party:gtest_main",
+    ],
+)

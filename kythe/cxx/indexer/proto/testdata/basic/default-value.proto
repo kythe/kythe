@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+package proto_kythe_test;
+option java_package = "io.kythe";
+
+message M {
+  //- @E defines/binding NodeE
+  enum E {
+    //- @V1 defines/binding NodeV1
+    //- NodeV1 childof NodeE
+    V1 = 1;
+    V2 = 3;
+  }
+  //- @E ref NodeE
+  //- @V1 ref NodeV1
+  optional E f = 1 [default = V1];
+
+  // This is used to test that we properly link the named default value of
+  // an enum type to its named declaration.
+}

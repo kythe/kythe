@@ -1,0 +1,52 @@
+// Test proto to test proto extensions.
+
+syntax = "proto2";
+
+//- @"package proto_kythe_test;" ref MainPackage
+package proto_kythe_test;
+
+import "other-package.proto";
+
+//- @Extendee defines/binding ExtendeeMessage
+message Extendee {
+  extensions 999 to max;
+}
+
+//- @Extendee ref ExtendeeMessage
+extend Extendee {
+  // extendee_ext comment.
+  //- @extendee_ext defines/binding ExtField
+  //- ExtField childof MainPackage
+  //- ExtField completes ExtendeeMessage
+  optional string extendee_ext = 1001;
+}
+
+//- @"itsapackage.Foo" ref FooMessage
+extend itsapackage.Foo {
+  //- @"itsapackage.Bar" ref BarMessage
+  //- @other_package_ext defines/binding OtherExtField
+  //- OtherExtField childof MainPackage
+  //- OtherExtField completes FooMessage
+  optional itsapackage.Bar other_package_ext = 1001;
+}
+
+//- @Nested defines/binding NestedMessage
+//- NestedMessage childof MainPackage
+message Nested {
+  //- @Extendee ref ExtendeeMessage
+  extend Extendee {
+    //- @nested_extendee_ext defines/binding NestedExtField
+    //- NestedExtField childof NestedMessage
+    //- NestedExtField completes ExtendeeMessage
+    optional string nested_extendee_ext = 1002;
+  }
+
+  //- @"itsapackage.Foo" ref FooMessage
+  extend itsapackage.Foo {
+    //- @"itsapackage.Bar" ref BarMessage
+    //- @nested_other_package_ext defines/binding NestedOtherField
+    //- NestedOtherField childof NestedMessage
+    //- NestedOtherField completes FooMessage
+    optional itsapackage.Bar nested_other_package_ext = 1002;
+  }
+}

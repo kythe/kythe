@@ -1,0 +1,51 @@
+// Test proto for message type fields.
+
+syntax = "proto2";
+
+package proto_kythe_test;
+option java_package = "io.kythe";
+
+//- @MessageFields defines/binding MessageFieldsNode
+//- MessageFieldsNode childof FileNode
+//- MessageFieldsNode.node/kind record
+message MessageFields {
+  //- @Type1 ref Type1Node
+  //- @field_name defines/binding FieldNameNode
+  //- FieldNameNode childof MessageFieldsNode
+  //- FieldNameNode.node/kind variable
+  //- FieldNameNode typed Type1Node
+  //- FieldNameNode code FNRoot
+  //- FNRoot child.0 FNQualName
+  //- FNRoot child.1 FNIdent
+  //- FNIdent.pre_text field_name
+  //- FNIdent.kind "IDENTIFIER"
+  //- FNQualName.kind "CONTEXT"
+  //- FNQualName.post_child_text "."
+  //- FNQualName.add_final_list_token true
+  //- FNQualName child.0 FNQualName0
+  //- FNQualName0.kind "IDENTIFIER"
+  //- FNQualName0.pre_text "proto_kythe_test"
+  //- FNQualName child.1 FNQualName1
+  //- FNQualName1.kind "IDENTIFIER"
+  //- FNQualName1.pre_text "MessageFields"
+  optional Type1 field_name = 1;
+
+  //- @Type1 ref Type1Node
+  //- @repeated_field_name defines/binding RepeatedNode
+  //- RepeatedNode childof MessageFieldsNode
+  //- RepeatedNode.node/kind variable
+  //- FieldNameNode typed Type1Node
+  repeated Type1 repeated_field_name = 2;
+}
+
+//- @Type1 defines/binding Type1Node
+//- Type1Node childof FileNode
+//- Type1Node.node/kind record
+message Type1 {
+  //- @test defines/binding TestNode
+  //- TestNode childof Type1Node
+  //- TestNode.node/kind variable
+  //- !{ TestNode typed _AnyTypeNode }
+  required string test = 1;
+}
+

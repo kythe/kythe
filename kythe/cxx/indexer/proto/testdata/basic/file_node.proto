@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+//- FileNode.node/kind file
+//- @"package proto_kythe_test;" ref PackageNode
+package proto_kythe_test;
+
+//- !{ @Message childof FileNode }
+//- @Message defines/binding MessageNode
+//- MessageNode childof PackageNode
+message Message {
+  optional int32 count = 1;
+}
