@@ -2577,8 +2577,19 @@ objc_indexer_test(
 objc_indexer_test(
     name = "objc_marked_source_method",
     srcs = ["objc/marked_method.m"],
-    convert_marked_source = True,
     check_for_singletons = True,
+    convert_marked_source = True,
+    tags = [
+        "marked_source",
+        "objc",
+    ],
+)
+
+objc_indexer_test(
+    name = "objc_marked_source_property",
+    srcs = ["objc/marked_property.m"],
+    check_for_singletons = True,
+    convert_marked_source = True,
     tags = [
         "marked_source",
         "objc",
