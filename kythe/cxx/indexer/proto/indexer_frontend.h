@@ -17,18 +17,9 @@
 #ifndef KYTHE_CXX_INDEXER_PROTO_INDEXER_FRONTEND_H_
 #define KYTHE_CXX_INDEXER_PROTO_INDEXER_FRONTEND_H_
 
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
-#include "absl/container/node_hash_map.h"
-#include "google/protobuf/compiler/importer.h"
-#include "google/protobuf/io/zero_copy_stream.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 
 namespace kythe {
@@ -36,74 +27,6 @@ namespace proto {
 class CompilationUnit;
 class FileData;
 }  // namespace proto
-
-// An implementation of SourceTree that
-//  - provides only pre-loaded files and
-//  - understands the path substitutions (generalizing search paths) used by
-//    the Proto compiler (e.g., for import statements).
-// Needed because Proto files will import "foo/bar.proto" and not want to care
-// whether the path is actually "bazel-out/long/path/foo/genprotos/bar.proto".
-// A ProtoFileParser passes exactly the argument of import statements, leaving
-// details like this to some other party (in this case the FileReader).
-//
-// Takes a sequence of substitutions (s, t) such that paths beginning with s
-// (and where the end of s is the end of a path component) can be treated as
-// though they instead began with t for purposes of file lookup. This is the
-// same as what protoc gets from "-I" and "--proto_path arguments".
-// (Often either s is empty, in which case t is essentially a search path, or
-// s and t completely specify virtual and actual filenames.)
-//
-// Substitutions are attempted one at a time (not composed) in the order they
-// appear, which should match the order they were specified on the protoc
-// command line. If no applicable substitution finds a valid file, the
-// filename is considered one more time with no substitution before failing.
-class PreloadedProtoFileTree : public google::protobuf::compiler::SourceTree {
- public:
-  PreloadedProtoFileTree(
-      const std::vector<std::pair<std::string, std::string>>* substitutions,
-      absl::node_hash_map<std::string, std::string>* file_mapping_cache)
-      : substitutions_(substitutions),
-        file_mapping_cache_(file_mapping_cache) {}
-  ~PreloadedProtoFileTree() override = default;
-
-  // Add a file's full name (i.e., what any substitutions will map the name(s)
-  // by which it is included onto) to the FileReader.
-  // Returns false if `filename` was already added.
-  bool AddFile(const std::string& filename, const std::string& contents);
-
-  // Load the full contents of `filename` into `contents`, if possible, and
-  // return whether this was successful.
-  // Note that ProtoFileParser passes the literal argument to import statements
-  // as `filename`, leaving FileReaders to do any elaboration (e.g., in this
-  // case, applying path substitutions).
-  google::protobuf::io::ZeroCopyInputStream* Open(
-      const std::string& filename) override;
-
-  // If Open() returns nullptr, calling this method immediately will return a
-  // description of the error.
-  std::string GetLastErrorMessage() override { return last_error_; }
-
-  // A wrapper around Open(), that reads the proto file contents into a buffer.
-  bool Read(absl::string_view file_path, std::string* out);
-
- private:
-  // All path prefix substitutions to consider.
-  const std::vector<std::pair<std::string, std::string>>* const substitutions_;
-
-  // A map of pre-substitution to post-substitution names for all files that
-  // have been successfully read via this reader.
-  absl::node_hash_map<std::string, std::string>* file_mapping_cache_;
-
-  // Path (post-substitution) -> file contents.
-  absl::node_hash_map<std::string, std::string> file_map_;
-
-  // A description of the error from the last call to Open() (if any).
-  std::string last_error_;
-
-  // disallow copy and assign
-  PreloadedProtoFileTree(const PreloadedProtoFileTree&) = delete;
-  void operator=(const PreloadedProtoFileTree&) = delete;
-};
 
 // Indexes `unit`, reading file paths and content from `files` and writing
 // Kythe artifacts to `output`. Returns an empty string if OK; otherwise,

@@ -42,6 +42,7 @@ cc_library(
     ],
     deps = [
         ":proto_graph_builder",
+        ":source_tree",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
         "@com_google_absl//absl/strings",
@@ -57,6 +58,18 @@ cc_library(
         "@io_kythe//kythe/proto:common_cc_proto",
         "@io_kythe//kythe/proto:storage_cc_proto",
         "@io_kythe//kythe/proto:xref_cc_proto",
+    ],
+)
+
+cc_library(
+    name = "source_tree",
+    srcs = ["source_tree.cc"],
+    hdrs = ["source_tree.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_protobuf//:protobuf",
+        "@io_kythe//kythe/cxx/common:path_utils",
     ],
 )
 

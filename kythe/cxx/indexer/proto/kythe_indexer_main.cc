@@ -28,6 +28,7 @@
 #include <string>
 
 #include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
