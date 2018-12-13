@@ -49,6 +49,10 @@ class ProtoAnalyzer {
       FileVNameGenerator* file_vnames, KytheGraphRecorder* recorder,
       absl::node_hash_map<std::string, std::string>* path_substitution_cache);
 
+  // disallow copy and assign
+  ProtoAnalyzer(const ProtoAnalyzer&) = delete;
+  void operator=(const ProtoAnalyzer&) = delete;
+
   // A wrapper for AnalyzeFile that generates the VName and relativizes
   // the proto file path.
   bool Parse(const std::string& proto_file, const std::string& content);
@@ -87,10 +91,6 @@ class ProtoAnalyzer {
   // Gives us properly linked together descriptors for proto files and their
   // contents.
   google::protobuf::DescriptorDatabase* descriptor_db_;
-
-  // disallow copy and assign
-  ProtoAnalyzer(const ProtoAnalyzer&) = delete;
-  void operator=(const ProtoAnalyzer&) = delete;
 };
 
 }  // namespace lang_proto

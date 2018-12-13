@@ -34,29 +34,27 @@
 #include "re2/re2.h"
 #include "re2/stringpiece.h"
 
-using kythe::proto::VName;
-
-using google::protobuf::Descriptor;
-using google::protobuf::DescriptorProto;
-using google::protobuf::EnumDescriptor;
-using google::protobuf::EnumDescriptorProto;
-using google::protobuf::EnumValueDescriptor;
-using google::protobuf::EnumValueDescriptorProto;
-using google::protobuf::FieldDescriptor;
-using google::protobuf::FieldDescriptorProto;
-using google::protobuf::FileDescriptorProto;
-using google::protobuf::MethodDescriptor;
-using google::protobuf::MethodDescriptorProto;
-using google::protobuf::OneofDescriptor;
-using google::protobuf::ServiceDescriptor;
-using google::protobuf::ServiceDescriptorProto;
-using google::protobuf::SourceCodeInfo;
-
-using kythe::Status;
-using kythe::StatusOr;
-
 namespace kythe {
 namespace lang_proto {
+
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::DescriptorProto;
+using ::google::protobuf::EnumDescriptor;
+using ::google::protobuf::EnumDescriptorProto;
+using ::google::protobuf::EnumValueDescriptor;
+using ::google::protobuf::EnumValueDescriptorProto;
+using ::google::protobuf::FieldDescriptor;
+using ::google::protobuf::FieldDescriptorProto;
+using ::google::protobuf::FileDescriptorProto;
+using ::google::protobuf::MethodDescriptor;
+using ::google::protobuf::MethodDescriptorProto;
+using ::google::protobuf::OneofDescriptor;
+using ::google::protobuf::ServiceDescriptor;
+using ::google::protobuf::ServiceDescriptorProto;
+using ::google::protobuf::SourceCodeInfo;
+using ::kythe::Status;
+using ::kythe::StatusOr;
+using ::kythe::proto::VName;
 
 namespace {
 

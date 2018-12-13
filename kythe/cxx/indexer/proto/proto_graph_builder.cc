@@ -23,7 +23,7 @@
 
 namespace kythe {
 
-using kythe::proto::VName;
+using ::kythe::proto::VName;
 
 namespace {
 // Pretty-prints a VName.

@@ -27,11 +27,10 @@
 namespace kythe {
 namespace lang_proto {
 
-using kythe::proto::VName;
-
-using google::protobuf::FileDescriptorProto;
-using google::protobuf::FindWithDefault;
-using google::protobuf::InsertIfNotPresent;
+using ::google::protobuf::FileDescriptorProto;
+using ::google::protobuf::FindWithDefault;
+using ::google::protobuf::InsertIfNotPresent;
+using ::kythe::proto::VName;
 
 // TODO: it seems very likely that a lot of the path-mangling
 // logic can be removed, though it doesn't seem to cause any harm...

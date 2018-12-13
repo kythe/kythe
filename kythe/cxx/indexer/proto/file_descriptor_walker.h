@@ -80,7 +80,9 @@ class FileDescriptorWalker {
         builder_(builder),
         uri_(file_name_) {}
 
-  ~FileDescriptorWalker() {}
+  // disallow copy and assign
+  FileDescriptorWalker(const FileDescriptorWalker&) = delete;
+  void operator=(const FileDescriptorWalker&) = delete;
 
   // Takes in a span -- as defined by SourceCodeInfo.Location.span -- and
   // converts it into a Location.
@@ -243,10 +245,6 @@ class FileDescriptorWalker {
   void VisitNestedFields(const std::string& name_prefix,
                          const google::protobuf::Descriptor* dp,
                          std::vector<int> lookup_path);
-
-  // disallow copy and assign
-  FileDescriptorWalker(const FileDescriptorWalker&) = delete;
-  void operator=(const FileDescriptorWalker&) = delete;
 };
 
 }  // namespace lang_proto

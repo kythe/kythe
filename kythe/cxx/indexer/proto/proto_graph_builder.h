@@ -61,6 +61,10 @@ class ProtoGraphBuilder {
       : recorder_(recorder),
         vname_for_rel_path_(std::move(vname_for_rel_path)) {}
 
+  // disallow copy and assign
+  ProtoGraphBuilder(const ProtoGraphBuilder&) = delete;
+  void operator=(const ProtoGraphBuilder&) = delete;
+
   // Returns a VName for the given protobuf descriptor. Descriptors share
   // various member names but do not participate in any sort of inheritance
   // hierarchy, so we're stuck with a template.
@@ -182,10 +186,6 @@ class ProtoGraphBuilder {
 
   // The text of the current file being analyzed.
   std::string current_file_contents_;
-
-  // disallow copy and assign
-  ProtoGraphBuilder(const ProtoGraphBuilder&) = delete;
-  void operator=(const ProtoGraphBuilder&) = delete;
 };
 
 }  // namespace kythe
