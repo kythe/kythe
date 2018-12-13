@@ -496,6 +496,21 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "recursive_type_visitor",
+    hdrs = ["recursive_type_visitor.h"],
+    deps = ["//third_party/llvm"],
+)
+
+cc_test(
+    name = "recursive_type_visitor_test",
+    srcs = ["recursive_type_visitor_test.cc"],
+    deps = [
+        ":recursive_type_visitor",
+        "//third_party:gtest_main",
+    ],
+)
+
 config_setting(
     name = "darwin",
     values = {"cpu": "darwin"},
