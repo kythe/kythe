@@ -732,21 +732,23 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
                          llvm::dyn_cast<clang::EnumDecl>(decl_context)) {
             stream << *enum_decl;
           } else if (const auto* cat_decl =
-                         llvm::dyn_cast<clang::ObjCCategoryDecl>(decl_context)) {
+                         llvm::dyn_cast<clang::ObjCCategoryDecl>(
+                             decl_context)) {
             // Print categories methods as
             // 'InterfaceName(CategoryName)::Method'.
             if (const auto* i = cat_decl->getClassInterface()) {
-                stream << i->getName();
+              stream << i->getName();
             }
             stream << "(" << cat_decl->getName() << ")";
           } else if (const auto* cat_impl =
-                         llvm::dyn_cast<clang::ObjCCategoryImplDecl>(decl_context)) {
+                         llvm::dyn_cast<clang::ObjCCategoryImplDecl>(
+                             decl_context)) {
             // Print categories methods as
             // 'InterfaceName(CategoryName)::Method'.
             if (const auto* decl = cat_impl->getCategoryDecl()) {
-                if (const auto* i = decl->getClassInterface()) {
-                    stream << i->getName();
-                }
+              if (const auto* i = decl->getClassInterface()) {
+                stream << i->getName();
+              }
             }
             stream << "(" << cat_impl->getName() << ")";
           } else {
