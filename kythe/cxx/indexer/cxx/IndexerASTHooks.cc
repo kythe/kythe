@@ -5178,6 +5178,8 @@ bool IndexerASTVisitor::VisitObjCPropertyDecl(
   auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
+  Marks.set_name_range(NameRange);
+  Marks.set_marked_source_end(Decl->getSourceRange().getEnd());
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
       absl::nullopt);
