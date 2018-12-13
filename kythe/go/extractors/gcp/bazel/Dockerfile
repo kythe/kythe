@@ -35,26 +35,12 @@ FROM launcher.gcr.io/google/ubuntu16_04
 # TODO(danielmoy): for modifying other bazel repos, use the setup-bazel-repo script.
 ADD kythe/examples/bazel/setup-bazel-repo.sh /opt/kythe/extractors/setup-bazel-repo.sh
 
-# These are instructions for installing bazel from apt-get, but it doesn't work
-# because one of the deps 'openjdk-8-jdk' cannot be found.
-#ENV KYTHE_PRE_DEPS \
-#    curl ca-certificates
-#
-#RUN apt-get update && \
-#    apt-get upgrade -y && \
-#    apt-get install -y --no-install-recommends $KYTHE_PRE_DEPS && \
-#    apt-get clean
-#
-# RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
-# RUN curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
-
 ENV KYTHE_DEPS \
     asciidoc asciidoctor source-highlight graphviz git \
     gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.6 bison cmake \
+    openjdk-8-jdk \
     parallel wget unzip curl ca-certificates \
     pkg-config zip g++ zlib1g-dev python
-    # not working:
-    # openjdk-8-jdk \
 
 RUN apt-get update && \
     apt-get upgrade -y && \
