@@ -59,7 +59,7 @@ wget_copy_archive() {
   fi
 }
 
-cd "$(dirname $0)/../.."
+cd "$(dirname "$0")/../.."
 ROOT="$PWD"
 
 bazel build //tools/modules:compiler_info
@@ -93,13 +93,14 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
   vbuild_dir="build.${MIN_LLVM_SHA}.${MIN_CLANG_SHA}"
   find "${LLVM_REPO}" -maxdepth 1 -type d \
       ! -name "${vbuild_dir}" -name 'build.*.*' \
-      -exec rm -rf \{} \;
+      -exec rm -rf {} \;
   if [[ ! -d "$vbuild_dir" ]]; then
     mkdir -p "$vbuild_dir"
+    # shellcheck disable=SC2064
     trap "rm -rf '$LLVM_REPO/$vbuild_dir'" ERR INT
     cd "$vbuild_dir"
     CXX=$(basename "${BAZEL_CC}" | sed -E 's/(cc)?(-.*)?$/++\2/')
-    if [ ! -z $(dirname "${BAZEL_CC}") ]; then
+    if [ ! -z "$(dirname "${BAZEL_CC}")" ]; then
       CXX="$(dirname "${BAZEL_CC}")/${CXX}"
     fi
     if [ ! -x "$CXX" ]; then
