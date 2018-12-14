@@ -46,7 +46,8 @@ wget_copy_archive() {
 
   if [[ ! -f "$dir/$sha.sentinel" ]]; then
     rm -rf "$dir"
-    local tmpdir="$(mktemp -d)"
+    local tmpdir
+    tmpdir="$(mktemp -d)"
     wget -O "$tmpdir/$sha.zip" "https://github.com/llvm-mirror/$target/archive/$sha.zip"
     wget_cleanup "$tmpdir"
     unzip "$tmpdir/$sha.zip" -d "$tmpdir/"
