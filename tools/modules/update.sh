@@ -46,9 +46,9 @@ wget_copy_archive() {
 
   if [[ ! -f "$dir/$sha.sentinel" ]]; then
     rm -rf "$dir"
-    local tmpdir=$(mktemp -d)
+    local tmpdir="$(mktemp -d)"
     wget -O "$tmpdir/$sha.zip" "https://github.com/llvm-mirror/$target/archive/$sha.zip"
-    wget_cleanup $tmpdir
+    wget_cleanup "$tmpdir"
     unzip "$tmpdir/$sha.zip" -d "$tmpdir/"
     # This relies on the behavior of github to always produce a zip archive with
     # a subdirectory named "repo-###sha###" that contains the repo inside it.
