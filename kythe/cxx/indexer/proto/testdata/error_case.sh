@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eo pipefail
+set -o pipefail
 
 PROTOC_ARGS="--proto_path=kythe/cxx/indexer/proto/testdata"
 

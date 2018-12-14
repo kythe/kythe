@@ -26,11 +26,9 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "glog/logging.h"
-#include "google/protobuf/descriptor.pb.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 #include "kythe/cxx/common/kythe_uri.h"
-#include "kythe/cxx/common/status.h"
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/cxx/common/utf8_line_index.h"
 #include "kythe/cxx/indexer/proto/proto_analyzer.h"
@@ -108,7 +106,7 @@ class FileDescriptorWalker {
   // reference location. We look for the location of the name (bar) and save in
   // Kythe as a declaration.
   // `lookup_path` is expected to point to the parent message (all of it).
-  void VisitFields(const std::string& message_display_name,
+  void VisitFields(const std::string& message_name,
                    const google::protobuf::Descriptor* dp,
                    std::vector<int> lookup_path);
 

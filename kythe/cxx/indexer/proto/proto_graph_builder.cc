@@ -82,11 +82,11 @@ VName ProtoGraphBuilder::CreateAndAddAnchorNode(const Location& location) {
 }
 
 VName ProtoGraphBuilder::CreateAndAddDocNode(const Location& location,
-                                             const VName& target) {
+                                             const VName& element) {
   VName doc = location.file;
   doc.set_language(kLanguageName);
   doc.set_signature(
-      absl::StrCat("doc-", location.begin, "-", target.signature()));
+      absl::StrCat("doc-", location.begin, "-", element.signature()));
 
   // Adjust the text to splice out comment markers, as per
   // http://www.kythe.io/docs/schema/#doc

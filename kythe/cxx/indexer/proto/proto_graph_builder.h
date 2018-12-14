@@ -123,7 +123,7 @@ class ProtoGraphBuilder {
   void AddImport(const std::string& import, const Location& location);
 
   // Adds a namespace for the file.  Generally the first call.
-  void AddNamespace(const proto::VName& ticket, const Location& location);
+  void AddNamespace(const proto::VName& package, const Location& location);
 
   // Adds a value field to an already-added enum declaration.
   void AddValueToEnum(const proto::VName& enum_type, const proto::VName& value,

@@ -21,13 +21,9 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "glog/logging.h"
-#include "google/protobuf/compiler/cpp/cpp_helpers.h"
-#include "google/protobuf/compiler/java/java_helpers.h"
 #include "google/protobuf/descriptor.h"
-#include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/stubs/map_util.h"
-#include "kythe/cxx/common/status.h"
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/cxx/indexer/proto/marked_source.h"
 #include "kythe/cxx/indexer/proto/proto_graph_builder.h"
@@ -52,7 +48,6 @@ using ::google::protobuf::OneofDescriptor;
 using ::google::protobuf::ServiceDescriptor;
 using ::google::protobuf::ServiceDescriptorProto;
 using ::google::protobuf::SourceCodeInfo;
-using ::kythe::Status;
 using ::kythe::StatusOr;
 using ::kythe::proto::VName;
 
@@ -343,11 +338,11 @@ void FileDescriptorWalker::AttachMarkedSource(
 
 void FileDescriptorWalker::VisitField(const std::string* parent_name,
                                       const VName* parent,
-                                      const std::string& message_display_name,
+                                      const std::string& message_name,
                                       const VName& message,
                                       const FieldDescriptor* field,
                                       std::vector<int> lookup_path) {
-  std::string vname = absl::StrCat(message_display_name, ".", field->name());
+  std::string vname = absl::StrCat(message_name, ".", field->name());
   VName v_name = builder_->VNameForDescriptor(field);
   AddComments(v_name, lookup_path);
 
@@ -430,7 +425,7 @@ void FileDescriptorWalker::VisitField(const std::string* parent_name,
   }
 }
 
-void FileDescriptorWalker::VisitFields(const std::string& message_display_name,
+void FileDescriptorWalker::VisitFields(const std::string& message_name,
                                        const Descriptor* dp,
                                        std::vector<int> lookup_path) {
   VName message = VNameForProtoPath(file_name_, lookup_path);
@@ -444,8 +439,8 @@ void FileDescriptorWalker::VisitFields(const std::string& message_display_name,
     for (int i = 0; i < dp->field_count(); i++) {
       ScopedLookup field_index(&lookup_path, i);
 
-      VisitField(&message_display_name, &message, message_display_name, message,
-                 dp->field(i), lookup_path);
+      VisitField(&message_name, &message, message_name, message, dp->field(i),
+                 lookup_path);
     }
   }
   {
@@ -453,8 +448,7 @@ void FileDescriptorWalker::VisitFields(const std::string& message_display_name,
                                DescriptorProto::kExtensionFieldNumber);
     for (int i = 0; i < dp->extension_count(); i++) {
       ScopedLookup extension_index(&lookup_path, i);
-      VisitExtension(&message_display_name, &message, dp->extension(i),
-                     lookup_path);
+      VisitExtension(&message_name, &message, dp->extension(i), lookup_path);
     }
   }
 }
@@ -687,7 +681,7 @@ void FileDescriptorWalker::VisitExtension(const std::string* parent_name,
                                           const VName* parent,
                                           const FieldDescriptor* field,
                                           std::vector<int> lookup_path) {
-  std::string message_display_name = field->containing_type()->full_name();
+  std::string message_name = field->containing_type()->full_name();
   VName message = builder_->VNameForDescriptor(field->containing_type());
   {
     // In a block like this:
@@ -708,8 +702,7 @@ void FileDescriptorWalker::VisitExtension(const std::string* parent_name,
     builder_->AddReference(message, extendee_location);
   }
 
-  VisitField(parent_name, parent, message_display_name, message, field,
-             lookup_path);
+  VisitField(parent_name, parent, message_name, message, field, lookup_path);
 }
 
 void FileDescriptorWalker::VisitNestedFields(const std::string& name_prefix,

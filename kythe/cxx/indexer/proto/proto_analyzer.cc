@@ -19,8 +19,6 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "glog/logging.h"
-#include "google/protobuf/compiler/importer.h"
-#include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/stubs/map_util.h"
 #include "kythe/cxx/indexer/proto/file_descriptor_walker.h"
 

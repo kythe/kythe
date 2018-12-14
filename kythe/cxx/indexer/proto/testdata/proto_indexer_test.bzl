@@ -1,3 +1,4 @@
+"""Rules for testing the proto indexer"""
 # Copyright 2018 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
