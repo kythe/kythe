@@ -344,7 +344,7 @@ cc_library(
     name = "status",
     srcs = ["status.cc"],
     hdrs = ["status.h"],
-    visibility = ["//visibility:private"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
