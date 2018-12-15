@@ -34,7 +34,7 @@ rest of these instructions assume you have it.
 To install most of the [external dependencies][ext], run
 
 {% highlight bash %}
-for pkg in asciidoc cmake go graphviz node parallel source-highlight ; do
+for pkg in asciidoc cmake go graphviz node parallel source-highlight wget ; do
    brew install $pkg
 done
 
