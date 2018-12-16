@@ -31,6 +31,7 @@ check_repo() {
       || ( cd "$1" && [[ -d ".svn" ]] \
           && [[ $(svnversion) -ge "${4:?no revison}" ]] \
           && cd "$ROOT" ) \
+      || ( cd "$1" && [[ -e "$3.sentinel" ]]) \
       || ( echo \
             "Missing ${2:-repo checkout} with ancestor $3 (rev $4) in $1
 Please run ./tools/modules/update.sh." \
