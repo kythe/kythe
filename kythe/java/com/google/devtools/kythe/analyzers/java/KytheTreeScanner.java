@@ -453,15 +453,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     EntrySet bindingAnchor = null;
     if (methodDef.sym.isConstructor()) {
       // Implicit constructors (those without syntactic definition locations) share the same
-      // preferred position as their owned class.  Since implicit constructors don't exist in the
-      // file's text, don't generate anchors them by ensuring the constructor's position is ahead
-      // of the owner's position.
+      // preferred position as their owned class.  We can differentiate them from other constructors
+      // by checking if its position is ahead of the owner's position.
       if (methodDef.getPreferredPosition() > owner.getTree().getPreferredPosition()) {
-        // Use the owner's name (the class name) to find the definition anchor's
-        // location because constructors are internally named "<init>".
+        // Explicit constructor: use the owner's name (the class name) to find the definition
+        // anchor's location because constructors are internally named "<init>".
         bindingAnchor =
             emitDefinesBindingAnchorEdge(
                 ctx, methodDef.sym.owner.name, methodDef.getPreferredPosition(), methodNode);
+      } else {
+        // Implicit constructor: generate a zero-length implicit anchor
+        emitAnchor(ctx, EdgeKind.DEFINES, methodNode);
       }
       // Likewise, constructors don't have return types in the Java AST, but
       // Kythe models all functions with return types.  As a solution, we use
@@ -1000,7 +1002,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // Ensure the context has a valid source span before searching for the Name.  Otherwise, anchors
     // may accidentily be emitted for Names that happen to appear after the tree context (e.g.
     // lambdas with type-inferred parameters that use the parameter type in the lambda body).
-    if (filePositions.getSpan(ctx.getTree()).isValid()) {
+    if (filePositions.getSpan(ctx.getTree()).isValidAndNonZero()) {
       emitAnchor(
           name,
           ctx.getTree().getPreferredPosition(),
