@@ -374,6 +374,17 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
       }
     }
   }
+  void VisitObjCPropertyDecl(clang::ObjCPropertyDecl* decl) {
+    if (const auto* type_source_info = decl->getTypeSourceInfo()) {
+      if (!ShouldSkipDecl(decl, type_source_info->getType(),
+                          type_source_info->getTypeLoc().getSourceRange())) {
+        auto type_loc = ExpandRangeBySingleToken(
+            cache_->source_manager(), cache_->lang_options(),
+            type_source_info->getTypeLoc().getSourceRange());
+        InsertTypeAnnotation(type_loc, clang::SourceRange{});
+      }
+    }
+  }
   void VisitFunctionDecl(clang::FunctionDecl* decl) {
     clang::SourceRange arg_list;
     if (const auto* type_info = decl->getTypeSourceInfo()) {
@@ -524,7 +535,8 @@ bool MarkedSourceGenerator::WillGenerateMarkedSource() const {
          llvm::isa<clang::TemplateTypeParmDecl>(decl_) ||
          llvm::isa<clang::NonTypeTemplateParmDecl>(decl_) ||
          llvm::isa<clang::TemplateTemplateParmDecl>(decl_) ||
-         llvm::isa<clang::ObjCTypeParamDecl>(decl_);
+         llvm::isa<clang::ObjCTypeParamDecl>(decl_) ||
+         llvm::isa<clang::ObjCPropertyDecl>(decl_);
 }
 
 std::string GetDeclName(const clang::LangOptions& lang_options,
@@ -732,21 +744,23 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
                          llvm::dyn_cast<clang::EnumDecl>(decl_context)) {
             stream << *enum_decl;
           } else if (const auto* cat_decl =
-                         llvm::dyn_cast<clang::ObjCCategoryDecl>(decl_context)) {
+                         llvm::dyn_cast<clang::ObjCCategoryDecl>(
+                             decl_context)) {
             // Print categories methods as
             // 'InterfaceName(CategoryName)::Method'.
             if (const auto* i = cat_decl->getClassInterface()) {
-                stream << i->getName();
+              stream << i->getName();
             }
             stream << "(" << cat_decl->getName() << ")";
           } else if (const auto* cat_impl =
-                         llvm::dyn_cast<clang::ObjCCategoryImplDecl>(decl_context)) {
+                         llvm::dyn_cast<clang::ObjCCategoryImplDecl>(
+                             decl_context)) {
             // Print categories methods as
             // 'InterfaceName(CategoryName)::Method'.
             if (const auto* decl = cat_impl->getCategoryDecl()) {
-                if (const auto* i = decl->getClassInterface()) {
-                    stream << i->getName();
-                }
+              if (const auto* i = decl->getClassInterface()) {
+                stream << i->getName();
+              }
             }
             stream << "(" << cat_impl->getName() << ")";
           } else {
@@ -848,6 +862,8 @@ absl::optional<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
     } else {
       return GenerateMarkedSourceUsingSource(decl_id);
     }
+  } else if (llvm::isa<clang::ObjCPropertyDecl>(decl_)) {
+    return GenerateMarkedSourceUsingSource(decl_id);
   } else if (llvm::isa<clang::ObjCMethodDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);
   } else if (llvm::isa<clang::TemplateTypeParmDecl>(decl_) ||

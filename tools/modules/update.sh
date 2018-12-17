@@ -46,9 +46,10 @@ wget_copy_archive() {
 
   if [[ ! -f "$dir/$sha.sentinel" ]]; then
     rm -rf "$dir"
-    local tmpdir=$(mktemp -d)
+    local tmpdir
+    tmpdir="$(mktemp -d)"
     wget -O "$tmpdir/$sha.zip" "https://github.com/llvm-mirror/$target/archive/$sha.zip"
-    wget_cleanup $tmpdir
+    wget_cleanup "$tmpdir"
     unzip "$tmpdir/$sha.zip" -d "$tmpdir/"
     # This relies on the behavior of github to always produce a zip archive with
     # a subdirectory named "repo-###sha###" that contains the repo inside it.
@@ -58,7 +59,7 @@ wget_copy_archive() {
   fi
 }
 
-cd "$(dirname $0)/../.."
+cd "$(dirname "$0")/../.."
 ROOT="$PWD"
 
 bazel build //tools/modules:compiler_info
@@ -92,13 +93,14 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
   vbuild_dir="build.${MIN_LLVM_SHA}.${MIN_CLANG_SHA}"
   find "${LLVM_REPO}" -maxdepth 1 -type d \
       ! -name "${vbuild_dir}" -name 'build.*.*' \
-      -exec rm -rf \{} \;
+      -exec rm -rf {} \;
   if [[ ! -d "$vbuild_dir" ]]; then
     mkdir -p "$vbuild_dir"
+    # shellcheck disable=SC2064
     trap "rm -rf '$LLVM_REPO/$vbuild_dir'" ERR INT
     cd "$vbuild_dir"
     CXX=$(basename "${BAZEL_CC}" | sed -E 's/(cc)?(-.*)?$/++\2/')
-    if [ ! -z $(dirname "${BAZEL_CC}") ]; then
+    if [ ! -z "$(dirname "${BAZEL_CC}")" ]; then
       CXX="$(dirname "${BAZEL_CC}")/${CXX}"
     fi
     if [ ! -x "$CXX" ]; then
