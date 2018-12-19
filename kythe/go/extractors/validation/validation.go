@@ -15,6 +15,8 @@
  */
 
 // Package validation contains logic for verifing the contents of a kzip.
+// For now we consider a set of kzip files "valid" if they contain files
+// covering all of a given source repo.
 package validation
 
 import (
@@ -30,8 +32,8 @@ import (
 	"bitbucket.org/creachadair/stringset"
 )
 
-// Harness encapsulates data for validation of a single kzip and repo.
-type Harness struct {
+// Settings encapsulates data for validation of a single kzip and repo.
+type Settings struct {
 	// Path to the kzip file to validate.
 	Compilations []string
 	// Path to the root of the repo to compare the kzip against.
@@ -44,10 +46,10 @@ type Harness struct {
 
 // Result explains a validation outcome.
 type Result struct {
-	// Number of files in the kzip file matching one of Langs extensions.
-	FilesInKZIP int
+	// Number of files in the kzip archives matching one of Langs extensions.
+	NumArchiveFiles int
 	// Number of files in the repo matching one of Langs extensions.
-	FilesInRepo int
+	NumRepoFiles int
 	// Number of files in the repo that were not matched in the kzip.
 	Missing int
 	// A breakdown of subdirectories with the most missing files.
@@ -73,6 +75,7 @@ type Dir struct {
 	Missing int
 }
 
+// Len reports the number of repo paths missing in the kzip archives.
 // Len is part of sort.Interface.
 func (c *Coverage) Len() int {
 	return len(c.Paths)
@@ -83,7 +86,8 @@ func (c *Coverage) Swap(i, j int) {
 	c.Paths[i], c.Paths[j] = c.Paths[j], c.Paths[i]
 }
 
-// Less is part of sort.Interface.
+// Less is part of sort.Interface.  We sort based on number of files in the
+// repo subdirectory that are missing from the corresponding kzip archives.
 func (c *Coverage) Less(i, j int) bool {
 	return c.Paths[i].Missing < c.Paths[j].Missing
 }
@@ -91,15 +95,15 @@ func (c *Coverage) Less(i, j int) bool {
 // Validate opens a kzip file and compares all of its contained files with those
 // present in the provided repo path.  It returns results explaining what
 // percentage of files are covered in the kzip.
-func (h Harness) Validate() (*Result, error) {
-	log.Printf("Gathering validation data for %s", h.Compilations)
-	fromKZIP, err := h.filenamesFromCompilations(h.Compilations)
+func (s Settings) Validate() (*Result, error) {
+	log.Printf("Gathering validation data for %s", s.Compilations)
+	fromKZIP, err := s.filenamesFromCompilations(s.Compilations)
 	if err != nil {
-		return nil, fmt.Errorf("reading from kzip %s: %v", h.Compilations, err)
+		return nil, fmt.Errorf("reading from kzip %s: %v", s.Compilations, err)
 	}
-	fromRepo, err := h.filenamesFromPath(h.Repo)
+	fromRepo, err := s.filenamesFromPath(s.Repo)
 	if err != nil {
-		return nil, fmt.Errorf("reading from repo %s: %v", h.Repo, err)
+		return nil, fmt.Errorf("reading from repo %s: %v", s.Repo, err)
 	}
 	missingFromKZIP := stringset.FromKeys(fromRepo).Diff(stringset.FromKeys(fromKZIP))
 
@@ -108,25 +112,25 @@ func (h Harness) Validate() (*Result, error) {
 	// Only try to go so many paths deep (src/java/com/domain/sub).
 	// TODO(danielmoy): be more intelligent about this.
 	for i := 1; i <= topMissingPathsDepth; i++ {
-		topMissing = getTopMissing(missingFromKZIP, topMissingPathsLimit, i)
+		topMissing = computeTopMissing(missingFromKZIP, topMissingPathsLimit, i)
 		if len(topMissing.Paths) >= topMissingPathsLimit {
 			break
 		}
 	}
 
-	if h.MissingOutput != nil {
-		err = outputMissing(missingFromKZIP, *h.MissingOutput)
+	if s.MissingOutput != nil {
+		err = outputMissing(missingFromKZIP, *s.MissingOutput)
 	}
 
 	return &Result{
-		FilesInKZIP: len(fromKZIP),
-		FilesInRepo: len(fromRepo),
-		Missing:     len(missingFromKZIP),
-		TopMissing:  topMissing,
+		NumArchiveFiles: len(fromKZIP),
+		NumRepoFiles:    len(fromRepo),
+		Missing:         len(missingFromKZIP),
+		TopMissing:      topMissing,
 	}, err
 }
 
-func (h Harness) filenamesFromCompilations(compilations []string) (stringset.Set, error) {
+func (s Settings) filenamesFromCompilations(compilations []string) (stringset.Set, error) {
 	ret := stringset.New()
 	for _, path := range compilations {
 		f, err := os.Open(path)
@@ -145,7 +149,7 @@ func (h Harness) filenamesFromCompilations(compilations []string) (stringset.Set
 		if err := r.Scan(func(cu *kzip.Unit) error {
 			if cu.Proto != nil {
 				for _, f := range cu.Proto.SourceFile {
-					if h.Langs.Contains(getExt(f)) {
+					if s.Langs.Contains(getExt(f)) {
 						ret.Add(f)
 					}
 				}
@@ -159,13 +163,13 @@ func (h Harness) filenamesFromCompilations(compilations []string) (stringset.Set
 	return ret, nil
 }
 
-func (h Harness) filenamesFromPath(path string) (stringset.Set, error) {
+func (s Settings) filenamesFromPath(path string) (stringset.Set, error) {
 	ret := stringset.New()
 	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if h.Langs.Contains(getExt(p)) {
+		if s.Langs.Contains(getExt(p)) {
 			// We are only interested in the repo-relative path.
 			rp, err := filepath.Rel(path, p)
 			if err != nil {
@@ -187,9 +191,9 @@ func getExt(path string) string {
 	return ext
 }
 
-// getTopMissing returns the top num most common subdirectories, down to at most
+// computeTopMissing returns the top num most common subdirectories, down to at most
 // level.
-func getTopMissing(missing stringset.Set, num, level int) Coverage {
+func computeTopMissing(missing stringset.Set, num, level int) Coverage {
 	counts := map[string]int{}
 	for f := range missing {
 		dirs := strings.Split(f, string(os.PathSeparator))

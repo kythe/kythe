@@ -85,17 +85,17 @@ func main() {
 
 	fmt.Printf("Validating kzip %s\n", *kzip)
 
-	repoPath := getRepo()
+	repoPath := fetchRepo()
 
-	h := validation.Harness{
+	s := validation.Settings{
 		Compilations: strings.Split(*kzip, ","),
 		Repo:         repoPath,
 		Langs:        stringset.FromKeys(strings.Split(*lang, ",")),
 	}
 	if *missingFile != "" {
-		h.MissingOutput = missingFile
+		s.MissingOutput = missingFile
 	}
-	res, err := h.Validate()
+	res, err := s.Validate()
 	if err != nil {
 		log.Fatalf("Failure validating: %v", err)
 	}
@@ -103,9 +103,9 @@ func main() {
 	log.Printf("Result: %v", res)
 
 	fmt.Println("KZIP verification:")
-	fmt.Printf("KZIP file count: %d\n", res.FilesInKZIP)
-	fmt.Printf("Repo file count: %d\n", res.FilesInRepo)
-	fmt.Printf("Percent missing: %.3f\n", float64(res.Missing)/float64(res.FilesInRepo))
+	fmt.Printf("KZIP file count: %d\n", res.NumArchiveFiles)
+	fmt.Printf("Repo file count: %d\n", res.NumRepoFiles)
+	fmt.Printf("Percent missing: %.1f%%\n", 100*float64(res.Missing)/float64(res.NumRepoFiles))
 	if len(res.TopMissing.Paths) > 0 {
 		fmt.Println("Top missing subdirectories:")
 		for _, v := range res.TopMissing.Paths {
@@ -114,14 +114,14 @@ func main() {
 	}
 }
 
-// getRepo either just early returns an available -localRepo, or fetches it from
+// fetchRepo either just early returns an available -localRepo, or fetches it from
 // the specified remote -repoURL
-func getRepo() string {
+func fetchRepo() string {
 	if *localRepo != "" {
 		log.Printf("Comparing against local copy of repo %s", *localRepo)
 		return *localRepo
 	}
-	log.Fatal("Unsupported use of -repoURL")
+	log.Fatal("Unsupported use of -repo_url")
 	log.Printf("Comparing against remote repo %s", *repoURL)
 	return ""
 }
