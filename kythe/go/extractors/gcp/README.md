@@ -51,7 +51,7 @@ To extract multiple parts of https://github.com/google/guava, use
 `examples/guava-mvn.yaml`.
 
 ```
-gcloud builds submit --config examples/mvn.yaml \
+gcloud builds submit --config examples/guava-mvn.yaml \
 --substitutions=\
 _BUCKET_NAME=$BUCKET_NAME,\
 _GUAVA_VERSION=<commit-hash>\
