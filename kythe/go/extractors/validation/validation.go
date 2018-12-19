@@ -51,7 +51,7 @@ type Result struct {
 	// Number of files in the repo matching one of Langs extensions.
 	NumRepoFiles int
 	// Number of files in the repo that were not matched in the kzip.
-	Missing int
+	NumMissing int
 	// A breakdown of subdirectories with the most missing files.
 	TopMissing Coverage
 }
@@ -125,7 +125,7 @@ func (s Settings) Validate() (*Result, error) {
 	return &Result{
 		NumArchiveFiles: len(fromKZIP),
 		NumRepoFiles:    len(fromRepo),
-		Missing:         len(missingFromKZIP),
+		NumMissing:      len(missingFromKZIP),
 		TopMissing:      topMissing,
 	}, err
 }

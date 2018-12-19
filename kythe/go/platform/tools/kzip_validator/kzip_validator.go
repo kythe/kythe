@@ -105,7 +105,7 @@ func main() {
 	fmt.Println("KZIP verification:")
 	fmt.Printf("KZIP file count: %d\n", res.NumArchiveFiles)
 	fmt.Printf("Repo file count: %d\n", res.NumRepoFiles)
-	fmt.Printf("Percent missing: %.1f%%\n", 100*float64(res.Missing)/float64(res.NumRepoFiles))
+	fmt.Printf("Percent missing: %.1f%%\n", 100*float64(res.NumMissing)/float64(res.NumRepoFiles))
 	if len(res.TopMissing.Paths) > 0 {
 		fmt.Println("Top missing subdirectories:")
 		for _, v := range res.TopMissing.Paths {
