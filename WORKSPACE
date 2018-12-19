@@ -6,7 +6,17 @@ load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.18", "0.20")
+check_version("0.20", "0.21")
+
+http_archive(
+    name = "bazel_toolchains",
+    sha256 = "0ffaab86bed3a0c8463dd63b1fe2218d8cad09e7f877075bf028f202f8df1ddc",
+    strip_prefix = "bazel-toolchains-5ce127aee3b4c22ab76071de972b71190f29be6e",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/5ce127aee3b4c22ab76071de972b71190f29be6e.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/5ce127aee3b4c22ab76071de972b71190f29be6e.tar.gz",
+    ],
+)
 
 load("//:setup.bzl", "kythe_rule_repositories")
 
@@ -19,16 +29,6 @@ kythe_dependencies()
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
 clang_configure()
-
-http_archive(
-    name = "bazel_toolchains",
-    sha256 = "4ab012a06e80172b1d2cc68a69f12237ba2c4eb47ba34cb8099830d3b8c43dbc",
-    strip_prefix = "bazel-toolchains-646207624ed58c9dc658a135e40e578f8bbabf64",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/646207624ed58c9dc658a135e40e578f8bbabf64.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/archive/646207624ed58c9dc658a135e40e578f8bbabf64.tar.gz",
-    ],
-)
 
 load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
 
