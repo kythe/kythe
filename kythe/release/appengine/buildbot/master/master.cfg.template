@@ -96,7 +96,7 @@ add_github_change_sources('lang-proto')
 ####### SCHEDULERS
 
 bazelMinVersion = '0.18.0'
-bazelMaxVersion = '0.20.0'
+bazelMaxVersion = '0.21.0'
 
 bazelBuilders = [
     'bazel-'+bazelMaxVersion,
