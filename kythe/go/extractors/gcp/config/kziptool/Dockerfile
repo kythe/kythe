@@ -12,23 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Build: bazel build //kythe/go/extractors/gcp/bazel:artifacts
+# Build: bazel build //kythe/go/extractors/gcp/config/kziptool:artifacts
 # Usage:
-#   This container houses bazel extraction artifacts which are necessary for
-#   extracting a bazel repo.  It includes a script for modifying a repo's
-#   WORKSPACE in /opt/kythe/extractors/setup-bazel-repo.sh, as well as an
-#   installed copy of the kythe repo at /opt/kythe/repo/kythe.
-#
-#   From commandline:
-#     docker run -it --entrypoint "/bin/sh" gcr.io/kythe-public/kythe-bazel-extractor-artifacts
+#   This container exposes zipmerge, useful for combining multiple kzip
+#   output files into a single kzip.
+#   TODO(danielmoy): include other useful tools for kzip handling.
 #
 #   From Google Cloud Build:
-#     - name: 'gcr.io/kythe-public/kythe-bazel-extractor-artifacts'
-#       volumes:
-#         - name: 'kythe_extractors'
-#           path: '/opt/kythe/extractors/'
-#         - name: 'kythe_repo'
-#           path: '/opt/kythe/repo/kythe/'
+#     - name: 'gcr.io/kythe-public/kzip-tools'
+#       entrypoint: 'bash'
+#       args: ['-c', 'zipmerge /some/output.kzip /input/files/*.kzip']
 
 FROM launcher.gcr.io/google/ubuntu16_04
 
@@ -36,6 +29,3 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends zipmerge && \
     apt-get clean
-
-# TODO(danielmoy): when we include other tools, don't use an entypoint like this
-ENTRYPOINT ["zipmerge"]
