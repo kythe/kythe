@@ -18,7 +18,8 @@
 // compares file coverage.
 //
 // Example:
-//  kzip_validator -kzip <kzip-file> -repoURL <repo-url> [-version <hash>]
+//  kzip_validator -kzip <kzip-file> -local_repo <repo-root-dir> -lang cc,h
+//  kzip_validator -kzip <kzip-file> -repo_url <repo-url> -lang java [-version <hash>]
 package main
 
 import (
@@ -35,13 +36,11 @@ import (
 var (
 	kzip      = flag.String("kzip", "", "The kzip file to check")
 	repoURL   = flag.String("repo_url", "", "The repo to compare against")
+	version   = flag.String("version", "", "The version of the remote repo to compare")
 	localRepo = flag.String("local_repo", "", "The path of an optional local repo to specify instead of -repoURL")
 	lang      = flag.String("lang", "", "The comma-separated language file extensions to check, e.g. 'java' or 'cpp,h'")
 
 	missingFile = flag.String("missing_file", "", "An optional file to write all missing filepaths to")
-
-	// TODO(danielmoy): support specific version validation
-	version = flag.String("version", "", "The version of the repo to compare")
 )
 
 func init() {
@@ -65,10 +64,13 @@ func verifyFlags() {
 		log.Fatal("You must provide a -kzip file")
 	}
 	if *repoURL == "" && *localRepo == "" {
-		log.Fatal("You must specify either -repoURL or a -localRepo path")
+		log.Fatal("You must specify either -repo_url or a -local_repo path")
 	}
 	if *repoURL != "" && *localRepo != "" {
-		log.Fatal("You must specify only one of -repoURL or -localRepo")
+		log.Fatal("You must specify only one of -repo_url or -local_repo")
+	}
+	if *version != "" && *repoURL == "" {
+		log.Fatal("-version is only copmatible with -reop_url, not -local_repo")
 	}
 	if *lang == "" {
 		log.Fatal("You must specify what -lang file extensions to examine")
@@ -103,7 +105,7 @@ func main() {
 	fmt.Printf("Repo file count: %d\n", res.FilesInRepo)
 	fmt.Printf("Percent missing: %.3f\n", float64(res.Missing)/float64(res.FilesInRepo))
 	if len(res.TopMissing.Paths) > 0 {
-		fmt.Println("Top missing repos:")
+		fmt.Println("Top missing subdirectories:")
 		for _, v := range res.TopMissing.Paths {
 			fmt.Printf("%10d %s\n", v.Missing, v.Path)
 		}
