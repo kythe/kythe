@@ -26,29 +26,31 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/platform/kzip"
+
+	"bitbucket.org/creachadair/stringset"
 )
 
 // Harness encapsulates data for validation of a single kzip and repo.
 type Harness struct {
 	// Path to the kzip file to validate.
-	Kzip string
+	Compilations []string
 	// Path to the root of the repo to compare the kzip against.
 	Repo string
 	// Language extensions to check, e.g. java, cpp, h.
-	Langs map[string]bool
+	Langs stringset.Set
 	// Optional file to output missing paths to.
 	MissingOutput *string
 }
 
-// Result is a simple container struct explaining the results of validation.
+// Result explains a validation outcome.
 type Result struct {
 	// Number of files in the kzip file matching one of Langs extensions.
-	FilesInKzip int
+	FilesInKZIP int
 	// Number of files in the repo matching one of Langs extensions.
 	FilesInRepo int
 	// Number of files in the repo that were not matched in the kzip.
 	Missing int
-	// A breakdown of the top missing files, by subdirectory.
+	// A breakdown of subdirectories with the most missing files.
 	TopMissing Coverage
 }
 
@@ -67,7 +69,7 @@ type Dir struct {
 	// Path is a subdirectory from Repo root.
 	Path string
 	// Missing is the number of files in the Repo from the corresponding
-	// subdirectory that were missing from the Kzip.
+	// subdirectory that were missing from the KZIP.
 	Missing int
 }
 
@@ -90,100 +92,104 @@ func (c *Coverage) Less(i, j int) bool {
 // present in the provided repo path.  It returns results explaining what
 // percentage of files are covered in the kzip.
 func (h Harness) Validate() (*Result, error) {
-	log.Printf("Gathering validation data for %s", h.Kzip)
-	fromKzip, err := h.filenamesFromKzip(h.Kzip)
+	log.Printf("Gathering validation data for %s", h.Compilations)
+	fromKZIP, err := h.filenamesFromCompilations(h.Compilations)
 	if err != nil {
-		return nil, fmt.Errorf("reading from kzip %s: %v", h.Kzip, err)
+		return nil, fmt.Errorf("reading from kzip %s: %v", h.Compilations, err)
 	}
 	fromRepo, err := h.filenamesFromPath(h.Repo)
 	if err != nil {
 		return nil, fmt.Errorf("reading from repo %s: %v", h.Repo, err)
 	}
-	missingFromKzip := map[string]bool{}
-	for f := range fromRepo {
-		if _, ok := fromKzip[f]; !ok {
-			missingFromKzip[f] = true
-		}
-	}
+	missingFromKZIP := stringset.FromKeys(fromRepo).Diff(stringset.FromKeys(fromKZIP))
 
 	// Try to calculate the most missing subdirectories.
 	topMissing := Coverage{}
 	// Only try to go so many paths deep (src/java/com/domain/sub).
 	// TODO(danielmoy): be more intelligent about this.
 	for i := 1; i <= topMissingPathsDepth; i++ {
-		topMissing = getTopMissing(missingFromKzip, topMissingPathsLimit, i)
+		topMissing = getTopMissing(missingFromKZIP, topMissingPathsLimit, i)
 		if len(topMissing.Paths) >= topMissingPathsLimit {
 			break
 		}
 	}
 
 	if h.MissingOutput != nil {
-		err = printMissing(missingFromKzip, *h.MissingOutput)
+		err = outputMissing(missingFromKZIP, *h.MissingOutput)
 	}
 
 	return &Result{
-		FilesInKzip: len(fromKzip),
+		FilesInKZIP: len(fromKZIP),
 		FilesInRepo: len(fromRepo),
-		Missing:     len(missingFromKzip),
+		Missing:     len(missingFromKZIP),
 		TopMissing:  topMissing,
 	}, err
 }
 
-func (h Harness) filenamesFromKzip(path string) (map[string]bool, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("opening kzip %s: %v", path, err)
-	}
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("getting kzip size %s: %v", path, err)
-	}
-	r, err := kzip.NewReader(f, fi.Size())
-	if err != nil {
-		return nil, fmt.Errorf("opening kzip reader %s: %v", path, err)
-	}
-
-	ret := map[string]bool{}
-
-	if err := r.Scan(func(cu *kzip.Unit) error {
-		if cu.Proto != nil {
-			for _, f := range cu.Proto.SourceFile {
-				ret[f] = true
-			}
+func (h Harness) filenamesFromCompilations(compilations []string) (stringset.Set, error) {
+	ret := stringset.New()
+	for _, path := range compilations {
+		f, err := os.Open(path)
+		if err != nil {
+			return nil, fmt.Errorf("opening kzip %s: %v", path, err)
 		}
-		return nil
-	}); err != nil {
-		return nil, fmt.Errorf("scanning kzip %s: %v", path, err)
+		fi, err := f.Stat()
+		if err != nil {
+			return nil, fmt.Errorf("getting kzip size %s: %v", path, err)
+		}
+		r, err := kzip.NewReader(f, fi.Size())
+		if err != nil {
+			return nil, fmt.Errorf("opening kzip reader %s: %v", path, err)
+		}
+
+		if err := r.Scan(func(cu *kzip.Unit) error {
+			if cu.Proto != nil {
+				for _, f := range cu.Proto.SourceFile {
+					if h.Langs.Contains(getExt(f)) {
+						ret.Add(f)
+					}
+				}
+			}
+			return nil
+		}); err != nil {
+			return nil, fmt.Errorf("scanning kzip %s: %v", path, err)
+		}
 	}
 
 	return ret, nil
 }
 
-func (h Harness) filenamesFromPath(path string) (map[string]bool, error) {
-	ret := map[string]bool{}
+func (h Harness) filenamesFromPath(path string) (stringset.Set, error) {
+	ret := stringset.New()
 	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		ext := filepath.Ext(p)
-		if len(ext) > 0 && ext[0] == '.' {
-			ext = ext[1:]
-		}
-		if _, ok := h.Langs[ext]; ok {
+		if h.Langs.Contains(getExt(p)) {
 			// We are only interested in the repo-relative path.
 			rp, err := filepath.Rel(path, p)
 			if err != nil {
 				return err
 			}
-			ret[rp] = true
+			ret.Add(rp)
 		}
 		return nil
 	})
 	return ret, err
 }
 
-// Returns the top N most common Mth-level subdirectories.
-func getTopMissing(missing map[string]bool, num, level int) Coverage {
+// Gets the extension of a file, agnostic of a preceding "."
+func getExt(path string) string {
+	ext := filepath.Ext(path)
+	if len(ext) > 0 && ext[0] == '.' {
+		ext = ext[1:]
+	}
+	return ext
+}
+
+// getTopMissing returns the top num most common subdirectories, down to at most
+// level.
+func getTopMissing(missing stringset.Set, num, level int) Coverage {
 	counts := map[string]int{}
 	for f := range missing {
 		dirs := strings.Split(f, string(os.PathSeparator))
@@ -205,7 +211,7 @@ func getTopMissing(missing map[string]bool, num, level int) Coverage {
 	return top
 }
 
-func printMissing(filenames map[string]bool, output string) (err error) {
+func outputMissing(filenames stringset.Set, output string) (err error) {
 	f, err := os.Create(output)
 	if err != nil {
 		return fmt.Errorf("opening missing file output %s: %v", output, err)

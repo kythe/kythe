@@ -31,10 +31,12 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/validation"
+
+	"bitbucket.org/creachadair/stringset"
 )
 
 var (
-	kzip      = flag.String("kzip", "", "The kzip file to check")
+	kzip      = flag.String("kzip", "", "The comma separated list of kzip files to check")
 	repoURL   = flag.String("repo_url", "", "The repo to compare against")
 	version   = flag.String("version", "", "The version of the remote repo to compare")
 	localRepo = flag.String("local_repo", "", "The path of an optional local repo to specify instead of -repoURL")
@@ -61,7 +63,7 @@ func verifyFlags() {
 	}
 
 	if *kzip == "" {
-		log.Fatal("You must provide a -kzip file")
+		log.Fatal("You must provide at least one -kzip file")
 	}
 	if *repoURL == "" && *localRepo == "" {
 		log.Fatal("You must specify either -repo_url or a -local_repo path")
@@ -86,22 +88,22 @@ func main() {
 	repoPath := getRepo()
 
 	h := validation.Harness{
-		Kzip:  *kzip,
-		Repo:  repoPath,
-		Langs: langs(),
+		Compilations: strings.Split(*kzip, ","),
+		Repo:         repoPath,
+		Langs:        stringset.FromKeys(strings.Split(*lang, ",")),
 	}
 	if *missingFile != "" {
 		h.MissingOutput = missingFile
 	}
 	res, err := h.Validate()
 	if err != nil {
-		log.Fatalf("validating: %v", err)
+		log.Fatalf("Failure validating: %v", err)
 	}
 
 	log.Printf("Result: %v", res)
 
-	fmt.Println("Kzip verification:")
-	fmt.Printf("Kzip file count: %d\n", res.FilesInKzip)
+	fmt.Println("KZIP verification:")
+	fmt.Printf("KZIP file count: %d\n", res.FilesInKZIP)
 	fmt.Printf("Repo file count: %d\n", res.FilesInRepo)
 	fmt.Printf("Percent missing: %.3f\n", float64(res.Missing)/float64(res.FilesInRepo))
 	if len(res.TopMissing.Paths) > 0 {
@@ -122,13 +124,4 @@ func getRepo() string {
 	log.Fatal("Unsupported use of -repoURL")
 	log.Printf("Comparing against remote repo %s", *repoURL)
 	return ""
-}
-
-func langs() map[string]bool {
-	ret := map[string]bool{}
-	exts := strings.Split(*lang, ",")
-	for _, v := range exts {
-		ret[v] = true
-	}
-	return ret
 }

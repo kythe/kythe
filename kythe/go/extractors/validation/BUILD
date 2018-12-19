@@ -1,4 +1,4 @@
-load("//tools:build_rules/shims.bzl", "go_test", "go_library")
+load("//tools:build_rules/shims.bzl", "go_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -9,14 +9,6 @@ go_library(
     ],
     deps = [
         "//kythe/go/platform/kzip",
-    ],
-)
-
-go_test(
-    name = "validation_test",
-    srcs = ["validation_test.go"],
-    data = [],
-    library = ":validation",
-    deps = [
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
     ],
 )
