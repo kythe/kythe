@@ -2,7 +2,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 git_repository(
     name = "io_kythe",
-    commit = "91da8b42354cd3b6818be5a9bf4389fd144ff6e5",
+    commit = "01617d9cc0753550964c57af57c64644a0808798",
     remote = "https://github.com/kythe/kythe",
 )
 
