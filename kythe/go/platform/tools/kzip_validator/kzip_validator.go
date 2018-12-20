@@ -39,7 +39,7 @@ var (
 	kzip      = flag.String("kzip", "", "The comma separated list of kzip files to check")
 	repoURL   = flag.String("repo_url", "", "The repo to compare against")
 	version   = flag.String("version", "", "The version of the remote repo to compare")
-	localRepo = flag.String("local_repo", "", "The path of an optional local repo to specify instead of -repoURL")
+	localRepo = flag.String("local_repo", "", "The path of an optional local repo to specify instead of -repo_url")
 	lang      = flag.String("lang", "", "The comma-separated language file extensions to check, e.g. 'java' or 'cpp,h'")
 
 	missingFile = flag.String("missing_file", "", "An optional file to write all missing filepaths to")
@@ -47,7 +47,7 @@ var (
 
 func init() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, `Usage: %s -kzip <kzip-file> -repoURL <url> [-version <hash>]
+		fmt.Fprintf(os.Stderr, `Usage: %s -kzip <kzip-file> -repo_url <url> [-version <hash>]
 
 Compare a kzip file's contents with a given repo, and print results of file coverage.
 
@@ -87,15 +87,12 @@ func main() {
 
 	repoPath := fetchRepo()
 
-	s := validation.Settings{
-		Compilations: strings.Split(*kzip, ","),
-		Repo:         repoPath,
-		Langs:        stringset.FromKeys(strings.Split(*lang, ",")),
-	}
-	if *missingFile != "" {
-		s.MissingOutput = missingFile
-	}
-	res, err := s.Validate()
+	res, err := validation.Settings{
+		Compilations:  strings.Split(*kzip, ","),
+		Repo:          repoPath,
+		Langs:         stringset.FromKeys(strings.Split(*lang, ",")),
+		MissingOutput: missingFile,
+	}.Validate()
 	if err != nil {
 		log.Fatalf("Failure validating: %v", err)
 	}
@@ -114,8 +111,8 @@ func main() {
 	}
 }
 
-// fetchRepo either just early returns an available -localRepo, or fetches it from
-// the specified remote -repoURL
+// fetchRepo either just early returns an available -local_repo, or fetches it from
+// the specified remote -repo_url
 func fetchRepo() string {
 	if *localRepo != "" {
 		log.Printf("Comparing against local copy of repo %s", *localRepo)
