@@ -34,7 +34,7 @@ import (
 
 // Settings encapsulates data for validation of a single kzip and repo.
 type Settings struct {
-	// Path to the kzip file to validate.
+	// Path to the kzip files to validate.
 	Compilations []string
 	// Path to the root of the repo to compare the kzip against.
 	Repo string
@@ -105,7 +105,7 @@ func (s Settings) Validate() (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("reading from repo %s: %v", s.Repo, err)
 	}
-	missingFromKZIP := stringset.FromKeys(fromRepo).Diff(stringset.FromKeys(fromKZIP))
+	missingFromKZIP := fromRepo.Diff(fromKZIP)
 
 	// Try to calculate the most missing subdirectories.
 	topMissing := Coverage{}
