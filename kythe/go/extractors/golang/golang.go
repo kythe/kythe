@@ -196,10 +196,12 @@ func (e *Extractor) dirToImport(dir string) (string, error) {
 	return dir, nil
 }
 
-// Locate attempts to locate the specified import path in the build context.
-// If the package has already been located, its existing package is returned.
-// Otherwise, if importing succeeds, a new *Package value is returned, and also
-// appended to the Packages field.
+// Locate attempts to resolve and locate the specified import path in the build
+// context.  If a package has already been located, its existing *Package is
+// returned.  Otherwise, a new *Package value is returned and appended to the
+// Packages field.
+//
+// Note: multiple packages may be resolved for "/..." import paths
 func (e *Extractor) Locate(importPath string) ([]*Package, error) {
 	listedPackages, err := e.listPackages(importPath)
 	if err != nil {
