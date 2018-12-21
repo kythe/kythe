@@ -196,25 +196,44 @@ func (e *Extractor) dirToImport(dir string) (string, error) {
 	return dir, nil
 }
 
-// Locate attempts to locate the specified import path in the build context.
-// If the package has already been located, its existing package is returned.
-// Otherwise, if importing succeeds, a new *Package value is returned, and also
-// appended to the Packages field.
-func (e *Extractor) Locate(importPath string) (*Package, error) {
-	if pkg := e.findPackage(importPath); pkg != nil {
-		return pkg, nil
-	}
-	bp, err := e.addPackage(importPath, e.LocalPath)
+// Locate attempts to resolve and locate the specified import path in the build
+// context.  If a package has already been located, its existing *Package is
+// returned.  Otherwise, a new *Package value is returned and appended to the
+// Packages field.
+//
+// Note: multiple packages may be resolved for "/..." import paths
+func (e *Extractor) Locate(importPath string) ([]*Package, error) {
+	listedPackages, err := e.listPackages(importPath)
 	if err != nil {
 		return nil, err
 	}
-	pkg := &Package{
-		ext:          e,
-		Path:         importPath,
-		BuildPackage: bp,
+
+	var pkgs []*Package
+	for _, pkg := range listedPackages {
+		if pkg.ForTest != "" || strings.HasSuffix(pkg.ImportPath, ".test") {
+			// ignore constructed test packages
+			continue
+		} else if pkg.Error != nil {
+			return nil, pkg.Error
+		}
+
+		importPath := pkg.ImportPath
+		p := e.findPackage(importPath)
+		if p == nil {
+			p = &Package{
+				ext:          e,
+				Path:         importPath,
+				DepOnly:      pkg.DepOnly,
+				BuildPackage: pkg.buildPackage(),
+			}
+			e.Packages = append(e.Packages, p)
+			e.mapPackage(importPath, p.BuildPackage)
+		}
+		if !pkg.DepOnly {
+			pkgs = append(pkgs, p)
+		}
 	}
-	e.Packages = append(e.Packages, pkg)
-	return pkg, nil
+	return pkgs, nil
 }
 
 // ImportDir attempts to import the Go package located in the given directory.
@@ -249,6 +268,9 @@ func (e *Extractor) ImportDir(dir string) (*Package, error) {
 func (e *Extractor) Extract() error {
 	var err error
 	for _, pkg := range e.Packages {
+		if pkg.DepOnly {
+			continue
+		}
 		pkg.Err = pkg.Extract()
 		if pkg.Err != nil && err == nil {
 			err = pkg.Err
@@ -263,6 +285,7 @@ type Package struct {
 	seen stringset.Set // input files already added to this package
 
 	Path         string                 // Import or directory path
+	DepOnly      bool                   // Whether the package is only seen as a dependency
 	Err          error                  // Error discovered during processing
 	BuildPackage *build.Package         // Package info from the go/build library
 	VName        *spb.VName             // The package's Kythe vname
@@ -295,7 +318,7 @@ func (p *Package) Extract() error {
 
 	// Add required inputs from this package (source files of various kinds).
 	bp := p.BuildPackage
-	srcBase := filepath.Join(bp.SrcRoot, bp.ImportPath)
+	srcBase := bp.Dir
 	p.addSource(cu, bp.Root, srcBase, bp.GoFiles)
 	p.addFiles(cu, bp.Root, srcBase, bp.CgoFiles)
 	p.addFiles(cu, bp.Root, srcBase, bp.CFiles)
