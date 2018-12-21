@@ -156,9 +156,7 @@ func (e *Extractor) listPackages(query ...string) ([]*jsonPackage, error) {
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("go list error: %v", err)
-	}
+	listErr := cmd.Run()
 
 	var pkgs []*jsonPackage
 	for de := json.NewDecoder(&out); de.More(); {
@@ -168,5 +166,5 @@ func (e *Extractor) listPackages(query ...string) ([]*jsonPackage, error) {
 		}
 		pkgs = append(pkgs, &pkg)
 	}
-	return pkgs, nil
+	return pkgs, listErr
 }

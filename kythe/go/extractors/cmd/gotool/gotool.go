@@ -121,12 +121,11 @@ func main() {
 	}
 	for _, path := range flag.Args() {
 		pkgs, err := locate(path)
-		if err == nil {
-			for _, pkg := range pkgs {
-				maybeLog("Found %q in %s", pkg.Path, pkg.BuildPackage.Dir)
-			}
-		} else {
+		if err != nil {
 			maybeFatal("Error locating %q: %v", path, err)
+		}
+		for _, pkg := range pkgs {
+			maybeLog("Found %q in %s", pkg.Path, pkg.BuildPackage.Dir)
 		}
 	}
 
