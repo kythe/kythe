@@ -45,7 +45,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&bc.GOROOT, "goroot", bc.GOROOT,
+	flag.StringVar(&bc.GOROOT, "goroot", filepath.Join(filepath.Dir(os.Args[0]), "go_example.runfiles/go_sdk"),
 		"Use this directory as the root for Go library packages")
 
 	flag.Usage = func() {
