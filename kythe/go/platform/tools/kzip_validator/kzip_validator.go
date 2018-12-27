@@ -25,24 +25,42 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/extractors/validation"
 
 	"bitbucket.org/creachadair/stringset"
+	"github.com/mholt/archiver"
 )
 
 var (
 	kzip      = flag.String("kzip", "", "The comma separated list of kzip files to check")
 	repoURL   = flag.String("repo_url", "", "The repo to compare against")
-	version   = flag.String("version", "", "The version of the remote repo to compare")
 	localRepo = flag.String("local_repo", "", "The path of an optional local repo to specify instead of -repo_url")
 	lang      = flag.String("lang", "", "The comma-separated language file extensions to check, e.g. 'java' or 'cpp,h'")
 
 	missingFile = flag.String("missing_file", "", "An optional file to write all missing filepaths to")
+
+	// These flags use the url() function below to download the archive as:
+	// <repo_url>/<archive_prefix>/<version><archive_format>
+	//
+	// For example: -repoURL http://github.com/google/guava
+	// -> http://github.com/google/guava/archive/master.zip
+	//
+	// The supported archiveFormats are based on the dependent archiver lib:
+	// https://github.com/mholt/archiver#supported-archive-formats
+	version       = flag.String("version", "master", "The version of the remote repo to compare")
+	archivePrefix = flag.String("archive_prefix", "archive", "The part of an archive download URL for a source repo, for example the 'archive' in https://github.com/google/guava/archive/version-hash.zip")
+	archiveFormat = flag.String("archive_format", ".zip", "The file format of the downloaded archive")
+	archiveSubdir = flag.String("archive_subdir", "REPO-VERSION", "This flag describes what the downloaded archive's format is.  Specify \"REPO-VESRION\" for a github-style nested subdirectory.  Specify \"\" emptystring for no nesting at all.")
 )
 
 func init() {
@@ -71,11 +89,16 @@ func verifyFlags() {
 	if *repoURL != "" && *localRepo != "" {
 		log.Fatal("You must specify only one of -repo_url or -local_repo")
 	}
-	if *version != "" && *repoURL == "" {
-		log.Fatal("-version is only copmatible with -reop_url, not -local_repo")
-	}
 	if *lang == "" {
 		log.Fatal("You must specify what -lang file extensions to examine")
+	}
+	if *repoURL != "" {
+		if _, err := url.Parse(*repoURL); err != nil {
+			log.Fatalf("Failed to parse -repo_url: %v", err)
+		}
+	}
+	if *archiveSubdir != "REPO-VERSION" && *archiveSubdir != "" {
+		log.Fatalf("Unsupported -archive_subdir %s, must use either \"REPO-VERSION\" or \"\"", *archiveSubdir)
 	}
 }
 
@@ -85,7 +108,27 @@ func main() {
 
 	fmt.Printf("Validating kzip %s\n", *kzip)
 
-	repoPath := fetchRepo()
+	if err := validate(); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+}
+
+func validate() (retErr error) {
+	repoPath, cleanup, err := fetchRepo()
+	if err != nil {
+		if cerr := cleanup(); cerr != nil {
+			fmt.Printf("Failure cleaning up: %v", cerr)
+		}
+		return fmt.Errorf("failure fetching repo: %v", err)
+	}
+	defer func() {
+		if err := cleanup(); err != nil {
+			log.Printf("Failed to clean up: %v", err)
+			if retErr == nil {
+				retErr = err
+			}
+		}
+	}()
 
 	res, err := validation.Settings{
 		Compilations:  strings.Split(*kzip, ","),
@@ -94,7 +137,7 @@ func main() {
 		MissingOutput: missingFile,
 	}.Validate()
 	if err != nil {
-		log.Fatalf("Failure validating: %v", err)
+		return fmt.Errorf("failure validating: %v", err)
 	}
 
 	log.Printf("Result: %v", res)
@@ -109,16 +152,123 @@ func main() {
 			fmt.Printf("%10d %s\n", v.Missing, v.Path)
 		}
 	}
+	return
+}
+
+func nocleanup() error {
+	return nil
 }
 
 // fetchRepo either just early returns an available -local_repo, or fetches it from
 // the specified remote -repo_url
-func fetchRepo() string {
+func fetchRepo() (string, func() error, error) {
+	cleanup := nocleanup
 	if *localRepo != "" {
 		log.Printf("Comparing against local copy of repo %s", *localRepo)
-		return *localRepo
+		return *localRepo, cleanup, nil
 	}
-	log.Fatal("Unsupported use of -repo_url")
-	log.Printf("Comparing against remote repo %s", *repoURL)
-	return ""
+	if !supported(*archiveFormat) {
+		return "", cleanup, fmt.Errorf("unsupported archive format: %s", *archiveFormat)
+	}
+	tmpdir, err := ioutil.TempDir("", "repo-dir")
+	if err != nil {
+		return "", cleanup, fmt.Errorf("creating tempdir: %v", err)
+	}
+	cleanup = func() error {
+		return os.RemoveAll(tmpdir)
+	}
+
+	archive, err := fetchArchive(tmpdir)
+	if err != nil {
+		return "", cleanup, fmt.Errorf("fetching archive: %v", err)
+	}
+
+	if err := archiver.Unarchive(archive, tmpdir); err != nil {
+		return "", cleanup, fmt.Errorf("extracting archive file: %v", err)
+	}
+
+	return relativedir(tmpdir), cleanup, nil
 }
+
+func supported(ext string) bool {
+	_, err := archiver.ByExtension("foo" + ext)
+	return err == nil
+}
+
+// fetchArchive downloads an archive specified by the format in url(), and puts
+// it into a given temp directory.
+func fetchArchive(dir string) (archive string, retErr error) {
+	archivefile, err := os.Create(filepath.Join(dir, "repo-archive"+*archiveFormat))
+	if err != nil {
+		return "", fmt.Errorf("creating archive tmpfile: %v", err)
+	}
+	defer func() {
+		if err := archivefile.Close(); err != nil {
+			log.Printf("Failure closing tempfile: %v", err)
+			if retErr == nil {
+				retErr = err
+			}
+		}
+	}()
+
+	target := archiveurl()
+	log.Printf("Downloading archive: %s", target)
+	resp, err := http.Get(target)
+	if err != nil {
+		return "", fmt.Errorf("downloading archive: %v", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Failure closing http body: %v", err)
+			if retErr == nil {
+				retErr = err
+			}
+		}
+	}()
+
+	_, err = io.Copy(archivefile, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("copying archive: %v", err)
+	}
+	archive = archivefile.Name()
+	return
+}
+
+func archiveurl() string {
+	baseURL, err := url.Parse(*repoURL)
+	if err != nil {
+		log.Fatalf("Failed to parse -repo_url %s, but that should have been done at startup: %v", *repoURL, err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, *archivePrefix, *version) + *archiveFormat
+	return baseURL.String()
+}
+
+// Because some source repositories (for example github) provide archives that
+// have a top-level directory in them, instead of just being flat repos, we
+// may have to append a relative subdir.
+func relativedir(dir string) string {
+	switch *archiveSubdir {
+	case "REPO-VERSION":
+		return repoVersionRelative(dir)
+	case "":
+		return dir
+	default:
+		log.Fatalf("Invalid -archive_subdir %s, but that should have been found at startup", *archiveSubdir)
+		return ""
+	}
+}
+
+func repoVersionRelative(dir string) string {
+	baseURL, err := url.Parse(*repoURL)
+	if err != nil {
+		log.Fatalf("Failed to parse -repo_url %s, but that should have been done at startup: %v", *repoURL, err)
+	}
+	// Get the last part, which we assume is the repo as in github.com/project/repo.
+	parts := strings.Split(path.Clean(baseURL.Path), "/")
+	if len(parts) == 0 {
+		log.Fatal("Invalid -repo_url, but that should have been caught at startup")
+	}
+	return path.Join(dir, fmt.Sprintf("%s-%s", parts[len(parts)-1], *version))
+}
+
+func noNesting(dir string) string { return dir }
