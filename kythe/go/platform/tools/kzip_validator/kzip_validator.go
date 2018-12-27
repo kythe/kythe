@@ -52,7 +52,7 @@ var (
 	// These flags use the url() function below to download the archive as:
 	// <repo_url>/<archive_prefix>/<version><archive_format>
 	//
-	// For example: -repoURL http://github.com/google/guava
+	// For example: -repo_url http://github.com/google/guava
 	// -> http://github.com/google/guava/archive/master.zip
 	//
 	// The supported archiveFormats are based on the dependent archiver lib:
@@ -75,7 +75,7 @@ Options:
 	}
 }
 
-func verifyFlags() {
+func initFlags() {
 	if len(flag.Args()) > 0 {
 		log.Fatalf("Unknown arguments: %v", flag.Args())
 	}
@@ -104,7 +104,7 @@ func verifyFlags() {
 
 func main() {
 	flag.Parse()
-	verifyFlags()
+	initFlags()
 
 	fmt.Printf("Validating kzip %s\n", *kzip)
 
@@ -116,16 +116,20 @@ func main() {
 func validate() (retErr error) {
 	repoPath, cleanup, err := fetchRepo()
 	if err != nil {
-		if cerr := cleanup(); cerr != nil {
-			fmt.Printf("Failure cleaning up: %v", cerr)
+		if cleanup != nil {
+			if cerr := cleanup(); cerr != nil {
+				fmt.Printf("Failure cleaning up: %v", cerr)
+			}
 		}
 		return fmt.Errorf("failure fetching repo: %v", err)
 	}
 	defer func() {
-		if err := cleanup(); err != nil {
-			log.Printf("Failed to clean up: %v", err)
-			if retErr == nil {
-				retErr = err
+		if cleanup != nil {
+			if err := cleanup(); err != nil {
+				log.Printf("Failed to clean up: %v", err)
+				if retErr == nil {
+					retErr = err
+				}
 			}
 		}
 	}()
@@ -155,26 +159,21 @@ func validate() (retErr error) {
 	return
 }
 
-func nocleanup() error {
-	return nil
-}
-
 // fetchRepo either just early returns an available -local_repo, or fetches it from
 // the specified remote -repo_url
 func fetchRepo() (string, func() error, error) {
-	cleanup := nocleanup
 	if *localRepo != "" {
 		log.Printf("Comparing against local copy of repo %s", *localRepo)
-		return *localRepo, cleanup, nil
+		return *localRepo, nil, nil
 	}
 	if !supported(*archiveFormat) {
-		return "", cleanup, fmt.Errorf("unsupported archive format: %s", *archiveFormat)
+		return "", nil, fmt.Errorf("unsupported archive format: %s", *archiveFormat)
 	}
 	tmpdir, err := ioutil.TempDir("", "repo-dir")
 	if err != nil {
-		return "", cleanup, fmt.Errorf("creating tempdir: %v", err)
+		return "", nil, fmt.Errorf("creating tempdir: %v", err)
 	}
-	cleanup = func() error {
+	cleanup := func() error {
 		return os.RemoveAll(tmpdir)
 	}
 
@@ -226,8 +225,7 @@ func fetchArchive(dir string) (archive string, retErr error) {
 		}
 	}()
 
-	_, err = io.Copy(archivefile, resp.Body)
-	if err != nil {
+	if _, err = io.Copy(archivefile, resp.Body); err != nil {
 		return "", fmt.Errorf("copying archive: %v", err)
 	}
 	archive = archivefile.Name()
@@ -270,5 +268,3 @@ func repoVersionRelative(dir string) string {
 	}
 	return path.Join(dir, fmt.Sprintf("%s-%s", parts[len(parts)-1], *version))
 }
-
-func noNesting(dir string) string { return dir }

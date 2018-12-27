@@ -10,7 +10,7 @@ filegroup(
         "@go_archiver//:LICENSE",
         "@go_beam//:LICENSE",
         "@go_cmp//:LICENSE",
-        "@go_compress//:LICENSE",
+        "@go_compress//:LICENSE.md",
         "@go_diff//:LICENSE",
         "@go_errors//:LICENSE",
         "@go_etree//:LICENSE",
