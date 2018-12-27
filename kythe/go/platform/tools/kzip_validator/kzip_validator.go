@@ -75,64 +75,129 @@ Options:
 	}
 }
 
-func initFlags() {
+type repoConfig interface {
+	// FetchRepo gets a repository and returns its path.
+	FetchRepo() (string, error)
+	// Cleanup removes any temporary files created during validation.
+	Cleanup() error
+}
+
+func initFromFlags() (repoConfig, error) {
+	initFail := false
 	if len(flag.Args()) > 0 {
-		log.Fatalf("Unknown arguments: %v", flag.Args())
+		log.Printf("Unknown arguments: %v", flag.Args())
+		initFail = true
 	}
 
 	if *kzip == "" {
-		log.Fatal("You must provide at least one -kzip file")
+		log.Print("You must provide at least one -kzip file")
+		initFail = true
 	}
 	if *repoURL == "" && *localRepo == "" {
-		log.Fatal("You must specify either -repo_url or a -local_repo path")
+		log.Print("You must specify either -repo_url or a -local_repo path")
+		initFail = true
 	}
 	if *repoURL != "" && *localRepo != "" {
-		log.Fatal("You must specify only one of -repo_url or -local_repo")
+		log.Print("You must specify only one of -repo_url or -local_repo")
+		initFail = true
 	}
 	if *lang == "" {
-		log.Fatal("You must specify what -lang file extensions to examine")
-	}
-	if *repoURL != "" {
-		if _, err := url.Parse(*repoURL); err != nil {
-			log.Fatalf("Failed to parse -repo_url: %v", err)
-		}
+		log.Print("You must specify what -lang file extensions to examine")
+		initFail = true
 	}
 	if *archiveSubdir != "REPO-VERSION" && *archiveSubdir != "" {
-		log.Fatalf("Unsupported -archive_subdir %s, must use either \"REPO-VERSION\" or \"\"", *archiveSubdir)
+		log.Printf("Unsupported -archive_subdir %s, must use either \"REPO-VERSION\" or \"\"", *archiveSubdir)
+		initFail = true
 	}
+
+	if !supported(*archiveFormat) {
+		log.Printf("unsupported archive format: %s", *archiveFormat)
+		initFail = true
+	}
+
+	if initFail {
+		return nil, fmt.Errorf("invalid flags, aborting")
+	}
+
+	// Pick remote or local based on whether -repo_url or -local_repo is set.
+	if *localRepo != "" {
+		return &localRepoConfig{repo: *localRepo}, nil
+	}
+	return remoteConfigFromFlags()
+}
+
+type localRepoConfig struct {
+	repo string
+}
+
+type remoteRepoConfig struct {
+	remoteArchive    string
+	tmpdir           string
+	localArchivePath string
+	localRepoPath    string
+}
+
+func remoteConfigFromFlags() (repoConfig, error) {
+	baseURL, err := url.Parse(*repoURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse -repo_url: %v", err)
+	}
+	// We assume that the -repo_url uses github style url/project/repo format.
+	dirs := strings.Split(path.Clean(baseURL.Path), "/")
+	if len(dirs) == 0 {
+		return nil, fmt.Errorf("-repo_url has no path: %s", *repoURL)
+	}
+	// repo could be "kythe" or "guava".
+	repo := dirs[len(dirs)-1]
+
+	tmpdir, err := ioutil.TempDir("", "repo-dir")
+	if err != nil {
+		return nil, fmt.Errorf("creating tempdir: %v", err)
+	}
+	baseURL.Path = path.Join(baseURL.Path, *archivePrefix, *version) + *archiveFormat
+
+	config := &remoteRepoConfig{
+		remoteArchive:    baseURL.String(),
+		tmpdir:           tmpdir,
+		localArchivePath: path.Join(tmpdir, "repo-archive"+*archiveFormat),
+		localRepoPath:    tmpdir,
+	}
+	// Because some source repositories (for example github) provide archives
+	// that have a top-level directory in them, instead of just being flat repos,
+	// we append a relative subdir.
+	if *archiveSubdir == "REPO-VERSION" {
+		config.localRepoPath = path.Join(tmpdir, fmt.Sprintf("%s-%s", repo, *version))
+	}
+	return config, nil
 }
 
 func main() {
 	flag.Parse()
-	initFlags()
+	config, err := initFromFlags()
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
 
 	fmt.Printf("Validating kzip %s\n", *kzip)
 
-	if err := validate(); err != nil {
+	if err := validate(config); err != nil {
 		log.Fatalf("Error: %v", err)
 	}
 }
 
-func validate() (retErr error) {
-	repoPath, cleanup, err := fetchRepo()
-	if err != nil {
-		if cleanup != nil {
-			if cerr := cleanup(); cerr != nil {
-				fmt.Printf("Failure cleaning up: %v", cerr)
-			}
-		}
-		return fmt.Errorf("failure fetching repo: %v", err)
-	}
+func validate(config repoConfig) (retErr error) {
+	repoPath, err := config.FetchRepo()
 	defer func() {
-		if cleanup != nil {
-			if err := cleanup(); err != nil {
-				log.Printf("Failed to clean up: %v", err)
-				if retErr == nil {
-					retErr = err
-				}
+		if err := config.Cleanup(); err != nil {
+			log.Printf("Failed to clean up: %v", err)
+			if retErr == nil {
+				retErr = err
 			}
 		}
 	}()
+	if err != nil {
+		return fmt.Errorf("failure fetching repo: %v", err)
+	}
 
 	res, err := validation.Settings{
 		Compilations:  strings.Split(*kzip, ","),
@@ -159,34 +224,30 @@ func validate() (retErr error) {
 	return
 }
 
-// fetchRepo either just early returns an available -local_repo, or fetches it from
-// the specified remote -repo_url
-func fetchRepo() (string, func() error, error) {
-	if *localRepo != "" {
-		log.Printf("Comparing against local copy of repo %s", *localRepo)
-		return *localRepo, nil, nil
-	}
-	if !supported(*archiveFormat) {
-		return "", nil, fmt.Errorf("unsupported archive format: %s", *archiveFormat)
-	}
-	tmpdir, err := ioutil.TempDir("", "repo-dir")
-	if err != nil {
-		return "", nil, fmt.Errorf("creating tempdir: %v", err)
-	}
-	cleanup := func() error {
-		return os.RemoveAll(tmpdir)
+func (l localRepoConfig) FetchRepo() (string, error) {
+	log.Printf("Comparing against local copy of repo %s", l.repo)
+	return l.repo, nil
+}
+
+func (l localRepoConfig) Cleanup() error { return nil }
+
+func (r remoteRepoConfig) FetchRepo() (string, error) {
+	if err := r.fetchArchive(); err != nil {
+		return "", fmt.Errorf("fetching archive: %v", err)
 	}
 
-	archive, err := fetchArchive(tmpdir)
-	if err != nil {
-		return "", cleanup, fmt.Errorf("fetching archive: %v", err)
+	if err := archiver.Unarchive(r.localArchivePath, r.tmpdir); err != nil {
+		return "", fmt.Errorf("extracting archive file: %v", err)
 	}
 
-	if err := archiver.Unarchive(archive, tmpdir); err != nil {
-		return "", cleanup, fmt.Errorf("extracting archive file: %v", err)
-	}
+	return r.repoDir(), nil
+}
 
-	return relativedir(tmpdir), cleanup, nil
+func (r remoteRepoConfig) Cleanup() error {
+	if r.tmpdir != "" {
+		return os.RemoveAll(r.tmpdir)
+	}
+	return nil
 }
 
 func supported(ext string) bool {
@@ -196,10 +257,10 @@ func supported(ext string) bool {
 
 // fetchArchive downloads an archive specified by the format in url(), and puts
 // it into a given temp directory.
-func fetchArchive(dir string) (archive string, retErr error) {
-	archivefile, err := os.Create(filepath.Join(dir, "repo-archive"+*archiveFormat))
+func (r remoteRepoConfig) fetchArchive() (retErr error) {
+	archivefile, err := os.Create(r.localArchivePath)
 	if err != nil {
-		return "", fmt.Errorf("creating archive tmpfile: %v", err)
+		return fmt.Errorf("creating archive tmpfile: %v", err)
 	}
 	defer func() {
 		if err := archivefile.Close(); err != nil {
@@ -210,11 +271,10 @@ func fetchArchive(dir string) (archive string, retErr error) {
 		}
 	}()
 
-	target := archiveurl()
-	log.Printf("Downloading archive: %s", target)
-	resp, err := http.Get(target)
+	log.Printf("Downloading archive: %s", r.remoteArchive)
+	resp, err := http.Get(r.remoteArchive)
 	if err != nil {
-		return "", fmt.Errorf("downloading archive: %v", err)
+		return fmt.Errorf("downloading archive: %v", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -226,45 +286,11 @@ func fetchArchive(dir string) (archive string, retErr error) {
 	}()
 
 	if _, err = io.Copy(archivefile, resp.Body); err != nil {
-		return "", fmt.Errorf("copying archive: %v", err)
+		return fmt.Errorf("copying archive: %v", err)
 	}
-	archive = archivefile.Name()
 	return
 }
 
-func archiveurl() string {
-	baseURL, err := url.Parse(*repoURL)
-	if err != nil {
-		log.Fatalf("Failed to parse -repo_url %s, but that should have been done at startup: %v", *repoURL, err)
-	}
-	baseURL.Path = path.Join(baseURL.Path, *archivePrefix, *version) + *archiveFormat
-	return baseURL.String()
-}
-
-// Because some source repositories (for example github) provide archives that
-// have a top-level directory in them, instead of just being flat repos, we
-// may have to append a relative subdir.
-func relativedir(dir string) string {
-	switch *archiveSubdir {
-	case "REPO-VERSION":
-		return repoVersionRelative(dir)
-	case "":
-		return dir
-	default:
-		log.Fatalf("Invalid -archive_subdir %s, but that should have been found at startup", *archiveSubdir)
-		return ""
-	}
-}
-
-func repoVersionRelative(dir string) string {
-	baseURL, err := url.Parse(*repoURL)
-	if err != nil {
-		log.Fatalf("Failed to parse -repo_url %s, but that should have been done at startup: %v", *repoURL, err)
-	}
-	// Get the last part, which we assume is the repo as in github.com/project/repo.
-	parts := strings.Split(path.Clean(baseURL.Path), "/")
-	if len(parts) == 0 {
-		log.Fatal("Invalid -repo_url, but that should have been caught at startup")
-	}
-	return path.Join(dir, fmt.Sprintf("%s-%s", parts[len(parts)-1], *version))
+func (r remoteRepoConfig) repoDir() string {
+	return r.localRepoPath
 }
