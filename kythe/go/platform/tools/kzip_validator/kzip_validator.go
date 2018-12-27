@@ -109,7 +109,6 @@ func initFromFlags() (repoConfig, error) {
 		log.Printf("Unsupported -archive_subdir %s, must use either \"REPO-VERSION\" or \"\"", *archiveSubdir)
 		initFail = true
 	}
-
 	if !supported(*archiveFormat) {
 		log.Printf("unsupported archive format: %s", *archiveFormat)
 		initFail = true
