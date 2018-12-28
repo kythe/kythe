@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // Fields must match go list;
@@ -122,7 +123,12 @@ type jsonPackageError struct {
 func (e jsonPackageError) Error() string { return fmt.Sprintf("%s: %s", e.Pos, e.Err) }
 
 func buildContextEnv(bc build.Context) ([]string, error) {
+	cgo := "0"
+	if bc.CgoEnabled {
+		cgo = "1"
+	}
 	vars := []string{
+		"CGO_ENABLED=" + cgo,
 		"GOARCH=" + bc.GOARCH,
 		"GOOS=" + bc.GOOS,
 	}
@@ -142,7 +148,17 @@ func buildContextEnv(bc build.Context) ([]string, error) {
 
 func (e *Extractor) listPackages(query ...string) ([]*jsonPackage, error) {
 	// TODO(schroederc): support GOPACKAGESDRIVER
-	args := append([]string{"list", "-test", "-deps", "-e", "-export", "-compiled", "-json", "--"}, query...)
+	args := append([]string{"list",
+		"-compiler=" + e.BuildContext.Compiler,
+		"-tags=" + strings.Join(e.BuildContext.BuildTags, ","),
+		"-installsuffix=" + e.BuildContext.InstallSuffix,
+		"-test",
+		"-deps",
+		"-e",
+		"-export",
+		"-compiled",
+		"-json",
+		"--"}, query...)
 	goTool := "go"
 	if e.BuildContext.GOROOT != "" {
 		goTool = filepath.Join(e.BuildContext.GOROOT, "bin/go")
