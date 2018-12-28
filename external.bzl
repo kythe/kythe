@@ -555,6 +555,54 @@ def _go_dependencies():
     )
 
     maybe(
+        go_repository,
+        name = "com_github_mholt_archiver",
+        commit = "d572b2e8b82726cee9476d1b9d63a7fe9b601ff1",
+        custom = "archiver",
+        importpath = "github.com/mholt/archiver",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_dsnet_compress",
+        commit = "cc9eb1d7ad760af14e8f918698f745e80377af4f",
+        custom = "compress",
+        importpath = "github.com/dsnet/compress",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_nwaples_rardecode",
+        commit = "197ef08ef68c4454ae5970a9c2692d6056ceb8d7",
+        custom = "rardecode",
+        importpath = "github.com/nwaples/rardecode",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_pierrec_lz4",
+        commit = "623b5a2f4d2a41e411730dcdfbfdaeb5c0c4564e",
+        custom = "lz4",
+        importpath = "github.com/pierrec/lz4",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_ulikunitz_xz",
+        commit = "590df8077fbcb06ad62d7714da06c00e5dd2316d",
+        custom = "xz",
+        importpath = "github.com/ulikunitz/xz",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_xi2_xz",
+        commit = "48954b6210f8d154cb5f8484d3a3e1f83489309e",
+        custom = "xi2xz",
+        importpath = "github.com/xi2/xz",
+    )
+
+    maybe(
         http_archive,
         name = "org_brotli_go",
         sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",

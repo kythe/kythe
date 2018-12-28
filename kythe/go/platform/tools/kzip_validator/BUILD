@@ -7,6 +7,7 @@ go_binary(
     srcs = ["kzip_validator.go"],
     deps = [
         "//kythe/go/extractors/validation",
+        "@com_github_mholt_archiver//:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
     ],
 )
