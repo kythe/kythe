@@ -239,7 +239,7 @@ func (r remoteRepoConfig) FetchRepo() (string, error) {
 		return "", fmt.Errorf("extracting archive file: %v", err)
 	}
 
-	return r.repoDir(), nil
+	return r.localRepoPath, nil
 }
 
 func (r remoteRepoConfig) Cleanup() error {
@@ -288,8 +288,4 @@ func (r remoteRepoConfig) fetchArchive() (retErr error) {
 		return fmt.Errorf("copying archive: %v", err)
 	}
 	return
-}
-
-func (r remoteRepoConfig) repoDir() string {
-	return r.localRepoPath
 }
