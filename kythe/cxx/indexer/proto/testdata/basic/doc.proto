@@ -144,7 +144,5 @@ service DocService { /* Doc service comment
 
   rpc GetDocComment(DocComment) returns (DocComment) {
     // GetDocComment comment
-
-    option deadline = 5.0;
   }
 }
