@@ -661,9 +661,9 @@ def kythe_dependencies():
     #
     # TODO(schroederc): update to 3.7.0 once released
     protobuf_archive = {
-        "sha256": "2cf824dca722d31ce0402e4611ed98ac1c9808f5b3f8b9cef5d445f305200731",
-        "strip_prefix": "protobuf-c4fb353fc8d560bcf206a3154d87c44057c6fa80",
-        "urls": ["https://github.com/protocolbuffers/protobuf/archive/c4fb353fc8d560bcf206a3154d87c44057c6fa80.zip"],
+        "sha256": "712715f5ac35637131f0d829ca7e0edaccab6fdeb33ecd3692ff24214ae5032f",
+        "strip_prefix": "protobuf-de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af",
+        "urls": ["https://github.com/protocolbuffers/protobuf/archive/de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af.zip"],
     }
     maybe(http_archive, name = "com_google_protobuf", **protobuf_archive)
     maybe(http_archive, name = "protobuf_archive", **protobuf_archive)
