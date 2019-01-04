@@ -18,9 +18,10 @@
 // default, this program reads a single Proto compilation unit from stdin and
 // emits binary Kythe artifacts to stdout as a sequence of Entity protos.
 //
-//   eg: indexer -i foo.proto -o foo.bin
-//       indexer -i foo.proto | verifier foo.proto
+//   eg: indexer foo.proto -o foo.bin
+//       indexer foo.proto | verifier foo.proto
 //       indexer -index_file some/file.kzip
+//       cat foo.proto | indexer | verifier foo.proto
 
 #include <fcntl.h>
 #include <sys/stat.h>
