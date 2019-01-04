@@ -171,9 +171,11 @@ bool MergeJsonWithMessage(const std::string& in, std::string* format_key,
     auto resolver =
         MakeTypeResolverForPool(message->GetDescriptor()->file()->pool());
 
+    google::protobuf::util::JsonParseOptions options;
+    options.case_insensitive_enum_parsing = false;
     auto status = google::protobuf::util::JsonToBinaryString(
         resolver.get(), message->GetDescriptor()->full_name(), content, &binary,
-        {});
+        options);
 
     if (!status.ok()) {
       LOG(ERROR) << status.ToString() << ": " << content;
@@ -191,9 +193,11 @@ Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
 
   std::string binary;
   google::protobuf::io::StringOutputStream output(&binary);
+  google::protobuf::util::JsonParseOptions options;
+  options.case_insensitive_enum_parsing = false;
   auto status = google::protobuf::util::JsonToBinaryStream(
       resolver.get(), message->GetDescriptor()->full_name(), input, &output,
-      {});
+      options);
 
   if (!status.ok()) {
     return Status(static_cast<StatusCode>(status.error_code()),
