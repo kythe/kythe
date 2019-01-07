@@ -1,7 +1,7 @@
 """This module provides rules for building protos for golang."""
 
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@io_bazel_rules_go//go:def.bzl", _GoSource = "GoSource")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("//tools:build_rules/testing.bzl", "file_diff_test")
 
 KYTHE_IMPORT_BASE = "kythe.io/kythe/proto"
@@ -33,7 +33,7 @@ _go_proto_src = rule(
     },
 )
 
-def go_kythe_proto(proto = None, deps = [], importpath = None, visibility=None):
+def go_kythe_proto(proto = None, deps = [], importpath = None, visibility = None):
     """Helper for go_proto_library for kythe project.
 
     A shorthand for a go_proto_library with its import path set to the
@@ -71,7 +71,7 @@ def go_kythe_proto(proto = None, deps = [], importpath = None, visibility=None):
         deps = deps,
         importpath = importpath,
         proto = proto,
-        visibility=visibility,
+        visibility = visibility,
     )
 
     # Copy the generated source from the proto library so we can compare it to

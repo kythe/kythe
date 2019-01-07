@@ -58,8 +58,8 @@ def kzip_extractor(
     xa_tool = "//kythe/go/extractors/cmd/bazel:extract_kzip"
     xa_output = "$(ACTION_ID).%s.kzip" % language
     xa_args = {
-        "extra_action": "$(EXTRA_ACTION_FILE)",
         "corpus": corpus,
+        "extra_action": "$(EXTRA_ACTION_FILE)",
         "language": language,
         "output": "$(output %s)" % xa_output,
         "scoped": "true" if scoped else "false",

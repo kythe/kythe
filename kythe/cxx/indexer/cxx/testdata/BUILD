@@ -5,7 +5,6 @@ load(
     "cc_indexer_test",
     "objc_indexer_test",
 )
-load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 sh_test(
     name = "kindex",

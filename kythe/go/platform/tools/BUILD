@@ -7,8 +7,8 @@ shell_tool_test(
     scriptfile = "indexpack_test.sh",
     tools = {
         "indexpack": "//kythe/go/platform/tools/indexpack",
-        "viewindex": "//kythe/go/platform/tools/viewindex",
         "input": "//kythe/testdata:test.kindex",
         "jq": "@com_github_stedolan_jq//:jq",
+        "viewindex": "//kythe/go/platform/tools/viewindex",
     },
 )
