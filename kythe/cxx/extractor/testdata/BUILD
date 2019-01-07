@@ -1,8 +1,8 @@
 load(
     "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
+    "cc_bazel_extractor_test",
     "cc_extractor_test",
     "objc_bazel_extractor_test",
-    "cc_bazel_extractor_test",
 )
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 

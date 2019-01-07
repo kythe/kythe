@@ -24,8 +24,8 @@ KytheVerifierSources = provider(
 KytheEntries = provider(
     doc = "Kythe indexer entry facts.",
     fields = {
-        "files": "Depset of files which combine to make an index.",
         "compressed": "Depset of combined, compressed index entries.",
+        "files": "Depset of files which combine to make an index.",
     },
 )
 
@@ -46,8 +46,8 @@ def _atomize_entries_impl(ctx):
     for dep in ctx.attr.deps:
         inputs += dep.kythe_entries
 
-    sorted_entries = ctx.new_file(ctx.outputs.entries, ctx.label.name + "_sorted_entries")
-    ctx.action(
+    sorted_entries = ctx.actions.declare_file("_sorted_entries", sibling = ctx.outputs.entries)
+    ctx.actions.run_shell(
         outputs = [sorted_entries],
         inputs = [zcat, entrystream] + inputs.to_list(),
         mnemonic = "SortEntries",
@@ -57,15 +57,15 @@ def _atomize_entries_impl(ctx):
             [s.path for s in inputs.to_list()]
         ),
     )
-    leveldb = ctx.new_file(ctx.outputs.entries, ctx.label.name + "_serving_tables")
-    ctx.action(
+    leveldb = ctx.actions.declare_file("_serving_tables", sibling = ctx.outputs.entries)
+    ctx.actions.run(
         outputs = [leveldb],
         inputs = [sorted_entries, postprocessor],
         executable = postprocessor,
         mnemonic = "PostProcessEntries",
         arguments = ["--entries", sorted_entries.path, "--out", leveldb.path],
     )
-    ctx.action(
+    ctx.actions.run_shell(
         outputs = [ctx.outputs.entries],
         inputs = [atomizer, leveldb],
         mnemonic = "AtomizeEntries",
@@ -89,15 +89,15 @@ atomize_entries = rule(
                 ".entries.gz",
             ],
         ),
-        "deps": attr.label_list(
-            providers = ["kythe_entries"],
-        ),
         "file_tickets": attr.string_list(
             mandatory = True,
             allow_empty = False,
         ),
-        "_zcat": attr.label(
-            default = Label("//tools:zcatext"),
+        "deps": attr.label_list(
+            providers = ["kythe_entries"],
+        ),
+        "_atomizer": attr.label(
+            default = Label("//kythe/go/test/tools:xrefs_atomizer"),
             executable = True,
             cfg = "host",
         ),
@@ -111,8 +111,8 @@ atomize_entries = rule(
             executable = True,
             cfg = "host",
         ),
-        "_atomizer": attr.label(
-            default = Label("//kythe/go/test/tools:xrefs_atomizer"),
+        "_zcat": attr.label(
+            default = Label("//tools:zcatext"),
             executable = True,
             cfg = "host",
         ),
@@ -147,8 +147,8 @@ def extract(
       mnemonic: Mnemonic of the extractor's action
     """
     env = {
-        "KYTHE_ROOT_DIRECTORY": ".",
         "KYTHE_OUTPUT_FILE": kzip.path,
+        "KYTHE_ROOT_DIRECTORY": ".",
     }
     inputs = srcs + deps
     if vnames_config:
@@ -218,15 +218,8 @@ java_extract_kzip = rule(
             allow_empty = False,
             allow_files = True,
         ),
-        "deps": attr.label_list(
-            providers = [KytheJavaJar],
-        ),
         "data": attr.label_list(
             allow_files = True,
-        ),
-        "vnames_config": attr.label(
-            default = Label("//external:vnames_config"),
-            allow_single_file = True,
         ),
         "extractor": attr.label(
             default = Label("//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor"),
@@ -234,12 +227,19 @@ java_extract_kzip = rule(
             cfg = "host",
         ),
         "opts": attr.string_list(),
-        "_java_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/jdk:toolchain"),
+        "vnames_config": attr.label(
+            default = Label("//external:vnames_config"),
+            allow_single_file = True,
+        ),
+        "deps": attr.label_list(
+            providers = [KytheJavaJar],
         ),
         "_host_javabase": attr.label(
             cfg = "host",
             default = Label("@bazel_tools//tools/jdk:current_java_runtime"),
+        ),
+        "_java_toolchain": attr.label(
+            default = Label("@bazel_tools//tools/jdk:toolchain"),
         ),
     },
     fragments = ["java"],
@@ -266,19 +266,19 @@ def _jvm_extract_kzip_impl(ctx):
 
 jvm_extract_kzip = rule(
     attrs = {
-        "deps": attr.label_list(
-            providers = [KytheJavaJar],
-        ),
         "extractor": attr.label(
             default = Label("//kythe/java/com/google/devtools/kythe/extractors/jvm:jar_extractor"),
             executable = True,
             cfg = "host",
         ),
+        "opts": attr.string_list(),
         "vnames_config": attr.label(
             default = Label("//external:vnames_config"),
             allow_single_file = True,
         ),
-        "opts": attr.string_list(),
+        "deps": attr.label_list(
+            providers = [KytheJavaJar],
+        ),
     },
     outputs = {"kzip": "%{name}.kzip"},
     implementation = _jvm_extract_kzip_impl,
@@ -320,21 +320,21 @@ def _index_compilation_impl(ctx):
 
 index_compilation = rule(
     attrs = {
-        "deps": attr.label_list(
-            mandatory = True,
-            allow_empty = False,
-            allow_files = [".kzip"],
-        ),
-        "tools": attr.label_list(
-            cfg = "host",
-            allow_files = True,
-        ),
         "indexer": attr.label(
             mandatory = True,
             executable = True,
             cfg = "host",
         ),
         "opts": attr.string_list(),
+        "tools": attr.label_list(
+            cfg = "host",
+            allow_files = True,
+        ),
+        "deps": attr.label_list(
+            mandatory = True,
+            allow_empty = False,
+            allow_files = [".kzip"],
+        ),
     },
     outputs = {
         "entries": "%{name}.entries.gz",
@@ -382,13 +382,13 @@ def _verifier_test_impl(ctx):
         output = ctx.outputs.executable,
         is_executable = True,
         substitutions = {
-            "@WORKSPACE_NAME@": ctx.workspace_name,
+            "@ARGS@": " ".join(args),
             "@ENTRIES@": " ".join([e.short_path for e in entries]),
             "@ENTRIES_GZ@": " ".join([e.short_path for e in entries_gz]),
             # If failure is expected, invert the sense of the verifier return.
             "@INVERT@": "!" if not ctx.attr.expect_success else "",
             "@VERIFIER@": ctx.executable._verifier.short_path,
-            "@ARGS@": " ".join(args),
+            "@WORKSPACE_NAME@": ctx.workspace_name,
         },
     )
     runfiles = ctx.runfiles(files = list(sources + entries + entries_gz) + [
@@ -411,6 +411,10 @@ verifier_test = rule(
                 ],
             ],
         ),
+        # Arguably, "expect_failure" is more natural, but that
+        # attribute is used by Skylark.
+        "expect_success": attr.bool(default = True),
+        "opts": attr.string_list(),
         "deps": attr.label_list(
             # TODO(shahms): Allow directly specifying sources/deps.
             #allow_files = [
@@ -419,19 +423,15 @@ verifier_test = rule(
             #],
             providers = [KytheEntries],
         ),
-        # Arguably, "expect_failure" is more natural, but that
-        # attribute is used by Skylark.
-        "expect_success": attr.bool(default = True),
+        "_template": attr.label(
+            default = Label("//tools/build_rules/verifier_test:verifier_test.sh.in"),
+            allow_single_file = True,
+        ),
         "_verifier": attr.label(
             default = Label("//kythe/cxx/verifier"),
             executable = True,
             cfg = "target",
         ),
-        "_template": attr.label(
-            default = Label("//tools/build_rules/verifier_test:verifier_test.sh.in"),
-            allow_single_file = True,
-        ),
-        "opts": attr.string_list(),
     },
     test = True,
     implementation = _verifier_test_impl,

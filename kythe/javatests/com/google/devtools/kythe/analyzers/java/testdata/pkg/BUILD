@@ -1,7 +1,6 @@
 load(
     "//tools/build_rules/verifier_test:verifier_test.bzl",
     "java_verifier_test",
-    "kythe_integration_test",
 )
 
 java_library(

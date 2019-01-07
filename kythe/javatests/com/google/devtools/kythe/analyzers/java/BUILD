@@ -6,8 +6,8 @@ shell_tool_test(
     scriptfile = "indexer_test.sh",
     tools = {
         "entrystream": "//kythe/go/platform/tools/entrystream",
-        "indexpack": "//kythe/go/platform/tools/indexpack",
         "indexer": "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
+        "indexpack": "//kythe/go/platform/tools/indexpack",
     },
 )
 
