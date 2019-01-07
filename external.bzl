@@ -658,14 +658,13 @@ def kythe_dependencies():
     # depend on @com_google_protobuf for protoc and proto runtimes.
     #
     # TODO(schroederc): update to 3.7.0 once released
-    protobuf_archive = {
-        "sha256": "712715f5ac35637131f0d829ca7e0edaccab6fdeb33ecd3692ff24214ae5032f",
-        "strip_prefix": "protobuf-de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af",
-        "urls": ["https://github.com/protocolbuffers/protobuf/archive/de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af.zip"],
-    }
-    maybe(http_archive, name = "com_google_protobuf", **protobuf_archive)
-    maybe(http_archive, name = "protobuf_archive", **protobuf_archive)
-    # The above copy is because com_google_riegeli uses a non-standard name... (╯°□°)╯︵ ┻━┻
+    maybe(
+        http_archive,
+        name = "com_google_protobuf",
+        sha256 = "712715f5ac35637131f0d829ca7e0edaccab6fdeb33ecd3692ff24214ae5032f",
+        strip_prefix = "protobuf-de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af.zip"],
+    )
 
     maybe(
         http_archive,
