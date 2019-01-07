@@ -11,6 +11,7 @@ cc_library(
     hdrs = ["proto_graph_builder.h"],
     deps = [
         ":comments",
+        ":vname_util",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
@@ -61,6 +62,15 @@ cc_library(
         "@io_kythe//kythe/proto:common_cc_proto",
         "@io_kythe//kythe/proto:storage_cc_proto",
         "@io_kythe//kythe/proto:xref_cc_proto",
+    ],
+)
+
+cc_library(
+    name = "vname_util",
+    hdrs = ["vname_util.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
