@@ -7,9 +7,9 @@ def test_vname_rules(name, rules, tests):
     shell_tool_test(
         name = name,
         tools = {
-            "TOOL": "//kythe/go/util/vnameutil:test_vname_rules",
             "RULES": rules,
             "TESTS": tests,
+            "TOOL": "//kythe/go/util/vnameutil:test_vname_rules",
         },
         script = ['"$$TOOL" --rules="$$RULES" --tests="$$TESTS"'],
     )
