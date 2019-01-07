@@ -98,9 +98,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_riegeli",
-        sha256 = "6b05427c3fab111af052d166d195052f5336b8517b26a11dbc4fee10cfc75b4e",
-        strip_prefix = "riegeli-bd99099abd41abbe35a10f3bfa35e15b6b2d893a",
-        url = "https://github.com/google/riegeli/archive/bd99099abd41abbe35a10f3bfa35e15b6b2d893a.zip",
+        sha256 = "5c1714329c19759201b7f2c6a2cf8b255b6f10c752b197d6e8847b8574dcd96b",
+        strip_prefix = "riegeli-6b1dd7be479f6ffffdec06c39f352bd5a87b63b7",
+        url = "https://github.com/google/riegeli/archive/6b1dd7be479f6ffffdec06c39f352bd5a87b63b7.zip",
     )
 
     maybe(
@@ -658,14 +658,13 @@ def kythe_dependencies():
     # depend on @com_google_protobuf for protoc and proto runtimes.
     #
     # TODO(schroederc): update to 3.7.0 once released
-    protobuf_archive = {
-        "sha256": "712715f5ac35637131f0d829ca7e0edaccab6fdeb33ecd3692ff24214ae5032f",
-        "strip_prefix": "protobuf-de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af",
-        "urls": ["https://github.com/protocolbuffers/protobuf/archive/de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af.zip"],
-    }
-    maybe(http_archive, name = "com_google_protobuf", **protobuf_archive)
-    maybe(http_archive, name = "protobuf_archive", **protobuf_archive)
-    # The above copy is because com_google_riegeli uses a non-standard name... (╯°□°)╯︵ ┻━┻
+    maybe(
+        http_archive,
+        name = "com_google_protobuf",
+        sha256 = "712715f5ac35637131f0d829ca7e0edaccab6fdeb33ecd3692ff24214ae5032f",
+        strip_prefix = "protobuf-de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af.zip"],
+    )
 
     maybe(
         http_archive,
