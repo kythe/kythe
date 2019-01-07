@@ -2,8 +2,6 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
-
-# Rule dependencies
 load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
@@ -285,12 +283,12 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_golang_protobuf",
-        commit = "aa810b61a9c79d51363740d207bb46cf8e620ed5",
         build_file_proto_mode = "disable_global",
+        commit = "aa810b61a9c79d51363740d207bb46cf8e620ed5",
         custom = "protobuf",
         importpath = "github.com/golang/protobuf",
-        patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
         patch_args = ["-p1"],
+        patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
     )
 
     maybe(
@@ -372,9 +370,9 @@ def _go_dependencies():
         commit = "3e7aa9e59977626dc60433e9aeadf1bb63d28295",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
-        patches = ["@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch"],
-        patch_args = ["-p1"],
         importpath = "golang.org/x/tools",
+        patch_args = ["-p1"],
+        patches = ["@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch"],
     )
 
     maybe(
