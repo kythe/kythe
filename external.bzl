@@ -98,9 +98,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_riegeli",
-        sha256 = "6b05427c3fab111af052d166d195052f5336b8517b26a11dbc4fee10cfc75b4e",
-        strip_prefix = "riegeli-bd99099abd41abbe35a10f3bfa35e15b6b2d893a",
-        url = "https://github.com/google/riegeli/archive/bd99099abd41abbe35a10f3bfa35e15b6b2d893a.zip",
+        sha256 = "5c1714329c19759201b7f2c6a2cf8b255b6f10c752b197d6e8847b8574dcd96b",
+        strip_prefix = "riegeli-6b1dd7be479f6ffffdec06c39f352bd5a87b63b7",
+        url = "https://github.com/google/riegeli/archive/6b1dd7be479f6ffffdec06c39f352bd5a87b63b7.zip",
     )
 
     maybe(
