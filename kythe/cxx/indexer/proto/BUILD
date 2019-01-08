@@ -71,6 +71,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_google_protobuf//:protobuf",
+        "@io_kythe//kythe/cxx/common:lib",
     ],
 )
 
