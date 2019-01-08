@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include "google/protobuf/io/printer.h"
+#include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
 
 namespace kythe {
