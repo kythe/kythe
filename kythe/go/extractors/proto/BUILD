@@ -3,6 +3,7 @@ load("@io_kythe//tools:build_rules/shims.bzl", "go_binary")
 go_binary(
     name = "extract_proto_kzip",
     srcs = ["extract_proto_kzip.go"],
+    visibility = ["//visibility:public"],
     deps = [
         "@io_kythe//kythe/go/extractors/bazel",
         "@io_kythe//kythe/go/extractors/bazel/extutil",
