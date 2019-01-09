@@ -1,3 +1,4 @@
+load("//tools:build_rules/docker.bzl", "docker_build")
 load("//tools:build_rules/shims.bzl", "go_binary")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -14,4 +15,15 @@ go_binary(
         "//kythe/proto:analysis_go_proto",
         "@com_github_pborman_uuid//:go_default_library",
     ],
+)
+
+docker_build(
+    name = "docker",
+    src = "Dockerfile",
+    data = [
+        "analyze_packages.sh",
+        ":gotool",
+    ],
+    image_name = "gcr.io/kythe-public/golang-extractor",
+    tags = ["manual"],
 )

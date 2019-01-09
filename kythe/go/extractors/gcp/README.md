@@ -32,7 +32,7 @@ authorize it, associate it with a valid project id, create a test gs bucket.
 ## Maven Proof of Concept
 
 To extract a maven repository using Kythe on Cloud Build, use
-`mvnpoc/cloudbuild.yaml`.  This assumes that you will specify a maven repository
+`examples/mvn.yaml`.  This assumes that you will specify a maven repository
 in `_REPO_NAME`, and that the repository has a top-level `pom.xml` file (right
 now it is a hard-coded location, but in the future it will be configurable).
 This also assumes you specify `_BUCKET_NAME` as per the Hello World Test above.
@@ -45,22 +45,20 @@ _REPO_NAME=https://github.com/project-name/repo-name\
 --no-source
 ```
 
-This Cloud Build uses two artifacts in gcr.io/kythe-public:
+### Guava specific example
 
-### Extractor Artifacts
+To extract multiple parts of https://github.com/google/guava, use
+`examples/guava-mvn.yaml`.
 
-gcr.io/kythe-public/kythe-javac-extractor-artifacts created from
-`kythe/java/com/google/devtools/kythe/extractors/java/artifacts` contains:
+```
+gcloud builds submit --config examples/guava-mvn.yaml \
+--substitutions=\
+_BUCKET_NAME=$BUCKET_NAME,\
+_GUAVA_VERSION=<commit-hash>\
+--no-source
+```
 
-* `javac-wrapper.sh` script which calls Kythe extraction and then an actual java
-  compiler
-* `javac_extractor.jar` which is the Kythe java extractor
-* `javac9_tools.jar` which contains javac langtools for JDK 9, but targets JRE 8
-
-gcr.io/kythe-public/build-preprocessor is just
-[kythe/go/extractors/config/preprocessor](https://github.com/kythe/kythe/blob/master/kythe/go/extractors/config/preprocessor/preprocessor.go),
-which we use to preprocess the `pom.xml` build configuration to be able to
-specify all of the above custom javac extraction logic.
+This outputs `guava-<commit-hash>.kzip` to $BUCKET_NAME on Google Cloud Storage.
 
 ## Gradle Proof of Concept
 
@@ -109,6 +107,49 @@ bazel build kythe/go/extractors/gcp/examples/restcheck:rest_auth_check
 
 If that returns with a 403 error, you likely did the authentication steps above
 incorrectly.
+
+## Associated extractor images
+
+Kythe team maintains a few images useful for extracting Kythe data on Google
+Cloud Build.  Many of these are used in example scripts and other generated GCB
+executions in Kythe.
+
+### gcr.io/kythe-public/kythe-javac-extractor-artifacts
+
+Created from
+[kythe/java/com/google/devtools/kythe/extractors/java/artifacts](https://github.com/kythe/kythe/blob/master/kythe/java/com/google/devtools/kythe/extractors/java/artifacts),
+this image contains:
+
+* `javac-wrapper.sh` script which calls Kythe extraction and then an actual java
+  compiler
+* `javac_extractor.jar` which is the Kythe java extractor
+* `javac9_tools.jar` which contains javac langtools for JDK 9, but targets JRE 8
+
+### gcr.io/kythe-public/kythe-bazel-extractor-artifacts
+
+Created from
+[kythe/go/extractors/gcp/bazel](https://github.com/kythe/kythe/blob/master/kythe/go/extractors/gcp/bazel),
+this image contains a full install of Kythe repo itself, along with a bazel
+builder.  In addition to building inside Google Cloud Build itself, you can also
+use this image for testing locally if you are having a hard time getting Kythe
+installed properly.  The clang/llvm setup from `tools/modules/update.sh` is
+already done, so arbitrary `bazel build //kythe/...` commands should work out of
+the box in this image.
+
+Note because it includes a full install of kythe, bazel, llvm, and clang, this
+image is quite large.
+
+### gcr.io/kythe-public/build-preprocessor
+
+This is a simple wrapper around
+[kythe/go/extractors/config/preprocessor](https://github.com/kythe/kythe/blob/master/kythe/go/extractors/config/preprocessor/preprocessor.go),
+which we use to preprocess the `pom.xml` build configuration to be able to
+specify all of the above custom javac extraction logic.
+
+### gcr.io/kythe-public/kzip-tools
+
+For now this is a simple wrapper around `zipmerge`, but will hopefully later
+contain other useful tools for dealing with kzip archives.
 
 ## Troubleshooting
 

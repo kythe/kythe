@@ -1,11 +1,10 @@
 load(
     "//tools/build_rules/verifier_test:verifier_test.bzl",
     "java_verifier_test",
-    "kythe_integration_test",
 )
 
-java_library(
-    name = "pkg",
+filegroup(
+    name = "pkg_files",
     srcs = glob(
         ["**/*.java"],
         exclude = [
@@ -14,6 +13,12 @@ java_library(
             "ProtobufMetadata.java",
         ],
     ),
+    visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
+)
+
+java_library(
+    name = "pkg",
+    srcs = [":pkg_files"],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
     exports = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/regression"],
     deps = ["@com_google_code_findbugs_jsr305//jar"],
