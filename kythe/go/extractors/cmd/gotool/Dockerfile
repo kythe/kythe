@@ -15,11 +15,12 @@
 FROM gcr.io/cloud-builders/go:debian
 
 RUN apt-get update && \
-    # TODO(schroederc): use kzip tool instead of zipmerge
-    apt-get install -y parallel zip zipmerge && \
+    apt-get install -y parallel && \
     apt-get clean
 
-ADD kythe/go/extractors/cmd/gotool/gotool /usr/local/bin/extract_go
 ADD kythe/go/extractors/cmd/gotool/analyze_packages.sh /usr/local/bin/analyze_packages.sh
+ADD kythe/go/extractors/cmd/gotool/gotool /usr/local/bin/extract_go
+ADD kythe/go/platform/tools/kzip/kzip /usr/local/bin/
+ADD kythe/release/base/fix_permissions.sh /usr/local/bin/
 
 ENTRYPOINT ["analyze_packages.sh"]

@@ -118,13 +118,14 @@ func mergeInto(wr *kzip.Writer, path string, filesAdded stringset.Set) error {
 			if filesAdded.Add(ri.Info.Digest) {
 				r, err := rd.Open(ri.Info.Digest)
 				if err != nil {
-					return err
+					return fmt.Errorf("error opening file: %v", err)
 				}
-				defer r.Close()
 				if _, err := wr.AddFile(r); err != nil {
-					return err
+					r.Close()
+					return fmt.Errorf("error adding file: %v", err)
+				} else if err := r.Close(); err != nil {
+					return fmt.Errorf("error closing file: %v", err)
 				}
-				return nil
 			}
 		}
 		// TODO(schroederc): duplicate compilations with different revisions

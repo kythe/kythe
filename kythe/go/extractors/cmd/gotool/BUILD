@@ -23,6 +23,8 @@ docker_build(
     data = [
         "analyze_packages.sh",
         ":gotool",
+        "//kythe/go/platform/tools/kzip",
+        "//kythe/release/base:fix_permissions.sh",
     ],
     image_name = "gcr.io/kythe-public/golang-extractor",
     tags = ["manual"],
