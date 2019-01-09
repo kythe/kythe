@@ -645,6 +645,13 @@ def _bindings():
         actual = "@net_zlib//:zlib",
     )
 
+def _kythe_contributions():
+    git_repository(
+        name = "io_kythe_lang_proto",
+        commit = "7759d0fd8b3340f77a7b9491b9cbc23c540e8191",
+        remote = "https://github.com/kythe/lang-proto",
+    )
+
 def kythe_dependencies():
     """Defines external repositories for Kythe dependencies.
 
@@ -653,6 +660,7 @@ def kythe_dependencies():
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
+    _kythe_contributions()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
