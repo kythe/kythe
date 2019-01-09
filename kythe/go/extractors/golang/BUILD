@@ -4,7 +4,10 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "golang",
-    srcs = ["golang.go"],
+    srcs = [
+        "golang.go",
+        "packages.go",
+    ],
     deps = [
         "//kythe/go/extractors/govname",
         "//kythe/go/platform/indexpack",

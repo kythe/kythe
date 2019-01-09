@@ -38,8 +38,8 @@ def build_example_sh():
         "GO_INDEXER_BIN": "//kythe/go/indexer/cmd/go_example:go_example",
         "JAVA_INDEXER_BIN": "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
         "KINDEX_TOOL_BIN": "//kythe/cxx/tools:kindex_tool",
-        "VERIFIER_BIN": "//kythe/cxx/verifier",
         "SHASUM_TOOL": "//kythe/go/platform/tools/shasum_tool:shasum_tool",
+        "VERIFIER_BIN": "//kythe/cxx/verifier",
     }
     fixes = [
         "-e '/^export %s=/{i\\\n_p=($(locations %s))\ns#$$#\"$$ROOT/$${_p[0]}\"#\n}'" % (key, target)

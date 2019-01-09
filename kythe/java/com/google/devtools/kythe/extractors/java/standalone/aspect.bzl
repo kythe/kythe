@@ -88,14 +88,14 @@ extract_java_aspect = aspect(
     _extract_java_aspect,
     attr_aspects = ["srcs"],
     attrs = {
-        "_java_aspect_vnames_config": attr.label(
-            default = Label("//external:vnames_config"),
-            allow_single_file = True,
-        ),
         "_java_aspect_extractor": attr.label(
             default = Label("@io_kythe//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor"),
             executable = True,
             cfg = "host",
+        ),
+        "_java_aspect_vnames_config": attr.label(
+            default = Label("//external:vnames_config"),
+            allow_single_file = True,
         ),
     },
 )

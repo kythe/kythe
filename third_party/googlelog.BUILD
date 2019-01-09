@@ -44,8 +44,8 @@ cc_library(
     includes = ["include"],
     linkopts = ["-lpthread"],
     deps = [
-        "@io_kythe//third_party/googlelog:config_h",
         "@com_github_gflags_gflags//:gflags",
+        "@io_kythe//third_party/googlelog:config_h",
     ],
 )
 

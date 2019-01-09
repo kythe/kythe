@@ -1,6 +1,5 @@
-load("//tools:build_rules/shims.bzl", "go_test")
-load("//tools:build_rules/shims.bzl", "go_binary", "go_library")
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+load("//tools:build_rules/shims.bzl", "go_binary", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 

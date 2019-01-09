@@ -15,16 +15,16 @@
 #
 
 load(
+    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+    "CPP_COMPILE_ACTION_NAME",
+)
+load(":toolchain_utils.bzl", "find_cpp_toolchain")
+load(
     ":verifier_test.bzl",
     "KytheEntries",
     "KytheVerifierSources",
     "extract",
     "verifier_test",
-)
-load(":toolchain_utils.bzl", "find_cpp_toolchain")
-load(
-    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
-    "CPP_COMPILE_ACTION_NAME",
 )
 
 UNSUPPORTED_FEATURES = [
@@ -43,21 +43,21 @@ CxxCompilationUnits = provider(
 )
 
 _VERIFIER_FLAGS = {
-    "convert_marked_source": False,
-    "ignore_dups": False,
     "check_for_singletons": False,
+    "convert_marked_source": False,
     "goal_prefix": "//-",
+    "ignore_dups": False,
 }
 
 _INDEXER_FLAGS = {
+    "experimental_alias_template_instantiations": False,
+    "experimental_drop_cpp_fwd_decl_docs": False,
+    "experimental_drop_instantiation_independent_data": False,
+    "experimental_drop_objc_fwd_class_docs": False,
+    "experimental_usr_byte_size": 0,
     "fail_on_unimplemented_builtin": True,
     "ignore_unimplemented": False,
     "index_template_instantiations": True,
-    "experimental_alias_template_instantiations": False,
-    "experimental_drop_instantiation_independent_data": False,
-    "experimental_drop_objc_fwd_class_docs": False,
-    "experimental_drop_cpp_fwd_decl_docs": False,
-    "experimental_usr_byte_size": 0,
 }
 
 def _compiler_options(ctx, cpp, copts, includes):
@@ -182,6 +182,30 @@ cc_extract_kzip = rule(
                 ".h",
             ],
         ),
+        "add_toolchain_include_directories": attr.bool(
+            doc = ("Whether or not to explicitly add the C++ toolchain " +
+                   "directories to the header search path."),
+            default = False,
+        ),
+        "copts": attr.string_list(
+            doc = """Options which are required to compile/index the sources.
+
+            These will be included in the resulting .kzip CompilationUnits.
+            """,
+        ),
+        "extractor": attr.label(
+            default = Label("//kythe/cxx/extractor:cxx_extractor"),
+            executable = True,
+            cfg = "host",
+        ),
+        "opts": attr.string_list(
+            doc = "Options which will be passed to the extractor as arguments.",
+        ),
+        "vnames_config": attr.label(
+            doc = "vnames_config file to be used by the extractor.",
+            default = Label("//external:vnames_config"),
+            allow_single_file = [".json"],
+        ),
         "deps": attr.label_list(
             doc = """Files which are required by the extracted sources.
 
@@ -199,30 +223,6 @@ cc_extract_kzip = rule(
                 [KytheEntries],
                 [CxxCompilationUnits],
             ],
-        ),
-        "vnames_config": attr.label(
-            doc = "vnames_config file to be used by the extractor.",
-            default = Label("//external:vnames_config"),
-            allow_single_file = [".json"],
-        ),
-        "opts": attr.string_list(
-            doc = "Options which will be passed to the extractor as arguments.",
-        ),
-        "add_toolchain_include_directories": attr.bool(
-            doc = ("Whether or not to explicitly add the C++ toolchain " +
-                   "directories to the header search path."),
-            default = False,
-        ),
-        "copts": attr.string_list(
-            doc = """Options which are required to compile/index the sources.
-
-            These will be included in the resulting .kzip CompilationUnits.
-            """,
-        ),
-        "extractor": attr.label(
-            default = Label("//kythe/cxx/extractor:cxx_extractor"),
-            executable = True,
-            cfg = "host",
         ),
         # Do not add references, temporary attribute for find_cpp_toolchain.
         "_cc_toolchain": attr.label(
@@ -258,8 +258,8 @@ def _extract_bundle_impl(ctx):
         outputs = [ctx.outputs.kzip],
         mnemonic = "ExtractBundle",
         env = {
-            "KYTHE_ROOT_DIRECTORY": ".",
             "KYTHE_OUTPUT_FILE": ctx.outputs.kzip.path,
+            "KYTHE_ROOT_DIRECTORY": ".",
             "KYTHE_VNAMES": ctx.file.vnames_config.path,
         },
         arguments = [
@@ -283,15 +283,6 @@ cc_extract_bundle = rule(
             mandatory = True,
             allow_single_file = True,
         ),
-        "vnames_config": attr.label(
-            default = Label("//kythe/cxx/indexer/cxx/testdata:test_vnames.json"),
-            allow_single_file = True,
-        ),
-        "unbundle": attr.label(
-            default = Label("//tools/build_rules/verifier_test:unbundle"),
-            executable = True,
-            cfg = "host",
-        ),
         "extractor": attr.label(
             default = Label("//kythe/cxx/extractor:cxx_extractor"),
             executable = True,
@@ -299,6 +290,15 @@ cc_extract_bundle = rule(
         ),
         "opts": attr.string_list(
             doc = "Additional arguments to pass to the extractor.",
+        ),
+        "unbundle": attr.label(
+            default = Label("//tools/build_rules/verifier_test:unbundle"),
+            executable = True,
+            cfg = "host",
+        ),
+        "vnames_config": attr.label(
+            default = Label("//kythe/cxx/indexer/cxx/testdata:test_vnames.json"),
+            allow_single_file = True,
         ),
     },
     doc = "Extracts a bundled C++ indexer test into a .kzip file.",
@@ -345,6 +345,11 @@ _bazel_extract_kzip = rule(
             mandatory = True,
             allow_single_file = [".xa"],
         ),
+        "extractor": attr.label(
+            default = Label("//kythe/cxx/extractor:cxx_extractor_bazel"),
+            executable = True,
+            cfg = "host",
+        ),
         "scripts": attr.label_list(
             cfg = "host",
             allow_files = True,
@@ -352,11 +357,6 @@ _bazel_extract_kzip = rule(
         "vnames_config": attr.label(
             default = Label("//external:vnames_config"),
             allow_single_file = True,
-        ),
-        "extractor": attr.label(
-            default = Label("//kythe/cxx/extractor:cxx_extractor_bazel"),
-            executable = True,
-            cfg = "host",
         ),
     },
     doc = "Extracts a Bazel extra action binary proto file into a .kzip.",
@@ -465,6 +465,17 @@ cc_index = rule(
             ],
             providers = [CxxCompilationUnits],
         ),
+        "copts": attr.string_list(
+            doc = "Options to pass to the compiler while indexing.",
+        ),
+        "indexer": attr.label(
+            default = Label("//kythe/cxx/indexer/cxx:indexer"),
+            executable = True,
+            cfg = "host",
+        ),
+        "opts": attr.string_list(
+            doc = "Options to pass to the indexer.",
+        ),
         "deps": attr.label_list(
             doc = "Files required to index srcs or entries to include in the index.",
             # .meta files, .h files, .entries{,.gz}, KytheEntries
@@ -475,17 +486,6 @@ cc_index = rule(
                 ".meta",  # Cross language metadata files.
             ],
             providers = [KytheEntries],
-        ),
-        "opts": attr.string_list(
-            doc = "Options to pass to the indexer.",
-        ),
-        "copts": attr.string_list(
-            doc = "Options to pass to the compiler while indexing.",
-        ),
-        "indexer": attr.label(
-            default = Label("//kythe/cxx/indexer/cxx:indexer"),
-            executable = True,
-            cfg = "host",
         ),
     },
     doc = """Produces a Kythe index from the C++ source files.

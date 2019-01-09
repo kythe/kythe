@@ -131,8 +131,8 @@ def _get_tool_paths(repository_ctx, darwin, cc):
         ]
     }
     paths.update({
-        "gcc": cc,
         "ar": "/usr/bin/libtool" if darwin else _which(repository_ctx, "ar", "/usr/bin/ar"),
+        "gcc": cc,
     })
     return paths
 
@@ -234,26 +234,47 @@ def _crosstool_content(repository_ctx, cc, cpu_value, darwin):
     """Return the content for the CROSSTOOL file, in a dictionary."""
     supports_gold_linker = _is_gold_supported(repository_ctx, cc)
     return {
-        "abi_version": _get_env_var(repository_ctx, "ABI_VERSION", "local", False),
         "abi_libc_version": _get_env_var(repository_ctx, "ABI_LIBC_VERSION", "local", False),
+        "abi_version": _get_env_var(repository_ctx, "ABI_VERSION", "local", False),
+        "ar_flag": ["-static", "-s", "-o"] if darwin else [],
         "builtin_sysroot": "",
         "compiler": _get_env_var(repository_ctx, "BAZEL_COMPILER", "compiler", False),
-        "host_system_name": _get_env_var(repository_ctx, "BAZEL_HOST_SYSTEM", "local", False),
-        "needsPic": True,
-        "supports_gold_linker": supports_gold_linker,
-        "supports_incremental_linker": False,
-        "supports_fission": False,
-        "supports_interface_shared_objects": False,
-        "supports_normalizing_ar": False,
-        "supports_start_end_lib": supports_gold_linker,
-        "target_libc": "macosx" if darwin else _get_env_var(repository_ctx, "BAZEL_TARGET_LIBC", "local", False),
-        "target_cpu": _get_env_var(repository_ctx, "BAZEL_TARGET_CPU", cpu_value, False),
-        "target_system_name": _get_env_var(repository_ctx, "BAZEL_TARGET_SYSTEM", "local", False),
+        "compiler_flag": [
+            # Security hardening requires optimization.
+            # We need to undef it as some distributions now have it enabled by default.
+            "-U_FORTIFY_SOURCE",
+            "-fstack-protector",
+            # All warnings are enabled. Maybe enable -Werror as well?
+            "-Wall",
+            # Enable a few more warnings that aren't part of -Wall.
+        ] + (["-Wthread-safety", "-Wself-assign"] if darwin else [
+            "-B" + str(repository_ctx.path(cc).dirname),
+            # Always have -B/usr/bin, see https://github.com/bazelbuild/bazel/issues/760.
+            "-B/usr/bin",
+        ]) + (
+            # Disable problematic warnings.
+            _add_option_if_supported(repository_ctx, cc, "-Wunused-but-set-parameter") +
+            # has false positives
+            _add_option_if_supported(repository_ctx, cc, "-Wno-free-nonheap-object") +
+            # Enable coloring even if there's no attached terminal. Bazel removes the
+            # escape sequences if --nocolor is specified.
+            _add_option_if_supported(repository_ctx, cc, "-fcolor-diagnostics")
+        ) + [
+            # Keep stack frames for debugging, even in opt mode.
+            "-fno-omit-frame-pointer",
+        ],
+        "cxx_builtin_include_directory": (
+            # Bazel uses the same list of directories for both compiler modes,
+            # but Clang doesn't list the same directories so we have to combine them.
+            _get_cxx_inc_directories(repository_ctx, cc, "c++") +
+            _get_cxx_inc_directories(repository_ctx, cc, "c")
+        ),
         "cxx_flag": [
             "-DGOOGLE_PROTOBUF_NO_RTTI",
             "-std=c++11",
             "-fno-rtti",
         ] + _cplus_include_paths(repository_ctx),
+        "host_system_name": _get_env_var(repository_ctx, "BAZEL_HOST_SYSTEM", "local", False),
         "linker_flag": [
             "-lstdc++",
             "-lm",  # Some systems expect -lm in addition to -lstdc++
@@ -290,14 +311,17 @@ def _crosstool_content(repository_ctx, cc, cpu_value, darwin):
                 "-pass-exit-codes",
             )
         ),
-        "ar_flag": ["-static", "-s", "-o"] if darwin else [],
-        "cxx_builtin_include_directory": (
-            # Bazel uses the same list of directories for both compiler modes,
-            # but Clang doesn't list the same directories so we have to combine them.
-            _get_cxx_inc_directories(repository_ctx, cc, "c++") +
-            _get_cxx_inc_directories(repository_ctx, cc, "c")
-        ),
+        "needsPic": True,
         "objcopy_embed_flag": ["-I", "binary"],
+        "supports_fission": False,
+        "supports_gold_linker": supports_gold_linker,
+        "supports_incremental_linker": False,
+        "supports_interface_shared_objects": False,
+        "supports_normalizing_ar": False,
+        "supports_start_end_lib": supports_gold_linker,
+        "target_cpu": _get_env_var(repository_ctx, "BAZEL_TARGET_CPU", cpu_value, False),
+        "target_libc": "macosx" if darwin else _get_env_var(repository_ctx, "BAZEL_TARGET_LIBC", "local", False),
+        "target_system_name": _get_env_var(repository_ctx, "BAZEL_TARGET_SYSTEM", "local", False),
         "unfiltered_cxx_flag":
         # If the compiler sometimes rewrites paths in the .d files without symlinks
         # (ie when they're shorter), it confuses Bazel's logic for verifying all
@@ -309,30 +333,6 @@ def _crosstool_content(repository_ctx, cc, cpu_value, darwin):
             "-D__DATE__=\\\"redacted\\\"",
             "-D__TIMESTAMP__=\\\"redacted\\\"",
             "-D__TIME__=\\\"redacted\\\"",
-        ],
-        "compiler_flag": [
-            # Security hardening requires optimization.
-            # We need to undef it as some distributions now have it enabled by default.
-            "-U_FORTIFY_SOURCE",
-            "-fstack-protector",
-            # All warnings are enabled. Maybe enable -Werror as well?
-            "-Wall",
-            # Enable a few more warnings that aren't part of -Wall.
-        ] + (["-Wthread-safety", "-Wself-assign"] if darwin else [
-            "-B" + str(repository_ctx.path(cc).dirname),
-            # Always have -B/usr/bin, see https://github.com/bazelbuild/bazel/issues/760.
-            "-B/usr/bin",
-        ]) + (
-            # Disable problematic warnings.
-            _add_option_if_supported(repository_ctx, cc, "-Wunused-but-set-parameter") +
-            # has false positives
-            _add_option_if_supported(repository_ctx, cc, "-Wno-free-nonheap-object") +
-            # Enable coloring even if there's no attached terminal. Bazel removes the
-            # escape sequences if --nocolor is specified.
-            _add_option_if_supported(repository_ctx, cc, "-fcolor-diagnostics")
-        ) + [
-            # Keep stack frames for debugging, even in opt mode.
-            "-fno-omit-frame-pointer",
         ],
     }
 
@@ -755,11 +755,11 @@ def _impl(repository_ctx):
             paths = (cuda_path.replace("\\", "\\\\") + "/bin;") + paths
         compute_capabilities = _cuda_compute_capabilities(repository_ctx)
         _tpl(repository_ctx, "wrapper/bin/pydir/msvc_tools.py", {
-            "%{lib_tool}": lib_tool,
-            "%{support_whole_archive}": support_whole_archive,
             "%{cuda_compute_capabilities}": ", ".join(
                 ["\"%s\"" % c for c in compute_capabilities],
             ),
+            "%{lib_tool}": lib_tool,
+            "%{support_whole_archive}": support_whole_archive,
         })
 
         # nvcc will generate some source files under tmp_dir
@@ -769,20 +769,20 @@ def _impl(repository_ctx):
                 cxx_include_directories.append(("cxx_builtin_include_directory: \"%s\"" % path))
         _tpl(repository_ctx, "CROSSTOOL", {
             "%{cc_toolchain_identifier}": cc_toolchain_identifier,
+            "%{compilation_mode_content}": "",
+            "%{content}": _get_windows_msys_crosstool_content(repository_ctx),
+            "%{coverage}": "",
             "%{cpu}": cpu_value,
+            "%{cxx_builtin_include_directory}": "\n".join(cxx_include_directories),
+            "%{dbg_content}": "",
             "%{default_toolchain_name}": "msvc_x64",
-            "%{toolchain_name}": "msys_x64",
-            "%{msvc_env_tmp}": tmp_dir,
-            "%{msvc_env_path}": paths,
             "%{msvc_env_include}": include_paths,
             "%{msvc_env_lib}": lib_paths,
-            "%{content}": _get_windows_msys_crosstool_content(repository_ctx),
-            "%{opt_content}": "",
-            "%{dbg_content}": "",
-            "%{compilation_mode_content}": "",
+            "%{msvc_env_path}": paths,
+            "%{msvc_env_tmp}": tmp_dir,
             "%{msys_x64_mingw_content}": "",
-            "%{cxx_builtin_include_directory}": "\n".join(cxx_include_directories),
-            "%{coverage}": "",
+            "%{opt_content}": "",
+            "%{toolchain_name}": "msys_x64",
         })
     else:
         darwin = cpu_value == "darwin"
@@ -796,11 +796,11 @@ def _impl(repository_ctx):
         opt_content = _opt_content(darwin)
         dbg_content = _dbg_content()
         _tpl(repository_ctx, "BUILD", {
+            "%{cc_compiler_deps}": ":cc_wrapper" if darwin else ":empty",
             "%{cc_toolchain_identifier}": cc_toolchain_identifier,
+            "%{compiler}": _get_env_var(repository_ctx, "BAZEL_COMPILER", "compiler", False),
             "%{name}": cpu_value,
             "%{supports_param_files}": "0" if darwin else "1",
-            "%{cc_compiler_deps}": ":cc_wrapper" if darwin else ":empty",
-            "%{compiler}": _get_env_var(repository_ctx, "BAZEL_COMPILER", "compiler", False),
         })
         _tpl(
             repository_ctx,
@@ -810,22 +810,22 @@ def _impl(repository_ctx):
         )
         _tpl(repository_ctx, "CROSSTOOL", {
             "%{cc_toolchain_identifier}": cc_toolchain_identifier,
-            "%{cpu}": cpu_value,
-            "%{default_toolchain_name}": _get_env_var(repository_ctx, "CC_TOOLCHAIN_NAME", "local", False),
-            "%{toolchain_name}": _get_env_var(repository_ctx, "CC_TOOLCHAIN_NAME", "local", False),
+            "%{compilation_mode_content}": "",
             "%{content}": _build_crosstool(crosstool_content) + "\n" +
                           _build_tool_path(tool_paths) + "\n" +
                           ("" if darwin else "linking_mode_flags { mode: DYNAMIC }\n"),
-            "%{opt_content}": _build_crosstool(opt_content, "    "),
-            "%{dbg_content}": _build_crosstool(dbg_content, "    "),
-            "%{compilation_mode_content}": "",
-            "%{msys_x64_mingw_content}": "",
-            "%{cxx_builtin_include_directory}": "",
             "%{coverage}": _coverage_feature(darwin),
-            "%{msvc_env_tmp}": "",
-            "%{msvc_env_path}": "",
+            "%{cpu}": cpu_value,
+            "%{cxx_builtin_include_directory}": "",
+            "%{dbg_content}": _build_crosstool(dbg_content, "    "),
+            "%{default_toolchain_name}": _get_env_var(repository_ctx, "CC_TOOLCHAIN_NAME", "local", False),
             "%{msvc_env_include}": "",
             "%{msvc_env_lib}": "",
+            "%{msvc_env_path}": "",
+            "%{msvc_env_tmp}": "",
+            "%{msys_x64_mingw_content}": "",
+            "%{opt_content}": _build_crosstool(opt_content, "    "),
+            "%{toolchain_name}": _get_env_var(repository_ctx, "CC_TOOLCHAIN_NAME", "local", False),
         }, repo = "")
 
 cc_autoconf = repository_rule(
