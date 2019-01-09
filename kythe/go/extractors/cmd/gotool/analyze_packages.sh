@@ -32,4 +32,5 @@ parallel --will-cite \
 mkdir -p "$OUTPUT"
 OUT="$(mktemp -p "$OUTPUT/" compilations.XXXXX.kzip)"
 echo "Merging compilations into $OUT" >&2
-zipmerge "$OUT" "$TMPDIR"/out.*.kzip
+kzip merge --output "$OUT" "$TMPDIR"/out.*.kzip
+fix_permissions.sh "$OUTPUT"
