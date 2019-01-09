@@ -71,7 +71,7 @@ func mergeArchives(ctx context.Context, output string, archives []string) error 
 	if err != nil {
 		return fmt.Errorf("error creating output: %v", err)
 	}
-	wr, err := kzip.NewWriter(out)
+	wr, err := kzip.NewWriteCloser(out)
 	if err != nil {
 		out.Close()
 		return fmt.Errorf("error creating writer: %v", err)
@@ -79,58 +79,56 @@ func mergeArchives(ctx context.Context, output string, archives []string) error 
 
 	filesAdded := stringset.New()
 	for _, path := range archives {
-		if err := func() error {
-			f, err := os.Open(path)
-			if err != nil {
-				return fmt.Errorf("error opening archive: %v", err)
-			}
-			defer f.Close()
-
-			stat, err := f.Stat()
-			if err != nil {
-				return err
-			}
-			size := stat.Size()
-			if size == 0 {
-				log.Printf("Skipping empty .kzip: %s", path)
-				return nil
-			}
-
-			rd, err := kzip.NewReader(f, size)
-			if err != nil {
-				return fmt.Errorf("error creating reader: %v", err)
-			}
-
-			return rd.Scan(func(u *kzip.Unit) error {
-				for _, ri := range u.Proto.RequiredInput {
-					if filesAdded.Add(ri.Info.Digest) {
-						r, err := rd.Open(ri.Info.Digest)
-						if err != nil {
-							return err
-						}
-						if _, err := wr.AddFile(r); err != nil {
-							r.Close()
-							return err
-						} else if err := r.Close(); err != nil {
-							return err
-						}
-					}
-				}
-				// TODO(schroederc): duplicate compilations with different revisions
-				_, err = wr.AddUnit(u.Proto, u.Index)
-				return err
-			})
-		}(); err != nil {
+		if err := mergeInto(wr, path, filesAdded); err != nil {
 			wr.Close()
-			out.Close()
 			return err
 		}
 	}
 
 	if err := wr.Close(); err != nil {
 		return fmt.Errorf("error closing writer: %v", err)
-	} else if err := out.Close(); err != nil {
-		return fmt.Errorf("error closing output: %v", err)
 	}
 	return nil
+}
+
+func mergeInto(wr *kzip.Writer, path string, filesAdded stringset.Set) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("error opening archive: %v", err)
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	size := stat.Size()
+	if size == 0 {
+		log.Printf("Skipping empty .kzip: %s", path)
+		return nil
+	}
+
+	rd, err := kzip.NewReader(f, size)
+	if err != nil {
+		return fmt.Errorf("error creating reader: %v", err)
+	}
+
+	return rd.Scan(func(u *kzip.Unit) error {
+		for _, ri := range u.Proto.RequiredInput {
+			if filesAdded.Add(ri.Info.Digest) {
+				r, err := rd.Open(ri.Info.Digest)
+				if err != nil {
+					return err
+				}
+				defer r.Close()
+				if _, err := wr.AddFile(r); err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+		// TODO(schroederc): duplicate compilations with different revisions
+		_, err = wr.AddUnit(u.Proto, u.Index)
+		return err
+	})
 }
