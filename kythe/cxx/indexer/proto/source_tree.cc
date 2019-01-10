@@ -108,7 +108,8 @@ google::protobuf::io::ZeroCopyInputStream* PreloadedProtoFileTree::Open(
 
 bool PreloadedProtoFileTree::Read(absl::string_view file_path,
                                   std::string* out) {
-  auto* in_stream = Open(std::string(file_path));
+  std::unique_ptr<google::protobuf::io::ZeroCopyInputStream> in_stream(
+      Open(std::string(file_path)));
   if (!in_stream) {
     return false;
   }
