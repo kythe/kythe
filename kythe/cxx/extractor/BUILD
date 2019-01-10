@@ -65,10 +65,6 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    visibility = [
-        "//kythe:default_visibility",
-        "//third_party/llvm/src:__pkg__",
-    ],
     deps = [
         "//kythe/proto:cxx_cc_proto",
         "//third_party/llvm",
@@ -179,6 +175,7 @@ cc_library(
     ],
     deps = [
         ":command_line_utils",
+        ":cxx_details",
         ":path_utils",
         ":supported_language",
         "//external:zlib",
