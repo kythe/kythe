@@ -6,28 +6,14 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "preprocessor_util_lib",
-    srcs = [
-        "cxx_extractor_preprocessor_utils.cc",
-    ],
-    hdrs = [
-        "cxx_extractor_preprocessor_utils.h",
-    ],
+    srcs = ["cxx_extractor_preprocessor_utils.cc"],
+    hdrs = ["cxx_extractor_preprocessor_utils.h"],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    deps = [
-        "//external:zlib",
-        "//kythe/cxx/extractor:cxx_details",
-        "//kythe/proto:analysis_cc_proto",
-        "//kythe/proto:storage_cc_proto",
-        "//third_party/llvm",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
-        "@com_google_protobuf//:protobuf",
-        "@com_googlesource_code_re2//:re2",
-    ],
+    deps = ["//third_party/llvm"],
 )
 
 cc_library(
