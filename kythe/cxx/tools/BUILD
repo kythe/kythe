@@ -70,6 +70,7 @@ cc_library(
 
 cc_binary(
     name = "kindex_tool",
+    visibility = ["//visibility:public"],
     deps = [
         ":cmdlib",
     ],
