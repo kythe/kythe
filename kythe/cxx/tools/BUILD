@@ -1,5 +1,7 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+
 cc_library(
     name = "cmdlib",
     srcs = [
@@ -70,7 +72,7 @@ cc_library(
 
 cc_binary(
     name = "kindex_tool",
-    visibility = ["//visibility:public"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":cmdlib",
     ],
