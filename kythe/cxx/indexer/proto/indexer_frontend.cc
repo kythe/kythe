@@ -17,75 +17,31 @@
 #include "kythe/cxx/indexer/proto/indexer_frontend.h"
 
 #include "absl/container/node_hash_map.h"
-#include "absl/strings/str_replace.h"
-#include "absl/strings/str_split.h"
-#include "absl/strings/strip.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/indexer/proto/proto_analyzer.h"
+#include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/cxx/indexer/proto/source_tree.h"
 #include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
-
-namespace {
-void AddPathSubstitutions(
-    absl::string_view path_argument,
-    std::vector<std::pair<std::string, std::string>>* substitutions) {
-  std::vector<std::string> parts =
-      absl::StrSplit(path_argument, ':', absl::SkipEmpty());
-  for (const std::string& path_or_substitution : parts) {
-    std::string::size_type equals_pos = path_or_substitution.find_first_of('=');
-    if (equals_pos == std::string::npos) {
-      substitutions->push_back(
-          std::make_pair("", CleanPath(path_or_substitution)));
-    } else {
-      substitutions->push_back(std::make_pair(
-          CleanPath(path_or_substitution.substr(0, equals_pos)),
-          CleanPath(path_or_substitution.substr(equals_pos + 1))));
-    }
-  }
-}
-
-void ParsePathSubstitutions(
-    const proto::CompilationUnit& unit,
-    std::vector<std::pair<std::string, std::string>>* substitutions) {
-  bool have_paths = false;
-  bool expecting_path_arg = false;
-  for (const std::string& argument : unit.argument()) {
-    if (expecting_path_arg) {
-      expecting_path_arg = false;
-      AddPathSubstitutions(argument, substitutions);
-      have_paths = true;
-    } else if (argument == "-I" || argument == "--proto_path") {
-      expecting_path_arg = true;
-    } else {
-      absl::string_view argument_value = argument;
-      if (absl::ConsumePrefix(&argument_value, "-I")) {
-        AddPathSubstitutions(argument_value, substitutions);
-        have_paths = true;
-      } else if (absl::ConsumePrefix(&argument_value, "--proto_path=")) {
-        AddPathSubstitutions(argument_value, substitutions);
-        have_paths = true;
-      }
-    }
-  }
-  if (!have_paths && !unit.working_directory().empty()) {
-    substitutions->push_back(
-        std::make_pair("", CleanPath(unit.working_directory())));
-  }
-}
-}  // anonymous namespace
 
 std::string IndexProtoCompilationUnit(const proto::CompilationUnit& unit,
                                       const std::vector<proto::FileData>& files,
                                       KytheOutputStream* output) {
   FileVNameGenerator file_vnames;
   KytheGraphRecorder recorder(output);
+
+  std::vector<std::string> unprocessed_args;
   std::vector<std::pair<std::string, std::string>> path_substitutions;
+  ::kythe::lang_proto::ParsePathSubstitutions(
+      unit.argument(), &path_substitutions, &unprocessed_args);
+  if (path_substitutions.empty() && !unit.working_directory().empty()) {
+    path_substitutions.push_back({"", CleanPath(unit.working_directory())});
+  }
+
   absl::node_hash_map<std::string, std::string> file_substitution_cache;
-  ParsePathSubstitutions(unit, &path_substitutions);
   PreloadedProtoFileTree file_reader(&path_substitutions,
                                      &file_substitution_cache);
   google::protobuf::compiler::SourceTreeDescriptorDatabase descriptor_db(

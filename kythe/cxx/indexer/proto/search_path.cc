@@ -1,0 +1,71 @@
+#include "search_path.h"
+
+#include "absl/strings/str_replace.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/strip.h"
+#include "kythe/cxx/common/path_utils.h"
+
+namespace kythe {
+namespace lang_proto {
+namespace {
+
+void AddPathSubstitutions(
+    absl::string_view path_argument,
+    std::vector<std::pair<std::string, std::string>>* substitutions) {
+  std::vector<std::string> parts =
+      absl::StrSplit(path_argument, ':', absl::SkipEmpty());
+  for (const std::string& path_or_substitution : parts) {
+    std::string::size_type equals_pos = path_or_substitution.find_first_of('=');
+    if (equals_pos == std::string::npos) {
+      substitutions->push_back({"", CleanPath(path_or_substitution)});
+    } else {
+      substitutions->push_back(
+          {CleanPath(path_or_substitution.substr(0, equals_pos)),
+           CleanPath(path_or_substitution.substr(equals_pos + 1))});
+    }
+  }
+}
+
+template <class ARGLIST>
+void _ParsePathSubstitutions(
+    ARGLIST args,
+    std::vector<std::pair<std::string, std::string>>* substitutions,
+    std::vector<std::string>* unprocessed) {
+  bool expecting_path_arg = false;
+  for (const std::string& argument : args) {
+    if (expecting_path_arg) {
+      expecting_path_arg = false;
+      AddPathSubstitutions(argument, substitutions);
+    } else if (argument == "-I" || argument == "--proto_path") {
+      expecting_path_arg = true;
+    } else {
+      absl::string_view argument_value = argument;
+      if (absl::ConsumePrefix(&argument_value, "-I")) {
+        AddPathSubstitutions(argument_value, substitutions);
+      } else if (absl::ConsumePrefix(&argument_value, "--proto_path=")) {
+        AddPathSubstitutions(argument_value, substitutions);
+      } else if (unprocessed) {
+        unprocessed->push_back(argument);
+      }
+    }
+  }
+}
+
+}  // namespace
+
+void ParsePathSubstitutions(
+    std::vector<std::string> args,
+    std::vector<std::pair<std::string, std::string>>* substitutions,
+    std::vector<std::string>* unprocessed) {
+  _ParsePathSubstitutions(args, substitutions, unprocessed);
+}
+
+void ParsePathSubstitutions(
+    google::protobuf::RepeatedPtrField<std::string> args,
+    std::vector<std::pair<std::string, std::string>>* substitutions,
+    std::vector<std::string>* unprocessed) {
+  _ParsePathSubstitutions(args, substitutions, unprocessed);
+}
+
+}  // namespace lang_proto
+}  // namespace kythe

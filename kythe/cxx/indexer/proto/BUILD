@@ -44,6 +44,7 @@ cc_library(
     ],
     deps = [
         ":proto_graph_builder",
+        ":search_path",
         ":source_tree",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:node_hash_map",
@@ -82,6 +83,17 @@ cc_library(
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_protobuf//:protobuf",
+        "@io_kythe//kythe/cxx/common:path_utils",
+    ],
+)
+
+cc_library(
+    name = "search_path",
+    srcs = ["search_path.cc"],
+    hdrs = ["search_path.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@io_kythe//kythe/cxx/common:path_utils",
     ],
