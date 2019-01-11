@@ -1,7 +1,5 @@
 licenses(["notice"])
 
-load("//tools:build_rules/cc_resources.bzl", "gendir")
-
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -18,18 +16,12 @@ cc_library(
 
 cc_library(
     name = "clang_builtin_headers",
-    srcs = [
-        "clang_builtin_headers.cc",
-        "//third_party/llvm:clang_builtin_headers_resources",
-    ],
-    hdrs = [
-        "clang_builtin_headers.h",
-        "//third_party/llvm:clang_builtin_headers_resources.inc",
-    ],
+    srcs = ["clang_builtin_headers.cc"],
+    hdrs = ["clang_builtin_headers.h"],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
-        "-I" + gendir() + "/third_party/llvm",
     ],
+    deps = ["//third_party/llvm:clang_builtin_headers_resources"],
 )
