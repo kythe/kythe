@@ -202,7 +202,7 @@ func validate(config repoConfig) (retErr error) {
 		Compilations:  strings.Split(*kzip, ","),
 		Repo:          repoPath,
 		Langs:         stringset.FromKeys(strings.Split(*lang, ",")),
-		MissingOutput: missingFile,
+		MissingOutput: *missingFile,
 	}.Validate()
 	if err != nil {
 		return fmt.Errorf("failure validating: %v", err)
