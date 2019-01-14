@@ -223,11 +223,15 @@ const clang::Decl* FindImplicitDeclForStmt(
     llvm::SmallVector<unsigned, 16>* StmtPath) {
   for (const auto& Current : RootTraversal(AllParents, Stmt)) {
     if (Current.decl && Current.decl->isImplicit() &&
-        !isa<VarDecl>(Current.decl)) {
+        !isa<VarDecl>(Current.decl) &&
+        !(isa<CXXRecordDecl>(Current.decl) &&
+          dyn_cast<CXXRecordDecl>(Current.decl)->isLambda())) {
       // If this is an implicit variable declaration, we assume that it is one
       // of the implicit declarations attached to a range for loop. We ignore
       // its implicitness, which lets us associate a source location with the
-      // implicit references to 'begin', 'end' and operators.
+      // implicit references to 'begin', 'end' and operators. We also skip
+      // the implicit CXXRecordDecl that's created for lambda expressions,
+      // since it may include interesting non-implicit nodes.
       return Current.decl;
     }
     if (Current.indexed_parent && StmtPath) {
