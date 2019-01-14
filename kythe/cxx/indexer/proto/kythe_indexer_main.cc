@@ -50,8 +50,6 @@ DEFINE_string(o, "-", "Output filename.");
 DEFINE_bool(flush_after_each_entry, false,
             "Flush output after writing each entry.");
 DEFINE_string(index_file, "", ".kzip file containing compilation unit.");
-DEFINE_int32(min_size, 4096, "Minimum size of an entry bundle.");
-DEFINE_int32(max_size, 1024 * 32, "Maximum size of an entry bundle.");
 
 namespace kythe {
 namespace {
