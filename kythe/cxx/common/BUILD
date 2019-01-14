@@ -22,6 +22,7 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":status_or",
         "@com_github_gflags_gflags//:gflags",
@@ -50,6 +51,7 @@ cc_library(
     name = "path_utils",
     srcs = ["path_utils.cc"],
     hdrs = ["path_utils.h"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         "@com_google_absl//absl/strings",
     ],
@@ -342,7 +344,7 @@ cc_library(
     name = "status",
     srcs = ["status.cc"],
     hdrs = ["status.h"],
-    visibility = ["//visibility:private"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
@@ -353,7 +355,7 @@ cc_library(
 cc_library(
     name = "status_or",
     hdrs = ["status_or.h"],
-    visibility = ["//visibility:private"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":status",
         "@com_github_google_glog//:glog",
@@ -388,6 +390,7 @@ cc_library(
     name = "utf8_line_index",
     srcs = ["utf8_line_index.cc"],
     hdrs = ["utf8_line_index.h"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/algorithm:container",

@@ -10,16 +10,12 @@ def cc_resources(name, data):
     if len(data) == 0:
         fail("Empty `data` attribute in `%s`" % name)
     native.genrule(
-        name = name,
+        name = name + "_inc",
         outs = [out_inc],
         srcs = data,
         cmd = cmd,
     )
-
-# Returns the generated files directory root.
-#
-# Note: workaround for https://github.com/bazelbuild/bazel/issues/4463.
-def gendir():
-    if native.repository_name() == "@":
-        return "$(GENDIR)"
-    return "$(GENDIR)/external/" + native.repository_name().lstrip("@")
+    native.cc_library(
+        name = name,
+        hdrs = [name + "_inc"],
+    )

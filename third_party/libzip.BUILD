@@ -5,18 +5,18 @@ package(
 load("@io_kythe//tools:build_rules/expand_template.bzl", "cmake_substitutions", "expand_template")
 
 _CMAKE_VARIABLES = {
-    "LIBZIP_TYPES_INCLUDE": "#include <stdint.h>",
-    "PACKAGE_VERSION": "1.5.1",
-    "PACKAGE_VERSION_MAJOR": "1",
-    "PACKAGE_VERSION_MINOR": "5",
-    "PACKAGE_VERSION_MICRO": "1",
     "INT16_T_LIBZIP": 2,
     "INT32_T_LIBZIP": 4,
     "INT64_T_LIBZIP": 8,
     "INT8_T_LIBZIP": 1,
     "INT_LIBZIP": 4,
+    "LIBZIP_TYPES_INCLUDE": "#include <stdint.h>",
     "LONG_LIBZIP": 8,
     "LONG_LONG_LIBZIP": 8,
+    "PACKAGE_VERSION": "1.5.1",
+    "PACKAGE_VERSION_MAJOR": "1",
+    "PACKAGE_VERSION_MICRO": "1",
+    "PACKAGE_VERSION_MINOR": "5",
     "SHORT_LIBZIP": 2,
     "SIZEOF_OFF_T": 8,
     "SIZE_T_LIBZIP": 8,
@@ -25,10 +25,10 @@ _CMAKE_VARIABLES = {
     "UINT32_T_LIBZIP": 4,
     "UINT64_T_LIBZIP": 8,
     "UINT8_T_LIBZIP": 1,
-    "__INT8_LIBZIP": None,
     "__INT16_LIBZIP": None,
     "__INT32_LIBZIP": None,
     "__INT64_LIBZIP": None,
+    "__INT8_LIBZIP": None,
 }
 
 _CMAKE_VARIABLES.update(dict([
@@ -123,8 +123,8 @@ _VARS = {
     "LIBZIP_TYPES_INCLUDE": "#include <stdint.h>",
     "PACKAGE_VERSION": "1.5.1",
     "PACKAGE_VERSION_MAJOR": "1",
-    "PACKAGE_VERSION_MINOR": "5",
     "PACKAGE_VERSION_MICRO": "1",
+    "PACKAGE_VERSION_MINOR": "5",
 }
 
 _VARS.update(dict([
@@ -149,8 +149,8 @@ expand_template(
         defines = {
             "LIBZIP_VERSION": True,
             "LIBZIP_VERSION_MAJOR": True,
-            "LIBZIP_VERSION_MINOR": True,
             "LIBZIP_VERSION_MICRO": True,
+            "LIBZIP_VERSION_MINOR": True,
             "ZIP_STATIC": False,
         },
         vars = _VARS,

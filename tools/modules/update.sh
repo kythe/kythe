@@ -16,31 +16,50 @@
 # update_modules.sh updates the repositories for external code (to the precise
 # revisions used for testing).
 #
-# If the single argument `--git_only` is passed, the repositories will be
+# If the single argument `--fetch_only` is passed, the repositories will be
 # updated to the pinned versions without configuring or building them.
 # If the argument `--build_only` is passed, the script will assume that the
 # repositories are at the correct version and will configure and build them.
 
-git_maybe_clone() {
-  local repo="$1"
-  local dir="$2"
-  if [[ ! -d "$dir/.git" ]]; then
-    git clone "$repo" "$dir"
+# This section is used for cleanup during/after fetching.
+TMPDIRS=()
+
+wget_cleanup() {
+  TMPDIRS+=("${1?:missing directory}")
+  trap trap_cleanup EXIT ERR INT
+}
+
+trap_cleanup() {
+  cd "$ROOT"
+  for dir in "${TMPDIRS[@]}"; do
+    rm -rf "$dir"
+  done
+}
+
+wget_copy_archive() {
+  # The dependency to download from llvm-mirror (llvm, clang).
+  local target="$1"
+  # The directory to download the dependency into.
+  local dir="${2:?missing directory}"
+  # The specific version of the dependency to use.
+  local sha="$3"
+
+  if [[ ! -f "$dir/$sha.sentinel" ]]; then
+    rm -rf "$dir"
+    local tmpdir
+    tmpdir="$(mktemp -d)"
+    wget -O "$tmpdir/$sha.zip" "https://github.com/llvm-mirror/$target/archive/$sha.zip"
+    wget_cleanup "$tmpdir"
+    unzip "$tmpdir/$sha.zip" -d "$tmpdir/"
+    # This relies on the behavior of github to always produce a zip archive with
+    # a subdirectory named "repo-###sha###" that contains the repo inside it.
+    mv "$tmpdir/$target-$sha" "$dir"
+    # Leave an empty file so that we know what version we have checked out.
+    touch "$dir/$sha.sentinel"
   fi
 }
 
-git_checkout_sha() {
-  local repo="$1"
-  local sha="$2"
-  cd "$repo"
-  if [[ "$sha" != "$(git rev-parse HEAD)" ]]; then
-    git fetch origin master
-    git checkout -f "$sha"
-  fi
-  cd - >/dev/null
-}
-
-cd "$(dirname $0)/../.."
+cd "$(dirname "$0")/../.."
 ROOT="$PWD"
 
 bazel build //tools/modules:compiler_info
@@ -58,15 +77,15 @@ if [[ -d "$LLVM_REPO/build" && ! -h "$LLVM_REPO/build" ]]; then
 fi
 
 . ./tools/modules/versions.sh
-if [[ -z "$1" || "$1" == "--git_only" ]]; then
+if [[ -z "$1" || "$1" == "--fetch_only" ]]; then
   echo "Using repository in $LLVM_REPO"
 
-  git_maybe_clone https://github.com/llvm-mirror/llvm "$LLVM_REPO"
-  git_maybe_clone https://github.com/llvm-mirror/clang "$LLVM_REPO/tools/clang"
+  wget_copy_archive "llvm" "$LLVM_REPO" "$MIN_LLVM_SHA"
+  wget_copy_archive "clang" "$LLVM_REPO/tools/clang" "$MIN_CLANG_SHA"
   rm -rf "$LLVM_REPO/tools/clang/tools/extra"
-
-  git_checkout_sha "$LLVM_REPO" "$MIN_LLVM_SHA"
-  git_checkout_sha "$LLVM_REPO/tools/clang" "$MIN_CLANG_SHA"
+  # Do cleanup, and clear the trap for later use.
+  trap_cleanup
+  trap - EXIT ERR INT
 fi
 
 if [[ -z "$1" || "$1" == "--build_only" ]]; then
@@ -74,13 +93,14 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
   vbuild_dir="build.${MIN_LLVM_SHA}.${MIN_CLANG_SHA}"
   find "${LLVM_REPO}" -maxdepth 1 -type d \
       ! -name "${vbuild_dir}" -name 'build.*.*' \
-      -exec rm -rf \{} \;
+      -exec rm -rf {} \;
   if [[ ! -d "$vbuild_dir" ]]; then
     mkdir -p "$vbuild_dir"
+    # shellcheck disable=SC2064
     trap "rm -rf '$LLVM_REPO/$vbuild_dir'" ERR INT
     cd "$vbuild_dir"
     CXX=$(basename "${BAZEL_CC}" | sed -E 's/(cc)?(-.*)?$/++\2/')
-    if [ ! -z $(dirname "${BAZEL_CC}") ]; then
+    if [ ! -z "$(dirname "${BAZEL_CC}")" ]; then
       CXX="$(dirname "${BAZEL_CC}")/${CXX}"
     fi
     if [ ! -x "$CXX" ]; then

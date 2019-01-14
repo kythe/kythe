@@ -121,7 +121,7 @@ class BufferStack {
         size_t to_copy = std::min(static_cast<size_t>(proto_size),
                                   joined->slab.size() - write_at);
         memcpy(proto_data, joined->slab.data() + write_at, to_copy);
-        if (proto_size > to_copy) {
+        if (static_cast<size_t>(proto_size) > to_copy) {
           stream->BackUp(proto_size - to_copy);
         }
         write_at += to_copy;

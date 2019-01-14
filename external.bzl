@@ -1,12 +1,10 @@
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
-load("@io_kythe//:setup.bzl", "maybe")
-
-# Rule dependencies
-load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
+load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
+load("@io_kythe//:setup.bzl", "maybe")
+load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 
 def _rule_dependencies():
     gazelle_dependencies()
@@ -100,9 +98,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_riegeli",
-        sha256 = "6b05427c3fab111af052d166d195052f5336b8517b26a11dbc4fee10cfc75b4e",
-        strip_prefix = "riegeli-bd99099abd41abbe35a10f3bfa35e15b6b2d893a",
-        url = "https://github.com/google/riegeli/archive/bd99099abd41abbe35a10f3bfa35e15b6b2d893a.zip",
+        sha256 = "5c1714329c19759201b7f2c6a2cf8b255b6f10c752b197d6e8847b8574dcd96b",
+        strip_prefix = "riegeli-6b1dd7be479f6ffffdec06c39f352bd5a87b63b7",
+        url = "https://github.com/google/riegeli/archive/6b1dd7be479f6ffffdec06c39f352bd5a87b63b7.zip",
     )
 
     maybe(
@@ -285,12 +283,12 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_golang_protobuf",
-        commit = "aa810b61a9c79d51363740d207bb46cf8e620ed5",
         build_file_proto_mode = "disable_global",
+        commit = "aa810b61a9c79d51363740d207bb46cf8e620ed5",
         custom = "protobuf",
         importpath = "github.com/golang/protobuf",
-        patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
         patch_args = ["-p1"],
+        patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
     )
 
     maybe(
@@ -372,9 +370,9 @@ def _go_dependencies():
         commit = "3e7aa9e59977626dc60433e9aeadf1bb63d28295",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
-        patches = ["@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch"],
-        patch_args = ["-p1"],
         importpath = "golang.org/x/tools",
+        patch_args = ["-p1"],
+        patches = ["@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch"],
     )
 
     maybe(
@@ -555,6 +553,54 @@ def _go_dependencies():
     )
 
     maybe(
+        go_repository,
+        name = "com_github_mholt_archiver",
+        commit = "d572b2e8b82726cee9476d1b9d63a7fe9b601ff1",
+        custom = "archiver",
+        importpath = "github.com/mholt/archiver",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_dsnet_compress",
+        commit = "cc9eb1d7ad760af14e8f918698f745e80377af4f",
+        custom = "compress",
+        importpath = "github.com/dsnet/compress",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_nwaples_rardecode",
+        commit = "197ef08ef68c4454ae5970a9c2692d6056ceb8d7",
+        custom = "rardecode",
+        importpath = "github.com/nwaples/rardecode",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_pierrec_lz4",
+        commit = "623b5a2f4d2a41e411730dcdfbfdaeb5c0c4564e",
+        custom = "lz4",
+        importpath = "github.com/pierrec/lz4",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_ulikunitz_xz",
+        commit = "590df8077fbcb06ad62d7714da06c00e5dd2316d",
+        custom = "xz",
+        importpath = "github.com/ulikunitz/xz",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_xi2_xz",
+        commit = "48954b6210f8d154cb5f8484d3a3e1f83489309e",
+        custom = "xi2xz",
+        importpath = "github.com/xi2/xz",
+    )
+
+    maybe(
         http_archive,
         name = "org_brotli_go",
         sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
@@ -599,6 +645,13 @@ def _bindings():
         actual = "@net_zlib//:zlib",
     )
 
+def _kythe_contributions():
+    git_repository(
+        name = "io_kythe_lang_proto",
+        commit = "7759d0fd8b3340f77a7b9491b9cbc23c540e8191",
+        remote = "https://github.com/kythe/lang-proto",
+    )
+
 def kythe_dependencies():
     """Defines external repositories for Kythe dependencies.
 
@@ -607,22 +660,19 @@ def kythe_dependencies():
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
+    _kythe_contributions()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
     #
-    # N.B. We have a near-clone of the protobuf BUILD file overriding upstream so
-    # that we can set the unexported config variable to enable zlib. Without this,
-    # protobuf silently yields link errors.
-    protobuf_archive = {
-        "build_file": "@io_kythe//third_party:protobuf.BUILD",
-        "sha256": "eb78d5527146ada6c68e7d6cd89edf1ee7743fb1731e5ec5c59acea27ae2833d",
-        "strip_prefix": "protobuf-d52f2bb9e45f6f92743ef632add29f6b15832d3b",
-        "urls": ["https://github.com/protocolbuffers/protobuf/archive/d52f2bb9e45f6f92743ef632add29f6b15832d3b.zip"],
-    }
-    maybe(http_archive, name = "com_google_protobuf", **protobuf_archive)
-    maybe(http_archive, name = "protobuf_archive", **protobuf_archive)
-    # The above copy is because com_google_riegeli uses a non-standard name... (╯°□°)╯︵ ┻━┻
+    # TODO(schroederc): update to 3.7.0 once released
+    maybe(
+        http_archive,
+        name = "com_google_protobuf",
+        sha256 = "712715f5ac35637131f0d829ca7e0edaccab6fdeb33ecd3692ff24214ae5032f",
+        strip_prefix = "protobuf-de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af.zip"],
+    )
 
     maybe(
         http_archive,

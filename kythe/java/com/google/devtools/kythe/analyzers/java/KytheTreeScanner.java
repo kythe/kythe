@@ -43,7 +43,9 @@ import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
+import com.sun.source.tree.Scope;
 import com.sun.source.tree.Tree.Kind;
+import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
@@ -451,15 +453,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     EntrySet bindingAnchor = null;
     if (methodDef.sym.isConstructor()) {
       // Implicit constructors (those without syntactic definition locations) share the same
-      // preferred position as their owned class.  Since implicit constructors don't exist in the
-      // file's text, don't generate anchors them by ensuring the constructor's position is ahead
-      // of the owner's position.
+      // preferred position as their owned class.  We can differentiate them from other constructors
+      // by checking if its position is ahead of the owner's position.
       if (methodDef.getPreferredPosition() > owner.getTree().getPreferredPosition()) {
-        // Use the owner's name (the class name) to find the definition anchor's
-        // location because constructors are internally named "<init>".
+        // Explicit constructor: use the owner's name (the class name) to find the definition
+        // anchor's location because constructors are internally named "<init>".
         bindingAnchor =
             emitDefinesBindingAnchorEdge(
                 ctx, methodDef.sym.owner.name, methodDef.getPreferredPosition(), methodNode);
+      } else {
+        // Implicit constructor: generate a zero-length implicit anchor
+        emitAnchor(ctx, EdgeKind.DEFINES, methodNode);
       }
       // Likewise, constructors don't have return types in the Java AST, but
       // Kythe models all functions with return types.  As a solution, we use
@@ -655,10 +659,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         if (cls != null) {
           // Import is a class member; emit usages for all matching (by name) class members.
           ctx = ctx.down(field);
+
+          JavacTrees trees = JavacTrees.instance(javaContext);
+          Type.ClassType classType = (Type.ClassType) cls.asType();
+          Scope scope = trees.getScope(treePath);
+
           JavaNode lastMember = null;
           for (Symbol member : cls.members().getSymbolsByName(field.name)) {
             try {
-              if (!member.isStatic()) {
+              if (!member.isStatic() || !trees.isAccessible(scope, member, classType)) {
                 continue;
               }
 
@@ -993,7 +1002,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // Ensure the context has a valid source span before searching for the Name.  Otherwise, anchors
     // may accidentily be emitted for Names that happen to appear after the tree context (e.g.
     // lambdas with type-inferred parameters that use the parameter type in the lambda body).
-    if (filePositions.getSpan(ctx.getTree()).isValid()) {
+    if (filePositions.getSpan(ctx.getTree()).isValidAndNonZero()) {
       emitAnchor(
           name,
           ctx.getTree().getPreferredPosition(),

@@ -5,6 +5,8 @@ package pkg;
 //- @Classes defines/binding N
 //- N.node/kind record
 //- N.subkind class
+//- DefaultCtrAnchor.loc/start @^class
+//- DefaultCtrAnchor.loc/end @^class
 public class Classes {
 
   //- DefaultCtor childof N
@@ -12,7 +14,35 @@ public class Classes {
   //- DefaultCtor typed DefaultCtorType
   //- DefaultCtorType param.0 FnBuiltin
   //- DefaultCtorType param.1 N
-  //- !{ _DefaultCtorAnchor defines/binding DefaultCtor }
+  //- DefaultCtrAnchor defines DefaultCtor
+  //- !{ _DefaultCtorBindingAnchor defines/binding DefaultCtor }
+  
+  private static class Subclass extends Classes {
+    //- ImplicitSuperCall ref/call DefaultCtor
+    //- ImplicitSuperCall.loc/start @^"{}"
+    //- ImplicitSuperCall.loc/end @^"{}"
+    //- ImplicitSuperCall childof SubclassCtor
+    //- @Subclass defines/binding SubclassCtor
+    Subclass() {}
+  }
+
+  //- @Subclass2 defines/binding SubclassTwo
+  //- ImplicitSubclassTwoCtorDef.node/kind anchor
+  //- ImplicitSubclassTwoCtorDef.subkind implicit
+  //- ImplicitSubclassTwoCtorDef defines ImplicitSubclassTwoCtor
+  //- ImplicitSubclassTwoCtorDef.loc/start @^#0class
+  //- ImplicitSubclassTwoCtorDef.loc/end @^#0class
+  //- ExtraImplicitSuperCall.node/kind anchor
+  //- ExtraImplicitSuperCall.subkind implicit
+  //- ExtraImplicitSuperCall.loc/start @^#0class
+  //- ExtraImplicitSuperCall.loc/end @^#0class
+  private static class Subclass2 extends Classes {
+    //- ImplicitSubclassTwoCtor.node/kind function
+    //- ImplicitSubclassTwoCtor.subkind constructor
+    //- ImplicitSubclassTwoCtor childof SubclassTwo
+    //- ExtraImplicitSuperCall ref/call DefaultCtor
+    //- ExtraImplicitSuperCall childof ImplicitSubclassTwoCtor
+  }
 
   //- @StaticInner defines/binding SI
   //- SI.node/kind record

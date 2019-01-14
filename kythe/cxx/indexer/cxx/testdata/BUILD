@@ -5,7 +5,6 @@ load(
     "cc_indexer_test",
     "objc_indexer_test",
 )
-load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 sh_test(
     name = "kindex",
@@ -2554,6 +2553,17 @@ cc_indexer_test(
 )
 
 objc_indexer_test(
+    name = "objc_marked_source_category",
+    srcs = ["objc/categories/marked_category.m"],
+    check_for_singletons = True,
+    convert_marked_source = True,
+    tags = [
+        "marked_source",
+        "objc",
+    ],
+)
+
+objc_indexer_test(
     name = "objc_marked_source_class",
     srcs = ["objc/marked_class.m"],
     convert_marked_source = True,
@@ -2566,6 +2576,18 @@ objc_indexer_test(
 objc_indexer_test(
     name = "objc_marked_source_method",
     srcs = ["objc/marked_method.m"],
+    check_for_singletons = True,
+    convert_marked_source = True,
+    tags = [
+        "marked_source",
+        "objc",
+    ],
+)
+
+objc_indexer_test(
+    name = "objc_marked_source_property",
+    srcs = ["objc/marked_property.m"],
+    check_for_singletons = True,
     convert_marked_source = True,
     tags = [
         "marked_source",

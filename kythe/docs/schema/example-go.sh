@@ -20,7 +20,6 @@ set -o pipefail
 #
 # The script assumes its working directory is the schema output directory and
 # requires the following environment variables:
-#   GOROOT
 #   TMP
 #   LANGUAGE
 #   LABEL
@@ -35,7 +34,8 @@ mkdir "$PKGDIR"
 cat > "$SRCFILE"
 
 readonly ENTRIES="$TMP/example.entries"
-"$GO_INDEXER_BIN" --package kythe/schema "$SRCFILE" > "$ENTRIES"
+GOCACHE="$TMP/gocache" \
+  "$GO_INDEXER_BIN" --package kythe/schema "$SRCFILE" > "$ENTRIES"
 "$VERIFIER_BIN" --nocheck_for_singletons --use_file_nodes < "$ENTRIES"
 
 trap 'error FORMAT' ERR

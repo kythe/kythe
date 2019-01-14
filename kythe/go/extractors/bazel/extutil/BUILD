@@ -1,3 +1,4 @@
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load("//tools:build_rules/shims.bzl", "go_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -7,6 +8,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "extutil",
     srcs = ["extutil.go"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         "//kythe/go/extractors/bazel",
         "//kythe/go/platform/kindex",

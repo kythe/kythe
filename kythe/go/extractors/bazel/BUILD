@@ -1,4 +1,5 @@
-load("//tools:build_rules/shims.bzl", "go_test", "go_library")
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -9,6 +10,7 @@ go_library(
         "settings.go",
         "utils.go",
     ],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/kzip",

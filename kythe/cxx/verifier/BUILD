@@ -1,5 +1,6 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load("//tools:build_rules/lexyacc.bzl", "genlex", "genyacc")
 
 genyacc(
@@ -99,6 +100,7 @@ cc_library(
 
 cc_binary(
     name = "verifier",
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":cmd_lib",
     ],

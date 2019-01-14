@@ -1,8 +1,8 @@
 package(default_visibility = ["//kythe:proto_visibility"])
 
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
-load(":go.bzl", "go_kythe_proto")
 load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
+load(":go.bzl", "go_kythe_proto")
 
 filegroup(
     name = "public",
@@ -100,6 +100,7 @@ cc_proto_library(
 
 go_kythe_proto(
     proto = ":storage_service_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":storage_go_proto"],
 )
 
@@ -125,11 +126,13 @@ proto_library(
 
 cc_proto_library(
     name = "analysis_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":analysis_proto"],
 )
 
 go_kythe_proto(
     proto = ":analysis_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [
         ":filecontext_go_proto",
         ":storage_go_proto",

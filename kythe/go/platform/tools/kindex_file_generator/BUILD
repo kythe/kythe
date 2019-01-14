@@ -41,7 +41,7 @@ shell_tool_test(
     """],
     tools = {
         "generator": ":kindex_file_generator",
-        "kindex": "//kythe/cxx/tools:kindex_tool",
         "input": "//kythe/testdata:BUILD",
+        "kindex": "//kythe/cxx/tools:kindex_tool",
     },
 )

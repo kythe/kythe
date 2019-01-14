@@ -57,10 +57,12 @@ cc_library(
         "//tools/modules:check_modules",
     ],
     hdrs = glob([
-        "llvm/include/**",
-        "llvm/build/include/**",
-        "llvm/build/tools/clang/include/**",
-        "llvm/tools/clang/include/**",
+        "llvm/include/**/*.h",
+        "llvm/build/include/**/*.h",
+        "llvm/build/include/**/*.def",
+        "llvm/build/tools/clang/include/**/*.inc",
+        "llvm/tools/clang/include/**/*.h",
+        "llvm/tools/clang/include/**/*.def",
     ]),
     defines = [
         "__STDC_LIMIT_MACROS",
@@ -79,9 +81,7 @@ cc_library(
         "-lpthread",
     ],
     linkstatic = 1,
-    deps = [
-        "//external:zlib",
-    ],
+    deps = ["//external:zlib"],
     alwayslink = 1,
 )
 
