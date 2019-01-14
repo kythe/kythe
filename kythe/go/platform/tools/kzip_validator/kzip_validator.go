@@ -17,9 +17,22 @@
 // Binary kzip_validator checks the contents of a kzip against a code repo and
 // compares file coverage.
 //
-// Example:
+// Usage:
 //  kzip_validator -kzip <kzip-file> -local_repo <repo-root-dir> -lang cc,h
 //  kzip_validator -kzip <kzip-file> -repo_url <repo-url> -lang java [-version <hash>]
+//
+// Examples:
+//  Github repos use default args (.zip, /archive/, master):
+//    kzip_validator -kzip <kzip-file> -repo_url https://github.com/google/guava
+//
+//  Other repository hosting services may require additional arguments:
+//    kzip_validator -kzip <kzip-file> \
+//      -repo_url https://android.googlesource.com/project/superproject
+//      -archive_prefix "+archive" \
+//      -archive_format ".tar.gz" \
+//      -archive_subdir "" \
+//      -lang "cc,h"
+//
 package main
 
 import (
