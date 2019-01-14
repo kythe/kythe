@@ -1,7 +1,4 @@
-load(
-    "//tools/build_rules/verifier_test:verifier_test.bzl",
-    "java_verifier_test",
-)
+load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
 
 filegroup(
     name = "pkg_files",
