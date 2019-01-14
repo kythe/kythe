@@ -192,42 +192,6 @@ go_entries = rule(
     outputs = {"entries": "%{name}.entries.gz"},
 )
 
-def _go_verifier_test(ctx):
-    entries = ctx.attr.entries.kythe_entries
-    verifier = ctx.file._verifier
-    vargs = [
-        verifier.short_path,
-        "--use_file_nodes",
-        "--show_goals",
-        "--check_for_singletons",
-    ]
-
-    if ctx.attr.log_entries:
-        vargs.append("--show_protos")
-    if ctx.attr.allow_duplicates:
-        vargs.append("--ignore_dups")
-
-    # If the test wants marked source, enable support for it in the verifier.
-    if ctx.attr.has_marked_source:
-        vargs.append("--convert_marked_source")
-
-    cmds = [
-        "set -e",
-        "set -o pipefail",
-        " ".join(
-            ["zcat", entries.short_path, "|"] + vargs,
-        ),
-        "",
-    ]
-    ctx.actions.write(
-        output = ctx.outputs.executable,
-        content = "\n".join(cmds),
-        is_executable = True,
-    )
-    return struct(
-        runfiles = ctx.runfiles([verifier, entries]),
-    )
-
 def go_verifier_test(
         name,
         entries,
