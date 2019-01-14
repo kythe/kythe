@@ -1,4 +1,4 @@
-load("//tools/build_rules/verifier_test:verifier_test.bzl", "jvm_verifier_test")
+load("//tools/build_rules/verifier_test:jvm_verifier_test.bzl", "jvm_verifier_test")
 
 exports_files(
     ["jvm_nodes.kythe_verifier.txt"],
