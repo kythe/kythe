@@ -97,10 +97,10 @@ bool GetCurrentDirectory(std::string* dir) {
   }
 }
 
-std::string MakeCleanAbsolutePath(const std::string& in_path) {
+std::string MakeCleanAbsolutePath(absl::string_view in_path) {
   std::string abs_path;
   if (IsAbsolutePath(in_path)) {
-    abs_path = in_path;
+    abs_path = std::string(in_path);
   } else {
     std::string dir;
     if (!GetCurrentDirectory(&dir)) {
@@ -112,24 +112,24 @@ std::string MakeCleanAbsolutePath(const std::string& in_path) {
   return CleanPath(abs_path);
 }
 
-std::pair<absl::string_view, absl::string_view> SplitPath(
-    absl::string_view path) {
+struct PathParts {
+  absl::string_view dir, base;
+};
+
+PathParts SplitPath(absl::string_view path) {
   std::string::difference_type pos = path.find_last_of('/');
 
   // Handle the case with no '/' in 'path'.
-  if (pos == absl::string_view::npos)
-    return std::make_pair(path.substr(0, 0), path);
+  if (pos == absl::string_view::npos) return {path.substr(0, 0), path};
 
   // Handle the case with a single leading '/' in 'path'.
-  if (pos == 0)
-    return std::make_pair(path.substr(0, 1), absl::ClippedSubstr(path, 1));
+  if (pos == 0) return {path.substr(0, 1), absl::ClippedSubstr(path, 1)};
 
-  return std::make_pair(path.substr(0, pos),
-                        absl::ClippedSubstr(path, pos + 1));
+  return {path.substr(0, pos), absl::ClippedSubstr(path, pos + 1)};
 }
 
 absl::string_view Dirname(absl::string_view path) {
-  return SplitPath(path).first;
+  return SplitPath(path).dir;
 }
 
 std::string RelativizePath(const std::string& to_relativize,

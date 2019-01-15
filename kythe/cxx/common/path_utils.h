@@ -45,7 +45,7 @@ std::string RelativizePath(const std::string& to_relativize,
 
 /// \brief Convert `in_path` to an absolute path, eliminating `.` and `..`.
 /// \param in_path The path to convert.
-std::string MakeCleanAbsolutePath(const std::string& in_path);
+std::string MakeCleanAbsolutePath(const absl::string_view in_path);
 
 /// \brief Sets `*dir` to the process's current working directory.
 ///
