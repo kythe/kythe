@@ -2,44 +2,34 @@ licenses(["notice"])  # Apache 2.0
 
 exports_files(["LICENSE"])
 
-load(":proto_indexer_test.bzl", "proto_error_test", "proto_indexer_test")
+load(":proto_verifier_test.bzl", "proto_verifier_test")
 
-# Required by proto_indexer_test macro.
-sh_binary(
-    name = "run_case",
-    srcs = ["run_case.sh"],
-    data = [
-        "//kythe/cxx/indexer/proto:indexer",
-        "@io_kythe//kythe/cxx/verifier",
-    ],
-)
-
-proto_indexer_test(
+proto_verifier_test(
     name = "file_node_existence",
     srcs = ["basic/file_node.proto"],
     tags = ["basic"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "default_values",
     srcs = ["basic/default-value.proto"],
     tags = ["basic"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "doc_comments",
     srcs = ["basic/doc.proto"],
     tags = ["basic"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "enum_basics",
     srcs = ["basic/enums.proto"],
     convert_marked_source = True,
     tags = ["basic"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "extensions",
     srcs = [
         "basic/extend.proto",
@@ -48,14 +38,14 @@ proto_indexer_test(
     tags = ["basic"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "message_fields",
     srcs = ["basic/message-fields.proto"],
     convert_marked_source = True,
     tags = ["basic"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "nested_message_fields",
     srcs = [
         "basic/nested-message.proto",
@@ -65,21 +55,21 @@ proto_indexer_test(
     tags = ["basic"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "oneof_fields",
     srcs = ["basic/oneof.proto"],
     convert_marked_source = True,
     tags = ["basic"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "services",
     srcs = ["basic/services.proto"],
     convert_marked_source = True,
     tags = ["basic"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "proto3",
     srcs = ["proto3.proto"],
     tags = ["basic"],
@@ -90,18 +80,7 @@ test_suite(
     tags = ["basic"],
 )
 
-proto_error_test(
-    name = "cyclic_dependencies",
-    srcs = [
-        "corner_cases/cyclic-dependency1.proto",
-        "corner_cases/cyclic-dependency2.proto",
-        "corner_cases/cyclic-dependency3.proto",
-    ],
-    convert_marked_source = True,
-    tags = ["corner_cases"],
-)
-
-proto_indexer_test(
+proto_verifier_test(
     name = "import_syntax",
     srcs = [
         "basic/nested-message.proto",
@@ -113,7 +92,7 @@ proto_indexer_test(
     tags = ["corner_cases"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "tabs",
     srcs = [
         "corner_cases/tabs.proto",
@@ -122,13 +101,13 @@ proto_indexer_test(
     tags = ["corner_cases"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "wide_chars",
     srcs = ["corner_cases/wide-chars.proto"],
     tags = ["corner_cases"],
 )
 
-proto_indexer_test(
+proto_verifier_test(
     name = "missing_package",
     srcs = ["corner_cases/nopackage.proto"],
     tags = ["corner_cases"],
