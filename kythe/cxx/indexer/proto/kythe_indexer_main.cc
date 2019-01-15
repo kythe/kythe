@@ -119,8 +119,9 @@ bool ReadProtoFile(int fd, const std::string& relative_path,
   return true;
 }
 
-// TODO(justbuchanan): Get this from a library. Maybe abseil?
-bool GetCurrentDirectory(std::string* dir) {
+// TODO(justbuchanan): Delete this and use the one from kythe's path_utils
+// library
+bool _GetCurrentDirectory(std::string* dir) {
   size_t len = 128;
   auto buffer = absl::make_unique<char[]>(len);
   for (;;) {
@@ -201,7 +202,7 @@ Examples:
       std::vector<proto::FileData> files;
       proto::CompilationUnit unit;
 
-      GetCurrentDirectory(unit.mutable_working_directory());
+      _GetCurrentDirectory(unit.mutable_working_directory());
       FileVNameGenerator file_vnames;
       bool stdin_requested = false;
       for (const std::string& arg : final_args) {
