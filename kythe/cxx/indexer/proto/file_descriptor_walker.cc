@@ -496,6 +496,15 @@ void FileDescriptorWalker::VisitNestedTypes(const std::string& message_name,
   for (int i = 0; i < dp->nested_type_count(); i++) {
     ScopedLookup nested_index(&lookup_path, i);
     const Descriptor* nested_proto = dp->nested_type(i);
+
+    // The proto compiler synthesizes types to represent map entries. For
+    // example, a "map<string, string> my_map" field would cause a type
+    // "MyMapEntry" to be generated. Because it doesn't actually exist in the
+    // source .proto file, we ignore it.
+    if (nested_proto->options().map_entry()) {
+      continue;
+    }
+
     std::string vname = absl::StrCat(message_name, ".", nested_proto->name());
 
     VName v_name = VNameForProtoPath(file_name_, lookup_path);
@@ -715,6 +724,14 @@ void FileDescriptorWalker::VisitNestedFields(const std::string& name_prefix,
     const Descriptor* nested_dp = dp->nested_type(j);
     const std::string nested_name_prefix =
         absl::StrCat(name_prefix, ".", nested_dp->name());
+
+    // The proto compiler synthesizes types to represent map entries. For
+    // example, a "map<string, string> my_map" field would cause a type
+    // "MyMapEntry" to be generated. Because it doesn't actually exist in the
+    // source .proto file, we ignore it.
+    if (nested_dp->options().map_entry()) {
+      continue;
+    }
 
     ScopedLookup nested_index(&lookup_path, j);
 
