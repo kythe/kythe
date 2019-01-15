@@ -21,12 +21,12 @@
 set -e
 
 # llvm
-MIN_LLVM_SHA="3fe1b12fca949399a3334a072ee7f96e2b6f557e"
-MIN_LLVM_REV="345798"
+MIN_LLVM_SHA="cae2d736b319f1bb124c7bd21e9b65bb1734ccf5"
+MIN_LLVM_REV="350964"
 # clang
 # NOTE: when updating Clang, make sure to adjust the path in
 # //third_party/llvm/BUILD:clang_builtin_headers_resources
-MIN_CLANG_SHA="d81da87531b6cd4829b939f433845b60ec1e00d6"
-MIN_CLANG_REV="345781"
+MIN_CLANG_SHA="4c57533ba3d00d3c41b96258eb7b6a4755b55b38"
+MIN_CLANG_REV="350958"
 
 FULL_SHA="${MIN_LLVM_SHA}-${MIN_CLANG_SHA}"
