@@ -20,13 +20,16 @@
 # be set to the new (matched) strings.
 set -e
 
+# shellcheck disable=SC2034
+{
 # llvm
-MIN_LLVM_SHA="3fe1b12fca949399a3334a072ee7f96e2b6f557e"
-MIN_LLVM_REV="345798"
+MIN_LLVM_SHA="a42cde684126a3797f3eda9c894c379e7a8c66c1"
+MIN_LLVM_REV="351207"
 # clang
 # NOTE: when updating Clang, make sure to adjust the path in
 # //third_party/llvm/BUILD:clang_builtin_headers_resources
-MIN_CLANG_SHA="d81da87531b6cd4829b939f433845b60ec1e00d6"
-MIN_CLANG_REV="345781"
+MIN_CLANG_SHA="777055562de6505702ba0c36210491a2436872e0"
+MIN_CLANG_REV="351210"
 
 FULL_SHA="${MIN_LLVM_SHA}-${MIN_CLANG_SHA}"
+}
