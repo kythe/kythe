@@ -23,13 +23,13 @@ set -e
 # shellcheck disable=SC2034
 {
 # llvm
-MIN_LLVM_SHA="cae2d736b319f1bb124c7bd21e9b65bb1734ccf5"
-MIN_LLVM_REV="350964"
+MIN_LLVM_SHA="a42cde684126a3797f3eda9c894c379e7a8c66c1"
+MIN_LLVM_REV="351207"
 # clang
 # NOTE: when updating Clang, make sure to adjust the path in
 # //third_party/llvm/BUILD:clang_builtin_headers_resources
-MIN_CLANG_SHA="4c57533ba3d00d3c41b96258eb7b6a4755b55b38"
-MIN_CLANG_REV="350958"
+MIN_CLANG_SHA="777055562de6505702ba0c36210491a2436872e0"
+MIN_CLANG_REV="351210"
 
 FULL_SHA="${MIN_LLVM_SHA}-${MIN_CLANG_SHA}"
 }
