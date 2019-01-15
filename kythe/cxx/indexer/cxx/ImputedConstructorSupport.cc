@@ -34,7 +34,7 @@ namespace {
 class TargetTypeVisitor : public clang::RecursiveASTVisitor<TargetTypeVisitor> {
  public:
   explicit TargetTypeVisitor(clang::QualType target_type)
-      : target_type_(std::move(target_type)) {}
+      : target_type_(target_type) {}
 
   const clang::CXXConstructorDecl* FindConstructor(clang::Stmt* stmt) {
     Enqueue(stmt);
