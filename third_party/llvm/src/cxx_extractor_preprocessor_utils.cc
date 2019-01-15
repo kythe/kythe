@@ -110,6 +110,7 @@ std::string getMacroExpandedString(clang::Preprocessor &PP,
 
 std::string getSourceString(clang::Preprocessor &PP, clang::SourceRange Range) {
   return clang::Lexer::getSourceText(clang::CharSourceRange(Range, false),
-                                     PP.getSourceManager(), PP.getLangOpts());
+                                     PP.getSourceManager(), PP.getLangOpts())
+      .trim();
 }
 }  // namespace kythe
