@@ -28,9 +28,12 @@
 #             If unavailable, LLVM is built at the necessary version and saved
 #             in the cache.
 #
+# The local cache directory can be set with the LLVM_CACHE environment variable;
+# it defaults to $HOME/.cache/kythe-llvm.
+#
 # Note: `cache-llvm.sh --update` captures 99.99% of use-cases (just use that)
 
-CACHE="$HOME/.cache/kythe-llvm"
+: "${LLVM_CACHE:=$HOME/.cache/kythe-llvm}"
 
 copy() {
   if which gcp &>/dev/null; then
@@ -47,7 +50,7 @@ cache_location() {
     exit 1
   fi
   source tools/modules/versions.sh
-  echo "$CACHE/$FULL_SHA"
+  echo "$LLVM_CACHE/$FULL_SHA"
 }
 
 check_version() {
@@ -73,7 +76,7 @@ save_cache() {
   dir="$(cache_location)"
   if [[ ! -d "$dir" ]]; then
     echo "Caching LLVM as $dir"
-    mkdir -p "$CACHE"
+    mkdir -p "$LLVM_CACHE"
     copy third_party/llvm/llvm "$dir"
   fi
 }
