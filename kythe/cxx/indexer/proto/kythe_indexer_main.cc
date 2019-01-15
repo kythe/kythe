@@ -119,25 +119,6 @@ bool ReadProtoFile(int fd, const std::string& relative_path,
   return true;
 }
 
-// TODO(justbuchanan): Delete this and use the one from kythe's path_utils
-// library
-bool _GetCurrentDirectory(std::string* dir) {
-  size_t len = 128;
-  auto buffer = absl::make_unique<char[]>(len);
-  for (;;) {
-    char* p = getcwd(buffer.get(), len);
-    if (p != nullptr) {
-      *dir = p;
-      return true;
-    } else if (errno == ERANGE) {
-      len += len;
-      buffer = absl::make_unique<char[]>(len);
-    } else {
-      return false;
-    }
-  }
-}
-
 }  // anonymous namespace
 
 int main(int argc, char* argv[]) {
@@ -202,7 +183,7 @@ Examples:
       std::vector<proto::FileData> files;
       proto::CompilationUnit unit;
 
-      _GetCurrentDirectory(unit.mutable_working_directory());
+      GetCurrentDirectory(unit.mutable_working_directory());
       FileVNameGenerator file_vnames;
       bool stdin_requested = false;
       for (const std::string& arg : final_args) {
