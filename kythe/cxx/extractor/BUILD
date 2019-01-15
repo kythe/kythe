@@ -83,32 +83,6 @@ cc_library(
 )
 
 cc_library(
-    name = "path_utils_testlib",
-    testonly = 1,
-    srcs = [
-        "path_utils_test.cc",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":path_utils",
-        "//third_party:gtest",
-        "//third_party/llvm",
-    ],
-)
-
-cc_test(
-    name = "path_utils_test",
-    size = "small",
-    deps = [
-        ":path_utils_testlib",
-    ],
-)
-
-cc_library(
     name = "supported_language",
     srcs = ["language.cc"],
     hdrs = ["language.h"],

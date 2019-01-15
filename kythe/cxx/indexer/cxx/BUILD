@@ -139,7 +139,6 @@ cc_library(
     ],
     deps = [
         ":kythe_claim_client",
-        "//kythe/cxx/extractor:path_utils",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
@@ -251,6 +250,7 @@ cc_library(
         ":graph_observer",
         ":indexer_ast_hooks",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/extractor:path_utils",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
@@ -276,6 +276,7 @@ cc_library(
         ":kythe_claim_client",
         ":vfs",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:path_utils",
         "//kythe/cxx/common/schema:edges",
         "//kythe/cxx/extractor:supported_language",
         "//third_party/llvm",
