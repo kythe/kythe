@@ -32,6 +32,15 @@
 
 CACHE="$HOME/.cache/kythe-llvm"
 
+copy() {
+  if which gcp &>/dev/null; then
+    # Use GNU cp from Homebrew coreutils
+    gcp -al "$@"
+  else
+    cp -al "$@"
+  fi
+}
+
 cache_location() {
   if [[ ! -r ./tools/modules/versions.sh ]]; then
     echo "ERROR: could not find ./tools/modules/versions.sh; are you in the Kythe repo root?" >&2
@@ -65,7 +74,7 @@ save_cache() {
   if [[ ! -d "$dir" ]]; then
     echo "Caching LLVM as $dir"
     mkdir -p "$CACHE"
-    cp -al third_party/llvm/llvm "$dir"
+    copy third_party/llvm/llvm "$dir"
   fi
 }
 
@@ -76,7 +85,7 @@ restore_cache() {
     if [[ -d "$dir" ]]; then
       echo "Restoring LLVM from $dir"
       rm -rf third_party/llvm/llvm
-      cp -al "$dir" third_party/llvm/llvm
+      copy "$dir" third_party/llvm/llvm
     else
       echo "Could not restore LLVM" >&2
       return 1
