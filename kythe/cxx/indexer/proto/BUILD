@@ -92,6 +92,7 @@ cc_library(
     name = "search_path",
     srcs = ["search_path.cc"],
     hdrs = ["search_path.h"],
+    visibility = ["//kythe/cxx/extractor/proto:__subpackages__"],
     deps = [
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",

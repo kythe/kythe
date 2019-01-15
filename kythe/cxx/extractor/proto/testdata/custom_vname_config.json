@@ -1,0 +1,17 @@
+[
+  {
+    "pattern": "(.*1\\.proto)",
+    "vname": {
+      "corpus": "corpus1",
+      "path": "@1@"
+    }
+  },
+  {
+    "pattern": "(.*)/(.*2\\.proto)",
+    "vname": {
+      "corpus": "corpus2",
+      "root": "@1@",
+      "path": "@2@"
+    }
+  }
+]

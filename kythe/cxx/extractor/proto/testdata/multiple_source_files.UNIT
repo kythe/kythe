@@ -1,0 +1,23 @@
+required_input {
+  v_name {
+    path: "kythe/cxx/extractor/proto/testdata/simple1.proto"
+  }
+  info {
+    path: "kythe/cxx/extractor/proto/testdata/simple1.proto"
+    digest: "36aa2295772636e8e940333faa06f0838953101f353ab52d72279389e16117be"
+  }
+}
+required_input {
+  v_name {
+    path: "kythe/cxx/extractor/proto/testdata/simple2.proto"
+  }
+  info {
+    path: "kythe/cxx/extractor/proto/testdata/simple2.proto"
+    digest: "0db133854842fd4a2112176264bb7e596671db36d1d91dcb9910c662278680ae"
+  }
+}
+argument: "kythe/cxx/extractor/proto/testdata/simple1.proto"
+argument: "kythe/cxx/extractor/proto/testdata/simple2.proto"
+source_file: "kythe/cxx/extractor/proto/testdata/simple1.proto"
+source_file: "kythe/cxx/extractor/proto/testdata/simple2.proto"
+entry_context: "hash0"
