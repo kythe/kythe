@@ -20,6 +20,8 @@
 # be set to the new (matched) strings.
 set -e
 
+# shellcheck disable=SC2034
+{
 # llvm
 MIN_LLVM_SHA="cae2d736b319f1bb124c7bd21e9b65bb1734ccf5"
 MIN_LLVM_REV="350964"
@@ -30,3 +32,4 @@ MIN_CLANG_SHA="4c57533ba3d00d3c41b96258eb7b6a4755b55b38"
 MIN_CLANG_REV="350958"
 
 FULL_SHA="${MIN_LLVM_SHA}-${MIN_CLANG_SHA}"
+}
