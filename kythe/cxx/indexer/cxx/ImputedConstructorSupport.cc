@@ -33,9 +33,8 @@ namespace {
 
 class TargetTypeVisitor : public clang::RecursiveASTVisitor<TargetTypeVisitor> {
  public:
-  explicit TargetTypeVisitor(clang::QualType target_type,
-                             clang::ASTContext* context)
-      : context_(context), target_type_(std::move(target_type)) {}
+  explicit TargetTypeVisitor(clang::QualType target_type)
+      : target_type_(std::move(target_type)) {}
 
   const clang::CXXConstructorDecl* FindConstructor(clang::Stmt* stmt) {
     Enqueue(stmt);
@@ -57,7 +56,7 @@ class TargetTypeVisitor : public clang::RecursiveASTVisitor<TargetTypeVisitor> {
 
   bool VisitCXXConstructExpr(clang::CXXConstructExpr* expr) {
     if (auto* decl = expr->getConstructor()) {
-      if (decl->getThisType(*context_)->getPointeeType() == target_type_) {
+      if (decl->getThisType()->getPointeeType() == target_type_) {
         matches_.push_back(decl);
       }
       for (auto* init : decl->inits()) {
@@ -75,7 +74,6 @@ class TargetTypeVisitor : public clang::RecursiveASTVisitor<TargetTypeVisitor> {
     }
   }
 
-  clang::ASTContext* context_;
   const clang::QualType target_type_;
 
   std::unordered_set<const clang::Stmt*> seen_;
@@ -107,9 +105,8 @@ absl::optional<clang::QualType> FindTargetType(
 }
 
 const clang::CXXConstructorDecl* FindConstructor(clang::Stmt* stmt,
-                                                 clang::QualType target_type,
-                                                 clang::ASTContext& context) {
-  TargetTypeVisitor visitor(target_type, &context);
+                                                 clang::QualType target_type) {
+  TargetTypeVisitor visitor(target_type);
   return visitor.FindConstructor(stmt);
 }
 
@@ -164,8 +161,7 @@ void ImputedConstructorSupport::InspectCallExpr(
   }
 
   if (const auto target_type = FindTargetType(*callee)) {
-    if (const auto* ctor = FindConstructor(callee->getBody(), *target_type,
-                                           callee->getASTContext())) {
+    if (const auto* ctor = FindConstructor(callee->getBody(), *target_type)) {
       auto node_id = visitor.BuildNodeIdForDecl(ctor);
       visitor.RecordCallEdges(range, node_id);
       const auto call_range = FindNamedCalleeRange(call_expr->getCallee());
