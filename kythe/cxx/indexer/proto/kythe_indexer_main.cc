@@ -103,7 +103,7 @@ bool ReadProtoFile(int fd, const std::string& relative_path,
     absl::StrAppend(&source_data, absl::string_view(buf, amount_read));
   }
   if (amount_read < 0) {
-    perror("Error reading input file");
+    LOG(ERROR) << "Error reading input file";
     return false;
   }
   proto::FileData file_data;
@@ -177,10 +177,7 @@ Examples:
   if (FLAGS_o != "-") {
     write_fd = ::open(FLAGS_o.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
                       S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (write_fd == -1) {
-      perror("Can't open output file");
-      exit(1);
-    }
+    CHECK(write_fd != -1) << "Can't open output file";
   }
 
   bool had_error = false;
@@ -195,7 +192,6 @@ Examples:
                                     std::vector<proto::FileData> file_data) {
         std::string err =
             IndexProtoCompilationUnit(unit, file_data, &kythe_output);
-        CHECK(err.empty());
         if (!err.empty()) {
           had_error = true;
           LOG(ERROR) << "Error: " << err;
@@ -241,10 +237,7 @@ Examples:
     }
   }
 
-  if (::close(write_fd) != 0) {
-    perror("Error closing output file");
-    exit(1);
-  }
+  CHECK(::close(write_fd) == 0) << "Error closing output file";
 
   return had_error ? 1 : 0;
 }
