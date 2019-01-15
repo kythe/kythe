@@ -47,5 +47,34 @@ TEST(PathUtilsTest, JoinPath) {
   EXPECT_EQ("a/c", JoinPath("a", "/c"));
 }
 
+TEST(PathUtilsTest, RelativizePath) {
+  std::string current_dir;
+  ASSERT_TRUE(GetCurrentDirectory(&current_dir));
+
+  std::string cwd_foo = JoinPath(current_dir, "foo");
+
+  EXPECT_EQ("foo", RelativizePath("foo", "."));
+  EXPECT_EQ("foo", RelativizePath("foo", current_dir));
+  EXPECT_EQ("bar", RelativizePath("foo/bar", "foo"));
+  EXPECT_EQ("bar", RelativizePath("foo/bar", cwd_foo));
+  EXPECT_EQ("foo", RelativizePath(cwd_foo, "."));
+  EXPECT_EQ(cwd_foo, RelativizePath(cwd_foo, "bar"));
+}
+
+TEST(PathUtilsTest, MakeCleanAbsolutePath) {
+  std::string current_dir;
+  ASSERT_TRUE(GetCurrentDirectory(&current_dir));
+
+  EXPECT_EQ(current_dir, MakeCleanAbsolutePath("."));
+
+  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c"));
+  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c/."));
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/./.."));
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/../."));
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/.."));
+  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/../c/.."));
+  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/b/c/../../.."));
+}
+
 }  // namespace
 }  // namespace kythe
