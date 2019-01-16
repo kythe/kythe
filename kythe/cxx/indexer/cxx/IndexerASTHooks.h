@@ -168,8 +168,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitFunctionDecl(clang::FunctionDecl* Decl);
   bool TraverseDecl(clang::Decl* Decl);
 
-  bool TraverseLambdaExpr(clang::LambdaExpr* Expr);
-
   bool TraverseConstructorInitializer(clang::CXXCtorInitializer* Init);
   bool TraverseCXXNewExpr(clang::CXXNewExpr* E);
   bool TraverseCXXFunctionalCastExpr(clang::CXXFunctionalCastExpr* E);
