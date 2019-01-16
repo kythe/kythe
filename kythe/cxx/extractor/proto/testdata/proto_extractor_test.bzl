@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+
 def _proto_extract_kzip_impl(ctx):
     cmd = [ctx.executable._extractor.path] + [p.path for p in ctx.files.protos]
     if ctx.attr.protoc_args:
@@ -21,7 +23,7 @@ def _proto_extract_kzip_impl(ctx):
     ctx.actions.run_shell(
         mnemonic = "ProtoExtract",
         command = " ".join(cmd),
-        env = ctx.attr.extra_env + {"KYTHE_OUTPUT_FILE": ctx.outputs.kzip.path},
+        env = dicts.add(ctx.attr.extra_env, {"KYTHE_OUTPUT_FILE": ctx.outputs.kzip.path}),
         outputs = [ctx.outputs.kzip],
         tools = [ctx.executable._extractor],
         inputs = ctx.files.protos + ctx.files.extra_files,
