@@ -1041,20 +1041,6 @@ void IndexerASTVisitor::VisitRecordDeclComment(
   }
 }
 
-bool IndexerASTVisitor::TraverseLambdaExpr(clang::LambdaExpr* Expr) {
-  // Clang does not reliably visit the implicitly generated class or (more
-  // importantly) call operator.
-  // Specifically, it only does so for lambdas defined at the top level,
-  // which is a vanishingly small number of them.
-  // TODO(shahms): Figure out *why* Clang behaves this way and fix that.
-  return Base::TraverseLambdaExpr(Expr) && [this, Expr] {
-    if (Expr->getLambdaClass()->getDeclContext()->isFunctionOrMethod()) {
-      return TraverseDecl(Expr->getCallOperator());
-    }
-    return true;
-  }();
-}
-
 bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
   if (ShouldStopIndexing()) {
     return false;
