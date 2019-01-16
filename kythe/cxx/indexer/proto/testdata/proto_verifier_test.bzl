@@ -1,3 +1,5 @@
+"""Rules for verifying proto indexer output"""
+
 # Copyright 2019 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

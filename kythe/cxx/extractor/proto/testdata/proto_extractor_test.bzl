@@ -54,8 +54,14 @@ def proto_extraction_golden_test(
         extra_files = [],
         protoc_args = [],
         extra_env = {}):
-    """Runs the extractor with the given parameters, then compares the generated
-    kzip's compilation unit to a golden file.
+    """Runs the extractor and compares the result to a golden file.
+
+    Args:
+      name: test name (note: _test will be appended to the end)
+      protos: proto files that will later be analyzed
+      extra_files: any other required deps, including protos imported by @protos
+      protoc_args: arguments to pass to the proto compiler (such as --proto_path)
+      extra_env: environment variables to configure extractor behavior
     """
     kzip = name + "_kzip"
     proto_extract_kzip(
