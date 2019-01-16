@@ -20,16 +20,19 @@ KINDEX_TOOL=$1; shift
 KZIP=$1; shift
 GOLDEN=$1; shift
 
+# Work in tmpdir because the runfiles dir is not writable
+cp $KZIP "${TEST_TMPDIR}/file.kzip"
 # Extract textproto version of compilation unit from kzip.
-"${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${KZIP}"
+"${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${TEST_TMPDIR}/file.kzip"
+UNIT="${TEST_TMPDIR}/file.kzip_UNIT"
 
 # Remove lines that will change depending on the machine the test is run on.
-skip_inplace "-target" 1 "${KZIP}_UNIT"
-skip_inplace "signature" 0 "${KZIP}_UNIT"
-skip_inplace "working_directory" 0 "${KZIP}_UNIT"
+skip_inplace "-target" 1 $UNIT
+skip_inplace "signature" 0 $UNIT
+skip_inplace "working_directory" 0 $UNIT
 
 echo
 echo "Diffing generated unit against golden"
 echo "-------------------------------------"
-diff -u $GOLDEN ${KZIP}_UNIT
+diff -u $GOLDEN $UNIT
 echo "No diffs found!"
