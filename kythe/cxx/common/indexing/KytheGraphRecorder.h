@@ -70,7 +70,8 @@ enum class PropertyID {
   kTagDeprecated,
   kDiagnosticMessage,
   kDiagnosticDetails,
-  kDiagnosticContextOrUrl
+  kDiagnosticContextOrUrl,
+  kDocUri
 };
 
 /// \brief Known edge kinds. See the schema for details.
