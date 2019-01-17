@@ -14,7 +14,7 @@
 
 # Build: bazel build //kythe/go/extractors/gcp/config/kziptool:artifacts
 # Usage:
-#   This container exposes the tool kzip, useful for combining multiple kzip
+#   This container exposes the kzip tool, useful for combining multiple kzip
 #   output files into a single kzip.
 #
 #   From Google Cloud Build:
