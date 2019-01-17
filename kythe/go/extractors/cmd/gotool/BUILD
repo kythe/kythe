@@ -8,12 +8,9 @@ go_binary(
     srcs = ["gotool.go"],
     deps = [
         "//kythe/go/extractors/golang",
-        "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
-        "//kythe/proto:analysis_go_proto",
-        "@com_github_pborman_uuid//:go_default_library",
     ],
 )
 
