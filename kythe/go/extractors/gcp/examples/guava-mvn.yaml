@@ -64,7 +64,7 @@ steps:
   args: ['ls', '/workspace/out']
 - name: 'gcr.io/kythe-public/kzip-tools'
   entrypoint: 'bash'
-  args: ['-c', 'zipmerge /workspace/out/guava-$_GUAVA_VERSION.kzip /workspace/out/*.kzip']
+  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/guava-$_GUAVA_VERSION.kzip /workspace/out/*.kzip']
 artifacts:
   objects:
     location: 'gs://${_BUCKET_NAME}/'
