@@ -19,15 +19,28 @@
 
 : "${TMPDIR:=/tmp}" "${OUTPUT:=/output}"
 
-echo "Downloading $*" >&2
-go get -d "$@" || true
+FLAGS=()
+PACKAGES=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -*)
+      FLAGS+=("$1") ;;
+    *)
+      PACKAGES+=("$1") ;;
+  esac
+  shift
+done
 
-echo "Extracting $*" >&2
+echo "Downloading ${PACKAGES[*]}" >&2
+go get -d "${PACKAGES[@]}" || true
+
+echo "Extracting ${PACKAGES[*]}" >&2
 parallel --will-cite \
   extract_go --continue -v \
   --goroot="$(go env GOROOT)" \
   --output="$TMPDIR/out.{#}.kzip" \
-  {} ::: "$@"
+  "${FLAGS[@]}" \
+  {} ::: "${PACKAGES[@]}"
 
 mkdir -p "$OUTPUT"
 OUT="$(mktemp -p "$OUTPUT/" compilations.XXXXX.kzip)"

@@ -46,6 +46,8 @@ var (
 	byDir      = flag.Bool("bydir", false, "Import by directory rather than import path")
 	keepGoing  = flag.Bool("continue", false, "Continue past errors")
 	verbose    = flag.Bool("v", false, "Enable verbose logging")
+
+	canonicalizePackageCorpus = flag.Bool("canonicalize_package_corpus", false, "Whether to use a package's canonical repository root URL as their corpus")
 )
 
 func init() {
@@ -95,8 +97,12 @@ func main() {
 	ctx := context.Background()
 	ext := &golang.Extractor{
 		BuildContext: bc,
-		Corpus:       *corpus,
 		LocalPath:    *localPath,
+
+		PackageVNameOptions: golang.PackageVNameOptions{
+			DefaultCorpus:             *corpus,
+			CanonicalizePackageCorpus: *canonicalizePackageCorpus,
+		},
 	}
 	if *extraFiles != "" {
 		ext.ExtraFiles = strings.Split(*extraFiles, ",")

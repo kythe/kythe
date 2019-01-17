@@ -20,10 +20,9 @@ package govname
 
 import (
 	"go/build"
-	"regexp"
 	"strings"
 
-	"kythe.io/kythe/go/util/vnameutil"
+	"golang.org/x/tools/go/vcs"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -34,68 +33,95 @@ const (
 	golangCorpus = "golang.org"
 )
 
-// VCSRules defines rewriting rules for Go import paths, using rules loosely
-// borrowed from $GOROOT/src/cmd/go/vcs.go.  These rules are used to extract
-// corpus and root information from an import path.
-var VCSRules = vnameutil.Rules{{
-	// Google code, new syntax
-	regexp.MustCompile(`^(?i)(?P<corpus>code\.google\.com/p/[-a-z0-9]+)(?:\.(?P<subrepo>\w+))?` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig, Root: "${subrepo}"},
-}, {
-	// Google code, old syntax
-	regexp.MustCompile(`^(?i)(?P<corpus>[-._a-z0-9]+\.googlecode\.com)` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig},
-}, {
-	// GitHub
-	regexp.MustCompile(`^(?P<corpus>github\.com(?:/[-.\w]+){2})` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig},
-}, {
-	// Bitbucket
-	regexp.MustCompile(`^(?P<corpus>bitbucket\.org(?:/[-.\w]+){2})` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig},
-}, {
-	// Launchpad
-	regexp.MustCompile(`^(?P<corpus>launchpad\.net/(?:[-.\w]+|~[-.\w]+/[-.\w]+))` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig},
-}, {
-	// Go extension repositories
-	regexp.MustCompile(`(?P<corpus>golang\.org(?:/x/\w+))` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig},
-},
-}
-
 // Language is the language string to use for Go VNames.
 const Language = "go"
+
+// PackageVNameOptions controls the construction of VNames for Go packages.
+type PackageVNameOptions struct {
+	// DefaultCorpus optionally provides a fallback corpus name if a package
+	// cannot otherwise be resolved to a corpus.
+	DefaultCorpus string
+
+	// CanonicalizePackageCorpus determines whether a package's corpus name s
+	// canonicalized as its VCS repository root URL rather than the Go import path
+	// corresponding the the VCS repository root.
+	CanonicalizePackageCorpus bool
+}
 
 // ForPackage returns a VName for a Go package.
 //
 // A package VName has the fixed signature "package", and the VName path holds
-// the import path relative to the corpus root.  The VCSRules are used to
-// identify the corpus; if none apply then by default the first path component
-// of the import path is used as the corpus name, except for packages under
-// GOROOT which are attributed to the special corpus "golang.org".
-func ForPackage(corpus string, pkg *build.Package) *spb.VName {
+// the import path relative to the corpus root.  If the package's VCS root
+// cannot be determined for the package's corpus, then by default the first path
+// component of the import path is used as the corpus name, except for packages
+// under GOROOT which are attributed to the special corpus "golang.org".
+//
+//
+// Examples:
+//   ForPackage(<kythe.io/kythe/go/util/schema>, &{CanonicalizePackageCorpus: false}) => {
+//     Corpus: "kythe.io",
+//     Path: "kythe/go/util/schema",
+//		 Language: "go",
+//		 Signature: "package",
+//   }
+//
+//   ForPackage( <kythe.io/kythe/go/util/schema>, &{CanonicalizePackageCorpus: true}) => {
+//     Corpus: "github.com/kythe/kythe",
+//     Path: "kythe/go/util/schema",
+//		 Language: "go",
+//		 Signature: "package",
+//   }
+//
+//   ForPackage(<github.com/kythe/kythe/kythe/go/util/schema>, &{CanonicalizePackageCorpus: false}) => {
+//     Corpus: "github.com/kythe/kythe",
+//     Path: "kythe/go/util/schema",
+//		 Language: "go",
+//		 Signature: "package",
+//   }
+//
+//   ForPackage(<github.com/kythe/kythe/kythe/go/util/schema>, &{CanonicalizePackageCorpus: true}) => {
+//     Corpus: "github.com/kythe/kythe",
+//     Path: "kythe/go/util/schema",
+//		 Language: "go",
+//		 Signature: "package",
+//   }
+func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 	ip := pkg.ImportPath
-	v, ok := VCSRules.Apply(ip)
-	if !ok {
-		v = &spb.VName{Path: ip, Signature: packageSig}
-		if pkg.Goroot {
-			// This is a Go standard library package; the corpus is implicit.
-			v.Corpus = golangCorpus
-		} else if strings.HasPrefix(ip, ".") {
-			// Local import; no corpus
-		} else if i := strings.Index(ip, "/"); i > 0 {
-			// Take the first slash-delimited component to be the corpus.
-			// e.g., import "foo/bar/baz" ⇒ corpus "foo", signature "bar/baz".
-			v.Corpus = ip[:i]
-			v.Path = ip[i+1:]
-			v.Signature = packageSig
-		} else if corpus != "" {
-			// Default: Assume the package is in "this" corpus, if defined.
-			v.Corpus = corpus
+	v := &spb.VName{Language: Language, Signature: packageSig}
+
+	// Attempt to resolve the package's repository root as its corpus.
+	if r, err := vcs.RepoRootForImportPath(ip, false); err == nil {
+		// TODO cache by root
+		v.Path = strings.TrimPrefix(strings.TrimPrefix(ip, r.Root), "/")
+		if opts != nil && opts.CanonicalizePackageCorpus {
+			// Use the canonical repository URL as the corpus.
+			v.Corpus = r.Repo
+			if i := strings.Index(v.Corpus, "://"); i >= 0 {
+				// Remove URL scheme from corpus
+				v.Corpus = v.Corpus[i+3:]
+			}
+			v.Corpus = strings.TrimSuffix(v.Corpus, "."+r.VCS.Cmd)
+		} else {
+			v.Corpus = r.Root
 		}
+		return v
 	}
-	v.Language = Language
+
+	v.Path = ip
+	if pkg.Goroot {
+		// This is a Go standard library package; the corpus is implicit.
+		v.Corpus = golangCorpus
+	} else if strings.HasPrefix(ip, ".") {
+		// Local import; no corpus
+	} else if i := strings.Index(ip, "/"); i > 0 {
+		// Take the first slash-delimited component to be the corpus.
+		// e.g., import "foo/bar/baz" ⇒ corpus "foo", signature "bar/baz".
+		v.Corpus = ip[:i]
+		v.Path = ip[i+1:]
+	} else if opts != nil && opts.DefaultCorpus != "" {
+		// Default: Assume the package is in "this" corpus, if defined.
+		v.Corpus = opts.DefaultCorpus
+	}
 	return v
 }
 
