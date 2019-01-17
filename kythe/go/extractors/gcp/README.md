@@ -42,7 +42,7 @@ gcloud builds submit --config examples/mvn.yaml \
 --substitutions=\
 _BUCKET_NAME=$BUCKET_NAME,\
 _REPO_NAME=https://github.com/project-name/repo-name\
---no-source
+ --no-source
 ```
 
 ### Guava specific example
@@ -55,7 +55,7 @@ gcloud builds submit --config examples/guava-mvn.yaml \
 --substitutions=\
 _BUCKET_NAME=$BUCKET_NAME,\
 _GUAVA_VERSION=<commit-hash>\
---no-source
+ --no-source
 ```
 
 This outputs `guava-<commit-hash>.kzip` to $BUCKET_NAME on Google Cloud Storage.
@@ -69,7 +69,7 @@ gcloud builds submit --config examples/gradle.yaml \
 --substitutions=\
 _BUCKET_NAME=$BUCKET_NAME,\
 _REPO_NAME=https://github.com/project-name/repo-name\
---no-source
+ --no-source
 ```
 
 ## Cloud Build REST API
@@ -148,8 +148,9 @@ specify all of the above custom javac extraction logic.
 
 ### gcr.io/kythe-public/kzip-tools
 
-For now this is a simple wrapper around `zipmerge`, but will hopefully later
-contain other useful tools for dealing with kzip archives.
+This image exposes the binary
+[kythe/go/platform/tools/kzip](https://github.com/kythe/kythe/blob/master/kythe/go/platform/tools/kzip/kzip.go),
+which for now just supports merging multiple kzips together.
 
 ## Troubleshooting
 
