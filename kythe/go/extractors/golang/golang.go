@@ -514,7 +514,7 @@ func (p *Package) addDeps(cu *apb.CompilationUnit, importPaths []string, localPa
 	for _, ip := range importPaths {
 		if ip == "unsafe" {
 			// package unsafe is intrinsic; nothing to do
-		} else if dep, err := p.ext.addPackage(ip, localPath); err != nil {
+		} else if dep, err := p.ext.addPackage(ip, localPath); err != nil || dep.PkgObj == "" {
 			missing = append(missing, ip)
 		} else {
 			p.addInput(cu, dep)
