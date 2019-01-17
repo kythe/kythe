@@ -203,10 +203,7 @@ func (e *Extractor) dirToImport(dir string) (string, error) {
 //
 // Note: multiple packages may be resolved for "/..." import paths
 func (e *Extractor) Locate(importPath string) ([]*Package, error) {
-	listedPackages, err := e.listPackages(importPath)
-	if err != nil {
-		return nil, err
-	}
+	listedPackages, listErr := e.listPackages(importPath)
 
 	var pkgs []*Package
 	for _, pkg := range listedPackages {
@@ -233,7 +230,7 @@ func (e *Extractor) Locate(importPath string) ([]*Package, error) {
 			pkgs = append(pkgs, p)
 		}
 	}
-	return pkgs, nil
+	return pkgs, listErr
 }
 
 // ImportDir attempts to import the Go package located in the given directory.
