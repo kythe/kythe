@@ -148,7 +148,7 @@ specify all of the above custom javac extraction logic.
 
 ### gcr.io/kythe-public/kzip-tools
 
-For now this is a simple wrapper around
+This image exposes the binary
 [kythe/go/platform/tools/kzip](https://github.com/kythe/kythe/blob/master/kythe/go/platform/tools/kzip/kzip.go),
 which for now just supports merging multiple kzips together.
 
