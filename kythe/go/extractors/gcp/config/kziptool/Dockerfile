@@ -14,18 +14,16 @@
 
 # Build: bazel build //kythe/go/extractors/gcp/config/kziptool:artifacts
 # Usage:
-#   This container exposes zipmerge, useful for combining multiple kzip
+#   This container exposes the kzip tool, useful for combining multiple kzip
 #   output files into a single kzip.
-#   TODO(danielmoy): include other useful tools for kzip handling.
 #
 #   From Google Cloud Build:
 #     - name: 'gcr.io/kythe-public/kzip-tools'
 #       entrypoint: 'bash'
-#       args: ['-c', 'zipmerge /some/output.kzip /input/files/*.kzip']
+#       args: ['-c', '/opt/kythe/tools/kzip merge --output /some/output.kzip /input/files/*.kzip']
 
 FROM launcher.gcr.io/google/ubuntu16_04
 
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends zipmerge && \
-    apt-get clean
+ADD kythe/go/platform/tools/kzip/kzip /opt/kythe/tools/kzip
+
+CMD ["/opt/kythe/tools/kzip"]
