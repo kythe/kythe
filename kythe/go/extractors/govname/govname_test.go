@@ -29,30 +29,44 @@ import (
 
 func TestForPackage(t *testing.T) {
 	tests := []struct {
-		path   string
-		ticket string
-		isRoot bool
+		path      string
+		ticket    string
+		canonical string
+		isRoot    bool
 	}{
 		{path: "bytes", ticket: "kythe://golang.org?lang=go?path=bytes#package", isRoot: true},
 		{path: "go/types", ticket: "kythe://golang.org?lang=go?path=go/types#package", isRoot: true},
-		{path: "golang.org/x/net/context", ticket: "kythe://golang.org/x/net?lang=go?path=context#package"},
-		{path: "code.google.com/p/foo.bar/baz", ticket: "kythe://code.google.com/p/foo?lang=go?path=baz?root=bar#package"},
+		{path: "golang.org/x/net/context", ticket: "kythe://golang.org/x/net?lang=go?path=context#package",
+			canonical: "kythe://go.googlesource.com/net?lang=go?path=context#package"},
+		{path: "go.googlesource.com/net", ticket: "kythe://go.googlesource.com/net?lang=go#package"},
+		{path: "kythe.io/kythe/go/util/kytheuri", ticket: "kythe://kythe.io?lang=go?path=kythe/go/util/kytheuri#package",
+			canonical: "kythe://github.com/kythe/kythe?lang=go?path=kythe/go/util/kytheuri#package"},
+		{path: "github.com/kythe/kythe/kythe/go/util/kytheuri", ticket: "kythe://github.com/kythe/kythe?lang=go?path=kythe/go/util/kytheuri#package"},
+		{path: "go.googlesource.com/net", ticket: "kythe://go.googlesource.com/net?lang=go#package"},
 		{path: "fuzzy1.googlecode.com/alpha", ticket: "kythe://fuzzy1.googlecode.com?lang=go?path=alpha#package"},
 		{path: "github.com/kythe/kythe/foo", ticket: "kythe://github.com/kythe/kythe?lang=go?path=foo#package"},
-		{path: "bitbucket.org/zut/alors/non", ticket: "kythe://bitbucket.org/zut/alors?lang=go?path=non#package"},
-		{path: "launchpad.net/~frood/blee/blor", ticket: "kythe://launchpad.net/~frood/blee?lang=go?path=blor#package"},
-
-		{path: "golang.org/x/net/context", ticket: "kythe://golang.org/x/net?lang=go?path=context#package"},
+		{path: "bitbucket.org/creachadair/stringset/makeset", ticket: "kythe://bitbucket.org/creachadair/stringset?lang=go?path=makeset#package"},
+		{path: "launchpad.net/~frood/blee/blor", ticket: "kythe://launchpad.net/~frood/blee/blor?lang=go#package"},
+		{path: "launchpad.net/~frood/blee/blor/baz", ticket: "kythe://launchpad.net/~frood/blee/blor?lang=go?path=baz#package"},
 	}
+	canonicalOpts := &PackageVNameOptions{CanonicalizePackageCorpus: true}
 	for _, test := range tests {
 		pkg := &build.Package{
 			ImportPath: test.path,
 			Goroot:     test.isRoot,
 		}
-		got := ForPackage("", pkg)
+		got := ForPackage(pkg, nil)
 		gotTicket := kytheuri.ToString(got)
 		if gotTicket != test.ticket {
-			t.Errorf(`ForPackage("", [%s]): got %q, want %q`, test.path, gotTicket, test.ticket)
+			t.Errorf(`ForPackage([%s], nil): got %q, want %q`, test.path, gotTicket, test.ticket)
+		}
+
+		canonical := test.ticket
+		if test.canonical != "" {
+			canonical = test.canonical
+		}
+		if got := kytheuri.ToString(ForPackage(pkg, canonicalOpts)); got != canonical {
+			t.Errorf(`ForPackage([%s], %#v): got %q, want canonicalized %q`, test.path, canonicalOpts, got, canonical)
 		}
 	}
 }

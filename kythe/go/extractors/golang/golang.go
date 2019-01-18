@@ -63,6 +63,9 @@ func init() {
 	}
 }
 
+// PackageVNameOptions re-exports govname.PackageVNameOptions.
+type PackageVNameOptions = govname.PackageVNameOptions
+
 // An Extractor contains the state needed to extract Go compilations from build
 // information.  The zero value is ready for use with default settings.
 type Extractor struct {
@@ -72,9 +75,8 @@ type Extractor struct {
 	// The packages that have been extracted so far (initially empty).
 	Packages []*Package
 
-	// The name of the corpus that should be attributed to packages whose
-	// corpus is not specified and cannot be inferred (e.g., local imports).
-	Corpus string
+	// The configuration for constructing VNames for packages.
+	PackageVNameOptions
 
 	// The local path against which relative imports should be resolved.
 	LocalPath string
@@ -86,10 +88,6 @@ type Extractor struct {
 
 	// Extra file paths to include in each compilation record.
 	ExtraFiles []string
-
-	// A function to generate a vname from a package's import path.  If nil,
-	// the extractor will use govname.ForPackage.
-	PackageVName func(corpus string, bp *build.Package) *spb.VName
 
 	// A function to convert a directory path to an import path.  If nil, the
 	// path is made relative to the first matching element of the build
@@ -170,12 +168,9 @@ func (e *Extractor) findPackage(importPath string) *Package {
 	return nil
 }
 
-// vnameFor returns a vname for the specified package, handling the default.
+// vnameFor returns a vname for the specified package.
 func (e *Extractor) vnameFor(bp *build.Package) *spb.VName {
-	if e.PackageVName != nil {
-		return e.PackageVName(e.Corpus, bp)
-	}
-	v := govname.ForPackage(e.Corpus, bp)
+	v := govname.ForPackage(bp, &e.PackageVNameOptions)
 	v.Signature = "" // not useful in this context
 	return v
 }
@@ -203,10 +198,7 @@ func (e *Extractor) dirToImport(dir string) (string, error) {
 //
 // Note: multiple packages may be resolved for "/..." import paths
 func (e *Extractor) Locate(importPath string) ([]*Package, error) {
-	listedPackages, err := e.listPackages(importPath)
-	if err != nil {
-		return nil, err
-	}
+	listedPackages, listErr := e.listPackages(importPath)
 
 	var pkgs []*Package
 	for _, pkg := range listedPackages {
@@ -233,7 +225,7 @@ func (e *Extractor) Locate(importPath string) ([]*Package, error) {
 			pkgs = append(pkgs, p)
 		}
 	}
-	return pkgs, nil
+	return pkgs, listErr
 }
 
 // ImportDir attempts to import the Go package located in the given directory.
@@ -459,11 +451,11 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 		}
 		trimmed := strings.TrimPrefix(path, root+"/")
 		vn := &spb.VName{
-			Corpus: p.ext.Corpus,
+			Corpus: p.ext.DefaultCorpus,
 			Path:   trimmed,
 		}
 		if vn.Corpus == "" {
-			// If no global corpus is specified, use the package's corpus for each of
+			// If no default corpus is specified, use the package's corpus for each of
 			// its files.  The package corpus is based on the rules in
 			// kythe/go/extractors/govname and is usually either the package's
 			// repository root (e.g. github.com/golang/protobuf) or a custom top-level
