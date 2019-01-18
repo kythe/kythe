@@ -20,26 +20,19 @@ load(
     "verifier_test",
 )
 
-KytheJavaJar = provider(
-    doc = "Bundled Java compilation.",
-    fields = {
-        "jar": "The bundled jar file.",
-    },
-)
-
 def _invoke(rulefn, name, **kwargs):
     """Invoke rulefn with name and kwargs, returning the label of the rule."""
     rulefn(name = name, **kwargs)
     return "//{}:{}".format(native.package_name(), name)
 
 def _java_extract_kzip_impl(ctx):
-    jars = []
+    deps = []
     for dep in ctx.attr.deps:
-        jars += [dep[KytheJavaJar].jar]
+        deps += [dep[JavaInfo]]
 
     # Actually compile the sources to be used as a dependency for other tests
     jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
-    info = java_common.compile(
+    java_info = java_common.compile(
         ctx,
         javac_opts = java_common.default_javac_opts(
             ctx,
@@ -49,9 +42,10 @@ def _java_extract_kzip_impl(ctx):
         host_javabase = ctx.attr._host_javabase,
         source_files = ctx.files.srcs,
         output = jar,
-        deps = [JavaInfo(compile_jar = curr_jar, output_jar = curr_jar) for curr_jar in jars],
+        deps = deps,
     )
 
+    jars = depset(transitive = [dep.compile_jars for dep in deps]).to_list()
     args = ctx.attr.opts + [
         "-encoding",
         "utf-8",
@@ -71,7 +65,7 @@ def _java_extract_kzip_impl(ctx):
         deps = jars + ctx.files.data,
     )
     return [
-        KytheJavaJar(jar = jar),
+        java_info,
         KytheVerifierSources(files = depset(ctx.files.srcs)),
     ]
 
@@ -96,7 +90,7 @@ java_extract_kzip = rule(
             allow_single_file = True,
         ),
         "deps": attr.label_list(
-            providers = [KytheJavaJar],
+            providers = [JavaInfo],
         ),
         "_host_javabase": attr.label(
             cfg = "host",
