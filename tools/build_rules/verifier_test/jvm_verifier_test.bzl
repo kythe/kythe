@@ -19,10 +19,6 @@ load(
     "index_compilation",
     "verifier_test",
 )
-load(
-    ":java_verifier_test.bzl",
-    "KytheJavaJar",
-)
 
 def _invoke(rulefn, name, **kwargs):
     """Invoke rulefn with name and kwargs, returning the label of the rule."""
@@ -32,7 +28,8 @@ def _invoke(rulefn, name, **kwargs):
 def _jvm_extract_kzip_impl(ctx):
     jars = []
     for dep in ctx.attr.deps:
-        jars += [dep[KytheJavaJar].jar]
+        jars += [dep[JavaInfo].full_compile_jars]
+    jars = depset(transitive = jars)
 
     extract(
         srcs = jars,
@@ -58,7 +55,7 @@ jvm_extract_kzip = rule(
             allow_single_file = True,
         ),
         "deps": attr.label_list(
-            providers = [KytheJavaJar],
+            providers = [JavaInfo],
         ),
     },
     outputs = {"kzip": "%{name}.kzip"},
