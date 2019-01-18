@@ -40,12 +40,12 @@ bool IsAbsolutePath(absl::string_view path);
 ///
 /// \param to_relativize Relative or absolute path to a file.
 /// \param relativize_against Relative or absolute path to a directory.
-std::string RelativizePath(const std::string& to_relativize,
-                           const std::string& relativize_against);
+std::string RelativizePath(absl::string_view to_relativize,
+                           absl::string_view relativize_against);
 
 /// \brief Convert `in_path` to an absolute path, eliminating `.` and `..`.
 /// \param in_path The path to convert.
-std::string MakeCleanAbsolutePath(const absl::string_view in_path);
+std::string MakeCleanAbsolutePath(absl::string_view in_path);
 
 /// \brief Sets `*dir` to the process's current working directory.
 ///
