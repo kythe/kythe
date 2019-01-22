@@ -141,7 +141,7 @@ may provide the jdk7 version by default. To determine if you are using an
 incompatible version of Bazel, look for `jdk7` in the build label that
 is printed by `bazel version`.
 
-Also note that not all targets build with `//...` - some targets aer
+Also note that not all targets build with `//...` - some targets are
 purposefully omitted.  This includes `//kythe/web/ui`, `//kythe/release`, and
 many of the docker images we push.
 
