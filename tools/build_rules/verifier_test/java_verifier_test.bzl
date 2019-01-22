@@ -232,6 +232,10 @@ def _generate_java_proto_impl(ctx):
         command = "\n".join([
             "#/bin/bash",
             "set -e",
+            # Creating the declared directory in this action is necessary for
+            # remote execution environments.  This differs from local execution
+            # where Bazel will create the directory before this action is
+            # executed.
             "mkdir -p " + out.path,
             " ".join([
                 protoc.path,
