@@ -224,11 +224,20 @@ def _generate_java_proto_impl(ctx):
     # Generate the Java protocol buffer sources into a directory.
     # Note: out contains .meta files with annotations for cross-language xrefs.
     out = ctx.actions.declare_directory(ctx.label.name + "_gen")
-    ctx.actions.run(
+    protoc = ctx.executable._protoc
+    ctx.actions.run_shell(
         outputs = [out],
         inputs = ctx.files.srcs,
-        executable = ctx.executable._protoc,
-        arguments = ["--java_out=annotate_code:" + out.path] + [src.path for src in ctx.files.srcs],
+        tools = [protoc],
+        command = "\n".join([
+            "#/bin/bash",
+            "set -e",
+            "mkdir -p " + out.path,
+            " ".join([
+                protoc.path,
+                "--java_out=annotate_code:" + out.path,
+            ] + [src.path for src in ctx.files.srcs]),
+        ]),
     )
 
     # List the Java sources in a files for the javac_extractor to take as a @params file.
