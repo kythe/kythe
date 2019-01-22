@@ -66,7 +66,8 @@ def _java_extract_kzip_impl(ctx):
         ) + ctx.attr.opts,
         java_toolchain = ctx.attr._java_toolchain,
         host_javabase = ctx.attr._host_javabase,
-        source_files = srcs + srcjars,
+        source_jars = srcjars,
+        source_files = srcs,
         output = jar,
         deps = deps,
     )
@@ -223,7 +224,7 @@ def java_verifier_test(
 def _generate_java_proto_impl(ctx):
     # Generate the Java protocol buffer sources into a directory.
     # Note: out contains .meta files with annotations for cross-language xrefs.
-    out = ctx.actions.declare_directory(ctx.label.name + "_gen")
+    out = ctx.actions.declare_directory(ctx.label.name)
     protoc = ctx.executable._protoc
     ctx.actions.run_shell(
         outputs = [out],
@@ -325,15 +326,15 @@ def java_proto_verifier_test(
     )
 
     _generate_java_proto(
-        name = name + "_proto_gensrc",
+        name = name + "_gensrc",
         srcs = proto_srcs,
     )
 
     kzip = _invoke(
         java_extract_kzip,
-        name = name + "_kzip",
+        name = name + "_java_kzip",
         testonly = True,
-        srcs = srcs + [":" + name + "_proto_gensrc"],
+        srcs = srcs + [":" + name + "_gensrc"],
         tags = tags,
         visibility = visibility,
         vnames_config = vnames_config,
@@ -342,7 +343,7 @@ def java_proto_verifier_test(
 
     entries = _invoke(
         index_compilation,
-        name = name + "_entries",
+        name = name + "_java_entries",
         testonly = True,
         indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
         opts = ["--verbose"],
