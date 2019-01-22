@@ -24,10 +24,10 @@ load(
     "proto_extract_kzip",
 )
 
-KytheJavaParams = provider(
+KytheJavaParamsInfo = provider(
     doc = "Java source jar unpacked into parameters file.",
     fields = {
-        "srcjars": "Original source jars generating files in params file.",
+        "srcjar": "Original source jar generating files in params file.",
         "params": "File with list of Java parameters.",
         "dir": "Directory of files referenced in params file.",
     },
@@ -48,10 +48,10 @@ def _java_extract_kzip_impl(ctx):
     params_files = []
     dirs = []
     for src in ctx.attr.srcs:
-        if KytheJavaParams in src:
-            srcjars += src[KytheJavaParams].srcjars
-            params_files += [src[KytheJavaParams].params]
-            dirs += [src[KytheJavaParams].dir]
+        if KytheJavaParamsInfo in src:
+            srcjars += [src[KytheJavaParamsInfo].srcjar]
+            params_files += [src[KytheJavaParamsInfo].params]
+            dirs += [src[KytheJavaParamsInfo].dir]
         else:
             srcs += [src.files]
     srcs = depset(transitive = srcs).to_list()
@@ -264,10 +264,10 @@ def _generate_java_proto_impl(ctx):
         arguments = ["--output", srcjar.path, "--resources", "@" + files.path],
     )
 
-    return struct(
-        files = depset([files, out, srcjar]),
-        providers = [KytheJavaParams(dir = out, params = files, srcjars = [srcjar])],
-    )
+    return [
+        DefaultInfo(files = depset([files, out, srcjar])),
+        KytheJavaParamsInfo(dir = out, params = files, srcjar = srcjar),
+    ]
 
 _generate_java_proto = rule(
     attrs = {
@@ -293,7 +293,6 @@ def java_proto_verifier_test(
         srcs,
         size = "small",
         proto_srcs = [],
-        java_proto = None,
         tags = [],
         verifier_opts = ["--ignore_dups"],
         vnames_config = None,
@@ -301,14 +300,20 @@ def java_proto_verifier_test(
     """Verify cross-language references between Java and Proto.
 
     Args:
-      srcs: The compilation's source file inputs; each file's verifier goals will be checked
+      name: Name of the test.
+      size: Size of the test.
+      tags: Test target tags.
+      visibility: Visibility of the test target.
+      srcs: The compilation's Java source files; each file's verifier goals will be checked
+      proto_srcs: The compilation's proto source files; each file's verifier goals will be checked
       verifier_opts: List of options passed to the verifier tool
       vnames_config: Optional path to a VName configuration file
+
+    Returns: the label of the test.
     """
     proto_kzip = _invoke(
         proto_extract_kzip,
         name = name + "_proto_kzip",
-        testonly = True,
         srcs = proto_srcs,
         tags = tags,
         visibility = visibility,
@@ -333,7 +338,6 @@ def java_proto_verifier_test(
     kzip = _invoke(
         java_extract_kzip,
         name = name + "_java_kzip",
-        testonly = True,
         srcs = srcs + [":" + name + "_gensrc"],
         tags = tags,
         visibility = visibility,
