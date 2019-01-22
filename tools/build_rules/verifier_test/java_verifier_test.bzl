@@ -314,7 +314,6 @@ def java_proto_verifier_test(
     proto_kzip = _invoke(
         proto_extract_kzip,
         name = name + "_proto_kzip",
-        testonly = True,
         srcs = proto_srcs,
         tags = tags,
         visibility = visibility,
@@ -339,7 +338,6 @@ def java_proto_verifier_test(
     kzip = _invoke(
         java_extract_kzip,
         name = name + "_java_kzip",
-        testonly = True,
         srcs = srcs + [":" + name + "_gensrc"],
         tags = tags,
         visibility = visibility,
