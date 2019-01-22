@@ -1,5 +1,9 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+# The targets in kythe/web/ui are marked "manual", so they will not build if you
+# blaze build //..., due to the behavior described in
+# https://docs.bazel.build/versions/master/guide.html#target-patterns.
+
 filegroup(
     name = "ui",
     srcs = [":prod-js"] + glob(["resources/public/**"]),
