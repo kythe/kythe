@@ -74,7 +74,7 @@ std::vector<std::string> PathSubstitutionsToArgs(
   for (const auto& sub : substitutions) {
     // Record in compilation unit args so indexer gets the same paths.
     args.push_back("--proto_path");
-    if (sub.first == "") {
+    if (sub.first.empty()) {
       args.push_back(sub.second);
     } else {
       args.push_back(absl::StrCat(sub.first, "=", sub.second));

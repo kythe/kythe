@@ -76,7 +76,7 @@ Examples:
     CHECK(absl::EndsWith(arg, ".proto"))
         << "Invalid arg, expected a proto file: '" << arg << "'";
   }
-  CHECK(proto_filenames.size() >= 1) << "Expected 1+ .proto files.";
+  CHECK(!proto_filenames.empty()) << "Expected 1+ .proto files.";
 
   // Extract and save kzip.
   proto::IndexedCompilation compilation;

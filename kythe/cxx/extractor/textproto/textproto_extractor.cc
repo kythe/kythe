@@ -122,7 +122,7 @@ Examples:
   TextprotoSchema schema = ParseTextprotoSchemaComments(textproto);
   std::vector<std::string> proto_filenames;
   if (!FLAGS_proto_files.empty()) {
-    proto_filenames = absl::StrSplit(FLAGS_proto_files, ",");
+    proto_filenames = absl::StrSplit(FLAGS_proto_files, ',');
   } else {
     proto_filenames.push_back(schema.proto_file);
     for (const auto& extra_import : schema.proto_imports) {
@@ -156,7 +156,7 @@ Examples:
   compilation.mutable_unit()->add_argument("--proto_message");
   compilation.mutable_unit()->add_argument(schema.proto_message);
   // Add protoc args.
-  if (proto_extractor.path_substitutions.size()) {
+  if (!proto_extractor.path_substitutions.empty()) {
     compilation.mutable_unit()->add_argument("--");
     for (auto& arg : lang_proto::PathSubstitutionsToArgs(
              proto_extractor.path_substitutions)) {

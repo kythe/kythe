@@ -23,20 +23,17 @@ namespace kythe {
 namespace lang_textproto {
 
 TextprotoSchema ParseTextprotoSchemaComments(absl::string_view textproto) {
-  TextprotoSchema meta;
+  TextprotoSchema schema;
 
-  for (absl::string_view line : absl::StrSplit(textproto, "\n")) {
+  for (absl::string_view line : absl::StrSplit(textproto, '\n')) {
     if (ConsumePrefix(&line, "#")) {
-      // Trim space from both ends.
-      line = absl::StripAsciiWhitespace(line);
-
+      line = absl::StripLeadingAsciiWhitespace(line);
       if (ConsumePrefix(&line, "proto-file:")) {
-        meta.proto_file = std::string(StripLeadingAsciiWhitespace(line));
+        schema.proto_file = std::string(StripAsciiWhitespace(line));
       } else if (ConsumePrefix(&line, "proto-message:")) {
-        meta.proto_message = std::string(StripLeadingAsciiWhitespace(line));
+        schema.proto_message = std::string(StripAsciiWhitespace(line));
       } else if (ConsumePrefix(&line, "proto-import:")) {
-        meta.proto_imports.push_back(
-            std::string(StripLeadingAsciiWhitespace(line)));
+        schema.proto_imports.push_back(std::string(StripAsciiWhitespace(line)));
       }
     } else if (line.empty()) {
       // Skip blank lines.
@@ -47,7 +44,7 @@ TextprotoSchema ParseTextprotoSchemaComments(absl::string_view textproto) {
     }
   }
 
-  return meta;
+  return schema;
 }
 
 }  // namespace lang_textproto

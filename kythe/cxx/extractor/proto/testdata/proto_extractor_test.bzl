@@ -99,6 +99,7 @@ def extractor_golden_test(
       deps: any other required deps
       opts: arguments to pass to the extractor
       extra_env: environment variables to configure extractor behavior
+      extractor: the extractor binary to use
     """
     kzip = name + "_kzip"
     extract_kzip(
