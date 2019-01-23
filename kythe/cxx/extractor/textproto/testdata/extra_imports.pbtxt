@@ -1,0 +1,5 @@
+# proto-file: example.proto
+# proto-message: textproto_test.MyMessage
+# proto-import: dep.proto
+
+str_field: "hello"

@@ -1,3 +1,14 @@
+cc_binary(
+    name = "textproto_extractor",
+    srcs = ["textproto_extractor.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":textproto_schema",
+        "//kythe/cxx/extractor/proto:lib",
+        "//kythe/cxx/indexer/proto:search_path",
+    ],
+)
+
 cc_library(
     name = "textproto_schema",
     srcs = ["textproto_schema.cc"],

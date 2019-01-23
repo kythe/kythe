@@ -91,4 +91,5 @@ extractor_golden_test(
 sh_binary(
     name = "kzip_diff_test",
     srcs = ["kzip_diff_test.sh"],
+    visibility = ["//kythe/cxx/extractor/textproto/testdata:__subpackages__"],
 )

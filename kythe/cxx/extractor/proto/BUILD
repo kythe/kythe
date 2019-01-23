@@ -19,6 +19,7 @@ cc_library(
     name = "lib",
     srcs = ["proto_extractor.cc"],
     hdrs = ["proto_extractor.h"],
+    visibility = ["//kythe/cxx/extractor/textproto:__subpackages__"],
     deps = [
         "//kythe/cxx/indexer/proto:search_path",
         "@com_github_google_glog//:glog",
