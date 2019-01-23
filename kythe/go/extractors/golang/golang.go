@@ -515,6 +515,9 @@ func (p *Package) addDeps(cu *apb.CompilationUnit, importPaths []string, localPa
 		if ip == "unsafe" {
 			// package unsafe is intrinsic; nothing to do
 		} else if dep, err := p.ext.addPackage(ip, localPath); err != nil || dep.PkgObj == "" {
+			// Package was either literally missing or could not be built properly.
+			// Note: Locate could have added a dependency package that could not be
+			// built as part of its earlier analysis.
 			missing = append(missing, ip)
 		} else {
 			p.addInput(cu, dep)
