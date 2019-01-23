@@ -20,6 +20,7 @@ def _lein_repository(repository_ctx):
     repository_ctx.file(
         "leinbuild.sh",
         "\n".join([
+            "#!/bin/sh",
             "export LEIN_HOME=\"%s\"" % (repository_ctx.path("home"),),
             "PROJECT=\"$(dirname \"${1:?Missing project.cls path}\")\"",
             "EXECROOT=\"$PWD\"",
@@ -30,6 +31,7 @@ def _lein_repository(repository_ctx):
             "mv \"$PROJECT\"/resources/public/js/main.js \"${2:?Missing main.js output path}\"",
             "mv \"$PROJECT\"/licenses.txt \"${3:?Missing licenses.txt output path}\"",
         ]),
+        executable = True,
     )
     repository_ctx.file(
         "WORKSPACE",
