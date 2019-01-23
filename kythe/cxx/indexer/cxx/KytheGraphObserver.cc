@@ -104,7 +104,8 @@ kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
     llvm::StringRef working_directory = vfs_->working_directory();
     llvm::StringRef file_name(file_entry->getName());
     if (file_name.startswith(working_directory)) {
-      out_name.set_path(RelativizePath(file_name, working_directory));
+      out_name.set_path(
+          RelativizePath(ConvertRef(file_name), ConvertRef(working_directory)));
     } else {
       out_name.set_path(file_entry->getName());
     }

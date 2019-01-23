@@ -73,7 +73,7 @@ var (
 	version       = flag.String("version", "master", "The version of the remote repo to compare")
 	archivePrefix = flag.String("archive_prefix", "archive", "The part of an archive download URL for a source repo, for example the 'archive' in https://github.com/google/guava/archive/version-hash.zip")
 	archiveFormat = flag.String("archive_format", ".zip", "The file format of the downloaded archive")
-	archiveSubdir = flag.String("archive_subdir", "REPO-VERSION", "This flag describes what the downloaded archive's format is.  Specify \"REPO-VESRION\" for a github-style nested subdirectory.  Specify \"\" emptystring for no nesting at all.")
+	archiveSubdir = flag.String("archive_subdir", "REPO-VERSION", "This flag describes what the downloaded archive's format is.  Specify \"REPO-VERSION\" for a github-style nested subdirectory.  Specify \"\" emptystring for no nesting at all.")
 )
 
 func init() {

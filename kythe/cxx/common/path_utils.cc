@@ -132,8 +132,8 @@ absl::string_view Dirname(absl::string_view path) {
   return SplitPath(path).dir;
 }
 
-std::string RelativizePath(const std::string& to_relativize,
-                           const std::string& relativize_against) {
+std::string RelativizePath(absl::string_view to_relativize,
+                           absl::string_view relativize_against) {
   std::string to_relativize_abs = MakeCleanAbsolutePath(to_relativize);
   std::string relativize_against_abs =
       MakeCleanAbsolutePath(relativize_against);

@@ -23,7 +23,7 @@ def _merge_kzips_impl(ctx):
         mnemonic = "MergeKZips",
         arguments = ["merge", "--output", output.path] + [f.path for f in ctx.files.srcs],
     )
-    return struct(files = depset([output]))
+    return [DefaultInfo(files = depset([output]))]
 
 merge_kzips = rule(
     attrs = {
