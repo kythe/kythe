@@ -42,9 +42,9 @@ type PackageVNameOptions struct {
 	// cannot otherwise be resolved to a corpus.
 	DefaultCorpus string
 
-	// CanonicalizePackageCorpus determines whether a package's corpus name s
+	// CanonicalizePackageCorpus determines whether a package's corpus name is
 	// canonicalized as its VCS repository root URL rather than the Go import path
-	// corresponding the the VCS repository root.
+	// corresponding to the VCS repository root.
 	CanonicalizePackageCorpus bool
 }
 
