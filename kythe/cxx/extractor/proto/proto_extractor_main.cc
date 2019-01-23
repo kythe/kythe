@@ -67,7 +67,7 @@ Examples:
          "environment variable.";
   IndexWriter kzip_writer = OpenKzipWriterOrDie(env_output_file);
 
-  // Parse --proto_path and -I args into a set of path substitions (search
+  // Parse --proto_path and -I args into a set of path substitutions (search
   // paths). The remaining arguments should be .proto files.
   std::vector<std::string> proto_filenames;
   ::kythe::lang_proto::ParsePathSubstitutions(

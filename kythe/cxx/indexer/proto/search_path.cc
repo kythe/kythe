@@ -1,5 +1,6 @@
 #include "search_path.h"
 
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/strip.h"
@@ -65,6 +66,21 @@ void ParsePathSubstitutions(
     std::vector<std::pair<std::string, std::string>>* substitutions,
     std::vector<std::string>* unprocessed) {
   _ParsePathSubstitutions(args, substitutions, unprocessed);
+}
+
+std::vector<std::string> PathSubstitutionsToArgs(
+    const std::vector<std::pair<std::string, std::string>>& substitutions) {
+  std::vector<std::string> args;
+  for (const auto& sub : substitutions) {
+    // Record in compilation unit args so indexer gets the same paths.
+    args.push_back("--proto_path");
+    if (sub.first == "") {
+      args.push_back(sub.second);
+    } else {
+      args.push_back(absl::StrCat(sub.first, "=", sub.second));
+    }
+  }
+  return args;
 }
 
 }  // namespace lang_proto

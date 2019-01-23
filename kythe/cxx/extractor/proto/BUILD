@@ -20,6 +20,7 @@ cc_library(
     srcs = ["proto_extractor.cc"],
     hdrs = ["proto_extractor.h"],
     deps = [
+        "//kythe/cxx/indexer/proto:search_path",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",

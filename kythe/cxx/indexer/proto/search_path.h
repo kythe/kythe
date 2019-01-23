@@ -38,6 +38,12 @@ void ParsePathSubstitutions(
     std::vector<std::pair<std::string, std::string>>* substitutions,
     std::vector<std::string>* unprocessed);
 
+// Converts a path substitutions map into a list of arguments that can be passed
+// to protoc. For example, given the substitution map {"": some/directory}, this
+// function would return ["--proto_path", "some/directory"].
+std::vector<std::string> PathSubstitutionsToArgs(
+    const std::vector<std::pair<std::string, std::string>>& substitutions);
+
 }  // namespace lang_proto
 }  // namespace kythe
 

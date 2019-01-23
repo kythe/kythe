@@ -24,6 +24,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
@@ -100,22 +101,18 @@ proto::CompilationUnit ProtoExtractor::ExtractProtos(
     unit.add_argument(proto);
   }
 
-  // Add path substitutions to src_tree and add as args to compilation unit.
+  // Add path substitutions to src_tree.
   RecordingDiskSourceTree src_tree;
   src_tree.MapPath("", "");  // Add current directory to VFS.
+  for (const auto& sub : path_substitutions) {
+    src_tree.MapPath(sub.first, sub.second);
+  }
+
+  // Add protoc args to output.
   if (path_substitutions.size()) {
     unit.add_argument("--");
-    for (const auto& sub : path_substitutions) {
-      // Add search path to proto SourceTree.
-      src_tree.MapPath(sub.first, sub.second);
-
-      // Record in compilation unit args so indexer gets the same paths.
-      unit.add_argument("--proto_path");
-      if (sub.first == "") {
-        unit.add_argument(sub.second);
-      } else {
-        unit.add_argument(absl::StrCat(sub.first, "=", sub.second));
-      }
+    for (auto& arg : PathSubstitutionsToArgs(path_substitutions)) {
+      unit.add_argument(arg);
     }
   }
 
