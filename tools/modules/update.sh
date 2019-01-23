@@ -20,6 +20,12 @@
 # updated to the pinned versions without configuring or building them.
 # If the argument `--build_only` is passed, the script will assume that the
 # repositories are at the correct version and will configure and build them.
+#
+# To force a rebuild of llvm and/or clang:
+#
+# rm third_party/llvm/llvm/*.sentinel
+# rm third_party/llvm/llvm/tools/clang/*.sentinel
+# ./tools/modules/update.sh
 
 # This section is used for cleanup during/after fetching.
 TMPDIRS=()
