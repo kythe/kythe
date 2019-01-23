@@ -653,8 +653,8 @@ def _kythe_contributions():
         remote = "https://github.com/kythe/lang-proto",
     )
 
-def _website_dependencies():
-    """Defines external repositories necessary for building the website."""
+def _sample_ui_dependencies():
+    """Defines external repositories necessary for building the sample UI."""
     lein_repository(
         name = "org_leiningen",
         sha256 = "af77a8569238fb89272fdd46974c97383be126f19e709f1e7b1c5ffb9135e1d7",
@@ -692,5 +692,5 @@ def kythe_dependencies():
     )
 
     _rule_dependencies()
-    _website_dependencies()
+    _sample_ui_dependencies()
     _bindings()
