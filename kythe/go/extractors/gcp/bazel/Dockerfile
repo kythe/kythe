@@ -62,5 +62,5 @@ RUN mv -T /tmp/kythe/kythe-$KYTHE_VERSION /opt/kythe/repo/kythe
 
 # Set up the kythe repo
 WORKDIR /opt/kythe/repo/kythe
-ENV CLANG=/usr/bin/clang-3.6
+ENV CC=/usr/bin/clang-3.6
 RUN ./tools/modules/update.sh

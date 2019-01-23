@@ -137,7 +137,7 @@ def _transitive_entries(deps):
 
 def _cc_extract_kzip_impl(ctx):
     cpp = find_cpp_toolchain(ctx)
-    if ctx.attr.add_toolchain_include_directories:
+    if cpp.libc == "macosx":
         toolchain_includes = cpp.built_in_include_directories
     else:
         toolchain_includes = []
@@ -181,11 +181,6 @@ cc_extract_kzip = rule(
                 ".c",
                 ".h",
             ],
-        ),
-        "add_toolchain_include_directories": attr.bool(
-            doc = ("Whether or not to explicitly add the C++ toolchain " +
-                   "directories to the header search path."),
-            default = False,
         ),
         "copts": attr.string_list(
             doc = """Options which are required to compile/index the sources.
@@ -727,7 +722,6 @@ def cc_extractor_test(
         tags = [],
         restricted_to = ["//buildenv:all"]):
     """C++ verifier test on an extracted source file."""
-    args = ["-std=" + std, "-c"]
     cc_extract_kzip(
         name = name + "_kzip",
         srcs = srcs,
@@ -735,8 +729,7 @@ def cc_extractor_test(
         tags = tags,
         restricted_to = restricted_to,
         testonly = True,
-        opts = args,
-        add_toolchain_include_directories = True,
+        opts = ["-c"],
     )
     cc_index(
         name = name + "_entries",
