@@ -6,6 +6,8 @@ cc_binary(
         ":textproto_schema",
         "//kythe/cxx/extractor/proto:lib",
         "//kythe/cxx/indexer/proto:search_path",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
     ],
 )

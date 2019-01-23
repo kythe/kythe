@@ -55,6 +55,7 @@ cc_library(
         "@com_googlesource_code_re2//:re2",
         "@io_kythe//kythe/cxx/common:kythe_uri",
         "@io_kythe//kythe/cxx/common:lib",
+        "@io_kythe//kythe/cxx/common:path_utils",
         "@io_kythe//kythe/cxx/common:status_or",
         "@io_kythe//kythe/cxx/common:utf8_line_index",
         "@io_kythe//kythe/cxx/common/indexing:output",
