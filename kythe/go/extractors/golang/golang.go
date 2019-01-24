@@ -276,6 +276,7 @@ type Package struct {
 	ext  *Extractor    // pointer back to the extractor that generated this package
 	seen stringset.Set // input files already added to this package
 
+	CorpusRoot   string                 // Corpus package root path
 	Path         string                 // Import or directory path
 	DepOnly      bool                   // Whether the package is only seen as a dependency
 	Err          error                  // Error discovered during processing
@@ -292,6 +293,11 @@ type Package struct {
 // by the Store method.
 func (p *Package) Extract() error {
 	p.VName = p.ext.vnameFor(p.BuildPackage)
+	if r, err := govname.RepoRoot(p.Path); err == nil {
+		p.CorpusRoot = r.Root
+	} else {
+		p.CorpusRoot = p.VName.GetCorpus()
+	}
 	cu := &apb.CompilationUnit{
 		VName:    p.VName,
 		Argument: []string{"go", "build"},
@@ -457,12 +463,11 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 		if vn.Corpus == "" {
 			// If no default corpus is specified, use the package's corpus for each of
 			// its files.  The package corpus is based on the rules in
-			// kythe/go/extractors/govname and is usually either the package's
-			// repository root (e.g. github.com/golang/protobuf) or a custom top-level
-			// domain (e.g. k8s.io).
+			// kythe/go/extractors/govname and is usually the package's
+			// repository root (e.g. github.com/golang/protobuf).
 			vn.Corpus = p.VName.Corpus
 			components := strings.SplitN(vn.Path, string(filepath.Separator), 2)
-			vn.Path = strings.TrimPrefix(components[1], vn.Corpus+"/")
+			vn.Path = strings.TrimPrefix(components[1], p.CorpusRoot+"/")
 			if components[0] != "src" {
 				vn.Root = components[0]
 			}
