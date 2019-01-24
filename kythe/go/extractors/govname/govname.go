@@ -90,8 +90,7 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 	v := &spb.VName{Language: Language, Signature: packageSig}
 
 	// Attempt to resolve the package's repository root as its corpus.
-	if r, err := vcs.RepoRootForImportPath(ip, false); err == nil {
-		// TODO cache by root
+	if r, err := RepoRoot(ip); err == nil {
 		v.Path = strings.TrimPrefix(strings.TrimPrefix(ip, r.Root), "/")
 		if opts != nil && opts.CanonicalizePackageCorpus {
 			// Use the canonical repository URL as the corpus.
@@ -151,4 +150,58 @@ func ForStandardLibrary(importPath string) *spb.VName {
 // extension repositories.  If v == nil, the answer is false.
 func IsStandardLibrary(v *spb.VName) bool {
 	return v != nil && (v.Language == "go" || v.Language == "") && v.Corpus == golangCorpus
+}
+
+// RepoRoot analyzes importPath to determine it's vcs.RepoRoot.
+func RepoRoot(importPath string) (*vcs.RepoRoot, error) {
+	if root := repoRootCache.lookup(strings.Split(importPath, "/")); root != nil {
+		return root, nil
+	}
+	r, err := vcs.RepoRootForImportPath(importPath, false)
+	if err != nil {
+		return nil, err
+	}
+	repoRootCache.add(strings.Split(r.Root, "/"), r)
+	return r, nil
+}
+
+var repoRootCache repoRootCacheNode
+
+// repoRootCacheNode is a prefix search tree node for *vcs.RepoRoots by their
+// root import path.
+type repoRootCacheNode struct {
+	root *vcs.RepoRoot
+
+	children map[string]*repoRootCacheNode
+}
+
+// add puts the given *vcs.RepoRoot into the prefix tree for the given path
+// components.
+func (n *repoRootCacheNode) add(components []string, r *vcs.RepoRoot) {
+	if len(components) == 0 {
+		n.root = r
+		return
+	}
+
+	if n.children == nil {
+		n.children = make(map[string]*repoRootCacheNode)
+	}
+	p := components[0]
+	c := n.children[p]
+	if c == nil {
+		c = &repoRootCacheNode{}
+		n.children[p] = c
+	}
+	c.add(components[1:], r)
+}
+
+// lookup returns the first known *vcs.RepoRoot for any prefix of the given path
+// components.  Returns nil if none match.
+func (n *repoRootCacheNode) lookup(components []string) *vcs.RepoRoot {
+	if n == nil {
+		return nil
+	} else if n.root != nil || len(components) == 0 {
+		return n.root
+	}
+	return n.children[components[0]].lookup(components[1:])
 }

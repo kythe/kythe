@@ -18,11 +18,13 @@ package govname
 
 import (
 	"go/build"
+	"strings"
 	"testing"
 
 	"kythe.io/kythe/go/util/kytheuri"
 
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/tools/go/vcs"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -131,5 +133,33 @@ func TestForStandardLibrary(t *testing.T) {
 		} else if !IsStandardLibrary(got) {
 			t.Errorf("IsStandardLibrary(%+v) is unexpectedly false", got)
 		}
+	}
+}
+
+func TestRepoRootCache(t *testing.T) {
+	var root repoRootCacheNode
+
+	if got := root.lookup(nil); got != nil {
+		t.Errorf("Expected nil; found %+v", got)
+	}
+	if got := root.lookup([]string{"anything"}); got != nil {
+		t.Errorf("Expected nil; found %+v", got)
+	}
+
+	root1 := &vcs.RepoRoot{Root: "anything/root"}
+	root.add(strings.Split(root1.Root, "/"), root1)
+
+	if got := root.lookup(nil); got != nil {
+		t.Errorf("Expected nil; found %+v", got)
+	}
+	if got := root.lookup([]string{"anything"}); got != nil {
+		t.Errorf("Expected nil; found %+v", got)
+	}
+
+	if got := root.lookup([]string{"anything", "root"}); got != root1 {
+		t.Errorf("Expected %+v; found %+v", root1, got)
+	}
+	if got := root.lookup([]string{"anything", "root", "path"}); got != root1 {
+		t.Errorf("Expected %+v; found %+v", root1, got)
 	}
 }
