@@ -15,7 +15,7 @@ http_archive(
 
 git_repository(
     name = "io_kythe",
-    commit = "44e9cb56d7df46ba712d69a67cd2fc69cefd6843",
+    commit = "f2dbc60f9c53f6a9eb28e7dd25e578c0a58625d6",
     remote = "https://github.com/kythe/kythe",
 )
 

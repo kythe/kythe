@@ -16,7 +16,7 @@
 
 #include "kythe/cxx/indexer/proto/proto_analyzer.h"
 
-#include "absl/container/node_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "glog/logging.h"
 #include "google/protobuf/stubs/map_util.h"
@@ -40,7 +40,7 @@ ProtoAnalyzer::ProtoAnalyzer(
     const proto::CompilationUnit* unit,
     google::protobuf::DescriptorDatabase* descriptor_db,
     FileVNameGenerator* file_vnames, KytheGraphRecorder* recorder,
-    absl::node_hash_map<std::string, std::string>* path_substitution_cache)
+    absl::flat_hash_map<std::string, std::string>* path_substitution_cache)
     : unit_(unit),
       file_vnames_(file_vnames),
       recorder_(recorder),

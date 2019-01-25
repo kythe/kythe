@@ -16,7 +16,7 @@
 
 #include "kythe/cxx/indexer/proto/indexer_frontend.h"
 
-#include "absl/container/node_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/path_utils.h"
@@ -41,7 +41,7 @@ std::string IndexProtoCompilationUnit(const proto::CompilationUnit& unit,
     path_substitutions.push_back({"", CleanPath(unit.working_directory())});
   }
 
-  absl::node_hash_map<std::string, std::string> file_substitution_cache;
+  absl::flat_hash_map<std::string, std::string> file_substitution_cache;
   PreloadedProtoFileTree file_reader(&path_substitutions,
                                      &file_substitution_cache);
   google::protobuf::compiler::SourceTreeDescriptorDatabase descriptor_db(

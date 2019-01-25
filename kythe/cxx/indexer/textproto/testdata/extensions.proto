@@ -1,0 +1,20 @@
+syntax="proto2";
+
+package mypkg;
+
+message ExtendableMessage {
+    //- @str_field1 defines/binding ExtendableMessageStrField1?
+    optional string str_field1 = 1;
+
+    extensions 1000 to max;
+}
+
+message MyExtension {
+    extend ExtendableMessage{
+        //- @ext defines/binding Ext?
+        optional MyExtension ext = 5000;
+    }
+
+    //- @field1 defines/binding MyExtensionField1?
+    optional string field1 = 1;
+}

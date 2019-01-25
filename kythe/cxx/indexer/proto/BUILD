@@ -42,12 +42,15 @@ cc_library(
     copts = [
         "-Wno-unused-variable",
     ],
+    visibility = [
+        "//kythe/cxx/indexer/textproto:__pkg__",
+    ],
     deps = [
         ":proto_graph_builder",
         ":search_path",
         ":source_tree",
         "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
@@ -80,9 +83,12 @@ cc_library(
     name = "source_tree",
     srcs = ["source_tree.cc"],
     hdrs = ["source_tree.h"],
+    visibility = [
+        "//kythe/cxx/indexer/textproto:__subpackages__",
+    ],
     deps = [
         "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_protobuf//:protobuf",
         "@io_kythe//kythe/cxx/common:path_utils",
     ],
@@ -95,6 +101,7 @@ cc_library(
     visibility = [
         "//kythe/cxx/extractor/proto:__subpackages__",
         "//kythe/cxx/extractor/textproto:__subpackages__",
+        "//kythe/cxx/indexer/textproto:__subpackages__",
     ],
     deps = [
         "@com_google_absl//absl/strings",

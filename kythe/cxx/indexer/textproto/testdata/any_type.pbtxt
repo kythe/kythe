@@ -1,0 +1,9 @@
+# proto-file: any_type.proto
+# proto-message: any_type_test.Message
+
+#- @str_field ref StrField
+str_field: "testing..."
+
+#- @details_field ref DetailsField
+details_field: {
+}

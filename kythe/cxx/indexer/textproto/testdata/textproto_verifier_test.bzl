@@ -1,4 +1,7 @@
-"""Rules for verifying proto indexer output"""
+"""Rules for verifying textproto indexer output"""
+
+# copied from proto_verifier_test.bzl.
+# TODO(justbuchanan): refactor
 
 # Copyright 2019 The Kythe Authors. All rights reserved.
 #
@@ -21,26 +24,27 @@ load(
     "index_compilation",
     "verifier_test",
 )
+load("//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl", "proto_extract_kzip")
 
 def _invoke(rulefn, name, **kwargs):
     """Invoke rulefn with name and kwargs, returning the label of the rule."""
     rulefn(name = name, **kwargs)
     return "//{}:{}".format(native.package_name(), name)
 
-def _proto_extract_kzip_impl(ctx):
+def _textproto_extract_kzip_impl(ctx):
     extract(
         srcs = ctx.files.srcs,
         ctx = ctx,
         extractor = ctx.executable.extractor,
         kzip = ctx.outputs.kzip,
-        mnemonic = "ProtoExtractKZip",
+        mnemonic = "TextprotoExtractKZip",
         opts = ["--", "--proto_path", ctx.label.package] + ctx.attr.opts,
         vnames_config = ctx.file.vnames_config,
         deps = ctx.files.deps,
     )
     return [KytheVerifierSources(files = depset(ctx.files.srcs))]
 
-proto_extract_kzip = rule(
+textproto_extract_kzip = rule(
     attrs = {
         "srcs": attr.label_list(
             mandatory = True,
@@ -49,7 +53,7 @@ proto_extract_kzip = rule(
         ),
         "deps": attr.label_list(allow_files = True),
         "extractor": attr.label(
-            default = Label("@io_kythe_lang_proto//kythe/cxx/extractor/proto:proto_extractor"),
+            default = Label("@io_kythe_lang_proto//kythe/cxx/extractor/textproto:textproto_extractor"),
             executable = True,
             cfg = "host",
         ),
@@ -60,69 +64,100 @@ proto_extract_kzip = rule(
         ),
     },
     outputs = {"kzip": "%{name}.kzip"},
-    implementation = _proto_extract_kzip_impl,
+    implementation = _textproto_extract_kzip_impl,
 )
 
-def proto_verifier_test(
+def textproto_verifier_test(
         name,
-        srcs,
-        meta = [],
+        textproto,
+        protos,
         deps = [],
         size = "small",
         tags = [],
         extractor = None,
         extractor_opts = [],
+        proto_extractor_opts = [],
         indexer_opts = [],
         verifier_opts = [],
         expect_success = True,
         convert_marked_source = False,
         vnames_config = None,
         visibility = None):
-    """Extract, analyze, and verify a proto compilation.
+    """Extract, analyze, and verify a textproto compilation.
 
     Args:
       srcs: The compilation's source file inputs; each file's verifier goals will be checked
-      deps: Optional list of proto_verifier_test targets to be used as proto compilation dependencies
-      meta: Optional list of Kythe metadata files
+      deps: Optional list of textproto_verifier_test targets to be used as proto compilation dependencies
       extractor: Executable extractor tool to invoke (defaults to protoc_extractor)
       extractor_opts: List of options passed to the extractor tool
+      proto_extractor_opts: List of options passed to the proto extractor tool
       indexer_opts: List of options passed to the indexer tool
       verifier_opts: List of options passed to the verifier tool
       vnames_config: Optional path to a VName configuration file
     """
-    kzip = _invoke(
-        proto_extract_kzip,
+
+    # extract textproto
+    textproto_kzip = _invoke(
+        textproto_extract_kzip,
         name = name + "_kzip",
         testonly = True,
-        srcs = srcs,
+        srcs = [textproto],
         extractor = extractor,
         opts = extractor_opts,
         tags = tags,
         visibility = visibility,
         vnames_config = vnames_config,
-        deps = deps,
+        deps = deps + protos,
     )
+
+    # index textproto
     entries = _invoke(
         index_compilation,
         name = name + "_entries",
         testonly = True,
-        indexer = "@io_kythe_lang_proto//kythe/cxx/indexer/proto:indexer",
+        indexer = "@io_kythe_lang_proto//kythe/cxx/indexer/textproto:textproto_indexer",
         opts = indexer_opts + ["--index_file"],
         tags = tags,
         visibility = visibility,
-        deps = [kzip],
+        deps = [textproto_kzip],
     )
-    vopts = ["--ignore_dups"] + verifier_opts
+
+    # extract proto(s)
+    proto_kzip = _invoke(
+        proto_extract_kzip,
+        name = name + "_protos_kzip",
+        testonly = True,
+        srcs = protos,
+        tags = tags,
+        opts = proto_extractor_opts,
+        visibility = visibility,
+        vnames_config = vnames_config,
+        deps = deps,
+    )
+
+    # index proto(s)
+    proto_entries = _invoke(
+        index_compilation,
+        name = name + "_proto_entries",
+        testonly = True,
+        indexer = "@io_kythe_lang_proto//kythe/cxx/indexer/proto:indexer",
+        opts = ["--index_file"],
+        tags = tags,
+        visibility = visibility,
+        deps = [proto_kzip],
+    )
+
+    vopts = verifier_opts + ["--ignore_dups", "--show_goals", "--goal_regex=\"\s*(?:#|//)-(.*)\""]
     if convert_marked_source:
         vopts += ["--convert_marked_source"]
     return _invoke(
         verifier_test,
         name = name,
         size = size,
-        srcs = [entries],
+        srcs = [entries, proto_entries],
         expect_success = expect_success,
         opts = vopts,
         tags = tags,
         visibility = visibility,
-        deps = [entries],
+        deps = [entries, proto_entries],
     )

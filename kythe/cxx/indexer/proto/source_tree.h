@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/container/node_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "google/protobuf/compiler/importer.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 
@@ -50,7 +50,7 @@ class PreloadedProtoFileTree : public google::protobuf::compiler::SourceTree {
  public:
   PreloadedProtoFileTree(
       const std::vector<std::pair<std::string, std::string>>* substitutions,
-      absl::node_hash_map<std::string, std::string>* file_mapping_cache)
+      absl::flat_hash_map<std::string, std::string>* file_mapping_cache)
       : substitutions_(substitutions),
         file_mapping_cache_(file_mapping_cache) {}
 
@@ -84,10 +84,10 @@ class PreloadedProtoFileTree : public google::protobuf::compiler::SourceTree {
 
   // A map of pre-substitution to post-substitution names for all files that
   // have been successfully read via this reader.
-  absl::node_hash_map<std::string, std::string>* file_mapping_cache_;
+  absl::flat_hash_map<std::string, std::string>* file_mapping_cache_;
 
   // Path (post-substitution) -> file contents.
-  absl::node_hash_map<std::string, std::string> file_map_;
+  absl::flat_hash_map<std::string, std::string> file_map_;
 
   // A description of the error from the last call to Open() (if any).
   std::string last_error_;

@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 
-#include "absl/container/node_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_set.h"
 #include "glog/logging.h"
 #include "google/protobuf/descriptor.h"
@@ -47,7 +47,7 @@ class ProtoAnalyzer {
       const proto::CompilationUnit* unit,
       google::protobuf::DescriptorDatabase* descriptor_db,
       FileVNameGenerator* file_vnames, KytheGraphRecorder* recorder,
-      absl::node_hash_map<std::string, std::string>* path_substitution_cache);
+      absl::flat_hash_map<std::string, std::string>* path_substitution_cache);
 
   // disallow copy and assign
   ProtoAnalyzer(const ProtoAnalyzer&) = delete;
@@ -86,7 +86,7 @@ class ProtoAnalyzer {
 
   // Maps files to paths which include their prefix directories, the most
   // common being bazel-out/ derivatives.
-  absl::node_hash_map<std::string, std::string>* path_substitution_cache_;
+  absl::flat_hash_map<std::string, std::string>* path_substitution_cache_;
 
   // Gives us properly linked together descriptors for proto files and their
   // contents.
