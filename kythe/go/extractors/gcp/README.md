@@ -58,7 +58,25 @@ _GUAVA_VERSION=<commit-hash>\
  --no-source
 ```
 
-This outputs `guava-<commit-hash>.kzip` to $BUCKET_NAME on Google Cloud Storage.
+This outputs `guava-<commit-hash>.kzip` to `$BUCKET_NAME` on Google Cloud Storage.
+
+This is a reasonable example of a maven project which has already specified
+the requisite `maven-compiler-plugin` bits in their `pom.xml` files to support
+Kythe extraction, and also a project which has multiple modules.
+
+Note however not all directories from guava extract with the top-level action.
+For example if you want to extract the android copy of guava that lives inside
+of the guava tree, you would need a slightly different action:
+
+```
+gcloud builds submit --config examples/guava-android-mvn.yaml \
+--substitutions=\
+_BUCKET_NAME=$BUCKET_NAME,\
+_GUAVA_VERSION=<commit-hash>\
+ --no-source
+```
+
+This outputs `guava-android-<commit-hash>kzip` to `$BUCKET_NAME` on GCS.
 
 ## Gradle Proof of Concept
 
