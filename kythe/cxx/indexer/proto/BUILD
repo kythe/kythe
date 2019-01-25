@@ -89,6 +89,7 @@ cc_library(
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@io_kythe//kythe/cxx/common:path_utils",
     ],
