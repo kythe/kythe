@@ -38,6 +38,7 @@ import (
 	"context"
 	"fmt"
 	"go/build"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -314,6 +315,17 @@ func (p *Package) Extract() error {
 		cu.Details = append(cu.Details, info)
 	}
 
+	if govname.ImportPath(cu.VName, bc.GOROOT) != p.Path {
+		// Add GoPackageInfo if constructed VName differs from actual ImportPath.
+		if info, err := ptypes.MarshalAny(&gopb.GoPackageInfo{
+			ImportPath: p.Path,
+		}); err == nil {
+			cu.Details = append(cu.Details, info)
+		} else {
+			log.Printf("WARNING: failed to marshal GoPackageInfo for CompilationUnit: %v", err)
+		}
+	}
+
 	// Add required inputs from this package (source files of various kinds).
 	bp := p.BuildPackage
 	srcBase := bp.Dir
@@ -501,6 +513,17 @@ func (p *Package) addInput(cu *apb.CompilationUnit, bp *build.Package) {
 		// Populate the vname for the input based on the corpus of the package.
 		fi := cu.RequiredInput[len(cu.RequiredInput)-1]
 		fi.VName = p.ext.vnameFor(bp)
+
+		if govname.ImportPath(fi.VName, p.ext.BuildContext.GOROOT) != bp.ImportPath {
+			// Add GoPackageInfo if constructed VName differs from actual ImportPath.
+			if info, err := ptypes.MarshalAny(&gopb.GoPackageInfo{
+				ImportPath: bp.ImportPath,
+			}); err == nil {
+				fi.Details = append(fi.Details, info)
+			} else {
+				log.Printf("WARNING: failed to marshal GoPackageInfo for input: %v", err)
+			}
+		}
 	}
 }
 
