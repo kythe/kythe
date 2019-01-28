@@ -161,9 +161,8 @@ func fromString(st string, size int) (versiontuple, error) {
 		id, err := strconv.Atoi(bits[i])
 		if err != nil {
 			return v, fmt.Errorf("version %s has malformed index %d: %v", st, i, err)
-		} else {
-			v.versions = append(v.versions, id)
 		}
+		v.versions = append(v.versions, id)
 	}
 	return v, nil
 }
