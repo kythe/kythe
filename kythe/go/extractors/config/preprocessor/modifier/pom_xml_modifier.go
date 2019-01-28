@@ -56,9 +56,10 @@ func PreProcessPomXML(pomXMLFile string) error {
 	return f.Close()
 }
 
-// Returns whether there is a maven-compiler-plugin specified already.
-// Additionally return whether or not we optimistically think that any specified
-// maven-compiler-plugin will work for us, or if we can see obvious errors.
+// hasCompilerPLugin returns whether there is a maven-compiler-plugin specified
+// already.  Additionally return whether or not we optimistically think that any
+// specified maven-compiler-plugin will work for us, or if we can see obvious
+// errors.
 func hasCompilerPlugin(doc *etree.Document) (bool, error) {
 	for _, p := range doc.FindElements("//project/build/plugins/plugin") {
 		a := p.FindElement("artifactId")
@@ -94,8 +95,8 @@ func hasCompilerPlugin(doc *etree.Document) (bool, error) {
 	return false, nil
 }
 
-// Check to see if the plugin fits the minimum supported versions we've
-// tested:
+// wellformedCompilerPlugin checks to see if the plugin fits the minimum
+// supported versions we've tested:
 // <plugin>
 //   <artifactId>maven-compiler-plugin</artifactId>
 //   <version>3.7.0</version>
@@ -111,7 +112,7 @@ func wellformedCompilerPlugin(el *etree.Element) error {
 		return fmt.Errorf("missing maven-compiler-plugin version")
 	}
 	vt, err := semvar(v.Text())
-	if err != nil || vt.earlierThan(versiontuple{[]int{3, 7, 0}}) {
+	if err != nil || vt.earlierThan(versiontuple{3, 7, 0}) {
 		return fmt.Errorf("unsupported maven-compiler-plugin version: %s, need 3.7.0+", v.Text())
 	}
 
@@ -130,7 +131,7 @@ func checkJavaVersion(el *etree.Element, kind string) error {
 	if k == nil {
 		return fmt.Errorf("mising %s", kind)
 	}
-	if v, err := javaVersion(k.Text()); err != nil || v.earlierThan(versiontuple{[]int{1, 7}}) {
+	if v, err := javaVersion(k.Text()); err != nil || v.earlierThan(versiontuple{1, 7}) {
 		// TODO(#3075): Should test an upper bound here too.
 		return fmt.Errorf("unsupported %s version: %s, need 1.7+", kind, k.Text())
 	}
@@ -139,9 +140,7 @@ func checkJavaVersion(el *etree.Element, kind string) error {
 
 // Some container that supports semvar (3.7.0) and java versions (1.6) for
 // comparison purposes only.
-type versiontuple struct {
-	versions []int
-}
+type versiontuple []int
 
 func semvar(st string) (versiontuple, error) {
 	return fromString(st, 3)
@@ -152,7 +151,7 @@ func javaVersion(st string) (versiontuple, error) {
 }
 
 func fromString(st string, size int) (versiontuple, error) {
-	v := versiontuple{[]int{}}
+	v := versiontuple{}
 	bits := strings.Split(st, ".")
 	if len(bits) != size {
 		return v, fmt.Errorf("version should have %d parts separated by '.', got: %s", size, st)
@@ -162,7 +161,7 @@ func fromString(st string, size int) (versiontuple, error) {
 		if err != nil {
 			return v, fmt.Errorf("version %s has malformed index %d: %v", st, i, err)
 		}
-		v.versions = append(v.versions, id)
+		v = append(v, id)
 	}
 	return v, nil
 }
@@ -170,13 +169,13 @@ func fromString(st string, size int) (versiontuple, error) {
 func (vt versiontuple) earlierThan(other versiontuple) bool {
 	// Version tuples aren't of the same length, probably shouldn't be
 	// compared
-	if len(vt.versions) != len(other.versions) {
+	if len(vt) != len(other) {
 		return false
 	}
-	for i := 0; i < len(vt.versions); i++ {
-		if vt.versions[i] < other.versions[i] {
+	for i := 0; i < len(vt); i++ {
+		if vt[i] < other[i] {
 			return true
-		} else if vt.versions[i] > other.versions[i] {
+		} else if vt[i] > other[i] {
 			return false
 		}
 	}
