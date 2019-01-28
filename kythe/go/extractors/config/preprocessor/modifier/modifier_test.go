@@ -43,7 +43,6 @@ func TestBuildGradleHasKythe(t *testing.T) {
 		{fileName: "other-build.gradle", javacWrapper: "/tmp/javac-wrapper.sh", wantError: true},
 		// Look at other-build.gradle but use the correct javac wrapper.
 		{fileName: "other-build.gradle", javacWrapper: "/different/javac-wrapper.sh", hasWrapper: true},
-		{fileName: "other-build.gradle", javacWrapper: "/different/javac-wrapper.sh", hasWrapper: true},
 	}
 
 	for _, tcase := range testcases {
