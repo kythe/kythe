@@ -182,26 +182,6 @@ func TestResolveErrors(t *testing.T) {
 	}
 }
 
-func TestImportPaths(t *testing.T) {
-	tests := []struct {
-		vname       *spb.VName
-		root, ipath string
-	}{
-		// A vname in the standard library corpus, with or without GOROOT set.
-		{&spb.VName{Corpus: "golang.org", Path: "foo/bar", Language: "go"}, "", "foo/bar"},
-		{&spb.VName{Corpus: "golang.org", Path: "foo/bar", Language: "go"}, "foo", "foo/bar"},
-		// A vname in some other corpus with the default GOROOT.
-		{&spb.VName{Corpus: "whatever.io", Path: "alpha/bravo.a"}, "", "whatever.io/alpha/bravo"},
-		// A vname in a nonstandard GOROOT of another corpus.
-		{&spb.VName{Corpus: "foo.com", Path: "odd/duck/pkg/linux_amd64/io/ioutil.a"}, "odd/duck", "io/ioutil"},
-	}
-	for _, test := range tests {
-		if got := vnameToImport(test.vname, test.root); got != test.ipath {
-			t.Errorf("vnameToImport(%v, %q): got %q, want %q", test.vname, test.root, got, test.ipath)
-		}
-	}
-}
-
 func TestSpan(t *testing.T) {
 	const input = `package main
 
