@@ -97,14 +97,14 @@ class TextprotoAnalyzer {
 
   // Recursively analyzes the message and any submessages, emitting "ref" edges
   // for all fields.
-  void AnalyzeMessage(const proto::VName& file_vname, const Message& proto,
-                      const Descriptor& descriptor,
-                      const TextFormat::ParseInfoTree& parse_tree);
+  Status AnalyzeMessage(const proto::VName& file_vname, const Message& proto,
+                        const Descriptor& descriptor,
+                        const TextFormat::ParseInfoTree& parse_tree);
 
  private:
-  void AnalyzeField(const proto::VName& file_vname, const Message& proto,
-                    const TextFormat::ParseInfoTree& parse_tree,
-                    const FieldDescriptor& field, int field_index);
+  Status AnalyzeField(const proto::VName& file_vname, const Message& proto,
+                      const TextFormat::ParseInfoTree& parse_tree,
+                      const FieldDescriptor& field, int field_index);
 
   proto::VName CreateAndAddAnchorNode(const proto::VName& file,
                                       const FieldDescriptor& field,
@@ -133,7 +133,7 @@ absl::optional<proto::VName> TextprotoAnalyzer::VNameForRelPath(
   return LookupVNameForFullPath(full_path, *unit_);
 }
 
-void TextprotoAnalyzer::AnalyzeMessage(
+Status TextprotoAnalyzer::AnalyzeMessage(
     const proto::VName& file_vname, const Message& proto,
     const Descriptor& descriptor, const TextFormat::ParseInfoTree& parse_tree) {
   const Reflection* reflection = proto.GetReflection();
@@ -155,11 +155,13 @@ void TextprotoAnalyzer::AnalyzeMessage(
 
       // Add a ref for each instance of the repeated field.
       for (int i = 0; i < count; i++) {
-        AnalyzeField(file_vname, proto, parse_tree, field, i);
+        auto s = AnalyzeField(file_vname, proto, parse_tree, field, i);
+        if (!s.ok()) return s;
       }
     } else {
-      AnalyzeField(file_vname, proto, parse_tree, field,
-                   kNonRepeatedFieldIndex);
+      auto s = AnalyzeField(file_vname, proto, parse_tree, field,
+                            kNonRepeatedFieldIndex);
+      if (!s.ok()) return s;
     }
   }
 
@@ -172,11 +174,15 @@ void TextprotoAnalyzer::AnalyzeMessage(
       continue;
     }
 
-    AnalyzeField(file_vname, proto, parse_tree, *field, kNonRepeatedFieldIndex);
+    auto s = AnalyzeField(file_vname, proto, parse_tree, *field,
+                          kNonRepeatedFieldIndex);
+    if (!s.ok()) return s;
   }
+
+  return OkStatus();
 }
 
-void TextprotoAnalyzer::AnalyzeField(
+Status TextprotoAnalyzer::AnalyzeField(
     const proto::VName& file_vname, const Message& proto,
     const TextFormat::ParseInfoTree& parse_tree, const FieldDescriptor& field,
     int field_index) {
@@ -191,18 +197,28 @@ void TextprotoAnalyzer::AnalyzeField(
     // its location is an error. For other "normal" fields, failure to find a
     // location just indicates that the field isn't present.
     if (field_index != kNonRepeatedFieldIndex || field.is_extension()) {
-      LOG(DFATAL) << "Failed to find location of field: " << field.full_name()
-                  << ". This is a bug in the textproto indexer";
+      return UnknownError(
+          absl::StrCat("Failed to find location of field: ", field.full_name(),
+                       ". This is a bug in the textproto indexer"));
     }
-    return;
+    return OkStatus();
   }
 
   proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, field, loc);
 
   // Add ref to proto field.
+  Status vname_lookup_status = OkStatus();
   proto::VName field_vname = ::kythe::lang_proto::VNameForDescriptor(
-      &field,
-      [this](const std::string& path) { return *VNameForRelPath(path); });
+      &field, [this, &vname_lookup_status](const std::string& path) {
+        auto v = VNameForRelPath(path);
+        if (!v.has_value()) {
+          vname_lookup_status = UnknownError(
+              absl::StrCat("Unable to lookup vname for rel path: ", path));
+          return proto::VName();
+        }
+        return *v;
+      });
+  if (!vname_lookup_status.ok()) return vname_lookup_status;
   recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
                      VNameRef(field_vname));
 
@@ -216,8 +232,11 @@ void TextprotoAnalyzer::AnalyzeField(
             ? reflection->GetMessage(proto, &field)
             : reflection->GetRepeatedMessage(proto, &field, field_index);
     const Descriptor& subdescriptor = *field.message_type();
-    AnalyzeMessage(file_vname, submessage, subdescriptor, subtree);
+    auto s = AnalyzeMessage(file_vname, submessage, subdescriptor, subtree);
+    if (!s.ok()) return s;
   }
+
+  return OkStatus();
 }
 
 proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
@@ -420,9 +439,7 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
   // Analyze!
   TextprotoAnalyzer analyzer(&unit, textproto_file_data->content(),
                              &file_substitution_cache, recorder);
-  analyzer.AnalyzeMessage(*file_vname, *proto, *descriptor, parse_tree);
-
-  return OkStatus();
+  return analyzer.AnalyzeMessage(*file_vname, *proto, *descriptor, parse_tree);
 }
 
 }  // namespace lang_textproto

@@ -52,6 +52,7 @@ void DecodeKzipFile(const std::string& path,
   auto status = reader->Scan([&](absl::string_view digest) {
     std::vector<proto::FileData> virtual_files;
     auto compilation = reader->ReadUnit(digest);
+    CHECK(compilation.ok()) << compilation.status();
     for (const auto& file : compilation->unit().required_input()) {
       auto content = reader->ReadFile(file.info().digest());
       CHECK(content) << "Unable to read file with digest: "
