@@ -9,6 +9,7 @@ cc_binary(
         "@io_kythe//kythe/cxx/common/indexing:caching_output",
         "@io_kythe//kythe/cxx/common/indexing:output",
         "@io_kythe//kythe/proto:analysis_cc_proto",
+        "@io_kythe//kythe/proto:buildinfo_cc_proto",
     ],
 )
 
