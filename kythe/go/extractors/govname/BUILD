@@ -18,6 +18,7 @@ go_test(
     size = "small",
     srcs = ["govname_test.go"],
     library = "govname",
+    tags = ["local"],
     visibility = ["//visibility:private"],
     deps = [
         "//kythe/go/util/kytheuri",
