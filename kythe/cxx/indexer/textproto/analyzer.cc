@@ -36,7 +36,7 @@
 namespace kythe {
 namespace lang_textproto {
 
-ABSL_CONST_INIT const absl::string_view kLanguageName = "protobuf_textformat";
+ABSL_CONST_INIT const absl::string_view kLanguageName = "textproto";
 
 namespace {
 
