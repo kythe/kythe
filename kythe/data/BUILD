@@ -1,12 +1,18 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
+load(":vnames.bzl", "construct_vnames_config")
 
 exports_files(["schema_index.textproto"])
 
-filegroup(
+construct_vnames_config(
     name = "vnames_config",
-    srcs = ["vnames.json"],
+    srcs = [
+        "vnames.cxx.json",
+        "vnames.java.json",
+        "vnames.json",
+    ],
+    corpus = "kythe",
     visibility = ["//visibility:public"],
 )
 
@@ -17,6 +23,7 @@ filegroup(
 
 shell_tool_test(
     name = "filevnames_config",
+    args = ["$(location :vnames_config)"],
     data = [":vnames_config"],
     scriptfile = "test_filevnames.sh",
     tools = {
