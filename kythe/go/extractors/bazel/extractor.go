@@ -198,6 +198,10 @@ func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader)
 		return nil, err
 	}
 
+	if c.Corpus == "" {
+		c.Corpus = c.inferCorpus(info)
+	}
+
 	// Construct the basic compilation.
 	cu := &apb.CompilationUnit{
 		VName: &spb.VName{
@@ -273,6 +277,31 @@ func (c *Config) fetchInputs(ctx context.Context, paths []string, file func(int,
 		})
 	}
 	return g.Wait()
+}
+
+func (c *Config) inferCorpus(info *ActionInfo) string {
+	var sourceCorpora stringset.Set
+	for _, in := range info.Inputs {
+		path, ok := c.checkInput(in)
+		if !ok || !c.isSource(path) {
+			continue
+		}
+
+		vname, ok := c.Rules.Apply(path)
+		if ok && vname.Corpus != "" {
+			sourceCorpora.Add(vname.Corpus)
+		}
+	}
+
+	corpora := sourceCorpora.Elements()
+	if len(sourceCorpora) != 1 {
+		log.Printf("WARNING: could not infer compilation corpus from source files: %v", corpora)
+		return ""
+	}
+
+	corpus := corpora[0]
+	c.logPrintf("Inferred compilation corpus from source files: %q", corpus)
+	return corpus
 }
 
 // classifyInputs updates unit to add required inputs for each matching path
