@@ -13,6 +13,13 @@
 # limitations under the License.
 
 def _construct_vnames_config_impl(ctx):
+    corpus = ctx.attr.corpus
+    if "kythe_corpus" in ctx.var:
+        # Use --define kythe_corpus=... override
+        corpus = ctx.var["kythe_corpus"]
+    elif corpus == "":
+        # Use workspace name as default
+        corpus = ctx.workspace_name
     srcs = ctx.files.srcs
     jq = ctx.executable._jq
     merged = ctx.actions.declare_file(ctx.label.name + "_merged.json")
@@ -29,9 +36,7 @@ def _construct_vnames_config_impl(ctx):
     ctx.actions.expand_template(
         template = merged,
         output = ctx.outputs.vnames,
-        substitutions = {
-            "CORPUS": ctx.attr.corpus,
-        },
+        substitutions = {"CORPUS": corpus},
     )
     return [DefaultInfo(
         data_runfiles = ctx.runfiles(files = [ctx.outputs.vnames]),

@@ -51,7 +51,7 @@ fi
 
 TMPDIR=${TMPDIR:-"/tmp"}
 
-BAZEL_ARGS=()
+BAZEL_ARGS=(--define kythe_corpus=github.com/bazel/bazel)
 BAZEL_ROOT="$PWD"
 
 GRAPHSTORE="$TMPDIR"/gs.bazel
