@@ -1,0 +1,32 @@
+{
+  "mappings":
+    [
+      {
+        "vname":
+          {
+            "corpus":":corpus",
+            "root":"bazel-out/:r2",
+            "path":":path*"
+          },
+        "local": "vfs/:corpus/bazel-out/:r2/:path*"
+      },
+      {
+        "vname":
+          {
+            "corpus":"kythe.io",
+            "root":"",
+            "path":"external/:path*"
+          },
+        "local": "vfs/kythe.io/external/:path*"
+      },
+      {
+        "vname":
+          {
+            "corpus":"kythe.io",
+            "root":"",
+            "path":":path*"
+          },
+        "local": ":path*"
+      }
+   ]
+}
