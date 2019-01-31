@@ -5,4 +5,5 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_binary(
     name = "cmakedefines",
     srcs = ["cmakedefines.go"],
+    visibility = ["//visibility:public"],
 )
