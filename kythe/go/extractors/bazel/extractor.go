@@ -246,7 +246,11 @@ func (c *Config) extract(ctx context.Context, info *ActionInfo, file fileReader)
 		return nil, fmt.Errorf("reading input files failed: %v", err)
 	}
 	log.Printf("Finished reading required inputs [%v elapsed]", time.Since(start))
-	return cu, c.fixup(cu)
+	if err := c.fixup(cu); err != nil {
+		return nil, err
+	}
+	log.Printf("Found %d required inputs, %d source files", len(cu.RequiredInput), len(cu.SourceFile))
+	return cu, nil
 }
 
 // fetchInputs concurrently fetches the contents of all the specified file
@@ -343,7 +347,6 @@ func (c *Config) classifyInputs(info *ActionInfo, unit *apb.CompilationUnit) []s
 		}
 	}
 	unit.SourceFile = sourceFiles.Elements()
-	log.Printf("Found %d required inputs, %d source files", len(inputs), len(sourceFiles))
 	return inputs.Elements()
 }
 

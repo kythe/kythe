@@ -60,10 +60,7 @@ def _java_extract_kzip_impl(ctx):
     jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
     java_info = java_common.compile(
         ctx,
-        javac_opts = java_common.default_javac_opts(
-            ctx,
-            java_toolchain_attr = "_java_toolchain",
-        ) + ctx.attr.opts,
+        javac_opts = ctx.attr.opts,
         java_toolchain = ctx.attr._java_toolchain,
         host_javabase = ctx.attr._host_javabase,
         source_jars = srcjars,
