@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	corpus      = flag.String("corpus", "", "Corpus label to assign (required)")
+	corpus      = flag.String("corpus", "", "Corpus label to assign")
 	language    = flag.String("language", "", "Language label to assign (required)")
 	extraAction = flag.String("extra_action", "", "Path of bazel.ExtraActionInfo file (required)")
 	outputPath  = flag.String("output", "", "Path of output index file (required)")
@@ -67,8 +67,6 @@ func main() {
 
 	// Verify that required flags are set.
 	switch {
-	case *corpus == "":
-		log.Fatal("You must provide a non-empty --corpus label")
 	case *language == "":
 		log.Fatal("You must provide a non-empty --language label")
 	case *extraAction == "":

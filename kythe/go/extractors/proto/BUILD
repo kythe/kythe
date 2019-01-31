@@ -27,7 +27,6 @@ extra_action(
         "--extra_action=$(EXTRA_ACTION_FILE)",
         "--output=$(output $(ACTION_ID).proto.kzip)",
         "--rules=$(location //external:vnames_config)",
-        "--corpus=DEFAULT",
         "--language=protobuf",
     ]),
     data = ["//external:vnames_config"],
