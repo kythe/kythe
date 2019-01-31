@@ -165,7 +165,7 @@ cc_resources(
     data = [":builtin_headers_gen"],
 )
 
-load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "CMAKE_DEFINES", "LLVM_TARGETS")
+load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "cmake_defines", "LLVM_TARGETS")
 load("@io_kythe//tools/build_rules/llvm:generated_llvm_build_deps.bzl", "LLVM_BUILD_DEPS")
 load("@io_kythe//tools/build_rules/llvm:llvm.bzl", "make_context")
 load("@io_kythe//tools/build_rules/llvm:generated_cmake_targets.bzl", "generated_cmake_targets")
@@ -176,7 +176,7 @@ cc_library(
 )
 
 generated_cmake_targets(make_context(
-    cmake_defines = CMAKE_DEFINES,
+    cmake_defines = cmake_defines(),
     llvm_build_deps = LLVM_BUILD_DEPS,
     target_defaults = TARGET_DEFAULTS,
 ))

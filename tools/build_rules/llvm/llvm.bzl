@@ -92,7 +92,10 @@ def _configure_file(ctx, src, out, *unused):
         name = _genfile_name(out),
         src = _join_path(root, src),
         out = _join_path(root, out),
-        defines = ctx._config.cmake_defines,
+        defines = select({
+            "//conditions:default": ctx._config.cmake_defines.default,
+            "@io_kythe//:darwin": ctx._config.cmake_defines.darwin,
+        }),
     )
 
 def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs = [], **kwargs):
