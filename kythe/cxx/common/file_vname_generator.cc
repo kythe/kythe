@@ -111,7 +111,7 @@ kythe::proto::VName FileVNameGenerator::LookupBaseVName(
       return result;
     }
   }
-  return kythe::proto::VName();
+  return default_vname_;
 }
 
 kythe::proto::VName FileVNameGenerator::LookupVName(
