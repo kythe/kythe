@@ -387,7 +387,7 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
       continue;
     }
 
-    LOG(INFO) << "Added file to descriptor db: " << file.info().path();
+    VLOG(1) << "Added file to descriptor db: " << file.info().path();
     if (!file_reader.AddFile(file.info().path(), file.content())) {
       return UnknownError("Unable to add file to SourceTree.");
     }
@@ -415,7 +415,7 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
     if (!proto_importer.Import(relpath)) {
       return UnknownError("Error importing proto file: " + relpath);
     }
-    LOG(INFO) << "Added proto to descriptor pool: " << relpath;
+    VLOG(1) << "Added proto to descriptor pool: " << relpath;
   }
   const DescriptorPool* descriptor_pool = proto_importer.pool();
 
