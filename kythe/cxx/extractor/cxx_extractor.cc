@@ -1126,11 +1126,15 @@ void CompilationWriter::WriteIndex(
   unit_vname->set_language(supported_language::ToString(lang));
   unit_vname->clear_path();
 
-  if (!target_name_.empty()) {
+  {
     kythe::proto::BuildDetails build_details;
     build_details.set_build_target(target_name_);
-    build_details.set_rule_type(rule_type_);  // may be empty; that's OK
-    PackAny(build_details, kBuildDetailsURI, unit.add_details());
+    build_details.set_rule_type(rule_type_);
+    build_details.set_build_config(build_config_);
+    // Include the details, but only if any of the fields are meaningfully set.
+    if (build_details.ByteSizeLong() > 0) {
+      PackAny(build_details, kBuildDetailsURI, unit.add_details());
+    }
   }
 
   for (const auto& file : source_files) {
@@ -1266,6 +1270,9 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
           getenv("KYTHE_EXCLUDE_AUTOCONFIGURATION_FILES")) {
     index_writer_.set_exclude_autoconfiguration_files(true);
   }
+  if (const char* env_kythe_build_confg = getenv("KYTHE_BUILD_CONFIG")) {
+    SetBuildConfig(env_kythe_build_confg);
+  }
 }
 
 /// Shims Clang's file system. We need to do this because other parts of the
@@ -1319,6 +1326,7 @@ bool ExtractorConfiguration::Extract(
           new RecordingFS(llvm::vfs::getRealFileSystem(), &index_writer_)));
   index_writer_.set_target_name(target_name_);
   index_writer_.set_rule_type(rule_type_);
+  index_writer_.set_build_config(build_config_);
   index_writer_.set_output_path(compilation_output_path_);
   auto extractor = NewExtractor(
       &index_writer_,

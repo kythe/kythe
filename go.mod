@@ -1,8 +1,8 @@
 module kythe.io
 
 require (
-	bitbucket.org/creachadair/shell v0.0.0-20180618202420-f7b089e3c07c
-	bitbucket.org/creachadair/stringset v0.0.0-20180426154347-e974a3c1694d
+	bitbucket.org/creachadair/shell v0.0.4
+	bitbucket.org/creachadair/stringset v0.0.3
 	cloud.google.com/go v0.0.0-20180405132441-01301d1df806
 	github.com/DataDog/zstd v0.0.0-20180321192404-aebefd9fcb99
 	github.com/apache/beam v0.0.0-20181105183121-f1a46474e4c1
