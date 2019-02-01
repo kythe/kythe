@@ -411,19 +411,19 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_bitbucket_creachadair_stringset",
-        commit = "e974a3c1694da0d5a14216ce46dbceef6a680978",
         custom = "stringset",
         custom_git = "https://bitbucket.org/creachadair/stringset.git",
         importpath = "bitbucket.org/creachadair/stringset",
+        tag = "v0.0.3",
     )
 
     maybe(
         go_repository,
         name = "org_bitbucket_creachadair_shell",
-        commit = "3dcd505a7ca5845388111724cc2e094581e92cc6",
         custom = "shell",
         custom_git = "https://bitbucket.org/creachadair/shell.git",
         importpath = "bitbucket.org/creachadair/shell",
+        tag = "v0.0.4",
     )
 
     maybe(
