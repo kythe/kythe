@@ -8,10 +8,8 @@ go_library(
     srcs = ["govname.go"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
-        "//kythe/go/util/kytheuri",
-        "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_x_tools//go/vcs:go_default_library",
     ],
 )
 
@@ -20,5 +18,10 @@ go_test(
     size = "small",
     srcs = ["govname_test.go"],
     library = "govname",
+    tags = ["local"],
     visibility = ["//visibility:private"],
+    deps = [
+        "//kythe/go/util/kytheuri",
+        "@com_github_golang_protobuf//proto:go_default_library",
+    ],
 )

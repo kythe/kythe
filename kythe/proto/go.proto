@@ -36,3 +36,9 @@ message GoDetails {
   // Whether cgo is enabled for this compilation.
   bool cgo_enabled = 7;
 }
+
+// GoPackageInfo provides details about a Go package.  This may be in relation
+// to a CompilationUnit as a whole or specific required input.
+message GoPackageInfo {
+  string import_path = 1;
+}

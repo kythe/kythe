@@ -5,6 +5,8 @@ load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
 load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
+load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
+load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 
 def _rule_dependencies():
     gazelle_dependencies()
@@ -157,6 +159,11 @@ def _cc_dependencies():
         sha256 = "5b2bd7a91489095ad54bb81ca6544561025b48ec6d19cc955325f96755d88414",
         strip_prefix = "leveldb-1.20",
         url = "https://github.com/google/leveldb/archive/v1.20.zip",
+    )
+
+    maybe(
+        git_llvm_repository,
+        name = "org_llvm",
     )
 
 def _java_dependencies():
@@ -645,6 +652,21 @@ def _bindings():
         actual = "@net_zlib//:zlib",
     )
 
+def _kythe_contributions():
+    git_repository(
+        name = "io_kythe_lang_proto",
+        commit = "bc7fc996b0f8a978a34ae66723d8c23c631c6746",
+        remote = "https://github.com/kythe/lang-proto",
+    )
+
+def _sample_ui_dependencies():
+    """Defines external repositories necessary for building the sample UI."""
+    lein_repository(
+        name = "org_leiningen",
+        sha256 = "af77a8569238fb89272fdd46974c97383be126f19e709f1e7b1c5ffb9135e1d7",
+        version = "2.5.1",
+    )
+
 def kythe_dependencies():
     """Defines external repositories for Kythe dependencies.
 
@@ -653,6 +675,7 @@ def kythe_dependencies():
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
+    _kythe_contributions()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
@@ -675,4 +698,5 @@ def kythe_dependencies():
     )
 
     _rule_dependencies()
+    _sample_ui_dependencies()
     _bindings()

@@ -14,34 +14,10 @@ steps:
     - name: 'kythe_extractors'
       path: '/opt/kythe/extractors/'
   waitFor: ['-']
-- name: 'gcr.io/kythe-public/build-preprocessor'
-  args: ['/workspace/code/pom.xml']
-  waitFor:
-    - 'CHECKOUT'
 - name: 'gcr.io/cloud-builders/mvn'
   args:
     - 'clean'
     - 'compile'
-    - '-X'
-    - '-f'
-    - '/workspace/code/pom.xml'
-    - '-Dmaven.compiler.forceJavacCompilerUse=true'
-    - '-Dmaven.compiler.fork=true'
-    - '-Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh'
-  env:
-    - 'KYTHE_CORPUS=guava'
-    - 'KYTHE_OUTPUT_DIRECTORY=/workspace/out'
-    - 'KYTHE_ROOT_DIRECTORY=/workspace/code'
-    - 'JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar'
-    - 'REAL_JAVAC=/usr/bin/javac'
-    - 'TMPDIR=/workspace/errs'
-    - 'KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar'
-  volumes:
-    - name: 'kythe_extractors'
-      path: '/opt/kythe/extractors/'
-- name: 'gcr.io/cloud-builders/mvn'
-  args:
-    - 'clean'
     - 'test-compile'
     - '-X'
     - '-f'
@@ -64,7 +40,7 @@ steps:
   args: ['ls', '/workspace/out']
 - name: 'gcr.io/kythe-public/kzip-tools'
   entrypoint: 'bash'
-  args: ['-c', 'zipmerge /workspace/out/guava-$_GUAVA_VERSION.kzip /workspace/out/*.kzip']
+  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/guava-$_GUAVA_VERSION.kzip /workspace/out/*.kzip']
 artifacts:
   objects:
     location: 'gs://${_BUCKET_NAME}/'

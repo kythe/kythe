@@ -12,9 +12,11 @@ extractors, and tools directly supported by the Kythe team.
    - go_indexer               :: Go indexer
    - java_indexer.jar         :: Java indexer
    - jvm_indexer.jar          :: JVM jar indexer
+   - proto_indexer            :: Protocol-buffer indexer
  - extractors
    - bazel_cxx_extractor      :: C++ extractor for Bazel extra_actions
    - bazel_go_extractor       :: Bazel Go extractor
+   - bazel_proto_extractor    :: Bazel Protocol-buffer extractor
    - bazel_java_extractor.jar :: Java extractor for Bazel extra_actions
    - cxx_extractor            :: C++ extractor
    - go_extractor             :: Go extractor

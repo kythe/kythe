@@ -39,9 +39,9 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceManager.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/schema/edges.h"
 #include "kythe/cxx/extractor/language.h"
-#include "kythe/cxx/extractor/path_utils.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/SHA1.h"
 
@@ -104,7 +104,8 @@ kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
     llvm::StringRef working_directory = vfs_->working_directory();
     llvm::StringRef file_name(file_entry->getName());
     if (file_name.startswith(working_directory)) {
-      out_name.set_path(cxx_extractor::RelativizePath(file_name, working_directory));
+      out_name.set_path(
+          RelativizePath(ConvertRef(file_name), ConvertRef(working_directory)));
     } else {
       out_name.set_path(file_entry->getName());
     }

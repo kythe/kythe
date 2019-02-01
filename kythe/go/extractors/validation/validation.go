@@ -41,7 +41,7 @@ type Settings struct {
 	// Language extensions to check, e.g. java, cpp, h.
 	Langs stringset.Set
 	// Optional file to output missing paths to.
-	MissingOutput *string
+	MissingOutput string
 }
 
 // Result explains a validation outcome.
@@ -118,8 +118,8 @@ func (s Settings) Validate() (*Result, error) {
 		}
 	}
 
-	if s.MissingOutput != nil {
-		err = outputMissing(missingFromKZIP, *s.MissingOutput)
+	if s.MissingOutput != "" {
+		err = outputMissing(missingFromKZIP, s.MissingOutput)
 	}
 
 	return &Result{

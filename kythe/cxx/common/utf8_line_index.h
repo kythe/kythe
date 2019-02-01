@@ -152,7 +152,8 @@ class UTF8LineIndex {
   // are not followed by a newline.  Empty files or file that end in a newline
   // do not have trailing characters, but all other files do.
   bool has_trailing_characters() const {
-    return line_begin_byte_offsets_.back() != content_.size();
+    return static_cast<size_t>(line_begin_byte_offsets_.back()) !=
+           content_.size();
   }
 
   // The content covered by this UTF8LineIndex.

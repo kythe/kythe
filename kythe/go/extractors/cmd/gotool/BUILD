@@ -8,12 +8,9 @@ go_binary(
     srcs = ["gotool.go"],
     deps = [
         "//kythe/go/extractors/golang",
-        "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
-        "//kythe/proto:analysis_go_proto",
-        "@com_github_pborman_uuid//:go_default_library",
     ],
 )
 
@@ -23,6 +20,8 @@ docker_build(
     data = [
         "analyze_packages.sh",
         ":gotool",
+        "//kythe/go/platform/tools/kzip",
+        "//kythe/release/base:fix_permissions.sh",
     ],
     image_name = "gcr.io/kythe-public/golang-extractor",
     tags = ["manual"],

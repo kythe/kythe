@@ -323,8 +323,8 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
   llvm::SmallString<1024> search_path;
   llvm::SmallString<1024> relative_path;
   llvm::SmallString<1024> filename;
-  const auto* file = cxx_extractor::LookupFileForIncludePragma(&preprocessor, &search_path,
-                                                &relative_path, &filename);
+  const auto* file = cxx_extractor::LookupFileForIncludePragma(
+      &preprocessor, &search_path, &relative_path, &filename);
   if (!file) {
     fprintf(stderr, "Missing metadata file: %s\n", filename.c_str());
     return;
