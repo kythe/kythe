@@ -1126,12 +1126,15 @@ void CompilationWriter::WriteIndex(
   unit_vname->set_language(supported_language::ToString(lang));
   unit_vname->clear_path();
 
-  if (!target_name_.empty()) {
+  {
     kythe::proto::BuildDetails build_details;
     build_details.set_build_target(target_name_);
-    build_details.set_rule_type(rule_type_);        // may be empty; that's OK
-    build_details.set_build_config(build_config_);  // may be empty; that's OK
-    PackAny(build_details, kBuildDetailsURI, unit.add_details());
+    build_details.set_rule_type(rule_type_);
+    build_details.set_build_config(build_config_);
+    // Include the details, but only if any of the fields are meaningfully set.
+    if (build_details.ByteSizeLong() > 0) {
+      PackAny(build_details, kBuildDetailsURI, unit.add_details());
+    }
   }
 
   for (const auto& file : source_files) {
