@@ -24,8 +24,8 @@
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/indexer/textproto/analyzer.h"
-#include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/buildinfo.pb.h"
 
 DEFINE_string(o, "-", "Output filename.");
 DEFINE_bool(flush_after_each_entry, true,

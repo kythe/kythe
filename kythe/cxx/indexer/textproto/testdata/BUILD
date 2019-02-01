@@ -19,6 +19,12 @@ textproto_verifier_test(
 )
 
 textproto_verifier_test(
+    name = "inline_repeated_field_test",
+    protos = ["example.proto"],
+    textproto = "inline_repeated_field.pbtxt",
+)
+
+textproto_verifier_test(
     name = "default_value_test",
     protos = ["example.proto"],
     textproto = "default_value.pbtxt",

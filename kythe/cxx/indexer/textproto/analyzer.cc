@@ -191,36 +191,58 @@ Status TextprotoAnalyzer::AnalyzeField(
   // 1-indexed line numbers.
   loc.line++;
 
+  bool add_anchor_node = true;
   if (loc.line == 0) {
     // When AnalyzeField() is called for repeated fields or extensions, we know
-    // the field was actually present in the input textproto. Failure to find
-    // its location is an error. For other "normal" fields, failure to find a
-    // location just indicates that the field isn't present.
-    if (field_index != kNonRepeatedFieldIndex || field.is_extension()) {
+    // the field was actually present in the input textproto. In the case of
+    // repeated fields, the presence of only one location entry but multiple
+    // values indicates that the shorthand/inline repeated field syntax was
+    // used. The inline syntax looks like:
+    //
+    //   repeated_field: ["value1", "value2"]
+    //
+    // Versus the standard syntax:
+    //
+    //   repeated_field: "value1"
+    //   repeated_field: "value2"
+    //
+    // This case is handled specially because there is only one "repeated_field"
+    // to add an anchor node for, but each value is still analyzed individually.
+    if (field_index != kNonRepeatedFieldIndex && field_index > 0) {
+      // Inline/short-hand repeated field syntax was used. There is no
+      // "field_name:" for this entry to add an anchor node for.
+      add_anchor_node = false;
+    } else if (field.is_extension() || field_index != kNonRepeatedFieldIndex) {
+      // If we can't find a location for a set extension or the first entry of
+      // the repeated field, this is a bug.
       return UnknownError(
           absl::StrCat("Failed to find location of field: ", field.full_name(),
-                       ". This is a bug in the textproto indexer"));
+                       ". This is a bug in the textproto indexer."));
+    } else {
+      // Normal proto field. Failure to find a location just means it's not set.
+      return OkStatus();
     }
-    return OkStatus();
   }
 
-  proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, field, loc);
+  if (add_anchor_node) {
+    proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, field, loc);
 
-  // Add ref to proto field.
-  Status vname_lookup_status = OkStatus();
-  proto::VName field_vname = ::kythe::lang_proto::VNameForDescriptor(
-      &field, [this, &vname_lookup_status](const std::string& path) {
-        auto v = VNameForRelPath(path);
-        if (!v.has_value()) {
-          vname_lookup_status = UnknownError(
-              absl::StrCat("Unable to lookup vname for rel path: ", path));
-          return proto::VName();
-        }
-        return *v;
-      });
-  if (!vname_lookup_status.ok()) return vname_lookup_status;
-  recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
-                     VNameRef(field_vname));
+    // Add ref to proto field.
+    Status vname_lookup_status = OkStatus();
+    proto::VName field_vname = ::kythe::lang_proto::VNameForDescriptor(
+        &field, [this, &vname_lookup_status](const std::string& path) {
+          auto v = VNameForRelPath(path);
+          if (!v.has_value()) {
+            vname_lookup_status = UnknownError(
+                absl::StrCat("Unable to lookup vname for rel path: ", path));
+            return proto::VName();
+          }
+          return *v;
+        });
+    if (!vname_lookup_status.ok()) return vname_lookup_status;
+    recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
+                       VNameRef(field_vname));
+  }
 
   // Handle submessage.
   if (field.type() == FieldDescriptor::TYPE_MESSAGE) {
@@ -319,7 +341,7 @@ std::string FullPathToRelative(
   return std::string(full_path);
 }
 
-}  // anonymous namespace
+}  // namespace
 
 Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
                               const std::vector<proto::FileData>& files,
