@@ -1,7 +1,11 @@
 bitbucket.org/creachadair/shell v0.0.0-20180618202420-f7b089e3c07c h1:YYVtvZUXJCjCMeDnQZQxIy2E7tgaovBIGWHcGk4xLDs=
 bitbucket.org/creachadair/shell v0.0.0-20180618202420-f7b089e3c07c/go.mod h1:ysdp8K5OqvK7lJI3ZNP0I7prXD4kWyDWxozmc04IFpE=
+bitbucket.org/creachadair/shell v0.0.4 h1:pQaJRbIWVEQKoNI7rGMRlLk1vu6RaPR6I5huNBoDEVw=
+bitbucket.org/creachadair/shell v0.0.4/go.mod h1:ysdp8K5OqvK7lJI3ZNP0I7prXD4kWyDWxozmc04IFpE=
 bitbucket.org/creachadair/stringset v0.0.0-20180426154347-e974a3c1694d h1:FmGByO8gQuj7RTJrFgHRDUmwGxTWmspAdr1okN7PqiU=
 bitbucket.org/creachadair/stringset v0.0.0-20180426154347-e974a3c1694d/go.mod h1:RieQmTKc3bD7Tg+9AnSl6lOoTpWD95zIxZFurx/cxM4=
+bitbucket.org/creachadair/stringset v0.0.3 h1:VmH2SQ+vEqTSgPHpiVZcGF/21spNbmJ86sSgkb8XMFU=
+bitbucket.org/creachadair/stringset v0.0.3/go.mod h1:RieQmTKc3bD7Tg+9AnSl6lOoTpWD95zIxZFurx/cxM4=
 cloud.google.com/go v0.0.0-20180405132441-01301d1df806 h1:JTpoFWTceA0iBjfhpuPja5ZBwVdldV1lWqQY3/ovo7M=
 cloud.google.com/go v0.0.0-20180405132441-01301d1df806/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 github.com/DataDog/zstd v0.0.0-20180321192404-aebefd9fcb99 h1:h4MiQG/EzHgRINnRtFkYrXlgidSWgw6yt2wwJUZy4+A=
