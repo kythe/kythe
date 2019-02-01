@@ -181,6 +181,8 @@ func YAMLEqual(expected, got []byte) error {
 	return JSONEqual(e, g)
 }
 
+// JSONEqual compares two bytes assuming they are json, using encoding/json
+// and DeepEqual.
 func JSONEqual(expected, got []byte) error {
 	var e, g interface{}
 	if err := json.Unmarshal(expected, &e); err != nil {
