@@ -24,31 +24,6 @@
 
 namespace kythe {
 namespace cxx_extractor {
-std::string CleanPath(llvm::StringRef in_path) {
-  llvm::SmallString<1024> out_path = in_path;
-  llvm::sys::path::remove_dots(out_path, true);
-  return out_path.str();
-}
-
-std::string MakeCleanAbsolutePath(const std::string& in_path) {
-  std::string abs_path = clang::tooling::getAbsolutePath(in_path);
-  return CleanPath(abs_path);
-}
-
-std::string RelativizePath(const std::string& to_relativize,
-                           const std::string& relativize_against) {
-  std::string to_relativize_abs = MakeCleanAbsolutePath(to_relativize);
-  std::string relativize_against_abs =
-      MakeCleanAbsolutePath(relativize_against);
-  llvm::StringRef to_relativize_parent =
-      llvm::sys::path::parent_path(to_relativize_abs);
-  std::string ret =
-      to_relativize_parent.startswith(relativize_against_abs)
-          ? to_relativize_abs.substr(relativize_against_abs.size() +
-                                     llvm::sys::path::get_separator().size())
-          : to_relativize_abs;
-  return ret;
-}
 
 const clang::FileEntry* LookupFileForIncludePragma(
     clang::Preprocessor* preprocessor, llvm::SmallVectorImpl<char>* search_path,

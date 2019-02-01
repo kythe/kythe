@@ -60,6 +60,8 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
 
     # Invoke the extractor on the temp directory.
     goroot = "/".join(ctx.files._sdk_files[0].path.split("/")[:-2])
+    cmds.append("export GOCACHE=" + tmpdir + "/cache")
+    cmds.append("export CGO_ENABLED=0")
     cmds.append(" ".join([
         ctx.files._extractor[-1].path,
         "-output",
@@ -73,7 +75,7 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
         ipath,
     ]))
 
-    f = ctx.new_file(ctx.configuration.bin_dir, script)
+    f = ctx.actions.declare_file(script)
     ctx.actions.write(output = f, content = "\n".join(cmds), is_executable = True)
     return f
 
@@ -115,14 +117,14 @@ def _go_extract(ctx):
 go_extract = rule(
     _go_extract,
     attrs = {
-        "library": attr.label(
-            providers = [GoSource],
-            mandatory = True,
-        ),
         # Additional data files to include in each compilation.
         "data": attr.label_list(
             allow_empty = True,
             allow_files = True,
+        ),
+        "library": attr.label(
+            providers = [GoSource],
+            mandatory = True,
         ),
         "_extractor": attr.label(
             default = Label("//kythe/go/extractors/cmd/gotool"),
@@ -162,20 +164,20 @@ def _go_entries(ctx):
         inputs = [kzip],
         tools = [ctx.executable._indexer],
     )
-    return [KytheEntries(files = depset(), compressed = depset([output]))]
+    return [KytheEntries(compressed = depset([output]), files = depset())]
 
 # Run the Kythe indexer on the output that results from a go_extract rule.
 go_entries = rule(
     _go_entries,
     attrs = {
+        # Whether to enable explosion of MarkedSource facts.
+        "has_marked_source": attr.bool(default = False),
+
         # The go_extract output to pass to the indexer.
         "kzip": attr.label(
             providers = ["kzip"],
             mandatory = True,
         ),
-
-        # Whether to enable explosion of MarkedSource facts.
-        "has_marked_source": attr.bool(default = False),
 
         # The suffix used to recognize linkage metadata files, if non-empty.
         "metadata_suffix": attr.string(default = ""),
@@ -189,42 +191,6 @@ go_entries = rule(
     },
     outputs = {"entries": "%{name}.entries.gz"},
 )
-
-def _go_verifier_test(ctx):
-    entries = ctx.attr.entries.kythe_entries
-    verifier = ctx.file._verifier
-    vargs = [
-        verifier.short_path,
-        "--use_file_nodes",
-        "--show_goals",
-        "--check_for_singletons",
-    ]
-
-    if ctx.attr.log_entries:
-        vargs.append("--show_protos")
-    if ctx.attr.allow_duplicates:
-        vargs.append("--ignore_dups")
-
-    # If the test wants marked source, enable support for it in the verifier.
-    if ctx.attr.has_marked_source:
-        vargs.append("--convert_marked_source")
-
-    cmds = [
-        "set -e",
-        "set -o pipefail",
-        " ".join(
-            ["zcat", entries.short_path, "|"] + vargs,
-        ),
-        "",
-    ]
-    ctx.file_action(
-        output = ctx.outputs.executable,
-        content = "\n".join(cmds),
-        executable = True,
-    )
-    return struct(
-        runfiles = ctx.runfiles([verifier, entries]),
-    )
 
 def go_verifier_test(
         name,
@@ -246,9 +212,9 @@ def go_verifier_test(
     return verifier_test(
         name = name,
         size = size,
+        opts = opts,
         tags = tags,
         deps = [entries],
-        opts = opts,
     )
 
 # Shared extract/index logic for the go_indexer_test/go_integration_test rules.
@@ -270,8 +236,8 @@ def _go_indexer(
     go_library(
         name = lib,
         srcs = srcs,
-        deps = deps,
         importpath = importpath,
+        deps = deps,
     )
     kzip = name + "_units"
     go_extract(
@@ -282,8 +248,8 @@ def _go_indexer(
     entries = name + "_entries"
     go_entries(
         name = entries,
-        kzip = ":" + kzip,
         has_marked_source = has_marked_source,
+        kzip = ":" + kzip,
         metadata_suffix = metadata_suffix,
     )
     return entries
@@ -305,20 +271,20 @@ def go_indexer_test(
     entries = _go_indexer(
         name = name,
         srcs = srcs,
-        deps = deps,
         data = data,
-        importpath = import_path,
         has_marked_source = has_marked_source,
+        importpath = import_path,
         metadata_suffix = metadata_suffix,
+        deps = deps,
     )
     go_verifier_test(
         name = name,
         size = size,
-        tags = tags,
-        entries = ":" + entries,
-        log_entries = log_entries,
-        has_marked_source = has_marked_source,
         allow_duplicates = allow_duplicates,
+        entries = ":" + entries,
+        has_marked_source = has_marked_source,
+        log_entries = log_entries,
+        tags = tags,
     )
 
 # A convenience macro to generate a test library, pass it to the Go indexer,
@@ -336,11 +302,11 @@ def go_integration_test(
     entries = _go_indexer(
         name = name,
         srcs = srcs,
-        deps = deps,
         data = data,
-        import_path = import_path,
         has_marked_source = has_marked_source,
+        import_path = import_path,
         metadata_suffix = metadata_suffix,
+        deps = deps,
     )
     kythe_integration_test(
         name = name,

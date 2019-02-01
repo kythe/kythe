@@ -223,11 +223,15 @@ const clang::Decl* FindImplicitDeclForStmt(
     llvm::SmallVector<unsigned, 16>* StmtPath) {
   for (const auto& Current : RootTraversal(AllParents, Stmt)) {
     if (Current.decl && Current.decl->isImplicit() &&
-        !isa<VarDecl>(Current.decl)) {
+        !isa<VarDecl>(Current.decl) &&
+        !(isa<CXXRecordDecl>(Current.decl) &&
+          dyn_cast<CXXRecordDecl>(Current.decl)->isLambda())) {
       // If this is an implicit variable declaration, we assume that it is one
       // of the implicit declarations attached to a range for loop. We ignore
       // its implicitness, which lets us associate a source location with the
-      // implicit references to 'begin', 'end' and operators.
+      // implicit references to 'begin', 'end' and operators. We also skip
+      // the implicit CXXRecordDecl that's created for lambda expressions,
+      // since it may include interesting non-implicit nodes.
       return Current.decl;
     }
     if (Current.indexed_parent && StmtPath) {
@@ -1035,20 +1039,6 @@ void IndexerASTVisitor::VisitRecordDeclComment(
       Decl->getDefinition() == Decl) {
     VisitComment(Comment, DCxt, DCID.value());
   }
-}
-
-bool IndexerASTVisitor::TraverseLambdaExpr(clang::LambdaExpr* Expr) {
-  // Clang does not reliably visit the implicitly generated class or (more
-  // importantly) call operator.
-  // Specifically, it only does so for lambdas defined at the top level,
-  // which is a vanishingly small number of them.
-  // TODO(shahms): Figure out *why* Clang behaves this way and fix that.
-  return Base::TraverseLambdaExpr(Expr) && [this, Expr] {
-    if (Expr->getLambdaClass()->getDeclContext()->isFunctionOrMethod()) {
-      return TraverseDecl(Expr->getCallOperator());
-    }
-    return true;
-  }();
 }
 
 bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
@@ -5178,6 +5168,8 @@ bool IndexerASTVisitor::VisitObjCPropertyDecl(
   auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
+  Marks.set_name_range(NameRange);
+  Marks.set_marked_source_end(Decl->getSourceRange().getEnd());
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
       absl::nullopt);

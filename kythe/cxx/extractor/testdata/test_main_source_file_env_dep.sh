@@ -31,10 +31,10 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}/with" \
     "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor/testdata -DMACRO \
     ./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc
-[[ $(ls -1 "${OUT_DIR}"/with/*.kindex | wc -l) -eq 1 ]]
-INDEX_PATH_WITH_MACRO=$(ls -1 "${OUT_DIR}"/with/*.kindex)
-[[ $(ls -1 "${OUT_DIR}"/without/*.kindex | wc -l) -eq 1 ]]
-INDEX_PATH_WITHOUT_MACRO=$(ls -1 "${OUT_DIR}"/without/*.kindex)
+[[ $(ls -1 "${OUT_DIR}"/with/*.kzip | wc -l) -eq 1 ]]
+INDEX_PATH_WITH_MACRO=$(ls -1 "${OUT_DIR}"/with/*.kzip)
+[[ $(ls -1 "${OUT_DIR}"/without/*.kzip | wc -l) -eq 1 ]]
+INDEX_PATH_WITHOUT_MACRO=$(ls -1 "${OUT_DIR}"/without/*.kzip)
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITH_MACRO}"
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITHOUT_MACRO}"
 

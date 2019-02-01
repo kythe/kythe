@@ -82,8 +82,8 @@ def cargo_lib(name, loc, srcs = [], lib_name = None, lib_type = "rlib", release 
         native.filegroup(
             name = name,
             srcs = select({
-                "//tools/build_rules/rust:k8": ["_" + name + "-k8"],
                 "//tools/build_rules/rust:darwin": ["_" + name + "-darwin"],
+                "//tools/build_rules/rust:k8": ["_" + name + "-k8"],
             }),
             tags = ["manual", "arc-ignore"],
         )

@@ -1,3 +1,5 @@
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visiblity:public"],
+)
 
-exports_files(["kythe_config.json"])
+exports_files(["setup-bazel-repo.sh"])

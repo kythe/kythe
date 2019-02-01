@@ -91,6 +91,7 @@ node_kinds: {
 
 fact_names: {
   prefix: "/kythe/"
+  fact_name: {key: "build/config"  value: BUILD_CONFIG}
   fact_name: {key: "code"          value: CODE}
   fact_name: {key: "complete"      value: COMPLETE}
   fact_name: {key: "context/url"   value: CONTEXT_URL}

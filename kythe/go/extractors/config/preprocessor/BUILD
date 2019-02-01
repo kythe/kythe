@@ -1,5 +1,5 @@
 load("//tools:build_rules/docker.bzl", "docker_build")
-load("//tools:build_rules/shims.bzl", "go_binary", "go_library")
+load("//tools:build_rules/shims.bzl", "go_binary")
 
 package(default_visibility = ["//kythe:default_visibility"])
 

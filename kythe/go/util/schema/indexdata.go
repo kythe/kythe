@@ -71,6 +71,7 @@ var (
 	}
 
 	factNames = map[string]scpb.FactName{
+		"/kythe/build/config":  19,
 		"/kythe/code":          1,
 		"/kythe/complete":      2,
 		"/kythe/context/url":   3,
@@ -204,6 +205,7 @@ var (
 		16: "/kythe/text",
 		17: "/kythe/text/encoding",
 		18: "/kythe/visibility",
+		19: "/kythe/build/config",
 	}
 
 	edgeKindsRev = map[scpb.EdgeKind]string{

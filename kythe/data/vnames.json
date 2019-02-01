@@ -1,85 +1,31 @@
 [
   {
-    "pattern": "bazel-out/[^/]+/bin/([^/]+/javatests/.+/testdata)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "pattern": "bazel-out/[^/]+/bin/external/([^/]+)/(.+)",
     "vname": {
-      "corpus": "kythe",
-      "path": "@1@/@2@.java"
+      "corpus": "@1@",
+      "path": "@2@"
     }
   },
   {
-    "pattern": "bazel-out/[^/]+/bin/(.*?/java|javatests)/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "pattern": "bazel-out/[^/]+/([^/]+)/external/([^/]+)/(.+)",
     "vname": {
-      "corpus": "kythe",
-      "path": "@1@/@2@.java"
-    }
-  },
-  {
-    "pattern": "bazel-out/[^/]+/bin/[^/]+/proto/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
-    "vname": {
-      "corpus": "kythe",
-      "root": "GENERATED/proto/java",
-      "path": "@1@.java"
+      "corpus": "@2@",
+      "root": "bazel-out/@1@",
+      "path": "@3@"
     }
   },
   {
     "pattern": "bazel-out/[^/]+/(\\w+)/(.*)",
     "vname": {
-      "corpus": "kythe",
+      "corpus": "CORPUS",
       "path": "@2@",
       "root": "bazel-out/@1@"
     }
   },
   {
-    "pattern": "(third_party/llvm/lib/clang/[^/]+/include)/(.*)",
-    "vname": {
-      "corpus": "cstdlib",
-      "root": "@1@",
-      "path": "@2@"
-    }
-  },
-  {
-    "pattern": "(/kythe_builtins/include)/(.*)",
-    "vname": {
-      "corpus": "cstdlib",
-      "root": "@1@",
-      "path": "@2@"
-    }
-  },
-  {
-    "pattern": "third_party/([^/]+)/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
-    "vname": {
-      "corpus": "third_party",
-      "root": "@1@",
-      "path": "@2@.java"
-    }
-  },
-  {
-    "pattern": "([^/]+/java|javatests/[^\\$]+)(\\$.+)?\\.(class|java)",
-    "vname": {
-      "corpus": "kythe",
-      "path": "@1@.java"
-    }
-  },
-  {
-    "pattern": "(/usr/include/c\\+\\+/[^/]+)/(.*)",
-    "vname": {
-      "corpus": "libstdcxx",
-      "root": "@1@",
-      "path": "@2@"
-    }
-  },
-  {
-    "pattern": "/usr/include/(.*)",
-    "vname": {
-      "corpus": "cstdlib",
-      "root": "/usr/include",
-      "path": "@1@"
-    }
-  },
-  {
     "pattern": "(.*)",
     "vname": {
-      "corpus": "kythe",
+      "corpus": "CORPUS",
       "path": "@1@"
     }
   }

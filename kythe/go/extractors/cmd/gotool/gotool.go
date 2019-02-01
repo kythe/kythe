@@ -46,6 +46,8 @@ var (
 	byDir      = flag.Bool("bydir", false, "Import by directory rather than import path")
 	keepGoing  = flag.Bool("continue", false, "Continue past errors")
 	verbose    = flag.Bool("v", false, "Enable verbose logging")
+
+	canonicalizePackageCorpus = flag.Bool("canonicalize_package_corpus", false, "Whether to use a package's canonical repository root URL as their corpus")
 )
 
 func init() {
@@ -95,23 +97,41 @@ func main() {
 	ctx := context.Background()
 	ext := &golang.Extractor{
 		BuildContext: bc,
-		Corpus:       *corpus,
 		LocalPath:    *localPath,
+
+		PackageVNameOptions: golang.PackageVNameOptions{
+			DefaultCorpus:             *corpus,
+			CanonicalizePackageCorpus: *canonicalizePackageCorpus,
+		},
 	}
 	if *extraFiles != "" {
 		ext.ExtraFiles = strings.Split(*extraFiles, ",")
+		for i, path := range ext.ExtraFiles {
+			var err error
+			ext.ExtraFiles[i], err = filepath.Abs(path)
+			if err != nil {
+				log.Fatalf("Error finding absolute path of %s: %v", path, err)
+			}
+		}
 	}
 
 	locate := ext.Locate
 	if *byDir {
-		locate = ext.ImportDir
+		locate = func(path string) ([]*golang.Package, error) {
+			pkg, err := ext.ImportDir(path)
+			if err != nil {
+				return nil, err
+			}
+			return []*golang.Package{pkg}, nil
+		}
 	}
 	for _, path := range flag.Args() {
-		pkg, err := locate(path)
-		if err == nil {
-			maybeLog("Found %q in %s", pkg.Path, pkg.BuildPackage.Dir)
-		} else {
+		pkgs, err := locate(path)
+		if err != nil {
 			maybeFatal("Error locating %q: %v", path, err)
+		}
+		for _, pkg := range pkgs {
+			maybeLog("Found %q in %s", pkg.Path, pkg.BuildPackage.Dir)
 		}
 	}
 

@@ -53,7 +53,7 @@ RUN wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz && \
 ENV PATH=$PATH:/usr/local/go/bin
 
 # Install Bazel minimum supported version
-RUN curl -L -o /usr/bin/bazel-0.18.0 https://github.com/bazelbuild/bazel/releases/download/0.18.0/bazel-0.18.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.18.0
+RUN curl -L -o /usr/bin/bazel-0.20.0 https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.20.0
 ADD bazel /usr/bin/bazel
 
 # Pre-cache LLVM
@@ -61,7 +61,7 @@ ADD cache-llvm.sh /usr/bin/
 RUN chmod +x /usr/bin/cache-llvm.sh && cache-llvm.sh --init
 
 # Install latest supported Bazel version
-RUN curl -L -o /usr/bin/bazel-0.20.0 https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.20.0
+RUN curl -L -o /usr/bin/bazel-0.22.0 https://github.com/bazelbuild/bazel/releases/download/0.22.0/bazel-0.22.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.22.0
 
 # Buildbot configuration
 ADD bazelrc /root/.bazelrc

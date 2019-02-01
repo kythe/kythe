@@ -1,5 +1,11 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+exports_files(["project.clj"])
+
+# The targets in kythe/web/ui are marked "manual", so they will not build if you
+# blaze build //..., due to the behavior described in
+# https://docs.bazel.build/versions/master/guide.html#target-patterns.
+
 filegroup(
     name = "ui",
     srcs = [":prod-js"] + glob(["resources/public/**"]),
@@ -16,20 +22,8 @@ genrule(
         "resources/public/js/main.js",
         "resources/public/js/licenses.txt",
     ],
-    cmd = "\n".join([
-        "lein=\"$$PWD/$(location //third_party/leiningen:lein)\"",
-        "export HOME=/tmp/lein",
-        "mkdir -p $$HOME",
-        "cd kythe/web/ui",
-        "$$lein deps",
-        "$$lein cljsbuild once prod",
-        "$$lein licenses | sort > licenses.txt",
-        "cd ../../..",
-        "cp kythe/web/ui/resources/public/js/main.js $(location resources/public/js/main.js)",
-        "mv kythe/web/ui/licenses.txt $(location resources/public/js/licenses.txt)",
-    ]),
+    cmd = "$(location @org_leiningen//:leinbuild) $(location :project.clj) $(OUTS)",
     heuristic_label_expansion = False,
-    local = 1,
     tags = ["manual"],
-    tools = ["//third_party/leiningen:lein"],
+    tools = ["@org_leiningen//:leinbuild"],
 )
