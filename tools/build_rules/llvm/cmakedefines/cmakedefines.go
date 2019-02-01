@@ -61,7 +61,7 @@ func (cv *cmakeValue) UnmarshalJSON(data []byte) error {
 	case nil:
 		*cv = ""
 	default:
-		return fmt.Errorf("expected bool, string or number, found: %v", data)
+		return fmt.Errorf("expected bool, string or number, found: %T", v)
 	}
 	return nil
 }
