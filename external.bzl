@@ -655,7 +655,7 @@ def _bindings():
 def _kythe_contributions():
     git_repository(
         name = "io_kythe_lang_proto",
-        commit = "b6f38f05feaeeea1e38ceeeb92bee849926921cd",
+        commit = "bc7fc996b0f8a978a34ae66723d8c23c631c6746",
         remote = "https://github.com/kythe/lang-proto",
     )
 
