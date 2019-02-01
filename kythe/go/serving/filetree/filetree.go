@@ -25,9 +25,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/storage/table"
+	"kythe.io/kythe/go/util/kytheuri"
 
 	ftpb "kythe.io/kythe/proto/filetree_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -72,10 +74,38 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 	} else if err != nil {
 		return nil, fmt.Errorf("lookup error: %v", err)
 	}
+	entries, err := parseLegacyEntries(nil, ftpb.DirectoryReply_FILE, d.FileTicket)
+	if err != nil {
+		return nil, err
+	}
+	entries, err = parseLegacyEntries(entries, ftpb.DirectoryReply_DIRECTORY, d.Subdirectory)
+	if err != nil {
+		return nil, err
+	}
 	return &ftpb.DirectoryReply{
+		// TODO(schroederc): remove deprecated fields
 		Subdirectory: d.Subdirectory,
 		File:         d.FileTicket,
+
+		Corpus: req.Corpus,
+		Root:   req.Root,
+		Path:   req.Path,
+		Entry:  entries,
 	}, nil
+}
+
+func parseLegacyEntries(entries []*ftpb.DirectoryReply_Entry, kind ftpb.DirectoryReply_Kind, tickets []string) ([]*ftpb.DirectoryReply_Entry, error) {
+	for _, ticket := range tickets {
+		uri, err := kytheuri.Parse(ticket)
+		if err != nil {
+			return nil, fmt.Errorf("invalid serving data: %v", err)
+		}
+		entries = append(entries, &ftpb.DirectoryReply_Entry{
+			Kind: kind,
+			Name: filepath.Base(uri.Path),
+		})
+	}
+	return entries, nil
 }
 
 // CorpusRoots implements part of the filetree Service interface.
