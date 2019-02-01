@@ -50,6 +50,8 @@ DEFINE_string(o, "-", "Output filename.");
 DEFINE_bool(flush_after_each_entry, false,
             "Flush output after writing each entry.");
 DEFINE_string(index_file, "", ".kzip file containing compilation unit.");
+DEFINE_string(default_corpus, "", "Default corpus for VNames.");
+DEFINE_string(default_root, "", "Default root for VNames.");
 
 namespace kythe {
 namespace {
@@ -185,6 +187,10 @@ Examples:
 
       GetCurrentDirectory(unit.mutable_working_directory());
       FileVNameGenerator file_vnames;
+      kythe::proto::VName default_vname;
+      default_vname.set_corpus(FLAGS_default_corpus);
+      default_vname.set_root(FLAGS_default_root);
+      file_vnames.set_default_base_vname(default_vname);
       bool stdin_requested = false;
       for (const std::string& arg : final_args) {
         if (arg == "-") {
