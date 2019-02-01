@@ -9,6 +9,7 @@ construct_vnames_config(
     name = "vnames_config",
     srcs = [
         "vnames.cxx.json",
+        "vnames.go.json",
         "vnames.java.json",
         "vnames.json",
     ],
@@ -29,4 +30,12 @@ shell_tool_test(
     tools = {
         "DIR_INDEXER": "//kythe/go/storage/tools:directory_indexer",
     },
+)
+
+load("//kythe/go/util/vnameutil:test/macros.bzl", "test_vname_rules")
+
+test_vname_rules(
+    name = "go_vnames_test",
+    rules = "vnames.go.json",
+    tests = "vnames_test.go.json",
 )
