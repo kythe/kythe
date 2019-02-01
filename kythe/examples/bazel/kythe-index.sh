@@ -124,9 +124,9 @@ if [[ -n "$EXTRACT" ]]; then
   bazel build "${BAZEL_ARGS[@]}" \
     --keep_going --output_groups=compilation_outputs \
     --experimental_extra_action_top_level_only \
-    --experimental_action_listener=@io_kythe//kythe/build:extract_kzip_cxx \
-    --experimental_action_listener=@io_kythe//kythe/build:extract_kzip_java \
-    --experimental_action_listener=@io_kythe//kythe/build:extract_kzip_protobuf \
+    --experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_cxx \
+    --experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_java \
+    --experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_protobuf \
     //src/{main,test}/... || true
 fi
 

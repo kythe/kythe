@@ -88,13 +88,13 @@ if [[ -d bazel-out ]]; then
 fi
 
 if [[ -n "$JAVA" ]]; then
-  BAZEL_ARGS+=(--experimental_action_listener=@io_kythe//kythe/build:extract_kzip_java)
+  BAZEL_ARGS+=(--experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_java)
 fi
 if [[ -n "$CXX" ]]; then
-  BAZEL_ARGS+=(--experimental_action_listener=@io_kythe//kythe/build:extract_kzip_cxx)
+  BAZEL_ARGS+=(--experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_cxx)
 fi
 if [[ -n "$GO" ]]; then
-  BAZEL_ARGS+=(--experimental_action_listener=@io_kythe//kythe/build:extract_kzip_go)
+  BAZEL_ARGS+=(--experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_go)
 fi
 
 set -x
