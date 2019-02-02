@@ -45,6 +45,7 @@
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/indexer/proto/indexer_frontend.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/buildinfo.pb.h"
 
 DEFINE_string(o, "-", "Output filename.");
 DEFINE_bool(flush_after_each_entry, false,
@@ -68,12 +69,17 @@ using CompilationVisitCallback = std::function<void(
 // indexer. It was initially copied from cxx/indexer/frontend.cc.
 void DecodeKzipFile(const std::string& path,
                     const CompilationVisitCallback& visit) {
+  // This forces the BuildDetails proto descriptor to be added to the pool so
+  // we can deserialize it.
+  proto::BuildDetails needed_for_proto_deserialization;
+
   StatusOr<IndexReader> reader = kythe::KzipReader::Open(path);
   CHECK(reader) << "Couldn't open kzip from " << path;
   bool compilation_read = false;
   auto status = reader->Scan([&](absl::string_view digest) {
     std::vector<proto::FileData> virtual_files;
     auto compilation = reader->ReadUnit(digest);
+    CHECK(compilation.ok()) << compilation.status();
     for (const auto& file : compilation->unit().required_input()) {
       auto content = reader->ReadFile(file.info().digest());
       CHECK(content) << "Unable to read file with digest: "
