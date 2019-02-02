@@ -44,11 +44,8 @@ func TestYAMLConversion(t *testing.T) {
 				t.Fatalf("reading expected testdata %s: %v", tcase.basename, err)
 			}
 
-			eq, diff := testutil.TrimmedEqual(actual, expected)
-			if !eq {
-				t.Errorf("Expected config %s to be equal, but got diff %s", tcase.basename, diff)
-				t.Errorf("actual:\n%s", actual)
-				t.Errorf("expected:\n%s", expected)
+			if err := testutil.YAMLEqual(actual, expected); err != nil {
+				t.Errorf("Expected config %s to be equal: %v", tcase.basename, err)
 			}
 		})
 	}

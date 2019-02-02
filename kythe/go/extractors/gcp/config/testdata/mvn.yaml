@@ -9,8 +9,8 @@ steps:
   - clone
   - ${_REPO_NAME}
   - /workspace/code
-  id: CLONE
   name: gcr.io/cloud-builders/git
+  id: CLONE
   waitFor:
   - '-'
 - args:
