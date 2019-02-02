@@ -17,7 +17,6 @@
 package config
 
 import (
-	"fmt"
 	"path"
 
 	"kythe.io/kythe/go/extractors/constants"
@@ -36,8 +35,11 @@ func (m gradleGenerator) preArtifacts() []string {
 
 // steps implements parts of buildSystemElaborator
 func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
+	// TODO(danielmoy): handle non-root builds.
+	buildfile := path.Join(codeDirectory, conf.Root, "build.gradle")
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),
+		preprocessorStep(buildfile),
 		&cloudbuild.BuildStep{
 			Name: constants.GCRGradleImage,
 			Args: []string{
@@ -54,7 +56,7 @@ func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep
 				"-S", // Prints verbose stacktraces.
 				"-d", // Logs in debug mode.
 				"-b", // Points directly at a specific build.gradle file:
-				path.Join(codeDirectory, conf.Root, "build.gradle"),
+				buildfile,
 			},
 			Volumes: []*cloudbuild.Volume{
 				&cloudbuild.Volume{
@@ -65,7 +67,6 @@ func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep
 			Env: []string{
 				"KYTHE_CORPUS=" + corpus,
 				"KYTHE_OUTPUT_DIRECTORY=" + outputDirectory,
-				fmt.Sprintf("KYTHE_OUTPUT_FILE=%s", path.Join(outputDirectory, outputFilePattern)),
 				"KYTHE_ROOT_DIRECTORY=" + codeDirectory,
 				"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
 				"REAL_JAVAC=" + constants.DefaultJavacLocation,
@@ -73,5 +74,6 @@ func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep
 				"KYTHE_JAVAC_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
 			},
 		},
+		zipMergeStep(),
 	}
 }

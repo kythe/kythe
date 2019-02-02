@@ -3,7 +3,7 @@ steps:
   args: ['clone', 'https://github.com/google/guava', '/workspace/code']
   id: 'CLONE'
 - name: 'gcr.io/cloud-builders/git'
-  args: ['checkout', '$_GUAVA_VERSION']
+  args: ['checkout', '${_VERSION}']
   dir: '/workspace/code'
   id: 'CHECKOUT'
 - name: 'ubuntu'
@@ -40,11 +40,11 @@ steps:
   args: ['ls', '/workspace/out']
 - name: 'gcr.io/kythe-public/kzip-tools'
   entrypoint: 'bash'
-  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/guava-$_GUAVA_VERSION.kzip /workspace/out/*.kzip']
+  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/guava-${_VERSION}.kzip /workspace/out/*.kzip']
 artifacts:
   objects:
-    location: 'gs://${_BUCKET_NAME}/'
+    location: 'gs://${_OUTPUT_GS_BUCKET}/'
     paths:
-      - '/workspace/out/guava-$_GUAVA_VERSION.kzip'
+      - '/workspace/out/guava-${_VERSION}.kzip'
       - '/workspace/errs/javac-extractor.err'
 

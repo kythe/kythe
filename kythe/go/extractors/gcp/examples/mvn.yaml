@@ -1,14 +1,15 @@
 steps:
 - name: 'gcr.io/cloud-builders/git'
-  args: ['clone', '${_REPO_NAME}', '/workspace/code']
+  args: ['clone', '${_REPO}', '/workspace/code']
   id: 'CLONE'
+  waitFor: ['-']
 - name: 'ubuntu'
   args: ['mkdir', '/workspace/out']
   waitFor: ['-']
 - name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts'
   volumes:
     - name: 'kythe_extractors'
-      path: '/opt/kythe/extractors/'
+      path: '/opt/kythe/extractors'
   waitFor: ['-']
 - name: 'gcr.io/kythe-public/build-preprocessor'
   args: ['/workspace/code/pom.xml']
@@ -18,6 +19,7 @@ steps:
   args:
     - 'clean'
     - 'compile'
+    - 'test-compile'
     - '-X'
     - '-f'
     - '/workspace/code/pom.xml'
@@ -25,9 +27,8 @@ steps:
     - '-Dmaven.compiler.fork=true'
     - '-Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh'
   env:
-    - 'KYTHE_CORPUS=mvnpoctest'
+    - 'KYTHE_CORPUS=${_CORPUS}'
     - 'KYTHE_OUTPUT_DIRECTORY=/workspace/out'
-    - 'KYTHE_OUTPUT_FILE=/workspace/out/test.kzip'
     - 'KYTHE_ROOT_DIRECTORY=/workspace/code'
     - 'JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar'
     - 'REAL_JAVAC=/usr/bin/javac'
@@ -35,11 +36,14 @@ steps:
     - 'KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar'
   volumes:
     - name: 'kythe_extractors'
-      path: '/opt/kythe/extractors/'
+      path: '/opt/kythe/extractors'
+- name: 'gcr.io/kythe-public/kzip-tools'
+  entrypoint: 'bash'
+  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip /workspace/out/*.kzip']
 artifacts:
   objects:
-    location: 'gs://${_BUCKET_NAME}/'
+    location: 'gs://${_OUTPUT_GS_BUCKET}/'
     paths:
-      - '/workspace/out/test.kzip'
       - '/workspace/out/javac-extractor.err'
+      - '/workspace/out/${_CORPUS}-${_VERSION}.kzip'
 

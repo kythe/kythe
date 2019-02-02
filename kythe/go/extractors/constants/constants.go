@@ -18,7 +18,6 @@
 package constants
 
 var (
-
 	// KytheBuildPreprocessorImage is defiend in
 	// kythe/go/extractors/config/preprocessor, and is published to GCR.
 	KytheBuildPreprocessorImage = "gcr.io/kythe-public/build-preprocessor"
@@ -44,6 +43,16 @@ var (
 	// DefaultJava9ToolsLocation is the location of a jar which allows java9
 	// compatibility for java8.
 	DefaultJava9ToolsLocation = "/opt/kythe/extractors/javac9_tools.jar"
+
+	// KytheKzipToolsImage is defined in
+	// kythe/go/platform/tools/kzip and published to GCR via
+	// kythe/go/extractors/gcp/config/kziptool:artifacts.  It is a utility for
+	// manipulating .kzip files.
+	KytheKzipToolsImage = "gcr.io/kythe-public/kzip-tools"
+
+	// DefaultKzipToolLocation is the location of tools/kzip binary defined in
+	// the gcr.io/kythe-public/kzip-tools image.
+	DefaultKzipToolLocation = "/opt/kythe/tools/kzip"
 
 	// Google Cloud Builders described at
 	// https://cloud.google.com/cloud-build/docs/cloud-builders.
