@@ -12,7 +12,7 @@ require (
 	github.com/golang/protobuf v0.0.0-20180814141427-aa810b61a9c7
 	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
 	github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540
-	github.com/google/go-cmp v0.0.0-20180328201512-5411ab924f9f
+	github.com/google/go-cmp v0.2.0
 	github.com/google/go-github v0.0.0-20180509124334-8ea2e2657df8
 	github.com/google/go-querystring v0.0.0-20170111101155-53e6ce116135
 	github.com/google/orderedcode v0.0.0-20150706152543-05a79567b685
