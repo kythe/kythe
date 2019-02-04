@@ -531,9 +531,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_beevik_etree",
-        commit = "9d7e8feddccb4ed1b8afb54e368bd323d2ff652c",
         custom = "etree",
         importpath = "github.com/beevik/etree",
+        tag = "v1.1.0",
     )
 
     maybe(
