@@ -26,6 +26,8 @@ github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540 h1:p7yBiLWuNlevGWjy6uv
 github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540/go.mod h1:XpGqLY1HgMKTQI5TU8iAKE/okaKqS9h1e6KRlRztlOU=
 github.com/google/go-cmp v0.0.0-20180328201512-5411ab924f9f h1:e7go61E2Xh2l5KtL3Lh6Tjy0/T+eem0bQsDwETI7SMo=
 github.com/google/go-cmp v0.0.0-20180328201512-5411ab924f9f/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
+github.com/google/go-cmp v0.2.0 h1:+dTQ8DZQJz0Mb/HjFlkptS1FeQ4cWSnN941F8aEG4SQ=
+github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/google/go-github v0.0.0-20180509124334-8ea2e2657df8/go.mod h1:zLgOLi98H3fifZn+44m+umXrS52loVEgC2AApnigrVQ=
 github.com/google/go-querystring v0.0.0-20170111101155-53e6ce116135/go.mod h1:odCYkC5MyYFN7vkCjXpyrEuKhc/BUO6wN/zVPAxq5ck=
 github.com/google/orderedcode v0.0.0-20150706152543-05a79567b685 h1:aGnMdT4gPUkBazyvUVXKbe4kOIgZ4uXc88WdOVxiG1E=
