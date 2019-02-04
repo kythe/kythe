@@ -523,9 +523,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_datadog_zstd",
-        commit = "aebefd9fcb99f22cd691ef778a12ed68f0e6a1ab",
         custom = "zstd",
         importpath = "github.com/DataDog/zstd",
+        tag = "v1.3.5",
     )
 
     maybe(

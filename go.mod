@@ -4,7 +4,7 @@ require (
 	bitbucket.org/creachadair/shell v0.0.4
 	bitbucket.org/creachadair/stringset v0.0.3
 	cloud.google.com/go v0.0.0-20180405132441-01301d1df806
-	github.com/DataDog/zstd v0.0.0-20180321192404-aebefd9fcb99
+	github.com/DataDog/zstd v1.3.5
 	github.com/apache/beam v0.0.0-20181105183121-f1a46474e4c1
 	github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76
