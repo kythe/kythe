@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.0.0-20180405132441-01301d1df806
 	github.com/DataDog/zstd v1.3.5
 	github.com/apache/beam v0.0.0-20181105183121-f1a46474e4c1
-	github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb
+	github.com/beevik/etree v1.1.0
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/golang/protobuf v0.0.0-20180814141427-aa810b61a9c7

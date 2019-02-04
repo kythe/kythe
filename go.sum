@@ -16,6 +16,8 @@ github.com/apache/beam v0.0.0-20181105183121-f1a46474e4c1 h1:9D6/sca/IAdMlAhi1pc
 github.com/apache/beam v0.0.0-20181105183121-f1a46474e4c1/go.mod h1:/8NX3Qi8vGstDLLaeaU7+lzVEu/ACaQhYjeefzQ0y1o=
 github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb h1:7UqUs7q4Iir6wMDedPXDB6uaPkuQv0oGrDoTydZyxG0=
 github.com/beevik/etree v0.0.0-20180609112216-9d7e8feddccb/go.mod h1:r8Aw8JqVegEf0w2fDnATrX9VpkMcyFeM0FhwO62wh+A=
+github.com/beevik/etree v1.1.0 h1:T0xke/WvNtMoCqgzPhkX2r4rjY3GDZFi+FjpRZY2Jbs=
+github.com/beevik/etree v1.1.0/go.mod h1:r8Aw8JqVegEf0w2fDnATrX9VpkMcyFeM0FhwO62wh+A=
 github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 h1:eX+pdPPlD279OWgdx7f6KqIRSONuK7egk+jDx7OM3Ac=
 github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76/go.mod h1:KjxHHirfLaw19iGT70HvVjHQsL1vq1SRQB4yOsAfy2s=
 github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4 h1:PaTU+9BARuIOAz1ixvps39DJjfq/SxOj3axzIlh7nFo=
