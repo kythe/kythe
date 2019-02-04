@@ -317,9 +317,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_google_go_cmp",
-        commit = "5411ab924f9ffa6566244a9e504bc347edacffd3",
         custom = "cmp",
         importpath = "github.com/google/go-cmp",
+        tag = "v0.2.0",
     )
 
     maybe(
