@@ -53,7 +53,8 @@ message DirectoryReply {
   // The path of the requested directory.
   string path = 5;
 
-  // Each known entry in the requested directory.
+  // Each known entry in the requested directory.  Each entry shares the above
+  // corpus, root, and path prefix.
   repeated Entry entry = 6;
 
   message Entry {
