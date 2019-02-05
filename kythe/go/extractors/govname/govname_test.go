@@ -40,7 +40,6 @@ func TestForPackage(t *testing.T) {
 		{path: "go/types", ticket: "kythe://golang.org?lang=go?path=go/types#package", isRoot: true},
 		{path: "golang.org/x/net/context", ticket: "kythe://golang.org/x/net?lang=go?path=context#package",
 			canonical: "kythe://go.googlesource.com/net?lang=go?path=context#package"},
-		{path: "go.googlesource.com/net", ticket: "kythe://go.googlesource.com/net?lang=go#package"},
 		{path: "kythe.io/kythe/go/util/kytheuri", ticket: "kythe://kythe.io?lang=go?path=kythe/go/util/kytheuri#package",
 			canonical: "kythe://github.com/kythe/kythe?lang=go?path=kythe/go/util/kytheuri#package"},
 		{path: "github.com/kythe/kythe/kythe/go/util/kytheuri", ticket: "kythe://github.com/kythe/kythe?lang=go?path=kythe/go/util/kytheuri#package"},
