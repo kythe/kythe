@@ -34,9 +34,9 @@ import (
 // Constants that map input/output substitutions.
 const (
 	corpus            = "${_CORPUS}"
-	outputFilePattern = "${_OUTPUT_KZIP_NAME}"
+	outputFilePattern = "${_CORPUS}-${_VERSION}.kzip"
 	outputGsBucket    = "${_OUTPUT_GS_BUCKET}"
-	repoName          = "${_REPO_NAME}"
+	repoName          = "${_REPO}"
 )
 
 // Constants ephemeral to a single kythe cloudbuild run.

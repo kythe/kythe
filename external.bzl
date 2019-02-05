@@ -317,9 +317,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_google_go_cmp",
-        commit = "5411ab924f9ffa6566244a9e504bc347edacffd3",
         custom = "cmp",
         importpath = "github.com/google/go-cmp",
+        tag = "v0.2.0",
     )
 
     maybe(
@@ -411,19 +411,19 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_bitbucket_creachadair_stringset",
-        commit = "e974a3c1694da0d5a14216ce46dbceef6a680978",
         custom = "stringset",
         custom_git = "https://bitbucket.org/creachadair/stringset.git",
         importpath = "bitbucket.org/creachadair/stringset",
+        tag = "v0.0.3",
     )
 
     maybe(
         go_repository,
         name = "org_bitbucket_creachadair_shell",
-        commit = "3dcd505a7ca5845388111724cc2e094581e92cc6",
         custom = "shell",
         custom_git = "https://bitbucket.org/creachadair/shell.git",
         importpath = "bitbucket.org/creachadair/shell",
+        tag = "v0.0.4",
     )
 
     maybe(
@@ -523,17 +523,17 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_datadog_zstd",
-        commit = "aebefd9fcb99f22cd691ef778a12ed68f0e6a1ab",
         custom = "zstd",
         importpath = "github.com/DataDog/zstd",
+        tag = "v1.3.5",
     )
 
     maybe(
         go_repository,
         name = "com_github_beevik_etree",
-        commit = "9d7e8feddccb4ed1b8afb54e368bd323d2ff652c",
         custom = "etree",
         importpath = "github.com/beevik/etree",
+        tag = "v1.1.0",
     )
 
     maybe(

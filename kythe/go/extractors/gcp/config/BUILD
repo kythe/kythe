@@ -22,7 +22,10 @@ go_library(
 go_test(
     name = "config_test",
     srcs = ["converter_test.go"],
-    data = [":testdatafiles"],
+    data = [
+        ":testdatafiles",
+        "//kythe/go/extractors/gcp/examples:yaml_examples",
+    ],
     library = ":config",
     deps = [
         "//kythe/go/test/testutil",
