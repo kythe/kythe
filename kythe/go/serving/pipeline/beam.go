@@ -460,6 +460,8 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 			Anchor: &srvpb.RawAnchor{
 				StartOffset: ref.Anchor.Span.Start.ByteOffset,
 				EndOffset:   ref.Anchor.Span.End.ByteOffset,
+
+				BuildConfiguration: ref.Anchor.BuildConfiguration,
 			},
 			Kind:   refKind(ref),
 			Target: kytheuri.ToString(ref.Source),
@@ -653,6 +655,7 @@ func (k *KytheBeam) References() beam.PCollection {
 			IncludeFacts: []string{
 				facts.AnchorStart, facts.AnchorEnd,
 				facts.SnippetStart, facts.SnippetEnd,
+				facts.BuildConfig,
 			},
 		}, k.nodes))
 	k.refs = beam.ParDo(s, toRefs, beam.CoGroupByKey(s, k.getFiles(), anchors))
@@ -741,27 +744,35 @@ func normalizeAnchors(file *srvpb.File, anchor func(**scpb.Node) bool, emit func
 func toRawAnchor(n *scpb.Node) (*srvpb.RawAnchor, error) {
 	var a srvpb.RawAnchor
 	for _, f := range n.Fact {
-		i, err := strconv.Atoi(string(f.Value))
-		if err != nil {
-			return nil, fmt.Errorf("invalid integer fact value for %q: %v", f.GetKytheName(), err)
-		}
-		n := int32(i)
-
+		var err error
 		switch f.GetKytheName() {
+		case scpb.FactName_BUILD_CONFIG:
+			a.BuildConfiguration = string(f.Value)
 		case scpb.FactName_LOC_START:
-			a.StartOffset = n
+			a.StartOffset, err = factValueToInt(f)
 		case scpb.FactName_LOC_END:
-			a.EndOffset = n
+			a.EndOffset, err = factValueToInt(f)
 		case scpb.FactName_SNIPPET_START:
-			a.SnippetStart = n
+			a.SnippetStart, err = factValueToInt(f)
 		case scpb.FactName_SNIPPET_END:
-			a.SnippetEnd = n
+			a.SnippetEnd, err = factValueToInt(f)
 		default:
 			return nil, fmt.Errorf("unhandled fact: %v", f)
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 	a.Ticket = kytheuri.ToString(n.Source)
 	return &a, nil
+}
+
+func factValueToInt(f *scpb.Fact) (int32, error) {
+	i, err := strconv.Atoi(string(f.Value))
+	if err != nil {
+		return 0, fmt.Errorf("invalid integer fact value for %q: %v", schema.GetFactName(f), err)
+	}
+	return int32(i), nil
 }
 
 func moveSourceToKey(n *scpb.Node) (*spb.VName, *scpb.Node) {
