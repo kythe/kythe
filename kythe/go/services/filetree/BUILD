@@ -13,5 +13,6 @@ go_library(
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:filetree_go_proto",
         "//kythe/proto:storage_go_proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )

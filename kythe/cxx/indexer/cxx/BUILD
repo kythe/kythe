@@ -412,6 +412,7 @@ cc_library(
         "//kythe/cxx/extractor:index_pack",
         "//kythe/cxx/extractor:supported_language",
         "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:buildinfo_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:cxx_cc_proto",
         "//kythe/proto:storage_cc_proto",

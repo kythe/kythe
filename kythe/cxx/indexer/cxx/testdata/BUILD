@@ -861,6 +861,15 @@ cc_indexer_test(
     ],
 )
 
+cc_indexer_test(
+    name = "build_config",
+    srcs = ["basic/build_config.cc"],
+    ibuild_config = "test-build-config",
+    tags = [
+        "basic",
+    ],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
