@@ -291,11 +291,11 @@ def _go_dependencies():
         go_repository,
         name = "com_github_golang_protobuf",
         build_file_proto_mode = "disable_global",
-        commit = "aa810b61a9c79d51363740d207bb46cf8e620ed5",
         custom = "protobuf",
         importpath = "github.com/golang/protobuf",
         patch_args = ["-p1"],
         patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
+        tag = "v1.2.0",
     )
 
     maybe(
