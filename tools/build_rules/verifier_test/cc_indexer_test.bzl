@@ -723,6 +723,7 @@ def cc_extractor_test(
         tags = [],
         restricted_to = ["//buildenv:all"]):
     """C++ verifier test on an extracted source file."""
+    args = ["-std=" + std, "-c"]
     cc_extract_kzip(
         name = name + "_kzip",
         srcs = srcs,
@@ -730,7 +731,7 @@ def cc_extractor_test(
         tags = tags,
         restricted_to = restricted_to,
         testonly = True,
-        opts = ["-c"],
+        opts = args,
     )
     cc_index(
         name = name + "_entries",
