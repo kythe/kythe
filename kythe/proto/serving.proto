@@ -126,6 +126,8 @@ message RawAnchor {
 
   int32 snippet_start = 4;
   int32 snippet_end = 5;
+
+  string build_configuration = 6;
 }
 
 // ExpandedAnchors are constructed from an RawAnchor and its associated File.
@@ -141,6 +143,8 @@ message ExpandedAnchor {
 
   string snippet = 6;
   kythe.proto.common.Span snippet_span = 7;
+
+  string build_configuration = 8;
 }
 
 // FileDecorations stores a file's contents and all contained anchor edges.
