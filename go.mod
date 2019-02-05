@@ -31,7 +31,7 @@ require (
 	github.com/ulikunitz/xz v0.5.5 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	go.opencensus.io v0.0.0-20180405210956-c40611a83b49
-	golang.org/x/net v0.0.0-20180509002218-f73e4c9ed3b7
+	golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3
 	golang.org/x/oauth2 v0.0.0-20180503012634-cdc340f7c179
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
 	golang.org/x/sys v0.0.0-20180616030259-6c888cc515d3
