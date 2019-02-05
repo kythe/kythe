@@ -73,6 +73,8 @@ go.opencensus.io v0.0.0-20180405210956-c40611a83b49 h1:D/lxRLFdKuCHBGoJKtI5ujWLQ
 go.opencensus.io v0.0.0-20180405210956-c40611a83b49/go.mod h1:UffZAU+4sDEINUGP/B7UfBBkq4fqLu9zXAX7ke6CHW0=
 golang.org/x/net v0.0.0-20180509002218-f73e4c9ed3b7 h1:vwPhSHmZ2xckGbhyz9c/u82CIp9iyzUDJHNXrRP0Xx8=
 golang.org/x/net v0.0.0-20180509002218-f73e4c9ed3b7/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
+golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3 h1:ulvT7fqt0yHWzpJwI57MezWnYDVpCAYBVuYst/L+fAY=
+golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/oauth2 v0.0.0-20180503012634-cdc340f7c179 h1:i7nIATcLJZqBHx/NOl8hfnkelUjmcyEhCN1/oISBrUc=
 golang.org/x/oauth2 v0.0.0-20180503012634-cdc340f7c179/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f h1:wMNYb4v58l5UBM7MYRLPG6ZhfOqbKu7X5eyFl8ZhKvA=

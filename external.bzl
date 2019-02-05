@@ -394,7 +394,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_net",
-        commit = "f73e4c9ed3b7ebdd5f699a16a880c2b1994e50dd",
+        commit = "d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf",
         custom = "x_net",
         custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
