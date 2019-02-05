@@ -42,7 +42,6 @@ Kythe relies on the following external dependencies:
 * libcurl4-openssl-dev
 * libncurses-dev
 * libssl-dev
-* [ninja](https://ninja-build.org/) (optional; improves LLVM build speed)
 * node.js
 * parallel
 * source-highlight
@@ -80,29 +79,19 @@ dependencies to the exact revision that we test against.
 This step may take a little time the first time it is run and should be quick
 on subsequent runs.
 
-#### Installing and keeping LLVM up to date
-
-When building Kythe, we assume that you have an LLVM checkout in
-`third_party/llvm/llvm`.  If you don't have an LLVM checkout in that directory, or
-if you fall out of date, the `./tools/modules/update.sh` script will update you
-to the exact revisions that we test against.
-
-Note that you don't need to have a checkout of LLVM per Kythe checkout.  It's
-enough to have a symlink of the `third_party/llvm/llvm` directory.
-
 #### Troubleshooting bazel/clang/llvm errors
 You must either have `/usr/bin/clang` aliased properly, or the `CC` env var set
 for Bazel:
 
 {% highlight bash %}
-echo 'build --client_env=CC=/usr/bin/clang-3.5' >>~/.bazelrc
+echo 'build --client_env=CC=/usr/bin/clang-3.6' >>~/.bazelrc
 {% endhighlight %}
 
 OR:
 
 {% highlight bash %}
-sudo ln -s /usr/bin/clang-3.5 /usr/bin/clang
-sudo ln -s /usr/bin/clang++-3.5 /usr/bin/clang++
+sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang
+sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++
 {% endhighlight %}
 
 OR:
@@ -117,9 +106,9 @@ If you ran bazel and get errors like this:
 {% highlight bash %}
 /home/username/kythe/third_party/zlib/BUILD:10:1: undeclared inclusion(s) in rule '//third_party/zlib:zlib':
 this rule is missing dependency declarations for the following files included by 'third_party/zlib/uncompr.c':
-  '/usr/lib/llvm-3.5/lib/clang/3.5.0/include/limits.h'
-  '/usr/lib/llvm-3.5/lib/clang/3.5.0/include/stddef.h'
-  '/usr/lib/llvm-3.5/lib/clang/3.5.0/include/stdarg.h'.
+  '/usr/lib/llvm-3.6/lib/clang/3.6.0/include/limits.h'
+  '/usr/lib/llvm-3.6/lib/clang/3.6.0/include/stddef.h'
+  '/usr/lib/llvm-3.6/lib/clang/3.6.0/include/stdarg.h'.
 {% endhighlight %}
 
 then you need to clean and rebuild your TOOLCHAIN:
