@@ -91,7 +91,14 @@ Note that you don't need to have a checkout of LLVM per Kythe checkout.  It's
 enough to have a symlink of the `third_party/llvm/llvm` directory.
 
 #### Troubleshooting bazel/clang/llvm errors
-You must either have /usr/bin/clang aliased properly, or the CLANG env var set:
+You must either have `/usr/bin/clang` aliased properly, or the `CC` env var set
+for Bazel:
+
+{% highlight bash %}
+echo 'build --client_env=CC=/usr/bin/clang-3.5' >>~/.bazelrc
+{% endhighlight %}
+
+OR:
 
 {% highlight bash %}
 sudo ln -s /usr/bin/clang-3.5 /usr/bin/clang
@@ -101,7 +108,7 @@ sudo ln -s /usr/bin/clang++-3.5 /usr/bin/clang++
 OR:
 
 {% highlight bash %}
-echo 'export CLANG=/usr/bin/clang' >> ~/.bashrc
+echo 'export CC=/usr/bin/clang' >> ~/.bashrc
 source ~/.bashrc
 {% endhighlight %}
 
