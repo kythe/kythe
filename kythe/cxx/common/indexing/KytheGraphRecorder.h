@@ -71,7 +71,8 @@ enum class PropertyID {
   kDiagnosticMessage,
   kDiagnosticDetails,
   kDiagnosticContextOrUrl,
-  kDocUri
+  kDocUri,
+  kBuildConfig
 };
 
 /// \brief Known edge kinds. See the schema for details.

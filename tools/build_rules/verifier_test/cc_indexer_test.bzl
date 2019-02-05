@@ -58,6 +58,7 @@ _INDEXER_FLAGS = {
     "fail_on_unimplemented_builtin": True,
     "ignore_unimplemented": False,
     "index_template_instantiations": True,
+    "ibuild_config": "",
 }
 
 def _compiler_options(ctx, cpp, copts, includes):
