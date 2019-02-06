@@ -136,6 +136,7 @@ func encodeDecorRef(file *spb.VName, ref *ppb.Reference, emit func([]byte, []byt
 	target := &xspb.FileDecorations_Target{
 		StartOffset: ref.Anchor.Span.Start.ByteOffset,
 		EndOffset:   ref.Anchor.Span.End.ByteOffset,
+		BuildConfig: ref.Anchor.BuildConfiguration,
 		Target:      ref.Source,
 	}
 	if k := ref.GetGenericKind(); k != "" {
