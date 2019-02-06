@@ -16,15 +16,17 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_RECURSIVE_TYPE_VISITOR_H_
 #define KYTHE_CXX_INDEXER_CXX_RECURSIVE_TYPE_VISITOR_H_
 
+#include <algorithm>
+
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 
 namespace kythe {
 
-// RecursiveTypeVisitor is a parallel type to clang::RecursiveASTVisitor which
-// uses the same visitation strategy, but visits type-as-written and resolved
-// type in parallel.
+// RecursiveTypeVisitor is a subclass of clang::RecursiveASTVisitor which
+//  visits type-as-written and resolved type in parallel, via "TypePair"
+//  member functions.
 template <typename Derived>
 class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
  public:
@@ -254,11 +256,12 @@ DEF_TRAVERSE_TYPEPAIR(UnaryTransformType, {
                                        T->getUnderlyingType());
 });
 DEF_TRAVERSE_TYPEPAIR(AutoType, {
-  return getDerived().TraverseType(TL.getDeducedType());
+  return getDerived().TraverseType(TL.getTypePtr()->getDeducedType());
 });
 DEF_TRAVERSE_TYPEPAIR(DeducedTemplateSpecializationType, {
-  return getDerived().TraverseTemplateName(TL.getTemplateName()) &&
-         getDerived().TraverseType(TL.getDeducedType());
+  return getDerived().TraverseTemplateName(
+             TL.getTypePtr()->getTemplateName()) &&
+         getDerived().TraverseType(TL.getTypePtr()->getDeducedType());
 });
 DEF_TRAVERSE_TYPEPAIR(RecordType, {});
 DEF_TRAVERSE_TYPEPAIR(EnumType, {});
@@ -306,7 +309,7 @@ DEF_TRAVERSE_TYPEPAIR(DependentTemplateSpecializationType, {
       return false;
     }
   }
-  for (unsigned I, E = TL.getNumArgs(); I != E; ++I) {
+  for (unsigned I = 0, E = TL.getNumArgs(); I != E; ++I) {
     if (!getDerived().TraverseTemplateArgumentLoc(TL.getArgLoc(I))) {
       return false;
     }
@@ -326,7 +329,8 @@ DEF_TRAVERSE_TYPEPAIR(ObjCObjectType, {
   }
 
   auto TypeArgs = T->getTypeArgs();
-  for (unsigned I = 0, E = std::min(TL.getNumTypeArgs(), TypeArgs.size());
+  for (unsigned I = 0,
+                E = std::min<unsigned>(TL.getNumTypeArgs(), TypeArgs.size());
        I != E; ++I) {
     if (!getDerived().TraverseTypePair(TL.getTypeArgTInfo(I)->getTypeLoc(),
                                        TypeArgs[I])) {
@@ -342,7 +346,7 @@ DEF_TRAVERSE_TYPEPAIR(AtomicType, {
   return getDerived().TraverseTypePair(TL.getValueLoc(), T->getValueType());
 });
 DEF_TRAVERSE_TYPEPAIR(PipeType, {
-  return getDerived().TraverseTypePair(TL.getValueLow(), T->getValueType());
+  return getDerived().TraverseTypePair(TL.getValueLoc(), T->getElementType());
 });
 
 #undef DEF_TRAVERSE_TYPEPAIR
