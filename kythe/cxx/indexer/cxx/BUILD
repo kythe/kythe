@@ -500,6 +500,7 @@ cc_library(
     name = "recursive_type_visitor",
     hdrs = ["recursive_type_visitor.h"],
     deps = [
+        "//kythe/cxx/common:scope_guard",
         "@org_llvm//:clangAST",
     ],
 )

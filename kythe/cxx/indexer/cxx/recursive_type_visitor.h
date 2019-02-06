@@ -17,10 +17,12 @@
 #define KYTHE_CXX_INDEXER_CXX_RECURSIVE_TYPE_VISITOR_H_
 
 #include <algorithm>
+#include <vector>
 
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
+#include "kythe/cxx/common/scope_guard.h"
 
 namespace kythe {
 
@@ -29,8 +31,40 @@ namespace kythe {
 //  member functions.
 template <typename Derived>
 class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
+  using Base = clang::RecursiveASTVisitor<Derived>;
+
  public:
   Derived& getDerived() { return *static_cast<Derived*>(this); }
+
+  bool TraverseDecl(clang::Decl* Decl) {
+    if (auto* DD = clang::dyn_cast<clang::DeclaratorDecl>(Decl)) {
+      if (DD->getTypeSourceInfo()) {
+        auto cleanup = PushScope(decl_stack_, DD);
+        return Base::TraverseDecl(Decl);
+      }
+    }
+    return Base::TraverseDecl(Decl);
+  }
+
+  bool TraverseObjCPropertyDecl(clang::ObjCPropertyDecl* Decl) {
+    if (!getDerived().shouldTraversePostOrder()) {
+      if (!getDerived().WalkUpFromObjCPropertyDecl(Decl)) {
+        return false;
+      }
+    }
+    if (auto* TSI = Decl->getTypeSourceInfo()) {
+      return getDerived().TraverseTypePair(TSI->getTypeLoc(), Decl->getType());
+    }
+    return getDerived().TraverseType(Decl->getType());
+  }
+
+  bool TraverseTypeLoc(clang::TypeLoc TL) {
+    if (!decl_stack_.empty() &&
+        decl_stack_.back()->getTypeSourceInfo()->getTypeLoc() == TL) {
+      return getDerived().TraverseTypePair(TL, decl_stack_.back()->getType());
+    }
+    return getDerived().TraverseTypePair(TL, TL.getType());
+  }
 
   /// Recursively vist a type-as-written with location in parallel
   /// with the derived type, by dispatching to Traverse*TypePair()
@@ -57,17 +91,6 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
   }
   bool VisitTypePair(clang::TypeLoc TL, const clang::Type* T) { return true; }
 
-  // QualifiedTypeLoc and UnqualTypeLoc are not declared in
-  // TypeNodes.def and thus need to be handled specially.
-  bool WalkUpFromQualifiedTypeLoc(clang::QualifiedTypeLoc TL) {
-    return getDerived().VisitUnqualTypeLoc(TL.getUnqualifiedLoc());
-  }
-  bool VisitQualifiedTypeLoc(clang::QualifiedTypeLoc TL) { return true; }
-  bool WalkUpFromUnqualTypeLoc(clang::UnqualTypeLoc TL) {
-    return getDerived().VisitUnqualTypeLoc(TL.getUnqualifiedLoc());
-  }
-  bool VisitUnqualTypeLoc(clang::UnqualTypeLoc TL) { return true; }
-
   // Note that BASE includes trailing 'Type' which CLASS doesn't.
 #define TYPE(CLASS, BASE)                                         \
   bool WalkUpFrom##CLASS##TypePair(clang::CLASS##TypeLoc TL,      \
@@ -90,6 +113,8 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
                                                   T ? T : TL.getTypePtr()); \
   }
 #include "clang/AST/TypeNodes.def"
+
+  std::vector<clang::DeclaratorDecl*> decl_stack_;
 };
 
 template <typename Derived>
