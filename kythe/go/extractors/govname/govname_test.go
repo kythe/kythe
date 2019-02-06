@@ -43,7 +43,6 @@ func TestForPackage(t *testing.T) {
 		{path: "kythe.io/kythe/go/util/kytheuri", ticket: "kythe://kythe.io?lang=go?path=kythe/go/util/kytheuri#package",
 			canonical: "kythe://github.com/kythe/kythe?lang=go?path=kythe/go/util/kytheuri#package"},
 		{path: "github.com/kythe/kythe/kythe/go/util/kytheuri", ticket: "kythe://github.com/kythe/kythe?lang=go?path=kythe/go/util/kytheuri#package"},
-		{path: "go.googlesource.com/net", ticket: "kythe://go.googlesource.com/net?lang=go#package"},
 		{path: "fuzzy1.googlecode.com/alpha", ticket: "kythe://fuzzy1.googlecode.com?lang=go?path=alpha#package"},
 		{path: "github.com/kythe/kythe/foo", ticket: "kythe://github.com/kythe/kythe?lang=go?path=foo#package"},
 		{path: "bitbucket.org/creachadair/stringset/makeset", ticket: "kythe://bitbucket.org/creachadair/stringset?lang=go?path=makeset#package"},

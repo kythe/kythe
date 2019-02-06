@@ -36,7 +36,7 @@ require (
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
 	golang.org/x/sys v0.0.0-20180616030259-6c888cc515d3
 	golang.org/x/text v0.0.0-20180410181320-7922cc490dd5
-	golang.org/x/tools v0.0.0-20180928164045-7b71b077e1f4
+	golang.org/x/tools v0.0.0-20190206175659-4892ae6946ab
 	google.golang.org/api v0.0.0-20180404000327-3097bf831ede
 	google.golang.org/genproto v0.0.0-20180716172848-2731d4fa720b // indirect
 	google.golang.org/grpc v0.0.0-20180510165436-d07538b1475e
