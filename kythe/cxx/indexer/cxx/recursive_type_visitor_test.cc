@@ -24,7 +24,7 @@ namespace {
 TEST(RecursiveTypeVisitorTest, TrivialImplementationWorks) {
   struct TestVisitor : RecursiveTypeVisitor<TestVisitor> {
   } visitor;
-  ASSERT_TRUE(visitor.TraverseTypeLocType(clang::TypeLoc(), clang::QualType()));
+  ASSERT_TRUE(visitor.TraverseTypePair(clang::TypeLoc(), clang::QualType()));
 }
 
 }  // namespace

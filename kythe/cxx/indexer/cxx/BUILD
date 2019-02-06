@@ -499,7 +499,9 @@ cc_test(
 cc_library(
     name = "recursive_type_visitor",
     hdrs = ["recursive_type_visitor.h"],
-    deps = ["//third_party/llvm"],
+    deps = [
+        "@org_llvm//:clangAST",
+    ],
 )
 
 cc_test(
