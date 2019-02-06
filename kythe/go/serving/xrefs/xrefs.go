@@ -442,7 +442,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 	}
 	initialSkip := int(pageToken.Indices["skip"])
-	edgesPageToken := pageToken.SubTokens["edges"]
 	stats.skip = initialSkip
 
 	reply := &xpb.CrossReferencesReply{
@@ -458,6 +457,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		reply.DefinitionLocations = make(map[string]*xpb.Anchor)
 	}
 
+	buildConfigs := stringset.New(req.BuildConfig...)
 	patterns := xrefs.ConvertFilters(req.Filter)
 
 	nextPageToken := &ipb.PageToken{
@@ -472,12 +472,11 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 	relatedKinds := stringset.New(req.RelatedNodeKind...)
 
-	wantMoreCrossRefs := edgesPageToken == "" &&
-		(req.DefinitionKind != xpb.CrossReferencesRequest_NO_DEFINITIONS ||
-			req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS ||
-			req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
-			req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS ||
-			len(req.Filter) > 0)
+	wantMoreCrossRefs := (req.DefinitionKind != xpb.CrossReferencesRequest_NO_DEFINITIONS ||
+		req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS ||
+		req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
+		req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS ||
+		len(req.Filter) > 0)
 
 	var foundCrossRefs bool
 	for i := 0; i < len(tickets); i++ {
@@ -530,6 +529,11 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 
 		for _, grp := range cr.Group {
+			// Filter anchor groups based on requested build configs
+			if len(buildConfigs) != 0 && !buildConfigs.Contains(grp.BuildConfig) && !xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind) {
+				continue
+			}
+
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
 				reply.Total.Definitions += int64(len(grp.Anchor))
@@ -560,6 +564,11 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 
 		for _, idx := range cr.PageIndex {
+			// Filter anchor pages based on requested build configs
+			if len(buildConfigs) != 0 && !buildConfigs.Contains(idx.BuildConfig) && !xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
+				continue
+			}
+
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, idx.Kind, cr.Incomplete):
 				reply.Total.Definitions += int64(idx.Count)
@@ -623,7 +632,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		nextPageToken.Indices["skip"] = int32(initialSkip + stats.total)
 	}
 
-	if _, skip := nextPageToken.Indices["skip"]; skip || nextPageToken.SubTokens["edges"] != "" {
+	if _, skip := nextPageToken.Indices["skip"]; skip {
 		rec, err := proto.Marshal(nextPageToken)
 		if err != nil {
 			return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
