@@ -22,7 +22,9 @@ To make sure you have done setup correctly, we have an example binary at
 `kythe/go/extractors/gcp/helloworld`, which you can run as follows:
 
 ```
-gcloud builds submit --config examples/helloworld/helloworld.yaml --substitutions=_BUCKET_NAME="$BUCKET_NAME" examples/helloworld
+gcloud builds submit --config examples/helloworld/helloworld.yaml \
+  --substitutions=_OUTPUT_GS_BUCKET="$BUCKET_NAME"\
+  examples/helloworld
 ```
 
 If that fails, you have to go back up to the [Cloud Build](#cloud-build) section
@@ -33,16 +35,19 @@ authorize it, associate it with a valid project id, create a test gs bucket.
 
 To extract a maven repository using Kythe on Cloud Build, use
 `examples/mvn.yaml`.  This assumes that you will specify a maven repository
-in `_REPO_NAME`, and that the repository has a top-level `pom.xml` file (right
+in `_REPO`, and that the repository has a top-level `pom.xml` file (right
 now it is a hard-coded location, but in the future it will be configurable).
-This also assumes you specify `_BUCKET_NAME` as per the Hello World Test above.
+This also assumes you specify `$BUCKET_NAME` as per the Hello World Test above.
+`_CORPUS` can be any identifying string for your repo, for example: "guava".
 
 ```
 gcloud builds submit --config examples/mvn.yaml \
---substitutions=\
-_BUCKET_NAME=$BUCKET_NAME,\
-_REPO_NAME=https://github.com/project-name/repo-name\
- --no-source
+  --substitutions=\
+_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
+_REPO=https://github.com/project-name/repo-name,\
+_VERSION=<version-hash>,\
+_CORPUS=repo-name\
+  --no-source
 ```
 
 ### Guava specific example
@@ -52,13 +57,31 @@ To extract multiple parts of https://github.com/google/guava, use
 
 ```
 gcloud builds submit --config examples/guava-mvn.yaml \
---substitutions=\
-_BUCKET_NAME=$BUCKET_NAME,\
-_GUAVA_VERSION=<commit-hash>\
- --no-source
+  --substitutions=\
+_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
+_VERSION=<commit-hash>,\
+  --no-source
 ```
 
-This outputs `guava-<commit-hash>.kzip` to $BUCKET_NAME on Google Cloud Storage.
+This outputs `guava-<commit-hash>.kzip` to `$BUCKET_NAME` on Google Cloud Storage.
+
+This is a reasonable example of a maven project which has already specified
+the requisite `maven-compiler-plugin` bits in their `pom.xml` files to support
+Kythe extraction, and also a project which has multiple modules.
+
+Note however not all directories from guava extract with the top-level action.
+For example if you want to extract the android copy of guava that lives inside
+of the guava tree, you would need a slightly different action:
+
+```
+gcloud builds submit --config examples/guava-android-mvn.yaml \
+  --substitutions=\
+_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
+_GUAVA_VERSION=<commit-hash>\
+  --no-source
+```
+
+This outputs `guava-android-<commit-hash>kzip` to `$BUCKET_NAME` on GCS.
 
 ## Gradle Proof of Concept
 
@@ -66,10 +89,12 @@ Gradle is extracted similarly:
 
 ```
 gcloud builds submit --config examples/gradle.yaml \
---substitutions=\
-_BUCKET_NAME=$BUCKET_NAME,\
-_REPO_NAME=https://github.com/project-name/repo-name\
- --no-source
+  --substitutions=\
+_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
+_REPO=https://github.com/project-name/repo-name,\
+_VERSION=<version-hash>,\
+_CORPUS=repo-name\
+  --no-source
 ```
 
 ## Cloud Build REST API

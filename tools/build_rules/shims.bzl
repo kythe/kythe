@@ -1,15 +1,19 @@
 load("@bazel_gazelle//:deps.bzl", _git_repository = "git_repository", _go_repository = "go_repository")
 load("@io_bazel_rules_go//go:def.bzl", _go_binary = "go_binary", _go_library = "go_library", _go_test = "go_test")
 
-def go_repository(name, commit, importpath, custom = None, custom_git = None, **kwargs):
+def go_repository(name, importpath, commit = None, custom = None, custom_git = None, tag = None, **kwargs):
     """Macro wrapping the Gazelle go_repository rule.  Works identically, except
     if custom is provided, an extra git_repository of that name is declared with
     an overlay built using the "third_party/go:<custom>.BUILD" file.
     """
+    if (not commit) == (not tag):
+        fail("Exactly one of commit= or tag= must be specified")
+
     _go_repository(
         name = name,
         commit = commit,
         importpath = importpath,
+        tag = tag,
         **kwargs
     )
     if custom != None:
@@ -19,6 +23,7 @@ def go_repository(name, commit, importpath, custom = None, custom_git = None, **
             name = "go_" + custom,
             commit = commit,
             remote = custom_git,
+            tag = tag,
             overlay = {"@io_kythe//third_party/go:" + custom + ".BUILD": "BUILD"},
         )
 

@@ -44,6 +44,11 @@ class FileVNameGenerator {
   /// \brief Returns a VName for the given file path.
   kythe::proto::VName LookupVName(const std::string& path) const;
 
+  /// \brief Sets the default base VName to use when no rules match.
+  void set_default_base_vname(const kythe::proto::VName& default_vname) {
+    default_vname_ = default_vname;
+  }
+
  private:
   /// \brief A command to use when building a result string.
   struct StringConsNode {
@@ -86,6 +91,8 @@ class FileVNameGenerator {
   std::vector<VNameRule> rules_;
   /// Used internally to find substitution markers when compiling rules.
   RE2 substitution_matcher_{"([^@]*)@([^@]+)@"};
+  /// The default base VName to use when no rules match.
+  kythe::proto::VName default_vname_;
 };
 }  // namespace kythe
 

@@ -1,34 +1,4 @@
-package(default_visibility = ["//kythe:default_visibility"])
-
-action_listener(
-    name = "extract_kindex",
-    extra_actions = [":extra_action"],
-    mnemonics = ["Javac"],
-    visibility = ["//visibility:public"],
-)
-
-extra_action(
-    name = "extra_action",
-    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kindex) $(location //external:vnames_config)",
-    data = ["//external:vnames_config"],
-    out_templates = ["$(ACTION_ID).java.kindex"],
-    tools = [":java_extractor"],
-)
-
-action_listener(
-    name = "extract_kzip",
-    extra_actions = [":extra_action_kzip"],
-    mnemonics = ["Javac"],
-    visibility = ["//visibility:public"],
-)
-
-extra_action(
-    name = "extra_action_kzip",
-    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kzip) $(location //external:vnames_config)",
-    data = ["//external:vnames_config"],
-    out_templates = ["$(ACTION_ID).java.kzip"],
-    tools = [":java_extractor"],
-)
+package(default_visibility = ["//visibility:public"])
 
 java_binary(
     name = "java_extractor",

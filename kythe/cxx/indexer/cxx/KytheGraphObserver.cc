@@ -275,6 +275,9 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
     }
   }
   out_name.set_language(supported_language::kIndexerLang);
+  if (!build_config_.empty()) {
+    absl::StrAppend(out_name.mutable_signature(), "%", build_config_);
+  }
   out_name.set_signature(CompressString(out_name.signature()));
   return out_name;
 }
@@ -382,6 +385,10 @@ void KytheGraphObserver::UnconditionalRecordRange(
   if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
     recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOfContext,
                        VNameRefFromNodeId(range.Context));
+  }
+  if (!build_config_.empty()) {
+    recorder_->AddProperty(anchor_name_ref, PropertyID::kBuildConfig,
+                           build_config_);
   }
 }
 

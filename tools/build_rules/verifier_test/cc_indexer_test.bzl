@@ -58,6 +58,7 @@ _INDEXER_FLAGS = {
     "fail_on_unimplemented_builtin": True,
     "ignore_unimplemented": False,
     "index_template_instantiations": True,
+    "ibuild_config": "",
 }
 
 def _compiler_options(ctx, cpp, copts, includes):
@@ -137,7 +138,7 @@ def _transitive_entries(deps):
 
 def _cc_extract_kzip_impl(ctx):
     cpp = find_cpp_toolchain(ctx)
-    if ctx.attr.add_toolchain_include_directories:
+    if cpp.libc == "macosx":
         toolchain_includes = cpp.built_in_include_directories
     else:
         toolchain_includes = []
@@ -181,11 +182,6 @@ cc_extract_kzip = rule(
                 ".c",
                 ".h",
             ],
-        ),
-        "add_toolchain_include_directories": attr.bool(
-            doc = ("Whether or not to explicitly add the C++ toolchain " +
-                   "directories to the header search path."),
-            default = False,
         ),
         "copts": attr.string_list(
             doc = """Options which are required to compile/index the sources.
@@ -736,7 +732,6 @@ def cc_extractor_test(
         restricted_to = restricted_to,
         testonly = True,
         opts = args,
-        add_toolchain_include_directories = True,
     )
     cc_index(
         name = name + "_entries",

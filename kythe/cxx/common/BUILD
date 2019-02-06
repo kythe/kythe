@@ -248,6 +248,7 @@ cc_library(
     name = "index_writer",
     srcs = ["index_writer.cc"],
     hdrs = ["index_writer.h"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":status_or",
         "//kythe/proto:analysis_cc_proto",

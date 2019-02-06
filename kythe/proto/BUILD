@@ -226,6 +226,7 @@ proto_library(
 
 cc_proto_library(
     name = "buildinfo_cc_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":buildinfo_proto"],
 )
 

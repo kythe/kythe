@@ -5,6 +5,8 @@ load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
 load("@io_bazel_rules_go//go:def.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
+load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
+load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 
 def _rule_dependencies():
     gazelle_dependencies()
@@ -159,6 +161,11 @@ def _cc_dependencies():
         url = "https://github.com/google/leveldb/archive/v1.20.zip",
     )
 
+    maybe(
+        git_llvm_repository,
+        name = "org_llvm",
+    )
+
 def _java_dependencies():
     maybe(
         # For @com_google_common_flogger
@@ -284,11 +291,11 @@ def _go_dependencies():
         go_repository,
         name = "com_github_golang_protobuf",
         build_file_proto_mode = "disable_global",
-        commit = "aa810b61a9c79d51363740d207bb46cf8e620ed5",
         custom = "protobuf",
         importpath = "github.com/golang/protobuf",
         patch_args = ["-p1"],
         patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
+        tag = "v1.2.0",
     )
 
     maybe(
@@ -310,9 +317,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_google_go_cmp",
-        commit = "5411ab924f9ffa6566244a9e504bc347edacffd3",
         custom = "cmp",
         importpath = "github.com/google/go-cmp",
+        tag = "v0.2.0",
     )
 
     maybe(
@@ -387,7 +394,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_net",
-        commit = "f73e4c9ed3b7ebdd5f699a16a880c2b1994e50dd",
+        commit = "d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf",
         custom = "x_net",
         custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
@@ -404,19 +411,19 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_bitbucket_creachadair_stringset",
-        commit = "e974a3c1694da0d5a14216ce46dbceef6a680978",
         custom = "stringset",
         custom_git = "https://bitbucket.org/creachadair/stringset.git",
         importpath = "bitbucket.org/creachadair/stringset",
+        tag = "v0.0.3",
     )
 
     maybe(
         go_repository,
         name = "org_bitbucket_creachadair_shell",
-        commit = "3dcd505a7ca5845388111724cc2e094581e92cc6",
         custom = "shell",
         custom_git = "https://bitbucket.org/creachadair/shell.git",
         importpath = "bitbucket.org/creachadair/shell",
+        tag = "v0.0.4",
     )
 
     maybe(
@@ -516,17 +523,17 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_datadog_zstd",
-        commit = "aebefd9fcb99f22cd691ef778a12ed68f0e6a1ab",
         custom = "zstd",
         importpath = "github.com/DataDog/zstd",
+        tag = "v1.3.5",
     )
 
     maybe(
         go_repository,
         name = "com_github_beevik_etree",
-        commit = "9d7e8feddccb4ed1b8afb54e368bd323d2ff652c",
         custom = "etree",
         importpath = "github.com/beevik/etree",
+        tag = "v1.1.0",
     )
 
     maybe(
@@ -648,8 +655,16 @@ def _bindings():
 def _kythe_contributions():
     git_repository(
         name = "io_kythe_lang_proto",
-        commit = "e96bdcb5b31e8cd212334f8665c81943aec82fe3",
+        commit = "bc7fc996b0f8a978a34ae66723d8c23c631c6746",
         remote = "https://github.com/kythe/lang-proto",
+    )
+
+def _sample_ui_dependencies():
+    """Defines external repositories necessary for building the sample UI."""
+    lein_repository(
+        name = "org_leiningen",
+        sha256 = "af77a8569238fb89272fdd46974c97383be126f19e709f1e7b1c5ffb9135e1d7",
+        version = "2.5.1",
     )
 
 def kythe_dependencies():
@@ -683,4 +698,5 @@ def kythe_dependencies():
     )
 
     _rule_dependencies()
+    _sample_ui_dependencies()
     _bindings()

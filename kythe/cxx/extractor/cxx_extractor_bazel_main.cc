@@ -31,6 +31,9 @@
 
 #include "cxx_extractor.h"
 
+DEFINE_string(build_config, "",
+              "Human readable description of the build configuration.");
+
 static void LoadExtraAction(const std::string& path,
                             blaze::ExtraActionInfo* info,
                             blaze::CppCompileInfo* cpp_info) {
@@ -50,6 +53,7 @@ int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.1");
+  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
   if (argc != 4) {
     fprintf(stderr, "Call as %s extra-action-file output-file vname-config\n",
             argv[0]);
@@ -76,6 +80,7 @@ int main(int argc, char* argv[]) {
   config.SetArgs(args);
   config.SetVNameConfig(vname_config);
   config.SetTargetName(info.owner());
+  config.SetBuildConfig(FLAGS_build_config);
   config.SetCompilationOutputPath(cpp_info.output_file());
   config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();

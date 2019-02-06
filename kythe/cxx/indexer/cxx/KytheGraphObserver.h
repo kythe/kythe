@@ -137,14 +137,17 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
 /// discovered during indexing to the provided `KytheGraphRecorder`.
 class KytheGraphObserver : public GraphObserver {
  public:
-  KytheGraphObserver(KytheGraphRecorder* recorder, KytheClaimClient* client,
-                     const MetadataSupports* meta_supports,
-                     const llvm::IntrusiveRefCntPtr<IndexVFS>& vfs,
-                     ProfilingCallback ReportProfileEventCallback)
+  explicit KytheGraphObserver(KytheGraphRecorder* recorder,
+                              KytheClaimClient* client,
+                              const MetadataSupports* meta_supports,
+                              const llvm::IntrusiveRefCntPtr<IndexVFS>& vfs,
+                              ProfilingCallback ReportProfileEventCallback,
+                              std::string build_config = "")
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
-        vfs_(vfs) {
+        vfs_(vfs),
+        build_config_(std::move(build_config)) {
     default_token_.set_rough_claimed(true);
     type_token_.set_rough_claimed(true);
     ReportProfileEvent = std::move(ReportProfileEventCallback);
@@ -602,6 +605,8 @@ class KytheGraphObserver : public GraphObserver {
   KytheClaimToken default_token_;
   /// The claim token to use for structural types.
   KytheClaimToken type_token_;
+  /// Name of the platform or build configuration to emit on anchors.
+  const std::string build_config_;
   /// Information about builtin nodes.
   struct Builtin {
     /// This Builtin's NodeId.

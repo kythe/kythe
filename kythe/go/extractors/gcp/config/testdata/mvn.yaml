@@ -3,14 +3,14 @@ artifacts:
     location: gs://${_OUTPUT_GS_BUCKET}/
     paths:
     - /workspace/out/javac-extractor.err
-    - /workspace/out/${_OUTPUT_KZIP_NAME}
+    - /workspace/out/${_CORPUS}-${_VERSION}.kzip
 steps:
 - args:
   - clone
-  - ${_REPO_NAME}
+  - ${_REPO}
   - /workspace/code
-  id: CLONE
   name: gcr.io/cloud-builders/git
+  id: CLONE
   waitFor:
   - '-'
 - args:
@@ -26,8 +26,14 @@ steps:
   waitFor:
   - '-'
 - args:
+  - /workspace/code/pom.xml
+  name: gcr.io/kythe-public/build-preprocessor
+  waitFor:
+    - CLONE
+- args:
   - clean
   - compile
+  - test-compile
   - -X
   - -f
   - /workspace/code/pom.xml
@@ -37,7 +43,6 @@ steps:
   env:
   - KYTHE_CORPUS=${_CORPUS}
   - KYTHE_OUTPUT_DIRECTORY=/workspace/out
-  - KYTHE_OUTPUT_FILE=/workspace/out/${_OUTPUT_KZIP_NAME}
   - KYTHE_ROOT_DIRECTORY=/workspace/code
   - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
   - REAL_JAVAC=/usr/bin/javac
@@ -47,3 +52,8 @@ steps:
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
+- args:
+  - -c
+  - /opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip /workspace/out/*.kzip
+  entrypoint: bash
+  name: gcr.io/kythe-public/kzip-tools

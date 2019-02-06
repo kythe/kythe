@@ -314,7 +314,12 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 			return nil, fmt.Errorf("missing vname for %q", fpath)
 		}
 
-		ipath := vnameToImport(ri.VName, details.GetGoroot())
+		var ipath string
+		if info := goPackageInfo(ri.Details); info != nil {
+			ipath = info.ImportPath
+		} else {
+			ipath = govname.ImportPath(ri.VName, details.GetGoroot())
+		}
 		imap[ipath] = ri.VName
 		fmap[ipath] = ri.Info
 	}
@@ -334,7 +339,6 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,
-		ImportPath:   vnameToImport(unit.VName, details.GetGoroot()),
 		FileSet:      fset,
 		Files:        files,
 		Info:         opts.info(),
@@ -349,6 +353,11 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		fileVName:   filev,
 		fileLoc:     floc,
 		details:     details,
+	}
+	if info := goPackageInfo(unit.Details); info != nil {
+		pi.ImportPath = info.ImportPath
+	} else {
+		pi.ImportPath = govname.ImportPath(unit.VName, details.GetGoroot())
 	}
 
 	// If mapping rules were found, populate the corresponding field.
@@ -943,7 +952,7 @@ func (pi *PackageInfo) findFieldName(expr ast.Expr) (id *ast.Ident, ok bool) {
 // importPath returns the import path of pkg.
 func (pi *PackageInfo) importPath(pkg *types.Package) string {
 	if v := pi.PackageVName[pkg]; v != nil {
-		return vnameToImport(v, pi.details.GetGoroot())
+		return govname.ImportPath(v, pi.details.GetGoroot())
 	}
 	return pkg.Name()
 }
@@ -958,44 +967,6 @@ func (pi *PackageInfo) isPackageInit(fi *funcInfo) bool {
 	return false
 }
 
-// vnameToImport returns the putative Go import path corresponding to v.  The
-// resulting string corresponds to the string literal appearing in source at
-// the import site for the package so named.
-func vnameToImport(v *spb.VName, goRoot string) string {
-	if govname.IsStandardLibrary(v) || (goRoot != "" && v.Root == goRoot) {
-		return v.Path
-	}
-
-	trimmed := strings.TrimSuffix(v.Path, filepath.Ext(v.Path))
-	if tail, ok := rootRelative(goRoot, trimmed); ok {
-		// Paths under a nonempty GOROOT are treated as if they were standard
-		// library packages even if they are not labelled as "golang.org", so
-		// that nonstandard install locations will work sensibly.
-		return tail
-	}
-	return filepath.Join(v.Corpus, trimmed)
-}
-
-// rootRelative reports whether path has the form
-//
-//     root[/pkg/os_arch/]tail
-//
-// and if so, returns the tail. It returns path, false if path does not have
-// this form.
-func rootRelative(root, path string) (string, bool) {
-	trimmed := strings.TrimPrefix(path, root+"/")
-	if root == "" || trimmed == path {
-		return path, false
-	}
-	if tail := strings.TrimPrefix(trimmed, "pkg/"); tail != trimmed {
-		parts := strings.SplitN(tail, "/", 2)
-		if len(parts) == 2 && strings.Contains(parts[0], "_") {
-			return parts[1], true
-		}
-	}
-	return trimmed, true
-}
-
 // goDetails returns the GoDetails message attached to unit, if there is one;
 // otherwise it returns nil.
 func goDetails(unit *apb.CompilationUnit) *gopb.GoDetails {
@@ -1003,6 +974,18 @@ func goDetails(unit *apb.CompilationUnit) *gopb.GoDetails {
 		var dets gopb.GoDetails
 		if err := ptypes.UnmarshalAny(msg, &dets); err == nil {
 			return &dets
+		}
+	}
+	return nil
+}
+
+// goPackageInfo returns the GoPackageInfo message within the given slice, if
+// there is one; otherwise it returns nil.
+func goPackageInfo(details []*ptypes.Any) *gopb.GoPackageInfo {
+	for _, msg := range details {
+		var info gopb.GoPackageInfo
+		if err := ptypes.UnmarshalAny(msg, &info); err == nil {
+			return &info
 		}
 	}
 	return nil

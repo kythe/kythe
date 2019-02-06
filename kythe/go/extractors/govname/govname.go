@@ -20,6 +20,7 @@ package govname
 
 import (
 	"go/build"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/vcs"
@@ -42,9 +43,9 @@ type PackageVNameOptions struct {
 	// cannot otherwise be resolved to a corpus.
 	DefaultCorpus string
 
-	// CanonicalizePackageCorpus determines whether a package's corpus name s
+	// CanonicalizePackageCorpus determines whether a package's corpus name is
 	// canonicalized as its VCS repository root URL rather than the Go import path
-	// corresponding the the VCS repository root.
+	// corresponding to the VCS repository root.
 	CanonicalizePackageCorpus bool
 }
 
@@ -90,8 +91,7 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 	v := &spb.VName{Language: Language, Signature: packageSig}
 
 	// Attempt to resolve the package's repository root as its corpus.
-	if r, err := vcs.RepoRootForImportPath(ip, false); err == nil {
-		// TODO cache by root
+	if r, err := RepoRoot(ip); err == nil {
 		v.Path = strings.TrimPrefix(strings.TrimPrefix(ip, r.Root), "/")
 		if opts != nil && opts.CanonicalizePackageCorpus {
 			// Use the canonical repository URL as the corpus.
@@ -151,4 +151,96 @@ func ForStandardLibrary(importPath string) *spb.VName {
 // extension repositories.  If v == nil, the answer is false.
 func IsStandardLibrary(v *spb.VName) bool {
 	return v != nil && (v.Language == "go" || v.Language == "") && v.Corpus == golangCorpus
+}
+
+// ImportPath returns the putative Go import path corresponding to v.  The
+// resulting string corresponds to the string literal appearing in source at the
+// import site for the package so named.
+func ImportPath(v *spb.VName, goRoot string) string {
+	if IsStandardLibrary(v) || (goRoot != "" && v.Root == goRoot) {
+		return v.Path
+	}
+
+	trimmed := strings.TrimSuffix(v.Path, filepath.Ext(v.Path))
+	if tail, ok := rootRelative(goRoot, trimmed); ok {
+		// Paths under a nonempty GOROOT are treated as if they were standard
+		// library packages even if they are not labelled as "golang.org", so
+		// that nonstandard install locations will work sensibly.
+		return tail
+	}
+	return filepath.Join(v.Corpus, trimmed)
+}
+
+// rootRelative reports whether path has the form
+//
+//     root[/pkg/os_arch/]tail
+//
+// and if so, returns the tail. It returns path, false if path does not have
+// this form.
+func rootRelative(root, path string) (string, bool) {
+	trimmed := strings.TrimPrefix(path, root+"/")
+	if root == "" || trimmed == path {
+		return path, false
+	}
+	if tail := strings.TrimPrefix(trimmed, "pkg/"); tail != trimmed {
+		parts := strings.SplitN(tail, "/", 2)
+		if len(parts) == 2 && strings.Contains(parts[0], "_") {
+			return parts[1], true
+		}
+	}
+	return trimmed, true
+}
+
+// RepoRoot analyzes importPath to determine it's vcs.RepoRoot.
+func RepoRoot(importPath string) (*vcs.RepoRoot, error) {
+	if root := repoRootCache.lookup(strings.Split(importPath, "/")); root != nil {
+		return root, nil
+	}
+	r, err := vcs.RepoRootForImportPath(importPath, false)
+	if err != nil {
+		return nil, err
+	}
+	repoRootCache.add(strings.Split(r.Root, "/"), r)
+	return r, nil
+}
+
+var repoRootCache repoRootCacheNode
+
+// repoRootCacheNode is a prefix search tree node for *vcs.RepoRoots by their
+// root import path.
+type repoRootCacheNode struct {
+	root *vcs.RepoRoot
+
+	children map[string]*repoRootCacheNode
+}
+
+// add puts the given *vcs.RepoRoot into the prefix tree for the given path
+// components.
+func (n *repoRootCacheNode) add(components []string, r *vcs.RepoRoot) {
+	if len(components) == 0 {
+		n.root = r
+		return
+	}
+
+	if n.children == nil {
+		n.children = make(map[string]*repoRootCacheNode)
+	}
+	p := components[0]
+	c := n.children[p]
+	if c == nil {
+		c = &repoRootCacheNode{}
+		n.children[p] = c
+	}
+	c.add(components[1:], r)
+}
+
+// lookup returns the first known *vcs.RepoRoot for any prefix of the given path
+// components.  Returns nil if none match.
+func (n *repoRootCacheNode) lookup(components []string) *vcs.RepoRoot {
+	if n == nil {
+		return nil
+	} else if n.root != nil || len(components) == 0 {
+		return n.root
+	}
+	return n.children[components[0]].lookup(components[1:])
 }

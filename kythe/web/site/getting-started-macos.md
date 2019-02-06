@@ -23,6 +23,31 @@ softwareupdate --install Xcode
 {% endhighlight %}
 
 or by launching the App Store application and browsing to Develop → Xcode.
+Verify your installation by running the command:
+
+{% highlight bash %}
+$ xcodebuild -version
+{% endhighlight %}
+
+You should get something like this (though the numbers will vary):
+
+{% highlight bash %}
+Xcode 10.1
+Build version 10B61
+{% endhighlight %}
+
+If you get an error like this:
+
+{% highlight bash %}
+xcode-select: error: tool 'xcodebuild' requires Xcode, but active developer directory '/Library/Developer/CommandLineTools' is a command line tools instance
+{% endhighlight %}
+
+then the following command should fix it:
+
+{% highlight bash %}
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+{% endhighlight %}
+
 
 **Homebrew**: You will also need to install [Homebrew](https://brew.sh) (follow
 the link for instructions).  There are other ways to install packages, but the

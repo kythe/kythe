@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
@@ -116,10 +117,22 @@ func TestPomXML(t *testing.T) {
 	testcases := []struct {
 		inputFile          string
 		expectedOutputFile string
+
+		// Specify this if there is an error expected, and include some snippet
+		// of text from the expected error to make sure it's the right one.
+		// If there's no expected error, just leave it as empty string.
+		expectedErrorSnippet string
 	}{
-		{"modified-pom.xml", "modified-pom.xml"},
-		{"plain-pom.xml", "modified-pom.xml"},
-		{"other-pom.xml", "modified-pom.xml"},
+		{"modified-pom.xml", "modified-pom.xml", ""},
+		{"child-pom.xml", "child-pom.xml", ""},
+		{"plain-pom.xml", "modified-pom.xml", ""},
+		{"other-pom.xml", "modified-pom.xml", ""},
+		{"plugin-management-pom.xml", "plugin-management-pom.xml", ""},
+		{"plugin-management-missing-version-pom.xml", "", "missing maven-compiler-plugin version"},
+		{"plugin-management-wrong-plugin-version-pom.xml", "", "unsupported maven-compiler-plugin version: 2.9.0"},
+		{"modified-wrong-source-version-pom.xml", "", "unsupported source version: 1.6"},
+		{"modified-wrong-target-version-pom.xml", "", "unsupported target version: 1.6"},
+		{"modified-invalid-version-pom.xml", "", "unsupported target version: elephant"},
 	}
 
 	for _, tcase := range testcases {
@@ -147,15 +160,23 @@ func TestPomXML(t *testing.T) {
 			}
 
 			// Do the copy if necessary.
-			if err := PreProcessPomXML(tfName); err != nil {
-				t.Fatalf("modifying pom.xml %s: %v", tcase.inputFile, err)
-			}
-
-			// Compare results.
-			eq, diff := testutil.TrimmedEqual(mustReadBytes(t, tfName), mustReadBytes(t, getPath(t, tcase.expectedOutputFile)))
-			if !eq {
-				t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
-				t.Errorf("input: %s", mustReadBytes(t, tfName))
+			procErr := PreProcessPomXML(tfName)
+			if procErr != nil && tcase.expectedErrorSnippet == "" {
+				t.Fatalf("modifying pom.xml %s: %v", tcase.inputFile, procErr)
+			} else if tcase.expectedErrorSnippet != "" {
+				if procErr == nil {
+					t.Errorf("expected error with text '%s', but got no error", tcase.expectedErrorSnippet)
+				} else if !strings.Contains(procErr.Error(), tcase.expectedErrorSnippet) {
+					t.Errorf("expected error with text '%s', but got %q", tcase.expectedErrorSnippet, procErr)
+				}
+				// Expected error with correct text, passes.
+			} else {
+				// No expected error, compare results.
+				eq, diff := testutil.TrimmedEqual(mustReadBytes(t, tfName), mustReadBytes(t, getPath(t, tcase.expectedOutputFile)))
+				if !eq {
+					t.Errorf("Expected input file %s to be %s, but got diff %s", tcase.inputFile, tcase.expectedOutputFile, diff)
+					t.Errorf("input: %s", mustReadBytes(t, tfName))
+				}
 			}
 		})
 	}

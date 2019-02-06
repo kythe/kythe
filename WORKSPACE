@@ -26,10 +26,6 @@ load("//:external.bzl", "kythe_dependencies")
 
 kythe_dependencies()
 
-load("//tools/cpp:clang_configure.bzl", "clang_configure")
-
-clang_configure()
-
 load("//tools/build_rules/external_tools:external_tools_configure.bzl", "external_tools_configure")
 
 external_tools_configure()

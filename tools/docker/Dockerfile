@@ -35,7 +35,7 @@ RUN apt-get update && \
 
 RUN update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-ENV CLANG=/usr/bin/clang-3.6
+ENV CC=/usr/bin/clang-3.6
 
 # Bison
 RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison_2.3.dfsg-5_amd64.deb -O /tmp/bison_2.3.deb && \

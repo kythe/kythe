@@ -46,9 +46,35 @@ message DirectoryRequest {
 }
 
 message DirectoryReply {
-  // Set of tickets for each contained sub-directory's corpus, root, and path.
-  repeated string subdirectory = 1;
+  // The corpus of the requested directory.
+  string corpus = 3;
+  // The root of the requested directory.
+  string root = 4;
+  // The path of the requested directory.
+  string path = 5;
 
-  // Set of file tickets contained within this directory.
-  repeated string file = 2;
+  // Each known entry in the requested directory.  Each entry shares the above
+  // corpus, root, and path prefix.
+  repeated Entry entry = 6;
+
+  message Entry {
+    // The kind of entry.
+    Kind kind = 1;
+
+    // The basename of the entry within the directory.
+    string name = 2;
+
+    // TODO(schroederc): repeated string build_configuration = 3;
+  }
+  enum Kind {
+    UNKNOWN = 0;
+    FILE = 1;
+    DIRECTORY = 2;
+  }
+
+  // DEPRECATED: Set of tickets for each contained sub-directory's corpus, root,
+  // and path.
+  repeated string subdirectory = 1 [deprecated = true];
+  // DEPRECATED: Set of file tickets contained within this directory.
+  repeated string file = 2 [deprecated = true];
 }
