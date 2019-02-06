@@ -154,6 +154,11 @@ message DecorationsRequest {
 
   // What kind of snippets to return (or none).
   SnippetsKind snippets = 9;
+
+  // Set of build configurations with which to filter decorations.  If empty,
+  // no filtering based on build configs will be done; all decorations for the
+  // file will be returned.
+  repeated string build_config = 11;
 }
 
 message DecorationsReply {
@@ -178,6 +183,9 @@ message DecorationsReply {
 
     // The reference's span within the source file.
     common.Span span = 5;
+
+    // The build config of the file containing this reference.
+    string build_config = 6;
 
     reserved 1, 10, 11;
   }
@@ -216,6 +224,7 @@ message DecorationsReply {
 
   // If requested, a list of diagnostics applying to the requested file
   // location.
+  // TODO(schroederc): filter spanning diagnostics by build configuration
   repeated common.Diagnostic diagnostic = 5;
 
   // This field will contain one entry, keyed by ticket, for each distinct node
