@@ -215,6 +215,7 @@ DEF_TRAVERSE_TYPEPAIR(FunctionProtoType, {
   if (!getDerived().TraverseTypePair(TL.getReturnLoc(), T->getReturnType())) {
     return false;
   }
+  T = TL.getTypePtr();  // Use TL for the remainder.
   for (unsigned I = 0, E = TL.getNumParams(); I != E; ++I) {
     if (auto P = TL.getParam(I)) {
       if (!getDerived().TraverseDecl(P)) {
@@ -245,29 +246,104 @@ DEF_TRAVERSE_TYPEPAIR(TypeOfType, {
   return getDerived().TraverseTypePair(TL.getUnderlyingTInfo()->getTypeLoc(),
                                        T->getUnderlyingType());
 });
-DEF_TRAVERSE_TYPEPAIR(DecltypeType, {});
-DEF_TRAVERSE_TYPEPAIR(UnaryTransformType, {});
-DEF_TRAVERSE_TYPEPAIR(AutoType, {});
-DEF_TRAVERSE_TYPEPAIR(DeducedTemplateSpecializationType, {});
+DEF_TRAVERSE_TYPEPAIR(DecltypeType, {
+  return getDerived().TraverseStmt(TL.getUnderlyingExpr());
+});
+DEF_TRAVERSE_TYPEPAIR(UnaryTransformType, {
+  return getDerived().TraverseTypePair(TL.getUnderlyingTInfo()->getTypeLoc(),
+                                       T->getUnderlyingType());
+});
+DEF_TRAVERSE_TYPEPAIR(AutoType, {
+  return getDerived().TraverseType(TL.getDeducedType());
+});
+DEF_TRAVERSE_TYPEPAIR(DeducedTemplateSpecializationType, {
+  return getDerived().TraverseTemplateName(TL.getTemplateName()) &&
+         getDerived().TraverseType(TL.getDeducedType());
+});
 DEF_TRAVERSE_TYPEPAIR(RecordType, {});
 DEF_TRAVERSE_TYPEPAIR(EnumType, {});
 DEF_TRAVERSE_TYPEPAIR(TemplateTypeParmType, {});
-DEF_TRAVERSE_TYPEPAIR(SubstTemplateTypeParmType, {});
-DEF_TRAVERSE_TYPEPAIR(SubstTemplateTypeParmPackType, {});
-DEF_TRAVERSE_TYPEPAIR(TemplateSpecializationType, {});
+DEF_TRAVERSE_TYPEPAIR(SubstTemplateTypeParmType, {
+  return getDerived().TraverseType(TL.getTypePtr()->getReplacementType());
+});
+DEF_TRAVERSE_TYPEPAIR(SubstTemplateTypeParmPackType, {
+  return getDerived().TraverseTemplateArgument(
+      TL.getTypePtr()->getArgumentPack());
+});
+DEF_TRAVERSE_TYPEPAIR(TemplateSpecializationType, {
+  if (!getDerived().TraverseTemplateName(TL.getTypePtr()->getTemplateName())) {
+    return false;
+  }
+  for (unsigned I = 0, E = TL.getNumArgs(); I != E; ++I) {
+    if (!getDerived().TraverseTemplateArgumentLoc(TL.getArgLoc(I))) {
+      return false;
+    }
+  }
+  return true;
+});
 DEF_TRAVERSE_TYPEPAIR(InjectedClassNameType, {});
-DEF_TRAVERSE_TYPEPAIR(ParenType, {});
-DEF_TRAVERSE_TYPEPAIR(AttributedType, {});
-DEF_TRAVERSE_TYPEPAIR(ElaboratedType, {});
-DEF_TRAVERSE_TYPEPAIR(DependentNameType, {});
-DEF_TRAVERSE_TYPEPAIR(DependentTemplateSpecializationType, {});
-DEF_TRAVERSE_TYPEPAIR(PackExpansionType, {});
+DEF_TRAVERSE_TYPEPAIR(ParenType, {
+  return getDerived().TraverseTypePair(TL.getInnerLoc(), T->getInnerType());
+});
+DEF_TRAVERSE_TYPEPAIR(AttributedType, {
+  return getDerived().TraverseTypePair(TL.getModifiedLoc(),
+                                       T->getModifiedType());
+});
+DEF_TRAVERSE_TYPEPAIR(ElaboratedType, {
+  if (auto QL = TL.getQualifierLoc()) {
+    if (!getDerived().TraverseNestedNameSpecifierLoc(QL)) {
+      return false;
+    }
+  }
+  return getDerived().TraverseTypePair(TL.getNamedTypeLoc(), T->getNamedType());
+});
+DEF_TRAVERSE_TYPEPAIR(DependentNameType, {
+  return getDerived().TraverseNestedNameSpecifierLoc(TL.getQualifierLoc());
+});
+DEF_TRAVERSE_TYPEPAIR(DependentTemplateSpecializationType, {
+  if (auto QL = TL.getQualifierLoc()) {
+    if (!getDerived().TraverseNestedNameSpecifierLoc(QL)) {
+      return false;
+    }
+  }
+  for (unsigned I, E = TL.getNumArgs(); I != E; ++I) {
+    if (!getDerived().TraverseTemplateArgumentLoc(TL.getArgLoc(I))) {
+      return false;
+    }
+  }
+  return true;
+});
+DEF_TRAVERSE_TYPEPAIR(PackExpansionType, {
+  return getDerived().TraverseTypePair(TL.getPatternLoc(), T->getPattern());
+});
 DEF_TRAVERSE_TYPEPAIR(ObjCTypeParamType, {});
 DEF_TRAVERSE_TYPEPAIR(ObjCInterfaceType, {});
-DEF_TRAVERSE_TYPEPAIR(ObjCObjectType, {});
-DEF_TRAVERSE_TYPEPAIR(ObjCObjectPointerType, {});
-DEF_TRAVERSE_TYPEPAIR(AtomicType, {});
-DEF_TRAVERSE_TYPEPAIR(PipeType, {});
+DEF_TRAVERSE_TYPEPAIR(ObjCObjectType, {
+  if (TL.getTypePtr()->getBaseType().getTypePtr() != TL.getTypePtr()) {
+    if (!getDerived().TraverseTypePair(TL.getBaseLoc(), T->getBaseType())) {
+      return false;
+    }
+  }
+
+  auto TypeArgs = T->getTypeArgs();
+  for (unsigned I = 0, E = std::min(TL.getNumTypeArgs(), TypeArgs.size());
+       I != E; ++I) {
+    if (!getDerived().TraverseTypePair(TL.getTypeArgTInfo(I)->getTypeLoc(),
+                                       TypeArgs[I])) {
+      return false;
+    }
+  }
+  return true;
+});
+DEF_TRAVERSE_TYPEPAIR(ObjCObjectPointerType, {
+  return getDerived().TraverseTypePair(TL.getPointeeLoc(), T->getPointeeType());
+});
+DEF_TRAVERSE_TYPEPAIR(AtomicType, {
+  return getDerived().TraverseTypePair(TL.getValueLoc(), T->getValueType());
+});
+DEF_TRAVERSE_TYPEPAIR(PipeType, {
+  return getDerived().TraverseTypePair(TL.getValueLow(), T->getValueType());
+});
 
 #undef DEF_TRAVERSE_TYPEPAIR
 
