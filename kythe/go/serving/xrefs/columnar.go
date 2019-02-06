@@ -124,6 +124,7 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 	var norm *span.Normalizer                                          // span normalizer for references
 	refsByTarget := make(map[string][]*xpb.DecorationsReply_Reference) // target -> set<Reference>
 	defs := stringset.New()                                            // set<needed definition tickets>
+	buildConfigs := stringset.New(req.BuildConfig...)
 	patterns := xrefs.ConvertFilters(req.Filter)
 	emitSnippets := req.Snippets != xpb.SnippetsKind_NONE
 
@@ -168,12 +169,17 @@ func (c *ColumnarTable) Decorations(ctx context.Context, req *xpb.DecorationsReq
 				continue
 			}
 			t := e.Target
+			// Filter decorations by requested build configs.
+			if len(buildConfigs) != 0 && !buildConfigs.Contains(t.BuildConfig) {
+				continue
+			}
 			kind := t.GetGenericKind()
 			if kind == "" {
 				kind = schema.EdgeKindString(t.GetKytheKind())
 			}
 			ref := &xpb.DecorationsReply_Reference{
 				TargetTicket: kytheuri.ToString(t.Target),
+				BuildConfig:  t.BuildConfig,
 				Kind:         kind,
 				Span:         norm.SpanOffsets(t.StartOffset, t.EndOffset),
 			}
