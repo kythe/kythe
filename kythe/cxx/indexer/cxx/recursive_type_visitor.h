@@ -58,12 +58,10 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
     return getDerived().TraverseType(Decl->getType());
   }
 
+  // Intercept calls to TraverseTypeLoc so that they are dispatched
+  // via TraverseTypePair.
   bool TraverseTypeLoc(clang::TypeLoc TL) {
-    if (!decl_stack_.empty() &&
-        decl_stack_.back()->getTypeSourceInfo()->getTypeLoc() == TL) {
-      return getDerived().TraverseTypePair(TL, decl_stack_.back()->getType());
-    }
-    return getDerived().TraverseTypePair(TL, TL.getType());
+    return getDerived().TraverseTypePair(TL, InterceptResolvedType(TL));
   }
 
   /// Recursively vist a type-as-written with location in parallel
@@ -100,11 +98,31 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
   }                                                               \
   bool Visit##CLASS##TypePair(clang::CLASS##TypeLoc TL,           \
                               const clang::CLASS##Type* T) {      \
-    return true;                                                  \
+    return getDerived().Visit##CLASS##TypeLoc(TL);                \
   }
 #include "clang/AST/TypeNodes.def"
 
  private:
+  bool ShouldInterceptTypeLoc(clang::TypeLoc TL) const {
+    if (decl_stack_.empty()) {
+      return false;
+    }
+    if (decl_stack_.back() == nullptr) {
+      return false;
+    }
+    if (decl_stack_.back()->getTypeSourceInfo() == nullptr) {
+      return false;
+    }
+    return decl_stack_.back()->getTypeSourceInfo()->getTypeLoc() == TL;
+  }
+
+  clang::QualType InterceptResolvedType(clang::TypeLoc TL) const {
+    if (ShouldInterceptTypeLoc(TL)) {
+      return decl_stack_.back()->getType();
+    }
+    return TL.getType();
+  }
+
 #define ABSTRACT_TYPE(CLASS, BASE)
 #define TYPE(CLASS, BASE)                                                   \
   bool Traverse##CLASS##TypePairHelper(clang::CLASS##TypeLoc TL,            \

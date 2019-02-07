@@ -272,6 +272,7 @@ const clang::Decl* FindImplicitDeclForStmt(
 
 // Calls tsi->overrideType(new_type) and restores the current type upon
 // destruction.
+// TODO(shahms): Remove this.
 class ScopedTypeOverride {
  public:
   explicit ScopedTypeOverride(clang::TypeSourceInfo* tsi,
@@ -1101,8 +1102,7 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
 
   // This is a dirty, dirty hack to allow other parts of the code to more
   // cleanly handle deduced types, but should *only* be done for deduced types.
-  // TODO(shahms): Remove this when it's fixed upstream.
-  //   Or replace it with the properly deduced type.
+  // TODO(shahms): Remove this in favor of the TypePair traversal.
   absl::optional<ScopedTypeOverride> type_override;
   if (auto* D = dyn_cast<clang::DeclaratorDecl>(Decl)) {
     if (auto* TSI = D->getTypeSourceInfo()) {
@@ -1818,8 +1818,9 @@ bool IndexerASTVisitor::VisitDeducedTemplateSpecializationTypeLoc(
   return VisitTemplateSpecializationTypeLocHelper(TL);
 }
 
-bool IndexerASTVisitor::VisitAutoTypeLoc(clang::AutoTypeLoc TL) {
-  RecordTypeLocSpellingLocation(TL);
+bool IndexerASTVisitor::VisitAutoTypePair(clang::AutoTypeLoc TL,
+                                          const clang::AutoType* T) {
+  RecordTypeLocSpellingLocation(TL, T);
   return true;
 }
 
@@ -1953,9 +1954,17 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
   return true;
 }
 
-NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
-  if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
-    if (auto Nodes = BuildNodeSetForType(TL)) {
+bool IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
+  return RecordTypeLocSpellingLocation(TL, TL.getTypePtr());
+}
+
+bool IndexerASTVisitor::RecordTypeLocSpellingLocation(
+    clang::TypeLoc Written, const clang::Type* Resolved) {
+  if (auto RCC = ExpandedRangeInCurrentContext(Written.getSourceRange())) {
+    // TODO(shahms): This is correct, except the nested use of EmitRanges causes
+    // problems.
+    // if (auto Nodes = BuildNodeSetForType(Resolved)) {
+    if (auto Nodes = BuildNodeSetForType(Written)) {
       Observer.recordTypeSpellingLocation(
           *RCC, Nodes.ForReference(), Nodes.claimability(), IsImplicit(*RCC));
       return Nodes;
@@ -3267,7 +3276,8 @@ bool IndexerASTVisitor::VisitUsingShadowDecl(
 void IndexerASTVisitor::AscribeSpelledType(
     const clang::TypeLoc& Type, const clang::QualType& TrueType,
     const GraphObserver::NodeId& AscribeTo) {
-  if (auto TyNodeId = BuildNodeIdForType(Type)) {
+  // TODO(shahms): use the true type for the node id.
+  if (auto TyNodeId = BuildNodeIdForType(/*True*/ Type)) {
     Observer.recordTypeEdge(AscribeTo, *TyNodeId);
   }
 }
@@ -4231,7 +4241,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForPointer(clang::PointerTypeLoc TL) {
 NodeSet IndexerASTVisitor::BuildNodeSetForMemberPointer(
     clang::MemberPointerTypeLoc TL) {
   if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    if (auto ClassID = BuildNodeIdForType(clang::QualType(TL.getClass(), 0))) {
+    if (auto ClassID = BuildNodeIdForType(TL.getClass())) {
       auto tapp = Observer.getNodeIdForBuiltinType("mptr");
       return Observer.recordTappNode(tapp, {*PointeeID, *ClassID});
     }
@@ -4540,6 +4550,15 @@ absl::optional<NodeId> IndexerASTVisitor::BuildNodeIdForType(
 absl::optional<NodeId> IndexerASTVisitor::BuildNodeIdForType(
     const clang::QualType& QT) {
   return BuildNodeSetForType(QT).AsOptional();
+}
+
+absl::optional<NodeId> IndexerASTVisitor::BuildNodeIdForType(
+    const clang::Type* Type) {
+  return BuildNodeSetForType(Type).AsOptional();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::Type* T) {
+  return BuildNodeSetForType(clang::QualType(T, 0));
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::QualType& QT) {
