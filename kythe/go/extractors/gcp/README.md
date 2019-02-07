@@ -157,12 +157,10 @@ Created from
 this image contains a full install of Kythe repo itself, along with a bazel
 builder.  In addition to building inside Google Cloud Build itself, you can also
 use this image for testing locally if you are having a hard time getting Kythe
-installed properly.  The clang/llvm setup from `tools/modules/update.sh` is
-already done, so arbitrary `bazel build //kythe/...` commands should work out of
-the box in this image.
+installed properly.
 
-Note because it includes a full install of kythe, bazel, llvm, and clang, this
-image is quite large.
+Note because it includes a full install of kythe and bazel this image is quite
+large.
 
 ### gcr.io/kythe-public/build-preprocessor
 
