@@ -16,7 +16,7 @@
 
 package com.google.devtools.kythe.platform.java.helpers;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.sun.tools.javac.code.Scope;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
@@ -27,6 +27,7 @@ import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Names;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,9 +58,9 @@ public class JavacUtil {
     // method override in each tree is considered DIRECT with the rest being INDIRECT.
     for (Type directSuperType : types.directSupertypes(owner.type)) {
       boolean direct = true;
-      List<Type> superTypes = Lists.newArrayList(directSuperType);
+      List<Type> superTypes = ImmutableList.of(directSuperType);
       while (!superTypes.isEmpty()) {
-        List<Type> nextLevel = Lists.newArrayList();
+        List<Type> nextLevel = new ArrayList<>();
         for (Type superType : superTypes) {
           nextLevel.addAll(types.directSupertypes(superType));
           Scope scope = superType.tsym.members();

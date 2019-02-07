@@ -84,7 +84,7 @@ public class JavaExtractor {
     List<String> sourcepaths = jInfo.getSourcepathList();
 
     if (!sourcepaths.isEmpty()) {
-      List<String> updatedSourcepaths = Lists.newArrayList();
+      List<String> updatedSourcepaths = new ArrayList<>();
       for (String sourcepath : sourcepaths) {
         // Support source jars like proto compilation outputs.
         if (sourcepath.endsWith(".jar") || sourcepath.endsWith(".srcjar")) {
@@ -174,7 +174,7 @@ public class JavaExtractor {
   /** Unzips specified zipFile to targetDirectory and returns a list of the unzipped files. */
   private static List<String> unzipFile(final ZipFile zipFile, File targetDirectory)
       throws IOException {
-    List<String> files = Lists.newArrayList();
+    List<String> files = new ArrayList<>();
     try {
       Enumeration<? extends ZipEntry> entries = zipFile.entries();
       // Zip Slip fix courtesy of snyk.io/research/zip-slip-vulnerability.

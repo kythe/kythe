@@ -16,7 +16,7 @@
 
 package com.google.devtools.kythe.platform.shared;
 
-import com.google.common.collect.Lists;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,7 +24,7 @@ import java.util.List;
  * used.
  */
 public class MetadataLoaders implements MetadataLoader {
-  private final List<MetadataLoader> loaders = Lists.newArrayList();
+  private final List<MetadataLoader> loaders = new ArrayList<>();
 
   /**
    * Try using the given MetadataLoader to load data.

@@ -707,7 +707,7 @@ public class JavaCompilationUnitExtractor {
 
       ClassLoader loader = processingClassloader(classpath, processorpath);
 
-      List<Processor> procs = Lists.newArrayList();
+      List<Processor> procs = new ArrayList<>();
 
       // Add any processors passed as flags.
       for (String processor : processors) {
@@ -823,7 +823,7 @@ public class JavaCompilationUnitExtractor {
       options.add(flag);
       options.add(joined);
       try {
-        List<File> files = Lists.newArrayList();
+        List<File> files = new ArrayList<>();
         for (String elt : searchpath) {
           files.add(new File(elt));
         }
