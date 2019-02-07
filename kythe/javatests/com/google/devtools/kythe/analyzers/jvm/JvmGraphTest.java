@@ -18,7 +18,7 @@ package com.google.devtools.kythe.analyzers.jvm;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type;
 import junit.framework.TestCase;
 
@@ -33,9 +33,9 @@ public final class JvmGraphTest extends TestCase {
     assertThat(Type.booleanType().toString()).isEqualTo("Z");
     assertThat(Type.byteType().toString()).isEqualTo("B");
     assertThat(Type.arrayType(objectType).toString()).isEqualTo("[Ljava/lang/Object;");
-    assertThat(Type.methodType(Lists.newArrayList(), Type.voidType()).toString()).isEqualTo("()V");
+    assertThat(Type.methodType(ImmutableList.of(), Type.voidType()).toString()).isEqualTo("()V");
     assertThat(
-            Type.methodType(Lists.newArrayList(objectType, Type.booleanType()), objectType)
+            Type.methodType(ImmutableList.of(objectType, Type.booleanType()), objectType)
                 .toString())
         .isEqualTo("(Ljava/lang/Object;Z)Ljava/lang/Object;");
   }

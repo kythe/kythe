@@ -210,7 +210,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       docScanner = new KytheDocTreeScanner(this, javaContext);
     }
     TreeContext ctx = new TreeContext(filePositions, compilation);
-    metadata = Lists.newArrayList();
+    metadata = new ArrayList<>();
 
     EntrySet fileNode = entrySets.newFileNodeAndEmit(filePositions);
 
@@ -901,8 +901,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           MiniAnchor.bracket(
               comment.text.replaceFirst("^(//|/\\*) ?", "").replaceFirst(" ?\\*/$", ""),
               pos -> pos,
-              Lists.newArrayList());
-      emitDoc(DocKind.LINE, bracketed, Lists.newArrayList(), node, null);
+              new ArrayList<>());
+      emitDoc(DocKind.LINE, bracketed, new ArrayList<>(), node, null);
     }
     return !lst.isEmpty();
   }
@@ -1161,7 +1161,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   void emitDoc(
       DocKind kind, String bracketedText, Iterable<Symbol> params, VName node, VName absNode) {
-    List<VName> paramNodes = Lists.newArrayList();
+    List<VName> paramNodes = new ArrayList<>();
     for (Symbol s : params) {
       VName paramNode = getNode(s);
       if (paramNode == null) {
