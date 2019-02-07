@@ -22,6 +22,7 @@ extractors, and tools directly supported by the Kythe team.
    - go_extractor             :: Go extractor
    - javac-wrapper.sh         :: javac wrapper script for extractor
    - javac_extractor.jar      :: Java extractor
+   - extract_kzip             :: Generic kzip extractor
  - proto                      :: Protocol buffer definitions of public APIs
  - tools
    - dedup_stream             :: Removes duplicates entries from a delimited stream

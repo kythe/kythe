@@ -36,6 +36,7 @@ genrule(
         ":javac_wrapper",
         ":cxx_extractor",
         ":go_extractor",
+        ":extract_kzip",
         ":java_indexer",
         ":jvm_indexer",
         ":cxx_indexer",
@@ -71,6 +72,7 @@ genrule(
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--cp $(location go_extractor) extractors/go_extractor",
+        "--cp $(location extract_kzip) extractors/extract_kzip",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
         "--relpaths kythe/web/ui/resources/public",
@@ -158,6 +160,11 @@ filegroup(
 filegroup(
     name = "bazel_proto_extractor",
     srcs = ["@io_kythe_lang_proto//kythe/go/extractors/proto:extract_proto_kzip"],
+)
+
+filegroup(
+    name = "extract_kzip",
+    srcs = ["//kythe/go/extractors/cmd/bazel:extract_kzip"],
 )
 
 filegroup(
