@@ -1,7 +1,7 @@
 // We index recurring base classes.
 // TODO(zarko): below, consider making
 //   ClassB extends/public InstAB
-// After T27 is finished, `specializes` will become
+// After #312 is finished, `specializes` will become
 // `instantiates`.
 //- @T defines/binding TyvarT
 template <typename T>
