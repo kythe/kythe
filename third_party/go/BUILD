@@ -18,6 +18,7 @@ filegroup(
         "@go_github//:LICENSE",
         "@go_google_api//:LICENSE",
         "@go_google_cloud//:LICENSE",
+        "@go_googleapis_gax//:LICENSE",
         "@go_grpc//:LICENSE",
         "@go_highwayhash//:LICENSE",
         "@go_jsonrpc2//:LICENSE",

@@ -385,10 +385,10 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_text",
-        commit = "7922cc490dd5a7dbaa7fd5d6196b49db59ac042f",
         custom = "x_text",
         custom_git = "https://github.com/golang/text.git",
         importpath = "golang.org/x/text",
+        tag = "v0.3.0",
     )
 
     maybe(
@@ -437,16 +437,16 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_google_grpc",
-        commit = "d07538b1475ec5b0ac85319e4a6706b2d2d8cab7",
         custom = "grpc",
         custom_git = "https://github.com/grpc/grpc-go.git",
         importpath = "google.golang.org/grpc",
+        tag = "v1.16.0",
     )
 
     maybe(
         go_repository,
         name = "org_golang_x_oauth2",
-        commit = "cdc340f7c179dbbfa4afd43b7614e8fcadde4269",
+        commit = "d2e6202438beef2727060aa7cabdd924d92ebfd9",
         custom = "x_oauth2",
         custom_git = "https://github.com/golang/oauth2.git",
         importpath = "golang.org/x/oauth2",
@@ -464,9 +464,18 @@ def _go_dependencies():
         go_repository,
         name = "com_github_apache_beam",
         build_file_proto_mode = "disable",
-        commit = "f1a46474e4c13cab82322cda86f1793e56bea31d",
+        commit = "d0cb12b5af8bc54c5b8e68107d642886c996b3da",
         custom = "beam",
         importpath = "github.com/apache/beam",
+    )
+
+    maybe(
+        go_repository,
+        name = "com_github_googleapis_gax_go",
+        build_file_proto_mode = "disable",
+        commit = "ddfab93c3faef4935403ac75a7c11f0e731dc181",
+        custom = "googleapis_gax",
+        importpath = "github.com/googleapis/gax-go",
     )
 
     maybe(
@@ -481,10 +490,10 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_google_cloud_go",
-        commit = "01301d1df8060594708d76bda9062b0205b77e8b",
         custom = "google_cloud",
         custom_git = "https://github.com/GoogleCloudPlatform/google-cloud-go.git",
         importpath = "cloud.google.com/go",
+        tag = "v0.26.0",
     )
 
     maybe(
@@ -514,7 +523,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sys",
-        commit = "6c888cc515d3ed83fc103cf1d84468aad274b0a7",
+        commit = "49385e6e15226593f68b26af201feec29d5bba22",
         custom = "x_sys",
         custom_git = "https://github.com/golang/sys.git",
         importpath = "golang.org/x/sys",
