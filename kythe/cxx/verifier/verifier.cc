@@ -1169,7 +1169,7 @@ bool Verifier::PrepareDatabase() {
         EncodedIdentEqualTo(ta->element(3), tb->element(3)) &&
         !EncodedIdentEqualTo(ta->element(4), tb->element(4))) {
       if (EncodedIdentEqualTo(ta->element(3), code_id_)) {
-        // TODO(zarko): Add documentation for these new edges (T195).
+        // TODO(#1553): (closed?) Add documentation for these new edges.
         printer.Print(
             "Two /kythe/code facts about a node differed in value:\n  ");
         ta->element(0)->Dump(symbol_table_, &printer);

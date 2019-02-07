@@ -279,7 +279,7 @@ public class JavaEntrySets extends KytheEntrySets {
       case TYPE_PARAMETER:
         return NodeKind.ABS_VAR;
       default:
-        // TODO(T227): handle all cases, make this exceptional, and remove all null checks
+        // TODO(#1845): handle all cases, make this exceptional, and remove all null checks
         return null;
     }
   }

@@ -98,7 +98,7 @@ public class JavaFileStoreBasedFileManager
     matchedFiles.addAll(matchingFiles);
 
     if (location == StandardLocation.SOURCE_PATH) {
-      // XXX(T70): do not search the underlying file manager (and the local fs) for source files
+      // XXX(#818): do not search the underlying file manager (and the local fs) for source files
       return matchedFiles;
     }
 

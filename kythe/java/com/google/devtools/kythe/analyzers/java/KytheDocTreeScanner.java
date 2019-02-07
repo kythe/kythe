@@ -48,7 +48,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
   }
 
   public boolean visitDocComment(TreePath treePath, VName node, EntrySet absNode) {
-    // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
+    // TODO(#1501): always use absNode
     DCDocComment doc = (DCDocComment) trees.getDocCommentTree(treePath);
     if (doc == null) {
       return false;
