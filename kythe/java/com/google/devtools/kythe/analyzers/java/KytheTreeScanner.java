@@ -863,7 +863,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private boolean visitDocComment(VName node, EntrySet absNode) {
-    // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
+    // TODO(#1501): always use absNode
     return docScanner != null && docScanner.visitDocComment(treePath, node, absNode);
   }
 
@@ -914,7 +914,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   // TODO When we want to refer to a type or method that is generic, we need to point to the abs
   // node. The code currently does not have an easy way to access that node but this method might
   // offer a way to change that.
-  // See https://phabricator-dot-kythe-repo.appspot.com/T185 for more discussion and detail.
+  // See #1501 for more discussion and detail.
   /** Create an abs node if we have type variables or if we have wildcards. */
   private EntrySet defineTypeParameters(
       TreeContext ownerContext,
@@ -1171,7 +1171,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     EntrySet doc =
         entrySets.newDocAndEmit(kind.getDocSubkind(), filePositions, bracketedText, paramNodes);
-    // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
+    // TODO(#1501): always use absNode
     entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, node);
     if (absNode != null) {
       entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, absNode);

@@ -14,5 +14,5 @@ template <typename T> struct C { bool f(T* t) { return g(); } };
 //- TheCall=@"j->f(nullptr)" ref/call TUnaryAppAbsF
 //- @h defines/binding FnH
 //- TheCall childof FnH
-//- TUnaryAppAbsF param.0 AbsF  // Until we record the whole type context: T230
+//- TUnaryAppAbsF param.0 AbsF  // Until we record the whole type context: #1879
 bool h(C<int>* j) { return j->f(nullptr); }

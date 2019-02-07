@@ -1,7 +1,6 @@
 package pkg;
 
-// After https://phabricator-dot-kythe-repo.appspot.com/T185 is fixed,
-// only the abs nodes should have documents/code.
+// After #1501 is fixed, only the abs nodes should have documents/code.
 
 //- @+2GenericComments defines/binding GAbsClass
 /** C */

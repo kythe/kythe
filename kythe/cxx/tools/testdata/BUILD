@@ -44,7 +44,7 @@ shell_tool_test(
     },
 )
 
-# TODO(T270): requires declarations generated in pipeline
+# TODO(#2375): (closed?) requires declarations generated in pipeline
 # sh_test(
 #     name = "def_decl_test",
 #     srcs = ["def_decl_test.sh"],
