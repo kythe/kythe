@@ -28,15 +28,15 @@ release_version = "v0.0.29"
 genrule(
     name = "release",
     srcs = [
-        ":bazel_java_extractor",
         ":bazel_cxx_extractor",
+        ":bazel_extract_kzip",
         ":bazel_go_extractor",
+        ":bazel_java_extractor",
         ":bazel_proto_extractor",
         ":javac_extractor",
         ":javac_wrapper",
         ":cxx_extractor",
         ":go_extractor",
-        ":extract_kzip",
         ":java_indexer",
         ":jvm_indexer",
         ":cxx_indexer",
@@ -66,13 +66,13 @@ genrule(
         "--cp $(location proto_indexer) indexers/proto_indexer",
         "--cp $(location javac_extractor) extractors/javac_extractor.jar",
         "--cp $(location bazel_cxx_extractor) extractors/bazel_cxx_extractor",
-        "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
+        "--cp $(location bazel_extract_kzip) extractors/bazel_extract_kzip",
         "--cp $(location bazel_go_extractor) extractors/bazel_go_extractor",
+        "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
         "--cp $(location bazel_proto_extractor) extractors/bazel_proto_extractor",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--cp $(location go_extractor) extractors/go_extractor",
-        "--cp $(location extract_kzip) extractors/extract_kzip",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
         "--relpaths kythe/web/ui/resources/public",
@@ -163,7 +163,7 @@ filegroup(
 )
 
 filegroup(
-    name = "extract_kzip",
+    name = "bazel_extract_kzip",
     srcs = ["//kythe/go/extractors/cmd/bazel:extract_kzip"],
 )
 
