@@ -1,8 +1,5 @@
 # Release Notes
 
-## [Unreleased]
-Nothing to report yet.
-
 ## [v0.0.29] - 2018-10-29
 
 ### Added
