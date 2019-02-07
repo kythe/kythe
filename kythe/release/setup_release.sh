@@ -25,18 +25,19 @@
 #      This creates a new release branch with a single commit for the new
 #      release $VERSION and builds the optimized release archive.
 #      $ ./kythe/release/setup_release.sh
-#   2) Open a Pull Request for review
-#   3) "Draft a new release" at https://github.com/kythe/kythe/releases
-#   4) Set tag version / release title to the new $VERSION
-#   5) Set description to newest section of RELEASES.md
-#   6) Upload bazel-genfiles/kythe/release/kythe-$VERSION.tar.gz{,.sha256}
+#   2) Review and edit updated RELEASES.md log
+#   3) Open a Pull Request for review
+#   4) "Draft a new release" at https://github.com/kythe/kythe/releases
+#   5) Set tag version / release title to the new $VERSION
+#   6) Set description to newest section of RELEASES.md
+#   7) Upload bazel-genfiles/kythe/release/kythe-$VERSION.tar.gz{,.sha256}
 #      These files were generated in step 1.
-#   7) Mark as "pre-release" and "Save draft"
-#   8) Add draft release URL to Pull Request
-#   9) Merge Pull Request once it has been accepted
-#   10) Edit Github release draft to set the tag's commit as the freshly pushed
+#   8) Mark as "pre-release" and "Save draft"
+#   9) Add draft release URL to Pull Request
+#   10) Merge Pull Request once it has been accepted
+#   11) Edit Github release draft to set the tag's commit as the freshly pushed
 #       release commit
-#   11) "Publish release"
+#   12) "Publish release"
 
 cd "$(dirname $0)"/../..
 
