@@ -17,6 +17,9 @@
 # Marks a new release by incrementing the current version number, modifying both RELEASES.md and
 # kythe/release/BUILD, and creating a new local Git commit.
 
+# Dependencies:
+#   - https://github.com/clog-tool/clog-cli
+
 # Guide to creating a Github release:
 #   1) Run this script on the clean master commit to release
 #      This creates a new release branch with a single commit for the new
@@ -62,14 +65,23 @@ join() { local IFS="$1"; shift; echo "$*"; }
 version="v$(join . "${components[@]}")"
 echo "Marking release $version"
 
-sed -i "s/## \[Unreleased\]/## [$version] - $(date +%Y-%m-%d)/
-s/\[Unreleased\]/[$version]/
-s/HEAD/$version/
-3i ## [Unreleased]
-3i Nothing to report yet.
-3i
-/^\[$version\]/i \
-[Unreleased] https://github.com/kythe/kythe/compare/${version}...HEAD" RELEASES.md
+# Update RELEASES.md
+{
+  cat <<EOF
+# Release Notes
+
+## [$version] - $(date +%Y-%m-%d)
+EOF
+  clog --from "v${previous_version}" --setversion "$version" -r https://github.com/kythe/kythe | tail -n+4
+  tail -n+2 RELEASES.md | sed \
+    -e "s/\[Unreleased\]/[$version]/" \
+    -e "s/HEAD/$version/" \
+    -e "/^\[$version\]/i \
+[Unreleased] https://github.com/kythe/kythe/compare/${version}...HEAD"
+} > RELEASES.md.new
+mv -f RELEASES.md.new RELEASES.md
+
+# Update release_version stamp for binaries
 sed -ri "s/^release_version = .+/release_version = \"$version\"/" kythe/release/BUILD
 
 if ! diff -q <(git diff --name-only) <(echo RELEASES.md; echo kythe/release/BUILD) >/dev/null; then
