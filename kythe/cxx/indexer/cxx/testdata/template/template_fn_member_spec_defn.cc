@@ -8,7 +8,7 @@ int q() {
   //- VarS typed TAppAbsSInt
   //- TAppAbsSInt param.0 AbsS
   S<int> s;
-  //- @f ref UnaryTAppF  // Until we index the full type context: T230
+  //- @f ref UnaryTAppF  // Until we index the full type context: #1879
   //- UnaryTAppF.node/kind tapp
   //- UnaryTAppF param.0 FnF
   //- FnFImp instantiates UnaryTAppF
