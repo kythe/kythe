@@ -187,6 +187,8 @@ var (
 							Ticket:      "kythe://c?lang=otpl?path=/a/path#6-9",
 							StartOffset: 6,
 							EndOffset:   9,
+
+							BuildConfiguration: "test-build-config",
 						},
 						Kind:   "/kythe/defines/binding",
 						Target: "kythe://c?lang=otpl?path=/a/path#map",
@@ -501,6 +503,23 @@ func TestDecorationsRefs(t *testing.T) {
 	}
 }
 
+func TestDecorationsBuildConfig(t *testing.T) {
+	d := tbl.Decorations[1]
+
+	st := tbl.Construct(t)
+	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+		Location:    &xpb.Location{Ticket: d.File.Ticket},
+		References:  true,
+		BuildConfig: []string{"test-build-config"},
+	})
+	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+
+	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration[:1])
+	if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDecorationsDirtyBuffer(t *testing.T) {
 	d := tbl.Decorations[1]
 
@@ -544,6 +563,8 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 					ColumnOffset: 9,
 				},
 			},
+
+			BuildConfig: "test-build-config",
 		},
 		// Skipped anchor for "empty?" (inside edit region)
 		{

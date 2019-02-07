@@ -17,6 +17,9 @@
 package config
 
 import (
+	"fmt"
+	"path"
+
 	"kythe.io/kythe/go/extractors/constants"
 
 	"google.golang.org/api/cloudbuild/v1"
@@ -69,5 +72,20 @@ func javaExtractorsStep() *cloudbuild.BuildStep {
 			},
 		},
 		WaitFor: []string{"-"},
+	}
+}
+
+func zipMergeStep() *cloudbuild.BuildStep {
+	return &cloudbuild.BuildStep{
+		Name:       constants.KytheKzipToolsImage,
+		Entrypoint: "bash",
+		Args: []string{
+			"-c",
+			fmt.Sprintf(
+				"%s merge --output %s %s/*.kzip",
+				constants.DefaultKzipToolLocation,
+				path.Join(outputDirectory, outputFilePattern),
+				outputDirectory),
+		},
 	}
 }

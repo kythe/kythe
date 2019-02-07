@@ -17,7 +17,6 @@
 package config
 
 import (
-	"fmt"
 	"path"
 
 	"kythe.io/kythe/go/extractors/constants"
@@ -36,8 +35,10 @@ func (m mavenGenerator) preArtifacts() []string {
 
 // steps implements parts of buildSystemElaborator
 func (m mavenGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
+	buildfile := path.Join(codeDirectory, conf.Root, "pom.xml")
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),
+		preprocessorStep(buildfile),
 		&cloudbuild.BuildStep{
 			Name: constants.GCRMvnImage,
 			Args: []string{
@@ -50,9 +51,10 @@ func (m mavenGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep 
 				// The alternative here is to fall back to using clean install,
 				// which should also work.
 				"compile",
+				"test-compile",
 				"-X", // For debugging output.
 				"-f", // Points directly at a specific pom.xml file:
-				path.Join(codeDirectory, conf.Root, "pom.xml"),
+				buildfile,
 				"-Dmaven.compiler.forceJavacCompilerUse=true",
 				"-Dmaven.compiler.fork=true",
 				"-Dmaven.compiler.executable=" + constants.DefaultJavacWrapperLocation,
@@ -66,7 +68,6 @@ func (m mavenGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep 
 			Env: []string{
 				"KYTHE_CORPUS=" + corpus,
 				"KYTHE_OUTPUT_DIRECTORY=" + outputDirectory,
-				fmt.Sprintf("KYTHE_OUTPUT_FILE=%s", path.Join(outputDirectory, outputFilePattern)),
 				"KYTHE_ROOT_DIRECTORY=" + codeDirectory,
 				"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
 				"REAL_JAVAC=" + constants.DefaultJavacLocation,
@@ -74,5 +75,6 @@ func (m mavenGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep 
 				"KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
 			},
 		},
+		zipMergeStep(),
 	}
 }

@@ -262,6 +262,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 
 	if req.References {
 		patterns := xrefs.ConvertFilters(req.Filter)
+		buildConfigs := stringset.New(req.BuildConfig...)
 
 		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
 		reply.Nodes = make(map[string]*cpb.NodeInfo, len(decor.Target))
@@ -292,6 +293,11 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		bindings := stringset.New()
 
 		for _, d := range decor.Decoration {
+			// Filter decorations by requested build configs.
+			if len(buildConfigs) != 0 && !buildConfigs.Contains(d.Anchor.BuildConfiguration) {
+				continue
+			}
+
 			start, end, exists := patcher.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset)
 			// Filter non-existent anchor.  Anchors can no longer exist if we were
 			// given a dirty buffer and the anchor was inside a changed region.
@@ -394,6 +400,7 @@ func decorationToReference(norm *span.Normalizer, d *srvpb.FileDecorations_Decor
 		Kind:             d.Kind,
 		Span:             span,
 		TargetDefinition: d.TargetDefinition,
+		BuildConfig:      d.Anchor.BuildConfiguration,
 	}
 }
 

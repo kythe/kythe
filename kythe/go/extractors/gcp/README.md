@@ -22,7 +22,9 @@ To make sure you have done setup correctly, we have an example binary at
 `kythe/go/extractors/gcp/helloworld`, which you can run as follows:
 
 ```
-gcloud builds submit --config examples/helloworld/helloworld.yaml --substitutions=_BUCKET_NAME="$BUCKET_NAME" examples/helloworld
+gcloud builds submit --config examples/helloworld/helloworld.yaml \
+  --substitutions=_OUTPUT_GS_BUCKET="$BUCKET_NAME"\
+  examples/helloworld
 ```
 
 If that fails, you have to go back up to the [Cloud Build](#cloud-build) section
@@ -33,16 +35,19 @@ authorize it, associate it with a valid project id, create a test gs bucket.
 
 To extract a maven repository using Kythe on Cloud Build, use
 `examples/mvn.yaml`.  This assumes that you will specify a maven repository
-in `_REPO_NAME`, and that the repository has a top-level `pom.xml` file (right
+in `_REPO`, and that the repository has a top-level `pom.xml` file (right
 now it is a hard-coded location, but in the future it will be configurable).
-This also assumes you specify `_BUCKET_NAME` as per the Hello World Test above.
+This also assumes you specify `$BUCKET_NAME` as per the Hello World Test above.
+`_CORPUS` can be any identifying string for your repo, for example: "guava".
 
 ```
 gcloud builds submit --config examples/mvn.yaml \
---substitutions=\
-_BUCKET_NAME=$BUCKET_NAME,\
-_REPO_NAME=https://github.com/project-name/repo-name\
- --no-source
+  --substitutions=\
+_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
+_REPO=https://github.com/project-name/repo-name,\
+_VERSION=<version-hash>,\
+_CORPUS=repo-name\
+  --no-source
 ```
 
 ### Guava specific example
@@ -52,10 +57,10 @@ To extract multiple parts of https://github.com/google/guava, use
 
 ```
 gcloud builds submit --config examples/guava-mvn.yaml \
---substitutions=\
-_BUCKET_NAME=$BUCKET_NAME,\
-_GUAVA_VERSION=<commit-hash>\
- --no-source
+  --substitutions=\
+_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
+_VERSION=<commit-hash>,\
+  --no-source
 ```
 
 This outputs `guava-<commit-hash>.kzip` to `$BUCKET_NAME` on Google Cloud Storage.
@@ -70,10 +75,10 @@ of the guava tree, you would need a slightly different action:
 
 ```
 gcloud builds submit --config examples/guava-android-mvn.yaml \
---substitutions=\
-_BUCKET_NAME=$BUCKET_NAME,\
+  --substitutions=\
+_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
 _GUAVA_VERSION=<commit-hash>\
- --no-source
+  --no-source
 ```
 
 This outputs `guava-android-<commit-hash>kzip` to `$BUCKET_NAME` on GCS.
@@ -84,10 +89,12 @@ Gradle is extracted similarly:
 
 ```
 gcloud builds submit --config examples/gradle.yaml \
---substitutions=\
-_BUCKET_NAME=$BUCKET_NAME,\
-_REPO_NAME=https://github.com/project-name/repo-name\
- --no-source
+  --substitutions=\
+_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
+_REPO=https://github.com/project-name/repo-name,\
+_VERSION=<version-hash>,\
+_CORPUS=repo-name\
+  --no-source
 ```
 
 ## Cloud Build REST API
@@ -150,12 +157,10 @@ Created from
 this image contains a full install of Kythe repo itself, along with a bazel
 builder.  In addition to building inside Google Cloud Build itself, you can also
 use this image for testing locally if you are having a hard time getting Kythe
-installed properly.  The clang/llvm setup from `tools/modules/update.sh` is
-already done, so arbitrary `bazel build //kythe/...` commands should work out of
-the box in this image.
+installed properly.
 
-Note because it includes a full install of kythe, bazel, llvm, and clang, this
-image is quite large.
+Note because it includes a full install of kythe and bazel this image is quite
+large.
 
 ### gcr.io/kythe-public/build-preprocessor
 

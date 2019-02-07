@@ -291,11 +291,11 @@ def _go_dependencies():
         go_repository,
         name = "com_github_golang_protobuf",
         build_file_proto_mode = "disable_global",
-        commit = "aa810b61a9c79d51363740d207bb46cf8e620ed5",
         custom = "protobuf",
         importpath = "github.com/golang/protobuf",
         patch_args = ["-p1"],
         patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
+        tag = "v1.2.0",
     )
 
     maybe(
@@ -317,9 +317,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_google_go_cmp",
-        commit = "5411ab924f9ffa6566244a9e504bc347edacffd3",
         custom = "cmp",
         importpath = "github.com/google/go-cmp",
+        tag = "v0.2.0",
     )
 
     maybe(
@@ -374,7 +374,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_tools",
-        commit = "3e7aa9e59977626dc60433e9aeadf1bb63d28295",
+        commit = "4892ae6946ab8a542e4fe1bf1376eb714b9e7aec",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
         importpath = "golang.org/x/tools",
@@ -394,7 +394,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_net",
-        commit = "f73e4c9ed3b7ebdd5f699a16a880c2b1994e50dd",
+        commit = "d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf",
         custom = "x_net",
         custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
@@ -523,17 +523,17 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_datadog_zstd",
-        commit = "aebefd9fcb99f22cd691ef778a12ed68f0e6a1ab",
         custom = "zstd",
         importpath = "github.com/DataDog/zstd",
+        tag = "v1.3.5",
     )
 
     maybe(
         go_repository,
         name = "com_github_beevik_etree",
-        commit = "9d7e8feddccb4ed1b8afb54e368bd323d2ff652c",
         custom = "etree",
         importpath = "github.com/beevik/etree",
+        tag = "v1.1.0",
     )
 
     maybe(
