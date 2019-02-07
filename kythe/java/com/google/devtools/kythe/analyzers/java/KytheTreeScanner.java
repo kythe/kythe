@@ -477,9 +477,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     if (bindingAnchor != null) {
-      if (!documented) {
-        emitComment(methodDef, methodNode);
-      }
       if (absNode != null) {
         emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode.getVName(), getScope(ctx));
         Span span = filePositions.findIdentifier(methodDef.name, methodDef.getPreferredPosition());
