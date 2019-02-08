@@ -4,7 +4,7 @@ package pkg;
 
 @Deprecated // TODO(#3459): This should not annotate the class, but does.
 public class AnnotationComments {
-  //- !{ _DeprecatedDoc documents AnnotationComments }
+  //- !{ _ documents AnnotationComments }
 
   //- @+3fooString defines/binding FooString
 
