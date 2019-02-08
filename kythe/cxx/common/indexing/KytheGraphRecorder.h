@@ -81,6 +81,7 @@ enum class EdgeKindID {
   kHasType,
   kRef,
   kRefImplicit,
+  kRefImports,
   kParam,
   kAliases,
   kAliasesRoot,
