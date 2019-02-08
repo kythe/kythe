@@ -1,13 +1,14 @@
 package pkg;
 
-// Tests for comments that should be ignored.
+//- @+3AnnotationComments defines/binding AnnotationComments
+
+@Deprecated // TODO(#3459): This should not annotate the class, but does.
 public class AnnotationComments {
+  //- !{ _DeprecatedDoc documents AnnotationComments }
+
   //- @+3fooString defines/binding FooString
 
   @SuppressWarnings("unchecked") // TODO(#3459): This should not documents fooString, but does.
   public String fooString() { return ""; }
-  // These tests are all busted:
-  //- !{ UncheckedDoc2 documents FooString }
-  //- UncheckedDoc2.node/kind doc
-  //- UncheckedDoc2.text "TODO(#3459): This should not documents fooString, but does."
+  //- !{ _UncheckedDoc documents FooString }
 }
