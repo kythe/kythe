@@ -151,7 +151,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool TraverseMemberPointerTypeLoc(clang::MemberPointerTypeLoc TL);
 
   // Emit edges for an anchor pointing to the indicated type.
-  bool EmitTypeLocNodes(clang::TypeLoc TL);
+  NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc TL);
 
   bool TraverseDeclarationNameInfo(clang::DeclarationNameInfo NameInfo);
 
@@ -446,11 +446,22 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param IdLoc The name's location.
   /// \param Root If provided, the primary NodeId is morally prepended to `NNS`
   /// such that the dependent name is lookup(lookup*(Root, NNS), Id).
-  /// \param ER If `EmitRanges::Yes`, records ranges for syntactic elements.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForDependentName(
       const clang::NestedNameSpecifierLoc& NNS,
       const clang::DeclarationName& Id, const clang::SourceLocation IdLoc,
-      const absl::optional<GraphObserver::NodeId>& Root, EmitRanges ER);
+      const absl::optional<GraphObserver::NodeId>& Root);
+
+  GraphObserver::NodeId BuildNodeIdForDependentLoc(
+      const clang::NestedNameSpecifierLoc& NNSLoc,
+      const clang::SourceLocation& IdLoc);
+  GraphObserver::NodeId BuildNodeIdForDependentRange(
+      const clang::NestedNameSpecifierLoc& NNSLoc,
+      const clang::SourceRange& IdRange);
+
+  void RecordDependentParamEdges();
+  void RecordDependentLookup(const GraphObserver::NodeId& DID,
+                             const clang::DeclarationName& Name);
+  bool TraverseNestedNameSpecifierLoc(clang::NestedNameSpecifierLoc NNS);
 
   /// \brief Is `VarDecl` a definition?
   ///
@@ -470,6 +481,12 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// the entity as written in the source code.
   clang::SourceRange RangeForNameOfDeclaration(
       const clang::NamedDecl* Decl) const;
+
+  /// \brief Gets a suitable range for an AST entity from the `start_location`.
+  clang::SourceRange RangeForASTEntity(
+      clang::SourceLocation start_location) const;
+  clang::SourceRange RangeForSingleToken(
+      clang::SourceLocation start_location) const;
 
   /// Consume a token of the `ExpectedKind` from the `StartLocation`,
   /// returning the range for that token on success and an invalid

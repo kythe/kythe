@@ -8,6 +8,7 @@ class C {
     //- LookupTDtor2.node/kind lookup
     //- LookupTDtor2 param.0 TyvarT
     //- LookupTDtor2.text "#dtor"
+    //- @"~" ref LookupTDtor2
     t->~T();
     //- @"delete t" ref/call LookupTDtor
     //- LookupTDtor.node/kind lookup
