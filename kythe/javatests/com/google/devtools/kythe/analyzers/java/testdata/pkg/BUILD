@@ -42,6 +42,14 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "annotation_comments_tests",
+    size = "small",
+    srcs = ["AnnotationComments.java"],
+    # TODO(#3459): make this failing test not manual if bug is fixed
+    tags = ["manual"],
+)
+
+java_verifier_test(
     name = "callgraph_tests",
     size = "small",
     srcs = ["Callgraph.java"],
