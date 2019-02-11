@@ -31,7 +31,7 @@ require (
 	github.com/syndtr/goleveldb v0.0.0-20180521045021-5d6fca44a948
 	github.com/ulikunitz/xz v0.5.5 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	go.opencensus.io v0.0.0-20180405210956-c40611a83b49
+	go.opencensus.io v0.15.0
 	golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
