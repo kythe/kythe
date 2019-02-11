@@ -366,9 +366,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_google_subcommands",
-        commit = "a3682377147edf596d303faabd89f81977b3f678",
         custom = "subcommands",
         importpath = "github.com/google/subcommands",
+        tag = "1.0.1",
     )
 
     maybe(
