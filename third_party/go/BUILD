@@ -15,7 +15,6 @@ filegroup(
         "@go_errors//:LICENSE",
         "@go_etree//:LICENSE",
         "@go_ghodss_yaml//:LICENSE",
-        "@go_github//:LICENSE",
         "@go_google_api//:LICENSE",
         "@go_google_cloud//:LICENSE",
         "@go_googleapis_gax//:LICENSE",
