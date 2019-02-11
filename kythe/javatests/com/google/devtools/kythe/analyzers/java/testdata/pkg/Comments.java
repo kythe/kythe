@@ -126,4 +126,12 @@ public class Comments
   //- OverrideDoc.node/kind doc
   //- OverrideDoc param.0 _Override
   //- OverrideDoc.text "This documents {@link #compareTo()} over {@link [Override]}. "
+
+  //- @+3fooFunction defines/binding FooFunction
+
+  // This documents FooFunction
+  void fooFunction() { return; }
+  //- FooFunctionDoc documents FooFunction
+  //- FooFunctionDoc.node/kind doc
+  //- FooFunctionDoc.text "This documents FooFunction"
 }
