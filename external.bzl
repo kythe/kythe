@@ -455,9 +455,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_google_go_querystring",
-        commit = "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
         custom = "querystring",
         importpath = "github.com/google/go-querystring",
+        tag = "v1.0.0",
     )
 
     maybe(
