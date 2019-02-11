@@ -1,4 +1,16 @@
+package(default_visibility = ["//visibility:public"])
+
 load(":extractors.bzl", "extractor_action")
+
+# Clone of default Java proto toolchain with "annotate_code" enabled for
+# cross-language metadata file generation.
+#
+# --proto_toolchain_for_java=@io_kythe//kythe/extractors:java_proto_toolchain
+proto_lang_toolchain(
+    name = "java_proto_toolchain",
+    command_line = "--java_out=annotate_code:$(OUT)",
+    runtime = "@com_google_protobuf//:protobuf_java",
+)
 
 extractor_action(
     name = "extract_kzip_cxx",
