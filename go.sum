@@ -45,8 +45,8 @@ github.com/mholt/archiver v3.1.1+incompatible h1:1dCVxuqs0dJseYEhi5pl7MYPH9zDa1w
 github.com/mholt/archiver v3.1.1+incompatible/go.mod h1:Dh2dOXnSdiLxRiPoVfIr/fI1TwETms9B8CTWfeh7ROU=
 github.com/minio/highwayhash v0.0.0-20180501080913-85fc8a2dacad h1:L+8skVz2lusCbtlalLXmJp+TK8XaGAsZ3utSC3k5Jc0=
 github.com/minio/highwayhash v0.0.0-20180501080913-85fc8a2dacad/go.mod h1:NL8wme5P5MoscwAkXfGroz3VgpCdhBw3KYOu5mEsvpU=
-github.com/nwaples/rardecode v1.0.1-0.20181025094117-197ef08ef68c h1:u2KzixJYvuGIaQ5mO+tFxJtaDmyCvdwprLFHrSvxi4k=
-github.com/nwaples/rardecode v1.0.1-0.20181025094117-197ef08ef68c/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
+github.com/nwaples/rardecode v1.0.0 h1:r7vGuS5akxOnR4JQSkko62RJ1ReCMXxQRPtxsiFMBOs=
+github.com/nwaples/rardecode v1.0.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
 github.com/pborman/uuid v0.0.0-20180122190007-c65b2f87fee3 h1:9J0mOv1rXIBlRjQCiAGyx9C3dZZh5uIa3HU0oTV8v1E=
 github.com/pborman/uuid v0.0.0-20180122190007-c65b2f87fee3/go.mod h1:VyrYX9gd7irzKovcSS6BIIEwPRkP2Wm2m9ufcdFSJ34=
 github.com/pierrec/lz4 v0.0.0-20181027085611-623b5a2f4d2a h1:AjoacEaTgu9mA3/ZNFtPfdIM9MP5WVngYdB2k/3xLJ4=
