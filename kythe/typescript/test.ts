@@ -62,6 +62,13 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
 function verify(
     host: ts.CompilerHost, options: ts.CompilerOptions,
     test: string): Promise<void> {
+  const compilationUnit: indexer.VName = {
+    corpus: 'testcorpus',
+    root: '',
+    path: '',
+    signature: '',
+    language: '',
+  };
   const program = ts.createProgram([test], options, host);
 
   const verifier = child_process.spawn(
@@ -72,7 +79,7 @@ function verify(
         shell: true,
       });
 
-  indexer.index('testcorpus', [test], program, (obj: {}) => {
+  indexer.index(compilationUnit, new Map(), [test], program, (obj: {}) => {
     verifier.stdin.write(JSON.stringify(obj) + '\n');
   });
   verifier.stdin.end();
