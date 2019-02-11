@@ -499,10 +499,10 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "io_opencensus_go",
-        commit = "c40611a83b49d279ee5203c85e4fe169dcb158b6",
         custom = "opencensus",
         custom_git = "https://github.com/census-instrumentation/opencensus-go.git",
         importpath = "go.opencensus.io",
+        tag = "v0.15.0",
     )
 
     maybe(
