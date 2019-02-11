@@ -21,7 +21,7 @@ require (
 	github.com/jmhodges/levigo v0.0.0-20161115193449-c42d9e0ca023
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/minio/highwayhash v0.0.0-20180501080913-85fc8a2dacad
-	github.com/nwaples/rardecode v1.0.1-0.20181025094117-197ef08ef68c // indirect
+	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/pborman/uuid v0.0.0-20180122190007-c65b2f87fee3
 	github.com/pierrec/lz4 v0.0.0-20190131084431-473cd7ce01a1 // indirect
 	github.com/pkg/errors v0.8.1

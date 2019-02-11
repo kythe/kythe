@@ -587,9 +587,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_nwaples_rardecode",
-        commit = "197ef08ef68c4454ae5970a9c2692d6056ceb8d7",
         custom = "rardecode",
         importpath = "github.com/nwaples/rardecode",
+        tag = "v1.0.0",
     )
 
     maybe(
