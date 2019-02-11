@@ -117,7 +117,7 @@ type WriterOptions struct {
 }
 
 // Textual WriterOptions format:
-// https://github.com/google/riegeli/blob/4a321b2/riegeli/records/record_writer.h#L98
+// https://github.com/google/riegeli/blob/master/doc/record_writer_options.md
 const (
 	brotliOption       = "brotli"
 	chunkSizeOption    = "chunk_size"
