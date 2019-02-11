@@ -403,9 +403,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_pkg_errors",
-        commit = "816c9085562cd7ee03e7f8188a1cfd942858cded",
         custom = "errors",
         importpath = "github.com/pkg/errors",
+        tag = "v0.8.1",
     )
 
     maybe(

@@ -51,6 +51,8 @@ github.com/pierrec/lz4 v0.0.0-20181027085611-623b5a2f4d2a h1:AjoacEaTgu9mA3/ZNFt
 github.com/pierrec/lz4 v0.0.0-20181027085611-623b5a2f4d2a/go.mod h1:3/3N9NVKO0jef7pBehbT1qWhCMrIgbYNnFAZCqQ5LRc=
 github.com/pkg/errors v0.0.0-20180311214515-816c9085562c h1:F5RoIh7F9wB47PvXvpP1+Ihq1TkyC8iRdvwfKkESEZQ=
 github.com/pkg/errors v0.0.0-20180311214515-816c9085562c/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
+github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/profile v1.2.1/go.mod h1:hJw3o1OdXxsrSjjVksARp5W95eeEaEfptyVZyv6JUPA=
 github.com/sergi/go-diff v0.0.0-20180205163309-da645544ed44 h1:UoZTeCJuGZpwXXqamtSHypwjqpyGdR9smB5iMleBDJ8=
 github.com/sergi/go-diff v0.0.0-20180205163309-da645544ed44/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=

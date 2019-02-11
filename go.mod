@@ -24,7 +24,7 @@ require (
 	github.com/nwaples/rardecode v1.0.1-0.20181025094117-197ef08ef68c // indirect
 	github.com/pborman/uuid v0.0.0-20180122190007-c65b2f87fee3
 	github.com/pierrec/lz4 v0.0.0-20181027085611-623b5a2f4d2a // indirect
-	github.com/pkg/errors v0.0.0-20180311214515-816c9085562c
+	github.com/pkg/errors v0.8.1
 	github.com/sergi/go-diff v0.0.0-20180205163309-da645544ed44
 	github.com/sourcegraph/go-langserver v0.0.0-20180529120946-e526744fd766
 	github.com/sourcegraph/jsonrpc2 v0.0.0-20180501180217-a3d86c792f0f
