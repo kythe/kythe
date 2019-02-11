@@ -595,9 +595,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_pierrec_lz4",
-        commit = "623b5a2f4d2a41e411730dcdfbfdaeb5c0c4564e",
         custom = "lz4",
         importpath = "github.com/pierrec/lz4",
+        tag = "v2.0.8",
     )
 
     maybe(
