@@ -428,14 +428,6 @@ def _go_dependencies():
 
     maybe(
         go_repository,
-        name = "com_github_google_go_github",
-        commit = "8ea2e2657df890db8fb434a9274799d641bd698c",
-        custom = "github",
-        importpath = "github.com/google/go-github",
-    )
-
-    maybe(
-        go_repository,
         name = "org_golang_google_grpc",
         custom = "grpc",
         custom_git = "https://github.com/grpc/grpc-go.git",
