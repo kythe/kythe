@@ -366,9 +366,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_google_subcommands",
-        commit = "a3682377147edf596d303faabd89f81977b3f678",
         custom = "subcommands",
         importpath = "github.com/google/subcommands",
+        tag = "1.0.1",
     )
 
     maybe(
@@ -403,9 +403,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_pkg_errors",
-        commit = "816c9085562cd7ee03e7f8188a1cfd942858cded",
         custom = "errors",
         importpath = "github.com/pkg/errors",
+        tag = "v0.8.1",
     )
 
     maybe(
@@ -424,14 +424,6 @@ def _go_dependencies():
         custom_git = "https://bitbucket.org/creachadair/shell.git",
         importpath = "bitbucket.org/creachadair/shell",
         tag = "v0.0.4",
-    )
-
-    maybe(
-        go_repository,
-        name = "com_github_google_go_github",
-        commit = "8ea2e2657df890db8fb434a9274799d641bd698c",
-        custom = "github",
-        importpath = "github.com/google/go-github",
     )
 
     maybe(
@@ -455,9 +447,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_google_go_querystring",
-        commit = "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
         custom = "querystring",
         importpath = "github.com/google/go-querystring",
+        tag = "v1.0.0",
     )
 
     maybe(
@@ -499,10 +491,10 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "io_opencensus_go",
-        commit = "c40611a83b49d279ee5203c85e4fe169dcb158b6",
         custom = "opencensus",
         custom_git = "https://github.com/census-instrumentation/opencensus-go.git",
         importpath = "go.opencensus.io",
+        tag = "v0.15.0",
     )
 
     maybe(
@@ -587,17 +579,17 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_nwaples_rardecode",
-        commit = "197ef08ef68c4454ae5970a9c2692d6056ceb8d7",
         custom = "rardecode",
         importpath = "github.com/nwaples/rardecode",
+        tag = "v1.0.0",
     )
 
     maybe(
         go_repository,
         name = "com_github_pierrec_lz4",
-        commit = "623b5a2f4d2a41e411730dcdfbfdaeb5c0c4564e",
         custom = "lz4",
         importpath = "github.com/pierrec/lz4",
+        tag = "v2.0.8",
     )
 
     maybe(

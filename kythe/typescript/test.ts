@@ -62,6 +62,13 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
 function verify(
     host: ts.CompilerHost, options: ts.CompilerOptions,
     test: string): Promise<void> {
+  const compilationUnit: indexer.VName = {
+    corpus: 'testcorpus',
+    root: '',
+    path: '',
+    signature: '',
+    language: '',
+  };
   const program = ts.createProgram([test], options, host);
 
   const verifier = child_process.spawn(
@@ -72,7 +79,7 @@ function verify(
         shell: true,
       });
 
-  indexer.index('testcorpus', [test], program, (obj: {}) => {
+  indexer.index(compilationUnit, new Map(), [test], program, (obj: {}) => {
     verifier.stdin.write(JSON.stringify(obj) + '\n');
   });
   verifier.stdin.end();
@@ -97,7 +104,7 @@ function testLoadTsConfig() {
 
 async function testIndexer(args: string[]) {
   const config = indexer.loadTsConfig('testdata/tsconfig.json', 'testdata');
-  let testPaths = args.map(path.resolve);
+  let testPaths = args.map(arg => path.resolve(arg));
   if (args.length === 0) {
     // If no tests were passed on the command line, run all the .ts files found
     // by the tsconfig.json, which covers all the tests in testdata/.

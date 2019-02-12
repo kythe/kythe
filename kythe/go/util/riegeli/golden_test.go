@@ -99,7 +99,7 @@ func TestGoldenTestData(t *testing.T) {
 // same records as the goldenJSONFile.  It also checks the RecordsMetadata
 // against goldenMetadataFile and the given expectedOptions.  RecordsMetadata
 // options are the same format as the C++ strings options defined at:
-// https://github.com/google/riegeli/blob/87a0fd66ffde99aaef4e6171029943d5a3a3ce41/riegeli/records/record_writer.h#L110
+// https://github.com/google/riegeli/blob/master/doc/record_writer_options.md
 func checkGoldenData(t *testing.T, goldenRiegeliFile, expectedOptions string) {
 	jsonFile, err := os.Open(goldenJSONFile)
 	if err != nil {

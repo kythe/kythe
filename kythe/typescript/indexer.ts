@@ -103,8 +103,15 @@ class Vistor {
   rootDirs: string[];
 
   constructor(
-      /** Corpus name for produced VNames. */
-      private corpus: string, program: ts.Program, private file: ts.SourceFile,
+      /**
+       * The VName for the CompilationUnit, containing compilation-wide info.
+       */
+      private compilationUnit: VName,
+      /**
+       * A map of path to path-specific VName.
+       */
+      private pathVNames: Map<string, VName>, program: ts.Program,
+      private file: ts.SourceFile,
       private getOffsetTable: (path: string) => utf8.OffsetTable) {
     this.typeChecker = program.getTypeChecker();
 
@@ -160,11 +167,13 @@ class Vistor {
    * newVName returns a new VName with a given signature and path.
    */
   newVName(signature: string, path: string): VName {
+    const vname = this.pathVNames.get(path);
     return {
       signature,
-      corpus: this.corpus,
-      root: '',
-      path,
+      corpus: vname && vname.corpus ? vname.corpus :
+                                      this.compilationUnit.corpus,
+      root: vname && vname.root ? vname.root : this.compilationUnit.root,
+      path: vname && vname.path ? vname.path : path,
       language: 'typescript',
     };
   }
@@ -1010,6 +1019,9 @@ class Vistor {
  * Kythe output for, because e.g. the standard library is contained within
  * the Program and we only want to process it once.)
  *
+ * @param compilationUnit A VName for the entire compilation, containing e.g.
+ *     corpus name.
+ * @param pathVNames A map of file path to path-specific VName.
  * @param emit If provided, a function that receives objects as they are
  *     emitted; otherwise, they are printed to stdout.
  * @param readFile If provided, a function that reads a file as bytes to a
@@ -1018,8 +1030,8 @@ class Vistor {
  *     each file's raw bytes for UTF-8<->UTF-16 conversions.
  */
 export function index(
-    corpus: string, paths: string[], program: ts.Program,
-    emit?: (obj: {}) => void,
+    vname: VName, pathVNames: Map<string, VName>, paths: string[],
+    program: ts.Program, emit?: (obj: {}) => void,
     readFile: (path: string) => Buffer = fs.readFileSync) {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
@@ -1062,7 +1074,8 @@ export function index(
     if (!sourceFile) {
       throw new Error(`requested indexing ${path} not found in program`);
     }
-    const visitor = new Vistor(corpus, program, sourceFile, getOffsetTable);
+    const visitor =
+        new Vistor(vname, pathVNames, program, sourceFile, getOffsetTable);
     if (emit != null) {
       visitor.emit = emit;
     }
@@ -1102,8 +1115,16 @@ function main(argv: string[]) {
     inPaths = config.fileNames;
   }
 
+  // This program merely demonstrates the API, so use a fake corpus/root/etc.
+  const compilationUnit: VName = {
+    corpus: 'corpus',
+    root: '',
+    path: '',
+    signature: '',
+    language: '',
+  };
   const program = ts.createProgram(inPaths, config.options);
-  index('TODOcorpus', inPaths, program);
+  index(compilationUnit, new Map(), inPaths, program);
   return 0;
 }
 
