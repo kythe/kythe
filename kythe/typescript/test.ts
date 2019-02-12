@@ -104,7 +104,7 @@ function testLoadTsConfig() {
 
 async function testIndexer(args: string[]) {
   const config = indexer.loadTsConfig('testdata/tsconfig.json', 'testdata');
-  let testPaths = args.map(path.resolve);
+  let testPaths = args.map(arg => path.resolve(arg));
   if (args.length === 0) {
     // If no tests were passed on the command line, run all the .ts files found
     // by the tsconfig.json, which covers all the tests in testdata/.
