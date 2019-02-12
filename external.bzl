@@ -555,9 +555,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "in_gopkg_yaml_v2",
-        commit = "4fc5987536ef307a24ca299aee7ae301cde3d221",
         custom = "yaml",
         importpath = "gopkg.in/yaml.v2",
+        tag = "v2.2.2",
     )
 
     maybe(
