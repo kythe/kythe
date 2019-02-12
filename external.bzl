@@ -563,9 +563,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_mholt_archiver",
-        commit = "d572b2e8b82726cee9476d1b9d63a7fe9b601ff1",
         custom = "archiver",
         importpath = "github.com/mholt/archiver",
+        tag = "v3.1.1",
     )
 
     maybe(
