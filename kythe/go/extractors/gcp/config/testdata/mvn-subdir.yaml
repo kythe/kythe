@@ -28,15 +28,15 @@ steps:
   waitFor:
   - '-'
 - name: gcr.io/kythe-public/kythe-javac-extractor-artifacts
-  id: 'JAVA-ARTIFACTS'
+  id: JAVA-ARTIFACTS
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
   waitFor:
   - '-'
 - args:
-  - /workspace/code/pom.xml
-  id: 'PREPROCESS0'
+  - /workspace/code/somesubdir/pom.xml
+  id: PREPROCESS0
   name: gcr.io/kythe-public/build-preprocessor
   waitFor:
     - CHECKOUT
@@ -46,14 +46,14 @@ steps:
   - test-compile
   - -X
   - -f
-  - /workspace/code/pom.xml
+  - /workspace/code/somesubdir/pom.xml
   - -Dmaven.compiler.forceJavacCompilerUse=true
   - -Dmaven.compiler.fork=true
   - -Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh
   env:
   - KYTHE_CORPUS=${_CORPUS}
   - KYTHE_OUTPUT_DIRECTORY=/workspace/out
-  - KYTHE_ROOT_DIRECTORY=/workspace/code
+  - KYTHE_ROOT_DIRECTORY=/workspace/code/somesubdir
   - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
   - REAL_JAVAC=/usr/bin/javac
   - TMPDIR=/workspace/out

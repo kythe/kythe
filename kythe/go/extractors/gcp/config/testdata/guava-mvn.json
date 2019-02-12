@@ -1,0 +1,10 @@
+{
+  "repo": "https://github.com/google/guava",
+  "extractions": [
+    {
+      "build_system": "MAVEN",
+      "corpus": "guava"
+    }
+  ]
+}
+
