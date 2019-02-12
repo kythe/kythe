@@ -9,8 +9,8 @@ steps:
   - clone
   - ${_REPO}
   - /workspace/code
-  name: gcr.io/cloud-builders/git
   id: CLONE
+  name: gcr.io/cloud-builders/git
   waitFor:
   - '-'
 - args:
@@ -35,31 +35,29 @@ steps:
   waitFor:
   - '-'
 - args:
-  - /workspace/code/pom.xml
-  id: 'PREPROCESS0'
+  - /workspace/code/othersubdir/build.gradle
   name: gcr.io/kythe-public/build-preprocessor
+  id: 'PREPROCESS0'
   waitFor:
     - CHECKOUT
 - args:
   - clean
-  - compile
-  - test-compile
-  - -X
-  - -f
-  - /workspace/code/pom.xml
-  - -Dmaven.compiler.forceJavacCompilerUse=true
-  - -Dmaven.compiler.fork=true
-  - -Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh
+  - build
+  - -s
+  - -S
+  - -d
+  - -b
+  - /workspace/code/othersubdir/build.gradle
   env:
   - KYTHE_CORPUS=${_CORPUS}
   - KYTHE_OUTPUT_DIRECTORY=/workspace/out
-  - KYTHE_ROOT_DIRECTORY=/workspace/code
+  - KYTHE_ROOT_DIRECTORY=/workspace/code/othersubdir
   - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
   - REAL_JAVAC=/usr/bin/javac
   - TMPDIR=/workspace/out
-  - KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
+  - KYTHE_JAVAC_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
   id: 'EXTRACT0'
-  name: gcr.io/cloud-builders/mvn
+  name: gcr.io/cloud-builders/gradle
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors

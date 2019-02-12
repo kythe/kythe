@@ -77,7 +77,7 @@ of the guava tree, you would need a slightly different action:
 gcloud builds submit --config examples/guava-android-mvn.yaml \
   --substitutions=\
 _OUTPUT_GS_BUCKET=$BUCKET_NAME,\
-_GUAVA_VERSION=<commit-hash>\
+_VERSION=<commit-hash>\
   --no-source
 ```
 
