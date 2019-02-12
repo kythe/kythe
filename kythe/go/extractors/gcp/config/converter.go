@@ -139,9 +139,9 @@ func readConfigFile(input string) (*rpb.Config, error) {
 // directly after cloning, but before other common steps.
 type buildSystemElaborator interface {
 	// extractSteps is a list of cloudbuild steps to extract the given target.
-	// The buildId is simply a unique integer for this instance and target, for
+	// The buildID is simply a unique integer for this instance and target, for
 	// use in coordinating paralleism if desired.
-	extractSteps(corpus string, target *rpb.ExtractionTarget, buildId int) []*cloudbuild.BuildStep
+	extractSteps(corpus string, target *rpb.ExtractionTarget, buildID int) []*cloudbuild.BuildStep
 	// postExtractSteps is a list of cloudbuild steps to be done after
 	// extraction finishes.
 	postExtractSteps(corpus string) []*cloudbuild.BuildStep

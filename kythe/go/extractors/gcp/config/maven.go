@@ -33,7 +33,7 @@ type mavenGenerator struct{}
 // extractSteps implements parts of buildSystemElaborator
 func (m mavenGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget, buildID int) []*cloudbuild.BuildStep {
 	buildfile := path.Join(codeDirectory, target.Path)
-	kPath, _ := filepath.Split(target.Path)
+	targetPath, _ := filepath.Split(target.Path)
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),
 		preprocessorStep(buildfile, buildID),
@@ -66,7 +66,7 @@ func (m mavenGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget
 			Env: []string{
 				"KYTHE_CORPUS=" + corpus,
 				"KYTHE_OUTPUT_DIRECTORY=" + outputDirectory,
-				"KYTHE_ROOT_DIRECTORY=" + filepath.Join(codeDirectory, kPath),
+				"KYTHE_ROOT_DIRECTORY=" + filepath.Join(codeDirectory, targetPath),
 				"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
 				"REAL_JAVAC=" + constants.DefaultJavacLocation,
 				"TMPDIR=" + outputDirectory,

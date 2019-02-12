@@ -31,9 +31,9 @@ import (
 type gradleGenerator struct{}
 
 // extractSteps implements parts of buildSystemElaborator
-func (m gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget, buildID int) []*cloudbuild.BuildStep {
+func (g gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget, buildID int) []*cloudbuild.BuildStep {
 	buildfile := path.Join(codeDirectory, target.Path)
-	kPath, _ := filepath.Split(target.Path)
+	targetPath, _ := filepath.Split(target.Path)
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),
 		preprocessorStep(buildfile, buildID),
@@ -64,7 +64,7 @@ func (m gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarge
 			Env: []string{
 				"KYTHE_CORPUS=" + corpus,
 				"KYTHE_OUTPUT_DIRECTORY=" + outputDirectory,
-				"KYTHE_ROOT_DIRECTORY=" + filepath.Join(codeDirectory, kPath),
+				"KYTHE_ROOT_DIRECTORY=" + filepath.Join(codeDirectory, targetPath),
 				"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
 				"REAL_JAVAC=" + constants.DefaultJavacLocation,
 				"TMPDIR=" + outputDirectory,
@@ -91,6 +91,6 @@ func (g gradleGenerator) defaultExtractionTarget() *rpb.ExtractionTarget {
 }
 
 // additionalArtifacts implements part of buildStepsGenerator
-func (m gradleGenerator) additionalArtifacts() []string {
+func (g gradleGenerator) additionalArtifacts() []string {
 	return []string{path.Join(outputDirectory, "javac-extractor.err")}
 }
