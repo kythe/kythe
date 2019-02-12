@@ -966,6 +966,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   private void visitAnnotations(
       VName owner, List<JCAnnotation> annotations, TreeContext ownerContext) {
+    for (JCAnnotation annotation : annotations) {
+      int defPosition = annotation.getPreferredPosition();
+      int defLine = filePositions.charToLine(defPosition);
+      // Claim trailing annotation comments, which isn't always right, but
+      // avoids some confusing comments for method annotations.
+      // TODO(danielmoy): don't do this for inline field annotations.
+      commentClaims.put(defLine, defLine);
+    }
     for (JavaNode node : scanList(annotations, ownerContext)) {
       entrySets.emitEdge(owner, EdgeKind.ANNOTATED_BY, node.getVName());
     }
