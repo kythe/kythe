@@ -5,6 +5,7 @@ package pkg;
 @Deprecated // TODO(#3459): This should not annotate the class, but does.
 public class AnnotationComments {
   //- { _ documents AnnotationComments }
+  // The above test is broken and should be '!{ _ documents ...' instead
 
   //- @+3fooString defines/binding FooString
 
