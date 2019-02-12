@@ -39,5 +39,5 @@ require (
 	golang.org/x/tools v0.0.0-20190206175659-4892ae6946ab
 	google.golang.org/api v0.0.0-20180404000327-3097bf831ede
 	google.golang.org/grpc v1.16.0
-	gopkg.in/yaml.v2 v2.2.1-0.20180326061214-4fc5987536ef
+	gopkg.in/yaml.v2 v2.2.2
 )
