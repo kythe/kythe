@@ -103,7 +103,8 @@ func zipMergeStep(corpus string) *cloudbuild.BuildStep {
 				path.Join(outputDirectory, outputFileName(corpus)),
 				outputDirectory),
 		},
-		// We explicitly don't include a WaitFor here because this should
-		// probably be done at the very end.
+		// We explicitly don't include a WaitFor here because that is equivalent
+		// to waiting for everything.  This step should be done at the end, so
+		// it gets no WaitFor (== wait for everything).
 	}
 }
