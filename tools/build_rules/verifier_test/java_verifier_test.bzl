@@ -132,6 +132,13 @@ java_extract_kzip = rule(
     implementation = _java_extract_kzip_impl,
 )
 
+_default_java_extractor_opts = [
+    "-source",
+    "9",
+    "-target",
+    "9",
+]
+
 def java_verifier_test(
         name,
         srcs,
@@ -140,12 +147,7 @@ def java_verifier_test(
         size = "small",
         tags = [],
         extractor = None,
-        extractor_opts = [
-            "-source",
-            "9",
-            "-target",
-            "9",
-        ],
+        extractor_opts = _default_java_extractor_opts,
         indexer_opts = ["--verbose"],
         verifier_opts = ["--ignore_dups"],
         load_plugin = None,
@@ -291,6 +293,7 @@ def java_proto_verifier_test(
         size = "small",
         proto_srcs = [],
         tags = [],
+        java_extractor_opts = _default_java_extractor_opts,
         verifier_opts = ["--ignore_dups"],
         vnames_config = None,
         visibility = None):
@@ -336,6 +339,7 @@ def java_proto_verifier_test(
         java_extract_kzip,
         name = name + "_java_kzip",
         srcs = srcs + [":" + name + "_gensrc"],
+        opts = java_extractor_opts,
         tags = tags,
         visibility = visibility,
         vnames_config = vnames_config,
