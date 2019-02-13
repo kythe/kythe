@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package pkg.proto2;
+
+option java_package = "pkg.proto2";
+
+//- @OuterMessage defines/binding OuterMessage
+message OuterMessage {
+    extensions 100 to max;
+}
+
+//- @ExtensionMessage defines/binding ExtensionMessage
+message ExtensionMessage {
+  extend OuterMessage {
+    //- @extension defines/binding ExtensionField
+    optional ExtensionMessage extension = 101;
+  }
+}
