@@ -540,8 +540,8 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_google_orderedcode",
-        commit = "05a79567b685231e7ca5db3adccddf9ae9dd86df",
         importpath = "github.com/google/orderedcode",
+        tag = "v0.0.1",
     )
 
     maybe(

@@ -14,7 +14,7 @@ require (
 	github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540
 	github.com/google/go-cmp v0.2.0
 	github.com/google/go-querystring v1.0.0
-	github.com/google/orderedcode v0.0.0-20150706152543-05a79567b685
+	github.com/google/orderedcode v0.0.1
 	github.com/google/subcommands v0.0.0-20190211182706-d47216cd1784
 	github.com/googleapis/gax-go v0.0.0-20190111180537-ddfab93c3fae // indirect
 	github.com/jmhodges/levigo v0.0.0-20161115193449-c42d9e0ca023
