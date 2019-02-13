@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"sort"
@@ -49,6 +50,10 @@ import (
 	ipb "kythe.io/kythe/proto/internal_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
+)
+
+var (
+	lenientErrors = flag.Bool("lenient_errors", false, "Don't die on errors, rather warn and skip processing.")
 )
 
 // Options controls the behavior of pipeline.Run.
@@ -430,6 +435,10 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 				targets[n.Ticket] = n
 			}
 			if file == nil {
+				if *lenientErrors {
+					log.Printf("Warning: no file set for anchor. fileTicket:[%v] curFile:[%v] fragment:[%v]", fileTicket, curFile, fragment)
+					return nil
+				}
 				return errors.New("missing file for anchors")
 			}
 
