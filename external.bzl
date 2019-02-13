@@ -300,10 +300,10 @@ def _go_dependencies():
 
     maybe(
         go_repository,
-        name = "com_github_pborman_uuid",
-        commit = "c65b2f87fee37d1c7854c9164a450713c28d50cd",
+        name = "com_github_google_uuid",
         custom = "uuid",
-        importpath = "github.com/pborman/uuid",
+        importpath = "github.com/google/uuid",
+        tag = "v1.1.0",
     )
 
     maybe(
@@ -540,8 +540,8 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_google_orderedcode",
-        commit = "05a79567b685231e7ca5db3adccddf9ae9dd86df",
         importpath = "github.com/google/orderedcode",
+        tag = "v0.0.1",
     )
 
     maybe(
@@ -555,9 +555,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "in_gopkg_yaml_v2",
-        commit = "4fc5987536ef307a24ca299aee7ae301cde3d221",
         custom = "yaml",
         importpath = "gopkg.in/yaml.v2",
+        tag = "v2.2.2",
     )
 
     maybe(

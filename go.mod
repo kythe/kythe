@@ -14,14 +14,14 @@ require (
 	github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540
 	github.com/google/go-cmp v0.2.0
 	github.com/google/go-querystring v1.0.0
-	github.com/google/orderedcode v0.0.0-20150706152543-05a79567b685
+	github.com/google/orderedcode v0.0.1
 	github.com/google/subcommands v0.0.0-20190211182706-d47216cd1784
+	github.com/google/uuid v1.1.0 // indirect
 	github.com/googleapis/gax-go v0.0.0-20190111180537-ddfab93c3fae // indirect
 	github.com/jmhodges/levigo v0.0.0-20161115193449-c42d9e0ca023
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/minio/highwayhash v0.0.0-20180501080913-85fc8a2dacad
 	github.com/nwaples/rardecode v1.0.0 // indirect
-	github.com/pborman/uuid v0.0.0-20180122190007-c65b2f87fee3
 	github.com/pierrec/lz4 v0.0.0-20190131084431-473cd7ce01a1 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/sergi/go-diff v0.0.0-20180205163309-da645544ed44
@@ -39,5 +39,5 @@ require (
 	golang.org/x/tools v0.0.0-20190206175659-4892ae6946ab
 	google.golang.org/api v0.0.0-20180404000327-3097bf831ede
 	google.golang.org/grpc v1.16.0
-	gopkg.in/yaml.v2 v2.2.1-0.20180326061214-4fc5987536ef
+	gopkg.in/yaml.v2 v2.2.2
 )

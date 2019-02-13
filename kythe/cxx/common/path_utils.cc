@@ -52,6 +52,11 @@ absl::string_view PathPrefix(absl::string_view path) {
   }
 }
 
+bool IsProperPathPrefix(absl::string_view s, absl::string_view prefix) {
+  return absl::StartsWith(s, prefix) &&
+         (s.size() == prefix.size() || s[prefix.size()] == '/');
+}
+
 }  // namespace
 
 std::string JoinPath(absl::string_view a, absl::string_view b) {
@@ -137,9 +142,15 @@ std::string RelativizePath(absl::string_view to_relativize,
   std::string to_relativize_abs = MakeCleanAbsolutePath(to_relativize);
   std::string relativize_against_abs =
       MakeCleanAbsolutePath(relativize_against);
+  if (relativize_against_abs == "/") {
+    // We don't handle a generic case where the absolute path ends with slash,
+    // since users can work around by just dropping the slash. Except this case
+    // where relativization base is the root.
+    return to_relativize_abs.substr(1);
+  }
   std::string to_relativize_parent = std::string(Dirname(to_relativize_abs));
   std::string ret =
-      absl::StartsWith(to_relativize_parent, relativize_against_abs)
+      IsProperPathPrefix(to_relativize_parent, relativize_against_abs)
           ? to_relativize_abs.substr(relativize_against_abs.size() + 1)
           : to_relativize_abs;
   return ret;
