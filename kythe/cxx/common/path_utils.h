@@ -36,7 +36,10 @@ bool IsAbsolutePath(absl::string_view path);
 /// \brief Relativize `to_relativize` with respect to `relativize_against`.
 ///
 /// If `to_relativize` does not name a path that is a child of
-/// `relativize_against`, `RelativizePath` will return an absolute path.
+/// `relativize_against`, `RelativizePath` will return an absolute path
+/// (resolved against the current working directory).
+///
+/// Note: arguments are assumed to be valid paths, but validity is not checked.
 ///
 /// \param to_relativize Relative or absolute path to a file.
 /// \param relativize_against Relative or absolute path to a directory.
