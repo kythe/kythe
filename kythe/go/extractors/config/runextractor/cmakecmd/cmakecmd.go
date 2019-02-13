@@ -30,7 +30,7 @@ import (
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"github.com/google/subcommands"
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 )
 
 type cmakeCommand struct {
@@ -88,7 +88,7 @@ func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 	var buildDir string
 	if c.buildDir == "" {
 		// sourceDir is already an absolute directory
-		buildDir = filepath.Join(sourceDir, "build-"+uuid.New())
+		buildDir = filepath.Join(sourceDir, "build-"+uuid.New().String())
 		if err := os.Mkdir(buildDir, 0755); err != nil {
 			// Unlike below, we need to fail if the "unique" directory exists.
 			return c.Fail("unable to create build directory: %v", err)
