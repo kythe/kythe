@@ -300,10 +300,10 @@ def _go_dependencies():
 
     maybe(
         go_repository,
-        name = "com_github_pborman_uuid",
-        commit = "c65b2f87fee37d1c7854c9164a450713c28d50cd",
+        name = "com_github_google_uuid",
         custom = "uuid",
-        importpath = "github.com/pborman/uuid",
+        importpath = "github.com/google/uuid",
+        tag = "v1.1.0",
     )
 
     maybe(

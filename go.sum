@@ -35,6 +35,8 @@ github.com/google/subcommands v0.0.0-20180305171600-a3682377147e h1:7OHlrhMiU9KC
 github.com/google/subcommands v0.0.0-20180305171600-a3682377147e/go.mod h1:ZjhPrFU+Olkh9WazFPsl27BQ4UPiG37m3yTrtFlrHVk=
 github.com/google/subcommands v0.0.0-20190211182706-d47216cd1784 h1:shVGySSLBc/LsgxQtxw7LgB1c1K47SzXJQar6Bx1tTQ=
 github.com/google/subcommands v0.0.0-20190211182706-d47216cd1784/go.mod h1:ZjhPrFU+Olkh9WazFPsl27BQ4UPiG37m3yTrtFlrHVk=
+github.com/google/uuid v1.1.0 h1:Jf4mxPC/ziBnoPIdpQdPJ9OeiomAUHLvxmPRSPH9m4s=
+github.com/google/uuid v1.1.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go v0.0.0-20190111180537-ddfab93c3fae/go.mod h1:5VvnLYVimBt+hOVlFtJDkYQHVmk4K27qHHioZjPbYAI=
 github.com/googleapis/gax-go/v2 v2.0.2/go.mod h1:LLvjysVCY1JZeum8Z6l8qUty8fiNwE08qbEPm1M08qg=
 github.com/jmhodges/levigo v0.0.0-20161115193449-c42d9e0ca023 h1:y5P5G9cANJZt3MXlMrgELo5mNLZPXH8aGFFFG7IzPU0=
@@ -46,8 +48,6 @@ github.com/minio/highwayhash v0.0.0-20180501080913-85fc8a2dacad h1:L+8skVz2lusCb
 github.com/minio/highwayhash v0.0.0-20180501080913-85fc8a2dacad/go.mod h1:NL8wme5P5MoscwAkXfGroz3VgpCdhBw3KYOu5mEsvpU=
 github.com/nwaples/rardecode v1.0.0 h1:r7vGuS5akxOnR4JQSkko62RJ1ReCMXxQRPtxsiFMBOs=
 github.com/nwaples/rardecode v1.0.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
-github.com/pborman/uuid v0.0.0-20180122190007-c65b2f87fee3 h1:9J0mOv1rXIBlRjQCiAGyx9C3dZZh5uIa3HU0oTV8v1E=
-github.com/pborman/uuid v0.0.0-20180122190007-c65b2f87fee3/go.mod h1:VyrYX9gd7irzKovcSS6BIIEwPRkP2Wm2m9ufcdFSJ34=
 github.com/pierrec/lz4 v0.0.0-20181027085611-623b5a2f4d2a h1:AjoacEaTgu9mA3/ZNFtPfdIM9MP5WVngYdB2k/3xLJ4=
 github.com/pierrec/lz4 v0.0.0-20181027085611-623b5a2f4d2a/go.mod h1:3/3N9NVKO0jef7pBehbT1qWhCMrIgbYNnFAZCqQ5LRc=
 github.com/pierrec/lz4 v0.0.0-20190131084431-473cd7ce01a1 h1:0utzB5Mn6QyMzIeOn+oD7pjKQLjJwfM9bz6TkPPdxcw=
