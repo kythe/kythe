@@ -52,6 +52,11 @@ absl::string_view PathPrefix(absl::string_view path) {
   }
 }
 
+bool IsProperPathPrefix(absl::string_view s, absl::string_view prefix) {
+  return absl::StartsWith(s, prefix) &&
+         (s.size() == prefix.size() || s[prefix.size()] == '/');
+}
+
 }  // namespace
 
 std::string JoinPath(absl::string_view a, absl::string_view b) {
@@ -131,13 +136,6 @@ PathParts SplitPath(absl::string_view path) {
 absl::string_view Dirname(absl::string_view path) {
   return SplitPath(path).dir;
 }
-
-namespace {
-bool IsProperPathPrefix(absl::string_view s, absl::string_view prefix) {
-  return absl::StartsWith(s, prefix) &&
-         (s.size() == prefix.size() || s[prefix.size()] == '/');
-}
-}  // namespace
 
 std::string RelativizePath(absl::string_view to_relativize,
                            absl::string_view relativize_against) {
