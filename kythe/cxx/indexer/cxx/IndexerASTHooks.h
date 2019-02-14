@@ -124,6 +124,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitCXXDependentScopeMemberExpr(
       const clang::CXXDependentScopeMemberExpr* Expr);
 
+  bool TraverseNestedNameSpecifierLoc(clang::NestedNameSpecifierLoc NNS);
+
   // Visitors for leaf TypeLoc types.
   bool VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL);
   bool VisitEnumTypeLoc(clang::EnumTypeLoc TL);
@@ -439,31 +441,60 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \return The name for `Decl`.
   GraphObserver::NameId BuildNameIdForDecl(const clang::Decl* Decl);
 
-  /// \brief Builds a NodeId for the given dependent name.
+  /// \brief Records parameter and lookup edges for the given dependent name.
   ///
   /// \param NNS The qualifier on the name.
   /// \param Id The name itself.
   /// \param IdLoc The name's location.
   /// \param Root If provided, the primary NodeId is morally prepended to `NNS`
   /// such that the dependent name is lookup(lookup*(Root, NNS), Id).
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForDependentName(
+  /// \return The NodeId for the dependent name.
+  absl::optional<GraphObserver::NodeId> RecordEdgesForDependentName(
       const clang::NestedNameSpecifierLoc& NNS,
       const clang::DeclarationName& Id, const clang::SourceLocation IdLoc,
-      const absl::optional<GraphObserver::NodeId>& Root);
+      const absl::optional<GraphObserver::NodeId>& Root = absl::nullopt);
 
+  /// \brief Records parameter edges for the given dependent name.
+  /// Also records Lookup edges for any nested Identifiers.
+  /// \param DId The NodeId of the dependent name to use.
+  /// \param NNSLoc The qualifier prefix of the dependent name, if any.
+  /// \param Root If provided, the primary NodeId to prepend to `NNS`.
+  /// \return The provided NodeId or nullopt if an unhandled element is
+  /// encountered.
+  absl::optional<GraphObserver::NodeId> RecordParamEdgesForDependentName(
+      const GraphObserver::NodeId& DId, clang::NestedNameSpecifierLoc NNSLoc,
+      const absl::optional<GraphObserver::NodeId>& Root = absl::nullopt);
+
+  /// \brief Records the lookup edge for a dependent name.
+  ///
+  /// \param DId The NodeId of the name being looked up.
+  /// \param Name The kind of name being looked up.
+  /// \return The provided NodeId or absl::nullopt if Name is unsupported.
+  absl::optional<GraphObserver::NodeId> RecordLookupEdgeForDependentName(
+      const GraphObserver::NodeId& DId, const clang::DeclarationName& Name);
+
+  /// \brief Builds a NodeId for the DependentName at IdLoc.
+  ///
+  /// \param NNSLoc The qualifier preceding the name.
+  /// \param IdLoc The starting location of the name itself.
   GraphObserver::NodeId BuildNodeIdForDependentLoc(
       const clang::NestedNameSpecifierLoc& NNSLoc,
       const clang::SourceLocation& IdLoc);
 
+  /// \brief Builds a NodeId for the DependentName at IdRange.
+  ///
+  /// \param NNSLoc The qualifier preceding the name.
+  /// \param IdRange The source range of the name itself.
   GraphObserver::NodeId BuildNodeIdForDependentRange(
       const clang::NestedNameSpecifierLoc& NNSLoc,
       const clang::SourceRange& IdRange);
 
-  absl::optional<GraphObserver::NodeId> RecordDependentParamEdges();
-  GraphObserver::NodeId RecordDependentLookup(
-      const GraphObserver::NodeId& DID, const clang::DeclarationName& Name);
-
-  bool TraverseNestedNameSpecifierLoc(clang::NestedNameSpecifierLoc NNS);
+  /// \brief Builds a NodeId for the provided NestedNameSpecifier, depending on
+  /// its type.
+  ///
+  /// \param NNSLoc The NestedNameSpecifierLoc from which to construct a NodeId.
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForNestedNameSpecifierLoc(
+      const clang::NestedNameSpecifierLoc& NNSLoc);
 
   /// \brief Is `VarDecl` a definition?
   ///
