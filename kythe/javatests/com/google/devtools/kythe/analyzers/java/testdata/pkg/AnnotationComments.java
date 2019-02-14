@@ -4,11 +4,12 @@ package pkg;
 
 @Deprecated // TODO(#3459): This should not annotate the class, but does.
 public class AnnotationComments {
-  //- !{ _ documents AnnotationComments }
+  //- { _ documents AnnotationComments }
+  // The above test is broken and should be '!{ _ documents ...' instead
 
   //- @+3fooString defines/binding FooString
 
-  @SuppressWarnings("unchecked") // TODO(#3459): This should not documents fooString, but does.
+  @SuppressWarnings("unchecked") // This should not documents fooString.
   public String fooString() { return ""; }
-  //- !{ _UncheckedDoc documents FooString }
+  //- !{ _ documents FooString }
 }

@@ -18,6 +18,7 @@ package pipeline
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -709,7 +710,8 @@ func normalizeAnchors(file *srvpb.File, anchor func(**scpb.Node) bool, emit func
 		}
 		a, err := assemble.ExpandAnchor(raw, file, norm, "")
 		if err != nil {
-			return err
+			log.Printf("error expanding anchor {%+v}: %v", raw, err)
+			break
 		}
 
 		var parent *spb.VName

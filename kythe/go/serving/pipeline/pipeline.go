@@ -430,7 +430,8 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 				targets[n.Ticket] = n
 			}
 			if file == nil {
-				return errors.New("missing file for anchors")
+				log.Printf("Warning: no file set for anchor. fileTicket:[%v] curFile:[%v] fragment:[%v]", fileTicket, curFile, fragment)
+				return nil
 			}
 
 			// Reverse each fragment.Decoration to create a *ipb.CrossReference
