@@ -15,7 +15,25 @@
 # limitations under the License.
 
 # Usage:
-# extract.sh //...
+# extract.sh \
+#     --define kythe_corpus=github.com/project/repo \
+#     //...
+#
+# Input `kythe_corpus` should be the repository you're extracting (for example
+# github.com/protocolbuffers/protobuf), as well as the build target to extract.
+# A good default is //..., which extracts almost everything.
+#
+# Note that this doesn't some targets - for example build targets with
+# `tags = ["manual"]` will not be extracted.  If you have  additional targets to
+# extract those can be appended cleanly:
+#
+#     extract.sh --define... //... //some/manual:target
+#
+# If you have restrictions on what can or should be extracted, for example an
+# entire directory to ignore, you must specify your partitions individually.  A
+# good tool for doing this (instead of manually discovering everything) is bazel
+# query, described at
+# https://docs.bazel.build/versions/master/query-how-to.html.
 #
 # Outputs $KYTHE_OUTPUT_DIRECTORY/compilations.kzip
 #
