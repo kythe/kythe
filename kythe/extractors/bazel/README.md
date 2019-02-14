@@ -26,9 +26,10 @@ mkdir -p output
 docker run \
   --mount type=bind,source=$PWD/protobuf,target=/workspace/code \
   --mount type=bind,source=$PWD/output,target=/workspace/output \
+  -e KYTHE_OUTPUT_DIRECTORY=/workspace/output \
   -w /workspace/code \
   gcr.io/kythe-public/bazel-extractor build \
   --define kythe_corpus=github.com/protocolbuffers/protobuf //...
-  
+
 viewindex output/compilations.kzip
 ```
