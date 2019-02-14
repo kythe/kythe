@@ -129,9 +129,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_googlesource_code_re2",
-        # Gitiles creates gzip files with an embedded timestamp, so we cannot use
-        # sha256 to validate the archives.  We must rely on the commit hash and https.
-        url = "https://code.googlesource.com/re2/+archive/2c220e7df3c10d42d74cb66290ec89116bb5e6be.tar.gz",
+        url = "https://github.com/google/re2/archive/2019-01-01.zip",
+        sha256 = "ae9b962dbd6427565efd3e9503acb40a1385b21962c29050546c9347ac7fa93f",
+        strip_prefix = "re2-2019-01-01",
     )
 
     maybe(
