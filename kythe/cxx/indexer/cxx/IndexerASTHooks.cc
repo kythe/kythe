@@ -1954,11 +1954,11 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
   return true;
 }
 
-bool IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
+NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
   return RecordTypeLocSpellingLocation(TL, TL.getTypePtr());
 }
 
-bool IndexerASTVisitor::RecordTypeLocSpellingLocation(
+NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(
     clang::TypeLoc Written, const clang::Type* Resolved) {
   if (auto RCC = ExpandedRangeInCurrentContext(Written.getSourceRange())) {
     // TODO(shahms): This is correct, except the nested use of EmitRanges causes
