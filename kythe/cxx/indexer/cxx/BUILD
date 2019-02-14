@@ -133,6 +133,9 @@ cc_library(
 
 cc_library(
     name = "graph_observer",
+    srcs = [
+        "GraphObserver.cc",
+    ],
     hdrs = [
         "GraphObserver.h",
     ],
