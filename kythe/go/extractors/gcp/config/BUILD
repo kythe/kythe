@@ -24,7 +24,7 @@ go_test(
     srcs = ["converter_test.go"],
     data = [
         ":testdatafiles",
-        "//kythe/go/extractors/gcp/examples:yaml_examples",
+        "//kythe/extractors/gcp/examples:yaml_examples",
     ],
     library = ":config",
     deps = [
