@@ -19,7 +19,7 @@ export BUCKET_NAME="your-bucket-name"
 ## Hello World Test
 
 To make sure you have done setup correctly, we have an example binary at
-`kythe/go/extractors/gcp/helloworld`, which you can run as follows:
+`kythe/go/extractors/gcp/examples/helloworld`, which you can run as follows:
 
 ```
 gcloud builds submit --config examples/helloworld/helloworld.yaml \
