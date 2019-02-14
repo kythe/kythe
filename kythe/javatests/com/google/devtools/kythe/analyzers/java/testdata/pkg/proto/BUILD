@@ -5,3 +5,9 @@ java_proto_verifier_test(
     srcs = ["Proto.java"],
     proto_srcs = ["testdata.proto"],
 )
+
+java_proto_verifier_test(
+    name = "proto2",
+    srcs = ["Proto2.java"],
+    proto_srcs = ["testdata2.proto"],
+)

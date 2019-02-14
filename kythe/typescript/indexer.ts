@@ -203,7 +203,7 @@ class Vistor {
     this.emit({
       source,
       fact_name: '/kythe/' + name,
-      fact_value: new Buffer(value).toString('base64'),
+      fact_value: Buffer.from(value).toString('base64'),
     });
   }
 
