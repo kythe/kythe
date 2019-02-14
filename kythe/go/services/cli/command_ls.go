@@ -121,27 +121,20 @@ func (c lsCommand) displayDirectory(d *ftpb.DirectoryReply) error {
 		return PrintJSONMessage(d)
 	}
 
-	for _, d := range d.Subdirectory {
-		if !c.lsURIs {
-			uri, err := kytheuri.Parse(d)
-			if err != nil {
-				return fmt.Errorf("received invalid directory uri %q: %v", d, err)
+	for _, e := range d.Entry {
+		name := e.Name
+		if c.lsURIs {
+			uri := &kytheuri.URI{
+				Corpus: d.Corpus,
+				Root:   d.Root,
+				Path:   filepath.Join(d.Path, name),
 			}
-			d = filepath.Base(uri.Path) + "/"
+			name = uri.String()
+		} else if e.Kind == ftpb.DirectoryReply_DIRECTORY {
+			name += "/"
 		}
-		if _, err := fmt.Fprintln(out, d); err != nil {
-			return err
-		}
-	}
-	for _, f := range d.File {
-		if !c.lsURIs {
-			uri, err := kytheuri.Parse(f)
-			if err != nil {
-				return fmt.Errorf("received invalid file ticket %q: %v", f, err)
-			}
-			f = filepath.Base(uri.Path)
-		}
-		if _, err := fmt.Fprintln(out, f); err != nil {
+
+		if _, err := fmt.Fprintln(out, name); err != nil {
 			return err
 		}
 	}
