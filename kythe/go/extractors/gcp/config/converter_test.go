@@ -27,7 +27,7 @@ import (
 const testDataDir = "testdata"
 
 // Also test some yaml configs checked in elsewhere.
-const examplesDir = "../examples"
+const examplesDir = "../../../../extractors/gcp/examples"
 
 func TestYAMLConversion(t *testing.T) {
 	testcases := []testcase{
