@@ -29,10 +29,6 @@
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 
-extern "C" {
-struct memcached_st;
-}
-
 namespace kythe {
 /// \brief Keeps track of whether hashes have been seen before.
 class HashCache {
@@ -57,22 +53,6 @@ class HashCache {
  private:
   size_t min_size_ = 0;
   size_t max_size_ = 32 * 1024;
-};
-
-/// \brief A `HashCache` that uses a memcached server.
-class MemcachedHashCache : public HashCache {
- public:
-  ~MemcachedHashCache() override;
-
-  /// \brief Use a memcached instance (e.g. "--SERVER=foo:1234")
-  bool OpenMemcache(const std::string& spec);
-
-  void RegisterHash(const Hash& hash) override;
-
-  bool SawHash(const Hash& hash) override;
-
- private:
-  ::memcached_st* cache_ = nullptr;
 };
 
 // Interface for receiving Kythe data.
