@@ -43,6 +43,8 @@
 # Also assumes you have extractors installed as per
 # kythe/extractors/bazel/extractors.bazelrc.
 
+${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
+
 bazel "$@"
 
 # Collect any extracted compilations.
