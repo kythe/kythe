@@ -59,6 +59,13 @@ TEST(PathUtilsTest, RelativizePath) {
   EXPECT_EQ("bar", RelativizePath("foo/bar", cwd_foo));
   EXPECT_EQ("foo", RelativizePath(cwd_foo, "."));
   EXPECT_EQ(cwd_foo, RelativizePath(cwd_foo, "bar"));
+
+  // If all paths are absolute, then relativizing is unaffected by current_dir.
+  EXPECT_EQ("bar", RelativizePath("/foo/bar", "/foo"));
+  EXPECT_EQ("foo", RelativizePath("/foo", "/"));
+
+  // Test that we only accept proper path prefixes as parent.
+  EXPECT_EQ("/foooo/bar", RelativizePath("/foooo/bar", "/foo"));
 }
 
 TEST(PathUtilsTest, MakeCleanAbsolutePath) {

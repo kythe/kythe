@@ -18,6 +18,8 @@ package config
 
 import (
 	"path"
+	"path/filepath"
+	"strconv"
 
 	"kythe.io/kythe/go/extractors/constants"
 
@@ -28,17 +30,13 @@ import (
 
 type mavenGenerator struct{}
 
-// preArtifacts implements part of buildSystemElaborator
-func (m mavenGenerator) preArtifacts() []string {
-	return []string{path.Join(outputDirectory, "javac-extractor.err")}
-}
-
-// steps implements parts of buildSystemElaborator
-func (m mavenGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
-	buildfile := path.Join(codeDirectory, conf.Root, "pom.xml")
+// extractSteps implements parts of buildSystemElaborator
+func (m mavenGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget, buildID int) []*cloudbuild.BuildStep {
+	buildfile := path.Join(codeDirectory, target.Path)
+	targetPath, _ := filepath.Split(target.Path)
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),
-		preprocessorStep(buildfile),
+		preprocessorStep(buildfile, buildID),
 		&cloudbuild.BuildStep{
 			Name: constants.GCRMvnImage,
 			Args: []string{
@@ -68,13 +66,33 @@ func (m mavenGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep 
 			Env: []string{
 				"KYTHE_CORPUS=" + corpus,
 				"KYTHE_OUTPUT_DIRECTORY=" + outputDirectory,
-				"KYTHE_ROOT_DIRECTORY=" + codeDirectory,
+				"KYTHE_ROOT_DIRECTORY=" + filepath.Join(codeDirectory, targetPath),
 				"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
 				"REAL_JAVAC=" + constants.DefaultJavacLocation,
 				"TMPDIR=" + outputDirectory,
 				"KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
 			},
+			Id:      extractStepID + strconv.Itoa(buildID),
+			WaitFor: []string{javaArtifactsID, preStepID + strconv.Itoa(buildID)},
 		},
-		zipMergeStep(),
 	}
+}
+
+// postExtractSteps implements parts of buildSystemElaborator
+func (m mavenGenerator) postExtractSteps(corpus string) []*cloudbuild.BuildStep {
+	return []*cloudbuild.BuildStep{
+		zipMergeStep(corpus),
+	}
+}
+
+// defaultConfigFile implements parts of buildSystemElaborator
+func (m mavenGenerator) defaultExtractionTarget() *rpb.ExtractionTarget {
+	return &rpb.ExtractionTarget{
+		Path: "pom.xml",
+	}
+}
+
+// additionalArtifacts implements part of buildSystemElaborator
+func (m mavenGenerator) additionalArtifacts() []string {
+	return []string{path.Join(outputDirectory, "javac-extractor.err")}
 }

@@ -3,6 +3,12 @@ steps:
   args: ['clone', '${_REPO}', '/workspace/code']
   id: 'CLONE'
   waitFor: ['-']
+- name: 'gcr.io/cloud-builders/git'
+  args: ['checkout', '${_VERSION}']
+  dir: '/workspace/code'
+  id: 'CHECKOUT'
+  waitFor:
+    - 'CLONE'
 - name: 'ubuntu'
   args: ['mkdir', '/workspace/out']
   waitFor: ['-']
@@ -10,11 +16,13 @@ steps:
   volumes:
     - name: 'kythe_extractors'
       path: '/opt/kythe/extractors'
+  id: 'JAVA-ARTIFACTS'
   waitFor: ['-']
 - name: 'gcr.io/kythe-public/build-preprocessor'
   args: ['/workspace/code/pom.xml']
+  id: 'PREPROCESS0'
   waitFor:
-    - 'CLONE'
+    - 'CHECKOUT'
 - name: 'gcr.io/cloud-builders/mvn'
   args:
     - 'clean'
@@ -37,6 +45,10 @@ steps:
   volumes:
     - name: 'kythe_extractors'
       path: '/opt/kythe/extractors'
+  id: 'EXTRACT0'
+  waitFor:
+    - 'JAVA-ARTIFACTS'
+    - 'PREPROCESS0'
 - name: 'gcr.io/kythe-public/kzip-tools'
   entrypoint: 'bash'
   args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip /workspace/out/*.kzip']

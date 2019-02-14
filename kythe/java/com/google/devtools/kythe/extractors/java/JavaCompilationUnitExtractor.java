@@ -500,7 +500,7 @@ public class JavaCompilationUnitExtractor {
           strippedPath = SOURCE_JAR_ROOT + entryPath;
           break;
         default:
-          // TODO(T227): we shouldn't need to throw an exception here because the above switch
+          // TODO(#1845): we shouldn't need to throw an exception here because the above switch
           // statement means that we never hit this default, but the static analysis tools can't
           // figure that out.  Try to refactor this code to remove this issue.
           throw new IllegalStateException(
@@ -707,7 +707,7 @@ public class JavaCompilationUnitExtractor {
 
       ClassLoader loader = processingClassloader(classpath, processorpath);
 
-      List<Processor> procs = Lists.newArrayList();
+      List<Processor> procs = new ArrayList<>();
 
       // Add any processors passed as flags.
       for (String processor : processors) {
@@ -823,7 +823,7 @@ public class JavaCompilationUnitExtractor {
       options.add(flag);
       options.add(joined);
       try {
-        List<File> files = Lists.newArrayList();
+        List<File> files = new ArrayList<>();
         for (String elt : searchpath) {
           files.add(new File(elt));
         }
@@ -862,7 +862,7 @@ public class JavaCompilationUnitExtractor {
       super(getPlatformClassLoader());
     }
 
-    // TODO(T281): remove reflection and call ClassLoader.getPlatformClassLoader() directly
+    // TODO(#2451): remove reflection and call ClassLoader.getPlatformClassLoader() directly
     // once JDK 8 compatibility is no longer required.
     public static ClassLoader getPlatformClassLoader() {
       try {

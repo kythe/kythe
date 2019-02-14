@@ -6,7 +6,7 @@ load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.20", "0.22")
+check_version("0.20", "0.23")
 
 http_archive(
     name = "bazel_toolchains",

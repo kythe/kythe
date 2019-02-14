@@ -83,9 +83,16 @@ message AnalysisResult {
 
 // Describes a single unit of compilation.
 message CompilationUnit {
-  // The base VName for the compilation and any generated VNames from its
-  // analysis. Generally, the `language` component designates the language of
-  // the compilation's sources.
+  // The base VName for the compilation and any VNames generated from its
+  // analysis. The `v_name` field does not identify a compilation unit, but
+  // provides the information the analyzer needs to correctly label the
+  // entities described by its source. At minimum, this should include the
+  // `corpus` and `language` the unit belongs to, and if appropriate the
+  // `root`. The `v_name` of an object in the code is formed by merging its
+  // specifics into this basis.
+  //
+  // This VName also serves as the default basis for any required inputs that
+  // do not provide their own `v_name` field.
   VName v_name = 1;
 
   reserved 2;

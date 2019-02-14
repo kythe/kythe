@@ -1593,7 +1593,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
       // Refer to explicit specializations directly.
       return absl::nullopt;
     }
-    // This is a member under a template instantiation. See T230.
+    // This is a member under a template instantiation. See #1879.
     return Observer.recordTappNode(
         BuildNodeIdForDecl(MSI->getInstantiatedFrom()), {}, 0);
   }
@@ -2804,7 +2804,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     // queries consistent, we'll use a nullary tapp() to refer to the
     // instantiated object underneath a template. It may be useful to also
     // add the type variables involve in this instantiation's particular
-    // parent, but we don't currently do so. (T230)
+    // parent, but we don't currently do so. (#1879)
     IsImplicit = !MSI->isExplicitSpecialization();
     InnerNode = BuildNodeIdForDecl(Decl);
     OuterNode = InnerNode;

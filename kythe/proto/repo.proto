@@ -20,17 +20,30 @@ package kythe.proto.repo;
 
 // Represents configuration data on how to extract a repo.
 message Config {
+  // ExtractionHint encapsulates all extraction steps for a single corpus.
   repeated ExtractionHint extractions = 1;
+  // Location of the repository to fetch from.  This can be a mirror, if you
+  // prefer the build to fetch from that mirror.
+  string repo = 2;
 }
 
 // Settings specific to extracting a single root and build system in this repo.
 message ExtractionHint {
   BuildSystem build_system = 1;
-  // The root of this extraction target, relative to the repo's root.
-  // The build config (e.g. pom.xml) should live in this directory.
-  string root = 2;
+  // Optionally specify a corpus for this extraction.  If unset, then we will
+  // try to determine corpus from the repository name.
+  string corpus = 2;
 
   JavaOptions java_options = 3;
+
+  // Optionally specify one or more targets for extraction.  By default, we will
+  // assume there is one target specified by root (above), but this can be
+  // configured by specifying target manually.
+  //
+  // Note that each separate target in a single ExtractionHint will be combined
+  // together into a single corpus.  If you need separate corpora, you must
+  // specify multiple ExtractionHint above.
+  repeated ExtractionTarget targets = 4;
 }
 
 enum BuildSystem {
@@ -49,4 +62,12 @@ message JavaOptions {
   }
   // The java version supported, such as 1.8.
   Version version = 1;
+}
+
+message ExtractionTarget {
+  // A file relative to the repository root that configures extraction for this
+  // target.  E.g.: a pom.xml file in maven, or build.gradle file in gradle.
+  string path = 1;
+
+  // TODO(danielmoy): bazel might require a build target instead of a path.
 }

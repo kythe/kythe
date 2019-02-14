@@ -458,7 +458,7 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 	} else {
 		// This is an indirect import, that is, a name imported but not
 		// mentioned explicitly by the package being indexed.
-		// TODO(T273): This is a workaround, and may not be correct in all
+		// TODO(#2383): This is a workaround, and may not be correct in all
 		// cases; work out a more comprehensive solution (possibly during
 		// extraction).
 		vname = proto.Clone(pi.VName).(*spb.VName)

@@ -38,16 +38,40 @@ func TestYAMLConversion(t *testing.T) {
 			yamlFile: "mvn.yaml",
 		},
 		{
+			name:     "maven-subdir",
+			jsonFile: "mvn-subdir.json",
+			yamlDir:  testDataDir,
+			yamlFile: "mvn-subdir.yaml",
+		},
+		{
 			name:     "maven-from-examples",
 			jsonFile: "mvn.json",
 			yamlDir:  examplesDir,
 			yamlFile: "mvn.yaml",
 		},
 		{
+			name:     "guava",
+			jsonFile: "guava-mvn.json",
+			yamlDir:  examplesDir,
+			yamlFile: "guava-mvn.yaml",
+		},
+		{
+			name:     "guava-android",
+			jsonFile: "guava-android-mvn.json",
+			yamlDir:  examplesDir,
+			yamlFile: "guava-android-mvn.yaml",
+		},
+		{
 			name:     "gradle-simple",
 			jsonFile: "gradle.json",
 			yamlDir:  testDataDir,
 			yamlFile: "gradle.yaml",
+		},
+		{
+			name:     "gradle-subdir",
+			jsonFile: "gradle-subdir.json",
+			yamlDir:  testDataDir,
+			yamlFile: "gradle-subdir.yaml",
 		},
 	}
 
@@ -62,7 +86,7 @@ func TestYAMLConversion(t *testing.T) {
 				t.Fatalf("reading expected testdata %s/%s: %v", tcase.yamlDir, tcase.yamlFile, err)
 			}
 
-			if err := testutil.YAMLEqual(actual, expected); err != nil {
+			if err := testutil.YAMLEqual(expected, actual); err != nil {
 				t.Errorf("Expected config %s to be equal: %v", tcase.jsonFile, err)
 			}
 		})
