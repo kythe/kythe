@@ -254,7 +254,7 @@ def _generate_java_proto_impl(ctx):
 
     # Produce a source jar file for the native Java compilation in the java_extract_kzip rule.
     # Note: we can't use java_common.pack_sources because our input is a directory.
-    singlejar = ctx.attr._java_toolchain.java_toolchain.single_jar
+    singlejar = ctx.attr._java_toolchain[java_common.JavaToolchainInfo].single_jar
     srcjar = ctx.actions.declare_file(ctx.label.name + ".srcjar")
     ctx.actions.run(
         outputs = [srcjar],
