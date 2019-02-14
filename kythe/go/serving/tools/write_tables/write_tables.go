@@ -63,7 +63,7 @@ var (
 	verbose = flag.Bool("verbose", false, "Whether to emit extra, and possibly excessive, log messages")
 
 	experimentalBeamPipeline = flag.Bool("experimental_beam_pipeline", false, "Whether to use the Beam experimental pipeline implementation")
-	beamShards               = flag.Int("beam_shards", 128, "Number of shards for beam processing.")
+	beamShards               = flag.Int("beam_shards", 0, "Number of shards for beam processing. If non-positive, a reasonable default will be chosen.")
 	experimentalColumnarData = flag.Bool("experimental_beam_columnar_data", false, "Whether to emit columnar data from the Beam pipeline implementation")
 	compactTable             = flag.Bool("compact_table", false, "Whether to compact the output LevelDB after its creation")
 )
@@ -165,7 +165,11 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 		log.Fatal("Error reading entries: ", err)
 	}
 	k := pipeline.FromEntries(s, entries)
-	shards := *beamShards // TODO(schroederc): better determine number of shards
+	shards := *beamShards
+	if shards <= 0 {
+		// TODO(schroederc): better determine number of shards
+		shards = 128
+	}
 	if *experimentalColumnarData {
 		beamio.WriteLevelDB(s, *tablePath, shards,
 			createColumnarMetadata(s),

@@ -41,7 +41,7 @@ func init() {
 // delimited protobuf stream or a Riegeli file.
 func ReadEntries(ctx context.Context, s beam.Scope, fileOrDir string) (beam.PCollection, error) {
 	if strings.HasSuffix(fileOrDir, "/") {
-		errv := beam.PCollection{}
+		var errv beam.PCollection
 		fs, err := filesystem.New(ctx, fileOrDir)
 		if err != nil {
 			return errv, err
@@ -52,7 +52,7 @@ func ReadEntries(ctx context.Context, s beam.Scope, fileOrDir string) (beam.PCol
 			return errv, err
 		}
 		if len(files) == 0 {
-			return errv, fmt.Errorf("No entries found in %s. Maybe mistyped path?", fileOrDir)
+			return errv, fmt.Errorf("no entries found in %s - maybe mistyped path?", fileOrDir)
 		}
 		return beam.ParDo(s, readFile, beam.CreateList(s, files)), nil
 	}
