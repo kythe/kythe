@@ -47,7 +47,9 @@ import (
 
 var (
 	gs          graphstore.Service
-	entriesFile = flag.String("entries", "", "Path to GraphStore-ordered entries file (mutually exclusive with --graphstore)")
+	entriesFile = flag.String("entries", "",
+		"In non-beam mode: path to GraphStore-ordered entries file (mutually exclusive with --graphstore).\n"+
+			"In beam mode: path to an unordered entries file, or if ending with slash, a directory containing such files.")
 
 	tablePath = flag.String("out", "", "Directory path to output serving table")
 
@@ -61,6 +63,7 @@ var (
 	verbose = flag.Bool("verbose", false, "Whether to emit extra, and possibly excessive, log messages")
 
 	experimentalBeamPipeline = flag.Bool("experimental_beam_pipeline", false, "Whether to use the Beam experimental pipeline implementation")
+	beamShards               = flag.Int("beam_shards", 128, "Number of shards for beam processing.")
 	experimentalColumnarData = flag.Bool("experimental_beam_columnar_data", false, "Whether to emit columnar data from the Beam pipeline implementation")
 	compactTable             = flag.Bool("compact_table", false, "Whether to compact the output LevelDB after its creation")
 )
@@ -157,9 +160,12 @@ func runExperimentalBeamPipeline(ctx context.Context) error {
 	}
 
 	p, s := beam.NewPipelineWithRoot()
-	entries := beamio.ReadEntries(ctx, s, *entriesFile)
+	entries, err := beamio.ReadEntries(ctx, s, *entriesFile)
+	if err != nil {
+		log.Fatal("Error reading entries: ", err)
+	}
 	k := pipeline.FromEntries(s, entries)
-	shards := 128 // TODO(schroederc): better determine number of shards
+	shards := *beamShards // TODO(schroederc): better determine number of shards
 	if *experimentalColumnarData {
 		beamio.WriteLevelDB(s, *tablePath, shards,
 			createColumnarMetadata(s),

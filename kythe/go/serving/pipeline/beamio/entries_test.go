@@ -66,7 +66,10 @@ func TestReadEntries(t *testing.T) {
 
 	p, s := beam.NewPipelineWithRoot()
 
-	coll := ReadEntries(context.Background(), s, f.Name())
+	coll, err := ReadEntries(context.Background(), s, f.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var found []*spb.Entry
 	beam.ParDo(s, func(e *spb.Entry, emit func(*spb.Entry)) { found = append(found, e) }, coll)
