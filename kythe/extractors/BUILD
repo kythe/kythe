@@ -2,6 +2,8 @@ package(default_visibility = ["//visibility:public"])
 
 load(":extractors.bzl", "extractor_action")
 
+exports_files(["extractors.bzl"])
+
 # Clone of default Java proto toolchain with "annotate_code" enabled for
 # cross-language metadata file generation.
 #

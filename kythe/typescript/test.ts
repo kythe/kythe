@@ -30,7 +30,7 @@ import * as ts from 'typescript';
 
 import * as indexer from './indexer';
 
-const KYTHE_PATH = process.env.KYTHE || '/opt/kythe';
+const KYTHE_PATH = process.env.['KYTHE'] || '/opt/kythe';
 
 /**
  * createTestCompilerHost creates a ts.CompilerHost that caches its default
