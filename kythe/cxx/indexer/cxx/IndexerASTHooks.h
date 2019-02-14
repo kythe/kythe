@@ -454,13 +454,15 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   GraphObserver::NodeId BuildNodeIdForDependentLoc(
       const clang::NestedNameSpecifierLoc& NNSLoc,
       const clang::SourceLocation& IdLoc);
+
   GraphObserver::NodeId BuildNodeIdForDependentRange(
       const clang::NestedNameSpecifierLoc& NNSLoc,
       const clang::SourceRange& IdRange);
 
-  void RecordDependentParamEdges();
-  void RecordDependentLookup(const GraphObserver::NodeId& DID,
-                             const clang::DeclarationName& Name);
+  absl::optional<GraphObserver::NodeId> RecordDependentParamEdges();
+  GraphObserver::NodeId RecordDependentLookup(
+      const GraphObserver::NodeId& DID, const clang::DeclarationName& Name);
+
   bool TraverseNestedNameSpecifierLoc(clang::NestedNameSpecifierLoc NNS);
 
   /// \brief Is `VarDecl` a definition?

@@ -1374,6 +1374,10 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr* E) {
     }
     auto DtorName = Context.DeclarationNames.getCXXDestructorName(
         CanQualType::CreateUnsafe(QTCan));
+    // DDiD = BuildNodeIdForDependentLoc(
+    //     NestedNameSpecifierLoc(), E->getBeginLoc());
+    // recordParamEdge(DDiD, 0, *TyId);
+    // RecordDependentLookup(DDId, DtorName)
     DDId = BuildNodeIdForDependentName(clang::NestedNameSpecifierLoc(),
                                        DtorName, E->getBeginLoc(), TyId);
   }
@@ -1481,6 +1485,10 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
       CanQualType::CreateUnsafe(QTCan));
   if (auto LookupId = BuildNodeIdForDependentName(
           clang::NestedNameSpecifierLoc(), CtorName, E->getBeginLoc(), TyId)) {
+    // DDiD = BuildNodeIdForDependentLoc(
+    //     NestedNameSpecifierLoc(), E->getBeginLoc());
+    // recordParamEdge(DDiD, 0, *TyId);
+    // RecordDependentLookup(DDId, CtorName)
     clang::SourceLocation RPL = E->getRParenLoc();
     clang::SourceRange SR = E->getSourceRange();
     // This loses the right paren without the offset.
@@ -3007,6 +3015,10 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
             if (auto LookupId = BuildNodeIdForDependentName(
                     clang::NestedNameSpecifierLoc(), DepName,
                     Init->getSourceLocation(), TyId)) {
+              // DDiD = BuildNodeIdForDependentLoc(
+              //     NestedNameSpecifierLoc(), E->getBeginLoc());
+              // recordParamEdge(DDiD, 0, *TyId);
+              // RecordDependentLookup(DDId, CtorName)
               clang::SourceLocation RPL = Init->getRParenLoc();
               clang::SourceRange SR = Init->getSourceRange();
               SR.setEnd(SR.getEnd().getLocWithOffset(1));
@@ -3700,6 +3712,32 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
   return absl::nullopt;
 }
 
+bool IndexerASTVisitor::TraverseNestedNameSpecifierLoc(
+    clang::NestedNameSpecifierLoc NNS) {
+  if (!NNS) {
+    return true;
+  }
+  if (!Verbosity) {
+    return Base::TraverseNestedNameSpecifierLoc(NNS);
+  }
+  switch (NNS.getNestedNameSpecifier()->getKind()) {
+    case NestedNameSpecifier::TypeSpec:
+      break;  // This is handled by VisitDependentNameTypeLoc.
+    case NestedNameSpecifier::Identifier: {
+      auto DId = BuildNodeIdForDependentRange(NNS.getPrefix(),
+                                              NNS.getLocalSourceRange());
+      if (auto RCC = ExplicitRangeInCurrentContext(NNS.getLocalSourceRange())) {
+        Observer.recordDeclUseLocation(*RCC, DId,
+                                       GraphObserver::Claimability::Claimable,
+                                       IsImplicit(*RCC));
+      }
+    } break;
+    default:
+      break;
+  }
+  return Base::TraverseNestedNameSpecifierLoc(NNS);
+}
+
 GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentRange(
     const clang::NestedNameSpecifierLoc& NNSLoc,
     const clang::SourceRange& IdRange) {
@@ -3730,20 +3768,22 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentLoc(
   return BuildNodeIdForDependentRange(NNS, RangeForASTEntity(IdLoc));
 }
 
-void IndexerASTVisitor::RecordDependentParamEdges() {}
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::RecordDependentParamEdges(
+    const GraphObserver::NodeId& DId, ) {}
 
-void IndexerASTVisitor::RecordDependentLookup(
-    const GraphObserver::NodeId& DID, const clang::DeclarationName& Name) {
+GraphObserver::NodeId IndexerASTVisitor::RecordDependentLookup(
+    const GraphObserver::NodeId& DId, const clang::DeclarationName& Name) {
   switch (Name.getNameKind()) {
     case clang::DeclarationName::Identifier:
-      Observer.recordLookupNode(DID,
+      Observer.recordLookupNode(DId,
                                 Name.getAsIdentifierInfo()->getNameStart());
       break;
     case clang::DeclarationName::CXXConstructorName:
-      Observer.recordLookupNode(DID, "#ctor");
+      Observer.recordLookupNode(DId, "#ctor");
       break;
     case clang::DeclarationName::CXXDestructorName:
-      Observer.recordLookupNode(DID, "#dtor");
+      Observer.recordLookupNode(DId, "#dtor");
       break;
 // TODO(zarko): Fill in the remaining relevant DeclarationName cases.
 #define UNEXPECTED_DECLARATION_NAME_KIND(kind)                         \
@@ -3760,39 +3800,14 @@ void IndexerASTVisitor::RecordDependentLookup(
       UNEXPECTED_DECLARATION_NAME_KIND(CXXDeductionGuideName);
 #undef UNEXPECTED_DECLARATION_NAME_KIND
   }
-}
-
-bool IndexerASTVisitor::TraverseNestedNameSpecifierLoc(
-    clang::NestedNameSpecifierLoc NNS) {
-  if (!NNS) {
-    return true;
-  }
-  if (!Verbosity) {
-    return Base::TraverseNestedNameSpecifierLoc(NNS);
-  }
-  switch (NNS.getNestedNameSpecifier()->getKind()) {
-    case NestedNameSpecifier::TypeSpec:
-      break;  // This is handled by VisitDependentNameTypeLoc.
-    case NestedNameSpecifier::Identifier: {
-      auto DID = BuildNodeIdForDependentRange(NNS.getPrefix(),
-                                              NNS.getLocalSourceRange());
-      if (auto RCC = ExplicitRangeInCurrentContext(NNS.getLocalSourceRange())) {
-        Observer.recordDeclUseLocation(*RCC, DID,
-                                       GraphObserver::Claimability::Claimable,
-                                       IsImplicit(*RCC));
-      }
-    } break;
-    default:
-      break;
-  }
-  return Base::TraverseNestedNameSpecifierLoc(NNS);
+  return DId;
 }
 
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForDependentName(
     const clang::NestedNameSpecifierLoc& InNNSLoc,
     const clang::DeclarationName& Id, const clang::SourceLocation IdLoc,
-    const absl::optional<GraphObserver::NodeId>& Root) {
+    const absl::optional<GraphObserver::NodeId>& Root = absl::nullopt) {
   if (!Verbosity) {
     return absl::nullopt;
   }
@@ -3850,8 +3865,7 @@ IndexerASTVisitor::BuildNodeIdForDependentName(
     Observer.recordParamEdge(IdOut, SubIdCount++, SubId);
     NNSLoc = NNSLoc.getPrefix();
   }
-  RecordDependentLookup(IdOut, Id);
-  return IdOut;
+  return RecordDependentLookup(IdOut, Id);
 }
 
 GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForSpecialTemplateArgument(
@@ -4291,11 +4305,11 @@ NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
 NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
     clang::DependentNameTypeLoc TL) {
   // TODO(shahms): We current rely on the param edges emitted here, but should
-  // not.
+  // not.  Use BuildNodeIdForDependentLoc() and emit the edits in Visit.
   if (auto ID = BuildNodeIdForDependentName(
           TL.getQualifierLoc(),
           clang::DeclarationName(TL.getTypePtr()->getIdentifier()),
-          TL.getNameLoc(), absl::nullopt)) {
+          TL.getNameLoc())) {
     return std::move(ID).value();
   }
   return NodeSet::Empty();
