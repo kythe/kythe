@@ -341,6 +341,14 @@ def _go_dependencies():
 
     maybe(
         go_repository,
+        name = "com_github_hanwen_go_fuse",
+        commit = "dfd0ceb206ca58277d145a4bc3a5e054b3ac20d1",
+        custom = "go_fuse",
+        importpath = "github.com/hanwen/go-fuse",
+    )
+
+    maybe(
+        go_repository,
         name = "com_github_golang_snappy",
         commit = "553a641470496b2327abcac10b36396bd98e45c9",
         custom = "snappy",
