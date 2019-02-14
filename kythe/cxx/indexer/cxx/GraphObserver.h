@@ -21,8 +21,10 @@
 /// \brief Defines the class kythe::GraphObserver
 
 #include <openssl/sha.h>  // for SHA256
+#include <string>
 
 #include "absl/strings/escaping.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "clang/Basic/SourceLocation.h"
@@ -46,18 +48,18 @@ namespace kythe {
 constexpr size_t kSha256DigestBase64MaxEncodingLength = 42;
 
 /// \brief A one-way hash for `InString`.
-template <typename String>
-String CompressString(const String& InString, bool Force = false) {
+inline std::string CompressString(absl::string_view InString,
+                                  bool Force = false) {
   if (InString.size() <= kSha256DigestBase64MaxEncodingLength && !Force) {
-    return InString;
+    return std::string(InString);
   }
   ::SHA256_CTX Sha;
   ::SHA256_Init(&Sha);
   ::SHA256_Update(&Sha, reinterpret_cast<const unsigned char*>(InString.data()),
                   InString.size());
-  String Hash(SHA256_DIGEST_LENGTH, '\0');
+  std::string Hash(SHA256_DIGEST_LENGTH, '\0');
   ::SHA256_Final(reinterpret_cast<unsigned char*>(&Hash[0]), &Sha);
-  String Result;
+  std::string Result;
   absl::Base64Escape(Hash, &Result);
   return Result;
 }
