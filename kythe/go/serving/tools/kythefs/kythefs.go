@@ -429,7 +429,7 @@ func main() {
 
 	kytheApi, err := api.ParseSpec(*serverAddr)
 	if err != nil {
-		log.Fatal("Failed to parse server address %q", *serverAddr)
+		log.Fatal("Failed to parse server address!", *serverAddr)
 	}
 
 	ctx := context.Background()
