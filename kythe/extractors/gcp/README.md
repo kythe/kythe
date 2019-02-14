@@ -150,26 +150,28 @@ this image contains:
 * `javac_extractor.jar` which is the Kythe java extractor
 * `javac9_tools.jar` which contains javac langtools for JDK 9, but targets JRE 8
 
-### gcr.io/kythe-public/kythe-bazel-extractor-artifacts
-
-TODO(danielmoy): update this with content from #3499, below is out of date:
+### gcr.io/kythe-public/bazel-extractor
 
 Created from
-[kythe/go/extractors/gcp/bazel](https://github.com/kythe/kythe/blob/master/kythe/go/extractors/gcp/bazel),
-this image contains a full install of Kythe repo itself, along with a bazel
-builder.  In addition to building inside Google Cloud Build itself, you can also
-use this image for testing locally if you are having a hard time getting Kythe
-installed properly.
+[kythe/extractors/bazel](https://github.com/kythe/kythe/blob/master/kythe/extractors/bazel),
+this image contains all of the pieces of kythe necessary to extract supported
+languages - bazel itself, all of the kythe extractors, and the `.bazelrc`.
+Additionally, it contains necessary tools (including a copy of `kzip-tools`
+described below), and some required scripts.
 
-Note because it includes a full install of kythe and bazel this image is quite
-large.
+When running this docker image, you must set environment variable
+`$KYTHE_OUTPUT_DIRECTORY`.
 
 ### gcr.io/kythe-public/build-preprocessor
 
 This is a simple wrapper around
 [kythe/go/extractors/config/preprocessor](https://github.com/kythe/kythe/blob/master/kythe/go/extractors/config/preprocessor/preprocessor.go),
-which we use to preprocess the `pom.xml` build configuration to be able to
-specify all of the above custom javac extraction logic.
+which we use to preprocess build configurations to be able to
+specify all of the above custom javac extraction logic.  Supports maven
+`pom.xml` files and gradle `build.gradle` files.  Ironically, bazel extraction
+doesn't need its `BUILD` files modified, because you can pass extractors
+directly as `extra_action`, so `build-preprocessor` doesn't support `BUILD`
+files.
 
 ### gcr.io/kythe-public/kzip-tools
 

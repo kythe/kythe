@@ -14,10 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Usage:
+# extract.sh //...
+#
+# Outputs $KYTHE_OUTPUT_DIRECTORY/compilations.kzip
+#
+# Requires having environment variable $KYTHE_OUTPUT_DIRECTORY set, as well
+# as kzip tool (kythe/go/platform/tools/kzip) installed to /kythe/kzip and
+# kythe/release/base/fix_permissions.sh copied to /kythe/fix_permissions.sh.
+# Also assumes you have extractors installed as per
+# kythe/extractors/bazel/extractors.bazelrc.
+
 bazel "$@"
 
 # Collect any extracted compilations.
-mkdir -p /workspace/output
+mkdir -p $KYTHE_OUTPUT_DIRECTORY
 find bazel-out/*/extra_actions/external/kythe_extractors -name '*.kzip' | \
-  xargs /kythe/kzip merge --output /workspace/output/compilations.kzip
-/kythe/fix_permissions.sh /workspace/output/
+  xargs /kythe/kzip merge --output $KYTHE_OUTPUT_DIRECTORY/compilations.kzip
+/kythe/fix_permissions.sh $KYTHE_OUTPUT_DIRECTORY
