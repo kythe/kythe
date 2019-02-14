@@ -14,7 +14,17 @@
  * limitations under the License.
  */
 
-// KytheFS exposes file content stored in Kythe as a virtual filesystem.
+// Binary KytheFS exposes file content stored in Kythe as a virtual filesystem.
+//
+// Example usage:
+//
+//     bazel build kythe/go/serving/tools/kythefs
+//     # Blocks until unmounted:
+//     ./bazel-bin/kythe/go/serving/tools/kythefs/kythefs --mountpoint vfs_dir
+//
+//     # To unmount:
+//     fusermount -u vfs_dir
+//
 package main
 
 import (
@@ -26,18 +36,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kythe.io/kythe/go/services/filetree"
-	"kythe.io/kythe/go/services/graph"
-	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/serving/api"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
-	ftpb "kythe.io/kythe/proto/filetree_go_proto"
-	gpb "kythe.io/kythe/proto/graph_go_proto"
-	xpb "kythe.io/kythe/proto/xref_go_proto"
+	"kythe.io/kythe/go/util/schema/facts"
 
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"
+
+	ftpb "kythe.io/kythe/proto/filetree_go_proto"
+	gpb "kythe.io/kythe/proto/graph_go_proto"
+	xpb "kythe.io/kythe/proto/xref_go_proto"
 )
 
 var (
@@ -56,12 +66,17 @@ func init() {
 
 type KytheFs struct {
 	pathfs.FileSystem
-	XRefs    xrefs.Service
-	FileTree filetree.Service
-	Graph    graph.Service
-	Context  context.Context
+	Context context.Context
+	Api     api.Interface
+
+	WarnedEmptyCorpus       bool
+	WarnedOverlappingPrefix bool
 }
 
+// A FilepathResolution is the result of mapping a vfs path into a Kythe uri
+// component or a proper KytheUri. The mapping happens in the context of a given
+// corpus+root.
+//
 // Only one of the fields has a non-default value, depending on the resolution.
 type FilepathResolution struct {
 	// Present if the filepath was resolved to a Kythe URI.
@@ -89,7 +104,7 @@ type FilepathResolution struct {
 	NextDirComponent string
 }
 
-// True if 'rs' contains a 'NextDirComponent' resolution.
+// hasDirComponent returns true if 'rs' contains a 'NextDirComponent' resolution.
 func hasDirComponent(rs []FilepathResolution) bool {
 	for _, r := range rs {
 		if r.NextDirComponent != "" {
@@ -99,66 +114,81 @@ func hasDirComponent(rs []FilepathResolution) bool {
 	return false
 }
 
-// Returns alternative resolutions if the path is ambiguous.
-// Ambiguity comes from two sources:
+// ResolveFilepath returns alternative resolutions of a given vfs path.
+// The multiple resolutions are due to ambiguity, which occurs due to:
 //
-//     a) The queried path points into a prefix of some corpus+root vfs path.
+//     a) The queried path pointing into a prefix of some corpus+root vfs path.
 //
-//     b) There are overlapping corpus+root+path vfs paths. If happens, you
-//        likely need to adjust the extractor's vname mapping config.
+//     b) Overlapping corpus+root+path vfs paths. If happens, you likely need to
+//        adjust the extractor's vname mapping config.
 //
 func (me *KytheFs) ResolveFilepath(path string) ([]FilepathResolution, error) {
-	req := ftpb.CorpusRootsRequest{}
-	cr, err := me.FileTree.CorpusRoots(me.Context, &req)
+	var req ftpb.CorpusRootsRequest
+	cr, err := me.Api.CorpusRoots(me.Context, &req)
 	if err != nil {
 		return nil, err
 	}
 
 	// Set to dedup next-dirs, as they can be common against multiple corpus+root
 	// pairs.
-	var nextDirs map[string]bool = make(map[string]bool)
+	nextDirs := make(map[string]bool)
 
-	// Among multiple possible corpus+root pairs, prefer the longest ones.
-	// We could alternatively check existence of the path with API calls, but
-	// this situation shouldn't normally arise unless extraction config is broken.
-	longestCorpusRootForTicket := ""
 	var ticketResolution *FilepathResolution
 
 	sep := string(os.PathSeparator)
 
-	for _, corpus := range cr.Corpus {
-		for _, root := range corpus.Root {
-			crPath := filepath.Join(corpus.Name, root)
-			if path == "" {
-				// List root dirs, which are the first components of corpus names.
-				parts := filepath.SplitList(corpus.Name)
-				if len(parts) > 0 {
-					nextDirs[parts[0]] = true
-				}
-			} else {
+	if path == "" {
+		// List top-level vfs dirs, which are the first components of corpus names.
+		for _, corpus := range me.NonEmptyCorpora(cr.Corpus) {
+			parts := strings.SplitN(corpus.Name, sep, 2)
+			nextDirs[parts[0]] = true
+		}
+	} else {
+		// Given a vfs directory path, collect the listings visible in that
+		// directory. These are the following directory components and maybe a
+		// resolved/ Kythe URI of a matching file.
+
+		// If a path could resolve to multiple URIs, due to an overlap in
+		// corpus+root+path_prefix, we arbitrary prefer the one matching the one
+		// with the longer corpus+root.
+		//
+		// We could alternatively check existence of the path with API calls, but
+		// this situation shouldn't normally arise unless extraction config is broken.
+		var longestCorpusRootForTicket string
+
+		for _, corpus := range me.NonEmptyCorpora(cr.Corpus) {
+			for _, root := range corpus.Root {
+				crPath := filepath.Join(corpus.Name, root)
 				crRemain := strings.TrimPrefix(crPath, path)
 				vfsRemain := strings.TrimPrefix(path, crPath)
 				if len(vfsRemain) < len(path) &&
 					(vfsRemain == "" || vfsRemain[:1] == sep) &&
 					len(crPath) > len(longestCorpusRootForTicket) {
 
+					if longestCorpusRootForTicket != "" && !me.WarnedOverlappingPrefix {
+						log.Printf("WARNING: There is at least one overlap in corpus+root+path_prefix. "+
+							"Path: %q (corpus+root %q), corpus+root of conflicting path: %q ",
+							path, crPath, longestCorpusRootForTicket)
+						me.WarnedOverlappingPrefix = true
+					}
+
 					longestCorpusRootForTicket = crPath
 					// Points inside corpus+root, match using the ticket.
-					var p string = "" // Exact corpus+root match.
+					var p string // Exact corpus+root match.
 					if vfsRemain != "" {
 						p = vfsRemain[1:] // Additional kythe path.
 					}
-					ticketResolution = &FilepathResolution{KytheURI: &kytheuri.URI{
-						Corpus: corpus.Name,
-						Root:   root,
-						Path:   p,
-					}}
+					ticketResolution = &FilepathResolution{
+						KytheURI: &kytheuri.URI{
+							Corpus: corpus.Name,
+							Root:   root,
+							Path:   p,
+						},
+					}
 				} else if len(crRemain) < len(crPath) && crRemain[:1] == sep {
 					// Queried path is a proper prefix.
-					parts := strings.Split(crRemain[1:], sep)
-					if len(parts) > 0 {
-						nextDirs[parts[0]] = true
-					}
+					parts := strings.SplitN(crRemain[1:], sep, 2)
+					nextDirs[parts[0]] = true
 				}
 			}
 		}
@@ -175,42 +205,62 @@ func (me *KytheFs) ResolveFilepath(path string) ([]FilepathResolution, error) {
 	return results, nil
 }
 
-// True if the given Kythe URI corresponds to a directory.
-func (me *KytheFs) IsDirectory(uri kytheuri.URI) (bool, error) {
+// NonEmptyCorpora returns the non-empty named corpuses, and warns the first time
+// an empty corpus name is encountered.
+//
+// Empty corpus names are not worth the trouble for special handling, given
+// that naming corpora comes without drawbacks and is a good practice.
+func (me *KytheFs) NonEmptyCorpora(cs []*ftpb.CorpusRootsReply_Corpus) []*ftpb.CorpusRootsReply_Corpus {
+	var res []*ftpb.CorpusRootsReply_Corpus
+	for _, c := range cs {
+		if c.Name != "" {
+			res = append(res, c)
+		} else if !me.WarnedEmptyCorpus {
+			log.Printf("WARNING: found empty corpus name, skipping mapping! " +
+				"Please set a corpus when extracting or indexing.")
+			me.WarnedEmptyCorpus = true
+		}
+	}
+	return res
+}
+
+// IsDirectory returns true if the given Kythe URI corresponds to a directory.
+//
+// Actually it checks that the path is not a known file. Could also use the
+// filetree api to check contents of the parent. But I expect this code to
+// change when caching is added, then we will determine directory-ness from
+// a local cache (and it will be a separate concern how we fill that cache).
+func (me *KytheFs) IsDirectory(uri *kytheuri.URI) (bool, error) {
 	ticket := uri.String()
-	nodeKind := "/kythe/node/kind"
 	req := &gpb.NodesRequest{
 		Ticket: []string{ticket},
-		Filter: []string{nodeKind},
+		// Minimize amount of data returned, ask for NodeKind only.
+		Filter: []string{facts.NodeKind},
 	}
-	res, err := me.Graph.Nodes(me.Context, req)
+	res, err := me.Api.Nodes(me.Context, req)
 	if err != nil {
 		return false, nil
 	}
 	for k, n := range res.Nodes {
-		if k == ticket {
-			for factKey, factValue := range n.Facts {
-				if factKey == nodeKind && string(factValue) == "file" {
-					return false, nil
-				}
-			}
+		if k != ticket {
+			continue
+		}
+		if len(n.Facts) > 0 {
+			// Directory entries don't have any facts.
+			return false, nil
 		}
 	}
-	// Note: Directory entries don't have any facts usually.
 	return true, nil
 }
 
-func (me *KytheFs) FetchSourceForURI(uri kytheuri.URI) ([]byte, error) {
+func (me *KytheFs) FetchSourceForURI(uri *kytheuri.URI) ([]byte, error) {
 	ticket := uri.String()
-	dec, err := me.XRefs.Decorations(me.Context, &xpb.DecorationsRequest{
-		Location:          &xpb.Location{Ticket: ticket},
-		References:        false,
-		TargetDefinitions: false,
-		SourceText:        true,
+	dec, err := me.Api.Decorations(me.Context, &xpb.DecorationsRequest{
+		Location:   &xpb.Location{Ticket: ticket},
+		SourceText: true,
 	})
-
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	return dec.SourceText, nil
 }
@@ -218,35 +268,34 @@ func (me *KytheFs) FetchSourceForURI(uri kytheuri.URI) ([]byte, error) {
 func (me *KytheFs) FetchSource(path string) ([]byte, error) {
 	resolutions, err := me.ResolveFilepath(path)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	for _, r := range resolutions {
-		if r.KytheURI != nil {
-			src, err := me.FetchSourceForURI(*r.KytheURI)
-
-			if err != nil {
-				return []byte{}, fmt.Errorf(
-					"No xrefs for [%v] (resolved to ticket [%v]): [%v]",
-					path, r.KytheURI.String(), err)
-			}
-
-			return src, nil
+		if r.KytheURI == nil {
+			continue
 		}
+		src, err := me.FetchSourceForURI(r.KytheURI)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"no xrefs for %q (resolved to ticket %q): %v",
+				path, r.KytheURI.String(), err)
+		}
+
+		return src, nil
 	}
 
-	return []byte{}, fmt.Errorf("Couldn't resolve path [%v] to a ticket", path)
+	return nil, fmt.Errorf("couldn't resolve path %q to a ticket", path)
 }
 
 //
-// go-fuse stubs
+// go-fuse stub implementation
 //
 
 func (me *KytheFs) GetAttr(path string, context *fuse.Context) (*fuse.Attr, fuse.Status) {
 	resolutions, err := me.ResolveFilepath(path)
-
 	if err != nil {
-		log.Printf("Resolution error for [%v]: %v", path, err)
+		log.Printf("resolution error for %q: %v", path, err)
 		return nil, fuse.ENOENT
 	}
 
@@ -257,34 +306,36 @@ func (me *KytheFs) GetAttr(path string, context *fuse.Context) (*fuse.Attr, fuse
 	}
 
 	for _, r := range resolutions {
-		if r.KytheURI != nil {
-			isDir, err := me.IsDirectory(*r.KytheURI)
-			if err != nil {
-				return nil, fuse.ENOENT
-			}
-			if isDir {
-				return &fuse.Attr{
-					Mode: fuse.S_IFDIR | 0755,
-				}, fuse.OK
-			} else {
-				src, err := me.FetchSourceForURI(*r.KytheURI)
-				if err != nil {
-					return nil, fuse.ENOENT
-				}
-				return &fuse.Attr{
-					Mode: fuse.S_IFREG | 0644, Size: uint64(len(src)),
-				}, fuse.OK
-			}
+		if r.KytheURI == nil {
+			continue
 		}
+
+		isDir, err := me.IsDirectory(r.KytheURI)
+		if err != nil {
+			return nil, fuse.ENOENT
+		}
+
+		if isDir {
+			return &fuse.Attr{
+				Mode: fuse.S_IFDIR | 0755,
+			}, fuse.OK
+		}
+
+		src, err := me.FetchSourceForURI(r.KytheURI)
+		if err != nil {
+			return nil, fuse.ENOENT
+		}
+		return &fuse.Attr{
+			Mode: fuse.S_IFREG | 0644, Size: uint64(len(src)),
+		}, fuse.OK
 	}
 	return nil, fuse.ENOENT
 }
 
 func (me *KytheFs) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntry, code fuse.Status) {
 	resolutions, err := me.ResolveFilepath(path)
-
 	if err != nil {
-		log.Printf("Resolution error for [%v]: %v", path, err)
+		log.Printf("resolution error for %q: %v", path, err)
 		return nil, fuse.ENOENT
 	}
 
@@ -304,10 +355,9 @@ func (me *KytheFs) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntr
 				Root:   r.KytheURI.Root,
 				Path:   r.KytheURI.Path,
 			}
-			dir, err := me.FileTree.Directory(me.Context, req)
-
+			dir, err := me.Api.Directory(me.Context, req)
 			if err != nil {
-				log.Printf("Error fetching dir contents for [%v] (ticket [%v]): %v",
+				log.Printf("error fetching dir contents for %q (ticket %q): %v",
 					path, r.KytheURI.String(), err)
 				return nil, fuse.ENOENT
 			}
@@ -315,7 +365,7 @@ func (me *KytheFs) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntr
 			for _, d := range dir.Subdirectory {
 				uri, err := kytheuri.Parse(d)
 				if err != nil {
-					log.Printf("warning: received invalid directory uri %v: %v", d, err)
+					log.Printf("warning: received invalid directory uri %q: %v", d, err)
 					continue
 				}
 				component := filepath.Base(uri.Path)
@@ -327,7 +377,7 @@ func (me *KytheFs) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntr
 			for _, f := range dir.File {
 				uri, err := kytheuri.Parse(f)
 				if err != nil {
-					log.Printf("warning: received invalid file uri %v: %v", f, err)
+					log.Printf("warning: received invalid file uri %q: %v", f, err)
 					continue
 				}
 				component := filepath.Base(uri.Path)
@@ -338,7 +388,7 @@ func (me *KytheFs) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntr
 			}
 		} else {
 			log.Fatalf(
-				"Programming error: resoultion is neither dir part nor uri for [%v]",
+				"Programming error: resoultion is neither dir part nor uri for %q",
 				path)
 		}
 	}
@@ -357,7 +407,7 @@ func (me *KytheFs) Open(path string, flags uint32, context *fuse.Context) (file 
 
 	src, err := me.FetchSource(path)
 	if err != nil {
-		log.Printf("Error fetching source for [%v]: %v", path, err)
+		log.Printf("error fetching source for %q: %v", path, err)
 		return nil, fuse.ENOENT
 	}
 
@@ -377,22 +427,21 @@ func main() {
 		log.Fatal("You must provide --mountpoint")
 	}
 
-	var xrefClient xrefs.Service = xrefs.WebClient(*serverAddr)
-	var filetreeClient filetree.Service = filetree.WebClient(*serverAddr)
-	var graphClient graph.Service = graph.WebClient(*serverAddr)
+	kytheApi, err := api.ParseSpec(*serverAddr)
+	if err != nil {
+		log.Fatal("Failed to parse server address %q", *serverAddr)
+	}
 
 	ctx := context.Background()
+	defer kytheApi.Close(ctx)
 
 	nfs := pathfs.NewPathNodeFs(&KytheFs{
 		FileSystem: pathfs.NewDefaultFileSystem(),
-		XRefs:      xrefClient,
-		FileTree:   filetreeClient,
-		Graph:      graphClient,
 		Context:    ctx,
+		Api:        kytheApi,
 	}, nil)
 
 	server, _, err := nodefs.MountRoot(*mountPoint, nfs.Root(), nil)
-
 	if err != nil {
 		log.Fatalf("Mounting failed: %v", err)
 	}

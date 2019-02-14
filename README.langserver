@@ -43,15 +43,11 @@ rm -rf $GS $TAB bazel-out/k8-fastbuild/extra_actions
 bazel build $1 --experimental_action_listener kythe/go/extractors/cmd/bazel:extract_kzip_go
 
 # Write index entries to graphstore.
-bazel-bin/kythe/go/indexer/cmd/go_indexer/go_indexer -code $(find bazel-out/k8-fastbuild/extra_actions -name '*.kzip' | xargs -n1 readlink -f) | ./bazel-bin/kythe/go/storage/tools/write_entries/write_entries -batch_size 10024 -workers 2 --graphstore $GS
-# Now read graphstore-ordered entries, since beam pipeline takes these as input.
-./bazel-bin/kythe/go/storage/tools/read_entries/read_entries --graphstore $GS > $ENTRIES
+bazel-bin/kythe/go/indexer/cmd/go_indexer/go_indexer -code $(find bazel-out/k8-fastbuild/extra_actions -name '*.kzip' | xargs -n1 readlink -f) > $ENTRIES
 
-# Legacy pipeline, won't serve documentation properly.
+# Prepare serving tables.
+# Need to use Beam pipeline, the legacy one won't serve documentation properly.
 # See https://github.com/kythe/kythe/issues/3412.
-# bazel-bin/kythe/go/serving/tools/write_tables/write_tables --graphstore $GS --out $TAB
-
-# Prepare columnar serving tables.
 bazel-bin/kythe/go/serving/tools/write_tables/write_tables --entries $ENTRIES --experimental_beam_pipeline --out $TAB
 
 # Serve.
