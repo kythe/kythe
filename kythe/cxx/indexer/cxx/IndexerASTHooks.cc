@@ -1718,7 +1718,6 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr* DRE) {
 bool IndexerASTVisitor::VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL) {
   if (FLAGS_emit_anchors_on_builtins) {
     RecordTypeLocSpellingLocation(TL);
-    return true;
   }
   return true;
 }
