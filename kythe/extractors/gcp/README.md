@@ -19,7 +19,7 @@ export BUCKET_NAME="your-bucket-name"
 ## Hello World Test
 
 To make sure you have done setup correctly, we have an example binary at
-`kythe/go/extractors/gcp/examples/helloworld`, which you can run as follows:
+`kythe/extractors/gcp/examples/helloworld`, which you can run as follows:
 
 ```
 gcloud builds submit --config examples/helloworld/helloworld.yaml \
@@ -126,8 +126,8 @@ If not, you can use these steps to create new credentials:
 To test, run
 
 ```
-bazel build kythe/go/extractors/gcp/examples/restcheck:rest_auth_check
-./bazel-bin/kythe/go/extractors/gcp/examples/restcheck/rest_auth_check -project_id=some-project
+bazel build kythe/extractors/gcp/examples/restcheck:rest_auth_check
+./bazel-bin/kythe/extractors/gcp/examples/restcheck/rest_auth_check -project_id=some-project
 ```
 
 If that returns with a 403 error, you likely did the authentication steps above
@@ -151,6 +151,8 @@ this image contains:
 * `javac9_tools.jar` which contains javac langtools for JDK 9, but targets JRE 8
 
 ### gcr.io/kythe-public/kythe-bazel-extractor-artifacts
+
+TODO(danielmoy): update this with content from #3499, below is out of date:
 
 Created from
 [kythe/go/extractors/gcp/bazel](https://github.com/kythe/kythe/blob/master/kythe/go/extractors/gcp/bazel),
