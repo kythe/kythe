@@ -64,10 +64,10 @@ func init() {
 		"[--server SERVER_ADDRESS]")
 }
 
-type KytheFs struct {
+type kytheFS struct {
 	pathfs.FileSystem
 	Context context.Context
-	Api     api.Interface
+	API     api.Interface
 
 	WarnedEmptyCorpus       bool
 	WarnedOverlappingPrefix bool
@@ -122,9 +122,9 @@ func hasDirComponent(rs []FilepathResolution) bool {
 //     b) Overlapping corpus+root+path vfs paths. If happens, you likely need to
 //        adjust the extractor's vname mapping config.
 //
-func (me *KytheFs) ResolveFilepath(path string) ([]FilepathResolution, error) {
+func (me *kytheFS) ResolveFilepath(path string) ([]FilepathResolution, error) {
 	var req ftpb.CorpusRootsRequest
-	cr, err := me.Api.CorpusRoots(me.Context, &req)
+	cr, err := me.API.CorpusRoots(me.Context, &req)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (me *KytheFs) ResolveFilepath(path string) ([]FilepathResolution, error) {
 	}
 
 	var results []FilepathResolution
-	for k, _ := range nextDirs {
+	for k := range nextDirs {
 		res := FilepathResolution{NextDirComponent: k}
 		results = append(results, res)
 	}
@@ -210,7 +210,7 @@ func (me *KytheFs) ResolveFilepath(path string) ([]FilepathResolution, error) {
 //
 // Empty corpus names are not worth the trouble for special handling, given
 // that naming corpora comes without drawbacks and is a good practice.
-func (me *KytheFs) NonEmptyCorpora(cs []*ftpb.CorpusRootsReply_Corpus) []*ftpb.CorpusRootsReply_Corpus {
+func (me *kytheFS) NonEmptyCorpora(cs []*ftpb.CorpusRootsReply_Corpus) []*ftpb.CorpusRootsReply_Corpus {
 	var res []*ftpb.CorpusRootsReply_Corpus
 	for _, c := range cs {
 		if c.Name != "" {
@@ -230,14 +230,14 @@ func (me *KytheFs) NonEmptyCorpora(cs []*ftpb.CorpusRootsReply_Corpus) []*ftpb.C
 // filetree api to check contents of the parent. But I expect this code to
 // change when caching is added, then we will determine directory-ness from
 // a local cache (and it will be a separate concern how we fill that cache).
-func (me *KytheFs) IsDirectory(uri *kytheuri.URI) (bool, error) {
+func (me *kytheFS) IsDirectory(uri *kytheuri.URI) (bool, error) {
 	ticket := uri.String()
 	req := &gpb.NodesRequest{
 		Ticket: []string{ticket},
 		// Minimize amount of data returned, ask for NodeKind only.
 		Filter: []string{facts.NodeKind},
 	}
-	res, err := me.Api.Nodes(me.Context, req)
+	res, err := me.API.Nodes(me.Context, req)
 	if err != nil {
 		return false, nil
 	}
@@ -253,9 +253,9 @@ func (me *KytheFs) IsDirectory(uri *kytheuri.URI) (bool, error) {
 	return true, nil
 }
 
-func (me *KytheFs) FetchSourceForURI(uri *kytheuri.URI) ([]byte, error) {
+func (me *kytheFS) fetchSourceForURI(uri *kytheuri.URI) ([]byte, error) {
 	ticket := uri.String()
-	dec, err := me.Api.Decorations(me.Context, &xpb.DecorationsRequest{
+	dec, err := me.API.Decorations(me.Context, &xpb.DecorationsRequest{
 		Location:   &xpb.Location{Ticket: ticket},
 		SourceText: true,
 	})
@@ -265,7 +265,7 @@ func (me *KytheFs) FetchSourceForURI(uri *kytheuri.URI) ([]byte, error) {
 	return dec.SourceText, nil
 }
 
-func (me *KytheFs) FetchSource(path string) ([]byte, error) {
+func (me *kytheFS) fetchSource(path string) ([]byte, error) {
 	resolutions, err := me.ResolveFilepath(path)
 	if err != nil {
 		return nil, err
@@ -275,7 +275,7 @@ func (me *KytheFs) FetchSource(path string) ([]byte, error) {
 		if r.KytheURI == nil {
 			continue
 		}
-		src, err := me.FetchSourceForURI(r.KytheURI)
+		src, err := me.fetchSourceForURI(r.KytheURI)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"no xrefs for %q (resolved to ticket %q): %v",
@@ -288,11 +288,8 @@ func (me *KytheFs) FetchSource(path string) ([]byte, error) {
 	return nil, fmt.Errorf("couldn't resolve path %q to a ticket", path)
 }
 
-//
-// go-fuse stub implementation
-//
-
-func (me *KytheFs) GetAttr(path string, context *fuse.Context) (*fuse.Attr, fuse.Status) {
+// GetAttr implements a go-fuse stub.
+func (me *kytheFS) GetAttr(path string, context *fuse.Context) (*fuse.Attr, fuse.Status) {
 	resolutions, err := me.ResolveFilepath(path)
 	if err != nil {
 		log.Printf("resolution error for %q: %v", path, err)
@@ -321,7 +318,7 @@ func (me *KytheFs) GetAttr(path string, context *fuse.Context) (*fuse.Attr, fuse
 			}, fuse.OK
 		}
 
-		src, err := me.FetchSourceForURI(r.KytheURI)
+		src, err := me.fetchSourceForURI(r.KytheURI)
 		if err != nil {
 			return nil, fuse.ENOENT
 		}
@@ -332,7 +329,8 @@ func (me *KytheFs) GetAttr(path string, context *fuse.Context) (*fuse.Attr, fuse
 	return nil, fuse.ENOENT
 }
 
-func (me *KytheFs) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntry, code fuse.Status) {
+// OpenDir implements a go-fuse stub.
+func (me *kytheFS) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntry, code fuse.Status) {
 	resolutions, err := me.ResolveFilepath(path)
 	if err != nil {
 		log.Printf("resolution error for %q: %v", path, err)
@@ -355,7 +353,7 @@ func (me *KytheFs) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntr
 				Root:   r.KytheURI.Root,
 				Path:   r.KytheURI.Path,
 			}
-			dir, err := me.Api.Directory(me.Context, req)
+			dir, err := me.API.Directory(me.Context, req)
 			if err != nil {
 				log.Printf("error fetching dir contents for %q (ticket %q): %v",
 					path, r.KytheURI.String(), err)
@@ -399,13 +397,14 @@ func (me *KytheFs) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntr
 	return result, fuse.OK
 }
 
-func (me *KytheFs) Open(path string, flags uint32, context *fuse.Context) (file nodefs.File, code fuse.Status) {
+// Open implements a go-fuse stub.
+func (me *kytheFS) Open(path string, flags uint32, context *fuse.Context) (file nodefs.File, code fuse.Status) {
 	// Read-only filesystem.
 	if flags&fuse.O_ANYWRITE != 0 {
 		return nil, fuse.EPERM
 	}
 
-	src, err := me.FetchSource(path)
+	src, err := me.fetchSource(path)
 	if err != nil {
 		log.Printf("error fetching source for %q: %v", path, err)
 		return nil, fuse.ENOENT
@@ -427,18 +426,18 @@ func main() {
 		log.Fatal("You must provide --mountpoint")
 	}
 
-	kytheApi, err := api.ParseSpec(*serverAddr)
+	kytheAPI, err := api.ParseSpec(*serverAddr)
 	if err != nil {
 		log.Fatal("Failed to parse server address!", *serverAddr)
 	}
 
 	ctx := context.Background()
-	defer kytheApi.Close(ctx)
+	defer kytheAPI.Close(ctx)
 
-	nfs := pathfs.NewPathNodeFs(&KytheFs{
+	nfs := pathfs.NewPathNodeFs(&kytheFS{
 		FileSystem: pathfs.NewDefaultFileSystem(),
 		Context:    ctx,
-		Api:        kytheApi,
+		API:        kytheAPI,
 	}, nil)
 
 	server, _, err := nodefs.MountRoot(*mountPoint, nfs.Root(), nil)
