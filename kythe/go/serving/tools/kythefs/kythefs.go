@@ -64,7 +64,7 @@ func init() {
 		"[--server SERVER_ADDRESS]")
 }
 
-type kytheFs struct {
+type kytheFS struct {
 	pathfs.FileSystem
 	Context context.Context
 	API     api.Interface
@@ -122,7 +122,7 @@ func hasDirComponent(rs []FilepathResolution) bool {
 //     b) Overlapping corpus+root+path vfs paths. If happens, you likely need to
 //        adjust the extractor's vname mapping config.
 //
-func (me *kytheFs) ResolveFilepath(path string) ([]FilepathResolution, error) {
+func (me *kytheFS) ResolveFilepath(path string) ([]FilepathResolution, error) {
 	var req ftpb.CorpusRootsRequest
 	cr, err := me.API.CorpusRoots(me.Context, &req)
 	if err != nil {
@@ -210,7 +210,7 @@ func (me *kytheFs) ResolveFilepath(path string) ([]FilepathResolution, error) {
 //
 // Empty corpus names are not worth the trouble for special handling, given
 // that naming corpora comes without drawbacks and is a good practice.
-func (me *kytheFs) NonEmptyCorpora(cs []*ftpb.CorpusRootsReply_Corpus) []*ftpb.CorpusRootsReply_Corpus {
+func (me *kytheFS) NonEmptyCorpora(cs []*ftpb.CorpusRootsReply_Corpus) []*ftpb.CorpusRootsReply_Corpus {
 	var res []*ftpb.CorpusRootsReply_Corpus
 	for _, c := range cs {
 		if c.Name != "" {
@@ -230,7 +230,7 @@ func (me *kytheFs) NonEmptyCorpora(cs []*ftpb.CorpusRootsReply_Corpus) []*ftpb.C
 // filetree api to check contents of the parent. But I expect this code to
 // change when caching is added, then we will determine directory-ness from
 // a local cache (and it will be a separate concern how we fill that cache).
-func (me *kytheFs) IsDirectory(uri *kytheuri.URI) (bool, error) {
+func (me *kytheFS) IsDirectory(uri *kytheuri.URI) (bool, error) {
 	ticket := uri.String()
 	req := &gpb.NodesRequest{
 		Ticket: []string{ticket},
@@ -253,7 +253,7 @@ func (me *kytheFs) IsDirectory(uri *kytheuri.URI) (bool, error) {
 	return true, nil
 }
 
-func (me *kytheFs) fetchSourceForURI(uri *kytheuri.URI) ([]byte, error) {
+func (me *kytheFS) fetchSourceForURI(uri *kytheuri.URI) ([]byte, error) {
 	ticket := uri.String()
 	dec, err := me.API.Decorations(me.Context, &xpb.DecorationsRequest{
 		Location:   &xpb.Location{Ticket: ticket},
@@ -265,7 +265,7 @@ func (me *kytheFs) fetchSourceForURI(uri *kytheuri.URI) ([]byte, error) {
 	return dec.SourceText, nil
 }
 
-func (me *kytheFs) fetchSource(path string) ([]byte, error) {
+func (me *kytheFS) fetchSource(path string) ([]byte, error) {
 	resolutions, err := me.ResolveFilepath(path)
 	if err != nil {
 		return nil, err
@@ -289,7 +289,7 @@ func (me *kytheFs) fetchSource(path string) ([]byte, error) {
 }
 
 // GetAttr implements a go-fuse stub.
-func (me *kytheFs) GetAttr(path string, context *fuse.Context) (*fuse.Attr, fuse.Status) {
+func (me *kytheFS) GetAttr(path string, context *fuse.Context) (*fuse.Attr, fuse.Status) {
 	resolutions, err := me.ResolveFilepath(path)
 	if err != nil {
 		log.Printf("resolution error for %q: %v", path, err)
@@ -330,7 +330,7 @@ func (me *kytheFs) GetAttr(path string, context *fuse.Context) (*fuse.Attr, fuse
 }
 
 // OpenDir implements a go-fuse stub.
-func (me *kytheFs) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntry, code fuse.Status) {
+func (me *kytheFS) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntry, code fuse.Status) {
 	resolutions, err := me.ResolveFilepath(path)
 	if err != nil {
 		log.Printf("resolution error for %q: %v", path, err)
@@ -398,7 +398,7 @@ func (me *kytheFs) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntr
 }
 
 // Open implements a go-fuse stub.
-func (me *kytheFs) Open(path string, flags uint32, context *fuse.Context) (file nodefs.File, code fuse.Status) {
+func (me *kytheFS) Open(path string, flags uint32, context *fuse.Context) (file nodefs.File, code fuse.Status) {
 	// Read-only filesystem.
 	if flags&fuse.O_ANYWRITE != 0 {
 		return nil, fuse.EPERM
@@ -434,7 +434,7 @@ func main() {
 	ctx := context.Background()
 	defer kytheAPI.Close(ctx)
 
-	nfs := pathfs.NewPathNodeFs(&kytheFs{
+	nfs := pathfs.NewPathNodeFs(&kytheFS{
 		FileSystem: pathfs.NewDefaultFileSystem(),
 		Context:    ctx,
 		API:        kytheAPI,
