@@ -30,7 +30,7 @@ git clone git@github.com:kythe/kythe.git
 Kythe relies on the following external dependencies:
 
 * asciidoc
-* bison-3.0.4 (2.3 is also acceptable)
+* bison-3.0.4
 * clang >= 3.6
 * cmake >= 3.4.3
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
