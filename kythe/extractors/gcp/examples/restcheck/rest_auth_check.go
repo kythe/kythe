@@ -22,7 +22,7 @@
 // go build rest_auth_check
 // ./rest_auth_check -project_id=some-project-id
 //
-// For authentication steps, see kythe/go/extractors/gcp/README.md
+// For authentication steps, see kythe/extractors/gcp/README.md
 package main
 
 import (

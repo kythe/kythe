@@ -14,10 +14,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Usage:
+# extract.sh \
+#     --define kythe_corpus=github.com/project/repo \
+#     //...
+#
+# Input `kythe_corpus` should be the repository you're extracting (for example
+# github.com/protocolbuffers/protobuf), as well as the build target to extract.
+# A good default is //..., which extracts almost everything.
+#
+# Note that this doesn't some targets - for example build targets with
+# `tags = ["manual"]` will not be extracted.  If you have  additional targets to
+# extract those can be appended cleanly:
+#
+#     extract.sh --define... //... //some/manual:target
+#
+# If you have restrictions on what can or should be extracted, for example an
+# entire directory to ignore, you must specify your partitions individually.  A
+# good tool for doing this (instead of manually discovering everything) is bazel
+# query, described at
+# https://docs.bazel.build/versions/master/query-how-to.html.
+#
+# Outputs $KYTHE_OUTPUT_DIRECTORY/compilations.kzip
+#
+# Requires having environment variable $KYTHE_OUTPUT_DIRECTORY set, as well
+# as kzip tool (kythe/go/platform/tools/kzip) installed to /kythe/kzip and
+# kythe/release/base/fix_permissions.sh copied to /kythe/fix_permissions.sh.
+# Also assumes you have extractors installed as per
+# kythe/extractors/bazel/extractors.bazelrc.
+
+${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
+
 bazel "$@"
 
 # Collect any extracted compilations.
-mkdir -p /workspace/output
+mkdir -p $KYTHE_OUTPUT_DIRECTORY
 find bazel-out/*/extra_actions/external/kythe_extractors -name '*.kzip' | \
-  xargs /kythe/kzip merge --output /workspace/output/compilations.kzip
-/kythe/fix_permissions.sh /workspace/output/
+  xargs /kythe/kzip merge --output $KYTHE_OUTPUT_DIRECTORY/compilations.kzip
+/kythe/fix_permissions.sh $KYTHE_OUTPUT_DIRECTORY
