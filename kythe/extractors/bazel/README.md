@@ -1,7 +1,7 @@
 # Bazel Kythe extraction
 
 This package contains a Docker image that configures the `gcr.io/cloud-builders/bazel` Cloud Builder
-to extract Kythe `.kzip` compilations from supported targets.
+to extract Kythe `.kzip` compilations from supported targets: `gcr.io/kythe-public/bazel-extractor`
 
 ## Supported Bazel rules
 
