@@ -122,7 +122,6 @@ class WrappedContext : public GeneratorContext {
     return true;
   }
 
-
   ZeroCopyOutputStream* OpenForAppend(const std::string&) override {
     return nullptr;
   }
