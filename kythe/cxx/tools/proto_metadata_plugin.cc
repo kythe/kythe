@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cstdlib>
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
@@ -20,6 +21,8 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "glog/logging.h"
@@ -27,6 +30,7 @@
 #include "google/protobuf/compiler/cpp/cpp_generator.h"
 #include "google/protobuf/compiler/plugin.h"
 #include "google/protobuf/compiler/plugin.pb.h"
+#include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 
@@ -35,12 +39,37 @@ namespace {
 using ::google::protobuf::FileDescriptor;
 using ::google::protobuf::compiler::GeneratorContext;
 using ::google::protobuf::compiler::cpp::CppGenerator;
+using ::google::protobuf::io::GzipOutputStream;
 using ::google::protobuf::io::Printer;
 using ::google::protobuf::io::StringOutputStream;
 using ::google::protobuf::io::ZeroCopyOutputStream;
 
 constexpr absl::string_view kMetadataFileSuffix = ".meta";
 constexpr absl::string_view kHeaderFileSuffix = ".h";
+constexpr absl::string_view kCompressMetadataParam = "compress_metadata";
+constexpr absl::string_view kAnnotateHeaderParam = "annotate_headers";
+constexpr absl::string_view kAnnotationPragmaParam = "annotation_pragma_name";
+constexpr absl::string_view kAnnotationPragmaInline = "kythe_inline_metadata";
+constexpr absl::string_view kAnnotationPragmaCompress =
+    "kythe_inline_gzip_metadata";
+constexpr int kMetadataLineLength = 76;
+
+absl::string_view NextChunk(absl::string_view* data, int size) {
+  if (data->empty()) {
+    return {};
+  }
+  absl::string_view result = data->substr(0, size);
+  data->remove_prefix(result.size());
+  return result;
+}
+
+void WriteLines(absl::string_view metadata, Printer* printer) {
+  while (!metadata.empty()) {
+    absl::string_view chunk = NextChunk(&metadata, kMetadataLineLength);
+    printer->WriteRaw(chunk.data(), chunk.size());
+    printer->PrintRaw("\n");
+  }
+}
 
 std::string WriteMetadata(absl::string_view metafile,
                           absl::string_view contents,
@@ -55,8 +84,8 @@ std::string WriteMetadata(absl::string_view metafile,
   printer.PrintRaw("\n");
   std::string metadata;
   absl::Base64Escape(contents, &metadata);
-  printer.WriteRaw(metadata.data(), metadata.size());
-  printer.PrintRaw("\n*/\n");
+  WriteLines(metadata, &printer);
+  printer.PrintRaw("*/\n");
 
   return "";
 }
@@ -83,15 +112,42 @@ class WrappedOutputStream : public ZeroCopyOutputStream {
   ZeroCopyOutputStream* wrapped_;
 };
 
+class GzipStringOutputStream : public ZeroCopyOutputStream {
+ public:
+  explicit GzipStringOutputStream(std::string* output)
+      : string_stream_(output) {}
+
+  bool Next(void** data, int* size) override {
+    return gzip_stream_.Next(data, size);
+  }
+  void BackUp(int count) override { return gzip_stream_.BackUp(count); }
+  google::protobuf::int64 ByteCount() const override {
+    return gzip_stream_.ByteCount();
+  }
+  bool WriteAliasedRaw(const void* data, int size) override {
+    return gzip_stream_.WriteAliasedRaw(data, size);
+  }
+  bool AllowsAliasing() const override { return gzip_stream_.AllowsAliasing(); }
+
+ private:
+  StringOutputStream string_stream_;
+  GzipOutputStream gzip_stream_{&string_stream_};
+};
+
 class WrappedContext : public GeneratorContext {
  public:
-  explicit WrappedContext(GeneratorContext* wrapped) : wrapped_(wrapped) {}
+  explicit WrappedContext(GeneratorContext* wrapped, bool compress_metadata)
+      : compress_metadata_(compress_metadata), wrapped_(wrapped) {}
 
   // Open the file for writing.
   ZeroCopyOutputStream* Open(const std::string& filename) override {
     // If it's a metadata file, preserve the contents in a string.
     if (absl::EndsWith(filename, kMetadataFileSuffix)) {
-      return new StringOutputStream(&metadata_map_[filename]);
+      if (compress_metadata_) {
+        return new GzipStringOutputStream(&metadata_map_[filename]);
+      } else {
+        return new StringOutputStream(&metadata_map_[filename]);
+      }
     }
     // If it's a header file, retain ownership of the stream so that we can
     // append to it later (OpenForAppend does not work be default).
@@ -141,6 +197,7 @@ class WrappedContext : public GeneratorContext {
   }
 
  private:
+  bool compress_metadata_;
   GeneratorContext* wrapped_;
   // Map from header name -> metadata contents.
   absl::node_hash_map<std::string, std::string> metadata_map_;
@@ -148,11 +205,32 @@ class WrappedContext : public GeneratorContext {
       stream_map_;
 };
 
+// Returns true if the compress_metadata paramete is present.
+// Adjusts the parameter argument to remove compress_metadata and include
+// requisite options for metadata generation.
+bool CompressMetadata(std::string* parameter) {
+  bool compress_metadata = false;
+  std::vector<absl::string_view> parts = {kAnnotateHeaderParam};
+  for (absl::string_view param : absl::StrSplit(*parameter, ',')) {
+    if (absl::StartsWith(param, kAnnotationPragmaParam) ||
+        param == kAnnotateHeaderParam || param == kCompressMetadataParam) {
+      continue;
+    }
+    parts.push_back(param);
+  }
+  *parameter = absl::StrJoin(parts, ",");
+  absl::StrAppend(
+      parameter, ",", kAnnotationPragmaParam, "=",
+      compress_metadata ? kAnnotationPragmaCompress : kAnnotationPragmaInline);
+  return compress_metadata;
+}
+
 class EmbeddedMetadataGenerator : public CppGenerator {
   bool Generate(const FileDescriptor* file, const std::string& parameter,
                 GeneratorContext* context, std::string* error) const override {
-    WrappedContext wrapper(context);
-    if (CppGenerator::Generate(file, parameter, &wrapper, error)) {
+    std::string cpp_parameter = parameter;
+    WrappedContext wrapper(context, CompressMetadata(&cpp_parameter));
+    if (CppGenerator::Generate(file, cpp_parameter, &wrapper, error)) {
       return wrapper.WriteEmbeddedMetadata(error);
     }
     return false;
