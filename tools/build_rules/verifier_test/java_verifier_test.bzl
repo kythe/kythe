@@ -254,12 +254,11 @@ def _generate_java_proto_impl(ctx):
 
     # Produce a source jar file for the native Java compilation in the java_extract_kzip rule.
     # Note: we can't use java_common.pack_sources because our input is a directory.
-    singlejar = ctx.attr._java_toolchain[java_common.JavaToolchainInfo].single_jar
     srcjar = ctx.actions.declare_file(ctx.label.name + ".srcjar")
     ctx.actions.run(
         outputs = [srcjar],
         inputs = [out, files],
-        executable = singlejar,
+        executable = ctx.executable._singlejar,
         arguments = ["--output", srcjar.path, "--resources", "@" + files.path],
     )
 
@@ -280,8 +279,10 @@ _generate_java_proto = rule(
             executable = True,
             cfg = "host",
         ),
-        "_java_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/jdk:current_java_toolchain"),
+        "_singlejar": attr.label(
+            default = Label("@bazel_tools//tools/jdk:singlejar"),
+            executable = True,
+            cfg = "host",
         ),
     },
     implementation = _generate_java_proto_impl,
