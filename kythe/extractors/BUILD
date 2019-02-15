@@ -27,11 +27,7 @@ proto_lang_toolchain(
     blacklisted_protos = [
         "@com_google_protobuf//:well_known_protos",
     ],
-    command_line = ",".join([
-        "--$(PLUGIN_OUT)=annotate_headers",
-        "annotation_pragma_name=kythe_inline_metadata",
-        "annotation_guard_name=KYTHE_IS_RUNNING:$(OUT)",
-    ]),
+    command_line = "--$(PLUGIN_OUT)=:$(OUT)",
     plugin = "//kythe/cxx/tools:proto_metadata_plugin",
     runtime = "@com_google_protobuf//:protobuf",
 )

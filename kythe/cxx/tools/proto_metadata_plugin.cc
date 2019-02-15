@@ -48,6 +48,8 @@ constexpr absl::string_view kMetadataFileSuffix = ".meta";
 constexpr absl::string_view kHeaderFileSuffix = ".h";
 constexpr absl::string_view kCompressMetadataParam = "compress_metadata";
 constexpr absl::string_view kAnnotateHeaderParam = "annotate_headers";
+constexpr absl::string_view kAnnotationGuardParam = "annotation_guard_name";
+constexpr absl::string_view kAnnotationGuardDefault = "KYTHE_IS_RUNNING";
 constexpr absl::string_view kAnnotationPragmaParam = "annotation_pragma_name";
 constexpr absl::string_view kAnnotationPragmaInline = "kythe_inline_metadata";
 constexpr absl::string_view kAnnotationPragmaCompress =
@@ -205,16 +207,24 @@ class WrappedContext : public GeneratorContext {
       stream_map_;
 };
 
-// Returns true if the compress_metadata paramete is present.
+// Returns true if the compress_metadata parameter is present.
 // Adjusts the parameter argument to remove compress_metadata and include
 // requisite options for metadata generation.
 bool CompressMetadata(std::string* parameter) {
+  bool has_guard_name = false;
   bool compress_metadata = false;
   std::vector<absl::string_view> parts = {kAnnotateHeaderParam};
   for (absl::string_view param : absl::StrSplit(*parameter, ',')) {
     if (absl::StartsWith(param, kAnnotationPragmaParam) ||
-        param == kAnnotateHeaderParam || param == kCompressMetadataParam) {
+        param == kAnnotateHeaderParam) {
       continue;
+    }
+    if (param == kCompressMetadataParam) {
+      compress_metadata = true;
+      continue;
+    }
+    if (absl::StartsWith(param, kAnnotationGuardParam)) {
+      has_guard_name = true;
     }
     parts.push_back(param);
   }
@@ -222,6 +232,10 @@ bool CompressMetadata(std::string* parameter) {
   absl::StrAppend(
       parameter, ",", kAnnotationPragmaParam, "=",
       compress_metadata ? kAnnotationPragmaCompress : kAnnotationPragmaInline);
+  if (!has_guard_name) {
+    absl::StrAppend(parameter, ",", kAnnotationGuardParam, "=",
+                    kAnnotationGuardDefault);
+  }
   return compress_metadata;
 }
 
