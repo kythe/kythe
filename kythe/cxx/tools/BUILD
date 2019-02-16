@@ -92,3 +92,17 @@ cc_binary(
         ":claimcmdlib",
     ],
 )
+
+cc_binary(
+    name = "proto_metadata_plugin",
+    srcs = ["proto_metadata_plugin.cc"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//:protoc_lib",
+    ],
+)
