@@ -1,7 +1,7 @@
 // Started from the calc++ example code as part of the Bison-3.0 distribution.
 %skeleton "lalr1.cc"
 %defines
-%define api.parser.class {AssertionParserImpl}
+%define parser_class_name {AssertionParserImpl}
 %{
 /*
  * Copyright 2014 The Kythe Authors. All rights reserved.
