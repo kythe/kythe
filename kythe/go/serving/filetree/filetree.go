@@ -25,6 +25,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 
@@ -74,7 +75,24 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 	} else if err != nil {
 		return nil, fmt.Errorf("lookup error: %v", err)
 	}
-	entries, err := parseLegacyEntries(nil, ftpb.DirectoryReply_FILE, d.FileTicket)
+	entries := make([]*ftpb.DirectoryReply_Entry, 0, len(d.Entry))
+	for _, e := range d.Entry {
+		re := &ftpb.DirectoryReply_Entry{
+			Name:        e.Name,
+			BuildConfig: e.BuildConfig,
+		}
+		switch e.Kind {
+		case srvpb.FileDirectory_FILE:
+			re.Kind = ftpb.DirectoryReply_FILE
+		case srvpb.FileDirectory_DIRECTORY:
+			re.Kind = ftpb.DirectoryReply_DIRECTORY
+		default:
+			log.Printf("WARNING: unknown directory entry type: %T", e)
+			continue
+		}
+		entries = append(entries, re)
+	}
+	entries, err := parseLegacyEntries(entries, ftpb.DirectoryReply_FILE, d.FileTicket)
 	if err != nil {
 		return nil, err
 	}
