@@ -28,7 +28,7 @@ def _construct_vnames_config_impl(ctx):
         command = "\n".join([
             "set -e -o pipefail",
             "cat " + " ".join([src.path for src in srcs]) + " | " +
-            "tr --delete '\n' | sed 's/\]\[/,/g' > " + merged.path,
+            "tr -d '\n' | sed 's/\]\[/,/g' > " + merged.path,
         ]),
     )
     ctx.actions.expand_template(
