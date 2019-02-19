@@ -116,11 +116,11 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 		targets = append(targets, g.defaultExtractionTarget())
 	}
 	for i, target := range targets {
-		id := ""
+		idSuffix := ""
 		if len(targets) > 1 {
-			id = strconv.Itoa(i)
+			idSuffix = strconv.Itoa(i)
 		}
-		build.Steps = append(build.Steps, g.extractSteps(hints.Corpus, target, id)...)
+		build.Steps = append(build.Steps, g.extractSteps(hints.Corpus, target, idSuffix)...)
 	}
 
 	build.Steps = append(build.Steps, g.postExtractSteps(hints.Corpus)...)
