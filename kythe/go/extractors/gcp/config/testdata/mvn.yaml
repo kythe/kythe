@@ -28,7 +28,7 @@ steps:
   waitFor:
   - '-'
 - name: gcr.io/kythe-public/kythe-javac-extractor-artifacts
-  id: 'JAVA-ARTIFACTS'
+  id: JAVA-ARTIFACTS
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
@@ -36,7 +36,7 @@ steps:
   - '-'
 - args:
   - /workspace/code/pom.xml
-  id: 'PREPROCESS0'
+  id: PREPROCESS0
   name: gcr.io/kythe-public/build-preprocessor
   waitFor:
     - CHECKOUT
@@ -50,6 +50,7 @@ steps:
   - -Dmaven.compiler.forceJavacCompilerUse=true
   - -Dmaven.compiler.fork=true
   - -Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh
+  entrypoint: mvn
   env:
   - KYTHE_CORPUS=${_CORPUS}
   - KYTHE_OUTPUT_DIRECTORY=/workspace/out
@@ -58,14 +59,14 @@ steps:
   - REAL_JAVAC=/usr/bin/javac
   - TMPDIR=/workspace/out
   - KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
-  id: 'EXTRACT0'
-  name: gcr.io/cloud-builders/mvn
+  id: EXTRACT0
+  name: maven:3.6.0-jdk-8-slim
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
   waitFor:
-    - 'JAVA-ARTIFACTS'
-    - 'PREPROCESS0'
+    - JAVA-ARTIFACTS
+    - PREPROCESS0
 - args:
   - -c
   - /opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip /workspace/out/*.kzip
