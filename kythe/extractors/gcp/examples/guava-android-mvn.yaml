@@ -23,7 +23,8 @@ steps:
   id: 'PREPROCESS0'
   waitFor:
     - 'CHECKOUT'
-- name: 'gcr.io/cloud-builders/mvn'
+- name: 'maven:3.6.0-jdk-8-slim'
+  entrypoint: 'mvn'
   args:
     - 'clean'
     - 'compile'

@@ -59,10 +59,17 @@ var (
 
 	// GCRGitImage an image that runs git.
 	GCRGitImage = "gcr.io/cloud-builders/git"
-	// GCRGradleImage is an image wrapped around java8, which runs gradle.
-	GCRGradleImage = "gcr.io/cloud-builders/gradle"
-	// GCRMvnImage is an image wrapped around java8, which runs mvn.
-	GCRMvnImage = "gcr.io/cloud-builders/mvn"
+	// GradleJDK8Image is an image wrapped around java8, which runs gradle.
+	// MvnJDK8Image is an image wrapped around java8, which runs mvn.
+	// See https://hub.docker.com/_/gradle for details on supported images.
+	GradleJDK8Image = "gradle:5.2.1-jdk8-slim"
+	// MvnJDK8Image is an image wrapped around java8, which runs mvn.
+	// See https://hub.docker.com/_/maven for details on supported images.
+	MvnJDK8Image = "maven:3.6.0-jdk-8-slim"
+	// MvnJDK11Image is an image wrapped around java11, which runs mvn.
+	// See https://hub.docker.com/_/maven for details on supported images.
+	// TODO(#3075): support jdk 11
+	MvnJDK11Image = "maven:3.6.0-jdk-11-slim"
 
 	// DefaultJavacLocation points to a common location for a javac binary.
 	// The binary will usually be symlinked here.

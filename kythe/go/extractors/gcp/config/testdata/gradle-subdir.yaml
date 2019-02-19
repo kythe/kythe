@@ -16,19 +16,19 @@ steps:
 - args:
   - checkout
   - ${_VERSION}
-  name: gcr.io/cloud-builders/git
   dir: /workspace/code
   id: CHECKOUT
+  name: gcr.io/cloud-builders/git
   waitFor:
-   - CLONE
+  - CLONE
 - args:
   - mkdir
   - /workspace/out
   name: ubuntu
   waitFor:
   - '-'
-- name: gcr.io/kythe-public/kythe-javac-extractor-artifacts
-  id: 'JAVA-ARTIFACTS'
+- id: JAVA-ARTIFACTS
+  name: gcr.io/kythe-public/kythe-javac-extractor-artifacts
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
@@ -36,10 +36,10 @@ steps:
   - '-'
 - args:
   - /workspace/code/othersubdir/build.gradle
+  id: PREPROCESS0
   name: gcr.io/kythe-public/build-preprocessor
-  id: 'PREPROCESS0'
   waitFor:
-    - CHECKOUT
+  - CHECKOUT
 - args:
   - clean
   - build
@@ -48,6 +48,7 @@ steps:
   - -d
   - -b
   - /workspace/code/othersubdir/build.gradle
+  entrypoint: gradle
   env:
   - KYTHE_CORPUS=${_CORPUS}
   - KYTHE_OUTPUT_DIRECTORY=/workspace/out
@@ -55,17 +56,18 @@ steps:
   - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
   - REAL_JAVAC=/usr/bin/javac
   - TMPDIR=/workspace/out
-  - KYTHE_JAVAC_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
-  id: 'EXTRACT0'
-  name: gcr.io/cloud-builders/gradle
+  - KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
+  id: EXTRACT0
+  name: gradle:5.2.1-jdk8-slim
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
   waitFor:
-    - 'JAVA-ARTIFACTS'
-    - 'PREPROCESS0'
+  - JAVA-ARTIFACTS
+  - PREPROCESS0
 - args:
   - -c
-  - /opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip /workspace/out/*.kzip
+  - /opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip
+    /workspace/out/*.kzip
   entrypoint: bash
   name: gcr.io/kythe-public/kzip-tools
