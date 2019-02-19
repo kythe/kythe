@@ -44,6 +44,12 @@ func TestYAMLConversion(t *testing.T) {
 			yamlFile: "mvn-subdir.yaml",
 		},
 		{
+			name:     "maven-multi",
+			jsonFile: "mvn-multi.json",
+			yamlDir:  testDataDir,
+			yamlFile: "mvn-multi.yaml",
+		},
+		{
 			name:     "maven-from-examples",
 			jsonFile: "mvn.json",
 			yamlDir:  examplesDir,

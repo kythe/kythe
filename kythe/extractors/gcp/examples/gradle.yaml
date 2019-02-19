@@ -25,7 +25,7 @@ steps:
     - '-'
 - name: 'gcr.io/kythe-public/build-preprocessor'
   args: ['/workspace/code/build.gradle']
-  id: 'PREPROCESS0'
+  id: 'PREPROCESS'
   waitFor:
     - 'CHECKOUT'
 - name: 'gradle:5.2.1-jdk8-slim'
@@ -49,10 +49,10 @@ steps:
   volumes:
     - name: 'kythe_extractors'
       path: '/opt/kythe/extractors'
-  id: 'EXTRACT0'
+  id: 'EXTRACT'
   waitFor:
     - 'JAVA-ARTIFACTS'
-    - 'PREPROCESS0'
+    - 'PREPROCESS'
 - name: 'gcr.io/kythe-public/kzip-tools'
   entrypoint: 'bash'
   args:

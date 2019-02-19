@@ -19,7 +19,6 @@ package config
 import (
 	"fmt"
 	"path"
-	"strconv"
 
 	"kythe.io/kythe/go/extractors/constants"
 
@@ -64,11 +63,11 @@ func commonSteps(repo string) []*cloudbuild.BuildStep {
 	}
 }
 
-func preprocessorStep(build string, buildID int) *cloudbuild.BuildStep {
+func preprocessorStep(build string, targetID string) *cloudbuild.BuildStep {
 	return &cloudbuild.BuildStep{
 		Name:    constants.KytheBuildPreprocessorImage,
 		Args:    []string{build},
-		Id:      preStepID + strconv.Itoa(buildID),
+		Id:      preStepID + targetID,
 		WaitFor: []string{checkoutStepID},
 	}
 }
