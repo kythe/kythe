@@ -1,7 +1,7 @@
 // Started from the calc++ example code as part of the Bison-3.0 distribution.
 %skeleton "lalr1.cc"
 %defines
-%define "parser_class_name" "AssertionParserImpl"
+%define api.parser.class {AssertionParserImpl}
 %{
 /*
  * Copyright 2014 The Kythe Authors. All rights reserved.
@@ -76,7 +76,7 @@ class AssertionParser;
 %type <int_> location_spec
 %type <int_> location_spec_hash
 %type <size_t_> exp_tuple_plus
-%error-verbose
+%define parse.error verbose
 %%
 %start unit;
 unit: goals  { };
