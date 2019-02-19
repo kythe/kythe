@@ -38,7 +38,8 @@ func (m mavenGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget
 		javaExtractorsStep(),
 		preprocessorStep(buildfile, buildID),
 		&cloudbuild.BuildStep{
-			Name: constants.GCRMvnImage,
+			Name:       constants.MvnJDK8Image,
+			Entrypoint: "mvn",
 			Args: []string{
 				"clean",
 				// TODO(#3126): If compile-test has to be done as a separate

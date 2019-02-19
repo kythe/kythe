@@ -350,9 +350,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_golang_snappy",
-        commit = "553a641470496b2327abcac10b36396bd98e45c9",
         custom = "snappy",
         importpath = "github.com/golang/snappy",
+        tag = "v0.0.1",
     )
 
     maybe(
