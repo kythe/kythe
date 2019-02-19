@@ -59,7 +59,7 @@ rest of these instructions assume you have it.
 To install most of the [external dependencies][ext], run
 
 {% highlight bash %}
-for pkg in asciidoc cmake go graphviz node parallel source-highlight wget ; do
+for pkg in asciidoc bison cmake go graphviz node parallel source-highlight wget ; do
    brew install $pkg
 done
 
@@ -71,6 +71,10 @@ done
 brew tap bazelbuild/tap
 brew tap-pin bazelbuild/tap
 brew install bazelbuild/tap/bazel
+
+# Bison. The stock version is too old, but Bison is keg-only and Bazel uses
+# a restricted PATH, so we need to tell Bazel where to find bison (see #3514):
+export BISON=/usr/local/opt/bison/bin/bison
 
 # Docker: See the instructions below.
 # DO NOT use brew install docker (or if you did: brew uninstall docker).
