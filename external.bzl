@@ -129,9 +129,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_googlesource_code_re2",
-        url = "https://github.com/google/re2/archive/2019-01-01.zip",
         sha256 = "ae9b962dbd6427565efd3e9503acb40a1385b21962c29050546c9347ac7fa93f",
         strip_prefix = "re2-2019-01-01",
+        url = "https://github.com/google/re2/archive/2019-01-01.zip",
     )
 
     maybe(
@@ -464,7 +464,7 @@ def _go_dependencies():
         go_repository,
         name = "com_github_apache_beam",
         build_file_proto_mode = "disable",
-        commit = "d0cb12b5af8bc54c5b8e68107d642886c996b3da",
+        commit = "2a41235289152d84e4283c2efd7812896150c183",
         custom = "beam",
         importpath = "github.com/apache/beam",
     )

@@ -94,11 +94,11 @@ func (n *CoGBK) StartBundle(ctx context.Context, id string, data exec.DataContex
 	return n.Out.StartBundle(ctx, id, data)
 }
 
-func (n *CoGBK) ProcessElement(ctx context.Context, elm exec.FullValue, _ ...exec.ReStream) error {
-	index := elm.Elm.(int)             // index of Inputs
-	value := elm.Elm2.(exec.FullValue) // actual KV<K,V>
+func (n *CoGBK) ProcessElement(ctx context.Context, elm *exec.FullValue, _ ...exec.ReStream) error {
+	index := elm.Elm.(int)              // index of Inputs
+	value := elm.Elm2.(*exec.FullValue) // actual KV<K,V>
 
-	fullVal := exec.FullValue{Elm: value.Elm2, Timestamp: value.Timestamp} // strip K from KV<K,V>
+	fullVal := &exec.FullValue{Elm: value.Elm2, Timestamp: value.Timestamp} // strip K from KV<K,V>
 	var buf bytes.Buffer
 	if err := n.valEnc[index].Encode(fullVal, &buf); err != nil {
 		return fmt.Errorf("failed to encode val %v for CoGBK: %v", elm, err)
@@ -108,7 +108,7 @@ func (n *CoGBK) ProcessElement(ctx context.Context, elm exec.FullValue, _ ...exe
 	// Encode KV per window
 	for _, w := range elm.Windows {
 		ws := []typex.Window{w}
-		fullKey := exec.FullValue{Elm: value.Elm, Timestamp: value.Timestamp, Windows: ws} // strip V from KV<K,V>
+		fullKey := &exec.FullValue{Elm: value.Elm, Timestamp: value.Timestamp, Windows: ws} // strip V from KV<K,V>
 
 		buf.Reset()
 		if err := n.keyEnc.Encode(fullKey, &buf); err != nil {
@@ -153,14 +153,14 @@ func (i *iterStream) Open() (exec.Stream, error) {
 	return i, nil
 }
 
-func (i *iterStream) Read() (exec.FullValue, error) {
+func (i *iterStream) Read() (*exec.FullValue, error) {
 	iv, err := i.next()
 	if err != nil {
-		return exec.FullValue{}, err
+		return nil, err
 	}
 	val, err := i.n.valDec[i.idx].Decode(bytes.NewBuffer(iv.Value))
 	if err != nil {
-		return exec.FullValue{}, fmt.Errorf("error decoding value: %v", err)
+		return nil, fmt.Errorf("error decoding value: %v", err)
 	}
 	return val, nil
 }
