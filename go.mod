@@ -10,7 +10,7 @@ require (
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/golang/protobuf v1.2.0
-	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
+	github.com/golang/snappy v0.0.1
 	github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540
 	github.com/google/go-cmp v0.2.0
 	github.com/google/go-querystring v1.0.0
