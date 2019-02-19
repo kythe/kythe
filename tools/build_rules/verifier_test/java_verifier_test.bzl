@@ -58,11 +58,21 @@ def _java_extract_kzip_impl(ctx):
 
     # Actually compile the sources to be used as a dependency for other tests
     jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
+
+    # Use find_java_toolchain / find_java_runtime_toolchain after the next Bazel release,
+    # see: https://github.com/bazelbuild/bazel/issues/7186
+    if hasattr(java_common, "JavaToolchainInfo"):
+        java_toolchain = ctx.attr._java_toolchain[java_common.JavaToolchainInfo]
+        host_javabase = ctx.attr._host_javabase[java_common.JavaRuntimeInfo]
+    else:
+        java_toolchain = ctx.attr._java_toolchain
+        host_javabase = ctx.attr._host_javabase
+
     java_info = java_common.compile(
         ctx,
         javac_opts = ctx.attr.opts,
-        java_toolchain = ctx.attr._java_toolchain,
-        host_javabase = ctx.attr._host_javabase,
+        java_toolchain = java_toolchain,
+        host_javabase = host_javabase,
         source_jars = srcjars,
         source_files = srcs,
         output = jar,
