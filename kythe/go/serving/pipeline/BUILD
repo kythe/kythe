@@ -44,6 +44,7 @@ go_library(
         "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/transforms/filter:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
     ],
 )
 
