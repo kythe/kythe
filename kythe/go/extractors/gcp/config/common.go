@@ -63,11 +63,11 @@ func commonSteps(repo string) []*cloudbuild.BuildStep {
 	}
 }
 
-func preprocessorStep(build string, targetID string) *cloudbuild.BuildStep {
+func preprocessorStep(build string, idSuffix string) *cloudbuild.BuildStep {
 	return &cloudbuild.BuildStep{
 		Name:    constants.KytheBuildPreprocessorImage,
 		Args:    []string{build},
-		Id:      preStepID + targetID,
+		Id:      preStepID + idSuffix,
 		WaitFor: []string{checkoutStepID},
 	}
 }

@@ -37,11 +37,11 @@ func (g gradleGenerator) preExtractSteps() []*cloudbuild.BuildStep {
 }
 
 // extractSteps implements parts of buildSystemElaborator
-func (g gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget, targetID string) []*cloudbuild.BuildStep {
+func (g gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget, idSuffix string) []*cloudbuild.BuildStep {
 	buildfile := path.Join(codeDirectory, target.Path)
 	targetPath, _ := filepath.Split(target.Path)
 	return []*cloudbuild.BuildStep{
-		preprocessorStep(buildfile, targetID),
+		preprocessorStep(buildfile, idSuffix),
 		&cloudbuild.BuildStep{
 			Name:       constants.GradleJDK8Image,
 			Entrypoint: "gradle",
@@ -76,8 +76,8 @@ func (g gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarge
 				"TMPDIR=" + outputDirectory,
 				"KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
 			},
-			Id:      extractStepID + targetID,
-			WaitFor: []string{javaArtifactsID, preStepID + targetID},
+			Id:      extractStepID + idSuffix,
+			WaitFor: []string{javaArtifactsID, preStepID + idSuffix},
 		},
 	}
 }

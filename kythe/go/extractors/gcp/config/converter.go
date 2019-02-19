@@ -152,9 +152,9 @@ type buildSystemElaborator interface {
 	// extraction starts, specific to this extractor type.
 	preExtractSteps() []*cloudbuild.BuildStep
 	// extractSteps is a list of cloudbuild steps to extract the given target.
-	// The targetID is simply a unique identifier for this instance and target,
+	// The idSuffix is simply a unique identifier for this instance and target,
 	// for use in coordinating paralleism if desired.
-	extractSteps(corpus string, target *rpb.ExtractionTarget, targetID string) []*cloudbuild.BuildStep
+	extractSteps(corpus string, target *rpb.ExtractionTarget, idSuffix string) []*cloudbuild.BuildStep
 	// postExtractSteps is a list of cloudbuild steps to be done after
 	// extraction finishes.
 	postExtractSteps(corpus string) []*cloudbuild.BuildStep
