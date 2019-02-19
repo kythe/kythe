@@ -64,7 +64,9 @@ message DirectoryReply {
     // The basename of the entry within the directory.
     string name = 2;
 
-    // TODO(schroederc): repeated string build_configuration = 3;
+    // Set of known build configurations of this FILE or all files recursively
+    // contained in/below this DIRECTORY.
+    repeated string build_configuration = 3;
   }
   enum Kind {
     UNKNOWN = 0;
