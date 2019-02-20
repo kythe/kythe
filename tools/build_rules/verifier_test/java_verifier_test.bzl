@@ -88,8 +88,6 @@ def _java_extract_kzip_impl(ctx):
     ]
     for params in params_files:
         args += ["@" + params.path]
-    for src in srcs:
-        args += [src.short_path]
     extract(
         srcs = srcs,
         ctx = ctx,
