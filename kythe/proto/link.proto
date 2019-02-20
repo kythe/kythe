@@ -20,6 +20,8 @@ package kythe.proto;
 
 import "kythe/proto/common.proto";
 
+option go_package = "link_go_proto";
+
 // A LinkService resolves "links" based on qualified names.  Given a qualified
 // name, resolution consists of finding the entities that define that name and
 // returning the locations of their definition sites. This permits a client to

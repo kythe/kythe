@@ -20,6 +20,8 @@ package kythe.proto;
 
 import "kythe/proto/common.proto";
 
+option go_package = "graph_go_proto";
+
 // This file defines a graph service interface, based on Kythe data.
 //
 // Tickets are Kythe URIs (http://www.kythe.io/docs/kythe-uri-spec.html).
