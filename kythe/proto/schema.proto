@@ -18,6 +18,8 @@ syntax = "proto3";
 
 package kythe.proto.schema;
 
+option go_package = "schema_go_proto";
+
 import "kythe/proto/storage.proto";
 
 // Index between schema-defined strings and proto enums.

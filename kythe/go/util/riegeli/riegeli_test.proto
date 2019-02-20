@@ -18,6 +18,8 @@ syntax = "proto2";
 
 package kythe.proto.riegeli_test;
 
+option go_package = "riegeli_test_go_proto";
+
 message Simple {
   optional string name = 1;
 }
