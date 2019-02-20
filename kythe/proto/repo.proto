@@ -18,6 +18,8 @@ syntax = "proto3";
 
 package kythe.proto.repo;
 
+option go_package = "repo_go_proto";
+
 // Represents configuration data on how to extract a repo.
 message Config {
   // ExtractionHint encapsulates all extraction steps for a single corpus.

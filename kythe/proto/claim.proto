@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package kythe.proto;
 
+option go_package = "claim_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/storage.proto";
