@@ -252,7 +252,7 @@ def _cc_extract_kzip_impl(ctx):
             kzip = ctx.actions.declare_file("{}/{}.kzip".format(ctx.label.name, src.basename)),
             extractor = ctx.executable.extractor,
             vnames_config = ctx.file.vnames_config,
-            srcs = [src],
+            srcs = depset([src]),
             opts = _compiler_options(
                 ctx,
                 cpp,
