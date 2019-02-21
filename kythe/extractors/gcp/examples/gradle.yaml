@@ -33,9 +33,6 @@ steps:
   args:
     - 'clean'
     - 'build'
-    - '-s'
-    - '-S'
-    - '-d'
     - '-b'
     - '/workspace/code/build.gradle'
   env:

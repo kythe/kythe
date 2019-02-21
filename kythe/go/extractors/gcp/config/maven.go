@@ -56,7 +56,6 @@ func (m mavenGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget
 				// which should also work.
 				"compile",
 				"test-compile",
-				"-X", // For debugging output.
 				"-f", // Points directly at a specific pom.xml file:
 				buildfile,
 				"-Dmaven.compiler.forceJavacCompilerUse=true",
