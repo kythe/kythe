@@ -40,7 +40,6 @@ steps:
     - 'KYTHE_ROOT_DIRECTORY=/workspace/code/android'
     - 'JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar'
     - 'REAL_JAVAC=/usr/bin/javac'
-    - 'TMPDIR=/workspace/out'
     - 'KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar'
   volumes:
     - name: 'kythe_extractors'
@@ -56,6 +55,5 @@ artifacts:
   objects:
     location: 'gs://${_BUCKET_NAME}/guava-android/'
     paths:
-      - '/workspace/out/javac-extractor.err'
       - '/workspace/out/${_COMMIT}.kzip'
 

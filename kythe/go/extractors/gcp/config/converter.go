@@ -107,7 +107,6 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 	if err != nil {
 		return nil, err
 	}
-	build.Artifacts.Objects.Paths = append(g.additionalArtifacts(), build.Artifacts.Objects.Paths...)
 
 	build.Steps = append(build.Steps, g.preExtractSteps()...)
 
@@ -162,9 +161,6 @@ type buildSystemElaborator interface {
 	// configuration file for a repo of a given type.  For example for a bazel
 	// repo it might just be root/BUILD, or a maven repo will have repo/pom.xml.
 	defaultExtractionTarget() *rpb.ExtractionTarget
-	// additionalArtifacts should be prepended to the list of artifacts returned
-	// from the cloudbuild invocation.
-	additionalArtifacts() []string
 }
 
 func generator(b rpb.BuildSystem) (buildSystemElaborator, error) {

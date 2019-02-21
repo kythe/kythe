@@ -69,7 +69,6 @@ JAVAC_EXTRACTOR_JAR=$PWD/extractors/javac_extractor.jar \
   KYTHE_EXTRACT_ONLY=1 \
   extractors/javac-wrapper.sh \
   "$TEST_REPOSRCDIR/kythe/java/com/google/devtools/kythe/util"/*.java
-cat "$TMPDIR"/javac-extractor.{out,err}
 test -r "$KYTHE_OUTPUT_FILE"
 java "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}" \
   -jar indexers/java_indexer.jar "$KYTHE_OUTPUT_FILE" | \
