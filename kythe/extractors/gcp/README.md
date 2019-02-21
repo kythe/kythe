@@ -23,7 +23,7 @@ To make sure you have done setup correctly, we have an example binary at
 
 ```
 gcloud builds submit --config examples/helloworld/helloworld.yaml \
-  --substitutions=_OUTPUT_GS_BUCKET="$BUCKET_NAME"\
+  --substitutions=_BUCKET_NAME="$BUCKET_NAME"\
   examples/helloworld
 ```
 
@@ -43,9 +43,9 @@ This also assumes you specify `$BUCKET_NAME` as per the Hello World Test above.
 ```
 gcloud builds submit --config examples/mvn.yaml \
   --substitutions=\
-_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
+_BUCKET_NAME=$BUCKET_NAME,\
 _REPO=https://github.com/project-name/repo-name,\
-_VERSION=<version-hash>,\
+_COMMIT=<version-hash>,\
 _CORPUS=repo-name\
   --no-source
 ```
@@ -58,8 +58,8 @@ To extract multiple parts of https://github.com/google/guava, use
 ```
 gcloud builds submit --config examples/guava-mvn.yaml \
   --substitutions=\
-_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
-_VERSION=<commit-hash>,\
+_BUCKET_NAME=$BUCKET_NAME,\
+_COMMIT=<commit-hash>,\
   --no-source
 ```
 
@@ -76,8 +76,8 @@ of the guava tree, you would need a slightly different action:
 ```
 gcloud builds submit --config examples/guava-android-mvn.yaml \
   --substitutions=\
-_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
-_VERSION=<commit-hash>\
+_BUCKET_NAME=$BUCKET_NAME,\
+_COMMIT=<commit-hash>\
   --no-source
 ```
 
@@ -90,9 +90,9 @@ Gradle is extracted similarly:
 ```
 gcloud builds submit --config examples/gradle.yaml \
   --substitutions=\
-_OUTPUT_GS_BUCKET=$BUCKET_NAME,\
+_BUCKET_NAME=$BUCKET_NAME,\
 _REPO=https://github.com/project-name/repo-name,\
-_VERSION=<version-hash>,\
+_COMMIT=<version-hash>,\
 _CORPUS=repo-name\
   --no-source
 ```
@@ -177,7 +177,8 @@ files.
 
 This image exposes the binary
 [kythe/go/platform/tools/kzip](https://github.com/kythe/kythe/blob/master/kythe/go/platform/tools/kzip/kzip.go),
-which for now just supports merging multiple kzips together.
+which currently supports merging multiple kzips together and creating trivial
+kzips from the command line.
 
 ## Troubleshooting
 

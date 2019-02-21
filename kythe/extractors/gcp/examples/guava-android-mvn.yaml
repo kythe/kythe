@@ -4,7 +4,7 @@ steps:
   id: 'CLONE'
   waitFor: ['-']
 - name: 'gcr.io/cloud-builders/git'
-  args: ['checkout', '${_VERSION}']
+  args: ['checkout', '${_COMMIT}']
   dir: '/workspace/code'
   id: 'CHECKOUT'
   waitFor:
@@ -12,13 +12,13 @@ steps:
 - name: 'ubuntu'
   args: ['mkdir', '/workspace/out']
   waitFor: ['-']
-- name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts'
+- name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable'
   volumes:
     - name: 'kythe_extractors'
       path: '/opt/kythe/extractors'
   id: 'JAVA-ARTIFACTS'
   waitFor: ['-']
-- name: 'gcr.io/kythe-public/build-preprocessor'
+- name: 'gcr.io/kythe-public/build-preprocessor:stable'
   args: ['/workspace/code/android/pom.xml']
   id: 'PREPROCESS'
   waitFor:
@@ -49,13 +49,13 @@ steps:
   waitFor:
     - 'JAVA-ARTIFACTS'
     - 'PREPROCESS'
-- name: 'gcr.io/kythe-public/kzip-tools'
+- name: 'gcr.io/kythe-public/kzip-tools:stable'
   entrypoint: 'bash'
-  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/guava-android-${_VERSION}.kzip /workspace/out/*.kzip']
+  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/${_COMMIT}.kzip /workspace/out/*.kzip']
 artifacts:
   objects:
-    location: 'gs://${_OUTPUT_GS_BUCKET}/'
+    location: 'gs://${_BUCKET_NAME}/guava-android/'
     paths:
       - '/workspace/out/javac-extractor.err'
-      - '/workspace/out/guava-android-${_VERSION}.kzip'
+      - '/workspace/out/${_COMMIT}.kzip'
 
