@@ -73,6 +73,12 @@ func TestYAMLConversion(t *testing.T) {
 			yamlDir:  testDataDir,
 			yamlFile: "gradle-subdir.yaml",
 		},
+		{
+			name:     "gradle-from-examples",
+			jsonFile: "gradle.json",
+			yamlDir:  examplesDir,
+			yamlFile: "gradle.yaml",
+		},
 	}
 
 	for _, tcase := range testcases {

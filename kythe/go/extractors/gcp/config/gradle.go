@@ -38,7 +38,8 @@ func (g gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarge
 		javaExtractorsStep(),
 		preprocessorStep(buildfile, buildID),
 		&cloudbuild.BuildStep{
-			Name: constants.GCRGradleImage,
+			Name:       constants.GradleJDK8Image,
+			Entrypoint: "gradle",
 			Args: []string{
 				"clean",
 				// TODO(#3126): If compile-test has to be done as a separate
@@ -68,7 +69,7 @@ func (g gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarge
 				"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
 				"REAL_JAVAC=" + constants.DefaultJavacLocation,
 				"TMPDIR=" + outputDirectory,
-				"KYTHE_JAVAC_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
+				"KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
 			},
 			Id:      extractStepID + strconv.Itoa(buildID),
 			WaitFor: []string{javaArtifactsID, preStepID + strconv.Itoa(buildID)},

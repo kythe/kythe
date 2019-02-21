@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.serving;
 
+option go_package = "serving_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/common.proto";
@@ -94,11 +95,30 @@ message EdgePage {
 
 // FileDirectory describes a virtual directory of file nodes.
 message FileDirectory {
-  // Set of URIs for each contained sub-directory's corpus, root, and full path.
-  repeated string subdirectory = 1;
+  // Each known entry in the directory.
+  repeated Entry entry = 3;
 
+  message Entry {
+    // The kind of entry.
+    Kind kind = 1;
+
+    // The basename of the entry within the directory.
+    string name = 2;
+
+    // Set of known build configurations of this FILE or all files recursively
+    // contained in/below this DIRECTORY.
+    repeated string build_config = 3;
+  }
+  enum Kind {
+    UNKNOWN = 0;
+    FILE = 1;
+    DIRECTORY = 2;
+  }
+
+  // Set of URIs for each contained sub-directory's corpus, root, and full path.
+  repeated string subdirectory = 1 [deprecated = true];
   // Set of file node tickets contained within this directory.
-  repeated string file_ticket = 2;
+  repeated string file_ticket = 2 [deprecated = true];
 }
 
 // CorpusRoots describes all of the known corpus/root pairs that contain file
