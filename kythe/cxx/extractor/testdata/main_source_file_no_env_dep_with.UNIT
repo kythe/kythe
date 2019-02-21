@@ -10,11 +10,6 @@ required_input {
     path: "./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc"
     digest: "d4fbc426e39f838a6253845a50f0e0089207ed423f852b08c283e3627bc5d49f"
   }
-  context {
-    row {
-      source_context: "EC_HASH"
-    }
-  }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
       row {
