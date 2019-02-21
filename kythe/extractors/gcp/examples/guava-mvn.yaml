@@ -20,7 +20,7 @@ steps:
   waitFor: ['-']
 - name: 'gcr.io/kythe-public/build-preprocessor'
   args: ['/workspace/code/pom.xml']
-  id: 'PREPROCESS0'
+  id: 'PREPROCESS'
   waitFor:
     - 'CHECKOUT'
 - name: 'maven:3.6.0-jdk-8-slim'
@@ -46,10 +46,10 @@ steps:
   volumes:
     - name: 'kythe_extractors'
       path: '/opt/kythe/extractors'
-  id: 'EXTRACT0'
+  id: 'EXTRACT'
   waitFor:
     - 'JAVA-ARTIFACTS'
-    - 'PREPROCESS0'
+    - 'PREPROCESS'
 - name: 'gcr.io/kythe-public/kzip-tools'
   entrypoint: 'bash'
   args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/guava-${_VERSION}.kzip /workspace/out/*.kzip']

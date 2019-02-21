@@ -10,27 +10,6 @@ required_input {
     path: "./kythe/cxx/extractor/testdata/transcript_main.cc"
     digest: "a719ebca696362eb639992c5afd3b08ab6c1938bc5639fdfe1fde06fd86bd622"
   }
-  context {
-    row {
-      source_context: "hash0"
-      column {
-        offset: 20
-        linked_context: "hash1"
-      }
-      column {
-        offset: 46
-        linked_context: "hash2"
-      }
-      column {
-        offset: 72
-        linked_context: "hash3"
-      }
-      column {
-        offset: 98
-        linked_context: "hash2"
-      }
-    }
-  }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
       row {
@@ -63,14 +42,6 @@ required_input {
     path: "./kythe/cxx/extractor/testdata/transcript_a.h"
     digest: "15d3490610af31dff6f1be9948ef61e66db48a84fc8fd93a81a5433abab04309"
   }
-  context {
-    row {
-      source_context: "hash3"
-    }
-    row {
-      source_context: "hash1"
-    }
-  }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
       row {
@@ -89,11 +60,6 @@ required_input {
   info {
     path: "./kythe/cxx/extractor/testdata/transcript_b.h"
     digest: "6904079b7b9d5d0586a08dbbdac2b08d35f00c1dbb4cc63721f22a347f52e2f7"
-  }
-  context {
-    row {
-      source_context: "hash2"
-    }
   }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
