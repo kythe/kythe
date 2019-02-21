@@ -177,7 +177,8 @@ files.
 
 This image exposes the binary
 [kythe/go/platform/tools/kzip](https://github.com/kythe/kythe/blob/master/kythe/go/platform/tools/kzip/kzip.go),
-which for now just supports merging multiple kzips together.
+which currently supports merging multiple kzips together and creating trivial
+kzips from the command line.
 
 ## Troubleshooting
 
