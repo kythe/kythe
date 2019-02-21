@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
   kythe::ExtractorConfiguration config;
   config.SetArgs(args);
   config.InitializeFromEnvironment();
-  config.Extract(kythe::supported_language::Language::kCpp);
+  bool success = config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();
-  return 0;
+  return success ? 0 : 1;
 }
