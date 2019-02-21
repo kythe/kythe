@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package cxx.indexer.testdata;
-
-message Trivial {
-  string field = 1;
-}
