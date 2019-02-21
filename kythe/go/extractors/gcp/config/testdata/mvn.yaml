@@ -27,7 +27,7 @@ steps:
   name: ubuntu
   waitFor:
   - '-'
-- name: gcr.io/kythe-public/kythe-javac-extractor-artifacts
+- name: gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable
   id: JAVA-ARTIFACTS
   volumes:
   - name: kythe_extractors
@@ -37,7 +37,7 @@ steps:
 - args:
   - /workspace/code/pom.xml
   id: PREPROCESS
-  name: gcr.io/kythe-public/build-preprocessor
+  name: gcr.io/kythe-public/build-preprocessor:stable
   waitFor:
     - CHECKOUT
 - args:
@@ -71,4 +71,4 @@ steps:
   - -c
   - /opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip /workspace/out/*.kzip
   entrypoint: bash
-  name: gcr.io/kythe-public/kzip-tools
+  name: gcr.io/kythe-public/kzip-tools:stable
