@@ -74,7 +74,6 @@ func (m mavenGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget
 				"KYTHE_ROOT_DIRECTORY=" + filepath.Join(codeDirectory, targetPath),
 				"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
 				"REAL_JAVAC=" + constants.DefaultJavacLocation,
-				"TMPDIR=" + outputDirectory,
 				"KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
 			},
 			Id:      extractStepID + idSuffix,
@@ -95,9 +94,4 @@ func (m mavenGenerator) defaultExtractionTarget() *rpb.ExtractionTarget {
 	return &rpb.ExtractionTarget{
 		Path: "pom.xml",
 	}
-}
-
-// additionalArtifacts implements part of buildSystemElaborator
-func (m mavenGenerator) additionalArtifacts() []string {
-	return []string{path.Join(outputDirectory, "javac-extractor.err")}
 }

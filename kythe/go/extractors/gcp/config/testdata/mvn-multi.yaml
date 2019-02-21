@@ -2,7 +2,6 @@ artifacts:
   objects:
     location: gs://${_BUCKET_NAME}/${_CORPUS}/
     paths:
-    - /workspace/out/javac-extractor.err
     - /workspace/out/${_COMMIT}.kzip
 steps:
 - args:
@@ -56,7 +55,6 @@ steps:
   - KYTHE_ROOT_DIRECTORY=/workspace/code
   - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
   - REAL_JAVAC=/usr/bin/javac
-  - TMPDIR=/workspace/out
   - KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
   id: EXTRACT0
   name: maven:3.6.0-jdk-8-slim
@@ -88,7 +86,6 @@ steps:
   - KYTHE_ROOT_DIRECTORY=/workspace/code/somesubdir
   - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
   - REAL_JAVAC=/usr/bin/javac
-  - TMPDIR=/workspace/out
   - KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
   id: EXTRACT1
   name: maven:3.6.0-jdk-8-slim
