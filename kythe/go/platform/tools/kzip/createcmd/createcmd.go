@@ -118,11 +118,7 @@ func openWriter(path string) (*kzip.Writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	w, err := kzip.NewWriteCloser(out)
-	if err != nil {
-		return nil, err
-	}
-	return w, nil
+	return kzip.NewWriteCloser(out)
 }
 
 func addFile(out *kzip.Writer, cu *apb.CompilationUnit, path string) error {
