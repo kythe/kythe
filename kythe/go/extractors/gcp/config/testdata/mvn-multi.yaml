@@ -36,7 +36,7 @@ steps:
   - '-'
 - args:
   - /workspace/code/pom.xml
-  id: PREPROCESS
+  id: PREPROCESS0
   name: gcr.io/kythe-public/build-preprocessor
   waitFor:
     - CHECKOUT
@@ -59,14 +59,47 @@ steps:
   - REAL_JAVAC=/usr/bin/javac
   - TMPDIR=/workspace/out
   - KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
-  id: EXTRACT
+  id: EXTRACT0
   name: maven:3.6.0-jdk-8-slim
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
   waitFor:
     - JAVA-ARTIFACTS
-    - PREPROCESS
+    - PREPROCESS0
+- args:
+  - /workspace/code/somesubdir/pom.xml
+  id: PREPROCESS1
+  name: gcr.io/kythe-public/build-preprocessor
+  waitFor:
+    - CHECKOUT
+- args:
+  - clean
+  - compile
+  - test-compile
+  - -X
+  - -f
+  - /workspace/code/somesubdir/pom.xml
+  - -Dmaven.compiler.forceJavacCompilerUse=true
+  - -Dmaven.compiler.fork=true
+  - -Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh
+  entrypoint: mvn
+  env:
+  - KYTHE_CORPUS=${_CORPUS}
+  - KYTHE_OUTPUT_DIRECTORY=/workspace/out
+  - KYTHE_ROOT_DIRECTORY=/workspace/code/somesubdir
+  - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
+  - REAL_JAVAC=/usr/bin/javac
+  - TMPDIR=/workspace/out
+  - KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
+  id: EXTRACT1
+  name: maven:3.6.0-jdk-8-slim
+  volumes:
+  - name: kythe_extractors
+    path: /opt/kythe/extractors
+  waitFor:
+    - JAVA-ARTIFACTS
+    - PREPROCESS1
 - args:
   - -c
   - /opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip /workspace/out/*.kzip

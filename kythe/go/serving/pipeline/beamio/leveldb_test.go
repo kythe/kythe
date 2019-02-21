@@ -106,3 +106,23 @@ func TestLevelDBSink(t *testing.T) {
 }
 
 func extendToKey(v beam.T) (beam.T, beam.T) { return v, v }
+
+func TestSchemaPreservingPathJoin(t *testing.T) {
+	exp := "gs://foo/bar/baz"
+	res := schemePreservingPathJoin("gs://foo", "bar/baz")
+	if exp != res {
+		t.Fatalf("Expected [%s], got [%s]", exp, res)
+	}
+
+	exp = "foo/bar/baz"
+	res = schemePreservingPathJoin("foo//bar", "baz")
+	if exp != res {
+		t.Fatalf("Expected [%s], got [%s]", exp, res)
+	}
+
+	exp = "/foo/bar"
+	res = schemePreservingPathJoin("/foo/", "bar")
+	if exp != res {
+		t.Fatalf("Expected [%s], got [%s]", exp, res)
+	}
+}

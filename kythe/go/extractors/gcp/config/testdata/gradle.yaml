@@ -36,7 +36,7 @@ steps:
   - '-'
 - args:
   - /workspace/code/build.gradle
-  id: PREPROCESS0
+  id: PREPROCESS
   name: gcr.io/kythe-public/build-preprocessor
   waitFor:
   - CHECKOUT
@@ -57,14 +57,14 @@ steps:
   - REAL_JAVAC=/usr/bin/javac
   - TMPDIR=/workspace/out
   - KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
-  id: EXTRACT0
+  id: EXTRACT
   name: gradle:5.2.1-jdk8-slim
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
   waitFor:
   - JAVA-ARTIFACTS
-  - PREPROCESS0
+  - PREPROCESS
 - args:
   - -c
   - /opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip
