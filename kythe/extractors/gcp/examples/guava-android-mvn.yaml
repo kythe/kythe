@@ -12,13 +12,13 @@ steps:
 - name: 'ubuntu'
   args: ['mkdir', '/workspace/out']
   waitFor: ['-']
-- name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts'
+- name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable'
   volumes:
     - name: 'kythe_extractors'
       path: '/opt/kythe/extractors'
   id: 'JAVA-ARTIFACTS'
   waitFor: ['-']
-- name: 'gcr.io/kythe-public/build-preprocessor'
+- name: 'gcr.io/kythe-public/build-preprocessor:stable'
   args: ['/workspace/code/android/pom.xml']
   id: 'PREPROCESS'
   waitFor:
@@ -50,7 +50,7 @@ steps:
   waitFor:
     - 'JAVA-ARTIFACTS'
     - 'PREPROCESS'
-- name: 'gcr.io/kythe-public/kzip-tools'
+- name: 'gcr.io/kythe-public/kzip-tools:stable'
   entrypoint: 'bash'
   args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/${_COMMIT}.kzip /workspace/out/*.kzip']
 artifacts:
