@@ -10,11 +10,6 @@ required_input {
     path: "./kythe/cxx/extractor/testdata/arm.cc"
     digest: "122b0dc24be3e4d4360ceffdbc00bdd2d6c4ea0600befbad7fbeac1946a9c677"
   }
-  context {
-    row {
-      source_context: "hash0"
-    }
-  }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
       row {

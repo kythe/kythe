@@ -100,19 +100,13 @@ class MutableFileContext {
  public:
   explicit MutableFileContext(
       kythe::proto::CompilationUnit::FileInput* file_input)
-      : file_input_(file_input),
-        any_(FindMutableContext(file_input, &context_)) {}
+      : any_(FindMutableContext(file_input, &context_)) {}
 
   kythe::proto::ContextDependentVersion* operator->() { return &context_; }
 
-  ~MutableFileContext() {
-    // TODO(shahms): Remove this when the field has been removed.
-    *file_input_->mutable_context() = context_;
-    any_->PackFrom(context_);
-  }
+  ~MutableFileContext() { any_->PackFrom(context_); }
 
  private:
-  kythe::proto::CompilationUnit::FileInput* file_input_;
   kythe::proto::ContextDependentVersion context_;
   google::protobuf::Any* any_;
 };

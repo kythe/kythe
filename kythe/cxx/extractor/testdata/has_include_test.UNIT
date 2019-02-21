@@ -9,11 +9,6 @@ required_input {
     path: "./kythe/cxx/extractor/testdata/has_include_test.cc"
     digest: "f21056fa681c2b74f91cc5ff9da2ac53d0b5c6ddc55420c647b142968915a90b"
   }
-  context {
-    row {
-      source_context: "hash0"
-    }
-  }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
       row {
