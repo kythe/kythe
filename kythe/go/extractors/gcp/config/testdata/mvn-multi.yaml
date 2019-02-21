@@ -1,9 +1,9 @@
 artifacts:
   objects:
-    location: gs://${_OUTPUT_GS_BUCKET}/
+    location: gs://${_BUCKET_NAME}/${_CORPUS}/
     paths:
     - /workspace/out/javac-extractor.err
-    - /workspace/out/${_CORPUS}-${_VERSION}.kzip
+    - /workspace/out/${_COMMIT}.kzip
 steps:
 - args:
   - clone
@@ -15,7 +15,7 @@ steps:
   - '-'
 - args:
   - checkout
-  - ${_VERSION}
+  - ${_COMMIT}
   name: gcr.io/cloud-builders/git
   dir: /workspace/code
   id: CHECKOUT
@@ -102,6 +102,6 @@ steps:
     - PREPROCESS1
 - args:
   - -c
-  - /opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip /workspace/out/*.kzip
+  - /opt/kythe/tools/kzip merge --output /workspace/out/${_COMMIT}.kzip /workspace/out/*.kzip
   entrypoint: bash
   name: gcr.io/kythe-public/kzip-tools

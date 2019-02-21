@@ -4,7 +4,7 @@ steps:
   id: 'CLONE'
   waitFor: ['-']
 - name: 'gcr.io/cloud-builders/git'
-  args: ['checkout', '${_VERSION}']
+  args: ['checkout', '${_COMMIT}']
   dir: '/workspace/code'
   id: 'CHECKOUT'
   waitFor:
@@ -52,11 +52,11 @@ steps:
     - 'PREPROCESS'
 - name: 'gcr.io/kythe-public/kzip-tools'
   entrypoint: 'bash'
-  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/guava-${_VERSION}.kzip /workspace/out/*.kzip']
+  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/${_COMMIT}.kzip /workspace/out/*.kzip']
 artifacts:
   objects:
-    location: 'gs://${_OUTPUT_GS_BUCKET}/'
+    location: 'gs://${_BUCKET_NAME}/guava/'
     paths:
       - '/workspace/out/javac-extractor.err'
-      - '/workspace/out/guava-${_VERSION}.kzip'
+      - '/workspace/out/${_COMMIT}.kzip'
 
