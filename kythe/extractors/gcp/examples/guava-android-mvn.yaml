@@ -29,7 +29,6 @@ steps:
     - 'clean'
     - 'compile'
     - 'test-compile'
-    - '-X'
     - '-f'
     - '/workspace/code/android/pom.xml'
     - '-Dmaven.compiler.forceJavacCompilerUse=true'

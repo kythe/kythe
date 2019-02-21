@@ -29,7 +29,6 @@ steps:
     - 'clean'
     - 'compile'
     - 'test-compile'
-    - '-X'
     - '-f'
     - '/workspace/code/pom.xml'
     - '-Dmaven.compiler.forceJavacCompilerUse=true'

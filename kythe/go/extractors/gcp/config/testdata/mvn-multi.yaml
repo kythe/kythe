@@ -44,7 +44,6 @@ steps:
   - clean
   - compile
   - test-compile
-  - -X
   - -f
   - /workspace/code/pom.xml
   - -Dmaven.compiler.forceJavacCompilerUse=true
@@ -77,7 +76,6 @@ steps:
   - clean
   - compile
   - test-compile
-  - -X
   - -f
   - /workspace/code/somesubdir/pom.xml
   - -Dmaven.compiler.forceJavacCompilerUse=true

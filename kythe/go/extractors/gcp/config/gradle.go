@@ -55,9 +55,6 @@ func (g gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarge
 				// The alternative here is to fall back to using clean install,
 				// which should also work.
 				"build",
-				"-s", // Prints stacktraces for user exceptions.
-				"-S", // Prints verbose stacktraces.
-				"-d", // Logs in debug mode.
 				"-b", // Points directly at a specific build.gradle file:
 				buildfile,
 			},
