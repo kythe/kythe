@@ -28,7 +28,7 @@ steps:
   waitFor:
   - '-'
 - id: JAVA-ARTIFACTS
-  name: gcr.io/kythe-public/kythe-javac-extractor-artifacts
+  name: gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
@@ -37,7 +37,7 @@ steps:
 - args:
   - /workspace/code/build.gradle
   id: PREPROCESS
-  name: gcr.io/kythe-public/build-preprocessor
+  name: gcr.io/kythe-public/build-preprocessor:stable
   waitFor:
   - CHECKOUT
 - args:
@@ -70,4 +70,4 @@ steps:
   - /opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip
     /workspace/out/*.kzip
   entrypoint: bash
-  name: gcr.io/kythe-public/kzip-tools
+  name: gcr.io/kythe-public/kzip-tools:stable
