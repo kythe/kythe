@@ -9,15 +9,6 @@ required_input {
     path: "./kythe/cxx/extractor/testdata/indirect_has_include_test.cc"
     digest: "5fde99768d3a029c643db445ff5896e0f7e149e7420baffc4ca34a1648b80321"
   }
-  context {
-    row {
-      source_context: "hash0"
-      column {
-        offset: 40
-        linked_context: "hash1"
-      }
-    }
-  }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
       row {
@@ -38,11 +29,6 @@ required_input {
     path: "./kythe/cxx/extractor/testdata/./has_include_test.h"
     digest: "ebebe3a0bf6fb1d21593bcf52d899124ea175ac04eae16a366ed0b9220ae0d06"
   }
-  context {
-    row {
-      source_context: "hash2"
-    }
-  }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
       row {
@@ -58,14 +44,6 @@ required_input {
   info {
     path: "./kythe/cxx/extractor/testdata/indirect_has_include_test.h"
     digest: "3c6775103858c81cb1a4a357943d90e625f767b94483f6c97c23ed28ec790368"
-  }
-  context {
-    row {
-      source_context: "hash1"
-      column {
-        linked_context: "hash2"
-      }
-    }
   }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {

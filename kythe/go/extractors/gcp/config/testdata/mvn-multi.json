@@ -1,0 +1,16 @@
+{
+  "extractions": [
+    {
+      "build_system": "MAVEN",
+      "targets": [
+        {
+          "path": "pom.xml"
+        },
+        {
+          "path": "somesubdir/pom.xml"
+        }
+      ]
+    }
+  ]
+}
+
