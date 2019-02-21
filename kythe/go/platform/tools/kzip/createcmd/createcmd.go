@@ -43,11 +43,13 @@ type createCommand struct {
 // New creates a new subcommand for merging kzip files.
 func New() subcommands.Command {
 	return &createCommand{
-		Info: cmdutil.NewInfo("create", "create simple kzip archives", `-uri <uri> -output <path> -source <path>
+		Info: cmdutil.NewInfo("create", "create simple kzip archives", `-uri <uri> -output <path> -source <path> required_input*
 
 Construct a kzip file consisting of a single input file name by -source.
 The resulting file is written to -output, and the vname of the compilation
 will be attributed to the values specified within -uri.
+
+Additional required inputs, if any, can be provided as positional paramters.
 `),
 	}
 }
@@ -62,9 +64,6 @@ func (c *createCommand) SetFlags(fs *flag.FlagSet) {
 
 // Execute implements the subcommands interface and creates the requested file.
 func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	if len(fs.Args()) > 0 {
-		c.Fail("unrecognized arguments: ", fs.Args())
-	}
 	switch {
 	case c.uri == "":
 		return c.Fail("missing required -uri")
@@ -91,38 +90,21 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		SourceFile: []string{c.source},
 	}
 
-	// add the input soure file to the compilation
-	src, err := os.Open(c.source)
-	if err != nil {
-		return c.Fail("error opening -source: ", err)
-	}
-	defer src.Close()
-
 	out, err := openWriter(c.output)
 	if err != nil {
 		return c.Fail("error opening -output: ", err)
 	}
 
-	digest, err := out.AddFile(src)
-	if err != nil {
-		return c.Fail("error adding -source to CU: ", err)
+	for _, path := range append([]string{c.source}, fs.Args()...) {
+		err := addFile(out, cu, path)
+		if err != nil {
+			return c.Fail("error adding file to -output: ", err)
+		}
 	}
-
-	cu.RequiredInput = append(cu.RequiredInput, &apb.CompilationUnit_FileInput{
-		VName: &spb.VName{
-			Corpus: uri.Corpus,
-			Root:   uri.Root,
-			Path:   c.output,
-		},
-		Info: &apb.FileInfo{
-			Path:   c.output,
-			Digest: digest,
-		},
-	})
 
 	_, err = out.AddUnit(cu, nil)
 	if err != nil {
-		return c.Fail("error writing compilation to output: ", err)
+		return c.Fail("error writing compilation to -output: ", err)
 	}
 
 	if err := out.Close(); err != nil {
@@ -141,4 +123,29 @@ func openWriter(path string) (*kzip.Writer, error) {
 		return nil, err
 	}
 	return w, nil
+}
+
+func addFile(out *kzip.Writer, cu *apb.CompilationUnit, path string) error {
+	input, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer input.Close()
+
+	digest, err := out.AddFile(input)
+	if err != nil {
+		return err
+	}
+	cu.RequiredInput = append(cu.RequiredInput, &apb.CompilationUnit_FileInput{
+		VName: &spb.VName{
+			Corpus: cu.VName.Corpus,
+			Root:   cu.VName.Root,
+			Path:   path,
+		},
+		Info: &apb.FileInfo{
+			Path:   path,
+			Digest: digest,
+		},
+	})
+	return nil
 }
