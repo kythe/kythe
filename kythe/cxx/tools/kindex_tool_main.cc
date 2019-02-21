@@ -132,15 +132,6 @@ void DumpCompilationUnit(const std::string& path,
           CanonicalizeHash(&hash_table, column.mutable_linked_context());
         }
       }
-      // TODO(shahms): Remove this when the indexers are updated.
-      if (input.has_context()) {
-        for (auto& row : *input.mutable_context()->mutable_row()) {
-          CanonicalizeHash(&hash_table, row.mutable_source_context());
-          for (auto& column : *row.mutable_column()) {
-            CanonicalizeHash(&hash_table, column.mutable_linked_context());
-          }
-        }
-      }
     }
   }
   google::protobuf::io::FileOutputStream file_output_stream(out_fd);
