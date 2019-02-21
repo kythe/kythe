@@ -38,6 +38,11 @@ cc_index(
     opts = [
         # Avoid emitting some nodes with conflicting facts.
         "--experimental_index_lite",
+        # Try to reduce the graph size to make life easier for the verifier.
+        "--test_claim",
+        "--noindex_template_instantiations",
+        "--experimental_drop_instantiation_independent_data",
+        "--noemit_anchors_on_builtins",
     ],
 )
 
