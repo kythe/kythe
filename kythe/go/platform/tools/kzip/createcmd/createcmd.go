@@ -49,7 +49,7 @@ Construct a kzip file consisting of a single input file name by -source.
 The resulting file is written to -output, and the vname of the compilation
 will be attributed to the values specified within -uri.
 
-Additional required inputs, if any, can be provided as positional paramters.
+Additional required inputs, if any, can be provided as positional parameters.
 `),
 	}
 }
