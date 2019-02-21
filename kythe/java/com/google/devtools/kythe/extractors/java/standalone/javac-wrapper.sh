@@ -38,7 +38,6 @@
 #
 # Other environment variables that may be passed to this script include:
 #   KYTHE_EXTRACT_ONLY: if set, suppress the call to javac after extraction
-#   TMPDIR: override the location of extraction logs and other temporary output
 
 if [[ -z "$JAVA_HOME" ]]; then
   readonly JAVABIN="$(which java)"
