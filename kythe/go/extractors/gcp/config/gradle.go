@@ -55,9 +55,6 @@ func (g gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarge
 				// The alternative here is to fall back to using clean install,
 				// which should also work.
 				"build",
-				"-s", // Prints stacktraces for user exceptions.
-				"-S", // Prints verbose stacktraces.
-				"-d", // Logs in debug mode.
 				"-b", // Points directly at a specific build.gradle file:
 				buildfile,
 			},
@@ -73,7 +70,6 @@ func (g gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarge
 				"KYTHE_ROOT_DIRECTORY=" + filepath.Join(codeDirectory, targetPath),
 				"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
 				"REAL_JAVAC=" + constants.DefaultJavacLocation,
-				"TMPDIR=" + outputDirectory,
 				"KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
 			},
 			Id:      extractStepID + idSuffix,
@@ -94,9 +90,4 @@ func (g gradleGenerator) defaultExtractionTarget() *rpb.ExtractionTarget {
 	return &rpb.ExtractionTarget{
 		Path: "build.gradle",
 	}
-}
-
-// additionalArtifacts implements part of buildStepsGenerator
-func (g gradleGenerator) additionalArtifacts() []string {
-	return []string{path.Join(outputDirectory, "javac-extractor.err")}
 }

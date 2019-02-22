@@ -20,7 +20,7 @@ package constants
 var (
 	// KytheBuildPreprocessorImage is defiend in
 	// kythe/go/extractors/config/preprocessor, and is published to GCR.
-	KytheBuildPreprocessorImage = "gcr.io/kythe-public/build-preprocessor"
+	KytheBuildPreprocessorImage = "gcr.io/kythe-public/build-preprocessor:stable"
 
 	// DefaultExtractorsDir is the canonical directory for extractors that any
 	// kythe docker image will use.  This can be useful if you need to load that
@@ -33,7 +33,7 @@ var (
 	// KytheJavacExtractorArtifactsImage is defined in
 	// kythe/java/com/google/devtools/kythe/extractors/java/artifacts, and
 	// published to GCR.
-	KytheJavacExtractorArtifactsImage = "gcr.io/kythe-public/kythe-javac-extractor-artifacts"
+	KytheJavacExtractorArtifactsImage = "gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable"
 
 	// DefaultJavacWrapperLocation is the location of the Kythe wrapper around
 	// javac that does extraction.
@@ -48,7 +48,7 @@ var (
 	// kythe/go/platform/tools/kzip and published to GCR via
 	// kythe/go/extractors/gcp/config/kziptool:artifacts.  It is a utility for
 	// manipulating .kzip files.
-	KytheKzipToolsImage = "gcr.io/kythe-public/kzip-tools"
+	KytheKzipToolsImage = "gcr.io/kythe-public/kzip-tools:stable"
 
 	// DefaultKzipToolLocation is the location of tools/kzip binary defined in
 	// the gcr.io/kythe-public/kzip-tools image.
