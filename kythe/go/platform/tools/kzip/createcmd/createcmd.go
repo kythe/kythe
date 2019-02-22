@@ -29,7 +29,6 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 
 	"github.com/golang/protobuf/jsonpb"
-
 	"github.com/google/subcommands"
 
 	anypb "github.com/golang/protobuf/ptypes/any"
@@ -97,9 +96,10 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		SourceFile: []string{c.source},
 	}
 
-	err = unmarshalDetails(c.details, &cu.Details)
-	if err != nil {
+	if details, err := unmarshalDetails(c.details); err != nil {
 		return c.Fail("error parsing -details: %v", err)
+	} else {
+		cu.Details = details
 	}
 
 	out, err := openWriter(c.output)
@@ -158,14 +158,15 @@ func addFile(out *kzip.Writer, cu *apb.CompilationUnit, path string) error {
 	return nil
 }
 
-func unmarshalDetails(details string, msg *[]*anypb.Any) error {
+func unmarshalDetails(details string) ([]*anypb.Any, error) {
+	var msg []*anypb.Any
 	dec := json.NewDecoder(strings.NewReader(details))
 	for dec.More() {
 		var detail anypb.Any
 		if err := jsonpb.UnmarshalNext(dec, &detail); err != nil {
-			return err
+			return msg, err
 		}
-		*msg = append(*msg, &detail)
+		msg = append(msg, &detail)
 	}
-	return nil
+	return msg, nil
 }
