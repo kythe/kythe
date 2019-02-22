@@ -96,11 +96,11 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		SourceFile: []string{c.source},
 	}
 
-	if details, err := unmarshalDetails(c.details); err != nil {
+	details, err := unmarshalDetails(c.details)
+	if err != nil {
 		return c.Fail("error parsing -details: %v", err)
-	} else {
-		cu.Details = details
 	}
+	cu.Details = details
 
 	out, err := openWriter(c.output)
 	if err != nil {
