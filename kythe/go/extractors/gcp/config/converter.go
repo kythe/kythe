@@ -35,8 +35,8 @@ import (
 // Constants that map input/output substitutions.
 const (
 	defaultCorpus   = "${_CORPUS}"
-	defaultVersion  = "${_VERSION}"
-	outputGsBucket  = "${_OUTPUT_GS_BUCKET}"
+	defaultVersion  = "${_COMMIT}"
+	outputGsBucket  = "${_BUCKET_NAME}"
 	defaultRepoName = "${_REPO}"
 )
 
@@ -93,7 +93,7 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 	build := &cloudbuild.Build{
 		Artifacts: &cloudbuild.Artifacts{
 			Objects: &cloudbuild.ArtifactObjects{
-				Location: fmt.Sprintf("gs://%s/", outputGsBucket),
+				Location: fmt.Sprintf("gs://%s/%s/", outputGsBucket, hints.Corpus),
 				Paths:    []string{path.Join(outputDirectory, outputFileName(hints.Corpus))},
 			},
 		},
@@ -107,7 +107,6 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 	if err != nil {
 		return nil, err
 	}
-	build.Artifacts.Objects.Paths = append(g.additionalArtifacts(), build.Artifacts.Objects.Paths...)
 
 	build.Steps = append(build.Steps, g.preExtractSteps()...)
 
@@ -162,9 +161,6 @@ type buildSystemElaborator interface {
 	// configuration file for a repo of a given type.  For example for a bazel
 	// repo it might just be root/BUILD, or a maven repo will have repo/pom.xml.
 	defaultExtractionTarget() *rpb.ExtractionTarget
-	// additionalArtifacts should be prepended to the list of artifacts returned
-	// from the cloudbuild invocation.
-	additionalArtifacts() []string
 }
 
 func generator(b rpb.BuildSystem) (buildSystemElaborator, error) {
@@ -181,5 +177,5 @@ func generator(b rpb.BuildSystem) (buildSystemElaborator, error) {
 }
 
 func outputFileName(corpus string) string {
-	return corpus + "-" + defaultVersion + ".kzip"
+	return defaultVersion + ".kzip"
 }

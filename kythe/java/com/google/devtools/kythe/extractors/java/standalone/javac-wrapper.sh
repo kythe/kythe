@@ -38,9 +38,6 @@
 #
 # Other environment variables that may be passed to this script include:
 #   KYTHE_EXTRACT_ONLY: if set, suppress the call to javac after extraction
-#   TMPDIR: override the location of extraction logs and other temporary output
-
-export TMPDIR="${TMPDIR:-/tmp}"
 
 if [[ -z "$JAVA_HOME" ]]; then
   readonly JAVABIN="$(which java)"
@@ -71,8 +68,8 @@ fi
 
 "$JAVABIN" "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}" \
   -jar "$JAVAC_EXTRACTOR_JAR" "$@" \
-  1>>"$TMPDIR"/javac-extractor.out \
-  2>>"$TMPDIR"/javac-extractor.err
+  1> >(sed -e 's/^/EXTRACT OUT: /') \
+  2> >(sed -e 's/^/EXTRACT ERR: /' >&2)
 if [[ -z "$KYTHE_EXTRACT_ONLY" ]]; then
   "$REAL_JAVAC" "$@"
 fi
