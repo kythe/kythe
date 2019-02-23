@@ -271,28 +271,6 @@ const clang::Decl* FindImplicitDeclForStmt(
   return nullptr;
 }
 
-// Calls tsi->overrideType(new_type) and restores the current type upon
-// destruction.
-// TODO(shahms): Remove this.
-class ScopedTypeOverride {
- public:
-  explicit ScopedTypeOverride(clang::TypeSourceInfo* tsi,
-                              clang::QualType new_type)
-      : tsi_(tsi), previous_type_(tsi_->getType()) {
-    tsi_->overrideType(new_type);
-  }
-
-  ~ScopedTypeOverride() { tsi_->overrideType(previous_type_); }
-
-  // Neither copyable nor movable.
-  ScopedTypeOverride(const ScopedTypeOverride&) = delete;
-  ScopedTypeOverride& operator=(const ScopedTypeOverride) = delete;
-
- private:
-  clang::TypeSourceInfo* tsi_;
-  clang::QualType previous_type_;
-};
-
 template <typename T>
 std::string DumpString(const T& val) {
   std::string s;
@@ -1099,18 +1077,6 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
   }
   if (Decl == nullptr) {
     return true;
-  }
-
-  // This is a dirty, dirty hack to allow other parts of the code to more
-  // cleanly handle deduced types, but should *only* be done for deduced types.
-  // TODO(shahms): Remove this in favor of the TypePair traversal.
-  absl::optional<ScopedTypeOverride> type_override;
-  if (auto* D = dyn_cast<clang::DeclaratorDecl>(Decl)) {
-    if (auto* TSI = D->getTypeSourceInfo()) {
-      if (TSI->getType() != D->getType() && TSI->getType()->isUndeducedType()) {
-        type_override.emplace(TSI, D->getType());
-      }
-    }
   }
 
   auto Scope = RestoreValue(Job->PruneIncompleteFunctions);
@@ -1962,10 +1928,7 @@ NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
 NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(
     clang::TypeLoc Written, const clang::Type* Resolved) {
   if (auto RCC = ExpandedRangeInCurrentContext(Written.getSourceRange())) {
-    // TODO(shahms): This is correct, except the nested use of EmitRanges causes
-    // problems.
-    // if (auto Nodes = BuildNodeSetForType(Resolved)) {
-    if (auto Nodes = BuildNodeSetForType(Written)) {
+    if (auto Nodes = BuildNodeSetForType(Resolved)) {
       Observer.recordTypeSpellingLocation(
           *RCC, Nodes.ForReference(), Nodes.claimability(), IsImplicit(*RCC));
       return Nodes;
@@ -2161,11 +2124,8 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
       *Observer.getSourceManager(), *Observer.getLangOptions(),
       Decl->getSourceRange().getEnd()));
   Marks.set_name_range(NameRange);
-  if (const auto* TSI = Decl->getTypeSourceInfo()) {
-    // TODO(zarko): Storage classes.
-    AscribeSpelledType(TSI->getTypeLoc(), Decl->getType(), BodyDeclNode);
-  } else if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
-    Observer.recordTypeEdge(BodyDeclNode, TyNodeId.value());
+  if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
+    Observer.recordTypeEdge(BodyDeclNode, *TyNodeId);
   }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   std::vector<LibrarySupport::Completion> Completions;
@@ -2290,11 +2250,8 @@ bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl* Decl) {
                               GraphObserver::VariableSubkind::Field,
                               Marks.GenerateMarkedSource(DeclNode));
   AssignUSR(DeclNode, Decl);
-  if (const auto* TSI = Decl->getTypeSourceInfo()) {
-    // TODO(zarko): Record storage classes for fields.
-    AscribeSpelledType(TSI->getTypeLoc(), Decl->getType(), DeclNode);
-  } else if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
-    Observer.recordTypeEdge(DeclNode, TyNodeId.value());
+  if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
+    Observer.recordTypeEdge(DeclNode, *TyNodeId);
   }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   return true;
@@ -2342,7 +2299,9 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl* Decl) {
   bool HasSpecifiedStorageType = false;
   if (const auto* TSI = Decl->getIntegerTypeSourceInfo()) {
     HasSpecifiedStorageType = true;
-    AscribeSpelledType(TSI->getTypeLoc(), TSI->getType(), DeclNode);
+    if (auto TyNodeId = BuildNodeIdForType(TSI->getType())) {
+      Observer.recordTypeEdge(DeclNode, *TyNodeId);
+    }
   }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   // TODO(zarko): Would this be clearer as !Decl->isThisDeclarationADefinition
@@ -3272,15 +3231,6 @@ bool IndexerASTVisitor::VisitUsingShadowDecl(
         GraphObserver::Claimability::Claimable, IsImplicit(RCC.value()));
   }
   return true;
-}
-
-void IndexerASTVisitor::AscribeSpelledType(
-    const clang::TypeLoc& Type, const clang::QualType& TrueType,
-    const GraphObserver::NodeId& AscribeTo) {
-  // TODO(shahms): use the true type for the node id.
-  if (auto TyNodeId = BuildNodeIdForType(/*True*/ Type)) {
-    Observer.recordTypeEdge(AscribeTo, *TyNodeId);
-  }
 }
 
 GraphObserver::NameId::NameEqClass IndexerASTVisitor::BuildNameEqClassForDecl(
@@ -5349,11 +5299,8 @@ bool IndexerASTVisitor::VisitObjCPropertyDecl(
       GraphObserver::VariableSubkind::Field,
       Marks.GenerateMarkedSource(DeclNode));
   AssignUSR(DeclNode, Decl);
-  if (const auto* TSI = Decl->getTypeSourceInfo()) {
-    // TODO(zarko): Record storage classes for fields.
-    AscribeSpelledType(TSI->getTypeLoc(), Decl->getType(), DeclNode);
-  } else if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
-    Observer.recordTypeEdge(DeclNode, TyNodeId.value());
+  if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
+    Observer.recordTypeEdge(DeclNode, *TyNodeId);
   }
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   return true;

@@ -784,19 +784,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   GraphObserver::NodeId ApplyBuiltinTypeConstructor(
       const char* BuiltinName, const GraphObserver::NodeId& Param);
 
-  /// \brief Ascribes a type to `AscribeTo`.
-  /// \param Type The `TypeLoc` referring to the type
-  /// \param DType A possibly deduced type (or simply Type->getType()).
-  /// \param AscribeTo The node to which the type should be ascribed.
-  ///
-  /// `auto` does not update TypeSourceInfo records after deduction, so
-  /// a deduced `auto` in the source text will appear to be undeduced.
-  /// In this case, it's useful to query the object being ascribed for its
-  /// unlocated QualType, as this does get updated.
-  void AscribeSpelledType(const clang::TypeLoc& Type,
-                          const clang::QualType& TrueType,
-                          const GraphObserver::NodeId& AscribeTo);
-
   /// \brief Returns the parent of the given node, along with the index
   /// at which the node appears underneath each parent.
   ///
