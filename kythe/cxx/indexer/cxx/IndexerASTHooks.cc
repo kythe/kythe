@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <tuple>
+#include <type_traits>
 
 #include "GraphObserver.h"
 #include "absl/strings/str_cat.h"
@@ -90,6 +91,33 @@ bool TokenQuotesIdentifier(const clang::SourceManager& SM,
     default:
       return false;
   }
+}
+
+absl::optional<llvm::StringRef> GetDeclarationName(
+    const clang::DeclarationName& Name, bool IgnoreUnimplemented) {
+  switch (Name.getNameKind()) {
+    case clang::DeclarationName::Identifier:
+      return Name.getAsIdentifierInfo()->getName();
+    case clang::DeclarationName::CXXConstructorName:
+      return "#ctor";
+    case clang::DeclarationName::CXXDestructorName:
+      return "#dtor";
+// TODO(zarko): Fill in the remaining relevant DeclarationName cases.
+#define UNEXPECTED_DECLARATION_NAME_KIND(kind)                         \
+  case clang::DeclarationName::kind:                                   \
+    CHECK(IgnoreUnimplemented) << "Unexpected DeclaraionName::" #kind; \
+    return absl::nullopt;
+      UNEXPECTED_DECLARATION_NAME_KIND(ObjCZeroArgSelector);
+      UNEXPECTED_DECLARATION_NAME_KIND(ObjCOneArgSelector);
+      UNEXPECTED_DECLARATION_NAME_KIND(ObjCMultiArgSelector);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXConversionFunctionName);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXOperatorName);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXLiteralOperatorName);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXUsingDirective);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXDeductionGuideName);
+#undef UNEXPECTED_DECLARATION_NAME_KIND
+  }
+  return absl::nullopt;
 }
 
 /// \brief Finds the first CXXConstructExpr child of the given
@@ -3759,8 +3787,9 @@ bool IndexerASTVisitor::TraverseNestedNameSpecifierLoc(
     case NestedNameSpecifier::TypeSpec:
       break;  // This is handled by VisitDependentNameTypeLoc.
     case NestedNameSpecifier::Identifier: {
-      auto DId = BuildNodeIdForDependentRange(NNS.getPrefix(),
-                                              NNS.getLocalSourceRange());
+      auto DId = BuildNodeIdForDependentIdentifier(
+          NNS.getPrefix().getNestedNameSpecifier(),
+          NNS.getNestedNameSpecifier()->getAsIdentifier());
       if (auto RCC = ExplicitRangeInCurrentContext(NNS.getLocalSourceRange())) {
         Observer.recordDeclUseLocation(*RCC, DId,
                                        GraphObserver::Claimability::Claimable,
@@ -3773,34 +3802,37 @@ bool IndexerASTVisitor::TraverseNestedNameSpecifierLoc(
   return Base::TraverseNestedNameSpecifierLoc(NNS);
 }
 
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentRange(
-    const clang::NestedNameSpecifierLoc& NNSLoc,
-    const clang::SourceRange& IdRange) {
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentIdentifier(
+    const clang::NestedNameSpecifier* Prefix,
+    const clang::IdentifierInfo* Identifier) {
+  CHECK(Identifier != nullptr) << "Ooops!";
+  return BuildNodeIdForDependentName(Prefix,
+                                     clang::DeclarationName(Identifier));
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentName(
+    const clang::NestedNameSpecifier* Prefix,
+    const clang::DeclarationName& Identifier) {
   // TODO(zarko): Need a better way to generate stablish names here.
   // In particular, it would be nice if a dependent name A::B::C
   // and a dependent name A::B::D were represented as ::C and ::D off
   // of the same dependent root A::B. (Does this actually make sense,
   // though? Could A::B resolve to a different entity in each case?)
-  std::string Identity = "#nns@";  // Nested name specifier.
+  std::string Identity = "#nns::";  // Nested name specifier.
+
   llvm::raw_string_ostream Ostream(Identity);
-  if (auto Range = ExplicitRangeInCurrentContext(NNSLoc.getSourceRange())) {
-    Observer.AppendRangeToStream(Ostream, *Range);
+  if (auto PId = BuildNodeIdForNestedNameSpecifier(Prefix)) {
+    Ostream << PId->IdentityRef();
   } else {
-    Ostream << "invalid";
+    Ostream << "(invalid)";
   }
-  Ostream << "@";
-  if (auto RCC = ExplicitRangeInCurrentContext(IdRange)) {
-    Observer.AppendRangeToStream(Ostream, *RCC);
+  Ostream << "::";
+  if (auto Name = GetDeclarationName(Identifier, IgnoreUnimplemented)) {
+    Ostream << *Name;
   } else {
-    Ostream << "invalid";
+    Ostream << "(invalid)";
   }
   return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
-}
-
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentLoc(
-    const clang::NestedNameSpecifierLoc& NNS,
-    const clang::SourceLocation& IdLoc) {
-  return BuildNodeIdForDependentRange(NNS, RangeForASTEntity(IdLoc));
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -3817,8 +3849,8 @@ IndexerASTVisitor::RecordParamEdgesForDependentName(
       case NestedNameSpecifier::Identifier:
         // Hashcons the identifiers.
         if (auto Subtree = RecordParamEdgesForDependentName(
-                BuildNodeIdForDependentRange(NNSLoc.getPrefix(),
-                                             NNSLoc.getLocalSourceRange()),
+                BuildNodeIdForDependentIdentifier(NNS->getPrefix(),
+                                                  NNS->getAsIdentifier()),
                 NNSLoc.getPrefix(), Root)) {
           if (RecordLookupEdgeForDependentName(*Subtree,
                                                NNS->getAsIdentifier())) {
@@ -3844,51 +3876,37 @@ IndexerASTVisitor::RecordParamEdgesForDependentName(
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::RecordLookupEdgeForDependentName(
     const GraphObserver::NodeId& DId, const clang::DeclarationName& Name) {
-  switch (Name.getNameKind()) {
-    case clang::DeclarationName::Identifier:
-      Observer.recordLookupNode(DId,
-                                Name.getAsIdentifierInfo()->getNameStart());
-      break;
-    case clang::DeclarationName::CXXConstructorName:
-      Observer.recordLookupNode(DId, "#ctor");
-      break;
-    case clang::DeclarationName::CXXDestructorName:
-      Observer.recordLookupNode(DId, "#dtor");
-      break;
-// TODO(zarko): Fill in the remaining relevant DeclarationName cases.
-#define UNEXPECTED_DECLARATION_NAME_KIND(kind)                         \
-  case clang::DeclarationName::kind:                                   \
-    CHECK(IgnoreUnimplemented) << "Unexpected DeclaraionName::" #kind; \
-    return absl::nullopt;
-      UNEXPECTED_DECLARATION_NAME_KIND(ObjCZeroArgSelector);
-      UNEXPECTED_DECLARATION_NAME_KIND(ObjCOneArgSelector);
-      UNEXPECTED_DECLARATION_NAME_KIND(ObjCMultiArgSelector);
-      UNEXPECTED_DECLARATION_NAME_KIND(CXXConversionFunctionName);
-      UNEXPECTED_DECLARATION_NAME_KIND(CXXOperatorName);
-      UNEXPECTED_DECLARATION_NAME_KIND(CXXLiteralOperatorName);
-      UNEXPECTED_DECLARATION_NAME_KIND(CXXUsingDirective);
-      UNEXPECTED_DECLARATION_NAME_KIND(CXXDeductionGuideName);
-#undef UNEXPECTED_DECLARATION_NAME_KIND
+  if (auto Lookup = GetDeclarationName(Name, IgnoreUnimplemented)) {
+    Observer.recordLookupNode(DId, *Lookup);
+    return DId;
   }
-  return DId;
+  return absl::nullopt;
 }
 
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForNestedNameSpecifierLoc(
     const clang::NestedNameSpecifierLoc& NNSLoc) {
-  auto* NNS = NNSLoc.getNestedNameSpecifier();
+  if (!NNSLoc) {
+    return absl::nullopt;
+  }
+  return BuildNodeIdForNestedNameSpecifier(NNSLoc.getNestedNameSpecifier());
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForNestedNameSpecifier(
+    const clang::NestedNameSpecifier* NNS) {
+  if (!NNS) {
+    return absl::nullopt;
+  }
   switch (NNS->getKind()) {
     case NestedNameSpecifier::Identifier:
-      return BuildNodeIdForDependentRange(NNSLoc.getPrefix(),
-                                          NNSLoc.getLocalSourceRange());
+      return BuildNodeIdForDependentIdentifier(NNS->getPrefix(),
+                                               NNS->getAsIdentifier());
     case NestedNameSpecifier::Namespace:
       return BuildNodeIdForDecl(NNS->getAsNamespace());
     case NestedNameSpecifier::NamespaceAlias:
       return BuildNodeIdForDecl(NNS->getAsNamespaceAlias());
     case NestedNameSpecifier::TypeSpec:
-      if (auto SubId = BuildNodeIdForType(NNSLoc.getTypeLoc())) {
-        return SubId;
-      }
       if (auto SubId =
               BuildNodeIdForType(clang::QualType(NNS->getAsType(), 0))) {
         return SubId;
@@ -3917,7 +3935,8 @@ IndexerASTVisitor::RecordEdgesForDependentName(
     return absl::nullopt;
   }
   if (auto IdOut = RecordParamEdgesForDependentName(
-          BuildNodeIdForDependentLoc(NNSLoc, IdLoc), NNSLoc, Root)) {
+          BuildNodeIdForDependentName(NNSLoc.getNestedNameSpecifier(), Id),
+          NNSLoc, Root)) {
     return RecordLookupEdgeForDependentName(*IdOut, Id);
   }
   return absl::nullopt;
@@ -4363,7 +4382,9 @@ NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
 
 NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
     clang::DependentNameTypeLoc TL) {
-  return BuildNodeIdForDependentLoc(TL.getQualifierLoc(), TL.getNameLoc());
+  return BuildNodeIdForDependentIdentifier(
+      TL.getQualifierLoc().getNestedNameSpecifier(),
+      TL.getTypePtr()->getIdentifier());
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
