@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <tuple>
+#include <type_traits>
 
 #include "GraphObserver.h"
 #include "absl/flags/flag.h"
