@@ -59,6 +59,8 @@ var (
 
 	// GCRGitImage an image that runs git.
 	GCRGitImage = "gcr.io/cloud-builders/git"
+	// BazelImage extracts a repo using bazel.  See kythe/extractors/bazel.
+	BazelImage = "gcr.io/kythe-public/bazel-extractor:stable"
 	// GradleJDK8Image is an image wrapped around java8, which runs gradle.
 	// MvnJDK8Image is an image wrapped around java8, which runs mvn.
 	// See https://hub.docker.com/_/gradle for details on supported images.

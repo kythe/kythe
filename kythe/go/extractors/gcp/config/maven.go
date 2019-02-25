@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 
 	"kythe.io/kythe/go/extractors/constants"
-
 	rpb "kythe.io/kythe/proto/repo_go_proto"
 
 	"google.golang.org/api/cloudbuild/v1"

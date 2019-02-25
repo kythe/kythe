@@ -97,6 +97,36 @@ _CORPUS=repo-name\
   --no-source
 ```
 
+## Bazel Extraction
+
+* `_COMMIT`: git repository commit to checkout, build, and extract
+* `_REPO`: source git repository URL
+* `_BUCKET_NAME`: GCS bucket name to store extracted compilations
+* `_CORPUS`: Kythe corpus label
+
+```shell
+# Extract github.com/angular/angular at commit 8accc98
+gcloud builds submit --no-source --config kythe/extractors/gcp/bazel/bazel.yaml \
+  --substitutions=_REPO=https://github.com/angular/angular.git,\
+_COMMIT=8accc98d28249628e84136d7306fdbbe1f4caaef,\
+_BUCKET_NAME=$BUCKET_NAME>,\
+_KYTHE_CORPUS=github.com/angular/angular
+
+# Extract github.com/bazelbuild/bazel at commit 22d375b
+gcloud builds submit --no-source --config kythe/extractors/gcp/bazel/bazel.yaml \
+  --substitutions=_REPO=https://github.com/bazelbuild/bazel.git,\
+_COMMIT=22d375bd532b04bb83f18a7770e5080e23a1d517,\
+_BUCKET_NAME=$BUCKET_NAME>,\
+_KYTHE_CORPUS=github.com/bazelbuild/bazel
+
+# Extract github.com/protocolbuffers/protobuf at commit e728325
+gcloud builds submit --no-source --config kythe/extractors/gcp/bazel/bazel.yaml \
+  --substitutions=_REPO=https://github.com/protocolbuffers/protobuf.git,\
+_COMMIT=e7283254d6eb01ddfdb63cc3c89cd312e2d354d5,\
+_BUCKET_NAME=$BUCKET_NAME>,\
+_KYTHE_CORPUS=github.com/protocolbuffers/protobuf
+```
+
 ## Cloud Build REST API
 
 Cloud Build has a REST API described at

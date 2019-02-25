@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "config",
     srcs = [
+        "bazel.go",
         "common.go",
         "converter.go",
         "gradle.go",

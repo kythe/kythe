@@ -2,7 +2,7 @@ artifacts:
   objects:
     location: gs://${_BUCKET_NAME}/${_CORPUS}/
     paths:
-    - /workspace/out/${_COMMIT}.kzip
+    - /workspace/output/${_COMMIT}.kzip
 steps:
 - args:
   - clone
@@ -22,7 +22,7 @@ steps:
    - CLONE
 - args:
   - mkdir
-  - /workspace/out
+  - /workspace/output
   name: ubuntu
   waitFor:
   - '-'
@@ -51,7 +51,7 @@ steps:
   entrypoint: mvn
   env:
   - KYTHE_CORPUS=${_CORPUS}
-  - KYTHE_OUTPUT_DIRECTORY=/workspace/out
+  - KYTHE_OUTPUT_DIRECTORY=/workspace/output
   - KYTHE_ROOT_DIRECTORY=/workspace/code
   - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
   - REAL_JAVAC=/usr/bin/javac
@@ -82,7 +82,7 @@ steps:
   entrypoint: mvn
   env:
   - KYTHE_CORPUS=${_CORPUS}
-  - KYTHE_OUTPUT_DIRECTORY=/workspace/out
+  - KYTHE_OUTPUT_DIRECTORY=/workspace/output
   - KYTHE_ROOT_DIRECTORY=/workspace/code/somesubdir
   - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
   - REAL_JAVAC=/usr/bin/javac
@@ -97,6 +97,7 @@ steps:
     - PREPROCESS1
 - args:
   - -c
-  - /opt/kythe/tools/kzip merge --output /workspace/out/${_COMMIT}.kzip /workspace/out/*.kzip
+  - /opt/kythe/tools/kzip merge --output /workspace/output/${_COMMIT}.kzip /workspace/output/*.kzip
   entrypoint: bash
+  id: MERGE
   name: gcr.io/kythe-public/kzip-tools:stable

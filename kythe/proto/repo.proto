@@ -45,6 +45,11 @@ message ExtractionHint {
   // Note that each separate target in a single ExtractionHint will be combined
   // together into a single corpus.  If you need separate corpora, you must
   // specify multiple ExtractionHint above.
+  //
+  // Each individual ExtractionTarget provided will have a separate build
+  // execution.  To specify multiple targets to build inside a single execution
+  // (for example bazel build //target:first //target:second), you must specify
+  // multiple individual_targets below.
   repeated ExtractionTarget targets = 4;
 }
 
@@ -71,5 +76,8 @@ message ExtractionTarget {
   // target.  E.g.: a pom.xml file in maven, or build.gradle file in gradle.
   string path = 1;
 
-  // TODO(danielmoy): bazel might require a build target instead of a path.
+  // Build targets for builders that require explicit targets instead of just
+  // invoking build inside of a directory.  For example in bazel this could be
+  // //kythe/go/... to extract all of the kythe golang code.
+  repeated string individual_targets = 2;
 }

@@ -85,6 +85,18 @@ func TestYAMLConversion(t *testing.T) {
 			yamlDir:  examplesDir,
 			yamlFile: "gradle.yaml",
 		},
+		{
+			name:     "bazel-from-examples",
+			jsonFile: "bazel.json",
+			yamlDir:  examplesDir,
+			yamlFile: "bazel.yaml",
+		},
+		{
+			name:     "bazel-multi",
+			jsonFile: "bazel-multi.json",
+			yamlDir:  testDataDir,
+			yamlFile: "bazel-multi.yaml",
+		},
 	}
 
 	for _, tcase := range testcases {

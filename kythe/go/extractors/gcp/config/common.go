@@ -30,6 +30,8 @@ const checkoutStepID = "CHECKOUT"
 const javaArtifactsID = "JAVA-ARTIFACTS"
 const preStepID = "PREPROCESS"
 const extractStepID = "EXTRACT"
+const mergeStepID = "MERGE"
+const renameStepID = "RENAME"
 
 // commonSteps returns cloudbuild BuildSteps for copying a repo and creating
 // an output directory.
@@ -57,7 +59,7 @@ func commonSteps(repo string) []*cloudbuild.BuildStep {
 		},
 		&cloudbuild.BuildStep{
 			Name:    "ubuntu", // This, however, has no entrypoint command.
-			Args:    []string{"mkdir", "/workspace/out"},
+			Args:    []string{"mkdir", outputDirectory},
 			WaitFor: []string{"-"},
 		},
 	}
@@ -99,9 +101,10 @@ func zipMergeStep(corpus string) *cloudbuild.BuildStep {
 			fmt.Sprintf(
 				"%s merge --output %s %s/*.kzip",
 				constants.DefaultKzipToolLocation,
-				path.Join(outputDirectory, outputFileName(corpus)),
+				path.Join(outputDirectory, outputFileName()),
 				outputDirectory),
 		},
+		Id: mergeStepID,
 		// We explicitly don't include a WaitFor here because that is equivalent
 		// to waiting for everything.  This step should be done at the end, so
 		// it gets no WaitFor (== wait for everything).
