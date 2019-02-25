@@ -1,0 +1,45 @@
+artifacts:
+  objects:
+    location: gs://${_BUCKET_NAME}/${_CORPUS}/
+    paths:
+    - /workspace/output/${_COMMIT}.kzip
+steps:
+- args:
+  - clone
+  - ${_REPO}
+  - /workspace/code
+  id: CLONE
+  name: gcr.io/cloud-builders/git
+  waitFor:
+  - '-'
+- args:
+  - checkout
+  - ${_COMMIT}
+  dir: /workspace/code
+  id: CHECKOUT
+  name: gcr.io/cloud-builders/git
+  waitFor:
+  - CLONE
+- args:
+  - mkdir
+  - /workspace/output
+  name: ubuntu
+  waitFor:
+  - '-'
+- args:
+  - build
+  - -k
+  - --define
+  - kythe_corpus=${_CORPUS}
+  - //a/target/...
+  - //another/target/...
+  - //direct:target
+  dir: /workspace/code
+  id: EXTRACT
+  name: gcr.io/kythe-public/bazel-extractor:stable
+- args:
+  - mv
+  - /workspace/output/compilations.kzip
+  - /workspace/output/${_COMMIT}.kzip
+  id: RENAME
+  name: ubuntu

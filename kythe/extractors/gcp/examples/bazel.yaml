@@ -1,0 +1,24 @@
+steps:
+- id: 'CLONE'
+  name: 'gcr.io/cloud-builders/git'
+  args: ['clone', '${_REPO}', '/workspace/code']
+  waitFor: ['-']
+- id: 'CHECKOUT'
+  name: 'gcr.io/cloud-builders/git'
+  args: ['checkout', '${_COMMIT}']
+  dir: '/workspace/code'
+  waitFor: ['CLONE']
+- name: 'ubuntu'
+  args: ['mkdir', '/workspace/output']
+  waitFor: ['-']
+- id: 'EXTRACT'
+  name: 'gcr.io/kythe-public/bazel-extractor:stable'
+  args: ['build', '-k', '--define', 'kythe_corpus=${_CORPUS}', '//...']
+  dir: '/workspace/code'
+- id: 'RENAME'
+  name: 'ubuntu'
+  args: ['mv', '/workspace/output/compilations.kzip', '/workspace/output/${_COMMIT}.kzip']
+artifacts:
+  objects:
+    location: 'gs://${_BUCKET_NAME}/${_CORPUS}/'
+    paths: ['/workspace/output/${_COMMIT}.kzip']

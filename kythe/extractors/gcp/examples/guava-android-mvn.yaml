@@ -10,7 +10,7 @@ steps:
   waitFor:
     - 'CLONE'
 - name: 'ubuntu'
-  args: ['mkdir', '/workspace/out']
+  args: ['mkdir', '/workspace/output']
   waitFor: ['-']
 - name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable'
   volumes:
@@ -36,7 +36,7 @@ steps:
     - '-Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh'
   env:
     - 'KYTHE_CORPUS=guava-android'
-    - 'KYTHE_OUTPUT_DIRECTORY=/workspace/out'
+    - 'KYTHE_OUTPUT_DIRECTORY=/workspace/output'
     - 'KYTHE_ROOT_DIRECTORY=/workspace/code/android'
     - 'JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar'
     - 'REAL_JAVAC=/usr/bin/javac'
@@ -50,10 +50,11 @@ steps:
     - 'PREPROCESS'
 - name: 'gcr.io/kythe-public/kzip-tools:stable'
   entrypoint: 'bash'
-  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/${_COMMIT}.kzip /workspace/out/*.kzip']
+  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/output/${_COMMIT}.kzip /workspace/output/*.kzip']
+  id: 'MERGE'
 artifacts:
   objects:
     location: 'gs://${_BUCKET_NAME}/guava-android/'
     paths:
-      - '/workspace/out/${_COMMIT}.kzip'
+      - '/workspace/output/${_COMMIT}.kzip'
 
