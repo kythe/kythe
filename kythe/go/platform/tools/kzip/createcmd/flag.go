@@ -171,6 +171,11 @@ func (f *kytheURI) String() string {
 	return (*kytheuri.URI)(f).String()
 }
 
+// Get implements part of the flag.Getter interface.
+func (f *kytheURI) Get() interface{} {
+	return f
+}
+
 // repeatedAny is a repeated flag of JSON-encoded Any messages.
 type repeatedAny []*anypb.Any
 
@@ -236,4 +241,9 @@ func (f *vnameRules) Set(s string) error {
 // String implements part of the flag.Value interface and returns a string-ish value for the flag.
 func (f *vnameRules) String() string {
 	return f.filename
+}
+
+// Get implements part of the flag.Getter interface.
+func (f *vnameRules) Get() interface{} {
+	return f
 }
