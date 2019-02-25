@@ -21,5 +21,6 @@ go_library(
         "@com_github_golang_protobuf//ptypes:go_default_library_gen",
         "@com_github_google_subcommands//:go_default_library",
         "@io_bazel_rules_go//proto/wkt:any_go_proto",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
     ],
 )

@@ -40,8 +40,8 @@ type createCommand struct {
 	rules  vnameRules
 
 	uri          kytheURI
-	source       repeatedString
-	inputs       repeatedString
+	source       repeatedStringSet
+	inputs       repeatedStringSet
 	hasError     bool
 	argument     repeatedString
 	outputKey    string
@@ -90,7 +90,7 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		return c.Fail("missing required -uri")
 	case c.output == "":
 		return c.Fail("missing required -output")
-	case len(c.source) == 0:
+	case c.source.Len() == 0:
 		return c.Fail("missing required -source_file")
 	}
 
@@ -111,18 +111,17 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		},
 		HasCompileErrors: c.hasError,
 		Argument:         append(c.argument, fs.Args()...),
-		SourceFile:       []string(c.source),
+		SourceFile:       c.source.Elements(),
 		OutputKey:        c.outputKey,
 		WorkingDirectory: c.workingDir,
 		EntryContext:     c.entryContext,
 		Environment:      c.environment.ToProto(),
 		Details:          ([]*anypb.Any)(c.details),
 	}, out, &c.rules.Rules}
-	if err := cb.addFiles(ctx, []string(c.source)); err != nil {
-		return c.Fail("error adding -source_file: %v", err)
-	}
-	if err := cb.addFiles(ctx, []string(c.inputs)); err != nil {
-		return c.Fail("error adding -required_input: %v", err)
+
+	c.inputs.update(c.source)
+	if err := cb.addFiles(ctx, c.inputs.Elements()); err != nil {
+		return c.Fail("error adding input files: %v", err)
 	}
 	if err := cb.done(); err != nil {
 		return c.Fail("error writing compilation to -output: %v", err)
