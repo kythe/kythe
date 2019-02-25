@@ -690,12 +690,21 @@ def kythe_dependencies():
     # depend on @com_google_protobuf for protoc and proto runtimes.
     #
     # TODO(schroederc): update to 3.7.0 once released
+    # maybe(
+    #     http_archive,
+    #     name = "com_google_protobuf",
+    #     sha256 = "712715f5ac35637131f0d829ca7e0edaccab6fdeb33ecd3692ff24214ae5032f",
+    #     strip_prefix = "protobuf-de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af",
+    #     urls = ["https://github.com/protocolbuffers/protobuf/archive/de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af.zip"],
+    # )
+
+    # TODO(justbuchanan): Use the above protobuf dep instead once
+    # https://github.com/protocolbuffers/protobuf/pull/5803 is merged.
     maybe(
-        http_archive,
-        name = "com_google_protobuf",
-        sha256 = "712715f5ac35637131f0d829ca7e0edaccab6fdeb33ecd3692ff24214ae5032f",
-        strip_prefix = "protobuf-de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af.zip"],
+        git_repository,
+        name="com_google_protobuf",
+        remote = "https://github.com/justbuchanan/protobuf",
+        commit = "annotate_cc_extensions",
     )
 
     maybe(
