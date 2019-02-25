@@ -18,7 +18,6 @@
 
 #include <algorithm>
 #include <tuple>
-#include <type_traits>
 
 #include "GraphObserver.h"
 #include "absl/strings/str_cat.h"
