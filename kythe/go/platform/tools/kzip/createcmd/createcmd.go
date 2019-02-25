@@ -79,6 +79,7 @@ func (c *createCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.outputKey, "output_key", "", "Name by which the output of this compilation is known to dependents (optional)")
 	fs.StringVar(&c.workingDir, "working_directory", "", "Absolute path of the directory from which the build tool was invoked (optional)")
 	fs.StringVar(&c.entryContext, "entry_context", "", "Language-specific context to provide the indexer (optional)")
+	fs.Var(&c.environment, "env", "Repeated KEY=VALUE pairs of environment variables to add to the compilation unit (optional)")
 	fs.Var(&c.details, "details", "Repeated JSON-encoded Any messages to embed as compilation details (optional)")
 }
 
