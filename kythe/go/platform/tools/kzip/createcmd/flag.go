@@ -74,7 +74,7 @@ func (f *repeatedEnv) Set(s string) error {
 
 // String implements part of the flag.Getter interface and returns a string-ish value for the flag.
 func (f *repeatedEnv) String() string {
-	if f == nil {
+	if f == nil || *f == nil {
 		return ""
 	}
 	var values []string
@@ -94,7 +94,7 @@ func (f *repeatedEnv) Get() interface{} {
 
 // ToProto returns a []*apb.CompilationUnit_Env for the mapped environment.
 func (f *repeatedEnv) ToProto() []*apb.CompilationUnit_Env {
-	if f == nil {
+	if f == nil || *f == nil {
 		return []*apb.CompilationUnit_Env(nil)
 	}
 	var result []*apb.CompilationUnit_Env
