@@ -19,16 +19,13 @@ package createcmd
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
-	"os"
-	"strings"
 
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
-	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/vnameutil"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/subcommands"
 
 	anypb "github.com/golang/protobuf/ptypes/any"
@@ -39,22 +36,31 @@ import (
 type createCommand struct {
 	cmdutil.Info
 
-	uri     string
-	output  string
-	source  string
-	details string
+	output string
+	rules  vnameRules
+
+	uri          kytheURI
+	source       repeatedString
+	inputs       repeatedString
+	hasError     bool
+	argument     repeatedString
+	outputKey    string
+	workingDir   string
+	entryContext string
+	environment  repeatedEnv
+	details      repeatedAny
 }
 
 // New creates a new subcommand for merging kzip files.
 func New() subcommands.Command {
 	return &createCommand{
-		Info: cmdutil.NewInfo("create", "create simple kzip archives", `-uri <uri> -output <path> -source <path> required_input*
+		Info: cmdutil.NewInfo("create", "create simple kzip archives", `[options] -- arguments*
 
-Construct a kzip file consisting of a single input file name by -source.
-The resulting file is written to -output, and the vname of the compilation
-will be attributed to the values specified within -uri.
+Construct a kzip file written to -output with the vname specified by -uri.
+Each of -source_file, -required_input and -details may be specified multiple times with each
+occurrence of the flag being appended to the corresponding field in the compilation unit.
 
-Additional required inputs, if any, can be provided as positional parameters.
+Any additional positional arguments are included as arguments in the compilation unit.
 `),
 	}
 }
@@ -62,94 +68,114 @@ Additional required inputs, if any, can be provided as positional parameters.
 // SetFlags implements the subcommands interface and provides command-specific flags
 // for creating kzip files.
 func (c *createCommand) SetFlags(fs *flag.FlagSet) {
-	fs.StringVar(&c.uri, "uri", "", "A Kythe URI naming the compilation unit")
-	fs.StringVar(&c.output, "output", "", "Path for output kzip file")
-	fs.StringVar(&c.source, "source", "", "Path for input source file")
-	fs.StringVar(&c.details, "details", "", "JSON-encoded Any messages to embed as compilation details.")
+	fs.StringVar(&c.output, "output", "", "Path for output kzip file (required)")
+	fs.Var(&c.rules, "rules", "Path to vnames.json file (optional)")
+
+	fs.Var(&c.uri, "uri", "A Kythe URI naming the compilation unit VName (required)")
+	fs.Var(&c.source, "source_file", "Repeated paths for input source files (required)")
+	fs.Var(&c.inputs, "required_input", "Repeated paths for additional required inputs (optional)")
+	fs.BoolVar(&c.hasError, "has_compile_errors", false, "Whether this unit had compilation errors (optional)")
+	fs.Var(&c.argument, "argument", "Repeated arguments to add to compilation unit (optional)")
+	fs.StringVar(&c.outputKey, "output_key", "", "Name by which the output of this compilation is known to dependents (optional)")
+	fs.StringVar(&c.workingDir, "working_directory", "", "Absolute path of the directory from which the build tool was invoked (optional)")
+	fs.StringVar(&c.entryContext, "entry_context", "", "Language-specific context to provide the indexer (optional)")
+	fs.Var(&c.details, "details", "Repeated JSON-encoded Any messages to embed as compilation details (optional)")
 }
 
 // Execute implements the subcommands interface and creates the requested file.
 func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	switch {
-	case c.uri == "":
+	case c.uri.Corpus == "":
 		return c.Fail("missing required -uri")
 	case c.output == "":
 		return c.Fail("missing required -output")
-	case c.source == "":
-		return c.Fail("missing required -source")
+	case len(c.source) == 0:
+		return c.Fail("missing required -source_file")
 	}
 
-	// Create a new compilation populating its VName with the values specified
-	// within the specified Kythe URI.
-	uri, err := kytheuri.Parse(c.uri)
-	if err != nil {
-		return c.Fail("error parsing -uri: %v", err)
-	}
-	cu := &apb.CompilationUnit{
-		VName: &spb.VName{
-			Corpus:    uri.Corpus,
-			Language:  uri.Language,
-			Signature: uri.Signature,
-			Root:      uri.Root,
-			Path:      uri.Path,
-		},
-		SourceFile: []string{c.source},
-	}
-
-	details, err := unmarshalDetails(c.details)
-	if err != nil {
-		return c.Fail("error parsing -details: %v", err)
-	}
-	cu.Details = details
-
-	out, err := openWriter(c.output)
+	out, err := openWriter(ctx, c.output)
 	if err != nil {
 		return c.Fail("error opening -output: %v", err)
 	}
 
-	for _, path := range append([]string{c.source}, fs.Args()...) {
-		err := addFile(out, cu, path)
-		if err != nil {
-			return c.Fail("error adding file to -output: %v", err)
-		}
+	// Create a new compilation populating its VName with the values specified
+	// within the specified Kythe URI.
+	cb := compilationBuilder{&apb.CompilationUnit{
+		VName: &spb.VName{
+			Corpus:    c.uri.Corpus,
+			Language:  c.uri.Language,
+			Signature: c.uri.Signature,
+			Root:      c.uri.Root,
+			Path:      c.uri.Path,
+		},
+		HasCompileErrors: c.hasError,
+		Argument:         append(c.argument, fs.Args()...),
+		SourceFile:       []string(c.source),
+		OutputKey:        c.outputKey,
+		WorkingDirectory: c.workingDir,
+		EntryContext:     c.entryContext,
+		Environment:      c.environment.ToProto(),
+		Details:          ([]*anypb.Any)(c.details),
+	}, out, &c.rules.Rules}
+	if err := cb.addFiles(ctx, []string(c.source)); err != nil {
+		return c.Fail("error adding -source_file: %v", err)
 	}
-
-	_, err = out.AddUnit(cu, nil)
-	if err != nil {
+	if err := cb.addFiles(ctx, []string(c.inputs)); err != nil {
+		return c.Fail("error adding -required_input: %v", err)
+	}
+	if err := cb.done(); err != nil {
 		return c.Fail("error writing compilation to -output: %v", err)
-	}
-
-	if err := out.Close(); err != nil {
-		return c.Fail("error closing output file: %v", err)
 	}
 	return subcommands.ExitSuccess
 }
 
-func openWriter(path string) (*kzip.Writer, error) {
-	out, err := os.Create(path)
+func openWriter(ctx context.Context, path string) (*kzip.Writer, error) {
+	out, err := vfs.Create(ctx, path)
 	if err != nil {
 		return nil, err
 	}
 	return kzip.NewWriteCloser(out)
 }
 
-func addFile(out *kzip.Writer, cu *apb.CompilationUnit, path string) error {
-	input, err := os.Open(path)
+type compilationBuilder struct {
+	unit  *apb.CompilationUnit
+	out   *kzip.Writer
+	rules *vnameutil.Rules
+}
+
+func (cb *compilationBuilder) addFiles(ctx context.Context, paths []string) error {
+	for _, path := range paths {
+		if err := cb.addFile(ctx, path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (cb *compilationBuilder) addFile(ctx context.Context, path string) error {
+	input, err := vfs.Open(ctx, path)
 	if err != nil {
 		return err
 	}
 	defer input.Close()
 
-	digest, err := out.AddFile(input)
+	digest, err := cb.out.AddFile(input)
 	if err != nil {
 		return err
 	}
-	cu.RequiredInput = append(cu.RequiredInput, &apb.CompilationUnit_FileInput{
-		VName: &spb.VName{
-			Corpus: cu.VName.Corpus,
-			Root:   cu.VName.Root,
+	vname, ok := cb.rules.Apply(path)
+	if !ok {
+		vname = &spb.VName{
+			Corpus: cb.unit.VName.Corpus,
+			Root:   cb.unit.VName.Root,
 			Path:   path,
-		},
+		}
+	} else if vname.Corpus == "" {
+		vname.Corpus = cb.unit.VName.Corpus
+
+	}
+	cb.unit.RequiredInput = append(cb.unit.RequiredInput, &apb.CompilationUnit_FileInput{
+		VName: vname,
 		Info: &apb.FileInfo{
 			Path:   path,
 			Digest: digest,
@@ -158,15 +184,11 @@ func addFile(out *kzip.Writer, cu *apb.CompilationUnit, path string) error {
 	return nil
 }
 
-func unmarshalDetails(details string) ([]*anypb.Any, error) {
-	var msg []*anypb.Any
-	dec := json.NewDecoder(strings.NewReader(details))
-	for dec.More() {
-		var detail anypb.Any
-		if err := jsonpb.UnmarshalNext(dec, &detail); err != nil {
-			return msg, err
-		}
-		msg = append(msg, &detail)
+func (cb *compilationBuilder) done() error {
+	_, err := cb.out.AddUnit(cb.unit, nil)
+	if err != nil {
+		return err
 	}
-	return msg, nil
+	cb.unit = nil
+	return cb.out.Close()
 }
