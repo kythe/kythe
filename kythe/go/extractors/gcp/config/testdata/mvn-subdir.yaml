@@ -20,12 +20,6 @@ steps:
   id: CHECKOUT
   waitFor:
    - CLONE
-- args:
-  - mkdir
-  - /workspace/output
-  name: ubuntu
-  waitFor:
-  - '-'
 - name: gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable
   id: JAVA-ARTIFACTS
   volumes:

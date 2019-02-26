@@ -21,12 +21,6 @@ steps:
   waitFor:
   - CLONE
 - args:
-  - mkdir
-  - /workspace/output
-  name: ubuntu
-  waitFor:
-  - '-'
-- args:
   - build
   - -k
   - --define

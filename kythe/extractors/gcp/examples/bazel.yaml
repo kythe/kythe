@@ -8,9 +8,6 @@ steps:
   args: ['checkout', '${_COMMIT}']
   dir: '/workspace/code'
   waitFor: ['CLONE']
-- name: 'ubuntu'
-  args: ['mkdir', '/workspace/output']
-  waitFor: ['-']
 - id: 'EXTRACT'
   name: 'gcr.io/kythe-public/bazel-extractor:stable'
   args: ['build', '-k', '--define', 'kythe_corpus=${_CORPUS}', '//...']

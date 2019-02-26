@@ -20,12 +20,6 @@ steps:
   name: gcr.io/cloud-builders/git
   waitFor:
   - CLONE
-- args:
-  - mkdir
-  - /workspace/output
-  name: ubuntu
-  waitFor:
-  - '-'
 - id: JAVA-ARTIFACTS
   name: gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable
   volumes:

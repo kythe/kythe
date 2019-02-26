@@ -57,11 +57,6 @@ func commonSteps(repo string) []*cloudbuild.BuildStep {
 			Id:      checkoutStepID,
 			WaitFor: []string{cloneStepID},
 		},
-		&cloudbuild.BuildStep{
-			Name:    "ubuntu", // This, however, has no entrypoint command.
-			Args:    []string{"mkdir", outputDirectory},
-			WaitFor: []string{"-"},
-		},
 	}
 }
 
