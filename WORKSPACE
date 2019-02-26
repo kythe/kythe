@@ -18,9 +18,22 @@ http_archive(
     ],
 )
 
-load("//:setup.bzl", "kythe_rule_repositories")
+load("//:setup.bzl", "kythe_rule_repositories", "maybe")
 
 kythe_rule_repositories()
+
+# TODO(schroederc): remove this.  This needs to be loaded before loading the
+# go_* rules.  Normally, this is done by go_rules_dependencies in external.bzl,
+# but because we want to overload some of those dependencies, we need the go_*
+# rules before go_rules_dependencies.  Likewise, we can't precisely control
+# when loads occur within a Starlark file so we now need to load this
+# manually... https://github.com/bazelbuild/rules_go/issues/1966
+load("@io_bazel_rules_go//go/private:compat/compat_repo.bzl", "go_rules_compat")
+
+maybe(
+    go_rules_compat,
+    name = "io_bazel_rules_go_compat",
+)
 
 load("//:external.bzl", "kythe_dependencies")
 
