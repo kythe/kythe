@@ -78,11 +78,15 @@ def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
         system_include_directories = depset(includes) + cc_info.compilation_context.system_includes,
         add_legacy_cxx_options = True,
     )
-    return cc_common.get_memory_inefficient_command_line(
+
+    # TODO(schroederc): use memory-efficient Args, when available
+    args = ctx.actions.args()
+    args.add_all(cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
         action_name = CPP_COMPILE_ACTION_NAME,
         variables = variables,
-    )
+    ))
+    return args
 
 def _flag(name, typename, value):
     if value == None:  # Omit None flags.
@@ -124,7 +128,7 @@ def _transitive_entries(deps):
         if KytheEntries in dep:
             files += dep[KytheEntries].files
             compressed += dep[KytheEntries].compressed
-    return KytheEntries(files = depset(transitive = files), compressed = depset(transitive = compressed))
+    return KytheEntries(compressed = depset(transitive = compressed), files = depset(transitive = files))
 
 def _generate_files(ctx, files, extension):
     return [
@@ -193,9 +197,6 @@ def _cc_kythe_proto_library_aspect_impl(target, ctx):
     ]
 
 _cc_kythe_proto_library_aspect = aspect(
-    implementation = _cc_kythe_proto_library_aspect_impl,
-    fragments = ["cpp"],
-    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     attr_aspects = ["deps"],
     attrs = {
         "_protoc": attr.label(
@@ -217,6 +218,9 @@ _cc_kythe_proto_library_aspect = aspect(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
     },
+    fragments = ["cpp"],
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+    implementation = _cc_kythe_proto_library_aspect_impl,
 )
 
 def _cc_kythe_proto_library(ctx):
@@ -226,13 +230,13 @@ def _cc_kythe_proto_library(ctx):
     ]
 
 cc_kythe_proto_library = rule(
-    implementation = _cc_kythe_proto_library,
     attrs = {
         "deps": attr.label_list(
             providers = [ProtoInfo],
             aspects = [_cc_kythe_proto_library_aspect],
         ),
     },
+    implementation = _cc_kythe_proto_library,
 )
 
 def _cc_extract_kzip_impl(ctx):
@@ -248,11 +252,10 @@ def _cc_extract_kzip_impl(ctx):
     ])
     outputs = depset([
         extract(
-            ctx = ctx,
-            kzip = ctx.actions.declare_file("{}/{}.kzip".format(ctx.label.name, src.basename)),
-            extractor = ctx.executable.extractor,
-            vnames_config = ctx.file.vnames_config,
             srcs = depset([src]),
+            ctx = ctx,
+            extractor = ctx.executable.extractor,
+            kzip = ctx.actions.declare_file("{}/{}.kzip".format(ctx.label.name, src.basename)),
             opts = _compiler_options(
                 ctx,
                 cpp,
@@ -260,6 +263,7 @@ def _cc_extract_kzip_impl(ctx):
                 toolchain_includes,
                 cc_info,
             ),
+            vnames_config = ctx.file.vnames_config,
             deps = depset(
                 direct = ctx.files.srcs,
                 transitive = [depset(ctx.files.deps), cc_info.compilation_context.headers],
@@ -548,7 +552,7 @@ def _cc_index_impl(ctx):
             sources += [dep[KytheVerifierSources].files]
     return [
         KytheVerifierSources(files = depset(transitive = sources)),
-        KytheEntries(files = entries, compressed = depset([ctx.outputs.entries])),
+        KytheEntries(compressed = depset([ctx.outputs.entries]), files = entries),
     ]
 
 # TODO(shahms): Support cc_library deps, along with cc toolchain support.
@@ -621,33 +625,33 @@ def _indexer_test(
             fail("Bundled indexer tests require exactly one src!")
         cc_extract_bundle(
             name = name + "_kzip",
-            src = srcs[0],
             testonly = True,
-            tags = tags,
+            src = srcs[0],
             opts = copts,
             restricted_to = restricted_to,
+            tags = tags,
         )
         srcs = [":" + name + "_kzip"]
     cc_index(
         name = name + "_entries",
-        srcs = srcs,
-        deps = deps,
-        tags = tags,
         testonly = True,
+        srcs = srcs,
         copts = copts if not bundled else [],
-        restricted_to = restricted_to,
-        opts = (["-claim_unknown=false"] if bundled else []) + flags.indexer,
         indexer = indexer,
+        opts = (["-claim_unknown=false"] if bundled else []) + flags.indexer,
+        restricted_to = restricted_to,
+        tags = tags,
+        deps = deps,
     )
     verifier_test(
         name = name,
+        size = size,
         # TODO(shahms): Use sources directly?
         srcs = [":" + name + "_entries"],
-        tags = tags,
-        size = size,
         expect_success = not expect_fail_verify,
-        restricted_to = restricted_to,
         opts = flags.verifier,
+        restricted_to = restricted_to,
+        tags = tags,
     )
 
 # If a test is expected to pass on darwin but not on linux, you can set
@@ -765,30 +769,30 @@ def objc_bazel_extractor_test(name, src, data, size = "small", tags = [], restri
     """
     _bazel_extract_kzip(
         name = name + "_kzip",
+        testonly = True,
         srcs = [src],
         data = data,
         extractor = "//kythe/cxx/extractor:objc_extractor_bazel",
+        restricted_to = restricted_to,
         scripts = [
             "//third_party/bazel:get_devdir",
             "//third_party/bazel:get_sdkroot",
         ],
         tags = tags,
-        restricted_to = restricted_to,
-        testonly = True,
     )
     cc_index(
         name = name + "_entries",
-        srcs = [":" + name + "_kzip"],
-        tags = tags,
-        restricted_to = restricted_to,
         testonly = True,
+        srcs = [":" + name + "_kzip"],
+        restricted_to = restricted_to,
+        tags = tags,
     )
     return verifier_test(
         name = name,
-        srcs = [":" + name + "_entries"],
         size = size,
-        restricted_to = restricted_to,
+        srcs = [":" + name + "_entries"],
         opts = ["--ignore_dups"],
+        restricted_to = restricted_to,
         tags = tags,
     )
 
@@ -801,23 +805,23 @@ def cc_bazel_extractor_test(name, src, data, size = "small", tags = []):
     """
     _bazel_extract_kzip(
         name = name + "_kzip",
+        testonly = True,
         srcs = [src],
         data = data,
         tags = tags,
-        testonly = True,
     )
     cc_index(
         name = name + "_entries",
+        testonly = True,
         srcs = [":" + name + "_kzip"],
         tags = tags,
-        testonly = True,
     )
     return verifier_test(
         name = name,
         size = size,
-        tags = tags,
-        opts = ["--ignore_dups"],
         srcs = [":" + name + "_entries"],
+        opts = ["--ignore_dups"],
+        tags = tags,
     )
 
 def cc_extractor_test(
@@ -833,28 +837,28 @@ def cc_extractor_test(
     args = ["-std=" + std, "-c"]
     cc_extract_kzip(
         name = name + "_kzip",
-        srcs = srcs,
-        deps = data,
-        tags = tags,
-        restricted_to = restricted_to,
         testonly = True,
+        srcs = srcs,
         opts = args,
+        restricted_to = restricted_to,
+        tags = tags,
+        deps = data,
     )
     cc_index(
         name = name + "_entries",
-        srcs = [":" + name + "_kzip"],
-        deps = data,
-        opts = ["--ignore_unimplemented"],
-        tags = tags,
-        restricted_to = restricted_to,
         testonly = True,
+        srcs = [":" + name + "_kzip"],
+        opts = ["--ignore_unimplemented"],
+        restricted_to = restricted_to,
+        tags = tags,
+        deps = data,
     )
     return verifier_test(
         name = name,
         size = size,
         srcs = [":" + name + "_entries"],
-        deps = deps,
         opts = ["--ignore_dups"],
         restricted_to = restricted_to,
         tags = tags,
+        deps = deps,
     )
