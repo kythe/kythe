@@ -24,6 +24,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	rpb "kythe.io/kythe/proto/repo_go_proto"
 
@@ -101,12 +102,14 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 		// if there is refactoring work done as described below to make steps
 		// more granular, this will have to hook into that logic.
 		Steps: commonSteps(repo),
+		Tags:  []string{hints.Corpus},
 	}
 
 	g, err := generator(hints.BuildSystem)
 	if err != nil {
 		return nil, err
 	}
+	build.Tags = append(build.Tags, "extract_"+strings.ToLower(hints.BuildSystem.String()))
 
 	build.Steps = append(build.Steps, g.preExtractSteps()...)
 

@@ -64,3 +64,6 @@ steps:
   entrypoint: bash
   id: MERGE
   name: gcr.io/kythe-public/kzip-tools:stable
+tags:
+  - ${_CORPUS}
+  - extract_maven

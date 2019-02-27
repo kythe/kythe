@@ -32,7 +32,7 @@ steps:
     - '-Dmaven.compiler.fork=true'
     - '-Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh'
   env:
-    - 'KYTHE_CORPUS=guava'
+    - 'KYTHE_CORPUS=github.com/google/guava'
     - 'KYTHE_OUTPUT_DIRECTORY=/workspace/output'
     - 'KYTHE_ROOT_DIRECTORY=/workspace/code'
     - 'JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar'
@@ -51,7 +51,9 @@ steps:
   id: 'MERGE'
 artifacts:
   objects:
-    location: 'gs://${_BUCKET_NAME}/guava/'
+    location: 'gs://${_BUCKET_NAME}/github.com/google/guava/'
     paths:
       - '/workspace/output/${_COMMIT}.kzip'
-
+tags:
+  - 'github.com/google/guava'
+  - 'extract_maven'

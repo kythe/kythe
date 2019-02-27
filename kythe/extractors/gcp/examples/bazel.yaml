@@ -19,3 +19,6 @@ artifacts:
   objects:
     location: 'gs://${_BUCKET_NAME}/${_CORPUS}/'
     paths: ['/workspace/output/${_COMMIT}.kzip']
+tags:
+  - '${_CORPUS}'
+  - 'extract_bazel'
