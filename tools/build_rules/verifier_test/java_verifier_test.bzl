@@ -24,12 +24,11 @@ load(
     "proto_extract_kzip",
 )
 
-KytheJavaParamsInfo = provider(
-    doc = "Java source jar unpacked into parameters file.",
+KytheGeneratedSourcesInfo = provider(
+    doc = "Generated Java source directory and jar.",
     fields = {
-        "srcjar": "Original source jar generating files in params file.",
-        "params": "File with list of Java parameters.",
-        "dir": "Directory of files referenced in params file.",
+        "srcjar": "Source jar of generated files.",
+        "dir": "Directory of unpacked files in srcjar.",
     },
 )
 
@@ -38,6 +37,13 @@ def _invoke(rulefn, name, **kwargs):
     rulefn(name = name, **kwargs)
     return "//{}:{}".format(native.package_name(), name)
 
+def _filter_java_sources(src):
+    if type(src) != "File":
+        return src
+    src = src.path
+    if src.endswith(".java"):
+        return src
+
 def _java_extract_kzip_impl(ctx):
     deps = []
     for dep in ctx.attr.deps:
@@ -45,13 +51,11 @@ def _java_extract_kzip_impl(ctx):
 
     srcs = []
     srcjars = []
-    params_files = []
     dirs = []
     for src in ctx.attr.srcs:
-        if KytheJavaParamsInfo in src:
-            srcjars += [src[KytheJavaParamsInfo].srcjar]
-            params_files += [src[KytheJavaParamsInfo].params]
-            dirs += [src[KytheJavaParamsInfo].dir]
+        if KytheGeneratedSourcesInfo in src:
+            srcjars += [src[KytheGeneratedSourcesInfo].srcjar]
+            dirs += [src[KytheGeneratedSourcesInfo].dir]
         else:
             srcs += [src.files]
     srcs = depset(transitive = srcs).to_list()
@@ -80,14 +84,12 @@ def _java_extract_kzip_impl(ctx):
     )
 
     jars = depset(transitive = [dep.compile_jars for dep in deps]).to_list()
-    args = ctx.attr.opts + [
-        "-encoding",
-        "utf-8",
-        "-cp",
-        ":".join([j.path for j in jars]),
-    ]
-    for params in params_files:
-        args += ["@" + params.path]
+
+    args = ctx.actions.args()
+    args.add_all(ctx.attr.opts + ["-encoding", "utf-8"])
+    args.add_joined("-cp", jars, join_with = ":")
+    args.add_all(dirs, map_each = _filter_java_sources, expand_directories = True)
+
     extract(
         srcs = srcs,
         ctx = ctx,
@@ -96,7 +98,7 @@ def _java_extract_kzip_impl(ctx):
         mnemonic = "JavaExtractKZip",
         opts = args,
         vnames_config = ctx.file.vnames_config,
-        deps = jars + ctx.files.data + params_files + dirs,
+        deps = jars + ctx.files.data + dirs,
     )
     return [
         java_info,
@@ -252,27 +254,22 @@ def _generate_java_proto_impl(ctx):
         ]),
     )
 
-    # List the Java sources in a files for the javac_extractor to take as a @params file.
-    files = ctx.actions.declare_file(ctx.label.name + ".files")
-    ctx.actions.run_shell(
-        outputs = [files],
-        inputs = [out],
-        command = "find " + out.path + " -name '*.java' >" + files.path,
-    )
-
     # Produce a source jar file for the native Java compilation in the java_extract_kzip rule.
     # Note: we can't use java_common.pack_sources because our input is a directory.
     srcjar = ctx.actions.declare_file(ctx.label.name + ".srcjar")
+    args = ctx.actions.args()
+    args.add_all(["--output", srcjar])
+    args.add_all(["--resources", out], map_each = _filter_java_sources, expand_directories = True)
     ctx.actions.run(
         outputs = [srcjar],
-        inputs = [out, files],
+        inputs = [out],
         executable = ctx.executable._singlejar,
-        arguments = ["--output", srcjar.path, "--resources", "@" + files.path],
+        arguments = [args],
     )
 
     return [
-        DefaultInfo(files = depset([files, out, srcjar])),
-        KytheJavaParamsInfo(dir = out, params = files, srcjar = srcjar),
+        DefaultInfo(files = depset([out, srcjar])),
+        KytheGeneratedSourcesInfo(dir = out, srcjar = srcjar),
     ]
 
 _generate_java_proto = rule(
