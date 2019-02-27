@@ -61,3 +61,9 @@ textproto_verifier_test(
     textproto = "any_type.pbtxt",
     deps = ["@com_google_protobuf//:well_known_protos"],
 )
+
+textproto_verifier_test(
+    name = "repeated_extension_test",
+    protos = ["repeated_extension.proto"],
+    textproto = "repeated_extension.pbtxt",
+)

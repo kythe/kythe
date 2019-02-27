@@ -174,9 +174,17 @@ Status TextprotoAnalyzer::AnalyzeMessage(
       continue;
     }
 
-    auto s = AnalyzeField(file_vname, proto, parse_tree, *field,
-                          kNonRepeatedFieldIndex);
-    if (!s.ok()) return s;
+    if (field->is_repeated()) {
+      const size_t count = reflection->FieldSize(proto, field);
+      for (size_t i = 0; i < count; i++) {
+        auto s = AnalyzeField(file_vname, proto, parse_tree, *field, i);
+        if (!s.ok()) return s;
+      }
+    } else {
+      auto s = AnalyzeField(file_vname, proto, parse_tree, *field,
+                            kNonRepeatedFieldIndex);
+      if (!s.ok()) return s;
+    }
   }
 
   return OkStatus();
