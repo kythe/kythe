@@ -11,7 +11,10 @@ load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 def _rule_dependencies():
     gazelle_dependencies()
     go_rules_dependencies()
-    go_register_toolchains()
+
+    # TODO(https://github.com/kythe/kythe/issues/3551): Remove the pin once we
+    # figure out why 1.12 doesn't work correctly.
+    go_register_toolchains(go_version = "1.11.5")
     rules_nodejs_dependencies()
 
 def _cc_dependencies():
