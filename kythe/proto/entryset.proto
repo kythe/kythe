@@ -18,6 +18,8 @@ syntax = "proto3";
 
 package kythe.storage;
 
+option go_package = "entryset_go_proto";
+
 // An EntrySet represents a compact collection of entries.
 // Compaction is achieved by encoding node names and string-valued data as
 // table offsets, and by sorting and prefix-encoding all the strings.

@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.serving.xrefs;
 
+option go_package = "xref_serving_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/common.proto";
@@ -66,7 +67,7 @@ message FileDecorations {
 
   // File decoration target
   //
-  // Columnar key: 10-start-end-kind-target
+  // Columnar key: 10-build_config-start-end-kind-target
   message Target {
     // Starting offset of this file decoration.
     int32 start_offset = 1;
@@ -79,6 +80,8 @@ message FileDecorations {
     }
 
     kythe.proto.VName target = 5;
+
+    string build_config = 6;
   }
 
   // Override per file decoration target node.
@@ -131,6 +134,7 @@ message FileDecorations {
   // Diagnostic per file span
   //
   // Columnar key: 70-start-end-hash
+  // TODO(schroederc): add build_config to spanning Diagnostics and key
   message Diagnostic {
     kythe.proto.common.Diagnostic diagnostic = 1;
   }

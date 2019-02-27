@@ -21,16 +21,14 @@ def _construct_vnames_config_impl(ctx):
         # Use workspace name as default
         corpus = ctx.workspace_name
     srcs = ctx.files.srcs
-    jq = ctx.executable._jq
     merged = ctx.actions.declare_file(ctx.label.name + "_merged.json")
     ctx.actions.run_shell(
         outputs = [merged],
         inputs = srcs,
-        tools = [jq],
         command = "\n".join([
             "set -e -o pipefail",
             "cat " + " ".join([src.path for src in srcs]) + " | " +
-            jq.path + " --slurp -S [.[][]] > " + merged.path,
+            "tr -d '\n' | sed 's/\]\[/,/g' > " + merged.path,
         ]),
     )
     ctx.actions.expand_template(
@@ -50,11 +48,6 @@ construct_vnames_config = rule(
             allow_files = True,
         ),
         "corpus": attr.string(),
-        "_jq": attr.label(
-            executable = True,
-            default = Label("@com_github_stedolan_jq//:jq"),
-            cfg = "host",
-        ),
     },
     outputs = {"vnames": "%{name}.json"},
     implementation = _construct_vnames_config_impl,

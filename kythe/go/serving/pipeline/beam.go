@@ -18,6 +18,7 @@ package pipeline
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -289,21 +290,31 @@ func groupCrossRefs(key *spb.VName, refStream func(**ppb.Reference) bool, emitSe
 	set := &srvpb.PagedCrossReferences{SourceTicket: kytheuri.ToString(key)}
 	// TODO(schroederc): add paging
 
-	groups := make(map[string]*srvpb.PagedCrossReferences_Group)
+	// kind -> build_config -> group
+	groups := make(map[string]map[string]*srvpb.PagedCrossReferences_Group)
 
 	var ref *ppb.Reference
 	for refStream(&ref) {
 		kind := refKind(ref)
-		g, ok := groups[kind]
+		configs, ok := groups[kind]
 		if !ok {
-			g = &srvpb.PagedCrossReferences_Group{Kind: kind}
-			groups[kind] = g
+			configs = make(map[string]*srvpb.PagedCrossReferences_Group)
+			groups[kind] = configs
+		}
+		config := ref.Anchor.BuildConfiguration
+		g, ok := configs[config]
+		if !ok {
+			g = &srvpb.PagedCrossReferences_Group{Kind: kind, BuildConfig: config}
+			configs[config] = g
 			set.Group = append(set.Group, g)
 		}
 		g.Anchor = append(g.Anchor, ref.Anchor)
 	}
 
-	sort.Slice(set.Group, func(i, j int) bool { return set.Group[i].Kind < set.Group[j].Kind })
+	sort.Slice(set.Group, func(i, j int) bool {
+		return compare.Strings(set.Group[i].BuildConfig, set.Group[j].BuildConfig).
+			AndThen(set.Group[i].Kind, set.Group[j].Kind) == compare.LT
+	})
 	for _, g := range set.Group {
 		sort.Slice(g.Anchor, func(i, j int) bool { return g.Anchor[i].Ticket < g.Anchor[j].Ticket })
 	}
@@ -709,7 +720,8 @@ func normalizeAnchors(file *srvpb.File, anchor func(**scpb.Node) bool, emit func
 		}
 		a, err := assemble.ExpandAnchor(raw, file, norm, "")
 		if err != nil {
-			return err
+			log.Printf("error expanding anchor {%+v}: %v", raw, err)
+			break
 		}
 
 		var parent *spb.VName

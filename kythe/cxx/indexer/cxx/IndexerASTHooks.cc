@@ -512,8 +512,7 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
       // selector.
       const SourceLocation& Loc = M->getSelectorLoc(0);
       if (Loc.isValid() && Loc.isFileID()) {
-        return RangeForSingleTokenFromSourceLocation(
-            *Observer.getSourceManager(), *Observer.getLangOptions(), Loc);
+        return RangeForSingleToken(Loc);
       }
 
       // If the selector location is not valid or is not a file, return the
@@ -522,8 +521,19 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
       return M->getSourceRange();
     }
   }
+  return RangeForASTEntity(StartLocation);
+}
+
+clang::SourceRange IndexerASTVisitor::RangeForASTEntity(
+    const clang::SourceLocation start_location) const {
   return RangeForASTEntityFromSourceLocation(
-      *Observer.getSourceManager(), *Observer.getLangOptions(), StartLocation);
+      *Observer.getSourceManager(), *Observer.getLangOptions(), start_location);
+}
+
+clang::SourceRange IndexerASTVisitor::RangeForSingleToken(
+    const clang::SourceLocation start_location) const {
+  return RangeForSingleTokenFromSourceLocation(
+      *Observer.getSourceManager(), *Observer.getLangOptions(), start_location);
 }
 
 void IndexerASTVisitor::MaybeRecordDefinitionRange(
@@ -1208,20 +1218,26 @@ bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
       Root = BuildNodeIdForType(BaseType);
     }
   }
-  // EmitRanges::Yes causes the use location to be recorded.
-  auto DepNodeId =
-      BuildNodeIdForDependentName(E->getQualifierLoc(), E->getMember(),
-                                  E->getMemberLoc(), Root, EmitRanges::Yes);
-  if (DepNodeId && E->hasExplicitTemplateArgs()) {
-    if (auto ArgIds = BuildTemplateArgumentList(E->template_arguments())) {
-      auto TappNodeId = Observer.recordTappNode(*DepNodeId, *ArgIds);
-      auto StmtId = BuildNodeIdForImplicitStmt(E);
-      auto Range = clang::SourceRange(E->getMemberLoc(),
-                                      E->getEndLoc().getLocWithOffset(1));
-      if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
-        Observer.recordDeclUseLocation(RCC.value(), TappNodeId,
-                                       GraphObserver::Claimability::Unclaimable,
-                                       IsImplicit(RCC.value()));
+
+  if (auto DepNodeId = RecordEdgesForDependentName(
+          E->getQualifierLoc(), E->getMember(), E->getMemberLoc(), Root)) {
+    if (auto RCC = ExplicitRangeInCurrentContext(
+            RangeForASTEntity(E->getMemberLoc()))) {
+      Observer.recordDeclUseLocation(*RCC, *DepNodeId,
+                                     GraphObserver::Claimability::Claimable,
+                                     IsImplicit(*RCC));
+    }
+    if (E->hasExplicitTemplateArgs()) {
+      if (auto ArgIds = BuildTemplateArgumentList(E->template_arguments())) {
+        auto TappNodeId = Observer.recordTappNode(*DepNodeId, *ArgIds);
+        auto StmtId = BuildNodeIdForImplicitStmt(E);
+        auto Range = clang::SourceRange(E->getMemberLoc(),
+                                        E->getEndLoc().getLocWithOffset(1));
+        if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
+          Observer.recordDeclUseLocation(
+              RCC.value(), TappNodeId, GraphObserver::Claimability::Unclaimable,
+              IsImplicit(RCC.value()));
+        }
       }
     }
   }
@@ -1242,9 +1258,7 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
     }
   }
   if (const auto* FieldDecl = E->getMemberDecl()) {
-    auto Range = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        E->getMemberLoc());
+    auto Range = RangeForASTEntity(E->getMemberLoc());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       Observer.recordDeclUseLocation(
@@ -1360,9 +1374,8 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr* E) {
     }
     auto DtorName = Context.DeclarationNames.getCXXDestructorName(
         CanQualType::CreateUnsafe(QTCan));
-    DDId =
-        BuildNodeIdForDependentName(clang::NestedNameSpecifierLoc(), DtorName,
-                                    E->getBeginLoc(), TyId, EmitRanges::No);
+    DDId = RecordEdgesForDependentName(clang::NestedNameSpecifierLoc(),
+                                       DtorName, E->getBeginLoc(), TyId);
   }
   if (DDId) {
     clang::SourceRange SR = E->getSourceRange();
@@ -1435,13 +1448,16 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
   }
   auto DtorName = Context.DeclarationNames.getCXXDestructorName(
       CanQualType::CreateUnsafe(DTCan));
-  if (auto DDId = BuildNodeIdForDependentName(
-          NNSLoc, DtorName, E->getTildeLoc(), TyId, EmitRanges::Yes)) {
+  if (auto DDId = RecordEdgesForDependentName(NNSLoc, DtorName,
+                                              E->getTildeLoc(), TyId)) {
+    if (auto RCC = ExplicitRangeInCurrentContext(
+            RangeForASTEntity(E->getTildeLoc()))) {
+      Observer.recordDeclUseLocation(*RCC, *DDId,
+                                     GraphObserver::Claimability::Claimable,
+                                     IsImplicit(*RCC));
+    }
     clang::SourceRange SR = E->getSourceRange();
-    SR.setEnd(RangeForASTEntityFromSourceLocation(*Observer.getSourceManager(),
-                                                  *Observer.getLangOptions(),
-                                                  SR.getEnd())
-                  .getEnd());
+    SR.setEnd(RangeForASTEntity(SR.getEnd()).getEnd());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), DDId.value());
@@ -1463,9 +1479,8 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
   }
   auto CtorName = Context.DeclarationNames.getCXXConstructorName(
       CanQualType::CreateUnsafe(QTCan));
-  if (auto LookupId =
-          BuildNodeIdForDependentName(clang::NestedNameSpecifierLoc(), CtorName,
-                                      E->getBeginLoc(), TyId, EmitRanges::No)) {
+  if (auto LookupId = RecordEdgesForDependentName(
+          clang::NestedNameSpecifierLoc(), CtorName, E->getBeginLoc(), TyId)) {
     clang::SourceLocation RPL = E->getRParenLoc();
     clang::SourceRange SR = E->getSourceRange();
     // This loses the right paren without the offset.
@@ -1570,7 +1585,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
       // Refer to explicit specializations directly.
       return absl::nullopt;
     }
-    // This is a member under a template instantiation. See T230.
+    // This is a member under a template instantiation. See #1879.
     return Observer.recordTappNode(
         BuildNodeIdForDecl(MSI->getInstantiatedFrom()), {}, 0);
   }
@@ -1702,22 +1717,25 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr* DRE) {
 
 bool IndexerASTVisitor::VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL) {
   if (FLAGS_emit_anchors_on_builtins) {
-    return EmitTypeLocNodes(TL);
+    RecordTypeLocSpellingLocation(TL);
   }
   return true;
 }
 
 bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitRecordTypeLoc(clang::RecordTypeLoc TL) {
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
     clang::TemplateTypeParmTypeLoc TL) {
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
@@ -1739,22 +1757,26 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
       }
     }
   }
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitDeducedTypeLoc(clang::DeducedTypeLoc TL) {
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitSubstTemplateTypeParmTypeLoc(
     clang::SubstTemplateTypeParmTypeLoc TL) {
   // TODO(zarko): Record both the replaced parameter and the replacement
   // type.
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL) {
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL) {
@@ -1766,22 +1788,39 @@ bool IndexerASTVisitor::VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL) {
 }
 
 bool IndexerASTVisitor::VisitTypedefTypeLoc(clang::TypedefTypeLoc TL) {
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitInjectedClassNameTypeLoc(
     clang::InjectedClassNameTypeLoc TL) {
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitDependentNameTypeLoc(
     clang::DependentNameTypeLoc TL) {
-  return EmitTypeLocNodes(TL);
+  if (auto Nodes = RecordTypeLocSpellingLocation(TL)) {
+    if (auto RCC =
+            ExplicitRangeInCurrentContext(RangeForASTEntity(TL.getNameLoc()))) {
+      Observer.recordDeclUseLocation(*RCC, Nodes.ForReference(),
+                                     GraphObserver::Claimability::Claimable,
+                                     IsImplicit(*RCC));
+    }
+    if (RecordParamEdgesForDependentName(Nodes.ForReference(),
+                                         TL.getQualifierLoc())) {
+      RecordLookupEdgeForDependentName(
+          Nodes.ForReference(),
+          clang::DeclarationName(TL.getTypePtr()->getIdentifier()));
+    }
+  }
+  return true;
 }
 
 bool IndexerASTVisitor::VisitPackExpansionTypeLoc(
     clang::PackExpansionTypeLoc TL) {
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitObjCObjectTypeLoc(clang::ObjCObjectTypeLoc TL) {
@@ -1793,12 +1832,14 @@ bool IndexerASTVisitor::VisitObjCObjectTypeLoc(clang::ObjCObjectTypeLoc TL) {
     }
   }
 
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::VisitObjCTypeParamTypeLoc(
     clang::ObjCTypeParamTypeLoc TL) {
-  return EmitTypeLocNodes(TL);
+  RecordTypeLocSpellingLocation(TL);
+  return true;
 }
 
 bool IndexerASTVisitor::TraverseAttributedTypeLoc(clang::AttributedTypeLoc TL) {
@@ -1855,14 +1896,15 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
   return true;
 }
 
-bool IndexerASTVisitor::EmitTypeLocNodes(clang::TypeLoc TL) {
+NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
   if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
     if (auto Nodes = BuildNodeSetForType(TL)) {
       Observer.recordTypeSpellingLocation(
           *RCC, Nodes.ForReference(), Nodes.claimability(), IsImplicit(*RCC));
+      return Nodes;
     }
   }
-  return true;
+  return NodeSet::Empty();
 }
 
 bool IndexerASTVisitor::TraverseDeclarationNameInfo(
@@ -1899,8 +1941,7 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     return true;
   }
   if (SL.isValid()) {
-    SourceRange Range = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(), SL);
+    SourceRange Range = RangeForASTEntity(SL);
     if (IsImplicit) {
       // Mark implicit ranges by making them zero-length.
       Range.setEnd(Range.getBegin());
@@ -2110,16 +2151,13 @@ bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl* Decl) {
     SourceLocation Loc = Decl->getBeginLoc();
     if (Decl->isInline() && Loc.isValid() && Loc.isFileID()) {
       // Skip the `inline` keyword.
-      Loc = RangeForSingleTokenFromSourceLocation(
-                *Observer.getSourceManager(), *Observer.getLangOptions(), Loc)
-                .getEnd();
+      Loc = RangeForSingleToken(Loc).getEnd();
       if (Loc.isValid() && Loc.isFileID()) {
         SkipWhitespace(*Observer.getSourceManager(), &Loc);
       }
     }
     if (Loc.isValid() && Loc.isFileID()) {
-      NameRange = RangeForASTEntityFromSourceLocation(
-          *Observer.getSourceManager(), *Observer.getLangOptions(), Loc);
+      NameRange = RangeForASTEntity(Loc);
     }
   } else {
     NameRange = RangeForNameOfDeclaration(Decl);
@@ -2443,12 +2481,10 @@ clang::SourceRange IndexerASTVisitor::ExpandRangeIfEmptyFileID(
     const clang::SourceRange& SR) {
   // Clang frequently handes out zero-width ranges at the start of an identifier
   // or other AST entity.  In this case, we use
-  // RangeForASTEntityFromSourceLocation to fill out the full SourceRange.
+  // RangeForASTEntity to fill out the full SourceRange.
   if (SR.isValid() && SR.getBegin().isFileID() &&
       SR.getBegin() == SR.getEnd()) {
-    return RangeForASTEntityFromSourceLocation(*Observer.getSourceManager(),
-                                               *Observer.getLangOptions(),
-                                               SR.getBegin());
+    return RangeForASTEntity(SR.getBegin());
   }
   return SR;
 }
@@ -2456,13 +2492,9 @@ clang::SourceRange IndexerASTVisitor::ExpandRangeIfEmptyFileID(
 clang::SourceRange IndexerASTVisitor::MapRangeToFileIfMacroID(
     const clang::SourceRange& SR) {
   if (SR.isValid() && SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
-    auto NewSR = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        SR.getBegin());
+    auto NewSR = RangeForASTEntity(SR.getBegin());
     if (SR.getBegin() != SR.getEnd()) {
-      auto EndSR = RangeForASTEntityFromSourceLocation(
-          *Observer.getSourceManager(), *Observer.getLangOptions(),
-          SR.getEnd());
+      auto EndSR = RangeForASTEntity(SR.getEnd());
       NewSR.setEnd(EndSR.getEnd());
     }
     if (NewSR.isValid() && NewSR.getBegin() != NewSR.getEnd() &&
@@ -2507,13 +2539,9 @@ IndexerASTVisitor::ExpandedRangeInCurrentContext(clang::SourceRange SR) {
   // If this type reference came from a macro context, try to see whether we
   // can attribute it back to a source file.
   if (SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
-    auto NewSR = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        SR.getBegin());
+    auto NewSR = RangeForASTEntity(SR.getBegin());
     if (SR.getBegin() != SR.getEnd()) {
-      auto EndSR = RangeForASTEntityFromSourceLocation(
-          *Observer.getSourceManager(), *Observer.getLangOptions(),
-          SR.getEnd());
+      auto EndSR = RangeForASTEntity(SR.getEnd());
       NewSR.setEnd(EndSR.getEnd());
     }
     if (NewSR.isValid() && NewSR.getBegin() != NewSR.getEnd() &&
@@ -2525,11 +2553,7 @@ IndexerASTVisitor::ExpandedRangeInCurrentContext(clang::SourceRange SR) {
     }
   }
   return ExplicitRangeInCurrentContext(
-      SR.getBegin() == SR.getEnd()
-          ? RangeForASTEntityFromSourceLocation(*Observer.getSourceManager(),
-                                                *Observer.getLangOptions(),
-                                                SR.getBegin())
-          : SR);
+      SR.getBegin() == SR.getEnd() ? RangeForASTEntity(SR.getBegin()) : SR);
 }
 
 absl::optional<GraphObserver::Range> IndexerASTVisitor::RangeInCurrentContext(
@@ -2777,7 +2801,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     // queries consistent, we'll use a nullary tapp() to refer to the
     // instantiated object underneath a template. It may be useful to also
     // add the type variables involve in this instantiation's particular
-    // parent, but we don't currently do so. (T230)
+    // parent, but we don't currently do so. (#1879)
     IsImplicit = !MSI->isExplicitSpecialization();
     InnerNode = BuildNodeIdForDecl(Decl);
     OuterNode = InnerNode;
@@ -2968,8 +2992,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
           // for the variable we are initializing.
           const SourceLocation& Loc = Init->getMemberLocation();
           if (Loc.isValid() && Loc.isFileID()) {
-            MemberSR = RangeForSingleTokenFromSourceLocation(
-                *Observer.getSourceManager(), *Observer.getLangOptions(), Loc);
+            MemberSR = RangeForSingleToken(Loc);
           }
           if (auto RCC = ExplicitRangeInCurrentContext(MemberSR)) {
             const auto& ID = BuildNodeIdForRefToDecl(M);
@@ -2986,9 +3009,9 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
           if (auto TyId = BuildNodeIdForType(InitTy->getTypeLoc())) {
             auto DepName = Context.DeclarationNames.getCXXConstructorName(
                 CanQualType::CreateUnsafe(QT));
-            if (auto LookupId = BuildNodeIdForDependentName(
+            if (auto LookupId = RecordEdgesForDependentName(
                     clang::NestedNameSpecifierLoc(), DepName,
-                    Init->getSourceLocation(), TyId, EmitRanges::No)) {
+                    Init->getSourceLocation(), TyId)) {
               clang::SourceLocation RPL = Init->getRParenLoc();
               clang::SourceRange SR = Init->getSourceRange();
               SR.setEnd(SR.getEnd().getLocWithOffset(1));
@@ -3682,102 +3705,113 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName& Name) {
   return absl::nullopt;
 }
 
-absl::optional<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdForDependentName(
-    const clang::NestedNameSpecifierLoc& InNNSLoc,
-    const clang::DeclarationName& Id, const clang::SourceLocation IdLoc,
-    const absl::optional<GraphObserver::NodeId>& Root, EmitRanges ER) {
-  if (!Verbosity) {
-    return absl::nullopt;
+bool IndexerASTVisitor::TraverseNestedNameSpecifierLoc(
+    clang::NestedNameSpecifierLoc NNS) {
+  if (!NNS) {
+    return true;
   }
+  if (!Verbosity) {
+    return Base::TraverseNestedNameSpecifierLoc(NNS);
+  }
+  switch (NNS.getNestedNameSpecifier()->getKind()) {
+    case NestedNameSpecifier::TypeSpec:
+      break;  // This is handled by VisitDependentNameTypeLoc.
+    case NestedNameSpecifier::Identifier: {
+      auto DId = BuildNodeIdForDependentRange(NNS.getPrefix(),
+                                              NNS.getLocalSourceRange());
+      if (auto RCC = ExplicitRangeInCurrentContext(NNS.getLocalSourceRange())) {
+        Observer.recordDeclUseLocation(*RCC, DId,
+                                       GraphObserver::Claimability::Claimable,
+                                       IsImplicit(*RCC));
+      }
+    } break;
+    default:
+      break;
+  }
+  return Base::TraverseNestedNameSpecifierLoc(NNS);
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentRange(
+    const clang::NestedNameSpecifierLoc& NNSLoc,
+    const clang::SourceRange& IdRange) {
   // TODO(zarko): Need a better way to generate stablish names here.
   // In particular, it would be nice if a dependent name A::B::C
   // and a dependent name A::B::D were represented as ::C and ::D off
   // of the same dependent root A::B. (Does this actually make sense,
   // though? Could A::B resolve to a different entity in each case?)
-  std::string Identity;
+  std::string Identity = "#nns@";  // Nested name specifier.
   llvm::raw_string_ostream Ostream(Identity);
-  Ostream << "#nns";  // Nested name specifier.
-  clang::SourceRange NNSRange(InNNSLoc.getBeginLoc(), InNNSLoc.getEndLoc());
-  Ostream << "@";
-  if (auto Range = ExplicitRangeInCurrentContext(NNSRange)) {
-    Observer.AppendRangeToStream(Ostream, Range.value());
+  if (auto Range = ExplicitRangeInCurrentContext(NNSLoc.getSourceRange())) {
+    Observer.AppendRangeToStream(Ostream, *Range);
   } else {
     Ostream << "invalid";
   }
   Ostream << "@";
-  if (auto RCC =
-          ExplicitRangeInCurrentContext(RangeForASTEntityFromSourceLocation(
-              *Observer.getSourceManager(), *Observer.getLangOptions(),
-              IdLoc))) {
-    Observer.AppendRangeToStream(Ostream, RCC.value());
+  if (auto RCC = ExplicitRangeInCurrentContext(IdRange)) {
+    Observer.AppendRangeToStream(Ostream, *RCC);
   } else {
     Ostream << "invalid";
   }
-  GraphObserver::NodeId IdOut(Observer.getDefaultClaimToken(), Ostream.str());
-  bool HandledRecursively = false;
+  return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentLoc(
+    const clang::NestedNameSpecifierLoc& NNS,
+    const clang::SourceLocation& IdLoc) {
+  return BuildNodeIdForDependentRange(NNS, RangeForASTEntity(IdLoc));
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::RecordParamEdgesForDependentName(
+    const GraphObserver::NodeId& DId, clang::NestedNameSpecifierLoc NNSLoc,
+    const absl::optional<GraphObserver::NodeId>& Root) {
   unsigned SubIdCount = 0;
-  clang::NestedNameSpecifierLoc NNSLoc = InNNSLoc;
   if (!NNSLoc && Root) {
-    Observer.recordParamEdge(IdOut, SubIdCount++, Root.value());
+    Observer.recordParamEdge(DId, SubIdCount++, *Root);
   }
-  while (NNSLoc && !HandledRecursively) {
-    GraphObserver::NodeId SubId(Observer.getDefaultClaimToken(), "");
-    auto* NNS = NNSLoc.getNestedNameSpecifier();
+  for (; NNSLoc; NNSLoc = NNSLoc.getPrefix()) {
+    const clang::NestedNameSpecifier* NNS = NNSLoc.getNestedNameSpecifier();
     switch (NNS->getKind()) {
-      case NestedNameSpecifier::Identifier: {
+      case NestedNameSpecifier::Identifier:
         // Hashcons the identifiers.
-        if (auto Subtree = BuildNodeIdForDependentName(
-                NNSLoc.getPrefix(), NNS->getAsIdentifier(),
-                NNSLoc.getLocalBeginLoc(), Root, ER)) {
-          SubId = Subtree.value();
-          HandledRecursively = true;
-        } else {
-          CHECK(IgnoreUnimplemented) << "NNS::Identifier";
-          return absl::nullopt;
+        if (auto Subtree = RecordParamEdgesForDependentName(
+                BuildNodeIdForDependentRange(NNSLoc.getPrefix(),
+                                             NNSLoc.getLocalSourceRange()),
+                NNSLoc.getPrefix(), Root)) {
+          if (RecordLookupEdgeForDependentName(*Subtree,
+                                               NNS->getAsIdentifier())) {
+            Observer.recordParamEdge(DId, SubIdCount++, *Subtree);
+            return DId;
+          }
         }
-      } break;
+        CHECK(IgnoreUnimplemented) << "NNS::Identifier";
+        return absl::nullopt;
       case NestedNameSpecifier::Namespace:
         // TODO(zarko): Emit some representation to back this node ID.
-        SubId = BuildNodeIdForDecl(NNS->getAsNamespace());
-        break;
-      case NestedNameSpecifier::NamespaceAlias:
-        SubId = BuildNodeIdForDecl(NNS->getAsNamespaceAlias());
-        break;
-      case NestedNameSpecifier::TypeSpec: {
-        const TypeLoc& TL = NNSLoc.getTypeLoc();
-        if (auto MaybeSubId = BuildNodeIdForType(TL)) {
-          SubId = MaybeSubId.value();
-        } else if (auto MaybeUnlocSubId = BuildNodeIdForType(clang::QualType(
-                       NNSLoc.getNestedNameSpecifier()->getAsType(), 0))) {
-          SubId = MaybeUnlocSubId.value();
+      default:
+        if (auto SubId = BuildNodeIdForNestedNameSpecifierLoc(NNSLoc)) {
+          Observer.recordParamEdge(DId, SubIdCount++, *SubId);
         } else {
           return absl::nullopt;
         }
-      } break;
-      case NestedNameSpecifier::TypeSpecWithTemplate:
-        CHECK(IgnoreUnimplemented) << "NNS::TypeSpecWithTemplate";
-        return absl::nullopt;
-      case NestedNameSpecifier::Global:
-        CHECK(IgnoreUnimplemented) << "NNS::Global";
-        return absl::nullopt;
-      default:
-        CHECK(IgnoreUnimplemented) << "Unexpected NestedNameSpecifier kind.";
-        return absl::nullopt;
     }
-    Observer.recordParamEdge(IdOut, SubIdCount++, SubId);
-    NNSLoc = NNSLoc.getPrefix();
   }
-  switch (Id.getNameKind()) {
+  return DId;
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::RecordLookupEdgeForDependentName(
+    const GraphObserver::NodeId& DId, const clang::DeclarationName& Name) {
+  switch (Name.getNameKind()) {
     case clang::DeclarationName::Identifier:
-      Observer.recordLookupNode(IdOut,
-                                Id.getAsIdentifierInfo()->getNameStart());
+      Observer.recordLookupNode(DId,
+                                Name.getAsIdentifierInfo()->getNameStart());
       break;
     case clang::DeclarationName::CXXConstructorName:
-      Observer.recordLookupNode(IdOut, "#ctor");
+      Observer.recordLookupNode(DId, "#ctor");
       break;
     case clang::DeclarationName::CXXDestructorName:
-      Observer.recordLookupNode(IdOut, "#dtor");
+      Observer.recordLookupNode(DId, "#dtor");
       break;
 // TODO(zarko): Fill in the remaining relevant DeclarationName cases.
 #define UNEXPECTED_DECLARATION_NAME_KIND(kind)                         \
@@ -3794,17 +3828,57 @@ IndexerASTVisitor::BuildNodeIdForDependentName(
       UNEXPECTED_DECLARATION_NAME_KIND(CXXDeductionGuideName);
 #undef UNEXPECTED_DECLARATION_NAME_KIND
   }
-  if (ER == EmitRanges::Yes) {
-    if (auto RCC =
-            ExplicitRangeInCurrentContext(RangeForASTEntityFromSourceLocation(
-                *Observer.getSourceManager(), *Observer.getLangOptions(),
-                IdLoc))) {
-      Observer.recordDeclUseLocation(RCC.value(), IdOut,
-                                     GraphObserver::Claimability::Claimable,
-                                     IsImplicit(RCC.value()));
-    }
+  return DId;
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForNestedNameSpecifierLoc(
+    const clang::NestedNameSpecifierLoc& NNSLoc) {
+  auto* NNS = NNSLoc.getNestedNameSpecifier();
+  switch (NNS->getKind()) {
+    case NestedNameSpecifier::Identifier:
+      return BuildNodeIdForDependentRange(NNSLoc.getPrefix(),
+                                          NNSLoc.getLocalSourceRange());
+    case NestedNameSpecifier::Namespace:
+      return BuildNodeIdForDecl(NNS->getAsNamespace());
+    case NestedNameSpecifier::NamespaceAlias:
+      return BuildNodeIdForDecl(NNS->getAsNamespaceAlias());
+    case NestedNameSpecifier::TypeSpec:
+      if (auto SubId = BuildNodeIdForType(NNSLoc.getTypeLoc())) {
+        return SubId;
+      }
+      if (auto SubId =
+              BuildNodeIdForType(clang::QualType(NNS->getAsType(), 0))) {
+        return SubId;
+      }
+      return absl::nullopt;
+    case NestedNameSpecifier::TypeSpecWithTemplate:
+      CHECK(IgnoreUnimplemented) << "NNS::TypeSpecWithTemplate";
+      return absl::nullopt;
+    case NestedNameSpecifier::Global:
+      CHECK(IgnoreUnimplemented) << "NNS::Global";
+      return absl::nullopt;
+    case NestedNameSpecifier::Super:
+      CHECK(IgnoreUnimplemented) << "NNS::Super";
+      return absl::nullopt;
   }
-  return IdOut;
+  CHECK(IgnoreUnimplemented) << "Unexpected NestedNameSpecifier kind.";
+  return absl::nullopt;
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::RecordEdgesForDependentName(
+    const clang::NestedNameSpecifierLoc& NNSLoc,
+    const clang::DeclarationName& Id, const clang::SourceLocation IdLoc,
+    const absl::optional<GraphObserver::NodeId>& Root) {
+  if (!Verbosity) {
+    return absl::nullopt;
+  }
+  if (auto IdOut = RecordParamEdgesForDependentName(
+          BuildNodeIdForDependentLoc(NNSLoc, IdLoc), NNSLoc, Root)) {
+    return RecordLookupEdgeForDependentName(*IdOut, Id);
+  }
+  return absl::nullopt;
 }
 
 GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForSpecialTemplateArgument(
@@ -3831,11 +3905,8 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
   std::string Text;
   llvm::raw_string_ostream TOstream(Text);
   bool IsBindingSite = false;
-  auto RCC = RangeInCurrentContext(
-      BuildNodeIdForImplicitStmt(Expr),
-      RangeForASTEntityFromSourceLocation(*Observer.getSourceManager(),
-                                          *Observer.getLangOptions(),
-                                          Expr->getExprLoc()));
+  auto RCC = RangeInCurrentContext(BuildNodeIdForImplicitStmt(Expr),
+                                   RangeForASTEntity(Expr->getExprLoc()));
   if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
     // TODO(zarko): Represent constant values of any type as nodes in the
     // graph; link ranges to them. Right now we don't emit any node data for
@@ -4246,15 +4317,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
 
 NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
     clang::DependentNameTypeLoc TL) {
-  // TODO(shahms): EmitRanges below should be No, but we currently
-  // rely on edges emitted in BuildNodeIdForDependentName.
-  if (auto ID = BuildNodeIdForDependentName(
-          TL.getQualifierLoc(),
-          clang::DeclarationName(TL.getTypePtr()->getIdentifier()),
-          TL.getNameLoc(), absl::nullopt, EmitRanges::Yes)) {
-    return std::move(ID).value();
-  }
-  return NodeSet::Empty();
+  return BuildNodeIdForDependentLoc(TL.getQualifierLoc(), TL.getNameLoc());
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
@@ -4680,9 +4743,7 @@ bool IndexerASTVisitor::VisitObjCImplementationDecl(
 bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
     const clang::ObjCCategoryImplDecl* ImplDecl) {
   auto Marks = MarkedSources.Generate(ImplDecl);
-  SourceRange NameRange = RangeForASTEntityFromSourceLocation(
-      *Observer.getSourceManager(), *Observer.getLangOptions(),
-      ImplDecl->getCategoryNameLoc());
+  SourceRange NameRange = RangeForASTEntity(ImplDecl->getCategoryNameLoc());
   auto ImplDeclNode = BuildNodeIdForDecl(ImplDecl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(ImplDecl->isImplicit(), ImplDeclNode, NameRange),
@@ -4721,9 +4782,7 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
       LOG(ERROR) << "Class extensions should not have a category impl.";
       return true;
     }
-    auto Range = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        ImplDecl->getCategoryNameLoc());
+    auto Range = RangeForASTEntity(ImplDecl->getCategoryNameLoc());
     if (auto RCC = ExplicitRangeInCurrentContext(Range)) {
       auto ID = BuildNodeIdForDecl(CategoryDecl);
       Observer.recordDeclUseLocation(RCC.value(), ID,
@@ -4741,9 +4800,8 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
     auto ClassInterfaceNode = BuildNodeIdForDecl(BaseClassInterface);
     // The location for the category decl is actually the location of the
     // interface name.
-    const SourceRange& IFaceNameRange = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        ImplDecl->getLocation());
+    const SourceRange& IFaceNameRange =
+        RangeForASTEntity(ImplDecl->getLocation());
     if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
       Observer.recordDeclUseLocation(RCC.value(), ClassInterfaceNode,
                                      GraphObserver::Claimability::Claimable,
@@ -4775,9 +4833,7 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
   // Draw a ref edge from the superclass usage in the interface declaration to
   // the superclass declaration.
   if (auto SC = IFace->getSuperClass()) {
-    auto SuperRange = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        IFace->getSuperClassLoc());
+    auto SuperRange = RangeForASTEntity(IFace->getSuperClassLoc());
     if (auto SCRCC = ExplicitRangeInCurrentContext(SuperRange)) {
       auto SCID = BuildNodeIdForDecl(SC);
       Observer.recordDeclUseLocation(SCRCC.value(), SCID,
@@ -4809,8 +4865,7 @@ void IndexerASTVisitor::ConnectToProtocols(
     Observer.recordExtendsEdge(BodyDeclNode, BuildNodeIdForDecl(*PIt),
                                false /* isVirtual */,
                                clang::AccessSpecifier::AS_none);
-    auto Range = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(), *PLocIt);
+    auto Range = RangeForASTEntity(*PLocIt);
     if (auto ERCC = ExplicitRangeInCurrentContext(Range)) {
       auto PID = BuildNodeIdForDecl(*PIt);
       Observer.recordDeclUseLocation(ERCC.value(), PID,
@@ -4878,9 +4933,7 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
   if (Decl->IsClassExtension()) {
     NameRange = RangeForNameOfDeclaration(Decl);
   } else {
-    NameRange = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        Decl->getCategoryNameLoc());
+    NameRange = RangeForASTEntity(Decl->getCategoryNameLoc());
   }
 
   auto DeclNode = BuildNodeIdForDecl(Decl);
@@ -4900,9 +4953,7 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
     auto ClassInterfaceNode = BuildNodeIdForDecl(BaseClassInterface);
     // The location for the category decl is actually the location of the
     // interface name.
-    const SourceRange& IFaceNameRange = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        Decl->getLocation());
+    const SourceRange& IFaceNameRange = RangeForASTEntity(Decl->getLocation());
     if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
       Observer.recordDeclUseLocation(RCC.value(), ClassInterfaceNode,
                                      GraphObserver::Claimability::Claimable,
@@ -5226,8 +5277,7 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
         // make it easier for frontends to make use of this data.
         const SourceLocation& Loc = Expr->getSelectorLoc(0);
         if (Loc.isValid() && Loc.isFileID()) {
-          const SourceRange& range = RangeForSingleTokenFromSourceLocation(
-              *Observer.getSourceManager(), *Observer.getLangOptions(), Loc);
+          const SourceRange& range = RangeForSingleToken(Loc);
           if (auto R = ExplicitRangeInCurrentContext(range)) {
             Observer.recordDeclUseLocation(
                 R.value(), DeclId, GraphObserver::Claimability::Unclaimable,
@@ -5281,8 +5331,7 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
   if (SL.isValid()) {
     // This gives us the property name. If we just call Expr->getSourceRange()
     // we just get the range for the object's name.
-    SourceRange SR = RangeForASTEntityFromSourceLocation(
-        *Observer.getSourceManager(), *Observer.getLangOptions(), SL);
+    SourceRange SR = RangeForASTEntity(SL);
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       // Record the "field" access if this has an explicit property.

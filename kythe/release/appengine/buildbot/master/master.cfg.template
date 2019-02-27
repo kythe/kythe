@@ -167,18 +167,10 @@ c['schedulers'].append(schedulers.ForceScheduler(name="force", builderNames=allB
 
 ####### BUILDERS
 
-# Allow only a single running LLVM build per worker
-llvm_lock = util.WorkerLock("llvm_builds", maxCount=1)
-
 bazelKytheSteps = util.BuildFactory()
 bazelKytheSteps.addStep(steps.GitHub(repourl=util.Property('repository', 'git://github.com/kythe/kythe.git'),
                                      mode='full', method='copy'))
 bazelBinEnv = {'DEFAULT_BAZEL': '/bin/false', 'BAZEL_VERSION': util.Property('bazel_version', bazelMaxVersion)}
-bazelKytheSteps.addStep(steps.ShellCommand(
-    command='if [ -r tools/modules/versions.sh ]; then cache-llvm.sh --update; fi',
-    locks=[llvm_lock.access('counting')],
-    env=bazelBinEnv,
-    haltOnFailure=True))
 bazelKytheSteps.addStep(steps.ShellCommand(
     command=["bazel", "test", "-k",
              util.Property('bazel_flags', default=[]),

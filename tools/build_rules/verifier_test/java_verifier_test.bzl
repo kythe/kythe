@@ -58,11 +58,21 @@ def _java_extract_kzip_impl(ctx):
 
     # Actually compile the sources to be used as a dependency for other tests
     jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
+
+    # Use find_java_toolchain / find_java_runtime_toolchain after the next Bazel release,
+    # see: https://github.com/bazelbuild/bazel/issues/7186
+    if hasattr(java_common, "JavaToolchainInfo"):
+        java_toolchain = ctx.attr._java_toolchain[java_common.JavaToolchainInfo]
+        host_javabase = ctx.attr._host_javabase[java_common.JavaRuntimeInfo]
+    else:
+        java_toolchain = ctx.attr._java_toolchain
+        host_javabase = ctx.attr._host_javabase
+
     java_info = java_common.compile(
         ctx,
         javac_opts = ctx.attr.opts,
-        java_toolchain = ctx.attr._java_toolchain,
-        host_javabase = ctx.attr._host_javabase,
+        java_toolchain = java_toolchain,
+        host_javabase = host_javabase,
         source_jars = srcjars,
         source_files = srcs,
         output = jar,
@@ -78,8 +88,6 @@ def _java_extract_kzip_impl(ctx):
     ]
     for params in params_files:
         args += ["@" + params.path]
-    for src in srcs:
-        args += [src.short_path]
     extract(
         srcs = srcs,
         ctx = ctx,
@@ -132,6 +140,13 @@ java_extract_kzip = rule(
     implementation = _java_extract_kzip_impl,
 )
 
+_default_java_extractor_opts = [
+    "-source",
+    "9",
+    "-target",
+    "9",
+]
+
 def java_verifier_test(
         name,
         srcs,
@@ -140,12 +155,7 @@ def java_verifier_test(
         size = "small",
         tags = [],
         extractor = None,
-        extractor_opts = [
-            "-source",
-            "9",
-            "-target",
-            "9",
-        ],
+        extractor_opts = _default_java_extractor_opts,
         indexer_opts = ["--verbose"],
         verifier_opts = ["--ignore_dups"],
         load_plugin = None,
@@ -252,12 +262,11 @@ def _generate_java_proto_impl(ctx):
 
     # Produce a source jar file for the native Java compilation in the java_extract_kzip rule.
     # Note: we can't use java_common.pack_sources because our input is a directory.
-    singlejar = ctx.attr._java_toolchain.java_toolchain.single_jar
     srcjar = ctx.actions.declare_file(ctx.label.name + ".srcjar")
     ctx.actions.run(
         outputs = [srcjar],
         inputs = [out, files],
-        executable = singlejar,
+        executable = ctx.executable._singlejar,
         arguments = ["--output", srcjar.path, "--resources", "@" + files.path],
     )
 
@@ -278,8 +287,10 @@ _generate_java_proto = rule(
             executable = True,
             cfg = "host",
         ),
-        "_java_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/jdk:current_java_toolchain"),
+        "_singlejar": attr.label(
+            default = Label("@bazel_tools//tools/jdk:singlejar"),
+            executable = True,
+            cfg = "host",
         ),
     },
     implementation = _generate_java_proto_impl,
@@ -291,6 +302,7 @@ def java_proto_verifier_test(
         size = "small",
         proto_srcs = [],
         tags = [],
+        java_extractor_opts = _default_java_extractor_opts,
         verifier_opts = ["--ignore_dups"],
         vnames_config = None,
         visibility = None):
@@ -336,6 +348,7 @@ def java_proto_verifier_test(
         java_extract_kzip,
         name = name + "_java_kzip",
         srcs = srcs + [":" + name + "_gensrc"],
+        opts = java_extractor_opts,
         tags = tags,
         visibility = visibility,
         vnames_config = vnames_config,

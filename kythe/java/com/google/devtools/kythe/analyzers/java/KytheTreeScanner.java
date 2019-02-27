@@ -210,7 +210,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       docScanner = new KytheDocTreeScanner(this, javaContext);
     }
     TreeContext ctx = new TreeContext(filePositions, compilation);
-    metadata = Lists.newArrayList();
+    metadata = new ArrayList<>();
 
     EntrySet fileNode = entrySets.newFileNodeAndEmit(filePositions);
 
@@ -863,7 +863,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private boolean visitDocComment(VName node, EntrySet absNode) {
-    // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
+    // TODO(#1501): always use absNode
     return docScanner != null && docScanner.visitDocComment(treePath, node, absNode);
   }
 
@@ -901,8 +901,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           MiniAnchor.bracket(
               comment.text.replaceFirst("^(//|/\\*) ?", "").replaceFirst(" ?\\*/$", ""),
               pos -> pos,
-              Lists.newArrayList());
-      emitDoc(DocKind.LINE, bracketed, Lists.newArrayList(), node, null);
+              new ArrayList<>());
+      emitDoc(DocKind.LINE, bracketed, new ArrayList<>(), node, null);
     }
     return !lst.isEmpty();
   }
@@ -914,7 +914,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   // TODO When we want to refer to a type or method that is generic, we need to point to the abs
   // node. The code currently does not have an easy way to access that node but this method might
   // offer a way to change that.
-  // See https://phabricator-dot-kythe-repo.appspot.com/T185 for more discussion and detail.
+  // See #1501 for more discussion and detail.
   /** Create an abs node if we have type variables or if we have wildcards. */
   private EntrySet defineTypeParameters(
       TreeContext ownerContext,
@@ -966,6 +966,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   private void visitAnnotations(
       VName owner, List<JCAnnotation> annotations, TreeContext ownerContext) {
+    for (JCAnnotation annotation : annotations) {
+      int defPosition = annotation.getPreferredPosition();
+      int defLine = filePositions.charToLine(defPosition);
+      // Claim trailing annotation comments, which isn't always right, but
+      // avoids some confusing comments for method annotations.
+      // TODO(danielmoy): don't do this for inline field annotations.
+      commentClaims.put(defLine, defLine);
+    }
     for (JavaNode node : scanList(annotations, ownerContext)) {
       entrySets.emitEdge(owner, EdgeKind.ANNOTATED_BY, node.getVName());
     }
@@ -1161,7 +1169,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   void emitDoc(
       DocKind kind, String bracketedText, Iterable<Symbol> params, VName node, VName absNode) {
-    List<VName> paramNodes = Lists.newArrayList();
+    List<VName> paramNodes = new ArrayList<>();
     for (Symbol s : params) {
       VName paramNode = getNode(s);
       if (paramNode == null) {
@@ -1171,7 +1179,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     EntrySet doc =
         entrySets.newDocAndEmit(kind.getDocSubkind(), filePositions, bracketedText, paramNodes);
-    // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
+    // TODO(#1501): always use absNode
     entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, node);
     if (absNode != null) {
       entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, absNode);

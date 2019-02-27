@@ -23,14 +23,15 @@ docker_build(
     deps = ["//kythe/release/base"],
 )
 
-release_version = "v0.0.29"
+release_version = "v0.0.30"
 
 genrule(
     name = "release",
     srcs = [
-        ":bazel_java_extractor",
         ":bazel_cxx_extractor",
+        ":bazel_extract_kzip",
         ":bazel_go_extractor",
+        ":bazel_java_extractor",
         ":bazel_proto_extractor",
         ":javac_extractor",
         ":javac_wrapper",
@@ -65,8 +66,9 @@ genrule(
         "--cp $(location proto_indexer) indexers/proto_indexer",
         "--cp $(location javac_extractor) extractors/javac_extractor.jar",
         "--cp $(location bazel_cxx_extractor) extractors/bazel_cxx_extractor",
-        "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
+        "--cp $(location bazel_extract_kzip) extractors/bazel_extract_kzip",
         "--cp $(location bazel_go_extractor) extractors/bazel_go_extractor",
+        "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
         "--cp $(location bazel_proto_extractor) extractors/bazel_proto_extractor",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
@@ -158,6 +160,11 @@ filegroup(
 filegroup(
     name = "bazel_proto_extractor",
     srcs = ["@io_kythe_lang_proto//kythe/go/extractors/proto:extract_proto_kzip"],
+)
+
+filegroup(
+    name = "bazel_extract_kzip",
+    srcs = ["//kythe/go/extractors/cmd/bazel:extract_kzip"],
 )
 
 filegroup(

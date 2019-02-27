@@ -36,7 +36,7 @@ func TestParse(t *testing.T) {
 		{"kythe://", new(URI)},
 
 		// Corpus labels are not normalized, even if they "look like" paths.
-		// See T181 for discussion.
+		// See #1479 for discussion.
 		{"kythe://..", &URI{Corpus: ".."}},
 		{"kythe://../", &URI{Corpus: "../"}},
 		{"kythe://../..", &URI{Corpus: "../.."}},

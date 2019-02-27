@@ -6,4 +6,4 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
-external_go_package(base_pkg = "github.com/pborman/uuid")
+external_go_package(base_pkg = "github.com/google/uuid")

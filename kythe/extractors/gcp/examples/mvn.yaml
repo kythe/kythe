@@ -3,24 +3,29 @@ steps:
   args: ['clone', '${_REPO}', '/workspace/code']
   id: 'CLONE'
   waitFor: ['-']
-- name: 'ubuntu'
-  args: ['mkdir', '/workspace/out']
-  waitFor: ['-']
-- name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts'
+- name: 'gcr.io/cloud-builders/git'
+  args: ['checkout', '${_COMMIT}']
+  dir: '/workspace/code'
+  id: 'CHECKOUT'
+  waitFor:
+    - 'CLONE'
+- name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable'
   volumes:
     - name: 'kythe_extractors'
       path: '/opt/kythe/extractors'
+  id: 'JAVA-ARTIFACTS'
   waitFor: ['-']
-- name: 'gcr.io/kythe-public/build-preprocessor'
+- name: 'gcr.io/kythe-public/build-preprocessor:stable'
   args: ['/workspace/code/pom.xml']
+  id: 'PREPROCESS'
   waitFor:
-    - 'CLONE'
-- name: 'gcr.io/cloud-builders/mvn'
+    - 'CHECKOUT'
+- name: 'maven:3.6.0-jdk-8-slim'
+  entrypoint: 'mvn'
   args:
     - 'clean'
     - 'compile'
     - 'test-compile'
-    - '-X'
     - '-f'
     - '/workspace/code/pom.xml'
     - '-Dmaven.compiler.forceJavacCompilerUse=true'
@@ -28,22 +33,25 @@ steps:
     - '-Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh'
   env:
     - 'KYTHE_CORPUS=${_CORPUS}'
-    - 'KYTHE_OUTPUT_DIRECTORY=/workspace/out'
+    - 'KYTHE_OUTPUT_DIRECTORY=/workspace/output'
     - 'KYTHE_ROOT_DIRECTORY=/workspace/code'
     - 'JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar'
     - 'REAL_JAVAC=/usr/bin/javac'
-    - 'TMPDIR=/workspace/out'
     - 'KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar'
   volumes:
     - name: 'kythe_extractors'
       path: '/opt/kythe/extractors'
-- name: 'gcr.io/kythe-public/kzip-tools'
+  id: 'EXTRACT'
+  waitFor:
+    - 'JAVA-ARTIFACTS'
+    - 'PREPROCESS'
+- name: 'gcr.io/kythe-public/kzip-tools:stable'
   entrypoint: 'bash'
-  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/${_CORPUS}-${_VERSION}.kzip /workspace/out/*.kzip']
+  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/output/${_COMMIT}.kzip /workspace/output/*.kzip']
+  id: 'MERGE'
 artifacts:
   objects:
-    location: 'gs://${_OUTPUT_GS_BUCKET}/'
+    location: 'gs://${_BUCKET_NAME}/${_CORPUS}/'
     paths:
-      - '/workspace/out/javac-extractor.err'
-      - '/workspace/out/${_CORPUS}-${_VERSION}.kzip'
+      - '/workspace/output/${_COMMIT}.kzip'
 

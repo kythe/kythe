@@ -72,8 +72,26 @@ func TestDirectories(t *testing.T) {
 		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path"},
 		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}, {
+		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path", Signature: "a0"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_BUILD_CONFIG},
+			Value: []byte("test-build-config"),
+		}},
+	}, {
+		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path", Signature: "a1"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_BUILD_CONFIG},
+			Value: []byte("test-build-config2"),
+		}},
+	}, {
 		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path2"},
 		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+	}, {
+		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path2", Signature: "a0"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		// no build-config
 	}, {
 		Source: &spb.VName{Corpus: "corpus", Root: "root", Path: "path3"},
 		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
@@ -81,28 +99,63 @@ func TestDirectories(t *testing.T) {
 		Source: &spb.VName{Corpus: "corpus", Path: "p/to/file.go"},
 		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}, {
+		Source: &spb.VName{Corpus: "corpus", Path: "p/to/file.go", Signature: "a0"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_BUILD_CONFIG},
+			Value: []byte("test-build-config"),
+		}},
+	}, {
 		Source: &spb.VName{Corpus: "corpus2", Path: "p/to/file.go"},
 		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
 	}}
 
 	expected := []*srvpb.FileDirectory{{
-		Subdirectory: []string{"kythe://corpus?path=p"},
+		Entry: []*srvpb.FileDirectory_Entry{{
+			Kind: srvpb.FileDirectory_DIRECTORY,
+			Name: "p",
+		}},
 	}, {
-		Subdirectory: []string{"kythe://corpus?path=p/to"},
+		Entry: []*srvpb.FileDirectory_Entry{{
+			Kind: srvpb.FileDirectory_DIRECTORY,
+			Name: "to",
+		}},
 	}, {
-		FileTicket: []string{"kythe://corpus?path=p/to/file.go"},
+		Entry: []*srvpb.FileDirectory_Entry{{
+			Kind: srvpb.FileDirectory_FILE,
+			Name: "file.go",
+		}},
 	}, {
-		Subdirectory: []string{"kythe://corpus2?path=p"},
+		Entry: []*srvpb.FileDirectory_Entry{{
+			Kind:        srvpb.FileDirectory_DIRECTORY,
+			Name:        "p",
+			BuildConfig: []string{"test-build-config"},
+		}},
 	}, {
-		Subdirectory: []string{"kythe://corpus2?path=p/to"},
+		Entry: []*srvpb.FileDirectory_Entry{{
+			Kind:        srvpb.FileDirectory_DIRECTORY,
+			Name:        "to",
+			BuildConfig: []string{"test-build-config"},
+		}},
 	}, {
-		FileTicket: []string{"kythe://corpus2?path=p/to/file.go"},
+		Entry: []*srvpb.FileDirectory_Entry{{
+			Kind:        srvpb.FileDirectory_FILE,
+			Name:        "file.go",
+			BuildConfig: []string{"test-build-config"},
+		}},
 	}, {
-		FileTicket: []string{
-			"kythe://corpus?path=path2?root=root",
-			"kythe://corpus?path=path3?root=root",
-			"kythe://corpus?path=path?root=root",
-		},
+		Entry: []*srvpb.FileDirectory_Entry{{
+			Kind:        srvpb.FileDirectory_FILE,
+			Name:        "path",
+			BuildConfig: []string{"test-build-config", "test-build-config2"},
+		}, {
+			Kind:        srvpb.FileDirectory_FILE,
+			Name:        "path2",
+			BuildConfig: []string{""},
+		}, {
+			Kind: srvpb.FileDirectory_FILE,
+			Name: "path3",
+		}},
 	}}
 
 	p, s, nodes := ptest.CreateList(testNodes)

@@ -15,9 +15,10 @@ extractors, and tools directly supported by the Kythe team.
    - proto_indexer            :: Protocol-buffer indexer
  - extractors
    - bazel_cxx_extractor      :: C++ extractor for Bazel extra_actions
+   - bazel_extract_kzip       :: Generic kzip extractor for Bazel extra actions
    - bazel_go_extractor       :: Bazel Go extractor
-   - bazel_proto_extractor    :: Bazel Protocol-buffer extractor
    - bazel_java_extractor.jar :: Java extractor for Bazel extra_actions
+   - bazel_proto_extractor    :: Bazel Protocol-buffer extractor
    - cxx_extractor            :: C++ extractor
    - go_extractor             :: Go extractor
    - javac-wrapper.sh         :: javac wrapper script for extractor

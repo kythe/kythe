@@ -264,7 +264,7 @@ public final class MarkedSources {
         case PCK:
         case MTH:
           return sym;
-          // TODO(T227): resolve non-exhaustive switch statements w/o defaults
+          // TODO(#1845): resolve non-exhaustive switch statements w/o defaults
         default:
           break;
       }

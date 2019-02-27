@@ -27,7 +27,7 @@ import (
 const testDataDir = "testdata"
 
 // Also test some yaml configs checked in elsewhere.
-const examplesDir = "../examples"
+const examplesDir = "../../../../extractors/gcp/examples"
 
 func TestYAMLConversion(t *testing.T) {
 	testcases := []testcase{
@@ -38,16 +38,64 @@ func TestYAMLConversion(t *testing.T) {
 			yamlFile: "mvn.yaml",
 		},
 		{
+			name:     "maven-subdir",
+			jsonFile: "mvn-subdir.json",
+			yamlDir:  testDataDir,
+			yamlFile: "mvn-subdir.yaml",
+		},
+		{
+			name:     "maven-multi",
+			jsonFile: "mvn-multi.json",
+			yamlDir:  testDataDir,
+			yamlFile: "mvn-multi.yaml",
+		},
+		{
 			name:     "maven-from-examples",
 			jsonFile: "mvn.json",
 			yamlDir:  examplesDir,
 			yamlFile: "mvn.yaml",
 		},
 		{
+			name:     "guava",
+			jsonFile: "guava-mvn.json",
+			yamlDir:  examplesDir,
+			yamlFile: "guava-mvn.yaml",
+		},
+		{
+			name:     "guava-android",
+			jsonFile: "guava-android-mvn.json",
+			yamlDir:  examplesDir,
+			yamlFile: "guava-android-mvn.yaml",
+		},
+		{
 			name:     "gradle-simple",
 			jsonFile: "gradle.json",
 			yamlDir:  testDataDir,
 			yamlFile: "gradle.yaml",
+		},
+		{
+			name:     "gradle-subdir",
+			jsonFile: "gradle-subdir.json",
+			yamlDir:  testDataDir,
+			yamlFile: "gradle-subdir.yaml",
+		},
+		{
+			name:     "gradle-from-examples",
+			jsonFile: "gradle.json",
+			yamlDir:  examplesDir,
+			yamlFile: "gradle.yaml",
+		},
+		{
+			name:     "bazel-from-examples",
+			jsonFile: "bazel.json",
+			yamlDir:  examplesDir,
+			yamlFile: "bazel.yaml",
+		},
+		{
+			name:     "bazel-multi",
+			jsonFile: "bazel-multi.json",
+			yamlDir:  testDataDir,
+			yamlFile: "bazel-multi.yaml",
 		},
 	}
 
@@ -62,7 +110,7 @@ func TestYAMLConversion(t *testing.T) {
 				t.Fatalf("reading expected testdata %s/%s: %v", tcase.yamlDir, tcase.yamlFile, err)
 			}
 
-			if err := testutil.YAMLEqual(actual, expected); err != nil {
+			if err := testutil.YAMLEqual(expected, actual); err != nil {
 				t.Errorf("Expected config %s to be equal: %v", tcase.jsonFile, err)
 			}
 		})

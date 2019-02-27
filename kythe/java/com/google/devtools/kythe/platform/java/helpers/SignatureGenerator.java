@@ -400,7 +400,7 @@ public class SignatureGenerator
   @Override
   public Void visitArrayType(ArrayType t, StringBuilder sbout) {
     t.getComponentType().accept(this, sbout);
-    // TODO(T266): handle case when ArrayType#isVarargs is incorrect; add "..." for varargs
+    // TODO(#2232): handle case when ArrayType#isVarargs is incorrect; add "..." for varargs
     sbout.append("[]");
     return null;
   }
@@ -539,7 +539,7 @@ public class SignatureGenerator
 
   @Override
   public Void visitModuleType(ModuleType moduleType, StringBuilder sb) {
-    // TODO(T257): implement this method for full Java 9 support
+    // TODO(#2174): implement this method for full Java 9 support
     throw new UnsupportedOperationException();
   }
 

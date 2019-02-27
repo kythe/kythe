@@ -14,7 +14,6 @@ go_library(
         "//kythe/go/util/riegeli",
         "//kythe/proto:storage_go_proto",
         "@com_github_apache_beam//sdks/go/pkg/beam:go_default_library",
-        "@com_github_apache_beam//sdks/go/pkg/beam/core/runtime/exec:go_default_library",
         "@com_github_apache_beam//sdks/go/pkg/beam/io/filesystem:go_default_library",
         "@com_github_syndtr_goleveldb//leveldb/comparer:go_default_library",
         "@com_github_syndtr_goleveldb//leveldb/journal:go_default_library",

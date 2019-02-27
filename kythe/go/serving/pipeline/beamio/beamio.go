@@ -24,7 +24,6 @@ import (
 	"reflect"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
-	"github.com/apache/beam/sdks/go/pkg/beam/core/runtime/exec"
 )
 
 func init() {
@@ -37,26 +36,29 @@ func init() {
 func EncodeKeyValues(s beam.Scope, tables ...beam.PCollection) beam.PCollection {
 	var encodings []beam.PCollection
 	for _, table := range tables {
-		encoded := beam.ParDo(s, &encodeKeyValue{beam.EncodedCoder{table.Coder()}}, table)
+		t := table.Type()
+		encoded := beam.ParDo(s, &encodeKeyValue{
+			KeyType:   beam.EncodedType{t.Components()[0].Type()},
+			ValueType: beam.EncodedType{t.Components()[1].Type()},
+		}, table)
 		encodings = append(encodings, encoded)
 	}
 	return beam.Flatten(s, encodings...)
 }
 
-type encodeKeyValue struct{ Coder beam.EncodedCoder }
+type encodeKeyValue struct{ KeyType, ValueType beam.EncodedType }
 
 func (e *encodeKeyValue) ProcessElement(key beam.T, val beam.U) (KeyValue, error) {
-	c := beam.UnwrapCoder(e.Coder.Coder)
-	keyEnc := exec.MakeElementEncoder(c.Components[0])
+	keyEnc := beam.NewElementEncoder(e.KeyType.T)
 	var keyBuf bytes.Buffer
-	if err := keyEnc.Encode(exec.FullValue{Elm: key}, &keyBuf); err != nil {
+	if err := keyEnc.Encode(key, &keyBuf); err != nil {
 		return KeyValue{}, err
 	} else if _, err := binary.ReadUvarint(&keyBuf); err != nil {
 		return KeyValue{}, fmt.Errorf("error removing varint prefix from key encoding: %v", err)
 	}
-	valEnc := exec.MakeElementEncoder(c.Components[1])
+	valEnc := beam.NewElementEncoder(e.ValueType.T)
 	var valBuf bytes.Buffer
-	if err := valEnc.Encode(exec.FullValue{Elm: val}, &valBuf); err != nil {
+	if err := valEnc.Encode(val, &valBuf); err != nil {
 		return KeyValue{}, err
 	} else if _, err := binary.ReadUvarint(&valBuf); err != nil {
 		return KeyValue{}, fmt.Errorf("error removing varint prefix from value encoding: %v", err)

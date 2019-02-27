@@ -198,7 +198,7 @@ go_indexer_test(
 )
 
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
-# TODO(T270): requires MarkedSource resolution in pipeline
+# TODO(#2375): (closed?) requires MarkedSource resolution in pipeline
 # go_integration_test(
 #     name = "marked_source_integration_test",
 #     srcs = ["testdata/integration/marked_source.go"],

@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package kythe.proto.serving;
 
+option go_package = "serving_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/common.proto";
@@ -94,11 +95,30 @@ message EdgePage {
 
 // FileDirectory describes a virtual directory of file nodes.
 message FileDirectory {
-  // Set of URIs for each contained sub-directory's corpus, root, and full path.
-  repeated string subdirectory = 1;
+  // Each known entry in the directory.
+  repeated Entry entry = 3;
 
+  message Entry {
+    // The kind of entry.
+    Kind kind = 1;
+
+    // The basename of the entry within the directory.
+    string name = 2;
+
+    // Set of known build configurations of this FILE or all files recursively
+    // contained in/below this DIRECTORY.
+    repeated string build_config = 3;
+  }
+  enum Kind {
+    UNKNOWN = 0;
+    FILE = 1;
+    DIRECTORY = 2;
+  }
+
+  // Set of URIs for each contained sub-directory's corpus, root, and full path.
+  repeated string subdirectory = 1 [deprecated = true];
   // Set of file node tickets contained within this directory.
-  repeated string file_ticket = 2;
+  repeated string file_ticket = 2 [deprecated = true];
 }
 
 // CorpusRoots describes all of the known corpus/root pairs that contain file
@@ -205,8 +225,8 @@ message FileDecorations {
 }
 
 // PagedCrossReferences are used for efficiently storing pre-cached data for
-// CrossReferencesReply.{definition,reference,documentation} anchors.  Related
-// nodes can be retrieved from edge sets/pages.
+// CrossReferencesReply.{definition,reference,caller} anchors and related
+// nodes.
 message PagedCrossReferences {
   reserved 10;
 
@@ -239,10 +259,13 @@ message PagedCrossReferences {
   message Group {
     string kind = 1;
 
+    // Build configuration for all anchors contained within the group.
+    string build_config = 5;
+
     // A group is composed entirely of anchors, related nodes, or callers.
     repeated ExpandedAnchor anchor = 2;
-    repeated RelatedNode related_node = 3;  // feature: RELATED_NODES
-    repeated Caller caller = 4;             // feature: CALLERS
+    repeated RelatedNode related_node = 3;
+    repeated Caller caller = 4;
   }
 
   message Page {
@@ -256,6 +279,7 @@ message PagedCrossReferences {
     string kind = 1;
     int32 count = 2;
     string page_key = 3;
+    string build_config = 4;
   }
 
   string source_ticket = 1;
@@ -270,7 +294,7 @@ message PagedCrossReferences {
   bool incomplete = 5;
 
   // The source node's MarkedSource.
-  kythe.proto.common.MarkedSource marked_source = 6;  // feature: MARKED_SOURCE
+  kythe.proto.common.MarkedSource marked_source = 6;
 }
 
 // A single node's documentation for the xrefs Documentation API.

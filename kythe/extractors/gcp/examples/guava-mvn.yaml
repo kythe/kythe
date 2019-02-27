@@ -2,24 +2,30 @@ steps:
 - name: 'gcr.io/cloud-builders/git'
   args: ['clone', 'https://github.com/google/guava', '/workspace/code']
   id: 'CLONE'
+  waitFor: ['-']
 - name: 'gcr.io/cloud-builders/git'
-  args: ['checkout', '${_VERSION}']
+  args: ['checkout', '${_COMMIT}']
   dir: '/workspace/code'
   id: 'CHECKOUT'
-- name: 'ubuntu'
-  args: ['mkdir', '/workspace/out', '/workspace/errs']
-  waitFor: ['-']
-- name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts'
+  waitFor:
+    - 'CLONE'
+- name: 'gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable'
   volumes:
     - name: 'kythe_extractors'
-      path: '/opt/kythe/extractors/'
+      path: '/opt/kythe/extractors'
+  id: 'JAVA-ARTIFACTS'
   waitFor: ['-']
-- name: 'gcr.io/cloud-builders/mvn'
+- name: 'gcr.io/kythe-public/build-preprocessor:stable'
+  args: ['/workspace/code/pom.xml']
+  id: 'PREPROCESS'
+  waitFor:
+    - 'CHECKOUT'
+- name: 'maven:3.6.0-jdk-8-slim'
+  entrypoint: 'mvn'
   args:
     - 'clean'
     - 'compile'
     - 'test-compile'
-    - '-X'
     - '-f'
     - '/workspace/code/pom.xml'
     - '-Dmaven.compiler.forceJavacCompilerUse=true'
@@ -27,24 +33,25 @@ steps:
     - '-Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh'
   env:
     - 'KYTHE_CORPUS=guava'
-    - 'KYTHE_OUTPUT_DIRECTORY=/workspace/out'
+    - 'KYTHE_OUTPUT_DIRECTORY=/workspace/output'
     - 'KYTHE_ROOT_DIRECTORY=/workspace/code'
     - 'JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar'
     - 'REAL_JAVAC=/usr/bin/javac'
-    - 'TMPDIR=/workspace/errs'
     - 'KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar'
   volumes:
     - name: 'kythe_extractors'
-      path: '/opt/kythe/extractors/'
-- name: 'ubuntu'
-  args: ['ls', '/workspace/out']
-- name: 'gcr.io/kythe-public/kzip-tools'
+      path: '/opt/kythe/extractors'
+  id: 'EXTRACT'
+  waitFor:
+    - 'JAVA-ARTIFACTS'
+    - 'PREPROCESS'
+- name: 'gcr.io/kythe-public/kzip-tools:stable'
   entrypoint: 'bash'
-  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/out/guava-${_VERSION}.kzip /workspace/out/*.kzip']
+  args: ['-c', '/opt/kythe/tools/kzip merge --output /workspace/output/${_COMMIT}.kzip /workspace/output/*.kzip']
+  id: 'MERGE'
 artifacts:
   objects:
-    location: 'gs://${_OUTPUT_GS_BUCKET}/'
+    location: 'gs://${_BUCKET_NAME}/guava/'
     paths:
-      - '/workspace/out/guava-${_VERSION}.kzip'
-      - '/workspace/errs/javac-extractor.err'
+      - '/workspace/output/${_COMMIT}.kzip'
 

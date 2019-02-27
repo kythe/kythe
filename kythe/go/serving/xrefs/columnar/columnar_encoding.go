@@ -118,7 +118,7 @@ func encodeDecorText(prefix []byte, file *spb.VName, t *xspb.FileDecorations_Tex
 
 func encodeDecorTarget(prefix []byte, file *spb.VName, t *xspb.FileDecorations_Target) (*KV, error) {
 	key, err := keys.Append(prefix, file,
-		columnarDecorationsTargetGroup, t.StartOffset, t.EndOffset,
+		columnarDecorationsTargetGroup, t.BuildConfig, t.StartOffset, t.EndOffset,
 		t.GetGenericKind(), int32(t.GetKytheKind()), t.Target)
 	if err != nil {
 		return nil, err
@@ -268,7 +268,9 @@ func decodeDecorTarget(file *spb.VName, key string, val []byte) (*xspb.FileDecor
 		kytheKindNum int32
 		genericKind  string
 	)
-	key, err := keys.Parse(key, &target.StartOffset, &target.EndOffset, &genericKind, &kytheKindNum, target.Target)
+	key, err := keys.Parse(key,
+		&target.BuildConfig, &target.StartOffset, &target.EndOffset,
+		&genericKind, &kytheKindNum, target.Target)
 	if err != nil {
 		return nil, err
 	}

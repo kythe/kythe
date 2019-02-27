@@ -30,7 +30,7 @@ git clone git@github.com:kythe/kythe.git
 Kythe relies on the following external dependencies:
 
 * asciidoc
-* bison-3.0.4 (2.3 is also acceptable)
+* bison-3.0.4
 * clang >= 3.6
 * cmake >= 3.4.3
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
@@ -69,15 +69,6 @@ apt-get install \
 # https://golang.org/dl/ for Golang installation
 # https://docs.docker.com/installation/debian/#debian-jessie-80-64-bit for Docker installation
 {% endhighlight %}
-
-### Internal Dependencies
-
-All other Kythe dependencies are hosted within the repository under
-`//third_party/...`. Run the `./tools/modules/update.sh` script to update these
-dependencies to the exact revision that we test against.
-
-This step may take a little time the first time it is run and should be quick
-on subsequent runs.
 
 #### Troubleshooting bazel/clang/llvm errors
 You must either have `/usr/bin/clang` aliased properly, or the `CC` env var set
@@ -126,8 +117,6 @@ Kythe uses [Bazel](http://bazel.io) to build its source code.  After
 dependencies, building Kythe should be as simple as:
 
 {% highlight bash %}
-./tools/modules/update.sh  # Ensure third_party is updated
-
 bazel build //... # Build all Kythe sources
 bazel test  //... # Run all Kythe tests
 {% endhighlight %}

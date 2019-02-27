@@ -21,12 +21,12 @@ shell_tool_test(
     },
 )
 
-# See https://kythe.io/phabricator/T70
+# See #818
 shell_tool_test(
     name = "indexer_source_root_test",
     data = [
         "//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:corner_case.kindex",
-        # Having the following sources in the Java indexer's source path caused T70.  The
+        # Having the following sources in the Java indexer's source path caused #818.  The
         # indexer read the .java file instead of the .class file found in corner_case.kindex,
         # causing javac to compile these sources without their depedencies (the transitive
         # dependencies of corner_case.kindex's compilation).

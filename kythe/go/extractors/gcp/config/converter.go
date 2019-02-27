@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 
 	rpb "kythe.io/kythe/proto/repo_go_proto"
 
@@ -33,15 +34,15 @@ import (
 
 // Constants that map input/output substitutions.
 const (
-	corpus            = "${_CORPUS}"
-	outputFilePattern = "${_CORPUS}-${_VERSION}.kzip"
-	outputGsBucket    = "${_OUTPUT_GS_BUCKET}"
-	repoName          = "${_REPO}"
+	defaultCorpus   = "${_CORPUS}"
+	defaultVersion  = "${_COMMIT}"
+	outputGsBucket  = "${_BUCKET_NAME}"
+	defaultRepoName = "${_REPO}"
 )
 
 // Constants ephemeral to a single kythe cloudbuild run.
 const (
-	outputDirectory = "/workspace/out"
+	outputDirectory = "/workspace/output"
 	codeDirectory   = "/workspace/code"
 	javaVolumeName  = "kythe_extractors"
 )
@@ -70,30 +71,59 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 	if len(conf.Extractions) == 0 {
 		return nil, fmt.Errorf("config has no extraction specified")
 	} else if len(conf.Extractions) > 1 {
-		return nil, fmt.Errorf("we don't yet support multiple extraction in a single repo")
+		return nil, fmt.Errorf("we don't yet support multiple corpus extraction yet")
+	}
+
+	repo := conf.Repo
+	if repo == "" {
+		// Default to a $_{REPO} string replacement.
+		// TODO(danielmoy): this kludge should be removed in favor of having
+		// config generation be a separate process (something should generate a
+		// qualified rpb.Config object, obviating the need to fall back to the
+		// $_{VAR} replacements.
+		repo = defaultRepoName
+	}
+
+	hints := conf.Extractions[0]
+	if hints.Corpus == "" {
+		// Default to a $_{CORPUS} string replacement.
+		hints.Corpus = defaultCorpus
 	}
 
 	build := &cloudbuild.Build{
 		Artifacts: &cloudbuild.Artifacts{
 			Objects: &cloudbuild.ArtifactObjects{
-				Location: fmt.Sprintf("gs://%s/", outputGsBucket),
-				Paths:    []string{path.Join(outputDirectory, outputFilePattern)},
+				Location: fmt.Sprintf("gs://%s/%s/", outputGsBucket, hints.Corpus),
+				Paths:    []string{path.Join(outputDirectory, outputFileName())},
 			},
 		},
 		// TODO(danielmoy): this should probably also be a generator, or at least
 		// if there is refactoring work done as described below to make steps
 		// more granular, this will have to hook into that logic.
-		Steps: commonSteps(),
+		Steps: commonSteps(repo),
 	}
-
-	hints := conf.Extractions[0]
 
 	g, err := generator(hints.BuildSystem)
 	if err != nil {
 		return nil, err
 	}
-	build.Artifacts.Objects.Paths = append(g.preArtifacts(), build.Artifacts.Objects.Paths...)
-	build.Steps = append(build.Steps, g.steps(hints)...)
+
+	build.Steps = append(build.Steps, g.preExtractSteps()...)
+
+	targets := hints.Targets
+	if len(targets) == 0 {
+		targets = append(targets, g.defaultExtractionTarget())
+	}
+	for i, target := range targets {
+		idSuffix := ""
+		if len(targets) > 1 {
+			idSuffix = strconv.Itoa(i)
+		}
+		build.Steps = append(build.Steps, g.extractSteps(hints.Corpus, target, idSuffix)...)
+	}
+
+	build.Steps = append(build.Steps, g.postExtractSteps(hints.Corpus)...)
+
 	return build, nil
 }
 
@@ -117,12 +147,20 @@ func readConfigFile(input string) (*rpb.Config, error) {
 // need ones that are appended.  We might need build steps that occur before or
 // directly after cloning, but before other common steps.
 type buildSystemElaborator interface {
-	// preArtifacts should be prepended to the list of artifacts returned from
-	// the cloudbuild invocation.
-	preArtifacts() []string
-	// steps is a list of cloudbuild steps specific for this builder for
-	// extraction.
-	steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep
+	// preExtractSteps is a list of cloudbuild steps to be done before
+	// extraction starts, specific to this extractor type.
+	preExtractSteps() []*cloudbuild.BuildStep
+	// extractSteps is a list of cloudbuild steps to extract the given target.
+	// The idSuffix is simply a unique identifier for this instance and target,
+	// for use in coordinating paralleism if desired.
+	extractSteps(corpus string, target *rpb.ExtractionTarget, idSuffix string) []*cloudbuild.BuildStep
+	// postExtractSteps is a list of cloudbuild steps to be done after
+	// extraction finishes.
+	postExtractSteps(corpus string) []*cloudbuild.BuildStep
+	// defaultExtractionTarget is the repo-relative location of the default build
+	// configuration file for a repo of a given type.  For example for a bazel
+	// repo it might just be root/BUILD, or a maven repo will have repo/pom.xml.
+	defaultExtractionTarget() *rpb.ExtractionTarget
 }
 
 func generator(b rpb.BuildSystem) (buildSystemElaborator, error) {
@@ -131,9 +169,13 @@ func generator(b rpb.BuildSystem) (buildSystemElaborator, error) {
 		return &mavenGenerator{}, nil
 	case rpb.BuildSystem_GRADLE:
 		return &gradleGenerator{}, nil
-	//case rpb.BuildSystem_BAZEL:
-	//		return bazelSteps
+	case rpb.BuildSystem_BAZEL:
+		return &bazelGenerator{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported build system %s", b)
 	}
+}
+
+func outputFileName() string {
+	return defaultVersion + ".kzip"
 }

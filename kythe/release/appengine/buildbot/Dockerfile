@@ -47,7 +47,7 @@ RUN ln -s /usr/bin/clang-3.8 /usr/bin/clang && \
     ln -s /usr/bin/clang++-3.8 /usr/bin/clang++
 
 # Install Go
-RUN wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz && \
+RUN wget https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go*.tar.gz && \
     rm -rf go*.tar.gz
 ENV PATH=$PATH:/usr/local/go/bin
@@ -55,10 +55,6 @@ ENV PATH=$PATH:/usr/local/go/bin
 # Install Bazel minimum supported version
 RUN curl -L -o /usr/bin/bazel-0.20.0 https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.20.0
 ADD bazel /usr/bin/bazel
-
-# Pre-cache LLVM
-ADD cache-llvm.sh /usr/bin/
-RUN chmod +x /usr/bin/cache-llvm.sh && cache-llvm.sh --init
 
 # Install latest supported Bazel version
 RUN curl -L -o /usr/bin/bazel-0.22.0 https://github.com/bazelbuild/bazel/releases/download/0.22.0/bazel-0.22.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.22.0

@@ -26,6 +26,12 @@ import (
 )
 
 const cloneStepID = "CLONE"
+const checkoutStepID = "CHECKOUT"
+const javaArtifactsID = "JAVA-ARTIFACTS"
+const preStepID = "PREPROCESS"
+const extractStepID = "EXTRACT"
+const mergeStepID = "MERGE"
+const renameStepID = "RENAME"
 
 // commonSteps returns cloudbuild BuildSteps for copying a repo and creating
 // an output directory.
@@ -36,27 +42,30 @@ const cloneStepID = "CLONE"
 // the code into /workspace/code.
 //
 // The output directory is /workspace/out.
-func commonSteps() []*cloudbuild.BuildStep {
+func commonSteps(repo string) []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{
 		&cloudbuild.BuildStep{
 			Name:    constants.GCRGitImage, // This triggers with command 'git'.
-			Args:    []string{"clone", repoName, "/workspace/code"},
+			Args:    []string{"clone", repo, codeDirectory},
 			Id:      cloneStepID,
 			WaitFor: []string{"-"},
 		},
 		&cloudbuild.BuildStep{
-			Name:    "ubuntu", // This, however, has no entrypoint command.
-			Args:    []string{"mkdir", "/workspace/out"},
-			WaitFor: []string{"-"},
+			Name:    constants.GCRGitImage, // This triggers with command 'git'.
+			Args:    []string{"checkout", defaultVersion},
+			Dir:     codeDirectory,
+			Id:      checkoutStepID,
+			WaitFor: []string{cloneStepID},
 		},
 	}
 }
 
-func preprocessorStep(build string) *cloudbuild.BuildStep {
+func preprocessorStep(build string, idSuffix string) *cloudbuild.BuildStep {
 	return &cloudbuild.BuildStep{
 		Name:    constants.KytheBuildPreprocessorImage,
 		Args:    []string{build},
-		WaitFor: []string{cloneStepID},
+		Id:      preStepID + idSuffix,
+		WaitFor: []string{checkoutStepID},
 	}
 }
 
@@ -71,11 +80,14 @@ func javaExtractorsStep() *cloudbuild.BuildStep {
 				Path: constants.DefaultExtractorsDir,
 			},
 		},
+		Id: javaArtifactsID,
+		// Don't need to wait for anything, because this is just sideloading
+		// another docker image.
 		WaitFor: []string{"-"},
 	}
 }
 
-func zipMergeStep() *cloudbuild.BuildStep {
+func zipMergeStep(corpus string) *cloudbuild.BuildStep {
 	return &cloudbuild.BuildStep{
 		Name:       constants.KytheKzipToolsImage,
 		Entrypoint: "bash",
@@ -84,8 +96,12 @@ func zipMergeStep() *cloudbuild.BuildStep {
 			fmt.Sprintf(
 				"%s merge --output %s %s/*.kzip",
 				constants.DefaultKzipToolLocation,
-				path.Join(outputDirectory, outputFilePattern),
+				path.Join(outputDirectory, outputFileName()),
 				outputDirectory),
 		},
+		Id: mergeStepID,
+		// We explicitly don't include a WaitFor here because that is equivalent
+		// to waiting for everything.  This step should be done at the end, so
+		// it gets no WaitFor (== wait for everything).
 	}
 }
