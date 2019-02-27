@@ -56,4 +56,4 @@ artifacts:
       - '/workspace/output/${_COMMIT}.kzip'
 tags:
   - 'guava-android'
-  - 'extract_maven'
+  - 'kythe_extract_maven'

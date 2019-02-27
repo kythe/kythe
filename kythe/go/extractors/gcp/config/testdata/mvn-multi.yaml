@@ -97,4 +97,4 @@ steps:
   name: gcr.io/kythe-public/kzip-tools:stable
 tags:
   - ${_CORPUS}
-  - extract_maven
+  - kythe_extract_maven

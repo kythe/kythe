@@ -109,7 +109,7 @@ func KytheToBuild(conf *rpb.Config) (*cloudbuild.Build, error) {
 	if err != nil {
 		return nil, err
 	}
-	build.Tags = append(build.Tags, "extract_"+strings.ToLower(hints.BuildSystem.String()))
+	build.Tags = append(build.Tags, "kythe_extract_"+strings.ToLower(hints.BuildSystem.String()))
 
 	build.Steps = append(build.Steps, g.preExtractSteps()...)
 

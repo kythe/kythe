@@ -56,5 +56,5 @@ artifacts:
       - '/workspace/output/${_COMMIT}.kzip'
 tags:
   - '${_CORPUS}'
-  - 'extract_maven'
+  - 'kythe_extract_maven'
 

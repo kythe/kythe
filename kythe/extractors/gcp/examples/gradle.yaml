@@ -58,4 +58,4 @@ artifacts:
       - '/workspace/output/${_COMMIT}.kzip'
 tags:
   - '${_CORPUS}'
-  - 'extract_gradle'
+  - 'kythe_extract_gradle'

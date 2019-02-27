@@ -21,4 +21,4 @@ artifacts:
     paths: ['/workspace/output/${_COMMIT}.kzip']
 tags:
   - '${_CORPUS}'
-  - 'extract_bazel'
+  - 'kythe_extract_bazel'
