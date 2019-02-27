@@ -68,8 +68,8 @@ def _kzip_diff_test_impl(ctx):
 kzip_diff_test = rule(
     implementation = _kzip_diff_test_impl,
     attrs = {
-        "golden_file": attr.label(allow_files = True, mandatory = True, single_file = True),
-        "kzip": attr.label(allow_files = True, mandatory = True, single_file = True),
+        "golden_file": attr.label(mandatory = True, allow_single_file = True),
+        "kzip": attr.label(mandatory = True, allow_single_file = True),
         "diff_bin": attr.label(
             cfg = "host",
             executable = True,
