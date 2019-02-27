@@ -39,30 +39,39 @@ def _atomize_entries_impl(ctx):
     for dep in ctx.attr.deps:
         inputs += dep.kythe_entries
 
+    sort_args = ctx.actions.args()
+    sort_args.add_all([zcat, entrystream, sorted_entries])
+    sort_args.add_all(inputs)
     sorted_entries = ctx.actions.declare_file("_sorted_entries", sibling = ctx.outputs.entries)
     ctx.actions.run_shell(
         outputs = [sorted_entries],
         inputs = [zcat, entrystream] + inputs.to_list(),
         mnemonic = "SortEntries",
         command = '("$1" "${@:4}" | "$2" --sort) > "$3" || rm -f "$3"',
-        arguments = (
-            [zcat.path, entrystream.path, sorted_entries.path] + [s.path for s in inputs.to_list()]
-        ),
+        arguments = [sort_args],
     )
+
+    process_args = ctx.actions.args()
+    process_args.add_all(["--entries", sorted_entries, "--out", leveldb])
     leveldb = ctx.actions.declare_file("_serving_tables", sibling = ctx.outputs.entries)
     ctx.actions.run(
         outputs = [leveldb],
         inputs = [sorted_entries, postprocessor],
         executable = postprocessor,
         mnemonic = "PostProcessEntries",
-        arguments = ["--entries", sorted_entries.path, "--out", leveldb.path],
+        arguments = [process_args],
     )
+
+    atomize_args = ctx.actions.args()
+    atomize_args.add_all([atomizer, "--api", leveldb])
+    atomize_args.add_all(ctx.attr.file_tickets)
+    atomize_args.add(ctx.outputs.entries)
     ctx.actions.run_shell(
         outputs = [ctx.outputs.entries],
         inputs = [atomizer, leveldb],
         mnemonic = "AtomizeEntries",
         command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") | gzip -c > "${@:${#@}}"',
-        arguments = ([atomizer.path, "--api", leveldb.path] + ctx.attr.file_tickets + [ctx.outputs.entries.path]),
+        arguments = [atomize_args],
         execution_requirements = {
             # TODO(shahms): Remove this when we can use a non-LevelDB store.
             "local": "true",  # LevelDB is bad and should feel bad.
@@ -131,7 +140,7 @@ def extract(
       kzip: Declared .kzip output File
       extractor: Executable extractor tool to invoke
       srcs: Files passed to extractor tool; the compilation's source file inputs
-      opts: List of options passed to the extractor tool before source files
+      opts: List of options (or Args object) passed to the extractor tool before source files
       deps: Dependencies for the extractor's action (not passed to extractor on command-line)
       vnames_config: Optional path to a VName configuration file
       mnemonic: Mnemonic of the extractor's action
@@ -144,16 +153,20 @@ def extract(
     if vnames_config:
         env["KYTHE_VNAMES"] = vnames_config.path
         inputs += [vnames_config]
+
+    args = opts
+    if type(args) != "Args":
+        args = ctx.actions.args()
+        args.add_all([ctx.expand_location(o) for o in opts])
+    args.add_all(srcs)
+
     ctx.actions.run(
         inputs = inputs,
         tools = [extractor],
         outputs = [kzip],
         mnemonic = mnemonic,
         executable = extractor,
-        arguments = (
-            [ctx.expand_location(o) for o in opts] +
-            [src.path for src in srcs]
-        ),
+        arguments = [args],
         env = env,
     )
     return kzip
@@ -170,21 +183,30 @@ def _index_compilation_impl(ctx):
                 sibling = ctx.outputs.entries,
             )
             intermediates += [entries]
+
+            args = ctx.actions.args()
+            args.add(ctx.executable.indexer)
+            args.add_all([ctx.expand_location(o) for o in ctx.attr.opts])
+            args.add_all([input, entries])
             ctx.actions.run_shell(
                 outputs = [entries],
                 inputs = [input],
                 tools = [ctx.executable.indexer] + ctx.files.tools,
-                arguments = ([ctx.executable.indexer.path] +
-                             [ctx.expand_location(o) for o in ctx.attr.opts] + [input.path, entries.path]),
+                arguments = [args],
                 command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") > "${@:${#@}}"',
                 mnemonic = "IndexCompilation",
             )
+
+    args = ctx.actions.args()
+    args.add("cat")
+    args.add_all(intermediates)
+    args.add(ctx.outputs.entries)
     ctx.actions.run_shell(
         outputs = [ctx.outputs.entries],
         inputs = intermediates,
         command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") | gzip -c > "${@:${#@}}"',
         mnemonic = "CompressEntries",
-        arguments = ["cat"] + [i.path for i in intermediates] + [ctx.outputs.entries.path],
+        arguments = [args],
     )
     return [
         KytheVerifierSources(files = depset(transitive = sources)),

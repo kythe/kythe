@@ -80,14 +80,12 @@ def _java_extract_kzip_impl(ctx):
     )
 
     jars = depset(transitive = [dep.compile_jars for dep in deps]).to_list()
-    args = ctx.attr.opts + [
-        "-encoding",
-        "utf-8",
-        "-cp",
-        ":".join([j.path for j in jars]),
-    ]
-    for params in params_files:
-        args += ["@" + params.path]
+
+    args = ctx.actions.args()
+    args.add_all(ctx.attr.opts + ["-encoding", "utf-8"])
+    args.add_joined("-cp", jars, join_with = ":")
+    args.add_all(params_files, format_each = "@%s")
+
     extract(
         srcs = srcs,
         ctx = ctx,
