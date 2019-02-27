@@ -54,4 +54,6 @@ artifacts:
     location: 'gs://${_BUCKET_NAME}/guava-android/'
     paths:
       - '/workspace/output/${_COMMIT}.kzip'
-
+tags:
+  - 'guava-android'
+  - 'kythe_extract_maven'
