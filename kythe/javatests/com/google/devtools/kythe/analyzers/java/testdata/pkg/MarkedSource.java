@@ -248,6 +248,20 @@ public class MarkedSource {
     List<? super Object> superBoundedList;
   }
 
+  //- @staticTApplyVar defines/binding StaticTApplyVar
+  //- StaticTApplyVar typed InnerStaticType
+  //- InnerStaticType code TAppCode
+  //- TAppCode.kind "TYPE"
+  //- TAppCode child.0 TAppCtor
+  //- TAppCtor.kind "LOOKUP_BY_PARAM"
+  //- TAppCode child.1 TAppParams
+  //- TAppParams.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- TAppParams.pre_text "<"
+  //- TAppParams.post_text ">"
+  //- TAppParams.post_child_text ", "
+  //- TAppParams.lookup_index "1"
+  static InnerStatic<MarkedSource> staticTApplyVar;
+
   Object o = new Object() {
     //- @field defines/binding AnonField
     //- AnonField childof AnonClass
@@ -316,6 +330,27 @@ public class MarkedSource {
     return new LocalClass();
   }
 
+  // TODO(schroederc): make verifier emit ArrayTAppCode{,2} with the same VName
+
+  //- @arry defines/binding ArrayParameter
+  //- ArrayParameter typed IntArrayArrayType
+  //- IntArrayArrayType code ArrayTAppCode
+  //- ArrayTAppCode.kind "TYPE"
+  //- ArrayTAppCode child.0 ArrayTAppChild
+  //- ArrayTAppChild.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- ArrayTAppChild.lookup_index "1"
+  //- ArrayTAppChild.post_text "[]"
+  //- IntArrayArrayType param.1 IntArrayType
+  //- IntArrayType code ArrayTAppCode2
+  //- ArrayTAppCode2.kind "TYPE"
+  //- ArrayTAppCode2 child.0 ArrayTAppChild2
+  //- ArrayTAppChild2.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- ArrayTAppChild2.lookup_index "1"
+  //- ArrayTAppChild2.post_text "[]"
+  //- IntArrayType param.1 IntType
+  //- IntType code IntCode
+  //- IntCode.kind "IDENTIFIER"
+  //- IntCode.pre_text "int"
   static Object referencesArrayMember(int[][] arry) {
     //- @clone ref ArrayCloneMethod
     //- ArrayCloneMethod.node/kind function
