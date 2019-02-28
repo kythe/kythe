@@ -19,7 +19,7 @@ require (
 	github.com/google/uuid v1.1.0 // indirect
 	github.com/googleapis/gax-go v0.0.0-20190111180537-ddfab93c3fae // indirect
 	github.com/hanwen/go-fuse v0.0.0-20190217114934-ce2558b4d3b5
-	github.com/jmhodges/levigo v0.0.0-20161115193449-c42d9e0ca023
+	github.com/jmhodges/levigo v1.0.0
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/minio/highwayhash v0.0.0-20180501080913-85fc8a2dacad
 	github.com/nwaples/rardecode v1.0.0 // indirect
