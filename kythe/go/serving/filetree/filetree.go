@@ -101,10 +101,6 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 		return nil, err
 	}
 	return &ftpb.DirectoryReply{
-		// TODO(schroederc): remove deprecated fields
-		Subdirectory: d.Subdirectory,
-		File:         d.FileTicket,
-
 		Corpus: req.Corpus,
 		Root:   req.Root,
 		Path:   req.Path,
