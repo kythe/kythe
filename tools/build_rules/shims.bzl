@@ -1,4 +1,5 @@
-load("@bazel_gazelle//:deps.bzl", _git_repository = "git_repository", _go_repository = "go_repository")
+load("@bazel_gazelle//:deps.bzl", _go_repository = "go_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@io_bazel_rules_go//go:def.bzl", _go_binary = "go_binary", _go_library = "go_library", _go_test = "go_test")
 
 def go_repository(name, importpath, commit = None, custom = None, custom_git = None, tag = None, **kwargs):
@@ -19,12 +20,12 @@ def go_repository(name, importpath, commit = None, custom = None, custom_git = N
     if custom != None:
         if custom_git == None:
             custom_git = "https://" + importpath + ".git"
-        _git_repository(
+        new_git_repository(
             name = "go_" + custom,
+            build_file = "@io_kythe//third_party/go:" + custom + ".BUILD",
             commit = commit,
             remote = custom_git,
             tag = tag,
-            overlay = {"@io_kythe//third_party/go:" + custom + ".BUILD": "BUILD"},
         )
 
 # Go importpath prefix shared by all Kythe libraries
