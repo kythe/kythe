@@ -43,6 +43,7 @@ def _filter_java_sources(src):
     src = src.path
     if src.endswith(".java"):
         return src
+    return None
 
 def _java_extract_kzip_impl(ctx):
     deps = []
