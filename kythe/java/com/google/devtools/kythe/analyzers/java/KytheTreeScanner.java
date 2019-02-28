@@ -630,7 +630,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       childWildcards.addAll(n.childWildcards);
     }
 
-    EntrySet typeNode = entrySets.newTApplyAndEmit(typeCtorNode.getVName(), argVNames);
+    EntrySet typeNode =
+        entrySets.newTApplyAndEmit(typeCtorNode.getVName(), argVNames, MarkedSources.GENERIC_TAPP);
     // TODO(salguarnieri) Think about removing this since it isn't something that we have a use for.
     emitAnchor(ctx, EdgeKind.REF, typeNode.getVName());
 
@@ -800,7 +801,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     JavaNode typeNode = scan(arrayType.getType(), ctx);
     EntrySet node =
         entrySets.newTApplyAndEmit(
-            entrySets.newBuiltinAndEmit("array").getVName(), Arrays.asList(typeNode.getVName()));
+            entrySets.newBuiltinAndEmit("array").getVName(),
+            Arrays.asList(typeNode.getVName()),
+            MarkedSources.ARRAY_TAPP);
     emitAnchor(ctx, EdgeKind.REF, node.getVName());
     JavaNode arrayNode = new JavaNode(node);
     return arrayNode;
@@ -1080,7 +1083,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     EntrySet typeNode =
         entrySets.newTApplyAndEmit(
-            javaLangEnumNode.getVName(), Collections.singletonList(enumVName));
+            javaLangEnumNode.getVName(),
+            Collections.singletonList(enumVName),
+            MarkedSources.GENERIC_TAPP);
     return new JavaNode(typeNode);
   }
 
