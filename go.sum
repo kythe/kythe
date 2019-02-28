@@ -33,8 +33,8 @@ github.com/google/subcommands v0.0.0-20190211182706-d47216cd1784 h1:shVGySSLBc/L
 github.com/google/subcommands v0.0.0-20190211182706-d47216cd1784/go.mod h1:ZjhPrFU+Olkh9WazFPsl27BQ4UPiG37m3yTrtFlrHVk=
 github.com/google/uuid v1.1.0 h1:Jf4mxPC/ziBnoPIdpQdPJ9OeiomAUHLvxmPRSPH9m4s=
 github.com/google/uuid v1.1.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/googleapis/gax-go v0.0.0-20190111180537-ddfab93c3fae h1:gqYEONBjbi6i+BsvlxVeViNY463dAnrU7LvicJ3ai9k=
-github.com/googleapis/gax-go v0.0.0-20190111180537-ddfab93c3fae/go.mod h1:5VvnLYVimBt+hOVlFtJDkYQHVmk4K27qHHioZjPbYAI=
+github.com/googleapis/gax-go v1.0.1 h1:s8wgqXDOSDs5edBX6px1MUySxwW+LnbCxqNhHMRp8is=
+github.com/googleapis/gax-go v1.0.1/go.mod h1:5VvnLYVimBt+hOVlFtJDkYQHVmk4K27qHHioZjPbYAI=
 github.com/googleapis/gax-go/v2 v2.0.2 h1:/rNgUniLy2vDXiK2xyJOcirGpC3G99dtK1NWx26WZ8Y=
 github.com/googleapis/gax-go/v2 v2.0.2/go.mod h1:LLvjysVCY1JZeum8Z6l8qUty8fiNwE08qbEPm1M08qg=
 github.com/hanwen/go-fuse v0.0.0-20190217114934-ce2558b4d3b5 h1:/5osAxzT98QS+h7fLt/CGP+PpbbsDnH7/oK2PrN7PWw=
