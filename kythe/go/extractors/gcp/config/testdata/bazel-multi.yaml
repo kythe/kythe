@@ -37,3 +37,6 @@ steps:
   - /workspace/output/${_COMMIT}.kzip
   id: RENAME
   name: ubuntu
+tags:
+  - ${_CORPUS}
+  - kythe_extract_bazel
