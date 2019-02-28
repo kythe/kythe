@@ -191,8 +191,8 @@ def _java_dependencies():
     maybe(
         native.maven_jar,
         name = "com_google_guava_guava",
-        artifact = "com.google.guava:guava:25.1-jre",
-        sha1 = "6c57e4b22b44e89e548b5c9f70f0c45fe10fb0b4",
+        artifact = "com.google.guava:guava:26.0-jre",
+        sha1 = "6a806eff209f36f635f943e16d97491f00f6bfab",
     )
 
     maybe(
