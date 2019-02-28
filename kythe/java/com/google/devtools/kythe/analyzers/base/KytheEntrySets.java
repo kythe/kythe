@@ -341,12 +341,16 @@ public class KytheEntrySets {
   public EntrySet newFunctionTypeAndEmit(VName returnType, List<VName> arguments) {
     List<VName> tArgs = new ArrayList<>(arguments);
     tArgs.add(0, returnType);
-    return newTApplyAndEmit(newBuiltinAndEmit("fn").getVName(), tArgs);
+    return newTApplyAndEmit(newBuiltinAndEmit("fn").getVName(), tArgs, null);
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} node along with its parameter edges. */
-  public EntrySet newTApplyAndEmit(VName head, List<VName> arguments) {
-    EntrySet node = emitAndReturn(newApplyNode(NodeKind.TAPPLY, head, arguments));
+  public EntrySet newTApplyAndEmit(VName head, List<VName> arguments, MarkedSource ms) {
+    NodeBuilder builder = newApplyNode(NodeKind.TAPPLY, head, arguments);
+    if (ms != null) {
+      builder.setProperty("code", ms);
+    }
+    EntrySet node = emitAndReturn(builder);
     emitEdge(node.getVName(), EdgeKind.PARAM, head, 0);
     emitOrdinalEdges(node.getVName(), EdgeKind.PARAM, arguments, 1);
     return node;
