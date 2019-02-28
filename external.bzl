@@ -473,9 +473,9 @@ def _go_dependencies():
         go_repository,
         name = "com_github_googleapis_gax_go",
         build_file_proto_mode = "disable",
-        commit = "ddfab93c3faef4935403ac75a7c11f0e731dc181",
         custom = "googleapis_gax",
         importpath = "github.com/googleapis/gax-go",
+        tag = "v1.0.1",
     )
 
     maybe(
