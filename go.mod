@@ -16,8 +16,8 @@ require (
 	github.com/google/go-querystring v1.0.0
 	github.com/google/orderedcode v0.0.1
 	github.com/google/subcommands v0.0.0-20190211182706-d47216cd1784
-	github.com/google/uuid v1.1.0 // indirect
-	github.com/googleapis/gax-go v0.0.0-20190111180537-ddfab93c3fae // indirect
+	github.com/google/uuid v1.1.0
+	github.com/googleapis/gax-go v1.0.1 // indirect
 	github.com/hanwen/go-fuse v0.0.0-20190217114934-ce2558b4d3b5
 	github.com/jmhodges/levigo v1.0.0
 	github.com/mholt/archiver v3.1.1+incompatible
