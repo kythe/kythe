@@ -309,9 +309,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_jmhodges_levigo",
-        commit = "c42d9e0ca023e2198120196f842701bb4c55d7b9",
         custom = "levigo",
         importpath = "github.com/jmhodges/levigo",
+        tag = "v1.0.0",
     )
 
     maybe(
