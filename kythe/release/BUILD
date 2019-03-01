@@ -214,6 +214,7 @@ filegroup(
         "//kythe/go/platform/tools/dedup_stream",
         "//kythe/go/platform/tools/entrystream",
         "//kythe/go/platform/tools/indexpack",
+        "//kythe/go/platform/tools/kzip",
         "//kythe/go/platform/tools/viewindex",
         "//kythe/go/serving/tools:http_server",
         "//kythe/go/serving/tools:kythe",
