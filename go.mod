@@ -18,7 +18,7 @@ require (
 	github.com/google/subcommands v0.0.0-20190211182706-d47216cd1784
 	github.com/google/uuid v1.1.0
 	github.com/googleapis/gax-go v1.0.1 // indirect
-	github.com/hanwen/go-fuse v0.0.0-20190217114934-ce2558b4d3b5
+	github.com/hanwen/go-fuse v1.0.0
 	github.com/jmhodges/levigo v1.0.0
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/minio/highwayhash v0.0.0-20180501080913-85fc8a2dacad
