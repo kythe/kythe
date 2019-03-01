@@ -49,6 +49,7 @@
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
+#include "kythe/proto/filecontext.pb.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/VirtualFileSystem.h"

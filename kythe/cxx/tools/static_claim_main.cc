@@ -35,6 +35,7 @@
 #include "kythe/cxx/extractor/index_pack.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
+#include "kythe/proto/filecontext.pb.h"
 
 using kythe::proto::ClaimAssignment;
 using kythe::proto::CompilationUnit;
