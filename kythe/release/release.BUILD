@@ -1,5 +1,13 @@
 package(default_visibility = ["//visibility:public"])
 
+exports_files([
+    "LICENSE",
+    "extractors/*",
+    "indexers/*",
+    "proto/*",
+    "tools/*",
+])
+
 load(":extractors.bzl", "extractor_action")
 load(":vnames.bzl", "construct_vnames_config")
 
@@ -30,12 +38,6 @@ java_binary(
     name = "bazel_java_extractor",
     main_class = "com.google.devtools.kythe.extractors.java.bazel.JavaExtractor",
     runtime_deps = ["extractors/bazel_java_extractor.jar"],
-)
-
-java_binary(
-    name = "bazel_jvm_extractor",
-    main_class = "com.google.devtools.kythe.extractors.jvm.bazel.BazelJvmExtractor",
-    runtime_deps = ["extractors/bazel_jvm_extractor.jar"],
 )
 
 filegroup(
@@ -77,19 +79,6 @@ extractor_action(
     extractor = ":bazel_java_extractor",
     mnemonics = ["Javac"],
     output = "$(ACTION_ID).java.kzip",
-)
-
-extractor_action(
-    name = "extract_kzip_jvm",
-    args = [
-        "$(EXTRA_ACTION_FILE)",
-        "$(output $(ACTION_ID).jvm.kzip)",
-        "$(location :vnames_config)",
-    ],
-    data = [":vnames_config"],
-    extractor = ":bazel_jvm_extractor",
-    mnemonics = ["JavaIjar"],
-    output = "$(ACTION_ID).jvm.kzip",
 )
 
 extractor_action(
