@@ -29,8 +29,6 @@ RUN tar xzf /tmp/kythe-v*.tar.gz && \
 
 # Tools and configuration
 ADD kythe/extractors/bazel/extract.sh /kythe/
-# TODO(schroederc): add kzip tool to release
-ADD kythe/go/platform/tools/kzip/kzip /kythe/
 ADD kythe/release/base/fix_permissions.sh /kythe/
 
 # Bazel repository setup
