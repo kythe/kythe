@@ -89,6 +89,7 @@ import (
 	// required for JSON (un)marshaling to work.
 	_ "kythe.io/kythe/proto/buildinfo_go_proto"
 	_ "kythe.io/kythe/proto/cxx_go_proto"
+	_ "kythe.io/kythe/proto/filecontext_go_proto"
 	_ "kythe.io/kythe/proto/go_go_proto"
 	_ "kythe.io/kythe/proto/java_go_proto"
 )

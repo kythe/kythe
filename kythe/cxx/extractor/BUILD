@@ -18,6 +18,7 @@ cc_library(
         "//external:zlib",
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:filecontext_cc_proto",
         "@boringssl//:crypto",
         "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",

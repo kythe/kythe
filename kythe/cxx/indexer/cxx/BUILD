@@ -21,6 +21,7 @@ cc_library(
         "//kythe/cxx/extractor:index_pack",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
+        "//kythe/proto:filecontext_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "@com_github_gflags_gflags//:gflags",
         "@com_google_absl//absl/memory",

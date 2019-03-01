@@ -33,6 +33,7 @@
 #include "kythe/cxx/extractor/cxx_details.h"
 #include "kythe/cxx/extractor/language.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/filecontext.pb.h"
 
 namespace clang {
 class FrontendAction;

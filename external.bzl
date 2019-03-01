@@ -342,9 +342,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_hanwen_go_fuse",
-        commit = "dfd0ceb206ca58277d145a4bc3a5e054b3ac20d1",
         custom = "go_fuse",
         importpath = "github.com/hanwen/go-fuse",
+        tag = "v1.0.0",
     )
 
     maybe(
