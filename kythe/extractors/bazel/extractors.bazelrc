@@ -14,8 +14,8 @@ build --proto_toolchain_for_java=@kythe_release//:java_proto_toolchain
 build --experimental_action_listener=@kythe_release//:extract_kzip_cxx
 build --experimental_action_listener=@kythe_release//:extract_kzip_go
 build --experimental_action_listener=@kythe_release//:extract_kzip_java
+build --experimental_action_listener=@kythe_release//:extract_kzip_jvm
 build --experimental_action_listener=@kythe_release//:extract_kzip_protobuf
 build --experimental_action_listener=@kythe_release//:extract_kzip_typescript
 
 # TODO(schroederc): add C++ proto toolchain plugin to release
-# TODO(schroederc): add JVM extractor to release
