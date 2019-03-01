@@ -30,7 +30,6 @@ import (
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/web"
-	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 
@@ -87,10 +86,8 @@ func (m *Map) Populate(ctx context.Context, gs graphstore.Service) error {
 
 // AddFile adds the given file VName to m.
 func (m *Map) AddFile(file *spb.VName) {
-	ticket := kytheuri.ToString(file)
 	dirPath := CleanDirPath(path.Dir(file.Path))
 	dir := m.ensureDir(file.Corpus, file.Root, dirPath)
-	dir.File = addToSet(dir.File, ticket)
 	dir.Entry = addEntry(dir.Entry, &ftpb.DirectoryReply_Entry{
 		Kind: ftpb.DirectoryReply_FILE,
 		Name: filepath.Base(file.Path),
@@ -161,12 +158,6 @@ func (m *Map) ensureDir(corpus, root, path string) *ftpb.DirectoryReply {
 
 		if path != "" {
 			parent := m.ensureDir(corpus, root, filepath.Dir(path))
-			uri := kytheuri.URI{
-				Corpus: corpus,
-				Root:   root,
-				Path:   path,
-			}
-			parent.Subdirectory = addToSet(parent.Subdirectory, uri.String())
 			parent.Entry = addEntry(parent.Entry, &ftpb.DirectoryReply_Entry{
 				Kind: ftpb.DirectoryReply_DIRECTORY,
 				Name: filepath.Base(path),

@@ -75,9 +75,5 @@ message DirectoryReply {
     DIRECTORY = 2;
   }
 
-  // DEPRECATED: Set of tickets for each contained sub-directory's corpus, root,
-  // and path.
-  repeated string subdirectory = 1 [deprecated = true];
-  // DEPRECATED: Set of file tickets contained within this directory.
-  repeated string file = 2 [deprecated = true];
+  reserved 1, 2;
 }

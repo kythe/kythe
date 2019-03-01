@@ -8,7 +8,6 @@ go_library(
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/services/web",
-        "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:filetree_go_proto",
