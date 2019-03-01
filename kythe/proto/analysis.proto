@@ -93,7 +93,15 @@ message CompilationUnit {
   // specifics into this basis.
   //
   // This VName also serves as the default basis for any required inputs that
-  // do not provide their own `v_name` field.
+  // do not provide their own `v_name` field.  As such, the general logic for
+  // constructing VNames for entities arising a given source path should be:
+  // {
+  //   corpus:   unit.required_input[path].v_name.corpus OR unit.v_name.corpus
+  //   root:     unit.required_input[path].v_name.root OR unit.v_name.root
+  //   path:     unit.required_input[path].v_name.path OR path
+  // }
+  // The above applies generally, but specific node kinds may have rules which
+  // override this logic.
   VName v_name = 1;
 
   reserved 2;
@@ -125,7 +133,8 @@ message CompilationUnit {
 
   message FileInput {
     // If set, overrides the `v_name` in the `CompilationUnit` for deriving
-    // VNames during analysis.
+    // VNames during analysis. Values for fields which are not explicitly set
+    // should be taken from the CompilationUnit's VName or (for path) FileInfo.
     VName v_name = 1;
 
     // The file's metadata. It is invalid to provide a FileInput without both

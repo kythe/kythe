@@ -191,8 +191,8 @@ def _java_dependencies():
     maybe(
         native.maven_jar,
         name = "com_google_guava_guava",
-        artifact = "com.google.guava:guava:25.1-jre",
-        sha1 = "6c57e4b22b44e89e548b5c9f70f0c45fe10fb0b4",
+        artifact = "com.google.guava:guava:26.0-jre",
+        sha1 = "6a806eff209f36f635f943e16d97491f00f6bfab",
     )
 
     maybe(
@@ -309,9 +309,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_jmhodges_levigo",
-        commit = "c42d9e0ca023e2198120196f842701bb4c55d7b9",
         custom = "levigo",
         importpath = "github.com/jmhodges/levigo",
+        tag = "v1.0.0",
     )
 
     maybe(
@@ -473,9 +473,9 @@ def _go_dependencies():
         go_repository,
         name = "com_github_googleapis_gax_go",
         build_file_proto_mode = "disable",
-        commit = "ddfab93c3faef4935403ac75a7c11f0e731dc181",
         custom = "googleapis_gax",
         importpath = "github.com/googleapis/gax-go",
+        tag = "v1.0.1",
     )
 
     maybe(

@@ -360,29 +360,18 @@ func (me *kytheFS) OpenDir(path string, context *fuse.Context) (c []fuse.DirEntr
 				return nil, fuse.ENOENT
 			}
 
-			for _, d := range dir.Subdirectory {
-				uri, err := kytheuri.Parse(d)
-				if err != nil {
-					log.Printf("warning: received invalid directory uri %q: %v", d, err)
+			for _, e := range dir.Entry {
+				de := fuse.DirEntry{Name: e.Name}
+				switch e.Kind {
+				case ftpb.DirectoryReply_FILE:
+					de.Mode = fuse.S_IFREG
+				case ftpb.DirectoryReply_DIRECTORY:
+					de.Mode = fuse.S_IFDIR
+				default:
+					log.Printf("WARNING: received invalid directory entry: %v", e)
 					continue
 				}
-				component := filepath.Base(uri.Path)
-				ents[component] = fuse.DirEntry{
-					Name: component,
-					Mode: fuse.S_IFDIR,
-				}
-			}
-			for _, f := range dir.File {
-				uri, err := kytheuri.Parse(f)
-				if err != nil {
-					log.Printf("warning: received invalid file uri %q: %v", f, err)
-					continue
-				}
-				component := filepath.Base(uri.Path)
-				ents[component] = fuse.DirEntry{
-					Name: component,
-					Mode: fuse.S_IFREG,
-				}
+				ents[e.Name] = de
 			}
 		} else {
 			log.Fatalf(

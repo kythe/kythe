@@ -35,6 +35,37 @@ import javax.lang.model.element.ElementKind;
 public final class MarkedSources {
   private MarkedSources() {}
 
+  /** {@link MarkedSource} for Java "tapp" nodes of the form C<T1, T2, T3...>. */
+  public static final MarkedSource GENERIC_TAPP;
+
+  /** {@link MarkedSource} for Java "tapp" nodes of the form C[]. */
+  public static final MarkedSource ARRAY_TAPP;
+
+  static {
+    MarkedSource.Builder genericTAppBuilder =
+        MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
+    genericTAppBuilder.addChildBuilder().setKind(MarkedSource.Kind.LOOKUP_BY_PARAM);
+    genericTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
+        .setLookupIndex(1)
+        .setPreText("<")
+        .setPostText(">")
+        .setPostChildText(", ");
+    GENERIC_TAPP = genericTAppBuilder.build();
+  }
+
+  static {
+    MarkedSource.Builder arrayTAppBuilder =
+        MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
+    arrayTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
+        .setLookupIndex(1)
+        .setPostText("[]");
+    ARRAY_TAPP = arrayTAppBuilder.build();
+  }
+
   /** Returns a {@link MarkedSource} instance for a {@link Symbol}. */
   static MarkedSource construct(
       SignatureGenerator signatureGenerator,

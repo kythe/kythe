@@ -83,12 +83,23 @@ func (c lsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	}
 
 	if c.filesOnly {
-		dir.Subdirectory = nil
+		dir.Entry = filterEntries(dir.Entry, ftpb.DirectoryReply_FILE)
 	} else if c.dirsOnly {
-		dir.File = nil
+		dir.Entry = filterEntries(dir.Entry, ftpb.DirectoryReply_DIRECTORY)
 	}
 
 	return c.displayDirectory(dir)
+}
+
+func filterEntries(entries []*ftpb.DirectoryReply_Entry, kind ftpb.DirectoryReply_Kind) []*ftpb.DirectoryReply_Entry {
+	var j int
+	for _, e := range entries {
+		if e.Kind == kind {
+			entries[j] = e
+			j++
+		}
+	}
+	return entries[:j]
 }
 
 func (c lsCommand) displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
