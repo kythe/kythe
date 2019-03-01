@@ -38,6 +38,7 @@ genrule(
         ":bazel_proto_extractor",
         ":javac_extractor",
         ":javac_wrapper",
+        ":cc_proto_metadata_plugin",
         ":cxx_extractor",
         ":go_extractor",
         ":java_indexer",
@@ -79,6 +80,7 @@ genrule(
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--cp $(location go_extractor) extractors/go_extractor",
+        "--cp $(location cc_proto_metadata_plugin) tools/cc_proto_metadata_plugin",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
         "--relpaths kythe/web/ui/resources/public",
@@ -205,6 +207,11 @@ filegroup(
 filegroup(
     name = "proto_indexer",
     srcs = ["@io_kythe_lang_proto//kythe/cxx/indexer/proto:indexer"],
+)
+
+filegroup(
+    name = "cc_proto_metadata_plugin",
+    srcs = ["//kythe/cxx/tools:proto_metadata_plugin"],
 )
 
 filegroup(

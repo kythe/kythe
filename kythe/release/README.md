@@ -26,6 +26,7 @@ extractors, and tools directly supported by the Kythe team.
    - javac_extractor.jar      :: Java extractor
  - proto                      :: Protocol buffer definitions of public APIs
  - tools
+   - cc_proto_metadata_plugin :: Replacement protoc plugin to generate metadata for C++
    - dedup_stream             :: Removes duplicates entries from a delimited stream
    - directory_indexer        :: Emits Kythe file nodes for some local paths
    - entrystream              :: Generic Kythe entry stream processor
