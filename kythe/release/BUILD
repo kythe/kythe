@@ -28,6 +28,8 @@ release_version = "v0.0.30"
 genrule(
     name = "release",
     srcs = [
+        "release.BUILD",
+        "release.WORKSPACE",
         ":bazel_cxx_extractor",
         ":bazel_extract_kzip",
         ":bazel_go_extractor",
@@ -59,6 +61,8 @@ genrule(
         "$(location //kythe/go/platform/tools/shasum_tool)",
         "$(location kythe-" + release_version + ".tar.gz)",
         "$(locations misc)",
+        "--cp $(location release.BUILD) BUILD",
+        "--cp $(location release.WORKSPACE) WORKSPACE",
         "--cp $(location java_indexer) indexers/java_indexer.jar",
         "--cp $(location jvm_indexer) indexers/jvm_indexer.jar",
         "--cp $(location cxx_indexer) indexers/cxx_indexer",
@@ -85,6 +89,7 @@ genrule(
         "package_release.sh",
         "//kythe/go/platform/tools/shasum_tool",
     ],
+    visibility = ["//visibility:public"],
 )
 
 filegroup(
@@ -93,6 +98,9 @@ filegroup(
         ":README.md",
         "//:LICENSE",
         "//:RELEASES.md",
+        "//kythe/data:raw_vnames_config",
+        "//kythe/data:vnames.bzl",
+        "//kythe/extractors:extractors.bzl",
     ],
 )
 
