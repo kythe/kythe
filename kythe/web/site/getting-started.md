@@ -42,7 +42,6 @@ Kythe relies on the following external dependencies:
 * libcurl4-openssl-dev
 * libncurses-dev
 * libssl-dev
-* libstdc++-8-dev
 * node.js
 * parallel
 * source-highlight
@@ -62,7 +61,7 @@ apt-get update
 
 apt-get install \
     asciidoc asciidoctor source-highlight graphviz \
-    gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.6 libstdc++-8-dev bison \
+    gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.6 bison \
     openjdk-8-jdk \
     parallel \
     wget
