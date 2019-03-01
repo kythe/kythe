@@ -31,6 +31,7 @@
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
+#include "kythe/proto/filecontext.pb.h"
 #include "llvm/ADT/Twine.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
 
