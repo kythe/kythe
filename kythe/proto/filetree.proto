@@ -34,8 +34,14 @@ message CorpusRootsRequest {}
 
 message CorpusRootsReply {
   message Corpus {
+    // Name of the corpus.
     string name = 1;
+
+    // Each known root within the corpus.
     repeated string root = 2;
+
+    // Each known build configuration within the corpus.
+    repeated string build_config = 3;
   }
   repeated Corpus corpus = 1;
 }
