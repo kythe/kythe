@@ -45,12 +45,30 @@ func TestCorpusRoots(t *testing.T) {
 	}, {
 		Source: &spb.VName{Corpus: "corpus2", Path: "p/to/file.go"},
 		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_FILE},
+	}, {
+		Source: &spb.VName{Corpus: "corpus", Path: "path", Signature: "a0"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+	}, {
+		Source: &spb.VName{Corpus: "corpus", Path: "path", Signature: "a1"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_BUILD_CONFIG},
+			Value: []byte("test-build-config"),
+		}},
+	}, {
+		Source: &spb.VName{Corpus: "corpus", Path: "p/to/file.go", Signature: "a0"},
+		Kind:   &scpb.Node_KytheKind{scpb.NodeKind_ANCHOR},
+		Fact: []*scpb.Fact{{
+			Name:  &scpb.Fact_KytheName{scpb.FactName_BUILD_CONFIG},
+			Value: []byte("test-build-config"),
+		}},
 	}}
 
 	expected := []*srvpb.CorpusRoots{{
 		Corpus: []*srvpb.CorpusRoots_Corpus{{
-			Corpus: "corpus",
-			Root:   []string{"", "root"},
+			Corpus:      "corpus",
+			Root:        []string{"", "root"},
+			BuildConfig: []string{"", "test-build-config"},
 		}, {
 			Corpus: "corpus2",
 			Root:   []string{""},
