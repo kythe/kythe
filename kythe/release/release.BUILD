@@ -29,6 +29,23 @@ proto_lang_toolchain(
     runtime = "@com_google_protobuf//:protobuf_java",
 )
 
+# Clone of default C++ proto toolchain with "annotate_headers" enabled for
+# cross-language metadata file generation.
+proto_lang_toolchain(
+    name = "cc_proto_toolchain",
+    blacklisted_protos = [
+        "@com_google_protobuf//:well_known_protos",
+    ],
+    command_line = "--$(PLUGIN_OUT)=:$(OUT)",
+    plugin = ":cc_proto_metadata_plugin",
+    runtime = "@com_google_protobuf//:protobuf",
+)
+
+filegroup(
+    name = "cc_proto_metadata_plugin",
+    srcs = ["tools/cc_proto_metadata_plugin"],
+)
+
 filegroup(
     name = "bazel_cxx_extractor",
     srcs = ["extractors/bazel_cxx_extractor"],

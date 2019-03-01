@@ -7,7 +7,8 @@ build --keep_going
 # By default, only extract specified top level targets.
 build --experimental_extra_action_top_level_only
 
-# Generate metadata for Java protocol buffer generated code.
+# Generate metadata for generated protocol buffer code.
+build --proto_toolchain_for_cc=@kythe_release//:cc_proto_toolchain
 build --proto_toolchain_for_java=@kythe_release//:java_proto_toolchain
 
 # Enable all supported Kythe extractors.
@@ -17,5 +18,3 @@ build --experimental_action_listener=@kythe_release//:extract_kzip_java
 build --experimental_action_listener=@kythe_release//:extract_kzip_jvm
 build --experimental_action_listener=@kythe_release//:extract_kzip_protobuf
 build --experimental_action_listener=@kythe_release//:extract_kzip_typescript
-
-# TODO(schroederc): add C++ proto toolchain plugin to release
