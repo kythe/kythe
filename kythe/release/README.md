@@ -18,6 +18,7 @@ extractors, and tools directly supported by the Kythe team.
    - bazel_extract_kzip       :: Generic kzip extractor for Bazel extra actions
    - bazel_go_extractor       :: Bazel Go extractor
    - bazel_java_extractor.jar :: Java extractor for Bazel extra_actions
+   - bazel_jvm_extractor.jar  :: JVM extractor for Bazel extra_actions
    - bazel_proto_extractor    :: Bazel Protocol-buffer extractor
    - cxx_extractor            :: C++ extractor
    - go_extractor             :: Go extractor
@@ -25,12 +26,14 @@ extractors, and tools directly supported by the Kythe team.
    - javac_extractor.jar      :: Java extractor
  - proto                      :: Protocol buffer definitions of public APIs
  - tools
+   - cc_proto_metadata_plugin :: Replacement protoc plugin to generate metadata for C++
    - dedup_stream             :: Removes duplicates entries from a delimited stream
    - directory_indexer        :: Emits Kythe file nodes for some local paths
    - entrystream              :: Generic Kythe entry stream processor
    - http_server              :: HTTP server for Kythe service APIs (xrefs, filetree, graph)
    - indexpack                :: Converts between .kindex archives and indexpacks
    - kythe                    :: CLI for the service APIs exposed by http_server
+   - kzip                     :: Utility to manipulate .kzip archives
    - read_entries             :: Dumps a GraphStore's contents as an entry stream
    - triples                  :: Converts an entry stream (or GraphStore) to N-Triples
    - verifier                 :: Verifies indexer outputs with source-inlined goals

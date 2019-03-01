@@ -1,5 +1,5 @@
 # Setup the local repository for the Kythe extraction tools.
-build --override_repository kythe_extractors=/kythe
+build --override_repository kythe_release=/kythe
 
 # By default, keep building after errors.
 build --keep_going
@@ -7,13 +7,14 @@ build --keep_going
 # By default, only extract specified top level targets.
 build --experimental_extra_action_top_level_only
 
-# Generate metadata for Java protocol buffer generated code.
-build --proto_toolchain_for_java=@kythe_extractors//:java_proto_toolchain
+# Generate metadata for generated protocol buffer code.
+build --proto_toolchain_for_cc=@kythe_release//:cc_proto_toolchain
+build --proto_toolchain_for_java=@kythe_release//:java_proto_toolchain
 
 # Enable all supported Kythe extractors.
-build --experimental_action_listener=@kythe_extractors//:extract_kzip_cxx
-build --experimental_action_listener=@kythe_extractors//:extract_kzip_go
-build --experimental_action_listener=@kythe_extractors//:extract_kzip_java
-build --experimental_action_listener=@kythe_extractors//:extract_kzip_jvm
-build --experimental_action_listener=@kythe_extractors//:extract_kzip_protobuf
-build --experimental_action_listener=@kythe_extractors//:extract_kzip_typescript
+build --experimental_action_listener=@kythe_release//:extract_kzip_cxx
+build --experimental_action_listener=@kythe_release//:extract_kzip_go
+build --experimental_action_listener=@kythe_release//:extract_kzip_java
+build --experimental_action_listener=@kythe_release//:extract_kzip_jvm
+build --experimental_action_listener=@kythe_release//:extract_kzip_protobuf
+build --experimental_action_listener=@kythe_release//:extract_kzip_typescript

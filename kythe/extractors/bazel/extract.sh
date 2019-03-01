@@ -43,12 +43,12 @@
 # Also assumes you have extractors installed as per
 # kythe/extractors/bazel/extractors.bazelrc.
 
-${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
+: ${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
 
 bazel "$@"
 
 # Collect any extracted compilations.
-mkdir -p $KYTHE_OUTPUT_DIRECTORY
-find bazel-out/*/extra_actions/external/kythe_extractors -name '*.kzip' | \
-  xargs /kythe/kzip merge --output $KYTHE_OUTPUT_DIRECTORY/compilations.kzip
-/kythe/fix_permissions.sh $KYTHE_OUTPUT_DIRECTORY
+mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
+find bazel-out/*/extra_actions/external/kythe_release -name '*.kzip' | \
+  xargs /kythe/tools/kzip merge --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
+/kythe/fix_permissions.sh "$KYTHE_OUTPUT_DIRECTORY"

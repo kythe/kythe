@@ -1,5 +1,13 @@
 package(default_visibility = ["//visibility:public"])
 
+exports_files([
+    "LICENSE",
+    "extractors/*",
+    "indexers/*",
+    "proto/*",
+    "tools/*",
+])
+
 load(":extractors.bzl", "extractor_action")
 load(":vnames.bzl", "construct_vnames_config")
 
@@ -19,6 +27,23 @@ proto_lang_toolchain(
     name = "java_proto_toolchain",
     command_line = "--java_out=annotate_code:$(OUT)",
     runtime = "@com_google_protobuf//:protobuf_java",
+)
+
+# Clone of default C++ proto toolchain with "annotate_headers" enabled for
+# cross-language metadata file generation.
+proto_lang_toolchain(
+    name = "cc_proto_toolchain",
+    blacklisted_protos = [
+        "@com_google_protobuf//:well_known_protos",
+    ],
+    command_line = "--$(PLUGIN_OUT)=:$(OUT)",
+    plugin = ":cc_proto_metadata_plugin",
+    runtime = "@com_google_protobuf//:protobuf",
+)
+
+filegroup(
+    name = "cc_proto_metadata_plugin",
+    srcs = ["tools/cc_proto_metadata_plugin"],
 )
 
 filegroup(

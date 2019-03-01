@@ -61,7 +61,7 @@ apt-get update
 
 apt-get install \
     asciidoc asciidoctor source-highlight graphviz \
-    gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.5 bison \
+    gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.6 bison \
     openjdk-8-jdk \
     parallel \
     wget
