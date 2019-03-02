@@ -704,7 +704,7 @@ def kythe_dependencies():
         git_repository,
         name="com_google_protobuf",
         remote = "https://github.com/justbuchanan/protobuf",
-        commit = "annotate_cc_extensions",
+        tag = "annotate_cc_extensions",
     )
 
     maybe(
