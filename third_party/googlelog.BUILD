@@ -39,7 +39,6 @@ cc_library(
         # Needed for Xcode 9.0+. It doesn't affect Linux builds. See D2013.
         "-D_DARWIN_C_SOURCE",
         "-D_XOPEN_SOURCE",
-        "-Iexternal/io_kythe/third_party/googlelog/src",
     ],
     includes = ["include"],
     linkopts = ["-lpthread"],

@@ -141,8 +141,9 @@ func (t *Table) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (
 
 	for i, corpus := range cr.Corpus {
 		reply.Corpus[i] = &ftpb.CorpusRootsReply_Corpus{
-			Name: corpus.Corpus,
-			Root: corpus.Root,
+			Name:        corpus.Corpus,
+			Root:        corpus.Root,
+			BuildConfig: corpus.BuildConfig,
 		}
 	}
 

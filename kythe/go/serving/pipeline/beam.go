@@ -119,6 +119,8 @@ type KytheBeam struct {
 	edges      beam.PCollection // *gspb.Edges
 
 	markedSources beam.PCollection // KV<*spb.VName, *cpb.MarkedSource>
+
+	anchorBuildConfigs beam.PCollection // KV<*spb.VName, string>
 }
 
 // FromNodes creates a KytheBeam pipeline from an input collection of
