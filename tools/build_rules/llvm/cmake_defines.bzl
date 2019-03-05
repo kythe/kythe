@@ -1,4 +1,13 @@
-LLVM_TARGETS = ["X86", "PowerPC", "ARM", "AArch64", "Mips"]
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+
+LLVM_TARGETS = [
+    "X86",
+    "PowerPC",
+    "ARM",
+    "AArch64",
+    "Mips",
+]
+
 _CMAKE_DEFINES = {
     "BACKTRACE_HEADER": "execinfo.h",
     "BUG_REPORT_URL": "https://bugs.llvm.org/",
@@ -76,7 +85,18 @@ _CMAKE_DEFINES = {
 
 def cmake_defines():
     return struct(
-        default = _CMAKE_DEFINES + {
+        darwin = dicts.add(_CMAKE_DEFINES, {
+            "HAVE_DECL_ARC4RANDOM": "1",
+            "HAVE_MALLOC_MALLOC_H": "1",
+            "HAVE_MALLOC_ZONE_STATISTICS": "1",
+            "HAVE_DLADDR": "1",
+            "HAVE_MACH_MACH_H": "1",
+            "HAVE_LIBXAR": "1",
+            "LLVM_DEFAULT_TARGET_TRIPLE": "x86_64-apple-darwin17.7.0",
+            "LLVM_HOST_TRIPLE": "x86_64-apple-darwin17.7.0",
+            "LTDL_SHLIB_EXT": ".dylib",
+        }),
+        default = dicts.add(_CMAKE_DEFINES, {
             "HAVE_MALLOC_H": "1",
             "HAVE_MALLINFO": "1",
             "HAVE_LINK_H": "1",
@@ -88,16 +108,5 @@ def cmake_defines():
             "LLVM_DEFAULT_TARGET_TRIPLE": "x86_64-unknown-linux-gnu",
             "LLVM_HOST_TRIPLE": "x86_64-unknown-linux-gnu",
             "LTDL_SHLIB_EXT": ".so",
-        },
-        darwin = _CMAKE_DEFINES + {
-            "HAVE_DECL_ARC4RANDOM": "1",
-            "HAVE_MALLOC_MALLOC_H": "1",
-            "HAVE_MALLOC_ZONE_STATISTICS": "1",
-            "HAVE_DLADDR": "1",
-            "HAVE_MACH_MACH_H": "1",
-            "HAVE_LIBXAR": "1",
-            "LLVM_DEFAULT_TARGET_TRIPLE": "x86_64-apple-darwin17.7.0",
-            "LLVM_HOST_TRIPLE": "x86_64-apple-darwin17.7.0",
-            "LTDL_SHLIB_EXT": ".dylib",
-        },
+        }),
     )

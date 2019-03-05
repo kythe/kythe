@@ -688,14 +688,13 @@ def kythe_dependencies():
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
-    #
-    # TODO(schroederc): update to 3.7.0 once released
+    # TODO(justbuchanan): update to the next tagged release when available
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "712715f5ac35637131f0d829ca7e0edaccab6fdeb33ecd3692ff24214ae5032f",
-        strip_prefix = "protobuf-de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/de9e1a04a68af0c8c5f49121ebd7dd1a2fed37af.zip"],
+        sha256 = "48a01655a0ce6ee5cf22cf182bab285951a4cef7f8a9f84db80ec0f8145546c6",
+        strip_prefix = "protobuf-2d0183ab58706a919f138e6920e33e3b76eb62f6",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/2d0183ab58706a919f138e6920e33e3b76eb62f6.zip"],
     )
 
     maybe(

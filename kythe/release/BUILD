@@ -34,9 +34,11 @@ genrule(
         ":bazel_extract_kzip",
         ":bazel_go_extractor",
         ":bazel_java_extractor",
+        ":bazel_jvm_extractor",
         ":bazel_proto_extractor",
         ":javac_extractor",
         ":javac_wrapper",
+        ":cc_proto_metadata_plugin",
         ":cxx_extractor",
         ":go_extractor",
         ":java_indexer",
@@ -73,10 +75,12 @@ genrule(
         "--cp $(location bazel_extract_kzip) extractors/bazel_extract_kzip",
         "--cp $(location bazel_go_extractor) extractors/bazel_go_extractor",
         "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
+        "--cp $(location bazel_jvm_extractor) extractors/bazel_jvm_extractor.jar",
         "--cp $(location bazel_proto_extractor) extractors/bazel_proto_extractor",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--cp $(location go_extractor) extractors/go_extractor",
+        "--cp $(location cc_proto_metadata_plugin) tools/cc_proto_metadata_plugin",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
         "--relpaths kythe/web/ui/resources/public",
@@ -146,6 +150,11 @@ filegroup(
 )
 
 filegroup(
+    name = "bazel_jvm_extractor",
+    srcs = ["//kythe/java/com/google/devtools/kythe/extractors/jvm/bazel:bazel_jvm_extractor_deploy.jar"],
+)
+
+filegroup(
     name = "cxx_extractor",
     srcs = ["//kythe/cxx/extractor:cxx_extractor"],
 )
@@ -201,12 +210,18 @@ filegroup(
 )
 
 filegroup(
+    name = "cc_proto_metadata_plugin",
+    srcs = ["//kythe/cxx/tools:proto_metadata_plugin"],
+)
+
+filegroup(
     name = "tools",
     srcs = [
         "//kythe/cxx/verifier",
         "//kythe/go/platform/tools/dedup_stream",
         "//kythe/go/platform/tools/entrystream",
         "//kythe/go/platform/tools/indexpack",
+        "//kythe/go/platform/tools/kzip",
         "//kythe/go/platform/tools/viewindex",
         "//kythe/go/serving/tools:http_server",
         "//kythe/go/serving/tools:kythe",

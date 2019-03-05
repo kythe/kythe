@@ -38,6 +38,8 @@ import (
 
 func init() {
 	beam.RegisterFunction(addCorpusRootsKey)
+	beam.RegisterFunction(anchorToBuildConfig)
+	beam.RegisterFunction(anchorToCorpusRoot)
 	beam.RegisterFunction(anchorToFileBuildConfig)
 	beam.RegisterFunction(fileToCorpusRoot)
 	beam.RegisterFunction(fileToDirectories)
@@ -58,14 +60,41 @@ func (k *KytheBeam) getFileVNames() beam.PCollection {
 	return k.fileVNames
 }
 
+func (k *KytheBeam) getAnchorBuildConfigs() beam.PCollection {
+	if k.anchorBuildConfigs.IsValid() {
+		return k.anchorBuildConfigs
+	}
+	k.anchorBuildConfigs = beam.Seq(k.s, k.nodes, &nodes.Filter{
+		FilterByKind: []string{kinds.Anchor},
+		IncludeFacts: []string{facts.BuildConfig},
+		IncludeEdges: []string{},
+	}, anchorToBuildConfig)
+	return k.anchorBuildConfigs
+}
+
+func anchorToBuildConfig(anchor *scpb.Node) (*spb.VName, string) {
+	var buildConfig string
+	for _, f := range anchor.Fact {
+		if f.GetKytheName() == scpb.FactName_BUILD_CONFIG {
+			buildConfig = string(f.Value)
+			break
+		}
+	}
+	return anchor.Source, buildConfig
+}
+
 // CorpusRoots returns the single *srvpb.CorpusRoots key-value for the Kythe
 // FileTree service.  The beam.PCollection has elements of type KV<string,
 // *srvpb.CorpusRoots>.
 func (k *KytheBeam) CorpusRoots() beam.PCollection {
 	s := k.s.Scope("CorpusRoots")
 	files := k.getFileVNames()
+	anchors := k.getAnchorBuildConfigs()
 	return beam.ParDo(s, addCorpusRootsKey,
-		beam.Combine(s, &combineCorpusRoots{}, beam.ParDo(s, fileToCorpusRoot, files)))
+		beam.Combine(s, &combineCorpusRoots{}, beam.Flatten(s,
+			beam.ParDo(s, fileToCorpusRoot, files),
+			beam.ParDo(s, anchorToCorpusRoot, anchors),
+		)))
 }
 
 // Directories returns a Kythe *srvpb.FileDirectory table for the Kythe FileTree
@@ -74,11 +103,7 @@ func (k *KytheBeam) CorpusRoots() beam.PCollection {
 func (k *KytheBeam) Directories() beam.PCollection {
 	s := k.s.Scope("Directories")
 	files := k.getFileVNames()
-	anchors := beam.ParDo(s, &nodes.Filter{
-		FilterByKind: []string{kinds.Anchor},
-		IncludeFacts: []string{facts.BuildConfig},
-		IncludeEdges: []string{},
-	}, k.nodes)
+	anchors := k.getAnchorBuildConfigs()
 	return beam.CombinePerKey(s, &combineDirectories{}, beam.Flatten(s,
 		beam.ParDo(s, fileToDirectories, files),
 		beam.ParDo(s, anchorToFileBuildConfig, anchors),
@@ -94,22 +119,18 @@ func dirTicket(corpus, root, dir string) string {
 
 // anchorToFileBuildConfig emits a FileDirectory for each path component in the
 // given anchor VName with its specified build config.
-func anchorToFileBuildConfig(anchor *scpb.Node, emit func(string, *srvpb.FileDirectory)) {
+func anchorToFileBuildConfig(anchor *spb.VName, buildConfig string, emit func(string, *srvpb.FileDirectory)) {
 	// Clean the file path and remove any leading slash.
-	path := filepath.Clean(filepath.Join("/", anchor.Source.GetPath()))[1:]
+	path := filepath.Clean(filepath.Join("/", anchor.GetPath()))[1:]
 	dir := currentAsEmpty(filepath.Dir(path))
-	buildConfig := []string{""}
-	for _, f := range anchor.Fact {
-		if f.GetKytheName() == scpb.FactName_BUILD_CONFIG {
-			buildConfig[0] = string(f.Value)
-		}
-	}
-	corpus, root := anchor.Source.GetCorpus(), anchor.Source.GetRoot()
+	buildConfigs := []string{buildConfig}
+
+	corpus, root := anchor.GetCorpus(), anchor.GetRoot()
 	emit(dirTicket(corpus, root, dir), &srvpb.FileDirectory{
 		Entry: []*srvpb.FileDirectory_Entry{{
 			Name:        filepath.Base(path),
 			Kind:        srvpb.FileDirectory_FILE,
-			BuildConfig: buildConfig,
+			BuildConfig: buildConfigs,
 		}},
 	})
 
@@ -120,7 +141,7 @@ func anchorToFileBuildConfig(anchor *scpb.Node, emit func(string, *srvpb.FileDir
 			Entry: []*srvpb.FileDirectory_Entry{{
 				Name:        name,
 				Kind:        srvpb.FileDirectory_DIRECTORY,
-				BuildConfig: buildConfig,
+				BuildConfig: buildConfigs,
 			}},
 		})
 	}
@@ -167,6 +188,17 @@ func fileToCorpusRoot(file *spb.VName) *srvpb.CorpusRoots {
 	}
 }
 
+// anchorToCorpusRoot returns a CorpusRoots for the anchor VName and build config.
+func anchorToCorpusRoot(anchor *spb.VName, buildConfig string) *srvpb.CorpusRoots {
+	return &srvpb.CorpusRoots{
+		Corpus: []*srvpb.CorpusRoots_Corpus{{
+			Corpus:      anchor.Corpus,
+			Root:        []string{anchor.Root},
+			BuildConfig: []string{buildConfig},
+		}},
+	}
+}
+
 type combineCorpusRoots struct{}
 
 func (combineCorpusRoots) MergeAccumulators(accum, cr *srvpb.CorpusRoots) *srvpb.CorpusRoots {
@@ -183,6 +215,7 @@ func (combineCorpusRoots) MergeAccumulators(accum, cr *srvpb.CorpusRoots) *srvpb
 			accum.Corpus = append(accum.Corpus, corpus)
 		}
 		corpus.Root = append(corpus.Root, c.Root...)
+		corpus.BuildConfig = append(corpus.BuildConfig, c.BuildConfig...)
 	}
 	return accum
 }
@@ -191,6 +224,7 @@ func (combineCorpusRoots) ExtractOutput(cr *srvpb.CorpusRoots) *srvpb.CorpusRoot
 	sort.Slice(cr.Corpus, func(i, j int) bool { return cr.Corpus[i].Corpus < cr.Corpus[j].Corpus })
 	for _, c := range cr.Corpus {
 		c.Root = removeDuplicates(c.Root)
+		c.BuildConfig = removeDuplicates(c.BuildConfig)
 	}
 	return cr
 }

@@ -8,21 +8,23 @@ load(
 def cc_proto_verifier_test(
         name,
         srcs,
-        size = "small",
+        proto_lib,
         proto_srcs = [],
         verifier_opts = [
             "--ignore_dups",
             # Else the verifier chokes on the inconsistent marked source from the protobuf headers.
             "--convert_marked_source",
-        ]):
+        ],
+        size = "small"):
     """Verify cross-language references between C++ and Proto.
 
     Args:
       name: Name of the test.
-      size: Size of the test.
       srcs: The compilation's C++ source files; each file's verifier goals will be checked
+      proto_lib: A proto_library target containing proto_srcs
       proto_srcs: The compilation's proto source files; each file's verifier goals will be checked
       verifier_opts: List of options passed to the verifier tool
+      size: Size of the test.
 
     Returns: the label of the test.
     """
@@ -43,7 +45,7 @@ def cc_proto_verifier_test(
     proto_lib = _invoke(
         cc_kythe_proto_library,
         name = name + "_cc_proto",
-        deps = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/proto:testdata_proto"],
+        deps = [proto_lib],
     )
 
     cc_kzip = _invoke(

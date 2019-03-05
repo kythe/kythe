@@ -29,6 +29,23 @@ proto_lang_toolchain(
     runtime = "@com_google_protobuf//:protobuf_java",
 )
 
+# Clone of default C++ proto toolchain with "annotate_headers" enabled for
+# cross-language metadata file generation.
+proto_lang_toolchain(
+    name = "cc_proto_toolchain",
+    blacklisted_protos = [
+        "@com_google_protobuf//:well_known_protos",
+    ],
+    command_line = "--$(PLUGIN_OUT)=:$(OUT)",
+    plugin = ":cc_proto_metadata_plugin",
+    runtime = "@com_google_protobuf//:protobuf",
+)
+
+filegroup(
+    name = "cc_proto_metadata_plugin",
+    srcs = ["tools/cc_proto_metadata_plugin"],
+)
+
 filegroup(
     name = "bazel_cxx_extractor",
     srcs = ["extractors/bazel_cxx_extractor"],
@@ -38,6 +55,12 @@ java_binary(
     name = "bazel_java_extractor",
     main_class = "com.google.devtools.kythe.extractors.java.bazel.JavaExtractor",
     runtime_deps = ["extractors/bazel_java_extractor.jar"],
+)
+
+java_binary(
+    name = "bazel_jvm_extractor",
+    main_class = "com.google.devtools.kythe.extractors.jvm.bazel.BazelJvmExtractor",
+    runtime_deps = ["extractors/bazel_jvm_extractor.jar"],
 )
 
 filegroup(
@@ -79,6 +102,19 @@ extractor_action(
     extractor = ":bazel_java_extractor",
     mnemonics = ["Javac"],
     output = "$(ACTION_ID).java.kzip",
+)
+
+extractor_action(
+    name = "extract_kzip_jvm",
+    args = [
+        "$(EXTRA_ACTION_FILE)",
+        "$(output $(ACTION_ID).jvm.kzip)",
+        "$(location :vnames_config)",
+    ],
+    data = [":vnames_config"],
+    extractor = ":bazel_jvm_extractor",
+    mnemonics = ["JavaIjar"],
+    output = "$(ACTION_ID).jvm.kzip",
 )
 
 extractor_action(

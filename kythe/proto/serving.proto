@@ -127,6 +127,7 @@ message CorpusRoots {
   message Corpus {
     string corpus = 1;
     repeated string root = 2;
+    repeated string build_config = 3;
   }
   repeated Corpus corpus = 1;
 }

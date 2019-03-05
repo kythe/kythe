@@ -6,7 +6,6 @@ docker_build(
     data = [
         "extract.sh",
         "extractors.bazelrc",
-        "//kythe/go/platform/tools/kzip",
         "//kythe/release",
         "//kythe/release/base:fix_permissions.sh",
     ],
