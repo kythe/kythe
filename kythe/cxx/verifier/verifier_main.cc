@@ -114,6 +114,7 @@ Example:
     }
     if (FLAGS_show_protos) {
       entry.PrintDebugString();
+      putchar('\n');
     }
     if (!v.AssertSingleFact(&dbname, facts, entry)) {
       fprintf(stderr, "Error asserting fact %zu\n", facts);
