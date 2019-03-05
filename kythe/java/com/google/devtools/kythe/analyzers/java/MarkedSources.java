@@ -35,10 +35,10 @@ import javax.lang.model.element.ElementKind;
 public final class MarkedSources {
   private MarkedSources() {}
 
-  /** {@link MarkedSource} for Java "tapp" nodes of the form C<T1, T2, T3...>. */
+  /** {@link MarkedSource} for Java "tapp" nodes of the form {@code C<T1, T2, T3...>}. */
   public static final MarkedSource GENERIC_TAPP;
 
-  /** {@link MarkedSource} for Java "tapp" nodes of the form C[]. */
+  /** {@link MarkedSource} for Java "tapp" nodes of the form {@code C[]}. */
   public static final MarkedSource ARRAY_TAPP;
 
   static {
