@@ -27,7 +27,6 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/vnameutil"
 
-	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/jsonpb"
 
 	anypb "github.com/golang/protobuf/ptypes/any"
@@ -54,45 +53,6 @@ func (f *repeatedString) String() string {
 func (f *repeatedString) Get() interface{} {
 	if f == nil {
 		return []string(nil)
-	}
-	return *f
-}
-
-type repeatedStringSet stringset.Set
-
-// Set implements part of the flag.Getter interface and will append a new value to the flag.
-func (f *repeatedStringSet) Set(s string) error {
-	(*stringset.Set)(f).Add(s)
-	return nil
-}
-
-// update adds the values from other to the contained stringset.
-func (f *repeatedStringSet) update(o repeatedStringSet) bool {
-	return (*stringset.Set)(f).Update(stringset.Set(o))
-}
-
-// Elements returns the set of elements as a sorted slice.
-func (f *repeatedStringSet) Elements() []string {
-	return (*stringset.Set)(f).Elements()
-}
-
-// Len returns the number of elements.
-func (f *repeatedStringSet) Len() int {
-	return (*stringset.Set)(f).Len()
-}
-
-// String implements part of the flag.Getter interface and returns a string-ish value for the flag.
-func (f *repeatedStringSet) String() string {
-	if f == nil {
-		return ""
-	}
-	return strings.Join(f.Elements(), ",")
-}
-
-// Get implements flag.Getter and returns a slice of string values.
-func (f *repeatedStringSet) Get() interface{} {
-	if f == nil {
-		return stringset.Set(nil)
 	}
 	return *f
 }

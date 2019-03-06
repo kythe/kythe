@@ -26,6 +26,8 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/util/build"
+
+	"bitbucket.org/creachadair/stringset"
 )
 
 // SimpleUsage returns a basic flag.Usage function that prints the given
@@ -72,4 +74,69 @@ func UsageError(msg string) {
 // flag.Usage, and exits the program unsuccessfully.
 func UsageErrorf(str string, vals ...interface{}) {
 	UsageError(fmt.Sprintf(str, vals...))
+}
+
+// StringList implements a flag.Value that accepts an sequence of values as a CSV.
+type StringList []string
+
+// Set implements part of the flag.Getter interface and will append new values to the flag.
+func (f *StringList) Set(s string) error {
+	*f = append(*f, strings.Split(s, ",")...)
+	return nil
+}
+
+// String implements part of the flag.Getter interface and returns a string-ish value for the flag.
+func (f *StringList) String() string {
+	if f == nil {
+		return ""
+	}
+	return strings.Join(*f, ",")
+}
+
+// Get implements flag.Getter and returns a slice of string values.
+func (f *StringList) Get() interface{} {
+	if f == nil {
+		return []string(nil)
+	}
+	return *f
+}
+
+// StringSet implements a flag.Value that accepts an set of values as a CSV.
+type StringSet stringset.Set
+
+// Set implements part of the flag.Getter interface and will append new values to the flag.
+func (f *StringSet) Set(s string) error {
+	(*stringset.Set)(f).Add(strings.Split(s, ",")...)
+	return nil
+}
+
+// Update adds the values from other to the contained stringset.
+func (f *StringSet) Update(o StringSet) bool {
+	return (*stringset.Set)(f).Update(stringset.Set(o))
+}
+
+// Elements returns the set of elements as a sorted slice.
+func (f *StringSet) Elements() []string {
+	return (*stringset.Set)(f).Elements()
+}
+
+// Len returns the number of elements.
+func (f *StringSet) Len() int {
+	return (*stringset.Set)(f).Len()
+}
+
+// String implements part of the flag.Getter interface and returns a string-ish value for the flag.
+func (f *StringSet) String() string {
+	if f == nil {
+		return ""
+	}
+	return strings.Join(f.Elements(), ",")
+}
+
+// Get implements flag.Getter and returns a slice of string values.
+func (f *StringSet) Get() interface{} {
+	if f == nil {
+		return stringset.Set(nil)
+	}
+	return *f
 }
