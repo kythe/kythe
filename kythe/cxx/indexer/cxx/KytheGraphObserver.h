@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "absl/strings/str_cat.h"
 #include "absl/types/optional.h"
 #include "glog/logging.h"
 
@@ -146,6 +147,7 @@ class KytheGraphObserver : public GraphObserver {
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
+        starting_context_(CompressString(build_config)),
         vfs_(vfs),
         build_config_(std::move(build_config)) {
     default_token_.set_rough_claimed(true);
@@ -384,7 +386,7 @@ class KytheGraphObserver : public GraphObserver {
   /// \brief Configures the starting context.
   /// \param context Context to use when the main source file is entered.
   void set_starting_context(const PreprocessorContext& context) {
-    starting_context_ = context;
+    starting_context_ = CompressString(absl::StrCat(build_config_, ":", context));
   }
 
   const KytheClaimToken* getClaimTokenForLocation(
