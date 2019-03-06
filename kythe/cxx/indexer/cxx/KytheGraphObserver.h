@@ -386,7 +386,8 @@ class KytheGraphObserver : public GraphObserver {
   /// \brief Configures the starting context.
   /// \param context Context to use when the main source file is entered.
   void set_starting_context(const PreprocessorContext& context) {
-    starting_context_ = CompressString(absl::StrCat(build_config_, ":", context));
+    starting_context_ =
+        CompressString(absl::StrCat(build_config_, ":", context));
   }
 
   const KytheClaimToken* getClaimTokenForLocation(
