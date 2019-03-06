@@ -132,8 +132,7 @@ def _transitive_entries(deps):
 
 def _generate_files(ctx, files, extension):
     return [
-        ctx.new_file(
-            ctx.genfiles_dir,
+        ctx.actions.declare_file(
             paths.replace_extension(
                 paths.relativize(f.path, ctx.label.package),
                 extension,
@@ -155,7 +154,7 @@ def _cc_kythe_proto_library_aspect_impl(target, ctx):
     headers = _generate_files(ctx, target[ProtoInfo].direct_sources, ".pb.h")
     args = ctx.actions.args()
     args.add("--plugin=protoc-gen-PLUGIN=" + ctx.executable._plugin.path)
-    args.add("--PLUGIN_out=:" + ctx.genfiles_dir.path + "/")
+    args.add("--PLUGIN_out=:" + ctx.bin_dir.path + "/")
     args.add_all(target[ProtoInfo].transitive_sources, map_each = _format_path_and_short_path)
     args.add_all(target[ProtoInfo].direct_sources, map_each = _get_short_path)
     ctx.actions.run(
