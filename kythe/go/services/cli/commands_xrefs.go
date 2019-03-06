@@ -23,6 +23,7 @@ import (
 	"log"
 	"strings"
 
+	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/markedsource"
 	"kythe.io/kythe/go/util/schema/edges"
@@ -33,9 +34,11 @@ import (
 )
 
 type xrefsCommand struct {
-	nodeFilters string
-	pageToken   string
-	pageSize    int
+	nodeFilters  flagutil.StringList
+	buildConfigs flagutil.StringSet
+
+	pageToken string
+	pageSize  int
 
 	defKind    string
 	declKind   string
@@ -56,7 +59,8 @@ func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.refKind, "references", "noncall", "Kind of references to return (kinds: all, noncall, call, or none)")
 	flag.StringVar(&c.callerKind, "callers", "direct", "Kind of callers to return (kinds: direct, overrides, or none)")
 	flag.BoolVar(&c.relatedNodes, "related_nodes", true, "Whether to request related nodes")
-	flag.StringVar(&c.nodeFilters, "filters", "", "Comma-separated list of additional fact filters to use when requesting related nodes")
+	flag.Var(&c.nodeFilters, "filters", "CSV list of additional fact filters to use when requesting related nodes")
+	flag.Var(&c.buildConfigs, "build_config", "CSV set of build configs with which to filter file decorations")
 	flag.BoolVar(&c.nodeDefinitions, "node_definitions", false, "Whether to request definition locations for related nodes")
 	flag.BoolVar(&c.anchorText, "anchor_text", false, "Whether to request text for anchors")
 
@@ -75,10 +79,11 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 	}
 	if c.relatedNodes {
 		req.Filter = []string{facts.NodeKind, facts.Subkind}
-		if c.nodeFilters != "" {
-			req.Filter = append(req.Filter, strings.Split(c.nodeFilters, ",")...)
+		if len(c.nodeFilters) > 0 && (len(c.nodeFilters) != 1 || c.nodeFilters[0] != "") {
+			req.Filter = append(req.Filter, c.nodeFilters...)
 		}
 	}
+	req.BuildConfig = c.buildConfigs.Elements()
 	switch c.defKind {
 	case "all":
 		req.DefinitionKind = xpb.CrossReferencesRequest_ALL_DEFINITIONS
