@@ -79,7 +79,7 @@ func UsageErrorf(str string, vals ...interface{}) {
 // StringList implements a flag.Value that accepts an sequence of values as a CSV.
 type StringList []string
 
-// Set implements part of the flag.Getter interface and will append a new value to the flag.
+// Set implements part of the flag.Getter interface and will append new values to the flag.
 func (f *StringList) Set(s string) error {
 	*f = append(*f, strings.Split(s, ",")...)
 	return nil
@@ -104,7 +104,7 @@ func (f *StringList) Get() interface{} {
 // StringSet implements a flag.Value that accepts an set of values as a CSV.
 type StringSet stringset.Set
 
-// Set implements part of the flag.Getter interface and will append a new value to the flag.
+// Set implements part of the flag.Getter interface and will append new values to the flag.
 func (f *StringSet) Set(s string) error {
 	(*stringset.Set)(f).Add(strings.Split(s, ",")...)
 	return nil

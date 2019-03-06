@@ -44,7 +44,7 @@ type createCommand struct {
 	source       flagutil.StringSet
 	inputs       flagutil.StringSet
 	hasError     bool
-	argument     flagutil.StringList
+	argument     repeatedString
 	outputKey    string
 	workingDir   string
 	entryContext string
