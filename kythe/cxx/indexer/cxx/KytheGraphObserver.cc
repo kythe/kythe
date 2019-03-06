@@ -1206,7 +1206,8 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
                 previous_context.c_str(), offset);
           }
         }
-        state.vname.set_signature(state.context + state.vname.signature());
+        state.vname.set_signature(absl::StrCat(
+            state.context, state.vname.signature(), build_config_));
         if (client_->Claim(claimant_, state.vname)) {
           if (recorded_files_.insert(entry).second) {
             bool was_invalid = false;
