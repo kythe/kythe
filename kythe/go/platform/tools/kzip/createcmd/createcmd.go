@@ -24,6 +24,7 @@ import (
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	"github.com/google/subcommands"
@@ -40,10 +41,10 @@ type createCommand struct {
 	rules  vnameRules
 
 	uri          kytheURI
-	source       repeatedStringSet
-	inputs       repeatedStringSet
+	source       flagutil.StringSet
+	inputs       flagutil.StringSet
 	hasError     bool
-	argument     repeatedString
+	argument     flagutil.StringList
 	outputKey    string
 	workingDir   string
 	entryContext string
@@ -119,7 +120,7 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		Details:          ([]*anypb.Any)(c.details),
 	}, out, &c.rules.Rules}
 
-	c.inputs.update(c.source)
+	c.inputs.Update(c.source)
 	if err := cb.addFiles(ctx, c.inputs.Elements()); err != nil {
 		return c.Fail("error adding input files: %v", err)
 	}

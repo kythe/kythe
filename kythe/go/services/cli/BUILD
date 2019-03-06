@@ -13,6 +13,7 @@ go_library(
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/identifiers",
         "//kythe/go/util/build",
+        "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/markedsource",
         "//kythe/go/util/schema/edges",
