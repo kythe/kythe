@@ -149,10 +149,16 @@ def extract(
         "KYTHE_OUTPUT_FILE": kzip.path,
         "KYTHE_ROOT_DIRECTORY": ".",
     }
-    inputs = srcs + deps
+
+    if type(srcs) != "depset":
+        srcs = depset(direct = srcs)
+    if type(deps) != "depset":
+        deps = depset(direct = deps)
+    direct_inputs = []
     if vnames_config:
         env["KYTHE_VNAMES"] = vnames_config.path
-        inputs += [vnames_config]
+        direct_inputs += [vnames_config]
+    inputs = depset(direct = direct_inputs, transitive = [srcs, deps])
 
     args = opts
     if type(args) != "Args":
