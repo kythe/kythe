@@ -75,7 +75,7 @@ def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
         user_compile_flags = copts,
         include_directories = cc_info.compilation_context.includes,
         quote_include_directories = cc_info.compilation_context.quote_includes,
-        system_include_directories = depset(includes) + cc_info.compilation_context.system_includes,
+        system_include_directories = depset(direct = includes, transitive = [cc_info.compilation_context.system_includes]),
         add_legacy_cxx_options = True,
     )
 
