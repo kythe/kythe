@@ -579,9 +579,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_dsnet_compress",
-        commit = "cc9eb1d7ad760af14e8f918698f745e80377af4f",
         custom = "compress",
         importpath = "github.com/dsnet/compress",
+        tag = "v0.0.1",
     )
 
     maybe(
