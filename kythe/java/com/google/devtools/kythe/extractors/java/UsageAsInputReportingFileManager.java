@@ -146,6 +146,45 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     return fileManager.getLocation(location);
   }
 
+  // TOOD(shahms): @Override; method added in JDK9
+  public Location getLocationForModule(Location location, JavaFileObject fo) throws IOException {
+    try {
+      return (Location)
+          StandardJavaFileManager.class
+              .getMethod("getLocationForModule", Location.class, JavaFileObject.class)
+              .invoke(fileManager, location, unwrap(fo));
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException("setLocationFromPaths called by unsupported Java version", e);
+    }
+  }
+
+  // TOOD(shahms): @Override; method added in JDK9
+  public boolean contains(Location location, FileObject fo) throws IOException {
+    try {
+      return (Boolean)
+          StandardJavaFileManager.class
+              .getMethod("contains", Location.class, FileObject.class)
+              .invoke(fileManager, location, unwrap(fo));
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException("setLocationFromPaths called by unsupported Java version", e);
+    }
+  }
+
+  // TODO(shahms): @Override; method added in JDK9
+  public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
+      Iterable<? extends Path> paths) {
+    try {
+      return Iterables.transform(
+          (Iterable<? extends JavaFileObject>)
+              StandardJavaFileManager.class
+                  .getMethod("getJavaFileObjectsFromPaths", Iterable.class)
+                  .invoke(fileManager, paths),
+          input -> map(input, null));
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException("setLocationFromPaths called by unsupported Java version", e);
+    }
+  }
+
   // TODO(schroederc): @Override; method added in JDK9
   public void setLocationFromPaths(Location location, Collection<? extends Path> paths)
       throws IOException {
@@ -158,16 +197,40 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     }
   }
 
+  // TODO(shahms): @Override; method added in JDK9
+  public void setLocationForModule(
+      Location location, String moduleName, Collection<? extends Path> paths) throws IOException {
+    try {
+      StandardJavaFileManager.class
+          .getMethod("setLocationForModule", Location.class, String.class, Collection.class)
+          .invoke(fileManager, location, moduleName, paths);
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException("setLocationForModule called by unsupported Java version", e);
+    }
+  }
+
+  // TODO(shahms): @Override; method added in JDK9
+  public Path asPath(FileObject fo) {
+    try {
+      return (Path)
+          StandardJavaFileManager.class
+              .getMethod("asPath", FileObject.class)
+              .invoke(fileManager, unwrap(fo));
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException("setLocationForModule called by unsupported Java version", e);
+    }
+  }
+
   // StandardJavaFileManager doesn't like it when it's asked about a JavaFileObject
   // it didn't create, so we need to unwrap our objects.
-  private FileObject unwrap(FileObject jfo) {
+  private static FileObject unwrap(FileObject jfo) {
     if (jfo instanceof UsageAsInputReportingJavaFileObject) {
       return ((UsageAsInputReportingJavaFileObject) jfo).underlyingFileObject;
     }
     return jfo;
   }
 
-  private JavaFileObject unwrap(JavaFileObject jfo) {
+  private static JavaFileObject unwrap(JavaFileObject jfo) {
     if (jfo instanceof UsageAsInputReportingJavaFileObject) {
       return ((UsageAsInputReportingJavaFileObject) jfo).underlyingFileObject;
     }
