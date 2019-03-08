@@ -67,7 +67,7 @@ lein_repository = repository_rule(
     implementation = _lein_repository,
     attrs = {
         "version": attr.string(
-            default = "2.5.1",
+            default = "2.5.3",
         ),
         "sha256": attr.string(mandatory = True),
     },
