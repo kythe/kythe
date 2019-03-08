@@ -100,29 +100,3 @@ fi
 
 # Ensure kythe tool is functional
 tools/kythe --api srv nodes 'kythe:?lang=java#pkg.Names'
-
-tools/http_server \
-  --public_resources web/ui \
-  --serving_table srv \
-  --listen $ADDR &
-pid=$!
-trap "kill $pid; kill -9 $pid" EXIT ERR INT
-
-while ! curl -s $ADDR >/dev/null; do
-  echo "Waiting for http_server..."
-  sleep 0.5
-done
-
-# Ensure basic HTTP handlers work
-curl -sf $ADDR >/dev/null
-curl -sf $ADDR/corpusRoots | jq . >/dev/null
-curl -sf $ADDR/dir | jq . >/dev/null
-curl -sf $ADDR/decorations -d '{"location": {"ticket": "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java"}, "source_text": true, "references": true}' | \
-  jq -e '(.reference | length) > 0
-     and (.nodes | length) == 0
-     and (.source_text | type) == "string"
-     and (.source_text | length) > 0'
-curl -sf $ADDR/decorations -d '{"location": {"ticket": "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java"}, "references": true, "filter": ["**"]}' | \
-  jq -e '(.reference | length) > 0
-     and (.nodes | length) > 0
-     and (.source_text | length) == 0'
