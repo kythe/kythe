@@ -63,7 +63,7 @@ tools/triples < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" >/dev/null
 
 rm -rf "$TMPDIR/java_compilation"
 export KYTHE_OUTPUT_FILE="$TMPDIR/java_compilation/util.kzip"
-export KYTHE_JAVA_RUNTIME_OPTIONS="-Xbootclasspath/p:$JAVA_LANGTOOLS"
+export KYTHE_JAVA_RUNTIME_OPTIONS="-Xbootclasspath/a:$JAVA_LANGTOOLS"
 JAVAC_EXTRACTOR_JAR=$PWD/extractors/javac_extractor.jar \
   KYTHE_ROOT_DIRECTORY="$TEST_REPOSRCDIR" \
   KYTHE_EXTRACT_ONLY=1 \
