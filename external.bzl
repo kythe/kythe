@@ -685,8 +685,8 @@ def _sample_ui_dependencies():
     """Defines external repositories necessary for building the sample UI."""
     lein_repository(
         name = "org_leiningen",
-        sha256 = "af77a8569238fb89272fdd46974c97383be126f19e709f1e7b1c5ffb9135e1d7",
-        version = "2.5.1",
+        sha256 = "a0a1f093677045c4e1e40219ccc989acd61433f61c50e098a2185faf4f03553c",
+        version = "2.5.3",
     )
 
 def kythe_dependencies():
