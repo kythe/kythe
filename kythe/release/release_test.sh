@@ -63,7 +63,12 @@ tools/triples < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" >/dev/null
 
 rm -rf "$TMPDIR/java_compilation"
 export KYTHE_OUTPUT_FILE="$TMPDIR/java_compilation/util.kzip"
-export KYTHE_JAVA_RUNTIME_OPTIONS="-Xbootclasspath/p:$JAVA_LANGTOOLS"
+if (java -version |& head -1 | grep 1.8 >/dev/null);
+then
+  export KYTHE_JAVA_RUNTIME_OPTIONS="-Xbootclasspath/p:$JAVA_LANGTOOLS"
+else
+  export KYTHE_JAVA_RUNTIME_OPTIONS="-Xbootclasspath/a:$JAVA_LANGTOOLS"
+fi
 JAVAC_EXTRACTOR_JAR=$PWD/extractors/javac_extractor.jar \
   KYTHE_ROOT_DIRECTORY="$TEST_REPOSRCDIR" \
   KYTHE_EXTRACT_ONLY=1 \
@@ -100,9 +105,7 @@ fi
 
 # Ensure kythe tool is functional
 tools/kythe --api srv nodes 'kythe:?lang=java#pkg.Names'
-
 tools/http_server \
-  --public_resources web/ui \
   --serving_table srv \
   --listen $ADDR &
 pid=$!
@@ -114,7 +117,6 @@ while ! curl -s $ADDR >/dev/null; do
 done
 
 # Ensure basic HTTP handlers work
-curl -sf $ADDR >/dev/null
 curl -sf $ADDR/corpusRoots | jq . >/dev/null
 curl -sf $ADDR/dir | jq . >/dev/null
 curl -sf $ADDR/decorations -d '{"location": {"ticket": "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java"}, "source_text": true, "references": true}' | \

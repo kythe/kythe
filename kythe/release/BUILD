@@ -49,7 +49,6 @@ genrule(
         ":tools",
         ":misc",
         "//kythe/proto:public",
-        "//kythe/web/ui",
         "//third_party:licenses",
     ],
     outs = [
@@ -83,8 +82,6 @@ genrule(
         "--cp $(location cc_proto_metadata_plugin) tools/cc_proto_metadata_plugin",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
-        "--relpaths kythe/web/ui/resources/public",
-        "--path web/ui $(locations //kythe/web/ui)",
         "--relpaths 'third_party' --path 'third_party' $(locations //third_party:licenses)",
     ]),
     heuristic_label_expansion = False,
