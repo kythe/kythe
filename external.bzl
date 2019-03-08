@@ -668,6 +668,21 @@ def _kythe_contributions():
         remote = "https://github.com/kythe/lang-proto",
     )
 
+def _extractor_image_dependencies():
+    """Defines external repositories necessary for extractor images."""
+    maybe(
+        http_archive,
+        name = "com_github_philwo_bazelisk",
+        sha256 = "cb6a208f559fd08d205527b69d597ef36f7e1a922fe1df64081e52dd544f7666",
+        strip_prefix = "bazelisk-0.0.2",
+        urls = ["https://github.com/philwo/bazelisk/archive/0.0.2.zip"],
+    )
+    go_repository(
+        name = "com_github_hashicorp_go_version",
+        importpath = "github.com/hashicorp/go-version",
+        tag = "v1.1.0",
+    )
+
 def _sample_ui_dependencies():
     """Defines external repositories necessary for building the sample UI."""
     lein_repository(
@@ -708,3 +723,4 @@ def kythe_dependencies():
     _rule_dependencies()
     _sample_ui_dependencies()
     _bindings()
+    _extractor_image_dependencies()
