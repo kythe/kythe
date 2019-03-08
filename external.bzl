@@ -670,10 +670,12 @@ def _kythe_contributions():
 
 def _extractor_image_dependencies():
     """Defines external repositories necessary for extractor images."""
-    git_repository(
+    maybe(
+        http_archive,
         name = "com_github_philwo_bazelisk",
-        commit = "81b696d64c2943c345cb0d902c94279715fc0b01",
-        remote = "https://github.com/philwo/bazelisk",
+        sha256 = "cb6a208f559fd08d205527b69d597ef36f7e1a922fe1df64081e52dd544f7666",
+        strip_prefix = "bazelisk-0.0.2",
+        urls = ["https://github.com/philwo/bazelisk/archive/0.0.2.zip"],
     )
     go_repository(
         name = "com_github_hashicorp_go_version",
