@@ -172,7 +172,7 @@ bazelKytheSteps.addStep(steps.GitHub(repourl=util.Property('repository', 'git://
                                      mode='full', method='copy'))
 bazelBinEnv = {'DEFAULT_BAZEL': '/bin/false', 'BAZEL_VERSION': util.Property('bazel_version', bazelMaxVersion)}
 bazelKytheSteps.addStep(steps.ShellCommand(
-    command=["bazel", "test", "-k",
+    command=["bazel", "test",
              util.Property('bazel_flags', default=[]),
              util.Property('bazel_targets', default=['//...'])],
     env=bazelBinEnv))
