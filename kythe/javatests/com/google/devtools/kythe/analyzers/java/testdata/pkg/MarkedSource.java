@@ -93,7 +93,19 @@ public class MarkedSource {
   //- MPType param.1 Void
   //- MPType param.2 String
   //- MPType param.3 Int
+  //- MPType code FnTypeCode
   void methodWithParams(String a, int b) {}
+
+  //- FnTypeCode.kind "TYPE"
+  //- FnTypeCode child.0 FnTypeRetCode
+  //- FnTypeRetCode.kind "LOOKUP_BY_PARAM"
+  //- FnTypeRetCode.lookup_index 1
+  //- FnTypeCode child.1 FnTypeParamsCode
+  //- FnTypeParamsCode.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- FnTypeParamsCode.pre_text "("
+  //- FnTypeParamsCode.post_text ")"
+  //- FnTypeParamsCode.post_child_text ", "
+  //- FnTypeParamsCode.lookup_index 2
 
   //- @pa defines/binding AParam
   //- @pb defines/binding BParam

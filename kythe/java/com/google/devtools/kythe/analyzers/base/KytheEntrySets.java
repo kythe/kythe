@@ -338,10 +338,10 @@ public class KytheEntrySets {
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */
-  public EntrySet newFunctionTypeAndEmit(VName returnType, List<VName> arguments) {
+  public EntrySet newFunctionTypeAndEmit(VName returnType, List<VName> arguments, MarkedSource ms) {
     List<VName> tArgs = new ArrayList<>(arguments);
     tArgs.add(0, returnType);
-    return newTApplyAndEmit(newBuiltinAndEmit("fn").getVName(), tArgs, null);
+    return newTApplyAndEmit(newBuiltinAndEmit("fn").getVName(), tArgs, ms);
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} node along with its parameter edges. */
