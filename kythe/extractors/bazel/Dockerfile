@@ -33,7 +33,6 @@ ADD kythe/release/base/fix_permissions.sh /kythe/
 
 # Bazel repository setup
 ADD kythe/extractors/bazel/extractors.bazelrc /kythe/bazelrc
-RUN cat /kythe/bazelrc > ~/.bazelrc
 
 # Bazelisk
 ADD external/com_github_philwo_bazelisk/linux_amd64_stripped/bazelisk /kythe/
