@@ -14,6 +14,7 @@
 (ns ui.service
   "Namespace for functions communicating with the xrefs server"
   (:require [ajax.core :refer [GET POST]]
+            [clojure.string :as string]
             [goog.crypt.base64 :as b64]
             [ui.schema :as schema]
             [ui.util :as util]))
@@ -31,18 +32,22 @@
      :handler (comp handler unwrap-corpus-roots-response)
      :error-handler error-handler}))
 
+(defn- concat-path [& components]
+  (string/join "/" (filter #(not (empty? %)) components)))
+
 (defn- unwrap-dir-response [resp]
-  {:dirs (into {}
-           (map (fn [ticket]
-                  (let [uri (util/ticket->vname ticket)]
-                    [(:path uri) {}]))
-             (get resp "subdirectory")))
-   :files (into {}
-            (map (fn [ticket]
-                   (let [vname (util/ticket->vname ticket)]
-                     [(util/basename (:path vname)) {:ticket ticket
-                                                     :vname vname}]))
-              (get resp "file")))})
+  (let [{:strs [corpus root path entry]} resp
+        vname {:corpus corpus :root root}]
+    {:dirs (into {}
+                 (map (fn [{:strs [name]}] [(concat-path path name) {}])
+                      (filter (fn [{:strs [kind]}] (= "DIRECTORY" kind))
+                              entry)))
+     :files (into {}
+                  (map (fn [e] (let [name (get e "name")
+                                     vname (assoc vname :path (concat-path path name))]
+                                 [name {:vname vname :ticket (util/vname->ticket vname)}]))
+                       (filter (fn [{:strs [kind]}] (= "FILE" kind))
+                               entry)))}))
 
 (defn get-directory
   "Requests the contents of the given directory"
