@@ -225,7 +225,21 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 	for corpus, roots := range tree.M {
 		for root, dirs := range roots {
 			for path, dir := range dirs {
-				if err := buffer.Put(ctx, ftsrv.PrefixedDirKey(corpus, root, path), dir); err != nil {
+				fd := &srvpb.FileDirectory{}
+				for _, e := range dir.Entry {
+					kind := srvpb.FileDirectory_UNKNOWN
+					switch e.Kind {
+					case ftpb.DirectoryReply_FILE:
+						kind = srvpb.FileDirectory_FILE
+					case ftpb.DirectoryReply_DIRECTORY:
+						kind = srvpb.FileDirectory_DIRECTORY
+					}
+					fd.Entry = append(fd.Entry, &srvpb.FileDirectory_Entry{
+						Kind: kind,
+						Name: e.Name,
+					})
+				}
+				if err := buffer.Put(ctx, ftsrv.PrefixedDirKey(corpus, root, path), fd); err != nil {
 					return err
 				}
 			}
