@@ -607,8 +607,7 @@ func (e *emitter) emitSatisfactions() {
 
 		// Check whether x is a named type with methods; if not, skip it.
 		x := xobj.Type()
-		ximset := typeutil.IntuitiveMethodSet(x, &msets)
-		if len(ximset) == 0 {
+		if len(typeutil.IntuitiveMethodSet(x, &msets)) == 0 {
 			continue // no methods to consider
 		}
 
@@ -642,10 +641,13 @@ func (e *emitter) emitSatisfactions() {
 
 			case ifx:
 				// y is a concrete type
+				pymset := msets.MethodSet(types.NewPointer(y))
 				if types.AssignableTo(y, x) {
 					e.writeSatisfies(yobj, xobj)
+					e.emitOverrides(ymset, pymset, xmset, cache)
 				} else if py := types.NewPointer(y); types.AssignableTo(py, x) {
 					e.writeSatisfies(yobj, xobj)
+					e.emitOverrides(ymset, pymset, xmset, cache)
 				}
 
 			case ify && ymset.Len() > 0:
