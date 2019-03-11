@@ -67,3 +67,21 @@ textproto_verifier_test(
     protos = ["repeated_extension.proto"],
     textproto = "repeated_extension.pbtxt",
 )
+
+textproto_verifier_test(
+    name = "schema_comments_test",
+    extractor_opts = [
+        "--proto_path",
+        "external/com_google_protobuf/src",
+    ],
+    proto_extractor_opts = [
+        "--proto_path",
+        "external/com_google_protobuf/src",
+    ],
+    protos = [
+        "any_type.proto",
+        "example.proto",
+    ],
+    textproto = "schema_comments.pbtxt",
+    deps = ["@com_google_protobuf//:well_known_protos"],
+)

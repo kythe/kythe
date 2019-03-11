@@ -7,6 +7,7 @@ message Message1 {
     string str_field = 1;
 }
 
+//- @Message2 defines/binding Message2?
 message Message2 {
     //- @field1 defines/binding Field1?
     string field1 = 1;

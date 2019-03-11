@@ -18,6 +18,7 @@ cc_library(
     srcs = ["analyzer.cc"],
     hdrs = ["analyzer.h"],
     deps = [
+        "//kythe/cxx/extractor/textproto:textproto_schema",
         "//kythe/cxx/indexer/proto:search_path",
         "//kythe/cxx/indexer/proto:source_tree",
         "//kythe/cxx/indexer/proto:vname_util",

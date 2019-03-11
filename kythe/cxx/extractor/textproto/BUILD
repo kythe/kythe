@@ -18,6 +18,7 @@ cc_library(
     name = "textproto_schema",
     srcs = ["textproto_schema.cc"],
     hdrs = ["textproto_schema.h"],
+    visibility = ["//kythe/cxx/indexer/textproto:__pkg__"],
     deps = [
         "@com_google_absl//absl/strings",
     ],

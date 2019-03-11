@@ -27,7 +27,9 @@
 #include "google/protobuf/text_format.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/common/status_or.h"
 #include "kythe/cxx/common/utf8_line_index.h"
+#include "kythe/cxx/extractor/textproto/textproto_schema.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/cxx/indexer/proto/source_tree.h"
 #include "kythe/cxx/indexer/proto/vname_util.h"
@@ -88,6 +90,7 @@ class TextprotoAnalyzer {
       KytheGraphRecorder* recorder)
       : unit_(unit),
         recorder_(recorder),
+        textproto_content_(textproto),
         line_index_(textproto),
         file_substitution_cache_(file_substitution_cache) {}
 
@@ -101,20 +104,40 @@ class TextprotoAnalyzer {
                         const Descriptor& descriptor,
                         const TextFormat::ParseInfoTree& parse_tree);
 
+  Status AnalyzeSchemaComments(const proto::VName& file_vname,
+                               const Descriptor& msg_descriptor);
+
  private:
   Status AnalyzeField(const proto::VName& file_vname, const Message& proto,
                       const TextFormat::ParseInfoTree& parse_tree,
                       const FieldDescriptor& field, int field_index);
 
-  proto::VName CreateAndAddAnchorNode(const proto::VName& file,
-                                      const FieldDescriptor& field,
-                                      TextFormat::ParseLocation loc);
+  proto::VName CreateAndAddAnchorNode(const proto::VName& file, int begin,
+                                      int end);
 
   absl::optional<proto::VName> VNameForRelPath(
       absl::string_view simplified_path) const;
 
+  template <typename SomeDescriptor>
+  StatusOr<proto::VName> VNameForDescriptor(const SomeDescriptor* descriptor) {
+    Status vname_lookup_status = OkStatus();
+    proto::VName vname = ::kythe::lang_proto::VNameForDescriptor(
+        descriptor, [this, &vname_lookup_status](const std::string& path) {
+          auto v = VNameForRelPath(path);
+          if (!v.has_value()) {
+            vname_lookup_status = UnknownError(
+                absl::StrCat("Unable to lookup vname for rel path: ", path));
+            return proto::VName();
+          }
+          return *v;
+        });
+    return vname_lookup_status.ok() ? StatusOr<proto::VName>(vname)
+                                    : vname_lookup_status;
+  }
+
   const proto::CompilationUnit* unit_;
   KytheGraphRecorder* recorder_;
+  const absl::string_view textproto_content_;
   const UTF8LineIndex line_index_;
 
   // Proto search paths are used to resolve relative paths to full paths.
@@ -233,23 +256,20 @@ Status TextprotoAnalyzer::AnalyzeField(
   }
 
   if (add_anchor_node) {
-    proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, field, loc);
+    const size_t len =
+        field.is_extension() ? field.full_name().size() : field.name().size();
+    if (field.is_extension()) {
+      loc.column++;  // Skip leading "[" for extensions.
+    }
+    const int begin = line_index_.ComputeByteOffset(loc.line, loc.column);
+    const int end = begin + len;
+    proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, begin, end);
 
     // Add ref to proto field.
-    Status vname_lookup_status = OkStatus();
-    proto::VName field_vname = ::kythe::lang_proto::VNameForDescriptor(
-        &field, [this, &vname_lookup_status](const std::string& path) {
-          auto v = VNameForRelPath(path);
-          if (!v.has_value()) {
-            vname_lookup_status = UnknownError(
-                absl::StrCat("Unable to lookup vname for rel path: ", path));
-            return proto::VName();
-          }
-          return *v;
-        });
-    if (!vname_lookup_status.ok()) return vname_lookup_status;
+    auto field_vname = VNameForDescriptor(&field);
+    if (!field_vname.ok()) return field_vname.status();
     recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
-                       VNameRef(field_vname));
+                       VNameRef(*field_vname));
   }
 
   // Handle submessage.
@@ -269,17 +289,47 @@ Status TextprotoAnalyzer::AnalyzeField(
   return OkStatus();
 }
 
-proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
-    const proto::VName& file_vname, const FieldDescriptor& field,
-    TextFormat::ParseLocation loc) {
-  const size_t len =
-      field.is_extension() ? field.full_name().size() : field.name().size();
-  int begin = line_index_.ComputeByteOffset(loc.line, loc.column);
-  if (field.is_extension()) {
-    begin += 1;  // Skip leading "[" for extensions.
-  }
-  const int end = begin + len;
+Status TextprotoAnalyzer::AnalyzeSchemaComments(
+    const proto::VName& file_vname, const Descriptor& msg_descriptor) {
+  TextprotoSchema schema = ParseTextprotoSchemaComments(textproto_content_);
 
+  // Handle 'proto-message' comment if present.
+  if (!schema.proto_message.empty()) {
+    size_t begin = schema.proto_message.begin() - textproto_content_.begin();
+    size_t end = begin + schema.proto_message.size();
+    proto::VName anchor = CreateAndAddAnchorNode(file_vname, begin, end);
+
+    // Add ref edge to proto message.
+    auto msg_vname = VNameForDescriptor(&msg_descriptor);
+    if (!msg_vname.ok()) return msg_vname.status();
+    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef,
+                       VNameRef(*msg_vname));
+  }
+
+  // Handle 'proto-file' and 'proto-import' comments if present.
+  std::vector<absl::string_view> proto_files = schema.proto_imports;
+  if (!schema.proto_file.empty()) {
+    proto_files.push_back(schema.proto_file);
+  }
+  for (const absl::string_view file : proto_files) {
+    size_t begin = file.begin() - textproto_content_.begin();
+    size_t end = begin + file.size();
+    proto::VName anchor = CreateAndAddAnchorNode(file_vname, begin, end);
+
+    // Add ref edge to file.
+    auto v = VNameForRelPath(file);
+    if (!v.has_value()) {
+      return UnknownError(
+          absl::StrCat("Unable to lookup vname for rel path: ", file));
+    }
+    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef, VNameRef(*v));
+  }
+
+  return OkStatus();
+}
+
+proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
+    const proto::VName& file_vname, int begin, int end) {
   proto::VName anchor = file_vname;
   anchor.set_language(std::string(kLanguageName));
   anchor.set_signature(absl::StrCat("@", begin, ":", end));
@@ -469,6 +519,12 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
   // Analyze!
   TextprotoAnalyzer analyzer(&unit, textproto_file_data->content(),
                              &file_substitution_cache, recorder);
+
+  Status status = analyzer.AnalyzeSchemaComments(*file_vname, *descriptor);
+  if (!status.ok()) {
+    return status;
+  }
+
   return analyzer.AnalyzeMessage(*file_vname, *proto, *descriptor, parse_tree);
 }
 

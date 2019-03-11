@@ -107,7 +107,7 @@ Examples:
   CHECK(textproto_args.size() == 1)
       << "Expected 1 textproto file, got " << textproto_args.size();
   std::string textproto_filename = textproto_args[0];
-  std::string textproto = LoadFileOrDie(textproto_filename);
+  const std::string textproto = LoadFileOrDie(textproto_filename);
 
   const char* output_file = getenv("KYTHE_OUTPUT_FILE");
   CHECK(output_file != nullptr)
@@ -124,9 +124,9 @@ Examples:
   if (!FLAGS_proto_files.empty()) {
     proto_filenames = absl::StrSplit(FLAGS_proto_files, ',');
   } else {
-    proto_filenames.push_back(schema.proto_file);
+    proto_filenames.push_back(std::string(schema.proto_file));
     for (const auto& extra_import : schema.proto_imports) {
-      proto_filenames.push_back(extra_import);
+      proto_filenames.push_back(std::string(extra_import));
     }
   }
   if (!FLAGS_proto_message.empty()) {
@@ -154,7 +154,7 @@ Examples:
   compilation.mutable_unit()->clear_argument();
   compilation.mutable_unit()->add_argument(textproto_filename);
   compilation.mutable_unit()->add_argument("--proto_message");
-  compilation.mutable_unit()->add_argument(schema.proto_message);
+  compilation.mutable_unit()->add_argument(std::string(schema.proto_message));
   // Add protoc args.
   if (!proto_extractor.path_substitutions.empty()) {
     compilation.mutable_unit()->add_argument("--");

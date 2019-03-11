@@ -26,8 +26,8 @@ namespace kythe {
 namespace lang_textproto {
 
 struct TextprotoSchema {
-  std::string proto_message, proto_file;
-  std::vector<std::string> proto_imports;
+  absl::string_view proto_message, proto_file;
+  std::vector<absl::string_view> proto_imports;
 };
 
 /// Parses comments at the top of textproto files that specify the corresponding
@@ -44,6 +44,8 @@ struct TextprotoSchema {
 /// \param textproto the contents of the textproto file
 /// \return the schema information seen in the textproto. May be
 /// incomplete.
+/// WARNING: The return value is made up of string_views that reference the
+/// input. Therefore the input string_view must outlive any use of the output.
 TextprotoSchema ParseTextprotoSchemaComments(absl::string_view textproto);
 
 }  // namespace lang_textproto

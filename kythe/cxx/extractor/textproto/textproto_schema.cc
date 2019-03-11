@@ -29,11 +29,11 @@ TextprotoSchema ParseTextprotoSchemaComments(absl::string_view textproto) {
     if (ConsumePrefix(&line, "#")) {
       line = absl::StripLeadingAsciiWhitespace(line);
       if (ConsumePrefix(&line, "proto-file:")) {
-        schema.proto_file = std::string(StripAsciiWhitespace(line));
+        schema.proto_file = StripAsciiWhitespace(line);
       } else if (ConsumePrefix(&line, "proto-message:")) {
-        schema.proto_message = std::string(StripAsciiWhitespace(line));
+        schema.proto_message = StripAsciiWhitespace(line);
       } else if (ConsumePrefix(&line, "proto-import:")) {
-        schema.proto_imports.push_back(std::string(StripAsciiWhitespace(line)));
+        schema.proto_imports.push_back(StripAsciiWhitespace(line));
       }
     } else if (line.empty()) {
       // Skip blank lines.
