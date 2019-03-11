@@ -51,6 +51,25 @@ var w struct {
 //- @X ref X
 var _ = w.X
 
+var y struct {
+	//- @Y defines/binding Y
+	//- Y.node/kind variable
+	//- Y.subkind field
+	Y int
+} = struct {
+	//- @Y defines/binding Y2
+	//- !{ @Y defines/binding Y
+	//-    @Y ref Y }
+	Y int
+	// TODO(schroederc): investigate joining the duplicate anon types
+}{
+	//- @Y ref Y2
+	Y: 25,
+}
+
+//- @Y ref Y
+var _ = y.Y
+
 //- @elt defines/binding Elt
 //- Elt.node/kind variable
 var g = func(elt struct {
