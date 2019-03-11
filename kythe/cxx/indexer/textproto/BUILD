@@ -30,6 +30,7 @@ cc_library(
         "@io_kythe//kythe/cxx/common:lib",
         "@io_kythe//kythe/cxx/common:path_utils",
         "@io_kythe//kythe/cxx/common:status",
+        "@io_kythe//kythe/cxx/common:status_or",
         "@io_kythe//kythe/cxx/common:utf8_line_index",
         "@io_kythe//kythe/cxx/common/indexing:output",
         "@io_kythe//kythe/proto:analysis_cc_proto",
