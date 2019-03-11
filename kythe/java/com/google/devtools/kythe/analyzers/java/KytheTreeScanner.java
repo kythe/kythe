@@ -494,7 +494,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
-    EntrySet fnTypeNode = entrySets.newFunctionTypeAndEmit(ret, toVNames(paramTypes));
+    EntrySet fnTypeNode =
+        entrySets.newFunctionTypeAndEmit(ret, toVNames(paramTypes), MarkedSources.FN_TAPP);
     entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode.getVName());
 
     JavacUtil.visitSuperMethods(
