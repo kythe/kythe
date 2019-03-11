@@ -2,7 +2,10 @@
 // methods of concrete types and the interfaces they satisfy.
 package override
 
-import _ "fmt"
+import (
+	_ "fmt"
+	"strings"
+)
 
 //- @Thinger defines/binding Thinger
 //- Thinger.node/kind interface
@@ -76,3 +79,20 @@ type Foil interface {
 	//- FoilThing childof Foil
 	Thing(bool)
 }
+
+//- @Grower defines/binding Grower
+//- Grower.node/kind interface
+//- StringBuilder satisfies Grower
+type Grower interface {
+	//- @Grow defines/binding Grow
+	//- Grow.node/kind function
+	Grow(int)
+
+	//- StringBuilderGrow overrides Grow
+}
+
+//- @Builder ref StringBuilder
+var _ Grower = &strings.Builder{}
+
+//- @Grow ref StringBuilderGrow
+func init() { (&strings.Builder{}).Grow(10) }
