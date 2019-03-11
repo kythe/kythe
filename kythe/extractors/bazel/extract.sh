@@ -45,7 +45,7 @@
 
 : ${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
 
-/kythe/bazelisk "$@"
+/kythe/bazelisk --bazelrc=/kythe/bazelrc "$@"
 
 # Collect any extracted compilations.
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
