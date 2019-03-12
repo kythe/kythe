@@ -93,3 +93,15 @@ type em struct {
 		X string
 	}
 }
+
+//- @api defines/binding API
+//- API.node/kind variable
+func h(api interface {
+	//- @M defines/binding M
+	//- M.node/kind function
+	M() int
+}) int {
+	//- @M ref M
+	//- @api ref API
+	return api.M()
+}
