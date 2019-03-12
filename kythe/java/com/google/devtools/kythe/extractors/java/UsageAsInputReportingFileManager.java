@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -146,28 +145,50 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     return fileManager.getLocation(location);
   }
 
-  // TODO(schroederc): @Override; method added in JDK9
+  @Override
+  public Location getLocationForModule(Location location, JavaFileObject fo) throws IOException {
+    return fileManager.getLocationForModule(location, unwrap(fo));
+  }
+
+  @Override
+  public boolean contains(Location location, FileObject fo) throws IOException {
+    return fileManager.contains(location, unwrap(fo));
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
+      Iterable<? extends Path> paths) {
+    return Iterables.transform(
+        fileManager.getJavaFileObjectsFromPaths(paths), input -> map(input, null));
+  }
+
+  @Override
   public void setLocationFromPaths(Location location, Collection<? extends Path> paths)
       throws IOException {
-    try {
-      StandardJavaFileManager.class
-          .getMethod("setLocationFromPaths", Location.class, Collection.class)
-          .invoke(fileManager, location, paths);
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-      throw new IllegalStateException("setLocationFromPaths called by unsupported Java version", e);
-    }
+    fileManager.setLocationFromPaths(location, paths);
+  }
+
+  @Override
+  public void setLocationForModule(
+      Location location, String moduleName, Collection<? extends Path> paths) throws IOException {
+    fileManager.setLocationForModule(location, moduleName, paths);
+  }
+
+  @Override
+  public Path asPath(FileObject fo) {
+    return fileManager.asPath(unwrap(fo));
   }
 
   // StandardJavaFileManager doesn't like it when it's asked about a JavaFileObject
   // it didn't create, so we need to unwrap our objects.
-  private FileObject unwrap(FileObject jfo) {
+  private static FileObject unwrap(FileObject jfo) {
     if (jfo instanceof UsageAsInputReportingJavaFileObject) {
       return ((UsageAsInputReportingJavaFileObject) jfo).underlyingFileObject;
     }
     return jfo;
   }
 
-  private JavaFileObject unwrap(JavaFileObject jfo) {
+  private static JavaFileObject unwrap(JavaFileObject jfo) {
     if (jfo instanceof UsageAsInputReportingJavaFileObject) {
       return ((UsageAsInputReportingJavaFileObject) jfo).underlyingFileObject;
     }

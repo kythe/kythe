@@ -114,6 +114,7 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
 
     String analysisTarget =
         readEnvironmentVariable("KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sources));
+
     return javaCompilationUnitExtractor.extract(
         analysisTarget,
         sources,

@@ -294,10 +294,12 @@ public class JavaCompilationUnitExtractor {
     return new CompilationDescription(compilationUnit, fileContents);
   }
 
-  /** Returns a new list with the same options except any destination directory options. */
+  /**
+   * Returns a new list with the same options except header/source destination directory options.
+   */
   private static List<String> removeDestDirOptions(Iterable<String> options) {
     return JavacOptionsUtils.removeOptions(
-        Lists.newArrayList(options), EnumSet.of(Option.D, Option.S, Option.H));
+        Lists.newArrayList(options), EnumSet.of(Option.S, Option.H));
   }
 
   /**
@@ -659,7 +661,7 @@ public class JavaCompilationUnitExtractor {
 
     // We will initialize and run the Javac compiler to detect which dependencies
     // the current compilation has.
-    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    JavaCompiler compiler = findJavaCompiler();
     if (compiler == null) {
       // TODO(schroederc): provide link to further context
       throw new IllegalStateException(
@@ -930,6 +932,24 @@ public class JavaCompilationUnitExtractor {
     completeOptions.add(tempDestinationDir.toString());
 
     return completeOptions;
+  }
+
+  private static JavaCompiler findJavaCompiler() {
+    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    if (compiler == null) {
+      // This is all a bit of a hack to be able to extract OpenJDK itself, which
+      // uses a bootstrap compiler and a lot of JDK options to compile itself.
+      // Notably, when using modules the system compiler is inhibited and the actual compiler
+      // resides in jdk.compiler.iterim.  Rather than hard-code this, just fall back to the first
+      // JavaCompiler we can find.
+      logger.atWarning().log("Unable to find system compiler, using first available.");
+      Module thisModule = JavaCompilationUnitExtractor.class.getModule();
+      thisModule.addUses(JavaCompiler.class);
+      ServiceLoader<JavaCompiler> sl =
+          ServiceLoader.load(JavaCompiler.class, thisModule.getClassLoader());
+      return sl.findFirst().orElse(null);
+    }
+    return compiler;
   }
 
   /** Returns a map from a classfile's {@link URI} to its sourcefile path's basename. */
