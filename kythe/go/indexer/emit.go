@@ -291,7 +291,7 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 		e.writeDoc(doc, target)
 	}
 
-	// Handle fields of anonymous types declared in situ.
+	// Handle members of anonymous types declared in situ.
 	if spec.Type != nil {
 		e.emitAnonMembers(spec.Type)
 	}
