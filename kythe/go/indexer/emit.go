@@ -291,13 +291,13 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 		e.writeDoc(doc, target)
 	}
 
-	// Handle fields of anonymous struct types declared in situ.
+	// Handle members of anonymous types declared in situ.
 	if spec.Type != nil {
-		e.emitAnonFields(spec.Type)
+		e.emitAnonMembers(spec.Type)
 	}
 	for _, v := range spec.Values {
 		if lit, ok := v.(*ast.CompositeLit); ok {
-			e.emitAnonFields(lit.Type)
+			e.emitAnonMembers(lit.Type)
 		}
 	}
 }
@@ -330,7 +330,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 				target := e.writeVarBinding(id, nodes.Field, nil)
 				f := st.Fields.List[i]
 				e.writeDoc(f.Doc, target)
-				e.emitAnonFields(f.Type)
+				e.emitAnonMembers(f.Type)
 			})
 
 			// Handle anonymous fields. Such fields behave as if they were
@@ -518,7 +518,7 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 		if sig.Params().At(i) != nil {
 			if param := e.writeBinding(id, nodes.Variable, info.vname); param != nil {
 				e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
-				e.emitAnonFields(ftype.Params.List[i].Type)
+				e.emitAnonMembers(ftype.Params.List[i].Type)
 			}
 		}
 		paramIndex++
@@ -530,15 +530,20 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	})
 }
 
-// emitAnonFields checks whether expr denotes an anonymous struct type, and if
-// so emits bindings for the fields of that struct. The resulting fields do not
-// parent to the struct, since it has no referential identity; but we do
-// capture documentation in the unlikely event someone wrote any.
-func (e *emitter) emitAnonFields(expr ast.Expr) {
+// emitAnonMembers checks whether expr denotes an anonymous struct or interface
+// type, and if so emits bindings for its member fields/methods. The resulting
+// members do not parent to the type, since it has no referential identity; but
+// we do capture documentation in the unlikely event someone wrote any.
+func (e *emitter) emitAnonMembers(expr ast.Expr) {
 	if st, ok := expr.(*ast.StructType); ok {
 		mapFields(st.Fields, func(i int, id *ast.Ident) {
 			target := e.writeVarBinding(id, nodes.Field, nil) // no parent
 			e.writeDoc(st.Fields.List[i].Doc, target)
+		})
+	} else if it, ok := expr.(*ast.InterfaceType); ok {
+		mapFields(it.Methods, func(i int, id *ast.Ident) {
+			target := e.writeBinding(id, nodes.Function, nil) // no parent
+			e.writeDoc(it.Methods.List[i].Doc, target)
 		})
 	}
 }
