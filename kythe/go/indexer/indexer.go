@@ -109,6 +109,10 @@ type PackageInfo struct {
 	// A cache of source file vnames.
 	fileVName map[*ast.File]*spb.VName
 
+	// A cache of type vnames and whether a type's facts have been emitted
+	typeVName   map[types.Type]*spb.VName
+	typeEmitted map[string]bool
+
 	// A cache of file location mappings. This lets us get back from the
 	// parser's location to the vname for the enclosing file, which is in turn
 	// affected by the build configuration.
@@ -351,6 +355,8 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		sigs:        make(map[types.Object]string),
 		packageInit: make(map[*ast.File]*funcInfo),
 		fileVName:   filev,
+		typeVName:   make(map[types.Type]*spb.VName),
+		typeEmitted: make(map[string]bool),
 		fileLoc:     floc,
 		details:     details,
 	}
@@ -887,9 +893,9 @@ func (pi *PackageInfo) addOwners(pkg *types.Package) {
 	for _, name := range scope.Names() {
 		switch obj := scope.Lookup(name).(type) {
 		case *types.TypeName:
-			// Go 1.9 will have support for type aliases.  For now, skip these
-			// so we don't wind up emitting redundant declaration sites for the
-			// aliased type.
+			// TODO(schroederc): support for type aliases.  For now, skip these so we
+			// don't wind up emitting redundant declaration sites for the aliased
+			// type.
 			named, ok := obj.Type().(*types.Named)
 			if !ok {
 				continue

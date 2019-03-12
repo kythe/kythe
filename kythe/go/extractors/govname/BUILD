@@ -5,7 +5,10 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "govname",
-    srcs = ["govname.go"],
+    srcs = [
+        "govname.go",
+        "types.go",
+    ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         "//kythe/proto:storage_go_proto",
