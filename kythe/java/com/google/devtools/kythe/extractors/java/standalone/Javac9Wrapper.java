@@ -115,34 +115,17 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
     String analysisTarget =
         readEnvironmentVariable("KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sources));
 
-    CompilationDescription desc =
-        javaCompilationUnitExtractor.extract(
-            analysisTarget,
-            sources,
-            classPaths,
-            bootclasspath,
-            sourcePaths,
-            processorPaths,
-            processors,
-            genSrcDir,
-            completeOptions,
-            outputDirectory);
-
-    // Restore output directory, if present. It will be stripped by the extractor but is required
-    // for modular compilations.
-    if (options.isSet(Option.D)) {
-      return new CompilationDescription(
-          desc.getCompilationUnit()
-              .toBuilder()
-              .clearArgument()
-              .addArgument("-d")
-              .addArgument(outputDirectory)
-              .addAllArgument(desc.getCompilationUnit().getArgumentList())
-              .build(),
-          desc.getFileContents());
-    }
-
-    return desc;
+    return javaCompilationUnitExtractor.extract(
+        analysisTarget,
+        sources,
+        classPaths,
+        bootclasspath,
+        sourcePaths,
+        processorPaths,
+        processors,
+        genSrcDir,
+        completeOptions,
+        outputDirectory);
   }
 
   @Override

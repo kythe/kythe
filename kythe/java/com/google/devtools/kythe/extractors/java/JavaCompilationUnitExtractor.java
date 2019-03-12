@@ -294,10 +294,12 @@ public class JavaCompilationUnitExtractor {
     return new CompilationDescription(compilationUnit, fileContents);
   }
 
-  /** Returns a new list with the same options except any destination directory options. */
+  /**
+   * Returns a new list with the same options except header/source destination directory options.
+   */
   private static List<String> removeDestDirOptions(Iterable<String> options) {
     return JavacOptionsUtils.removeOptions(
-        Lists.newArrayList(options), EnumSet.of(Option.D, Option.S, Option.H));
+        Lists.newArrayList(options), EnumSet.of(Option.S, Option.H));
   }
 
   /**

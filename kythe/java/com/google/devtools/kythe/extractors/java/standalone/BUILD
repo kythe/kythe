@@ -44,7 +44,6 @@ java_binary(
         ":abstract_javac_wrapper",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
-        "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "//third_party/javac:javac9",
