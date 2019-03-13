@@ -946,7 +946,8 @@ public class JavaCompilationUnitExtractor {
       logger.atWarning().log("Unable to find system compiler, using first available.");
       try {
         // TODO(shahms): Use the proper methods when we can rely on JDK 9.
-        Object thisModule = JavaCompilationUnitExtractor.class.getMethod("getModule").invoke(null);
+        Object thisModule =
+            Class.class.getMethod("getModule").invoke(JavaCompilationUnitExtractor.class);
         thisModule
             .getClass()
             .getMethod("addUses", Class.class)
@@ -955,7 +956,7 @@ public class JavaCompilationUnitExtractor {
             (ClassLoader) thisModule.getClass().getMethod("getClassLoader").invoke(thisModule);
         return ServiceLoader.load(JavaCompiler.class, loader).findFirst().orElse(null);
       } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-        logger.atWarning().log("Running on a pre-modular JDK; failing to find compiler.");
+        logger.atWarning().log("Running on a pre-modular JDK; failing to find compiler: %s", e);
       }
     }
     return compiler;
