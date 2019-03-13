@@ -63,6 +63,7 @@ import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -943,11 +944,20 @@ public class JavaCompilationUnitExtractor {
       // resides in jdk.compiler.iterim.  Rather than hard-code this, just fall back to the first
       // JavaCompiler we can find.
       logger.atWarning().log("Unable to find system compiler, using first available.");
-      Module thisModule = JavaCompilationUnitExtractor.class.getModule();
-      thisModule.addUses(JavaCompiler.class);
-      ServiceLoader<JavaCompiler> sl =
-          ServiceLoader.load(JavaCompiler.class, thisModule.getClassLoader());
-      return sl.findFirst().orElse(null);
+      try {
+        // TODO(shahms): Use the proper methods when we can rely on JDK 9.
+        Object thisModule =
+            Class.class.getMethod("getModule").invoke(JavaCompilationUnitExtractor.class);
+        thisModule
+            .getClass()
+            .getMethod("addUses", Class.class)
+            .invoke(thisModule, JavaCompiler.class);
+        ClassLoader loader =
+            (ClassLoader) thisModule.getClass().getMethod("getClassLoader").invoke(thisModule);
+        return ServiceLoader.load(JavaCompiler.class, loader).findFirst().orElse(null);
+      } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+        logger.atWarning().log("Running on a pre-modular JDK; failing to find compiler: %s", e);
+      }
     }
     return compiler;
   }
