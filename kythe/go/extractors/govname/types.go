@@ -25,7 +25,7 @@ import (
 
 // BasicType returns the VName for a basic builtin Go type.
 func BasicType(b *types.Basic) *spb.VName {
-	return &spb.VName{Corpus: golangCorpus, Language: Language, Signature: fmt.Sprintf("%s#builtin", b.Name())}
+	return &spb.VName{Corpus: golangCorpus, Language: Language, Signature: b.Name() + "#builtin"}
 }
 
 // FunctionConstructorType returns the VName for the builtin Go function type constructor.
@@ -71,5 +71,5 @@ func ChanConstructorType(dir types.ChanDir) *spb.VName {
 	default:
 		chanType = "chan"
 	}
-	return &spb.VName{Corpus: golangCorpus, Language: Language, Signature: fmt.Sprintf("%s#builtin", chanType)}
+	return &spb.VName{Corpus: golangCorpus, Language: Language, Signature: chanType + "#builtin"}
 }

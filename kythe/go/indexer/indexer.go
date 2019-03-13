@@ -109,8 +109,10 @@ type PackageInfo struct {
 	// A cache of source file vnames.
 	fileVName map[*ast.File]*spb.VName
 
-	// A cache of type vnames and whether a type's facts have been emitted
-	typeVName   map[types.Type]*spb.VName
+	// A cache of type vnames.
+	typeVName map[types.Type]*spb.VName
+
+	// Cache storing whether a type's facts have been emitted (keyed by VName signature)
 	typeEmitted map[string]bool
 
 	// A cache of file location mappings. This lets us get back from the
