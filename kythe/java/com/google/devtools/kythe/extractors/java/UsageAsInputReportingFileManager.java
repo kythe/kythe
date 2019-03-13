@@ -18,9 +18,11 @@ package com.google.devtools.kythe.extractors.java;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.flogger.FluentLogger;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -41,6 +43,22 @@ import javax.tools.StandardJavaFileManager;
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<StandardJavaFileManager>
     implements StandardJavaFileManager {
+
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
+  // TODO(shahms): Remove these when we've moved to JDK9 and can invoke the methods directly.
+  //  Until then, cache the lookup of these extended StandardJavaFileManager methods.
+  private static final Method getLocationForModuleMethod =
+      getMethodOrNull("getLocationForModule", Location.class, JavaFileObject.class);
+  private static final Method containsMethod =
+      getMethodOrNull("contains", Location.class, FileObject.class);
+  private static final Method getJavaFileObjectsFromPathsMethod =
+      getMethodOrNull("getJavaFileObjectsFromPaths", Iterable.class);
+  private static final Method setLocationFromPathsMethod =
+      getMethodOrNull("setLocationFromPaths", Location.class, Collection.class);
+  private static final Method setLocationForModuleMethod =
+      getMethodOrNull("setLocationForModule", Location.class, String.class, Collection.class);
+  private static final Method asPathMethod = getMethodOrNull("asPath", FileObject.class);
 
   private final Map<URI, InputUsageRecord> inputUsageRecords = new HashMap<>();
 
@@ -150,11 +168,8 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   public Location getLocationForModule(Location location, JavaFileObject fo) throws IOException {
     // TODO(shahms): return fileManager.getLocationForModule(location, unwrap(fo));
     try {
-      return (Location)
-          StandardJavaFileManager.class
-              .getMethod("getLocationForModule", Location.class, JavaFileObject.class)
-              .invoke(fileManager, location, unwrap(fo));
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      return (Location) getLocationForModuleMethod.invoke(fileManager, location, unwrap(fo));
+    } catch (IllegalAccessException | InvocationTargetException e) {
       throw new IllegalStateException("getLocationForModule called by unsupported Java version", e);
     }
   }
@@ -163,11 +178,8 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   public boolean contains(Location location, FileObject fo) throws IOException {
     // TODO(shahms): return fileManager.contains(location, unwrap(fo));
     try {
-      return (Boolean)
-          StandardJavaFileManager.class
-              .getMethod("contains", Location.class, FileObject.class)
-              .invoke(fileManager, location, unwrap(fo));
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      return (Boolean) containsMethod.invoke(fileManager, location, unwrap(fo));
+    } catch (IllegalAccessException | InvocationTargetException e) {
       throw new IllegalStateException("contains called by unsupported Java version", e);
     }
   }
@@ -180,11 +192,9 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     try {
       return Iterables.transform(
           (Iterable<? extends JavaFileObject>)
-              StandardJavaFileManager.class
-                  .getMethod("getJavaFileObjectsFromPaths", Iterable.class)
-                  .invoke(fileManager, paths),
+              getJavaFileObjectsFromPathsMethod.invoke(fileManager, paths),
           input -> map(input, null));
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+    } catch (IllegalAccessException | InvocationTargetException e) {
       throw new IllegalStateException(
           "getJavaFileObjectsFromPaths called by unsupported Java version", e);
     }
@@ -195,10 +205,8 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
       throws IOException {
     // TODO(shahms): fileManager.setLocationFromPaths(location, paths);
     try {
-      StandardJavaFileManager.class
-          .getMethod("setLocationFromPaths", Location.class, Collection.class)
-          .invoke(fileManager, location, paths);
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      setLocationFromPathsMethod.invoke(fileManager, location, paths);
+    } catch (IllegalAccessException | InvocationTargetException e) {
       throw new IllegalStateException("setLocationFromPaths called by unsupported Java version", e);
     }
   }
@@ -208,10 +216,8 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
       Location location, String moduleName, Collection<? extends Path> paths) throws IOException {
     // TODO(shahms): fileManager.setLocationForModule(location, moduleName, paths);
     try {
-      StandardJavaFileManager.class
-          .getMethod("setLocationForModule", Location.class, String.class, Collection.class)
-          .invoke(fileManager, location, moduleName, paths);
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      setLocationForModuleMethod.invoke(fileManager, location, moduleName, paths);
+    } catch (IllegalAccessException | InvocationTargetException e) {
       throw new IllegalStateException("setLocationForModule called by unsupported Java version", e);
     }
   }
@@ -220,11 +226,8 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   public Path asPath(FileObject fo) {
     // TODO(shahms): return fileManager.asPath(unwrap(fo));
     try {
-      return (Path)
-          StandardJavaFileManager.class
-              .getMethod("asPath", FileObject.class)
-              .invoke(fileManager, unwrap(fo));
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      return (Path) asPathMethod.invoke(fileManager, unwrap(fo));
+    } catch (IllegalAccessException | InvocationTargetException e) {
       throw new IllegalStateException("asPath called by unsupported Java version", e);
     }
   }
@@ -243,5 +246,14 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
       return ((UsageAsInputReportingJavaFileObject) jfo).underlyingFileObject;
     }
     return jfo;
+  }
+
+  private static Method getMethodOrNull(String name, Class<?>... parameterTypes) {
+    try {
+      return StandardJavaFileManager.class.getMethod(name, parameterTypes);
+    } catch (NoSuchMethodException e) {
+      logger.atInfo().log("Failed to find extended StandardJavaFileManager method: %s", e);
+    }
+    return null;
   }
 }

@@ -118,6 +118,25 @@ public class JavaCompilationUnitExtractor {
     return String.format("!%s_JAR!", location);
   }
 
+  // TODO(shahms): Use the proper methods when we can rely on JDK 9.
+  private static final ClassLoader moduleClassLoader;
+
+  static {
+    ClassLoader loader = null;
+    try {
+      Object thisModule =
+          Class.class.getMethod("getModule").invoke(JavaCompilationUnitExtractor.class);
+      thisModule
+          .getClass()
+          .getMethod("addUses", Class.class)
+          .invoke(thisModule, JavaCompiler.class);
+      loader = (ClassLoader) thisModule.getClass().getMethod("getClassLoader").invoke(thisModule);
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      logger.atInfo().log("Running on non-modular JDK, fallback compiler unavailable.");
+    }
+    moduleClassLoader = loader;
+  }
+
   private static final String JAR_SCHEME = "jar";
   private final String jdkJar;
   private final String rootDirectory;
@@ -937,27 +956,14 @@ public class JavaCompilationUnitExtractor {
 
   private static JavaCompiler findJavaCompiler() {
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    if (compiler == null) {
+    if (compiler == null && moduleClassLoader != null) {
       // This is all a bit of a hack to be able to extract OpenJDK itself, which
       // uses a bootstrap compiler and a lot of JDK options to compile itself.
       // Notably, when using modules the system compiler is inhibited and the actual compiler
       // resides in jdk.compiler.iterim.  Rather than hard-code this, just fall back to the first
       // JavaCompiler we can find.
       logger.atWarning().log("Unable to find system compiler, using first available.");
-      try {
-        // TODO(shahms): Use the proper methods when we can rely on JDK 9.
-        Object thisModule =
-            Class.class.getMethod("getModule").invoke(JavaCompilationUnitExtractor.class);
-        thisModule
-            .getClass()
-            .getMethod("addUses", Class.class)
-            .invoke(thisModule, JavaCompiler.class);
-        ClassLoader loader =
-            (ClassLoader) thisModule.getClass().getMethod("getClassLoader").invoke(thisModule);
-        return ServiceLoader.load(JavaCompiler.class, loader).findFirst().orElse(null);
-      } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-        logger.atWarning().log("Running on a pre-modular JDK; failing to find compiler: %s", e);
-      }
+      return ServiceLoader.load(JavaCompiler.class, moduleClassLoader).findFirst().orElse(null);
     }
     return compiler;
   }
