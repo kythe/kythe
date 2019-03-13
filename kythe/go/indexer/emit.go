@@ -254,6 +254,103 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 	e.emitParameters(decl.Type, sig, info)
 }
 
+// emitTApp emits a tapp node and returns its VName.  The new tapp is emitted
+// with given constructor and parameters.  The constructor's kind is also
+// emitted if this is the first time seeing it.
+func (e *emitter) emitTApp(ctorKind string, ctor *spb.VName, params ...*spb.VName) *spb.VName {
+	if !e.pi.typeEmitted[ctor.Signature] {
+		e.writeFact(ctor, facts.NodeKind, ctorKind)
+		e.pi.typeEmitted[ctor.Signature] = true
+	}
+	components := []interface{}{ctor}
+	for _, p := range params {
+		components = append(components, p)
+	}
+	v := &spb.VName{Language: govname.Language, Signature: hashSignature(components)}
+	if !e.pi.typeEmitted[v.Signature] {
+		e.writeFact(v, facts.NodeKind, nodes.TApp)
+		e.writeEdge(v, ctor, edges.ParamIndex(0))
+		for i, p := range params {
+			e.writeEdge(v, p, edges.ParamIndex(i+1))
+		}
+		e.pi.typeEmitted[v.Signature] = true
+	}
+	return v
+}
+
+// emitType emits the type as a node and returns its VName.  VNames are cached
+// so the type nodes are only emitted the first time they are seen.
+func (e *emitter) emitType(typ types.Type) *spb.VName {
+	v, ok := e.pi.typeVName[typ]
+	if ok {
+		return v
+	}
+
+	// TODO(schroederc): MarkedSource for tapps and tbuiltins
+
+	switch typ := typ.(type) {
+	case *types.Named:
+		v = e.pi.ObjectVName(typ.Obj())
+	case *types.Basic:
+		v = govname.BasicType(typ)
+		if !e.pi.typeEmitted[v.Signature] {
+			e.writeFact(v, facts.NodeKind, nodes.TBuiltin)
+		}
+	case *types.Array:
+		v = e.emitTApp(nodes.TBuiltin, govname.ArrayConstructorType(typ.Len()), e.emitType(typ.Elem()))
+	case *types.Slice:
+		v = e.emitTApp(nodes.TBuiltin, govname.SliceConstructorType(), e.emitType(typ.Elem()))
+	case *types.Pointer:
+		v = e.emitTApp(nodes.TBuiltin, govname.PointerConstructorType(), e.emitType(typ.Elem()))
+	case *types.Chan:
+		v = e.emitTApp(nodes.TBuiltin, govname.ChanConstructorType(typ.Dir()), e.emitType(typ.Elem()))
+	case *types.Map:
+		v = e.emitTApp(nodes.TBuiltin, govname.MapConstructorType(), e.emitType(typ.Key()), e.emitType(typ.Elem()))
+	case *types.Tuple: // function return types
+		v = e.emitTApp(nodes.TBuiltin, govname.TupleConstructorType(), e.visitTuple(typ)...)
+	case *types.Signature: // function types
+		// TODO(schroederc): handle typ.Recv()
+		// TODO(schroederc): handle typ.Variadic()
+
+		params := e.visitTuple(typ.Params())
+		var ret *spb.VName
+		if typ.Results().Len() == 1 {
+			ret = e.emitType(typ.Results().At(0).Type())
+		} else {
+			ret = e.emitType(typ.Results())
+		}
+		v = e.emitTApp(nodes.TBuiltin, govname.FunctionConstructorType(), append([]*spb.VName{ret}, params...)...)
+	case *types.Interface:
+		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
+		if !e.pi.typeEmitted[v.Signature] {
+			e.writeFact(v, facts.NodeKind, nodes.Interface)
+			e.pi.typeEmitted[v.Signature] = true
+		}
+	case *types.Struct:
+		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
+		if !e.pi.typeEmitted[v.Signature] {
+			e.writeFact(v, facts.NodeKind, nodes.Record)
+			e.pi.typeEmitted[v.Signature] = true
+		}
+	default:
+		log.Printf("WARNING: unknown type %T: %+v", typ, typ)
+	}
+
+	e.pi.typeVName[typ] = v
+	return v
+}
+
+func (e *emitter) emitTypeOf(expr ast.Expr) *spb.VName { return e.emitType(e.pi.Info.TypeOf(expr)) }
+
+func (e *emitter) visitTuple(t *types.Tuple) []*spb.VName {
+	size := t.Len()
+	ts := make([]*spb.VName, size)
+	for i := 0; i < size; i++ {
+		ts[i] = e.emitType(t.At(i).Type())
+	}
+	return ts
+}
+
 // visitFuncLit handles function literals and their parameters.  The signature
 // for a function literal is named relative to the signature of its parent
 // function, or the file scope if the literal is at the top level.
@@ -827,6 +924,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 	if e.opts != nil && e.opts.EmitMarkedSource {
 		e.emitCode(target, e.pi.MarkedSource(obj))
 	}
+	e.writeEdge(target, e.emitTypeOf(id), edges.Typed)
 	return target
 }
 
