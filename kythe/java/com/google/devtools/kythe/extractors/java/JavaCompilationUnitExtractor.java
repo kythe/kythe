@@ -63,7 +63,6 @@ import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -131,7 +130,7 @@ public class JavaCompilationUnitExtractor {
           .getMethod("addUses", Class.class)
           .invoke(thisModule, JavaCompiler.class);
       loader = (ClassLoader) thisModule.getClass().getMethod("getClassLoader").invoke(thisModule);
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+    } catch (ReflectiveOperationException e) {
       logger.atInfo().log("Running on non-modular JDK, fallback compiler unavailable.");
     }
     moduleClassLoader = loader;

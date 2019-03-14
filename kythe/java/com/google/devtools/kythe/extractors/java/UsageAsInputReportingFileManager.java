@@ -21,7 +21,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.flogger.FluentLogger;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
@@ -169,7 +168,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     // TODO(shahms): return fileManager.getLocationForModule(location, unwrap(fo));
     try {
       return (Location) getLocationForModuleMethod.invoke(fileManager, location, unwrap(fo));
-    } catch (IllegalAccessException | InvocationTargetException e) {
+    } catch (ReflectiveOperationException e) {
       throw new IllegalStateException("getLocationForModule called by unsupported Java version", e);
     }
   }
@@ -179,12 +178,13 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     // TODO(shahms): return fileManager.contains(location, unwrap(fo));
     try {
       return (Boolean) containsMethod.invoke(fileManager, location, unwrap(fo));
-    } catch (IllegalAccessException | InvocationTargetException e) {
+    } catch (ReflectiveOperationException e) {
       throw new IllegalStateException("contains called by unsupported Java version", e);
     }
   }
 
   // TODO(shahms): @Override; added in JDK9
+  @SuppressWarnings("unchecked") // safe by specification.
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
       Iterable<? extends Path> paths) {
     // TODO(shahms): return Iterables.transform(
@@ -194,7 +194,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
           (Iterable<? extends JavaFileObject>)
               getJavaFileObjectsFromPathsMethod.invoke(fileManager, paths),
           input -> map(input, null));
-    } catch (IllegalAccessException | InvocationTargetException e) {
+    } catch (ReflectiveOperationException e) {
       throw new IllegalStateException(
           "getJavaFileObjectsFromPaths called by unsupported Java version", e);
     }
@@ -206,7 +206,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     // TODO(shahms): fileManager.setLocationFromPaths(location, paths);
     try {
       setLocationFromPathsMethod.invoke(fileManager, location, paths);
-    } catch (IllegalAccessException | InvocationTargetException e) {
+    } catch (ReflectiveOperationException e) {
       throw new IllegalStateException("setLocationFromPaths called by unsupported Java version", e);
     }
   }
@@ -217,7 +217,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     // TODO(shahms): fileManager.setLocationForModule(location, moduleName, paths);
     try {
       setLocationForModuleMethod.invoke(fileManager, location, moduleName, paths);
-    } catch (IllegalAccessException | InvocationTargetException e) {
+    } catch (ReflectiveOperationException e) {
       throw new IllegalStateException("setLocationForModule called by unsupported Java version", e);
     }
   }
@@ -227,7 +227,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     // TODO(shahms): return fileManager.asPath(unwrap(fo));
     try {
       return (Path) asPathMethod.invoke(fileManager, unwrap(fo));
-    } catch (IllegalAccessException | InvocationTargetException e) {
+    } catch (ReflectiveOperationException e) {
       throw new IllegalStateException("asPath called by unsupported Java version", e);
     }
   }
@@ -252,7 +252,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     try {
       return StandardJavaFileManager.class.getMethod(name, parameterTypes);
     } catch (NoSuchMethodException e) {
-      logger.atInfo().log("Failed to find extended StandardJavaFileManager method: %s", e);
+      logger.atInfo().withCause(e).log("Failed to find extended StandardJavaFileManager method");
     }
     return null;
   }
