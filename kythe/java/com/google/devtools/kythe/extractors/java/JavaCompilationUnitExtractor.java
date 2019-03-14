@@ -963,7 +963,9 @@ public class JavaCompilationUnitExtractor {
       // resides in jdk.compiler.iterim.  Rather than hard-code this, just fall back to the first
       // JavaCompiler we can find.
       logger.atWarning().log("Unable to find system compiler, using first available.");
-      return ServiceLoader.load(JavaCompiler.class, moduleClassLoader).findFirst().orElse(null);
+      for (JavaCompiler found : ServiceLoader.load(JavaCompiler.class, moduleClassLoader)) {
+        return found;
+      }
     }
     return compiler;
   }
