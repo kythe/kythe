@@ -412,6 +412,8 @@ class KytheGraphObserver : public GraphObserver {
   void iterateOverClaimedFiles(
       std::function<bool(clang::FileID, const NodeId&)> iter) const override;
 
+  absl::string_view getBuildConfig() const override { return build_config_; }
+
  private:
   void AddMarkedSource(const VNameRef& vname,
                        const absl::optional<MarkedSource>& signature) {

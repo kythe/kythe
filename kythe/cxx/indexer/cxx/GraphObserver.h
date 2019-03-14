@@ -1044,6 +1044,9 @@ class GraphObserver {
   virtual void iterateOverClaimedFiles(
       std::function<bool(clang::FileID, const NodeId&)> iter) const {}
 
+  /// Name of the platform or build configuration to emit on anchors.
+  virtual absl::string_view getBuildConfig() const { return ""; }
+
  protected:
   clang::SourceManager* SourceManager = nullptr;
   clang::LangOptions* LangOptions = nullptr;
