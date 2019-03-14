@@ -3804,7 +3804,6 @@ bool IndexerASTVisitor::TraverseNestedNameSpecifierLoc(
 GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentIdentifier(
     const clang::NestedNameSpecifier* Prefix,
     const clang::IdentifierInfo* Identifier) {
-  CHECK(Identifier != nullptr) << "Ooops!";
   return BuildNodeIdForDependentName(Prefix,
                                      clang::DeclarationName(Identifier));
 }
