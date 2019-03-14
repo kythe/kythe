@@ -58,6 +58,17 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
     return getDerived().TraverseType(Decl->getType());
   }
 
+  bool TraverseTemplateArgumentLoc(const clang::TemplateArgumentLoc& ArgLoc) {
+    const auto& Arg = ArgLoc.getArgument();
+    if (Arg.getKind() == clang::TemplateArgument::Type) {
+      if (auto* TSI = ArgLoc.getTypeSourceInfo()) {
+        return getDerived().TraverseTypePair(TSI->getTypeLoc(),
+                                             Arg.getAsType());
+      }
+    }
+    return Base::TraverseTemplateArgumentLoc(ArgLoc);
+  }
+
   // Intercept calls to TraverseTypeLoc so that they are dispatched
   // via TraverseTypePair.
   bool TraverseTypeLoc(clang::TypeLoc TL) {
@@ -123,15 +134,6 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
     return TL.getType();
   }
 
-#define ABSTRACT_TYPE(CLASS, BASE)
-#define TYPE(CLASS, BASE)                                                   \
-  bool Traverse##CLASS##TypePairHelper(clang::CLASS##TypeLoc TL,            \
-                                       const clang::CLASS##Type* T) {       \
-    return getDerived().Traverse##CLASS##TypePair(TL,                       \
-                                                  T ? T : TL.getTypePtr()); \
-  }
-#include "clang/AST/TypeNodes.def"
-
   std::vector<clang::DeclaratorDecl*> decl_stack_;
 };
 
@@ -148,11 +150,13 @@ bool RecursiveTypeVisitor<Derived>::TraverseTypePair(clang::TypeLoc TL,
       return getDerived().TraverseQualifiedTypePair(
           TL.castAs<clang::QualifiedTypeLoc>(), T);
 #define ABSTRACT_TYPE(CLASS, BASE)
-#define TYPE(CLASS, BASE)                   \
-  case clang::TypeLoc::CLASS:               \
-    return Traverse##CLASS##TypePairHelper( \
-        TL.castAs<clang::CLASS##TypeLoc>(), \
-        clang::dyn_cast<clang::CLASS##Type>(T.getTypePtr()));
+#define TYPE(CLASS, BASE)                                     \
+  case clang::TypeLoc::CLASS:                                 \
+    return getDerived().Traverse##CLASS##TypePair(            \
+        TL.castAs<clang::CLASS##TypeLoc>(),                   \
+        clang::isa<clang::CLASS##Type>(T.getTypePtr())        \
+            ? clang::cast<clang::CLASS##Type>(T.getTypePtr()) \
+            : TL.castAs<clang::CLASS##TypeLoc>().getTypePtr());
 #include "clang/AST/TypeNodes.def"
   }
 
@@ -194,9 +198,13 @@ DEF_TRAVERSE_TYPEPAIR(RValueReferenceType, {
   return getDerived().TraverseTypePair(TL.getPointeeLoc(), T->getPointeeType());
 });
 DEF_TRAVERSE_TYPEPAIR(MemberPointerType, {
-  return getDerived().TraverseTypePair(TL.getClassTInfo()->getTypeLoc(),
-                                       clang::QualType(T->getClass(), 0)) &&
-         getDerived().TraverseTypePair(TL.getPointeeLoc(), T->getPointeeType());
+  return [&] {
+    if (auto* TSI = TL.getClassTInfo()) {
+      return getDerived().TraverseTypePair(TSI->getTypeLoc(),
+                                           clang::QualType(T->getClass(), 0));
+    }
+    return getDerived().TraverseType(clang::QualType(T->getClass(), 0));
+  }() && getDerived().TraverseTypePair(TL.getPointeeLoc(), T->getPointeeType());
 });
 DEF_TRAVERSE_TYPEPAIR(AdjustedType, {
   return getDerived().TraverseTypePair(TL.getOriginalLoc(),
