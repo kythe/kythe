@@ -186,7 +186,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   // TODO(shahms): @Override; added in JDK9
   @SuppressWarnings("unchecked") // safe by specification.
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
-      Collection<? extends Path> paths) {
+      Iterable<? extends Path> paths) {
     // TODO(shahms): return Iterables.transform(
     //      fileManager.getJavaFileObjectsFromPaths(paths), input -> map(input, null));
     try {
