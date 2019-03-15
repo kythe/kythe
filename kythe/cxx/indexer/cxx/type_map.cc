@@ -27,7 +27,8 @@ std::uintptr_t ComputeKeyFromQualType(const clang::ASTContext& context,
                                       const clang::Type* type) {
   return qual_type.getLocalQualifiers().getCVRQualifiers() +
          reinterpret_cast<std::uintptr_t>(
-             clang::isa<clang::TemplateSpecializationType>(type)
+             (clang::isa<clang::TemplateSpecializationType>(type) &&
+              !type->isDependentType())
                  ? context.getCanonicalType(type)
                  : type);
 }
