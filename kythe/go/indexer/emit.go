@@ -309,8 +309,6 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 	case *types.Tuple: // function return types
 		v = e.emitTApp(nodes.TBuiltin, govname.TupleConstructorType(), e.visitTuple(typ)...)
 	case *types.Signature: // function types
-		// TODO(#3613): handle typ.Recv()
-
 		params := e.visitTuple(typ.Params())
 		if typ.Variadic() && len(params) > 0 {
 			// Convert last parameter type from slice type to variadic type.
@@ -326,7 +324,16 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 		} else {
 			ret = e.emitType(typ.Results())
 		}
-		v = e.emitTApp(nodes.TBuiltin, govname.FunctionConstructorType(), append([]*spb.VName{ret}, params...)...)
+
+		var recv *spb.VName
+		if r := typ.Recv(); r != nil {
+			recv = e.emitType(r.Type())
+		} else {
+			recv = e.emitType(types.NewTuple())
+		}
+
+		v = e.emitTApp(nodes.TBuiltin, govname.FunctionConstructorType(),
+			append([]*spb.VName{ret, recv}, params...)...)
 	case *types.Interface:
 		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
 		if !e.pi.typeEmitted[v.Signature] {
