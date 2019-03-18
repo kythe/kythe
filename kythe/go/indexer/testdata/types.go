@@ -28,7 +28,8 @@ package types
 //- NullFuncType.node/kind tapp
 //- NullFuncType param.0 FnBuiltin
 //- NullFuncType param.1 EmptyTuple
-//- !{ NullFuncType param.2 _ }
+//- NullFuncType param.2 EmptyTuple
+//- !{ NullFuncType param.3 _ }
 func f0() {}
 
 //- @f1 defines/binding F1
@@ -36,9 +37,10 @@ func f0() {}
 //- F1FuncType.node/kind tapp
 //- F1FuncType param.0 FnBuiltin
 //- F1FuncType param.1 EmptyTuple
-//- F1FuncType param.2 IntBuiltin
-//- F1FuncType param.3 BoolBuiltin
-//- F1FuncType param.4 StringBuiltin
+//- F1FuncType param.2 EmptyTuple
+//- F1FuncType param.3 IntBuiltin
+//- F1FuncType param.4 BoolBuiltin
+//- F1FuncType param.5 StringBuiltin
 func f1(a int, b bool, c string) {}
 
 //- @f2 defines/binding F2
@@ -46,7 +48,8 @@ func f1(a int, b bool, c string) {}
 //- F2FuncType.node/kind tapp
 //- F2FuncType param.0 FnBuiltin
 //- F2FuncType param.1 IntBuiltin
-//- !{ NullFuncType param.2 _ }
+//- F2FuncType param.2 EmptyTuple
+//- !{ NullFuncType param.3 _ }
 func f2() int { return 0 }
 
 //- @f3 defines/binding F3
@@ -54,11 +57,12 @@ func f2() int { return 0 }
 //- F3FuncType.node/kind tapp
 //- F3FuncType param.0 FnBuiltin
 //- F3FuncType param.1 F3Return
+//- F3FuncType param.2 EmptyTuple
 //- F3Return.node/kind tapp
 //- F3Return param.0 TupleBuiltin
 //- F3Return param.1 IntBuiltin
 //- F3Return param.2 BoolBuiltin
-//- !{ NullFuncType param.2 _ }
+//- !{ NullFuncType param.3 _ }
 func f3() (int, bool) { return 0, false }
 
 //- @f4 defines/binding F4
@@ -66,8 +70,9 @@ func f3() (int, bool) { return 0, false }
 //- F4FuncType.node/kind tapp
 //- F4FuncType param.0 FnBuiltin
 //- F4FuncType param.1 EmptyTuple
-//- F4FuncType param.2 IntBuiltin
-//- F4FuncType param.3 VariadicInt
+//- F4FuncType param.2 EmptyTuple
+//- F4FuncType param.3 IntBuiltin
+//- F4FuncType param.4 VariadicInt
 //- VariadicInt.node/kind tapp
 //- VariadicInt param.0 VariadicBuiltin
 //- VariadicInt param.1 IntBuiltin
@@ -168,6 +173,25 @@ type S struct {
 //- SVar.node/kind variable
 //- SVar typed S
 var sv = S{}
+
+//- @Method defines/binding Method
+//- Method typed MethodType
+//- MethodType.node/kind tapp
+//- MethodType param.0 FnBuiltin
+//- MethodType param.1 EmptyTuple
+//- MethodType param.2 S
+func (s S) Method() {}
+
+//- @PMethod defines/binding PMethod
+//- PMethod typed PMethodType
+//- PMethodType.node/kind tapp
+//- PMethodType param.0 FnBuiltin
+//- PMethodType param.1 EmptyTuple
+//- PMethodType param.2 SPointer
+//- SPointer.node/kind tapp
+//- SPointer param.0 PointerBuiltin
+//- SPointer param.1 S
+func (s *S) PMethod() {}
 
 //- @Iter defines/binding Iter
 //- Iter.node/kind interface
