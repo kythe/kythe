@@ -67,7 +67,7 @@ public enum NodeKind {
     return kind;
   }
 
-  /** Returns the node's subkind Kythe GraphStore value (or {@code null}). */
+  /** Returns the node's subkind Kythe GraphStore value (or {@code Optional.empty()}). */
   public final Optional<String> getSubkind() {
     return Optional.ofNullable(subkind);
   }
