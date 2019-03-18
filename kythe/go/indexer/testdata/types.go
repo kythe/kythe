@@ -15,6 +15,7 @@ package types
 //- StringBuiltin=vname("string#builtin", "golang.org", "", "", "go").node/kind tbuiltin
 //- TupleBuiltin=vname("tuple#builtin", "golang.org", "", "", "go").node/kind tbuiltin
 //- Uint8Builtin=vname("uint8#builtin", "golang.org", "", "", "go").node/kind tbuiltin
+//- VariadicBuiltin=vname("variadic#builtin", "golang.org", "", "", "go").node/kind tbuiltin
 
 // float32 is not used in this package; it shouldn't be emitted
 //- !{ _Float32Builtin=vname("float32#builtin", "golang.org", "", "", "go").node/kind tbuiltin }
@@ -59,6 +60,18 @@ func f2() int { return 0 }
 //- F3Return param.2 BoolBuiltin
 //- !{ NullFuncType param.2 _ }
 func f3() (int, bool) { return 0, false }
+
+//- @f4 defines/binding F4
+//- F4 typed F4FuncType
+//- F4FuncType.node/kind tapp
+//- F4FuncType param.0 FnBuiltin
+//- F4FuncType param.1 EmptyTuple
+//- F4FuncType param.2 IntBuiltin
+//- F4FuncType param.3 VariadicInt
+//- VariadicInt.node/kind tapp
+//- VariadicInt param.0 VariadicBuiltin
+//- VariadicInt param.1 IntBuiltin
+func f4(a int, b ...int) {}
 
 func paramTypes(
 	//- @intParam defines/binding IntParam

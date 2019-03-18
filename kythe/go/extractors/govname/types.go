@@ -73,3 +73,8 @@ func ChanConstructorType(dir types.ChanDir) *spb.VName {
 	}
 	return &spb.VName{Corpus: golangCorpus, Language: Language, Signature: chanType + "#builtin"}
 }
+
+// VariadicConstructorType returns the VName for the builtin Go variadic type constructor.
+func VariadicConstructorType() *spb.VName {
+	return &spb.VName{Corpus: golangCorpus, Language: Language, Signature: "variadic#builtin"}
+}

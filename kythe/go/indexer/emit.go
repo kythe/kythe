@@ -309,10 +309,17 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 	case *types.Tuple: // function return types
 		v = e.emitTApp(nodes.TBuiltin, govname.TupleConstructorType(), e.visitTuple(typ)...)
 	case *types.Signature: // function types
-		// TODO(schroederc): handle typ.Recv()
-		// TODO(schroederc): handle typ.Variadic()
+		// TODO(#3613): handle typ.Recv()
 
 		params := e.visitTuple(typ.Params())
+		if typ.Variadic() && len(params) > 0 {
+			// Convert last parameter type from slice type to variadic type.
+			last := len(params) - 1
+			if slice, ok := typ.Params().At(last).Type().(*types.Slice); ok {
+				params[last] = e.emitTApp(nodes.TBuiltin, govname.VariadicConstructorType(), e.emitType(slice.Elem()))
+			}
+		}
+
 		var ret *spb.VName
 		if typ.Results().Len() == 1 {
 			ret = e.emitType(typ.Results().At(0).Type())
