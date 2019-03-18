@@ -18,7 +18,7 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y \
       # Install C++ compilers for cc_* rule support.
-      gcc clang && \
+      build-essential openjdk-8-jdk python zip unzip gcc clang && \
     apt-get clean
 
 # Extract the Kythe release archive to /kythe
