@@ -21,7 +21,7 @@ public final class WildcardMethod {
   //- WildcardFn childof WildcardFnAbs
   //- WildcardFn.node/kind function
   //- WildcardFn typed WildcardFnType
-  //- WildcardFnType param.2 WildcardParam1Type
+  //- WildcardFnType param.3 WildcardParam1Type
   //- !{ Wildcard0 bounded/upper Anything0
   //-    Wildcard0 bounded/lower Anything1 }
   //- !{ WildcardFnAbs param.1 _ }
