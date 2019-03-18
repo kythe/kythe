@@ -91,9 +91,9 @@ public class MarkedSource {
   //- @methodWithParams defines/binding MethodWithParams
   //- MethodWithParams typed MPType
   //- MPType param.1 Void
-  //- MPType param.2 String
-  //- MPType param.3 Int
-  //- MPType code FnTypeCode
+  //- MPType param.3 String
+  //- MPType param.4 Int
+  //- MPType code MethodTypeCode
   void methodWithParams(String a, int b) {}
 
   //- FnTypeCode.kind "TYPE"
@@ -106,6 +106,22 @@ public class MarkedSource {
   //- FnTypeParamsCode.post_text ")"
   //- FnTypeParamsCode.post_child_text ", "
   //- FnTypeParamsCode.lookup_index 2
+
+  //- MethodTypeCode.kind "TYPE"
+  //- MethodTypeCode child.0 MethodTypeRetCode
+  //- MethodTypeRetCode.kind "LOOKUP_BY_PARAM"
+  //- MethodTypeRetCode.lookup_index 1
+  //- MethodTypeRetCode.post_text " "
+  //- MethodTypeCode child.1 MethodTypeRecvCode
+  //- MethodTypeRecvCode.kind "LOOKUP_BY_PARAM"
+  //- MethodTypeRecvCode.lookup_index 2
+  //- MethodTypeRecvCode.post_text "::"
+  //- MethodTypeCode child.2 MethodTypeParamsCode
+  //- MethodTypeParamsCode.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- MethodTypeParamsCode.pre_text "("
+  //- MethodTypeParamsCode.post_text ")"
+  //- MethodTypeParamsCode.post_child_text ", "
+  //- MethodTypeParamsCode.lookup_index 3
 
   //- @pa defines/binding AParam
   //- @pb defines/binding BParam
@@ -322,6 +338,8 @@ public class MarkedSource {
   }
 
   //- @func defines/binding Func
+  //- Func typed FuncType
+  //- FuncType code FnTypeCode
   public static Object func() {
     //- @LocalClass defines/binding LocalClass
     //- LocalClass childof Func
