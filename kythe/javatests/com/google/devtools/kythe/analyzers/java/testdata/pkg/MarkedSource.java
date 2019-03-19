@@ -108,14 +108,18 @@ public class MarkedSource {
   //- FnTypeParamsCode.lookup_index 2
 
   //- MethodTypeCode.kind "TYPE"
-  //- MethodTypeCode child.0 MethodTypeRetCode
+  //- MethodTypeCode child.0 MethodTypeRetBox
+  //- MethodTypeRetBox.kind "BOX"
+  //- MethodTypeRetBox.post_text " "
+  //- MethodTypeRetBox child.0 MethodTypeRetCode
   //- MethodTypeRetCode.kind "LOOKUP_BY_PARAM"
   //- MethodTypeRetCode.lookup_index 1
-  //- MethodTypeRetCode.post_text " "
-  //- MethodTypeCode child.1 MethodTypeRecvCode
+  //- MethodTypeCode child.1 MethodTypeRecvBox
+  //- MethodTypeRecvBox.kind "BOX"
+  //- MethodTypeRecvBox.post_text "::"
+  //- MethodTypeRecvBox child.0 MethodTypeRecvCode
   //- MethodTypeRecvCode.kind "LOOKUP_BY_PARAM"
   //- MethodTypeRecvCode.lookup_index 2
-  //- MethodTypeRecvCode.post_text "::"
   //- MethodTypeCode child.2 MethodTypeParamsCode
   //- MethodTypeParamsCode.kind "PARAMETER_LOOKUP_BY_PARAM"
   //- MethodTypeParamsCode.pre_text "("
