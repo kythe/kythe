@@ -330,9 +330,12 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 		}
 		if typ.Results().Len() != 0 {
 			ms.Child = append(ms.Child, &cpb.MarkedSource{
-				Kind:        cpb.MarkedSource_LOOKUP_BY_PARAM,
-				LookupIndex: 1,
-				PreText:     " ",
+				Kind:    cpb.MarkedSource_BOX,
+				PreText: " ",
+				Child: []*cpb.MarkedSource{{
+					Kind:        cpb.MarkedSource_LOOKUP_BY_PARAM,
+					LookupIndex: 1,
+				}},
 			})
 		}
 
@@ -340,10 +343,13 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 		if r := typ.Recv(); r != nil {
 			recv = e.emitType(r.Type())
 			ms.Child = append([]*cpb.MarkedSource{{
-				Kind:        cpb.MarkedSource_LOOKUP_BY_PARAM,
-				LookupIndex: 2,
-				PreText:     "(",
-				PostText:    ") ",
+				Kind:     cpb.MarkedSource_BOX,
+				PreText:  "(",
+				PostText: ") ",
+				Child: []*cpb.MarkedSource{{
+					Kind:        cpb.MarkedSource_LOOKUP_BY_PARAM,
+					LookupIndex: 2,
+				}},
 			}}, ms.Child...)
 		} else {
 			recv = e.emitType(types.NewTuple())

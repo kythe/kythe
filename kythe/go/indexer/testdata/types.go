@@ -97,10 +97,12 @@ package types
 //- FnTAppCodeParam.pre_text "func("
 //- FnTAppCodeParam.post_child_text ", "
 //- FnTAppCodeParam.post_text ")"
-//- FnTAppCode child.1 FnTAppCodeReturn
+//- FnTAppCode child.1 FnTAppCodeReturnBox
+//- FnTAppCodeReturnBox.kind "BOX"
+//- FnTAppCodeReturnBox.pre_text " "
+//- FnTAppCodeReturnBox child.0 FnTAppCodeReturn
 //- FnTAppCodeReturn.kind "LOOKUP_BY_PARAM"
 //- FnTAppCodeReturn.lookup_index 1
-//- FnTAppCodeReturn.pre_text " "
 
 //- VoidFnTAppCode.kind "TYPE"
 //- VoidFnTAppCode child.0 VoidFnTAppCodeParam
@@ -111,28 +113,34 @@ package types
 //- VoidFnTAppCodeParam.post_text ")"
 
 //- MethodTAppCode.kind "TYPE"
-//- MethodTAppCode child.0 MethodTAppCodeRecv
+//- MethodTAppCode child.0 MethodTAppCodeRecvBox
+//- MethodTAppCodeRecvBox.kind "BOX"
+//- MethodTAppCodeRecvBox.pre_text "("
+//- MethodTAppCodeRecvBox.post_text ") "
+//- MethodTAppCodeRecvBox child.0 MethodTAppCodeRecv
 //- MethodTAppCodeRecv.kind "LOOKUP_BY_PARAM"
 //- MethodTAppCodeRecv.lookup_index 2
-//- MethodTAppCodeRecv.pre_text "("
-//- MethodTAppCodeRecv.post_text ") "
 //- MethodTAppCode child.1 MethodTAppCodeParam
 //- MethodTAppCodeParam.kind "PARAMETER_LOOKUP_BY_PARAM"
 //- MethodTAppCodeParam.lookup_index 3
 //- MethodTAppCodeParam.pre_text "func("
 //- MethodTAppCodeParam.post_child_text ", "
 //- MethodTAppCodeParam.post_text ")"
-//- MethodTAppCode child.2 MethodTAppCodeReturn
+//- MethodTAppCode child.2 MethodTAppCodeReturnBox
+//- MethodTAppCodeReturnBox.kind "BOX"
+//- MethodTAppCodeReturnBox.pre_text " "
+//- MethodTAppCodeReturnBox child.0 MethodTAppCodeReturn
 //- MethodTAppCodeReturn.kind "LOOKUP_BY_PARAM"
 //- MethodTAppCodeReturn.lookup_index 1
-//- MethodTAppCodeReturn.pre_text " "
 
 //- VoidMethodTAppCode.kind "TYPE"
-//- VoidMethodTAppCode child.0 VoidMethodTAppCodeRecv
+//- VoidMethodTAppCode child.0 VoidMethodTAppCodeRecvBox
+//- VoidMethodTAppCodeRecvBox.kind "BOX"
+//- VoidMethodTAppCodeRecvBox.pre_text "("
+//- VoidMethodTAppCodeRecvBox.post_text ") "
+//- VoidMethodTAppCodeRecvBox child.0 VoidMethodTAppCodeRecv
 //- VoidMethodTAppCodeRecv.kind "LOOKUP_BY_PARAM"
 //- VoidMethodTAppCodeRecv.lookup_index 2
-//- VoidMethodTAppCodeRecv.pre_text "("
-//- VoidMethodTAppCodeRecv.post_text ") "
 //- VoidMethodTAppCode child.1 VoidMethodTAppCodeParam
 //- VoidMethodTAppCodeParam.kind "PARAMETER_LOOKUP_BY_PARAM"
 //- VoidMethodTAppCodeParam.lookup_index 3
