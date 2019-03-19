@@ -20,8 +20,129 @@ package types
 // float32 is not used in this package; it shouldn't be emitted
 //- !{ _Float32Builtin=vname("float32#builtin", "golang.org", "", "", "go").node/kind tbuiltin }
 
+//- FnBuiltin code FnCode
+//- FnCode.kind "IDENTIFIER"
+//- FnCode.pre_text "fn"
+//- BoolBuiltin code BoolCode
+//- BoolCode.kind "IDENTIFIER"
+//- BoolCode.pre_text "bool"
+
+//- SliceTAppCode.kind "TYPE"
+//- SliceTAppCode.pre_text "[]"
+//- SliceTAppCode child.0 SliceTAppCodeParam
+//- SliceTAppCodeParam.kind "LOOKUP_BY_PARAM"
+//- SliceTAppCodeParam.lookup_index 1
+
+//- PointerTAppCode.kind "TYPE"
+//- PointerTAppCode.pre_text "*"
+//- PointerTAppCode child.0 PointerTAppCodeParam
+//- PointerTAppCodeParam.kind "LOOKUP_BY_PARAM"
+//- PointerTAppCodeParam.lookup_index 1
+
+//- TupleTAppCode.kind "TYPE"
+//- TupleTAppCode.pre_text "("
+//- TupleTAppCode.post_text ")"
+//- TupleTAppCode child.0 TupleTAppCodeParam
+//- TupleTAppCodeParam.kind "PARAMETER_LOOKUP_BY_PARAM"
+//- TupleTAppCodeParam.post_child_text ", "
+//- TupleTAppCodeParam.lookup_index 1
+
+//- VariadicTAppCode.kind "TYPE"
+//- VariadicTAppCode.pre_text "..."
+//- VariadicTAppCode child.0 VariadicTAppCodeParam
+//- VariadicTAppCodeParam.kind "LOOKUP_BY_PARAM"
+//- VariadicTAppCodeParam.lookup_index 1
+
+//- Array4TAppCode.kind "TYPE"
+//- Array4TAppCode.pre_text "[4]"
+//- Array4TAppCode child.0 Array4TAppCodeParam
+//- Array4TAppCodeParam.kind "LOOKUP_BY_PARAM"
+//- Array4TAppCodeParam.lookup_index 1
+
+//- ChanTAppCode.kind "TYPE"
+//- ChanTAppCode.pre_text "chan "
+//- ChanTAppCode child.0 ChanTAppCodeParam
+//- ChanTAppCodeParam.kind "LOOKUP_BY_PARAM"
+//- ChanTAppCodeParam.lookup_index 1
+
+//- SendChanTAppCode.kind "TYPE"
+//- SendChanTAppCode.pre_text "chan<- "
+//- SendChanTAppCode child.0 SendChanTAppCodeParam
+//- SendChanTAppCodeParam.kind "LOOKUP_BY_PARAM"
+//- SendChanTAppCodeParam.lookup_index 1
+
+//- RecvChanTAppCode.kind "TYPE"
+//- RecvChanTAppCode.pre_text "<-chan "
+//- RecvChanTAppCode child.0 RecvChanTAppCodeParam
+//- RecvChanTAppCodeParam.kind "LOOKUP_BY_PARAM"
+//- RecvChanTAppCodeParam.lookup_index 1
+
+//- MapTAppCode.kind "TYPE"
+//- MapTAppCode.pre_text "map"
+//- MapTAppCode child.0 MapTAppCodeKeyBox
+//- MapTAppCodeKeyBox.kind "BOX"
+//- MapTAppCodeKeyBox.pre_text "["
+//- MapTAppCodeKeyBox.post_text "]"
+//- MapTAppCodeKeyBox child.0 MapTAppCodeKey
+//- MapTAppCodeKey.kind "LOOKUP_BY_PARAM"
+//- MapTAppCodeKey.lookup_index 1
+//- MapTAppCode child.1 MapTAppCodeValue
+//- MapTAppCodeValue.kind "LOOKUP_BY_PARAM"
+//- MapTAppCodeValue.lookup_index 2
+
+//- FnTAppCode.kind "TYPE"
+//- FnTAppCode child.0 FnTAppCodeParam
+//- FnTAppCodeParam.kind "PARAMETER_LOOKUP_BY_PARAM"
+//- FnTAppCodeParam.lookup_index 3
+//- FnTAppCodeParam.pre_text "func("
+//- FnTAppCodeParam.post_child_text ", "
+//- FnTAppCodeParam.post_text ")"
+//- FnTAppCode child.1 FnTAppCodeReturn
+//- FnTAppCodeReturn.kind "LOOKUP_BY_PARAM"
+//- FnTAppCodeReturn.lookup_index 1
+//- FnTAppCodeReturn.pre_text " "
+
+//- VoidFnTAppCode.kind "TYPE"
+//- VoidFnTAppCode child.0 VoidFnTAppCodeParam
+//- VoidFnTAppCodeParam.kind "PARAMETER_LOOKUP_BY_PARAM"
+//- VoidFnTAppCodeParam.lookup_index 3
+//- VoidFnTAppCodeParam.pre_text "func("
+//- VoidFnTAppCodeParam.post_child_text ", "
+//- VoidFnTAppCodeParam.post_text ")"
+
+//- MethodTAppCode.kind "TYPE"
+//- MethodTAppCode child.0 MethodTAppCodeRecv
+//- MethodTAppCodeRecv.kind "LOOKUP_BY_PARAM"
+//- MethodTAppCodeRecv.lookup_index 2
+//- MethodTAppCodeRecv.pre_text "("
+//- MethodTAppCodeRecv.post_text ") "
+//- MethodTAppCode child.1 MethodTAppCodeParam
+//- MethodTAppCodeParam.kind "PARAMETER_LOOKUP_BY_PARAM"
+//- MethodTAppCodeParam.lookup_index 3
+//- MethodTAppCodeParam.pre_text "func("
+//- MethodTAppCodeParam.post_child_text ", "
+//- MethodTAppCodeParam.post_text ")"
+//- MethodTAppCode child.2 MethodTAppCodeReturn
+//- MethodTAppCodeReturn.kind "LOOKUP_BY_PARAM"
+//- MethodTAppCodeReturn.lookup_index 1
+//- MethodTAppCodeReturn.pre_text " "
+
+//- VoidMethodTAppCode.kind "TYPE"
+//- VoidMethodTAppCode child.0 VoidMethodTAppCodeRecv
+//- VoidMethodTAppCodeRecv.kind "LOOKUP_BY_PARAM"
+//- VoidMethodTAppCodeRecv.lookup_index 2
+//- VoidMethodTAppCodeRecv.pre_text "("
+//- VoidMethodTAppCodeRecv.post_text ") "
+//- VoidMethodTAppCode child.1 VoidMethodTAppCodeParam
+//- VoidMethodTAppCodeParam.kind "PARAMETER_LOOKUP_BY_PARAM"
+//- VoidMethodTAppCodeParam.lookup_index 3
+//- VoidMethodTAppCodeParam.pre_text "func("
+//- VoidMethodTAppCodeParam.post_child_text ", "
+//- VoidMethodTAppCodeParam.post_text ")"
+
 //- EmptyTuple.node/kind tapp
 //- EmptyTuple param.0 TupleBuiltin
+//- EmptyTuple code TupleTAppCode
 
 //- @f0 defines/binding F0
 //- F0 typed NullFuncType
@@ -30,6 +151,7 @@ package types
 //- NullFuncType param.1 EmptyTuple
 //- NullFuncType param.2 EmptyTuple
 //- !{ NullFuncType param.3 _ }
+//- NullFuncType code VoidFnTAppCode
 func f0() {}
 
 //- @f1 defines/binding F1
@@ -50,6 +172,7 @@ func f1(a int, b bool, c string) {}
 //- F2FuncType param.1 IntBuiltin
 //- F2FuncType param.2 EmptyTuple
 //- !{ NullFuncType param.3 _ }
+//- F2FuncType code FnTAppCode
 func f2() int { return 0 }
 
 //- @f3 defines/binding F3
@@ -76,6 +199,7 @@ func f3() (int, bool) { return 0, false }
 //- VariadicInt.node/kind tapp
 //- VariadicInt param.0 VariadicBuiltin
 //- VariadicInt param.1 IntBuiltin
+//- VariadicInt code VariadicTAppCode
 func f4(a int, b ...int) {}
 
 func paramTypes(
@@ -115,6 +239,7 @@ type S struct {
 	//- IntPointer.node/kind tapp
 	//- IntPointer param.0 PointerBuiltin
 	//- IntPointer param.1 IntBuiltin
+	//- IntPointer code PointerTAppCode
 	IntPointerField *int
 
 	//- @IntArray4Field defines/binding IA4F
@@ -122,6 +247,7 @@ type S struct {
 	//- IA4.node/kind tapp
 	//- IA4 param.0 Array4Builtin
 	//- IA4 param.1 IntBuiltin
+	//- IA4 code Array4TAppCode
 	IntArray4Field [4]int
 
 	//- @IntSliceField defines/binding IntSliceField
@@ -129,6 +255,7 @@ type S struct {
 	//- IntSlice.node/kind tapp
 	//- IntSlice param.0 SliceBuiltin
 	//- IntSlice param.1 IntBuiltin
+	//- IntSlice code SliceTAppCode
 	IntSliceField []int
 
 	//- @StrSetField defines/binding StrSetField
@@ -136,6 +263,7 @@ type S struct {
 	//- StrSet param.0 MapBuiltin
 	//- StrSet param.1 StringBuiltin
 	//- StrSet param.2 EmptyStruct
+	//- StrSet code MapTAppCode
 	StrSetField map[string]EmptyStruct
 
 	//- @ByteField defines/binding ByteField
@@ -152,6 +280,7 @@ type S struct {
 	//- IntChan.node/kind tapp
 	//- IntChan param.0 ChanBuiltin
 	//- IntChan param.1 IntBuiltin
+	//- IntChan code ChanTAppCode
 	整数型Chan chan int
 
 	//- @RecvIntChan defines/binding RecvIntChanField
@@ -159,6 +288,7 @@ type S struct {
 	//- RecvIntChan.node/kind tapp
 	//- RecvIntChan param.0 ChanRecvBuiltin
 	//- RecvIntChan param.1 IntBuiltin
+	//- RecvIntChan code RecvChanTAppCode
 	RecvIntChan <-chan int
 
 	//- @SendIntChan defines/binding SendIntChanField
@@ -166,6 +296,7 @@ type S struct {
 	//- SendIntChan.node/kind tapp
 	//- SendIntChan param.0 ChanSendBuiltin
 	//- SendIntChan param.1 IntBuiltin
+	//- SendIntChan code SendChanTAppCode
 	SendIntChan chan<- int
 }
 
@@ -178,9 +309,10 @@ var sv = S{}
 //- Method typed MethodType
 //- MethodType.node/kind tapp
 //- MethodType param.0 FnBuiltin
-//- MethodType param.1 EmptyTuple
+//- MethodType param.1 IntBuiltin
 //- MethodType param.2 S
-func (s S) Method() {}
+//- MethodType code MethodTAppCode
+func (s S) Method() int { return 0 }
 
 //- @PMethod defines/binding PMethod
 //- PMethod typed PMethodType
@@ -191,6 +323,7 @@ func (s S) Method() {}
 //- SPointer.node/kind tapp
 //- SPointer param.0 PointerBuiltin
 //- SPointer param.1 S
+//- MethodType code VoidMethodTAppCode
 func (s *S) PMethod() {}
 
 //- @Iter defines/binding Iter
