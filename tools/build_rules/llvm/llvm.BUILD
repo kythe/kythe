@@ -142,10 +142,7 @@ load("@io_kythe//tools:build_rules/cc_resources.bzl", "cc_resources")
 builtin_headers = glob(
     ["tools/clang/lib/Headers/**"],
     exclude = ["tools/clang/lib/Headers/**/CMakeLists.txt"],
-) + [
-    "tools/clang/lib/Headers/arm_fp16.h",
-    "tools/clang/lib/Headers/arm_neon.h",
-]
+)
 
 genrule(
     name = "builtin_headers_gen",
