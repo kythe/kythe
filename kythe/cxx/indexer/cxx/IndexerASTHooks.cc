@@ -21,6 +21,7 @@
 #include "IndexerASTHooks.h"
 #include "indexed_parent_iterator.h"
 
+#include "absl/strings/str_cat.h"
 #include "absl/types/optional.h"
 
 #include "clang/AST/Attr.h"
@@ -366,7 +367,9 @@ class PruneCheck {
   void GenerateCleanupId(const clang::Decl* decl) {
     // TODO(zarko): Check to see if non-function members of a class
     // can be traversed once per argument set.
-    cleanup_id_ = visitor_->BuildNodeIdForDecl(decl).getRawIdentity();
+    cleanup_id_ =
+        absl::StrCat(visitor_->BuildNodeIdForDecl(decl).getRawIdentity(), "#",
+                     visitor_->getGraphObserver().getBuildConfig());
     // It's critical that we distinguish between different argument lists
     // here even if aliasing is turned on; otherwise we will drop data.
     // If aliasing is off, the NodeId already contains this information.

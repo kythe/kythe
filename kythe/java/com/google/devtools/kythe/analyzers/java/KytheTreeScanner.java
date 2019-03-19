@@ -393,6 +393,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     scan(methodDef.getThrows(), ctx);
     scan(methodDef.getDefaultValue(), ctx);
+    scan(methodDef.getReceiverParameter(), ctx);
 
     JavaNode returnType = scan(methodDef.getReturnType(), ctx);
     List<JavaNode> params = new ArrayList<>();
@@ -494,7 +495,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
-    EntrySet fnTypeNode = entrySets.newFunctionTypeAndEmit(ret, toVNames(paramTypes));
+
+    VName recv = null;
+    if (!methodDef.getModifiers().getFlags().contains(Modifier.STATIC)) {
+      recv = owner.getNode().getVName();
+    }
+    EntrySet fnTypeNode =
+        entrySets.newFunctionTypeAndEmit(
+            ret,
+            recv == null ? entrySets.newBuiltinAndEmit("void").getVName() : recv,
+            toVNames(paramTypes),
+            recv == null ? MarkedSources.FN_TAPP : MarkedSources.METHOD_TAPP);
     entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode.getVName());
 
     JavacUtil.visitSuperMethods(

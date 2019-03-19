@@ -78,11 +78,11 @@ mvn clean compile \
 
 cd ..
 
-# Index the resulting .kindex files, deduplicate the entries, and finally store
+# Index the resulting .kzip files, deduplicate the entries, and finally store
 # them in a GraphStore
 GRAPHSTORE=/tmp/kythe_graphstore
 rm -rf "$GRAPHSTORE"
-find "$KYTHE_OUTPUT_DIRECTORY" -name '*.kindex' | \
+find "$KYTHE_OUTPUT_DIRECTORY" -name '*.kzip' | \
   xargs -L1 java -jar /opt/kythe/indexers/java_indexer.jar | \
   /opt/kythe/tools/dedup_stream | \
   /opt/kythe/tools/write_entries --graphstore $GRAPHSTORE
@@ -111,14 +111,14 @@ rm -rf "$SERVING"
 `extractors/cxx_extractor` and `extractors/javac_extractor.jar` are
 flag-compatible replacements for clang and javac, respectively.  Instead of
 performing a full compilation, they extract the compilation's full context
-including all file inputs and archive them in a .kindex file.
+including all file inputs and archive them in a .kzip file.
 
 Since each extractor is meant to replace a compiler, all configuration is passed
 by the following environment variables:
 
     KYTHE_ROOT_DIRECTORY (required): root directory of the repository being compiled.
         This helps the extractor correctly infer file input paths.
-    KYTHE_OUTPUT_DIRECTORY (required): output directory for resulting .kindex
+    KYTHE_OUTPUT_DIRECTORY (required): output directory for resulting .kzip
         files
     KYTHE_VNAMES: path to a JSON-encoded VNames configuration file.  See
         https://godoc.org/github.com/kythe/kythe/kythe/go/util/vnameutil for
@@ -173,13 +173,13 @@ accompanying binaries in the `tools/` directory.
 ### Examples
 
     java -jar indexers/java_indexer.jar \
-      /tmp/kythe/065c7a9a0789d09b73d74b0ca17cfcec6643d69a6218d095d19a770b10dffdf9.kindex \
+      /tmp/kythe/065c7a9a0789d09b73d74b0ca17cfcec6643d69a6218d095d19a770b10dffdf9.kzip \
       > java.entries
 
     indexers/cxx_indexers \
-      /tmp/kythe/579d266e5914257a9bd4458eb9b218690280ae15123d642025f224d10f64e6f3.kindex \
+      /tmp/kythe/579d266e5914257a9bd4458eb9b218690280ae15123d642025f224d10f64e6f3.kzip \
       > cxx.entries
 
     indexers/go_indexer \
-      /tmp/kythe/579d266e5914257a9bd4458eb9b218690280ae15123d642025f224d10f64e6f3.kindex \
+      /tmp/kythe/579d266e5914257a9bd4458eb9b218690280ae15123d642025f224d10f64e6f3.kzip \
       > go.entries

@@ -41,6 +41,12 @@ public final class MarkedSources {
   /** {@link MarkedSource} for Java "tapp" nodes of the form {@code C[]}. */
   public static final MarkedSource ARRAY_TAPP;
 
+  /** {@link MarkedSource} for Java "tapp" nodes of the form {@code R(T1, T2, T3...)}. */
+  public static final MarkedSource FN_TAPP;
+
+  /** {@link MarkedSource} for Java "tapp" nodes of the form {@code R C::(T1, T2, T3...)}. */
+  public static final MarkedSource METHOD_TAPP;
+
   static {
     MarkedSource.Builder genericTAppBuilder =
         MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
@@ -64,6 +70,42 @@ public final class MarkedSources {
         .setLookupIndex(1)
         .setPostText("[]");
     ARRAY_TAPP = arrayTAppBuilder.build();
+  }
+
+  static {
+    MarkedSource.Builder fnTAppBuilder = MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
+    fnTAppBuilder.addChildBuilder().setKind(MarkedSource.Kind.LOOKUP_BY_PARAM).setLookupIndex(1);
+    fnTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
+        .setLookupIndex(2)
+        .setPreText("(")
+        .setPostText(")")
+        .setPostChildText(", ");
+    FN_TAPP = fnTAppBuilder.build();
+  }
+
+  static {
+    MarkedSource.Builder methodTAppBuilder =
+        MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
+    methodTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.LOOKUP_BY_PARAM)
+        .setLookupIndex(1)
+        .setPostText(" ");
+    methodTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.LOOKUP_BY_PARAM)
+        .setLookupIndex(2)
+        .setPostText("::");
+    methodTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
+        .setLookupIndex(3)
+        .setPreText("(")
+        .setPostText(")")
+        .setPostChildText(", ");
+    METHOD_TAPP = methodTAppBuilder.build();
   }
 
   /** Returns a {@link MarkedSource} instance for a {@link Symbol}. */
