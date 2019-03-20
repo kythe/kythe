@@ -336,7 +336,15 @@ func (s *S) PMethod() {}
 
 //- @Iter defines/binding Iter
 //- Iter.node/kind interface
-type Iter interface{}
+type Iter interface {
+	//- @Method defines/binding IMethod
+	//- IMethod typed IMethodType
+	//- IMethodType.node/kind tapp
+	//- IMethodType param.0 FnBuiltin
+	//- IMethodType param.1 IntBuiltin
+	//- IMethodType param.2 Iter
+	Method() int
+}
 
 //- @iv defines/binding IVar
 //- IVar.node/kind variable

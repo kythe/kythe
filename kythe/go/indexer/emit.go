@@ -245,19 +245,18 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 // with given constructor and parameters.  The constructor's kind is also
 // emitted if this is the first time seeing it.
 func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VName, params ...*spb.VName) *spb.VName {
-	if !e.pi.typeEmitted.Contains(ctor.Signature) {
+	if e.pi.typeEmitted.Add(ctor.Signature) {
 		e.writeFact(ctor, facts.NodeKind, ctorKind)
 		if ctorKind == nodes.TBuiltin {
 			e.emitBuiltinMarkedSource(ctor)
 		}
-		e.pi.typeEmitted.Add(ctor.Signature)
 	}
 	components := []interface{}{ctor}
 	for _, p := range params {
 		components = append(components, p)
 	}
 	v := &spb.VName{Language: govname.Language, Signature: hashSignature(components)}
-	if !e.pi.typeEmitted.Contains(v.Signature) {
+	if e.pi.typeEmitted.Add(v.Signature) {
 		e.writeFact(v, facts.NodeKind, nodes.TApp)
 		e.writeEdge(v, ctor, edges.ParamIndex(0))
 		for i, p := range params {
@@ -266,7 +265,6 @@ func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VNam
 		if ms != nil && e.opts.emitMarkedSource() {
 			e.emitCode(v, ms)
 		}
-		e.pi.typeEmitted.Add(v.Signature)
 	}
 	return v
 }
@@ -284,10 +282,9 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 		v = e.pi.ObjectVName(typ.Obj())
 	case *types.Basic:
 		v = govname.BasicType(typ)
-		if !e.pi.typeEmitted.Contains(v.Signature) {
+		if e.pi.typeEmitted.Add(v.Signature) {
 			e.writeFact(v, facts.NodeKind, nodes.TBuiltin)
 			e.emitBuiltinMarkedSource(v)
-			e.pi.typeEmitted.Add(v.Signature)
 		}
 	case *types.Array:
 		v = e.emitTApp(arrayTAppMS(typ.Len()), nodes.TBuiltin, govname.ArrayConstructorType(typ.Len()), e.emitType(typ.Elem()))
@@ -359,7 +356,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			append([]*spb.VName{ret, recv}, params...)...)
 	case *types.Interface:
 		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
-		if !e.pi.typeEmitted.Contains(v.Signature) {
+		if e.pi.typeEmitted.Add(v.Signature) {
 			e.writeFact(v, facts.NodeKind, nodes.Interface)
 			if e.opts.emitMarkedSource() {
 				e.emitCode(v, &cpb.MarkedSource{
@@ -367,11 +364,10 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 					PreText: typ.String(),
 				})
 			}
-			e.pi.typeEmitted.Add(v.Signature)
 		}
 	case *types.Struct:
 		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
-		if !e.pi.typeEmitted.Contains(v.Signature) {
+		if e.pi.typeEmitted.Add(v.Signature) {
 			e.writeFact(v, facts.NodeKind, nodes.Record)
 			if e.opts.emitMarkedSource() {
 				e.emitCode(v, &cpb.MarkedSource{
@@ -379,7 +375,6 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 					PreText: typ.String(),
 				})
 			}
-			e.pi.typeEmitted.Add(v.Signature)
 		}
 	default:
 		log.Printf("WARNING: unknown type %T: %+v", typ, typ)
@@ -842,6 +837,12 @@ func (e *emitter) emitOverrides(xmset, pxmset, ymset *types.MethodSet, cache ove
 		xvname := e.pi.ObjectVName(xobj)
 		yvname := e.pi.ObjectVName(yobj)
 		e.writeEdge(xvname, yvname, edges.Overrides)
+
+		xt := e.emitType(xobj.Type())
+		yt := e.emitType(yobj.Type())
+		if e.pi.typeEmitted.Add(xt.Signature + "+" + yt.Signature) {
+			e.writeEdge(xt, yt, edges.Satisfies)
+		}
 	}
 }
 

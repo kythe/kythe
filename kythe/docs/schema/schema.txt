@@ -1281,11 +1281,11 @@ satisfies
 ~~~~~~~~~
 
 Brief description::
-  A *satisfies* T if A is a concrete type that satisfies an interface type T.
+  A *satisfies* T if A is a type that implicitly satisfies a type T.
 Points from::
-  type nodes (<<record>>)
+  type nodes (<<record>>, <<tapp>>, etc.)
 Points toward::
-  <<interface>>
+  type nodes (<<interface>>, <<tapp>>, etc.)
 Ordinals are used::
   never
 
@@ -1303,6 +1303,23 @@ type SB bool
 
 //- @HasBadge defines/binding HasBadge
 //- HasBadge childof StaticBadger
+func (s SB) HasBadge() bool { return bool(s) }
+--------------------------------------------------------------------------------
+
+[kythe,Go,"Types of overriding methods satisfy types of overridden interface methods."]
+--------------------------------------------------------------------------------
+package sat
+
+//- @HasBadge defines/binding HasBadgeI
+//- HasBadgeI typed HasBadgeIType
+type Badger interface { HasBadge() bool }
+
+type SB bool
+
+//- @HasBadge defines/binding HasBadge
+//- HasBadge typed HasBadgeType
+//- HasBadgeType satisfies HasBadgeIType
+//- ! { HasBadge typed HasBadgeIType }
 func (s SB) HasBadge() bool { return bool(s) }
 --------------------------------------------------------------------------------
 
