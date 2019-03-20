@@ -10,6 +10,7 @@ go_library(
     deps = [
         "//kythe/go/extractors/config",
         "//kythe/go/platform/kindex",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
     ],
 )
 

@@ -113,7 +113,7 @@ type PackageInfo struct {
 	typeVName map[types.Type]*spb.VName
 
 	// Cache storing whether a type's facts have been emitted (keyed by VName signature)
-	typeEmitted map[string]bool
+	typeEmitted stringset.Set
 
 	// A cache of file location mappings. This lets us get back from the
 	// parser's location to the vname for the enclosing file, which is in turn
@@ -358,7 +358,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		packageInit: make(map[*ast.File]*funcInfo),
 		fileVName:   filev,
 		typeVName:   make(map[types.Type]*spb.VName),
-		typeEmitted: make(map[string]bool),
+		typeEmitted: stringset.New(),
 		fileLoc:     floc,
 		details:     details,
 	}
