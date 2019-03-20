@@ -34,6 +34,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"bitbucket.org/creachadair/stringset"
+
 	cpb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -253,7 +255,7 @@ func TestFilesRoundTrip(t *testing.T) {
 	// Verify that we can read the same data back out, and that we got all the
 	// files we originally contracted for.
 
-	found := make(map[string]bool) // So we can check for anything missing, below
+	found := stringset.New() // So we can check for anything missing, below
 	for digest, path := range keys {
 		data, err := testArchive.ReadFile(context.Background(), digest)
 		if err != nil {
@@ -262,11 +264,11 @@ func TestFilesRoundTrip(t *testing.T) {
 			t.Errorf("Incorrect data for %q: got %q, want %q", digest, got, want)
 		} else {
 			t.Logf("Found correct data for %q: %q", path, got)
-			found[path] = true
+			found.Add(path)
 		}
 	}
 	for path := range testFiles {
-		if !found[path] {
+		if !found.Contains(path) {
 			t.Errorf("Missing data for file %q", path)
 		}
 	}
@@ -357,11 +359,11 @@ func TestZipReader(t *testing.T) {
 	}
 
 	var numUnits int
-	digests := make(map[string]bool)
+	digests := stringset.New()
 	if err := pack.ReadUnits(ctx, "kythe", func(_ string, v interface{}) error {
 		numUnits++
 		for _, ri := range v.(*cpb.CompilationUnit).RequiredInput {
-			digests[ri.GetInfo().Digest] = true
+			digests.Add(ri.GetInfo().Digest)
 		}
 		return nil
 	}); err != nil {
@@ -370,10 +372,10 @@ func TestZipReader(t *testing.T) {
 	if numUnits != len(testUnits) {
 		t.Errorf("Read compilations: got %d compilations, want %d", numUnits, len(testUnits))
 	}
-	if len(digests) != len(testFiles) {
-		t.Errorf("Read files: got %d, want %d", len(digests), len(testFiles))
+	if digests.Len() != len(testFiles) {
+		t.Errorf("Read files: got %d, want %d", digests.Len(), len(testFiles))
 	}
-	t.Logf("Found %d compilations and %d unique file digests", numUnits, len(digests))
+	t.Logf("Found %d compilations and %d unique file digests", numUnits, digests.Len())
 	for digest := range digests {
 		data, err := pack.ReadFile(ctx, digest)
 		if err != nil {

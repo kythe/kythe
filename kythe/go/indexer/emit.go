@@ -97,8 +97,8 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 		pi:       pi,
 		sink:     sink,
 		opts:     opts,
-		impl:     make(map[impl]bool),
-		anchored: make(map[ast.Node]bool),
+		impl:     make(map[impl]struct{}),
+		anchored: make(map[ast.Node]struct{}),
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -163,9 +163,9 @@ type emitter struct {
 	pi       *PackageInfo
 	sink     Sink
 	opts     *EmitOptions
-	impl     map[impl]bool                        // see checkImplements
+	impl     map[impl]struct{}                    // see checkImplements
 	rmap     map[*ast.File]map[int]metadata.Rules // see applyRules
-	anchored map[ast.Node]bool                    // see writeAnchor
+	anchored map[ast.Node]struct{}                // see writeAnchor
 	firstErr error
 }
 
@@ -245,19 +245,19 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 // with given constructor and parameters.  The constructor's kind is also
 // emitted if this is the first time seeing it.
 func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VName, params ...*spb.VName) *spb.VName {
-	if !e.pi.typeEmitted[ctor.Signature] {
+	if !e.pi.typeEmitted.Contains(ctor.Signature) {
 		e.writeFact(ctor, facts.NodeKind, ctorKind)
 		if ctorKind == nodes.TBuiltin {
 			e.emitBuiltinMarkedSource(ctor)
 		}
-		e.pi.typeEmitted[ctor.Signature] = true
+		e.pi.typeEmitted.Add(ctor.Signature)
 	}
 	components := []interface{}{ctor}
 	for _, p := range params {
 		components = append(components, p)
 	}
 	v := &spb.VName{Language: govname.Language, Signature: hashSignature(components)}
-	if !e.pi.typeEmitted[v.Signature] {
+	if !e.pi.typeEmitted.Contains(v.Signature) {
 		e.writeFact(v, facts.NodeKind, nodes.TApp)
 		e.writeEdge(v, ctor, edges.ParamIndex(0))
 		for i, p := range params {
@@ -266,7 +266,7 @@ func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VNam
 		if ms != nil && e.opts.emitMarkedSource() {
 			e.emitCode(v, ms)
 		}
-		e.pi.typeEmitted[v.Signature] = true
+		e.pi.typeEmitted.Add(v.Signature)
 	}
 	return v
 }
@@ -284,10 +284,10 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 		v = e.pi.ObjectVName(typ.Obj())
 	case *types.Basic:
 		v = govname.BasicType(typ)
-		if !e.pi.typeEmitted[v.Signature] {
+		if !e.pi.typeEmitted.Contains(v.Signature) {
 			e.writeFact(v, facts.NodeKind, nodes.TBuiltin)
 			e.emitBuiltinMarkedSource(v)
-			e.pi.typeEmitted[v.Signature] = true
+			e.pi.typeEmitted.Add(v.Signature)
 		}
 	case *types.Array:
 		v = e.emitTApp(arrayTAppMS(typ.Len()), nodes.TBuiltin, govname.ArrayConstructorType(typ.Len()), e.emitType(typ.Elem()))
@@ -359,7 +359,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			append([]*spb.VName{ret, recv}, params...)...)
 	case *types.Interface:
 		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
-		if !e.pi.typeEmitted[v.Signature] {
+		if !e.pi.typeEmitted.Contains(v.Signature) {
 			e.writeFact(v, facts.NodeKind, nodes.Interface)
 			if e.opts.emitMarkedSource() {
 				e.emitCode(v, &cpb.MarkedSource{
@@ -367,11 +367,11 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 					PreText: typ.String(),
 				})
 			}
-			e.pi.typeEmitted[v.Signature] = true
+			e.pi.typeEmitted.Add(v.Signature)
 		}
 	case *types.Struct:
 		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
-		if !e.pi.typeEmitted[v.Signature] {
+		if !e.pi.typeEmitted.Contains(v.Signature) {
 			e.writeFact(v, facts.NodeKind, nodes.Record)
 			if e.opts.emitMarkedSource() {
 				e.emitCode(v, &cpb.MarkedSource{
@@ -379,7 +379,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 					PreText: typ.String(),
 				})
 			}
-			e.pi.typeEmitted[v.Signature] = true
+			e.pi.typeEmitted.Add(v.Signature)
 		}
 	default:
 		log.Printf("WARNING: unknown type %T: %+v", typ, typ)
@@ -856,10 +856,10 @@ func (e *emitter) check(err error) {
 
 func (e *emitter) checkImplements(src, tgt types.Object) bool {
 	i := impl{A: src, B: tgt}
-	if e.impl[i] {
+	if _, ok := e.impl[i]; ok {
 		return false
 	}
-	e.impl[i] = true
+	e.impl[i] = struct{}{}
 	return true
 }
 
@@ -878,10 +878,10 @@ func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
 }
 
 func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
-	if e.anchored[node] {
+	if _, ok := e.anchored[node]; ok {
 		return // this node already has an anchor
 	}
-	e.anchored[node] = true
+	e.anchored[node] = struct{}{}
 	e.check(e.sink.writeAnchor(e.ctx, src, start, end))
 }
 
