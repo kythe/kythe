@@ -51,5 +51,5 @@
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 find bazel-out/*/extra_actions/external/kythe_release -name '*.kzip' | \
   xargs -r /kythe/tools/kzip merge --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
-test -f "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip" || exit $?
 /kythe/fix_permissions.sh "$KYTHE_OUTPUT_DIRECTORY"
+test -f "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
