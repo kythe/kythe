@@ -51,5 +51,7 @@ build:remote --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/1.1
 
 build:remote --javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:jdk10
 
+build:remote --action_env=LEIN_JAVA_CMD=
+
 # Support user-provided user.bazelrc
 try-import user.bazelrc
