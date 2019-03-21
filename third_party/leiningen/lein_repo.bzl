@@ -18,6 +18,7 @@ abspath() {
     [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
   fi
 }
+set -eo pipefail
 export LEIN_HOME="$(abspath "$0.runfiles/%s/home")"
 export HOME="$LEIN_HOME",
 export JVM_OPTS="-Duser.home=$LEIN_HOME"
