@@ -164,6 +164,7 @@ LLVM_BUILD_DEPS = {
         "CodeGen",
         "Core",
         "DebugInfoCodeView",
+        "DebugInfoDWARF",
         "DebugInfoMSF",
         "MC",
         "MCParser",
