@@ -33,7 +33,7 @@ const clang::FileEntry* LookupFileForIncludePragma(
   if (preprocessor->LexHeaderName(filename_token)) {
     return nullptr;
   }
-  if (!filename_token.isOneOf(clang::tok::angle_string_literal,
+  if (!filename_token.isOneOf(clang::tok::header_name,
                               clang::tok::string_literal)) {
     return nullptr;
   }
