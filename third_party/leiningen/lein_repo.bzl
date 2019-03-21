@@ -19,6 +19,7 @@ abspath() {{
     [[ $1 = /* ]] && echo "$1" || echo "$PWD/${{1#./}}"
   fi
 }}
+set -eo pipefail
 # If the locally specified path to java exists, use it.
 # Otherwise, fallback to the system default (which may be incompatible).
 # TODO(shahms): This should be a toolchain if we keep leiningen around at all.
