@@ -121,7 +121,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 	// of the tickets is a complete definition, since that is preferred.
 	var numAnchors int
 	anchors := make(map[string][]*xpb.Anchor)
-	complete := make(map[string]bool)
+	complete := stringset.New()
 	pref := false
 	for ticket, xrefs := range defs.CrossReferences {
 		log.Printf("Checking node %q...", ticket)
@@ -149,14 +149,14 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 			switch s := string(comp); s {
 			case "definition":
 				if !pref {
-					complete = make(map[string]bool)
+					complete = stringset.New()
 					pref = true
 				}
-				complete[ticket] = true
+				complete.Add(ticket)
 				log.Print("+ Node is a preferred complete definition")
 			case "complete":
 				if !pref {
-					complete[ticket] = true
+					complete.Add(ticket)
 					log.Print("+ Node is a complete definition")
 				}
 			}
@@ -168,7 +168,7 @@ func (s *Resolver) Resolve(ctx context.Context, req *linkpb.LinkRequest) (*linkp
 	// If we do have any complete definitions, throw out all the others.
 	if len(complete) != 0 {
 		for ticket := range anchors {
-			if _, ok := complete[ticket]; !ok {
+			if !complete.Contains(ticket) {
 				log.Printf("- Discarding incomplete definition %q", ticket)
 				delete(anchors, ticket)
 			}
@@ -301,7 +301,7 @@ func compileLocation(locs []*linkpb.LinkRequest_Location, keep bool) (matcher, e
 		return func(*kytheuri.URI) bool { return keep }, nil
 	}
 	var matchPath, matchRoot []func(string) bool
-	corpora := make(map[string]bool)
+	corpora := stringset.New()
 	for _, loc := range locs {
 		if r, err := regexp.Compile(loc.Path); err == nil {
 			matchPath = append(matchPath, r.MatchString)
@@ -314,10 +314,10 @@ func compileLocation(locs []*linkpb.LinkRequest_Location, keep bool) (matcher, e
 			return nil, fmt.Errorf("root regexp: %v", err)
 		}
 		if loc.Corpus != "" {
-			corpora[loc.Corpus] = true
+			corpora.Add(loc.Corpus)
 		}
 	}
-	matchCorpus := func(c string) bool { return len(corpora) == 0 || corpora[c] }
+	matchCorpus := func(c string) bool { return corpora.Len() == 0 || corpora.Contains(c) }
 	return func(u *kytheuri.URI) bool {
 		for i := 0; i < len(matchPath); i++ {
 			if matchPath[i](u.Path) && matchRoot[i](u.Root) && matchCorpus(u.Corpus) {

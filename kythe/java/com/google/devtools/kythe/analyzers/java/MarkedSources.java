@@ -90,14 +90,18 @@ public final class MarkedSources {
         MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
     methodTAppBuilder
         .addChildBuilder()
-        .setKind(MarkedSource.Kind.LOOKUP_BY_PARAM)
-        .setLookupIndex(1)
-        .setPostText(" ");
-    methodTAppBuilder
+        .setKind(MarkedSource.Kind.BOX)
+        .setPostText(" ")
         .addChildBuilder()
         .setKind(MarkedSource.Kind.LOOKUP_BY_PARAM)
-        .setLookupIndex(2)
-        .setPostText("::");
+        .setLookupIndex(1);
+    methodTAppBuilder
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.BOX)
+        .setPostText("::")
+        .addChildBuilder()
+        .setKind(MarkedSource.Kind.LOOKUP_BY_PARAM)
+        .setLookupIndex(2);
     methodTAppBuilder
         .addChildBuilder()
         .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
