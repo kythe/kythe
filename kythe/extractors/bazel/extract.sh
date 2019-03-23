@@ -45,6 +45,15 @@
 
 : ${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
 
+if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
+  echo "Installing $KYTHE_SYSTEM_DEPS"
+  # TODO(jaysachs): unclear if we should bail if any packages fail to install
+  apt-get update && \
+  apt-get upgrade -y && \
+  apt-get install -y $KYTHE_SYSTEM_DEPS && \
+  apt-get clean
+fi
+
 /kythe/bazelisk --bazelrc=/kythe/bazelrc "$@"
 
 # Collect any extracted compilations.

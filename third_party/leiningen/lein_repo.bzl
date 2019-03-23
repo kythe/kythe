@@ -10,7 +10,7 @@ def _lein_repository(repository_ctx):
     repository_ctx.template("home/lein.sh", "home/lein.sh.in", {"LEIN_JVM_OPTS": "JVM_OPTS"})
     repository_ctx.file(
         "leinbuild.sh",
-        """#!/bin/sh
+        """#!/bin/bash
 abspath() {{
   # Compatibility script for OS X which lacks realpath
   if [ ! -z "$(which realpath)" ]; then
