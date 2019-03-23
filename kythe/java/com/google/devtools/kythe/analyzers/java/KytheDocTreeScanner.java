@@ -18,10 +18,14 @@ package com.google.devtools.kythe.analyzers.java;
 
 import static com.google.devtools.kythe.analyzers.java.KytheTreeScanner.DocKind.JAVADOC;
 
+import com.google.common.base.Splitter;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.sun.source.doctree.DeprecatedTree;
 import com.sun.source.doctree.ReferenceTree;
+import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.util.DocSourcePositions;
 import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTreePathScanner;
 import com.sun.source.util.DocTrees;
@@ -31,14 +35,19 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.tree.DCTree.DCDocComment;
 import com.sun.tools.javac.tree.DCTree.DCReference;
 import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.Position;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final KytheTreeScanner treeScanner;
   private final List<MiniAnchor<Symbol>> miniAnchors;
+  private Optional<String> deprecated;
   private final DocTrees trees;
 
   public KytheDocTreeScanner(KytheTreeScanner treeScanner, Context context) {
@@ -55,7 +64,9 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     }
 
     miniAnchors.clear();
+    deprecated = Optional.empty();
     scan(new DocTreePath(treePath, doc), doc);
+
 
     String bracketed =
         MiniAnchor.bracket(
@@ -72,7 +83,12 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
       anchoredTo.add(miniAnchor.getAnchoredTo());
     }
     treeScanner.emitDoc(
-        JAVADOC, bracketed, anchoredTo, node, absNode == null ? null : absNode.getVName());
+        JAVADOC,
+        bracketed,
+        anchoredTo,
+        deprecated,
+        node,
+        absNode == null ? null : absNode.getVName());
     return true;
   }
 
@@ -96,6 +112,40 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     treeScanner.emitDocReference(sym, startPos, endPos);
     miniAnchors.add(new MiniAnchor<Symbol>(sym, startPos, endPos));
 
+    return null;
+  }
+
+  @Override
+  public Void visitDeprecated(DeprecatedTree node, DCDocComment doc) {
+    if (node.getBody().isEmpty()) {
+      // deprecated tag is empty
+      deprecated = Optional.of("");
+      return null;
+    }
+    CompilationUnitTree unit = getCurrentPath().getTreePath().getCompilationUnit();
+    DocSourcePositions positions = trees.getSourcePositions();
+    int start = (int) positions.getStartPosition(unit, doc, node.getBody().get(0));
+    int end = (int) positions.getEndPosition(unit, doc, node);
+    if (end == Position.NOPOS) {
+      // deprecated tag is empty
+      deprecated = Optional.of("");
+      return null;
+    }
+    CharSequence source;
+    try {
+      source = unit.getSourceFile().getCharContent(/* ignoreEncodingErrors= */ true);
+    } catch (IOException e) {
+      return null;
+    }
+    // Join lines from multi-line @deprecated tags, removing the leading `*` from the javadoc.
+    String text =
+        Splitter.onPattern("\\R").splitToList(source.subSequence(start, end)).stream()
+            .map(String::trim)
+            .map(l -> l.startsWith("*") ? l.substring(1).trim() : l)
+            .collect(Collectors.joining(" "));
+
+    // Save the contents of the @deprecated tag to emit.
+    deprecated = Optional.of(text);
     return null;
   }
 }
