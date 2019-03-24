@@ -26,6 +26,7 @@ import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
+import com.google.devtools.kythe.analyzers.java.KytheDocTreeScanner.DocCommentVisitResult;
 import com.google.devtools.kythe.analyzers.java.SourceText.Comment;
 import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
@@ -878,30 +879,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private boolean visitDocComment(VName node, EntrySet absNode, JCModifiers modifiers) {
-    // emit tags/deprecated if a @Deprecated annotation is present even if there isn't @deprecated
-    // javadoc
-    String[] deprecated = {null};
-    if (modifiers != null) {
+    // TODO(#1501): always use absNode
+    Optional<String> deprecated = Optional.empty();
+    boolean documented = false;
+    if (docScanner != null) {
+      DocCommentVisitResult result = docScanner.visitDocComment(treePath, node, absNode);
+      documented = result.documented();
+      deprecated = result.deprecated();
+    }
+    if (!deprecated.isPresent() && modifiers != null) {
+      // emit tags/deprecated if a @Deprecated annotation is present even if there isn't @deprecated
+      // javadoc
       if (modifiers.getAnnotations().stream()
           .map(a -> a.annotationType.type.tsym.getQualifiedName())
           .anyMatch(n -> n.contentEquals("java.lang.Deprecated"))) {
-        deprecated[0] = "";
+        deprecated = Optional.of("");
       }
     }
-    // TODO(#1501): always use absNode
-    boolean documented =
-        docScanner != null
-            && docScanner.visitDocComment(
-                treePath,
-                node,
-                absNode,
-                d -> {
-                  deprecated[0] = d;
-                });
-    Optional<String> text = Optional.ofNullable(deprecated[0]);
-    emitDeprecated(text, node);
+    emitDeprecated(deprecated, node);
     if (absNode != null) {
-      emitDeprecated(text, absNode.getVName());
+      emitDeprecated(deprecated, absNode.getVName());
     }
     return documented;
   }

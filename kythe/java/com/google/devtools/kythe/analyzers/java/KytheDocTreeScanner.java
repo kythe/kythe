@@ -18,12 +18,12 @@ package com.google.devtools.kythe.analyzers.java;
 
 import static com.google.devtools.kythe.analyzers.java.KytheTreeScanner.DocKind.JAVADOC;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Splitter;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.sun.source.doctree.DeprecatedTree;
-import java.util.function.Consumer;
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.DocSourcePositions;
@@ -48,7 +48,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
 
   private final KytheTreeScanner treeScanner;
   private final List<MiniAnchor<Symbol>> miniAnchors;
-  private Consumer<String> deprecated;
+  private Optional<String> deprecated;
   private final DocTrees trees;
 
   public KytheDocTreeScanner(KytheTreeScanner treeScanner, Context context) {
@@ -57,15 +57,27 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     this.trees = JavacTrees.instance(context);
   }
 
-  public boolean visitDocComment(TreePath treePath, VName node, EntrySet absNode, Consumer<String> deprecated) {
+  @AutoValue
+  abstract static class DocCommentVisitResult {
+    abstract boolean documented();
+
+    abstract Optional<String> deprecated();
+
+    static DocCommentVisitResult create(boolean documented, Optional<String> deprecated) {
+      return new AutoValue_KytheDocTreeScanner_DocCommentVisitResult(documented, deprecated);
+    }
+  }
+
+  public DocCommentVisitResult visitDocComment(TreePath treePath, VName node, EntrySet absNode) {
     // TODO(#1501): always use absNode
     DCDocComment doc = (DCDocComment) trees.getDocCommentTree(treePath);
     if (doc == null) {
-      return false;
+      return DocCommentVisitResult.create(
+          /* documented= */ false, /* deprecated= */ Optional.empty());
     }
 
     miniAnchors.clear();
-    this.deprecated = deprecated;
+    deprecated = Optional.empty();
     scan(new DocTreePath(treePath, doc), doc);
 
 
@@ -89,7 +101,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
         anchoredTo,
         node,
         absNode == null ? null : absNode.getVName());
-    return true;
+    return DocCommentVisitResult.create(/* documented= */ true, /* deprecated= */ deprecated);
   }
 
   @Override
@@ -119,7 +131,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
   public Void visitDeprecated(DeprecatedTree node, DCDocComment doc) {
     if (node.getBody().isEmpty()) {
       // deprecated tag is empty
-      deprecated.accept("");
+      deprecated = Optional.of("");
       return null;
     }
     CompilationUnitTree unit = getCurrentPath().getTreePath().getCompilationUnit();
@@ -128,7 +140,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     int end = (int) positions.getEndPosition(unit, doc, node);
     if (end == Position.NOPOS) {
       // deprecated tag is empty
-      deprecated.accept("");
+      deprecated = Optional.of("");
       return null;
     }
     CharSequence source;
@@ -145,7 +157,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
             .collect(Collectors.joining(" "));
 
     // Save the contents of the @deprecated tag to emit.
-    deprecated.accept(text);
+    deprecated = Optional.of(text);
     return null;
   }
 }
