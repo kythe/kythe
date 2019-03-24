@@ -880,25 +880,25 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   private boolean visitDocComment(VName node, EntrySet absNode, JCModifiers modifiers) {
     // TODO(#1501): always use absNode
-    Optional<String> deprecated = Optional.empty();
+    Optional<String> deprecation = Optional.empty();
     boolean documented = false;
     if (docScanner != null) {
       DocCommentVisitResult result = docScanner.visitDocComment(treePath, node, absNode);
       documented = result.documented();
-      deprecated = result.deprecated();
+      deprecation = result.deprecation();
     }
-    if (!deprecated.isPresent() && modifiers != null) {
+    if (!deprecation.isPresent() && modifiers != null) {
       // emit tags/deprecated if a @Deprecated annotation is present even if there isn't @deprecated
       // javadoc
       if (modifiers.getAnnotations().stream()
           .map(a -> a.annotationType.type.tsym.getQualifiedName())
           .anyMatch(n -> n.contentEquals("java.lang.Deprecated"))) {
-        deprecated = Optional.of("");
+        deprecation = Optional.of("");
       }
     }
-    emitDeprecated(deprecated, node);
+    emitDeprecated(deprecation, node);
     if (absNode != null) {
-      emitDeprecated(deprecated, absNode.getVName());
+      emitDeprecated(deprecation, absNode.getVName());
     }
     return documented;
   }
@@ -1228,8 +1228,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
   }
 
-  private void emitDeprecated(Optional<String> deprecated, VName node) {
-    deprecated.ifPresent(d -> entrySets.getEmitter().emitFact(node, "/kythe/tag/deprecated", d));
+  private void emitDeprecated(Optional<String> deprecation, VName node) {
+    deprecation.ifPresent(d -> entrySets.getEmitter().emitFact(node, "/kythe/tag/deprecated", d));
   }
 
   // Unwraps the target EntrySet and emits an edge to it from the sourceNode
