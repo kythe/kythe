@@ -7,6 +7,7 @@ load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
+load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 
 def _rule_dependencies():
     gazelle_dependencies()
@@ -165,6 +166,8 @@ def _cc_dependencies():
         git_llvm_repository,
         name = "org_llvm",
     )
+
+    lexyacc_configure()
 
 def _java_dependencies():
     maybe(
