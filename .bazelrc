@@ -7,9 +7,6 @@ build --auto_cpu_environment_group=//buildenv:cpu
 # Ensure clang is used, by default, over any other C++ installation (e.g. gcc).
 build --client_env=CC=clang
 
-# Allow the user to override the Bison installation.
-build --action_env=BISON
-
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env
 
@@ -52,6 +49,7 @@ build:remote --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/1.1
 build:remote --javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:jdk10
 
 build:remote --action_env=LEIN_JAVA_CMD=
+build:remote --action_env=BISON=/usr/bin/bison
 
 # Support user-provided user.bazelrc
 try-import user.bazelrc

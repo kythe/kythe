@@ -109,6 +109,7 @@ def _local_lexyacc(repository_ctx):
 
 local_lexyacc_repository = repository_rule(
     implementation = _local_lexyacc,
+    local = True,
     environ = ["PATH", "BISON"],
 )
 
