@@ -40,7 +40,6 @@ Kythe relies on the following external dependencies:
 * jdk >= 8
 * [leiningen](http://leiningen.org/) (used to build `//kythe/web/ui`)
 * libcurl4-openssl-dev
-* libncurses-dev
 * libssl-dev
 * node.js
 * parallel

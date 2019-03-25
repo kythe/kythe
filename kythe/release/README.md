@@ -43,7 +43,6 @@ extractors, and tools directly supported by the Kythe team.
 
 # Dependencies
  - Java JDK >=8
- - libncurses
  - libuuid
 
 ## Debian Jessie Install
