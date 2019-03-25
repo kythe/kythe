@@ -10,5 +10,3 @@ sh_binary(
     name = "zcatext",
     srcs = ["zcatext.sh"],
 )
-
-toolchain(name = "bison_toolchain_type")
