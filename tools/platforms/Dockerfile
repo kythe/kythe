@@ -18,7 +18,7 @@ FROM gcr.io/cloud-marketplace/google/rbe-ubuntu16-04@sha256:9bd8ba020af33edb5f11
 RUN apt-get update && \
     apt-get install -y \
       # Kythe C++ dependencies
-      cmake libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex bison g++ \
+      cmake libssl-dev uuid-dev libcurl4-openssl-dev flex bison g++ \
       # Kythe misc dependencies
       asciidoc source-highlight graphviz && \
     apt-get clean
