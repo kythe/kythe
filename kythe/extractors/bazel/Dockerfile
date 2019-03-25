@@ -29,6 +29,7 @@ RUN tar xzf /tmp/kythe-v*.tar.gz && \
 # Tools and configuration
 ADD kythe/extractors/bazel/extract.sh /kythe/
 ADD kythe/release/base/fix_permissions.sh /kythe/
+ADD external/javax_annotation_jsr250_api/jar/jsr250-api-1.0.jar /kythe/
 
 # Bazel repository setup
 ADD kythe/extractors/bazel/extractors.bazelrc /kythe/bazelrc
