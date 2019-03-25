@@ -54,7 +54,7 @@ lexyacc_variables = rule(
     toolchains = ["//tools/build_rules/lexyacc:toolchain_type"],
 )
 
-def _lexyacc_toolchain(ctx):
+def _lexyacc_toolchain_impl(ctx):
     return [
         platform_common.ToolchainInfo(
             lexyaccinfo = LexYaccInfo(
@@ -64,8 +64,8 @@ def _lexyacc_toolchain(ctx):
         ),
     ]
 
-lexyacc_toolchain = rule(
-    implementation = _lexyacc_toolchain,
+_lexyacc_toolchain = rule(
+    implementation = _lexyacc_toolchain_impl,
     attrs = {
         "lex": attr.string(),
         "yacc": attr.string(),
@@ -74,6 +74,14 @@ lexyacc_toolchain = rule(
         platform_common.ToolchainInfo,
     ],
 )
+
+def lexyacc_toolchain(name, lex, yacc):
+    _lexyacc_toolchain(name = name, lex = lex, yacc = yacc)
+    native.toolchain(
+        name = name + "_toolchain",
+        toolchain = ":" + name,
+        toolchain_type = "@//tools/build_rules/lexyacc:toolchain_type",
+    )
 
 def _local_lexyacc(repository_ctx):
     flex = repository_ctx.which("flex")
@@ -96,13 +104,6 @@ def _local_lexyacc(repository_ctx):
             "  name = \"lexyacc_local\",",
             "  lex = \"%s\"," % flex,
             "  yacc = \"%s\"," % bison,
-            ")",
-            "toolchain(",
-            "  name = \"lexyacc_local_toolchain\",",
-            "  toolchain = \":lexyacc_local\",",
-            "  toolchain_type = \"@//tools/build_rules/lexyacc:toolchain_type\",",
-            "  #exec_compatible_with = [\"@bazel_tools//platforms:host_platform\"],",
-            "  #target_compatible_with = [\"@bazel_tools//platforms:target_platform\"],",
             ")",
         ]),
     )
