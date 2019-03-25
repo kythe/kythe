@@ -83,6 +83,12 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "deprecation_tests",
+    size = "small",
+    srcs = ["Deprecation.java"],
+)
+
+java_verifier_test(
     name = "comments_tests",
     size = "small",
     srcs = ["Comments.java"],

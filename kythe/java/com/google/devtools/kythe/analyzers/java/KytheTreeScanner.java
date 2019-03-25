@@ -916,7 +916,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
               comment.text.replaceFirst("^(//|/\\*) ?", "").replaceFirst(" ?\\*/$", ""),
               pos -> pos,
               new ArrayList<>());
-      emitDoc(DocKind.LINE, bracketed, new ArrayList<>(), node, null);
+      emitDoc(DocKind.LINE, bracketed, new ArrayList<>(), Optional.empty(), node, null);
     }
     return !lst.isEmpty();
   }
@@ -1184,7 +1184,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   void emitDoc(
-      DocKind kind, String bracketedText, Iterable<Symbol> params, VName node, VName absNode) {
+      DocKind kind,
+      String bracketedText,
+      Iterable<Symbol> params,
+      Optional<String> deprecated,
+      VName node,
+      VName absNode) {
     List<VName> paramNodes = new ArrayList<>();
     for (Symbol s : params) {
       VName paramNode = getNode(s);
@@ -1197,9 +1202,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         entrySets.newDocAndEmit(kind.getDocSubkind(), filePositions, bracketedText, paramNodes);
     // TODO(#1501): always use absNode
     entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, node);
+    emitDeprecated(deprecated, node);
     if (absNode != null) {
       entrySets.emitEdge(doc.getVName(), EdgeKind.DOCUMENTS, absNode);
+      emitDeprecated(deprecated, absNode);
     }
+  }
+
+  private void emitDeprecated(Optional<String> deprecated, VName node) {
+    deprecated.ifPresent(d -> entrySets.getEmitter().emitFact(node, "/kythe/tag/deprecated", d));
   }
 
   // Unwraps the target EntrySet and emits an edge to it from the sourceNode
