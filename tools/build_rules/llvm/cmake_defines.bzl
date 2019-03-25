@@ -52,7 +52,6 @@ _CMAKE_DEFINES = {
     "HAVE_SYS_STAT_H": "1",
     "HAVE_SYS_TIME_H": "1",
     "HAVE_SYS_TYPES_H": "1",
-    "HAVE_TERMINFO": "1",
     "HAVE_TERMIOS_H": "1",
     "HAVE_UNISTD_H": "1",
     "HAVE__UNWIND_BACKTRACE": "1",

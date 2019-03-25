@@ -6,7 +6,6 @@ TARGET_DEFAULTS = {
     "LLVMSupport": {
         "linkopts": [
             "-pthread",
-            "-lncurses",
             "-ldl",
         ],
         "deps": [
