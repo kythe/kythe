@@ -18,8 +18,8 @@ load(
     "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     "CPP_COMPILE_ACTION_NAME",
 )
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":toolchain_utils.bzl", "find_cpp_toolchain")
 load(
     ":verifier_test.bzl",
     "KytheEntries",
