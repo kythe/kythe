@@ -57,7 +57,7 @@ RUN curl -L -o /usr/bin/bazel-0.22.0 https://github.com/bazelbuild/bazel/release
 ADD bazel /usr/bin/bazel
 
 # Install latest supported Bazel version
-RUN curl -L -o /usr/bin/bazel-0.23.1 https://github.com/bazelbuild/bazel/releases/download/0.23.1/bazel-0.23.1-linux-x86_64 && chmod +x /usr/bin/bazel-0.23.1
+RUN curl -L -o /usr/bin/bazel-0.24.0 https://github.com/bazelbuild/bazel/releases/download/0.24.0/bazel-0.24.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.24.0
 
 # Buildbot configuration
 ADD bazelrc /root/.bazelrc
