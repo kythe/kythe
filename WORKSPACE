@@ -6,15 +6,15 @@ load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.20", "0.23")
+check_version("0.22", "0.24")
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "0ffaab86bed3a0c8463dd63b1fe2218d8cad09e7f877075bf028f202f8df1ddc",
-    strip_prefix = "bazel-toolchains-5ce127aee3b4c22ab76071de972b71190f29be6e",
+    sha256 = "3296270c89ad23d1cde1a9cea54873c33d894fe7e8e1b2a44589db5da7f4a9ba",
+    strip_prefix = "bazel-toolchains-bdcb59618ced1fc1a749669fc1fe7b7d98b0239f",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/5ce127aee3b4c22ab76071de972b71190f29be6e.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/archive/5ce127aee3b4c22ab76071de972b71190f29be6e.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/bdcb59618ced1fc1a749669fc1fe7b7d98b0239f.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/bdcb59618ced1fc1a749669fc1fe7b7d98b0239f.tar.gz",
     ],
 )
 
