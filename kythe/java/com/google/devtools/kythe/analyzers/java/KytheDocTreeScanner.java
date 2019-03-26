@@ -63,7 +63,14 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
 
     abstract Optional<String> deprecation();
 
-    static DocCommentVisitResult create(boolean documented, Optional<String> deprecation) {
+    private static final DocCommentVisitResult UNDOCUMENTED =
+        create(/* documented= */ false, /* deprecation= */ Optional.empty());
+
+    static DocCommentVisitResult create(Optional<String> deprecation) {
+      return create(/* documented= */ true, deprecation);
+    }
+
+    private static DocCommentVisitResult create(boolean documented, Optional<String> deprecation) {
       return new AutoValue_KytheDocTreeScanner_DocCommentVisitResult(documented, deprecation);
     }
   }
@@ -72,8 +79,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     // TODO(#1501): always use absNode
     DCDocComment doc = (DCDocComment) trees.getDocCommentTree(treePath);
     if (doc == null) {
-      return DocCommentVisitResult.create(
-          /* documented= */ false, /* deprecation= */ Optional.empty());
+      return DocCommentVisitResult.UNDOCUMENTED;
     }
 
     miniAnchors.clear();
@@ -101,7 +107,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
         anchoredTo,
         node,
         absNode == null ? null : absNode.getVName());
-    return DocCommentVisitResult.create(/* documented= */ true, /* deprecation= */ deprecation);
+    return DocCommentVisitResult.create(deprecation);
   }
 
   @Override
