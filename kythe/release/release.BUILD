@@ -21,12 +21,21 @@ construct_vnames_config(
     ],
 )
 
-# Clone of default Java proto toolchain with "annotate_code" enabled for
-# cross-language metadata file generation.
 proto_lang_toolchain(
     name = "java_proto_toolchain",
-    command_line = "--java_out=annotate_code:$(OUT)",
-    runtime = "@com_google_protobuf//:protobuf_java",
+    command_line = "--java_out=annotate_code,shared,immutable,no_enforce_api_compatibility:$(OUT)",
+    runtime = ":protobuf",
+)
+
+java_library(
+    name = "protobuf",
+    visibility = ["//visibility:private"],
+    exports = [
+        "@com_google_protobuf//:protobuf_java",
+    ],
+    deps = [
+        "@com_google_protobuf//:protobuf_java",
+    ],
 )
 
 # Clone of default C++ proto toolchain with "annotate_headers" enabled for
