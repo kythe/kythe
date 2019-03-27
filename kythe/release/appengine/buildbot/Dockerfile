@@ -64,7 +64,8 @@ ADD bazelrc /root/.bazelrc
 ADD start.sh /buildbot/
 ADD worker /buildbot/worker
 ADD master /buildbot/master
-ADD secrets/kythe-bazel-remote-cache.json /buildbot/
+ADD secrets.tar /buildbot
+RUN buildbot checkconfig /buildbot/master/master.cfg
 
 EXPOSE 8080
 CMD /buildbot/start.sh
