@@ -43,8 +43,9 @@ build:remote --host_platform=//tools/platforms:rbe
 build:remote --platforms=//tools/platforms:rbe
 
 build:remote --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
-build:remote --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.20.0/default:toolchain
-build:remote --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.20.0/cpp:cc-toolchain-clang-x86_64-default
+build:remote --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.22.0/default:toolchain
+build:remote --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.22.0/cpp:cc-toolchain-clang-x86_64-default
+
 build:remote --extra_toolchains=@io_kythe//tools/build_rules/lexyacc:lexyacc_remote_toolchain
 
 build:remote --javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:jdk10
