@@ -21,11 +21,15 @@ cd "$(dirname "$0")"
 # Cleanup secrets on exit
 trap "rm -rf '$PWD/secrets'*" EXIT ERR INT
 
-gsutil cp gs://kythe-buildbot/secrets.tar.enc secrets.tar.enc
-gcloud kms decrypt --location=global --keyring=Buildbot --key=secrets \
-  --plaintext-file=secrets.tar --ciphertext-file=secrets.tar.enc
-
 VERSION=v1
-docker build -t gcr.io/kythe-repo/buildbot.$VERSION .
-docker push gcr.io/kythe-repo/buildbot.$VERSION
+if [[ "$1" == --cloud ]]; then
+  gcloud builds submit --substitutions=_VERSION=$VERSION .
+else
+  gsutil cp gs://kythe-buildbot/secrets.tar.enc secrets.tar.enc
+  gcloud kms decrypt --location=global --keyring=Buildbot --key=secrets \
+    --plaintext-file=secrets.tar --ciphertext-file=secrets.tar.enc
+
+  docker build -t gcr.io/kythe-repo/buildbot.$VERSION .
+  docker push gcr.io/kythe-repo/buildbot.$VERSION
+fi
 gcloud app deploy --image-url=gcr.io/kythe-repo/buildbot.$VERSION --stop-previous-version --version $VERSION

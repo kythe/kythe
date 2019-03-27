@@ -22,19 +22,6 @@ steps:
   - -t
   - gcr.io/$PROJECT_ID/buildbot.$_VERSION
   - .
-- name: gcr.io/cloud-builders/docker
-  id: 'Push image'
-  args:
-  - push
-  - gcr.io/$PROJECT_ID/buildbot.$_VERSION
-- name: gcr.io/cloud-builders/gcloud
-  id: 'Deploy'
-  args:
-  - app
-  - deploy
-  - --image-url=gcr.io/kythe-repo/buildbot.$_VERSION
-  - --stop-previous-version
-  - --version=$_VERSION
 timeout: 1800s # 30 minute timeout
 images:
   - gcr.io/$PROJECT_ID/buildbot.$_VERSION
