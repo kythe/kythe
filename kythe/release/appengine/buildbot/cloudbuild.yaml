@@ -29,7 +29,7 @@ steps:
   args:
   - push
   - gcr.io/$PROJECT_ID/buildbot.$_VERSION
-timeout: 1800s # 30 minute timeout
+timeout: 30m
 images:
   - gcr.io/$PROJECT_ID/buildbot.$_VERSION
 substitutions:
