@@ -18,25 +18,4 @@
 
 cd "$(dirname "$0")"
 
-# Cleanup secrets on exit
-trap "rm -rf '$PWD/secrets'* '$PWD/master/master.cfg'" EXIT ERR INT
-
-gsutil cp gs://kythe-buildbot/secrets.tar.enc secrets.tar.enc
-gcloud kms decrypt --location=global --keyring=Buildbot --key=secrets \
-  --plaintext-file=secrets.tar --ciphertext-file=secrets.tar.enc
-tar xf secrets.tar
-
-SECRETS_SED=
-for secret in secrets/*; do
-  name="$(basename "$secret")"
-  SECRETS_SED="$SECRETS_SED
-s/@secret{$name}/$(cat "$secret" | tr -d '\n' | sed 's#/#\\/#g')/g"
-done
-
-sed "$SECRETS_SED" master/master.cfg.template >master/master.cfg
-buildbot checkconfig master
-
-VERSION=v1
-docker build -t gcr.io/kythe-repo/buildbot.$VERSION .
-docker push gcr.io/kythe-repo/buildbot.$VERSION
-gcloud app deploy --image-url=gcr.io/kythe-repo/buildbot.$VERSION --stop-previous-version --version $VERSION
+gcloud builds submit .
