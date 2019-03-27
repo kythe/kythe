@@ -21,6 +21,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
         "//kythe/java/com/google/devtools/kythe/analyzers/jvm:jvm_graph",
+        "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/platform/java",
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",

@@ -1,6 +1,6 @@
 package pkg;
 
-//- @+8Deprecation defines/binding DeprecationClass
+//- @+9Deprecation defines/binding DeprecationClass
 
 /**
  * This the javadoc summary fragment, not the {@code @deprecated} tag.
@@ -8,18 +8,21 @@ package pkg;
  * @deprecated this class is obsolete; prefer {@link Comments}
  * @author this is an author tag, not the {@code @deprecated} tag.
  */
+@Deprecated
 public class Deprecation {
   //- DeprecationClass.tag/deprecated "this class is obsolete; prefer {@link Comments}"
 
-  //- @+3deprecatedMethod defines/binding DeprecationMethod
+  //- @+4deprecatedMethod defines/binding DeprecationMethod
 
   /** @deprecated this method is obsolete */
+  @Deprecated
   void deprecatedMethod() {}
   //- DeprecationMethod.tag/deprecated "this method is obsolete"
 
-  //- @+3deprecatedField defines/binding DeprecationField
+  //- @+4deprecatedField defines/binding DeprecationField
 
   /** @deprecated this field is obsolete */
+  @Deprecated
   int deprecatedField;
   //- DeprecationField.tag/deprecated "this field is obsolete"
 
