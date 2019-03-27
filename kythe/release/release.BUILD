@@ -21,6 +21,8 @@ construct_vnames_config(
     ],
 )
 
+# Clone of default Java proto toolchain with "annotate_code" enabled for
+# cross-language metadata file generation.
 proto_lang_toolchain(
     name = "java_proto_toolchain",
     command_line = "--java_out=annotate_code,shared,immutable,no_enforce_api_compatibility:$(OUT)",
