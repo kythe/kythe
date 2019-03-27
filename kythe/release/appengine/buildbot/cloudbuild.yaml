@@ -5,6 +5,8 @@ steps:
   - cp
   - gs://kythe-buildbot/secrets.tar.enc
   - secrets.tar.enc
+# Decrypt retrieved credentials.
+# https://cloud.google.com/cloud-build/docs/securing-builds/use-encrypted-secrets-credentials
 - name: gcr.io/cloud-builders/gcloud
   id: 'Decrypt secrets'
   args:
@@ -22,6 +24,11 @@ steps:
   - -t
   - gcr.io/$PROJECT_ID/buildbot.$_VERSION
   - .
+- name: gcr.io/cloud-builders/docker
+  id: 'Push image'
+  args:
+  - push
+  - gcr.io/$PROJECT_ID/buildbot.$_VERSION
 timeout: 1800s # 30 minute timeout
 images:
   - gcr.io/$PROJECT_ID/buildbot.$_VERSION
