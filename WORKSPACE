@@ -10,11 +10,11 @@ check_version("0.22", "0.24")
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "3296270c89ad23d1cde1a9cea54873c33d894fe7e8e1b2a44589db5da7f4a9ba",
-    strip_prefix = "bazel-toolchains-bdcb59618ced1fc1a749669fc1fe7b7d98b0239f",
+    sha256 = "d3da5e10483e2786452a3bdfe1bc2e3e4185f5292f96a52374a1f9aacf25d308",
+    strip_prefix = "bazel-toolchains-4c1acb6eaf4a23580ac2edf56393a69614426399",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/bdcb59618ced1fc1a749669fc1fe7b7d98b0239f.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/archive/bdcb59618ced1fc1a749669fc1fe7b7d98b0239f.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/4c1acb6eaf4a23580ac2edf56393a69614426399.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/4c1acb6eaf4a23580ac2edf56393a69614426399.tar.gz",
     ],
 )
 
