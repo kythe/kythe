@@ -76,9 +76,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_github_gflags_gflags",
-        sha256 = "94ad0467a0de3331de86216cbc05636051be274bf2160f6e86f07345213ba45b",
-        strip_prefix = "gflags-77592648e3f3be87d6c7123eb81cbad75f9aef5a",
-        url = "https://github.com/gflags/gflags/archive/77592648e3f3be87d6c7123eb81cbad75f9aef5a.zip",
+        sha256 = "19713a36c9f32b33df59d1c79b4958434cb005b5b47dc5400a7a4b078111d9b5",
+        strip_prefix = "gflags-2.2.2",
+        url = "https://github.com/gflags/gflags/archive/v2.2.2.zip",
     )
 
     maybe(
