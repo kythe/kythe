@@ -42,9 +42,6 @@ cc_library(
     copts = [
         "-Wno-unused-variable",
     ],
-    visibility = [
-        "//kythe/cxx/indexer/textproto:__pkg__",
-    ],
     deps = [
         ":proto_graph_builder",
         ":search_path",
