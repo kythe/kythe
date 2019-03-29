@@ -173,7 +173,7 @@ filegroup(
 
 filegroup(
     name = "bazel_proto_extractor",
-    srcs = ["@io_kythe_lang_proto//kythe/go/extractors/proto:extract_proto_kzip"],
+    srcs = ["//kythe/go/extractors/proto:extract_proto_kzip"],
 )
 
 filegroup(
@@ -203,7 +203,7 @@ filegroup(
 
 filegroup(
     name = "proto_indexer",
-    srcs = ["@io_kythe_lang_proto//kythe/cxx/indexer/proto:indexer"],
+    srcs = ["//kythe/cxx/indexer/proto:indexer"],
 )
 
 filegroup(

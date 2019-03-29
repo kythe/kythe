@@ -20,7 +20,7 @@ load(
     "verifier_test",
 )
 load(
-    "@io_kythe_lang_proto//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl",
+    "//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl",
     "proto_extract_kzip",
 )
 
@@ -330,7 +330,7 @@ def java_proto_verifier_test(
         index_compilation,
         name = name + "_proto_entries",
         testonly = True,
-        indexer = "@io_kythe_lang_proto//kythe/cxx/indexer/proto:indexer",
+        indexer = "//kythe/cxx/indexer/proto:indexer",
         opts = ["--index_file"],
         tags = tags,
         visibility = visibility,

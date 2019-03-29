@@ -664,13 +664,6 @@ def _bindings():
         actual = "@net_zlib//:zlib",
     )
 
-def _kythe_contributions():
-    git_repository(
-        name = "io_kythe_lang_proto",
-        commit = "e9b68f1708ebeb4c11e0a7ff155ab0a5480d3a35",
-        remote = "https://github.com/kythe/lang-proto",
-    )
-
 def _extractor_image_dependencies():
     """Defines external repositories necessary for extractor images."""
     maybe(
@@ -702,7 +695,6 @@ def kythe_dependencies():
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
-    _kythe_contributions()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.

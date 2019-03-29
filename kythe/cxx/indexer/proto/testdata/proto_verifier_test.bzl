@@ -49,7 +49,7 @@ proto_extract_kzip = rule(
         ),
         "deps": attr.label_list(allow_files = True),
         "extractor": attr.label(
-            default = Label("@io_kythe_lang_proto//kythe/cxx/extractor/proto:proto_extractor"),
+            default = Label("//kythe/cxx/extractor/proto:proto_extractor"),
             executable = True,
             cfg = "host",
         ),
@@ -106,7 +106,7 @@ def proto_verifier_test(
         index_compilation,
         name = name + "_entries",
         testonly = True,
-        indexer = "@io_kythe_lang_proto//kythe/cxx/indexer/proto:indexer",
+        indexer = "//kythe/cxx/indexer/proto:indexer",
         opts = indexer_opts + ["--index_file"],
         tags = tags,
         visibility = visibility,
