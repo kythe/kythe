@@ -1,0 +1,148 @@
+// Test proto for doc comments.
+
+syntax = "proto2";
+
+package proto_kythe_test;
+
+//- @+8"DocComment" defines/binding DocCommentMessage
+//- DocCommentComment.node/kind doc
+//- DocCommentComment documents DocCommentMessage
+//- DocCommentComment.text
+//-   "A doc comment is a piece of text which documents a code element.\nDoc comments can have html code in them."
+
+// A doc comment is a piece of text which documents a code element.
+// Doc comments can have html code in them.
+message DocComment {
+
+  //- Type1Comment.node/kind doc
+  //- Type1Comment.text
+  //-   "This field determines the type of a comment.\nA comment can be single line or multi-line."
+  //- Type1Comment documents Type1Message
+  //- @+2"type1" defines/binding Type1Message
+
+  optional CommentType type1 = 2;
+  // This field determines the type of a comment.
+  // A comment can be single line or multi-line.
+
+  //- @+3"content1" defines/binding _Content1Field
+
+  // Comment content includes comment marks.
+  optional string content1 = 3;
+  // comment marks are: //, /*, *, and */
+
+  //- HtmlTreeComment.node/kind doc
+  //- HtmlTreeComment.text "The html part\nof the comment"
+  //- HtmlTreeComment documents HtmlTreeMessage
+  //- @+4"HtmlTree" defines/binding HtmlTreeMessage
+
+  /* The html part
+   * of the comment */
+  message HtmlTree {
+
+    //- @+3"content2" defines/binding _Content2Field
+
+    // content of the html
+    optional string content2 = 1;
+
+    //- TagTypeComment.node/kind doc
+    //- TagTypeComment.text "\nType of a tag\n"
+    //- TagTypeComment documents TagTypeEnum
+    //- @+5"TagType" defines/binding TagTypeEnum
+
+    /*
+     * Type of a tag
+     */
+    enum TagType {
+
+      //- ClosedValueDoc.node/kind doc
+      //- ClosedValueDoc.text "Closed"
+      //- ClosedValueDoc documents ClosedValue
+      //- @+2"CLOSED" defines/binding ClosedValue
+
+      CLOSED = 0; // Closed
+
+      //- OpenValueDoc.node/kind doc
+      //- OpenValueDoc.text "Open"
+      //- OpenValueDoc documents OpenValue
+      //- @+2"OPEN" defines/binding OpenValue
+
+      OPEN = 1; /* Open */
+    }
+
+    //- @+3"type2" defines/binding _Type2Field
+
+    /* The type of the tag */
+    optional TagType type2 = 2;
+
+    //- CromulentComment.node/kind doc
+    //- CromulentComment documents CromulentField
+    //- @+11"cromulent" defines/binding CromulentField
+
+    /*
+     *
+     * Some other field, I guess?
+     *
+     * I don't know.
+     *
+     * I just write these comments.
+     *
+     */
+    optional bool cromulent = 3;
+  }
+}
+
+//- CommentTypeEnumComment.node/kind doc
+//- CommentTypeEnumComment.text "Structural type of a comment"
+//- CommentTypeEnumComment documents CommentTypeEnum
+//- @+2"CommentType" defines/binding CommentTypeEnum
+
+enum CommentType {
+  // Structural type of a comment
+
+  //- SingleLineComment.node/kind doc
+  //- SingleLineComment.text "Only one line comment"
+  //- SingleLineComment documents SingleLineValue
+  //- @+2"SINGLE_LINE" defines/binding SingleLineValue
+
+  SINGLE_LINE = 8;
+  /* Only one line comment */
+
+  //- MultiLineComment.node/kind doc
+  //- MultiLineComment.text "Comment which spans to multiple lines.\nHere is another line"
+  //- MultiLineComment documents MultiLineValue
+  //- @+2"MULTI_LINE" defines/binding MultiLineValue
+
+  MULTI_LINE = 2;
+  /* Comment which spans to multiple lines.
+   * Here is another line */
+
+  //- WeirdComment.node/kind doc
+  //- WeirdComment documents WeirdValue
+  //- @+2"WEIRD_MULTI_LINE" defines/binding WeirdValue
+
+  WEIRD_MULTI_LINE = 4; /*
+                         *
+                         * Who is doing this.
+                         *
+                         * Who thought comments should look like this.
+                         *
+                         */
+}
+
+//- DocServiceComment.node/kind doc
+//- DocServiceComment.text "Doc service comment\nmore of the DocService comment, for some reason."
+//- DocServiceComment documents DocServiceNode
+//- @+2"DocService" defines/binding DocServiceNode
+
+service DocService { /* Doc service comment
+* more of the DocService comment, for some reason. */
+
+  //- GetDocCommentComment.node/kind doc
+  //- GetDocCommentComment.text "GetDocComment comment"
+  //- GetDocCommentComment documents GetMethod
+  //- @+2"GetDocComment" defines/binding GetMethod
+
+  rpc GetDocComment(DocComment) returns (DocComment) {
+    // GetDocComment comment
+  }
+}

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package example;
+
+message Message1 {
+    //- @str_field defines/binding Message1StrField?
+    string str_field = 1;
+}
+
+//- @Message2 defines/binding Message2?
+message Message2 {
+    //- @field1 defines/binding Field1?
+    string field1 = 1;
+
+    //- @field2 defines/binding Field2?
+    int32 field2 = 2;
+
+    //- @bool_field defines/binding BoolField?
+    bool bool_field = 3;
+
+    //- @repeated_field defines/binding RepeatedField?
+    repeated string repeated_field = 4;
+
+    //- @msg1 defines/binding Msg1?
+    Message1 msg1 = 5;
+
+    //- @repeated_message defines/binding RepeatedMessage?
+    repeated Message1 repeated_message = 6;
+
+    //- @field5 defines/binding Field5?
+    repeated bool field5 = 7;
+}

@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package deps_test;
+
+import "dep.proto";
+
+message MyMessage {
+    optional deps_test.SubMessage sub_msg = 1;
+}

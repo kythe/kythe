@@ -1,0 +1,6 @@
+# proto-file: example_with_deps.proto
+# proto-message: deps_test.MyMessage
+
+sub_msg {
+    field1: "hello"
+}

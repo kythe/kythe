@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package repeated_extension_test;
+
+message Extendee {
+    extensions 100 to max;
+}
+
+message Extension {
+    extend Extendee {
+        //- @ext defines/binding Ext?
+        repeated Extension ext = 1000;
+    }
+
+    //- @str_field defines/binding ExtensionStrField?
+    optional string str_field = 1;
+}

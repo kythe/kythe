@@ -1,0 +1,21 @@
+// For testing generated code vnames.
+
+syntax = "proto2";
+
+package proto_kythe_test;
+
+message ParentMessage {
+  message NestedMessage {
+  }
+
+  enum NestedEnum {
+    TEST = 1;
+  }
+}
+
+enum TopLevelEnum {
+  TEST = 1;
+}
+
+service TestService {
+}
