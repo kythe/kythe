@@ -13,7 +13,7 @@ def genlex(name, src, out, includes = []):
         outs = [out],
         srcs = [src] + includes,
         cmd = cmd,
-        toolchains = ["@//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
+        toolchains = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
     )
 
 def genyacc(name, src, header_out, source_out, extra_outs = []):
@@ -32,7 +32,7 @@ def genyacc(name, src, header_out, source_out, extra_outs = []):
         outs = [source_out, header_out] + extra_outs,
         srcs = [src],
         cmd = cmd,
-        toolchains = ["@//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
+        toolchains = ["@io_kythe//tools/build_rules/lexyacc:current_lexyacc_toolchain"],
     )
 
 LexYaccInfo = provider(
@@ -41,7 +41,7 @@ LexYaccInfo = provider(
 )
 
 def _lexyacc_variables(ctx):
-    lyinfo = ctx.toolchains["//tools/build_rules/lexyacc:toolchain_type"].lexyaccinfo
+    lyinfo = ctx.toolchains["@io_kythe//tools/build_rules/lexyacc:toolchain_type"].lexyaccinfo
     return [
         platform_common.TemplateVariableInfo({
             "LEX": lyinfo.lex,
@@ -51,7 +51,7 @@ def _lexyacc_variables(ctx):
 
 lexyacc_variables = rule(
     implementation = _lexyacc_variables,
-    toolchains = ["//tools/build_rules/lexyacc:toolchain_type"],
+    toolchains = ["@io_kythe//tools/build_rules/lexyacc:toolchain_type"],
 )
 
 def _lexyacc_toolchain_impl(ctx):
@@ -80,7 +80,7 @@ def lexyacc_toolchain(name, lex, yacc):
     native.toolchain(
         name = name + "_toolchain",
         toolchain = ":" + name,
-        toolchain_type = "@//tools/build_rules/lexyacc:toolchain_type",
+        toolchain_type = "@io_kythe//tools/build_rules/lexyacc:toolchain_type",
     )
 
 def _local_lexyacc(repository_ctx):
@@ -98,7 +98,7 @@ def _local_lexyacc(repository_ctx):
     repository_ctx.file(
         "BUILD.bazel",
         content = "\n".join([
-            "load(\"@//tools/build_rules/lexyacc:lexyacc.bzl\", \"lexyacc_toolchain\")",
+            "load(\"@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl\", \"lexyacc_toolchain\")",
             "package(default_visibility=[\"//visibility:public\"])",
             "lexyacc_toolchain(",
             "  name = \"lexyacc_local\",",
