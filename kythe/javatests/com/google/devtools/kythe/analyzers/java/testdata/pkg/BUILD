@@ -211,7 +211,6 @@ java_verifier_test(
     name = "generics_tests",
     size = "small",
     srcs = ["Generics.java"],
-    visibility = ["//kythe/go/serving/tools/testdata:__pkg__"],
 )
 
 java_verifier_test(
