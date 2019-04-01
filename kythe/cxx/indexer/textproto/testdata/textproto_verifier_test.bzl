@@ -79,21 +79,28 @@ def textproto_verifier_test(
         proto_extractor_opts = [],
         indexer_opts = [],
         verifier_opts = [],
-        expect_success = True,
         convert_marked_source = False,
         vnames_config = None,
         visibility = None):
     """Extract, analyze, and verify a textproto compilation.
 
     Args:
-      srcs: The compilation's source file inputs; each file's verifier goals will be checked
+      name: Name of the test
+      textproto: Textproto file being tested
+      protos: Proto files that define the textproto's schema
       deps: Optional list of textproto_verifier_test targets to be used as proto compilation dependencies
+      size: Test size
+      tags: Test tags
       extractor: Executable extractor tool to invoke (defaults to protoc_extractor)
       extractor_opts: List of options passed to the extractor tool
       proto_extractor_opts: List of options passed to the proto extractor tool
       indexer_opts: List of options passed to the indexer tool
       verifier_opts: List of options passed to the verifier tool
+      convert_marked_source: Whether the verifier should convert marked source.
       vnames_config: Optional path to a VName configuration file
+      visibility: Visibility of underlying build targets
+    Returns:
+      Name of the test rule
     """
 
     # extract textproto
@@ -155,7 +162,6 @@ def textproto_verifier_test(
         name = name,
         size = size,
         srcs = [entries, proto_entries],
-        expect_success = expect_success,
         opts = vopts,
         tags = tags,
         visibility = visibility,

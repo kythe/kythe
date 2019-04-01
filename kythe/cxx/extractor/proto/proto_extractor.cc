@@ -109,7 +109,7 @@ proto::CompilationUnit ProtoExtractor::ExtractProtos(
   }
 
   // Add protoc args to output.
-  if (path_substitutions.size()) {
+  if (!path_substitutions.empty()) {
     unit.add_argument("--");
     for (auto& arg : PathSubstitutionsToArgs(path_substitutions)) {
       unit.add_argument(arg);

@@ -66,7 +66,6 @@ proto_extract_kzip = rule(
 def proto_verifier_test(
         name,
         srcs,
-        meta = [],
         deps = [],
         size = "small",
         tags = [],
@@ -74,21 +73,26 @@ def proto_verifier_test(
         extractor_opts = [],
         indexer_opts = [],
         verifier_opts = [],
-        expect_success = True,
         convert_marked_source = False,
         vnames_config = None,
         visibility = None):
     """Extract, analyze, and verify a proto compilation.
 
     Args:
+      name: Name of the test
       srcs: The compilation's source file inputs; each file's verifier goals will be checked
       deps: Optional list of proto_verifier_test targets to be used as proto compilation dependencies
-      meta: Optional list of Kythe metadata files
+      size: Test size
+      tags: Test tags
       extractor: Executable extractor tool to invoke (defaults to protoc_extractor)
       extractor_opts: List of options passed to the extractor tool
       indexer_opts: List of options passed to the indexer tool
       verifier_opts: List of options passed to the verifier tool
+      convert_marked_source: Whether the verifier should convert marked source.
       vnames_config: Optional path to a VName configuration file
+      visibility: Visibility of underlying build targets
+    Returns:
+      Name of the test rule
     """
     kzip = _invoke(
         proto_extract_kzip,
@@ -120,7 +124,6 @@ def proto_verifier_test(
         name = name,
         size = size,
         srcs = [entries],
-        expect_success = expect_success,
         opts = vopts,
         tags = tags,
         visibility = visibility,
