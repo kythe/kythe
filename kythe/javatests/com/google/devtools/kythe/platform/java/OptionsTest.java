@@ -19,7 +19,6 @@ package com.google.devtools.kythe.platform.java;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Lists;
-import com.sun.tools.javac.api.JavacTool;
 import java.util.List;
 import junit.framework.TestCase;
 
