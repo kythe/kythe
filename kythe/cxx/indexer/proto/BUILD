@@ -12,16 +12,16 @@ cc_library(
     deps = [
         ":comments",
         ":vname_util",
+        "//kythe/cxx/common:kythe_uri",
+        "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:vname_ordering",
+        "//kythe/cxx/common/indexing:output",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:storage_cc_proto",
+        "//kythe/proto:xref_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
-        "@io_kythe//kythe/cxx/common:kythe_uri",
-        "@io_kythe//kythe/cxx/common:lib",
-        "@io_kythe//kythe/cxx/common:vname_ordering",
-        "@io_kythe//kythe/cxx/common/indexing:output",
-        "@io_kythe//kythe/proto:common_cc_proto",
-        "@io_kythe//kythe/proto:storage_cc_proto",
-        "@io_kythe//kythe/proto:xref_cc_proto",
     ],
 )
 
@@ -46,6 +46,16 @@ cc_library(
         ":proto_graph_builder",
         ":search_path",
         ":source_tree",
+        "//kythe/cxx/common:kythe_uri",
+        "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:path_utils",
+        "//kythe/cxx/common:status_or",
+        "//kythe/cxx/common:utf8_line_index",
+        "//kythe/cxx/common/indexing:output",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:storage_cc_proto",
+        "//kythe/proto:xref_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
@@ -53,16 +63,6 @@ cc_library(
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
-        "@io_kythe//kythe/cxx/common:kythe_uri",
-        "@io_kythe//kythe/cxx/common:lib",
-        "@io_kythe//kythe/cxx/common:path_utils",
-        "@io_kythe//kythe/cxx/common:status_or",
-        "@io_kythe//kythe/cxx/common:utf8_line_index",
-        "@io_kythe//kythe/cxx/common/indexing:output",
-        "@io_kythe//kythe/proto:analysis_cc_proto",
-        "@io_kythe//kythe/proto:common_cc_proto",
-        "@io_kythe//kythe/proto:storage_cc_proto",
-        "@io_kythe//kythe/proto:xref_cc_proto",
     ],
 )
 
@@ -71,8 +71,8 @@ cc_library(
     hdrs = ["vname_util.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//kythe/cxx/common:lib",
         "@com_google_protobuf//:protobuf",
-        "@io_kythe//kythe/cxx/common:lib",
     ],
 )
 
@@ -84,11 +84,11 @@ cc_library(
         "//kythe/cxx/indexer/textproto:__subpackages__",
     ],
     deps = [
+        "//kythe/cxx/common:path_utils",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
-        "@io_kythe//kythe/cxx/common:path_utils",
     ],
 )
 
@@ -102,9 +102,9 @@ cc_library(
         "//kythe/cxx/indexer/textproto:__subpackages__",
     ],
     deps = [
+        "//kythe/cxx/common:path_utils",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
-        "@io_kythe//kythe/cxx/common:path_utils",
     ],
 )
 
@@ -124,18 +124,18 @@ cc_library(
     ],
     deps = [
         ":proto_analyzer",
+        "//kythe/cxx/common:json_proto",
+        "//kythe/cxx/common:kzip_reader",
+        "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:path_utils",
+        "//kythe/cxx/common/indexing:caching_output",
+        "//kythe/cxx/common/indexing:output",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:buildinfo_cc_proto",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
-        "@io_kythe//kythe/cxx/common:json_proto",
-        "@io_kythe//kythe/cxx/common:kzip_reader",
-        "@io_kythe//kythe/cxx/common:lib",
-        "@io_kythe//kythe/cxx/common:path_utils",
-        "@io_kythe//kythe/cxx/common/indexing:caching_output",
-        "@io_kythe//kythe/cxx/common/indexing:output",
-        "@io_kythe//kythe/proto:analysis_cc_proto",
-        "@io_kythe//kythe/proto:buildinfo_cc_proto",
     ],
 )
 
@@ -153,6 +153,6 @@ cc_test(
     srcs = ["comments_test.cc"],
     deps = [
         ":comments",
-        "@io_kythe//third_party:gtest_main",
+        "//third_party:gtest_main",
     ],
 )

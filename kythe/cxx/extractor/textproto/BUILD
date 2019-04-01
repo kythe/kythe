@@ -4,13 +4,13 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":textproto_schema",
+        "//kythe/cxx/common:kzip_writer",
         "//kythe/cxx/extractor/proto:lib",
         "//kythe/cxx/indexer/proto:search_path",
+        "//kythe/proto:analysis_cc_proto",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
-        "@io_kythe//kythe/cxx/common:kzip_writer",
-        "@io_kythe//kythe/proto:analysis_cc_proto",
     ],
 )
 
@@ -29,6 +29,6 @@ cc_test(
     srcs = ["textproto_schema_test.cc"],
     deps = [
         ":textproto_schema",
-        "@io_kythe//third_party:gtest_main",
+        "//third_party:gtest_main",
     ],
 )
