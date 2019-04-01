@@ -4,14 +4,14 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":lib",
+        "//kythe/cxx/common:kzip_writer",
+        "//kythe/cxx/common:path_utils",
         "//kythe/cxx/indexer/proto:search_path",
+        "//kythe/proto:analysis_cc_proto",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
-        "@io_kythe//kythe/cxx/common:kzip_writer",
-        "@io_kythe//kythe/cxx/common:path_utils",
-        "@io_kythe//kythe/proto:analysis_cc_proto",
     ],
 )
 
@@ -21,13 +21,13 @@ cc_library(
     hdrs = ["proto_extractor.h"],
     visibility = ["//kythe/cxx/extractor/textproto:__subpackages__"],
     deps = [
+        "//kythe/cxx/common:index_writer",
+        "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:path_utils",
         "//kythe/cxx/indexer/proto:search_path",
+        "//kythe/proto:analysis_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
-        "@io_kythe//kythe/cxx/common:index_writer",
-        "@io_kythe//kythe/cxx/common:lib",
-        "@io_kythe//kythe/cxx/common:path_utils",
-        "@io_kythe//kythe/proto:analysis_cc_proto",
     ],
 )
