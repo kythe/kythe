@@ -78,7 +78,7 @@ kzip_diff_test = rule(
         "kindex_tool": attr.label(
             cfg = "host",
             executable = True,
-            default = Label("@io_kythe//kythe/cxx/tools:kindex_tool"),
+            default = Label("//kythe/cxx/tools:kindex_tool"),
         ),
     },
     test = True,
