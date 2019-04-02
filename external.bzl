@@ -518,9 +518,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_minio_highwayhash",
-        commit = "85fc8a2dacad36a6beb2865793cd81363a496696",
         custom = "highwayhash",
         importpath = "github.com/minio/highwayhash",
+        tag = "v1.0.0",
     )
 
     maybe(
