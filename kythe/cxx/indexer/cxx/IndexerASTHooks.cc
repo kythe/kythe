@@ -4071,11 +4071,11 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(clang::RecordTypeLoc TL) {
     NodeId DeclId =
         Observer.recordTappNode(BuildNodeIdForDecl(SpecDecl), TemplateArgs);
     if (SpecDecl->getTemplatedDecl()->getDefinition()) {
-      return {std::move(DeclId), Claimability::Unclaimable};
+      return {DeclId, Claimability::Unclaimable};
     } else {
       return {Observer.recordTappNode(BuildNominalNodeIdForDecl(SpecDecl),
                                       TemplateArgs),
-              std::move(DeclId)};
+              DeclId};
     }
   } else {
     return BuildNodeSetForNonSpecializedRecordDecl(Decl);
