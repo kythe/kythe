@@ -32,7 +32,7 @@ namespace kythe {
 class ImputedConstructorSupport : public LibrarySupport {
  public:
   explicit ImputedConstructorSupport(
-      std::unordered_set<std::string> allowed_constructor_names = {
+      std::unordered_set<std::string> patterns = {
           "std(::\\w+)*::make_unique", "absl::make_unique",
           "llvm::make_unique"});
 
