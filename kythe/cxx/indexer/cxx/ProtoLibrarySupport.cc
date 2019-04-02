@@ -104,7 +104,7 @@ class ParseTextProtoHandler {
   //    ": 'literal'"
   // or
   //    "{ field1: 3 field2: 'value' }"
-  bool ParseFieldValue(const clang::CXXMethodDecl& AccessorDecl);
+  bool ParseFieldValue(const clang::CXXMethodDecl& accessor_decl);
 
   // Returns the source location/range of a given position/token.
   clang::SourceLocation GetSourceLocation(

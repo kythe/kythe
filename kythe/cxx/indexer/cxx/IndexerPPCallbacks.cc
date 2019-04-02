@@ -345,7 +345,7 @@ void IndexerPPCallbacks::HandleKytheInlineMetadataPragma(
   clang::Token tok;
   if (!preprocessor.LexStringLiteral(tok, search_string,
                                      "pragma kythe_inline_metadata",
-                                     /*MacroExpansion=*/true)) {
+                                     /*AllowMacroExpansion=*/true)) {
     return;
   }
   if (search_string.empty()) {
