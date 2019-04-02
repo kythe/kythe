@@ -45,7 +45,10 @@ genrule(
         ":jvm_indexer",
         ":cxx_indexer",
         ":go_indexer",
+        ":proto_extractor",
         ":proto_indexer",
+        ":textproto_extractor",
+        ":textproto_indexer",
         ":tools",
         ":misc",
         "//kythe/proto:public",
@@ -69,6 +72,7 @@ genrule(
         "--cp $(location cxx_indexer) indexers/cxx_indexer",
         "--cp $(location go_indexer) indexers/go_indexer",
         "--cp $(location proto_indexer) indexers/proto_indexer",
+        "--cp $(location textproto_indexer) indexers/textproto_indexer",
         "--cp $(location javac_extractor) extractors/javac_extractor.jar",
         "--cp $(location bazel_cxx_extractor) extractors/bazel_cxx_extractor",
         "--cp $(location bazel_extract_kzip) extractors/bazel_extract_kzip",
@@ -79,6 +83,8 @@ genrule(
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--cp $(location go_extractor) extractors/go_extractor",
+        "--cp $(location proto_extractor) extractors/proto_extractor",
+        "--cp $(location textproto_extractor) extractors/textproto_extractor",
         "--cp $(location cc_proto_metadata_plugin) tools/cc_proto_metadata_plugin",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
@@ -202,8 +208,23 @@ filegroup(
 )
 
 filegroup(
+    name = "proto_extractor",
+    srcs = ["//kythe/cxx/extractor/proto:proto_extractor"],
+)
+
+filegroup(
     name = "proto_indexer",
     srcs = ["//kythe/cxx/indexer/proto:indexer"],
+)
+
+filegroup(
+    name = "textproto_extractor",
+    srcs = ["//kythe/cxx/extractor/textproto:textproto_extractor"],
+)
+
+filegroup(
+    name = "textproto_indexer",
+    srcs = ["//kythe/cxx/indexer/textproto:textproto_indexer"],
 )
 
 filegroup(

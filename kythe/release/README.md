@@ -13,6 +13,7 @@ extractors, and tools directly supported by the Kythe team.
    - java_indexer.jar         :: Java indexer
    - jvm_indexer.jar          :: JVM jar indexer
    - proto_indexer            :: Protocol-buffer indexer
+   - textproto_indexer        :: Text-format protocol-buffer indexer
  - extractors
    - bazel_cxx_extractor      :: C++ extractor for Bazel extra_actions
    - bazel_extract_kzip       :: Generic kzip extractor for Bazel extra actions
@@ -24,6 +25,8 @@ extractors, and tools directly supported by the Kythe team.
    - go_extractor             :: Go extractor
    - javac-wrapper.sh         :: javac wrapper script for extractor
    - javac_extractor.jar      :: Java extractor
+   - proto_extractor          :: Protocol-buffer extractor
+   - textproto_extractor      :: Text-format protocol-buffer extractor
  - proto                      :: Protocol buffer definitions of public APIs
  - tools
    - cc_proto_metadata_plugin :: Replacement protoc plugin to generate metadata for C++
