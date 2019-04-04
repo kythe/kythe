@@ -28,9 +28,10 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/platform/kzip"
-	apb "kythe.io/kythe/proto/analysis_go_proto"
 
 	"bitbucket.org/creachadair/stringset"
+
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
 // Settings encapsulates data for validation of a single kzip and repo.
@@ -65,7 +66,8 @@ type Coverage struct {
 	Paths []Dir
 }
 
-// Stats on contents of archive, file count by corpus/extension
+// Statistics collects file count stats on the contents of an archive per corpus, a map
+// from corpus to file extension to count.
 type Statistics map[string]map[string]int
 
 // The number of missing paths to print in output.
@@ -81,8 +83,8 @@ type Dir struct {
 	Missing int
 }
 
-// accumulate accumulates statistics (currently granular file counts)
-// from a compilation unit.
+// accumulate accumulates statistics (currently granular file counts) from a compilation
+// unit. Note that repeated calls for the same compilation unit are not idempotent.
 func (s Statistics) accumulate(cu *apb.CompilationUnit) {
 	corpus := cu.VName.Corpus
 	if s[corpus] == nil {
