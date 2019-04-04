@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/platform/kzip"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 
 	"bitbucket.org/creachadair/stringset"
 )
@@ -54,6 +55,8 @@ type Result struct {
 	NumMissing int
 	// A breakdown of subdirectories with the most missing files.
 	TopMissing Coverage
+	// Statistics on the count of archive source files by corpus and extension.
+	Stats Statistics
 }
 
 // Coverage describes the missing subdirectories in a repo.
@@ -61,6 +64,9 @@ type Coverage struct {
 	// The missing paths.
 	Paths []Dir
 }
+
+// Stats on contents of archive
+type Statistics map[string]map[string]int
 
 // The number of missing paths to print in output.
 const topMissingPathsLimit = 20
@@ -73,6 +79,16 @@ type Dir struct {
 	// Missing is the number of files in the Repo from the corresponding
 	// subdirectory that were missing from the KZIP.
 	Missing int
+}
+
+func (s Statistics) accumulate(cu *apb.CompilationUnit) {
+	corpus := cu.VName.Corpus
+	if s[corpus] == nil {
+		s[corpus] = make(map[string]int)
+	}
+	for _, f := range cu.SourceFile {
+		s[corpus][getExt(f)]++
+	}
 }
 
 // Len reports the number of repo paths missing in the kzip archives.
@@ -97,7 +113,7 @@ func (c *Coverage) Less(i, j int) bool {
 // percentage of files are covered in the kzip.
 func (s Settings) Validate() (*Result, error) {
 	log.Printf("Gathering validation data for %s", s.Compilations)
-	fromKZIP, err := s.filenamesFromCompilations(s.Compilations)
+	stats, fromKZIP, err := s.filenamesFromCompilations(s.Compilations)
 	if err != nil {
 		return nil, fmt.Errorf("reading from kzip %s: %v", s.Compilations, err)
 	}
@@ -127,23 +143,25 @@ func (s Settings) Validate() (*Result, error) {
 		NumRepoFiles:    len(fromRepo),
 		NumMissing:      len(missingFromKZIP),
 		TopMissing:      topMissing,
+		Stats:           stats,
 	}, err
 }
 
-func (s Settings) filenamesFromCompilations(compilations []string) (stringset.Set, error) {
+func (s Settings) filenamesFromCompilations(compilations []string) (Statistics, stringset.Set, error) {
+	stats := make(Statistics)
 	ret := stringset.New()
 	for _, path := range compilations {
 		f, err := os.Open(path)
 		if err != nil {
-			return nil, fmt.Errorf("opening kzip %s: %v", path, err)
+			return nil, nil, fmt.Errorf("opening kzip %s: %v", path, err)
 		}
 		fi, err := f.Stat()
 		if err != nil {
-			return nil, fmt.Errorf("getting kzip size %s: %v", path, err)
+			return nil, nil, fmt.Errorf("getting kzip size %s: %v", path, err)
 		}
 		r, err := kzip.NewReader(f, fi.Size())
 		if err != nil {
-			return nil, fmt.Errorf("opening kzip reader %s: %v", path, err)
+			return nil, nil, fmt.Errorf("opening kzip reader %s: %v", path, err)
 		}
 
 		if err := r.Scan(func(cu *kzip.Unit) error {
@@ -153,14 +171,15 @@ func (s Settings) filenamesFromCompilations(compilations []string) (stringset.Se
 						ret.Add(f)
 					}
 				}
+				stats.accumulate(cu.Proto)
 			}
 			return nil
 		}); err != nil {
-			return nil, fmt.Errorf("scanning kzip %s: %v", path, err)
+			return nil, nil, fmt.Errorf("scanning kzip %s: %v", path, err)
 		}
 	}
 
-	return ret, nil
+	return stats, ret, nil
 }
 
 func (s Settings) filenamesFromPath(path string) (stringset.Set, error) {
