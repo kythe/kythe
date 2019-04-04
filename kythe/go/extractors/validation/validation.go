@@ -81,6 +81,8 @@ type Dir struct {
 	Missing int
 }
 
+// accumulate accumulates statistics (currently granular file counts)
+// from a compilation unit.
 func (s Statistics) accumulate(cu *apb.CompilationUnit) {
 	corpus := cu.VName.Corpus
 	if s[corpus] == nil {
