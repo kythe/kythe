@@ -240,10 +240,8 @@ cc_kythe_proto_library = rule(
 
 def _cc_extract_kzip_impl(ctx):
     cpp = find_cpp_toolchain(ctx)
-    if cpp.libc == "macosx":
-        toolchain_includes = cpp.built_in_include_directories
-    else:
-        toolchain_includes = []
+    toolchain_files = cpp.all_files if hasattr(cpp, 'all_files') else depset()
+    toolchain_includes = cpp.built_in_include_directories
     cc_info = cc_common.merge_cc_infos(cc_infos = [
         src[CcInfo]
         for src in ctx.attr.srcs + ctx.attr.deps
@@ -258,7 +256,7 @@ def _cc_extract_kzip_impl(ctx):
             opts = _compiler_options(
                 ctx,
                 cpp,
-                ctx.attr.opts,
+                ctx.attr.opts + ['-nostdinc', '-nostdinc++'],
                 toolchain_includes,
                 cc_info,
             ),
@@ -266,7 +264,7 @@ def _cc_extract_kzip_impl(ctx):
             deps = depset(
                 direct = ctx.files.srcs,
                 transitive = [depset(ctx.files.deps), cc_info.compilation_context.headers],
-            ),
+            ) + toolchain_files,
         )
         for src in ctx.files.srcs
         if not src.path.endswith(".h")  # Don't extract headers.
