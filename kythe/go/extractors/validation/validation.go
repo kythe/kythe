@@ -65,7 +65,7 @@ type Coverage struct {
 	Paths []Dir
 }
 
-// Stats on contents of archive
+// Stats on contents of archive, file count by corpus/extension
 type Statistics map[string]map[string]int
 
 // The number of missing paths to print in output.
