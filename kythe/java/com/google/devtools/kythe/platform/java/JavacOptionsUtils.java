@@ -47,8 +47,7 @@ import javax.tools.OptionChecker;
 /**
  * A utility class for dealing with javac command-line options.
  *
- * To make modifications to javac commandline arguments, use
- * {@code ModifiableOptions.of(args)}.
+ * <p>To make modifications to javac commandline arguments, use {@code ModifiableOptions.of(args)}.
  */
 public class JavacOptionsUtils {
 
@@ -79,7 +78,7 @@ public class JavacOptionsUtils {
     return (i >= 0) ? Charset.forName(options.get(i + 1)) : null;
   }
 
-  /** A useful container for modifying javac commandline arguements, in the style of a builder. */
+  /** A useful container for modifying javac commandline arguments, in the style of a builder. */
   public static class ModifiableOptions {
     private List<String> internal = new ArrayList<>();
 
