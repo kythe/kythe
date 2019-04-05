@@ -318,7 +318,7 @@ public class JavaCompilationUnitExtractor {
    */
   private static List<String> removeDestDirOptions(Iterable<String> options) {
     return JavacOptionsUtils.removeOptions(
-        Lists.newArrayList(options), EnumSet.of(Option.S, Option.H));
+        Lists.newArrayList(options), EnumSet.of(Option.D, Option.S, Option.H));
   }
 
   /**
