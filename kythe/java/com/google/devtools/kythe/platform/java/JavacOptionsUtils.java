@@ -62,7 +62,7 @@ public class JavacOptionsUtils {
   private static final Splitter PATH_SPLITTER = Splitter.on(':').trimResults().omitEmptyStrings();
   private static final Joiner PATH_JOINER = Joiner.on(':').skipNulls();
   /** Returns a new list of options with only javac compiler supported options. */
-  public static List<String> removeUnsupportedOptions(List<String> rawOptions) {
+  public static List<String> removeUnsupportedOptions(Iterable<String> rawOptions) {
     List<String> options = new ArrayList<>();
     ImmutableList<OptionChecker> optionCheckers =
         ImmutableList.of(JavacTool.create(), new JavacFileManager(new Context(), false, UTF_8));
