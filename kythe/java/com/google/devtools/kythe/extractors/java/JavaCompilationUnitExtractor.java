@@ -922,7 +922,7 @@ public class JavaCompilationUnitExtractor {
 
     List<String> completeOptions =
         JavacOptionsUtils.ensureEncodingSet(
-            JavacOptionsUtils.removeUnsupportedOptions(Lists.newArrayList(rawOptions)),
+            JavacOptionsUtils.removeUnsupportedOptions(rawOptions),
             Charsets.UTF_8);
 
     setLocation(
