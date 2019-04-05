@@ -553,8 +553,7 @@ public class JavaExtractorTest extends TestCase {
     // Check that the -s, and -h flags have been removed from the compilation's arguments, but -d
     // preserved (it is required by modular builds).
     assertThat(unit.getArgumentList())
-        .containsExactly(
-            "-Xdoclint:-Xdoclint:all/private", "-g:lines", "-d", outputDirs.get(2).toString())
+        .containsExactly("-Xdoclint:-Xdoclint:all/private", "-g:lines")
         .inOrder();
   }
 
