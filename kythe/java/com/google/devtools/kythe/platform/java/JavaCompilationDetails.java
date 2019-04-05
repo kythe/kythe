@@ -22,8 +22,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.flogger.FluentLogger;
+import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptions;
 import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitBasedJavaFileManager;
 import com.google.devtools.kythe.platform.java.filemanager.JavaFileStoreBasedFileManager;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
@@ -184,20 +184,20 @@ public class JavaCompilationDetails {
   }
 
   /** Generate options (such as classpath and sourcepath) from the compilation unit. */
-  private static List<String> optionsFromCompilationUnit(
+  private static ImmutableList<String> optionsFromCompilationUnit(
       CompilationUnit compilationUnit, List<Processor> processors) {
     // Start with the default options, and then add in source
-    List<String> arguments = Lists.newArrayList(compilationUnit.getArgumentList());
-    // TODO(jrtom): use static imports for brevity
-    arguments = JavacOptionsUtils.ensureEncodingSet(arguments, DEFAULT_ENCODING);
-    JavacOptionsUtils.updateArgumentsWithJavaOptions(arguments, compilationUnit);
+    ModifiableOptions arguments =
+        ModifiableOptions.of(compilationUnit.getArgumentList())
+            .ensureEncodingSet(DEFAULT_ENCODING)
+            .updateWithJavaOptions(compilationUnit);
 
     if (processors.isEmpty()) {
       arguments.add("-proc:none");
     }
 
-    arguments = JavacOptionsUtils.removeUnsupportedOptions(arguments);
-    return ImmutableList.copyOf(arguments);
+    arguments.removeUnsupportedOptions();
+    return arguments.build();
   }
 
   /** Writes nothing, used to reduce noise from the javac analysis output. */
