@@ -317,6 +317,7 @@ public class JavaCompilationUnitExtractor {
    * Returns a new list with the same options except header/source destination directory options.
    */
   private static List<String> removeDestDirOptions(Iterable<String> options) {
+    // TODO(#3671): Option.D needs to remain in for module support, fix either here or in indexing.
     return JavacOptionsUtils.removeOptions(
         Lists.newArrayList(options), EnumSet.of(Option.D, Option.S, Option.H));
   }
