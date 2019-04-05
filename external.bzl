@@ -699,12 +699,19 @@ def kythe_dependencies():
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
     # TODO(justbuchanan): update to the next tagged release when available
+    # maybe(
+    #     http_archive,
+    #     name = "com_google_protobuf",
+    #     sha256 = "48a01655a0ce6ee5cf22cf182bab285951a4cef7f8a9f84db80ec0f8145546c6",
+    #     strip_prefix = "protobuf-2d0183ab58706a919f138e6920e33e3b76eb62f6",
+    #     urls = ["https://github.com/protocolbuffers/protobuf/archive/2d0183ab58706a919f138e6920e33e3b76eb62f6.zip"],
+    # )
+    # TODO(justbuchanan): DO NOT SUBMIT. wait until https://github.com/protocolbuffers/protobuf/pull/5991 is merged.
     maybe(
-        http_archive,
+        git_repository,
         name = "com_google_protobuf",
-        sha256 = "48a01655a0ce6ee5cf22cf182bab285951a4cef7f8a9f84db80ec0f8145546c6",
-        strip_prefix = "protobuf-2d0183ab58706a919f138e6920e33e3b76eb62f6",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/2d0183ab58706a919f138e6920e33e3b76eb62f6.zip"],
+        commit = "oneof_annotations",
+        remote = "https://github.com/justbuchanan/protobuf",
     )
 
     maybe(
