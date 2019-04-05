@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptions;
-import java.util.List;
 import junit.framework.TestCase;
 
 /** Unit tests for {@link JavacOptionsUtils}. */
@@ -29,7 +28,8 @@ public class OptionsTest extends TestCase {
   public void testRemoveUnsupportedOptions_depAnn() {
     final String lintOption = "-Xlint:-dep-ann";
 
-    ModifiableOptions args = ModifiableOptions.of(ImmutableList.of(lintOption, "--class-path", "some/class/path"));
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of(lintOption, "--class-path", "some/class/path"));
     assertThat(args.removeUnsupportedOptions().build())
         .containsExactly("--class-path", "some/class/path")
         .inOrder();
