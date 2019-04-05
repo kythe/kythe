@@ -68,16 +68,6 @@ public class JavacOptionsUtils {
   private static final Splitter PATH_SPLITTER = Splitter.on(':').trimResults().omitEmptyStrings();
   private static final Joiner PATH_JOINER = Joiner.on(':').skipNulls();
 
-  /**
-   * Extract the encoding flag from the list of javac options. If the flag is specified more than
-   * once, returns the last copy, which matches javac's behavior. If the flag is not specified,
-   * returns null.
-   */
-  public static @Nullable Charset getEncodingOption(List<String> options) {
-    int i = options.lastIndexOf("-encoding");
-    return (i >= 0) ? Charset.forName(options.get(i + 1)) : null;
-  }
-
   /** A useful container for modifying javac commandline arguments, in the style of a builder. */
   public static class ModifiableOptions {
     private List<String> internal = new ArrayList<>();
@@ -128,6 +118,30 @@ public class JavacOptionsUtils {
           }
         }
         it.next();
+      }
+      return this;
+    }
+
+    /** Removes the given {@link Option}s (and their arguments) from the builder. */
+    public ModifiableOptions removeOptions(Set<Option> opts) {
+      List<String> original = internal;
+      internal = new ArrayList<>(original.size());
+      for (int i = 0; i < original.size(); i++) {
+        String opt = original.get(i);
+        boolean matched = false;
+        for (Option o : opts) {
+          if (o.matches(opt)) {
+            matched = true;
+            if (o.hasArg()) {
+              // Skip the argument too.
+              i++;
+            }
+            break;
+          }
+        }
+        if (!matched) {
+          internal.add(opt);
+        }
       }
       return this;
     }
@@ -247,29 +261,15 @@ public class JavacOptionsUtils {
       }
       return paths.build();
     }
+  }
 
-    /** Removes the given {@link Option}s (and their arguments) from the builder. */
-    public ModifiableOptions removeOptions(Set<Option> opts) {
-      List<String> original = internal;
-      internal = new ArrayList<>(original.size());
-      for (int i = 0; i < original.size(); i++) {
-        String opt = original.get(i);
-        boolean matched = false;
-        for (Option o : opts) {
-          if (o.matches(opt)) {
-            matched = true;
-            if (o.hasArg()) {
-              // Skip the argument too.
-              i++;
-            }
-            break;
-          }
-        }
-        if (!matched) {
-          internal.add(opt);
-        }
-      }
-      return this;
-    }
+  /**
+   * Extract the encoding flag from the list of javac options. If the flag is specified more than
+   * once, returns the last copy, which matches javac's behavior. If the flag is not specified,
+   * returns null.
+   */
+  public static @Nullable Charset getEncodingOption(List<String> options) {
+    int i = options.lastIndexOf("-encoding");
+    return (i >= 0) ? Charset.forName(options.get(i + 1)) : null;
   }
 }
