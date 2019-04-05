@@ -44,7 +44,12 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.tools.OptionChecker;
 
-/** A utility class for dealing with javac command-line options. */
+/**
+ * A utility class for dealing with javac command-line options.
+ *
+ * To make modifications to javac commandline arguments, use
+ * {@code ModifiableOptions.of(args)}.
+ */
 public class JavacOptionsUtils {
 
   private static final ImmutableList<String> JRE_JARS =
