@@ -25,8 +25,13 @@ construct_vnames_config(
 # cross-language metadata file generation.
 proto_lang_toolchain(
     name = "java_proto_toolchain",
-    command_line = "--java_out=annotate_code,shared,immutable,no_enforce_api_compatibility:$(OUT)",
+    command_line = "--java_out=annotate_code,shared,immutable:$(OUT)",
     runtime = ":protobuf",
+)
+
+java_import(
+	name = "jsr250",
+	jars = [ "jsr250-api-1.0.jar" ],
 )
 
 java_library(
@@ -34,6 +39,7 @@ java_library(
     visibility = ["//visibility:private"],
     exports = [
         "@com_google_protobuf//:protobuf_java",
+	":jsr250",
     ],
     runtime_deps = [
         "@com_google_protobuf//:protobuf_java",
