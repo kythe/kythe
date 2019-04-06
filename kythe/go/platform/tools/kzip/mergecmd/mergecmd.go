@@ -18,6 +18,7 @@
 package mergecmd
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -57,7 +58,14 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	if c.output == "" {
 		return c.Fail("required --output path missing")
 	}
-	if err := mergeArchives(ctx, c.output, fs.Args()); err != nil {
+	archives := fs.Args()
+	if len(archives) == 0 {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			archives = append(archives, scanner.Text())
+		}
+	}
+	if err := mergeArchives(ctx, c.output, archives); err != nil {
 		return c.Fail("Error merging archives: ", err)
 	}
 	return subcommands.ExitSuccess
