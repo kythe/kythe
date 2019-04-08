@@ -59,10 +59,15 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 		return c.Fail("required --output path missing")
 	}
 	archives := fs.Args()
+	scanner := bufio.NewScanner(os.Stdin)
 	if len(archives) == 0 {
-		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			archives = append(archives, scanner.Text())
+		}
+	} else {
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 && scanner.Scan() {
+			return c.Fail("stdin not empty but input files specified as args")
 		}
 	}
 	if err := mergeArchives(ctx, c.output, archives); err != nil {
