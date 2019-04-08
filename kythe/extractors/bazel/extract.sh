@@ -59,6 +59,7 @@ fi
 # Collect any extracted compilations.
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 find bazel-out/*/extra_actions/external/kythe_release -name '*.kzip' | \
-  /kythe/tools/kzip merge --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
+  /kythe/tools/kzip merge --inputs_from_stdin \
+                          --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
 /kythe/fix_permissions.sh "$KYTHE_OUTPUT_DIRECTORY"
 test -f "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
