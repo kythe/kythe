@@ -37,7 +37,8 @@ import (
 type mergeCommand struct {
 	cmdutil.Info
 
-	output string
+	output    string
+	xargsMode bool
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -51,6 +52,7 @@ func New() subcommands.Command {
 // for merging kzip files.
 func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
+	fs.BoolVar(&c.xargsMode, "xargs_mode", false, "Whether input files should be read from stdin like xargs")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
@@ -59,15 +61,10 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 		return c.Fail("required --output path missing")
 	}
 	archives := fs.Args()
-	scanner := bufio.NewScanner(os.Stdin)
-	if len(archives) == 0 {
+	if c.xargsMode {
+		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			archives = append(archives, scanner.Text())
-		}
-	} else {
-		stat, _ := os.Stdin.Stat()
-		if (stat.Mode() & os.ModeCharDevice) == 0 && scanner.Scan() {
-			return c.Fail("stdin not empty but input files specified as args")
 		}
 	}
 	if err := mergeArchives(ctx, c.output, archives); err != nil {
