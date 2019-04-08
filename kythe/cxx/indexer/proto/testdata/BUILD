@@ -75,6 +75,12 @@ proto_verifier_test(
     tags = ["basic"],
 )
 
+proto_verifier_test(
+    name = "deprecated",
+    srcs = ["basic/deprecated.proto"],
+    tags = ["basic"],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],

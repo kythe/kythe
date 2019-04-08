@@ -211,4 +211,10 @@ void ProtoGraphBuilder::AddCodeFact(const VName& element,
   recorder_->AddMarkedSource(VNameRef(element), code);
 }
 
+void ProtoGraphBuilder::SetDeprecated(const VName& node_name) {
+  VLOG(1) << "Adding deprecation tag for " << StringifyNode(node_name);
+  recorder_->AddProperty(VNameRef(node_name), kythe::PropertyID::kTagDeprecated,
+                         "This field is deprecated.");
+}
+
 }  // namespace kythe

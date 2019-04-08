@@ -366,6 +366,11 @@ void FileDescriptorWalker::VisitField(const std::string* parent_name,
 
   AttachMarkedSource(v_name, GenerateMarkedSourceForDescriptor(field));
 
+  // Check for [deprecated=true] annotations and emit deprecation tags.
+  if (field->options().deprecated()) {
+    builder_->SetDeprecated(v_name);
+  }
+
   Location type_location;
   {
     ScopedLookup type_num(&lookup_path,
