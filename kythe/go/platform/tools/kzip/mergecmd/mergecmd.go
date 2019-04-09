@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
@@ -36,7 +37,8 @@ import (
 type mergeCommand struct {
 	cmdutil.Info
 
-	output string
+	output        string
+	mergeExisting bool
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -50,6 +52,7 @@ func New() subcommands.Command {
 // for merging kzip files.
 func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
+	fs.BoolVar(&c.mergeExisting, "merge_existing", false, "Whether to merge the contents of the existing output file, if it exists")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
@@ -57,9 +60,37 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	if c.output == "" {
 		return c.Fail("required --output path missing")
 	}
-	if err := mergeArchives(ctx, c.output, fs.Args()); err != nil {
+	dir, file := filepath.Split(c.output)
+	if dir == "" {
+		dir = "."
+	}
+	tmpOut, err := vfs.CreateTemp(ctx, dir, file)
+	defer func() {
+		if tmpOut != "" {
+			vfs.Remove(ctx, tmpOut)
+		}
+	}()
+	if err != nil {
+		return c.Fail("Error creating temp output: ", err)
+	}
+	archives := fs.Args()
+	if c.mergeExisting {
+		orig, err := vfs.Open(ctx, c.output)
+		if err == nil {
+			archives = append([]string{c.output}, archives...)
+			err := orig.Close()
+			if err != nil {
+				return c.Fail("Error closing original: ", err)
+			}
+		}
+	}
+	if err := mergeArchives(ctx, tmpOut, archives); err != nil {
 		return c.Fail("Error merging archives: ", err)
 	}
+	if err := vfs.Rename(ctx, tmpOut, c.output); err != nil {
+		return c.Fail("Error renaming tmp to output:", err)
+	}
+	tmpOut = ""
 	return subcommands.ExitSuccess
 }
 

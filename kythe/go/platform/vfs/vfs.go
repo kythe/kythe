@@ -63,6 +63,9 @@ type Writer interface {
 	// Create creates a new file for writing, as os.Create.
 	Create(ctx context.Context, path string) (io.WriteCloser, error)
 
+	// CreateTemp creates a new temp file returning the path to it.
+	CreateTemp(ctx context.Context, dir string, pattern string) (string, error)
+
 	// Rename renames oldPath to newPath, as os.Rename, overwriting newPath if
 	// it exists.
 	Rename(ctx context.Context, oldPath, newPath string) error
@@ -103,6 +106,11 @@ func Create(ctx context.Context, path string) (io.WriteCloser, error) {
 	return Default.Create(ctx, path)
 }
 
+// CreateTemp creates a new temp file, using the Default VFS.
+func CreateTemp(ctx context.Context, dir string, pattern string) (string, error) {
+	return Default.CreateTemp(ctx, dir, pattern)
+}
+
 // Rename renames oldPath to newPath, using the Default VFS, overwriting newPath
 // if it exists.
 func Rename(ctx context.Context, oldPath, newPath string) error {
@@ -140,6 +148,16 @@ func (LocalFS) Open(_ context.Context, path string) (io.ReadCloser, error) {
 // Create implements part of the VFS interface.
 func (LocalFS) Create(_ context.Context, path string) (io.WriteCloser, error) {
 	return os.Create(path)
+}
+
+// CreateTemp implements part of the VFS interface.
+func (LocalFS) CreateTemp(_ context.Context, dir string, pattern string) (string, error) {
+	f, err := ioutil.TempFile(dir, pattern)
+	if err != nil {
+		return "", err
+	}
+	n := f.Name()
+	return n, f.Close()
 }
 
 // Rename implements part of the VFS interface.
