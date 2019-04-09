@@ -17,9 +17,10 @@
 #include "objc_bazel_support.h"
 
 #include <llvm/ADT/StringRef.h>
-#include "re2/re2.h"
 
 #include <sstream>
+
+#include "re2/re2.h"
 
 namespace kythe {
 

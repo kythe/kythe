@@ -19,11 +19,10 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_GOOGLE_FLAGS_LIBRARY_SUPPORT_H_
 #define KYTHE_CXX_INDEXER_CXX_GOOGLE_FLAGS_LIBRARY_SUPPORT_H_
 
-#include "clang/AST/Decl.h"
-#include "clang/AST/Expr.h"
-
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
+#include "clang/AST/Decl.h"
+#include "clang/AST/Expr.h"
 
 namespace kythe {
 

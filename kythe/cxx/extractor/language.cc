@@ -15,9 +15,10 @@
  */
 
 #include "kythe/cxx/extractor/language.h"
-#include "llvm/ADT/StringRef.h"
 
 #include <string>
+
+#include "llvm/ADT/StringRef.h"
 
 namespace kythe {
 namespace supported_language {

@@ -70,6 +70,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "cxx_extractor.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -77,10 +78,8 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/extractor/language.h"
-#include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
-
-#include "cxx_extractor.h"
 #include "objc_bazel_support.h"
+#include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
 
 struct XAState {
   std::string extra_action_file;

@@ -17,8 +17,8 @@
 // This file uses the Clang style conventions.
 
 #include "IndexerPPCallbacks.h"
-#include "GraphObserver.h"
 
+#include "GraphObserver.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/PPCallbacks.h"

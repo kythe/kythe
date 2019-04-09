@@ -17,13 +17,13 @@
 #ifndef KYTHE_CXX_DOC_HTML_RENDERER_H_
 #define KYTHE_CXX_DOC_HTML_RENDERER_H_
 
+#include <functional>
+#include <string>
+
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/doc/markup_handler.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/xref.pb.h"
-
-#include <functional>
-#include <string>
 
 namespace kythe {
 

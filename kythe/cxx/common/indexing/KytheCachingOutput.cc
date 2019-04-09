@@ -16,10 +16,10 @@
 
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 
+#include <libmemcached/memcached.h>
+
 #include <algorithm>
 #include <sstream>
-
-#include <libmemcached/memcached.h>
 
 namespace kythe {
 

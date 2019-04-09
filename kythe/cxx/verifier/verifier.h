@@ -21,10 +21,9 @@
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
+#include "assertions.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
-
-#include "assertions.h"
 
 namespace kythe {
 namespace verifier {

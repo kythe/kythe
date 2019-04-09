@@ -15,6 +15,7 @@
  */
 
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
+
 #include "glog/logging.h"
 
 // See

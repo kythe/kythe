@@ -19,12 +19,10 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_INDEXER_LIBRARY_SUPPORT_H_
 #define KYTHE_CXX_INDEXER_CXX_INDEXER_LIBRARY_SUPPORT_H_
 
+#include "GraphObserver.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
-
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
-
-#include "GraphObserver.h"
 
 namespace kythe {
 

@@ -15,6 +15,7 @@
  */
 
 #include "file_vname_generator.h"
+
 #include "gtest/gtest.h"
 
 extern const char kTestFile[];
