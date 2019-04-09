@@ -63,7 +63,9 @@ type Writer interface {
 	// Create creates a new file for writing, as os.Create.
 	Create(ctx context.Context, path string) (io.WriteCloser, error)
 
-	// TempFile creates a new temp file returning the open handle to it.
+	// TempFile creates a new temp file returning the open handle to it. The
+	// name of the file is constructed from dir pattern and per
+	// ioutil.TempFile.
 	TempFile(ctx context.Context, dir, pattern string) (*os.File, error)
 
 	// Rename renames oldPath to newPath, as os.Rename, overwriting newPath if
