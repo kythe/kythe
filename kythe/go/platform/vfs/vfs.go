@@ -41,6 +41,8 @@ type Interface interface {
 	Writer
 }
 
+// NamedWriteCloser composes io.WriteCloser and access to its "name". For
+// file-based implementations, this should be the full path to the full.
 type NamedWriteCloser interface {
 	io.WriteCloser
 	Name() string
