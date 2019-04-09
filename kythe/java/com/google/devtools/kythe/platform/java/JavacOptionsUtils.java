@@ -75,8 +75,6 @@ public class JavacOptionsUtils {
      *
      * <p>Mostly equivalent to {@link OptionChecker.isSupportedOption}, except supports {@link
      * FunctionalInterface}.
-     *
-     * <p>Somewhat supports adjacent args by assuming options with ':' have no positional args.
      */
     int matches(String option);
   }
@@ -87,7 +85,7 @@ public class JavacOptionsUtils {
       for (OptionChecker checker : checkers) {
         int supported = checker.isSupportedOption(arg);
         if (supported >= 0) {
-          return arg.indexOf(':') == -1 ? supported : 0;
+          return arg.indexOf(':') == -1 && arg.indexOf('=') == -1 ? supported : 0;
         }
       }
       return -1;
@@ -102,7 +100,7 @@ public class JavacOptionsUtils {
           if (!opt.hasArg()) {
             return 0;
           }
-          return arg.indexOf(':') == -1 ? 1 : 0;
+          return arg.indexOf(':') == -1 && arg.indexOf('=') == -1 ? 1 : 0;
         }
       }
       return -1;

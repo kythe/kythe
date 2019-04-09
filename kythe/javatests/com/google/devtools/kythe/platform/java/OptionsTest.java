@@ -78,6 +78,15 @@ public class OptionsTest {
   }
 
   @Test
+  public void removeOptions_handlesAdjacentEquals() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-prompt", "-Djava.ext.dirs=not/a/dir", "-moreinfo"));
+    assertThat(args.removeOptions(ImmutableSet.of(Option.DJAVA_EXT_DIRS)).build())
+        .containsExactly("-prompt", "-moreinfo")
+        .inOrder();
+  }
+
+  @Test
   public void keepOptions_singles() {
     ModifiableOptions args =
         ModifiableOptions.of(ImmutableList.of("-prompt", "-doe", "-moreinfo", "--class-path"));
