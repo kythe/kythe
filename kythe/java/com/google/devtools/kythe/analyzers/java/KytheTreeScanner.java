@@ -1206,11 +1206,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   void emitDoc(
-      DocKind kind,
-      String bracketedText,
-      Iterable<Symbol> params,
-      VName node,
-      VName absNode) {
+      DocKind kind, String bracketedText, Iterable<Symbol> params, VName node, VName absNode) {
     List<VName> paramNodes = new ArrayList<>();
     for (Symbol s : params) {
       VName paramNode = getNode(s);
