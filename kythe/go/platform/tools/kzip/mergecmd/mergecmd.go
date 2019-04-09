@@ -95,7 +95,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	return subcommands.ExitSuccess
 }
 
-func mergeArchives(ctx context.Context, out *os.File, archives []string) error {
+func mergeArchives(ctx context.Context, out vfs.NamedWriteCloser, archives []string) error {
 	wr, err := kzip.NewWriteCloser(out)
 	if err != nil {
 		out.Close()

@@ -41,6 +41,11 @@ type Interface interface {
 	Writer
 }
 
+type NamedWriteCloser interface {
+	io.WriteCloser
+	Name() string
+}
+
 // Reader is a virtual file system interface for reading files.
 type Reader interface {
 	// Stat returns file status information for path, as os.Stat.
@@ -63,10 +68,10 @@ type Writer interface {
 	// Create creates a new file for writing, as os.Create.
 	Create(ctx context.Context, path string) (io.WriteCloser, error)
 
-	// TempFile creates a new temp file returning the open handle to it. The
+	// TempFile creates a new temp file returning a NamedWriteCloser to it. The
 	// name of the file is constructed from dir pattern and per
 	// ioutil.TempFile.
-	TempFile(ctx context.Context, dir, pattern string) (*os.File, error)
+	TempFile(ctx context.Context, dir, pattern string) (NamedWriteCloser, error)
 
 	// Rename renames oldPath to newPath, as os.Rename, overwriting newPath if
 	// it exists.
@@ -109,7 +114,7 @@ func Create(ctx context.Context, path string) (io.WriteCloser, error) {
 }
 
 // TempFile creates a new temp file, using the Default VFS.
-func TempFile(ctx context.Context, dir, pattern string) (*os.File, error) {
+func TempFile(ctx context.Context, dir, pattern string) (NamedWriteCloser, error) {
 	return Default.TempFile(ctx, dir, pattern)
 }
 
@@ -153,7 +158,7 @@ func (LocalFS) Create(_ context.Context, path string) (io.WriteCloser, error) {
 }
 
 // TempFile implements part of the VFS interface.
-func (LocalFS) TempFile(_ context.Context, dir, pattern string) (*os.File, error) {
+func (LocalFS) TempFile(_ context.Context, dir, pattern string) (NamedWriteCloser, error) {
 	return ioutil.TempFile(dir, pattern)
 }
 
@@ -182,7 +187,7 @@ func (UnsupportedWriter) Create(_ context.Context, _ string) (io.WriteCloser, er
 }
 
 // TempFile implements part of the VFS interface. It is not supported.
-func (UnsupportedWriter) TempFile(_ context.Context, dir, pattern string) (*os.File, error) {
+func (UnsupportedWriter) TempFile(_ context.Context, dir, pattern string) (NamedWriteCloser, error) {
 	return nil, ErrNotSupported
 }
 
