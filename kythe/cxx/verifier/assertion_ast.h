@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "glog/logging.h"
-
 #include "kythe/cxx/verifier/location.hh"
 #include "pretty_printer.h"
 

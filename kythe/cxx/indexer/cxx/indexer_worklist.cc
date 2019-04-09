@@ -15,6 +15,7 @@
  */
 
 #include "kythe/cxx/indexer/cxx/indexer_worklist.h"
+
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
 
 namespace kythe {

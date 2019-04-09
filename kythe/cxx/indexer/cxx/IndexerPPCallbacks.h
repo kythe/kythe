@@ -19,12 +19,11 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_PP_CALLBACKS_H_
 #define KYTHE_CXX_INDEXER_CXX_PP_CALLBACKS_H_
 
+#include "GraphObserver.h"
+#include "IndexerASTHooks.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Token.h"
-
-#include "GraphObserver.h"
-#include "IndexerASTHooks.h"
 
 namespace kythe {
 

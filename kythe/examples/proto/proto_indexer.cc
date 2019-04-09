@@ -20,7 +20,9 @@
 //   --include_imports --include_source_info
 
 #include <fcntl.h>
+
 #include <map>
+
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/descriptor.pb.h"

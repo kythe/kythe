@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+#include "kythe/cxx/common/kythe_uri.h"
+
 #include <utility>
 
 #include "absl/strings/str_split.h"
-#include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/path_utils.h"
 
 namespace kythe {

@@ -16,27 +16,26 @@
 
 #include "cxx_extractor.h"
 
-#include <tuple>
-#include <type_traits>
-#include <unordered_map>
-#include <utility>
-
 #include <fcntl.h>
 #include <openssl/sha.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <tuple>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+
+#include "absl/memory/memory.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
-
-#include "absl/memory/memory.h"
-#include "absl/strings/match.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
