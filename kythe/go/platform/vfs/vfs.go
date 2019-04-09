@@ -63,8 +63,8 @@ type Writer interface {
 	// Create creates a new file for writing, as os.Create.
 	Create(ctx context.Context, path string) (io.WriteCloser, error)
 
-	// CreateTemp creates a new temp file returning the path to it.
-	CreateTemp(ctx context.Context, dir string, pattern string) (string, error)
+	// TempFile creates a new temp file returning the open handle to it.
+	TempFile(ctx context.Context, dir, pattern string) (*os.File, error)
 
 	// Rename renames oldPath to newPath, as os.Rename, overwriting newPath if
 	// it exists.
@@ -106,9 +106,9 @@ func Create(ctx context.Context, path string) (io.WriteCloser, error) {
 	return Default.Create(ctx, path)
 }
 
-// CreateTemp creates a new temp file, using the Default VFS.
-func CreateTemp(ctx context.Context, dir string, pattern string) (string, error) {
-	return Default.CreateTemp(ctx, dir, pattern)
+// TempFile creates a new temp file, using the Default VFS.
+func TempFile(ctx context.Context, dir, pattern string) (*os.File, error) {
+	return Default.TempFile(ctx, dir, pattern)
 }
 
 // Rename renames oldPath to newPath, using the Default VFS, overwriting newPath
@@ -150,14 +150,9 @@ func (LocalFS) Create(_ context.Context, path string) (io.WriteCloser, error) {
 	return os.Create(path)
 }
 
-// CreateTemp implements part of the VFS interface.
-func (LocalFS) CreateTemp(_ context.Context, dir string, pattern string) (string, error) {
-	f, err := ioutil.TempFile(dir, pattern)
-	if err != nil {
-		return "", err
-	}
-	n := f.Name()
-	return n, f.Close()
+// TempFile implements part of the VFS interface.
+func (LocalFS) TempFile(_ context.Context, dir, pattern string) (*os.File, error) {
+	return ioutil.TempFile(dir, pattern)
 }
 
 // Rename implements part of the VFS interface.
@@ -184,9 +179,9 @@ func (UnsupportedWriter) Create(_ context.Context, _ string) (io.WriteCloser, er
 	return nil, ErrNotSupported
 }
 
-// CreateTemp implements part of the VFS interface. It is not supported.
-func (UnsupportedWriter) CreateTemp(_ context.Context, dir string, pattern string) (string, error) {
-	return "", ErrNotSupported
+// TempFile implements part of the VFS interface. It is not supported.
+func (UnsupportedWriter) TempFile(_ context.Context, dir, pattern string) (*os.File, error) {
+	return nil, ErrNotSupported
 }
 
 // MkdirAll implements part of Writer interface.  It is not supported.

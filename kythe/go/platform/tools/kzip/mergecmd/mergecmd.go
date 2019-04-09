@@ -37,8 +37,8 @@ import (
 type mergeCommand struct {
 	cmdutil.Info
 
-	output        string
-	mergeExisting bool
+	output string
+	append bool
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -52,7 +52,7 @@ func New() subcommands.Command {
 // for merging kzip files.
 func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
-	fs.BoolVar(&c.mergeExisting, "merge_existing", false, "Whether to merge the contents of the existing output file, if it exists")
+	fs.BoolVar(&c.append, "append", false, "Whether to additionally merge the contents of the existing output file, if it exists")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
@@ -64,17 +64,19 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	if dir == "" {
 		dir = "."
 	}
-	tmpOut, err := vfs.CreateTemp(ctx, dir, file)
+	tmpOut, err := vfs.TempFile(ctx, dir, file)
+	tmpName := tmpOut.Name()
 	defer func() {
-		if tmpOut != "" {
-			vfs.Remove(ctx, tmpOut)
+		if tmpOut != nil {
+			tmpOut.Close()
+			vfs.Remove(ctx, tmpName)
 		}
 	}()
 	if err != nil {
 		return c.Fail("Error creating temp output: ", err)
 	}
 	archives := fs.Args()
-	if c.mergeExisting {
+	if c.append {
 		orig, err := vfs.Open(ctx, c.output)
 		if err == nil {
 			archives = append([]string{c.output}, archives...)
@@ -87,18 +89,13 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	if err := mergeArchives(ctx, tmpOut, archives); err != nil {
 		return c.Fail("Error merging archives: ", err)
 	}
-	if err := vfs.Rename(ctx, tmpOut, c.output); err != nil {
+	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
 		return c.Fail("Error renaming tmp to output:", err)
 	}
-	tmpOut = ""
 	return subcommands.ExitSuccess
 }
 
-func mergeArchives(ctx context.Context, output string, archives []string) error {
-	out, err := vfs.Create(ctx, output)
-	if err != nil {
-		return fmt.Errorf("error creating output: %v", err)
-	}
+func mergeArchives(ctx context.Context, out *os.File, archives []string) error {
 	wr, err := kzip.NewWriteCloser(out)
 	if err != nil {
 		out.Close()
