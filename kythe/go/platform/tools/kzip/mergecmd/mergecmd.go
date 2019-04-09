@@ -58,7 +58,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 		return c.Fail("required --output path missing")
 	}
 	if err := mergeArchives(ctx, c.output, fs.Args()); err != nil {
-		return c.Fail("Error merging archives: ", err)
+		return c.Fail("Error merging archives: %v", err)
 	}
 	return subcommands.ExitSuccess
 }
