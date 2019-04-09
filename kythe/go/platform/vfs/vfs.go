@@ -184,6 +184,11 @@ func (UnsupportedWriter) Create(_ context.Context, _ string) (io.WriteCloser, er
 	return nil, ErrNotSupported
 }
 
+// CreateTemp implements part of the VFS interface. It is not supported.
+func (UnsupportedWriter) CreateTemp(_ context.Context, dir string, pattern string) (string, error) {
+	return "", ErrNotSupported
+}
+
 // MkdirAll implements part of Writer interface.  It is not supported.
 func (UnsupportedWriter) MkdirAll(_ context.Context, _ string, _ os.FileMode) error {
 	return ErrNotSupported
