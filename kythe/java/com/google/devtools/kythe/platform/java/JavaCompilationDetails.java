@@ -196,8 +196,7 @@ public class JavaCompilationDetails {
       arguments.add("-proc:none");
     }
 
-    arguments.removeUnsupportedOptions();
-    return arguments.build();
+    return arguments.removeUnsupportedOptions().build();
   }
 
   /** Writes nothing, used to reduce noise from the javac analysis output. */

@@ -20,13 +20,11 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
@@ -39,8 +37,10 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.tools.OptionChecker;
 
@@ -68,6 +68,56 @@ public class JavacOptionsUtils {
   private static final Splitter PATH_SPLITTER = Splitter.on(':').trimResults().omitEmptyStrings();
   private static final Joiner PATH_JOINER = Joiner.on(':').skipNulls();
 
+  @FunctionalInterface
+  private static interface OptionsHandler {
+    /** Handles a given option with pointer to remaining, returning options to keep. */
+    void handleOption(String value, Iterator<String> remaining);
+  }
+
+  // ArgKind.REQUIRED and ArgKind.ADJACENT.
+  @FunctionalInterface
+  private static interface OptionMatcher {
+    /**
+     * Returns 0 or more if a given option matches, or -1 if it doesn't.
+     *
+     * <p>Mostly equivalent to {@link OptionChecker.isSupportedOption}, except supports {@link
+     * FunctionalInterface}.
+     *
+     * <p>Somewhat supports adjacent args by assuming options with ':' have no positional args.
+     */
+    int matches(String option);
+  }
+
+  /** Utility for converting between {@link OptionChecker} and {@link OptionMatcher}. */
+  private static OptionMatcher fromCheckers(final Iterable<OptionChecker> checkers) {
+    return (arg) -> {
+      for (OptionChecker checker : checkers) {
+        int supported = checker.isSupportedOption(arg);
+        if (supported >= 0) {
+          return arg.indexOf(':') == -1 ? supported : 0;
+        }
+      }
+      return -1;
+    };
+  }
+
+  /** Utility for matching directly specified {@link Option}s. */
+  private static OptionMatcher matchOpts(Iterable<Option> opts) {
+    return (arg) -> {
+      for (Option opt : opts) {
+        if (opt.matches(arg)) {
+          if (!opt.hasArg()) {
+            return 0;
+          }
+          return arg.indexOf(':') == -1 ? 1 : 0;
+        }
+      }
+      return -1;
+    };
+  }
+
+  private static final Consumer<String> NO_OP = (val) -> {};
+
   /** A useful container for modifying javac commandline arguments, in the style of a builder. */
   public static class ModifiableOptions {
     private List<String> internal = new ArrayList<>();
@@ -93,55 +143,66 @@ public class JavacOptionsUtils {
       return this;
     }
 
+    private static final ImmutableList<OptionChecker> SUPPORTED_OPTIONS =
+        ImmutableList.of(JavacTool.create(), new JavacFileManager(new Context(), false, UTF_8));
+
     /** Removes unsupported javac compiler options. */
     public ModifiableOptions removeUnsupportedOptions() {
-      List<String> previous = internal;
-      internal = new ArrayList<>();
-      ImmutableList<OptionChecker> optionCheckers =
-          ImmutableList.of(JavacTool.create(), new JavacFileManager(new Context(), false, UTF_8));
-      PeekingIterator<String> it =
-          Iterators.peekingIterator(
-              Iterators.filter(
-                  previous.iterator(),
-                  Predicates.not(o -> o.startsWith("-Xlint") || o.startsWith("-Werror"))));
-      outer:
-      while (it.hasNext()) {
-        for (OptionChecker optionChecker : optionCheckers) {
-          int arity = optionChecker.isSupportedOption(it.peek());
-          if (arity > 0 && it.peek().indexOf(':') != -1) {
-            // For "conjoined" flags (e.g., -flag:arg) we want to consume just command-line option.
-            arity = 0;
-          }
-          if (arity != -1) {
-            Iterators.addAll(internal, Iterators.limit(it, arity + 1));
-            continue outer;
-          }
-        }
-        it.next();
-      }
+      removeOptions(ImmutableSet.of(Option.WERROR, Option.XLINT, Option.XLINT_CUSTOM));
+      replaceOptions(fromCheckers(SUPPORTED_OPTIONS), true);
       return this;
     }
 
     /** Removes the given {@link Option}s (and their arguments) from the builder. */
-    public ModifiableOptions removeOptions(Set<Option> opts) {
-      List<String> original = internal;
-      internal = new ArrayList<>(original.size());
-      for (int i = 0; i < original.size(); i++) {
-        String opt = original.get(i);
-        boolean matched = false;
-        for (Option o : opts) {
-          if (o.matches(opt)) {
-            matched = true;
-            if (o.hasArg()) {
-              // Skip the argument too.
-              i++;
+    public ModifiableOptions removeOptions(final Set<Option> opts) {
+      return replaceOptions(matchOpts(opts), false);
+    }
+
+    /** Keep only the matched options. */
+    public ModifiableOptions keepOptions(final Set<Option> opts) {
+      return replaceOptions(matchOpts(opts), true);
+    }
+
+    private ModifiableOptions replaceOptions(OptionMatcher matcher, boolean matched) {
+      final List<String> replacements = new ArrayList<>(internal.size());
+      Consumer<String> placer = (value) -> replacements.add(value);
+      if (matched) {
+        acceptOptions(matcher, placer, NO_OP);
+      } else {
+        acceptOptions(matcher, NO_OP, placer);
+      }
+      internal = replacements;
+      return this;
+    }
+
+    private ModifiableOptions acceptOptions(
+        OptionMatcher matcher, final Consumer<String> matched, final Consumer<String> unmatched) {
+      return acceptOptions(matcher, matched, unmatched, NO_OP);
+    }
+
+    private ModifiableOptions acceptOptions(
+        OptionMatcher matcher,
+        final Consumer<String> matched,
+        final Consumer<String> unmatched,
+        final Consumer<String> positionalMatched) {
+      OptionsHandler h =
+          (value, remaining) -> {
+            int match = matcher.matches(value);
+            if (match < 0) {
+              unmatched.accept(value);
+              return;
+            } else {
+              matched.accept(value);
+              if (match > 0 && remaining.hasNext()) {
+                String positional = remaining.next();
+                matched.accept(positional);
+                positionalMatched.accept(positional);
+              }
             }
-            break;
-          }
-        }
-        if (!matched) {
-          internal.add(opt);
-        }
+          };
+      Iterator<String> args = internal.iterator();
+      while (args.hasNext()) {
+        h.handleOption(args.next(), args);
       }
       return this;
     }
@@ -244,21 +305,12 @@ public class JavacOptionsUtils {
      * return them.
      */
     private ImmutableList<String> removeArgumentPaths(Option option) {
-      List<String> original = internal;
-      internal = new ArrayList<>(original.size());
       ImmutableList.Builder<String> paths = ImmutableList.builder();
-      for (int i = 0; i < original.size(); i++) {
-        if (option.matches(original.get(i))) {
-          if (i + 1 >= original.size()) {
-            throw new IllegalArgumentException(
-                String.format("Malformed %s argument: %s", option.getPrimaryName(), original));
-          }
-          i++;
-          paths.addAll(PATH_SPLITTER.split(original.get(i)));
-        } else {
-          internal.add(original.get(i));
-        }
-      }
+      List<String> replacements = new ArrayList<>(internal.size());
+      Consumer<String> matched = (value) -> paths.addAll(PATH_SPLITTER.split(value));
+      Consumer<String> unmatched = (value) -> replacements.add(value);
+      acceptOptions(matchOpts(ImmutableList.of(option)), NO_OP, unmatched, matched);
+      internal = replacements;
       return paths.build();
     }
   }
