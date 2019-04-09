@@ -74,7 +74,6 @@ public class JavacOptionsUtils {
     void handleOption(String value, Iterator<String> remaining);
   }
 
-  // ArgKind.REQUIRED and ArgKind.ADJACENT.
   @FunctionalInterface
   private static interface OptionMatcher {
     /**
