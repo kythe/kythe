@@ -69,12 +69,6 @@ public class JavacOptionsUtils {
   private static final Joiner PATH_JOINER = Joiner.on(':').skipNulls();
 
   @FunctionalInterface
-  private static interface OptionsHandler {
-    /** Handles a given option with pointer to remaining, returning options to keep. */
-    void handleOption(String value, Iterator<String> remaining);
-  }
-
-  @FunctionalInterface
   private static interface OptionMatcher {
     /**
      * Returns 0 or more if a given option matches, or -1 if it doesn't.
@@ -184,24 +178,20 @@ public class JavacOptionsUtils {
         final Consumer<String> matched,
         final Consumer<String> unmatched,
         final Consumer<String> positionalMatched) {
-      OptionsHandler h =
-          (value, remaining) -> {
-            int match = matcher.matches(value);
-            if (match < 0) {
-              unmatched.accept(value);
-              return;
-            } else {
-              matched.accept(value);
-              if (match > 0 && remaining.hasNext()) {
-                String positional = remaining.next();
-                matched.accept(positional);
-                positionalMatched.accept(positional);
-              }
-            }
-          };
       Iterator<String> args = internal.iterator();
       while (args.hasNext()) {
-        h.handleOption(args.next(), args);
+        String value = args.next();
+        int match = matcher.matches(value);
+        if (match < 0) {
+          unmatched.accept(value);
+        } else {
+          matched.accept(value);
+          if (match > 0 && args.hasNext()) {
+            String positional = args.next();
+            matched.accept(positional);
+            positionalMatched.accept(positional);
+          }
+        }
       }
       return this;
     }
