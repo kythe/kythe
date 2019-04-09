@@ -16,20 +16,19 @@
 
 #include "verifier.h"
 
-#include "glog/logging.h"
-#include "google/protobuf/text_format.h"
-
-#include "absl/memory/memory.h"
-#include "assertions.h"
-#include "kythe/cxx/common/kythe_uri.h"
-#include "kythe/cxx/common/scope_guard.h"
-#include "kythe/proto/common.pb.h"
-#include "kythe/proto/storage.pb.h"
-
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include "absl/memory/memory.h"
+#include "assertions.h"
+#include "glog/logging.h"
+#include "google/protobuf/text_format.h"
+#include "kythe/cxx/common/kythe_uri.h"
+#include "kythe/cxx/common/scope_guard.h"
+#include "kythe/proto/common.pb.h"
+#include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 namespace verifier {

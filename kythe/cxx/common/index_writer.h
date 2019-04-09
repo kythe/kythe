@@ -17,10 +17,9 @@
 #ifndef KYTHE_CXX_COMMON_INDEX_WRITER_H_
 #define KYTHE_CXX_COMMON_INDEX_WRITER_H_
 
+#include "absl/strings/string_view.h"
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/proto/analysis.pb.h"
-
-#include "absl/strings/string_view.h"
 
 namespace kythe {
 

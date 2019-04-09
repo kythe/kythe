@@ -16,11 +16,10 @@
 
 #include <regex>
 
-#include "verifier.h"
-
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
+#include "verifier.h"
 
 namespace kythe {
 namespace verifier {

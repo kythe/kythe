@@ -33,7 +33,50 @@ public class QualifiedNameExtractorTest {
   public void testCStyleMarkedSource() throws Exception {
     MarkedSource.Builder builder = MarkedSource.newBuilder();
     TextFormat.merge(
-        "child {\n    kind: TYPE\n    pre_text: \"Output*\"\n}\nchild {\n    pre_text: \" \"\n}\nchild {\n    kind: IDENTIFIER\n    pre_text: \"parse\"\n}\nchild {\n    kind: PARAMETER\n    pre_text: \"(\"\n    child: {\n        pre_text: \"const \"\n        child: {\n            kind: TYPE\n            pre_text: \"char*\"\n        }\n        child {\n            pre_text: \" \"\n        }\n        child {\n            child: {\n                kind: CONTEXT\n                child: [\n                  {\n                    kind: IDENTIFIER\n                    pre_text: \"parse\"\n                  }\n                ]\n                post_child_text: \"::\"\n                add_final_list_token: true\n            }\n            child: {\n                kind: IDENTIFIER\n                pre_text: \"buffer\"\n            }\n        }\n    }\n    post_child_text: \", \"\n    post_text: \")\"\n}\n",
+        "child {\n"
+            + "    kind: TYPE\n"
+            + "    pre_text: \"Output*\"\n"
+            + "}\n"
+            + "child {\n"
+            + "    pre_text: \" \"\n"
+            + "}\n"
+            + "child {\n"
+            + "    kind: IDENTIFIER\n"
+            + "    pre_text: \"parse\"\n"
+            + "}\n"
+            + "child {\n"
+            + "    kind: PARAMETER\n"
+            + "    pre_text: \"(\"\n"
+            + "    child: {\n"
+            + "        pre_text: \"const \"\n"
+            + "        child: {\n"
+            + "            kind: TYPE\n"
+            + "            pre_text: \"char*\"\n"
+            + "        }\n"
+            + "        child {\n"
+            + "            pre_text: \" \"\n"
+            + "        }\n"
+            + "        child {\n"
+            + "            child: {\n"
+            + "                kind: CONTEXT\n"
+            + "                child: [\n"
+            + "                  {\n"
+            + "                    kind: IDENTIFIER\n"
+            + "                    pre_text: \"parse\"\n"
+            + "                  }\n"
+            + "                ]\n"
+            + "                post_child_text: \"::\"\n"
+            + "                add_final_list_token: true\n"
+            + "            }\n"
+            + "            child: {\n"
+            + "                kind: IDENTIFIER\n"
+            + "                pre_text: \"buffer\"\n"
+            + "            }\n"
+            + "        }\n"
+            + "    }\n"
+            + "    post_child_text: \", \"\n"
+            + "    post_text: \")\"\n"
+            + "}\n",
         builder);
     MarkedSource testInput = builder.build();
     Optional<SymbolInfo> resolvedName =
@@ -47,7 +90,43 @@ public class QualifiedNameExtractorTest {
   public void testExtractNameFromMarkedSourceReturnsProperly() throws Exception {
     MarkedSource.Builder builder = MarkedSource.newBuilder();
     TextFormat.merge(
-        "child {\nkind: CONTEXT\nchild {\nkind: IDENTIFIER\npre_text: \"java\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"com\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"google\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"devtools\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"kythe\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"analyzers\"\n} \nchild {\nkind: IDENTIFIER\npre_text: \"java\"\n} \npost_child_text: \".\"\nadd_final_list_token: true\n} \nchild {\nkind: IDENTIFIER\npre_text: \"JavaEntrySets\"\n}",
+        "child {\n"
+            + "kind: CONTEXT\n"
+            + "child {\n"
+            + "kind: IDENTIFIER\n"
+            + "pre_text: \"java\"\n"
+            + "} \n"
+            + "child {\n"
+            + "kind: IDENTIFIER\n"
+            + "pre_text: \"com\"\n"
+            + "} \n"
+            + "child {\n"
+            + "kind: IDENTIFIER\n"
+            + "pre_text: \"google\"\n"
+            + "} \n"
+            + "child {\n"
+            + "kind: IDENTIFIER\n"
+            + "pre_text: \"devtools\"\n"
+            + "} \n"
+            + "child {\n"
+            + "kind: IDENTIFIER\n"
+            + "pre_text: \"kythe\"\n"
+            + "} \n"
+            + "child {\n"
+            + "kind: IDENTIFIER\n"
+            + "pre_text: \"analyzers\"\n"
+            + "} \n"
+            + "child {\n"
+            + "kind: IDENTIFIER\n"
+            + "pre_text: \"java\"\n"
+            + "} \n"
+            + "post_child_text: \".\"\n"
+            + "add_final_list_token: true\n"
+            + "} \n"
+            + "child {\n"
+            + "kind: IDENTIFIER\n"
+            + "pre_text: \"JavaEntrySets\"\n"
+            + "}",
         builder);
     MarkedSource testInput = builder.build();
     Optional<SymbolInfo> resolvedName =
@@ -65,7 +144,15 @@ public class QualifiedNameExtractorTest {
   public void testExtractNameFromMarkedSourceReturnsProperlyForNoPackage() throws Exception {
     MarkedSource.Builder builder = MarkedSource.newBuilder();
     TextFormat.merge(
-        "child {\nkind: CONTEXT \npost_child_text: \".\"\nadd_final_list_token: true\n} \nchild {\nkind: IDENTIFIER\npre_text: \"JavaEntrySets\"\n}",
+        "child {\n"
+            + "kind: CONTEXT \n"
+            + "post_child_text: \".\"\n"
+            + "add_final_list_token: true\n"
+            + "} \n"
+            + "child {\n"
+            + "kind: IDENTIFIER\n"
+            + "pre_text: \"JavaEntrySets\"\n"
+            + "}",
         builder);
     MarkedSource testInput = builder.build();
     Optional<SymbolInfo> resolvedName =
@@ -110,7 +197,11 @@ public class QualifiedNameExtractorTest {
   public void testNestedContext() throws Exception {
     MarkedSource.Builder builder = MarkedSource.newBuilder();
     TextFormat.merge(
-        "child { pre_text: \"type \" } child { child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"kythe/go/platform/kindex\" } post_child_text: \".\" add_final_list_token: true } child { kind: IDENTIFIER pre_text: \"Settings\" } } child { kind: TYPE pre_text: \" \" } child { kind: TYPE pre_text: \"struct {...}\" }",
+        "child { pre_text: \"type \" } child { child { kind: CONTEXT child { kind: IDENTIFIER"
+            + " pre_text: \"kythe/go/platform/kindex\" } post_child_text: \".\""
+            + " add_final_list_token: true } child { kind: IDENTIFIER pre_text: \"Settings\" } }"
+            + " child { kind: TYPE pre_text: \" \" } child { kind: TYPE pre_text: \"struct {...}\""
+            + " }",
         builder);
     MarkedSource testInput = builder.build();
     Optional<SymbolInfo> resolvedName =
@@ -128,7 +219,8 @@ public class QualifiedNameExtractorTest {
   public void testUnmarkedBaseName() throws Exception {
     MarkedSource.Builder builder = MarkedSource.newBuilder();
     TextFormat.merge(
-        "child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"//kythe/proto\" } } child { kind: IDENTIFIER pre_text: \":analysis_go_proto\" }",
+        "child { kind: CONTEXT child { kind: IDENTIFIER pre_text: \"//kythe/proto\" } } child {"
+            + " kind: IDENTIFIER pre_text: \":analysis_go_proto\" }",
         builder);
     MarkedSource testInput = builder.build();
     Optional<SymbolInfo> resolvedName =

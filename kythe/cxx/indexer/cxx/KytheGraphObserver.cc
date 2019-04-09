@@ -16,6 +16,7 @@
 
 #include "KytheGraphObserver.h"
 
+#include "IndexerASTHooks.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "clang/AST/Attr.h"
@@ -44,8 +45,6 @@
 #include "kythe/cxx/extractor/language.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/SHA1.h"
-
-#include "IndexerASTHooks.h"
 
 DEFINE_bool(fail_on_unimplemented_builtin, false,
             "Fail indexer if we encounter a builtin we do not handle");

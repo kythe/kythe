@@ -17,10 +17,10 @@
 #ifndef KYTHE_CXX_EXTRACTOR_PATH_UTILS_H_
 #define KYTHE_CXX_EXTRACTOR_PATH_UTILS_H_
 
+#include <string>
+
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
-
-#include <string>
 
 namespace clang {
 class FileEntry;

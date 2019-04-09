@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+#include "kythe/cxx/common/path_utils.h"
+
 #include <string>
 
 #include "gtest/gtest.h"
-#include "kythe/cxx/common/path_utils.h"
 
 namespace kythe {
 namespace {

@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#include "kythe/cxx/common/path_utils.h"
+
 #include <stdlib.h>
 #include <unistd.h>
+
 #include <vector>
 
 #include "absl/memory/memory.h"
@@ -24,7 +27,6 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "glog/logging.h"
-#include "kythe/cxx/common/path_utils.h"
 
 namespace kythe {
 namespace {

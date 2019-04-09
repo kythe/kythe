@@ -17,6 +17,7 @@
 #include "kythe/cxx/common/kzip_writer.h"
 
 #include <zip.h>
+
 #include <cstdlib>
 
 #include "absl/strings/str_cat.h"

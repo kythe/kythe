@@ -38,7 +38,8 @@ public class IndexerConfig {
   @Parameter(
       names = "--default_metadata_corpus",
       description =
-          "If set, use this as the corpus for VNames generated from metadata (if a corpus cannot otherwise be determined).")
+          "If set, use this as the corpus for VNames generated from metadata (if a corpus cannot"
+              + " otherwise be determined).")
   private String defaultMetadataCorpus;
 
   private final JCommander jc;

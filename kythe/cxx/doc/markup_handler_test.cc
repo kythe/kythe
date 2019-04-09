@@ -15,13 +15,14 @@
  */
 
 #include "kythe/cxx/doc/markup_handler.h"
+
+#include <stack>
+
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/doc/html_markup_handler.h"
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
-
-#include <stack>
 
 namespace kythe {
 namespace {
