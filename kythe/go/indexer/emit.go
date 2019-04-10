@@ -970,12 +970,20 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 func (e *emitter) writeDef(node ast.Node, target *spb.VName) { e.writeRef(node, target, edges.Defines) }
 
 // writeDoc adds associations between comment groups and a documented node.
+// It also handles marking deprecated facts on the target.
 func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 	if comments == nil || len(comments.List) == 0 || target == nil {
 		return
 	}
 	var lines []string
+	deprecated := false
+	depMsg := ""
 	for _, comment := range comments.List {
+		i := strings.Index(comment.Text, "// Deprecated: ")
+		if i >= 0 {
+			depMsg = comment.Text[(i + 15):]
+			deprecated = true
+		}
 		lines = append(lines, trimComment(comment.Text))
 	}
 	docNode := proto.Clone(target).(*spb.VName)
@@ -983,6 +991,9 @@ func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 	e.writeFact(docNode, facts.NodeKind, nodes.Doc)
 	e.writeFact(docNode, facts.Text, strings.Join(lines, "\n"))
 	e.writeEdge(docNode, target, edges.Documents)
+	if deprecated {
+		e.writeFact(target, facts.Deprecated, depMsg)
+	}
 }
 
 // isCall reports whether id is a call to obj.  This holds if id is in call
