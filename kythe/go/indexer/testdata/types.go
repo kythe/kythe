@@ -21,10 +21,10 @@ package types
 //- !{ _Float32Builtin=vname("float32#builtin", "golang.org", "", "", "go").node/kind tbuiltin }
 
 //- FnBuiltin code FnCode
-//- FnCode.kind "IDENTIFIER"
+//- FnCode.kind "TYPE"
 //- FnCode.pre_text "fn"
 //- BoolBuiltin code BoolCode
-//- BoolCode.kind "IDENTIFIER"
+//- BoolCode.kind "TYPE"
 //- BoolCode.pre_text "bool"
 
 //- SliceTAppCode.kind "TYPE"

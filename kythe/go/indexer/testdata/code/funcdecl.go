@@ -8,7 +8,10 @@ package funcdecl
 //- Param code XCode
 //- XCode.post_child_text " "
 //- XCode child.0 XName
-//- XCode child.1 XType
+//- XCode child.1 XTypeLookup
+//- XTypeLookup.kind "LOOKUP_BY_TYPED"
+//- Param typed ParamType
+//- ParamType code XType
 //-
 //- XName child.0 XCtx
 //- XName child.1 XId

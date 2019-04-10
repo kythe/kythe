@@ -140,7 +140,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 			PostChildText: " ",
 			Child: []*cpb.MarkedSource{
 				ms,
-				{Kind: cpb.MarkedSource_TYPE, PreText: typeName(t.Type())},
+				{Kind: cpb.MarkedSource_LOOKUP_BY_TYPED},
 			},
 		}
 		ms = repl
@@ -266,7 +266,7 @@ func (e *emitter) emitPackageMarkedSource(pi *PackageInfo) {
 func (e *emitter) emitBuiltinMarkedSource(b *spb.VName) {
 	if e.opts.emitMarkedSource() {
 		e.emitCode(b, &cpb.MarkedSource{
-			Kind:    cpb.MarkedSource_IDENTIFIER,
+			Kind:    cpb.MarkedSource_TYPE,
 			PreText: strings.TrimSuffix(b.Signature, "#builtin"),
 		})
 	}
