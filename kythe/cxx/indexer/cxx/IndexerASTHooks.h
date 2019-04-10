@@ -24,6 +24,8 @@
 #include <unordered_set>
 #include <utility>
 
+#include "GraphObserver.h"
+#include "IndexerLibrarySupport.h"
 #include "absl/memory/memory.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
@@ -33,9 +35,6 @@
 #include "clang/Sema/SemaConsumer.h"
 #include "clang/Sema/Template.h"
 #include "glog/logging.h"
-
-#include "GraphObserver.h"
-#include "IndexerLibrarySupport.h"
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"

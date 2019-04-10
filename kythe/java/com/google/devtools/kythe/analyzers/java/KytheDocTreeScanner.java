@@ -86,7 +86,6 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     deprecation = Optional.empty();
     scan(new DocTreePath(treePath, doc), doc);
 
-
     String bracketed =
         MiniAnchor.bracket(
             doc.comment.getText(),
@@ -102,11 +101,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
       anchoredTo.add(miniAnchor.getAnchoredTo());
     }
     treeScanner.emitDoc(
-        JAVADOC,
-        bracketed,
-        anchoredTo,
-        node,
-        absNode == null ? null : absNode.getVName());
+        JAVADOC, bracketed, anchoredTo, node, absNode == null ? null : absNode.getVName());
     return DocCommentVisitResult.create(deprecation);
   }
 

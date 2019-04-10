@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
+#include "IndexerASTHooks.h"
+
 #include <algorithm>
 #include <tuple>
 
 #include "GraphObserver.h"
-#include "IndexerASTHooks.h"
-#include "indexed_parent_iterator.h"
-
 #include "absl/strings/str_cat.h"
 #include "absl/types/optional.h"
-
 #include "clang/AST/Attr.h"
 #include "clang/AST/CommentLexer.h"
 #include "clang/AST/Decl.h"
@@ -48,6 +46,7 @@
 #include "clang/Lex/Lexer.h"
 #include "clang/Sema/Lookup.h"
 #include "gflags/gflags.h"
+#include "indexed_parent_iterator.h"
 #include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "kythe/cxx/indexer/cxx/marked_source.h"

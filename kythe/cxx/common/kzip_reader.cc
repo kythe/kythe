@@ -16,6 +16,9 @@
 
 #include "kythe/cxx/common/kzip_reader.h"
 
+#include <openssl/sha.h>
+
+#include "absl/strings/escaping.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -27,9 +30,6 @@
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/libzip/error.h"
 #include "kythe/proto/analysis.pb.h"
-
-#include <openssl/sha.h>
-#include "absl/strings/escaping.h"
 
 namespace kythe {
 namespace {

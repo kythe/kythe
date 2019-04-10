@@ -30,13 +30,12 @@
 #include "clang/Basic/Specifiers.h"
 #include "clang/Lex/Preprocessor.h"
 #include "glog/logging.h"
+#include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
-
-#include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 
 namespace kythe {
 

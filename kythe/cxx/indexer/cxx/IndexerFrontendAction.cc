@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 
+#include "KytheGraphObserver.h"
 #include "absl/memory/memory.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
@@ -34,8 +35,6 @@
 #include "kythe/proto/filecontext.pb.h"
 #include "llvm/ADT/Twine.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
-
-#include "KytheGraphObserver.h"
 
 namespace kythe {
 

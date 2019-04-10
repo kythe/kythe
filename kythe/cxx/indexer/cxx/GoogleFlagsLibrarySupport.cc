@@ -16,10 +16,10 @@
 
 // This file uses the Clang style conventions.
 
-#include "clang/AST/ASTContext.h"
-
 #include "GoogleFlagsLibrarySupport.h"
+
 #include "IndexerASTHooks.h"
+#include "clang/AST/ASTContext.h"
 
 namespace kythe {
 

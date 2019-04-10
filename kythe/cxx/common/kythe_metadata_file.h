@@ -17,15 +17,14 @@
 #ifndef KYTHE_CXX_COMMON_KYTHE_METADATA_FILE_H_
 #define KYTHE_CXX_COMMON_KYTHE_METADATA_FILE_H_
 
-#include "kythe/proto/storage.pb.h"
+#include <map>
+#include <memory>
 
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "kythe/proto/storage.pb.h"
 #include "rapidjson/document.h"
-
-#include <map>
-#include <memory>
 
 namespace kythe {
 

@@ -17,6 +17,7 @@
 #include "analyzer.h"
 
 #include <memory>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/match.h"
 #include "absl/strings/strip.h"

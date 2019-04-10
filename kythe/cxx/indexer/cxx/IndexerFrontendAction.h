@@ -30,6 +30,9 @@
 #include <string>
 #include <utility>
 
+#include "GraphObserver.h"
+#include "IndexerASTHooks.h"
+#include "IndexerPPCallbacks.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
@@ -40,10 +43,6 @@
 #include "kythe/cxx/extractor/cxx_details.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
-
-#include "GraphObserver.h"
-#include "IndexerASTHooks.h"
-#include "IndexerPPCallbacks.h"
 
 namespace kythe {
 namespace proto {

@@ -15,6 +15,7 @@
  */
 
 #include "path_utils.h"
+
 #include "clang/Basic/FileManager.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/LexDiagnostic.h"
