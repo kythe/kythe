@@ -976,14 +976,7 @@ func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 		return
 	}
 	var lines []string
-	deprecated := false
-	depMsg := ""
 	for _, comment := range comments.List {
-		i := strings.Index(comment.Text, "// Deprecated: ")
-		if i >= 0 {
-			depMsg = comment.Text[(i + 15):]
-			deprecated = true
-		}
 		lines = append(lines, trimComment(comment.Text))
 	}
 	docNode := proto.Clone(target).(*spb.VName)
@@ -991,6 +984,26 @@ func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 	e.writeFact(docNode, facts.NodeKind, nodes.Doc)
 	e.writeFact(docNode, facts.Text, strings.Join(lines, "\n"))
 	e.writeEdge(docNode, target, edges.Documents)
+	e.handleDeprecation(target, lines)
+}
+
+// handleDeprecation emits a deprecated fact for the specified target if the
+// comment lines indicate it is deprecated.
+func (e *emitter) handleDeprecation(target *spb.VName, lines []string) {
+	deprecated := false
+	depMsg := ""
+	for _, line := range lines {
+		if !deprecated {
+			if msg := strings.TrimPrefix(line, "Deprecated: "); msg != line {
+				depMsg = msg
+				deprecated = true
+			}
+		} else if line == "" {
+			break
+		} else {
+			depMsg += " " + line
+		}
+	}
 	if deprecated {
 		e.writeFact(target, facts.Deprecated, depMsg)
 	}
