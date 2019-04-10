@@ -74,7 +74,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 		}
 	}()
 	if err != nil {
-		return c.Fail("Error creating temp output: ", err)
+		return c.Fail("Error creating temp output: %v", err)
 	}
 	archives := fs.Args()
 	if c.append {
@@ -82,15 +82,15 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 		if err == nil {
 			archives = append([]string{c.output}, archives...)
 			if err := orig.Close(); err != nil {
-				return c.Fail("Error closing original: ", err)
+				return c.Fail("Error closing original: %v", err)
 			}
 		}
 	}
 	if err := mergeArchives(ctx, tmpOut, archives); err != nil {
-		return c.Fail("Error merging archives: ", err)
+		return c.Fail("Error merging archives: %v", err)
 	}
 	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
-		return c.Fail("Error renaming tmp to output:", err)
+		return c.Fail("Error renaming tmp to output: %v", err)
 	}
 	return subcommands.ExitSuccess
 }
