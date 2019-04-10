@@ -20,7 +20,6 @@ import static com.google.common.base.StandardSystemProperty.JAVA_HOME;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -69,6 +68,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -925,7 +925,7 @@ public class JavaCompilationUnitExtractor {
     ModifiableOptions completeOptions =
         ModifiableOptions.of(rawOptions)
             .removeUnsupportedOptions()
-            .ensureEncodingSet(Charsets.UTF_8);
+            .ensureEncodingSet(StandardCharsets.UTF_8);
 
     setLocation(
         completeOptions, standardFileManager, classpath, "-cp", StandardLocation.CLASS_PATH);
