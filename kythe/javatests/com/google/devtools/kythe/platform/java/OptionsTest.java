@@ -17,20 +17,188 @@
 package com.google.devtools.kythe.platform.java;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
-import com.google.common.collect.Lists;
-import java.util.List;
-import junit.framework.TestCase;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptions;
+import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
+import com.google.devtools.kythe.proto.Java.JavaDetails;
+import com.google.protobuf.Any;
+import com.sun.tools.javac.main.Option;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-/** Unit tests for {@link JavacOptionsUtils}. */
-public class OptionsTest extends TestCase {
-
-  public void testRemoveUnsupportedOptions_depAnn() {
+@RunWith(JUnit4.class)
+public class OptionsTest {
+  @Test
+  public void removeUnsupportedOptions_depAnn() {
     final String lintOption = "-Xlint:-dep-ann";
 
-    List<String> rawArgs = Lists.newArrayList(lintOption, "--class-path", "some/class/path");
-    assertThat(JavacOptionsUtils.removeUnsupportedOptions(rawArgs))
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of(lintOption, "--class-path", "some/class/path"));
+    assertThat(args.removeUnsupportedOptions().build())
         .containsExactly("--class-path", "some/class/path")
         .inOrder();
+  }
+
+  @Test
+  public void removeUnsupportedOptions_missingArgFine() {
+    ModifiableOptions args = ModifiableOptions.of(ImmutableList.of("--class-path"));
+    assertThat(args.removeUnsupportedOptions().build()).containsExactly("--class-path").inOrder();
+  }
+
+  @Test
+  public void removeOptions_singles() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-prompt", "-doe", "-moreinfo", "--class-path"));
+    assertThat(args.removeOptions(ImmutableSet.of(Option.DOE)).build())
+        .containsExactly("-prompt", "-moreinfo", "--class-path")
+        .inOrder();
+  }
+
+  @Test
+  public void removeOptions_positionalClobbers() {
+    ModifiableOptions args =
+        ModifiableOptions.of(
+            ImmutableList.of("-prompt", "-doe", "--class-path", "not/a/real/path", "-moreinfo"));
+    assertThat(args.removeOptions(ImmutableSet.of(Option.CLASS_PATH)).build())
+        .containsExactly("-prompt", "-doe", "-moreinfo")
+        .inOrder();
+  }
+
+  @Test
+  public void removeOptions_adjacentDoesntClobber() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-prompt", "-doe", "-proc:none", "-moreinfo"));
+    assertThat(args.removeOptions(ImmutableSet.of(Option.PROC)).build())
+        .containsExactly("-prompt", "-doe", "-moreinfo")
+        .inOrder();
+  }
+
+  @Test
+  public void removeOptions_handlesAdjacentEquals() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-prompt", "-Djava.ext.dirs=not/a/dir", "-moreinfo"));
+    assertThat(args.removeOptions(ImmutableSet.of(Option.DJAVA_EXT_DIRS)).build())
+        .containsExactly("-prompt", "-moreinfo")
+        .inOrder();
+  }
+
+  @Test
+  public void keepOptions_singles() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-prompt", "-doe", "-moreinfo", "--class-path"));
+    assertThat(args.keepOptions(ImmutableSet.of(Option.DOE, Option.PROMPT)).build())
+        .containsExactly("-prompt", "-doe")
+        .inOrder();
+  }
+
+  @Test
+  public void keepOptions_positionalClobbers() {
+    ModifiableOptions args =
+        ModifiableOptions.of(
+            ImmutableList.of(
+                "-proc:none",
+                "--processor-path",
+                "fake/path",
+                "--class-path",
+                "not/a/real/path",
+                "-moreinfo"));
+    assertThat(args.keepOptions(ImmutableSet.of(Option.CLASS_PATH)).build())
+        .containsExactly("--class-path", "not/a/real/path")
+        .inOrder();
+  }
+
+  // Note that previous behavior of this function *did* clobber unrelated next args when an
+  // adjacent ':' arg was specified.
+  @Test
+  public void keepOptions_adjacentDoesntClobber() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-prompt", "-doe", "-proc:none", "-moreinfo"));
+    assertThat(args.keepOptions(ImmutableSet.of(Option.PROC)).build())
+        .containsExactly("-proc:none")
+        .inOrder();
+  }
+
+  @Test
+  public void updateWithJavaOptions_updatesBootClassPath() {
+    ModifiableOptions args =
+        ModifiableOptions.of(
+            ImmutableList.of("--boot-class-path", "not/a/real/path:also/fake", "-doe"));
+    ImmutableList<String> updatedArgs =
+        args.updateWithJavaOptions(CompilationUnit.getDefaultInstance()).build();
+    // Note the re-ordering.  Probably it doesn't matter, but enforce in test just to be sure.
+    assertThat(updatedArgs).containsAllOf("-doe", "--boot-class-path").inOrder();
+    // Also verify that we kept paths passed in.
+    int idx = updatedArgs.indexOf("--boot-class-path");
+    assertThat(updatedArgs).hasSize(idx + 2);
+    assertThat(updatedArgs.get(idx + 1)).startsWith("not/a/real/path:also/fake");
+    assertThat(updatedArgs.get(idx + 1)).contains(".jar");
+    assertWithMessage("--boot-class-path should have a bunch of jars added")
+        .that(updatedArgs.get(idx + 1).length() > 50)
+        .isTrue();
+  }
+
+  @Test
+  public void updateWithJavaOptions_emptyDetailsAddsBootClassPath() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("--class-path", "not/a/real/path:also/fake", "-doe"));
+    ImmutableList<String> updatedArgs =
+        args.updateWithJavaOptions(CompilationUnit.getDefaultInstance()).build();
+    assertThat(updatedArgs).containsAllOf("--class-path", "-doe", "--boot-class-path").inOrder();
+    assertThat(updatedArgs.get(updatedArgs.indexOf("--class-path") + 1))
+        .startsWith("not/a/real/path:also/fake");
+
+    assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1)).contains(".jar");
+  }
+
+  @Test
+  public void updateWithJavaOptions_updatesPathsFromDetails() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("--class-path", "not/a/real/path:also/fake", "-doe"));
+
+    CompilationUnit cu =
+        CompilationUnit.newBuilder()
+            .addDetails(
+                Any.pack(
+                    JavaDetails.newBuilder()
+                        .addClasspath("class/from/details")
+                        .addSourcepath("source/from/details")
+                        .addBootclasspath("boot/from/details")
+                        .build()))
+            .build();
+    ImmutableList<String> updatedArgs = args.updateWithJavaOptions(cu).build();
+    // Note that the unspecified --source-path and --boot-class-path get added in from details.
+    assertThat(updatedArgs)
+        .containsAllOf("-doe", "--class-path", "--source-path", "--boot-class-path")
+        .inOrder();
+    int classIdx = updatedArgs.indexOf("--class-path");
+    assertThat(updatedArgs.get(classIdx + 1)).startsWith("class/from/details");
+    // Should clobber the argument, leaving only the non-argument.
+    assertThat(updatedArgs.get(classIdx + 1)).doesNotContain("not/a/real/path:also/fake");
+
+    assertThat(updatedArgs.get(updatedArgs.indexOf("--source-path") + 1))
+        .contains("source/from/details");
+    assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1))
+        .contains("boot/from/details");
+  }
+
+  @Test
+  public void updateWithJavaOptions_updatesSomePathsFromDetails() {
+    ModifiableOptions args = ModifiableOptions.of(ImmutableList.of("-doe"));
+
+    CompilationUnit cu =
+        CompilationUnit.newBuilder()
+            .addDetails(
+                Any.pack(JavaDetails.newBuilder().addSourcepath("source/from/details").build()))
+            .build();
+    ImmutableList<String> updatedArgs = args.updateWithJavaOptions(cu).build();
+    // --source-path comes from details, --boot-class-path comes from system.
+    assertThat(updatedArgs).containsAllOf("-doe", "--source-path", "--boot-class-path").inOrder();
+    assertThat(updatedArgs.get(updatedArgs.indexOf("--source-path") + 1))
+        .matches("source/from/details");
+    assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1)).contains(".jar");
   }
 }
