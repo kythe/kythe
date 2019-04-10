@@ -33,7 +33,7 @@ func outer() {
 }
 
 //- @+6multilineDep defines/binding Func
-//- Func.deprecated "more than one line for deprecation message"
+//- Func.deprecated "more than one"
 
 // Deprecated: more than one
 // line for deprecation
