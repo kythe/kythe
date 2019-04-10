@@ -21,6 +21,8 @@ import * as ts from 'typescript';
 
 import * as utf8 from './utf8';
 
+const LANGUAGE = 'typescript';
+
 /** VName is the type of Kythe node identities. */
 export interface VName {
   signature: string;
@@ -121,10 +123,7 @@ class Vistor {
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
 
-    this.kFile = this.newVName(
-        /* empty signature */ '',
-        path.relative(this.sourceRoot, file.fileName));
-    this.kFile.language = '';
+    this.kFile = this.newFileVName(file.fileName);
   }
 
   /**
@@ -164,27 +163,32 @@ class Vistor {
   }
 
   /**
+   * newFileVName returns a new VName for the given file path.
+   */
+  newFileVName(path: string): VName {
+    const vname = this.pathVNames.get(path);
+    return {
+      signature: '',
+      language: '',
+      corpus: vname && vname.corpus ? vname.corpus :
+                                      this.compilationUnit.corpus,
+      root: vname && vname.corpus ? vname.root : this.compilationUnit.root,
+      path: vname && vname.path ? vname.path : path,
+    };
+  }
+
+  /**
    * newVName returns a new VName with a given signature and path.
    */
   newVName(signature: string, path: string): VName {
-    const vname = this.pathVNames.get(path);
-    return {
-      signature,
-      corpus: vname && vname.corpus ? vname.corpus :
-                                      this.compilationUnit.corpus,
-      root: vname && vname.root ? vname.root : this.compilationUnit.root,
-      path: vname && vname.path ? vname.path : path,
-      language: 'typescript',
-    };
+    return Object.assign(
+        this.newFileVName(path), {signature: signature, language: LANGUAGE});
   }
 
   /** newAnchor emits a new anchor entry that covers a TypeScript node. */
   newAnchor(node: ts.Node, start = node.getStart(), end = node.end): VName {
-    const name = this.newVName(
-        `@${start}:${end}`,
-        // An anchor refers to specific text, so its path is the file path,
-        // not the module name.
-        path.relative(this.sourceRoot, node.getSourceFile().fileName));
+    const name = Object.assign(
+        {...this.kFile}, {signature: `@${start}:${end}`, language: LANGUAGE});
     this.emitNode(name, 'anchor');
     const offsetTable = this.getOffsetTable(node.getSourceFile().fileName);
     this.emitFact(name, 'loc/start', offsetTable.lookup(start).toString());
