@@ -27,6 +27,7 @@ const (
 	Code         = prefix + "code"
 	Complete     = prefix + "complete"
 	ContextURL   = prefix + "context/url"
+	Deprecated   = prefix + "tag/deprecated"
 	Details      = prefix + "details"
 	DocURI       = prefix + "doc/uri"
 	Message      = prefix + "message"
