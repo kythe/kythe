@@ -36,11 +36,10 @@
 // compiler header files embedded into the extractor's executable will be
 // mapped to /kythe_builtins and used.
 
+#include "cxx_extractor.h"
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/extractor/language.h"
-
-#include "cxx_extractor.h"
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;

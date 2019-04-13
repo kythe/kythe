@@ -15,9 +15,10 @@
  */
 
 #include "kythe/cxx/doc/html_renderer.h"
-#include "kythe/cxx/doc/markup_handler.h"
 
 #include <stack>
+
+#include "kythe/cxx/doc/markup_handler.h"
 
 namespace kythe {
 namespace {

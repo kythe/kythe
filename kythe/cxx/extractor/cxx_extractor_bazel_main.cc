@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include "cxx_extractor.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -28,8 +29,6 @@
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/extractor/language.h"
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
-
-#include "cxx_extractor.h"
 
 DEFINE_string(build_config, "",
               "Human readable description of the build configuration.");

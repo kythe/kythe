@@ -18,7 +18,6 @@
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 
 #include "absl/strings/string_view.h"
-
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
 

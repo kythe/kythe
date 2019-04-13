@@ -22,10 +22,9 @@
 #include <unordered_set>
 #include <utility>
 
+#include "GraphObserver.h"
 #include "absl/types/optional.h"
 #include "glog/logging.h"
-
-#include "GraphObserver.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/cxx/extractor/language.h"

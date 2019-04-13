@@ -19,6 +19,7 @@
 
 #include <cstdio>
 #include <string>
+
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/status.h"

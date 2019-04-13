@@ -21,10 +21,9 @@
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
+#include "assertions.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
-
-#include "assertions.h"
 
 namespace kythe {
 namespace verifier {
@@ -355,6 +354,9 @@ class Verifier {
 
   /// Identifier for MarkedSource LOOKUP_BY_PARAM_WITH_DEFAULTS kinds.
   AstNode* marked_source_parameter_lookup_by_param_with_defaults_id_;
+
+  /// Identifier for MarkedSource LOOKUP_BY_TYPED kinds.
+  AstNode* marked_source_lookup_by_typed_id_;
 
   /// Identifier for MarkedSource kind facts.
   AstNode* marked_source_kind_id_;

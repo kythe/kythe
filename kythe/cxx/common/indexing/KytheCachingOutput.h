@@ -18,13 +18,13 @@
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_CACHING_OUTPUT_H_
 
 #include <openssl/sha.h>
+
 #include <memory>
 #include <vector>
 
 #include "absl/strings/string_view.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
-
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"

@@ -20,15 +20,14 @@ import static com.google.common.base.StandardSystemProperty.JAVA_HOME;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteStreams;
@@ -36,7 +35,7 @@ import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
-import com.google.devtools.kythe.platform.java.JavacOptionsUtils;
+import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptions;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileData;
@@ -69,6 +68,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -316,9 +316,11 @@ public class JavaCompilationUnitExtractor {
   /**
    * Returns a new list with the same options except header/source destination directory options.
    */
-  private static List<String> removeDestDirOptions(Iterable<String> options) {
-    return JavacOptionsUtils.removeOptions(
-        Lists.newArrayList(options), EnumSet.of(Option.S, Option.H));
+  private static ImmutableList<String> removeDestDirOptions(Iterable<String> options) {
+    // TODO(#3671): Option.D needs to remain in for module support, fix either here or in indexing.
+    return ModifiableOptions.of(options)
+        .removeOptions(EnumSet.of(Option.D, Option.S, Option.H))
+        .build();
   }
 
   /**
@@ -833,7 +835,7 @@ public class JavaCompilationUnitExtractor {
 
   /** Sets the given location using command-line flags and the FileManager API. */
   private static void setLocation(
-      List<String> options,
+      ModifiableOptions options,
       StandardJavaFileManager fileManager,
       Iterable<String> searchpath,
       String flag,
@@ -910,7 +912,7 @@ public class JavaCompilationUnitExtractor {
    * destination directory. Only options supported by the Java compiler will be within the returned
    * {@link List}.
    */
-  private static List<String> completeCompilerOptions(
+  private static ImmutableList<String> completeCompilerOptions(
       StandardJavaFileManager standardFileManager,
       Iterable<String> rawOptions,
       Iterable<String> classpath,
@@ -920,10 +922,10 @@ public class JavaCompilationUnitExtractor {
       Path tempDestinationDir)
       throws ExtractionException {
 
-    List<String> completeOptions =
-        JavacOptionsUtils.ensureEncodingSet(
-            JavacOptionsUtils.removeUnsupportedOptions(Lists.newArrayList(rawOptions)),
-            Charsets.UTF_8);
+    ModifiableOptions completeOptions =
+        ModifiableOptions.of(rawOptions)
+            .removeUnsupportedOptions()
+            .ensureEncodingSet(StandardCharsets.UTF_8);
 
     setLocation(
         completeOptions, standardFileManager, classpath, "-cp", StandardLocation.CLASS_PATH);
@@ -946,11 +948,11 @@ public class JavaCompilationUnitExtractor {
         "-bootclasspath",
         StandardLocation.PLATFORM_CLASS_PATH);
 
-    JavacOptionsUtils.removeOptions(completeOptions, EnumSet.of(Option.D));
-    completeOptions.add("-d");
-    completeOptions.add(tempDestinationDir.toString());
-
-    return completeOptions;
+    return completeOptions
+        .removeOptions(EnumSet.of(Option.D))
+        .add("-d")
+        .add(tempDestinationDir.toString())
+        .build();
   }
 
   private static JavaCompiler findJavaCompiler() {

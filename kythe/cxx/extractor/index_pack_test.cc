@@ -15,6 +15,7 @@
  */
 
 #include "index_pack.h"
+
 #include "absl/memory/memory.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/gzip_stream.h"

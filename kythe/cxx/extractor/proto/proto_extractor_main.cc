@@ -23,14 +23,13 @@
 //   proto_extractor foo.proto bar.proto
 //   proto_extractor foo.proto -- --proto_path dir/with/my/deps
 
-#include "kythe/cxx/extractor/proto/proto_extractor.h"
-
 #include <string>
 
 #include "absl/strings/match.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/kzip_writer.h"
+#include "kythe/cxx/extractor/proto/proto_extractor.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/proto/analysis.pb.h"
 

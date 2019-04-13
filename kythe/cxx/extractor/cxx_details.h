@@ -17,12 +17,12 @@
 #ifndef KYTHE_CXX_EXTRACTOR_CXX_DETAILS_H_
 #define KYTHE_CXX_EXTRACTOR_CXX_DETAILS_H_
 
+#include <vector>
+
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 #include "kythe/proto/cxx.pb.h"
-
-#include <vector>
 
 namespace kythe {
 /// \brief Reproduces Clang's internal header search state.

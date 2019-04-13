@@ -17,9 +17,9 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_PROTO_CONVERSIONS_H_
 #define KYTHE_CXX_INDEXER_CXX_PROTO_CONVERSIONS_H_
 
-#include "llvm/ADT/StringRef.h"
-
 #include <string>
+
+#include "llvm/ADT/StringRef.h"
 
 namespace kythe {
 /// \brief Wrap a protobuf string in a StringRef.

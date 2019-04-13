@@ -124,8 +124,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
                 .build();
       }
       rule.vname =
-          rule.vname
-              .toBuilder()
+          rule.vname.toBuilder()
               .setSignature(protoPath.toString())
               .setLanguage(PROTOBUF_LANGUAGE)
               .build();
@@ -149,5 +148,5 @@ public class ProtobufMetadataLoader implements MetadataLoader {
       return null;
     }
     return info;
-  };
+  }
 }

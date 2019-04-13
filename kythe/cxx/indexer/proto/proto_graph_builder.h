@@ -150,6 +150,9 @@ class ProtoGraphBuilder {
   // Adds a code fact to the element.
   void AddCodeFact(const proto::VName& element, const MarkedSource& code);
 
+  // Marks the given node as deprecated.
+  void SetDeprecated(const proto::VName& node_name);
+
  private:
   // Where we output nodes, edges, etc..
   KytheGraphRecorder* recorder_;

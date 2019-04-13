@@ -23,8 +23,6 @@
 //   textproto_extractor foo.pbtxt
 //   textproto_extractor foo.pbtxt -- --proto_path dir/with/proto/deps
 
-#include "kythe/cxx/extractor/proto/proto_extractor.h"
-
 #include <string>
 
 #include "absl/strings/match.h"
@@ -33,6 +31,7 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/kzip_writer.h"
+#include "kythe/cxx/extractor/proto/proto_extractor.h"
 #include "kythe/cxx/extractor/textproto/textproto_schema.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/proto/analysis.pb.h"

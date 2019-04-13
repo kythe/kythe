@@ -17,17 +17,18 @@
 
 #include "CommandLineUtils.h"
 
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Regex.h"
-
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+
 #include <algorithm>
 #include <mutex>
 #include <string>
 #include <vector>
+
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Regex.h"
 
 namespace kythe {
 namespace common {

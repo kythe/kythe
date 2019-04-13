@@ -17,6 +17,7 @@
 #include "kythe/cxx/common/kzip_writer.h"
 
 #include <openssl/sha.h>
+
 #include <array>
 #include <string>
 #include <tuple>

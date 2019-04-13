@@ -15,6 +15,7 @@
  */
 
 #include "kythe/cxx/indexer/cxx/marked_source.h"
+
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/PrettyPrinter.h"

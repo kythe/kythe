@@ -15,6 +15,7 @@
  */
 
 #include "kythe/cxx/common/net_client.h"
+
 #include "absl/memory/memory.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"

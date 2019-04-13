@@ -17,10 +17,10 @@
 #ifndef KYTHE_CXX_COMMON_NET_CLIENT_H_
 #define KYTHE_CXX_COMMON_NET_CLIENT_H_
 
+#include <curl/curl.h>
+
 #include <memory>
 #include <string>
-
-#include <curl/curl.h>
 
 #include "kythe/proto/graph.pb.h"
 #include "kythe/proto/storage.pb.h"

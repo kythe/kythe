@@ -15,6 +15,7 @@
  */
 
 #include "textproto_schema.h"
+
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/strip.h"
