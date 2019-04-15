@@ -31,6 +31,7 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/kzip_writer.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/extractor/proto/proto_extractor.h"
 #include "kythe/cxx/extractor/textproto/textproto_schema.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
@@ -144,9 +145,13 @@ Examples:
   *compilation.mutable_unit() =
       proto_extractor.ExtractProtos(proto_filenames, &kzip_writer);
 
+  // Relativize path before writing to kzip.
+  const std::string textproto_rel_filename =
+      RelativizePath(textproto_filename, proto_extractor.root_directory);
+
   // Replace the proto extractor's source file list with our textproto.
   compilation.mutable_unit()->clear_source_file();
-  compilation.mutable_unit()->add_source_file(textproto_filename);
+  compilation.mutable_unit()->add_source_file(textproto_rel_filename);
 
   // Re-build compilation unit's arguments list. Add --proto_message and any
   // protoc args.
@@ -171,12 +176,12 @@ Examples:
     proto::CompilationUnit::FileInput* file_input =
         compilation.mutable_unit()->add_required_input();
     proto::VName vname =
-        proto_extractor.vname_gen.LookupVName(textproto_filename);
+        proto_extractor.vname_gen.LookupVName(textproto_rel_filename);
     if (vname.corpus().empty()) {
       vname.set_corpus(proto_extractor.corpus);
     }
     *file_input->mutable_v_name() = std::move(vname);
-    file_input->mutable_info()->set_path(textproto_filename);
+    file_input->mutable_info()->set_path(textproto_rel_filename);
     file_input->mutable_info()->set_digest(*digest);
   }
 

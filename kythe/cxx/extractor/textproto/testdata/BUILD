@@ -90,3 +90,18 @@ textproto_extractor_golden_test(
     ],
     deps = ["example.proto"],
 )
+
+# Test that KYTHE_ROOT_DIRECTORY environment variable works. File paths in the
+# output should be relative to KYTHE_ROOT_DIRECTORY, not the extractor's working
+# directory.
+textproto_extractor_golden_test(
+    name = "subdir",
+    srcs = ["subdir/subdir.pbtxt"],
+    extra_env = {"KYTHE_ROOT_DIRECTORY": "kythe/cxx/extractor/textproto/testdata/subdir"},
+    opts = [
+        "--",
+        "--proto_path",
+        "kythe/cxx/extractor/textproto/testdata/subdir",
+    ],
+    deps = ["subdir/subdir.proto"],
+)
