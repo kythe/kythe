@@ -219,12 +219,6 @@ def _java_dependencies():
         sha1 = "a6a2b2df72fd13ec466216049b303f206bd66c5d",
     )
 
-    # This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
-    native.bind(
-        name = "error_prone_annotations",
-        actual = "@com_google_errorprone_error_prone_annotations//jar:jar",
-    )
-
     maybe(
         native.maven_jar,
         name = "org_ow2_asm_asm",

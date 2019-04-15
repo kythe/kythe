@@ -53,3 +53,9 @@ npm_install(
     package_json = "//:package.json",
     package_lock_json = "//:package-lock.json",
 )
+
+# This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
+bind(
+    name = "error_prone_annotations",
+    actual = "@com_google_errorprone_error_prone_annotations//jar:jar",
+)
