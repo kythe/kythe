@@ -25,7 +25,7 @@ message Message {
     bool nested_bool = 2;
   }
 
-  //- @oneof_field defines/binding OneofField
+  //- @oneof_field defines/binding OneofField?
   oneof oneof_field {
     //- @oneof_string defines/binding OneofString
     string oneof_string = 4;
