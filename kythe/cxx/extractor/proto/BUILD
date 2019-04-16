@@ -21,6 +21,7 @@ cc_library(
     hdrs = ["proto_extractor.h"],
     visibility = ["//kythe/cxx/extractor/textproto:__subpackages__"],
     deps = [
+        "//kythe/cxx/common:file_utils",
         "//kythe/cxx/common:index_writer",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:path_utils",

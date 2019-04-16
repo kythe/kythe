@@ -22,6 +22,7 @@
 #include "glog/logging.h"
 #include "google/protobuf/compiler/importer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "kythe/cxx/common/file_utils.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
@@ -73,21 +74,6 @@ class RecordingDiskSourceTree : public DiskSourceTree {
  private:
   std::set<std::string> opened_files_;
 };
-
-// Loads all data from a file or terminates the process.
-static std::string LoadFileOrDie(const std::string& file) {
-  FILE* handle = fopen(file.c_str(), "rb");
-  CHECK(handle != nullptr) << "Couldn't open input file " << file;
-  CHECK_EQ(fseek(handle, 0, SEEK_END), 0) << "Couldn't seek " << file;
-  long size = ftell(handle);
-  CHECK_GE(size, 0) << "Bad size for " << file;
-  CHECK_EQ(fseek(handle, 0, SEEK_SET), 0) << "Couldn't seek " << file;
-  std::string content;
-  content.resize(size);
-  CHECK_EQ(fread(&content[0], size, 1, handle), 1) << "Couldn't read " << file;
-  CHECK_NE(fclose(handle), EOF) << "Couldn't close " << file;
-  return content;
-}
 
 }  // namespace
 
