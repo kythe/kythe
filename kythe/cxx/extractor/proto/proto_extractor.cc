@@ -31,6 +31,8 @@ namespace kythe {
 namespace lang_proto {
 namespace {
 
+using ::google::protobuf::compiler::DiskSourceTree;
+
 // Error "collector" that just writes messages to log output.
 class LoggingMultiFileErrorCollector
     : public google::protobuf::compiler::MultiFileErrorCollector {
@@ -48,8 +50,7 @@ class LoggingMultiFileErrorCollector
 
 // DiskSourceTree that records which proto files are opened while parsing the
 // toplevel proto(s), allowing us to get a list of transitive dependencies.
-class RecordingDiskSourceTree
-    : public google::protobuf::compiler::DiskSourceTree {
+class RecordingDiskSourceTree : public DiskSourceTree {
  public:
   google::protobuf::io::ZeroCopyInputStream* Open(
       const std::string& filename) override {
@@ -133,13 +134,18 @@ proto::CompilationUnit ProtoExtractor::ExtractProtos(
   }
 
   // Write each toplevel proto and its transitive dependencies into the kzip.
-  for (const std::string& filename : src_tree.opened_files()) {
+  for (const std::string& abspath : src_tree.opened_files()) {
+    // Resolve path relative to the proto compiler's search paths.
+    std::string relpath, shadow;
+    CHECK(DiskSourceTree::SUCCESS ==
+          src_tree.DiskFileToVirtualFile(abspath, &relpath, &shadow));
+    CHECK(shadow.empty()) << "Filepath shadows a real file: " << relpath;
     // Read file contents
     std::string file_contents;
     {
       std::unique_ptr<google::protobuf::io::ZeroCopyInputStream> in_stream(
-          src_tree.Open(filename));
-      CHECK(in_stream != nullptr) << "Can't open file: " << filename;
+          src_tree.Open(relpath));
+      CHECK(in_stream != nullptr) << "Can't open file: " << relpath;
 
       const void* data = nullptr;
       int size = 0;
@@ -148,12 +154,8 @@ proto::CompilationUnit ProtoExtractor::ExtractProtos(
       }
     }
 
-    // Resolve path relative to the proto compiler's search paths.
-    std::string full_path;
-    CHECK(src_tree.VirtualFileToDiskFile(filename, &full_path))
-        << "Error canonicalizing path: " << filename;
     // Make path relative to KYTHE_ROOT_DIRECTORY.
-    full_path = RelativizePath(full_path, root_directory);
+    const std::string final_path = RelativizePath(abspath, root_directory);
 
     // Write file to index.
     auto digest = index_writer->WriteFile(file_contents);
@@ -161,12 +163,12 @@ proto::CompilationUnit ProtoExtractor::ExtractProtos(
 
     // Record file info to compilation unit.
     proto::CompilationUnit::FileInput* file_input = unit.add_required_input();
-    proto::VName vname = vname_gen.LookupVName(full_path);
+    proto::VName vname = vname_gen.LookupVName(final_path);
     if (vname.corpus().empty()) {
       vname.set_corpus(std::string(corpus));
     }
     *file_input->mutable_v_name() = std::move(vname);
-    file_input->mutable_info()->set_path(full_path);
+    file_input->mutable_info()->set_path(final_path);
     file_input->mutable_info()->set_digest(*digest);
   }
 
