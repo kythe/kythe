@@ -18,6 +18,7 @@
 
 #include <sstream>
 
+#include "kythe/cxx/common/file_utils.h"
 #include "verifier.h"
 
 namespace kythe {
@@ -559,21 +560,11 @@ void AssertionParser::ScanBeginString(const RE2& goal_comment_regex,
 
 void AssertionParser::ScanBeginFile(const RE2& goal_comment_regex,
                                     bool trace_scanning) {
-  std::string buffer;
   if (file().empty() || file() == "-") {
     Error("will not read goals from stdin");
     exit(EXIT_FAILURE);
   }
-  FILE* input = ::fopen(file().c_str(), "r");
-  CHECK(input != nullptr) << "Couldn't open " << file();
-  CHECK(!::fseek(input, 0, SEEK_END));
-  auto file_len = ::ftell(input);
-  CHECK(file_len >= 0);
-  CHECK(!::fseek(input, 0, SEEK_SET));
-  buffer.resize(file_len);
-  CHECK(::fread(const_cast<char*>(buffer.data()), 1, file_len, input) ==
-        file_len);
-  ::fclose(input);
+  std::string buffer = LoadFileOrDie(file());
   ScanBeginString(goal_comment_regex, buffer, trace_scanning);
 }
 
