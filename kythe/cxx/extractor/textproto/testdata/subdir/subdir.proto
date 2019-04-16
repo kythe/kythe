@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package textproto_test;
+
+message MyMessage {
+    string str_field = 2;
+}
