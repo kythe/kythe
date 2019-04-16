@@ -31,6 +31,13 @@ void fn() {
   *msg.mutable_nested_message() = nested;
   //- @nested_message ref CxxGetNestedMessageField
   msg.nested_message();
+
+  //- @clear_oneof_field ref CxxClearOneofField
+  msg.clear_oneof_field();
+  //- @oneof_field_case ref CxxOneofFieldCase
+  msg.oneof_field_case();
+  //- @set_oneof_string ref CxxSetOneofString
+  msg.set_oneof_string("hello");
 }
 //- Message generates CxxMessage
 //- StringField generates CxxSetStringField
@@ -44,3 +51,6 @@ void fn() {
 //- NestedString generates CxxGetNestedStringField
 //- NestedBool generates CxxSetNestedBoolField
 //- NestedBool generates CxxGetNestedBoolField
+//- OneofField generates CxxOneofFieldCase
+//- OneofField generates CxxClearOneofField
+//- OneofString generates CxxSetOneofString

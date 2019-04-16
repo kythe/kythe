@@ -702,9 +702,9 @@ def kythe_dependencies():
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "48a01655a0ce6ee5cf22cf182bab285951a4cef7f8a9f84db80ec0f8145546c6",
-        strip_prefix = "protobuf-2d0183ab58706a919f138e6920e33e3b76eb62f6",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/2d0183ab58706a919f138e6920e33e3b76eb62f6.zip"],
+        sha256 = "ef62ee52bedc3a0ec0aeb7911279243119d53eac7f8bbbec833761c07e802bcb",
+        strip_prefix = "protobuf-8e5ea65953f3c47e01bca360ecf3abdf2c8b1c33",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/8e5ea65953f3c47e01bca360ecf3abdf2c8b1c33.zip"],
     )
 
     maybe(
