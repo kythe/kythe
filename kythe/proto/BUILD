@@ -38,6 +38,12 @@ go_kythe_proto(
     deps = [":storage_go_proto"],
 )
 
+java_proto_library(
+    name = "schema_java_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = [":schema_proto"],
+)
+
 # Common Kythe protocol buffer definitions shared among other libraries
 proto_library(
     name = "common_proto",

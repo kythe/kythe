@@ -22,7 +22,7 @@ genrule(
     srcs = ["//kythe/data:schema_index.textproto"],
     outs = ["schema_index.go"],
     cmd = " ".join([
-        "$(location //kythe/go/util/schema/mkdata) -package schema",
+        "$(location //kythe/go/util/schema/mkdata) --language go --package schema",
         "-input '$(location //kythe/data:schema_index.textproto)'",
         "-output '$@'",
     ]),
