@@ -71,6 +71,9 @@ func TestExtractCompilationsEndToEnd(t *testing.T) {
 			return err
 		} else if info.IsDir() {
 			return nil
+		} else if filepath.Ext(path) != ".kzip" {
+			t.Logf("Ignoring non-kzip file: %v", path)
+			return nil
 		}
 		reader, err := os.Open(path)
 		if err != nil {
