@@ -246,11 +246,11 @@ func generateJava(index *scpb.Index) {
 	fmt.Fprintf(src, "// Input file: %s\n\n", *inputPath)
 	fmt.Fprintf(src, "package %s;\n", *packageName)
 
-	fmt.Fprintf(src, "import com.google.common.collect.ImmutableBiMap;\n")
-	fmt.Fprintf(src, "import com.google.devtools.kythe.proto.Schema.EdgeKind;\n")
-	fmt.Fprintf(src, "import com.google.devtools.kythe.proto.Schema.FactName;\n")
-	fmt.Fprintf(src, "import com.google.devtools.kythe.proto.Schema.NodeKind;\n")
-	fmt.Fprintf(src, "import com.google.devtools.kythe.proto.Schema.Subkind;\n")
+	fmt.Fprintln(src, "import com.google.common.collect.ImmutableBiMap;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.EdgeKind;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.FactName;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.NodeKind;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.Subkind;")
 
 	fmt.Fprintln(src, "/** Utility for handling schema strings and their corresponding protocol buffer enums. */")
 	fmt.Fprintln(src, "public final class Schema {")
@@ -264,7 +264,7 @@ func generateJava(index *scpb.Index) {
 			fmt.Fprintf(src, ".put(%q, NodeKind.%s)\n", fullName, enum)
 		}
 	}
-	fmt.Fprintln(src, ".build();\n")
+	fmt.Fprintln(src, ".build();")
 
 	fmt.Fprintln(src, "private static final ImmutableBiMap<String, Subkind> SUBKINDS = ImmutableBiMap.<String, Subkind>builder()")
 	for _, kinds := range index.Subkinds {
@@ -274,7 +274,7 @@ func generateJava(index *scpb.Index) {
 			fmt.Fprintf(src, ".put(%q, Subkind.%s)\n", fullName, enum)
 		}
 	}
-	fmt.Fprintln(src, ".build();\n")
+	fmt.Fprintln(src, ".build();")
 
 	fmt.Fprintln(src, "private static final ImmutableBiMap<String, EdgeKind> EDGE_KINDS = ImmutableBiMap.<String, EdgeKind>builder()")
 	for _, kinds := range index.EdgeKinds {
@@ -284,7 +284,7 @@ func generateJava(index *scpb.Index) {
 			fmt.Fprintf(src, ".put(%q, EdgeKind.%s)\n", fullName, enum)
 		}
 	}
-	fmt.Fprintln(src, ".build();\n")
+	fmt.Fprintln(src, ".build();")
 
 	fmt.Fprintln(src, "private static final ImmutableBiMap<String, FactName> FACT_NAMES = ImmutableBiMap.<String, FactName>builder()")
 	for _, kinds := range index.FactNames {
@@ -294,31 +294,31 @@ func generateJava(index *scpb.Index) {
 			fmt.Fprintf(src, ".put(%q, FactName.%s)\n", fullName, enum)
 		}
 	}
-	fmt.Fprintln(src, ".build();\n")
+	fmt.Fprintln(src, ".build();")
 
 	fmt.Fprintln(src, "/** Returns the schema {@link NodeKind} for the given kind. */")
-	fmt.Fprintln(src, "public static NodeKind nodeKind(String k) { return NODE_KINDS.getOrDefault(k, NodeKind.UNKNOWN_NODE_KIND); }\n")
+	fmt.Fprintln(src, "public static NodeKind nodeKind(String k) { return NODE_KINDS.getOrDefault(k, NodeKind.UNKNOWN_NODE_KIND); }")
 
 	fmt.Fprintln(src, "/** Returns the schema {@link Subkind} for the given kind. */")
-	fmt.Fprintln(src, "public static Subkind subkind(String k) { return SUBKINDS.getOrDefault(k, Subkind.UNKNOWN_SUBKIND); }\n")
+	fmt.Fprintln(src, "public static Subkind subkind(String k) { return SUBKINDS.getOrDefault(k, Subkind.UNKNOWN_SUBKIND); }")
 
 	fmt.Fprintln(src, "/** Returns the schema {@link EdgeKind} for the given kind. */")
-	fmt.Fprintln(src, "public static EdgeKind edgeKind(String k) { return EDGE_KINDS.getOrDefault(k, EdgeKind.UNKNOWN_EDGE_KIND); }\n")
+	fmt.Fprintln(src, "public static EdgeKind edgeKind(String k) { return EDGE_KINDS.getOrDefault(k, EdgeKind.UNKNOWN_EDGE_KIND); }")
 
 	fmt.Fprintln(src, "/** Returns the schema {@link FactName} for the given name. */")
-	fmt.Fprintln(src, "public static FactName factName(String n) { return FACT_NAMES.getOrDefault(n, FactName.UNKNOWN_FACT_NAME); }\n")
+	fmt.Fprintln(src, "public static FactName factName(String n) { return FACT_NAMES.getOrDefault(n, FactName.UNKNOWN_FACT_NAME); }")
 
 	fmt.Fprintln(src, "/** Returns the string representation of the given {@link NodeKind}. */")
-	fmt.Fprintln(src, "public static String nodeKindString(NodeKind k) { return NODE_KINDS.inverse().getOrDefault(k, \"\"); }\n")
+	fmt.Fprintln(src, "public static String nodeKindString(NodeKind k) { return NODE_KINDS.inverse().getOrDefault(k, \"\"); }")
 
 	fmt.Fprintln(src, "/** Returns the string representation of the given {@link Subkind}. */")
-	fmt.Fprintln(src, "public static String subkindString(Subkind k) { return SUBKINDS.inverse().getOrDefault(k, \"\"); }\n")
+	fmt.Fprintln(src, "public static String subkindString(Subkind k) { return SUBKINDS.inverse().getOrDefault(k, \"\"); }")
 
 	fmt.Fprintln(src, "/** Returns the string representation of the given {@link EdgeKind}. */")
-	fmt.Fprintln(src, "public static String edgeKindString(EdgeKind k) { return EDGE_KINDS.inverse().getOrDefault(k, \"\"); }\n")
+	fmt.Fprintln(src, "public static String edgeKindString(EdgeKind k) { return EDGE_KINDS.inverse().getOrDefault(k, \"\"); }")
 
 	fmt.Fprintln(src, "/** Returns the string representation of the given {@link FactName}. */")
-	fmt.Fprintln(src, "public static String factNameString(FactName n) { return FACT_NAMES.inverse().getOrDefault(n, \"\"); }\n")
+	fmt.Fprintln(src, "public static String factNameString(FactName n) { return FACT_NAMES.inverse().getOrDefault(n, \"\"); }")
 
 	fmt.Fprintln(src, "}")
 
