@@ -32,30 +32,30 @@ document describes how to encode information about generated code to permit
 cross-language links.
 
 To make the discussion easier to understand let's pretend we are working with
-two languages: AliceLang and BobLang. AliceLang has `.alice` file and BobLang
-has `.bob` files. We also have a tool (generator) that can take generate
-`foo.bob` file from `foo.alice` file. We have following components:
+two languages: SourceLang and TargetLang. SourceLang has `.source` file and TargetLang
+has `.target` files. We also have a tool (generator) that can take generate
+`foo.target` file from `foo.source` file. We have following components:
 
-* Alice Indexer - Kythe indexer that takes `.alice` files and outputs index
+* Source Indexer - Kythe indexer that takes `.source` files and outputs index
   data.
-* Bob Indexer - Kythe indexer that takes `.bob` files and outputs index
+* Target Indexer - Kythe indexer that takes `.target` files and outputs index
   data.
-* Generator - tool that produces `.bob` files from `.alice` files.
+* Generator - tool that produces `.target` files from `.source` files.
 * Post processor - Kythe tool that takes all index data produced by all
   indexers, processes it and outputs final Kythe graph that contains data
-  for both AliceLang and BobLang.
+  for both SourceLang and TargetLang.
 
 Now we want to teach Kythe how to create cross-references between generated
-`foo.bob` file and original `foo.alice` file. The main idea is pretty simple:
-Generator has to output extra data containing mapping of elements in `foo.bob`
-to the original elements from `alice.bob`. Then when Bob Indexer is indexing
-`foo.bob` it will use that mapping to output *generates* or *imputes* edges.
-These edges connect nodes from `foo.bob` with nodes in `foo.alice`.
+`foo.target` file and original `foo.source` file. The main idea is pretty simple:
+Generator has to output extra data containing mapping of elements in `foo.target`
+to the original elements from `foo.source`. Then when Target Indexer is indexing
+`foo.target` it will use that mapping to output *generates* or *imputes* edges.
+These edges connect nodes from `foo.target` with nodes in `foo.source`.
 
 Kythe doesn't require implementors to use one concrete approach for passing
 mapping metadata and outputting *generates* and *imputes* edges. Below we
 describe two different approaches, each has its own pros and cons. But in
-both cases it is assumed that implementors can change Generator and Bob
+both cases it is assumed that implementors can change Generator and Target
 Indexer.
 
 TIP: You can find an example implementation at
@@ -65,9 +65,9 @@ use; this is a work in progress.
 
 === Java To JavaScript with *imputes* edges
 
-This approach is generic and works for any combination of AliceLang and
-BobLang. In this example we generate JavaScript files from Java file so
-AliceLang is Java and BobLang is JavaScript. Given `Color.java`:
+This approach is generic and works for any combination of SourceLang and
+TargetLang. In this example we generate JavaScript files from Java file so
+SourceLang is Java and TargetLang is JavaScript. Given `Color.java`:
 
 [source,java]
 -------------------------------------------------------------------------------
@@ -127,7 +127,7 @@ This mapping has 3 `meta` entries. The first entry for `Color`, the second for
   position of elements in the source (`Color.java`) and target (`color.js`)
   files.
 * Each position is defined as byte offset inside file and not as line/column.
-  This is required because in Kythe anchors defined using byte offsets and
+  This is required because in Kythe anchors are defined using byte offsets and
   not line/column. In this example JavaScript indexer will process this
   mapping and will need to output *anchor* for `Color.java` and indexer
   doesn't have access to the `Color.java` file (it has access only to JS
@@ -253,13 +253,13 @@ This approach is easier to implement compared to *imputes* approach described
 above, but it requires tighter integration with Indexer and Generator. When
 Generator outputs code it also adds a mapping as in the *imputes* approach,
 but instead of mapping location to location it outputs VNames of nodes from
-`foo.alice`. It requires Generator to know exactly what VNames will be produced
-by the Alice Indexer. This approach is feasible when either VNames either
-have simple stable form or Generator can reuse code from Alice Indexer to
+`foo.source`. It requires Generator to know exactly what VNames will be produced
+by the Source Indexer. This approach is feasible when either VNames either
+have simple stable form or Generator can reuse code from Source Indexer to
 generate VNames.
 
 In this example we generate C++ files from Protocol buffer definitions. So
-AliceLang is Protocol Buffers and BobLang is C++.
+SourceLang is Protocol Buffers and TargetLang is C++.
 
 The Kythe project uses
 link:https://developers.google.com/protocol-buffers/[protocol buffers] for
