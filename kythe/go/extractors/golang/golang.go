@@ -38,6 +38,7 @@ import (
 	"context"
 	"fmt"
 	"go/build"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,6 +64,9 @@ func init() {
 	}
 }
 
+// PackageVNameOptions re-exports govname.PackageVNameOptions.
+type PackageVNameOptions = govname.PackageVNameOptions
+
 // An Extractor contains the state needed to extract Go compilations from build
 // information.  The zero value is ready for use with default settings.
 type Extractor struct {
@@ -72,9 +76,8 @@ type Extractor struct {
 	// The packages that have been extracted so far (initially empty).
 	Packages []*Package
 
-	// The name of the corpus that should be attributed to packages whose
-	// corpus is not specified and cannot be inferred (e.g., local imports).
-	Corpus string
+	// The configuration for constructing VNames for packages.
+	PackageVNameOptions
 
 	// The local path against which relative imports should be resolved.
 	LocalPath string
@@ -86,10 +89,6 @@ type Extractor struct {
 
 	// Extra file paths to include in each compilation record.
 	ExtraFiles []string
-
-	// A function to generate a vname from a package's import path.  If nil,
-	// the extractor will use govname.ForPackage.
-	PackageVName func(corpus string, bp *build.Package) *spb.VName
 
 	// A function to convert a directory path to an import path.  If nil, the
 	// path is made relative to the first matching element of the build
@@ -170,12 +169,9 @@ func (e *Extractor) findPackage(importPath string) *Package {
 	return nil
 }
 
-// vnameFor returns a vname for the specified package, handling the default.
+// vnameFor returns a vname for the specified package.
 func (e *Extractor) vnameFor(bp *build.Package) *spb.VName {
-	if e.PackageVName != nil {
-		return e.PackageVName(e.Corpus, bp)
-	}
-	v := govname.ForPackage(e.Corpus, bp)
+	v := govname.ForPackage(bp, &e.PackageVNameOptions)
 	v.Signature = "" // not useful in this context
 	return v
 }
@@ -203,10 +199,7 @@ func (e *Extractor) dirToImport(dir string) (string, error) {
 //
 // Note: multiple packages may be resolved for "/..." import paths
 func (e *Extractor) Locate(importPath string) ([]*Package, error) {
-	listedPackages, err := e.listPackages(importPath)
-	if err != nil {
-		return nil, err
-	}
+	listedPackages, listErr := e.listPackages(importPath)
 
 	var pkgs []*Package
 	for _, pkg := range listedPackages {
@@ -233,7 +226,7 @@ func (e *Extractor) Locate(importPath string) ([]*Package, error) {
 			pkgs = append(pkgs, p)
 		}
 	}
-	return pkgs, nil
+	return pkgs, listErr
 }
 
 // ImportDir attempts to import the Go package located in the given directory.
@@ -284,6 +277,7 @@ type Package struct {
 	ext  *Extractor    // pointer back to the extractor that generated this package
 	seen stringset.Set // input files already added to this package
 
+	CorpusRoot   string                 // Corpus package root path
 	Path         string                 // Import or directory path
 	DepOnly      bool                   // Whether the package is only seen as a dependency
 	Err          error                  // Error discovered during processing
@@ -300,6 +294,11 @@ type Package struct {
 // by the Store method.
 func (p *Package) Extract() error {
 	p.VName = p.ext.vnameFor(p.BuildPackage)
+	if r, err := govname.RepoRoot(p.Path); err == nil {
+		p.CorpusRoot = r.Root
+	} else {
+		p.CorpusRoot = p.VName.GetCorpus()
+	}
 	cu := &apb.CompilationUnit{
 		VName:    p.VName,
 		Argument: []string{"go", "build"},
@@ -314,6 +313,17 @@ func (p *Package) Extract() error {
 		CgoEnabled: bc.CgoEnabled,
 	}); err == nil {
 		cu.Details = append(cu.Details, info)
+	}
+
+	if govname.ImportPath(cu.VName, bc.GOROOT) != p.Path {
+		// Add GoPackageInfo if constructed VName differs from actual ImportPath.
+		if info, err := ptypes.MarshalAny(&gopb.GoPackageInfo{
+			ImportPath: p.Path,
+		}); err == nil {
+			cu.Details = append(cu.Details, info)
+		} else {
+			log.Printf("WARNING: failed to marshal GoPackageInfo for CompilationUnit: %v", err)
+		}
 	}
 
 	// Add required inputs from this package (source files of various kinds).
@@ -459,18 +469,17 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 		}
 		trimmed := strings.TrimPrefix(path, root+"/")
 		vn := &spb.VName{
-			Corpus: p.ext.Corpus,
+			Corpus: p.ext.DefaultCorpus,
 			Path:   trimmed,
 		}
 		if vn.Corpus == "" {
-			// If no global corpus is specified, use the package's corpus for each of
+			// If no default corpus is specified, use the package's corpus for each of
 			// its files.  The package corpus is based on the rules in
-			// kythe/go/extractors/govname and is usually either the package's
-			// repository root (e.g. github.com/golang/protobuf) or a custom top-level
-			// domain (e.g. k8s.io).
+			// kythe/go/extractors/govname and is usually the package's
+			// repository root (e.g. github.com/golang/protobuf).
 			vn.Corpus = p.VName.Corpus
 			components := strings.SplitN(vn.Path, string(filepath.Separator), 2)
-			vn.Path = strings.TrimPrefix(components[1], vn.Corpus+"/")
+			vn.Path = strings.TrimPrefix(components[1], p.CorpusRoot+"/")
 			if components[0] != "src" {
 				vn.Root = components[0]
 			}
@@ -504,6 +513,17 @@ func (p *Package) addInput(cu *apb.CompilationUnit, bp *build.Package) {
 		// Populate the vname for the input based on the corpus of the package.
 		fi := cu.RequiredInput[len(cu.RequiredInput)-1]
 		fi.VName = p.ext.vnameFor(bp)
+
+		if govname.ImportPath(fi.VName, p.ext.BuildContext.GOROOT) != bp.ImportPath {
+			// Add GoPackageInfo if constructed VName differs from actual ImportPath.
+			if info, err := ptypes.MarshalAny(&gopb.GoPackageInfo{
+				ImportPath: bp.ImportPath,
+			}); err == nil {
+				fi.Details = append(fi.Details, info)
+			} else {
+				log.Printf("WARNING: failed to marshal GoPackageInfo for input: %v", err)
+			}
+		}
 	}
 }
 
@@ -522,7 +542,10 @@ func (p *Package) addDeps(cu *apb.CompilationUnit, importPaths []string, localPa
 	for _, ip := range importPaths {
 		if ip == "unsafe" {
 			// package unsafe is intrinsic; nothing to do
-		} else if dep, err := p.ext.addPackage(ip, localPath); err != nil {
+		} else if dep, err := p.ext.addPackage(ip, localPath); err != nil || dep.PkgObj == "" {
+			// Package was either literally missing or could not be built properly.
+			// Note: Locate could have added a dependency package that could not be
+			// built as part of its earlier analysis.
 			missing = append(missing, ip)
 		} else {
 			p.addInput(cu, dep)

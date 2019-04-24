@@ -41,12 +41,15 @@
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
 #include "kythe/proto/filecontext.pb.h"
+#include "re2/re2.h"
 
 DEFINE_string(assemble, "", "Assemble positional args into output file");
 DEFINE_string(explode, "", "Explode this kindex file into its constituents");
 DEFINE_bool(canonicalize_hashes, false,
             "Replace transcripts with sequence numbers");
 DEFINE_bool(suppress_details, false, "Suppress CU details.");
+DEFINE_string(keep_details_matching, "",
+              "If present, include these details when suppressing the rest.");
 
 namespace {
 
@@ -80,6 +83,16 @@ class MutableContextRows {
   kythe::proto::ContextDependentVersion context_;
 };
 
+class PermissiveFinder : public google::protobuf::TextFormat::Finder {
+ public:
+  const google::protobuf::Descriptor* FindAnyType(
+      const google::protobuf::Message& message, const std::string& prefix,
+      const std::string& name) const {
+    // Ignore any provided prefix and use one of the default supported ones.
+    return Finder::FindAnyType(message, "type.googleapis.com/", name);
+  }
+};
+
 /// \brief Gives each `hash` a unique, shorter ID based on visitation order.
 void CanonicalizeHash(
     absl::flat_hash_map<google::protobuf::string, size_t>* hashes,
@@ -97,7 +110,18 @@ void DumpCompilationUnit(const std::string& path,
       open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
   CHECK_GE(out_fd, 0) << "Couldn't open " << out_path << " for writing.";
   if (FLAGS_suppress_details) {
-    unit->clear_details();
+    if (FLAGS_keep_details_matching.empty()) {
+      unit->clear_details();
+    } else {
+      google::protobuf::RepeatedPtrField<google::protobuf::Any> keep;
+      re2::RE2 detail_pattern(FLAGS_keep_details_matching);
+      for (const auto& detail : *unit->mutable_details()) {
+        if (re2::RE2::FullMatch(detail.type_url(), detail_pattern)) {
+          *keep.Add() = detail;
+        }
+      }
+      unit->mutable_details()->Swap(&keep);
+    }
   }
   if (FLAGS_canonicalize_hashes) {
     CanonicalizeHash(&hash_table, unit->mutable_entry_context());
@@ -108,20 +132,13 @@ void DumpCompilationUnit(const std::string& path,
           CanonicalizeHash(&hash_table, column.mutable_linked_context());
         }
       }
-      // TODO(shahms): Remove this when the indexers are updated.
-      if (input.has_context()) {
-        for (auto& row : *input.mutable_context()->mutable_row()) {
-          CanonicalizeHash(&hash_table, row.mutable_source_context());
-          for (auto& column : *row.mutable_column()) {
-            CanonicalizeHash(&hash_table, column.mutable_linked_context());
-          }
-        }
-      }
     }
   }
   google::protobuf::io::FileOutputStream file_output_stream(out_fd);
   google::protobuf::TextFormat::Printer printer;
   printer.SetExpandAny(true);
+  PermissiveFinder finder;
+  printer.SetFinder(&finder);
   CHECK(printer.Print(*unit, &file_output_stream));
   CHECK(file_output_stream.Close());
 }
@@ -136,6 +153,8 @@ void DumpFileData(const std::string& path,
   google::protobuf::io::FileOutputStream file_output_stream(out_fd);
   google::protobuf::TextFormat::Printer printer;
   printer.SetExpandAny(true);
+  PermissiveFinder finder;
+  printer.SetFinder(&finder);
   CHECK(printer.Print(content, &file_output_stream));
   CHECK(file_output_stream.Close());
 }

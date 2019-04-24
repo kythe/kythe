@@ -18,7 +18,7 @@
 set -e
 
 DIRECTORY_INDEXER="$PWD/${DIR_INDEXER?:missing directory_indexer}"
-CONFIG="$PWD/kythe/data/vnames.json"
+CONFIG="$PWD/$1"
 OUT="$TEST_TMPDIR/file_entries"
 
 # Directory tree with some (but not many) files

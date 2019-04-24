@@ -31,3 +31,6 @@ tools/node
 # Kythe website artifacts
 kythe/web/site/.bundle/
 kythe/web/site/_vendor/
+
+# User bazelrc overrides
+/user.bazelrc

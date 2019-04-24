@@ -18,6 +18,7 @@ package pipeline
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -118,6 +119,8 @@ type KytheBeam struct {
 	edges      beam.PCollection // *gspb.Edges
 
 	markedSources beam.PCollection // KV<*spb.VName, *cpb.MarkedSource>
+
+	anchorBuildConfigs beam.PCollection // KV<*spb.VName, string>
 }
 
 // FromNodes creates a KytheBeam pipeline from an input collection of
@@ -289,21 +292,31 @@ func groupCrossRefs(key *spb.VName, refStream func(**ppb.Reference) bool, emitSe
 	set := &srvpb.PagedCrossReferences{SourceTicket: kytheuri.ToString(key)}
 	// TODO(schroederc): add paging
 
-	groups := make(map[string]*srvpb.PagedCrossReferences_Group)
+	// kind -> build_config -> group
+	groups := make(map[string]map[string]*srvpb.PagedCrossReferences_Group)
 
 	var ref *ppb.Reference
 	for refStream(&ref) {
 		kind := refKind(ref)
-		g, ok := groups[kind]
+		configs, ok := groups[kind]
 		if !ok {
-			g = &srvpb.PagedCrossReferences_Group{Kind: kind}
-			groups[kind] = g
+			configs = make(map[string]*srvpb.PagedCrossReferences_Group)
+			groups[kind] = configs
+		}
+		config := ref.Anchor.BuildConfiguration
+		g, ok := configs[config]
+		if !ok {
+			g = &srvpb.PagedCrossReferences_Group{Kind: kind, BuildConfig: config}
+			configs[config] = g
 			set.Group = append(set.Group, g)
 		}
 		g.Anchor = append(g.Anchor, ref.Anchor)
 	}
 
-	sort.Slice(set.Group, func(i, j int) bool { return set.Group[i].Kind < set.Group[j].Kind })
+	sort.Slice(set.Group, func(i, j int) bool {
+		return compare.Strings(set.Group[i].BuildConfig, set.Group[j].BuildConfig).
+			AndThen(set.Group[i].Kind, set.Group[j].Kind) == compare.LT
+	})
 	for _, g := range set.Group {
 		sort.Slice(g.Anchor, func(i, j int) bool { return g.Anchor[i].Ticket < g.Anchor[j].Ticket })
 	}
@@ -460,6 +473,8 @@ func (c *combineDecorPieces) AddInput(accum *srvpb.FileDecorations, p *ppb.Decor
 			Anchor: &srvpb.RawAnchor{
 				StartOffset: ref.Anchor.Span.Start.ByteOffset,
 				EndOffset:   ref.Anchor.Span.End.ByteOffset,
+
+				BuildConfiguration: ref.Anchor.BuildConfiguration,
 			},
 			Kind:   refKind(ref),
 			Target: kytheuri.ToString(ref.Source),
@@ -653,6 +668,7 @@ func (k *KytheBeam) References() beam.PCollection {
 			IncludeFacts: []string{
 				facts.AnchorStart, facts.AnchorEnd,
 				facts.SnippetStart, facts.SnippetEnd,
+				facts.BuildConfig,
 			},
 		}, k.nodes))
 	k.refs = beam.ParDo(s, toRefs, beam.CoGroupByKey(s, k.getFiles(), anchors))
@@ -706,7 +722,8 @@ func normalizeAnchors(file *srvpb.File, anchor func(**scpb.Node) bool, emit func
 		}
 		a, err := assemble.ExpandAnchor(raw, file, norm, "")
 		if err != nil {
-			return err
+			log.Printf("error expanding anchor {%+v}: %v", raw, err)
+			break
 		}
 
 		var parent *spb.VName
@@ -741,27 +758,35 @@ func normalizeAnchors(file *srvpb.File, anchor func(**scpb.Node) bool, emit func
 func toRawAnchor(n *scpb.Node) (*srvpb.RawAnchor, error) {
 	var a srvpb.RawAnchor
 	for _, f := range n.Fact {
-		i, err := strconv.Atoi(string(f.Value))
-		if err != nil {
-			return nil, fmt.Errorf("invalid integer fact value for %q: %v", f.GetKytheName(), err)
-		}
-		n := int32(i)
-
+		var err error
 		switch f.GetKytheName() {
+		case scpb.FactName_BUILD_CONFIG:
+			a.BuildConfiguration = string(f.Value)
 		case scpb.FactName_LOC_START:
-			a.StartOffset = n
+			a.StartOffset, err = factValueToInt(f)
 		case scpb.FactName_LOC_END:
-			a.EndOffset = n
+			a.EndOffset, err = factValueToInt(f)
 		case scpb.FactName_SNIPPET_START:
-			a.SnippetStart = n
+			a.SnippetStart, err = factValueToInt(f)
 		case scpb.FactName_SNIPPET_END:
-			a.SnippetEnd = n
+			a.SnippetEnd, err = factValueToInt(f)
 		default:
 			return nil, fmt.Errorf("unhandled fact: %v", f)
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 	a.Ticket = kytheuri.ToString(n.Source)
 	return &a, nil
+}
+
+func factValueToInt(f *scpb.Fact) (int32, error) {
+	i, err := strconv.Atoi(string(f.Value))
+	if err != nil {
+		return 0, fmt.Errorf("invalid integer fact value for %q: %v", schema.GetFactName(f), err)
+	}
+	return int32(i), nil
 }
 
 func moveSourceToKey(n *scpb.Node) (*spb.VName, *scpb.Node) {

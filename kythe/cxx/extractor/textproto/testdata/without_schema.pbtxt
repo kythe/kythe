@@ -1,0 +1,4 @@
+# This proto file does not use the "proto-file" and "proto-message" schema
+# comments. The extractor is given this information via flags instead.
+
+str_field: "testing, testing..."

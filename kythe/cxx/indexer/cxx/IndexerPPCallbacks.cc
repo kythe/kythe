@@ -17,8 +17,8 @@
 // This file uses the Clang style conventions.
 
 #include "IndexerPPCallbacks.h"
-#include "GraphObserver.h"
 
+#include "GraphObserver.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/PPCallbacks.h"
@@ -323,8 +323,8 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
   llvm::SmallString<1024> search_path;
   llvm::SmallString<1024> relative_path;
   llvm::SmallString<1024> filename;
-  const auto* file = cxx_extractor::LookupFileForIncludePragma(&preprocessor, &search_path,
-                                                &relative_path, &filename);
+  const auto* file = cxx_extractor::LookupFileForIncludePragma(
+      &preprocessor, &search_path, &relative_path, &filename);
   if (!file) {
     fprintf(stderr, "Missing metadata file: %s\n", filename.c_str());
     return;
@@ -345,7 +345,7 @@ void IndexerPPCallbacks::HandleKytheInlineMetadataPragma(
   clang::Token tok;
   if (!preprocessor.LexStringLiteral(tok, search_string,
                                      "pragma kythe_inline_metadata",
-                                     /*MacroExpansion=*/true)) {
+                                     /*AllowMacroExpansion=*/true)) {
     return;
   }
   if (search_string.empty()) {

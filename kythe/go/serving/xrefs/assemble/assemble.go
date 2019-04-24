@@ -702,6 +702,8 @@ func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *span.Normaliz
 			Start: p2p(ssp),
 			End:   p2p(sep),
 		},
+
+		BuildConfiguration: anchor.BuildConfiguration,
 	}, nil
 }
 

@@ -1,10 +1,14 @@
-load("//tools/build_rules/verifier_test:verifier_test.bzl", "java_verifier_test")
+load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
+
+filegroup(
+    name = "regression_files",
+    srcs = glob(["**/*.java"]),
+    visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
+)
 
 java_library(
     name = "regression",
-    srcs = glob(
-        ["**/*.java"],
-    ),
+    srcs = [":regression_files"],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
 )
 

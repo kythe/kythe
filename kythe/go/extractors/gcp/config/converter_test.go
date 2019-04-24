@@ -17,7 +17,6 @@
 package config
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -27,46 +26,113 @@ import (
 
 const testDataDir = "testdata"
 
+// Also test some yaml configs checked in elsewhere.
+const examplesDir = "../../../../extractors/gcp/examples"
+
 func TestYAMLConversion(t *testing.T) {
 	testcases := []testcase{
-		{"mvn"},
-		{"gradle"},
+		{
+			name:     "maven-simple",
+			jsonFile: "mvn.json",
+			yamlDir:  testDataDir,
+			yamlFile: "mvn.yaml",
+		},
+		{
+			name:     "maven-subdir",
+			jsonFile: "mvn-subdir.json",
+			yamlDir:  testDataDir,
+			yamlFile: "mvn-subdir.yaml",
+		},
+		{
+			name:     "maven-multi",
+			jsonFile: "mvn-multi.json",
+			yamlDir:  testDataDir,
+			yamlFile: "mvn-multi.yaml",
+		},
+		{
+			name:     "maven-from-examples",
+			jsonFile: "mvn.json",
+			yamlDir:  examplesDir,
+			yamlFile: "mvn.yaml",
+		},
+		{
+			name:     "guava",
+			jsonFile: "guava-mvn.json",
+			yamlDir:  examplesDir,
+			yamlFile: "guava-mvn.yaml",
+		},
+		{
+			name:     "guava-android",
+			jsonFile: "guava-android-mvn.json",
+			yamlDir:  examplesDir,
+			yamlFile: "guava-android-mvn.yaml",
+		},
+		{
+			name:     "gradle-simple",
+			jsonFile: "gradle.json",
+			yamlDir:  testDataDir,
+			yamlFile: "gradle.yaml",
+		},
+		{
+			name:     "gradle-subdir",
+			jsonFile: "gradle-subdir.json",
+			yamlDir:  testDataDir,
+			yamlFile: "gradle-subdir.yaml",
+		},
+		{
+			name:     "gradle-from-examples",
+			jsonFile: "gradle.json",
+			yamlDir:  examplesDir,
+			yamlFile: "gradle.yaml",
+		},
+		{
+			name:     "bazel-from-examples",
+			jsonFile: "bazel.json",
+			yamlDir:  examplesDir,
+			yamlFile: "bazel.yaml",
+		},
+		{
+			name:     "bazel-multi",
+			jsonFile: "bazel-multi.json",
+			yamlDir:  testDataDir,
+			yamlFile: "bazel-multi.yaml",
+		},
 	}
 
 	for _, tcase := range testcases {
-		t.Run(tcase.basename, func(t *testing.T) {
+		t.Run(tcase.name, func(t *testing.T) {
 			actual, err := KytheToYAML(tcase.getJSONFile(t))
 			if err != nil {
-				t.Fatalf("reading config %s: %v", tcase.basename, err)
+				t.Fatalf("reading config %s: %v", tcase.jsonFile, err)
 			}
 			expected, err := tcase.getExpectedYAML(t)
 			if err != nil {
-				t.Fatalf("reading expected testdata %s: %v", tcase.basename, err)
+				t.Fatalf("reading expected testdata %s/%s: %v", tcase.yamlDir, tcase.yamlFile, err)
 			}
 
-			eq, diff := testutil.TrimmedEqual(actual, expected)
-			if !eq {
-				t.Errorf("Expected config %s to be equal, but got diff %s", tcase.basename, diff)
-				t.Errorf("actual:\n%s", actual)
-				t.Errorf("expected:\n%s", expected)
+			if err := testutil.YAMLEqual(expected, actual); err != nil {
+				t.Errorf("Expected config %s to be equal: %v", tcase.jsonFile, err)
 			}
 		})
 	}
 }
 
 type testcase struct {
-	basename string
+	name     string
+	jsonFile string
+
+	// YAML files not guaranteed to be in testdata, could be elsewhere.
+	yamlDir  string
+	yamlFile string
+
+	expectedError error
 }
 
 func (tc testcase) getJSONFile(t *testing.T) string {
-	return getPath(t, fmt.Sprintf("%s.json", tc.basename))
+	return testutil.TestFilePath(t, filepath.Join(testDataDir, tc.jsonFile))
 }
 
 func (tc testcase) getExpectedYAML(t *testing.T) ([]byte, error) {
-	fp := getPath(t, fmt.Sprintf("%s.yaml", tc.basename))
+	fp := testutil.TestFilePath(t, filepath.Join(tc.yamlDir, tc.yamlFile))
 	return ioutil.ReadFile(fp)
-}
-
-func getPath(t *testing.T, f string) string {
-	return testutil.TestFilePath(t, filepath.Join(testDataDir, f))
 }

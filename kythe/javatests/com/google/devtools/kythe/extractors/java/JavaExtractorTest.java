@@ -484,8 +484,8 @@ public class JavaExtractorTest extends TestCase {
   }
 
   /**
-   * Tests that unsupported flags do not crash the extractor and destination options are not present
-   * in the resulting {@link CompilationUnit}.
+   * Tests that unsupported flags do not crash the extractor and source/header destination options
+   * are not present in the resulting {@link CompilationUnit}.
    */
   public void testJavaExtractorArguments() throws Exception {
     String testDir = System.getenv("TEST_TMPDIR");
@@ -550,7 +550,8 @@ public class JavaExtractorTest extends TestCase {
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
 
-    // Check that the -d, -s, and -h flags have been removed from the compilation's arguments
+    // Check that the -s, and -h flags have been removed from the compilation's arguments, but -d
+    // preserved (it is required by modular builds).
     assertThat(unit.getArgumentList())
         .containsExactly("-Xdoclint:-Xdoclint:all/private", "-g:lines")
         .inOrder();

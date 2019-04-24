@@ -36,11 +36,10 @@
 // compiler header files embedded into the extractor's executable will be
 // mapped to /kythe_builtins and used.
 
+#include "cxx_extractor.h"
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/extractor/language.h"
-
-#include "cxx_extractor.h"
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -50,7 +49,7 @@ int main(int argc, char* argv[]) {
   kythe::ExtractorConfiguration config;
   config.SetArgs(args);
   config.InitializeFromEnvironment();
-  config.Extract(kythe::supported_language::Language::kCpp);
+  bool success = config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();
-  return 0;
+  return success ? 0 : 1;
 }

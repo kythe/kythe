@@ -15,6 +15,7 @@
  */
 
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
+
 #include "glog/logging.h"
 
 // See
@@ -51,7 +52,7 @@ namespace {
 /// v is called as
 ///     (TagEnumerator, "tag-name", is-section, is-tag-block, tag-block-id)
 /// Sections affect parsing. We don't treat the "\brief" section as a tag block.
-// clang-format-off
+// clang-format off
 #define DOXYGEN_TAGS(v)                                  \
   v(Brief, "brief", true, false, NOT_TAG_BLOCK)          \
       v(C, "c", false, false, NOT_TAG_BLOCK)             \

@@ -2,7 +2,10 @@
 // methods of concrete types and the interfaces they satisfy.
 package override
 
-import _ "fmt"
+import (
+	_ "fmt"
+	"strings"
+)
 
 //- @Thinger defines/binding Thinger
 //- Thinger.node/kind interface
@@ -10,6 +13,7 @@ type Thinger interface {
 	//- @Thing defines/binding AbstractThing
 	//- Thing.node/kind function
 	//- Thing childof Thinger
+	//- AbstractThing typed AbstractThingType
 	Thing()
 }
 
@@ -22,6 +26,7 @@ type Stuffer interface {
 	//- @Stuff defines/binding AbstractStuff
 	//- Stuff.node/kind function
 	//- Stuff childof Stuffer
+	//- AbstractStuff typed AbstractStuffType
 	Stuff()
 }
 
@@ -35,6 +40,8 @@ type foo struct{}
 //- ConcreteThing.node/kind function
 //- ConcreteThing childof Foo
 //- ConcreteThing overrides AbstractThing
+//- ConcreteThing typed ConcreteThingType
+//- ConcreteThingType satisfies AbstractThingType
 //- !{ ConcreteThing overrides FoilThing }
 func (foo) Thing() {}
 
@@ -42,6 +49,8 @@ func (foo) Thing() {}
 //- ConcreteStuff.node/kind function
 //- ConcreteStuff childof Foo
 //- ConcreteStuff overrides AbstractStuff
+//- ConcreteStuff typed ConcreteStuffType
+//- ConcreteStuffType satisfies AbstractStuffType
 func (foo) Stuff() {}
 
 //- @bar defines/binding Bar
@@ -76,3 +85,20 @@ type Foil interface {
 	//- FoilThing childof Foil
 	Thing(bool)
 }
+
+//- @Grower defines/binding Grower
+//- Grower.node/kind interface
+//- StringBuilder satisfies Grower
+type Grower interface {
+	//- @Grow defines/binding Grow
+	//- Grow.node/kind function
+	Grow(int)
+
+	//- StringBuilderGrow overrides Grow
+}
+
+//- @Builder ref StringBuilder
+var _ Grower = &strings.Builder{}
+
+//- @Grow ref StringBuilderGrow
+func init() { (&strings.Builder{}).Grow(10) }

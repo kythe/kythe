@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "config",
     srcs = [
+        "bazel.go",
         "common.go",
         "converter.go",
         "gradle.go",
@@ -22,7 +23,10 @@ go_library(
 go_test(
     name = "config_test",
     srcs = ["converter_test.go"],
-    data = [":testdatafiles"],
+    data = [
+        ":testdatafiles",
+        "//kythe/extractors/gcp/examples:yaml_examples",
+    ],
     library = ":config",
     deps = [
         "//kythe/go/test/testutil",

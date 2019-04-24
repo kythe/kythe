@@ -207,6 +207,21 @@ shell_tool_test(
     },
 )
 
+shell_tool_test(
+    name = "build_config",
+    data = [
+        "build_config.UNIT",
+        "build_config.cc",
+        "skip_functions.sh",
+        "test_common.sh",
+    ],
+    scriptfile = "test_build_config.sh",
+    tools = {
+        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
+        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
+    },
+)
+
 cc_extractor_test(
     name = "recursish_macro_test",
     size = "small",

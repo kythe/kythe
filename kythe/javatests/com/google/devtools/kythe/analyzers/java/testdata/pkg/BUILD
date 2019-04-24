@@ -1,10 +1,7 @@
-load(
-    "//tools/build_rules/verifier_test:verifier_test.bzl",
-    "java_verifier_test",
-)
+load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
 
-java_library(
-    name = "pkg",
+filegroup(
+    name = "pkg_files",
     srcs = glob(
         ["**/*.java"],
         exclude = [
@@ -13,6 +10,12 @@ java_library(
             "ProtobufMetadata.java",
         ],
     ),
+    visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
+)
+
+java_library(
+    name = "pkg",
+    srcs = [":pkg_files"],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
     exports = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/regression"],
     deps = ["@com_google_code_findbugs_jsr305//jar"],
@@ -36,6 +39,12 @@ java_verifier_test(
     name = "annotations_tests",
     size = "small",
     srcs = ["Annotations.java"],
+)
+
+java_verifier_test(
+    name = "annotation_comments_tests",
+    size = "small",
+    srcs = ["AnnotationComments.java"],
 )
 
 java_verifier_test(
@@ -71,6 +80,18 @@ java_verifier_test(
     name = "selectors_tests",
     size = "small",
     srcs = ["Selectors.java"],
+)
+
+java_verifier_test(
+    name = "deprecation_tests",
+    size = "small",
+    srcs = ["Deprecation.java"],
+)
+
+java_verifier_test(
+    name = "deprecation_annotation_tests",
+    size = "small",
+    srcs = ["DeprecationAnnotations.java"],
 )
 
 java_verifier_test(
@@ -152,7 +173,7 @@ java_verifier_test(
     deps = [":jvm_files_tests"],
 )
 
-# TODO This test currently fails: https://phabricator-dot-kythe-repo.appspot.com/T185
+# TODO(#1501): This test currently fails
 java_verifier_test(
     name = "generic_class_tests",
     size = "small",
@@ -175,7 +196,7 @@ java_verifier_test(
     srcs = ["GenericMethod.java"],
 )
 
-# TODO This test currently fails: https://phabricator-dot-kythe-repo.appspot.com/T185
+# TODO(#1501): This test currently fails
 java_verifier_test(
     name = "generic_method_ref_tests",
     size = "small",

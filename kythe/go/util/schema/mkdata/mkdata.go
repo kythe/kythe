@@ -35,9 +35,10 @@ import (
 )
 
 var (
+	language    = flag.String("language", "", "Generated target language (supported: go java)")
 	inputPath   = flag.String("input", "", "Path of input data file (textpb)")
-	outputPath  = flag.String("output", "", "Path of output source file (Go)")
-	packageName = flag.String("package", "schema", "Package name to generate")
+	outputPath  = flag.String("output", "", "Path of output source file")
+	packageName = flag.String("package", "", "Package name to generate")
 )
 
 func main() {
@@ -61,9 +62,17 @@ func main() {
 		log.Fatalf("Invalid schema data: %v", err)
 	}
 
-	// Generate Go source text.
-	src := new(strings.Builder)
-	fmt.Fprintln(src, `/*
+	switch *language {
+	case "go":
+		generateGo(&index)
+	case "java":
+		generateJava(&index)
+	default:
+		log.Fatalf("You must provide a supported generated language (go or java): found %q", *language)
+	}
+}
+
+const copyrightHeader = `/*
  * Copyright 2018 The Kythe Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -77,7 +86,11 @@ func main() {
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */`)
+ */`
+
+func generateGo(index *scpb.Index) {
+	src := new(strings.Builder)
+	fmt.Fprintln(src, copyrightHeader)
 	fmt.Fprintf(src, "\n\npackage %s\n", *packageName)
 	fmt.Fprintf(src, `
 // This is a generated file -- do not edit it by hand.
@@ -224,4 +237,92 @@ func sortedKeys(v interface{}) []interface{} {
 		vals[i] = key.Interface()
 	}
 	return vals
+}
+
+func generateJava(index *scpb.Index) {
+	src := new(strings.Builder)
+	fmt.Fprintln(src, copyrightHeader)
+	fmt.Fprintln(src, "\n// This is a generated file -- do not edit it by hand.")
+	fmt.Fprintf(src, "// Input file: %s\n\n", *inputPath)
+	fmt.Fprintf(src, "package %s;\n", *packageName)
+
+	fmt.Fprintln(src, "import com.google.common.collect.ImmutableBiMap;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.EdgeKind;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.FactName;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.NodeKind;")
+	fmt.Fprintln(src, "import com.google.devtools.kythe.proto.Schema.Subkind;")
+
+	fmt.Fprintln(src, "/** Utility for handling schema strings and their corresponding protocol buffer enums. */")
+	fmt.Fprintln(src, "public final class Schema {")
+	fmt.Fprintln(src, "private Schema() {}")
+
+	fmt.Fprintln(src, "private static final ImmutableBiMap<String, NodeKind> NODE_KINDS = ImmutableBiMap.<String, NodeKind>builder()")
+	for _, kinds := range index.NodeKinds {
+		for _, name := range stringset.FromKeys(kinds.NodeKind).Elements() {
+			enum := kinds.NodeKind[name]
+			fullName := kinds.Prefix + name
+			fmt.Fprintf(src, ".put(%q, NodeKind.%s)\n", fullName, enum)
+		}
+	}
+	fmt.Fprintln(src, ".build();")
+
+	fmt.Fprintln(src, "private static final ImmutableBiMap<String, Subkind> SUBKINDS = ImmutableBiMap.<String, Subkind>builder()")
+	for _, kinds := range index.Subkinds {
+		for _, name := range stringset.FromKeys(kinds.Subkind).Elements() {
+			enum := kinds.Subkind[name]
+			fullName := kinds.Prefix + name
+			fmt.Fprintf(src, ".put(%q, Subkind.%s)\n", fullName, enum)
+		}
+	}
+	fmt.Fprintln(src, ".build();")
+
+	fmt.Fprintln(src, "private static final ImmutableBiMap<String, EdgeKind> EDGE_KINDS = ImmutableBiMap.<String, EdgeKind>builder()")
+	for _, kinds := range index.EdgeKinds {
+		for _, name := range stringset.FromKeys(kinds.EdgeKind).Elements() {
+			enum := kinds.EdgeKind[name]
+			fullName := kinds.Prefix + name
+			fmt.Fprintf(src, ".put(%q, EdgeKind.%s)\n", fullName, enum)
+		}
+	}
+	fmt.Fprintln(src, ".build();")
+
+	fmt.Fprintln(src, "private static final ImmutableBiMap<String, FactName> FACT_NAMES = ImmutableBiMap.<String, FactName>builder()")
+	for _, kinds := range index.FactNames {
+		for _, name := range stringset.FromKeys(kinds.FactName).Elements() {
+			enum := kinds.FactName[name]
+			fullName := kinds.Prefix + name
+			fmt.Fprintf(src, ".put(%q, FactName.%s)\n", fullName, enum)
+		}
+	}
+	fmt.Fprintln(src, ".build();")
+
+	fmt.Fprintln(src, "/** Returns the schema {@link NodeKind} for the given kind. */")
+	fmt.Fprintln(src, "public static NodeKind nodeKind(String k) { return NODE_KINDS.getOrDefault(k, NodeKind.UNKNOWN_NODE_KIND); }")
+
+	fmt.Fprintln(src, "/** Returns the schema {@link Subkind} for the given kind. */")
+	fmt.Fprintln(src, "public static Subkind subkind(String k) { return SUBKINDS.getOrDefault(k, Subkind.UNKNOWN_SUBKIND); }")
+
+	fmt.Fprintln(src, "/** Returns the schema {@link EdgeKind} for the given kind. */")
+	fmt.Fprintln(src, "public static EdgeKind edgeKind(String k) { return EDGE_KINDS.getOrDefault(k, EdgeKind.UNKNOWN_EDGE_KIND); }")
+
+	fmt.Fprintln(src, "/** Returns the schema {@link FactName} for the given name. */")
+	fmt.Fprintln(src, "public static FactName factName(String n) { return FACT_NAMES.getOrDefault(n, FactName.UNKNOWN_FACT_NAME); }")
+
+	fmt.Fprintln(src, "/** Returns the string representation of the given {@link NodeKind}. */")
+	fmt.Fprintln(src, "public static String nodeKindString(NodeKind k) { return NODE_KINDS.inverse().getOrDefault(k, \"\"); }")
+
+	fmt.Fprintln(src, "/** Returns the string representation of the given {@link Subkind}. */")
+	fmt.Fprintln(src, "public static String subkindString(Subkind k) { return SUBKINDS.inverse().getOrDefault(k, \"\"); }")
+
+	fmt.Fprintln(src, "/** Returns the string representation of the given {@link EdgeKind}. */")
+	fmt.Fprintln(src, "public static String edgeKindString(EdgeKind k) { return EDGE_KINDS.inverse().getOrDefault(k, \"\"); }")
+
+	fmt.Fprintln(src, "/** Returns the string representation of the given {@link FactName}. */")
+	fmt.Fprintln(src, "public static String factNameString(FactName n) { return FACT_NAMES.inverse().getOrDefault(n, \"\"); }")
+
+	fmt.Fprintln(src, "}")
+
+	if err := ioutil.WriteFile(*outputPath, []byte(src.String()), 0644); err != nil {
+		log.Fatalf("Writing Java output: %v", err)
+	}
 }

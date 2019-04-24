@@ -30,16 +30,16 @@ import (
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/web"
-	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
+
+	"github.com/golang/protobuf/proto"
 
 	ftpb "kythe.io/kythe/proto/filetree_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // Service provides an interface to explore a tree of VName files.
-// TODO(schroederc): add Context argument to interface methods
 type Service interface {
 	// Directory returns the contents of the directory at the given corpus/root/path.
 	Directory(context.Context, *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error)
@@ -86,10 +86,12 @@ func (m *Map) Populate(ctx context.Context, gs graphstore.Service) error {
 
 // AddFile adds the given file VName to m.
 func (m *Map) AddFile(file *spb.VName) {
-	ticket := kytheuri.ToString(file)
 	dirPath := CleanDirPath(path.Dir(file.Path))
 	dir := m.ensureDir(file.Corpus, file.Root, dirPath)
-	dir.File = addToSet(dir.File, ticket)
+	dir.Entry = addEntry(dir.Entry, &ftpb.DirectoryReply_Entry{
+		Kind: ftpb.DirectoryReply_FILE,
+		Name: filepath.Base(file.Path),
+	})
 }
 
 // CorpusRoots implements part of the filetree.Service interface.
@@ -147,17 +149,19 @@ func (m *Map) ensureDir(corpus, root, path string) *ftpb.DirectoryReply {
 	dirs := m.ensureCorpusRoot(corpus, root)
 	dir := dirs[path]
 	if dir == nil {
-		dir = &ftpb.DirectoryReply{}
+		dir = &ftpb.DirectoryReply{
+			Corpus: corpus,
+			Root:   root,
+			Path:   path,
+		}
 		dirs[path] = dir
 
 		if path != "" {
 			parent := m.ensureDir(corpus, root, filepath.Dir(path))
-			uri := kytheuri.URI{
-				Corpus: corpus,
-				Root:   root,
-				Path:   path,
-			}
-			parent.Subdirectory = addToSet(parent.Subdirectory, uri.String())
+			parent.Entry = addEntry(parent.Entry, &ftpb.DirectoryReply_Entry{
+				Kind: ftpb.DirectoryReply_DIRECTORY,
+				Name: filepath.Base(path),
+			})
 		}
 	}
 	return dir
@@ -170,6 +174,15 @@ func addToSet(strs []string, str string) []string {
 		}
 	}
 	return append(strs, str)
+}
+
+func addEntry(entries []*ftpb.DirectoryReply_Entry, e *ftpb.DirectoryReply_Entry) []*ftpb.DirectoryReply_Entry {
+	for _, x := range entries {
+		if proto.Equal(x, e) {
+			return entries
+		}
+	}
+	return append(entries, e)
 }
 
 type webClient struct{ addr string }

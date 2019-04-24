@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+#include "kythe/cxx/common/path_utils.h"
+
 #include <string>
 
 #include "gtest/gtest.h"
-#include "kythe/cxx/common/path_utils.h"
 
 namespace kythe {
 namespace {
@@ -45,6 +46,42 @@ TEST(PathUtilsTest, JoinPath) {
   EXPECT_EQ("a/c", JoinPath("a", "c"));
   EXPECT_EQ("a/c", JoinPath("a/", "c"));
   EXPECT_EQ("a/c", JoinPath("a", "/c"));
+}
+
+TEST(PathUtilsTest, RelativizePath) {
+  std::string current_dir;
+  ASSERT_TRUE(GetCurrentDirectory(&current_dir));
+
+  std::string cwd_foo = JoinPath(current_dir, "foo");
+
+  EXPECT_EQ("foo", RelativizePath("foo", "."));
+  EXPECT_EQ("foo", RelativizePath("foo", current_dir));
+  EXPECT_EQ("bar", RelativizePath("foo/bar", "foo"));
+  EXPECT_EQ("bar", RelativizePath("foo/bar", cwd_foo));
+  EXPECT_EQ("foo", RelativizePath(cwd_foo, "."));
+  EXPECT_EQ(cwd_foo, RelativizePath(cwd_foo, "bar"));
+
+  // If all paths are absolute, then relativizing is unaffected by current_dir.
+  EXPECT_EQ("bar", RelativizePath("/foo/bar", "/foo"));
+  EXPECT_EQ("foo", RelativizePath("/foo", "/"));
+
+  // Test that we only accept proper path prefixes as parent.
+  EXPECT_EQ("/foooo/bar", RelativizePath("/foooo/bar", "/foo"));
+}
+
+TEST(PathUtilsTest, MakeCleanAbsolutePath) {
+  std::string current_dir;
+  ASSERT_TRUE(GetCurrentDirectory(&current_dir));
+
+  EXPECT_EQ(current_dir, MakeCleanAbsolutePath("."));
+
+  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c"));
+  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c/."));
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/./.."));
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/../."));
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/.."));
+  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/../c/.."));
+  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/b/c/../../.."));
 }
 
 }  // namespace

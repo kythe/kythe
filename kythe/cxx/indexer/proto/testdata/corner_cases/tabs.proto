@@ -1,0 +1,34 @@
+// Test file to make sure we're treating tabs correctly (b/8262123).
+
+syntax = "proto2";
+
+import "other-package.proto";
+
+package proto_kythe_test;
+option java_package = "io.kythe";
+
+// This proto deliberately has tab-based whitespacing.  This exposes a bug in
+// how our indexer assigns charno locations to proto files formatted this way.
+// The tabs should not be removed or the test will be broken or invalidated.
+
+//- @MessageWithTabsInside defines/binding MessageNode
+message MessageWithTabsInside {
+	//- @foo defines/binding FooField
+	//- FooField childof MessageNode
+	optional string foo = 1;
+
+	//- @MessageWithTabsInside ref MessageNode
+	//- @bar defines/binding BarField
+	//- BarField childof MessageNode
+	optional MessageWithTabsInside bar = 2;
+
+	//- @"itsapackage.Foo" ref FooMessage
+	//- @foo_data defines/binding AnotherFooField
+	//- AnotherFooField childof MessageNode
+	optional itsapackage.Foo foo_data = 3;
+
+	//- @"itsapackage.Bar" ref BarMessage
+	//- @bar_data defines/binding AnotherBarField
+	//- AnotherBarField childof MessageNode
+	optional itsapackage.Bar bar_data = 4;
+}

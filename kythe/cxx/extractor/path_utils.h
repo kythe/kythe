@@ -17,10 +17,10 @@
 #ifndef KYTHE_CXX_EXTRACTOR_PATH_UTILS_H_
 #define KYTHE_CXX_EXTRACTOR_PATH_UTILS_H_
 
+#include <string>
+
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
-
-#include <string>
 
 namespace clang {
 class FileEntry;
@@ -29,26 +29,6 @@ class Preprocessor;
 
 namespace kythe {
 namespace cxx_extractor {
-/// \brief Relativize `to_relativize` with respect to `relativize_against`.
-///
-/// If `to_relativize` does not name a path that is a child of
-/// `relativize_against`, `RelativizePath` will return an absolute path.
-///
-/// \param to_relativize Relative or absolute path to a file.
-/// \param relativize_against Relative or absolute path to a directory.
-std::string RelativizePath(const std::string& to_relativize,
-                           const std::string& relativize_against);
-
-/// \brief Convert `in_path` to an absolute path, eliminating `.` and `..`.
-/// \param in_path The path to convert.
-std::string MakeCleanAbsolutePath(const std::string& in_path);
-
-/// \brief Lexically eliminate `.` and `..` from `in_path`.
-///
-/// This function ignores the effects of symlinks.
-///
-/// \param in_path The path to convert.
-std::string CleanPath(llvm::StringRef in_path);
 
 /// \brief Looks up a file for an #include-ish pragma.
 /// \param preprocessor The preprocessor to use to consume the filename tokens.

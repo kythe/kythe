@@ -29,6 +29,9 @@ import (
 	anypb "github.com/golang/protobuf/ptypes/any"
 )
 
+// Any is an alias for the protocol buffer Any message type.
+type Any = anypb.Any
+
 // MarshalAny converts pb to a google.protobuf.Any message, fixing the URLs of
 // Kythe protobuf types as needed.
 func MarshalAny(pb proto.Message) (*anypb.Any, error) {

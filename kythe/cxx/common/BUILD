@@ -53,6 +53,7 @@ cc_library(
     hdrs = ["path_utils.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -63,6 +64,15 @@ cc_test(
     deps = [
         ":path_utils",
         "//third_party:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "file_utils",
+    srcs = ["file_utils.cc"],
+    hdrs = ["file_utils.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -247,6 +257,7 @@ cc_library(
     name = "index_writer",
     srcs = ["index_writer.cc"],
     hdrs = ["index_writer.h"],
+    visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":status_or",
         "//kythe/proto:analysis_cc_proto",

@@ -24,6 +24,8 @@
 #include <unordered_set>
 #include <utility>
 
+#include "GraphObserver.h"
+#include "IndexerLibrarySupport.h"
 #include "absl/memory/memory.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
@@ -33,9 +35,6 @@
 #include "clang/Sema/SemaConsumer.h"
 #include "clang/Sema/Template.h"
 #include "glog/logging.h"
-
-#include "GraphObserver.h"
-#include "IndexerLibrarySupport.h"
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
@@ -124,6 +123,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitCXXDependentScopeMemberExpr(
       const clang::CXXDependentScopeMemberExpr* Expr);
 
+  bool TraverseNestedNameSpecifierLoc(clang::NestedNameSpecifierLoc NNS);
+
   // Visitors for leaf TypeLoc types.
   bool VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL);
   bool VisitEnumTypeLoc(clang::EnumTypeLoc TL);
@@ -151,7 +152,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool TraverseMemberPointerTypeLoc(clang::MemberPointerTypeLoc TL);
 
   // Emit edges for an anchor pointing to the indicated type.
-  bool EmitTypeLocNodes(clang::TypeLoc TL);
+  NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc TL);
 
   bool TraverseDeclarationNameInfo(clang::DeclarationNameInfo NameInfo);
 
@@ -167,8 +168,6 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitEnumConstantDecl(const clang::EnumConstantDecl* Decl);
   bool VisitFunctionDecl(clang::FunctionDecl* Decl);
   bool TraverseDecl(clang::Decl* Decl);
-
-  bool TraverseLambdaExpr(clang::LambdaExpr* Expr);
 
   bool TraverseConstructorInitializer(clang::CXXCtorInitializer* Init);
   bool TraverseCXXNewExpr(clang::CXXNewExpr* E);
@@ -341,7 +340,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
-      const clang::TemplateArgumentLoc& Arg, EmitRanges ER);
+      const clang::TemplateArgumentLoc& Arg, EmitRanges EmitRanges);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
@@ -368,13 +367,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// function template instantiation.
   absl::optional<GraphObserver::NodeId>
   BuildNodeIdForImplicitFunctionTemplateInstantiation(
-      const clang::FunctionDecl* Decl);
+      const clang::FunctionDecl* FD);
 
   /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
   /// class template instantiation.
   absl::optional<GraphObserver::NodeId>
   BuildNodeIdForImplicitClassTemplateInstantiation(
-      const clang::ClassTemplateSpecializationDecl* Decl);
+      const clang::ClassTemplateSpecializationDecl* CTSD);
 
   /// \brief Builds a stable node ID for an external reference to `Decl`.
   ///
@@ -413,7 +412,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// \param Decl The declaration that is being identified.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTypedefNameDecl(
-      const clang::TypedefNameDecl* TND);
+      const clang::TypedefNameDecl* Decl);
 
   /// \brief Builds a stable node ID for `Decl`.
   ///
@@ -441,18 +440,60 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \return The name for `Decl`.
   GraphObserver::NameId BuildNameIdForDecl(const clang::Decl* Decl);
 
-  /// \brief Builds a NodeId for the given dependent name.
+  /// \brief Records parameter and lookup edges for the given dependent name.
   ///
   /// \param NNS The qualifier on the name.
   /// \param Id The name itself.
   /// \param IdLoc The name's location.
   /// \param Root If provided, the primary NodeId is morally prepended to `NNS`
   /// such that the dependent name is lookup(lookup*(Root, NNS), Id).
-  /// \param ER If `EmitRanges::Yes`, records ranges for syntactic elements.
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForDependentName(
+  /// \return The NodeId for the dependent name.
+  absl::optional<GraphObserver::NodeId> RecordEdgesForDependentName(
       const clang::NestedNameSpecifierLoc& NNS,
       const clang::DeclarationName& Id, const clang::SourceLocation IdLoc,
-      const absl::optional<GraphObserver::NodeId>& Root, EmitRanges ER);
+      const absl::optional<GraphObserver::NodeId>& Root = absl::nullopt);
+
+  /// \brief Records parameter edges for the given dependent name.
+  /// Also records Lookup edges for any nested Identifiers.
+  /// \param DId The NodeId of the dependent name to use.
+  /// \param NNSLoc The qualifier prefix of the dependent name, if any.
+  /// \param Root If provided, the primary NodeId to prepend to `NNS`.
+  /// \return The provided NodeId or nullopt if an unhandled element is
+  /// encountered.
+  absl::optional<GraphObserver::NodeId> RecordParamEdgesForDependentName(
+      const GraphObserver::NodeId& DId, clang::NestedNameSpecifierLoc NNSLoc,
+      const absl::optional<GraphObserver::NodeId>& Root = absl::nullopt);
+
+  /// \brief Records the lookup edge for a dependent name.
+  ///
+  /// \param DId The NodeId of the name being looked up.
+  /// \param Name The kind of name being looked up.
+  /// \return The provided NodeId or absl::nullopt if Name is unsupported.
+  absl::optional<GraphObserver::NodeId> RecordLookupEdgeForDependentName(
+      const GraphObserver::NodeId& DId, const clang::DeclarationName& Name);
+
+  /// \brief Builds a NodeId for the DependentName at IdLoc.
+  ///
+  /// \param NNSLoc The qualifier preceding the name.
+  /// \param IdLoc The starting location of the name itself.
+  GraphObserver::NodeId BuildNodeIdForDependentLoc(
+      const clang::NestedNameSpecifierLoc& NNSLoc,
+      const clang::SourceLocation& IdLoc);
+
+  /// \brief Builds a NodeId for the DependentName at IdRange.
+  ///
+  /// \param NNSLoc The qualifier preceding the name.
+  /// \param IdRange The source range of the name itself.
+  GraphObserver::NodeId BuildNodeIdForDependentRange(
+      const clang::NestedNameSpecifierLoc& NNSLoc,
+      const clang::SourceRange& IdRange);
+
+  /// \brief Builds a NodeId for the provided NestedNameSpecifier, depending on
+  /// its type.
+  ///
+  /// \param NNSLoc The NestedNameSpecifierLoc from which to construct a NodeId.
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForNestedNameSpecifierLoc(
+      const clang::NestedNameSpecifierLoc& NNSLoc);
 
   /// \brief Is `VarDecl` a definition?
   ///
@@ -473,6 +514,12 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   clang::SourceRange RangeForNameOfDeclaration(
       const clang::NamedDecl* Decl) const;
 
+  /// \brief Gets a suitable range for an AST entity from the `start_location`.
+  clang::SourceRange RangeForASTEntity(
+      clang::SourceLocation start_location) const;
+  clang::SourceRange RangeForSingleToken(
+      clang::SourceLocation start_location) const;
+
   /// Consume a token of the `ExpectedKind` from the `StartLocation`,
   /// returning the range for that token on success and an invalid
   /// range otherwise.
@@ -491,9 +538,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   bool TraverseVarTemplateDecl(clang::VarTemplateDecl* TD);
   bool TraverseVarTemplateSpecializationDecl(
-      clang::VarTemplateSpecializationDecl* VD);
+      clang::VarTemplateSpecializationDecl* TD);
   bool ForceTraverseVarTemplateSpecializationDecl(
-      clang::VarTemplateSpecializationDecl* VD);
+      clang::VarTemplateSpecializationDecl* TD);
   bool TraverseVarTemplatePartialSpecializationDecl(
       clang::VarTemplatePartialSpecializationDecl* TD);
 
@@ -657,7 +704,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Handle the file-level comments for `Id` with node ID `FileId`.
   void HandleFileLevelComments(clang::FileID Id,
-                               const GraphObserver::NodeId& FileId);
+                               const GraphObserver::NodeId& FileNode);
 
   /// \brief Emit data for `Comment` that documents `DocumentedNode`, using
   /// `DC` for lookups.

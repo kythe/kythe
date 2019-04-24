@@ -15,6 +15,7 @@
  */
 
 #include "kythe/cxx/indexer/cxx/marked_source.h"
+
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/PrettyPrinter.h"
@@ -473,7 +474,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     }
     if (annotation.begin >= annotation.end ||
         annotation.end > formatted_range_.size()) {
-      // TODO(zarko): This is a symptom of T204. This check is here to avoid
+      // TODO(#1632): This is a symptom of #1632. This check is here to avoid
       // clogging log output.
       if (annotation.kind != Annotation::QualifiedName &&
           IsValidRange(cache_->source_manager(), original_range)) {

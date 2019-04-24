@@ -1,19 +1,4 @@
-package(default_visibility = ["//kythe:default_visibility"])
-
-action_listener(
-    name = "extract_kindex",
-    extra_actions = [":extra_action"],
-    mnemonics = ["JavaIjar"],
-    visibility = ["//visibility:public"],
-)
-
-extra_action(
-    name = "extra_action",
-    cmd = "$(location :bazel_jvm_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).jvm.kindex) $(location //external:vnames_config)",
-    data = ["//external:vnames_config"],
-    out_templates = ["$(ACTION_ID).jvm.kindex"],
-    tools = [":bazel_jvm_extractor"],
-)
+package(default_visibility = ["//visibility:public"])
 
 java_binary(
     name = "bazel_jvm_extractor",

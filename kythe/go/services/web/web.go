@@ -98,6 +98,9 @@ func WriteJSONResponse(w http.ResponseWriter, r *http.Request, v interface{}) er
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	cw := httpencoding.CompressData(w, r)
 	defer cw.Close()
+	if msg, ok := v.(proto.Message); ok {
+		return JSONMarshaler.Marshal(cw, msg)
+	}
 	return json.NewEncoder(cw).Encode(v)
 }
 

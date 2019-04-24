@@ -17,8 +17,8 @@
 package config
 
 import (
-	"fmt"
 	"path"
+	"path/filepath"
 
 	"kythe.io/kythe/go/extractors/constants"
 
@@ -29,17 +29,22 @@ import (
 
 type gradleGenerator struct{}
 
-// preArtifacts implements part of buildStepsGenerator
-func (m gradleGenerator) preArtifacts() []string {
-	return []string{path.Join(outputDirectory, "javac-extractor.err")}
-}
-
-// steps implements parts of buildSystemElaborator
-func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep {
+// preExtractSteps implements parts of buildSystemElaborator
+func (g gradleGenerator) preExtractSteps() []*cloudbuild.BuildStep {
 	return []*cloudbuild.BuildStep{
 		javaExtractorsStep(),
+	}
+}
+
+// extractSteps implements parts of buildSystemElaborator
+func (g gradleGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget, idSuffix string) []*cloudbuild.BuildStep {
+	buildfile := path.Join(codeDirectory, target.Path)
+	targetPath, _ := filepath.Split(target.Path)
+	return []*cloudbuild.BuildStep{
+		preprocessorStep(buildfile, idSuffix),
 		&cloudbuild.BuildStep{
-			Name: constants.GCRGradleImage,
+			Name:       constants.GradleJDK8Image,
+			Entrypoint: "gradle",
 			Args: []string{
 				"clean",
 				// TODO(#3126): If compile-test has to be done as a separate
@@ -50,11 +55,8 @@ func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep
 				// The alternative here is to fall back to using clean install,
 				// which should also work.
 				"build",
-				"-s", // Prints stacktraces for user exceptions.
-				"-S", // Prints verbose stacktraces.
-				"-d", // Logs in debug mode.
 				"-b", // Points directly at a specific build.gradle file:
-				path.Join(codeDirectory, conf.Root, "build.gradle"),
+				buildfile,
 			},
 			Volumes: []*cloudbuild.Volume{
 				&cloudbuild.Volume{
@@ -65,13 +67,27 @@ func (m gradleGenerator) steps(conf *rpb.ExtractionHint) []*cloudbuild.BuildStep
 			Env: []string{
 				"KYTHE_CORPUS=" + corpus,
 				"KYTHE_OUTPUT_DIRECTORY=" + outputDirectory,
-				fmt.Sprintf("KYTHE_OUTPUT_FILE=%s", path.Join(outputDirectory, outputFilePattern)),
-				"KYTHE_ROOT_DIRECTORY=" + codeDirectory,
+				"KYTHE_ROOT_DIRECTORY=" + filepath.Join(codeDirectory, targetPath),
 				"JAVAC_EXTRACTOR_JAR=" + constants.DefaultJavaExtractorLocation,
 				"REAL_JAVAC=" + constants.DefaultJavacLocation,
-				"TMPDIR=" + outputDirectory,
-				"KYTHE_JAVAC_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
+				"KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:" + constants.DefaultJava9ToolsLocation,
 			},
+			Id:      extractStepID + idSuffix,
+			WaitFor: []string{javaArtifactsID, preStepID + idSuffix},
 		},
+	}
+}
+
+// postExtractSteps implements parts of buildSystemElaborator
+func (g gradleGenerator) postExtractSteps(corpus string) []*cloudbuild.BuildStep {
+	return []*cloudbuild.BuildStep{
+		zipMergeStep(corpus),
+	}
+}
+
+// defaultConfigFile implements parts of buildSystemElaborator
+func (g gradleGenerator) defaultExtractionTarget() *rpb.ExtractionTarget {
+	return &rpb.ExtractionTarget{
+		Path: "build.gradle",
 	}
 }

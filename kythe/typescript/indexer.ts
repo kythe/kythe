@@ -21,6 +21,8 @@ import * as ts from 'typescript';
 
 import * as utf8 from './utf8';
 
+const LANGUAGE = 'typescript';
+
 /** VName is the type of Kythe node identities. */
 export interface VName {
   signature: string;
@@ -102,15 +104,16 @@ class Vistor {
    */
   rootDirs: string[];
 
-  /**
-   * Tracks whether we've emitted the module anchor yet;
-   * see emitModuleAnchorForFirstExport.
-   */
-  emittedModuleAnchor = false;
-
   constructor(
-      /** Corpus name for produced VNames. */
-      private corpus: string, program: ts.Program, private file: ts.SourceFile,
+      /**
+       * The VName for the CompilationUnit, containing compilation-wide info.
+       */
+      private compilationUnit: VName,
+      /**
+       * A map of path to path-specific VName.
+       */
+      private pathVNames: Map<string, VName>, program: ts.Program,
+      private file: ts.SourceFile,
       private getOffsetTable: (path: string) => utf8.OffsetTable) {
     this.typeChecker = program.getTypeChecker();
 
@@ -120,10 +123,7 @@ class Vistor {
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
 
-    this.kFile = this.newVName(
-        /* empty signature */ '',
-        path.relative(this.sourceRoot, file.fileName));
-    this.kFile.language = '';
+    this.kFile = this.newFileVName(file.fileName);
   }
 
   /**
@@ -163,25 +163,32 @@ class Vistor {
   }
 
   /**
+   * newFileVName returns a new VName for the given file path.
+   */
+  newFileVName(path: string): VName {
+    const vname = this.pathVNames.get(path);
+    return {
+      signature: '',
+      language: '',
+      corpus: vname && vname.corpus ? vname.corpus :
+                                      this.compilationUnit.corpus,
+      root: vname && vname.corpus ? vname.root : this.compilationUnit.root,
+      path: vname && vname.path ? vname.path : path,
+    };
+  }
+
+  /**
    * newVName returns a new VName with a given signature and path.
    */
   newVName(signature: string, path: string): VName {
-    return {
-      signature,
-      corpus: this.corpus,
-      root: '',
-      path,
-      language: 'typescript',
-    };
+    return Object.assign(
+        this.newFileVName(path), {signature: signature, language: LANGUAGE});
   }
 
   /** newAnchor emits a new anchor entry that covers a TypeScript node. */
   newAnchor(node: ts.Node, start = node.getStart(), end = node.end): VName {
-    const name = this.newVName(
-        `@${start}:${end}`,
-        // An anchor refers to specific text, so its path is the file path,
-        // not the module name.
-        path.relative(this.sourceRoot, node.getSourceFile().fileName));
+    const name = Object.assign(
+        {...this.kFile}, {signature: `@${start}:${end}`, language: LANGUAGE});
     this.emitNode(name, 'anchor');
     const offsetTable = this.getOffsetTable(node.getSourceFile().fileName);
     this.emitFact(name, 'loc/start', offsetTable.lookup(start).toString());
@@ -200,7 +207,7 @@ class Vistor {
     this.emit({
       source,
       fact_name: '/kythe/' + name,
-      fact_value: new Buffer(value).toString('base64'),
+      fact_value: Buffer.from(value).toString('base64'),
     });
   }
 
@@ -624,24 +631,20 @@ class Vistor {
   }
 
   /**
-   * When we first encounter an 'export' statement (making the file a
-   * module), we tag the 'export' as anchoring the module.
+   * When a file imports another file, with syntax like
+   *   import * as x from 'some/path';
+   * we wants 'some/path' to refer to a VName that just means "the entire
+   * file".  It doesn't refer to any text in particular, so we just mark
+   * the first letter in the file as the anchor for this.
    */
-  emitModuleAnchorForFirstExport(node: ts.Node) {
-    // Emit metadata defining only the first export in the file to be
-    // the source of the module, so check if we've emitted the module
-    // anchor before.
-    if (this.emittedModuleAnchor) return;
-
-    // Emit a "record" node, representing the module object.
+  emitModuleAnchor(sf: ts.SourceFile) {
     const kMod = this.newVName('module', this.moduleName(this.file.fileName));
     this.emitFact(kMod, 'node/kind', 'record');
     this.emitEdge(this.kFile, 'childof', kMod);
 
-    // Emit the anchor, bound to the "export" keyword
-    const anchor = this.newAnchor(node.getFirstToken(this.file));
+    // Emit the anchor, bound to the beginning of the file.
+    const anchor = this.newAnchor(this.file, 0, 1);
     this.emitEdge(anchor, 'defines/binding', kMod);
-    this.emittedModuleAnchor = true;
   }
 
   /**
@@ -676,7 +679,6 @@ class Vistor {
    * and that case is handled as part of the ordinary declaration handling.
    */
   visitExportDeclaration(decl: ts.ExportDeclaration) {
-    this.emitModuleAnchorForFirstExport(decl);
     if (decl.exportClause) {
       for (const exp of decl.exportClause.elements) {
         const localSym = this.getSymbolAtLocation(exp.name);
@@ -941,11 +943,6 @@ class Vistor {
 
   /** visit is the main dispatch for visiting AST nodes. */
   visit(node: ts.Node): void {
-    // Ensure that the first 'export' seen in the file gets tagged as
-    // the anchor attributed as the definition site for the module.
-    if (ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Export) {
-      this.emitModuleAnchorForFirstExport(node);
-    }
     switch (node.kind) {
       case ts.SyntaxKind.ImportDeclaration:
         return this.visitImportDeclaration(node as ts.ImportDeclaration);
@@ -1011,6 +1008,8 @@ class Vistor {
     this.emitFact(this.kFile, 'node/kind', 'file');
     this.emitFact(this.kFile, 'text', this.file.text);
 
+    this.emitModuleAnchor(this.file);
+
     ts.forEachChild(this.file, n => this.visit(n));
   }
 }
@@ -1024,6 +1023,9 @@ class Vistor {
  * Kythe output for, because e.g. the standard library is contained within
  * the Program and we only want to process it once.)
  *
+ * @param compilationUnit A VName for the entire compilation, containing e.g.
+ *     corpus name.
+ * @param pathVNames A map of file path to path-specific VName.
  * @param emit If provided, a function that receives objects as they are
  *     emitted; otherwise, they are printed to stdout.
  * @param readFile If provided, a function that reads a file as bytes to a
@@ -1032,8 +1034,8 @@ class Vistor {
  *     each file's raw bytes for UTF-8<->UTF-16 conversions.
  */
 export function index(
-    corpus: string, paths: string[], program: ts.Program,
-    emit?: (obj: {}) => void,
+    vname: VName, pathVNames: Map<string, VName>, paths: string[],
+    program: ts.Program, emit?: (obj: {}) => void,
     readFile: (path: string) => Buffer = fs.readFileSync) {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
@@ -1076,7 +1078,8 @@ export function index(
     if (!sourceFile) {
       throw new Error(`requested indexing ${path} not found in program`);
     }
-    const visitor = new Vistor(corpus, program, sourceFile, getOffsetTable);
+    const visitor =
+        new Vistor(vname, pathVNames, program, sourceFile, getOffsetTable);
     if (emit != null) {
       visitor.emit = emit;
     }
@@ -1116,8 +1119,16 @@ function main(argv: string[]) {
     inPaths = config.fileNames;
   }
 
+  // This program merely demonstrates the API, so use a fake corpus/root/etc.
+  const compilationUnit: VName = {
+    corpus: 'corpus',
+    root: '',
+    path: '',
+    signature: '',
+    language: '',
+  };
   const program = ts.createProgram(inPaths, config.options);
-  index('TODOcorpus', inPaths, program);
+  index(compilationUnit, new Map(), inPaths, program);
   return 0;
 }
 

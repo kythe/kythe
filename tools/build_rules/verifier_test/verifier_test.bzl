@@ -29,13 +29,6 @@ KytheEntries = provider(
     },
 )
 
-KytheJavaJar = provider(
-    doc = "Bundled Java compilation.",
-    fields = {
-        "jar": "The bundled jar file.",
-    },
-)
-
 def _atomize_entries_impl(ctx):
     zcat = ctx.executable._zcat
     entrystream = ctx.executable._entrystream
@@ -46,33 +39,39 @@ def _atomize_entries_impl(ctx):
     for dep in ctx.attr.deps:
         inputs += dep.kythe_entries
 
+    sort_args = ctx.actions.args()
+    sort_args.add_all([zcat, entrystream, sorted_entries])
+    sort_args.add_all(inputs)
     sorted_entries = ctx.actions.declare_file("_sorted_entries", sibling = ctx.outputs.entries)
     ctx.actions.run_shell(
         outputs = [sorted_entries],
         inputs = [zcat, entrystream] + inputs.to_list(),
         mnemonic = "SortEntries",
         command = '("$1" "${@:4}" | "$2" --sort) > "$3" || rm -f "$3"',
-        arguments = (
-            [zcat.path, entrystream.path, sorted_entries.path] +
-            [s.path for s in inputs.to_list()]
-        ),
+        arguments = [sort_args],
     )
+
+    process_args = ctx.actions.args()
+    process_args.add_all(["--entries", sorted_entries, "--out", leveldb])
     leveldb = ctx.actions.declare_file("_serving_tables", sibling = ctx.outputs.entries)
     ctx.actions.run(
         outputs = [leveldb],
         inputs = [sorted_entries, postprocessor],
         executable = postprocessor,
         mnemonic = "PostProcessEntries",
-        arguments = ["--entries", sorted_entries.path, "--out", leveldb.path],
+        arguments = [process_args],
     )
+
+    atomize_args = ctx.actions.args()
+    atomize_args.add_all([atomizer, "--api", leveldb])
+    atomize_args.add_all(ctx.attr.file_tickets)
+    atomize_args.add(ctx.outputs.entries)
     ctx.actions.run_shell(
         outputs = [ctx.outputs.entries],
         inputs = [atomizer, leveldb],
         mnemonic = "AtomizeEntries",
         command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") | gzip -c > "${@:${#@}}"',
-        arguments = ([atomizer.path, "--api", leveldb.path] +
-                     ctx.attr.file_tickets +
-                     [ctx.outputs.entries.path]),
+        arguments = [atomize_args],
         execution_requirements = {
             # TODO(shahms): Remove this when we can use a non-LevelDB store.
             "local": "true",  # LevelDB is bad and should feel bad.
@@ -141,7 +140,7 @@ def extract(
       kzip: Declared .kzip output File
       extractor: Executable extractor tool to invoke
       srcs: Files passed to extractor tool; the compilation's source file inputs
-      opts: List of options passed to the extractor tool before source files
+      opts: List of options (or Args object) passed to the extractor tool before source files
       deps: Dependencies for the extractor's action (not passed to extractor on command-line)
       vnames_config: Optional path to a VName configuration file
       mnemonic: Mnemonic of the extractor's action
@@ -150,139 +149,33 @@ def extract(
         "KYTHE_OUTPUT_FILE": kzip.path,
         "KYTHE_ROOT_DIRECTORY": ".",
     }
-    inputs = srcs + deps
+
+    if type(srcs) != "depset":
+        srcs = depset(direct = srcs)
+    if type(deps) != "depset":
+        deps = depset(direct = deps)
+    direct_inputs = []
     if vnames_config:
         env["KYTHE_VNAMES"] = vnames_config.path
-        inputs += [vnames_config]
+        direct_inputs += [vnames_config]
+    inputs = depset(direct = direct_inputs, transitive = [srcs, deps])
+
+    args = opts
+    if type(args) != "Args":
+        args = ctx.actions.args()
+        args.add_all([ctx.expand_location(o) for o in opts])
+    args.add_all(srcs)
+
     ctx.actions.run(
         inputs = inputs,
         tools = [extractor],
         outputs = [kzip],
         mnemonic = mnemonic,
         executable = extractor,
-        arguments = (
-            [ctx.expand_location(o) for o in opts] +
-            [src.path for src in srcs]
-        ),
+        arguments = [args],
         env = env,
     )
     return kzip
-
-def _java_extract_kzip_impl(ctx):
-    jars = []
-    for dep in ctx.attr.deps:
-        jars += [dep[KytheJavaJar].jar]
-
-    # Actually compile the sources to be used as a dependency for other tests
-    jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
-    info = java_common.compile(
-        ctx,
-        javac_opts = java_common.default_javac_opts(
-            ctx,
-            java_toolchain_attr = "_java_toolchain",
-        ) + ctx.attr.opts,
-        java_toolchain = ctx.attr._java_toolchain,
-        host_javabase = ctx.attr._host_javabase,
-        source_files = ctx.files.srcs,
-        output = jar,
-        deps = [JavaInfo(output_jar = curr_jar, compile_jar = curr_jar) for curr_jar in jars],
-    )
-
-    args = ctx.attr.opts + [
-        "-encoding",
-        "utf-8",
-        "-cp",
-        ":".join([j.path for j in jars]),
-    ]
-    for src in ctx.files.srcs:
-        args += [src.short_path]
-    extract(
-        ctx = ctx,
-        kzip = ctx.outputs.kzip,
-        extractor = ctx.executable.extractor,
-        vnames_config = ctx.file.vnames_config,
-        srcs = ctx.files.srcs,
-        opts = args,
-        deps = jars + ctx.files.data,
-        mnemonic = "JavaExtractKZip",
-    )
-    return [
-        KytheJavaJar(jar = jar),
-        KytheVerifierSources(files = depset(ctx.files.srcs)),
-    ]
-
-java_extract_kzip = rule(
-    attrs = {
-        "srcs": attr.label_list(
-            mandatory = True,
-            allow_empty = False,
-            allow_files = True,
-        ),
-        "data": attr.label_list(
-            allow_files = True,
-        ),
-        "extractor": attr.label(
-            default = Label("//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor"),
-            executable = True,
-            cfg = "host",
-        ),
-        "opts": attr.string_list(),
-        "vnames_config": attr.label(
-            default = Label("//external:vnames_config"),
-            allow_single_file = True,
-        ),
-        "deps": attr.label_list(
-            providers = [KytheJavaJar],
-        ),
-        "_host_javabase": attr.label(
-            cfg = "host",
-            default = Label("@bazel_tools//tools/jdk:current_java_runtime"),
-        ),
-        "_java_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/jdk:toolchain"),
-        ),
-    },
-    fragments = ["java"],
-    host_fragments = ["java"],
-    outputs = {"kzip": "%{name}.kzip"},
-    implementation = _java_extract_kzip_impl,
-)
-
-def _jvm_extract_kzip_impl(ctx):
-    jars = []
-    for dep in ctx.attr.deps:
-        jars += [dep[KytheJavaJar].jar]
-
-    extract(
-        ctx = ctx,
-        srcs = jars,
-        kzip = ctx.outputs.kzip,
-        extractor = ctx.executable.extractor,
-        vnames_config = ctx.file.vnames_config,
-        opts = ctx.attr.opts,
-        mnemonic = "JvmExtractKZip",
-    )
-    return [KytheVerifierSources(files = depset())]
-
-jvm_extract_kzip = rule(
-    attrs = {
-        "extractor": attr.label(
-            default = Label("//kythe/java/com/google/devtools/kythe/extractors/jvm:jar_extractor"),
-            executable = True,
-            cfg = "host",
-        ),
-        "opts": attr.string_list(),
-        "vnames_config": attr.label(
-            default = Label("//external:vnames_config"),
-            allow_single_file = True,
-        ),
-        "deps": attr.label_list(
-            providers = [KytheJavaJar],
-        ),
-    },
-    outputs = {"kzip": "%{name}.kzip"},
-    implementation = _jvm_extract_kzip_impl,
-)
 
 def _index_compilation_impl(ctx):
     sources = []
@@ -296,26 +189,34 @@ def _index_compilation_impl(ctx):
                 sibling = ctx.outputs.entries,
             )
             intermediates += [entries]
+
+            args = ctx.actions.args()
+            args.add(ctx.executable.indexer)
+            args.add_all([ctx.expand_location(o) for o in ctx.attr.opts])
+            args.add_all([input, entries])
             ctx.actions.run_shell(
                 outputs = [entries],
                 inputs = [input],
                 tools = [ctx.executable.indexer] + ctx.files.tools,
-                arguments = ([ctx.executable.indexer.path] +
-                             [ctx.expand_location(o) for o in ctx.attr.opts] +
-                             [input.path, entries.path]),
+                arguments = [args],
                 command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") > "${@:${#@}}"',
                 mnemonic = "IndexCompilation",
             )
+
+    args = ctx.actions.args()
+    args.add("cat")
+    args.add_all(intermediates)
+    args.add(ctx.outputs.entries)
     ctx.actions.run_shell(
         outputs = [ctx.outputs.entries],
         inputs = intermediates,
         command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") | gzip -c > "${@:${#@}}"',
         mnemonic = "CompressEntries",
-        arguments = ["cat"] + [i.path for i in intermediates] + [ctx.outputs.entries.path],
+        arguments = [args],
     )
     return [
         KytheVerifierSources(files = depset(transitive = sources)),
-        KytheEntries(files = depset(intermediates), compressed = depset([ctx.outputs.entries])),
+        KytheEntries(compressed = depset([ctx.outputs.entries]), files = depset(intermediates)),
     ]
 
 index_compilation = rule(
@@ -442,150 +343,21 @@ def _invoke(rulefn, name, **kwargs):
     rulefn(name = name, **kwargs)
     return "//{}:{}".format(native.package_name(), name)
 
-def java_verifier_test(
-        name,
-        srcs,
-        meta = [],
-        deps = [],
-        size = "small",
-        tags = [],
-        extractor = None,
-        extractor_opts = ["-source", "9", "-target", "9"],
-        indexer_opts = ["--verbose"],
-        verifier_opts = ["--ignore_dups"],
-        load_plugin = None,
-        extra_goals = [],
-        vnames_config = None,
-        visibility = None):
-    """Extract, analyze, and verify a Java compilation.
-
-    Args:
-      srcs: The compilation's source file inputs; each file's verifier goals will be checked
-      deps: Optional list of java_verifier_test targets to be used as Java compilation dependencies
-      meta: Optional list of Kythe metadata files
-      extractor: Executable extractor tool to invoke (defaults to javac_extractor)
-      extractor_opts: List of options passed to the extractor tool
-      indexer_opts: List of options passed to the indexer tool
-      verifier_opts: List of options passed to the verifier tool
-      load_plugin: Optional Java analyzer plugin to load
-      extra_goals: List of text files containing verifier goals additional to those in srcs
-      vnames_config: Optional path to a VName configuration file
-    """
-    kzip = _invoke(
-        java_extract_kzip,
-        name = name + "_kzip",
-        srcs = srcs,
-        # This is a hack to depend on the .jar producer.
-        deps = [d + "_kzip" for d in deps],
-        data = meta,
-        extractor = extractor,
-        opts = extractor_opts,
-        tags = tags,
-        visibility = visibility,
-        vnames_config = vnames_config,
-        testonly = True,
-    )
-    indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer"
-    tools = []
-    if load_plugin:
-        # If loaded plugins have deps, those must be included in the loaded jar
-        native.java_binary(
-            name = name + "_load_plugin",
-            main_class = "not.Used",
-            runtime_deps = [load_plugin],
-        )
-        load_plugin_deploy_jar = ":{}_load_plugin_deploy.jar".format(name)
-        indexer_opts = indexer_opts + [
-            "--load_plugin",
-            "$(location {})".format(load_plugin_deploy_jar),
-        ]
-        tools += [load_plugin_deploy_jar]
-
-    entries = _invoke(
-        index_compilation,
-        name = name + "_entries",
-        indexer = indexer,
-        deps = [kzip],
-        tags = tags,
-        opts = indexer_opts,
-        tools = tools,
-        visibility = visibility,
-        testonly = True,
-    )
-    return _invoke(
-        verifier_test,
-        name = name,
-        size = size,
-        tags = tags,
-        srcs = [entries] + extra_goals,
-        deps = [entries],
-        opts = verifier_opts,
-        visibility = visibility,
-    )
-
-def jvm_verifier_test(
-        name,
-        srcs,
-        deps = [],
-        size = "small",
-        tags = [],
-        indexer_opts = [],
-        verifier_opts = ["--ignore_dups"],
-        visibility = None):
-    """Extract, analyze, and verify a JVM compilation.
-
-    Args:
-      srcs: Source files containing verifier goals for the JVM compilation
-      deps: List of java/jvm verifier_test targets to be used as compilation dependencies
-      indexer_opts: List of options passed to the indexer tool
-      verifier_opts: List of options passed to the verifier tool
-    """
-    kzip = _invoke(
-        jvm_extract_kzip,
-        name = name + "_kzip",
-        # This is a hack to depend on the .jar producer.
-        deps = [d + "_kzip" for d in deps],
-        tags = tags,
-        visibility = visibility,
-        testonly = True,
-    )
-    indexer = "//kythe/java/com/google/devtools/kythe/analyzers/jvm:class_file_indexer"
-    entries = _invoke(
-        index_compilation,
-        name = name + "_entries",
-        indexer = indexer,
-        deps = [kzip],
-        tags = tags,
-        opts = indexer_opts,
-        visibility = visibility,
-        testonly = True,
-    )
-    return _invoke(
-        verifier_test,
-        name = name,
-        size = size,
-        tags = tags,
-        srcs = [entries] + srcs,
-        deps = [entries],
-        opts = verifier_opts,
-        visibility = visibility,
-    )
-
 def kythe_integration_test(name, srcs, file_tickets, tags = [], size = "small"):
     entries = _invoke(
         atomize_entries,
         name = name + "_atomized_entries",
-        file_tickets = file_tickets,
-        srcs = [],
-        deps = srcs,
-        tags = tags,
         testonly = True,
+        srcs = [],
+        file_tickets = file_tickets,
+        tags = tags,
+        deps = srcs,
     )
     return _invoke(
         verifier_test,
         name = name,
         size = size,
+        opts = ["--ignore_dups"],
         tags = tags,
         deps = [entries],
-        opts = ["--ignore_dups"],
     )

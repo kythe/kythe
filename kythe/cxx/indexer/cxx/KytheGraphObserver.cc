@@ -16,6 +16,7 @@
 
 #include "KytheGraphObserver.h"
 
+#include "IndexerASTHooks.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "clang/AST/Attr.h"
@@ -39,13 +40,11 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceManager.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/schema/edges.h"
 #include "kythe/cxx/extractor/language.h"
-#include "kythe/cxx/extractor/path_utils.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/SHA1.h"
-
-#include "IndexerASTHooks.h"
 
 DEFINE_bool(fail_on_unimplemented_builtin, false,
             "Fail indexer if we encounter a builtin we do not handle");
@@ -104,7 +103,8 @@ kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
     llvm::StringRef working_directory = vfs_->working_directory();
     llvm::StringRef file_name(file_entry->getName());
     if (file_name.startswith(working_directory)) {
-      out_name.set_path(cxx_extractor::RelativizePath(file_name, working_directory));
+      out_name.set_path(
+          RelativizePath(ConvertRef(file_name), ConvertRef(working_directory)));
     } else {
       out_name.set_path(file_entry->getName());
     }
@@ -274,6 +274,9 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
     }
   }
   out_name.set_language(supported_language::kIndexerLang);
+  if (!build_config_.empty()) {
+    absl::StrAppend(out_name.mutable_signature(), "%", build_config_);
+  }
   out_name.set_signature(CompressString(out_name.signature()));
   return out_name;
 }
@@ -381,6 +384,10 @@ void KytheGraphObserver::UnconditionalRecordRange(
   if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
     recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOfContext,
                        VNameRefFromNodeId(range.Context));
+  }
+  if (!build_config_.empty()) {
+    recorder_->AddProperty(anchor_name_ref, PropertyID::kBuildConfig,
+                           build_config_);
   }
 }
 
@@ -1198,7 +1205,8 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
                 previous_context.c_str(), offset);
           }
         }
-        state.vname.set_signature(state.context + state.vname.signature());
+        state.vname.set_signature(absl::StrCat(
+            state.context, state.vname.signature(), build_config_));
         if (client_->Claim(claimant_, state.vname)) {
           if (recorded_files_.insert(entry).second) {
             bool was_invalid = false;

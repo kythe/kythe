@@ -16,9 +16,8 @@
 
 #include "KytheVFS.h"
 
-#include "kythe/cxx/indexer/cxx/proto_conversions.h"
-
 #include "absl/memory/memory.h"
+#include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"

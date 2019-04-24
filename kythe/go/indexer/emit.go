@@ -60,6 +60,13 @@ type EmitOptions struct {
 	DocBase *url.URL
 }
 
+func (e *EmitOptions) emitMarkedSource() bool {
+	if e == nil {
+		return false
+	}
+	return e.EmitMarkedSource
+}
+
 // shouldEmit reports whether the indexer should emit a node for the given
 // vname.  Presently this is true if vname denotes a standard library and the
 // corresponding option is enabled.
@@ -90,8 +97,8 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 		pi:       pi,
 		sink:     sink,
 		opts:     opts,
-		impl:     make(map[impl]bool),
-		anchored: make(map[ast.Node]bool),
+		impl:     make(map[impl]struct{}),
+		anchored: make(map[ast.Node]struct{}),
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -99,27 +106,7 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 	if url := e.opts.docURL(pi); url != "" {
 		e.writeFact(pi.VName, facts.DocURI, url)
 	}
-	if opts != nil && opts.EmitMarkedSource && len(pi.Files) != 0 {
-		ipath := pi.ImportPath
-		ms := &cpb.MarkedSource{
-			Child: []*cpb.MarkedSource{{
-				Kind:    cpb.MarkedSource_IDENTIFIER,
-				PreText: ipath,
-			}},
-		}
-		if p := strings.LastIndex(ipath, "/"); p > 0 {
-			ms.Child[0].PreText = ipath[p+1:]
-			ms.Child = append([]*cpb.MarkedSource{{
-				Kind: cpb.MarkedSource_CONTEXT,
-				Child: []*cpb.MarkedSource{{
-					Kind:    cpb.MarkedSource_IDENTIFIER,
-					PreText: ipath[:p],
-				}},
-				PostChildText: "/",
-			}}, ms.Child...)
-		}
-		e.emitCode(pi.VName, ms)
-	}
+	e.emitPackageMarkedSource(pi)
 
 	// Emit facts for all the source files claimed by this package.
 	for file, text := range pi.SourceText {
@@ -176,9 +163,9 @@ type emitter struct {
 	pi       *PackageInfo
 	sink     Sink
 	opts     *EmitOptions
-	impl     map[impl]bool                        // see checkImplements
+	impl     map[impl]struct{}                    // see checkImplements
 	rmap     map[*ast.File]map[int]metadata.Rules // see applyRules
-	anchored map[ast.Node]bool                    // see writeAnchor
+	anchored map[ast.Node]struct{}                // see writeAnchor
 	firstErr error
 }
 
@@ -254,6 +241,160 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 	e.emitParameters(decl.Type, sig, info)
 }
 
+// emitTApp emits a tapp node and returns its VName.  The new tapp is emitted
+// with given constructor and parameters.  The constructor's kind is also
+// emitted if this is the first time seeing it.
+func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VName, params ...*spb.VName) *spb.VName {
+	if e.pi.typeEmitted.Add(ctor.Signature) {
+		e.writeFact(ctor, facts.NodeKind, ctorKind)
+		if ctorKind == nodes.TBuiltin {
+			e.emitBuiltinMarkedSource(ctor)
+		}
+	}
+	components := []interface{}{ctor}
+	for _, p := range params {
+		components = append(components, p)
+	}
+	v := &spb.VName{Language: govname.Language, Signature: hashSignature(components)}
+	if e.pi.typeEmitted.Add(v.Signature) {
+		e.writeFact(v, facts.NodeKind, nodes.TApp)
+		e.writeEdge(v, ctor, edges.ParamIndex(0))
+		for i, p := range params {
+			e.writeEdge(v, p, edges.ParamIndex(i+1))
+		}
+		if ms != nil && e.opts.emitMarkedSource() {
+			e.emitCode(v, ms)
+		}
+	}
+	return v
+}
+
+// emitType emits the type as a node and returns its VName.  VNames are cached
+// so the type nodes are only emitted the first time they are seen.
+func (e *emitter) emitType(typ types.Type) *spb.VName {
+	v, ok := e.pi.typeVName[typ]
+	if ok {
+		return v
+	}
+
+	switch typ := typ.(type) {
+	case *types.Named:
+		v = e.pi.ObjectVName(typ.Obj())
+	case *types.Basic:
+		v = govname.BasicType(typ)
+		if e.pi.typeEmitted.Add(v.Signature) {
+			e.writeFact(v, facts.NodeKind, nodes.TBuiltin)
+			e.emitBuiltinMarkedSource(v)
+		}
+	case *types.Array:
+		v = e.emitTApp(arrayTAppMS(typ.Len()), nodes.TBuiltin, govname.ArrayConstructorType(typ.Len()), e.emitType(typ.Elem()))
+	case *types.Slice:
+		v = e.emitTApp(sliceTAppMS, nodes.TBuiltin, govname.SliceConstructorType(), e.emitType(typ.Elem()))
+	case *types.Pointer:
+		v = e.emitTApp(pointerTAppMS, nodes.TBuiltin, govname.PointerConstructorType(), e.emitType(typ.Elem()))
+	case *types.Chan:
+		v = e.emitTApp(chanTAppMS(typ.Dir()), nodes.TBuiltin, govname.ChanConstructorType(typ.Dir()), e.emitType(typ.Elem()))
+	case *types.Map:
+		v = e.emitTApp(mapTAppMS, nodes.TBuiltin, govname.MapConstructorType(), e.emitType(typ.Key()), e.emitType(typ.Elem()))
+	case *types.Tuple: // function return types
+		v = e.emitTApp(tupleTAppMS, nodes.TBuiltin, govname.TupleConstructorType(), e.visitTuple(typ)...)
+	case *types.Signature: // function types
+		ms := &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_TYPE,
+			Child: []*cpb.MarkedSource{{
+				Kind:          cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
+				LookupIndex:   3,
+				PreText:       "func(",
+				PostChildText: ", ",
+				PostText:      ")",
+			}},
+		}
+
+		params := e.visitTuple(typ.Params())
+		if typ.Variadic() && len(params) > 0 {
+			// Convert last parameter type from slice type to variadic type.
+			last := len(params) - 1
+			if slice, ok := typ.Params().At(last).Type().(*types.Slice); ok {
+				params[last] = e.emitTApp(variadicTAppMS, nodes.TBuiltin, govname.VariadicConstructorType(), e.emitType(slice.Elem()))
+			}
+		}
+
+		var ret *spb.VName
+		if typ.Results().Len() == 1 {
+			ret = e.emitType(typ.Results().At(0).Type())
+		} else {
+			ret = e.emitType(typ.Results())
+		}
+		if typ.Results().Len() != 0 {
+			ms.Child = append(ms.Child, &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_BOX,
+				PreText: " ",
+				Child: []*cpb.MarkedSource{{
+					Kind:        cpb.MarkedSource_LOOKUP_BY_PARAM,
+					LookupIndex: 1,
+				}},
+			})
+		}
+
+		var recv *spb.VName
+		if r := typ.Recv(); r != nil {
+			recv = e.emitType(r.Type())
+			ms.Child = append([]*cpb.MarkedSource{{
+				Kind:     cpb.MarkedSource_BOX,
+				PreText:  "(",
+				PostText: ") ",
+				Child: []*cpb.MarkedSource{{
+					Kind:        cpb.MarkedSource_LOOKUP_BY_PARAM,
+					LookupIndex: 2,
+				}},
+			}}, ms.Child...)
+		} else {
+			recv = e.emitType(types.NewTuple())
+		}
+
+		v = e.emitTApp(ms, nodes.TBuiltin, govname.FunctionConstructorType(),
+			append([]*spb.VName{ret, recv}, params...)...)
+	case *types.Interface:
+		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
+		if e.pi.typeEmitted.Add(v.Signature) {
+			e.writeFact(v, facts.NodeKind, nodes.Interface)
+			if e.opts.emitMarkedSource() {
+				e.emitCode(v, &cpb.MarkedSource{
+					Kind:    cpb.MarkedSource_TYPE,
+					PreText: typ.String(),
+				})
+			}
+		}
+	case *types.Struct:
+		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
+		if e.pi.typeEmitted.Add(v.Signature) {
+			e.writeFact(v, facts.NodeKind, nodes.Record)
+			if e.opts.emitMarkedSource() {
+				e.emitCode(v, &cpb.MarkedSource{
+					Kind:    cpb.MarkedSource_TYPE,
+					PreText: typ.String(),
+				})
+			}
+		}
+	default:
+		log.Printf("WARNING: unknown type %T: %+v", typ, typ)
+	}
+
+	e.pi.typeVName[typ] = v
+	return v
+}
+
+func (e *emitter) emitTypeOf(expr ast.Expr) *spb.VName { return e.emitType(e.pi.Info.TypeOf(expr)) }
+
+func (e *emitter) visitTuple(t *types.Tuple) []*spb.VName {
+	size := t.Len()
+	ts := make([]*spb.VName, size)
+	for i := 0; i < size; i++ {
+		ts[i] = e.emitType(t.At(i).Type())
+	}
+	return ts
+}
+
 // visitFuncLit handles function literals and their parameters.  The signature
 // for a function literal is named relative to the signature of its parent
 // function, or the file scope if the literal is at the top level.
@@ -291,14 +432,13 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 		e.writeDoc(doc, target)
 	}
 
-	// Handle fields of anonymous struct types declared in situ.
+	// Handle members of anonymous types declared in situ.
 	if spec.Type != nil {
-		e.emitAnonFields(spec.Type)
-	} else {
-		for _, v := range spec.Values {
-			if lit, ok := v.(*ast.CompositeLit); ok {
-				e.emitAnonFields(lit.Type)
-			}
+		e.emitAnonMembers(spec.Type)
+	}
+	for _, v := range spec.Values {
+		if lit, ok := v.(*ast.CompositeLit); ok {
+			e.emitAnonMembers(lit.Type)
 		}
 	}
 }
@@ -331,7 +471,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 				target := e.writeVarBinding(id, nodes.Field, nil)
 				f := st.Fields.List[i]
 				e.writeDoc(f.Doc, target)
-				e.emitAnonFields(f.Type)
+				e.emitAnonMembers(f.Type)
 			})
 
 			// Handle anonymous fields. Such fields behave as if they were
@@ -519,7 +659,7 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 		if sig.Params().At(i) != nil {
 			if param := e.writeBinding(id, nodes.Variable, info.vname); param != nil {
 				e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
-				e.emitAnonFields(ftype.Params.List[i].Type)
+				e.emitAnonMembers(ftype.Params.List[i].Type)
 			}
 		}
 		paramIndex++
@@ -531,15 +671,20 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	})
 }
 
-// emitAnonFields checks whether expr denotes an anonymous struct type, and if
-// so emits bindings for the fields of that struct. The resulting fields do not
-// parent to the struct, since it has no referential identity; but we do
-// capture documentation in the unlikely event someone wrote any.
-func (e *emitter) emitAnonFields(expr ast.Expr) {
+// emitAnonMembers checks whether expr denotes an anonymous struct or interface
+// type, and if so emits bindings for its member fields/methods. The resulting
+// members do not parent to the type, since it has no referential identity; but
+// we do capture documentation in the unlikely event someone wrote any.
+func (e *emitter) emitAnonMembers(expr ast.Expr) {
 	if st, ok := expr.(*ast.StructType); ok {
 		mapFields(st.Fields, func(i int, id *ast.Ident) {
 			target := e.writeVarBinding(id, nodes.Field, nil) // no parent
 			e.writeDoc(st.Fields.List[i].Doc, target)
+		})
+	} else if it, ok := expr.(*ast.InterfaceType); ok {
+		mapFields(it.Methods, func(i int, id *ast.Ident) {
+			target := e.writeBinding(id, nodes.Function, nil) // no parent
+			e.writeDoc(it.Methods.List[i].Doc, target)
 		})
 	}
 }
@@ -608,8 +753,7 @@ func (e *emitter) emitSatisfactions() {
 
 		// Check whether x is a named type with methods; if not, skip it.
 		x := xobj.Type()
-		ximset := typeutil.IntuitiveMethodSet(x, &msets)
-		if len(ximset) == 0 {
+		if len(typeutil.IntuitiveMethodSet(x, &msets)) == 0 {
 			continue // no methods to consider
 		}
 
@@ -643,10 +787,13 @@ func (e *emitter) emitSatisfactions() {
 
 			case ifx:
 				// y is a concrete type
+				pymset := msets.MethodSet(types.NewPointer(y))
 				if types.AssignableTo(y, x) {
 					e.writeSatisfies(yobj, xobj)
+					e.emitOverrides(ymset, pymset, xmset, cache)
 				} else if py := types.NewPointer(y); types.AssignableTo(py, x) {
 					e.writeSatisfies(yobj, xobj)
+					e.emitOverrides(ymset, pymset, xmset, cache)
 				}
 
 			case ify && ymset.Len() > 0:
@@ -690,19 +837,12 @@ func (e *emitter) emitOverrides(xmset, pxmset, ymset *types.MethodSet, cache ove
 		xvname := e.pi.ObjectVName(xobj)
 		yvname := e.pi.ObjectVName(yobj)
 		e.writeEdge(xvname, yvname, edges.Overrides)
-	}
-}
 
-// emitCode emits a code fact for the specified marked source message on the
-// target, or logs a diagnostic.
-func (e *emitter) emitCode(target *spb.VName, ms *cpb.MarkedSource) {
-	if ms != nil {
-		bits, err := proto.Marshal(ms)
-		if err != nil {
-			log.Printf("ERROR: Unable to marshal marked source: %v", err)
-			return
+		xt := e.emitType(xobj.Type())
+		yt := e.emitType(yobj.Type())
+		if e.pi.typeEmitted.Add(xt.Signature + "+" + yt.Signature) {
+			e.writeEdge(xt, yt, edges.Satisfies)
 		}
-		e.writeFact(target, facts.Code, string(bits))
 	}
 }
 
@@ -717,10 +857,10 @@ func (e *emitter) check(err error) {
 
 func (e *emitter) checkImplements(src, tgt types.Object) bool {
 	i := impl{A: src, B: tgt}
-	if e.impl[i] {
+	if _, ok := e.impl[i]; ok {
 		return false
 	}
-	e.impl[i] = true
+	e.impl[i] = struct{}{}
 	return true
 }
 
@@ -739,10 +879,10 @@ func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
 }
 
 func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
-	if e.anchored[node] {
+	if _, ok := e.anchored[node]; ok {
 		return // this node already has an anchor
 	}
-	e.anchored[node] = true
+	e.anchored[node] = struct{}{}
 	e.check(e.sink.writeAnchor(e.ctx, src, start, end))
 }
 
@@ -818,9 +958,10 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 	if parent != nil {
 		e.writeEdge(target, parent, edges.ChildOf)
 	}
-	if e.opts != nil && e.opts.EmitMarkedSource {
+	if e.opts.emitMarkedSource() {
 		e.emitCode(target, e.pi.MarkedSource(obj))
 	}
+	e.writeEdge(target, e.emitTypeOf(id), edges.Typed)
 	return target
 }
 
@@ -829,6 +970,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 func (e *emitter) writeDef(node ast.Node, target *spb.VName) { e.writeRef(node, target, edges.Defines) }
 
 // writeDoc adds associations between comment groups and a documented node.
+// It also handles marking deprecated facts on the target.
 func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 	if comments == nil || len(comments.List) == 0 || target == nil {
 		return
@@ -840,8 +982,29 @@ func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 	docNode := proto.Clone(target).(*spb.VName)
 	docNode.Signature += " doc"
 	e.writeFact(docNode, facts.NodeKind, nodes.Doc)
-	e.writeFact(docNode, facts.Text, strings.Join(lines, "\n"))
+	e.writeFact(docNode, facts.Text, escComment.Replace(strings.Join(lines, "\n")))
 	e.writeEdge(docNode, target, edges.Documents)
+	e.emitDeprecation(target, lines)
+}
+
+// emitDeprecation emits a deprecated fact for the specified target if the
+// comment lines indicate it is deprecated per https://github.com/golang/go/wiki/Deprecated
+func (e *emitter) emitDeprecation(target *spb.VName, lines []string) {
+	var deplines []string
+	for _, line := range lines {
+		if len(deplines) == 0 {
+			if msg := strings.TrimPrefix(line, "Deprecated:"); msg != line {
+				deplines = append(deplines, strings.TrimSpace(msg))
+			}
+		} else if line == "" {
+			break
+		} else {
+			deplines = append(deplines, strings.TrimSpace(line))
+		}
+	}
+	if len(deplines) > 0 {
+		e.writeFact(target, facts.Deprecated, strings.Join(deplines, " "))
+	}
 }
 
 // isCall reports whether id is a call to obj.  This holds if id is in call
@@ -1018,14 +1181,12 @@ var escComment = strings.NewReplacer("[", `\[`, "]", `\]`, `\`, `\\`)
 
 // trimComment removes the comment delimiters from a comment.  For single-line
 // comments, it also removes a single leading space, if present; for multi-line
-// comments it discards leading and trailing whitespace. Brackets and backslash
-// characters are escaped per http://www.kythe.io/docs/schema/#doc.
+// comments it discards leading and trailing whitespace.
 func trimComment(text string) string {
 	if single := strings.TrimPrefix(text, "//"); single != text {
-		return escComment.Replace(strings.TrimPrefix(single, " "))
+		return strings.TrimPrefix(single, " ")
 	}
-	trimmed := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "/*"), "*/"))
-	return escComment.Replace(trimmed)
+	return strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "/*"), "*/"))
 }
 
 // specComment returns the innermost comment associated with spec, or nil.

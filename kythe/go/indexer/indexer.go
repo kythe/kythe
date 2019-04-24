@@ -59,7 +59,6 @@ import (
 	"golang.org/x/tools/go/gcexportdata"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
-	cpb "kythe.io/kythe/proto/common_go_proto"
 	gopb "kythe.io/kythe/proto/go_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -108,6 +107,12 @@ type PackageInfo struct {
 
 	// A cache of source file vnames.
 	fileVName map[*ast.File]*spb.VName
+
+	// A cache of type vnames.
+	typeVName map[types.Type]*spb.VName
+
+	// Cache storing whether a type's facts have been emitted (keyed by VName signature)
+	typeEmitted stringset.Set
 
 	// A cache of file location mappings. This lets us get back from the
 	// parser's location to the vname for the enclosing file, which is in turn
@@ -314,7 +319,12 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 			return nil, fmt.Errorf("missing vname for %q", fpath)
 		}
 
-		ipath := vnameToImport(ri.VName, details.GetGoroot())
+		var ipath string
+		if info := goPackageInfo(ri.Details); info != nil {
+			ipath = info.ImportPath
+		} else {
+			ipath = govname.ImportPath(ri.VName, details.GetGoroot())
+		}
 		imap[ipath] = ri.VName
 		fmap[ipath] = ri.Info
 	}
@@ -334,7 +344,6 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,
-		ImportPath:   vnameToImport(unit.VName, details.GetGoroot()),
 		FileSet:      fset,
 		Files:        files,
 		Info:         opts.info(),
@@ -347,8 +356,15 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		sigs:        make(map[types.Object]string),
 		packageInit: make(map[*ast.File]*funcInfo),
 		fileVName:   filev,
+		typeVName:   make(map[types.Type]*spb.VName),
+		typeEmitted: stringset.New(),
 		fileLoc:     floc,
 		details:     details,
+	}
+	if info := goPackageInfo(unit.Details); info != nil {
+		pi.ImportPath = info.ImportPath
+	} else {
+		pi.ImportPath = govname.ImportPath(unit.VName, details.GetGoroot())
 	}
 
 	// If mapping rules were found, populate the corresponding field.
@@ -449,7 +465,7 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 	} else {
 		// This is an indirect import, that is, a name imported but not
 		// mentioned explicitly by the package being indexed.
-		// TODO(T273): This is a workaround, and may not be correct in all
+		// TODO(#2383): This is a workaround, and may not be correct in all
 		// cases; work out a more comprehensive solution (possibly during
 		// extraction).
 		vname = proto.Clone(pi.VName).(*spb.VName)
@@ -458,200 +474,6 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 
 	vname.Signature = sig
 	return vname
-}
-
-// MarkedSource returns a MarkedSource message describing obj.
-// See: http://www.kythe.io/docs/schema/marked-source.html.
-func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
-	ms := &cpb.MarkedSource{
-		Child: []*cpb.MarkedSource{{
-			Kind:    cpb.MarkedSource_IDENTIFIER,
-			PreText: objectName(obj),
-		}},
-	}
-
-	// Include the package name as context, and for objects that hang off a
-	// named struct or interface, a label for that type.
-	//
-	// For example, given
-	//     package p
-	//     var v int                // context is "p"
-	//     type s struct { v int }  // context is "p.s"
-	//     func (v) f(x int) {}
-	//              ^ ^--------------- context is "p.v.f"
-	//              \----------------- context is "p.v"
-	//
-	// The tree structure is:
-	//
-	//                 (box)
-	//                   |
-	//         (ctx)-----+-------(id)
-	//           |                |
-	//     +----"."----+(".")    name
-	//     |           |
-	//    (id) pkg    type
-	//
-	if ctx := pi.typeContext(obj); len(ctx) != 0 {
-		ms.Child = append([]*cpb.MarkedSource{{
-			Kind:              cpb.MarkedSource_CONTEXT,
-			PostChildText:     ".",
-			AddFinalListToken: true,
-			Child:             ctx,
-		}}, ms.Child...)
-	}
-
-	// Handle types with "interesting" superstructure specially.
-	switch t := obj.(type) {
-	case *types.Func:
-		// For functions we include the parameters and return values, and for
-		// methods the receiver.
-		//
-		// Methods:   func (R) Name(p1, ...) (r0, ...)
-		// Functions: func Name(p0, ...) (r0, ...)
-		fn := &cpb.MarkedSource{
-			Kind:  cpb.MarkedSource_BOX,
-			Child: []*cpb.MarkedSource{{PreText: "func "}},
-		}
-		sig := t.Type().(*types.Signature)
-		firstParam := 0
-		if recv := sig.Recv(); recv != nil {
-			// Parenthesized receiver type, e.g. (R).
-			fn.Child = append(fn.Child, &cpb.MarkedSource{
-				Kind:     cpb.MarkedSource_PARAMETER,
-				PreText:  "(",
-				PostText: ") ",
-				Child: []*cpb.MarkedSource{{
-					Kind:    cpb.MarkedSource_TYPE,
-					PreText: typeName(recv.Type()),
-				}},
-			})
-			firstParam = 1
-		}
-		fn.Child = append(fn.Child, ms)
-
-		// If there are no parameters, the lookup will not produce anything.
-		// Ensure when this happens we still get parentheses for notational
-		// purposes.
-		if sig.Params().Len() == 0 {
-			fn.Child = append(fn.Child, &cpb.MarkedSource{
-				Kind:    cpb.MarkedSource_PARAMETER,
-				PreText: "()",
-			})
-		} else {
-			fn.Child = append(fn.Child, &cpb.MarkedSource{
-				Kind:          cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
-				PreText:       "(",
-				PostChildText: ", ",
-				PostText:      ")",
-				LookupIndex:   uint32(firstParam),
-			})
-		}
-		if res := sig.Results(); res != nil && res.Len() > 0 {
-			rms := &cpb.MarkedSource{Kind: cpb.MarkedSource_TYPE, PreText: " "}
-			if res.Len() > 1 {
-				// If there is more than one result type, parenthesize.
-				rms.PreText = " ("
-				rms.PostText = ")"
-				rms.PostChildText = ", "
-			}
-			for i := 0; i < res.Len(); i++ {
-				rms.Child = append(rms.Child, &cpb.MarkedSource{
-					PreText: objectName(res.At(i)),
-				})
-			}
-			fn.Child = append(fn.Child, rms)
-		}
-		ms = fn
-
-	case *types.Var:
-		// For variables and fields, include the type.
-		repl := &cpb.MarkedSource{
-			Kind:          cpb.MarkedSource_BOX,
-			PostChildText: " ",
-			Child: []*cpb.MarkedSource{
-				ms,
-				{Kind: cpb.MarkedSource_TYPE, PreText: typeName(t.Type())},
-			},
-		}
-		ms = repl
-
-	case *types.TypeName:
-		// For named types, include the underlying type.
-		repl := &cpb.MarkedSource{
-			Kind:          cpb.MarkedSource_BOX,
-			PostChildText: " ",
-			Child: []*cpb.MarkedSource{
-				{PreText: "type"},
-				ms,
-				{Kind: cpb.MarkedSource_TYPE, PreText: typeName(t.Type().Underlying())},
-			},
-		}
-		ms = repl
-
-	default:
-		// TODO(fromberger): Handle other variations from go/types.
-	}
-	return ms
-}
-
-// objectName returns a human-readable name for obj if one can be inferred.  If
-// the object has its own non-blank name, that is used; otherwise if the object
-// is of a named type, that type's name is used. Otherwise the result is "_".
-func objectName(obj types.Object) string {
-	if name := obj.Name(); name != "" {
-		return name // the object's given name
-	} else if name := typeName(obj.Type()); name != "" {
-		return name // the object's type's name
-	}
-	return "_" // not sure what to call it
-}
-
-// typeName returns a human readable name for typ.
-func typeName(typ types.Type) string {
-	switch t := typ.(type) {
-	case *types.Named:
-		return t.Obj().Name()
-	case *types.Basic:
-		return t.Name()
-	case *types.Struct:
-		return "struct {...}"
-	case *types.Interface:
-		return "interface {...}"
-	case *types.Pointer:
-		return "*" + typeName(t.Elem())
-	}
-	return typ.String()
-}
-
-// typeContext returns the package, type, and function context identifiers that
-// qualify the name of obj, if any are applicable. The result is empty if there
-// are no appropriate qualifiers.
-func (pi *PackageInfo) typeContext(obj types.Object) []*cpb.MarkedSource {
-	var ms []*cpb.MarkedSource
-	addID := func(s string) {
-		ms = append(ms, &cpb.MarkedSource{
-			Kind:    cpb.MarkedSource_IDENTIFIER,
-			PreText: s,
-		})
-	}
-	for cur := pi.owner[obj]; cur != nil; cur = pi.owner[cur] {
-		if t, ok := cur.(interface {
-			Name() string
-		}); ok {
-			addID(t.Name())
-		} else {
-			addID(typeName(cur.Type()))
-		}
-	}
-	if pkg := obj.Pkg(); pkg != nil {
-		addID(pi.importPath(pkg))
-	}
-	for i, j := 0, len(ms)-1; i < j; {
-		ms[i], ms[j] = ms[j], ms[i]
-		i++
-		j--
-	}
-	return ms
 }
 
 // FileVName returns a VName for path relative to the package base.
@@ -878,9 +700,9 @@ func (pi *PackageInfo) addOwners(pkg *types.Package) {
 	for _, name := range scope.Names() {
 		switch obj := scope.Lookup(name).(type) {
 		case *types.TypeName:
-			// Go 1.9 will have support for type aliases.  For now, skip these
-			// so we don't wind up emitting redundant declaration sites for the
-			// aliased type.
+			// TODO(schroederc): support for type aliases.  For now, skip these so we
+			// don't wind up emitting redundant declaration sites for the aliased
+			// type.
 			named, ok := obj.Type().(*types.Named)
 			if !ok {
 				continue
@@ -943,7 +765,7 @@ func (pi *PackageInfo) findFieldName(expr ast.Expr) (id *ast.Ident, ok bool) {
 // importPath returns the import path of pkg.
 func (pi *PackageInfo) importPath(pkg *types.Package) string {
 	if v := pi.PackageVName[pkg]; v != nil {
-		return vnameToImport(v, pi.details.GetGoroot())
+		return govname.ImportPath(v, pi.details.GetGoroot())
 	}
 	return pkg.Name()
 }
@@ -958,44 +780,6 @@ func (pi *PackageInfo) isPackageInit(fi *funcInfo) bool {
 	return false
 }
 
-// vnameToImport returns the putative Go import path corresponding to v.  The
-// resulting string corresponds to the string literal appearing in source at
-// the import site for the package so named.
-func vnameToImport(v *spb.VName, goRoot string) string {
-	if govname.IsStandardLibrary(v) || (goRoot != "" && v.Root == goRoot) {
-		return v.Path
-	}
-
-	trimmed := strings.TrimSuffix(v.Path, filepath.Ext(v.Path))
-	if tail, ok := rootRelative(goRoot, trimmed); ok {
-		// Paths under a nonempty GOROOT are treated as if they were standard
-		// library packages even if they are not labelled as "golang.org", so
-		// that nonstandard install locations will work sensibly.
-		return tail
-	}
-	return filepath.Join(v.Corpus, trimmed)
-}
-
-// rootRelative reports whether path has the form
-//
-//     root[/pkg/os_arch/]tail
-//
-// and if so, returns the tail. It returns path, false if path does not have
-// this form.
-func rootRelative(root, path string) (string, bool) {
-	trimmed := strings.TrimPrefix(path, root+"/")
-	if root == "" || trimmed == path {
-		return path, false
-	}
-	if tail := strings.TrimPrefix(trimmed, "pkg/"); tail != trimmed {
-		parts := strings.SplitN(tail, "/", 2)
-		if len(parts) == 2 && strings.Contains(parts[0], "_") {
-			return parts[1], true
-		}
-	}
-	return trimmed, true
-}
-
 // goDetails returns the GoDetails message attached to unit, if there is one;
 // otherwise it returns nil.
 func goDetails(unit *apb.CompilationUnit) *gopb.GoDetails {
@@ -1003,6 +787,18 @@ func goDetails(unit *apb.CompilationUnit) *gopb.GoDetails {
 		var dets gopb.GoDetails
 		if err := ptypes.UnmarshalAny(msg, &dets); err == nil {
 			return &dets
+		}
+	}
+	return nil
+}
+
+// goPackageInfo returns the GoPackageInfo message within the given slice, if
+// there is one; otherwise it returns nil.
+func goPackageInfo(details []*ptypes.Any) *gopb.GoPackageInfo {
+	for _, msg := range details {
+		var info gopb.GoPackageInfo
+		if err := ptypes.UnmarshalAny(msg, &info); err == nil {
+			return &info
 		}
 	}
 	return nil

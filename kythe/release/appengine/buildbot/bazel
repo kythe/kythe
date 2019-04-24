@@ -52,7 +52,8 @@ if [[ -z "$BAZEL_VERSION" ]]; then
 
   # Select latest version available
   VERSIONS=($(ls "$BAZEL_BIN"/bazel-* | xargs -L1 basename | sort -t. -h -k1,1 -k2,2 -k3,3))
-  BAZEL_VERSION="${VERSIONS[-1]#bazel-}"
+  LATEST="${VERSIONS[*]: -1}"
+  BAZEL_VERSION="${LATEST#bazel-}"
 fi
 
 exec "$BAZEL_BIN/bazel-$BAZEL_VERSION" "$@"

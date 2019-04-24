@@ -25,9 +25,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/storage/table"
+	"kythe.io/kythe/go/util/kytheuri"
 
 	ftpb "kythe.io/kythe/proto/filetree_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
@@ -72,10 +75,51 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 	} else if err != nil {
 		return nil, fmt.Errorf("lookup error: %v", err)
 	}
+	entries := make([]*ftpb.DirectoryReply_Entry, 0, len(d.Entry))
+	for _, e := range d.Entry {
+		re := &ftpb.DirectoryReply_Entry{
+			Name:        e.Name,
+			BuildConfig: e.BuildConfig,
+		}
+		switch e.Kind {
+		case srvpb.FileDirectory_FILE:
+			re.Kind = ftpb.DirectoryReply_FILE
+		case srvpb.FileDirectory_DIRECTORY:
+			re.Kind = ftpb.DirectoryReply_DIRECTORY
+		default:
+			log.Printf("WARNING: unknown directory entry type: %T", e)
+			continue
+		}
+		entries = append(entries, re)
+	}
+	entries, err := parseLegacyEntries(entries, ftpb.DirectoryReply_FILE, d.FileTicket)
+	if err != nil {
+		return nil, err
+	}
+	entries, err = parseLegacyEntries(entries, ftpb.DirectoryReply_DIRECTORY, d.Subdirectory)
+	if err != nil {
+		return nil, err
+	}
 	return &ftpb.DirectoryReply{
-		Subdirectory: d.Subdirectory,
-		File:         d.FileTicket,
+		Corpus: req.Corpus,
+		Root:   req.Root,
+		Path:   req.Path,
+		Entry:  entries,
 	}, nil
+}
+
+func parseLegacyEntries(entries []*ftpb.DirectoryReply_Entry, kind ftpb.DirectoryReply_Kind, tickets []string) ([]*ftpb.DirectoryReply_Entry, error) {
+	for _, ticket := range tickets {
+		uri, err := kytheuri.Parse(ticket)
+		if err != nil {
+			return nil, fmt.Errorf("invalid serving data: %v", err)
+		}
+		entries = append(entries, &ftpb.DirectoryReply_Entry{
+			Kind: kind,
+			Name: filepath.Base(uri.Path),
+		})
+	}
+	return entries, nil
 }
 
 // CorpusRoots implements part of the filetree Service interface.
@@ -97,8 +141,9 @@ func (t *Table) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (
 
 	for i, corpus := range cr.Corpus {
 		reply.Corpus[i] = &ftpb.CorpusRootsReply_Corpus{
-			Name: corpus.Corpus,
-			Root: corpus.Root,
+			Name:        corpus.Corpus,
+			Root:        corpus.Root,
+			BuildConfig: corpus.BuildConfig,
 		}
 	}
 

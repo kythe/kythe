@@ -51,7 +51,7 @@ fi
 
 TMPDIR=${TMPDIR:-"/tmp"}
 
-BAZEL_ARGS=()
+BAZEL_ARGS=(--define kythe_corpus=github.com/bazel/bazel)
 BAZEL_ROOT="$PWD"
 
 GRAPHSTORE="$TMPDIR"/gs.bazel
@@ -123,10 +123,21 @@ if [[ -n "$EXTRACT" ]]; then
   bazel build "${BAZEL_ARGS[@]}" \
     --keep_going --output_groups=compilation_outputs \
     --experimental_extra_action_top_level_only \
-    --experimental_action_listener=@io_kythe//kythe/cxx/extractor:extract_kzip \
-    --experimental_action_listener=@io_kythe//kythe/java/com/google/devtools/kythe/extractors/java/bazel:extract_kzip \
+    --experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_cxx \
+    --experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_java \
+    --experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_protobuf \
     //src/{main,test}/... || true
 fi
+
+analyze() {
+  local lang="$1"
+  shift 1
+  local xa="io_kythe/kythe/build/extract_kzip_${lang}_extra_action"
+  local dedup_stream="$KYTHE_BIN/kythe/go/platform/tools/dedup_stream/dedup_stream"
+  find -L "$BAZEL_ROOT"/bazel-out/*/extra_actions/external/"$xa" -name '*.kzip' | \
+    parallel -t -L1 "$@" | \
+    "$dedup_stream" >>"$GRAPHSTORE"
+}
 
 if [[ -n "$ANALYZE" ]]; then
   echo "Analyzing compilations..."
@@ -135,15 +146,13 @@ if [[ -n "$ANALYZE" ]]; then
   rm -rf "$GRAPHSTORE"
 
   bazel build "${BAZEL_ARGS[@]}" \
+    @io_kythe//kythe/go/platform/tools/dedup_stream \
     @io_kythe//kythe/cxx/indexer/cxx:indexer \
     @io_kythe//kythe/java/com/google/devtools/kythe/analyzers/java:indexer \
-    @io_kythe//kythe/go/platform/tools/dedup_stream
-  find -L "$BAZEL_ROOT"/bazel-out/*/extra_actions/external/io_kythe/kythe/java/com/google/devtools/kythe/extractors/java/bazel/extra_action_kzip -name '*.kzip' | \
-    parallel -L1 "$KYTHE_BIN"/kythe/java/com/google/devtools/kythe/analyzers/java/indexer | \
-    "$KYTHE_BIN"/kythe/go/platform/tools/dedup_stream/dedup_stream >"$GRAPHSTORE"
-  find -L "$BAZEL_ROOT"/bazel-out/*/extra_actions/external/io_kythe/kythe/cxx/extractor/extra_action_kzip -name '*.kzip' | \
-    parallel -L1 "$KYTHE_BIN"/kythe/cxx/indexer/cxx/indexer | \
-    "$KYTHE_BIN"/kythe/go/platform/tools/dedup_stream/dedup_stream >>"$GRAPHSTORE"
+    //kythe/cxx/indexer/proto:indexer
+  analyze cxx "$KYTHE_BIN/kythe/cxx/indexer/cxx/indexer"
+  analyze java "$KYTHE_BIN/kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
+  analyze protobuf "$KYTHE_BIN/kythe/cxx/indexer/proto/indexer"
   cd "$ROOT"
 fi
 

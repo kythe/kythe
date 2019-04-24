@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.analyzers.base;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
@@ -27,7 +28,6 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -338,15 +338,24 @@ public class KytheEntrySets {
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */
-  public EntrySet newFunctionTypeAndEmit(VName returnType, List<VName> arguments) {
-    List<VName> tArgs = new ArrayList<>(arguments);
-    tArgs.add(0, returnType);
-    return newTApplyAndEmit(newBuiltinAndEmit("fn").getVName(), tArgs);
+  public EntrySet newFunctionTypeAndEmit(
+      VName returnType, VName receiverType, List<VName> arguments, MarkedSource ms) {
+    List<VName> tArgs =
+        ImmutableList.<VName>builderWithExpectedSize(2 + arguments.size())
+            .add(returnType)
+            .add(receiverType)
+            .addAll(arguments)
+            .build();
+    return newTApplyAndEmit(newBuiltinAndEmit("fn").getVName(), tArgs, ms);
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} node along with its parameter edges. */
-  public EntrySet newTApplyAndEmit(VName head, List<VName> arguments) {
-    EntrySet node = emitAndReturn(newApplyNode(NodeKind.TAPPLY, head, arguments));
+  public EntrySet newTApplyAndEmit(VName head, List<VName> arguments, MarkedSource ms) {
+    NodeBuilder builder = newApplyNode(NodeKind.TAPPLY, head, arguments);
+    if (ms != null) {
+      builder.setProperty("code", ms);
+    }
+    EntrySet node = emitAndReturn(builder);
     emitEdge(node.getVName(), EdgeKind.PARAM, head, 0);
     emitOrdinalEdges(node.getVName(), EdgeKind.PARAM, arguments, 1);
     return node;

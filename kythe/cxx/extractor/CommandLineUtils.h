@@ -94,7 +94,7 @@ std::vector<std::string> ClangArgsToGCCArgs(
 // Removes and adjusts the flags to be valid for compiling with
 // AddressSanitizer.
 std::vector<std::string> AdjustClangArgsForAddressSanitizer(
-    const std::vector<std::string>& clang_args);
+    const std::vector<std::string>& input);
 
 // Converts a std::string std::vector representing a command line into a C
 // string std::vector representing the argv (including the trailing NULL).

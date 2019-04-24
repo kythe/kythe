@@ -16,20 +16,19 @@
 
 #include "verifier.h"
 
-#include "glog/logging.h"
-#include "google/protobuf/text_format.h"
-
-#include "absl/memory/memory.h"
-#include "assertions.h"
-#include "kythe/cxx/common/kythe_uri.h"
-#include "kythe/cxx/common/scope_guard.h"
-#include "kythe/proto/common.pb.h"
-#include "kythe/proto/storage.pb.h"
-
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include "absl/memory/memory.h"
+#include "assertions.h"
+#include "glog/logging.h"
+#include "google/protobuf/text_format.h"
+#include "kythe/cxx/common/kythe_uri.h"
+#include "kythe/cxx/common/scope_guard.h"
+#include "kythe/proto/common.pb.h"
+#include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 namespace verifier {
@@ -622,6 +621,8 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
       IdentifierFor(builtin_location_, "LOOKUP_BY_PARAM");
   marked_source_parameter_lookup_by_param_with_defaults_id_ = IdentifierFor(
       builtin_location_, "PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS");
+  marked_source_lookup_by_typed_id_ =
+      IdentifierFor(builtin_location_, "LOOKUP_BY_TYPED");
   marked_source_kind_id_ = IdentifierFor(builtin_location_, "/kythe/kind");
   marked_source_pre_text_id_ =
       IdentifierFor(builtin_location_, "/kythe/pre_text");
@@ -1169,7 +1170,7 @@ bool Verifier::PrepareDatabase() {
         EncodedIdentEqualTo(ta->element(3), tb->element(3)) &&
         !EncodedIdentEqualTo(ta->element(4), tb->element(4))) {
       if (EncodedIdentEqualTo(ta->element(3), code_id_)) {
-        // TODO(zarko): Add documentation for these new edges (T195).
+        // TODO(#1553): (closed?) Add documentation for these new edges.
         printer.Print(
             "Two /kythe/code facts about a node differed in value:\n  ");
         ta->element(0)->Dump(symbol_table_, &printer);
@@ -1306,6 +1307,9 @@ AstNode* Verifier::ConvertMarkedSource(
     case proto::common::MarkedSource::PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS:
       emit_fact(marked_source_kind_id_,
                 marked_source_parameter_lookup_by_param_with_defaults_id_);
+      break;
+    case proto::common::MarkedSource::LOOKUP_BY_TYPED:
+      emit_fact(marked_source_kind_id_, marked_source_lookup_by_typed_id_);
       break;
     // The proto enum is polluted with enumerators like
     // MarkedSource_Kind_MarkedSource_Kind_INT_MIN_SENTINEL_DO_NOT_USE_.

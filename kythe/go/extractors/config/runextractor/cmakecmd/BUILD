@@ -9,6 +9,6 @@ go_library(
         "//kythe/go/extractors/config/runextractor/compdb",
         "//kythe/go/util/cmdutil",
         "@com_github_google_subcommands//:go_default_library",
-        "@com_github_pborman_uuid//:go_default_library",
+        "@com_github_google_uuid//:go_default_library",
     ],
 )

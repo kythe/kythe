@@ -17,9 +17,8 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_GRAPH_RECORDER_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_GRAPH_RECORDER_H_
 
-#include "absl/strings/string_view.h"
-
 #include "KytheOutputStream.h"
+#include "absl/strings/string_view.h"
 
 namespace kythe {
 
@@ -70,7 +69,9 @@ enum class PropertyID {
   kTagDeprecated,
   kDiagnosticMessage,
   kDiagnosticDetails,
-  kDiagnosticContextOrUrl
+  kDiagnosticContextOrUrl,
+  kDocUri,
+  kBuildConfig
 };
 
 /// \brief Known edge kinds. See the schema for details.
@@ -79,6 +80,7 @@ enum class EdgeKindID {
   kHasType,
   kRef,
   kRefImplicit,
+  kRefImports,
   kParam,
   kAliases,
   kAliasesRoot,

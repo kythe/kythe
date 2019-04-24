@@ -18,10 +18,9 @@
 package constants
 
 var (
-
 	// KytheBuildPreprocessorImage is defiend in
 	// kythe/go/extractors/config/preprocessor, and is published to GCR.
-	KytheBuildPreprocessorImage = "gcr.io/kythe-public/build-preprocessor"
+	KytheBuildPreprocessorImage = "gcr.io/kythe-public/build-preprocessor:stable"
 
 	// DefaultExtractorsDir is the canonical directory for extractors that any
 	// kythe docker image will use.  This can be useful if you need to load that
@@ -34,7 +33,7 @@ var (
 	// KytheJavacExtractorArtifactsImage is defined in
 	// kythe/java/com/google/devtools/kythe/extractors/java/artifacts, and
 	// published to GCR.
-	KytheJavacExtractorArtifactsImage = "gcr.io/kythe-public/kythe-javac-extractor-artifacts"
+	KytheJavacExtractorArtifactsImage = "gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable"
 
 	// DefaultJavacWrapperLocation is the location of the Kythe wrapper around
 	// javac that does extraction.
@@ -45,15 +44,34 @@ var (
 	// compatibility for java8.
 	DefaultJava9ToolsLocation = "/opt/kythe/extractors/javac9_tools.jar"
 
+	// KytheKzipToolsImage is defined in
+	// kythe/go/platform/tools/kzip and published to GCR via
+	// kythe/go/extractors/gcp/config/kziptool:artifacts.  It is a utility for
+	// manipulating .kzip files.
+	KytheKzipToolsImage = "gcr.io/kythe-public/kzip-tools:stable"
+
+	// DefaultKzipToolLocation is the location of tools/kzip binary defined in
+	// the gcr.io/kythe-public/kzip-tools image.
+	DefaultKzipToolLocation = "/opt/kythe/tools/kzip"
+
 	// Google Cloud Builders described at
 	// https://cloud.google.com/cloud-build/docs/cloud-builders.
 
 	// GCRGitImage an image that runs git.
 	GCRGitImage = "gcr.io/cloud-builders/git"
-	// GCRGradleImage is an image wrapped around java8, which runs gradle.
-	GCRGradleImage = "gcr.io/cloud-builders/gradle"
-	// GCRMvnImage is an image wrapped around java8, which runs mvn.
-	GCRMvnImage = "gcr.io/cloud-builders/mvn"
+	// BazelImage extracts a repo using bazel.  See kythe/extractors/bazel.
+	BazelImage = "gcr.io/kythe-public/bazel-extractor:stable"
+	// GradleJDK8Image is an image wrapped around java8, which runs gradle.
+	// MvnJDK8Image is an image wrapped around java8, which runs mvn.
+	// See https://hub.docker.com/_/gradle for details on supported images.
+	GradleJDK8Image = "gradle:5.2.1-jdk8-slim"
+	// MvnJDK8Image is an image wrapped around java8, which runs mvn.
+	// See https://hub.docker.com/_/maven for details on supported images.
+	MvnJDK8Image = "maven:3.6.0-jdk-8-slim"
+	// MvnJDK11Image is an image wrapped around java11, which runs mvn.
+	// See https://hub.docker.com/_/maven for details on supported images.
+	// TODO(#3075): support jdk 11
+	MvnJDK11Image = "maven:3.6.0-jdk-11-slim"
 
 	// DefaultJavacLocation points to a common location for a javac binary.
 	// The binary will usually be symlinked here.

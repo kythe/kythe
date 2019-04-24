@@ -1,0 +1,17 @@
+{
+  "extractions": [
+    {
+      "build_system": "BAZEL",
+      "targets": [
+        {
+          "individual_targets": [
+            "//a/target/...",
+            "//another/target/...",
+            "//direct:target"
+          ]
+        }
+      ]
+    }
+  ]
+}
+

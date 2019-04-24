@@ -1,8 +1,7 @@
 // Started from the calc++ example code as part of the Bison-3.0 distribution.
-// NOTE: This file must remain compatible with Bison 2.3.
 %skeleton "lalr1.cc"
 %defines
-%define "parser_class_name" "AssertionParserImpl"
+%define parser_class_name {AssertionParserImpl}
 %{
 /*
  * Copyright 2014 The Kythe Authors. All rights reserved.
@@ -40,7 +39,7 @@ class AssertionParser;
   @$.begin.column = 1;
   @$.end.column = 1;
 };
-%define "parse.trace"
+%define parse.trace
 %{
 #include "kythe/cxx/verifier/assertions.h"
 #define newAst new (context.arena_) kythe::verifier::
@@ -77,7 +76,7 @@ class AssertionParser;
 %type <int_> location_spec
 %type <int_> location_spec_hash
 %type <size_t_> exp_tuple_plus
-%error-verbose
+%define parse.error verbose
 %%
 %start unit;
 unit: goals  { };

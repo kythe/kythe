@@ -20,15 +20,14 @@ import static com.google.common.base.StandardSystemProperty.JAVA_HOME;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteStreams;
@@ -36,7 +35,7 @@ import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
-import com.google.devtools.kythe.platform.java.JavacOptionsUtils;
+import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptions;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileData;
@@ -69,6 +68,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -115,6 +115,25 @@ public class JavaCompilationUnitExtractor {
 
   private static String classJarRoot(Location location) {
     return String.format("!%s_JAR!", location);
+  }
+
+  // TODO(shahms): Use the proper methods when we can rely on JDK 9.
+  private static final ClassLoader moduleClassLoader;
+
+  static {
+    ClassLoader loader = null;
+    try {
+      Object thisModule =
+          Class.class.getMethod("getModule").invoke(JavaCompilationUnitExtractor.class);
+      thisModule
+          .getClass()
+          .getMethod("addUses", Class.class)
+          .invoke(thisModule, JavaCompiler.class);
+      loader = (ClassLoader) thisModule.getClass().getMethod("getClassLoader").invoke(thisModule);
+    } catch (ReflectiveOperationException e) {
+      logger.atInfo().log("Running on non-modular JDK, fallback compiler unavailable.");
+    }
+    moduleClassLoader = loader;
   }
 
   private static final String JAR_SCHEME = "jar";
@@ -294,10 +313,14 @@ public class JavaCompilationUnitExtractor {
     return new CompilationDescription(compilationUnit, fileContents);
   }
 
-  /** Returns a new list with the same options except any destination directory options. */
-  private static List<String> removeDestDirOptions(Iterable<String> options) {
-    return JavacOptionsUtils.removeOptions(
-        Lists.newArrayList(options), EnumSet.of(Option.D, Option.S, Option.H));
+  /**
+   * Returns a new list with the same options except header/source destination directory options.
+   */
+  private static ImmutableList<String> removeDestDirOptions(Iterable<String> options) {
+    // TODO(#3671): Option.D needs to remain in for module support, fix either here or in indexing.
+    return ModifiableOptions.of(options)
+        .removeOptions(EnumSet.of(Option.D, Option.S, Option.H))
+        .build();
   }
 
   /**
@@ -500,7 +523,7 @@ public class JavaCompilationUnitExtractor {
           strippedPath = SOURCE_JAR_ROOT + entryPath;
           break;
         default:
-          // TODO(T227): we shouldn't need to throw an exception here because the above switch
+          // TODO(#1845): we shouldn't need to throw an exception here because the above switch
           // statement means that we never hit this default, but the static analysis tools can't
           // figure that out.  Try to refactor this code to remove this issue.
           throw new IllegalStateException(
@@ -659,7 +682,7 @@ public class JavaCompilationUnitExtractor {
 
     // We will initialize and run the Javac compiler to detect which dependencies
     // the current compilation has.
-    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    JavaCompiler compiler = findJavaCompiler();
     if (compiler == null) {
       // TODO(schroederc): provide link to further context
       throw new IllegalStateException(
@@ -707,7 +730,7 @@ public class JavaCompilationUnitExtractor {
 
       ClassLoader loader = processingClassloader(classpath, processorpath);
 
-      List<Processor> procs = Lists.newArrayList();
+      List<Processor> procs = new ArrayList<>();
 
       // Add any processors passed as flags.
       for (String processor : processors) {
@@ -812,7 +835,7 @@ public class JavaCompilationUnitExtractor {
 
   /** Sets the given location using command-line flags and the FileManager API. */
   private static void setLocation(
-      List<String> options,
+      ModifiableOptions options,
       StandardJavaFileManager fileManager,
       Iterable<String> searchpath,
       String flag,
@@ -823,7 +846,7 @@ public class JavaCompilationUnitExtractor {
       options.add(flag);
       options.add(joined);
       try {
-        List<File> files = Lists.newArrayList();
+        List<File> files = new ArrayList<>();
         for (String elt : searchpath) {
           files.add(new File(elt));
         }
@@ -862,7 +885,7 @@ public class JavaCompilationUnitExtractor {
       super(getPlatformClassLoader());
     }
 
-    // TODO(T281): remove reflection and call ClassLoader.getPlatformClassLoader() directly
+    // TODO(#2451): remove reflection and call ClassLoader.getPlatformClassLoader() directly
     // once JDK 8 compatibility is no longer required.
     public static ClassLoader getPlatformClassLoader() {
       try {
@@ -889,7 +912,7 @@ public class JavaCompilationUnitExtractor {
    * destination directory. Only options supported by the Java compiler will be within the returned
    * {@link List}.
    */
-  private static List<String> completeCompilerOptions(
+  private static ImmutableList<String> completeCompilerOptions(
       StandardJavaFileManager standardFileManager,
       Iterable<String> rawOptions,
       Iterable<String> classpath,
@@ -899,10 +922,10 @@ public class JavaCompilationUnitExtractor {
       Path tempDestinationDir)
       throws ExtractionException {
 
-    List<String> completeOptions =
-        JavacOptionsUtils.ensureEncodingSet(
-            JavacOptionsUtils.removeUnsupportedOptions(Lists.newArrayList(rawOptions)),
-            Charsets.UTF_8);
+    ModifiableOptions completeOptions =
+        ModifiableOptions.of(rawOptions)
+            .removeUnsupportedOptions()
+            .ensureEncodingSet(StandardCharsets.UTF_8);
 
     setLocation(
         completeOptions, standardFileManager, classpath, "-cp", StandardLocation.CLASS_PATH);
@@ -925,11 +948,27 @@ public class JavaCompilationUnitExtractor {
         "-bootclasspath",
         StandardLocation.PLATFORM_CLASS_PATH);
 
-    JavacOptionsUtils.removeOptions(completeOptions, EnumSet.of(Option.D));
-    completeOptions.add("-d");
-    completeOptions.add(tempDestinationDir.toString());
+    return completeOptions
+        .removeOptions(EnumSet.of(Option.D))
+        .add("-d")
+        .add(tempDestinationDir.toString())
+        .build();
+  }
 
-    return completeOptions;
+  private static JavaCompiler findJavaCompiler() {
+    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    if (compiler == null && moduleClassLoader != null) {
+      // This is all a bit of a hack to be able to extract OpenJDK itself, which
+      // uses a bootstrap compiler and a lot of JDK options to compile itself.
+      // Notably, when using modules the system compiler is inhibited and the actual compiler
+      // resides in jdk.compiler.iterim.  Rather than hard-code this, just fall back to the first
+      // JavaCompiler we can find.
+      logger.atWarning().log("Unable to find system compiler, using first available.");
+      for (JavaCompiler found : ServiceLoader.load(JavaCompiler.class, moduleClassLoader)) {
+        return found;
+      }
+    }
+    return compiler;
   }
 
   /** Returns a map from a classfile's {@link URI} to its sourcefile path's basename. */

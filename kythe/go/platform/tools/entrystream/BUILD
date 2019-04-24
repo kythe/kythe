@@ -7,6 +7,7 @@ go_binary(
     srcs = ["entrystream.go"],
     deps = [
         "//kythe/go/platform/delimited",
+        "//kythe/go/storage/entryset",
         "//kythe/go/storage/stream",
         "//kythe/go/util/compare",
         "//kythe/go/util/disksort",

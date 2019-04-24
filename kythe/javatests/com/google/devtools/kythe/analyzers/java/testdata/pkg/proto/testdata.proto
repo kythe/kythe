@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package pkg.proto;
+
+option java_package = "pkg.proto";
+
+//- @Message defines/binding Message
+message Message {
+  //- @string_field defines/binding StringField
+  string string_field = 1;
+
+  //- @int32_field defines/binding Int32Field
+  int32 int32_field = 2;
+
+  //- @NestedMessage ref NestedMessage
+  //- @nested_message defines/binding NestedMessageField
+  NestedMessage nested_message = 3;
+
+  //- @NestedMessage defines/binding NestedMessage
+  message NestedMessage {
+    //- @nested_string defines/binding NestedString
+    string nested_string = 1;
+
+    //- @nested_bool defines/binding NestedBool
+    bool nested_bool = 2;
+  }
+
+  //- @oneof_field defines/binding OneofField
+  oneof oneof_field {
+    //- @oneof_string defines/binding OneofString
+    string oneof_string = 4;
+    bool oneof_bool = 5;
+  }
+}

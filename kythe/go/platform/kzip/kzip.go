@@ -80,6 +80,7 @@ import (
 
 	"kythe.io/kythe/go/platform/kcd/kythe"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/jsonpb"
 	"golang.org/x/sync/errgroup"
 
@@ -89,6 +90,7 @@ import (
 	// required for JSON (un)marshaling to work.
 	_ "kythe.io/kythe/proto/buildinfo_go_proto"
 	_ "kythe.io/kythe/proto/cxx_go_proto"
+	_ "kythe.io/kythe/proto/filecontext_go_proto"
 	_ "kythe.io/kythe/proto/go_go_proto"
 	_ "kythe.io/kythe/proto/java_go_proto"
 )
@@ -311,9 +313,9 @@ type Unit struct {
 type Writer struct {
 	mu  sync.Mutex
 	zip *zip.Writer
-	fd  map[string]bool // file digests already written
-	ud  map[string]bool // unit digests already written
-	c   io.Closer       // a closer for the underlying writer (may be nil)
+	fd  stringset.Set // file digests already written
+	ud  stringset.Set // unit digests already written
+	c   io.Closer     // a closer for the underlying writer (may be nil)
 }
 
 // NewWriter constructs a new empty Writer that delivers output to w.  The
@@ -334,8 +336,8 @@ func NewWriter(w io.Writer) (*Writer, error) {
 
 	return &Writer{
 		zip: archive,
-		fd:  make(map[string]bool),
-		ud:  make(map[string]bool),
+		fd:  stringset.New(),
+		ud:  stringset.New(),
 	}, nil
 }
 
@@ -368,7 +370,7 @@ func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if _, ok := w.ud[digest]; ok {
+	if w.ud.Contains(digest) {
 		return digest, ErrUnitExists
 	}
 
@@ -382,7 +384,7 @@ func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_
 	}); err != nil {
 		return "", err
 	}
-	w.ud[digest] = true
+	w.ud.Add(digest)
 	return digest, nil
 }
 
@@ -401,7 +403,7 @@ func (w *Writer) AddFile(r io.Reader) (string, error) {
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if _, ok := w.fd[digest]; ok {
+	if w.fd.Contains(digest) {
 		return digest, nil // already written
 	}
 
@@ -412,7 +414,7 @@ func (w *Writer) AddFile(r io.Reader) (string, error) {
 	if _, err := io.Copy(f, &buf); err != nil {
 		return "", err
 	}
-	w.fd[digest] = true
+	w.fd.Add(digest)
 	return digest, nil
 }
 

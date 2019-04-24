@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 
+#include "KytheGraphObserver.h"
 #include "absl/memory/memory.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
@@ -29,11 +30,11 @@
 #include "kythe/cxx/indexer/cxx/KytheVFS.h"
 #include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
+#include "kythe/proto/filecontext.pb.h"
 #include "llvm/ADT/Twine.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
-
-#include "KytheGraphObserver.h"
 
 namespace kythe {
 
@@ -44,6 +45,10 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 }
 
 namespace {
+
+// Message type URI for the build details message.
+constexpr absl::string_view kBuildDetailsURI =
+    "kythe.io/proto/kythe.proto.BuildDetails";
 
 /// \brief Range wrapper around unpacked ContextDependentVersion rows.
 class FileContextRows {
@@ -76,6 +81,18 @@ bool DecodeDetails(const proto::CompilationUnit& Unit,
     }
   }
   return false;
+}
+
+std::string ExtractBuildConfig(const proto::CompilationUnit& Unit) {
+  proto::BuildDetails details;
+  for (const auto& Any : Unit.details()) {
+    if (Any.type_url() == kBuildDetailsURI) {
+      if (UnpackAny(Any, &details)) {
+        return details.build_config();
+      }
+    }
+  }
+  return "";
 }
 
 bool DecodeHeaderSearchInfo(const proto::CxxCompilationUnitDetails& Details,
@@ -147,7 +164,8 @@ std::string IndexCompilationUnit(
       new IndexVFS(FSO.WorkingDir, Files, Dirs));
   KytheGraphRecorder Recorder(&Output);
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
-                              Options.ReportProfileEvent);
+                              Options.ReportProfileEvent,
+                              ExtractBuildConfig(Unit));
   if (Cache != nullptr) {
     Output.UseHashCache(Cache);
     Observer.StopDeferringNodes();

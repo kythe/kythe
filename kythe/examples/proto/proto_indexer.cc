@@ -20,14 +20,16 @@
 //   --include_imports --include_source_info
 
 #include <fcntl.h>
+
 #include <map>
+
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
+#include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
 
 DEFINE_string(corpus_name, "kythe", "Use this corpus in VNames.");

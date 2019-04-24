@@ -16,17 +16,16 @@
 
 #include <stdio.h>
 #include <unistd.h>
+
 #include <string>
 
+#include "assertion_ast.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
-
 #include "kythe/proto/storage.pb.h"
-
-#include "assertion_ast.h"
 #include "verifier.h"
 
 DEFINE_bool(show_protos, false, "Show protocol buffers read from standard in");
@@ -114,6 +113,7 @@ Example:
     }
     if (FLAGS_show_protos) {
       entry.PrintDebugString();
+      putchar('\n');
     }
     if (!v.AssertSingleFact(&dbname, facts, entry)) {
       fprintf(stderr, "Error asserting fact %zu\n", facts);

@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.platform.java.helpers;
 
-import com.google.common.base.Charsets;
 import com.google.common.flogger.FluentLogger;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.TreePath;
@@ -44,6 +43,7 @@ import com.sun.tools.javac.code.Type.WildcardType;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Name;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -400,7 +400,7 @@ public class SignatureGenerator
   @Override
   public Void visitArrayType(ArrayType t, StringBuilder sbout) {
     t.getComponentType().accept(this, sbout);
-    // TODO(T266): handle case when ArrayType#isVarargs is incorrect; add "..." for varargs
+    // TODO(#2232): handle case when ArrayType#isVarargs is incorrect; add "..." for varargs
     sbout.append("[]");
     return null;
   }
@@ -539,7 +539,7 @@ public class SignatureGenerator
 
   @Override
   public Void visitModuleType(ModuleType moduleType, StringBuilder sb) {
-    // TODO(T257): implement this method for full Java 9 support
+    // TODO(#2174): implement this method for full Java 9 support
     throw new UnsupportedOperationException();
   }
 
@@ -626,7 +626,7 @@ public class SignatureGenerator
 
     @Override
     protected void append(byte[] ba) {
-      sb.append(new String(ba, Charsets.UTF_8));
+      sb.append(new String(ba, StandardCharsets.UTF_8));
     }
 
     @Override

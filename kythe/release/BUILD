@@ -23,26 +23,35 @@ docker_build(
     deps = ["//kythe/release/base"],
 )
 
-release_version = "v0.0.29"
+release_version = "v0.0.30"
 
 genrule(
     name = "release",
     srcs = [
-        ":bazel_java_extractor",
+        "release.BUILD",
+        "release.WORKSPACE",
         ":bazel_cxx_extractor",
+        ":bazel_extract_kzip",
         ":bazel_go_extractor",
+        ":bazel_java_extractor",
+        ":bazel_jvm_extractor",
+        ":bazel_proto_extractor",
         ":javac_extractor",
         ":javac_wrapper",
+        ":cc_proto_metadata_plugin",
         ":cxx_extractor",
         ":go_extractor",
         ":java_indexer",
         ":jvm_indexer",
         ":cxx_indexer",
         ":go_indexer",
+        ":proto_extractor",
+        ":proto_indexer",
+        ":textproto_extractor",
+        ":textproto_indexer",
         ":tools",
         ":misc",
         "//kythe/proto:public",
-        "//kythe/web/ui",
         "//third_party:licenses",
     ],
     outs = [
@@ -56,21 +65,29 @@ genrule(
         "$(location //kythe/go/platform/tools/shasum_tool)",
         "$(location kythe-" + release_version + ".tar.gz)",
         "$(locations misc)",
+        "--cp $(location release.BUILD) BUILD",
+        "--cp $(location release.WORKSPACE) WORKSPACE",
         "--cp $(location java_indexer) indexers/java_indexer.jar",
         "--cp $(location jvm_indexer) indexers/jvm_indexer.jar",
         "--cp $(location cxx_indexer) indexers/cxx_indexer",
         "--cp $(location go_indexer) indexers/go_indexer",
+        "--cp $(location proto_indexer) indexers/proto_indexer",
+        "--cp $(location textproto_indexer) indexers/textproto_indexer",
         "--cp $(location javac_extractor) extractors/javac_extractor.jar",
         "--cp $(location bazel_cxx_extractor) extractors/bazel_cxx_extractor",
-        "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
+        "--cp $(location bazel_extract_kzip) extractors/bazel_extract_kzip",
         "--cp $(location bazel_go_extractor) extractors/bazel_go_extractor",
+        "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
+        "--cp $(location bazel_jvm_extractor) extractors/bazel_jvm_extractor.jar",
+        "--cp $(location bazel_proto_extractor) extractors/bazel_proto_extractor",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--cp $(location go_extractor) extractors/go_extractor",
+        "--cp $(location proto_extractor) extractors/proto_extractor",
+        "--cp $(location textproto_extractor) extractors/textproto_extractor",
+        "--cp $(location cc_proto_metadata_plugin) tools/cc_proto_metadata_plugin",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
-        "--relpaths kythe/web/ui/resources/public",
-        "--path web/ui $(locations //kythe/web/ui)",
         "--relpaths 'third_party' --path 'third_party' $(locations //third_party:licenses)",
     ]),
     heuristic_label_expansion = False,
@@ -79,6 +96,7 @@ genrule(
         "package_release.sh",
         "//kythe/go/platform/tools/shasum_tool",
     ],
+    visibility = ["//visibility:public"],
 )
 
 filegroup(
@@ -87,6 +105,9 @@ filegroup(
         ":README.md",
         "//:LICENSE",
         "//:RELEASES.md",
+        "//kythe/data:raw_vnames_config",
+        "//kythe/data:vnames.bzl",
+        "//kythe/extractors:extractors.bzl",
     ],
 )
 
@@ -132,6 +153,11 @@ filegroup(
 )
 
 filegroup(
+    name = "bazel_jvm_extractor",
+    srcs = ["//kythe/java/com/google/devtools/kythe/extractors/jvm/bazel:bazel_jvm_extractor_deploy.jar"],
+)
+
+filegroup(
     name = "cxx_extractor",
     srcs = ["//kythe/cxx/extractor:cxx_extractor"],
 )
@@ -149,6 +175,16 @@ filegroup(
 filegroup(
     name = "bazel_go_extractor",
     srcs = ["//kythe/go/extractors/cmd/bazel:bazel_go_extractor"],
+)
+
+filegroup(
+    name = "bazel_proto_extractor",
+    srcs = ["//kythe/go/extractors/proto:extract_proto_kzip"],
+)
+
+filegroup(
+    name = "bazel_extract_kzip",
+    srcs = ["//kythe/go/extractors/cmd/bazel:extract_kzip"],
 )
 
 filegroup(
@@ -172,12 +208,38 @@ filegroup(
 )
 
 filegroup(
+    name = "proto_extractor",
+    srcs = ["//kythe/cxx/extractor/proto:proto_extractor"],
+)
+
+filegroup(
+    name = "proto_indexer",
+    srcs = ["//kythe/cxx/indexer/proto:indexer"],
+)
+
+filegroup(
+    name = "textproto_extractor",
+    srcs = ["//kythe/cxx/extractor/textproto:textproto_extractor"],
+)
+
+filegroup(
+    name = "textproto_indexer",
+    srcs = ["//kythe/cxx/indexer/textproto:textproto_indexer"],
+)
+
+filegroup(
+    name = "cc_proto_metadata_plugin",
+    srcs = ["//kythe/cxx/tools:proto_metadata_plugin"],
+)
+
+filegroup(
     name = "tools",
     srcs = [
         "//kythe/cxx/verifier",
         "//kythe/go/platform/tools/dedup_stream",
         "//kythe/go/platform/tools/entrystream",
         "//kythe/go/platform/tools/indexpack",
+        "//kythe/go/platform/tools/kzip",
         "//kythe/go/platform/tools/viewindex",
         "//kythe/go/serving/tools:http_server",
         "//kythe/go/serving/tools:kythe",

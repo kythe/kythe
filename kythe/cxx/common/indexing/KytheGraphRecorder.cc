@@ -38,6 +38,7 @@ static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/typed"),
     new std::string("/kythe/edge/ref"),
     new std::string("/kythe/edge/ref/implicit"),
+    new std::string("/kythe/edge/ref/imports"),
     new std::string("/kythe/edge/param"),
     new std::string("/kythe/edge/aliases"),
     new std::string("/kythe/edge/aliases/root"),
@@ -112,6 +113,8 @@ static const std::string* const kPropertySpellings[] = {
     new std::string("/kythe/message"),
     new std::string("/kythe/details"),
     new std::string("/kythe/context/url"),
+    new std::string("/kythe/doc/uri"),
+    new std::string("/kythe/build/config"),
 };
 
 static const std::string* const kEmptyStringSpelling = new std::string("");

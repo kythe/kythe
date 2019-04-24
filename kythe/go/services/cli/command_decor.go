@@ -27,6 +27,7 @@ import (
 
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graph"
+	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/facts"
 
@@ -53,6 +54,7 @@ var (
 type baseDecorCommand struct {
 	decorSpan                string
 	corpus, root, pathPrefix string
+	buildConfigs             flagutil.StringSet
 }
 
 func (c *baseDecorCommand) SetFlags(flag *flag.FlagSet) {
@@ -65,6 +67,7 @@ func (c *baseDecorCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.corpus, "corpus", DefaultFileCorpus, "File corpus to use if given a raw path")
 	flag.StringVar(&c.root, "root", DefaultFileRoot, "File root to use if given a raw path")
 	flag.StringVar(&c.pathPrefix, "path_prefix", DefaultFilePathPrefix, "File path prefix to use if given a raw path (this is prepended directly to the raw path without any joining slashes)")
+	flag.Var(&c.buildConfigs, "build_config", "CSV set of build configs with which to filter file decorations")
 }
 
 func (c baseDecorCommand) fileTicketArg(flag *flag.FlagSet) (string, error) {
@@ -97,6 +100,7 @@ func (c baseDecorCommand) baseRequest(flag *flag.FlagSet) (*xpb.DecorationsReque
 		req.Location.Kind = xpb.Location_SPAN
 		req.Location.Span = span
 	}
+	req.BuildConfig = c.buildConfigs.Elements()
 	return req, nil
 }
 

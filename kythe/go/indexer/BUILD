@@ -8,6 +8,7 @@ go_library(
         "emit.go",
         "facts.go",
         "indexer.go",
+        "markedsource.go",
     ],
     deps = [
         "//kythe/go/extractors/govname",
@@ -45,6 +46,11 @@ load(":testdata/go_indexer_test.bzl", "go_indexer_test")
 go_indexer_test(
     name = "syntax_test",
     srcs = ["testdata/syntax.go"],
+)
+
+go_indexer_test(
+    name = "deprecation_test",
+    srcs = ["testdata/basic/deprecation.go"],
 )
 
 go_indexer_test(
@@ -197,8 +203,14 @@ go_indexer_test(
     import_path = "test/pkginit",
 )
 
+go_indexer_test(
+    name = "types_test",
+    srcs = ["testdata/types.go"],
+    has_marked_source = True,
+)
+
 # load(":testdata/go_indexer_test.bzl", "go_integration_test")
-# TODO(T270): requires MarkedSource resolution in pipeline
+# TODO(#2375): (closed?) requires MarkedSource resolution in pipeline
 # go_integration_test(
 #     name = "marked_source_integration_test",
 #     srcs = ["testdata/integration/marked_source.go"],

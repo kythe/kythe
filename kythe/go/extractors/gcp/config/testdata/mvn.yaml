@@ -1,49 +1,69 @@
 artifacts:
   objects:
-    location: gs://${_OUTPUT_GS_BUCKET}/
+    location: gs://${_BUCKET_NAME}/${_CORPUS}/
     paths:
-    - /workspace/out/javac-extractor.err
-    - /workspace/out/${_OUTPUT_KZIP_NAME}
+    - /workspace/output/${_COMMIT}.kzip
 steps:
 - args:
   - clone
-  - ${_REPO_NAME}
+  - ${_REPO}
   - /workspace/code
-  id: CLONE
   name: gcr.io/cloud-builders/git
+  id: CLONE
   waitFor:
   - '-'
 - args:
-  - mkdir
-  - /workspace/out
-  name: ubuntu
+  - checkout
+  - ${_COMMIT}
+  name: gcr.io/cloud-builders/git
+  dir: /workspace/code
+  id: CHECKOUT
   waitFor:
-  - '-'
-- name: gcr.io/kythe-public/kythe-javac-extractor-artifacts
+   - CLONE
+- name: gcr.io/kythe-public/kythe-javac-extractor-artifacts:stable
+  id: JAVA-ARTIFACTS
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
   waitFor:
   - '-'
 - args:
+  - /workspace/code/pom.xml
+  id: PREPROCESS
+  name: gcr.io/kythe-public/build-preprocessor:stable
+  waitFor:
+    - CHECKOUT
+- args:
   - clean
   - compile
-  - -X
+  - test-compile
   - -f
   - /workspace/code/pom.xml
   - -Dmaven.compiler.forceJavacCompilerUse=true
   - -Dmaven.compiler.fork=true
   - -Dmaven.compiler.executable=/opt/kythe/extractors/javac-wrapper.sh
+  entrypoint: mvn
   env:
   - KYTHE_CORPUS=${_CORPUS}
-  - KYTHE_OUTPUT_DIRECTORY=/workspace/out
-  - KYTHE_OUTPUT_FILE=/workspace/out/${_OUTPUT_KZIP_NAME}
+  - KYTHE_OUTPUT_DIRECTORY=/workspace/output
   - KYTHE_ROOT_DIRECTORY=/workspace/code
   - JAVAC_EXTRACTOR_JAR=/opt/kythe/extractors/javac_extractor.jar
   - REAL_JAVAC=/usr/bin/javac
-  - TMPDIR=/workspace/out
   - KYTHE_JAVA_RUNTIME_OPTIONS=-Xbootclasspath/p:/opt/kythe/extractors/javac9_tools.jar
-  name: gcr.io/cloud-builders/mvn
+  id: EXTRACT
+  name: maven:3.6.0-jdk-8-slim
   volumes:
   - name: kythe_extractors
     path: /opt/kythe/extractors
+  waitFor:
+    - JAVA-ARTIFACTS
+    - PREPROCESS
+- args:
+  - -c
+  - /opt/kythe/tools/kzip merge --output /workspace/output/${_COMMIT}.kzip /workspace/output/*.kzip
+  entrypoint: bash
+  id: MERGE
+  name: gcr.io/kythe-public/kzip-tools:stable
+tags:
+  - ${_CORPUS}
+  - kythe_extract_maven

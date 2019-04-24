@@ -1,8 +1,4 @@
 # Kythe extraction setup
-bind(
-    name = "vnames_config",
-    actual = "@io_kythe//kythe/examples/bazel:kythe_config.json",
-)
 
 # Build against Kythe master.  Run `bazel sync` to update to the latest commit.
 http_archive(

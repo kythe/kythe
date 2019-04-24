@@ -135,7 +135,8 @@ public class JavaEntrySets extends KytheEntrySets {
       getStatisticsCollector().incrementCounter("unextracted-input-file");
       String msg =
           String.format(
-              "Couldn't generate vname for symbol %s.  Input file for enclosing class %s not seen during extraction.",
+              "Couldn't generate vname for symbol %s.  Input file for enclosing class %s not seen"
+                  + " during extraction.",
               sym, enclClass);
       logger.atWarning().log(msg);
       Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(msg);
@@ -279,7 +280,7 @@ public class JavaEntrySets extends KytheEntrySets {
       case TYPE_PARAMETER:
         return NodeKind.ABS_VAR;
       default:
-        // TODO(T227): handle all cases, make this exceptional, and remove all null checks
+        // TODO(#1845): handle all cases, make this exceptional, and remove all null checks
         return null;
     }
   }

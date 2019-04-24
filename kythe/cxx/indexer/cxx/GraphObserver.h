@@ -20,9 +20,9 @@
 /// \file
 /// \brief Defines the class kythe::GraphObserver
 
-#include <openssl/sha.h>  // for SHA256
+#include <string>
 
-#include "absl/strings/escaping.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "clang/Basic/SourceLocation.h"
@@ -30,37 +30,19 @@
 #include "clang/Basic/Specifiers.h"
 #include "clang/Lex/Preprocessor.h"
 #include "glog/logging.h"
+#include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "kythe/cxx/common/indexing/KytheCachingOutput.h"
-
 namespace kythe {
 
 // TODO(zarko): Most of the documentation for this interface belongs here.
 
-// base64 has a 4:3 overhead and SHA256_DIGEST_LENGTH is 32. 32*4/3 = 42.
-constexpr size_t kSha256DigestBase64MaxEncodingLength = 42;
-
 /// \brief A one-way hash for `InString`.
-template <typename String>
-String CompressString(const String& InString, bool Force = false) {
-  if (InString.size() <= kSha256DigestBase64MaxEncodingLength && !Force) {
-    return InString;
-  }
-  ::SHA256_CTX Sha;
-  ::SHA256_Init(&Sha);
-  ::SHA256_Update(&Sha, reinterpret_cast<const unsigned char*>(InString.data()),
-                  InString.size());
-  String Hash(SHA256_DIGEST_LENGTH, '\0');
-  ::SHA256_Final(reinterpret_cast<unsigned char*>(&Hash[0]), &Sha);
-  String Result;
-  absl::Base64Escape(Hash, &Result);
-  return Result;
-}
+std::string CompressString(absl::string_view InString, bool Force = false);
 
 enum class ProfilingEvent {
   Enter,  ///< A profiling section was entered.
@@ -1060,6 +1042,9 @@ class GraphObserver {
   /// If `iter` returns false, terminates iteration.
   virtual void iterateOverClaimedFiles(
       std::function<bool(clang::FileID, const NodeId&)> iter) const {}
+
+  /// Name of the platform or build configuration to emit on anchors.
+  virtual absl::string_view getBuildConfig() const { return ""; }
 
  protected:
   clang::SourceManager* SourceManager = nullptr;

@@ -44,6 +44,9 @@ func TestReferences(t *testing.T) {
 		}, {
 			Name:  &scpb.Fact_KytheName{scpb.FactName_LOC_END},
 			Value: []byte("4"),
+		}, {
+			Name:  &scpb.Fact_KytheName{scpb.FactName_BUILD_CONFIG},
+			Value: []byte("test-build-config"),
 		}},
 		Edge: []*scpb.Edge{{
 			Kind:   &scpb.Edge_KytheKind{scpb.EdgeKind_REF},
@@ -102,6 +105,7 @@ func TestReferences(t *testing.T) {
 					ColumnOffset: 9,
 				},
 			},
+			BuildConfiguration: "test-build-config",
 		},
 	}, {
 		Source: &spb.VName{Signature: "node2"},

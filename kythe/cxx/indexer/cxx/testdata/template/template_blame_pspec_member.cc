@@ -17,7 +17,7 @@ template <typename T, typename S> struct C { bool f(T* t) { return g(); } };
 //- TsImpCall childof TsImp  // Aliasing is off by default
 template <typename T> struct C<T, int> { bool f(T* t) { return g(); } };
 
-// Until type contexts: T230
+// Until type contexts: #1879
 //- TheCall=@"j->f(nullptr)" ref/call TAppUnarySpecF
 //- @h defines/binding FnH
 //- TheCall childof FnH

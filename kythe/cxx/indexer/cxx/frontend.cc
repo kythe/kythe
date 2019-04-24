@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 #include <string>
 
 #include "absl/memory/memory.h"
@@ -47,6 +48,8 @@ DEFINE_int32(min_size, 4096, "Minimum size of an entry bundle");
 DEFINE_int32(max_size, 1024 * 32, "Maximum size of an entry bundle");
 DEFINE_bool(cache_stats, false, "Show cache stats");
 DEFINE_string(icorpus, "", "Corpus to use for files specified with -i");
+DEFINE_string(ibuild_config, "",
+              "Build config to use for files specified with -i");
 DEFINE_bool(normalize_file_vnames, false, "Normalize incoming file vnames.");
 DEFINE_string(experimental_dynamic_claim_cache, "",
               "Use a memcache instance for dynamic claims (EXPERIMENTAL)");
@@ -66,6 +69,10 @@ namespace {
 /// The prefix prepended to silent inputs. Only checked when "--test_claim"
 /// is enabled.
 constexpr char kSilentPrefix[] = "silent:";
+
+/// The message type URI for the build details message.
+constexpr char kBuildDetailsURI[] = "kythe.io/proto/kythe.proto.BuildDetails";
+
 /// \return the input name stripped of its prefix if it's silent; an empty
 /// string otherwise.
 llvm::StringRef strip_silent_input_prefix(llvm::StringRef argument) {
@@ -293,6 +300,13 @@ void IndexerContext::LoadDataFromUnpackedFile(
     job.unit.add_argument(arg);
   }
   job.unit.mutable_v_name()->set_corpus(FLAGS_icorpus);
+  if (!FLAGS_ibuild_config.empty()) {
+    proto::BuildDetails details;
+    details.set_build_config(FLAGS_ibuild_config);
+    auto* any = job.unit.add_details();
+    any->PackFrom(details);
+    any->set_type_url(kBuildDetailsURI);
+  }
   MaybeNormalizeFileVNames(&job);
   visit(job);
 }
@@ -372,10 +386,6 @@ IndexerContext::~IndexerContext() { CloseOutputStreams(); }
 
 void IndexerContext::EnumerateCompilations(
     const CompilationVisitCallback& visit) {
-  // This forces the BuildDetails proto descriptor to be added to the pool so
-  // we can deserialize it.
-  proto::BuildDetails needed_for_proto_deserialization;
-
   if (unpacked_inputs_) {
     LoadDataFromUnpackedFile(default_filename_, visit);
   } else {

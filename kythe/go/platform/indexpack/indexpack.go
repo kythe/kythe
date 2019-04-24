@@ -86,7 +86,7 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 )
 
 const (
@@ -259,7 +259,7 @@ func CreateOrOpen(ctx context.Context, path string, opts ...Option) (*Archive, e
 }
 
 func (a *Archive) writeFile(ctx context.Context, dir, name string, data []byte) error {
-	tmp := filepath.Join(dir, uuid.New()) + newSuffix
+	tmp := filepath.Join(dir, uuid.New().String()) + newSuffix
 	f, err := a.fs.Create(ctx, tmp)
 	if err != nil {
 		return err

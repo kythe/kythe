@@ -30,7 +30,7 @@ git clone git@github.com:kythe/kythe.git
 Kythe relies on the following external dependencies:
 
 * asciidoc
-* bison-3.0.4 (2.3 is also acceptable)
+* bison-3.0.4
 * clang >= 3.6
 * cmake >= 3.4.3
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
@@ -40,9 +40,7 @@ Kythe relies on the following external dependencies:
 * jdk >= 8
 * [leiningen](http://leiningen.org/) (used to build `//kythe/web/ui`)
 * libcurl4-openssl-dev
-* libncurses-dev
 * libssl-dev
-* [ninja](https://ninja-build.org/) (optional; improves LLVM build speed)
 * node.js
 * parallel
 * source-highlight
@@ -62,7 +60,7 @@ apt-get update
 
 apt-get install \
     asciidoc asciidoctor source-highlight graphviz \
-    gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.5 bison \
+    gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.6 bison \
     openjdk-8-jdk \
     parallel \
     wget
@@ -71,37 +69,25 @@ apt-get install \
 # https://docs.docker.com/installation/debian/#debian-jessie-80-64-bit for Docker installation
 {% endhighlight %}
 
-### Internal Dependencies
-
-All other Kythe dependencies are hosted within the repository under
-`//third_party/...`. Run the `./tools/modules/update.sh` script to update these
-dependencies to the exact revision that we test against.
-
-This step may take a little time the first time it is run and should be quick
-on subsequent runs.
-
-#### Installing and keeping LLVM up to date
-
-When building Kythe, we assume that you have an LLVM checkout in
-`third_party/llvm/llvm`.  If you don't have an LLVM checkout in that directory, or
-if you fall out of date, the `./tools/modules/update.sh` script will update you
-to the exact revisions that we test against.
-
-Note that you don't need to have a checkout of LLVM per Kythe checkout.  It's
-enough to have a symlink of the `third_party/llvm/llvm` directory.
-
 #### Troubleshooting bazel/clang/llvm errors
-You must either have /usr/bin/clang aliased properly, or the CLANG env var set:
+You must either have `/usr/bin/clang` aliased properly, or the `CC` env var set
+for Bazel:
 
 {% highlight bash %}
-sudo ln -s /usr/bin/clang-3.5 /usr/bin/clang
-sudo ln -s /usr/bin/clang++-3.5 /usr/bin/clang++
+echo 'build --client_env=CC=/usr/bin/clang-3.6' >>~/.bazelrc
 {% endhighlight %}
 
 OR:
 
 {% highlight bash %}
-echo 'export CLANG=/usr/bin/clang' >> ~/.bashrc
+sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang
+sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++
+{% endhighlight %}
+
+OR:
+
+{% highlight bash %}
+echo 'export CC=/usr/bin/clang' >> ~/.bashrc
 source ~/.bashrc
 {% endhighlight %}
 
@@ -110,9 +96,9 @@ If you ran bazel and get errors like this:
 {% highlight bash %}
 /home/username/kythe/third_party/zlib/BUILD:10:1: undeclared inclusion(s) in rule '//third_party/zlib:zlib':
 this rule is missing dependency declarations for the following files included by 'third_party/zlib/uncompr.c':
-  '/usr/lib/llvm-3.5/lib/clang/3.5.0/include/limits.h'
-  '/usr/lib/llvm-3.5/lib/clang/3.5.0/include/stddef.h'
-  '/usr/lib/llvm-3.5/lib/clang/3.5.0/include/stdarg.h'.
+  '/usr/lib/llvm-3.6/lib/clang/3.6.0/include/limits.h'
+  '/usr/lib/llvm-3.6/lib/clang/3.6.0/include/stddef.h'
+  '/usr/lib/llvm-3.6/lib/clang/3.6.0/include/stdarg.h'.
 {% endhighlight %}
 
 then you need to clean and rebuild your TOOLCHAIN:
@@ -130,8 +116,6 @@ Kythe uses [Bazel](http://bazel.io) to build its source code.  After
 dependencies, building Kythe should be as simple as:
 
 {% highlight bash %}
-./tools/modules/update.sh  # Ensure third_party is updated
-
 bazel build //... # Build all Kythe sources
 bazel test  //... # Run all Kythe tests
 {% endhighlight %}
@@ -140,6 +124,10 @@ Please note that you must use a non-jdk7 version of Bazel. Some package managers
 may provide the jdk7 version by default. To determine if you are using an
 incompatible version of Bazel, look for `jdk7` in the build label that
 is printed by `bazel version`.
+
+Also note that not all targets build with `//...` - some targets are
+purposefully omitted.  This includes `//kythe/web/ui`, `//kythe/release`, and
+many of the docker images we push.
 
 ### Build a release of Kythe using Bazel and unpack it in /opt/kythe
 

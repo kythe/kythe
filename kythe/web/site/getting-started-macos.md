@@ -23,6 +23,31 @@ softwareupdate --install Xcode
 {% endhighlight %}
 
 or by launching the App Store application and browsing to Develop → Xcode.
+Verify your installation by running the command:
+
+{% highlight bash %}
+$ xcodebuild -version
+{% endhighlight %}
+
+You should get something like this (though the numbers will vary):
+
+{% highlight bash %}
+Xcode 10.1
+Build version 10B61
+{% endhighlight %}
+
+If you get an error like this:
+
+{% highlight bash %}
+xcode-select: error: tool 'xcodebuild' requires Xcode, but active developer directory '/Library/Developer/CommandLineTools' is a command line tools instance
+{% endhighlight %}
+
+then the following command should fix it:
+
+{% highlight bash %}
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+{% endhighlight %}
+
 
 **Homebrew**: You will also need to install [Homebrew](https://brew.sh) (follow
 the link for instructions).  There are other ways to install packages, but the
@@ -34,7 +59,7 @@ rest of these instructions assume you have it.
 To install most of the [external dependencies][ext], run
 
 {% highlight bash %}
-for pkg in asciidoc cmake go graphviz node parallel source-highlight wget ; do
+for pkg in asciidoc bison brotli cmake go graphviz leveldb node parallel source-highlight wget ; do
    brew install $pkg
 done
 
@@ -46,6 +71,10 @@ done
 brew tap bazelbuild/tap
 brew tap-pin bazelbuild/tap
 brew install bazelbuild/tap/bazel
+
+# Bison. The stock version is too old, but Bison is keg-only and Bazel uses
+# a restricted PATH, so we need to tell Bazel where to find bison (see #3514):
+export BISON=/usr/local/opt/bison/bin/bison
 
 # Docker: See the instructions below.
 # DO NOT use brew install docker (or if you did: brew uninstall docker).
