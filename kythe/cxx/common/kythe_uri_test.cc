@@ -86,6 +86,9 @@ TEST(KytheUri, Parse) {
       {"kythe:?path=P", MakeURI().Path("P")},
       {"kythe:?lang=L", MakeURI().Language("L")},
 
+      // Special characters.
+      {"kythe:#-%2B_%2F", MakeURI().Signature("-+_/")},
+
       // Corner cases about relative paths. NB: MakeURI() goes through VNames.
       {"kythe://..", MakeURI().Corpus("..")},
       {"kythe://../", MakeURI().Corpus("../")},
