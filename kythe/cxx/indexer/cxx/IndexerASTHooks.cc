@@ -541,9 +541,13 @@ clang::SourceRange IndexerASTVisitor::RangeForSingleToken(
 void IndexerASTVisitor::MaybeRecordDefinitionRange(
     const absl::optional<GraphObserver::Range>& R,
     const GraphObserver::NodeId& Id,
-    const absl::optional<GraphObserver::NodeId>& DeclId) {
+    const absl::optional<GraphObserver::NodeId>& DeclId,
+    const absl::optional<GraphObserver::Range>& FullDefinition) {
   if (R) {
     Observer.recordDefinitionBindingRange(R.value(), Id, DeclId);
+    if (FullDefinition) {
+      Observer.recordFullDefinitionRange(FullDefinition.value(), Id, DeclId);
+    }
   }
 }
 
@@ -2790,10 +2794,12 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   std::vector<std::pair<clang::TemplateName, clang::SourceLocation>> TNs;
   bool TNsAreSpeculative = false;
   bool IsImplicit = false;
+  SourceLocation TemplateKeywordLoc;
   if (auto* FTD = Decl->getDescribedFunctionTemplate()) {
     // Function template (inc. overloads)
     InnerNode = BuildNodeIdForDecl(Decl, 0);
     OuterNode = RecordTemplate(FTD, InnerNode);
+    TemplateKeywordLoc = FTD->getSourceRange().getBegin();
   } else if (auto* MSI = Decl->getMemberSpecializationInfo()) {
     // Here, template variables are bound by our enclosing context.
     // For example:
@@ -2932,9 +2938,22 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     }
   }
 
-  MaybeRecordDefinitionRange(NameRangeInContext, OuterNode,
-                             BuildNodeIdForDefnOfDecl(Decl));
   bool IsFunctionDefinition = IsDefinition(Decl);
+  if (!IsFunctionDefinition || Decl->isImplicit() ||
+      Decl->getBody() == nullptr) {
+    MaybeRecordDefinitionRange(NameRangeInContext, OuterNode,
+                               BuildNodeIdForDefnOfDecl(Decl));
+  } else {
+    SourceRange DefinitionRange(
+        TemplateKeywordLoc.isValid() ? TemplateKeywordLoc
+                                     : Decl->getSourceRange().getBegin(),
+        RangeForASTEntity(Decl->getSourceRange().getEnd()).getEnd());
+    auto DefinitionRangeInContext =
+        RangeInCurrentContext(Decl->isImplicit(), OuterNode, DefinitionRange);
+    MaybeRecordDefinitionRange(NameRangeInContext, OuterNode,
+                               BuildNodeIdForDefnOfDecl(Decl),
+                               DefinitionRangeInContext);
+  }
   unsigned ParamNumber = 0;
   for (const auto* Param : Decl->parameters()) {
     ConnectParam(Decl, InnerNode, IsFunctionDefinition, ParamNumber++, Param,

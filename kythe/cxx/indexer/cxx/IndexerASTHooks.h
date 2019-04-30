@@ -568,7 +568,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   void MaybeRecordDefinitionRange(
       const absl::optional<GraphObserver::Range>& R,
       const GraphObserver::NodeId& Id,
-      const absl::optional<GraphObserver::NodeId>& DeclId);
+      const absl::optional<GraphObserver::NodeId>& DeclId,
+      const absl::optional<GraphObserver::Range>& FullDefinition =
+          absl::nullopt);
 
   /// \brief Returns the attached GraphObserver.
   GraphObserver& getGraphObserver() { return Observer; }
