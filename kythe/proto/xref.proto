@@ -160,6 +160,9 @@ message DecorationsRequest {
   // no filtering based on build configs will be done; all decorations for the
   // file will be returned.
   repeated string build_config = 11;
+
+  // Whether to return known semantic scopes per Reference.
+  bool semantic_scopes = 12;
 }
 
 message DecorationsReply {
@@ -187,6 +190,11 @@ message DecorationsReply {
 
     // The build config of the file containing this reference.
     string build_config = 6;
+
+    // Ticket of the semantic node with the narrowest scope enclosing the
+    // reference.  Populated only if semantic_scopes is true in the
+    // DecorationsRequest.
+    string semantic_scope = 7;
 
     reserved 1, 10, 11;
   }

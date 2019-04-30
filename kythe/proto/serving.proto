@@ -179,6 +179,7 @@ message FileDecorations {
     string target = 5;
 
     string target_definition = 4;
+    string semantic_scope = 6;
   }
 
   // The decorations located in the file, sorted by starting offset.
