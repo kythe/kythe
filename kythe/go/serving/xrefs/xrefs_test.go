@@ -201,6 +201,8 @@ var (
 						},
 						Kind:   "/kythe/refs",
 						Target: "kythe://core?lang=otpl#empty?",
+
+						SemanticScope: "kythe://c?lang=otpl?path=/a/path#map",
 					},
 					{
 						Anchor: &srvpb.RawAnchor{
@@ -210,6 +212,8 @@ var (
 						},
 						Kind:   "/kythe/refs",
 						Target: "kythe://core?lang=otpl#cons",
+
+						SemanticScope: "kythe://c?lang=otpl?path=/a/path#map",
 					},
 				},
 				Target: getNodes("kythe://c?lang=otpl?path=/a/path#map", "kythe://core?lang=otpl#empty?", "kythe://core?lang=otpl#cons"),
@@ -493,12 +497,32 @@ func TestDecorationsRefs(t *testing.T) {
 	}
 
 	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration)
+	for _, ref := range expected {
+		ref.SemanticScope = "" // not requested
+	}
 	if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
 		t.Fatal(err)
 	}
 
 	expectedNodes := nodeInfos(tbl.Nodes[9:11], tbl.Nodes[12:13])
 	if err := testutil.DeepEqual(expectedNodes, reply.Nodes); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDecorationsRefScopes(t *testing.T) {
+	d := tbl.Decorations[1]
+
+	st := tbl.Construct(t)
+	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+		Location:       &xpb.Location{Ticket: d.File.Ticket},
+		References:     true,
+		SemanticScopes: true,
+	})
+	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+
+	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration)
+	if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
 		t.Fatal(err)
 	}
 }
