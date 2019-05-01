@@ -141,9 +141,9 @@ std::function<bool(absl::string_view)> CompilePatterns(
 }  // namespace
 
 ImputedConstructorSupport::ImputedConstructorSupport(
-    std::unordered_set<std::string> allowed_constructor_names)
-    : ImputedConstructorSupport(
-          CompilePatterns(std::move(allowed_constructor_names))) {}
+    std::unordered_set<std::string> allowed_constructor_patterns)
+    : ImputedConstructorSupport(CompilePatterns(allowed_constructor_patterns)) {
+}
 
 ImputedConstructorSupport::ImputedConstructorSupport(
     std::function<bool(absl::string_view)> allow_constructor_name)

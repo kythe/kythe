@@ -67,6 +67,7 @@ cc_library(
     ],
     deps = [
         ":lexparse",
+        "//kythe/cxx/common:file_utils",
         "//kythe/cxx/common:kythe_uri",
         "//kythe/cxx/common:scope_guard",
         "//kythe/proto:common_cc_proto",

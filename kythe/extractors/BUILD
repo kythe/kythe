@@ -130,7 +130,7 @@ extractor_action(
         "--output=$(output $(ACTION_ID).protobuf.kzip)",
     ],
     data = ["//external:vnames_config"],
-    extractor = "@io_kythe_lang_proto//kythe/go/extractors/proto:extract_proto_kzip",
+    extractor = "//kythe/go/extractors/proto:extract_proto_kzip",
     mnemonics = ["GenProtoDescriptorSet"],
     output = "$(ACTION_ID).protobuf.kzip",
 )

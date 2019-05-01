@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <bitset>
-
 #include "pretty_printer.h"
+
+#include <bitset>
 
 namespace kythe {
 namespace verifier {

@@ -1,0 +1,15 @@
+// Test proto for message type fields.
+
+syntax = "proto2";
+
+package proto_kythe_test;
+option java_outer_classname = "XlangFields2";
+
+message MessageFields {
+  optional Type1 field_name = 1;
+}
+
+message Type1 {
+  required string test = 1;
+}
+

@@ -16,29 +16,29 @@
 
 #include "cxx_extractor.h"
 
-#include <tuple>
-#include <type_traits>
-#include <unordered_map>
-#include <utility>
-
 #include <fcntl.h>
 #include <openssl/sha.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <tuple>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+
+#include "absl/memory/memory.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
-
-#include "absl/memory/memory.h"
-#include "absl/strings/match.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+#include "kythe/cxx/common/file_utils.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/kzip_writer.h"
 #include "kythe/cxx/common/path_utils.h"
@@ -1188,21 +1188,6 @@ void MapCompilerResources(clang::tooling::ToolInvocation* invocation,
     llvm::sys::path::append(out_path, file->name);
     invocation->mapVirtualFile(out_path, file->data);
   }
-}
-
-/// \brief Loads all data from a file or terminates the process.
-static std::string LoadFileOrDie(const std::string& file) {
-  FILE* handle = fopen(file.c_str(), "rb");
-  CHECK(handle != nullptr) << "Couldn't open input file " << file;
-  CHECK_EQ(fseek(handle, 0, SEEK_END), 0) << "Couldn't seek " << file;
-  long size = ftell(handle);
-  CHECK_GE(size, 0) << "Bad size for " << file;
-  CHECK_EQ(fseek(handle, 0, SEEK_SET), 0) << "Couldn't seek " << file;
-  std::string content;
-  content.resize(size);
-  CHECK_EQ(fread(&content[0], size, 1, handle), 1) << "Couldn't read " << file;
-  CHECK_NE(fclose(handle), EOF) << "Couldn't close " << file;
-  return content;
 }
 
 void ExtractorConfiguration::SetVNameConfig(const std::string& path) {

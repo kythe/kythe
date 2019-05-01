@@ -317,6 +317,10 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 				r.TargetDefinition = ""
 			}
 
+			if !req.SemanticScopes {
+				r.SemanticScope = ""
+			}
+
 			if req.ExtendsOverrides && (r.Kind == edges.Defines || r.Kind == edges.DefinesBinding) {
 				bindings.Add(r.TargetTicket)
 			}
@@ -401,6 +405,7 @@ func decorationToReference(norm *span.Normalizer, d *srvpb.FileDecorations_Decor
 		Span:             span,
 		TargetDefinition: d.TargetDefinition,
 		BuildConfig:      d.Anchor.BuildConfiguration,
+		SemanticScope:    d.SemanticScope,
 	}
 }
 

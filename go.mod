@@ -21,7 +21,7 @@ require (
 	github.com/hanwen/go-fuse v1.0.0
 	github.com/jmhodges/levigo v1.0.0
 	github.com/mholt/archiver v3.1.1+incompatible
-	github.com/minio/highwayhash v0.0.0-20180501080913-85fc8a2dacad
+	github.com/minio/highwayhash v1.0.0
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/pierrec/lz4 v0.0.0-20190131084431-473cd7ce01a1 // indirect
 	github.com/pkg/errors v0.8.1
@@ -34,7 +34,7 @@ require (
 	golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
-	golang.org/x/sys v0.0.0-20180830151530-49385e6e1522
+	golang.org/x/sys v0.0.0-20190130150945-aca44879d564
 	golang.org/x/text v0.3.0
 	golang.org/x/tools v0.0.0-20190206175659-4892ae6946ab
 	google.golang.org/api v0.0.0-20180404000327-3097bf831ede

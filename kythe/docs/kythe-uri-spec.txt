@@ -74,7 +74,7 @@ Examples (subject to change):
 * Maven (corpus, path, language): `kythe://maven.org/central/org/apache/thrift?lang=java?path=libthrift/0.9.1`
 * Language, path, signature: `kythe:?lang=go?path=mapreduce/go/contrib/plan.go#MR`
 * Corpus, path, language: `kythe://code.google.com/p/go.tools?lang=go?path=cmd/godoc/doc.go`
-* Alternate root: `kythe://chromium.org/chrome?root=third_party/openssl/1650?path=openssl/crypto/bf/bf_pi.h`
+* Alternate root: `kythe://chromium.org/chrome?path=openssl/crypto/bf/bf_pi.h?root=third_party/openssl/1650`
 
 === Rationale
 
@@ -100,6 +100,3 @@ whether the "project" label is likely to vary.  A github.com repo will not
 frequently change name, so it makes sense to include the repo name as part of
 the corpus, and reserve the `root` field for branches.  The encoding of the URI
 is agnostic to the decision.
-
-
-

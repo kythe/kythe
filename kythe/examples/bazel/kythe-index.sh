@@ -109,7 +109,6 @@ done
 
 cd "$BAZEL_ROOT"
 KYTHE_BIN="$BAZEL_ROOT/bazel-bin/external/io_kythe"
-KYTHE_PROTO_BIN="$BAZEL_ROOT/bazel-bin/external/io_kythe_lang_proto"
 
 if ! grep -q 'Kythe extraction setup' WORKSPACE; then
   echo "ERROR: $BAZEL_ROOT is not a correctly configured Bazel repository" >&2
@@ -150,10 +149,10 @@ if [[ -n "$ANALYZE" ]]; then
     @io_kythe//kythe/go/platform/tools/dedup_stream \
     @io_kythe//kythe/cxx/indexer/cxx:indexer \
     @io_kythe//kythe/java/com/google/devtools/kythe/analyzers/java:indexer \
-    @io_kythe_lang_proto//kythe/cxx/indexer/proto:indexer
+    //kythe/cxx/indexer/proto:indexer
   analyze cxx "$KYTHE_BIN/kythe/cxx/indexer/cxx/indexer"
   analyze java "$KYTHE_BIN/kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
-  analyze protobuf "$KYTHE_PROTO_BIN/kythe/cxx/indexer/proto/indexer"
+  analyze protobuf "$KYTHE_BIN/kythe/cxx/indexer/proto/indexer"
   cd "$ROOT"
 fi
 

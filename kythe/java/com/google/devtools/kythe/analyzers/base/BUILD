@@ -23,6 +23,8 @@ java_library(
         "NodeKind.java",
     ],
     deps = [
+        "//kythe/java/com/google/devtools/kythe/util/schema",
+        "//kythe/proto:schema_java_proto",
         "//third_party/guava",
         "@com_google_code_findbugs_jsr305//jar",
     ],

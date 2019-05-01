@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package proto_kythe_test;
+option java_package = "io.kythe";
+
+message M {
+  //- @field1 defines/binding F1
+  //- F1.tag/deprecated ""
+  optional string field1 = 1 [deprecated=true];
+
+  //- @field2 defines/binding F2
+  //- !{ F2.tag/deprecated "" }
+  optional string field2 = 2;
+
+  // Fields that are annotated with [deprecated=true] should be tagged as
+  // deprecated by the proto indexer.
+}

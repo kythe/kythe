@@ -19,6 +19,7 @@ syntax = "proto3";
 package kythe.proto.schema;
 
 option go_package = "schema_go_proto";
+option java_package = "com.google.devtools.kythe.proto";
 
 import "kythe/proto/storage.proto";
 
@@ -228,4 +229,12 @@ message Edge {
 
   Node source_node = 6;
   Node target_node = 7;
+}
+
+// A Kythe Entry represents a single graph node fact or edge.
+message Entry {
+  oneof entry {
+    Fact fact = 1;
+    Edge edge = 2;
+  }
 }

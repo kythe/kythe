@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+#include "kythe/cxx/doc/markup_handler.h"
+
 #include <algorithm>
 #include <stack>
-
-#include "kythe/cxx/doc/markup_handler.h"
 
 namespace kythe {
 

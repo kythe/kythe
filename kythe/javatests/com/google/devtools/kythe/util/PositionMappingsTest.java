@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.util;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_16;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -102,8 +103,8 @@ public class PositionMappingsTest {
     // check for correct byte offsets at each index in the text
     for (int i = 0; i < text.length(); i++) {
       String ss = text.substring(0, i);
-      assertThat(positionMappings.charToByteOffset(i))
-          .named("offsets[" + i + "]")
+      assertWithMessage("offsets[" + i + "]")
+          .that(positionMappings.charToByteOffset(i))
           .isEqualTo(ss.getBytes(charset).length);
     }
   }

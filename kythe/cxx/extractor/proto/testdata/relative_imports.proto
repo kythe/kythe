@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+// This import is in a subdirectory, so it won't be found by default. This
+// exercies the extractor's handling of --proto_path for adding directories to
+// the search path.
+import "other.proto";
+
+package example;
+
+message MyMessage {
+  optional other.OtherMessage msg = 1;
+}

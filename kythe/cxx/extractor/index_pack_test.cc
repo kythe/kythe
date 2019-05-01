@@ -15,6 +15,7 @@
  */
 
 #include "index_pack.h"
+
 #include "absl/memory/memory.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -108,24 +109,24 @@ TEST(IndexPack, ScanData) {
   ASSERT_TRUE(pack.AddFileData(file_data, &error_text));
   ASSERT_TRUE(pack.AddFileData(file_data, &error_text));
   bool file_matched = false, file_had_errors = false, multiple_files = false;
-  EXPECT_TRUE(
-      pack.ScanData(IndexPackFilesystem::DataKind::kFileData,
-                    [&pack, &file_matched, &multiple_files,
-                     &file_had_errors](const std::string& data_hash) {
-                      if (file_matched) {
-                        multiple_files = true;
-                      } else {
-                        std::string file_content;
-                        if (pack.ReadFileData(data_hash, &file_content) &&
-                            file_content == "data1") {
-                          file_matched = true;
-                        } else {
-                          file_had_errors = true;
-                        }
-                      }
-                      return true;
-                    },
-                    &error_text));
+  EXPECT_TRUE(pack.ScanData(
+      IndexPackFilesystem::DataKind::kFileData,
+      [&pack, &file_matched, &multiple_files,
+       &file_had_errors](const std::string& data_hash) {
+        if (file_matched) {
+          multiple_files = true;
+        } else {
+          std::string file_content;
+          if (pack.ReadFileData(data_hash, &file_content) &&
+              file_content == "data1") {
+            file_matched = true;
+          } else {
+            file_had_errors = true;
+          }
+        }
+        return true;
+      },
+      &error_text));
   EXPECT_TRUE(file_matched);
   EXPECT_FALSE(multiple_files);
   EXPECT_FALSE(file_had_errors);
@@ -405,12 +406,13 @@ TEST(IndexPack, PosixScanFiles) {
   ASSERT_NE(nullptr, posix);
   ASSERT_TRUE(error_text.empty());
   std::vector<std::string> scanned_files;
-  EXPECT_TRUE(posix->ScanFiles(IndexPackFilesystem::DataKind::kFileData,
-                               [&scanned_files](const std::string& file_name) {
-                                 scanned_files.push_back(file_name);
-                                 return true;
-                               },
-                               &error_text));
+  EXPECT_TRUE(posix->ScanFiles(
+      IndexPackFilesystem::DataKind::kFileData,
+      [&scanned_files](const std::string& file_name) {
+        scanned_files.push_back(file_name);
+        return true;
+      },
+      &error_text));
   std::set<std::string> expect_scan_files = {kData1Sha, kData2Sha};
   EXPECT_EQ(scanned_files.size(), expect_scan_files.size());
   EXPECT_TRUE(error_text.empty());
@@ -419,12 +421,13 @@ TEST(IndexPack, PosixScanFiles) {
         << "When looking for " << file;
   }
   scanned_files.clear();
-  EXPECT_TRUE(posix->ScanFiles(IndexPackFilesystem::DataKind::kCompilationUnit,
-                               [&scanned_files](const std::string& file_name) {
-                                 scanned_files.push_back(file_name);
-                                 return true;
-                               },
-                               &error_text));
+  EXPECT_TRUE(posix->ScanFiles(
+      IndexPackFilesystem::DataKind::kCompilationUnit,
+      [&scanned_files](const std::string& file_name) {
+        scanned_files.push_back(file_name);
+        return true;
+      },
+      &error_text));
   std::set<std::string> expect_scan_units = {kUnit1Sha, kUnit2Sha};
   EXPECT_EQ(scanned_files.size(), expect_scan_units.size());
   EXPECT_TRUE(error_text.empty());

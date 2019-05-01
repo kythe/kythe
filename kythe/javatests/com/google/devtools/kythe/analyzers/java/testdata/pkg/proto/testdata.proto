@@ -24,4 +24,11 @@ message Message {
     //- @nested_bool defines/binding NestedBool
     bool nested_bool = 2;
   }
+
+  //- @oneof_field defines/binding OneofField
+  oneof oneof_field {
+    //- @oneof_string defines/binding OneofString
+    string oneof_string = 4;
+    bool oneof_bool = 5;
+  }
 }

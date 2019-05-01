@@ -970,6 +970,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 func (e *emitter) writeDef(node ast.Node, target *spb.VName) { e.writeRef(node, target, edges.Defines) }
 
 // writeDoc adds associations between comment groups and a documented node.
+// It also handles marking deprecated facts on the target.
 func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 	if comments == nil || len(comments.List) == 0 || target == nil {
 		return
@@ -981,8 +982,29 @@ func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 	docNode := proto.Clone(target).(*spb.VName)
 	docNode.Signature += " doc"
 	e.writeFact(docNode, facts.NodeKind, nodes.Doc)
-	e.writeFact(docNode, facts.Text, strings.Join(lines, "\n"))
+	e.writeFact(docNode, facts.Text, escComment.Replace(strings.Join(lines, "\n")))
 	e.writeEdge(docNode, target, edges.Documents)
+	e.emitDeprecation(target, lines)
+}
+
+// emitDeprecation emits a deprecated fact for the specified target if the
+// comment lines indicate it is deprecated per https://github.com/golang/go/wiki/Deprecated
+func (e *emitter) emitDeprecation(target *spb.VName, lines []string) {
+	var deplines []string
+	for _, line := range lines {
+		if len(deplines) == 0 {
+			if msg := strings.TrimPrefix(line, "Deprecated:"); msg != line {
+				deplines = append(deplines, strings.TrimSpace(msg))
+			}
+		} else if line == "" {
+			break
+		} else {
+			deplines = append(deplines, strings.TrimSpace(line))
+		}
+	}
+	if len(deplines) > 0 {
+		e.writeFact(target, facts.Deprecated, strings.Join(deplines, " "))
+	}
 }
 
 // isCall reports whether id is a call to obj.  This holds if id is in call
@@ -1159,14 +1181,12 @@ var escComment = strings.NewReplacer("[", `\[`, "]", `\]`, `\`, `\\`)
 
 // trimComment removes the comment delimiters from a comment.  For single-line
 // comments, it also removes a single leading space, if present; for multi-line
-// comments it discards leading and trailing whitespace. Brackets and backslash
-// characters are escaped per http://www.kythe.io/docs/schema/#doc.
+// comments it discards leading and trailing whitespace.
 func trimComment(text string) string {
 	if single := strings.TrimPrefix(text, "//"); single != text {
-		return escComment.Replace(strings.TrimPrefix(single, " "))
+		return strings.TrimPrefix(single, " ")
 	}
-	trimmed := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "/*"), "*/"))
-	return escComment.Replace(trimmed)
+	return strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "/*"), "*/"))
 }
 
 // specComment returns the innermost comment associated with spec, or nil.

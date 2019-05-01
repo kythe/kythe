@@ -15,6 +15,7 @@
  */
 
 #include "kythe/cxx/doc/html_renderer.h"
+
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"

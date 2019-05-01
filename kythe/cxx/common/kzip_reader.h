@@ -17,10 +17,10 @@
 #ifndef KYTHE_CXX_COMMON_KZIP_READER_H_
 #define KYTHE_CXX_COMMON_KZIP_READER_H_
 
+#include <zip.h>
+
 #include <functional>
 #include <string>
-
-#include <zip.h>
 
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/common/index_reader.h"

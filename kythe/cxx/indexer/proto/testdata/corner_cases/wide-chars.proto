@@ -1,0 +1,43 @@
+// Test proto to test Kythe UTF-8 handling. Note that non-ASCII characters
+// aren't allowed most places in proto syntax.
+
+syntax = "proto2";
+
+package proto_kythe_test;
+
+
+//- MoneyComment.node/kind doc
+//- MoneyComment documents MoneyMessage
+//- MoneyComment.text
+//-   "Caution: ẅ̸̛̠̟͇̜̱̲͍͈̙̣̻̻̝́̃̀̀̽̀͝͝ͅȅ̸̜̀̀̐a̵̰̥̖̳̰̭̗͓͐̀͆̎̾̿͑̒́͛̌l̷̛͖̰̱̺͉̪͈̗͎͚̱̫͌̌͒̑̊͂̐͆̓̇̏̏͒ͅt̴̺̼̊̂̅͛͒̿̈́̈́̈́̊͝͝͝h̶̪̜̻͙̥͙́͑͋̃͐̉̅̍ ̷̢̡̥͕͓̻̄̉͆͐̑̎͆̊ͅb̷̢̼̲͈̫̹̪̯͖͈̈́̈̓̾̆̔̄ĕ̶̢̢̟͇̤̞̺̝̝̱͖̰̦̂͊͜͜͝y̸̮̼̤͕̯͉̳̱̅̈̌̅͐̈́͑̏̍͆̋̃̈́͠ô̵̢̩̣̯̣̞͙͕͊̊̈́̿͗́̊̈́̏͆͠n̸̦̳̠̬̖̠̤͉͍̋͋̉̄̈́̒̃̚͘̕͠d̴̨̛͇̺̥͎̅͆͂̒̃̏͝ ̸̢̨̡̩̦́ÿ̸̢̦̥̫͉̯̣͎͚̖̘̜̠́̽̋̉̓̍ö̷̧̥̹̫̱͈̪̗͕͕͔̭̩̱͝u̵͇̘̼͕̫̭͔̞̰̰̗̯͙̯̱͑̊͛͒́̌̍̚r̴̲̰͈̤͙̭̝̖͚͓͚̰̀̓̃̕ ̷͚̥̤̗̝͕̠̗͇̗̋̆̕ͅẅ̸̪͈̖̻̊̔̽̀͛̿̏̈́̃̕͘͠͝i̴̦̺̭͍̣̬͍̱̖̦̗͓̘̊̿̽͐̇̓̅̈͐̈́l̷͕͔̱̒͑̋̂͗̀̈̀͐̊́͆d̵̫͊̾̃̉̎̉͒͂́́́̾̚͘ȅ̶̡̧̖̟̼͇̥̟̥̤̲ś̸̯͎̞̣̫̗̒̾͒͘̕͘͠ț̸̨̡̬̳͎͍̝̳̻̬̏͗͒̓̃̇̄̚͘͝ ̷̧̘̤̤̬̥̘̭͉̞̗̰̮͕̌̆d̴̺̔͝ŗ̸̢̤̦̝̖̻̼̦͇͍̻̫̬̿̌̿̈̀͆̍͐̕̚͠e̸̤̔ạ̸̖̫̲̖͓͔͔̜̰̠̄̄͝͝͝m̶̡̛͔͎̘̱̳̼̝͖̐̽̔͑͋͂͂́͘s̴̨̛̤̳͉͓̗̲̩͎̲̹̺̭͈̆̄̐̌̉̑͂͛͘.̷̢̢̼̗̲͙̣̰̪͛̿̚.̴̢̮̥͎͍̫͍̾̈́̀̈̉̾͝.̶̤̪̜͚̣̺̅͑̐̃̋̂̄͐͑̓͂͘\nNot responsible for any externalities."
+//- @+4"Money" defines/binding MoneyMessage
+
+// Caution: ẅ̸̛̠̟͇̜̱̲͍͈̙̣̻̻̝́̃̀̀̽̀͝͝ͅȅ̸̜̀̀̐a̵̰̥̖̳̰̭̗͓͐̀͆̎̾̿͑̒́͛̌l̷̛͖̰̱̺͉̪͈̗͎͚̱̫͌̌͒̑̊͂̐͆̓̇̏̏͒ͅt̴̺̼̊̂̅͛͒̿̈́̈́̈́̊͝͝͝h̶̪̜̻͙̥͙́͑͋̃͐̉̅̍ ̷̢̡̥͕͓̻̄̉͆͐̑̎͆̊ͅb̷̢̼̲͈̫̹̪̯͖͈̈́̈̓̾̆̔̄ĕ̶̢̢̟͇̤̞̺̝̝̱͖̰̦̂͊͜͜͝y̸̮̼̤͕̯͉̳̱̅̈̌̅͐̈́͑̏̍͆̋̃̈́͠ô̵̢̩̣̯̣̞͙͕͊̊̈́̿͗́̊̈́̏͆͠n̸̦̳̠̬̖̠̤͉͍̋͋̉̄̈́̒̃̚͘̕͠d̴̨̛͇̺̥͎̅͆͂̒̃̏͝ ̸̢̨̡̩̦́ÿ̸̢̦̥̫͉̯̣͎͚̖̘̜̠́̽̋̉̓̍ö̷̧̥̹̫̱͈̪̗͕͕͔̭̩̱͝u̵͇̘̼͕̫̭͔̞̰̰̗̯͙̯̱͑̊͛͒́̌̍̚r̴̲̰͈̤͙̭̝̖͚͓͚̰̀̓̃̕ ̷͚̥̤̗̝͕̠̗͇̗̋̆̕ͅẅ̸̪͈̖̻̊̔̽̀͛̿̏̈́̃̕͘͠͝i̴̦̺̭͍̣̬͍̱̖̦̗͓̘̊̿̽͐̇̓̅̈͐̈́l̷͕͔̱̒͑̋̂͗̀̈̀͐̊́͆d̵̫͊̾̃̉̎̉͒͂́́́̾̚͘ȅ̶̡̧̖̟̼͇̥̟̥̤̲ś̸̯͎̞̣̫̗̒̾͒͘̕͘͠ț̸̨̡̬̳͎͍̝̳̻̬̏͗͒̓̃̇̄̚͘͝ ̷̧̘̤̤̬̥̘̭͉̞̗̰̮͕̌̆d̴̺̔͝ŗ̸̢̤̦̝̖̻̼̦͇͍̻̫̬̿̌̿̈̀͆̍͐̕̚͠e̸̤̔ạ̸̖̫̲̖͓͔͔̜̰̠̄̄͝͝͝m̶̡̛͔͎̘̱̳̼̝͖̐̽̔͑͋͂͂́͘s̴̨̛̤̳͉͓̗̲̩͎̲̹̺̭͈̆̄̐̌̉̑͂͛͘.̷̢̢̼̗̲͙̣̰̪͛̿̚.̴̢̮̥͎͍̫͍̾̈́̀̈̉̾͝.̶̤̪̜͚̣̺̅͑̐̃̋̂̄͐͑̓͂͘
+// Not responsible for any externalities.
+message Money {
+  //- @units defines/binding UnitsField
+  //- UnitsField childof MoneyMessage
+  //- UnitsComment.node/kind doc
+  //- UnitsComment.text
+  //-   "💀  💀  💀  NOTICE 💀  💀  💀\n\nDoubloons subject to confiscation\n\n❤️, LeChuck\n"
+  //- UnitsComment documents UnitsField
+  optional string units = 1 [default = "£"];
+  /* 💀  💀  💀  NOTICE 💀  💀  💀
+   *
+   * Doubloons subject to confiscation
+   *
+   * ❤️, LeChuck
+   */
+
+
+  //- AmountField childof _AmountMessage
+  //- AmountComment.node/kind doc
+  //- AmountComment.text
+  //-   "this can be many useful values from ℤ\nbut you'll probably be happier if it's also in ℕ"
+  //- AmountComment documents AmountField
+  //- @+4"amount" defines/binding AmountField
+
+  // this can be many useful values from ℤ
+  // but you'll probably be happier if it's also in ℕ
+  required int64 amount = 2;
+}

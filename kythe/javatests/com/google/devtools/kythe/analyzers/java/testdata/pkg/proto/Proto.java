@@ -20,6 +20,8 @@ public class Proto {
                   //- @setNestedBool ref JavaSetNestedBool
                   .setNestedBool(true)
                   .build())
+          //- @setOneofString ref JavaSetOneofString
+          .setOneofString("hello")
           .build();
 
   static void getFields() {
@@ -55,4 +57,6 @@ public class Proto {
   //- NestedString generates JavaGetNestedString
   //- NestedBool generates JavaSetNestedBool
   //- NestedBool generates JavaGetNestedBool
+
+  //- OneofString generates JavaSetOneofString
 }

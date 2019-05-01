@@ -18,6 +18,7 @@
 #define KYTHE_CXX_COMMON_KZIP_WRITER_H_
 
 #include <zip.h>
+
 #include <unordered_map>
 
 #include "absl/strings/string_view.h"

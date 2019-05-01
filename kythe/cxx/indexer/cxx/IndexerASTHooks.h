@@ -24,6 +24,8 @@
 #include <unordered_set>
 #include <utility>
 
+#include "GraphObserver.h"
+#include "IndexerLibrarySupport.h"
 #include "absl/memory/memory.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
@@ -33,9 +35,6 @@
 #include "clang/Sema/SemaConsumer.h"
 #include "clang/Sema/Template.h"
 #include "glog/logging.h"
-
-#include "GraphObserver.h"
-#include "IndexerLibrarySupport.h"
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
@@ -341,7 +340,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
-      const clang::TemplateArgumentLoc& Arg, EmitRanges ER);
+      const clang::TemplateArgumentLoc& Arg, EmitRanges EmitRanges);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
@@ -368,13 +367,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// function template instantiation.
   absl::optional<GraphObserver::NodeId>
   BuildNodeIdForImplicitFunctionTemplateInstantiation(
-      const clang::FunctionDecl* Decl);
+      const clang::FunctionDecl* FD);
 
   /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
   /// class template instantiation.
   absl::optional<GraphObserver::NodeId>
   BuildNodeIdForImplicitClassTemplateInstantiation(
-      const clang::ClassTemplateSpecializationDecl* Decl);
+      const clang::ClassTemplateSpecializationDecl* CTSD);
 
   /// \brief Builds a stable node ID for an external reference to `Decl`.
   ///
@@ -413,7 +412,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// \param Decl The declaration that is being identified.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTypedefNameDecl(
-      const clang::TypedefNameDecl* TND);
+      const clang::TypedefNameDecl* Decl);
 
   /// \brief Builds a stable node ID for `Decl`.
   ///
@@ -539,9 +538,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   bool TraverseVarTemplateDecl(clang::VarTemplateDecl* TD);
   bool TraverseVarTemplateSpecializationDecl(
-      clang::VarTemplateSpecializationDecl* VD);
+      clang::VarTemplateSpecializationDecl* TD);
   bool ForceTraverseVarTemplateSpecializationDecl(
-      clang::VarTemplateSpecializationDecl* VD);
+      clang::VarTemplateSpecializationDecl* TD);
   bool TraverseVarTemplatePartialSpecializationDecl(
       clang::VarTemplatePartialSpecializationDecl* TD);
 
@@ -567,6 +566,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief Records the range of a definition. If the range cannot be placed
   /// somewhere inside a source file, no record is made.
   void MaybeRecordDefinitionRange(
+      const absl::optional<GraphObserver::Range>& R,
+      const GraphObserver::NodeId& Id,
+      const absl::optional<GraphObserver::NodeId>& DeclId);
+
+  /// \brief Records the full range of a definition. If the range cannot be
+  /// placed somewhere inside a source file, no record is made.
+  void MaybeRecordFullDefinitionRange(
       const absl::optional<GraphObserver::Range>& R,
       const GraphObserver::NodeId& Id,
       const absl::optional<GraphObserver::NodeId>& DeclId);
@@ -705,7 +711,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Handle the file-level comments for `Id` with node ID `FileId`.
   void HandleFileLevelComments(clang::FileID Id,
-                               const GraphObserver::NodeId& FileId);
+                               const GraphObserver::NodeId& FileNode);
 
   /// \brief Emit data for `Comment` that documents `DocumentedNode`, using
   /// `DC` for lookups.

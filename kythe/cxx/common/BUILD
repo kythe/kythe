@@ -68,6 +68,15 @@ cc_test(
 )
 
 cc_library(
+    name = "file_utils",
+    srcs = ["file_utils.cc"],
+    hdrs = ["file_utils.h"],
+    deps = [
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
     name = "vname_ordering",
     hdrs = ["vname_ordering.h"],
     visibility = [PUBLIC_VISIBILITY],

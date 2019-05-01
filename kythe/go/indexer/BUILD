@@ -49,6 +49,11 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "deprecation_test",
+    srcs = ["testdata/basic/deprecation.go"],
+)
+
+go_indexer_test(
     name = "filenode_test",
     srcs = ["testdata/basic/filenode.go"],
     import_path = "test/basic",

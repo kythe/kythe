@@ -1,7 +1,7 @@
 load("//tools/build_rules/verifier_test:cc_indexer_test.bzl", "cc_extract_kzip", "cc_index", "cc_kythe_proto_library")
 load("//tools/build_rules/verifier_test:verifier_test.bzl", "index_compilation", "verifier_test")
 load(
-    "@io_kythe_lang_proto//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl",
+    "//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl",
     "proto_extract_kzip",
 )
 
@@ -37,7 +37,7 @@ def cc_proto_verifier_test(
     proto_entries = _invoke(
         index_compilation,
         name = name + "_proto_entries",
-        indexer = "@io_kythe_lang_proto//kythe/cxx/indexer/proto:indexer",
+        indexer = "//kythe/cxx/indexer/proto:indexer",
         opts = ["--index_file"],
         deps = [proto_kzip],
     )

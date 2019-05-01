@@ -17,6 +17,7 @@
 #include "kythe/cxx/common/kzip_writer.h"
 
 #include <openssl/sha.h>
+
 #include <array>
 #include <string>
 #include <tuple>
@@ -112,7 +113,7 @@ StatusOr<std::string> KzipWriter::WriteUnit(
     initialized_ = true;
   }
   if (auto json = WriteMessageAsJsonToString(unit)) {
-    auto file = InsertFile(kUnitRoot, std::move(*json));
+    auto file = InsertFile(kUnitRoot, *json);
     if (file.inserted()) {
       auto status = WriteTextFile(archive_, file.path(), file.contents());
       if (!status.ok()) {

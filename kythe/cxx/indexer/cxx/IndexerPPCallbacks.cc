@@ -17,8 +17,8 @@
 // This file uses the Clang style conventions.
 
 #include "IndexerPPCallbacks.h"
-#include "GraphObserver.h"
 
+#include "GraphObserver.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/PPCallbacks.h"
@@ -345,7 +345,7 @@ void IndexerPPCallbacks::HandleKytheInlineMetadataPragma(
   clang::Token tok;
   if (!preprocessor.LexStringLiteral(tok, search_string,
                                      "pragma kythe_inline_metadata",
-                                     /*MacroExpansion=*/true)) {
+                                     /*AllowMacroExpansion=*/true)) {
     return;
   }
   if (search_string.empty()) {

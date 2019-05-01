@@ -157,6 +157,7 @@ cc_library(
         ":path_utils",
         ":supported_language",
         "//external:zlib",
+        "//kythe/cxx/common:file_utils",
         "//kythe/cxx/common:index_writer",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:kzip_writer",

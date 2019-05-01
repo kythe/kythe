@@ -243,8 +243,8 @@ def _java_dependencies():
     maybe(
         native.maven_jar,
         name = "com_google_truth_truth",
-        artifact = "com.google.truth:truth:0.41",
-        sha1 = "846cd094934911f635ba2dadc016d538b8c30927",
+        artifact = "com.google.truth:truth:0.44",
+        sha1 = "11eff954c0c14da7d43276d7b3bcf71463105368",
     )
 
     maybe(
@@ -518,9 +518,9 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_minio_highwayhash",
-        commit = "85fc8a2dacad36a6beb2865793cd81363a496696",
         custom = "highwayhash",
         importpath = "github.com/minio/highwayhash",
+        tag = "v1.0.0",
     )
 
     maybe(
@@ -664,13 +664,6 @@ def _bindings():
         actual = "@net_zlib//:zlib",
     )
 
-def _kythe_contributions():
-    git_repository(
-        name = "io_kythe_lang_proto",
-        commit = "e9b68f1708ebeb4c11e0a7ff155ab0a5480d3a35",
-        remote = "https://github.com/kythe/lang-proto",
-    )
-
 def _extractor_image_dependencies():
     """Defines external repositories necessary for extractor images."""
     maybe(
@@ -702,7 +695,6 @@ def kythe_dependencies():
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
-    _kythe_contributions()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
@@ -710,9 +702,9 @@ def kythe_dependencies():
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "48a01655a0ce6ee5cf22cf182bab285951a4cef7f8a9f84db80ec0f8145546c6",
-        strip_prefix = "protobuf-2d0183ab58706a919f138e6920e33e3b76eb62f6",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/2d0183ab58706a919f138e6920e33e3b76eb62f6.zip"],
+        sha256 = "ef62ee52bedc3a0ec0aeb7911279243119d53eac7f8bbbec833761c07e802bcb",
+        strip_prefix = "protobuf-8e5ea65953f3c47e01bca360ecf3abdf2c8b1c33",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/8e5ea65953f3c47e01bca360ecf3abdf2c8b1c33.zip"],
     )
 
     maybe(

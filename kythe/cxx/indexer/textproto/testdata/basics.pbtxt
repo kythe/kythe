@@ -1,0 +1,17 @@
+# proto-file: example.proto
+# proto-message: example.Message2
+
+#- @field1 ref Field1
+field1: "hello"
+
+#- @repeated_message ref RepeatedMessage
+repeated_message {
+    #- @str_field ref Message1StrField
+    str_field: "hello"
+}
+
+#- @repeated_message ref RepeatedMessage
+repeated_message {
+    #- @str_field ref Message1StrField
+    str_field: "hello"
+}

@@ -1,0 +1,38 @@
+// Test proto for nested messages.
+
+syntax = "proto2";
+
+//- @"package proto_kythe_test;" ref ThePackage
+package proto_kythe_test;
+option java_package = "io.kythe";
+
+//- @ParentMessage defines/binding ParentMessageNode
+//- ParentMessageNode childof ThePackage
+//- ParentMessageNode code PMRoot
+//- PMRoot child.0 PMContext
+//- PMRoot child.1 PMIdent
+//- PMIdent.kind "IDENTIFIER"
+//- PMIdent.pre_text "ParentMessage"
+//- PMContext.kind "CONTEXT"
+//- PMContext child.0 PMContext0
+//- PMContext0.pre_text "proto_kythe_test"
+message ParentMessage {
+  //- @NestedMessage defines/binding NestedMessageNode
+  //- NestedMessageNode childof ParentMessageNode
+  //- NestedMessageNode code NMRoot
+  //- NMRoot child.0 NMContext
+  //- NMRoot child.1 NMIdent
+  //- NMIdent.pre_text "NestedMessage"
+  //- NMContext child.1 NMContext1
+  //- NMContext1.pre_text "ParentMessage"
+  message NestedMessage {
+    //- @test defines/binding TestFieldNode
+    //- TestFieldNode childof NestedMessageNode
+    required string test = 1;
+  }
+  //- @NestedMessage ref NestedMessageNode
+  //- @field_name defines/binding NamedFieldNode
+  //- NamedFieldNode childof ParentMessageNode
+  optional NestedMessage field_name = 1;
+}
+

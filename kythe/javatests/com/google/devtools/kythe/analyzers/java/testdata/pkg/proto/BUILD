@@ -18,6 +18,10 @@ java_proto_verifier_test(
     name = "proto",
     srcs = ["Proto.java"],
     proto_srcs = ["testdata.proto"],
+    verifier_opts = [
+        "--ignore_dups",
+        "--check_for_singletons=false",
+    ],
 )
 
 java_proto_verifier_test(
