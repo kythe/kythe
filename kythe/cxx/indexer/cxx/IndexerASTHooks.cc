@@ -541,13 +541,18 @@ clang::SourceRange IndexerASTVisitor::RangeForSingleToken(
 void IndexerASTVisitor::MaybeRecordDefinitionRange(
     const absl::optional<GraphObserver::Range>& R,
     const GraphObserver::NodeId& Id,
-    const absl::optional<GraphObserver::NodeId>& DeclId,
-    const absl::optional<GraphObserver::Range>& FullDefinition) {
+    const absl::optional<GraphObserver::NodeId>& DeclId) {
   if (R) {
     Observer.recordDefinitionBindingRange(R.value(), Id, DeclId);
-    if (FullDefinition) {
-      Observer.recordFullDefinitionRange(FullDefinition.value(), Id, DeclId);
-    }
+  }
+}
+
+void IndexerASTVisitor::MaybeRecordFullDefinitionRange(
+    const absl::optional<GraphObserver::Range>& R,
+    const GraphObserver::NodeId& Id,
+    const absl::optional<GraphObserver::NodeId>& DeclId) {
+  if (R) {
+    Observer.recordFullDefinitionRange(R.value(), Id, DeclId);
   }
 }
 
@@ -2939,20 +2944,19 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   }
 
   bool IsFunctionDefinition = IsDefinition(Decl);
-  if (!IsFunctionDefinition || Decl->isImplicit() ||
-      Decl->getBody() == nullptr) {
-    MaybeRecordDefinitionRange(NameRangeInContext, OuterNode,
-                               BuildNodeIdForDefnOfDecl(Decl));
-  } else {
+  MaybeRecordDefinitionRange(NameRangeInContext, OuterNode,
+                             BuildNodeIdForDefnOfDecl(Decl));
+
+  if (IsFunctionDefinition && !Decl->isImplicit() &&
+      Decl->getBody() != nullptr) {
     SourceRange DefinitionRange(
         TemplateKeywordLoc.isValid() ? TemplateKeywordLoc
                                      : Decl->getSourceRange().getBegin(),
         RangeForASTEntity(Decl->getSourceRange().getEnd()).getEnd());
     auto DefinitionRangeInContext =
         RangeInCurrentContext(Decl->isImplicit(), OuterNode, DefinitionRange);
-    MaybeRecordDefinitionRange(NameRangeInContext, OuterNode,
-                               BuildNodeIdForDefnOfDecl(Decl),
-                               DefinitionRangeInContext);
+    MaybeRecordFullDefinitionRange(DefinitionRangeInContext, OuterNode,
+                                   BuildNodeIdForDefnOfDecl(Decl));
   }
   unsigned ParamNumber = 0;
   for (const auto* Param : Decl->parameters()) {
