@@ -145,9 +145,9 @@ public class ExtractorUtilsTest extends TestCase {
 
     CompilationUnit output = ExtractorUtils.normalizeCompilationUnit(unit);
     assertThat(output.getVName().getSignature()).isEqualTo(unit.getVName().getSignature());
-    assertThat(output.getArgumentList()).isSameAs(unit.getArgumentList());
+    assertThat(output.getArgumentList()).isSameInstanceAs(unit.getArgumentList());
     assertThat(output.getOutputKey()).isEqualTo(unit.getOutputKey());
-    assertThat(output.getSourceFileList()).isSameAs(unit.getSourceFileList());
+    assertThat(output.getSourceFileList()).isSameInstanceAs(unit.getSourceFileList());
     assertThat(output.getRequiredInputCount()).isEqualTo(2);
 
     CompilationUnit.FileInput cfi0 = output.getRequiredInput(0);
