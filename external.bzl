@@ -243,8 +243,8 @@ def _java_dependencies():
     maybe(
         native.maven_jar,
         name = "com_google_truth_truth",
-        artifact = "com.google.truth:truth:0.41",
-        sha1 = "846cd094934911f635ba2dadc016d538b8c30927",
+        artifact = "com.google.truth:truth:0.44",
+        sha1 = "11eff954c0c14da7d43276d7b3bcf71463105368",
     )
 
     maybe(
