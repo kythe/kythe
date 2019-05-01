@@ -980,6 +980,12 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "function_defines",
+    srcs = ["function/function_defines.cc"],
+    tags = ["function"],
+)
+
+cc_indexer_test(
     name = "function_direct_call",
     srcs = ["function/function_direct_call.cc"],
     tags = ["function"],
@@ -1070,6 +1076,12 @@ cc_indexer_test(
 cc_indexer_test(
     name = "function_member_conversion",
     srcs = ["function/function_member_conversion.cc"],
+    tags = ["function"],
+)
+
+cc_indexer_test(
+    name = "function_member_defines",
+    srcs = ["function/function_member_defines.cc"],
     tags = ["function"],
 )
 
@@ -2112,6 +2124,12 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_fn_decl_defn",
     srcs = ["template/template_fn_decl_defn.cc"],
+    tags = ["template"],
+)
+
+cc_indexer_test(
+    name = "template_fn_defines",
+    srcs = ["template/template_fn_defines.cc"],
     tags = ["template"],
 )
 
