@@ -570,6 +570,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
       const GraphObserver::NodeId& Id,
       const absl::optional<GraphObserver::NodeId>& DeclId);
 
+  /// \brief Records the full range of a definition. If the range cannot be
+  /// placed somewhere inside a source file, no record is made.
+  void MaybeRecordFullDefinitionRange(
+      const absl::optional<GraphObserver::Range>& R,
+      const GraphObserver::NodeId& Id,
+      const absl::optional<GraphObserver::NodeId>& DeclId);
+
   /// \brief Returns the attached GraphObserver.
   GraphObserver& getGraphObserver() { return Observer; }
 
