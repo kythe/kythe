@@ -2,10 +2,15 @@ workspace(name = "io_kythe")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
-load("//:version.bzl", "check_version")
+load("//:version.bzl", "check_version", "blacklist_version")
 
 # Check that the user has a version between our minimum supported version of
-# Bazel and our maximum supported version of Bazel.
+# Bazel and our maximum supported version of Bazel, and not one of the known-bad releases.
+blacklist_version(
+    reason = "Broken cc_common.compile API: https://github.com/bazelbuild/bazel/issues/8226",
+    version = "0.25.0",
+)
+
 check_version("0.22", "0.24")
 
 http_archive(

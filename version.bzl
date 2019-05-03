@@ -32,3 +32,13 @@ def check_version(min_required, max_supported):
     max = _parse_version(max_supported)
     if max < _bound_size(found_version, len(max)):
         fail("Your bazel is too new. Maximum supported version {} of bazel, found {}".format(max_supported, found))
+
+def blacklist_version(version, reason):
+    found = _parse_version(native.bazel_version)
+    if found == _parse_version(version):
+        fail("\n".join([
+            "You're using a blacklisted version of Bazel ({}).".format(native.bazel_version),
+            "Please upgrade or downgrade to a supported release.",
+            "The version of Bazel you're using is incompatible with Kythe because:",
+            reason,
+        ]))
