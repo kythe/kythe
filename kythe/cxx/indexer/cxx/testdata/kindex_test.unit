@@ -31,3 +31,4 @@ argument: "/fake/test.cc"
 has_compile_errors: false
 source_file: "/fake/test.cc"
 output_key: "/fake-out/test.o"
+working_directory: "/"
