@@ -50,7 +50,8 @@ int main(int argc, char** argv) {
   ::gflags::SetVersionString("0.1");
   ::gflags::SetUsageMessage(R"(Verification tool for Kythe databases.
 Reads Kythe facts from standard input and checks them against one or more rule
-files. See the DESIGN file for more details on invocation and rule syntax.
+files. See https://kythe.io/docs/kythe-verifier.html for more details on
+invocation and rule syntax.
 
 Example:
   ${INDEXER_BIN} -i $1 | ${VERIFIER_BIN} --show_protos --show_goals $1
