@@ -444,7 +444,8 @@ set -o pipefail
 # Read JSON entries from standard in and pass them to the verifier.
 # The entrystream tool turns the JSON into length-delimited protocol buffers,
 # described at http://godoc.org/kythe.io/kythe/go/platform/delimited
-/opt/kythe/tools/entrystream --read_json | /opt/kythe/tools/verifier "$@"
+/opt/kythe/tools/entrystream --read_format=json | \
+/opt/kythe/tools/verifier --nofile_vnames --nocheck_for_singletons "$@"
 ----
 
 We can write a rule file that checks whether we have any file nodes at all and
