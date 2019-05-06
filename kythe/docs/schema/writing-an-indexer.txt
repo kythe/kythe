@@ -444,7 +444,8 @@ set -o pipefail
 # Read JSON entries from standard in and pass them to the verifier.
 # The entrystream tool turns the JSON into length-delimited protocol buffers,
 # described at http://godoc.org/kythe.io/kythe/go/platform/delimited
-/opt/kythe/tools/entrystream --read_json | /opt/kythe/tools/verifier "$@"
+/opt/kythe/tools/entrystream --read_format=json | \
+/opt/kythe/tools/verifier --nofile_vnames "$@"
 ----
 
 We can write a rule file that checks whether we have any file nodes at all and
@@ -452,7 +453,7 @@ call it `test.goals`:
 
 [source,c]
 ----
-//- FileNode.node/kind file
+//- FileNode?.node/kind file
 ----
 
 The `//-` prefix tells the verifier which lines to look for goals on. It's meant
@@ -481,7 +482,7 @@ and asked for a node with kind `elif` instead:
 
 [source,c]
 ----
-//- FileNode.node/kind elif
+//- FileNode?.node/kind elif
 ----
 
 the verifier will protest (and return a nonzero exit code):

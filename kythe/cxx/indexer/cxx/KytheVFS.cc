@@ -46,6 +46,8 @@ IndexVFS::IndexVFS(const std::string& working_directory,
   for (llvm::StringRef dir : virtual_dirs) {
     FileRecordForPath(dir, BehaviorOnMissing::kCreateDirectory, 0);
   }
+  // Clang always expects to be able to find a directory at .
+  FileRecordForPath(".", BehaviorOnMissing::kCreateDirectory, 0);
 }
 
 IndexVFS::~IndexVFS() {
