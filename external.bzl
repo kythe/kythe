@@ -687,7 +687,7 @@ def _sample_ui_dependencies():
         version = "2.5.3",
     )
 
-def kythe_dependencies():
+def kythe_dependencies(sample_ui = True):
     """Defines external repositories for Kythe dependencies.
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
@@ -716,6 +716,7 @@ def kythe_dependencies():
     )
 
     _rule_dependencies()
-    _sample_ui_dependencies()
+    if sample_ui:
+        _sample_ui_dependencies()
     _bindings()
     _extractor_image_dependencies()
