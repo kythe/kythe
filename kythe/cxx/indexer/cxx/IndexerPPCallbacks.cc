@@ -19,6 +19,7 @@
 #include "IndexerPPCallbacks.h"
 
 #include "GraphObserver.h"
+#include "absl/strings/str_format.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/PPCallbacks.h"
@@ -326,7 +327,7 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
   const auto* file = cxx_extractor::LookupFileForIncludePragma(
       &preprocessor, &search_path, &relative_path, &filename);
   if (!file) {
-    fprintf(stderr, "Missing metadata file: %s\n", filename.c_str());
+    absl::FPrintF(stderr, "Missing metadata file: %s\n", filename.str());
     return;
   }
   clang::FileID pragma_file_id =
@@ -334,7 +335,7 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
   if (!pragma_file_id.isInvalid()) {
     Observer.applyMetadataFile(pragma_file_id, file, "");
   } else {
-    fprintf(stderr, "Metadata pragma was in an impossible place\n");
+    absl::FPrintF(stderr, "Metadata pragma was in an impossible place\n");
   }
 }
 

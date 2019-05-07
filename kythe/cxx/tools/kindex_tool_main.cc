@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/match.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -277,7 +278,7 @@ kindex_tool -assemble some/file.kindex some/unit some/content...
     std::vector<std::string> constituent_parts(argv + 1, argv + argc);
     BuildIndexFile(FLAGS_assemble, constituent_parts);
   } else {
-    fprintf(stderr, "Specify either -assemble or -explode.\n");
+    absl::FPrintF(stderr, "Specify either -assemble or -explode.\n");
     return -1;
   }
   return 0;

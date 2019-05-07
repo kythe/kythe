@@ -22,6 +22,7 @@
 
 #include "KytheGraphObserver.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
@@ -101,8 +102,9 @@ bool DecodeHeaderSearchInfo(const proto::CxxCompilationUnitDetails& Details,
     return false;
   }
   if (!Info.CopyFrom(Details)) {
-    fprintf(stderr,
-            "Warning: unit has header search info, but it is ill-formed.\n");
+    absl::FPrintF(
+        stderr,
+        "Warning: unit has header search info, but it is ill-formed.\n");
     return false;
   }
   return true;

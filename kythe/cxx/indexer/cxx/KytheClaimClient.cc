@@ -19,6 +19,8 @@
 #include <libmemcached/memcached.h>
 #include <openssl/sha.h>
 
+#include "absl/strings/str_format.h"
+
 namespace kythe {
 namespace {
 constexpr char kArbitraryClaimantRoot[] = "KytheClaimClient";
@@ -58,7 +60,7 @@ DynamicClaimClient::~DynamicClaimClient() {
     memcached_free(cache_);
     cache_ = nullptr;
   }
-  fprintf(
+  absl::FPrintF(
       stderr, "%8lu  %8lu claims approved/rejected (%f reject fraction)\n",
       request_count_ - rejected_requests_, rejected_requests_,
       request_count_ == 0 ? 0.0 : (double)rejected_requests_ / request_count_);
@@ -118,8 +120,8 @@ bool DynamicClaimClient::Claim(const kythe::proto::VName& claimant,
       if (!memcached_success(add_result) &&
           add_result != MEMCACHED_DATA_EXISTS) {
         // We'll also pass the check below and assume we claimed the vname.
-        fprintf(stderr, "memcached add failed: %s\n",
-                memcached_strerror(cache_, add_result));
+        absl::FPrintF(stderr, "memcached add failed: %s\n",
+                      memcached_strerror(cache_, add_result));
       }
       if (add_result != MEMCACHED_DATA_EXISTS) {
         claim_table_[vname] = claimant;
