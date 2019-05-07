@@ -8,6 +8,9 @@ def _tuplicate(value, delim):
     return rv
 
 def _parse_version(version):
+    if not version:
+        return ()
+
     # Remove any commit tail.
     version = version.split(" ", 1)[0]
 

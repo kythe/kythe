@@ -15,6 +15,7 @@ build --java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
 
 # Ensure that we do not use an older Java version for the --javabase.
 build --javabase=@bazel_tools//tools/jdk:host_jdk
+build --noincompatible_use_jdk11_as_host_javabase
 
 # Use the RBE instance in the kythe-repo project
 build:remote --remote_instance_name=projects/kythe-repo/instances/default_instance --project_id=kythe-repo
