@@ -70,6 +70,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "absl/strings/str_format.h"
 #include "cxx_extractor.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -201,10 +202,11 @@ int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.2");
   if (argc != 4 && argc != 6) {
-    fprintf(stderr,
-            "Invalid number of arguments:\n\tCall as %s extra-action-file "
-            "output-file vname-config [devdir-script sdkroot-script]\n",
-            argv[0]);
+    absl::FPrintF(
+        stderr,
+        "Invalid number of arguments:\n\tCall as %s extra-action-file "
+        "output-file vname-config [devdir-script sdkroot-script]\n",
+        argv[0]);
     return 1;
   }
   XAState xa_state;

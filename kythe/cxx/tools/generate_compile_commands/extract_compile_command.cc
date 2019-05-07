@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
@@ -100,7 +101,7 @@ int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   if (argc != 3) {
-    fprintf(stderr, "usage: %s extra-action-file output-file\n", argv[0]);
+    absl::FPrintF(stderr, "usage: %s extra-action-file output-file\n", argv[0]);
     return 1;
   }
   std::string extra_action_file = argv[1];
