@@ -152,6 +152,7 @@ genrule(
       OUTS=($(OUTS))
       for i in "$${!SRCS[@]}"; do
         cp $${SRCS[$$i]} $${OUTS[$$i]}
+        echo cp $${SRCS[$$i]} $${OUTS[$$i]}
       done""",
     output_to_bindir = True,
 )
@@ -159,6 +160,7 @@ genrule(
 cc_resources(
     name = "clang_builtin_headers_resources",
     data = [":builtin_headers_gen"],
+    strip = "staging/include/",
 )
 
 load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "cmake_defines", "LLVM_TARGETS")
