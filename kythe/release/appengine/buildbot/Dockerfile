@@ -30,7 +30,7 @@ RUN apt-get update && \
       # Bazel dependencies
       pkg-config zip g++ zlib1g-dev unzip \
       # Kythe C++ dependencies
-      cmake gcc libssl-dev uuid-dev libcurl4-openssl-dev flex clang-3.8 bison \
+      gcc uuid-dev flex clang-3.8 bison \
       # Kythe misc dependencies
       asciidoc source-highlight graphviz curl parallel && \
     apt-get clean
