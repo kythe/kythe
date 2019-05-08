@@ -31,16 +31,13 @@ Kythe relies on the following external dependencies:
 
 * asciidoc
 * bison-3.0.4
-* clang >= 3.6
-* cmake >= 3.4.3
+* clang >= 3.8
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
 * flex-2.5
 * go >= 1.7
 * graphviz
 * jdk >= 8
 * [leiningen](http://leiningen.org/) (used to build `//kythe/web/ui`)
-* libcurl4-openssl-dev
-* libssl-dev
 * node.js
 * parallel
 * source-highlight
@@ -60,7 +57,7 @@ apt-get update
 
 apt-get install \
     asciidoc asciidoctor source-highlight graphviz \
-    gcc libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.6 bison \
+    gcc uuid-dev libncurses-dev flex clang-3.8 bison \
     openjdk-8-jdk \
     parallel \
     wget
@@ -74,14 +71,14 @@ You must either have `/usr/bin/clang` aliased properly, or the `CC` env var set
 for Bazel:
 
 {% highlight bash %}
-echo 'build --client_env=CC=/usr/bin/clang-3.6' >>~/.bazelrc
+echo 'build --client_env=CC=/usr/bin/clang-3.8' >>~/.bazelrc
 {% endhighlight %}
 
 OR:
 
 {% highlight bash %}
-sudo ln -s /usr/bin/clang-3.6 /usr/bin/clang
-sudo ln -s /usr/bin/clang++-3.6 /usr/bin/clang++
+sudo ln -s /usr/bin/clang-3.8 /usr/bin/clang
+sudo ln -s /usr/bin/clang++-3.8 /usr/bin/clang++
 {% endhighlight %}
 
 OR:
