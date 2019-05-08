@@ -152,7 +152,6 @@ genrule(
       OUTS=($(OUTS))
       for i in "$${!SRCS[@]}"; do
         cp $${SRCS[$$i]} $${OUTS[$$i]}
-        echo cp $${SRCS[$$i]} $${OUTS[$$i]}
       done""",
     output_to_bindir = True,
 )
