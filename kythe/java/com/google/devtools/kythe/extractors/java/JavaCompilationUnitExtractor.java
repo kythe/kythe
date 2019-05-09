@@ -493,10 +493,14 @@ public class JavaCompilationUnitExtractor {
     }
     String path = uri.getRawSchemeSpecificPart();
 
+
     // If the file was part of the JDK we do not store it as the JDK is tied
     // to the analyzer we'll run on this information later on.
     if ((isJarPath && jarPath.startsWith(jdkJar)) || path.startsWith(JDK_MODULE_PREFIX)) {
       return;
+    }
+    if (path.contains("Generated.class")) {
+      logger.atWarning().log("Including JDK class: %s (path: %s)", uri, path);
     }
 
     // Make the path relative to the indexer (e.g. a subdir of corpus/).

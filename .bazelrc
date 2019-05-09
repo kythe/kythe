@@ -10,12 +10,11 @@ build --client_env=CC=clang
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env
 
-# By default, compile for Java 8
+# By default, compile for Java 8, run on Java 11
 build --java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
-
-# Ensure that we do not use an older Java version for the --javabase.
-build --javabase=@bazel_tools//tools/jdk:host_jdk
-build --noincompatible_use_jdk11_as_host_javabase
+build --javabase=@bazel_tools//tools/jdk:remote_jdk11
+build --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
+build --host_javabase=@bazel_tools//tools/jdk:remote_jdk11
 
 # Use the RBE instance in the kythe-repo project
 build:remote --remote_instance_name=projects/kythe-repo/instances/default_instance --project_id=kythe-repo
@@ -39,17 +38,20 @@ build:remote --strategy=Closure=remote
 build:remote --genrule_strategy=remote
 build:remote --define=EXECUTOR=remote
 
+build:remote --host_javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.2:jdk11
+build:remote --javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.2:jdk11
+build:remote --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
+build:remote --java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
+
+build:remote --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+build:remote --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/1.2/bazel_0.25.0/default:toolchain
+build:remote --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/1.2/bazel_0.25.0/cpp:cc-toolchain-clang-x86_64-default
+
 build:remote --extra_execution_platforms=//tools/platforms:rbe
 build:remote --host_platform=//tools/platforms:rbe
 build:remote --platforms=//tools/platforms:rbe
 
-build:remote --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
-build:remote --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.22.0/default:toolchain
-build:remote --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/1.1/bazel_0.22.0/cpp:cc-toolchain-clang-x86_64-default
-
 build:remote --extra_toolchains=@io_kythe//tools/build_rules/lexyacc:lexyacc_remote_toolchain
-
-build:remote --javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.1:jdk10
 
 build:remote --action_env=LEIN_JAVA_CMD=
 

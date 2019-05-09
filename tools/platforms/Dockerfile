@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # docker build -t gcr.io/kythe-repo/kythe-builder .
-FROM gcr.io/cloud-marketplace/google/rbe-ubuntu16-04@sha256:9bd8ba020af33edb5f11eff0af2f63b3bcb168cd6566d7b27c6685e717787928
+FROM gcr.io/cloud-marketplace/google/rbe-ubuntu16-04@sha256:da0f21c71abce3bbb92c3a0c44c3737f007a82b60f8bd2930abc55fe64fc2729
 
 RUN apt-get update && \
     apt-get install -y \
