@@ -36,5 +36,5 @@ java_binary(
         "testdata/processor/SillyProcessor.java",
     ],
     create_executable = 0,
-    deps = ["@bazel_tools//tools/jdk:langtools-neverlink"],
+    deps = ["//third_party/javac"],
 )
