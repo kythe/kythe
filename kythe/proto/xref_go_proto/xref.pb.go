@@ -3,10 +3,12 @@
 
 package xref_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import common_go_proto "kythe.io/kythe/proto/common_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	common_go_proto "kythe.io/kythe/proto/common_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type SnippetsKind int32
 
@@ -30,6 +32,7 @@ var SnippetsKind_name = map[int32]string{
 	0: "NONE",
 	1: "DEFAULT",
 }
+
 var SnippetsKind_value = map[string]int32{
 	"NONE":    0,
 	"DEFAULT": 1,
@@ -38,8 +41,9 @@ var SnippetsKind_value = map[string]int32{
 func (x SnippetsKind) String() string {
 	return proto.EnumName(SnippetsKind_name, int32(x))
 }
+
 func (SnippetsKind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{0}
+	return fileDescriptor_c0b69b838b524f8a, []int{0}
 }
 
 type Location_Kind int32
@@ -53,6 +57,7 @@ var Location_Kind_name = map[int32]string{
 	0: "FILE",
 	1: "SPAN",
 }
+
 var Location_Kind_value = map[string]int32{
 	"FILE": 0,
 	"SPAN": 1,
@@ -61,8 +66,9 @@ var Location_Kind_value = map[string]int32{
 func (x Location_Kind) String() string {
 	return proto.EnumName(Location_Kind_name, int32(x))
 }
+
 func (Location_Kind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{0, 0}
+	return fileDescriptor_c0b69b838b524f8a, []int{0, 0}
 }
 
 type DecorationsRequest_SpanKind int32
@@ -76,6 +82,7 @@ var DecorationsRequest_SpanKind_name = map[int32]string{
 	0: "WITHIN_SPAN",
 	1: "AROUND_SPAN",
 }
+
 var DecorationsRequest_SpanKind_value = map[string]int32{
 	"WITHIN_SPAN": 0,
 	"AROUND_SPAN": 1,
@@ -84,8 +91,9 @@ var DecorationsRequest_SpanKind_value = map[string]int32{
 func (x DecorationsRequest_SpanKind) String() string {
 	return proto.EnumName(DecorationsRequest_SpanKind_name, int32(x))
 }
+
 func (DecorationsRequest_SpanKind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{1, 0}
+	return fileDescriptor_c0b69b838b524f8a, []int{1, 0}
 }
 
 type DecorationsReply_Override_Kind int32
@@ -99,6 +107,7 @@ var DecorationsReply_Override_Kind_name = map[int32]string{
 	0: "OVERRIDES",
 	1: "EXTENDS",
 }
+
 var DecorationsReply_Override_Kind_value = map[string]int32{
 	"OVERRIDES": 0,
 	"EXTENDS":   1,
@@ -107,8 +116,9 @@ var DecorationsReply_Override_Kind_value = map[string]int32{
 func (x DecorationsReply_Override_Kind) String() string {
 	return proto.EnumName(DecorationsReply_Override_Kind_name, int32(x))
 }
+
 func (DecorationsReply_Override_Kind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{2, 1, 0}
+	return fileDescriptor_c0b69b838b524f8a, []int{2, 1, 0}
 }
 
 type CrossReferencesRequest_DefinitionKind int32
@@ -126,6 +136,7 @@ var CrossReferencesRequest_DefinitionKind_name = map[int32]string{
 	2: "FULL_DEFINITIONS",
 	3: "BINDING_DEFINITIONS",
 }
+
 var CrossReferencesRequest_DefinitionKind_value = map[string]int32{
 	"NO_DEFINITIONS":      0,
 	"ALL_DEFINITIONS":     1,
@@ -136,8 +147,9 @@ var CrossReferencesRequest_DefinitionKind_value = map[string]int32{
 func (x CrossReferencesRequest_DefinitionKind) String() string {
 	return proto.EnumName(CrossReferencesRequest_DefinitionKind_name, int32(x))
 }
+
 func (CrossReferencesRequest_DefinitionKind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{3, 0}
+	return fileDescriptor_c0b69b838b524f8a, []int{3, 0}
 }
 
 type CrossReferencesRequest_DeclarationKind int32
@@ -151,6 +163,7 @@ var CrossReferencesRequest_DeclarationKind_name = map[int32]string{
 	0: "NO_DECLARATIONS",
 	1: "ALL_DECLARATIONS",
 }
+
 var CrossReferencesRequest_DeclarationKind_value = map[string]int32{
 	"NO_DECLARATIONS":  0,
 	"ALL_DECLARATIONS": 1,
@@ -159,8 +172,9 @@ var CrossReferencesRequest_DeclarationKind_value = map[string]int32{
 func (x CrossReferencesRequest_DeclarationKind) String() string {
 	return proto.EnumName(CrossReferencesRequest_DeclarationKind_name, int32(x))
 }
+
 func (CrossReferencesRequest_DeclarationKind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{3, 1}
+	return fileDescriptor_c0b69b838b524f8a, []int{3, 1}
 }
 
 type CrossReferencesRequest_ReferenceKind int32
@@ -178,6 +192,7 @@ var CrossReferencesRequest_ReferenceKind_name = map[int32]string{
 	2: "NON_CALL_REFERENCES",
 	3: "ALL_REFERENCES",
 }
+
 var CrossReferencesRequest_ReferenceKind_value = map[string]int32{
 	"NO_REFERENCES":       0,
 	"CALL_REFERENCES":     1,
@@ -188,8 +203,9 @@ var CrossReferencesRequest_ReferenceKind_value = map[string]int32{
 func (x CrossReferencesRequest_ReferenceKind) String() string {
 	return proto.EnumName(CrossReferencesRequest_ReferenceKind_name, int32(x))
 }
+
 func (CrossReferencesRequest_ReferenceKind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{3, 2}
+	return fileDescriptor_c0b69b838b524f8a, []int{3, 2}
 }
 
 type CrossReferencesRequest_CallerKind int32
@@ -205,6 +221,7 @@ var CrossReferencesRequest_CallerKind_name = map[int32]string{
 	1: "DIRECT_CALLERS",
 	2: "OVERRIDE_CALLERS",
 }
+
 var CrossReferencesRequest_CallerKind_value = map[string]int32{
 	"NO_CALLERS":       0,
 	"DIRECT_CALLERS":   1,
@@ -214,8 +231,9 @@ var CrossReferencesRequest_CallerKind_value = map[string]int32{
 func (x CrossReferencesRequest_CallerKind) String() string {
 	return proto.EnumName(CrossReferencesRequest_CallerKind_name, int32(x))
 }
+
 func (CrossReferencesRequest_CallerKind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{3, 3}
+	return fileDescriptor_c0b69b838b524f8a, []int{3, 3}
 }
 
 type Location struct {
@@ -231,16 +249,17 @@ func (m *Location) Reset()         { *m = Location{} }
 func (m *Location) String() string { return proto.CompactTextString(m) }
 func (*Location) ProtoMessage()    {}
 func (*Location) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{0}
+	return fileDescriptor_c0b69b838b524f8a, []int{0}
 }
+
 func (m *Location) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Location.Unmarshal(m, b)
 }
 func (m *Location) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Location.Marshal(b, m, deterministic)
 }
-func (dst *Location) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Location.Merge(dst, src)
+func (m *Location) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Location.Merge(m, src)
 }
 func (m *Location) XXX_Size() int {
 	return xxx_messageInfo_Location.Size(m)
@@ -294,16 +313,17 @@ func (m *DecorationsRequest) Reset()         { *m = DecorationsRequest{} }
 func (m *DecorationsRequest) String() string { return proto.CompactTextString(m) }
 func (*DecorationsRequest) ProtoMessage()    {}
 func (*DecorationsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{1}
+	return fileDescriptor_c0b69b838b524f8a, []int{1}
 }
+
 func (m *DecorationsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecorationsRequest.Unmarshal(m, b)
 }
 func (m *DecorationsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DecorationsRequest.Marshal(b, m, deterministic)
 }
-func (dst *DecorationsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DecorationsRequest.Merge(dst, src)
+func (m *DecorationsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecorationsRequest.Merge(m, src)
 }
 func (m *DecorationsRequest) XXX_Size() int {
 	return xxx_messageInfo_DecorationsRequest.Size(m)
@@ -416,16 +436,17 @@ func (m *DecorationsReply) Reset()         { *m = DecorationsReply{} }
 func (m *DecorationsReply) String() string { return proto.CompactTextString(m) }
 func (*DecorationsReply) ProtoMessage()    {}
 func (*DecorationsReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{2}
+	return fileDescriptor_c0b69b838b524f8a, []int{2}
 }
+
 func (m *DecorationsReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecorationsReply.Unmarshal(m, b)
 }
 func (m *DecorationsReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DecorationsReply.Marshal(b, m, deterministic)
 }
-func (dst *DecorationsReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DecorationsReply.Merge(dst, src)
+func (m *DecorationsReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecorationsReply.Merge(m, src)
 }
 func (m *DecorationsReply) XXX_Size() int {
 	return xxx_messageInfo_DecorationsReply.Size(m)
@@ -508,16 +529,17 @@ func (m *DecorationsReply_Reference) Reset()         { *m = DecorationsReply_Ref
 func (m *DecorationsReply_Reference) String() string { return proto.CompactTextString(m) }
 func (*DecorationsReply_Reference) ProtoMessage()    {}
 func (*DecorationsReply_Reference) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{2, 0}
+	return fileDescriptor_c0b69b838b524f8a, []int{2, 0}
 }
+
 func (m *DecorationsReply_Reference) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecorationsReply_Reference.Unmarshal(m, b)
 }
 func (m *DecorationsReply_Reference) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DecorationsReply_Reference.Marshal(b, m, deterministic)
 }
-func (dst *DecorationsReply_Reference) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DecorationsReply_Reference.Merge(dst, src)
+func (m *DecorationsReply_Reference) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecorationsReply_Reference.Merge(m, src)
 }
 func (m *DecorationsReply_Reference) XXX_Size() int {
 	return xxx_messageInfo_DecorationsReply_Reference.Size(m)
@@ -584,16 +606,17 @@ func (m *DecorationsReply_Override) Reset()         { *m = DecorationsReply_Over
 func (m *DecorationsReply_Override) String() string { return proto.CompactTextString(m) }
 func (*DecorationsReply_Override) ProtoMessage()    {}
 func (*DecorationsReply_Override) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{2, 1}
+	return fileDescriptor_c0b69b838b524f8a, []int{2, 1}
 }
+
 func (m *DecorationsReply_Override) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecorationsReply_Override.Unmarshal(m, b)
 }
 func (m *DecorationsReply_Override) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DecorationsReply_Override.Marshal(b, m, deterministic)
 }
-func (dst *DecorationsReply_Override) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DecorationsReply_Override.Merge(dst, src)
+func (m *DecorationsReply_Override) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecorationsReply_Override.Merge(m, src)
 }
 func (m *DecorationsReply_Override) XXX_Size() int {
 	return xxx_messageInfo_DecorationsReply_Override.Size(m)
@@ -643,16 +666,17 @@ func (m *DecorationsReply_Overrides) Reset()         { *m = DecorationsReply_Ove
 func (m *DecorationsReply_Overrides) String() string { return proto.CompactTextString(m) }
 func (*DecorationsReply_Overrides) ProtoMessage()    {}
 func (*DecorationsReply_Overrides) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{2, 2}
+	return fileDescriptor_c0b69b838b524f8a, []int{2, 2}
 }
+
 func (m *DecorationsReply_Overrides) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecorationsReply_Overrides.Unmarshal(m, b)
 }
 func (m *DecorationsReply_Overrides) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DecorationsReply_Overrides.Marshal(b, m, deterministic)
 }
-func (dst *DecorationsReply_Overrides) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DecorationsReply_Overrides.Merge(dst, src)
+func (m *DecorationsReply_Overrides) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecorationsReply_Overrides.Merge(m, src)
 }
 func (m *DecorationsReply_Overrides) XXX_Size() int {
 	return xxx_messageInfo_DecorationsReply_Overrides.Size(m)
@@ -693,16 +717,17 @@ func (m *CrossReferencesRequest) Reset()         { *m = CrossReferencesRequest{}
 func (m *CrossReferencesRequest) String() string { return proto.CompactTextString(m) }
 func (*CrossReferencesRequest) ProtoMessage()    {}
 func (*CrossReferencesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{3}
+	return fileDescriptor_c0b69b838b524f8a, []int{3}
 }
+
 func (m *CrossReferencesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CrossReferencesRequest.Unmarshal(m, b)
 }
 func (m *CrossReferencesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CrossReferencesRequest.Marshal(b, m, deterministic)
 }
-func (dst *CrossReferencesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CrossReferencesRequest.Merge(dst, src)
+func (m *CrossReferencesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CrossReferencesRequest.Merge(m, src)
 }
 func (m *CrossReferencesRequest) XXX_Size() int {
 	return xxx_messageInfo_CrossReferencesRequest.Size(m)
@@ -821,16 +846,17 @@ func (m *Anchor) Reset()         { *m = Anchor{} }
 func (m *Anchor) String() string { return proto.CompactTextString(m) }
 func (*Anchor) ProtoMessage()    {}
 func (*Anchor) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{4}
+	return fileDescriptor_c0b69b838b524f8a, []int{4}
 }
+
 func (m *Anchor) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Anchor.Unmarshal(m, b)
 }
 func (m *Anchor) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Anchor.Marshal(b, m, deterministic)
 }
-func (dst *Anchor) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Anchor.Merge(dst, src)
+func (m *Anchor) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Anchor.Merge(m, src)
 }
 func (m *Anchor) XXX_Size() int {
 	return xxx_messageInfo_Anchor.Size(m)
@@ -902,16 +928,17 @@ func (m *Printable) Reset()         { *m = Printable{} }
 func (m *Printable) String() string { return proto.CompactTextString(m) }
 func (*Printable) ProtoMessage()    {}
 func (*Printable) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{5}
+	return fileDescriptor_c0b69b838b524f8a, []int{5}
 }
+
 func (m *Printable) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Printable.Unmarshal(m, b)
 }
 func (m *Printable) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Printable.Marshal(b, m, deterministic)
 }
-func (dst *Printable) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Printable.Merge(dst, src)
+func (m *Printable) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Printable.Merge(m, src)
 }
 func (m *Printable) XXX_Size() int {
 	return xxx_messageInfo_Printable.Size(m)
@@ -951,16 +978,17 @@ func (m *CrossReferencesReply) Reset()         { *m = CrossReferencesReply{} }
 func (m *CrossReferencesReply) String() string { return proto.CompactTextString(m) }
 func (*CrossReferencesReply) ProtoMessage()    {}
 func (*CrossReferencesReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{6}
+	return fileDescriptor_c0b69b838b524f8a, []int{6}
 }
+
 func (m *CrossReferencesReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CrossReferencesReply.Unmarshal(m, b)
 }
 func (m *CrossReferencesReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CrossReferencesReply.Marshal(b, m, deterministic)
 }
-func (dst *CrossReferencesReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CrossReferencesReply.Merge(dst, src)
+func (m *CrossReferencesReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CrossReferencesReply.Merge(m, src)
 }
 func (m *CrossReferencesReply) XXX_Size() int {
 	return xxx_messageInfo_CrossReferencesReply.Size(m)
@@ -1019,16 +1047,17 @@ func (m *CrossReferencesReply_RelatedNode) Reset()         { *m = CrossReference
 func (m *CrossReferencesReply_RelatedNode) String() string { return proto.CompactTextString(m) }
 func (*CrossReferencesReply_RelatedNode) ProtoMessage()    {}
 func (*CrossReferencesReply_RelatedNode) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{6, 0}
+	return fileDescriptor_c0b69b838b524f8a, []int{6, 0}
 }
+
 func (m *CrossReferencesReply_RelatedNode) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CrossReferencesReply_RelatedNode.Unmarshal(m, b)
 }
 func (m *CrossReferencesReply_RelatedNode) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CrossReferencesReply_RelatedNode.Marshal(b, m, deterministic)
 }
-func (dst *CrossReferencesReply_RelatedNode) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CrossReferencesReply_RelatedNode.Merge(dst, src)
+func (m *CrossReferencesReply_RelatedNode) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CrossReferencesReply_RelatedNode.Merge(m, src)
 }
 func (m *CrossReferencesReply_RelatedNode) XXX_Size() int {
 	return xxx_messageInfo_CrossReferencesReply_RelatedNode.Size(m)
@@ -1074,16 +1103,17 @@ func (m *CrossReferencesReply_RelatedAnchor) Reset()         { *m = CrossReferen
 func (m *CrossReferencesReply_RelatedAnchor) String() string { return proto.CompactTextString(m) }
 func (*CrossReferencesReply_RelatedAnchor) ProtoMessage()    {}
 func (*CrossReferencesReply_RelatedAnchor) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{6, 1}
+	return fileDescriptor_c0b69b838b524f8a, []int{6, 1}
 }
+
 func (m *CrossReferencesReply_RelatedAnchor) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CrossReferencesReply_RelatedAnchor.Unmarshal(m, b)
 }
 func (m *CrossReferencesReply_RelatedAnchor) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CrossReferencesReply_RelatedAnchor.Marshal(b, m, deterministic)
 }
-func (dst *CrossReferencesReply_RelatedAnchor) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CrossReferencesReply_RelatedAnchor.Merge(dst, src)
+func (m *CrossReferencesReply_RelatedAnchor) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CrossReferencesReply_RelatedAnchor.Merge(m, src)
 }
 func (m *CrossReferencesReply_RelatedAnchor) XXX_Size() int {
 	return xxx_messageInfo_CrossReferencesReply_RelatedAnchor.Size(m)
@@ -1141,16 +1171,17 @@ func (m *CrossReferencesReply_CrossReferenceSet) Reset() {
 func (m *CrossReferencesReply_CrossReferenceSet) String() string { return proto.CompactTextString(m) }
 func (*CrossReferencesReply_CrossReferenceSet) ProtoMessage()    {}
 func (*CrossReferencesReply_CrossReferenceSet) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{6, 2}
+	return fileDescriptor_c0b69b838b524f8a, []int{6, 2}
 }
+
 func (m *CrossReferencesReply_CrossReferenceSet) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CrossReferencesReply_CrossReferenceSet.Unmarshal(m, b)
 }
 func (m *CrossReferencesReply_CrossReferenceSet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CrossReferencesReply_CrossReferenceSet.Marshal(b, m, deterministic)
 }
-func (dst *CrossReferencesReply_CrossReferenceSet) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CrossReferencesReply_CrossReferenceSet.Merge(dst, src)
+func (m *CrossReferencesReply_CrossReferenceSet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CrossReferencesReply_CrossReferenceSet.Merge(m, src)
 }
 func (m *CrossReferencesReply_CrossReferenceSet) XXX_Size() int {
 	return xxx_messageInfo_CrossReferencesReply_CrossReferenceSet.Size(m)
@@ -1226,16 +1257,17 @@ func (m *CrossReferencesReply_Total) Reset()         { *m = CrossReferencesReply
 func (m *CrossReferencesReply_Total) String() string { return proto.CompactTextString(m) }
 func (*CrossReferencesReply_Total) ProtoMessage()    {}
 func (*CrossReferencesReply_Total) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{6, 3}
+	return fileDescriptor_c0b69b838b524f8a, []int{6, 3}
 }
+
 func (m *CrossReferencesReply_Total) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CrossReferencesReply_Total.Unmarshal(m, b)
 }
 func (m *CrossReferencesReply_Total) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CrossReferencesReply_Total.Marshal(b, m, deterministic)
 }
-func (dst *CrossReferencesReply_Total) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CrossReferencesReply_Total.Merge(dst, src)
+func (m *CrossReferencesReply_Total) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CrossReferencesReply_Total.Merge(m, src)
 }
 func (m *CrossReferencesReply_Total) XXX_Size() int {
 	return xxx_messageInfo_CrossReferencesReply_Total.Size(m)
@@ -1301,16 +1333,17 @@ func (m *DocumentationRequest) Reset()         { *m = DocumentationRequest{} }
 func (m *DocumentationRequest) String() string { return proto.CompactTextString(m) }
 func (*DocumentationRequest) ProtoMessage()    {}
 func (*DocumentationRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{7}
+	return fileDescriptor_c0b69b838b524f8a, []int{7}
 }
+
 func (m *DocumentationRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DocumentationRequest.Unmarshal(m, b)
 }
 func (m *DocumentationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DocumentationRequest.Marshal(b, m, deterministic)
 }
-func (dst *DocumentationRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DocumentationRequest.Merge(dst, src)
+func (m *DocumentationRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DocumentationRequest.Merge(m, src)
 }
 func (m *DocumentationRequest) XXX_Size() int {
 	return xxx_messageInfo_DocumentationRequest.Size(m)
@@ -1355,16 +1388,17 @@ func (m *DocumentationReply) Reset()         { *m = DocumentationReply{} }
 func (m *DocumentationReply) String() string { return proto.CompactTextString(m) }
 func (*DocumentationReply) ProtoMessage()    {}
 func (*DocumentationReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{8}
+	return fileDescriptor_c0b69b838b524f8a, []int{8}
 }
+
 func (m *DocumentationReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DocumentationReply.Unmarshal(m, b)
 }
 func (m *DocumentationReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DocumentationReply.Marshal(b, m, deterministic)
 }
-func (dst *DocumentationReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DocumentationReply.Merge(dst, src)
+func (m *DocumentationReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DocumentationReply.Merge(m, src)
 }
 func (m *DocumentationReply) XXX_Size() int {
 	return xxx_messageInfo_DocumentationReply.Size(m)
@@ -1410,16 +1444,17 @@ func (m *DocumentationReply_Document) Reset()         { *m = DocumentationReply_
 func (m *DocumentationReply_Document) String() string { return proto.CompactTextString(m) }
 func (*DocumentationReply_Document) ProtoMessage()    {}
 func (*DocumentationReply_Document) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xref_a1cf2f06f9d39ad4, []int{8, 0}
+	return fileDescriptor_c0b69b838b524f8a, []int{8, 0}
 }
+
 func (m *DocumentationReply_Document) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DocumentationReply_Document.Unmarshal(m, b)
 }
 func (m *DocumentationReply_Document) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DocumentationReply_Document.Marshal(b, m, deterministic)
 }
-func (dst *DocumentationReply_Document) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DocumentationReply_Document.Merge(dst, src)
+func (m *DocumentationReply_Document) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DocumentationReply_Document.Merge(m, src)
 }
 func (m *DocumentationReply_Document) XXX_Size() int {
 	return xxx_messageInfo_DocumentationReply_Document.Size(m)
@@ -1459,6 +1494,14 @@ func (m *DocumentationReply_Document) GetChildren() []*DocumentationReply_Docume
 }
 
 func init() {
+	proto.RegisterEnum("kythe.proto.SnippetsKind", SnippetsKind_name, SnippetsKind_value)
+	proto.RegisterEnum("kythe.proto.Location_Kind", Location_Kind_name, Location_Kind_value)
+	proto.RegisterEnum("kythe.proto.DecorationsRequest_SpanKind", DecorationsRequest_SpanKind_name, DecorationsRequest_SpanKind_value)
+	proto.RegisterEnum("kythe.proto.DecorationsReply_Override_Kind", DecorationsReply_Override_Kind_name, DecorationsReply_Override_Kind_value)
+	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DefinitionKind", CrossReferencesRequest_DefinitionKind_name, CrossReferencesRequest_DefinitionKind_value)
+	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DeclarationKind", CrossReferencesRequest_DeclarationKind_name, CrossReferencesRequest_DeclarationKind_value)
+	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_ReferenceKind", CrossReferencesRequest_ReferenceKind_name, CrossReferencesRequest_ReferenceKind_value)
+	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_CallerKind", CrossReferencesRequest_CallerKind_name, CrossReferencesRequest_CallerKind_value)
 	proto.RegisterType((*Location)(nil), "kythe.proto.Location")
 	proto.RegisterType((*DecorationsRequest)(nil), "kythe.proto.DecorationsRequest")
 	proto.RegisterType((*DecorationsReply)(nil), "kythe.proto.DecorationsReply")
@@ -1485,19 +1528,11 @@ func init() {
 	proto.RegisterMapType((map[string]*Anchor)(nil), "kythe.proto.DocumentationReply.DefinitionLocationsEntry")
 	proto.RegisterMapType((map[string]*common_go_proto.NodeInfo)(nil), "kythe.proto.DocumentationReply.NodesEntry")
 	proto.RegisterType((*DocumentationReply_Document)(nil), "kythe.proto.DocumentationReply.Document")
-	proto.RegisterEnum("kythe.proto.SnippetsKind", SnippetsKind_name, SnippetsKind_value)
-	proto.RegisterEnum("kythe.proto.Location_Kind", Location_Kind_name, Location_Kind_value)
-	proto.RegisterEnum("kythe.proto.DecorationsRequest_SpanKind", DecorationsRequest_SpanKind_name, DecorationsRequest_SpanKind_value)
-	proto.RegisterEnum("kythe.proto.DecorationsReply_Override_Kind", DecorationsReply_Override_Kind_name, DecorationsReply_Override_Kind_value)
-	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DefinitionKind", CrossReferencesRequest_DefinitionKind_name, CrossReferencesRequest_DefinitionKind_value)
-	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DeclarationKind", CrossReferencesRequest_DeclarationKind_name, CrossReferencesRequest_DeclarationKind_value)
-	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_ReferenceKind", CrossReferencesRequest_ReferenceKind_name, CrossReferencesRequest_ReferenceKind_value)
-	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_CallerKind", CrossReferencesRequest_CallerKind_name, CrossReferencesRequest_CallerKind_value)
 }
 
-func init() { proto.RegisterFile("kythe/proto/xref.proto", fileDescriptor_xref_a1cf2f06f9d39ad4) }
+func init() { proto.RegisterFile("kythe/proto/xref.proto", fileDescriptor_c0b69b838b524f8a) }
 
-var fileDescriptor_xref_a1cf2f06f9d39ad4 = []byte{
+var fileDescriptor_c0b69b838b524f8a = []byte{
 	// 2062 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0xdd, 0x72, 0xdb, 0xc6,
 	0xf5, 0x17, 0x48, 0x90, 0x02, 0x0f, 0xf8, 0x01, 0xad, 0x15, 0xfd, 0x61, 0xe6, 0x9f, 0x58, 0x86,
