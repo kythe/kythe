@@ -498,9 +498,6 @@ public class JavaCompilationUnitExtractor {
     if ((isJarPath && jarPath.startsWith(jdkJar)) || path.startsWith(JDK_MODULE_PREFIX)) {
       return;
     }
-    if (path.contains("Generated.class")) {
-      logger.atWarning().log("Including JDK class: %s (path: %s)", uri, path);
-    }
 
     // Make the path relative to the indexer (e.g. a subdir of corpus/).
     // If not possible, we store the fullpath.
