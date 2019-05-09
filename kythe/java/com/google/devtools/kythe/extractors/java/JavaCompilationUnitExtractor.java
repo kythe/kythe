@@ -493,7 +493,6 @@ public class JavaCompilationUnitExtractor {
     }
     String path = uri.getRawSchemeSpecificPart();
 
-
     // If the file was part of the JDK we do not store it as the JDK is tied
     // to the analyzer we'll run on this information later on.
     if ((isJarPath && jarPath.startsWith(jdkJar)) || path.startsWith(JDK_MODULE_PREFIX)) {
