@@ -622,7 +622,7 @@ public class JavaExtractorTest extends TestCase {
     // With the expected sources as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
         .containsExactly(
-           JDK_ANNOTATION_CLASS,
+            JDK_ANNOTATION_CLASS,
             makeFileInfo(origSources.get(0)),
             makeFileInfo(origSources.get(1)),
             makeFileInfo(sillyGenerated, Paths.get(testDir, sillyGenerated).toString()));
