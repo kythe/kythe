@@ -60,7 +60,7 @@ def _emit_extractor_script(ctx, mode, script, output, srcs, deps, ipath, data):
 
     # Invoke the extractor on the temp directory.
     goroot = "/".join(ctx.files._sdk_files[0].path.split("/")[:-2])
-    cmds.append("export GOCACHE=" + tmpdir + "/cache")
+    cmds.append("export GOCACHE=\"$PWD/" + tmpdir + "/cache\"")
     cmds.append("export CGO_ENABLED=0")
     cmds.append(" ".join([
         ctx.files._extractor[-1].path,

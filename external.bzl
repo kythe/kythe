@@ -385,7 +385,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_tools",
-        commit = "4892ae6946ab8a542e4fe1bf1376eb714b9e7aec",
+        commit = "589c23e65e65055d47b9ad4a99723bc389136265",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
         importpath = "golang.org/x/tools",
