@@ -622,7 +622,7 @@ public class JavaExtractorTest extends TestCase {
     // With the expected sources as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
         .containsExactly(
-            GENERATED_ANNOTATION_CLASS,
+            JDK_ANNOTATION_CLASS,
             makeFileInfo(origSources.get(0)),
             makeFileInfo(origSources.get(1)),
             makeFileInfo(sillyGenerated, Paths.get(testDir, sillyGenerated).toString()));
@@ -632,7 +632,7 @@ public class JavaExtractorTest extends TestCase {
     assertThat(details.getSourcepathList()).hasSize(2);
     assertThat(details.getSourcepathList())
         .containsExactly(TEST_DATA_DIR, "output-gensrc.jar.files");
-    assertThat(details.getClasspathList()).containsExactly("!CLASS_PATH_JAR!");
+    assertThat(details.getClasspathList()).containsExactly(JDK_ANNOTATION_PATH);
   }
 
   /** Tests that the extractor doesn't fall over when it's provided with no sources. */
