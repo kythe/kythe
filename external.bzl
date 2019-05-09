@@ -467,7 +467,7 @@ def _go_dependencies():
         go_repository,
         name = "com_github_apache_beam",
         build_file_proto_mode = "disable",
-        commit = "2a41235289152d84e4283c2efd7812896150c183",
+        commit = "3cf3a4708c588e32e85a1d4cfdb29ab5a0203efc",
         custom = "beam",
         importpath = "github.com/apache/beam",
     )
