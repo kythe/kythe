@@ -3,10 +3,12 @@
 
 package link_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import common_go_proto "kythe.io/kythe/proto/common_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	common_go_proto "kythe.io/kythe/proto/common_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type LinkRequest_DefinitionKind int32
 
@@ -32,6 +34,7 @@ var LinkRequest_DefinitionKind_name = map[int32]string{
 	1: "FULL",
 	2: "ANY",
 }
+
 var LinkRequest_DefinitionKind_value = map[string]int32{
 	"BINDING": 0,
 	"FULL":    1,
@@ -41,8 +44,9 @@ var LinkRequest_DefinitionKind_value = map[string]int32{
 func (x LinkRequest_DefinitionKind) String() string {
 	return proto.EnumName(LinkRequest_DefinitionKind_name, int32(x))
 }
+
 func (LinkRequest_DefinitionKind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_link_2566f186b86f72a9, []int{0, 0}
+	return fileDescriptor_bd0775c667ce666e, []int{0, 0}
 }
 
 type LinkRequest struct {
@@ -64,16 +68,17 @@ func (m *LinkRequest) Reset()         { *m = LinkRequest{} }
 func (m *LinkRequest) String() string { return proto.CompactTextString(m) }
 func (*LinkRequest) ProtoMessage()    {}
 func (*LinkRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_link_2566f186b86f72a9, []int{0}
+	return fileDescriptor_bd0775c667ce666e, []int{0}
 }
+
 func (m *LinkRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LinkRequest.Unmarshal(m, b)
 }
 func (m *LinkRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_LinkRequest.Marshal(b, m, deterministic)
 }
-func (dst *LinkRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LinkRequest.Merge(dst, src)
+func (m *LinkRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LinkRequest.Merge(m, src)
 }
 func (m *LinkRequest) XXX_Size() int {
 	return xxx_messageInfo_LinkRequest.Size(m)
@@ -160,16 +165,17 @@ func (m *LinkRequest_Location) Reset()         { *m = LinkRequest_Location{} }
 func (m *LinkRequest_Location) String() string { return proto.CompactTextString(m) }
 func (*LinkRequest_Location) ProtoMessage()    {}
 func (*LinkRequest_Location) Descriptor() ([]byte, []int) {
-	return fileDescriptor_link_2566f186b86f72a9, []int{0, 0}
+	return fileDescriptor_bd0775c667ce666e, []int{0, 0}
 }
+
 func (m *LinkRequest_Location) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LinkRequest_Location.Unmarshal(m, b)
 }
 func (m *LinkRequest_Location) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_LinkRequest_Location.Marshal(b, m, deterministic)
 }
-func (dst *LinkRequest_Location) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LinkRequest_Location.Merge(dst, src)
+func (m *LinkRequest_Location) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LinkRequest_Location.Merge(m, src)
 }
 func (m *LinkRequest_Location) XXX_Size() int {
 	return xxx_messageInfo_LinkRequest_Location.Size(m)
@@ -212,16 +218,17 @@ func (m *LinkRequest_Params) Reset()         { *m = LinkRequest_Params{} }
 func (m *LinkRequest_Params) String() string { return proto.CompactTextString(m) }
 func (*LinkRequest_Params) ProtoMessage()    {}
 func (*LinkRequest_Params) Descriptor() ([]byte, []int) {
-	return fileDescriptor_link_2566f186b86f72a9, []int{0, 1}
+	return fileDescriptor_bd0775c667ce666e, []int{0, 1}
 }
+
 func (m *LinkRequest_Params) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LinkRequest_Params.Unmarshal(m, b)
 }
 func (m *LinkRequest_Params) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_LinkRequest_Params.Marshal(b, m, deterministic)
 }
-func (dst *LinkRequest_Params) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LinkRequest_Params.Merge(dst, src)
+func (m *LinkRequest_Params) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LinkRequest_Params.Merge(m, src)
 }
 func (m *LinkRequest_Params) XXX_Size() int {
 	return xxx_messageInfo_LinkRequest_Params.Size(m)
@@ -252,16 +259,17 @@ func (m *Link) Reset()         { *m = Link{} }
 func (m *Link) String() string { return proto.CompactTextString(m) }
 func (*Link) ProtoMessage()    {}
 func (*Link) Descriptor() ([]byte, []int) {
-	return fileDescriptor_link_2566f186b86f72a9, []int{1}
+	return fileDescriptor_bd0775c667ce666e, []int{1}
 }
+
 func (m *Link) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Link.Unmarshal(m, b)
 }
 func (m *Link) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Link.Marshal(b, m, deterministic)
 }
-func (dst *Link) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Link.Merge(dst, src)
+func (m *Link) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Link.Merge(m, src)
 }
 func (m *Link) XXX_Size() int {
 	return xxx_messageInfo_Link.Size(m)
@@ -306,16 +314,17 @@ func (m *Link_Node) Reset()         { *m = Link_Node{} }
 func (m *Link_Node) String() string { return proto.CompactTextString(m) }
 func (*Link_Node) ProtoMessage()    {}
 func (*Link_Node) Descriptor() ([]byte, []int) {
-	return fileDescriptor_link_2566f186b86f72a9, []int{1, 0}
+	return fileDescriptor_bd0775c667ce666e, []int{1, 0}
 }
+
 func (m *Link_Node) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Link_Node.Unmarshal(m, b)
 }
 func (m *Link_Node) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Link_Node.Marshal(b, m, deterministic)
 }
-func (dst *Link_Node) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Link_Node.Merge(dst, src)
+func (m *Link_Node) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Link_Node.Merge(m, src)
 }
 func (m *Link_Node) XXX_Size() int {
 	return xxx_messageInfo_Link_Node.Size(m)
@@ -358,16 +367,17 @@ func (m *LinkReply) Reset()         { *m = LinkReply{} }
 func (m *LinkReply) String() string { return proto.CompactTextString(m) }
 func (*LinkReply) ProtoMessage()    {}
 func (*LinkReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_link_2566f186b86f72a9, []int{2}
+	return fileDescriptor_bd0775c667ce666e, []int{2}
 }
+
 func (m *LinkReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LinkReply.Unmarshal(m, b)
 }
 func (m *LinkReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_LinkReply.Marshal(b, m, deterministic)
 }
-func (dst *LinkReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LinkReply.Merge(dst, src)
+func (m *LinkReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LinkReply.Merge(m, src)
 }
 func (m *LinkReply) XXX_Size() int {
 	return xxx_messageInfo_LinkReply.Size(m)
@@ -386,18 +396,18 @@ func (m *LinkReply) GetLinks() []*Link {
 }
 
 func init() {
+	proto.RegisterEnum("kythe.proto.LinkRequest_DefinitionKind", LinkRequest_DefinitionKind_name, LinkRequest_DefinitionKind_value)
 	proto.RegisterType((*LinkRequest)(nil), "kythe.proto.LinkRequest")
 	proto.RegisterType((*LinkRequest_Location)(nil), "kythe.proto.LinkRequest.Location")
 	proto.RegisterType((*LinkRequest_Params)(nil), "kythe.proto.LinkRequest.Params")
 	proto.RegisterType((*Link)(nil), "kythe.proto.Link")
 	proto.RegisterType((*Link_Node)(nil), "kythe.proto.Link.Node")
 	proto.RegisterType((*LinkReply)(nil), "kythe.proto.LinkReply")
-	proto.RegisterEnum("kythe.proto.LinkRequest_DefinitionKind", LinkRequest_DefinitionKind_name, LinkRequest_DefinitionKind_value)
 }
 
-func init() { proto.RegisterFile("kythe/proto/link.proto", fileDescriptor_link_2566f186b86f72a9) }
+func init() { proto.RegisterFile("kythe/proto/link.proto", fileDescriptor_bd0775c667ce666e) }
 
-var fileDescriptor_link_2566f186b86f72a9 = []byte{
+var fileDescriptor_bd0775c667ce666e = []byte{
 	// 536 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xcd, 0x6e, 0xd3, 0x40,
 	0x10, 0xae, 0x63, 0x27, 0x71, 0xc6, 0x34, 0x0d, 0x23, 0x14, 0xad, 0x8c, 0xd4, 0x9a, 0x70, 0xa8,

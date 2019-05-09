@@ -3,9 +3,11 @@
 
 package entryset_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type EntrySet struct {
 	Nodes                []*EntrySet_Node      `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
@@ -32,16 +34,17 @@ func (m *EntrySet) Reset()         { *m = EntrySet{} }
 func (m *EntrySet) String() string { return proto.CompactTextString(m) }
 func (*EntrySet) ProtoMessage()    {}
 func (*EntrySet) Descriptor() ([]byte, []int) {
-	return fileDescriptor_entryset_9e3521cefdcf07e3, []int{0}
+	return fileDescriptor_d82fe1fc380de7f6, []int{0}
 }
+
 func (m *EntrySet) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EntrySet.Unmarshal(m, b)
 }
 func (m *EntrySet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EntrySet.Marshal(b, m, deterministic)
 }
-func (dst *EntrySet) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntrySet.Merge(dst, src)
+func (m *EntrySet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EntrySet.Merge(m, src)
 }
 func (m *EntrySet) XXX_Size() int {
 	return xxx_messageInfo_EntrySet.Size(m)
@@ -95,16 +98,17 @@ func (m *EntrySet_Node) Reset()         { *m = EntrySet_Node{} }
 func (m *EntrySet_Node) String() string { return proto.CompactTextString(m) }
 func (*EntrySet_Node) ProtoMessage()    {}
 func (*EntrySet_Node) Descriptor() ([]byte, []int) {
-	return fileDescriptor_entryset_9e3521cefdcf07e3, []int{0, 0}
+	return fileDescriptor_d82fe1fc380de7f6, []int{0, 0}
 }
+
 func (m *EntrySet_Node) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EntrySet_Node.Unmarshal(m, b)
 }
 func (m *EntrySet_Node) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EntrySet_Node.Marshal(b, m, deterministic)
 }
-func (dst *EntrySet_Node) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntrySet_Node.Merge(dst, src)
+func (m *EntrySet_Node) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EntrySet_Node.Merge(m, src)
 }
 func (m *EntrySet_Node) XXX_Size() int {
 	return xxx_messageInfo_EntrySet_Node.Size(m)
@@ -162,16 +166,17 @@ func (m *EntrySet_Fact) Reset()         { *m = EntrySet_Fact{} }
 func (m *EntrySet_Fact) String() string { return proto.CompactTextString(m) }
 func (*EntrySet_Fact) ProtoMessage()    {}
 func (*EntrySet_Fact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_entryset_9e3521cefdcf07e3, []int{0, 1}
+	return fileDescriptor_d82fe1fc380de7f6, []int{0, 1}
 }
+
 func (m *EntrySet_Fact) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EntrySet_Fact.Unmarshal(m, b)
 }
 func (m *EntrySet_Fact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EntrySet_Fact.Marshal(b, m, deterministic)
 }
-func (dst *EntrySet_Fact) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntrySet_Fact.Merge(dst, src)
+func (m *EntrySet_Fact) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EntrySet_Fact.Merge(m, src)
 }
 func (m *EntrySet_Fact) XXX_Size() int {
 	return xxx_messageInfo_EntrySet_Fact.Size(m)
@@ -207,16 +212,17 @@ func (m *EntrySet_FactGroup) Reset()         { *m = EntrySet_FactGroup{} }
 func (m *EntrySet_FactGroup) String() string { return proto.CompactTextString(m) }
 func (*EntrySet_FactGroup) ProtoMessage()    {}
 func (*EntrySet_FactGroup) Descriptor() ([]byte, []int) {
-	return fileDescriptor_entryset_9e3521cefdcf07e3, []int{0, 2}
+	return fileDescriptor_d82fe1fc380de7f6, []int{0, 2}
 }
+
 func (m *EntrySet_FactGroup) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EntrySet_FactGroup.Unmarshal(m, b)
 }
 func (m *EntrySet_FactGroup) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EntrySet_FactGroup.Marshal(b, m, deterministic)
 }
-func (dst *EntrySet_FactGroup) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntrySet_FactGroup.Merge(dst, src)
+func (m *EntrySet_FactGroup) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EntrySet_FactGroup.Merge(m, src)
 }
 func (m *EntrySet_FactGroup) XXX_Size() int {
 	return xxx_messageInfo_EntrySet_FactGroup.Size(m)
@@ -246,16 +252,17 @@ func (m *EntrySet_Edge) Reset()         { *m = EntrySet_Edge{} }
 func (m *EntrySet_Edge) String() string { return proto.CompactTextString(m) }
 func (*EntrySet_Edge) ProtoMessage()    {}
 func (*EntrySet_Edge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_entryset_9e3521cefdcf07e3, []int{0, 3}
+	return fileDescriptor_d82fe1fc380de7f6, []int{0, 3}
 }
+
 func (m *EntrySet_Edge) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EntrySet_Edge.Unmarshal(m, b)
 }
 func (m *EntrySet_Edge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EntrySet_Edge.Marshal(b, m, deterministic)
 }
-func (dst *EntrySet_Edge) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntrySet_Edge.Merge(dst, src)
+func (m *EntrySet_Edge) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EntrySet_Edge.Merge(m, src)
 }
 func (m *EntrySet_Edge) XXX_Size() int {
 	return xxx_messageInfo_EntrySet_Edge.Size(m)
@@ -291,16 +298,17 @@ func (m *EntrySet_EdgeGroup) Reset()         { *m = EntrySet_EdgeGroup{} }
 func (m *EntrySet_EdgeGroup) String() string { return proto.CompactTextString(m) }
 func (*EntrySet_EdgeGroup) ProtoMessage()    {}
 func (*EntrySet_EdgeGroup) Descriptor() ([]byte, []int) {
-	return fileDescriptor_entryset_9e3521cefdcf07e3, []int{0, 4}
+	return fileDescriptor_d82fe1fc380de7f6, []int{0, 4}
 }
+
 func (m *EntrySet_EdgeGroup) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EntrySet_EdgeGroup.Unmarshal(m, b)
 }
 func (m *EntrySet_EdgeGroup) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EntrySet_EdgeGroup.Marshal(b, m, deterministic)
 }
-func (dst *EntrySet_EdgeGroup) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntrySet_EdgeGroup.Merge(dst, src)
+func (m *EntrySet_EdgeGroup) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EntrySet_EdgeGroup.Merge(m, src)
 }
 func (m *EntrySet_EdgeGroup) XXX_Size() int {
 	return xxx_messageInfo_EntrySet_EdgeGroup.Size(m)
@@ -330,16 +338,17 @@ func (m *EntrySet_String) Reset()         { *m = EntrySet_String{} }
 func (m *EntrySet_String) String() string { return proto.CompactTextString(m) }
 func (*EntrySet_String) ProtoMessage()    {}
 func (*EntrySet_String) Descriptor() ([]byte, []int) {
-	return fileDescriptor_entryset_9e3521cefdcf07e3, []int{0, 5}
+	return fileDescriptor_d82fe1fc380de7f6, []int{0, 5}
 }
+
 func (m *EntrySet_String) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EntrySet_String.Unmarshal(m, b)
 }
 func (m *EntrySet_String) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EntrySet_String.Marshal(b, m, deterministic)
 }
-func (dst *EntrySet_String) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntrySet_String.Merge(dst, src)
+func (m *EntrySet_String) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EntrySet_String.Merge(m, src)
 }
 func (m *EntrySet_String) XXX_Size() int {
 	return xxx_messageInfo_EntrySet_String.Size(m)
@@ -374,11 +383,9 @@ func init() {
 	proto.RegisterType((*EntrySet_String)(nil), "kythe.storage.EntrySet.String")
 }
 
-func init() {
-	proto.RegisterFile("kythe/proto/entryset.proto", fileDescriptor_entryset_9e3521cefdcf07e3)
-}
+func init() { proto.RegisterFile("kythe/proto/entryset.proto", fileDescriptor_d82fe1fc380de7f6) }
 
-var fileDescriptor_entryset_9e3521cefdcf07e3 = []byte{
+var fileDescriptor_d82fe1fc380de7f6 = []byte{
 	// 377 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x52, 0x31, 0x6f, 0xf2, 0x30,
 	0x14, 0x14, 0x90, 0xf0, 0xc1, 0xe3, 0xfb, 0x86, 0xcf, 0xad, 0xaa, 0x28, 0x42, 0x55, 0xdb, 0x89,

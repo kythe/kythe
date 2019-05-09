@@ -298,7 +298,7 @@ def _go_dependencies():
         importpath = "github.com/golang/protobuf",
         patch_args = ["-p1"],
         patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
-        tag = "v1.2.0",
+        tag = "v1.3.0",
     )
 
     maybe(
@@ -328,7 +328,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sync",
-        commit = "1d60e4601c6fd243af51cc01ddf169918a5407ca",
+        commit = "42b317875d0f",
         custom = "sync",
         custom_git = "https://github.com/golang/sync.git",
         importpath = "golang.org/x/sync",
@@ -405,7 +405,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_net",
-        commit = "d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf",
+        commit = "3a22650c66bd",
         custom = "x_net",
         custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
