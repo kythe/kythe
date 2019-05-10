@@ -178,6 +178,9 @@ For each `meta` entry indexer should do the following:
 3. Ouptut one *imputes* edge from the *anchor* created at step 1 to the node
    found at step 2.
 
+Note that this only applies to meta entries with type `anchor_anchor`. For other
+types structure might be different. See link:https://github.com/kythe/kythe/issues/3711[issue #3711].
+
 Here is what JavaScript indexer outputs for the `Color` element using the
 rules above:
 
