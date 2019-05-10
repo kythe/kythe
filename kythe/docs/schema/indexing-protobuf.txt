@@ -56,7 +56,8 @@ Kythe doesn't require implementors to use one concrete approach for passing
 mapping metadata and outputting *generates* and *imputes* edges. Below we
 describe two different approaches, each has its own pros and cons. But in
 both cases it is assumed that implementors can change Generator and Target
-Indexer.
+Indexer. If possible *generates* approach is preferred as requires less
+post-processing work.
 
 TIP: You can find an example implementation at
 link:https://github.com/kythe/kythe/tree/master/kythe/examples/proto[GitHub].
@@ -120,7 +121,7 @@ elements.
 }
 -------------------------------------------------------------------------------
 
-This mapping has 3 `meta` entries. The first entry for `Color`, the second for
+This mapping has 2 `meta` entries. The first entry for `Color`, the second for
 `RED`. Note:
 
 * Each entry doesn't contain names of elements. Each entry contains only
@@ -134,10 +135,12 @@ This mapping has 3 `meta` entries. The first entry for `Color`, the second for
   files). Because of that JS indexer can't translate line/column to byte
   offset.
 * Entry doesn't contain vnames of elements in `Color.java` or `color.js` and
-  instead contains positions. Vnames of nodes are internal details of each
+  instead contains positions. VNames of nodes are internal details of each
   indexer and subject to change. Generator usually a standalone tool that
   doesn't know rules for producing vnames for specific language so it's
-  impossible for Generator to output vnames of nodes.
+  impossible for Generator to output vnames of nodes. If in your case
+  VNames are stable and well-specified you can use simpler approach
+  using *generates* described in `Protocol Buffer` section below.
 
 To pass this mapping to the JavaScript Indexer Generator will append it
 as a comment at the last line of `color.js`:
