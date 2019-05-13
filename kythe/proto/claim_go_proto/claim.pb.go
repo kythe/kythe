@@ -3,10 +3,12 @@
 
 package claim_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type ClaimAssignment struct {
 	CompilationVName     *storage_go_proto.VName `protobuf:"bytes,1,opt,name=compilation_v_name,json=compilationVName,proto3" json:"compilation_v_name,omitempty"`
@@ -31,16 +33,17 @@ func (m *ClaimAssignment) Reset()         { *m = ClaimAssignment{} }
 func (m *ClaimAssignment) String() string { return proto.CompactTextString(m) }
 func (*ClaimAssignment) ProtoMessage()    {}
 func (*ClaimAssignment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_claim_43b2d156c892fe7a, []int{0}
+	return fileDescriptor_4321fa1d8e7ef1ee, []int{0}
 }
+
 func (m *ClaimAssignment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClaimAssignment.Unmarshal(m, b)
 }
 func (m *ClaimAssignment) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ClaimAssignment.Marshal(b, m, deterministic)
 }
-func (dst *ClaimAssignment) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClaimAssignment.Merge(dst, src)
+func (m *ClaimAssignment) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClaimAssignment.Merge(m, src)
 }
 func (m *ClaimAssignment) XXX_Size() int {
 	return xxx_messageInfo_ClaimAssignment.Size(m)
@@ -69,9 +72,9 @@ func init() {
 	proto.RegisterType((*ClaimAssignment)(nil), "kythe.proto.ClaimAssignment")
 }
 
-func init() { proto.RegisterFile("kythe/proto/claim.proto", fileDescriptor_claim_43b2d156c892fe7a) }
+func init() { proto.RegisterFile("kythe/proto/claim.proto", fileDescriptor_4321fa1d8e7ef1ee) }
 
-var fileDescriptor_claim_43b2d156c892fe7a = []byte{
+var fileDescriptor_4321fa1d8e7ef1ee = []byte{
 	// 191 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0xcf, 0xae, 0x2c, 0xc9,
 	0x48, 0xd5, 0x2f, 0x28, 0xca, 0x2f, 0xc9, 0xd7, 0x4f, 0xce, 0x49, 0xcc, 0xcc, 0xd5, 0x03, 0xb3,

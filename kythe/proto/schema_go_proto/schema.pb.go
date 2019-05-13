@@ -3,10 +3,12 @@
 
 package schema_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type NodeKind int32
 
@@ -78,6 +80,7 @@ var NodeKind_name = map[int32]string{
 	24: "VARIABLE",
 	25: "VCS",
 }
+
 var NodeKind_value = map[string]int32{
 	"UNKNOWN_NODE_KIND": 0,
 	"ABS":               1,
@@ -110,8 +113,9 @@ var NodeKind_value = map[string]int32{
 func (x NodeKind) String() string {
 	return proto.EnumName(NodeKind_name, int32(x))
 }
+
 func (NodeKind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{0}
+	return fileDescriptor_a9abda27437812b0, []int{0}
 }
 
 type Subkind int32
@@ -157,6 +161,7 @@ var Subkind_name = map[int32]string{
 	16: "TYPE",
 	17: "UNION",
 }
+
 var Subkind_value = map[string]int32{
 	"UNKNOWN_SUBKIND": 0,
 	"CATEGORY":        1,
@@ -181,8 +186,9 @@ var Subkind_value = map[string]int32{
 func (x Subkind) String() string {
 	return proto.EnumName(Subkind_name, int32(x))
 }
+
 func (Subkind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{1}
+	return fileDescriptor_a9abda27437812b0, []int{1}
 }
 
 type FactName int32
@@ -232,6 +238,7 @@ var FactName_name = map[int32]string{
 	18: "VISIBILITY",
 	19: "BUILD_CONFIG",
 }
+
 var FactName_value = map[string]int32{
 	"UNKNOWN_FACT_NAME": 0,
 	"CODE":              1,
@@ -258,8 +265,9 @@ var FactName_value = map[string]int32{
 func (x FactName) String() string {
 	return proto.EnumName(FactName_name, int32(x))
 }
+
 func (FactName) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{2}
+	return fileDescriptor_a9abda27437812b0, []int{2}
 }
 
 type EdgeKind int32
@@ -357,6 +365,7 @@ var EdgeKind_name = map[int32]string{
 	42: "TYPED",
 	43: "UNDEFINES",
 }
+
 var EdgeKind_value = map[string]int32{
 	"UNKNOWN_EDGE_KIND":        0,
 	"ALIASES":                  1,
@@ -407,8 +416,9 @@ var EdgeKind_value = map[string]int32{
 func (x EdgeKind) String() string {
 	return proto.EnumName(EdgeKind_name, int32(x))
 }
+
 func (EdgeKind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{3}
+	return fileDescriptor_a9abda27437812b0, []int{3}
 }
 
 type Index struct {
@@ -425,16 +435,17 @@ func (m *Index) Reset()         { *m = Index{} }
 func (m *Index) String() string { return proto.CompactTextString(m) }
 func (*Index) ProtoMessage()    {}
 func (*Index) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{0}
+	return fileDescriptor_a9abda27437812b0, []int{0}
 }
+
 func (m *Index) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Index.Unmarshal(m, b)
 }
 func (m *Index) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Index.Marshal(b, m, deterministic)
 }
-func (dst *Index) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Index.Merge(dst, src)
+func (m *Index) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Index.Merge(m, src)
 }
 func (m *Index) XXX_Size() int {
 	return xxx_messageInfo_Index.Size(m)
@@ -485,16 +496,17 @@ func (m *Index_EdgeKinds) Reset()         { *m = Index_EdgeKinds{} }
 func (m *Index_EdgeKinds) String() string { return proto.CompactTextString(m) }
 func (*Index_EdgeKinds) ProtoMessage()    {}
 func (*Index_EdgeKinds) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{0, 0}
+	return fileDescriptor_a9abda27437812b0, []int{0, 0}
 }
+
 func (m *Index_EdgeKinds) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Index_EdgeKinds.Unmarshal(m, b)
 }
 func (m *Index_EdgeKinds) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Index_EdgeKinds.Marshal(b, m, deterministic)
 }
-func (dst *Index_EdgeKinds) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Index_EdgeKinds.Merge(dst, src)
+func (m *Index_EdgeKinds) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Index_EdgeKinds.Merge(m, src)
 }
 func (m *Index_EdgeKinds) XXX_Size() int {
 	return xxx_messageInfo_Index_EdgeKinds.Size(m)
@@ -531,16 +543,17 @@ func (m *Index_NodeKinds) Reset()         { *m = Index_NodeKinds{} }
 func (m *Index_NodeKinds) String() string { return proto.CompactTextString(m) }
 func (*Index_NodeKinds) ProtoMessage()    {}
 func (*Index_NodeKinds) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{0, 1}
+	return fileDescriptor_a9abda27437812b0, []int{0, 1}
 }
+
 func (m *Index_NodeKinds) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Index_NodeKinds.Unmarshal(m, b)
 }
 func (m *Index_NodeKinds) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Index_NodeKinds.Marshal(b, m, deterministic)
 }
-func (dst *Index_NodeKinds) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Index_NodeKinds.Merge(dst, src)
+func (m *Index_NodeKinds) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Index_NodeKinds.Merge(m, src)
 }
 func (m *Index_NodeKinds) XXX_Size() int {
 	return xxx_messageInfo_Index_NodeKinds.Size(m)
@@ -577,16 +590,17 @@ func (m *Index_Subkinds) Reset()         { *m = Index_Subkinds{} }
 func (m *Index_Subkinds) String() string { return proto.CompactTextString(m) }
 func (*Index_Subkinds) ProtoMessage()    {}
 func (*Index_Subkinds) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{0, 2}
+	return fileDescriptor_a9abda27437812b0, []int{0, 2}
 }
+
 func (m *Index_Subkinds) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Index_Subkinds.Unmarshal(m, b)
 }
 func (m *Index_Subkinds) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Index_Subkinds.Marshal(b, m, deterministic)
 }
-func (dst *Index_Subkinds) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Index_Subkinds.Merge(dst, src)
+func (m *Index_Subkinds) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Index_Subkinds.Merge(m, src)
 }
 func (m *Index_Subkinds) XXX_Size() int {
 	return xxx_messageInfo_Index_Subkinds.Size(m)
@@ -623,16 +637,17 @@ func (m *Index_FactNames) Reset()         { *m = Index_FactNames{} }
 func (m *Index_FactNames) String() string { return proto.CompactTextString(m) }
 func (*Index_FactNames) ProtoMessage()    {}
 func (*Index_FactNames) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{0, 3}
+	return fileDescriptor_a9abda27437812b0, []int{0, 3}
 }
+
 func (m *Index_FactNames) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Index_FactNames.Unmarshal(m, b)
 }
 func (m *Index_FactNames) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Index_FactNames.Marshal(b, m, deterministic)
 }
-func (dst *Index_FactNames) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Index_FactNames.Merge(dst, src)
+func (m *Index_FactNames) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Index_FactNames.Merge(m, src)
 }
 func (m *Index_FactNames) XXX_Size() int {
 	return xxx_messageInfo_Index_FactNames.Size(m)
@@ -678,16 +693,17 @@ func (m *Node) Reset()         { *m = Node{} }
 func (m *Node) String() string { return proto.CompactTextString(m) }
 func (*Node) ProtoMessage()    {}
 func (*Node) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{1}
+	return fileDescriptor_a9abda27437812b0, []int{1}
 }
+
 func (m *Node) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Node.Unmarshal(m, b)
 }
 func (m *Node) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Node.Marshal(b, m, deterministic)
 }
-func (dst *Node) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Node.Merge(dst, src)
+func (m *Node) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Node.Merge(m, src)
 }
 func (m *Node) XXX_Size() int {
 	return xxx_messageInfo_Node.Size(m)
@@ -793,110 +809,14 @@ func (m *Node) GetGenericSubkind() string {
 	return ""
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Node) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Node_OneofMarshaler, _Node_OneofUnmarshaler, _Node_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Node) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Node_KytheKind)(nil),
 		(*Node_GenericKind)(nil),
 		(*Node_KytheSubkind)(nil),
 		(*Node_GenericSubkind)(nil),
 	}
-}
-
-func _Node_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Node)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Node_KytheKind:
-		b.EncodeVarint(4<<3 | proto.WireVarint)
-		b.EncodeVarint(uint64(x.KytheKind))
-	case *Node_GenericKind:
-		b.EncodeVarint(5<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.GenericKind)
-	case nil:
-	default:
-		return fmt.Errorf("Node.Kind has unexpected type %T", x)
-	}
-	// subkind
-	switch x := m.Subkind.(type) {
-	case *Node_KytheSubkind:
-		b.EncodeVarint(6<<3 | proto.WireVarint)
-		b.EncodeVarint(uint64(x.KytheSubkind))
-	case *Node_GenericSubkind:
-		b.EncodeVarint(7<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.GenericSubkind)
-	case nil:
-	default:
-		return fmt.Errorf("Node.Subkind has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Node_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Node)
-	switch tag {
-	case 4: // kind.kythe_kind
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Kind = &Node_KytheKind{NodeKind(x)}
-		return true, err
-	case 5: // kind.generic_kind
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Kind = &Node_GenericKind{x}
-		return true, err
-	case 6: // subkind.kythe_subkind
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Subkind = &Node_KytheSubkind{Subkind(x)}
-		return true, err
-	case 7: // subkind.generic_subkind
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Subkind = &Node_GenericSubkind{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Node_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Node)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Node_KytheKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.KytheKind))
-	case *Node_GenericKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.GenericKind)))
-		n += len(x.GenericKind)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	// subkind
-	switch x := m.Subkind.(type) {
-	case *Node_KytheSubkind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.KytheSubkind))
-	case *Node_GenericSubkind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.GenericSubkind)))
-		n += len(x.GenericSubkind)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type Fact struct {
@@ -915,16 +835,17 @@ func (m *Fact) Reset()         { *m = Fact{} }
 func (m *Fact) String() string { return proto.CompactTextString(m) }
 func (*Fact) ProtoMessage()    {}
 func (*Fact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{2}
+	return fileDescriptor_a9abda27437812b0, []int{2}
 }
+
 func (m *Fact) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Fact.Unmarshal(m, b)
 }
 func (m *Fact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Fact.Marshal(b, m, deterministic)
 }
-func (dst *Fact) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Fact.Merge(dst, src)
+func (m *Fact) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Fact.Merge(m, src)
 }
 func (m *Fact) XXX_Size() int {
 	return xxx_messageInfo_Fact.Size(m)
@@ -986,69 +907,12 @@ func (m *Fact) GetValue() []byte {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Fact) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Fact_OneofMarshaler, _Fact_OneofUnmarshaler, _Fact_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Fact) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Fact_KytheName)(nil),
 		(*Fact_GenericName)(nil),
 	}
-}
-
-func _Fact_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Fact)
-	// name
-	switch x := m.Name.(type) {
-	case *Fact_KytheName:
-		b.EncodeVarint(2<<3 | proto.WireVarint)
-		b.EncodeVarint(uint64(x.KytheName))
-	case *Fact_GenericName:
-		b.EncodeVarint(3<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.GenericName)
-	case nil:
-	default:
-		return fmt.Errorf("Fact.Name has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Fact_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Fact)
-	switch tag {
-	case 2: // name.kythe_name
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Name = &Fact_KytheName{FactName(x)}
-		return true, err
-	case 3: // name.generic_name
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Name = &Fact_GenericName{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Fact_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Fact)
-	// name
-	switch x := m.Name.(type) {
-	case *Fact_KytheName:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.KytheName))
-	case *Fact_GenericName:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.GenericName)))
-		n += len(x.GenericName)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type Edge struct {
@@ -1070,16 +934,17 @@ func (m *Edge) Reset()         { *m = Edge{} }
 func (m *Edge) String() string { return proto.CompactTextString(m) }
 func (*Edge) ProtoMessage()    {}
 func (*Edge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{3}
+	return fileDescriptor_a9abda27437812b0, []int{3}
 }
+
 func (m *Edge) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Edge.Unmarshal(m, b)
 }
 func (m *Edge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Edge.Marshal(b, m, deterministic)
 }
-func (dst *Edge) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Edge.Merge(dst, src)
+func (m *Edge) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Edge.Merge(m, src)
 }
 func (m *Edge) XXX_Size() int {
 	return xxx_messageInfo_Edge.Size(m)
@@ -1162,69 +1027,12 @@ func (m *Edge) GetTargetNode() *Node {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Edge) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Edge_OneofMarshaler, _Edge_OneofUnmarshaler, _Edge_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Edge) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Edge_KytheKind)(nil),
 		(*Edge_GenericKind)(nil),
 	}
-}
-
-func _Edge_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Edge)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Edge_KytheKind:
-		b.EncodeVarint(3<<3 | proto.WireVarint)
-		b.EncodeVarint(uint64(x.KytheKind))
-	case *Edge_GenericKind:
-		b.EncodeVarint(4<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.GenericKind)
-	case nil:
-	default:
-		return fmt.Errorf("Edge.Kind has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Edge_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Edge)
-	switch tag {
-	case 3: // kind.kythe_kind
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Kind = &Edge_KytheKind{EdgeKind(x)}
-		return true, err
-	case 4: // kind.generic_kind
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Kind = &Edge_GenericKind{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Edge_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Edge)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Edge_KytheKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.KytheKind))
-	case *Edge_GenericKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.GenericKind)))
-		n += len(x.GenericKind)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type Entry struct {
@@ -1241,16 +1049,17 @@ func (m *Entry) Reset()         { *m = Entry{} }
 func (m *Entry) String() string { return proto.CompactTextString(m) }
 func (*Entry) ProtoMessage()    {}
 func (*Entry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_b8bc086cc8d1c7fa, []int{4}
+	return fileDescriptor_a9abda27437812b0, []int{4}
 }
+
 func (m *Entry) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Entry.Unmarshal(m, b)
 }
 func (m *Entry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Entry.Marshal(b, m, deterministic)
 }
-func (dst *Entry) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Entry.Merge(dst, src)
+func (m *Entry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Entry.Merge(m, src)
 }
 func (m *Entry) XXX_Size() int {
 	return xxx_messageInfo_Entry.Size(m)
@@ -1298,81 +1107,19 @@ func (m *Entry) GetEdge() *Edge {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Entry) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Entry_OneofMarshaler, _Entry_OneofUnmarshaler, _Entry_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Entry) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Entry_Fact)(nil),
 		(*Entry_Edge)(nil),
 	}
 }
 
-func _Entry_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Entry)
-	// entry
-	switch x := m.Entry.(type) {
-	case *Entry_Fact:
-		b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Fact); err != nil {
-			return err
-		}
-	case *Entry_Edge:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Edge); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Entry.Entry has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Entry_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Entry)
-	switch tag {
-	case 1: // entry.fact
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Fact)
-		err := b.DecodeMessage(msg)
-		m.Entry = &Entry_Fact{msg}
-		return true, err
-	case 2: // entry.edge
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Edge)
-		err := b.DecodeMessage(msg)
-		m.Entry = &Entry_Edge{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Entry_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Entry)
-	// entry
-	switch x := m.Entry.(type) {
-	case *Entry_Fact:
-		s := proto.Size(x.Fact)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Entry_Edge:
-		s := proto.Size(x.Edge)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
-}
-
 func init() {
+	proto.RegisterEnum("kythe.proto.schema.NodeKind", NodeKind_name, NodeKind_value)
+	proto.RegisterEnum("kythe.proto.schema.Subkind", Subkind_name, Subkind_value)
+	proto.RegisterEnum("kythe.proto.schema.FactName", FactName_name, FactName_value)
+	proto.RegisterEnum("kythe.proto.schema.EdgeKind", EdgeKind_name, EdgeKind_value)
 	proto.RegisterType((*Index)(nil), "kythe.proto.schema.Index")
 	proto.RegisterType((*Index_EdgeKinds)(nil), "kythe.proto.schema.Index.EdgeKinds")
 	proto.RegisterMapType((map[string]EdgeKind)(nil), "kythe.proto.schema.Index.EdgeKinds.EdgeKindEntry")
@@ -1386,15 +1133,11 @@ func init() {
 	proto.RegisterType((*Fact)(nil), "kythe.proto.schema.Fact")
 	proto.RegisterType((*Edge)(nil), "kythe.proto.schema.Edge")
 	proto.RegisterType((*Entry)(nil), "kythe.proto.schema.Entry")
-	proto.RegisterEnum("kythe.proto.schema.NodeKind", NodeKind_name, NodeKind_value)
-	proto.RegisterEnum("kythe.proto.schema.Subkind", Subkind_name, Subkind_value)
-	proto.RegisterEnum("kythe.proto.schema.FactName", FactName_name, FactName_value)
-	proto.RegisterEnum("kythe.proto.schema.EdgeKind", EdgeKind_name, EdgeKind_value)
 }
 
-func init() { proto.RegisterFile("kythe/proto/schema.proto", fileDescriptor_schema_b8bc086cc8d1c7fa) }
+func init() { proto.RegisterFile("kythe/proto/schema.proto", fileDescriptor_a9abda27437812b0) }
 
-var fileDescriptor_schema_b8bc086cc8d1c7fa = []byte{
+var fileDescriptor_a9abda27437812b0 = []byte{
 	// 1628 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x55, 0xcd, 0x72, 0x1b, 0xb9,
 	0x11, 0x16, 0xff, 0x49, 0x90, 0x92, 0x5a, 0xb0, 0x2c, 0xd3, 0xb2, 0x93, 0x75, 0xe4, 0xfc, 0x78,

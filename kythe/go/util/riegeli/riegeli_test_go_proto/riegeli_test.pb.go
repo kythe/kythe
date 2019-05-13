@@ -3,9 +3,11 @@
 
 package riegeli_test_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type Simple struct {
 	Name                 *string  `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
@@ -29,16 +31,17 @@ func (m *Simple) Reset()         { *m = Simple{} }
 func (m *Simple) String() string { return proto.CompactTextString(m) }
 func (*Simple) ProtoMessage()    {}
 func (*Simple) Descriptor() ([]byte, []int) {
-	return fileDescriptor_riegeli_test_ad4413a3829fc90c, []int{0}
+	return fileDescriptor_b786c6e75369a723, []int{0}
 }
+
 func (m *Simple) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Simple.Unmarshal(m, b)
 }
 func (m *Simple) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Simple.Marshal(b, m, deterministic)
 }
-func (dst *Simple) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Simple.Merge(dst, src)
+func (m *Simple) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Simple.Merge(m, src)
 }
 func (m *Simple) XXX_Size() int {
 	return xxx_messageInfo_Simple.Size(m)
@@ -74,16 +77,17 @@ func (m *Complex) Reset()         { *m = Complex{} }
 func (m *Complex) String() string { return proto.CompactTextString(m) }
 func (*Complex) ProtoMessage()    {}
 func (*Complex) Descriptor() ([]byte, []int) {
-	return fileDescriptor_riegeli_test_ad4413a3829fc90c, []int{1}
+	return fileDescriptor_b786c6e75369a723, []int{1}
 }
+
 func (m *Complex) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Complex.Unmarshal(m, b)
 }
 func (m *Complex) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Complex.Marshal(b, m, deterministic)
 }
-func (dst *Complex) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Complex.Merge(dst, src)
+func (m *Complex) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Complex.Merge(m, src)
 }
 func (m *Complex) XXX_Size() int {
 	return xxx_messageInfo_Complex.Size(m)
@@ -161,16 +165,17 @@ func (m *Complex_Group) Reset()         { *m = Complex_Group{} }
 func (m *Complex_Group) String() string { return proto.CompactTextString(m) }
 func (*Complex_Group) ProtoMessage()    {}
 func (*Complex_Group) Descriptor() ([]byte, []int) {
-	return fileDescriptor_riegeli_test_ad4413a3829fc90c, []int{1, 0}
+	return fileDescriptor_b786c6e75369a723, []int{1, 0}
 }
+
 func (m *Complex_Group) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Complex_Group.Unmarshal(m, b)
 }
 func (m *Complex_Group) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Complex_Group.Marshal(b, m, deterministic)
 }
-func (dst *Complex_Group) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Complex_Group.Merge(dst, src)
+func (m *Complex_Group) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Complex_Group.Merge(m, src)
 }
 func (m *Complex_Group) XXX_Size() int {
 	return xxx_messageInfo_Complex_Group.Size(m)
@@ -195,10 +200,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("kythe/go/util/riegeli/riegeli_test.proto", fileDescriptor_riegeli_test_ad4413a3829fc90c)
+	proto.RegisterFile("kythe/go/util/riegeli/riegeli_test.proto", fileDescriptor_b786c6e75369a723)
 }
 
-var fileDescriptor_riegeli_test_ad4413a3829fc90c = []byte{
+var fileDescriptor_b786c6e75369a723 = []byte{
 	// 282 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x90, 0x4f, 0x4b, 0x03, 0x31,
 	0x10, 0xc5, 0x49, 0xb7, 0xbb, 0xab, 0x63, 0x2b, 0x12, 0x90, 0x06, 0xf1, 0x10, 0x7b, 0x31, 0xa7,

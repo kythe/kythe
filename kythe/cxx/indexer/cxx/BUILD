@@ -378,6 +378,7 @@ cc_library(
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@org_llvm//:LLVMSupport",

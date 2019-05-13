@@ -3,11 +3,13 @@
 
 package graph_serving_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import schema_go_proto "kythe.io/kythe/proto/schema_go_proto"
-import storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	schema_go_proto "kythe.io/kythe/proto/schema_go_proto"
+	storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,7 +20,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type Edges struct {
 	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
@@ -36,16 +38,17 @@ func (m *Edges) Reset()         { *m = Edges{} }
 func (m *Edges) String() string { return proto.CompactTextString(m) }
 func (*Edges) ProtoMessage()    {}
 func (*Edges) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_serving_7e58dc12a40a376b, []int{0}
+	return fileDescriptor_6a9dc9f3ff73c6a9, []int{0}
 }
+
 func (m *Edges) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Edges.Unmarshal(m, b)
 }
 func (m *Edges) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Edges.Marshal(b, m, deterministic)
 }
-func (dst *Edges) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Edges.Merge(dst, src)
+func (m *Edges) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Edges.Merge(m, src)
 }
 func (m *Edges) XXX_Size() int {
 	return xxx_messageInfo_Edges.Size(m)
@@ -113,97 +116,13 @@ func (m *Edges) GetTarget() *Edges_Target {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Edges) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Edges_OneofMarshaler, _Edges_OneofUnmarshaler, _Edges_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Edges) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Edges_Index_)(nil),
 		(*Edges_Edge_)(nil),
 		(*Edges_Target_)(nil),
 	}
-}
-
-func _Edges_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Edges)
-	// entry
-	switch x := m.Entry.(type) {
-	case *Edges_Index_:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Index); err != nil {
-			return err
-		}
-	case *Edges_Edge_:
-		b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Edge); err != nil {
-			return err
-		}
-	case *Edges_Target_:
-		b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Target); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Edges.Entry has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Edges_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Edges)
-	switch tag {
-	case 2: // entry.index
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Edges_Index)
-		err := b.DecodeMessage(msg)
-		m.Entry = &Edges_Index_{msg}
-		return true, err
-	case 3: // entry.edge
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Edges_Edge)
-		err := b.DecodeMessage(msg)
-		m.Entry = &Edges_Edge_{msg}
-		return true, err
-	case 4: // entry.target
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Edges_Target)
-		err := b.DecodeMessage(msg)
-		m.Entry = &Edges_Target_{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Edges_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Edges)
-	// entry
-	switch x := m.Entry.(type) {
-	case *Edges_Index_:
-		s := proto.Size(x.Index)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Edges_Edge_:
-		s := proto.Size(x.Edge)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Edges_Target_:
-		s := proto.Size(x.Target)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type Edges_Index struct {
@@ -217,16 +136,17 @@ func (m *Edges_Index) Reset()         { *m = Edges_Index{} }
 func (m *Edges_Index) String() string { return proto.CompactTextString(m) }
 func (*Edges_Index) ProtoMessage()    {}
 func (*Edges_Index) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_serving_7e58dc12a40a376b, []int{0, 0}
+	return fileDescriptor_6a9dc9f3ff73c6a9, []int{0, 0}
 }
+
 func (m *Edges_Index) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Edges_Index.Unmarshal(m, b)
 }
 func (m *Edges_Index) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Edges_Index.Marshal(b, m, deterministic)
 }
-func (dst *Edges_Index) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Edges_Index.Merge(dst, src)
+func (m *Edges_Index) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Edges_Index.Merge(m, src)
 }
 func (m *Edges_Index) XXX_Size() int {
 	return xxx_messageInfo_Edges_Index.Size(m)
@@ -261,16 +181,17 @@ func (m *Edges_Edge) Reset()         { *m = Edges_Edge{} }
 func (m *Edges_Edge) String() string { return proto.CompactTextString(m) }
 func (*Edges_Edge) ProtoMessage()    {}
 func (*Edges_Edge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_serving_7e58dc12a40a376b, []int{0, 1}
+	return fileDescriptor_6a9dc9f3ff73c6a9, []int{0, 1}
 }
+
 func (m *Edges_Edge) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Edges_Edge.Unmarshal(m, b)
 }
 func (m *Edges_Edge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Edges_Edge.Marshal(b, m, deterministic)
 }
-func (dst *Edges_Edge) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Edges_Edge.Merge(dst, src)
+func (m *Edges_Edge) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Edges_Edge.Merge(m, src)
 }
 func (m *Edges_Edge) XXX_Size() int {
 	return xxx_messageInfo_Edges_Edge.Size(m)
@@ -339,69 +260,12 @@ func (m *Edges_Edge) GetTarget() *storage_go_proto.VName {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Edges_Edge) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Edges_Edge_OneofMarshaler, _Edges_Edge_OneofUnmarshaler, _Edges_Edge_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Edges_Edge) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Edges_Edge_KytheKind)(nil),
 		(*Edges_Edge_GenericKind)(nil),
 	}
-}
-
-func _Edges_Edge_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Edges_Edge)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Edges_Edge_KytheKind:
-		b.EncodeVarint(1<<3 | proto.WireVarint)
-		b.EncodeVarint(uint64(x.KytheKind))
-	case *Edges_Edge_GenericKind:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.GenericKind)
-	case nil:
-	default:
-		return fmt.Errorf("Edges_Edge.Kind has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Edges_Edge_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Edges_Edge)
-	switch tag {
-	case 1: // kind.kythe_kind
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Kind = &Edges_Edge_KytheKind{schema_go_proto.EdgeKind(x)}
-		return true, err
-	case 2: // kind.generic_kind
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Kind = &Edges_Edge_GenericKind{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Edges_Edge_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Edges_Edge)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Edges_Edge_KytheKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.KytheKind))
-	case *Edges_Edge_GenericKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.GenericKind)))
-		n += len(x.GenericKind)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type Edges_Target struct {
@@ -415,16 +279,17 @@ func (m *Edges_Target) Reset()         { *m = Edges_Target{} }
 func (m *Edges_Target) String() string { return proto.CompactTextString(m) }
 func (*Edges_Target) ProtoMessage()    {}
 func (*Edges_Target) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_serving_7e58dc12a40a376b, []int{0, 2}
+	return fileDescriptor_6a9dc9f3ff73c6a9, []int{0, 2}
 }
+
 func (m *Edges_Target) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Edges_Target.Unmarshal(m, b)
 }
 func (m *Edges_Target) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Edges_Target.Marshal(b, m, deterministic)
 }
-func (dst *Edges_Target) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Edges_Target.Merge(dst, src)
+func (m *Edges_Target) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Edges_Target.Merge(m, src)
 }
 func (m *Edges_Target) XXX_Size() int {
 	return xxx_messageInfo_Edges_Target.Size(m)
@@ -449,11 +314,9 @@ func init() {
 	proto.RegisterType((*Edges_Target)(nil), "kythe.proto.serving.graph.Edges.Target")
 }
 
-func init() {
-	proto.RegisterFile("kythe/proto/graph_serving.proto", fileDescriptor_graph_serving_7e58dc12a40a376b)
-}
+func init() { proto.RegisterFile("kythe/proto/graph_serving.proto", fileDescriptor_6a9dc9f3ff73c6a9) }
 
-var fileDescriptor_graph_serving_7e58dc12a40a376b = []byte{
+var fileDescriptor_6a9dc9f3ff73c6a9 = []byte{
 	// 380 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0xdf, 0x6a, 0xdb, 0x30,
 	0x14, 0x87, 0x9d, 0xcd, 0x76, 0x96, 0x93, 0xb1, 0x0b, 0x5d, 0x0c, 0xc7, 0x0c, 0x32, 0x36, 0xf6,

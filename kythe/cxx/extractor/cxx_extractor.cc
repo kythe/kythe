@@ -29,6 +29,7 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
@@ -1192,7 +1193,7 @@ void MapCompilerResources(clang::tooling::ToolInvocation* invocation,
 
 void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
   if (!index_writer_.SetVNameConfiguration(LoadFileOrDie(path))) {
-    fprintf(stderr, "Couldn't configure vnames from %s\n", path.c_str());
+    absl::FPrintF(stderr, "Couldn't configure vnames from %s\n", path);
     exit(1);
   }
 }
