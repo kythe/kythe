@@ -410,6 +410,9 @@ message Anchor {
   // Span of the anchor's snippet within its parent's text
   common.Span snippet_span = 11;
 
+  // The build config of the file containing this anchor.
+  string build_config = 12;
+
   reserved 4, 5, 8, 9;
 }
 
