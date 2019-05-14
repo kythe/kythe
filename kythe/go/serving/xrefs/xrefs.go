@@ -811,6 +811,7 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 		Span:        a.Span,
 		Snippet:     a.Snippet,
 		SnippetSpan: a.SnippetSpan,
+		BuildConfig: a.BuildConfiguration,
 	}}
 }
 
