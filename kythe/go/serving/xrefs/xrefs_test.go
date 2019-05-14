@@ -190,7 +190,7 @@ var (
 
 							BuildConfiguration: "test-build-config",
 						},
-						Kind:   "/kythe/defines/binding",
+						Kind:   "/kythe/edge/defines/binding",
 						Target: "kythe://c?lang=otpl?path=/a/path#map",
 					},
 					{
@@ -216,7 +216,41 @@ var (
 						SemanticScope: "kythe://c?lang=otpl?path=/a/path#map",
 					},
 				},
+				TargetOverride: []*srvpb.FileDecorations_Override{{
+					Kind:                 srvpb.FileDecorations_Override_EXTENDS,
+					Overriding:           "kythe://c?lang=otpl?path=/a/path#map",
+					Overridden:           "kythe://c?lang=otpl#map",
+					OverriddenDefinition: "kythe://c?lang=otpl?path=/b/path#mapDef",
+					MarkedSource: &cpb.MarkedSource{
+						Kind:    cpb.MarkedSource_IDENTIFIER,
+						PreText: "OverrideMS",
+					},
+				}, {
+					Kind:                 srvpb.FileDecorations_Override_EXTENDS,
+					Overriding:           "kythe://c?lang=otpl?path=/a/path#map",
+					Overridden:           "kythe://c?lang=otpl#map",
+					OverriddenDefinition: "kythe://c?lang=otpl?path=/b/path#mapDefOtherConfig",
+					MarkedSource: &cpb.MarkedSource{
+						Kind:    cpb.MarkedSource_IDENTIFIER,
+						PreText: "OverrideMS",
+					},
+				}},
 				Target: getNodes("kythe://c?lang=otpl?path=/a/path#map", "kythe://core?lang=otpl#empty?", "kythe://core?lang=otpl#cons"),
+				TargetDefinitions: []*srvpb.ExpandedAnchor{{
+					Ticket:             "kythe://c?lang=otpl?path=/b/path#mapDef",
+					BuildConfiguration: "test-build-config",
+					Span: &cpb.Span{
+						Start: &cpb.Point{LineNumber: 1},
+						End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+					},
+				}, {
+					Ticket:             "kythe://c?lang=otpl?path=/b/path#mapDefOtherConfig",
+					BuildConfiguration: "other-build-config",
+					Span: &cpb.Span{
+						Start: &cpb.Point{LineNumber: 1},
+						End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+					},
+				}},
 				Diagnostic: []*cpb.Diagnostic{
 					{Message: "Test diagnostic message"},
 					{
@@ -529,21 +563,135 @@ func TestDecorationsRefScopes(t *testing.T) {
 	}
 }
 
-func TestDecorationsBuildConfig(t *testing.T) {
+func TestDecorationsExtendsOverrides(t *testing.T) {
 	d := tbl.Decorations[1]
 
 	st := tbl.Construct(t)
 	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
-		Location:    &xpb.Location{Ticket: d.File.Ticket},
-		References:  true,
-		BuildConfig: []string{"test-build-config"},
+		Location:          &xpb.Location{Ticket: d.File.Ticket},
+		References:        true,
+		ExtendsOverrides:  true,
+		SemanticScopes:    true,
+		TargetDefinitions: true,
 	})
 	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
-	expected := refs(span.NewNormalizer(d.File.Text), d.Decoration[:1])
-	if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
+	expectedOverrides := map[string]*xpb.DecorationsReply_Overrides{
+		"kythe://c?lang=otpl?path=/a/path#map": &xpb.DecorationsReply_Overrides{
+			Override: []*xpb.DecorationsReply_Override{{
+				Kind:             xpb.DecorationsReply_Override_EXTENDS,
+				Target:           "kythe://c?lang=otpl#map",
+				TargetDefinition: "kythe://c?lang=otpl?path=/b/path#mapDef",
+				MarkedSource: &cpb.MarkedSource{
+					Kind:    cpb.MarkedSource_IDENTIFIER,
+					PreText: "OverrideMS",
+				},
+			}, {
+				Kind:             xpb.DecorationsReply_Override_EXTENDS,
+				Target:           "kythe://c?lang=otpl#map",
+				TargetDefinition: "kythe://c?lang=otpl?path=/b/path#mapDefOtherConfig",
+				MarkedSource: &cpb.MarkedSource{
+					Kind:    cpb.MarkedSource_IDENTIFIER,
+					PreText: "OverrideMS",
+				},
+			}},
+		},
+	}
+	if err := testutil.DeepEqual(expectedOverrides, reply.ExtendsOverrides); err != nil {
 		t.Fatal(err)
 	}
+
+	expectedDefs := map[string]*xpb.Anchor{
+		"kythe://c?lang=otpl?path=/b/path#mapDef": &xpb.Anchor{
+			Ticket:      "kythe://c?lang=otpl?path=/b/path#mapDef",
+			Parent:      "kythe://c?path=/b/path",
+			BuildConfig: "test-build-config",
+			Span: &cpb.Span{
+				Start: &cpb.Point{LineNumber: 1},
+				End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+			},
+		},
+		"kythe://c?lang=otpl?path=/b/path#mapDefOtherConfig": &xpb.Anchor{
+			Ticket:      "kythe://c?lang=otpl?path=/b/path#mapDefOtherConfig",
+			Parent:      "kythe://c?path=/b/path",
+			BuildConfig: "other-build-config",
+			Span: &cpb.Span{
+				Start: &cpb.Point{LineNumber: 1},
+				End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+			},
+		},
+	}
+	if err := testutil.DeepEqual(expectedDefs, reply.DefinitionLocations); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDecorationsBuildConfig(t *testing.T) {
+	d := tbl.Decorations[1]
+	st := tbl.Construct(t)
+
+	t.Run("MissingConfig", func(t *testing.T) {
+		reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+			Location:          &xpb.Location{Ticket: d.File.Ticket},
+			References:        true,
+			BuildConfig:       []string{"missing-build-config"},
+			ExtendsOverrides:  true,
+			TargetDefinitions: true,
+		})
+		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+
+		if err := testutil.DeepEqual([]*xpb.DecorationsReply_Reference{}, reply.Reference); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("FoundConfig", func(t *testing.T) {
+		reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+			Location:          &xpb.Location{Ticket: d.File.Ticket},
+			References:        true,
+			BuildConfig:       []string{"test-build-config"},
+			ExtendsOverrides:  true,
+			TargetDefinitions: true,
+		})
+		testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+
+		expected := refs(span.NewNormalizer(d.File.Text), d.Decoration[:1])
+		if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
+			t.Fatal(err)
+		}
+
+		expectedOverrides := map[string]*xpb.DecorationsReply_Overrides{
+			"kythe://c?lang=otpl?path=/a/path#map": &xpb.DecorationsReply_Overrides{
+				Override: []*xpb.DecorationsReply_Override{{
+					Kind:             xpb.DecorationsReply_Override_EXTENDS,
+					Target:           "kythe://c?lang=otpl#map",
+					TargetDefinition: "kythe://c?lang=otpl?path=/b/path#mapDef",
+					MarkedSource: &cpb.MarkedSource{
+						Kind:    cpb.MarkedSource_IDENTIFIER,
+						PreText: "OverrideMS",
+					},
+				}},
+			},
+		}
+		if err := testutil.DeepEqual(expectedOverrides, reply.ExtendsOverrides); err != nil {
+			t.Fatal(err)
+		}
+
+		expectedDefs := map[string]*xpb.Anchor{
+			"kythe://c?lang=otpl?path=/b/path#mapDef": &xpb.Anchor{
+				Ticket:      "kythe://c?lang=otpl?path=/b/path#mapDef",
+				Parent:      "kythe://c?path=/b/path",
+				BuildConfig: "test-build-config",
+				Span: &cpb.Span{
+					Start: &cpb.Point{LineNumber: 1},
+					End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+				},
+			},
+		}
+		if err := testutil.DeepEqual(expectedDefs, reply.DefinitionLocations); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func TestDecorationsDirtyBuffer(t *testing.T) {
@@ -575,7 +723,7 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 		{
 			// Unpatched anchor for "map"
 			TargetTicket: "kythe://c?lang=otpl?path=/a/path#map",
-			Kind:         "/kythe/defines/binding",
+			Kind:         "/kythe/edge/defines/binding",
 
 			Span: &cpb.Span{
 				Start: &cpb.Point{
