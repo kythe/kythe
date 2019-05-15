@@ -148,7 +148,11 @@ std::string IndexCompilationUnit(
   llvm::sys::path::Style Style;
   if (!kythe::IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(
           Unit.working_directory(), &Style)) {
-    return Unit.working_directory() + " is not absolute or has unknown style.";
+    if (!Unit.working_directory().empty()) {
+      absl::FPrintF(stderr, "warning: could not detect path style for %s\n",
+                    Unit.working_directory().c_str());
+    }
+    Style = llvm::sys::path::Style::posix;
   }
   HeaderSearchInfo HSI;
   proto::CxxCompilationUnitDetails Details;
