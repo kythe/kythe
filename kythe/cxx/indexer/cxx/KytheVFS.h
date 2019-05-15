@@ -19,6 +19,7 @@
 
 #include "clang/Basic/FileManager.h"
 #include "kythe/proto/analysis.pb.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/VirtualFileSystem.h"
 
 namespace kythe {
@@ -32,9 +33,17 @@ class IndexVFS : public llvm::vfs::FileSystem {
  public:
   /// \param working_directory The absolute path to the working directory.
   /// \param virtual_files Files to map.
+  /// \param virtual_dirs Directories to map.
+  /// \param style Style used to parse incoming paths. Paths are normalized
+  /// to POSIX-style.
   IndexVFS(const std::string& working_directory,
            const std::vector<proto::FileData>& virtual_files,
-           const std::vector<llvm::StringRef>& virtual_dirs);
+           const std::vector<llvm::StringRef>& virtual_dirs,
+           const llvm::sys::path::Style style);
+  /// \return false if `awd` is not absolute or its style could not be detected;
+  /// true if `style` was set to the style of `awd`.
+  static bool DetectStyleFromAbsoluteWorkingDirectory(
+      const std::string& awd, llvm::sys::path::Style* style);
   ~IndexVFS();
   /// \brief Implements llvm::vfs::FileSystem::status.
   llvm::ErrorOr<llvm::vfs::Status> status(const llvm::Twine& path) override;
