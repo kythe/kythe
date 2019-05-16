@@ -31,17 +31,16 @@ static inline std::pair<uint64_t, uint64_t> PairFromUid(
   return std::make_pair(uid.getDevice(), uid.getFile());
 }
 
-bool IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(
-    const std::string& awd, llvm::sys::path::Style* style) {
+absl::optional<llvm::sys::path::Style>
+IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd) {
   if (llvm::sys::path::is_absolute(awd, llvm::sys::path::Style::posix)) {
-    *style = llvm::sys::path::Style::posix;
+    return llvm::sys::path::Style::posix;
   } else if (llvm::sys::path::is_absolute(awd,
                                           llvm::sys::path::Style::windows)) {
-    *style = llvm::sys::path::Style::windows;
-  } else {
-    return false;
+    return llvm::sys::path::Style::windows;
   }
-  return true;
+  absl::FPrintF(stderr, "warning: could not detect path style for %s\n", awd);
+  return absl::nullopt;
 }
 
 namespace {
@@ -64,7 +63,7 @@ IndexVFS::IndexVFS(const std::string& working_directory,
   if (!llvm::sys::path::is_absolute(working_directory_,
                                     llvm::sys::path::Style::posix)) {
     absl::FPrintF(stderr, "warning: working directory %s is not absolute\n",
-                  working_directory_.c_str());
+                  working_directory_);
   }
   for (const auto& data : virtual_files_) {
     std::string path = FixupPath(ToStringRef(data.info().path()), style);

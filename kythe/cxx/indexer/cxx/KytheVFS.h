@@ -17,6 +17,7 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_VFS_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_VFS_H_
 
+#include "absl/types/optional.h"
 #include "clang/Basic/FileManager.h"
 #include "kythe/proto/analysis.pb.h"
 #include "llvm/Support/Path.h"
@@ -39,11 +40,11 @@ class IndexVFS : public llvm::vfs::FileSystem {
   IndexVFS(const std::string& working_directory,
            const std::vector<proto::FileData>& virtual_files,
            const std::vector<llvm::StringRef>& virtual_dirs,
-           const llvm::sys::path::Style style);
-  /// \return false if `awd` is not absolute or its style could not be detected;
-  /// true if `style` was set to the style of `awd`.
-  static bool DetectStyleFromAbsoluteWorkingDirectory(
-      const std::string& awd, llvm::sys::path::Style* style);
+           llvm::sys::path::Style style);
+  /// \return nullopt if if `awd` is not absolute or its style could not be
+  /// detected; otherwise, the style of `awd`.
+  static absl::optional<llvm::sys::path::Style>
+  DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd);
   ~IndexVFS();
   /// \brief Implements llvm::vfs::FileSystem::status.
   llvm::ErrorOr<llvm::vfs::Status> status(const llvm::Twine& path) override;
