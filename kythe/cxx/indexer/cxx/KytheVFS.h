@@ -41,7 +41,7 @@ class IndexVFS : public llvm::vfs::FileSystem {
            const std::vector<proto::FileData>& virtual_files,
            const std::vector<llvm::StringRef>& virtual_dirs,
            llvm::sys::path::Style style);
-  /// \return nullopt if if `awd` is not absolute or its style could not be
+  /// \return nullopt if `awd` is not absolute or its style could not be
   /// detected; otherwise, the style of `awd`.
   static absl::optional<llvm::sys::path::Style>
   DetectStyleFromAbsoluteWorkingDirectory(const std::string& awd);
