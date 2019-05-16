@@ -100,24 +100,26 @@ func indexMultiLanguageKzip(path string, out *os.File) error {
 	// For each compilation unit in the kzip, save a temporary kzip containing
 	// only that unit and run the appropriate indexer on it.
 	if err := r.Scan(func(cu *kzip.Unit) error {
-		if cu.Proto != nil {
-			tmpfilepath, err := saveSingleUnitTmpKzip(r, cu)
-			if err != nil {
-				return fmt.Errorf("creating tmp kzip: %v", err)
-			}
-			defer os.Remove(tmpfilepath)
+		if cu.Proto == nil {
+			return nil
+		}
 
-			// Run language-specific indexer.
-			args, err := indexerCommand(tmpfilepath, cu.Proto.VName.Language)
-			if err != nil {
-				return err
-			}
-			cmd := exec.Command(args[0], args[1:]...)
-			cmd.Stdout = out
-			cmd.Stderr = os.Stderr
-			if err = cmd.Run(); err != nil {
-				return fmt.Errorf("indexing kzip %s: %v", tmpfilepath, err)
-			}
+		tmpfilepath, err := saveSingleUnitTmpKzip(r, cu)
+		if err != nil {
+			return fmt.Errorf("creating tmp kzip: %v", err)
+		}
+		defer os.Remove(tmpfilepath)
+
+		// Run language-specific indexer.
+		args, err := indexerCommand(tmpfilepath, cu.Proto.VName.Language)
+		if err != nil {
+			return err
+		}
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Stdout = out
+		cmd.Stderr = os.Stderr
+		if err = cmd.Run(); err != nil {
+			return fmt.Errorf("indexing kzip %s: %v", tmpfilepath, err)
 		}
 		return nil
 	}, kzip.ReadConcurrency(*concurrency)); err != nil {
