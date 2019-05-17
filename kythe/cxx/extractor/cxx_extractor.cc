@@ -1198,7 +1198,7 @@ void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
   }
 }
 
-void IsCuda(const std::vector<std::string>& args) {
+bool IsCuda(const std::vector<std::string>& args) {
   for (int i = 0; i < args.size() - 1; i++) {
     if (args[i] == "-x" && args[i + 1] == "cuda") {
       return true;
