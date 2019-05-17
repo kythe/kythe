@@ -1198,8 +1198,22 @@ void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
   }
 }
 
+void IsCuda(const std::vector<std::string>& args) {
+  for (int i = 0; i < args.size() - 1; i++) {
+    if (args[i] == "-x" && args[i + 1] == "cuda") {
+      return true;
+    }
+  }
+  return false;
+}
+
 void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
   final_args_ = args;
+  // Only compile CUDA for the host. Otherwise we end up getting more than a
+  // single clang invocation.
+  if (IsCuda(final_args_)) {
+    final_args_.push_back("--cuda-host-only");
+  }
   std::string executable = !final_args_.empty() ? final_args_[0] : "";
   if (final_args_.size() >= 3 && final_args_[1] == "--with_executable") {
     executable = final_args_[2];
