@@ -60,7 +60,7 @@ case $file in
     fi ;;
   *.h|*.cc|*.c|*.proto|*.js)
     if command -v clang-format &>/dev/null; then
-      if clang-format --output-replacements-xml "$file" | grep -q '<replacement '; then
+      if ! diff <(clang-format --style=file "$file") "$file"; then
         echo "clang-format::error:1 $file"
       fi
     fi ;;
