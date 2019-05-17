@@ -60,7 +60,7 @@ case $file in
     fi ;;
   *.h|*.cc|*.c|*.proto|*.js)
     if command -v clang-format &>/dev/null; then
-      if diff -q <(clang-format --style=file "$file") "$file"; then
+      if ! diff -q <(clang-format --style=file "$file") "$file"; then
         echo "clang-format::error:1 $file"
       fi
     fi ;;
