@@ -124,10 +124,6 @@ void MaybeNormalizeFileVNames(IndexerJob* job) {
 
 void UpdateJobWdirFromUnit(IndexerJob* job) {
   job->working_directory = job->unit.working_directory();
-  CHECK(!job->working_directory.empty())
-      << "Indexer jobs must have their absolute working directory set.";
-  CHECK(llvm::sys::path::is_absolute(job->working_directory))
-      << "Indexer jobs must have their absolute working directory set.";
 }
 
 /// \brief Reads data from a .kindex file into memory.

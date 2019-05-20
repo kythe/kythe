@@ -27,8 +27,8 @@
 #include <sys/stat.h>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/str_format.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_format.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
