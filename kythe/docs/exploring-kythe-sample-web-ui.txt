@@ -94,7 +94,9 @@ http://www.kythe.io/docs/schema/#named[/kythe/edge/named]:: associated
   part of a function http://www.kythe.io/docs/schema/#tapp[tapp] type)
 
 By clicking on `GCCArgsToClangArgs` on
-https://xrefs-dot-kythe-repo.appspot.com/#kythe/cxx/common/CommandLineUtils.h?corpus=kythe&line=61[line 61 of kythe/cxx/common/CommandLineUtils.h], one can see some other simple examples of edges from C++'s perspective:
+https://xrefs-dot-kythe-repo.appspot.com/#kythe/cxx/common/CommandLineUtils.h?corpus=kythe&line=61[line
+61 of kythe/cxx/common/CommandLineUtils.h], one can see some other simple
+examples of edges from C++'s perspective:
 
 %link:http://www.kythe.io/docs/schema/#completes[/kythe/edge/completes]:: anchor
   location of definitions for the `GCCArgsToClangArgs`
