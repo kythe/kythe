@@ -154,6 +154,45 @@ public final class NodesTest extends TestCase {
                 + "  edges: {ticket: 'kythe:#tgt2' ordinal: 1}}}"));
   }
 
+  public void testFromSource() {
+    testProtoConversion(
+        "fromSource",
+        Nodes::fromSource,
+        Source.class,
+        Node.class,
+        ImmutableList.of(
+            "ticket: 'kythe://c#s'",
+            "ticket: 'kythe:#node' facts: {key: '/kythe/text/encoding' value: 'second'}"
+                + " facts: {key: '/kythe/text' value: 'first'}",
+            "ticket: 'kythe:#node' facts: {key: '/not/kythe/fact' value: 'val'}",
+            "ticket: 'kythe:#node' edge_groups: {key: '/kythe/edge/param' value: {"
+                + " edges: {ticket: 'kythe:#target' ordinal: 1}"
+                + " edges: {ticket: 'kythe:#tgt' ordinal: 2}"
+                + " edges: {ticket: 'kythe:#target' ordinal: 0}}}",
+            "ticket: 'kythe:#node' edge_groups: {key: '/not/kythe/edge' value: {"
+                + " edges: {ticket: 'kythe:#target'}}}",
+            "ticket: 'kythe:#record' facts: {key: '/kythe/node/kind' value: 'record'}",
+            "ticket: 'kythe:#record' facts: {key: '/kythe/node/kind' value: 'record'}"
+                + " facts: {key: '/kythe/subkind' value: 'class'}",
+            "ticket: 'kythe:#node' facts: {key: '/kythe/node/kind' value: 'something'}",
+            "ticket: 'kythe:#node' facts: {key: '/kythe/subkind' value: 'something'}"),
+        ImmutableList.of(
+            "source: {corpus: 'c' signature: 's'}",
+            "source: {signature: 'node'} fact: {kythe_name: TEXT value: 'first'}"
+                + " fact: {kythe_name: TEXT_ENCODING value: 'second'}",
+            "source: {signature: 'node'} fact: {generic_name: '/not/kythe/fact' value: 'val'}",
+            "source: {signature: 'node'}"
+                + " edge: {kythe_kind: PARAM ordinal: 0 target: {signature: 'target'}}"
+                + " edge: {kythe_kind: PARAM ordinal: 1 target: {signature: 'target'}}"
+                + " edge: {kythe_kind: PARAM ordinal: 2 target: {signature: 'tgt'}}",
+            "source: {signature: 'node'}"
+                + " edge: {generic_kind: '/not/kythe/edge' target: {signature: 'target'}}",
+            "source: {signature: 'record'} kythe_kind: RECORD",
+            "source: {signature: 'record'} kythe_kind: RECORD kythe_subkind: CLASS",
+            "source: {signature: 'node'} generic_kind: 'something'",
+            "source: {signature: 'node'} generic_subkind: 'something'"));
+  }
+
   public void testConvertToSchemaEntry() {
     testProtoConversion(
         "convertToSchemaEntry",
