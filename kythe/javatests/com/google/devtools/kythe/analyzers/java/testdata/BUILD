@@ -33,4 +33,5 @@ java_extract_kzip(
         "//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/regression:regression_files",
     ],
     visibility = ["//visibility:public"],
+    deps = ["@com_google_code_findbugs_jsr305//jar"],  # needed for pkg/package-info.java
 )
