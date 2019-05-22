@@ -1,8 +1,6 @@
 ---
 tasks:
   ubuntu_1804:
-    shell_commands:
-      - sed -i.bak -e 's/version.bzl/dummy_version.bzl/' WORKSPACE
     platform: ubuntu1804
     build_targets:
       - "//kythe/..."
