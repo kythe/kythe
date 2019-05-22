@@ -65,6 +65,7 @@ _INDEXER_FLAGS = {
 def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
     """Returns the list of compiler flags from the C++ toolchain."""
     feature_configuration = cc_common.configure_features(
+        ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
@@ -91,6 +92,7 @@ def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
 def _compile_and_link(ctx, cc_info_providers, sources, headers):
     cc_toolchain = find_cpp_toolchain(ctx)
     feature_configuration = cc_common.configure_features(
+        ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
@@ -351,6 +353,7 @@ cc_extract_kzip = rule(
     Each file in srcs will be extracted into a separate .kzip file, based on the name
     of the source.
     """,
+    fragments = ["cpp"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     implementation = _cc_extract_kzip_impl,
 )
