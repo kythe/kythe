@@ -149,7 +149,7 @@ java_verifier_test(
     name = "cross_file_tests",
     size = "small",
     srcs = ["CrossFile.java"],
-    deps = [":files_tests"],
+    verifier_deps = [":files_tests"],
 )
 
 java_verifier_test(
@@ -170,7 +170,7 @@ java_verifier_test(
         "--verbose",
         "--emit_jvm_signatures",
     ],
-    deps = [":jvm_files_tests"],
+    verifier_deps = [":jvm_files_tests"],
 )
 
 # TODO(#1501): This test currently fails
@@ -245,6 +245,7 @@ java_verifier_test(
     meta = [
         "Metadata.java.meta",
     ],
+    deps = ["@javax_annotation_jsr250_api//jar"],
 )
 
 java_verifier_test(
@@ -260,6 +261,7 @@ java_verifier_test(
         "ProtobufMetadata.java.pb.meta",
     ],
     vnames_config = "protobuf_vnames.json",
+    deps = ["@javax_annotation_jsr250_api//jar"],
 )
 
 java_verifier_test(
@@ -313,6 +315,7 @@ java_verifier_test(
         "Packages.java",
         "package-info.java",
     ],
+    deps = ["@com_google_code_findbugs_jsr305//jar"],
 )
 
 java_verifier_test(

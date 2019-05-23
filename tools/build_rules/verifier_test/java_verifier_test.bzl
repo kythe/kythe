@@ -154,6 +154,7 @@ def java_verifier_test(
         name,
         srcs,
         meta = [],
+        verifier_deps = [],
         deps = [],
         size = "small",
         tags = [],
@@ -169,7 +170,8 @@ def java_verifier_test(
 
     Args:
       srcs: The compilation's source file inputs; each file's verifier goals will be checked
-      deps: Optional list of java_verifier_test targets to be used as Java compilation dependencies
+      verifier_deps: Optional list of java_verifier_test targets to be used as Java compilation dependencies
+      deps: Optional list of Java compilation dependencies
       meta: Optional list of Kythe metadata files
       extractor: Executable extractor tool to invoke (defaults to javac_extractor)
       extractor_opts: List of options passed to the extractor tool
@@ -191,7 +193,7 @@ def java_verifier_test(
         visibility = visibility,
         vnames_config = vnames_config,
         # This is a hack to depend on the .jar producer.
-        deps = [d + "_kzip" for d in deps],
+        deps = deps + [d + "_kzip" for d in verifier_deps],
     )
     indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer"
     tools = []
