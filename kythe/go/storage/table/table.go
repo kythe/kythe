@@ -70,8 +70,9 @@ func (t *KVProto) Lookup(ctx context.Context, key []byte, msg proto.Message) err
 	v, err := t.Get(ctx, key, nil)
 	if err == io.EOF {
 		return ErrNoSuchKey
-	}
-	if err := proto.Unmarshal(v, msg); err != nil {
+	} else if err != nil {
+		return err
+	} else if err := proto.Unmarshal(v, msg); err != nil {
 		return fmt.Errorf("proto unmarshal error: %v", err)
 	}
 	return nil
