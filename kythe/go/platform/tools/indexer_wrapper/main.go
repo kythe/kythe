@@ -1,4 +1,4 @@
-// binary indexer_wrapper reads compilation units from the provided kzip(s) and
+// Binary indexer_wrapper reads compilation units from the provided kzip(s) and
 // indexes them using language-specific indexers. Entry protos are written to
 // stdout.
 //
@@ -19,6 +19,7 @@ import (
 	"kythe.io/kythe/go/platform/analysis/driver"
 	"kythe.io/kythe/go/platform/analysis/local"
 	"kythe.io/kythe/go/platform/delimited"
+
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
@@ -33,7 +34,7 @@ func binPath(binname string) string {
 	return filepath.Join(*releaseDir, "indexers", binname)
 }
 
-func NewDelegatingAnalyzer(fetcher analysis.Fetcher) *delegatingAnalyzer {
+func NewDelegatingAnalyzer(fetcher analysis.Fetcher) (*delegatingAnalyzer, error) {
 	// Command-line invocations for known/released indexer binaries.
 	cmds := map[string][]string{
 		"c++":       []string{binPath("cxx_indexer")},
@@ -46,10 +47,14 @@ func NewDelegatingAnalyzer(fetcher analysis.Fetcher) *delegatingAnalyzer {
 
 	analyzers := map[string]analysis.CompilationAnalyzer{}
 	for lang, cmd := range cmds {
-		analyzers[lang] = NewLocalAnalyzer(cmd, fetcher)
+		var err error
+		analyzers[lang], err = local.NewLocalAnalyzer(cmd, fetcher)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return &delegatingAnalyzer{analyzers: analyzers}
+	return &delegatingAnalyzer{analyzers: analyzers}, nil
 }
 
 func (a *delegatingAnalyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f analysis.OutputFunc) error {
@@ -112,8 +117,13 @@ func main() {
 	}
 
 	q := local.NewFileQueue(flag.Args(), nil)
+	a, err := NewDelegatingAnalyzer(q)
+	if err != nil {
+		log.Fatalf("unable to initialize delegating analyzer: %v", err)
+	}
+
 	driver := driver.Driver{
-		Analyzer:    NewDelegatingAnalyzer(q),
+		Analyzer:    a,
 		Context:     &driverContext{},
 		WriteOutput: writeOutput,
 	}

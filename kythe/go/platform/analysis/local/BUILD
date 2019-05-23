@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/analysis/driver",
+        "//kythe/go/platform/delimited",
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
