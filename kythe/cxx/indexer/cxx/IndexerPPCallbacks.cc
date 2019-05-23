@@ -53,9 +53,10 @@ IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor& PP,
     MetadataPragmaHandlerWrapper(IndexerPPCallbacks* context)
         : PragmaHandler("kythe_metadata"), context_(context) {}
     void HandlePragma(clang::Preprocessor& Preprocessor,
-                      clang::PragmaIntroducerKind Introducer,
+                      clang::PragmaIntroducer Introducer,
                       clang::Token& FirstToken) override {
-      context_->HandleKytheMetadataPragma(Preprocessor, Introducer, FirstToken);
+      context_->HandleKytheMetadataPragma(Preprocessor, Introducer.Kind,
+                                          FirstToken);
     }
 
    private:
@@ -66,9 +67,9 @@ IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor& PP,
     InlineMetadataPragmaHandlerWrapper(IndexerPPCallbacks* context)
         : PragmaHandler("kythe_inline_metadata"), context_(context) {}
     void HandlePragma(clang::Preprocessor& Preprocessor,
-                      clang::PragmaIntroducerKind Introducer,
+                      clang::PragmaIntroducer Introducer,
                       clang::Token& FirstToken) override {
-      context_->HandleKytheInlineMetadataPragma(Preprocessor, Introducer,
+      context_->HandleKytheInlineMetadataPragma(Preprocessor, Introducer.Kind,
                                                 FirstToken);
     }
 

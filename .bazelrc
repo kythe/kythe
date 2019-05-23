@@ -1,6 +1,10 @@
 # Remote Build Execution requires a strong hash function, such as SHA256.
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 
+# Compatibility options
+build --incompatible_require_ctx_in_configure_features # remove in 0.26
+build --incompatible_string_join_requires_strings      # remove in 0.27
+
 build --workspace_status_command tools/buildstamp/get_workspace_status
 build --auto_cpu_environment_group=//buildenv:cpu
 
