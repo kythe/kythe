@@ -434,7 +434,7 @@ def _go_dependencies():
         custom = "shell",
         custom_git = "https://bitbucket.org/creachadair/shell.git",
         importpath = "bitbucket.org/creachadair/shell",
-        tag = "v0.0.4",
+        tag = "v0.0.5",
     )
 
     maybe(
