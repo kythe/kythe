@@ -33,11 +33,10 @@ java_library(
     name = "protobuf",
     visibility = ["//visibility:private"],
     exports = [
+        "jsr250-api-1.0.jar",
         "@com_google_protobuf//:protobuf_java",
     ],
-    runtime_deps = [
-        "@com_google_protobuf//:protobuf_java",
-    ],
+    runtime_deps = ["@com_google_protobuf//:protobuf_java"],
 )
 
 # Clone of default C++ proto toolchain with "annotate_headers" enabled for
