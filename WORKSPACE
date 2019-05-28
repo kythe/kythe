@@ -6,6 +6,8 @@ load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel, and not one of the known-bad releases.
+# When updating the supported versions, make sure to update .bazelversion to the maximum
+# and https://buildkite.com/kythe-project/bazel-minimum/settings for the minimum.
 check_version("0.25.1", "0.26")
 
 http_archive(
