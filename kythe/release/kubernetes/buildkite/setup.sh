@@ -13,6 +13,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# Script for configuring kubectl to talk to the buildkite-agent cluster by
+# default.
+# This should be run prior to running deploy.sh, but only needs to be run once.
 CLUSTER=buildkite-agent-cluster
 ZONE=us-central1-a
 PROJECT=kythe-repo

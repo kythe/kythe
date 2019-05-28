@@ -14,7 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Script to deploy the kythe-repo/buildkite kubernetes agent.
+# Script to build and deploy the kythe-repo/buildkite-agent on Kubernetes.
+# Note: if only the image has changed, kubectl apply will not work by itself
+#       and must be followed by:
+#       kubectl rollout restart deployment.app/buildkite-agent
 cd "$(dirname "$0")"
 
 if [[ "$1" == --cloud ]]; then
