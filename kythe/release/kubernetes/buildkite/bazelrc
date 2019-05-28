@@ -1,0 +1,7 @@
+build --noshow_loading_progress
+test --test_output=errors --test_summary=terse --test_verbose_timeout_warnings
+test --test_tag_filters=-flaky
+
+# TODO(schroederc): enable remote cache between builders and devs
+# build --remote_http_cache=https://storage.googleapis.com/kythe-bazel-remote-cache
+# build --google_credentials=/buildbot/secrets/kythe-bazel-remote-cache.json
