@@ -215,7 +215,7 @@ func saveSingleUnitKzip(ctx context.Context, cu *apb.CompilationUnit, fetcher an
 		return "", err
 	}
 
-	w, err := kzip.NewWriter(tmpfile)
+	w, err := kzip.NewWriteCloser(tmpfile)
 	if err != nil {
 		return "", err
 	}
