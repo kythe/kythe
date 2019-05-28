@@ -19,6 +19,7 @@
 #include <zip.h>
 
 #include <cstdlib>
+#include <unordered_set>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
