@@ -219,11 +219,6 @@ func saveSingleUnitKzip(ctx context.Context, cu *apb.CompilationUnit, fetcher an
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		if err := w.Close(); err != nil {
-			log.Printf("unable to close kzip writer: %v", err)
-		}
-	}()
 
 	if _, err = w.AddUnit(cu, nil); err != nil {
 		return "", err
@@ -239,5 +234,5 @@ func saveSingleUnitKzip(ctx context.Context, cu *apb.CompilationUnit, fetcher an
 		}
 	}
 
-	return tmpfile.Name(), nil
+	return tmpfile.Name(), w.Close()
 }
