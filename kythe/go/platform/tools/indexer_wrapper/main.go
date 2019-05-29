@@ -34,7 +34,7 @@ func binPath(binname string) string {
 	return filepath.Join(*releaseDir, "indexers", binname)
 }
 
-func NewDelegatingAnalyzer(fetcher analysis.Fetcher) (*delegatingAnalyzer, error) {
+func NewDelegatingAnalyzer(fetcher analysis.Fetcher) *delegatingAnalyzer {
 	// Command-line invocations for known/released indexer binaries.
 	cmds := map[string][]string{
 		"c++":       []string{binPath("cxx_indexer")},
@@ -47,14 +47,10 @@ func NewDelegatingAnalyzer(fetcher analysis.Fetcher) (*delegatingAnalyzer, error
 
 	analyzers := map[string]analysis.CompilationAnalyzer{}
 	for lang, cmd := range cmds {
-		var err error
-		analyzers[lang], err = local.NewLocalAnalyzer(cmd, fetcher)
-		if err != nil {
-			return nil, err
-		}
+		analyzers[lang] = local.NewAnalyzer(cmd, fetcher)
 	}
 
-	return &delegatingAnalyzer{analyzers: analyzers}, nil
+	return &delegatingAnalyzer{analyzers: analyzers}
 }
 
 func (a *delegatingAnalyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f analysis.OutputFunc) error {
@@ -71,14 +67,10 @@ func (a *delegatingAnalyzer) Analyze(ctx context.Context, req *apb.AnalysisReque
 type driverContext struct{}
 
 func (driverContext) Setup(context.Context, driver.Compilation) error { return nil }
-	return nil
-}
-func (c *driverContext) Teardown(ctx context.Context, comp driver.Compilation) error {
-	return nil
-}
+func (driverContext) Teardown(ctx context.Context, comp driver.Compilation) error { return nil }
 
 // log any errors that happen during analysis.
-func (c *driverContext) AnalysisError(ctx context.Context, comp driver.Compilation, err error) error {
+func (driverContext) AnalysisError(ctx context.Context, comp driver.Compilation, err error) error {
 	log.Printf("AnalysisError: %v", err)
 	return err
 }
@@ -117,10 +109,7 @@ func main() {
 	}
 
 	q := local.NewFileQueue(flag.Args(), nil)
-	a, err := NewDelegatingAnalyzer(q)
-	if err != nil {
-		log.Fatalf("unable to initialize delegating analyzer: %v", err)
-	}
+	a := NewDelegatingAnalyzer(q)
 
 	driver := driver.Driver{
 		Analyzer:    a,
