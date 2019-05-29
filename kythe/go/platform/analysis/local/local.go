@@ -202,7 +202,6 @@ func (a *localAnalyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f
 	if err := f(ctx, &apb.AnalysisOutput{FinalResult: &apb.AnalysisResult{Status: apb.AnalysisResult_COMPLETE}}); err != nil {
 		return fmt.Errorf("unable to write analysis output: %v", err)
 	}
-
 	return nil
 }
 
