@@ -357,17 +357,27 @@ func groupCrossRefs(
 				g = &srvpb.PagedCrossReferences_Group{
 					Kind:        kind,
 					BuildConfig: config,
-					Caller: []*srvpb.PagedCrossReferences_Caller{{
-						Caller:         caller.Location,
-						SemanticCaller: ticket,
-						MarkedSource:   caller.MarkedSource,
-					}},
 				}
 				configs[config] = g
 				set.Group = append(set.Group, g)
 			}
 
-			g.Caller[0].Callsite = append(g.Caller[0].Callsite, site.Location)
+			var groupCaller *srvpb.PagedCrossReferences_Caller
+			for _, c := range g.Caller {
+				if c.SemanticCaller == ticket {
+					groupCaller = c
+					break
+				}
+			}
+			if groupCaller == nil {
+				groupCaller = &srvpb.PagedCrossReferences_Caller{
+					Caller:         caller.Location,
+					SemanticCaller: ticket,
+					MarkedSource:   caller.MarkedSource,
+				}
+				g.Caller = append(g.Caller, groupCaller)
+			}
+			groupCaller.Callsite = append(groupCaller.Callsite, site.Location)
 		}
 	}
 
