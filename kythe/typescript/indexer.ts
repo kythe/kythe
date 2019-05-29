@@ -193,7 +193,6 @@ class Vistor {
     const offsetTable = this.getOffsetTable(node.getSourceFile().fileName);
     this.emitFact(name, 'loc/start', offsetTable.lookup(start).toString());
     this.emitFact(name, 'loc/end', offsetTable.lookup(end).toString());
-    this.emitEdge(name, 'childof', this.kFile);
     return name;
   }
 
@@ -790,7 +789,9 @@ class Vistor {
       // TODO: choose VName for anonymous functions.
       kFunc = this.newVName('TODO', 'TODOPath');
     }
-    this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
+    if (kFunc) {
+        this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
+    }
 
     if (kFunc && decl.parent) {
       // Emit a "childof" edge on class/interface members.

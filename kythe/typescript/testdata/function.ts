@@ -8,6 +8,7 @@ interface Num {
   num: number;
 }
 
+//- TestDef defines F
 //- @test defines/binding F
 //- F.node/kind function
 //- @a defines/binding ParamA
@@ -15,6 +16,7 @@ interface Num {
 //- F param.0 ParamA
 //- @#0Num ref Num
 //- @#1Num ref Num
+//- TestDef.loc/start @^function
 function test(a: number, num: Num): Num {
   // TODO(evanm): it would be nice for @num ref NumAttr.  TypeScript seems to
   // know they're linked, in that if you rename 'num' above it knows to rename
@@ -23,6 +25,7 @@ function test(a: number, num: Num): Num {
   // the def'n of 'num' above, it doesn't show up when you hover 'num' below.
   //- @a ref ParamA
   return {num: a};
+  //- TestDef.loc/end @$"}"
 }
 
 //- @test ref F
