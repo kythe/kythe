@@ -70,7 +70,7 @@ func (a *delegatingAnalyzer) Analyze(ctx context.Context, req *apb.AnalysisReque
 
 type driverContext struct{}
 
-func (c *driverContext) Setup(ctx context.Context, comp driver.Compilation) error {
+func (driverContext) Setup(context.Context, driver.Compilation) error { return nil }
 	return nil
 }
 func (c *driverContext) Teardown(ctx context.Context, comp driver.Compilation) error {
