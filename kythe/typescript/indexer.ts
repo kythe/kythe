@@ -789,6 +789,9 @@ class Vistor {
       // TODO: choose VName for anonymous functions.
       kFunc = this.newVName('TODO', 'TODOPath');
     }
+    if (kFunc) {
+        this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
+    }
 
     if (kFunc && decl.parent) {
       // Emit a "childof" edge on class/interface members.
