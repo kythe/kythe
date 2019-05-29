@@ -17,6 +17,8 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
@@ -83,12 +85,7 @@ struct OrdinalEdgeRef {
   /// Overwrites all of the fields in `entry` that can differ between edges with
   /// ordinals.
   void Expand(proto::Entry* entry) const {
-    char digits[12];  // strlen("4294967295") + 2
-    int dot_ordinal_length = ::sprintf(digits, ".%u", ordinal);
-    entry->mutable_edge_kind()->clear();
-    entry->mutable_edge_kind()->reserve(dot_ordinal_length + edge_kind.size());
-    entry->mutable_edge_kind()->append(edge_kind.data(), edge_kind.size());
-    entry->mutable_edge_kind()->append(digits, dot_ordinal_length);
+    entry->set_edge_kind(absl::StrCat(edge_kind, ".", ordinal));
     source->Expand(entry->mutable_source());
     target->Expand(entry->mutable_target());
   }

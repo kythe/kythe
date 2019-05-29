@@ -80,6 +80,7 @@ cc_library(
     hdrs = ["path_utils.h"],
     deps = [
         "//kythe/cxx/common:lib",
+        "@com_google_absl//absl/strings:str_format",
         "@org_llvm//:LLVMSupport",
         "@org_llvm//:clangBasic",
         "@org_llvm//:clangLex",
@@ -109,6 +110,7 @@ cc_library(
     ],
     deps = [
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings:str_format",
         "@org_llvm//:LLVMSupport",
     ],
 )

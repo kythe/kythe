@@ -3,11 +3,13 @@
 
 package analysis_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import any "github.com/golang/protobuf/ptypes/any"
-import storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	any "github.com/golang/protobuf/ptypes/any"
+	storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,7 +20,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type AnalysisResult_Status int32
 
@@ -33,6 +35,7 @@ var AnalysisResult_Status_name = map[int32]string{
 	1: "INCOMPLETE",
 	2: "INVALID_REQUEST",
 }
+
 var AnalysisResult_Status_value = map[string]int32{
 	"COMPLETE":        0,
 	"INCOMPLETE":      1,
@@ -42,8 +45,9 @@ var AnalysisResult_Status_value = map[string]int32{
 func (x AnalysisResult_Status) String() string {
 	return proto.EnumName(AnalysisResult_Status_name, int32(x))
 }
+
 func (AnalysisResult_Status) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{2, 0}
+	return fileDescriptor_8e4ea7eca60afe48, []int{2, 0}
 }
 
 type AnalysisRequest struct {
@@ -60,16 +64,17 @@ func (m *AnalysisRequest) Reset()         { *m = AnalysisRequest{} }
 func (m *AnalysisRequest) String() string { return proto.CompactTextString(m) }
 func (*AnalysisRequest) ProtoMessage()    {}
 func (*AnalysisRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{0}
+	return fileDescriptor_8e4ea7eca60afe48, []int{0}
 }
+
 func (m *AnalysisRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AnalysisRequest.Unmarshal(m, b)
 }
 func (m *AnalysisRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AnalysisRequest.Marshal(b, m, deterministic)
 }
-func (dst *AnalysisRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AnalysisRequest.Merge(dst, src)
+func (m *AnalysisRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AnalysisRequest.Merge(m, src)
 }
 func (m *AnalysisRequest) XXX_Size() int {
 	return xxx_messageInfo_AnalysisRequest.Size(m)
@@ -120,16 +125,17 @@ func (m *AnalysisOutput) Reset()         { *m = AnalysisOutput{} }
 func (m *AnalysisOutput) String() string { return proto.CompactTextString(m) }
 func (*AnalysisOutput) ProtoMessage()    {}
 func (*AnalysisOutput) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{1}
+	return fileDescriptor_8e4ea7eca60afe48, []int{1}
 }
+
 func (m *AnalysisOutput) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AnalysisOutput.Unmarshal(m, b)
 }
 func (m *AnalysisOutput) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AnalysisOutput.Marshal(b, m, deterministic)
 }
-func (dst *AnalysisOutput) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AnalysisOutput.Merge(dst, src)
+func (m *AnalysisOutput) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AnalysisOutput.Merge(m, src)
 }
 func (m *AnalysisOutput) XXX_Size() int {
 	return xxx_messageInfo_AnalysisOutput.Size(m)
@@ -166,16 +172,17 @@ func (m *AnalysisResult) Reset()         { *m = AnalysisResult{} }
 func (m *AnalysisResult) String() string { return proto.CompactTextString(m) }
 func (*AnalysisResult) ProtoMessage()    {}
 func (*AnalysisResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{2}
+	return fileDescriptor_8e4ea7eca60afe48, []int{2}
 }
+
 func (m *AnalysisResult) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AnalysisResult.Unmarshal(m, b)
 }
 func (m *AnalysisResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AnalysisResult.Marshal(b, m, deterministic)
 }
-func (dst *AnalysisResult) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AnalysisResult.Merge(dst, src)
+func (m *AnalysisResult) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AnalysisResult.Merge(m, src)
 }
 func (m *AnalysisResult) XXX_Size() int {
 	return xxx_messageInfo_AnalysisResult.Size(m)
@@ -220,16 +227,17 @@ func (m *CompilationUnit) Reset()         { *m = CompilationUnit{} }
 func (m *CompilationUnit) String() string { return proto.CompactTextString(m) }
 func (*CompilationUnit) ProtoMessage()    {}
 func (*CompilationUnit) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{3}
+	return fileDescriptor_8e4ea7eca60afe48, []int{3}
 }
+
 func (m *CompilationUnit) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CompilationUnit.Unmarshal(m, b)
 }
 func (m *CompilationUnit) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CompilationUnit.Marshal(b, m, deterministic)
 }
-func (dst *CompilationUnit) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompilationUnit.Merge(dst, src)
+func (m *CompilationUnit) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompilationUnit.Merge(m, src)
 }
 func (m *CompilationUnit) XXX_Size() int {
 	return xxx_messageInfo_CompilationUnit.Size(m)
@@ -323,16 +331,17 @@ func (m *CompilationUnit_FileInput) Reset()         { *m = CompilationUnit_FileI
 func (m *CompilationUnit_FileInput) String() string { return proto.CompactTextString(m) }
 func (*CompilationUnit_FileInput) ProtoMessage()    {}
 func (*CompilationUnit_FileInput) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{3, 0}
+	return fileDescriptor_8e4ea7eca60afe48, []int{3, 0}
 }
+
 func (m *CompilationUnit_FileInput) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CompilationUnit_FileInput.Unmarshal(m, b)
 }
 func (m *CompilationUnit_FileInput) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CompilationUnit_FileInput.Marshal(b, m, deterministic)
 }
-func (dst *CompilationUnit_FileInput) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompilationUnit_FileInput.Merge(dst, src)
+func (m *CompilationUnit_FileInput) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompilationUnit_FileInput.Merge(m, src)
 }
 func (m *CompilationUnit_FileInput) XXX_Size() int {
 	return xxx_messageInfo_CompilationUnit_FileInput.Size(m)
@@ -376,16 +385,17 @@ func (m *CompilationUnit_Env) Reset()         { *m = CompilationUnit_Env{} }
 func (m *CompilationUnit_Env) String() string { return proto.CompactTextString(m) }
 func (*CompilationUnit_Env) ProtoMessage()    {}
 func (*CompilationUnit_Env) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{3, 1}
+	return fileDescriptor_8e4ea7eca60afe48, []int{3, 1}
 }
+
 func (m *CompilationUnit_Env) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CompilationUnit_Env.Unmarshal(m, b)
 }
 func (m *CompilationUnit_Env) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CompilationUnit_Env.Marshal(b, m, deterministic)
 }
-func (dst *CompilationUnit_Env) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompilationUnit_Env.Merge(dst, src)
+func (m *CompilationUnit_Env) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompilationUnit_Env.Merge(m, src)
 }
 func (m *CompilationUnit_Env) XXX_Size() int {
 	return xxx_messageInfo_CompilationUnit_Env.Size(m)
@@ -421,16 +431,17 @@ func (m *FilesRequest) Reset()         { *m = FilesRequest{} }
 func (m *FilesRequest) String() string { return proto.CompactTextString(m) }
 func (*FilesRequest) ProtoMessage()    {}
 func (*FilesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{4}
+	return fileDescriptor_8e4ea7eca60afe48, []int{4}
 }
+
 func (m *FilesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FilesRequest.Unmarshal(m, b)
 }
 func (m *FilesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FilesRequest.Marshal(b, m, deterministic)
 }
-func (dst *FilesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FilesRequest.Merge(dst, src)
+func (m *FilesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FilesRequest.Merge(m, src)
 }
 func (m *FilesRequest) XXX_Size() int {
 	return xxx_messageInfo_FilesRequest.Size(m)
@@ -460,16 +471,17 @@ func (m *FileInfo) Reset()         { *m = FileInfo{} }
 func (m *FileInfo) String() string { return proto.CompactTextString(m) }
 func (*FileInfo) ProtoMessage()    {}
 func (*FileInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{5}
+	return fileDescriptor_8e4ea7eca60afe48, []int{5}
 }
+
 func (m *FileInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileInfo.Unmarshal(m, b)
 }
 func (m *FileInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FileInfo.Marshal(b, m, deterministic)
 }
-func (dst *FileInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FileInfo.Merge(dst, src)
+func (m *FileInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FileInfo.Merge(m, src)
 }
 func (m *FileInfo) XXX_Size() int {
 	return xxx_messageInfo_FileInfo.Size(m)
@@ -507,16 +519,17 @@ func (m *FileData) Reset()         { *m = FileData{} }
 func (m *FileData) String() string { return proto.CompactTextString(m) }
 func (*FileData) ProtoMessage()    {}
 func (*FileData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{6}
+	return fileDescriptor_8e4ea7eca60afe48, []int{6}
 }
+
 func (m *FileData) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileData.Unmarshal(m, b)
 }
 func (m *FileData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FileData.Marshal(b, m, deterministic)
 }
-func (dst *FileData) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FileData.Merge(dst, src)
+func (m *FileData) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FileData.Merge(m, src)
 }
 func (m *FileData) XXX_Size() int {
 	return xxx_messageInfo_FileData.Size(m)
@@ -560,16 +573,17 @@ func (m *CompilationBundle) Reset()         { *m = CompilationBundle{} }
 func (m *CompilationBundle) String() string { return proto.CompactTextString(m) }
 func (*CompilationBundle) ProtoMessage()    {}
 func (*CompilationBundle) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{7}
+	return fileDescriptor_8e4ea7eca60afe48, []int{7}
 }
+
 func (m *CompilationBundle) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CompilationBundle.Unmarshal(m, b)
 }
 func (m *CompilationBundle) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CompilationBundle.Marshal(b, m, deterministic)
 }
-func (dst *CompilationBundle) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompilationBundle.Merge(dst, src)
+func (m *CompilationBundle) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompilationBundle.Merge(m, src)
 }
 func (m *CompilationBundle) XXX_Size() int {
 	return xxx_messageInfo_CompilationBundle.Size(m)
@@ -606,16 +620,17 @@ func (m *IndexedCompilation) Reset()         { *m = IndexedCompilation{} }
 func (m *IndexedCompilation) String() string { return proto.CompactTextString(m) }
 func (*IndexedCompilation) ProtoMessage()    {}
 func (*IndexedCompilation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{8}
+	return fileDescriptor_8e4ea7eca60afe48, []int{8}
 }
+
 func (m *IndexedCompilation) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_IndexedCompilation.Unmarshal(m, b)
 }
 func (m *IndexedCompilation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_IndexedCompilation.Marshal(b, m, deterministic)
 }
-func (dst *IndexedCompilation) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_IndexedCompilation.Merge(dst, src)
+func (m *IndexedCompilation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IndexedCompilation.Merge(m, src)
 }
 func (m *IndexedCompilation) XXX_Size() int {
 	return xxx_messageInfo_IndexedCompilation.Size(m)
@@ -651,16 +666,17 @@ func (m *IndexedCompilation_Index) Reset()         { *m = IndexedCompilation_Ind
 func (m *IndexedCompilation_Index) String() string { return proto.CompactTextString(m) }
 func (*IndexedCompilation_Index) ProtoMessage()    {}
 func (*IndexedCompilation_Index) Descriptor() ([]byte, []int) {
-	return fileDescriptor_analysis_4ba6188b87e0d17e, []int{8, 0}
+	return fileDescriptor_8e4ea7eca60afe48, []int{8, 0}
 }
+
 func (m *IndexedCompilation_Index) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_IndexedCompilation_Index.Unmarshal(m, b)
 }
 func (m *IndexedCompilation_Index) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_IndexedCompilation_Index.Marshal(b, m, deterministic)
 }
-func (dst *IndexedCompilation_Index) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_IndexedCompilation_Index.Merge(dst, src)
+func (m *IndexedCompilation_Index) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IndexedCompilation_Index.Merge(m, src)
 }
 func (m *IndexedCompilation_Index) XXX_Size() int {
 	return xxx_messageInfo_IndexedCompilation_Index.Size(m)
@@ -679,6 +695,7 @@ func (m *IndexedCompilation_Index) GetRevisions() []string {
 }
 
 func init() {
+	proto.RegisterEnum("kythe.proto.AnalysisResult_Status", AnalysisResult_Status_name, AnalysisResult_Status_value)
 	proto.RegisterType((*AnalysisRequest)(nil), "kythe.proto.AnalysisRequest")
 	proto.RegisterType((*AnalysisOutput)(nil), "kythe.proto.AnalysisOutput")
 	proto.RegisterType((*AnalysisResult)(nil), "kythe.proto.AnalysisResult")
@@ -691,14 +708,11 @@ func init() {
 	proto.RegisterType((*CompilationBundle)(nil), "kythe.proto.CompilationBundle")
 	proto.RegisterType((*IndexedCompilation)(nil), "kythe.proto.IndexedCompilation")
 	proto.RegisterType((*IndexedCompilation_Index)(nil), "kythe.proto.IndexedCompilation.Index")
-	proto.RegisterEnum("kythe.proto.AnalysisResult_Status", AnalysisResult_Status_name, AnalysisResult_Status_value)
 }
 
-func init() {
-	proto.RegisterFile("kythe/proto/analysis.proto", fileDescriptor_analysis_4ba6188b87e0d17e)
-}
+func init() { proto.RegisterFile("kythe/proto/analysis.proto", fileDescriptor_8e4ea7eca60afe48) }
 
-var fileDescriptor_analysis_4ba6188b87e0d17e = []byte{
+var fileDescriptor_8e4ea7eca60afe48 = []byte{
 	// 842 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x55, 0x5f, 0x6f, 0xdb, 0x36,
 	0x10, 0x9f, 0xe2, 0x7f, 0xf2, 0xc9, 0x4d, 0x1c, 0xae, 0x1b, 0x54, 0xaf, 0x43, 0x0d, 0x0d, 0x1d,

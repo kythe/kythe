@@ -54,11 +54,11 @@ same for C++.
 
 {% highlight bash %}
 # Extract all Java/C++ compilations in Kythe
-bazel test \
+bazel build -k \
   --experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_java \
   --experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_cxx \
   --experimental_extra_action_top_level_only \
-  //...
+  //kythe/cxx/... //kythe/java/...
 
 # Find the extracted .kzip files
 find -L bazel-out -name '*.kzip'

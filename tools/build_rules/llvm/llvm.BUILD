@@ -159,6 +159,7 @@ genrule(
 cc_resources(
     name = "clang_builtin_headers_resources",
     data = [":builtin_headers_gen"],
+    strip = "staging/include/",
 )
 
 load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "cmake_defines", "LLVM_TARGETS")

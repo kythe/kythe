@@ -3,9 +3,11 @@
 
 package filetree_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type DirectoryReply_Kind int32
 
@@ -31,6 +33,7 @@ var DirectoryReply_Kind_name = map[int32]string{
 	1: "FILE",
 	2: "DIRECTORY",
 }
+
 var DirectoryReply_Kind_value = map[string]int32{
 	"UNKNOWN":   0,
 	"FILE":      1,
@@ -40,8 +43,9 @@ var DirectoryReply_Kind_value = map[string]int32{
 func (x DirectoryReply_Kind) String() string {
 	return proto.EnumName(DirectoryReply_Kind_name, int32(x))
 }
+
 func (DirectoryReply_Kind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_filetree_3039fb11cbcc5c38, []int{3, 0}
+	return fileDescriptor_a7cc7eba6fded8b6, []int{3, 0}
 }
 
 type CorpusRootsRequest struct {
@@ -54,16 +58,17 @@ func (m *CorpusRootsRequest) Reset()         { *m = CorpusRootsRequest{} }
 func (m *CorpusRootsRequest) String() string { return proto.CompactTextString(m) }
 func (*CorpusRootsRequest) ProtoMessage()    {}
 func (*CorpusRootsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filetree_3039fb11cbcc5c38, []int{0}
+	return fileDescriptor_a7cc7eba6fded8b6, []int{0}
 }
+
 func (m *CorpusRootsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CorpusRootsRequest.Unmarshal(m, b)
 }
 func (m *CorpusRootsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CorpusRootsRequest.Marshal(b, m, deterministic)
 }
-func (dst *CorpusRootsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CorpusRootsRequest.Merge(dst, src)
+func (m *CorpusRootsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CorpusRootsRequest.Merge(m, src)
 }
 func (m *CorpusRootsRequest) XXX_Size() int {
 	return xxx_messageInfo_CorpusRootsRequest.Size(m)
@@ -85,16 +90,17 @@ func (m *CorpusRootsReply) Reset()         { *m = CorpusRootsReply{} }
 func (m *CorpusRootsReply) String() string { return proto.CompactTextString(m) }
 func (*CorpusRootsReply) ProtoMessage()    {}
 func (*CorpusRootsReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filetree_3039fb11cbcc5c38, []int{1}
+	return fileDescriptor_a7cc7eba6fded8b6, []int{1}
 }
+
 func (m *CorpusRootsReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CorpusRootsReply.Unmarshal(m, b)
 }
 func (m *CorpusRootsReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CorpusRootsReply.Marshal(b, m, deterministic)
 }
-func (dst *CorpusRootsReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CorpusRootsReply.Merge(dst, src)
+func (m *CorpusRootsReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CorpusRootsReply.Merge(m, src)
 }
 func (m *CorpusRootsReply) XXX_Size() int {
 	return xxx_messageInfo_CorpusRootsReply.Size(m)
@@ -125,16 +131,17 @@ func (m *CorpusRootsReply_Corpus) Reset()         { *m = CorpusRootsReply_Corpus
 func (m *CorpusRootsReply_Corpus) String() string { return proto.CompactTextString(m) }
 func (*CorpusRootsReply_Corpus) ProtoMessage()    {}
 func (*CorpusRootsReply_Corpus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filetree_3039fb11cbcc5c38, []int{1, 0}
+	return fileDescriptor_a7cc7eba6fded8b6, []int{1, 0}
 }
+
 func (m *CorpusRootsReply_Corpus) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CorpusRootsReply_Corpus.Unmarshal(m, b)
 }
 func (m *CorpusRootsReply_Corpus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CorpusRootsReply_Corpus.Marshal(b, m, deterministic)
 }
-func (dst *CorpusRootsReply_Corpus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CorpusRootsReply_Corpus.Merge(dst, src)
+func (m *CorpusRootsReply_Corpus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CorpusRootsReply_Corpus.Merge(m, src)
 }
 func (m *CorpusRootsReply_Corpus) XXX_Size() int {
 	return xxx_messageInfo_CorpusRootsReply_Corpus.Size(m)
@@ -179,16 +186,17 @@ func (m *DirectoryRequest) Reset()         { *m = DirectoryRequest{} }
 func (m *DirectoryRequest) String() string { return proto.CompactTextString(m) }
 func (*DirectoryRequest) ProtoMessage()    {}
 func (*DirectoryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filetree_3039fb11cbcc5c38, []int{2}
+	return fileDescriptor_a7cc7eba6fded8b6, []int{2}
 }
+
 func (m *DirectoryRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DirectoryRequest.Unmarshal(m, b)
 }
 func (m *DirectoryRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DirectoryRequest.Marshal(b, m, deterministic)
 }
-func (dst *DirectoryRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DirectoryRequest.Merge(dst, src)
+func (m *DirectoryRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DirectoryRequest.Merge(m, src)
 }
 func (m *DirectoryRequest) XXX_Size() int {
 	return xxx_messageInfo_DirectoryRequest.Size(m)
@@ -234,16 +242,17 @@ func (m *DirectoryReply) Reset()         { *m = DirectoryReply{} }
 func (m *DirectoryReply) String() string { return proto.CompactTextString(m) }
 func (*DirectoryReply) ProtoMessage()    {}
 func (*DirectoryReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filetree_3039fb11cbcc5c38, []int{3}
+	return fileDescriptor_a7cc7eba6fded8b6, []int{3}
 }
+
 func (m *DirectoryReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DirectoryReply.Unmarshal(m, b)
 }
 func (m *DirectoryReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DirectoryReply.Marshal(b, m, deterministic)
 }
-func (dst *DirectoryReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DirectoryReply.Merge(dst, src)
+func (m *DirectoryReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DirectoryReply.Merge(m, src)
 }
 func (m *DirectoryReply) XXX_Size() int {
 	return xxx_messageInfo_DirectoryReply.Size(m)
@@ -295,16 +304,17 @@ func (m *DirectoryReply_Entry) Reset()         { *m = DirectoryReply_Entry{} }
 func (m *DirectoryReply_Entry) String() string { return proto.CompactTextString(m) }
 func (*DirectoryReply_Entry) ProtoMessage()    {}
 func (*DirectoryReply_Entry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filetree_3039fb11cbcc5c38, []int{3, 0}
+	return fileDescriptor_a7cc7eba6fded8b6, []int{3, 0}
 }
+
 func (m *DirectoryReply_Entry) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DirectoryReply_Entry.Unmarshal(m, b)
 }
 func (m *DirectoryReply_Entry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DirectoryReply_Entry.Marshal(b, m, deterministic)
 }
-func (dst *DirectoryReply_Entry) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DirectoryReply_Entry.Merge(dst, src)
+func (m *DirectoryReply_Entry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DirectoryReply_Entry.Merge(m, src)
 }
 func (m *DirectoryReply_Entry) XXX_Size() int {
 	return xxx_messageInfo_DirectoryReply_Entry.Size(m)
@@ -337,20 +347,18 @@ func (m *DirectoryReply_Entry) GetBuildConfig() []string {
 }
 
 func init() {
+	proto.RegisterEnum("kythe.proto.DirectoryReply_Kind", DirectoryReply_Kind_name, DirectoryReply_Kind_value)
 	proto.RegisterType((*CorpusRootsRequest)(nil), "kythe.proto.CorpusRootsRequest")
 	proto.RegisterType((*CorpusRootsReply)(nil), "kythe.proto.CorpusRootsReply")
 	proto.RegisterType((*CorpusRootsReply_Corpus)(nil), "kythe.proto.CorpusRootsReply.Corpus")
 	proto.RegisterType((*DirectoryRequest)(nil), "kythe.proto.DirectoryRequest")
 	proto.RegisterType((*DirectoryReply)(nil), "kythe.proto.DirectoryReply")
 	proto.RegisterType((*DirectoryReply_Entry)(nil), "kythe.proto.DirectoryReply.Entry")
-	proto.RegisterEnum("kythe.proto.DirectoryReply_Kind", DirectoryReply_Kind_name, DirectoryReply_Kind_value)
 }
 
-func init() {
-	proto.RegisterFile("kythe/proto/filetree.proto", fileDescriptor_filetree_3039fb11cbcc5c38)
-}
+func init() { proto.RegisterFile("kythe/proto/filetree.proto", fileDescriptor_a7cc7eba6fded8b6) }
 
-var fileDescriptor_filetree_3039fb11cbcc5c38 = []byte{
+var fileDescriptor_a7cc7eba6fded8b6 = []byte{
 	// 435 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0xc1, 0x6e, 0xd3, 0x40,
 	0x10, 0x86, 0xb3, 0xb6, 0x13, 0x9a, 0x31, 0x14, 0x33, 0x42, 0xc8, 0x0a, 0xaa, 0x9a, 0x5a, 0x1c,

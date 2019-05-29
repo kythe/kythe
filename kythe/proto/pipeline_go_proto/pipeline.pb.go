@@ -3,13 +3,15 @@
 
 package pipeline_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import common_go_proto "kythe.io/kythe/proto/common_go_proto"
-import schema_go_proto "kythe.io/kythe/proto/schema_go_proto"
-import serving_go_proto "kythe.io/kythe/proto/serving_go_proto"
-import storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	common_go_proto "kythe.io/kythe/proto/common_go_proto"
+	schema_go_proto "kythe.io/kythe/proto/schema_go_proto"
+	serving_go_proto "kythe.io/kythe/proto/serving_go_proto"
+	storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -20,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type Reference struct {
 	Source *storage_go_proto.VName `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
@@ -39,16 +41,17 @@ func (m *Reference) Reset()         { *m = Reference{} }
 func (m *Reference) String() string { return proto.CompactTextString(m) }
 func (*Reference) ProtoMessage()    {}
 func (*Reference) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pipeline_8f60de55df34b857, []int{0}
+	return fileDescriptor_1b726955a4487b4b, []int{0}
 }
+
 func (m *Reference) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Reference.Unmarshal(m, b)
 }
 func (m *Reference) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Reference.Marshal(b, m, deterministic)
 }
-func (dst *Reference) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Reference.Merge(dst, src)
+func (m *Reference) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Reference.Merge(m, src)
 }
 func (m *Reference) XXX_Size() int {
 	return xxx_messageInfo_Reference.Size(m)
@@ -117,69 +120,12 @@ func (m *Reference) GetScope() *storage_go_proto.VName {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Reference) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Reference_OneofMarshaler, _Reference_OneofUnmarshaler, _Reference_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Reference) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Reference_KytheKind)(nil),
 		(*Reference_GenericKind)(nil),
 	}
-}
-
-func _Reference_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Reference)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Reference_KytheKind:
-		b.EncodeVarint(2<<3 | proto.WireVarint)
-		b.EncodeVarint(uint64(x.KytheKind))
-	case *Reference_GenericKind:
-		b.EncodeVarint(3<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.GenericKind)
-	case nil:
-	default:
-		return fmt.Errorf("Reference.Kind has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Reference_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Reference)
-	switch tag {
-	case 2: // kind.kythe_kind
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Kind = &Reference_KytheKind{schema_go_proto.EdgeKind(x)}
-		return true, err
-	case 3: // kind.generic_kind
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Kind = &Reference_GenericKind{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Reference_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Reference)
-	// kind
-	switch x := m.Kind.(type) {
-	case *Reference_KytheKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.KytheKind))
-	case *Reference_GenericKind:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.GenericKind)))
-		n += len(x.GenericKind)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type DecorationPiece struct {
@@ -200,16 +146,17 @@ func (m *DecorationPiece) Reset()         { *m = DecorationPiece{} }
 func (m *DecorationPiece) String() string { return proto.CompactTextString(m) }
 func (*DecorationPiece) ProtoMessage()    {}
 func (*DecorationPiece) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pipeline_8f60de55df34b857, []int{1}
+	return fileDescriptor_1b726955a4487b4b, []int{1}
 }
+
 func (m *DecorationPiece) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecorationPiece.Unmarshal(m, b)
 }
 func (m *DecorationPiece) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DecorationPiece.Marshal(b, m, deterministic)
 }
-func (dst *DecorationPiece) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DecorationPiece.Merge(dst, src)
+func (m *DecorationPiece) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecorationPiece.Merge(m, src)
 }
 func (m *DecorationPiece) XXX_Size() int {
 	return xxx_messageInfo_DecorationPiece.Size(m)
@@ -303,135 +250,15 @@ func (m *DecorationPiece) GetDiagnostic() *common_go_proto.Diagnostic {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*DecorationPiece) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _DecorationPiece_OneofMarshaler, _DecorationPiece_OneofUnmarshaler, _DecorationPiece_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*DecorationPiece) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*DecorationPiece_File)(nil),
 		(*DecorationPiece_Reference)(nil),
 		(*DecorationPiece_Node)(nil),
 		(*DecorationPiece_Definition_)(nil),
 		(*DecorationPiece_Diagnostic)(nil),
 	}
-}
-
-func _DecorationPiece_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*DecorationPiece)
-	// piece
-	switch x := m.Piece.(type) {
-	case *DecorationPiece_File:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.File); err != nil {
-			return err
-		}
-	case *DecorationPiece_Reference:
-		b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Reference); err != nil {
-			return err
-		}
-	case *DecorationPiece_Node:
-		b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Node); err != nil {
-			return err
-		}
-	case *DecorationPiece_Definition_:
-		b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Definition); err != nil {
-			return err
-		}
-	case *DecorationPiece_Diagnostic:
-		b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Diagnostic); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("DecorationPiece.Piece has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _DecorationPiece_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*DecorationPiece)
-	switch tag {
-	case 2: // piece.file
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(serving_go_proto.File)
-		err := b.DecodeMessage(msg)
-		m.Piece = &DecorationPiece_File{msg}
-		return true, err
-	case 3: // piece.reference
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Reference)
-		err := b.DecodeMessage(msg)
-		m.Piece = &DecorationPiece_Reference{msg}
-		return true, err
-	case 4: // piece.node
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(schema_go_proto.Node)
-		err := b.DecodeMessage(msg)
-		m.Piece = &DecorationPiece_Node{msg}
-		return true, err
-	case 5: // piece.definition
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(DecorationPiece_Definition)
-		err := b.DecodeMessage(msg)
-		m.Piece = &DecorationPiece_Definition_{msg}
-		return true, err
-	case 6: // piece.diagnostic
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(common_go_proto.Diagnostic)
-		err := b.DecodeMessage(msg)
-		m.Piece = &DecorationPiece_Diagnostic{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _DecorationPiece_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*DecorationPiece)
-	// piece
-	switch x := m.Piece.(type) {
-	case *DecorationPiece_File:
-		s := proto.Size(x.File)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *DecorationPiece_Reference:
-		s := proto.Size(x.Reference)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *DecorationPiece_Node:
-		s := proto.Size(x.Node)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *DecorationPiece_Definition_:
-		s := proto.Size(x.Definition)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *DecorationPiece_Diagnostic:
-		s := proto.Size(x.Diagnostic)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type DecorationPiece_Definition struct {
@@ -446,16 +273,17 @@ func (m *DecorationPiece_Definition) Reset()         { *m = DecorationPiece_Defi
 func (m *DecorationPiece_Definition) String() string { return proto.CompactTextString(m) }
 func (*DecorationPiece_Definition) ProtoMessage()    {}
 func (*DecorationPiece_Definition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pipeline_8f60de55df34b857, []int{1, 0}
+	return fileDescriptor_1b726955a4487b4b, []int{1, 0}
 }
+
 func (m *DecorationPiece_Definition) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecorationPiece_Definition.Unmarshal(m, b)
 }
 func (m *DecorationPiece_Definition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DecorationPiece_Definition.Marshal(b, m, deterministic)
 }
-func (dst *DecorationPiece_Definition) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DecorationPiece_Definition.Merge(dst, src)
+func (m *DecorationPiece_Definition) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DecorationPiece_Definition.Merge(m, src)
 }
 func (m *DecorationPiece_Definition) XXX_Size() int {
 	return xxx_messageInfo_DecorationPiece_Definition.Size(m)
@@ -486,11 +314,9 @@ func init() {
 	proto.RegisterType((*DecorationPiece_Definition)(nil), "kythe.proto.pipeline.DecorationPiece.Definition")
 }
 
-func init() {
-	proto.RegisterFile("kythe/proto/pipeline.proto", fileDescriptor_pipeline_8f60de55df34b857)
-}
+func init() { proto.RegisterFile("kythe/proto/pipeline.proto", fileDescriptor_1b726955a4487b4b) }
 
-var fileDescriptor_pipeline_8f60de55df34b857 = []byte{
+var fileDescriptor_1b726955a4487b4b = []byte{
 	// 461 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0xc1, 0x8b, 0xd3, 0x4e,
 	0x14, 0x6e, 0xfb, 0x4b, 0xf3, 0x23, 0x2f, 0xa2, 0x38, 0x78, 0xc8, 0x16, 0x71, 0xcb, 0x2e, 0x48,

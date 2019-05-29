@@ -60,9 +60,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_absl",
-        sha256 = "77a39b7084b66582aaa18b42e4e4154df6bee29632875bbcc41d99502f784634",
-        strip_prefix = "abseil-cpp-2019e17a520575ab365b2b5134d71068182c70b8",
-        url = "https://github.com/abseil/abseil-cpp/archive/2019e17a520575ab365b2b5134d71068182c70b8.zip",
+        sha256 = "3601822b4d3c7cc62d891a2d0993b902ad1858e4faf41d895678d3a7749ec503",
+        strip_prefix = "abseil-cpp-ca3f87560a0eef716195cadf66dc6b938a579ec6",
+        url = "https://github.com/abseil/abseil-cpp/archive/ca3f87560a0eef716195cadf66dc6b938a579ec6.zip",
     )
 
     maybe(
@@ -298,7 +298,7 @@ def _go_dependencies():
         importpath = "github.com/golang/protobuf",
         patch_args = ["-p1"],
         patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
-        tag = "v1.2.0",
+        tag = "v1.3.0",
     )
 
     maybe(
@@ -328,7 +328,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sync",
-        commit = "1d60e4601c6fd243af51cc01ddf169918a5407ca",
+        commit = "42b317875d0f",
         custom = "sync",
         custom_git = "https://github.com/golang/sync.git",
         importpath = "golang.org/x/sync",
@@ -385,7 +385,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_tools",
-        commit = "4892ae6946ab8a542e4fe1bf1376eb714b9e7aec",
+        commit = "589c23e65e65055d47b9ad4a99723bc389136265",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
         importpath = "golang.org/x/tools",
@@ -405,7 +405,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_net",
-        commit = "d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf",
+        commit = "3a22650c66bd",
         custom = "x_net",
         custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
@@ -434,7 +434,7 @@ def _go_dependencies():
         custom = "shell",
         custom_git = "https://bitbucket.org/creachadair/shell.git",
         importpath = "bitbucket.org/creachadair/shell",
-        tag = "v0.0.4",
+        tag = "v0.0.5",
     )
 
     maybe(
@@ -467,7 +467,7 @@ def _go_dependencies():
         go_repository,
         name = "com_github_apache_beam",
         build_file_proto_mode = "disable",
-        commit = "2a41235289152d84e4283c2efd7812896150c183",
+        commit = "3cf3a4708c588e32e85a1d4cfdb29ab5a0203efc",
         custom = "beam",
         importpath = "github.com/apache/beam",
     )
@@ -687,7 +687,7 @@ def _sample_ui_dependencies():
         version = "2.5.3",
     )
 
-def kythe_dependencies():
+def kythe_dependencies(sample_ui = True):
     """Defines external repositories for Kythe dependencies.
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
@@ -716,6 +716,7 @@ def kythe_dependencies():
     )
 
     _rule_dependencies()
-    _sample_ui_dependencies()
+    if sample_ui:
+        _sample_ui_dependencies()
     _bindings()
     _extractor_image_dependencies()

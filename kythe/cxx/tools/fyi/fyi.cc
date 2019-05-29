@@ -17,6 +17,7 @@
 #include "kythe/cxx/tools/fyi/fyi.h"
 
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
@@ -414,7 +415,7 @@ class Action : public clang::ASTFrontendAction,
     std::string error_text;
     if (!factory_.xrefs_->Edges(named_edges_request, &named_edges_reply,
                                 &error_text)) {
-      fprintf(stderr, "Xrefs error (named): %s\n", error_text.c_str());
+      absl::FPrintF(stderr, "Xrefs error (named): %s\n", error_text);
       return clang::TypoCorrection();
     }
     // Get information about the places where those nodes were defined.
@@ -427,7 +428,7 @@ class Action : public clang::ASTFrontendAction,
         ToStringRef(absl::StrCat("%", kythe::common::schema::kDefines)));
     if (!factory_.xrefs_->Edges(defined_edges_request, &defined_edges_reply,
                                 &error_text)) {
-      fprintf(stderr, "Xrefs error (defines): %s\n", error_text.c_str());
+      absl::FPrintF(stderr, "Xrefs error (defines): %s\n", error_text);
       return clang::TypoCorrection();
     }
     // Finally, figure out whether we can make those definition sites visible
@@ -440,7 +441,7 @@ class Action : public clang::ASTFrontendAction,
     childof_request.add_filter(kythe::common::schema::kFactNodeKind);
     childof_request.add_kind(kythe::common::schema::kChildOf);
     if (!factory_.xrefs_->Edges(childof_request, &childof_reply, &error_text)) {
-      fprintf(stderr, "Xrefs error (childof): %s\n", error_text.c_str());
+      absl::FPrintF(stderr, "Xrefs error (childof): %s\n", error_text);
       return clang::TypoCorrection();
     }
     // Add those files to the set of includes to try out.
@@ -602,7 +603,7 @@ bool ActionFactory::runInvocation(
           /*ErrAST*/ nullptr);
       // The preprocessor hooks must have configured the FileTracker.
       if (action->tracker() == nullptr) {
-        fprintf(stderr, "Error: Never entered input file.\n");
+        absl::FPrintF(stderr, "Error: Never entered input file.\n");
         return false;
       }
     } else {
@@ -654,7 +655,7 @@ bool ActionFactory::runInvocation(
   if (action->tracker()->state() != FileTracker::State::kFailure) {
     const auto buffer = action->tracker()->backing_store();
     if (!buffer.empty()) {
-      printf("%s", buffer.str().c_str());
+      absl::PrintF("%s", buffer.str());
     }
   }
   return action->tracker()->state() == FileTracker::State::kSuccess;

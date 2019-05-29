@@ -3,10 +3,12 @@
 
 package java_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type JarDetails struct {
 	Jar                  []*JarDetails_Jar `protobuf:"bytes,1,rep,name=jar,proto3" json:"jar,omitempty"`
@@ -30,16 +32,17 @@ func (m *JarDetails) Reset()         { *m = JarDetails{} }
 func (m *JarDetails) String() string { return proto.CompactTextString(m) }
 func (*JarDetails) ProtoMessage()    {}
 func (*JarDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_java_4af205c53eb1abc3, []int{0}
+	return fileDescriptor_4e5838ccc9a1d029, []int{0}
 }
+
 func (m *JarDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_JarDetails.Unmarshal(m, b)
 }
 func (m *JarDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_JarDetails.Marshal(b, m, deterministic)
 }
-func (dst *JarDetails) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JarDetails.Merge(dst, src)
+func (m *JarDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JarDetails.Merge(m, src)
 }
 func (m *JarDetails) XXX_Size() int {
 	return xxx_messageInfo_JarDetails.Size(m)
@@ -68,16 +71,17 @@ func (m *JarDetails_Jar) Reset()         { *m = JarDetails_Jar{} }
 func (m *JarDetails_Jar) String() string { return proto.CompactTextString(m) }
 func (*JarDetails_Jar) ProtoMessage()    {}
 func (*JarDetails_Jar) Descriptor() ([]byte, []int) {
-	return fileDescriptor_java_4af205c53eb1abc3, []int{0, 0}
+	return fileDescriptor_4e5838ccc9a1d029, []int{0, 0}
 }
+
 func (m *JarDetails_Jar) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_JarDetails_Jar.Unmarshal(m, b)
 }
 func (m *JarDetails_Jar) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_JarDetails_Jar.Marshal(b, m, deterministic)
 }
-func (dst *JarDetails_Jar) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JarDetails_Jar.Merge(dst, src)
+func (m *JarDetails_Jar) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JarDetails_Jar.Merge(m, src)
 }
 func (m *JarDetails_Jar) XXX_Size() int {
 	return xxx_messageInfo_JarDetails_Jar.Size(m)
@@ -106,16 +110,17 @@ func (m *JarEntryDetails) Reset()         { *m = JarEntryDetails{} }
 func (m *JarEntryDetails) String() string { return proto.CompactTextString(m) }
 func (*JarEntryDetails) ProtoMessage()    {}
 func (*JarEntryDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_java_4af205c53eb1abc3, []int{1}
+	return fileDescriptor_4e5838ccc9a1d029, []int{1}
 }
+
 func (m *JarEntryDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_JarEntryDetails.Unmarshal(m, b)
 }
 func (m *JarEntryDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_JarEntryDetails.Marshal(b, m, deterministic)
 }
-func (dst *JarEntryDetails) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JarEntryDetails.Merge(dst, src)
+func (m *JarEntryDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JarEntryDetails.Merge(m, src)
 }
 func (m *JarEntryDetails) XXX_Size() int {
 	return xxx_messageInfo_JarEntryDetails.Size(m)
@@ -147,16 +152,17 @@ func (m *JavaDetails) Reset()         { *m = JavaDetails{} }
 func (m *JavaDetails) String() string { return proto.CompactTextString(m) }
 func (*JavaDetails) ProtoMessage()    {}
 func (*JavaDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_java_4af205c53eb1abc3, []int{2}
+	return fileDescriptor_4e5838ccc9a1d029, []int{2}
 }
+
 func (m *JavaDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_JavaDetails.Unmarshal(m, b)
 }
 func (m *JavaDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_JavaDetails.Marshal(b, m, deterministic)
 }
-func (dst *JavaDetails) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JavaDetails.Merge(dst, src)
+func (m *JavaDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JavaDetails.Merge(m, src)
 }
 func (m *JavaDetails) XXX_Size() int {
 	return xxx_messageInfo_JavaDetails.Size(m)
@@ -202,9 +208,9 @@ func init() {
 	proto.RegisterType((*JavaDetails)(nil), "kythe.proto.JavaDetails")
 }
 
-func init() { proto.RegisterFile("kythe/proto/java.proto", fileDescriptor_java_4af205c53eb1abc3) }
+func init() { proto.RegisterFile("kythe/proto/java.proto", fileDescriptor_4e5838ccc9a1d029) }
 
-var fileDescriptor_java_4af205c53eb1abc3 = []byte{
+var fileDescriptor_4e5838ccc9a1d029 = []byte{
 	// 298 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x90, 0x4f, 0x4f, 0xb3, 0x40,
 	0x10, 0xc6, 0x43, 0x79, 0xdb, 0xbc, 0x1d, 0xac, 0x35, 0x7b, 0x30, 0xb5, 0x1a, 0x6d, 0xd0, 0xc4,

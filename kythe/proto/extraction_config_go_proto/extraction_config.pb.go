@@ -3,9 +3,11 @@
 
 package extraction_config_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type ExtractionConfiguration struct {
 	RequiredImage        []*ExtractionConfiguration_Image      `protobuf:"bytes,1,rep,name=required_image,json=requiredImage,proto3" json:"required_image,omitempty"`
@@ -31,16 +33,17 @@ func (m *ExtractionConfiguration) Reset()         { *m = ExtractionConfiguration
 func (m *ExtractionConfiguration) String() string { return proto.CompactTextString(m) }
 func (*ExtractionConfiguration) ProtoMessage()    {}
 func (*ExtractionConfiguration) Descriptor() ([]byte, []int) {
-	return fileDescriptor_extraction_config_2b39cab2ce2c56d9, []int{0}
+	return fileDescriptor_9995da4eeba664d0, []int{0}
 }
+
 func (m *ExtractionConfiguration) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExtractionConfiguration.Unmarshal(m, b)
 }
 func (m *ExtractionConfiguration) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ExtractionConfiguration.Marshal(b, m, deterministic)
 }
-func (dst *ExtractionConfiguration) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtractionConfiguration.Merge(dst, src)
+func (m *ExtractionConfiguration) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExtractionConfiguration.Merge(m, src)
 }
 func (m *ExtractionConfiguration) XXX_Size() int {
 	return xxx_messageInfo_ExtractionConfiguration.Size(m)
@@ -86,16 +89,17 @@ func (m *ExtractionConfiguration_Image) Reset()         { *m = ExtractionConfigu
 func (m *ExtractionConfiguration_Image) String() string { return proto.CompactTextString(m) }
 func (*ExtractionConfiguration_Image) ProtoMessage()    {}
 func (*ExtractionConfiguration_Image) Descriptor() ([]byte, []int) {
-	return fileDescriptor_extraction_config_2b39cab2ce2c56d9, []int{0, 0}
+	return fileDescriptor_9995da4eeba664d0, []int{0, 0}
 }
+
 func (m *ExtractionConfiguration_Image) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExtractionConfiguration_Image.Unmarshal(m, b)
 }
 func (m *ExtractionConfiguration_Image) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ExtractionConfiguration_Image.Marshal(b, m, deterministic)
 }
-func (dst *ExtractionConfiguration_Image) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtractionConfiguration_Image.Merge(dst, src)
+func (m *ExtractionConfiguration_Image) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExtractionConfiguration_Image.Merge(m, src)
 }
 func (m *ExtractionConfiguration_Image) XXX_Size() int {
 	return xxx_messageInfo_ExtractionConfiguration_Image.Size(m)
@@ -146,16 +150,17 @@ func (m *ExtractionConfiguration_CopySpec) Reset()         { *m = ExtractionConf
 func (m *ExtractionConfiguration_CopySpec) String() string { return proto.CompactTextString(m) }
 func (*ExtractionConfiguration_CopySpec) ProtoMessage()    {}
 func (*ExtractionConfiguration_CopySpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_extraction_config_2b39cab2ce2c56d9, []int{0, 1}
+	return fileDescriptor_9995da4eeba664d0, []int{0, 1}
 }
+
 func (m *ExtractionConfiguration_CopySpec) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExtractionConfiguration_CopySpec.Unmarshal(m, b)
 }
 func (m *ExtractionConfiguration_CopySpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ExtractionConfiguration_CopySpec.Marshal(b, m, deterministic)
 }
-func (dst *ExtractionConfiguration_CopySpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtractionConfiguration_CopySpec.Merge(dst, src)
+func (m *ExtractionConfiguration_CopySpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExtractionConfiguration_CopySpec.Merge(m, src)
 }
 func (m *ExtractionConfiguration_CopySpec) XXX_Size() int {
 	return xxx_messageInfo_ExtractionConfiguration_CopySpec.Size(m)
@@ -192,16 +197,17 @@ func (m *ExtractionConfiguration_EnvVar) Reset()         { *m = ExtractionConfig
 func (m *ExtractionConfiguration_EnvVar) String() string { return proto.CompactTextString(m) }
 func (*ExtractionConfiguration_EnvVar) ProtoMessage()    {}
 func (*ExtractionConfiguration_EnvVar) Descriptor() ([]byte, []int) {
-	return fileDescriptor_extraction_config_2b39cab2ce2c56d9, []int{0, 2}
+	return fileDescriptor_9995da4eeba664d0, []int{0, 2}
 }
+
 func (m *ExtractionConfiguration_EnvVar) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExtractionConfiguration_EnvVar.Unmarshal(m, b)
 }
 func (m *ExtractionConfiguration_EnvVar) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ExtractionConfiguration_EnvVar.Marshal(b, m, deterministic)
 }
-func (dst *ExtractionConfiguration_EnvVar) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtractionConfiguration_EnvVar.Merge(dst, src)
+func (m *ExtractionConfiguration_EnvVar) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExtractionConfiguration_EnvVar.Merge(m, src)
 }
 func (m *ExtractionConfiguration_EnvVar) XXX_Size() int {
 	return xxx_messageInfo_ExtractionConfiguration_EnvVar.Size(m)
@@ -238,16 +244,17 @@ func (m *ExtractionConfiguration_RunCommand) Reset()         { *m = ExtractionCo
 func (m *ExtractionConfiguration_RunCommand) String() string { return proto.CompactTextString(m) }
 func (*ExtractionConfiguration_RunCommand) ProtoMessage()    {}
 func (*ExtractionConfiguration_RunCommand) Descriptor() ([]byte, []int) {
-	return fileDescriptor_extraction_config_2b39cab2ce2c56d9, []int{0, 3}
+	return fileDescriptor_9995da4eeba664d0, []int{0, 3}
 }
+
 func (m *ExtractionConfiguration_RunCommand) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExtractionConfiguration_RunCommand.Unmarshal(m, b)
 }
 func (m *ExtractionConfiguration_RunCommand) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ExtractionConfiguration_RunCommand.Marshal(b, m, deterministic)
 }
-func (dst *ExtractionConfiguration_RunCommand) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtractionConfiguration_RunCommand.Merge(dst, src)
+func (m *ExtractionConfiguration_RunCommand) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExtractionConfiguration_RunCommand.Merge(m, src)
 }
 func (m *ExtractionConfiguration_RunCommand) XXX_Size() int {
 	return xxx_messageInfo_ExtractionConfiguration_RunCommand.Size(m)
@@ -281,10 +288,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("kythe/proto/extraction_config.proto", fileDescriptor_extraction_config_2b39cab2ce2c56d9)
+	proto.RegisterFile("kythe/proto/extraction_config.proto", fileDescriptor_9995da4eeba664d0)
 }
 
-var fileDescriptor_extraction_config_2b39cab2ce2c56d9 = []byte{
+var fileDescriptor_9995da4eeba664d0 = []byte{
 	// 362 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xc1, 0x4a, 0xfb, 0x40,
 	0x10, 0xc6, 0x49, 0xd3, 0xa6, 0xcd, 0x84, 0xff, 0x1f, 0x59, 0x44, 0x43, 0x10, 0x0c, 0x7a, 0x29,

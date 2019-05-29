@@ -18,6 +18,7 @@
 
 #include "IndexerASTHooks.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
@@ -424,8 +425,8 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
           recorder_->AddEdge(decl, edge_kind, remote);
         }
       } else {
-        fprintf(stderr, "Unknown edge kind %s from metadata\n",
-                rule->second.edge_out.c_str());
+        absl::FPrintF(stderr, "Unknown edge kind %s from metadata\n",
+                      rule->second.edge_out);
       }
     }
   }
@@ -1072,8 +1073,8 @@ void KytheGraphObserver::applyMetadataFile(clang::FileID id,
   const llvm::MemoryBuffer* buffer =
       SourceManager->getMemoryBufferForFile(file);
   if (!buffer) {
-    fprintf(stderr, "Couldn't get content for %s\n",
-            file->getName().str().c_str());
+    absl::FPrintF(stderr, "Couldn't get content for %s\n",
+                  file->getName().str());
     return;
   }
   if (auto metadata = meta_supports_->ParseFile(
@@ -1184,25 +1185,27 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
               if (offset_info != context_info->second.end()) {
                 state.context = offset_info->second;
               } else {
-                fprintf(stderr,
-                        "Warning: when looking for %s[%s]:%u: missing source "
-                        "offset\n",
-                        vfs_->get_debug_uid_string(previous_uid).c_str(),
-                        previous_context.c_str(), offset);
+                absl::FPrintF(
+                    stderr,
+                    "Warning: when looking for %s[%s]:%u: missing source "
+                    "offset\n",
+                    vfs_->get_debug_uid_string(previous_uid), previous_context,
+                    offset);
               }
             } else {
-              fprintf(stderr,
-                      "Warning: when looking for %s[%s]:%u: missing source "
-                      "context\n",
-                      vfs_->get_debug_uid_string(previous_uid).c_str(),
-                      previous_context.c_str(), offset);
+              absl::FPrintF(
+                  stderr,
+                  "Warning: when looking for %s[%s]:%u: missing source "
+                  "context\n",
+                  vfs_->get_debug_uid_string(previous_uid), previous_context,
+                  offset);
             }
           } else {
-            fprintf(
+            absl::FPrintF(
                 stderr,
                 "Warning: when looking for %s[%s]:%u: missing source path\n",
-                vfs_->get_debug_uid_string(previous_uid).c_str(),
-                previous_context.c_str(), offset);
+                vfs_->get_debug_uid_string(previous_uid), previous_context,
+                offset);
           }
         }
         state.vname.set_signature(absl::StrCat(
@@ -1293,8 +1296,9 @@ void KytheGraphObserver::AddContextInformation(
     path_to_context_data_[found_file->getUniqueID()][context][offset] =
         dest_context;
   } else {
-    fprintf(stderr, "WARNING: Path %s could not be mapped to a VFS record.\n",
-            path.c_str());
+    absl::FPrintF(stderr,
+                  "WARNING: Path %s could not be mapped to a VFS record.\n",
+                  path);
   }
 }
 

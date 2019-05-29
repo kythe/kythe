@@ -3,9 +3,11 @@
 
 package repo_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type BuildSystem int32
 
@@ -33,6 +35,7 @@ var BuildSystem_name = map[int32]string{
 	2: "GRADLE",
 	3: "BAZEL",
 }
+
 var BuildSystem_value = map[string]int32{
 	"UNKNOWN": 0,
 	"MAVEN":   1,
@@ -43,8 +46,9 @@ var BuildSystem_value = map[string]int32{
 func (x BuildSystem) String() string {
 	return proto.EnumName(BuildSystem_name, int32(x))
 }
+
 func (BuildSystem) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_repo_52a7aee08af1276e, []int{0}
+	return fileDescriptor_793fb1509239cce0, []int{0}
 }
 
 type JavaOptions_Version int32
@@ -58,6 +62,7 @@ var JavaOptions_Version_name = map[int32]string{
 	0: "UNKNOWN",
 	1: "JAVA_1_8",
 }
+
 var JavaOptions_Version_value = map[string]int32{
 	"UNKNOWN":  0,
 	"JAVA_1_8": 1,
@@ -66,8 +71,9 @@ var JavaOptions_Version_value = map[string]int32{
 func (x JavaOptions_Version) String() string {
 	return proto.EnumName(JavaOptions_Version_name, int32(x))
 }
+
 func (JavaOptions_Version) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_repo_52a7aee08af1276e, []int{2, 0}
+	return fileDescriptor_793fb1509239cce0, []int{2, 0}
 }
 
 type Config struct {
@@ -82,16 +88,17 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_repo_52a7aee08af1276e, []int{0}
+	return fileDescriptor_793fb1509239cce0, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -130,16 +137,17 @@ func (m *ExtractionHint) Reset()         { *m = ExtractionHint{} }
 func (m *ExtractionHint) String() string { return proto.CompactTextString(m) }
 func (*ExtractionHint) ProtoMessage()    {}
 func (*ExtractionHint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_repo_52a7aee08af1276e, []int{1}
+	return fileDescriptor_793fb1509239cce0, []int{1}
 }
+
 func (m *ExtractionHint) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExtractionHint.Unmarshal(m, b)
 }
 func (m *ExtractionHint) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ExtractionHint.Marshal(b, m, deterministic)
 }
-func (dst *ExtractionHint) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtractionHint.Merge(dst, src)
+func (m *ExtractionHint) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExtractionHint.Merge(m, src)
 }
 func (m *ExtractionHint) XXX_Size() int {
 	return xxx_messageInfo_ExtractionHint.Size(m)
@@ -189,16 +197,17 @@ func (m *JavaOptions) Reset()         { *m = JavaOptions{} }
 func (m *JavaOptions) String() string { return proto.CompactTextString(m) }
 func (*JavaOptions) ProtoMessage()    {}
 func (*JavaOptions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_repo_52a7aee08af1276e, []int{2}
+	return fileDescriptor_793fb1509239cce0, []int{2}
 }
+
 func (m *JavaOptions) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_JavaOptions.Unmarshal(m, b)
 }
 func (m *JavaOptions) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_JavaOptions.Marshal(b, m, deterministic)
 }
-func (dst *JavaOptions) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JavaOptions.Merge(dst, src)
+func (m *JavaOptions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JavaOptions.Merge(m, src)
 }
 func (m *JavaOptions) XXX_Size() int {
 	return xxx_messageInfo_JavaOptions.Size(m)
@@ -228,16 +237,17 @@ func (m *ExtractionTarget) Reset()         { *m = ExtractionTarget{} }
 func (m *ExtractionTarget) String() string { return proto.CompactTextString(m) }
 func (*ExtractionTarget) ProtoMessage()    {}
 func (*ExtractionTarget) Descriptor() ([]byte, []int) {
-	return fileDescriptor_repo_52a7aee08af1276e, []int{3}
+	return fileDescriptor_793fb1509239cce0, []int{3}
 }
+
 func (m *ExtractionTarget) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ExtractionTarget.Unmarshal(m, b)
 }
 func (m *ExtractionTarget) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ExtractionTarget.Marshal(b, m, deterministic)
 }
-func (dst *ExtractionTarget) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtractionTarget.Merge(dst, src)
+func (m *ExtractionTarget) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExtractionTarget.Merge(m, src)
 }
 func (m *ExtractionTarget) XXX_Size() int {
 	return xxx_messageInfo_ExtractionTarget.Size(m)
@@ -263,17 +273,17 @@ func (m *ExtractionTarget) GetIndividualTargets() []string {
 }
 
 func init() {
+	proto.RegisterEnum("kythe.proto.repo.BuildSystem", BuildSystem_name, BuildSystem_value)
+	proto.RegisterEnum("kythe.proto.repo.JavaOptions_Version", JavaOptions_Version_name, JavaOptions_Version_value)
 	proto.RegisterType((*Config)(nil), "kythe.proto.repo.Config")
 	proto.RegisterType((*ExtractionHint)(nil), "kythe.proto.repo.ExtractionHint")
 	proto.RegisterType((*JavaOptions)(nil), "kythe.proto.repo.JavaOptions")
 	proto.RegisterType((*ExtractionTarget)(nil), "kythe.proto.repo.ExtractionTarget")
-	proto.RegisterEnum("kythe.proto.repo.BuildSystem", BuildSystem_name, BuildSystem_value)
-	proto.RegisterEnum("kythe.proto.repo.JavaOptions_Version", JavaOptions_Version_name, JavaOptions_Version_value)
 }
 
-func init() { proto.RegisterFile("kythe/proto/repo.proto", fileDescriptor_repo_52a7aee08af1276e) }
+func init() { proto.RegisterFile("kythe/proto/repo.proto", fileDescriptor_793fb1509239cce0) }
 
-var fileDescriptor_repo_52a7aee08af1276e = []byte{
+var fileDescriptor_793fb1509239cce0 = []byte{
 	// 383 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x51, 0x4d, 0xaf, 0x93, 0x40,
 	0x14, 0x75, 0xca, 0x13, 0xe4, 0xce, 0xf3, 0x89, 0xb3, 0x78, 0x61, 0x63, 0x42, 0x88, 0x26, 0xc4,
