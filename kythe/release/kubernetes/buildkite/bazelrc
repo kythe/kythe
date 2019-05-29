@@ -1,0 +1,3 @@
+build --noshow_loading_progress
+test --test_output=errors --test_summary=terse --test_verbose_timeout_warnings
+test --test_tag_filters=-flaky
