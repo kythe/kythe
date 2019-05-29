@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
   NullOutputStream null_stream;
 
   context.EnumerateCompilations([&](IndexerJob& job) {
-    options.EffectiveWorkingDirectory = job.working_directory;
+    options.EffectiveWorkingDirectory = job.unit.working_directory();
 
     kythe::MetadataSupports meta_supports;
     meta_supports.Add(llvm::make_unique<ProtobufMetadataSupport>());

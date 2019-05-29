@@ -122,10 +122,6 @@ void MaybeNormalizeFileVNames(IndexerJob* job) {
   }
 }
 
-void UpdateJobWdirFromUnit(IndexerJob* job) {
-  job->working_directory = job->unit.working_directory();
-}
-
 /// \brief Reads data from a .kindex file into memory.
 /// \param path The path from which the file should be read.
 /// \param virtual_files A vector to be filled with FileData.
@@ -187,7 +183,6 @@ void DecodeKZipFile(const std::string& path, bool silent,
     }
     job.unit = compilation->unit();
 
-    UpdateJobWdirFromUnit(&job);
     MaybeNormalizeFileVNames(&job);
     visit(job);
 
@@ -250,7 +245,6 @@ void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu,
     IndexerJob job;
     job.silent = silent;
     DecodeIndexFile(name, &job.virtual_files, &job.unit);
-    UpdateJobWdirFromUnit(&job);
     MaybeNormalizeFileVNames(&job);
     visit(job);
   }
@@ -264,7 +258,7 @@ void IndexerContext::LoadDataFromUnpackedFile(
   std::string source_file_name = default_filename;
   llvm::SmallString<1024> cwd;
   CHECK(!llvm::sys::fs::current_path(cwd));
-  job.working_directory = cwd.str();
+  job.unit.set_working_directory(cwd.str());
   if (FLAGS_i != "-") {
     read_fd = open(FLAGS_i.c_str(), O_RDONLY);
     if (read_fd == -1) {
