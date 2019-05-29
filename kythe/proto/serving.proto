@@ -30,6 +30,8 @@ message Node {
 
   // This node's definition location (anchor).
   ExpandedAnchor definition_location = 3;
+
+  double rank = 4;
 }
 
 // Full representation of a Kythe edge; useful during post-processing.
@@ -166,6 +168,8 @@ message ExpandedAnchor {
   kythe.proto.common.Span snippet_span = 7;
 
   string build_configuration = 8;
+
+  double rank = 9;
 }
 
 // FileDecorations stores a file's contents and all contained anchor edges.

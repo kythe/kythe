@@ -3,9 +3,11 @@
 
 package status_service_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type StatusReply_Language_Support int32
 
@@ -31,6 +33,7 @@ var StatusReply_Language_Support_name = map[int32]string{
 	1: "EXPERIMENTAL",
 	2: "SUPPORTED",
 }
+
 var StatusReply_Language_Support_value = map[string]int32{
 	"UNSUPPORTED":  0,
 	"EXPERIMENTAL": 1,
@@ -40,8 +43,9 @@ var StatusReply_Language_Support_value = map[string]int32{
 func (x StatusReply_Language_Support) String() string {
 	return proto.EnumName(StatusReply_Language_Support_name, int32(x))
 }
+
 func (StatusReply_Language_Support) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_status_service_886f2cb548e216d7, []int{1, 1, 0}
+	return fileDescriptor_a6ff3b5f197dffee, []int{1, 1, 0}
 }
 
 type StatusRequest struct {
@@ -54,16 +58,17 @@ func (m *StatusRequest) Reset()         { *m = StatusRequest{} }
 func (m *StatusRequest) String() string { return proto.CompactTextString(m) }
 func (*StatusRequest) ProtoMessage()    {}
 func (*StatusRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_status_service_886f2cb548e216d7, []int{0}
+	return fileDescriptor_a6ff3b5f197dffee, []int{0}
 }
+
 func (m *StatusRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusRequest.Unmarshal(m, b)
 }
 func (m *StatusRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StatusRequest.Marshal(b, m, deterministic)
 }
-func (dst *StatusRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StatusRequest.Merge(dst, src)
+func (m *StatusRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StatusRequest.Merge(m, src)
 }
 func (m *StatusRequest) XXX_Size() int {
 	return xxx_messageInfo_StatusRequest.Size(m)
@@ -87,16 +92,17 @@ func (m *StatusReply) Reset()         { *m = StatusReply{} }
 func (m *StatusReply) String() string { return proto.CompactTextString(m) }
 func (*StatusReply) ProtoMessage()    {}
 func (*StatusReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_status_service_886f2cb548e216d7, []int{1}
+	return fileDescriptor_a6ff3b5f197dffee, []int{1}
 }
+
 func (m *StatusReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusReply.Unmarshal(m, b)
 }
 func (m *StatusReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StatusReply.Marshal(b, m, deterministic)
 }
-func (dst *StatusReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StatusReply.Merge(dst, src)
+func (m *StatusReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StatusReply.Merge(m, src)
 }
 func (m *StatusReply) XXX_Size() int {
 	return xxx_messageInfo_StatusReply.Size(m)
@@ -140,16 +146,17 @@ func (m *StatusReply_Origin) Reset()         { *m = StatusReply_Origin{} }
 func (m *StatusReply_Origin) String() string { return proto.CompactTextString(m) }
 func (*StatusReply_Origin) ProtoMessage()    {}
 func (*StatusReply_Origin) Descriptor() ([]byte, []int) {
-	return fileDescriptor_status_service_886f2cb548e216d7, []int{1, 0}
+	return fileDescriptor_a6ff3b5f197dffee, []int{1, 0}
 }
+
 func (m *StatusReply_Origin) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusReply_Origin.Unmarshal(m, b)
 }
 func (m *StatusReply_Origin) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StatusReply_Origin.Marshal(b, m, deterministic)
 }
-func (dst *StatusReply_Origin) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StatusReply_Origin.Merge(dst, src)
+func (m *StatusReply_Origin) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StatusReply_Origin.Merge(m, src)
 }
 func (m *StatusReply_Origin) XXX_Size() int {
 	return xxx_messageInfo_StatusReply_Origin.Size(m)
@@ -186,16 +193,17 @@ func (m *StatusReply_Language) Reset()         { *m = StatusReply_Language{} }
 func (m *StatusReply_Language) String() string { return proto.CompactTextString(m) }
 func (*StatusReply_Language) ProtoMessage()    {}
 func (*StatusReply_Language) Descriptor() ([]byte, []int) {
-	return fileDescriptor_status_service_886f2cb548e216d7, []int{1, 1}
+	return fileDescriptor_a6ff3b5f197dffee, []int{1, 1}
 }
+
 func (m *StatusReply_Language) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusReply_Language.Unmarshal(m, b)
 }
 func (m *StatusReply_Language) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StatusReply_Language.Marshal(b, m, deterministic)
 }
-func (dst *StatusReply_Language) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StatusReply_Language.Merge(dst, src)
+func (m *StatusReply_Language) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StatusReply_Language.Merge(m, src)
 }
 func (m *StatusReply_Language) XXX_Size() int {
 	return xxx_messageInfo_StatusReply_Language.Size(m)
@@ -221,18 +229,16 @@ func (m *StatusReply_Language) GetSupport() StatusReply_Language_Support {
 }
 
 func init() {
+	proto.RegisterEnum("kythe.proto.StatusReply_Language_Support", StatusReply_Language_Support_name, StatusReply_Language_Support_value)
 	proto.RegisterType((*StatusRequest)(nil), "kythe.proto.StatusRequest")
 	proto.RegisterType((*StatusReply)(nil), "kythe.proto.StatusReply")
 	proto.RegisterType((*StatusReply_Origin)(nil), "kythe.proto.StatusReply.Origin")
 	proto.RegisterType((*StatusReply_Language)(nil), "kythe.proto.StatusReply.Language")
-	proto.RegisterEnum("kythe.proto.StatusReply_Language_Support", StatusReply_Language_Support_name, StatusReply_Language_Support_value)
 }
 
-func init() {
-	proto.RegisterFile("kythe/proto/status_service.proto", fileDescriptor_status_service_886f2cb548e216d7)
-}
+func init() { proto.RegisterFile("kythe/proto/status_service.proto", fileDescriptor_a6ff3b5f197dffee) }
 
-var fileDescriptor_status_service_886f2cb548e216d7 = []byte{
+var fileDescriptor_a6ff3b5f197dffee = []byte{
 	// 357 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0xcd, 0x6e, 0xaa, 0x40,
 	0x14, 0xc7, 0x45, 0x6f, 0x50, 0x0f, 0x7a, 0x35, 0x67, 0x71, 0x2f, 0x61, 0xa3, 0xa5, 0x1b, 0xbb,

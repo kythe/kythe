@@ -3,10 +3,12 @@
 
 package graph_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import common_go_proto "kythe.io/kythe/proto/common_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	common_go_proto "kythe.io/kythe/proto/common_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type NodesRequest struct {
 	Ticket               []string `protobuf:"bytes,1,rep,name=ticket,proto3" json:"ticket,omitempty"`
@@ -31,16 +33,17 @@ func (m *NodesRequest) Reset()         { *m = NodesRequest{} }
 func (m *NodesRequest) String() string { return proto.CompactTextString(m) }
 func (*NodesRequest) ProtoMessage()    {}
 func (*NodesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_c34d059ac32f02dd, []int{0}
+	return fileDescriptor_fdd66e9c25a95983, []int{0}
 }
+
 func (m *NodesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NodesRequest.Unmarshal(m, b)
 }
 func (m *NodesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_NodesRequest.Marshal(b, m, deterministic)
 }
-func (dst *NodesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NodesRequest.Merge(dst, src)
+func (m *NodesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NodesRequest.Merge(m, src)
 }
 func (m *NodesRequest) XXX_Size() int {
 	return xxx_messageInfo_NodesRequest.Size(m)
@@ -76,16 +79,17 @@ func (m *NodesReply) Reset()         { *m = NodesReply{} }
 func (m *NodesReply) String() string { return proto.CompactTextString(m) }
 func (*NodesReply) ProtoMessage()    {}
 func (*NodesReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_c34d059ac32f02dd, []int{1}
+	return fileDescriptor_fdd66e9c25a95983, []int{1}
 }
+
 func (m *NodesReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NodesReply.Unmarshal(m, b)
 }
 func (m *NodesReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_NodesReply.Marshal(b, m, deterministic)
 }
-func (dst *NodesReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NodesReply.Merge(dst, src)
+func (m *NodesReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NodesReply.Merge(m, src)
 }
 func (m *NodesReply) XXX_Size() int {
 	return xxx_messageInfo_NodesReply.Size(m)
@@ -118,16 +122,17 @@ func (m *EdgesRequest) Reset()         { *m = EdgesRequest{} }
 func (m *EdgesRequest) String() string { return proto.CompactTextString(m) }
 func (*EdgesRequest) ProtoMessage()    {}
 func (*EdgesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_c34d059ac32f02dd, []int{2}
+	return fileDescriptor_fdd66e9c25a95983, []int{2}
 }
+
 func (m *EdgesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EdgesRequest.Unmarshal(m, b)
 }
 func (m *EdgesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EdgesRequest.Marshal(b, m, deterministic)
 }
-func (dst *EdgesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EdgesRequest.Merge(dst, src)
+func (m *EdgesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EdgesRequest.Merge(m, src)
 }
 func (m *EdgesRequest) XXX_Size() int {
 	return xxx_messageInfo_EdgesRequest.Size(m)
@@ -184,16 +189,17 @@ func (m *EdgeSet) Reset()         { *m = EdgeSet{} }
 func (m *EdgeSet) String() string { return proto.CompactTextString(m) }
 func (*EdgeSet) ProtoMessage()    {}
 func (*EdgeSet) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_c34d059ac32f02dd, []int{3}
+	return fileDescriptor_fdd66e9c25a95983, []int{3}
 }
+
 func (m *EdgeSet) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EdgeSet.Unmarshal(m, b)
 }
 func (m *EdgeSet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EdgeSet.Marshal(b, m, deterministic)
 }
-func (dst *EdgeSet) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EdgeSet.Merge(dst, src)
+func (m *EdgeSet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EdgeSet.Merge(m, src)
 }
 func (m *EdgeSet) XXX_Size() int {
 	return xxx_messageInfo_EdgeSet.Size(m)
@@ -222,16 +228,17 @@ func (m *EdgeSet_Group) Reset()         { *m = EdgeSet_Group{} }
 func (m *EdgeSet_Group) String() string { return proto.CompactTextString(m) }
 func (*EdgeSet_Group) ProtoMessage()    {}
 func (*EdgeSet_Group) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_c34d059ac32f02dd, []int{3, 0}
+	return fileDescriptor_fdd66e9c25a95983, []int{3, 0}
 }
+
 func (m *EdgeSet_Group) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EdgeSet_Group.Unmarshal(m, b)
 }
 func (m *EdgeSet_Group) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EdgeSet_Group.Marshal(b, m, deterministic)
 }
-func (dst *EdgeSet_Group) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EdgeSet_Group.Merge(dst, src)
+func (m *EdgeSet_Group) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EdgeSet_Group.Merge(m, src)
 }
 func (m *EdgeSet_Group) XXX_Size() int {
 	return xxx_messageInfo_EdgeSet_Group.Size(m)
@@ -261,16 +268,17 @@ func (m *EdgeSet_Group_Edge) Reset()         { *m = EdgeSet_Group_Edge{} }
 func (m *EdgeSet_Group_Edge) String() string { return proto.CompactTextString(m) }
 func (*EdgeSet_Group_Edge) ProtoMessage()    {}
 func (*EdgeSet_Group_Edge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_c34d059ac32f02dd, []int{3, 0, 0}
+	return fileDescriptor_fdd66e9c25a95983, []int{3, 0, 0}
 }
+
 func (m *EdgeSet_Group_Edge) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EdgeSet_Group_Edge.Unmarshal(m, b)
 }
 func (m *EdgeSet_Group_Edge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EdgeSet_Group_Edge.Marshal(b, m, deterministic)
 }
-func (dst *EdgeSet_Group_Edge) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EdgeSet_Group_Edge.Merge(dst, src)
+func (m *EdgeSet_Group_Edge) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EdgeSet_Group_Edge.Merge(m, src)
 }
 func (m *EdgeSet_Group_Edge) XXX_Size() int {
 	return xxx_messageInfo_EdgeSet_Group_Edge.Size(m)
@@ -309,16 +317,17 @@ func (m *EdgesReply) Reset()         { *m = EdgesReply{} }
 func (m *EdgesReply) String() string { return proto.CompactTextString(m) }
 func (*EdgesReply) ProtoMessage()    {}
 func (*EdgesReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_graph_c34d059ac32f02dd, []int{4}
+	return fileDescriptor_fdd66e9c25a95983, []int{4}
 }
+
 func (m *EdgesReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EdgesReply.Unmarshal(m, b)
 }
 func (m *EdgesReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_EdgesReply.Marshal(b, m, deterministic)
 }
-func (dst *EdgesReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EdgesReply.Merge(dst, src)
+func (m *EdgesReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EdgesReply.Merge(m, src)
 }
 func (m *EdgesReply) XXX_Size() int {
 	return xxx_messageInfo_EdgesReply.Size(m)
@@ -372,9 +381,9 @@ func init() {
 	proto.RegisterMapType((map[string]int64)(nil), "kythe.proto.EdgesReply.TotalEdgesByKindEntry")
 }
 
-func init() { proto.RegisterFile("kythe/proto/graph.proto", fileDescriptor_graph_c34d059ac32f02dd) }
+func init() { proto.RegisterFile("kythe/proto/graph.proto", fileDescriptor_fdd66e9c25a95983) }
 
-var fileDescriptor_graph_c34d059ac32f02dd = []byte{
+var fileDescriptor_fdd66e9c25a95983 = []byte{
 	// 598 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x54, 0x51, 0x8f, 0xd2, 0x40,
 	0x10, 0xbe, 0x16, 0xca, 0xc1, 0x00, 0x4a, 0xd6, 0xd3, 0xab, 0x55, 0x23, 0xa9, 0xd1, 0x10, 0x13,

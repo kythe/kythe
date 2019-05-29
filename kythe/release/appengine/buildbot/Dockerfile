@@ -30,7 +30,7 @@ RUN apt-get update && \
       # Bazel dependencies
       pkg-config zip g++ zlib1g-dev unzip \
       # Kythe C++ dependencies
-      cmake gcc libssl-dev uuid-dev libcurl4-openssl-dev flex clang-3.8 bison \
+      gcc uuid-dev flex clang-3.8 bison \
       # Kythe misc dependencies
       asciidoc source-highlight graphviz curl parallel && \
     apt-get clean
@@ -53,11 +53,11 @@ RUN wget https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz && \
 ENV PATH=$PATH:/usr/local/go/bin
 
 # Install Bazel minimum supported version
-RUN curl -L -o /usr/bin/bazel-0.22.0 https://github.com/bazelbuild/bazel/releases/download/0.22.0/bazel-0.22.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.22.0
+RUN curl -L -o /usr/bin/bazel-0.25.1 https://github.com/bazelbuild/bazel/releases/download/0.25.1/bazel-0.25.1-linux-x86_64 && chmod +x /usr/bin/bazel-0.25.1
 ADD bazel /usr/bin/bazel
 
-# Install latest supported Bazel version
-RUN curl -L -o /usr/bin/bazel-0.24.0 https://github.com/bazelbuild/bazel/releases/download/0.24.0/bazel-0.24.0-linux-x86_64 && chmod +x /usr/bin/bazel-0.24.0
+# Install latest supported Bazel version (when different from minimum)
+# RUN curl -L -o /usr/bin/bazel-0.25.1 https://github.com/bazelbuild/bazel/releases/download/0.25.1/bazel-0.25.1-linux-x86_64 && chmod +x /usr/bin/bazel-0.25.1
 
 # Buildbot configuration
 ADD bazelrc /root/.bazelrc

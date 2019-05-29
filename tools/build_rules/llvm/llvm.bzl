@@ -133,7 +133,7 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
         target_kind_deps = {
             "Utils": [":LLVMMC", ":LLVMCodeGen"],
             "Info": [":LLVMMC", ":LLVMTarget"],
-            "AsmPrinter": [":LLVMTarget", ":LLVMCodeGen"],
+            "Desc": [":LLVMCodeGen"],
         }
         depends += target_kind_deps.get(kind, [])
 

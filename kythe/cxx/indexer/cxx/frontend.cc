@@ -23,6 +23,7 @@
 #include <string>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
 #include "gflags/gflags.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -123,11 +124,6 @@ void MaybeNormalizeFileVNames(IndexerJob* job) {
 
 void UpdateJobWdirFromUnit(IndexerJob* job) {
   job->working_directory = job->unit.working_directory();
-  if (!llvm::sys::path::is_absolute(job->working_directory)) {
-    llvm::SmallString<1024> stored_wd;
-    CHECK(!llvm::sys::fs::make_absolute(stored_wd));
-    job->working_directory = stored_wd.str();
-  }
 }
 
 /// \brief Reads data from a .kindex file into memory.
@@ -317,7 +313,7 @@ void IndexerContext::InitializeClaimClient() {
     dynamic_claims->set_max_redundant_claims(
         FLAGS_experimental_dynamic_overclaim);
     if (!dynamic_claims->OpenMemcache(FLAGS_experimental_dynamic_claim_cache)) {
-      fprintf(stderr, "Can't open memcached\n");
+      absl::FPrintF(stderr, "Can't open memcached\n");
       exit(1);
     }
     claim_client_ = std::move(dynamic_claims);

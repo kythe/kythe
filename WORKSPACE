@@ -5,16 +5,18 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_r
 load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
-# Bazel and our maximum supported version of Bazel.
-check_version("0.22", "0.24")
+# Bazel and our maximum supported version of Bazel, and not one of the known-bad releases.
+# When updating the supported versions, make sure to update .bazelversion to the maximum
+# and https://buildkite.com/kythe-project/bazel-minimum/settings for the minimum.
+check_version("0.25.1", "0.26")
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "d3da5e10483e2786452a3bdfe1bc2e3e4185f5292f96a52374a1f9aacf25d308",
-    strip_prefix = "bazel-toolchains-4c1acb6eaf4a23580ac2edf56393a69614426399",
+    sha256 = "56e75f7c9bb074f35b71a9950917fbd036bd1433f9f5be7c04bace0e68eb804a",
+    strip_prefix = "bazel-toolchains-9bd2748ec99d72bec41c88eecc3b7bd19d91a0c7",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/4c1acb6eaf4a23580ac2edf56393a69614426399.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/archive/4c1acb6eaf4a23580ac2edf56393a69614426399.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/9bd2748ec99d72bec41c88eecc3b7bd19d91a0c7.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/9bd2748ec99d72bec41c88eecc3b7bd19d91a0c7.tar.gz",
     ],
 )
 

@@ -3,9 +3,11 @@
 
 package cxx_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type CxxCompilationUnitDetails struct {
 	HeaderSearchInfo     *CxxCompilationUnitDetails_HeaderSearchInfo     `protobuf:"bytes,1,opt,name=header_search_info,json=headerSearchInfo,proto3" json:"header_search_info,omitempty"`
@@ -31,16 +33,17 @@ func (m *CxxCompilationUnitDetails) Reset()         { *m = CxxCompilationUnitDet
 func (m *CxxCompilationUnitDetails) String() string { return proto.CompactTextString(m) }
 func (*CxxCompilationUnitDetails) ProtoMessage()    {}
 func (*CxxCompilationUnitDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cxx_ad8115ae2e9e4f1c, []int{0}
+	return fileDescriptor_01bf80ce9e4f99a5, []int{0}
 }
+
 func (m *CxxCompilationUnitDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CxxCompilationUnitDetails.Unmarshal(m, b)
 }
 func (m *CxxCompilationUnitDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CxxCompilationUnitDetails.Marshal(b, m, deterministic)
 }
-func (dst *CxxCompilationUnitDetails) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CxxCompilationUnitDetails.Merge(dst, src)
+func (m *CxxCompilationUnitDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CxxCompilationUnitDetails.Merge(m, src)
 }
 func (m *CxxCompilationUnitDetails) XXX_Size() int {
 	return xxx_messageInfo_CxxCompilationUnitDetails.Size(m)
@@ -87,16 +90,17 @@ func (m *CxxCompilationUnitDetails_HeaderSearchDir) Reset() {
 func (m *CxxCompilationUnitDetails_HeaderSearchDir) String() string { return proto.CompactTextString(m) }
 func (*CxxCompilationUnitDetails_HeaderSearchDir) ProtoMessage()    {}
 func (*CxxCompilationUnitDetails_HeaderSearchDir) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cxx_ad8115ae2e9e4f1c, []int{0, 0}
+	return fileDescriptor_01bf80ce9e4f99a5, []int{0, 0}
 }
+
 func (m *CxxCompilationUnitDetails_HeaderSearchDir) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CxxCompilationUnitDetails_HeaderSearchDir.Unmarshal(m, b)
 }
 func (m *CxxCompilationUnitDetails_HeaderSearchDir) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CxxCompilationUnitDetails_HeaderSearchDir.Marshal(b, m, deterministic)
 }
-func (dst *CxxCompilationUnitDetails_HeaderSearchDir) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CxxCompilationUnitDetails_HeaderSearchDir.Merge(dst, src)
+func (m *CxxCompilationUnitDetails_HeaderSearchDir) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CxxCompilationUnitDetails_HeaderSearchDir.Merge(m, src)
 }
 func (m *CxxCompilationUnitDetails_HeaderSearchDir) XXX_Size() int {
 	return xxx_messageInfo_CxxCompilationUnitDetails_HeaderSearchDir.Size(m)
@@ -145,16 +149,17 @@ func (m *CxxCompilationUnitDetails_HeaderSearchInfo) String() string {
 }
 func (*CxxCompilationUnitDetails_HeaderSearchInfo) ProtoMessage() {}
 func (*CxxCompilationUnitDetails_HeaderSearchInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cxx_ad8115ae2e9e4f1c, []int{0, 1}
+	return fileDescriptor_01bf80ce9e4f99a5, []int{0, 1}
 }
+
 func (m *CxxCompilationUnitDetails_HeaderSearchInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CxxCompilationUnitDetails_HeaderSearchInfo.Unmarshal(m, b)
 }
 func (m *CxxCompilationUnitDetails_HeaderSearchInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CxxCompilationUnitDetails_HeaderSearchInfo.Marshal(b, m, deterministic)
 }
-func (dst *CxxCompilationUnitDetails_HeaderSearchInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CxxCompilationUnitDetails_HeaderSearchInfo.Merge(dst, src)
+func (m *CxxCompilationUnitDetails_HeaderSearchInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CxxCompilationUnitDetails_HeaderSearchInfo.Merge(m, src)
 }
 func (m *CxxCompilationUnitDetails_HeaderSearchInfo) XXX_Size() int {
 	return xxx_messageInfo_CxxCompilationUnitDetails_HeaderSearchInfo.Size(m)
@@ -202,16 +207,17 @@ func (m *CxxCompilationUnitDetails_SystemHeaderPrefix) String() string {
 }
 func (*CxxCompilationUnitDetails_SystemHeaderPrefix) ProtoMessage() {}
 func (*CxxCompilationUnitDetails_SystemHeaderPrefix) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cxx_ad8115ae2e9e4f1c, []int{0, 2}
+	return fileDescriptor_01bf80ce9e4f99a5, []int{0, 2}
 }
+
 func (m *CxxCompilationUnitDetails_SystemHeaderPrefix) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CxxCompilationUnitDetails_SystemHeaderPrefix.Unmarshal(m, b)
 }
 func (m *CxxCompilationUnitDetails_SystemHeaderPrefix) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CxxCompilationUnitDetails_SystemHeaderPrefix.Marshal(b, m, deterministic)
 }
-func (dst *CxxCompilationUnitDetails_SystemHeaderPrefix) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CxxCompilationUnitDetails_SystemHeaderPrefix.Merge(dst, src)
+func (m *CxxCompilationUnitDetails_SystemHeaderPrefix) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CxxCompilationUnitDetails_SystemHeaderPrefix.Merge(m, src)
 }
 func (m *CxxCompilationUnitDetails_SystemHeaderPrefix) XXX_Size() int {
 	return xxx_messageInfo_CxxCompilationUnitDetails_SystemHeaderPrefix.Size(m)
@@ -247,16 +253,17 @@ func (m *CxxCompilationUnitDetails_StatPath) Reset()         { *m = CxxCompilati
 func (m *CxxCompilationUnitDetails_StatPath) String() string { return proto.CompactTextString(m) }
 func (*CxxCompilationUnitDetails_StatPath) ProtoMessage()    {}
 func (*CxxCompilationUnitDetails_StatPath) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cxx_ad8115ae2e9e4f1c, []int{0, 3}
+	return fileDescriptor_01bf80ce9e4f99a5, []int{0, 3}
 }
+
 func (m *CxxCompilationUnitDetails_StatPath) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CxxCompilationUnitDetails_StatPath.Unmarshal(m, b)
 }
 func (m *CxxCompilationUnitDetails_StatPath) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CxxCompilationUnitDetails_StatPath.Marshal(b, m, deterministic)
 }
-func (dst *CxxCompilationUnitDetails_StatPath) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CxxCompilationUnitDetails_StatPath.Merge(dst, src)
+func (m *CxxCompilationUnitDetails_StatPath) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CxxCompilationUnitDetails_StatPath.Merge(m, src)
 }
 func (m *CxxCompilationUnitDetails_StatPath) XXX_Size() int {
 	return xxx_messageInfo_CxxCompilationUnitDetails_StatPath.Size(m)
@@ -282,9 +289,9 @@ func init() {
 	proto.RegisterType((*CxxCompilationUnitDetails_StatPath)(nil), "kythe.proto.CxxCompilationUnitDetails.StatPath")
 }
 
-func init() { proto.RegisterFile("kythe/proto/cxx.proto", fileDescriptor_cxx_ad8115ae2e9e4f1c) }
+func init() { proto.RegisterFile("kythe/proto/cxx.proto", fileDescriptor_01bf80ce9e4f99a5) }
 
-var fileDescriptor_cxx_ad8115ae2e9e4f1c = []byte{
+var fileDescriptor_01bf80ce9e4f99a5 = []byte{
 	// 418 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x52, 0x4d, 0x6f, 0xd4, 0x30,
 	0x10, 0x55, 0x76, 0xd9, 0x6a, 0x3b, 0x5b, 0x95, 0x95, 0xf9, 0x50, 0xc8, 0x01, 0x02, 0xa7, 0x9c,

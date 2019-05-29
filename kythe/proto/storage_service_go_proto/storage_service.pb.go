@@ -3,10 +3,12 @@
 
 package storage_service_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import _ "kythe.io/kythe/proto/storage_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	_ "kythe.io/kythe/proto/storage_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,13 +19,11 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-func init() {
-	proto.RegisterFile("kythe/proto/storage_service.proto", fileDescriptor_storage_service_87342725e7f341b8)
-}
+func init() { proto.RegisterFile("kythe/proto/storage_service.proto", fileDescriptor_67be6a87f67c26cd) }
 
-var fileDescriptor_storage_service_87342725e7f341b8 = []byte{
+var fileDescriptor_67be6a87f67c26cd = []byte{
 	// 241 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0xcc, 0xae, 0x2c, 0xc9,
 	0x48, 0xd5, 0x2f, 0x28, 0xca, 0x2f, 0xc9, 0xd7, 0x2f, 0x2e, 0xc9, 0x2f, 0x4a, 0x4c, 0x4f, 0x8d,

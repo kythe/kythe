@@ -38,4 +38,5 @@ compile_commands = rule(
         "compile_commands": "compile_commands.json.in",
     },
     implementation = _compile_commands_impl,
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
 )
