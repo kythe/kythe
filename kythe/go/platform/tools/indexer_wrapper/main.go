@@ -31,7 +31,7 @@ type delegatingAnalyzer struct {
 
 // binPath returns the absolute path to an indexer given its name.
 func binPath(binname string) string {
-	return filepath.Join(*releaseDir, "indexers", binname)
+	return filepath.Join(*kytheDir, "indexers", binname)
 }
 
 func NewDelegatingAnalyzer(fetcher analysis.Fetcher) *delegatingAnalyzer {
@@ -76,7 +76,7 @@ func (driverContext) AnalysisError(ctx context.Context, comp driver.Compilation,
 }
 
 var (
-	releaseDir = flag.String("release_dir", "/opt/kythe", "Path to kythe release dir, which contains indexer binaries and more")
+	kytheDir = flag.String("kythe_dir", "/opt/kythe", "Path to kythe release dir, which contains indexer binaries and more")
 )
 
 func init() {

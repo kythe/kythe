@@ -223,7 +223,7 @@ func saveSingleUnitKzip(ctx context.Context, cu *apb.CompilationUnit, fetcher an
 		}
 	}()
 
-	if _, err = w.AddUnit(cu, nil); err != nil {
+	if _, err := w.AddUnit(cu, nil); err != nil {
 		return "", err
 	}
 
