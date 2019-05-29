@@ -9,6 +9,7 @@ interface Num {
 }
 
 //- TestDef defines F
+//- TestDef.node/kind anchor
 //- @test defines/binding F
 //- F.node/kind function
 //- @a defines/binding ParamA
