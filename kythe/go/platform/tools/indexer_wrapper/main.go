@@ -92,7 +92,7 @@ func init() {
 		fmt.Fprintf(os.Stderr, `Usage: %s file.kzip...
 
 Indexes all compilation units from the provided kzip(s) by delegating to
-language-specific indexers. Entry protos are written to stdout.
+language-specific indexers. Entry protos are written as a delimited stream to stdout.
 
 Options:
 `, filepath.Base(os.Args[0]))
