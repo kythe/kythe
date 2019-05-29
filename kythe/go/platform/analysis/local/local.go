@@ -208,7 +208,7 @@ func (a *localAnalyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f
 // saveSingleUnitKzip creates a kzip file containing the given compilation unit
 // and any files it depends on. File contents are retrieved from the given
 // fetcher object.
-func saveSingleUnitKzip(ctx context.Context, cu *apb.CompilationUnit, fetcher analysis.Fetcher) (path string, err error) {
+func saveSingleUnitKzip(ctx context.Context, cu *apb.CompilationUnit, fetcher analysis.Fetcher) (_ string, err error) {
 	tmpfile, err := vfs.CreateTempFile(ctx, "", fmt.Sprintf("*_%s.kzip", cu.VName.Language))
 	if err != nil {
 		return "", err
