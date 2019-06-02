@@ -69,6 +69,18 @@ enum TSNamespace {
   VALUE,
 }
 
+/**
+ * Context represent the expression context a node is being used in. A
+ * GetterLike context guarantees that the node is not being set; a SetterLike
+ * context guarantees the node is being set.
+ *
+ * The Context is used for disambiguating declarations.
+ */
+enum Context {
+  GetterLike,
+  SetterLike,
+}
+
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Vistor {
   /** kFile is the VName for the 'file' node representing the source file. */
@@ -374,38 +386,28 @@ class Vistor {
   }
 
   /** getSymbolName computes the VName (and signature) of a ts.Symbol. */
-  getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: ts.Node): VName {
+  getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName {
     let vnames = this.symbolNames.get(sym);
     let declarations = sym.declarations;
-    if (!(context && declarations.length > 1) && vnames && vnames[ns])
-      return vnames[ns]!;
+    // Symbols with multiple declarations are disambiguated by the context
+    // they are used in.
+    const contextApplies = context !== undefined && declarations.length > 1;
+
+    if (!contextApplies && vnames && vnames[ns]) return vnames[ns]!;
     // TODO: update symbolNames table to account for context kind
 
     if (!declarations || declarations.length < 1) {
       throw new Error('TODO: symbol has no declarations?');
     }
-    // Symbols with multiple declarations are disambiguated by the context
-    // they are used in.
-    if (context && declarations.length > 1) {
-      switch (context.kind) {
-        case ts.SyntaxKind.GetAccessor:
-        case ts.SyntaxKind.SetAccessor:
-          declarations =
-              declarations.filter(decl => decl.kind === context.kind);
+    if (contextApplies) {
+      switch (context) {
+        case Context.GetterLike:
+          // GetterLike guarantees the node declaration is not a setter
+          declarations = declarations.filter(decl => !ts.isSetAccessor(decl));
           break;
-        case ts.SyntaxKind.BinaryExpression:
-          const ctx = context as ts.BinaryExpression;
-          // If the node is being assigned to it cannot reference a getter.
-          if (this.getSymbolAtLocation(ctx.left) === sym &&
-              ctx.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
-            declarations = declarations.filter(
-                decl => decl.kind !== ts.SyntaxKind.GetAccessor);
-          }
-          break;
-        default:
-          // If the node is not being assigned to it cannot reference a setter.
-          declarations = declarations.filter(
-              decl => decl.kind !== ts.SyntaxKind.SetAccessor);
+        case Context.SetterLike:
+          // SetterLike guarantees the node declaration is not a setter
+          declarations = declarations.filter(decl => !ts.isGetAccessor(decl));
           break;
       }
     }
@@ -803,6 +805,12 @@ class Vistor {
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
     this.visitDecorators(decl.decorators || []);
     let kFunc: VName|undefined = undefined;
+    let context: Context|undefined = undefined;
+    if (ts.isGetAccessor(decl)) {
+      context = Context.GetterLike;
+    } else if (ts.isSetAccessor(decl)) {
+      context = Context.SetterLike;
+    }
     if (decl.name) {
       const sym = this.getSymbolAtLocation(decl.name);
       if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
@@ -816,7 +824,7 @@ class Vistor {
               `function declaration ${decl.name.getText()} has no symbol`);
           return;
         }
-        kFunc = this.getSymbolName(sym, TSNamespace.VALUE, decl);
+        kFunc = this.getSymbolName(sym, TSNamespace.VALUE, context);
         this.emitNode(kFunc, 'function');
 
         this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
@@ -949,6 +957,38 @@ class Vistor {
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kMember);
   }
 
+  visitExpressionMember(node: ts.Node) {
+    const sym = this.getSymbolAtLocation(node);
+    if (!sym) {
+      // E.g. a field of an "any".
+      return;
+    }
+    if (!sym.declarations || sym.declarations.length === 0) {
+      // An undeclared symbol, e.g. "undefined".
+      return;
+    }
+    // The identifier's parent is the node participating in
+    // contextual expression.
+    const expression = node.parent.parent;
+    let context: Context|undefined = undefined;
+    switch (expression.kind) {
+      case ts.SyntaxKind.BinaryExpression:
+        const expr = expression as ts.BinaryExpression;
+        // An assignment has a setter-like context.
+        if (this.getSymbolAtLocation(expr.left) === sym &&
+            expr.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+          context = Context.SetterLike;
+        }
+        break;
+      default:
+        // Everything that is not an assignment has getter-like context.
+        context = Context.GetterLike;
+        break;
+    }
+    const name = this.getSymbolName(sym, TSNamespace.VALUE, context);
+    this.emitEdge(this.newAnchor(node), 'ref', name);
+  }
+
   /**
    * visitJSDoc attempts to attach a 'doc' node to a given target, by looking
    * for JSDoc comments.
@@ -1027,20 +1067,7 @@ class Vistor {
         // Assume that this identifer is occurring as part of an
         // expression; we handle identifiers that occur in other
         // circumstances (e.g. in a type) separately in visitType.
-        const sym = this.getSymbolAtLocation(node);
-        if (!sym) {
-          // E.g. a field of an "any".
-          return;
-        }
-        if (!sym.declarations || sym.declarations.length === 0) {
-          // An undeclared symbol, e.g. "undefined".
-          return;
-        }
-        // The identifier's parent is the node participating in
-        // contextual expression.
-        const expression = node.parent.parent;
-        const name = this.getSymbolName(sym, TSNamespace.VALUE, expression);
-        this.emitEdge(this.newAnchor(node), 'ref', name);
+        this.visitExpressionMember(node);
         return;
       default:
         // Use default recursive processing.
