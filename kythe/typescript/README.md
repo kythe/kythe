@@ -2,24 +2,25 @@
 
 ## VName Specification
 
-This specification defines how indexer expresses TypeScript declarations as
-VNames. You may find this useful if you are developing an application that
+This specification defines how the indexer expresses VNames for TypeScript
+declarations. You may find this useful if you are developing an application that
 relies on TypeScript code you don't want to re-index.
 
 [spec tests](./testdata/declaration_spec.ts)
 
 ### VName signature
 
-The signature description language used in this document similar to regex.
+The signature description language used in this document is similar to regex.
 
-- A substring matching `\b\$.*\b` is a variable.
-  - e.g. `$DECLARATION_NAME` is a variable refering to the name of declaration.
-- A substring matching `\[.*\]\?` is matched 0 or 1 times.
-  - e.g. `(hidden)?` is really `hidden` or ``.
-- A substring matching `\[.*\]\*` is matched 0 or more times.
-  - e.g. `[a]*` is ``, or `a`, or `aa`, ...
-- All other substrings are literals.
-  - e.g. `get#$NAME` is really `get#foo` if `$NAME = foo`.
+-   A substring in `\b\$.*\b` is a variable.
+    -   e.g. `$DECLARATION_NAME` is a variable refering to the name of
+        declaration.
+-   A substring in `\[.*\]\?` is matched 0 or 1 times.
+    -   e.g. `(hidden)?` is really `hidden` or ``.
+-   A substring in `\[.*\]\*` is matched 0 or more times.
+    -   e.g. `[a]*` is ``, or`a`, or`aa`, ...
+-   All other substrings are literals.
+    -   e.g. `get#$NAME` is really `get#foo` if `$NAME = foo`.
 
 The signature of a TypeScript declaration is defined by the following schema:
 
@@ -31,11 +32,11 @@ where `$PART` is a component of the enclosing declaration scope and `#type` is
 appended to the signature of type declarations. `SyntaxKind`s that are type
 declarations are:
 
-- `ClassDeclaration` (also a value)
-- `EnumDeclaration` (also a value)
-- `InterfaceDeclaration`
-- `TypeAliasDeclaration`
-- `TypeParameter`
+-   `ClassDeclaration` (also a value)
+-   `EnumDeclaration` (also a value)
+-   `InterfaceDeclaration`
+-   `TypeAliasDeclaration`
+-   `TypeParameter`
 
 As an example of this schema, in
 
@@ -60,7 +61,7 @@ describing the module.
 
 **SyntaxKind**:
 
-- `SourceFile`
+-   `SourceFile`
 
 ```typescript
 //- FileModule=VName("module", _, _, _, _).node/kind record
@@ -72,28 +73,25 @@ describing the module.
 
 #### Named Declaration
 
-**Form**: `$DECLARATION_NAME(#type)?`
-
-**Notes**: Signatures for type declarations are appended with a `#type literal`.
-`SyntaxKind`s that are affected by this are annotated below.
+**Form**: `$DECLARATION_NAME`
 
 **SyntaxKind**:
 
-- `NamespaceImport`
-- `ClassDeclaration`
-- `PropertyDeclaration`
-- `MethodDeclaration`
-- `EnumDeclaration`
-- `EnumMember`
-- `FunctionDeclaration`
-- `Parameter`
-- `InterfaceDeclaration`
-- `PropertySignature`
-- `MethodSignature`
-- `VariableDeclaration`
-- `PropertyAssignment`
-- `TypeAliasDeclaration`
-- `TypeParameter`
+-   `NamespaceImport`
+-   `ClassDeclaration`
+-   `PropertyDeclaration`
+-   `MethodDeclaration`
+-   `EnumDeclaration`
+-   `EnumMember`
+-   `FunctionDeclaration`
+-   `Parameter`
+-   `InterfaceDeclaration`
+-   `PropertySignature`
+-   `MethodSignature`
+-   `VariableDeclaration`
+-   `PropertyAssignment`
+-   `TypeAliasDeclaration`
+-   `TypeParameter`
 
 ```typescript
 //- @Klass defines/binding VName("Klass", _, _, _, _)
@@ -113,7 +111,7 @@ export class Klass {
 
 **SyntaxKind**:
 
-- `Constructor`
+-   `Constructor`
 
 ```typescript
 class Klass {
@@ -128,7 +126,7 @@ class Klass {
 
 **SyntaxKind**:
 
-- GetAccessor
+-   GetAccessor
 
 ```typescript
 class Klass {
@@ -143,7 +141,7 @@ class Klass {
 
 **SyntaxKind**:
 
-- SetAccessor
+-   SetAccessor
 
 ```typescript
 class Klass {
@@ -161,11 +159,14 @@ variable named `default`.
 
 **SyntaxKind**:
 
-- `ExportAssignment`
+-   `ExportAssignment`
 
 ```typescript
-//- @myExport defines/binding VName("default", _, _, _, _)
+//- @"export =" defines/binding VName("default", _, _, _, _)
 export = myExport;
+
+//- @default defines/binding VName("default", _, _, _, _)
+export default myExport;
 ```
 
 #### Anonymous Block
@@ -177,9 +178,9 @@ anonymous block cannot be accessed outside it.
 
 **SyntaxKind**:
 
-- `ArrowFunction`
-- `Block` that does not have a `FunctionDeclaration` or `MethodDeclaration`
-  parent
+-   `ArrowFunction`
+-   `Block` that does not have a `FunctionDeclaration` or `MethodDeclaration`
+    parent
 
 ```typescript
 let af = () => {
@@ -198,15 +199,15 @@ Project-specific, defined by the compilation unit you pass to the indexer.
 
 ### VName path
 
-- For entire source code files
-  - the entire file path, relative to the corpus and root.
-- For declarations with a file
-  - the file path stripped of `.d.ts` or `.ts` extensions, relative to the
-    corpus and root.
+-   For entire source code files
+    -   the entire file path, relative to the corpus and root.
+-   For declarations with a file
+    -   the file path stripped of `.d.ts` or `.ts` extensions, relative to the
+        corpus and root.
 
 ### VName language
 
-Always `'typescript'`.
+Always `typescript`.
 
 ## Development
 
