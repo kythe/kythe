@@ -44,6 +44,21 @@ class Class implements IFace {
     //- FakeMember.node/kind variable
     constructor(public otherMember: number, member: string) {}
 
+    //- @mem defines/binding GetMember
+    //- GetMember.node/kind function
+    //- GetMember childof Class
+    get mem() {
+      return this.mem;
+    }
+
+    //- @mem defines/binding SetMember
+    //- SetMember.node/kind function
+    //- SetMember childof Class
+    set mem(newMem) {
+      //- @member ref Member
+      this.member = newMem;
+    }
+
     //- @method defines/binding Method
     //- Method.node/kind function
     //- Method childof Class
@@ -52,6 +67,10 @@ class Class implements IFace {
         this.member;
         //- @method ref Method
         this.method();
+        //- @mem ref GetMember
+        this.mem;
+        //- @mem ref SetMember
+        this.mem = 0;
     }
 
     // TODO: ensure the method is linked to the interface too.

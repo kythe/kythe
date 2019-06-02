@@ -28,8 +28,10 @@ class C {
   method() {}
 
   // Constructor
-  //- @constructor defines/binding VName("C.constructor", _, _, "testdata/declaration_spec", "typescript")
-  constructor() {}
+  constructor() {
+    //- @a defines/binding VName("C.constructor.a", _, _, "testdata/declaration_spec", "typescript")
+    let a;
+  }
 
   // GetAccessor
   //- @prop defines/binding VName("C.prop#getter", _, _, "testdata/declaration_spec", "typescript")
