@@ -267,7 +267,8 @@ class Vistor {
         case ts.SyntaxKind.Block:
           if (node.parent &&
               (node.parent.kind === ts.SyntaxKind.FunctionDeclaration ||
-               node.parent.kind === ts.SyntaxKind.MethodDeclaration)) {
+               node.parent.kind === ts.SyntaxKind.MethodDeclaration ||
+               node.parent.kind === ts.SyntaxKind.Constructor)) {
             // A block that's an immediate child of a function is the
             // function's body, so it doesn't need a separate name.
             continue;
@@ -294,9 +295,19 @@ class Vistor {
         case ts.SyntaxKind.TypeAliasDeclaration:
         case ts.SyntaxKind.TypeParameter:
         case ts.SyntaxKind.VariableDeclaration:
+        case ts.SyntaxKind.GetAccessor:
+        case ts.SyntaxKind.SetAccessor:
           const decl = node as ts.NamedDeclaration;
           if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
-            parts.push(decl.name.text);
+            let part = decl.name.text;
+            // Getters and setters semantically refer to the same entities but
+            // are declared differently, so they are differentiated.
+            if (ts.isGetAccessor(decl)) {
+              part += '#getter';
+            } else if (ts.isSetAccessor(decl)) {
+              part += '#setter';
+            }
+            parts.push(part);
           } else {
             // TODO: handle other declarations, e.g. binding patterns.
             parts.push(this.anonName(node));
@@ -363,16 +374,43 @@ class Vistor {
   }
 
   /** getSymbolName computes the VName (and signature) of a ts.Symbol. */
-  getSymbolName(sym: ts.Symbol, ns: TSNamespace): VName {
+  getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: ts.Node): VName {
     let vnames = this.symbolNames.get(sym);
-    if (vnames && vnames[ns]) return vnames[ns]!;
+    let declarations = sym.declarations;
+    if (!(context && declarations.length > 1) && vnames && vnames[ns])
+      return vnames[ns]!;
+    // TODO: update symbolNames table to account for context kind
 
-    if (!sym.declarations || sym.declarations.length < 1) {
+    if (!declarations || declarations.length < 1) {
       throw new Error('TODO: symbol has no declarations?');
     }
-    // TODO: think about symbols with multiple declarations.
+    // Symbols with multiple declarations are disambiguated by the context
+    // they are used in.
+    if (context && declarations.length > 1) {
+      switch (context.kind) {
+        case ts.SyntaxKind.GetAccessor:
+        case ts.SyntaxKind.SetAccessor:
+          declarations =
+              declarations.filter(decl => decl.kind === context.kind);
+          break;
+        case ts.SyntaxKind.BinaryExpression:
+          const ctx = context as ts.BinaryExpression;
+          // If the node is being assigned to it cannot reference a getter.
+          if (this.getSymbolAtLocation(ctx.left) === sym &&
+              ctx.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+            declarations = declarations.filter(
+                decl => decl.kind !== ts.SyntaxKind.GetAccessor);
+          }
+          break;
+        default:
+          // If the node is not being assigned to it cannot reference a setter.
+          declarations = declarations.filter(
+              decl => decl.kind !== ts.SyntaxKind.SetAccessor);
+          break;
+      }
+    }
 
-    const decl = sym.declarations[0];
+    const decl = declarations[0];
     const vname = this.scopedSignature(decl);
     // The signature of a value is undecorated;
     // the signature of a type has the #type suffix.
@@ -778,7 +816,7 @@ class Vistor {
               `function declaration ${decl.name.getText()} has no symbol`);
           return;
         }
-        kFunc = this.getSymbolName(sym, TSNamespace.VALUE);
+        kFunc = this.getSymbolName(sym, TSNamespace.VALUE, decl);
         this.emitNode(kFunc, 'function');
 
         this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
@@ -790,7 +828,7 @@ class Vistor {
       kFunc = this.newVName('TODO', 'TODOPath');
     }
     if (kFunc) {
-        this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
+      this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
     }
 
     if (kFunc && decl.parent) {
@@ -966,6 +1004,8 @@ class Vistor {
       case ts.SyntaxKind.FunctionDeclaration:
       case ts.SyntaxKind.MethodDeclaration:
       case ts.SyntaxKind.MethodSignature:
+      case ts.SyntaxKind.GetAccessor:
+      case ts.SyntaxKind.SetAccessor:
         return this.visitFunctionLikeDeclaration(
             node as ts.FunctionLikeDeclaration);
       case ts.SyntaxKind.ClassDeclaration:
@@ -996,7 +1036,10 @@ class Vistor {
           // An undeclared symbol, e.g. "undefined".
           return;
         }
-        const name = this.getSymbolName(sym, TSNamespace.VALUE);
+        // The identifier's parent is the node participating in
+        // contextual expression.
+        const expression = node.parent.parent;
+        const name = this.getSymbolName(sym, TSNamespace.VALUE, expression);
         this.emitEdge(this.newAnchor(node), 'ref', name);
         return;
       default:

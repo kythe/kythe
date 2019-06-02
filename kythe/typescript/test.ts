@@ -80,6 +80,7 @@ function verify(
       });
 
   indexer.index(compilationUnit, new Map(), [test], program, (obj: {}) => {
+    // console.log(JSON.stringify(obj) + '\n');
     verifier.stdin.write(JSON.stringify(obj) + '\n');
   });
   verifier.stdin.end();
