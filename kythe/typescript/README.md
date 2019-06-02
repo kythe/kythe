@@ -10,35 +10,76 @@ relies on TypeScript code you don't want to re-index.
 
 ### VName signature
 
-The signature of a TypeScript declaration is its enclosing scope and its name,
-joined by a delimiter of a dot (`.`). For example, in
+The signature description language used in this document similar to regex.
+
+- A substring matching `\b\$.*\b` is a variable.
+  - e.g. `$DECLARATION_NAME` is a variable refering to the name of declaration.
+- A substring matching `\[.*\]\?` is matched 0 or 1 times.
+  - e.g. `(hidden)?` is really `hidden` or ``.
+- A substring matching `\[.*\]\*` is matched 0 or more times.
+  - e.g. `[a]*` is ``, or `a`, or `aa`, ...
+- All other substrings are literals.
+  - e.g. `get#$NAME` is really `get#foo` if `$NAME = foo`.
+
+The signature of a TypeScript declaration is defined by the following schema:
+
+```regex
+$PART[.$PART]*[#type]?
+```
+
+where `$PART` is a component of the enclosing declaration scope and `#type` is
+appended to the signature of type declarations. `SyntaxKind`s that are type
+declarations are:
+
+- `ClassDeclaration` (also a value)
+- `EnumDeclaration` (also a value)
+- `InterfaceDeclaration`
+- `TypeAliasDeclaration`
+- `TypeParameter`
+
+As an example of this schema, in
 
 ```typescript
 class A {
   public foo: string;
 }
+
+type B = A;
 ```
 
-`foo` has the signature `A.foo`.
+`foo` has the signature `A.foo` and `B` has the signature `B#type`.
 
-The contribution of a scope to the signature name is defined below. Contribution
-forms are described with the following schema:
+Signature components (`$PART`s in the schema) are defined below.
 
-- A substring starting with `$` is a variable up until its word boundary.
-  - e.g. `$DECLARATION_NAME` is a variable refering to the name of declaration.
-- All other substrings are literals.
-  - e.g. `get#$NAME` is really `get#foo` if `$NAME = foo`.
+#### File Module
+
+**Form**: `module`
+
+**Notes**: The first character of TypeScript source file binds to a VName
+describing the module.
+
+**SyntaxKind**:
+
+- `SourceFile`
+
+```typescript
+//- FileModule=VName("module", _, _, _, _).node/kind record
+//- FileModuleAnchor.node/kind anchor
+//- FileModuleAnchor./kythe/loc/start 0
+//- FileModuleAnchor./kythe/loc/end 1
+//- FileModuleAnchor defines/binding FileModule
+```
 
 #### Named Declaration
 
-**Form**: `$DECLARATION_NAME`
+**Form**: `$DECLARATION_NAME(#type)?`
+
+**Notes**: Signatures for type declarations are appended with a `#type literal`.
+`SyntaxKind`s that are affected by this are annotated below.
 
 **SyntaxKind**:
 
 - `NamespaceImport`
-- `ImportSpecifier`
-- `ExportSpecifier`
-- `ModuleDeclaration`
 - `ClassDeclaration`
 - `PropertyDeclaration`
 - `MethodDeclaration`
@@ -56,6 +97,7 @@ forms are described with the following schema:
 
 ```typescript
 //- @Klass defines/binding VName("Klass", _, _, _, _)
+//- @Klass defines/binding VName("Klass#type", _, _, _, _)
 export class Klass {
   //- @property defines/binding VName("Klass.property", _, _, _, _)
   property = {
