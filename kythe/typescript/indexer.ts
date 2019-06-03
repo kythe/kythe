@@ -326,7 +326,18 @@ class Vistor {
           }
           break;
         case ts.SyntaxKind.Constructor:
-          parts.push('constructor');
+          // Class properties declared with the constructor shorthand:
+          //    constructor(private member: string)
+          // should be scoped to the class, not the constructor.
+          const isClassMember = startNode.kind === ts.SyntaxKind.Parameter &&
+              startNode.parent === node &&  // has to be in this ctor
+              startNode.modifiers &&
+              (startNode.modifiers.find(
+                  m => m.kind === ts.SyntaxKind.PrivateKeyword ||
+                      m.kind === ts.SyntaxKind.PublicKeyword));
+          if (!isClassMember) {
+            parts.push('constructor');
+          }
           break;
         case ts.SyntaxKind.ModuleDeclaration:
           const modDecl = node as ts.ModuleDeclaration;

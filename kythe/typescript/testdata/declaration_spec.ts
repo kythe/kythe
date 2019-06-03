@@ -16,7 +16,6 @@ import * as NspI from './declaration';
 export default NspI;
 
 // ClassDeclaration
-//- @C defines/binding VName("C", _, _, "testdata/declaration_spec", "typescript")
 //- @C defines/binding VName("C#type", _, _, "testdata/declaration_spec", "typescript")
 class C {
   // PropertyDeclaration
@@ -28,23 +27,29 @@ class C {
   method() {}
 
   // Constructor
-  constructor() {
+  //- @constructor defines/binding VName("C:ctor", _, _, "testdata/declaration_spec", "typescript")
+  //- @pProp defines/binding VName("C.pProp", _, _, "testdata/declaration_spec", "typescript")
+  constructor(private pProp: number) {
     //- @a defines/binding VName("C.constructor.a", _, _, "testdata/declaration_spec", "typescript")
     let a;
   }
 
   // GetAccessor
-  //- @prop defines/binding VName("C.prop#getter", _, _, "testdata/declaration_spec", "typescript")
+  //- @prop defines/binding VName("C.prop:getter", _, _, "testdata/declaration_spec", "typescript")
   get prop() {
     return this.property;
   }
 
   // SetAccessor
-  //- @prop defines/binding VName("C.prop#setter", _, _, "testdata/declaration_spec", "typescript")
+  //- @prop defines/binding VName("C.prop:setter", _, _, "testdata/declaration_spec", "typescript")
   set prop(nProp) {
     this.property = nProp;
   }
 }
+
+// ClassDeclaration with no constructor
+//- @CC defines/binding VName("CC:ctor", _, _, "testdata/declaration_spec", "typescript")
+class CC {}
 
 // EnumDeclaration
 //- @E defines/binding VName("E", _, _, "testdata/declaration_spec", "typescript")
