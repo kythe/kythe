@@ -262,15 +262,11 @@ class Vistor {
          node = node.parent) {
       switch (node.kind) {
         case ts.SyntaxKind.ExportAssignment:
-          const exportDecl = node as ts.ExportAssignment;
-          if (!exportDecl.isExportEquals) {
-            // It's an "export default" statement.
-            // This is semantically equivalent to exporting a variable
-            // named 'default'.
-            parts.push('default');
-          } else {
-            this.todo(node, 'handle ExportAssignment with =');
-          }
+          // It's an "export default" statement.
+          // This is semantically equivalent to exporting a variable
+          // named 'default'.
+          // For now, "export =" has the same behavior. TODO: better behavior.
+          parts.push('default');
           break;
         case ts.SyntaxKind.ArrowFunction:
           // Arrow functions are anonymous, so generate a unique id.
@@ -717,19 +713,18 @@ class Vistor {
    *   export = ...;
    */
   visitExportAssignment(assign: ts.ExportAssignment) {
-    if (assign.isExportEquals) {
-      this.todo(assign, `handle export = statement`);
-    } else {
-      // export default <expr>;
-      // is the same as exporting the expression under the symbol named
-      // "default".  But we don't have a nice name to link the symbol to!
-      // So instead we link the keyword "default" itself to the VName.
-      // The TypeScript AST does not expose the location of the 'default'
-      // keyword so we just find it in the source text to link it.
-      const span = this.getTextSpan(assign, 'default');
-      const anchor = this.newAnchor(assign, span.start, span.end);
-      this.emitEdge(anchor, 'defines/binding', this.scopedSignature(assign));
-    }
+    //    export default <expr>;
+    // is the same as exporting the expression under the symbol named
+    // "default".  But we don't have a nice name to link the symbol to!
+    // So instead we link the keyword "default" itself to the VName.
+    // The TypeScript AST does not expose the location of the 'default'
+    // keyword so we just find it in the source text to link it.
+    //    export = <expr>
+    // has the same behavior for now. TODO: better behavior.
+    const span =
+        this.getTextSpan(assign, assign.isExportEquals ? '=' : 'default');
+    const anchor = this.newAnchor(assign, span.start, span.end);
+    this.emitEdge(anchor, 'defines/binding', this.scopedSignature(assign));
   }
 
   /**
