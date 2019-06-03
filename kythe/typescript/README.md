@@ -82,6 +82,7 @@ describing the module.
 -   `Constructor`
 -   `PropertyDeclaration`
 -   `MethodDeclaration`
+-   `GetAccessor`
 -   `EnumDeclaration`
 -   `EnumMember`
 -   `FunctionDeclaration`
@@ -106,9 +107,7 @@ export class Klass {
 
 #### Class Declaration
 
-**Form**:
-- `$CLASS#type`
-- `$CLASS:ctor`
+**Form**: - `$CLASS#type` - `$CLASS:ctor`
 
 **Notes**: Because a class is both a type and a value, it has to be labeled as
 such. The identifier of a class is always binded as the class type. If a class
@@ -118,9 +117,7 @@ otherwise, the class identifier is also bound as the value.
 This only applies to the class declarations. Signatures of identifiers within a
 class have a class component that is only `$CLASS`.
 
-**SyntaxKind**:
-- ClassDeclaration
-- Constructor
+**SyntaxKind**: - ClassDeclaration - Constructor
 
 ```typescript
 //- @Klass defines/binding VName("Klass#type", _, _, _, _)
@@ -134,24 +131,13 @@ class Klass {
 class NoCtorKlass {}
 ```
 
-#### Getter
-
-**Form**: `$DECLARATION_NAME:getter`
-
-**SyntaxKind**:
-
--   GetAccessor
-
-```typescript
-class Klass {
-  //- @foo defines/binding VName("Klass.foo:getter", _, _, _, _)
-  get foo() {}
-}
-```
-
 #### Setter
 
 **Form**: `$DECLARATION_NAME#setter`
+
+**Notes**: This is to differentiate the setter from the getter, because the
+identifier for a getter and setter is the same and its symbol has multiple
+declarations.
 
 **SyntaxKind**:
 

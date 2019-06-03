@@ -28,21 +28,25 @@ class C {
   method() {}
 
   // Constructor
-  //- @constructor defines/binding VName("C.constructor", _, _, "testdata/declaration_spec", "typescript")
+  //- @constructor defines/binding VName("C:ctor", _, _, "testdata/declaration_spec", "typescript")
   constructor() {}
 
   // GetAccessor
-  //- @prop defines/binding VName("C.prop#getter", _, _, "testdata/declaration_spec", "typescript")
+  //- @prop defines/binding VName("C.prop", _, _, "testdata/declaration_spec", "typescript")
   get prop() {
     return this.property;
   }
 
   // SetAccessor
-  //- @prop defines/binding VName("C.prop#setter", _, _, "testdata/declaration_spec", "typescript")
+  //- @prop defines/binding VName("C.prop:setter", _, _, "testdata/declaration_spec", "typescript")
   set prop(nProp) {
     this.property = nProp;
   }
 }
+
+// ClassDeclaration with no ctor
+//- @CC defines/binding VName("C:ctor", _, _, "testdata/declaration_spec", "typescript")
+class CC {}
 
 // EnumDeclaration
 //- @E defines/binding VName("E", _, _, "testdata/declaration_spec", "typescript")
