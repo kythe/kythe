@@ -313,10 +313,8 @@ class Vistor {
           if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
             let part = decl.name.text;
             // Getters and setters semantically refer to the same entities but
-            // are declared differently, so they are differentiated.
-            if (ts.isGetAccessor(decl)) {
-              part += ':getter';
-            } else if (ts.isSetAccessor(decl)) {
+            // are declared differently, so setters are differentiated.
+            if (ts.isSetAccessor(decl)) {
               part += ':setter';
             }
             parts.push(part);

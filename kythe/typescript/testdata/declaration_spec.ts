@@ -35,7 +35,7 @@ class C {
   }
 
   // GetAccessor
-  //- @prop defines/binding VName("C.prop:getter", _, _, "testdata/declaration_spec", "typescript")
+  //- @prop defines/binding VName("C.prop", _, _, "testdata/declaration_spec", "typescript")
   get prop() {
     return this.property;
   }
