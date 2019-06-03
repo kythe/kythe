@@ -79,6 +79,7 @@ describing the module.
 
 -   `NamespaceImport`
 -   `ClassDeclaration`
+-   `Constructor`
 -   `PropertyDeclaration`
 -   `MethodDeclaration`
 -   `EnumDeclaration`
@@ -94,35 +95,48 @@ describing the module.
 -   `TypeParameter`
 
 ```typescript
-//- @Klass defines/binding VName("Klass", _, _, _, _)
-//- @Klass defines/binding VName("Klass#type", _, _, _, _)
 export class Klass {
-  //- @property defines/binding VName("Klass.property", _, _, _, _)
-  property = {
-    //- @property defines/binding VName("Klass.property.key", _, _, _, _)
-    key: 0
+  //- @property defines/binding VName("Klass.method", _, _, _, _)
+  method() {
+    //- @property defines/binding VName("Klass.method.val", _, _, _, _)
+    let val;
   };
 }
 ```
 
-#### Constructor
+#### Class Declaration
 
-**Form**: `constructor`
+**Form**:
+- `$CLASS#type`
+- `$CLASS:ctor`
+
+**Notes**: Because a class is both a type and a value, it has to be labeled as
+such. The identifier of a class is always binded as the class type. If a class
+defines a constructor, the constructor is binded as the class value (`ctor`);
+otherwise, the class identifier is also bound as the value.
+
+This only applies to the class declarations. Signatures of identifiers within a
+class have a class component that is only `$CLASS`.
 
 **SyntaxKind**:
-
--   `Constructor`
+- ClassDeclaration
+- Constructor
 
 ```typescript
+//- @Klass defines/binding VName("Klass#type", _, _, _, _)
 class Klass {
-  //- @constructor defines/binding VName("Klass.constructor", _, _, _, _)
+  //- @constructor defines/binding VName("Klass:ctor", _, _, _, _)
   constructor() {}
 }
+
+//- @NoCtorKlass defines/binding VName("NoCtorKlass#type", _, _, _, _)
+//- @NoCtorKlass defines/binding VName("NoCtorKlass:ctor", _, _, _, _)
+class NoCtorKlass {}
 ```
 
 #### Getter
 
-**Form**: `$DECLARATION_NAME#getter`
+**Form**: `$DECLARATION_NAME:getter`
 
 **SyntaxKind**:
 
@@ -130,7 +144,7 @@ class Klass {
 
 ```typescript
 class Klass {
-  //- @foo defines/binding VName("Klass.foo#getter", _, _, _, _)
+  //- @foo defines/binding VName("Klass.foo:getter", _, _, _, _)
   get foo() {}
 }
 ```
@@ -145,7 +159,7 @@ class Klass {
 
 ```typescript
 class Klass {
-  //- @foo defines/binding VName("Klass.foo#setter", _, _, _, _)
+  //- @foo defines/binding VName("Klass.foo:setter", _, _, _, _)
   set foo(newFoo) {}
 }
 ```
