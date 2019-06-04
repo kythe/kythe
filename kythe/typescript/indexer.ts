@@ -385,7 +385,11 @@ class Vistor {
     return this.typeChecker.getSymbolAtLocation(node);
   }
 
-  /** getSymbolName computes the VName (and signature) of a ts.Symbol. */
+  /**
+   * getSymbolName computes the VName (and signature) of a ts.Symbol. A Context
+   * can be optionally specified to help disambiguate nodes with multiple
+   * declarations. See the documentation of Context for more information.
+   */
   getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName {
     let vnames = this.symbolNames.get(sym);
     let declarations = sym.declarations;
@@ -967,8 +971,8 @@ class Vistor {
       // An undeclared symbol, e.g. "undefined".
       return;
     }
-    // The identifier's parent is the node participating in
-    // contextual expression.
+    // The identifier's parent is the node it names; that node's parent is the
+    // expression.
     const expression = node.parent.parent;
     let context: Context|undefined = undefined;
     switch (expression.kind) {
