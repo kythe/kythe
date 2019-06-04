@@ -379,6 +379,11 @@ class Vistor {
     if (ns === TSNamespace.TYPE) {
       vname.signature += '#type';
     }
+    // The signature of a class declaration value is its constructor, as the
+    // constructor has more semantic meaning.
+    if ((sym.flags & ts.SymbolFlags.Class) && ns === TSNamespace.VALUE) {
+      vname.signature += ':ctor';
+    }
 
     // Save it in the appropriate slot in the symbolNames table.
     if (!vnames) vnames = [null, null];
@@ -647,6 +652,17 @@ class Vistor {
   }
 
   /**
+   * Returns the location of a text in the source code of a node.
+   */
+  getTextSpan(node: ts.Node, text: string): {start: number, end: number} {
+    const ofs = node.getText().indexOf(text);
+    if (ofs < 0) throw new Error(`${text} not found in ${node.getText()}`);
+    const start = node.getStart() + ofs;
+    const end = start + text.length;
+    return {start, end};
+  }
+
+  /**
    * Handles code like:
    *   export default ...;
    *   export = ...;
@@ -661,10 +677,8 @@ class Vistor {
       // So instead we link the keyword "default" itself to the VName.
       // The TypeScript AST does not expose the location of the 'default'
       // keyword so we just find it in the source text to link it.
-      const ofs = assign.getText().indexOf('default');
-      if (ofs < 0) throw new Error(`'export default' without 'default'?`);
-      const start = assign.getStart() + ofs;
-      const anchor = this.newAnchor(assign, start, start + 'default'.length);
+      const span = this.getTextSpan(assign, 'default');
+      const anchor = this.newAnchor(assign, span.start, span.end);
       this.emitEdge(anchor, 'defines/binding', this.scopedSignature(assign));
     }
   }
@@ -765,6 +779,12 @@ class Vistor {
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
     this.visitDecorators(decl.decorators || []);
     let kFunc: VName|undefined = undefined;
+<<<<<<< HEAD
+=======
+    let context: Context|undefined = undefined;
+    if (ts.isGetAccessor(decl)) context = Context.GetterLike;
+    if (ts.isSetAccessor(decl)) context = Context.SetterLike;
+>>>>>>> c77cb19d... add constructor spec impl
     if (decl.name) {
       const sym = this.getSymbolAtLocation(decl.name);
       if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
@@ -790,7 +810,7 @@ class Vistor {
       kFunc = this.newVName('TODO', 'TODOPath');
     }
     if (kFunc) {
-        this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
+      this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
     }
 
     if (kFunc && decl.parent) {
@@ -867,16 +887,25 @@ class Vistor {
       // instances of the class) and a value (the constructor).
       const kClass = this.getSymbolName(sym, TSNamespace.TYPE);
       this.emitNode(kClass, 'record');
-      const kClassCtor = this.getSymbolName(sym, TSNamespace.VALUE);
-      this.emitNode(kClassCtor, 'function');
-      // TODO: the specific constructor() should really be the thing tagged
-      // with constructor, but we also need to handle classes that don't declare
-      // a constructor.  Fix me later.
-      this.emitFact(kClassCtor, 'subkind', 'constructor');
+      const classAnchor = this.newAnchor(decl.name);
+      this.emitEdge(classAnchor, 'defines/binding', kClass);
 
-      const anchor = this.newAnchor(decl.name);
-      this.emitEdge(anchor, 'defines/binding', kClass);
-      this.emitEdge(anchor, 'defines/binding', kClassCtor);
+      const kClassCtor = this.getSymbolName(sym, TSNamespace.VALUE);
+      let classCtorAnchor;
+      const ctor = sym.members!.get(ts.InternalSymbolName.Constructor);
+      if (ctor) {
+        const decl = ctor.declarations[0];
+        const span = this.getTextSpan(decl, 'constructor');
+        classCtorAnchor = this.newAnchor(decl, span.start, span.end);
+      } else {
+        // TODO: the specific constructor() should really be the thing tagged
+        // with constructor, but we also need to handle classes that don't
+        // declare a constructor.  Fix me later.
+        classCtorAnchor = classAnchor;
+      }
+      this.emitNode(kClassCtor, 'function');
+      this.emitFact(kClassCtor, 'subkind', 'constructor');
+      this.emitEdge(classCtorAnchor, 'defines/binding', kClassCtor);
 
       this.visitJSDoc(decl, kClass);
     }
@@ -911,6 +940,41 @@ class Vistor {
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kMember);
   }
 
+<<<<<<< HEAD
+=======
+  visitExpressionMember(node: ts.Node) {
+    const sym = this.getSymbolAtLocation(node);
+    if (!sym) {
+      // E.g. a field of an "any".
+      return;
+    }
+    if (!sym.declarations || sym.declarations.length === 0) {
+      // An undeclared symbol, e.g. "undefined".
+      return;
+    }
+    // The identifier's parent is the node participating in
+    // contextual expression.
+    const expression = node.parent.parent;
+    let context: Context|undefined = undefined;
+    switch (expression.kind) {
+      case ts.SyntaxKind.BinaryExpression:
+        const expr = expression as ts.BinaryExpression;
+        // An assignment has a setter-like context.
+        if (this.getSymbolAtLocation(expr.left) === sym &&
+            expr.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+          context = Context.SetterLike;
+        }
+        break;
+      default:
+        // All other expressions are reads.
+        context = Context.GetterLike;
+        break;
+    }
+    const name = this.getSymbolName(sym, TSNamespace.VALUE, context);
+    this.emitEdge(this.newAnchor(node), 'ref', name);
+  }
+
+>>>>>>> c77cb19d... add constructor spec impl
   /**
    * visitJSDoc attempts to attach a 'doc' node to a given target, by looking
    * for JSDoc comments.
