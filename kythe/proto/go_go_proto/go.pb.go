@@ -3,9 +3,11 @@
 
 package go_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type GoDetails struct {
 	Goos                 string   `protobuf:"bytes,1,opt,name=goos,proto3" json:"goos,omitempty"`
@@ -35,16 +37,17 @@ func (m *GoDetails) Reset()         { *m = GoDetails{} }
 func (m *GoDetails) String() string { return proto.CompactTextString(m) }
 func (*GoDetails) ProtoMessage()    {}
 func (*GoDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_go_0251d8e3856873be, []int{0}
+	return fileDescriptor_01b832ac89a99f34, []int{0}
 }
+
 func (m *GoDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GoDetails.Unmarshal(m, b)
 }
 func (m *GoDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GoDetails.Marshal(b, m, deterministic)
 }
-func (dst *GoDetails) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GoDetails.Merge(dst, src)
+func (m *GoDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GoDetails.Merge(m, src)
 }
 func (m *GoDetails) XXX_Size() int {
 	return xxx_messageInfo_GoDetails.Size(m)
@@ -115,16 +118,17 @@ func (m *GoPackageInfo) Reset()         { *m = GoPackageInfo{} }
 func (m *GoPackageInfo) String() string { return proto.CompactTextString(m) }
 func (*GoPackageInfo) ProtoMessage()    {}
 func (*GoPackageInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_go_0251d8e3856873be, []int{1}
+	return fileDescriptor_01b832ac89a99f34, []int{1}
 }
+
 func (m *GoPackageInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GoPackageInfo.Unmarshal(m, b)
 }
 func (m *GoPackageInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GoPackageInfo.Marshal(b, m, deterministic)
 }
-func (dst *GoPackageInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GoPackageInfo.Merge(dst, src)
+func (m *GoPackageInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GoPackageInfo.Merge(m, src)
 }
 func (m *GoPackageInfo) XXX_Size() int {
 	return xxx_messageInfo_GoPackageInfo.Size(m)
@@ -147,9 +151,9 @@ func init() {
 	proto.RegisterType((*GoPackageInfo)(nil), "kythe.proto.GoPackageInfo")
 }
 
-func init() { proto.RegisterFile("kythe/proto/go.proto", fileDescriptor_go_0251d8e3856873be) }
+func init() { proto.RegisterFile("kythe/proto/go.proto", fileDescriptor_01b832ac89a99f34) }
 
-var fileDescriptor_go_0251d8e3856873be = []byte{
+var fileDescriptor_01b832ac89a99f34 = []byte{
 	// 250 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0xd0, 0x41, 0x4b, 0xc3, 0x30,
 	0x18, 0xc6, 0x71, 0xea, 0x66, 0x5d, 0xdf, 0xe2, 0x25, 0x88, 0x04, 0x41, 0x56, 0x76, 0xea, 0xa9,

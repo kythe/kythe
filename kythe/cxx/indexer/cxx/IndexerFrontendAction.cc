@@ -21,7 +21,10 @@
 #include <utility>
 
 #include "KytheGraphObserver.h"
+#include "KytheVFS.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
@@ -101,8 +104,9 @@ bool DecodeHeaderSearchInfo(const proto::CxxCompilationUnitDetails& Details,
     return false;
   }
   if (!Info.CopyFrom(Details)) {
-    fprintf(stderr,
-            "Warning: unit has header search info, but it is ill-formed.\n");
+    absl::FPrintF(
+        stderr,
+        "Warning: unit has header search info, but it is ill-formed.\n");
     return false;
   }
   return true;
@@ -141,6 +145,10 @@ std::string IndexCompilationUnit(
     const LibrarySupports* LibrarySupports,
     std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor*)>
         CreateWorklist) {
+  llvm::sys::path::Style Style =
+      kythe::IndexVFS::DetectStyleFromAbsoluteWorkingDirectory(
+          Unit.working_directory())
+          .value_or(llvm::sys::path::Style::posix);
   HeaderSearchInfo HSI;
   proto::CxxCompilationUnitDetails Details;
   bool HSIValid = false;
@@ -157,11 +165,14 @@ std::string IndexCompilationUnit(
   }
   clang::FileSystemOptions FSO;
   FSO.WorkingDir = Options.EffectiveWorkingDirectory;
+  if (Style == llvm::sys::path::Style::windows) {
+    FSO.WorkingDir = absl::StrCat("/", FSO.WorkingDir);
+  }
   for (auto& Path : HSI.paths) {
     Dirs.push_back(ToStringRef(Path.path));
   }
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(
-      new IndexVFS(FSO.WorkingDir, Files, Dirs));
+      new IndexVFS(Options.EffectiveWorkingDirectory, Files, Dirs, Style));
   KytheGraphRecorder Recorder(&Output);
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
                               Options.ReportProfileEvent,
@@ -219,6 +230,7 @@ std::string IndexCompilationUnit(
   if (!FixupArgument.empty()) {
     Args.insert(Args.begin() + 1, FixupArgument);
   }
+
   // StdinAdjustSingleFrontendActionFactory takes ownership of its action.
   std::unique_ptr<StdinAdjustSingleFrontendActionFactory> Tool =
       absl::make_unique<StdinAdjustSingleFrontendActionFactory>(

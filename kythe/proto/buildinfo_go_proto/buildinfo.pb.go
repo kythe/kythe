@@ -3,9 +3,11 @@
 
 package buildinfo_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type BuildDetails struct {
 	BuildTarget          string   `protobuf:"bytes,1,opt,name=build_target,json=buildTarget,proto3" json:"build_target,omitempty"`
@@ -31,16 +33,17 @@ func (m *BuildDetails) Reset()         { *m = BuildDetails{} }
 func (m *BuildDetails) String() string { return proto.CompactTextString(m) }
 func (*BuildDetails) ProtoMessage()    {}
 func (*BuildDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_buildinfo_fe2d8b42a73b6097, []int{0}
+	return fileDescriptor_eab47dfb43d1d01f, []int{0}
 }
+
 func (m *BuildDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BuildDetails.Unmarshal(m, b)
 }
 func (m *BuildDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_BuildDetails.Marshal(b, m, deterministic)
 }
-func (dst *BuildDetails) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BuildDetails.Merge(dst, src)
+func (m *BuildDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BuildDetails.Merge(m, src)
 }
 func (m *BuildDetails) XXX_Size() int {
 	return xxx_messageInfo_BuildDetails.Size(m)
@@ -76,11 +79,9 @@ func init() {
 	proto.RegisterType((*BuildDetails)(nil), "kythe.proto.BuildDetails")
 }
 
-func init() {
-	proto.RegisterFile("kythe/proto/buildinfo.proto", fileDescriptor_buildinfo_fe2d8b42a73b6097)
-}
+func init() { proto.RegisterFile("kythe/proto/buildinfo.proto", fileDescriptor_eab47dfb43d1d01f) }
 
-var fileDescriptor_buildinfo_fe2d8b42a73b6097 = []byte{
+var fileDescriptor_eab47dfb43d1d01f = []byte{
 	// 175 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0xce, 0xae, 0x2c, 0xc9,
 	0x48, 0xd5, 0x2f, 0x28, 0xca, 0x2f, 0xc9, 0xd7, 0x4f, 0x2a, 0xcd, 0xcc, 0x49, 0xc9, 0xcc, 0x4b,

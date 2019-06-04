@@ -37,6 +37,7 @@
 
 #include <set>
 
+#include "absl/strings/str_format.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -97,7 +98,7 @@ int main(int argc, char* argv[]) {
       FLAGS_index_pack, kythe::IndexPackFilesystem::OpenMode::kReadOnly,
       &error_text);
   if (!filesystem) {
-    ::fprintf(stderr, "Error reading index pack: %s\n", error_text.c_str());
+    absl::FPrintF(stderr, "Error reading index pack: %s\n", error_text);
     return 1;
   }
   kythe::IndexPack pack(std::move(filesystem));
@@ -112,24 +113,24 @@ int main(int argc, char* argv[]) {
             for (const auto& input : unit.required_input()) {
               if (paths.count(input.v_name().path())) {
                 if (!FLAGS_slice_dependencies || claimed) {
-                  ::printf("units/%s.unit\n", file_id.c_str());
+                  absl::PrintF("units/%s.unit\n", file_id);
                   if (!FLAGS_slice_dependencies && claimed) {
-                    ::printf("# prev claim contains");
+                    absl::PrintF("# prev claim contains");
                     for (const auto& arg : unit.source_file()) {
-                      ::printf(" %s", arg.c_str());
+                      absl::PrintF(" %s", arg);
                     }
-                    ::printf("\n");
+                    absl::PrintF("\n");
                   }
                 }
               }
               if (FLAGS_slice_dependencies && claimed) {
-                ::printf("files/%s.data\n", input.info().digest().c_str());
+                absl::PrintF("files/%s.data\n", input.info().digest());
               }
             }
             return true;
           },
           &error_text)) {
-    ::fprintf(stderr, "Error scanning index pack: %s\n", error_text.c_str());
+    absl::FPrintF(stderr, "Error scanning index pack: %s\n", error_text);
   }
   return 0;
 }

@@ -23,6 +23,7 @@
 #include <string>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
 #include "gflags/gflags.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -121,15 +122,6 @@ void MaybeNormalizeFileVNames(IndexerJob* job) {
   }
 }
 
-void UpdateJobWdirFromUnit(IndexerJob* job) {
-  job->working_directory = job->unit.working_directory();
-  if (!llvm::sys::path::is_absolute(job->working_directory)) {
-    llvm::SmallString<1024> stored_wd;
-    CHECK(!llvm::sys::fs::make_absolute(stored_wd));
-    job->working_directory = stored_wd.str();
-  }
-}
-
 /// \brief Reads data from a .kindex file into memory.
 /// \param path The path from which the file should be read.
 /// \param virtual_files A vector to be filled with FileData.
@@ -191,7 +183,6 @@ void DecodeKZipFile(const std::string& path, bool silent,
     }
     job.unit = compilation->unit();
 
-    UpdateJobWdirFromUnit(&job);
     MaybeNormalizeFileVNames(&job);
     visit(job);
 
@@ -254,7 +245,6 @@ void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu,
     IndexerJob job;
     job.silent = silent;
     DecodeIndexFile(name, &job.virtual_files, &job.unit);
-    UpdateJobWdirFromUnit(&job);
     MaybeNormalizeFileVNames(&job);
     visit(job);
   }
@@ -268,7 +258,7 @@ void IndexerContext::LoadDataFromUnpackedFile(
   std::string source_file_name = default_filename;
   llvm::SmallString<1024> cwd;
   CHECK(!llvm::sys::fs::current_path(cwd));
-  job.working_directory = cwd.str();
+  job.unit.set_working_directory(cwd.str());
   if (FLAGS_i != "-") {
     read_fd = open(FLAGS_i.c_str(), O_RDONLY);
     if (read_fd == -1) {
@@ -317,7 +307,7 @@ void IndexerContext::InitializeClaimClient() {
     dynamic_claims->set_max_redundant_claims(
         FLAGS_experimental_dynamic_overclaim);
     if (!dynamic_claims->OpenMemcache(FLAGS_experimental_dynamic_claim_cache)) {
-      fprintf(stderr, "Can't open memcached\n");
+      absl::FPrintF(stderr, "Can't open memcached\n");
       exit(1);
     }
     claim_client_ = std::move(dynamic_claims);

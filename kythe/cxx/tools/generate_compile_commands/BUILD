@@ -9,6 +9,7 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
     ],
 )

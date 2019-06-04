@@ -65,6 +65,7 @@ _INDEXER_FLAGS = {
 def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
     """Returns the list of compiler flags from the C++ toolchain."""
     feature_configuration = cc_common.configure_features(
+        ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
@@ -87,6 +88,37 @@ def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
         variables = variables,
     ))
     return args
+
+def _compile_and_link(ctx, cc_info_providers, sources, headers):
+    cc_toolchain = find_cpp_toolchain(ctx)
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
+    )
+    compile_ctx, compile_outs = cc_common.compile(
+        name = ctx.label.name,
+        actions = ctx.actions,
+        cc_toolchain = cc_toolchain,
+        srcs = sources,
+        public_hdrs = headers,
+        feature_configuration = feature_configuration,
+        compilation_contexts = [provider.compilation_context for provider in cc_info_providers],
+    )
+    linking_ctx, linking_out = cc_common.create_linking_context_from_compilation_outputs(
+        name = ctx.label.name + "_transitive_library",
+        actions = ctx.actions,
+        feature_configuration = feature_configuration,
+        cc_toolchain = cc_toolchain,
+        compilation_outputs = compile_outs,
+        linking_contexts = [provider.linking_context for provider in cc_info_providers],
+    )
+    return struct(
+        transitive_library_file = linking_out,
+        compilation_context = compile_ctx,
+        linking_context = linking_ctx,
+    )
 
 def _flag(name, typename, value):
     if value == None:  # Omit None flags.
@@ -165,33 +197,13 @@ def _cc_kythe_proto_library_aspect_impl(target, ctx):
         tools = [ctx.executable._plugin],
         mnemonic = "GenerateKytheCCProto",
     )
-    cc_toolchain = find_cpp_toolchain(ctx)
     cc_info_providers = [lib[CcInfo] for lib in [target, ctx.attr._runtime] if CcInfo in lib]
-    feature_configuration = cc_common.configure_features(
-        cc_toolchain = cc_toolchain,
-        requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
-    )
-    compile_protos_cc_info = cc_common.compile(
-        ctx = ctx,
-        cc_toolchain = cc_toolchain,
-        srcs = sources,
-        hdrs = headers,
-        feature_configuration = feature_configuration,
-        compilation_contexts = [provider.compilation_context for provider in cc_info_providers],
-    )
-    linking_info = cc_common.link(
-        ctx = ctx,
-        cc_toolchain = cc_toolchain,
-        cc_compilation_outputs = compile_protos_cc_info.cc_compilation_outputs,
-        feature_configuration = feature_configuration,
-        linking_contexts = [provider.linking_context for provider in cc_info_providers],
-    )
+    cc_context = _compile_and_link(ctx, cc_info_providers, sources = sources, headers = headers)
     return [
         _KytheProtoInfo(files = depset(sources + headers)),
         CcInfo(
-            compilation_context = compile_protos_cc_info.compilation_context,
-            linking_context = linking_info.linking_context,
+            compilation_context = cc_context.compilation_context,
+            linking_context = cc_context.linking_context,
         ),
     ]
 
@@ -341,6 +353,7 @@ cc_extract_kzip = rule(
     Each file in srcs will be extracted into a separate .kzip file, based on the name
     of the source.
     """,
+    fragments = ["cpp"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     implementation = _cc_extract_kzip_impl,
 )

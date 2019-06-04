@@ -1,0 +1,5 @@
+content: "class Header;\n"
+info {
+  path: "../../inc/test.h"
+  digest: "uncheckedh"
+}

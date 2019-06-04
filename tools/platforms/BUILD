@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-# Fork of https://github.com/bazelbuild/bazel-toolchains/blob/9a111bd8/configs/ubuntu16_04_clang/1.1/BUILD#L105
+# Fork of https://github.com/bazelbuild/bazel-toolchains/blob/89cf3b0d/configs/ubuntu16_04_clang/1.2/BUILD#L127
 platform(
     name = "rbe",
     constraint_values = [
@@ -13,7 +13,7 @@ platform(
     remote_execution_properties = """
         properties: {
           name: "container-image"
-          value:"docker://gcr.io/kythe-repo/kythe-builder@sha256:05bc48137d4effa7c29f7559b2f5c6abf7275674a9babe060835d473c25d1d2c"
+          value:"docker://gcr.io/kythe-repo/kythe-builder@sha256:b0b900680b081e78102926741587a9cfc23bbb1c434fef44cb4cdcf001658376"
         }
         """,
 )

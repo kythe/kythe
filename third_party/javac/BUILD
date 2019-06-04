@@ -24,7 +24,7 @@ java_import(
 
 filegroup(
     name = "javac_jar",
-    srcs = ["javac-9-dev-r4023-1.jar"],
+    srcs = ["javac-9+181-r4173-1.jar"],
 )
 
 filegroup(

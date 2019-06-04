@@ -1,0 +1,36 @@
+v_name {
+  signature: "test_kindex"
+  corpus: "kythe"
+  language: "c++"
+}
+required_input {
+  v_name {
+    path: "inc/test.h"
+    corpus: "arbitrary_corpus"
+    language: "c++"
+  }
+  info {
+    path: "../../inc/test.h"
+    digest: "uncheckedh2"
+  }
+}
+required_input {
+  v_name {
+    path: "src/main/main.cc"
+    corpus: "fake_corpus"
+    language: "c++"
+  }
+  info {
+    path: "../../src/main/main.cc"
+    digest: "uncheckedcc"
+  }
+}
+argument: "clang-cl.exe"
+argument: "--driver-mode=cl"
+argument: "/DCMDARG"
+argument: "/I../.."
+argument: "../../src/main/main.cc"
+has_compile_errors: false
+source_file: "../../src/main/main.cc"
+output_key: "obj/main.o"
+working_directory: "C:/repo/a/build/release"

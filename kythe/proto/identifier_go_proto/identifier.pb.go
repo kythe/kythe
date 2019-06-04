@@ -3,9 +3,11 @@
 
 package identifier_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type FindRequest struct {
 	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
@@ -31,16 +33,17 @@ func (m *FindRequest) Reset()         { *m = FindRequest{} }
 func (m *FindRequest) String() string { return proto.CompactTextString(m) }
 func (*FindRequest) ProtoMessage()    {}
 func (*FindRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_identifier_35694b3e713c8801, []int{0}
+	return fileDescriptor_e4e74f173922aaa6, []int{0}
 }
+
 func (m *FindRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FindRequest.Unmarshal(m, b)
 }
 func (m *FindRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FindRequest.Marshal(b, m, deterministic)
 }
-func (dst *FindRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FindRequest.Merge(dst, src)
+func (m *FindRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FindRequest.Merge(m, src)
 }
 func (m *FindRequest) XXX_Size() int {
 	return xxx_messageInfo_FindRequest.Size(m)
@@ -83,16 +86,17 @@ func (m *FindReply) Reset()         { *m = FindReply{} }
 func (m *FindReply) String() string { return proto.CompactTextString(m) }
 func (*FindReply) ProtoMessage()    {}
 func (*FindReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_identifier_35694b3e713c8801, []int{1}
+	return fileDescriptor_e4e74f173922aaa6, []int{1}
 }
+
 func (m *FindReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FindReply.Unmarshal(m, b)
 }
 func (m *FindReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FindReply.Marshal(b, m, deterministic)
 }
-func (dst *FindReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FindReply.Merge(dst, src)
+func (m *FindReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FindReply.Merge(m, src)
 }
 func (m *FindReply) XXX_Size() int {
 	return xxx_messageInfo_FindReply.Size(m)
@@ -125,16 +129,17 @@ func (m *FindReply_Match) Reset()         { *m = FindReply_Match{} }
 func (m *FindReply_Match) String() string { return proto.CompactTextString(m) }
 func (*FindReply_Match) ProtoMessage()    {}
 func (*FindReply_Match) Descriptor() ([]byte, []int) {
-	return fileDescriptor_identifier_35694b3e713c8801, []int{1, 0}
+	return fileDescriptor_e4e74f173922aaa6, []int{1, 0}
 }
+
 func (m *FindReply_Match) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FindReply_Match.Unmarshal(m, b)
 }
 func (m *FindReply_Match) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FindReply_Match.Marshal(b, m, deterministic)
 }
-func (dst *FindReply_Match) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FindReply_Match.Merge(dst, src)
+func (m *FindReply_Match) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FindReply_Match.Merge(m, src)
 }
 func (m *FindReply_Match) XXX_Size() int {
 	return xxx_messageInfo_FindReply_Match.Size(m)
@@ -186,11 +191,9 @@ func init() {
 	proto.RegisterType((*FindReply_Match)(nil), "kythe.proto.FindReply.Match")
 }
 
-func init() {
-	proto.RegisterFile("kythe/proto/identifier.proto", fileDescriptor_identifier_35694b3e713c8801)
-}
+func init() { proto.RegisterFile("kythe/proto/identifier.proto", fileDescriptor_e4e74f173922aaa6) }
 
-var fileDescriptor_identifier_35694b3e713c8801 = []byte{
+var fileDescriptor_e4e74f173922aaa6 = []byte{
 	// 325 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x91, 0x41, 0x6b, 0xf2, 0x30,
 	0x18, 0xc7, 0xa9, 0x55, 0xdf, 0xb7, 0x4f, 0xb7, 0xc1, 0x32, 0x90, 0xe0, 0x64, 0x73, 0xc2, 0xc0,
