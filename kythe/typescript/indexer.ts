@@ -790,12 +790,6 @@ class Vistor {
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
     this.visitDecorators(decl.decorators || []);
     let kFunc: VName|undefined = undefined;
-<<<<<<< HEAD
-=======
-    let context: Context|undefined = undefined;
-    if (ts.isGetAccessor(decl)) context = Context.GetterLike;
-    if (ts.isSetAccessor(decl)) context = Context.SetterLike;
->>>>>>> c77cb19d... add constructor spec impl
     if (decl.name) {
       const sym = this.getSymbolAtLocation(decl.name);
       if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
@@ -951,41 +945,6 @@ class Vistor {
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kMember);
   }
 
-<<<<<<< HEAD
-=======
-  visitExpressionMember(node: ts.Node) {
-    const sym = this.getSymbolAtLocation(node);
-    if (!sym) {
-      // E.g. a field of an "any".
-      return;
-    }
-    if (!sym.declarations || sym.declarations.length === 0) {
-      // An undeclared symbol, e.g. "undefined".
-      return;
-    }
-    // The identifier's parent is the node participating in
-    // contextual expression.
-    const expression = node.parent.parent;
-    let context: Context|undefined = undefined;
-    switch (expression.kind) {
-      case ts.SyntaxKind.BinaryExpression:
-        const expr = expression as ts.BinaryExpression;
-        // An assignment has a setter-like context.
-        if (this.getSymbolAtLocation(expr.left) === sym &&
-            expr.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
-          context = Context.SetterLike;
-        }
-        break;
-      default:
-        // All other expressions are reads.
-        context = Context.GetterLike;
-        break;
-    }
-    const name = this.getSymbolName(sym, TSNamespace.VALUE, context);
-    this.emitEdge(this.newAnchor(node), 'ref', name);
-  }
-
->>>>>>> c77cb19d... add constructor spec impl
   /**
    * visitJSDoc attempts to attach a 'doc' node to a given target, by looking
    * for JSDoc comments.
