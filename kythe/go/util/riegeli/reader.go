@@ -103,14 +103,9 @@ func (r *reader) Seek(pos int64) error {
 		return fmt.Errorf("error verifying file: %v", err)
 	}
 
-	blockStart := (pos / blockSize) * blockSize
-	if pos-blockStart < blockHeaderSize {
-		pos += blockHeaderSize
-	}
-
 	if pos < r.r.Position() || pos >= r.r.Position()+r.chunkSize {
 		// We're seeking outside of the current chunk.
-		if err := r.r.SeekToChunkContaining(pos); err != nil {
+		if err := r.r.SeekToChunkContaining(pos); err != nil && err != io.EOF {
 			return fmt.Errorf("failed to seek to enclosing chunk: %v", err)
 		}
 		r.recordReader = nil
@@ -135,21 +130,18 @@ func (r *reader) nextRecord() ([]byte, error) {
 
 func (r *reader) ensureRecordReader() error {
 	if r.recordReader != nil && r.recordReader.Len() == 0 {
-		if err := r.recordReader.Close(); err != nil {
-			return fmt.Errorf("error closing record reader: %v", err)
-		}
 		r.recordReader = nil
 	}
 
 	for r.recordReader == nil {
-		c, size, err := r.r.Next()
+		c, chunkSize, err := r.r.Next()
 		if err != nil {
 			return err
 		} else if c.Header.NumRecords == 0 && c.Header.ChunkType != fileSignatureChunkType && c.Header.ChunkType != fileMetadataChunkType {
 			// ignore chunks with no records; even for unknown chunk types
 			continue
 		}
-		r.chunkSize = size
+		r.chunkSize = chunkSize
 
 		switch c.Header.ChunkType {
 		case fileSignatureChunkType:
@@ -165,11 +157,8 @@ func (r *reader) ensureRecordReader() error {
 				return fmt.Errorf("didn't find single RecordsMetadata record: found %d", rd.Len())
 			}
 			rec, err := rd.Next()
-			cErr := rd.Close()
 			if err != nil {
 				return fmt.Errorf("reading RecordsMetadata: %v", err)
-			} else if cErr != nil {
-				return fmt.Errorf("closing RecordsMetadata reader: %v", err)
 			}
 			r.metadata = new(rmpb.RecordsMetadata)
 			if err := proto.Unmarshal(rec, r.metadata); err != nil {
@@ -207,8 +196,6 @@ func verifySignature(c *chunk) error {
 
 // A recordReader reads a finite stream of records.
 type recordReader interface {
-	io.Closer
-
 	// Next reads and returns the next record.  io.EOF is returned if no further
 	// records exist.
 	Next() ([]byte, error)
@@ -228,9 +215,6 @@ type fixedRecordReader struct {
 	records [][]byte
 	index   int
 }
-
-// Close implements part of the recordReader interface.
-func (r *fixedRecordReader) Close() error { return nil }
 
 // Len implements part of the recordReader interface.
 func (r *fixedRecordReader) Len() int { return len(r.records) - r.index }
@@ -253,6 +237,8 @@ func (r *fixedRecordReader) Index() int { return r.index }
 func (r *fixedRecordReader) Seek(index int) {
 	if index < 0 {
 		index = 0
+	} else if index >= len(r.records) {
+		index = len(r.records)
 	}
 	r.index = index
 }
@@ -361,14 +347,22 @@ func (b *blockReader) Next() ([]byte, error) {
 }
 
 // Position returns the current position within the underlying ReadSeeker.
-func (b *blockReader) Position() int64 { return b.position }
+func (b *blockReader) Position() int64 {
+	if b.position%blockSize == blockHeaderSize {
+		return b.position - blockHeaderSize
+	}
+	return b.position
+}
 
 // Seek seeks to the the given position within the underlying ReadSeeker.
 func (b *blockReader) Seek(pos int64) error {
 	blockStart := (pos / blockSize) * blockSize
-	if pos-blockStart < blockHeaderSize {
+	if pos == blockStart {
+		pos = blockStart + blockHeaderSize
+	} else if pos-blockStart < blockHeaderSize {
 		return fmt.Errorf("attempting to seek into block header: %d", pos)
-	} else if err := b.readBlock(blockStart); err != nil {
+	}
+	if err := b.readBlock(blockStart); err != nil {
 		return err
 	} else if _, err := b.buf.Seek(pos-(blockStart+blockHeaderSize), io.SeekStart); err != nil {
 		return err
@@ -394,15 +388,27 @@ func (b *blockReader) readBlock(blockStart int64) error {
 	return nil
 }
 
-// SeekToNextChunkInBlock seeks to the first chunk starting within the block
+// SeekToNextChunkInBlock seeks to the first chunk starting from the block
 // starting at the given offset.
 func (b *blockReader) SeekToNextChunkInBlock(blockStart int64) error {
-	if err := b.readBlock(blockStart); err != nil {
-		return err
-	}
 	var offset int64
-	if b.header.PreviousChunk != 0 {
-		offset = int64(b.header.NextChunk) - blockHeaderSize
+	for {
+		if err := b.readBlock(blockStart); err != nil {
+			return err
+		}
+		if b.header.PreviousChunk == 0 {
+			// Block starts with a chunk
+			offset = 0
+		} else {
+			// Block interrupts a chunk
+			offset = int64(b.header.NextChunk) - blockHeaderSize
+		}
+
+		if offset < usableBlockSize {
+			break
+		}
+
+		blockStart += blockSize
 	}
 	if _, err := b.buf.Seek(offset, io.SeekStart); err != nil {
 		return err
@@ -443,6 +449,8 @@ func (c *chunkReader) Next() (*chunk, int64, error) {
 		}
 		chunkSize += int64(padding)
 	}
+	blockHeaders := blockHeaderSize * int64(interveningBlockHeaders(int(c.position), int(chunkSize)))
+	chunkSize += blockHeaders
 	return &chunk{Header: *h, Data: data}, chunkSize, err
 }
 
@@ -471,10 +479,14 @@ func (c *chunkReader) SeekToChunkContaining(pos int64) error {
 		if err == io.EOF {
 			return io.EOF
 		} else if err != nil {
-			return fmt.Errorf("reading chunk header: %v", err)
+			return fmt.Errorf("reading chunk header at %d: %v", c.position, err)
 		}
 
-		nextChunk := c.position + chunkHeaderSize + int64(h.DataSize) + int64(paddingSize(int(c.position), h))
+		chunkSize := chunkHeaderSize + int64(h.DataSize) + int64(paddingSize(int(c.position), h))
+		blockHeaders := blockHeaderSize * int64(interveningBlockHeaders(int(c.position), int(chunkSize)))
+		chunkSize += blockHeaders
+
+		nextChunk := c.position + chunkSize
 		if pos < nextChunk {
 			// We're at the chunk containing the desired position.
 			break
