@@ -33,6 +33,24 @@ export interface VName {
 }
 
 /**
+ * A indexer plugin adds extra functionality with the same inputs as the base
+ * indexer.
+ */
+export interface Plugin {
+  name: string;
+  index:
+      (/**
+        * The VName for the CompilationUnit, containing compilation-wide info.
+        */
+       compilationUnit: VName,
+       /**
+        * A map of path to path-specific VName.
+        */
+       pathVNames: Map<string, VName>, paths: string[], program: ts.Program,
+       emit?: (obj: {}) => void) => void;
+}
+
+/**
  * toArray converts an Iterator to an array of its values.
  * It's necessary when running in ES5 environments where for-of loops
  * don't iterate through Iterators.
@@ -790,7 +808,7 @@ class Vistor {
       kFunc = this.newVName('TODO', 'TODOPath');
     }
     if (kFunc) {
-        this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
+      this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
     }
 
     if (kFunc && decl.parent) {
@@ -1030,6 +1048,8 @@ class Vistor {
  * @param pathVNames A map of file path to path-specific VName.
  * @param emit If provided, a function that receives objects as they are
  *     emitted; otherwise, they are printed to stdout.
+ * @param plugins If provided, a list of plugin indexers to run after the
+ *     TypeScript program has been indexed.
  * @param readFile If provided, a function that reads a file as bytes to a
  *     Node Buffer.  It'd be nice to just reuse program.getSourceFile but
  *     unfortunately that returns a (Unicode) string and we need to get at
@@ -1037,7 +1057,7 @@ class Vistor {
  */
 export function index(
     vname: VName, pathVNames: Map<string, VName>, paths: string[],
-    program: ts.Program, emit?: (obj: {}) => void,
+    program: ts.Program, emit?: (obj: {}) => void, plugins?: Plugin[],
     readFile: (path: string) => Buffer = fs.readFileSync) {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
@@ -1086,6 +1106,12 @@ export function index(
       visitor.emit = emit;
     }
     visitor.index();
+  }
+
+  if (plugins) {
+    for (const plugin of plugins) {
+      plugin.index(vname, pathVNames, paths, program, emit);
+    }
   }
 }
 
