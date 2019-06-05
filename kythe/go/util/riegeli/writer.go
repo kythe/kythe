@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/golang/protobuf/proto"
 
@@ -313,15 +314,17 @@ func newRecordChunkWriter(opts *WriterOptions) (*recordChunkWriter, error) {
 	}, nil
 }
 
-// WriteTo implements the io.WriterTo interface for chunkHeaders.
-func (h *chunkHeader) WriteTo(w io.Writer) (int, error) {
+// Marshal writes the chunk header to the given buffer.
+func (h *chunkHeader) Marshal(buf []byte) {
+	if len(buf) != chunkHeaderSize {
+		log.Panicf("wrong chunk header buffer size: %d != %d", len(buf), chunkHeaderSize)
+	}
 	// header_hash       (8 bytes) — hash of the rest of the header
 	// data_size         (8 bytes) — size of data
 	// data_hash         (8 bytes) — hash of data
 	// chunk_type        (1 byte)  — determines how to interpret data
 	// num_records       (7 bytes) — number of records after decoding
 	// decoded_data_size (8 bytes) — sum of record sizes after decoding
-	var buf [chunkHeaderSize]byte
 	binary.LittleEndian.PutUint64(buf[8:16], h.DataSize)
 	copy(buf[16:], h.DataHash[:])
 	buf[24] = byte(h.ChunkType)
@@ -332,24 +335,14 @@ func (h *chunkHeader) WriteTo(w io.Writer) (int, error) {
 	binary.LittleEndian.PutUint64(buf[32:40], h.DecodedDataSize)
 	hash := hashBytes(buf[8:])
 	binary.LittleEndian.PutUint64(buf[:8], hash)
-	return w.Write(buf[:])
 }
 
 // WriteTo writes the chunk to w, given its starting position within w.
 func (c *chunk) WriteTo(w *blockWriter, pos int) (int, error) {
 	binary.LittleEndian.PutUint64(c.Header.DataHash[:], hashBytes(c.Data))
 	// TODO(schroederc): reuse buffers
-	var buf bytes.Buffer
-	if _, err := c.Header.WriteTo(&buf); err != nil {
-		return 0, err
-	}
-	(&buf).Write(c.Data)
-	padding := paddingSize(pos, &c.Header)
-	for i := 0; i < padding; i++ {
-		(&buf).WriteByte(0)
-	}
-	if buf.Len() != chunkHeaderSize+len(c.Data)+padding {
-		return 0, fmt.Errorf("bad chunk size: %v", buf.Len())
-	}
-	return w.WriteChunk(buf.Bytes())
+	buf := make([]byte, chunkHeaderSize+len(c.Data)+paddingSize(pos, &c.Header))
+	c.Header.Marshal(buf[:chunkHeaderSize])
+	copy(buf[chunkHeaderSize:], c.Data)
+	return w.WriteChunk(buf)
 }
