@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/golang/protobuf/proto"
 
@@ -316,7 +317,7 @@ func newRecordChunkWriter(opts *WriterOptions) (*recordChunkWriter, error) {
 // Marshal writes the chunk header to the given buffer.
 func (h *chunkHeader) Marshal(buf []byte) {
 	if len(buf) != chunkHeaderSize {
-		panic(fmt.Errorf("wrong chunk header buffer size: %d != %d", len(buf), chunkHeaderSize))
+		log.Panicf("wrong chunk header buffer size: %d != %d", len(buf), chunkHeaderSize)
 	}
 	// header_hash       (8 bytes) — hash of the rest of the header
 	// data_size         (8 bytes) — size of data

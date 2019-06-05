@@ -348,6 +348,9 @@ func (b *blockReader) Next() ([]byte, error) {
 
 // Position returns the current position within the underlying ReadSeeker.
 func (b *blockReader) Position() int64 {
+	// The blockReader bookkeeping only tracks positions outside of block headers.
+	// However, Riegeli considers the starting position of a chunk that begins
+	// immediately after a block header to be the start of the block.
 	if b.position%blockSize == blockHeaderSize {
 		return b.position - blockHeaderSize
 	}
