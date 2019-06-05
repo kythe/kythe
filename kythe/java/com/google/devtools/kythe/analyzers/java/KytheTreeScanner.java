@@ -992,10 +992,36 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   /** Returns the {@link JavaNode} associated with a {@link Symbol} or {@code null}. */
   private JavaNode getJavaNode(Symbol sym) {
+    if (jvmGraph != null && config.getEmitJvmReferences() && isExternal(sym)) {
+      // Symbol is external to the analyzed compilation and may not be defined in Java.  Return the
+      // related JVM node to accomodate cross-language references.
+      Type type = externalType(sym);
+      if (type instanceof Type.MethodType) {
+        JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
+        ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
+        String methodName = sym.getQualifiedName().toString();
+        return new JavaNode(jvmGraph.getMethodVName(parentClass, methodName, methodJvmType));
+      } else if (type instanceof Type.ClassType) {
+        return new JavaNode(jvmGraph.getReferenceVName(referenceType(sym.type)));
+      } else if (sym instanceof Symbol.VarSymbol
+          && ((Symbol.VarSymbol) sym).getKind() == ElementKind.FIELD) {
+        ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
+        String fieldName = sym.getSimpleName().toString();
+        return new JavaNode(jvmGraph.getFieldVName(parentClass, fieldName));
+      }
+    }
+
     return signatureGenerator
         .getSignature(sym)
         .map(sig -> new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null)))
         .orElse(null);
+  }
+
+  private boolean isExternal(Symbol sym) {
+    // TODO(schroederc): check if Symbol comes from any source file in compilation
+    // TODO(schroederc): research other methods to hueristically determine if a Symbol is defined in
+    //                   a Java compilation (vs. some other JVM language)
+    return sym.enclClass().sourcefile != filePositions.getSourceFile() && !entrySets.fromJDK(sym);
   }
 
   private void visitAnnotations(
