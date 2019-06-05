@@ -44,10 +44,10 @@ export interface Plugin {
         */
        compilationUnit: VName,
        /**
-        * A map of path to path-specific VName.
+        * Converts paths to their VNames.
         */
-       pathVNames: Map<string, VName>, paths: string[], program: ts.Program,
-       emit?: (obj: {}) => void) => void;
+       pathVNames: (path: string) => VName | undefined, paths: string[],
+       program: ts.Program, emit?: (obj: {}) => void) => void;
 }
 
 /**
@@ -1110,7 +1110,8 @@ export function index(
 
   if (plugins) {
     for (const plugin of plugins) {
-      plugin.index(vname, pathVNames, paths, program, emit);
+      plugin.index(
+          vname, (path: string) => pathVNames.get(path), paths, program, emit);
     }
   }
 }
