@@ -110,7 +110,7 @@ fact_names: {
   fact_name: {key: "text"           value: TEXT}
   fact_name: {key: "text/encoding"  value: TEXT_ENCODING}
   fact_name: {key: "visibility"     value: VISIBILITY}
-  fact_name: {key: "tag/deprecated" value: DEPRECATED}
+  fact_name: {key: "tag/deprecated" value: TAG_DEPRECATED}
 }
 
 subkinds: {
