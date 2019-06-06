@@ -386,9 +386,14 @@ public class MarkedSource {
   //- IntCode.kind "IDENTIFIER"
   //- IntCode.pre_text "int"
   static Object referencesArrayMember(int[][] arry) {
-    // No marked source emitted for node defined outside of compilation.
     //- @clone ref ArrayCloneMethod
-    //- !{ArrayCloneMethod code _}
+    //- ArrayCloneMethod.node/kind function
+    //- ArrayCloneMethod code ACMRoot
+    //- ACMRoot child.1 ACMContext
+    //- ACMContext.kind "CONTEXT"
+    //- ACMContext child.0 ACMContextIdent
+    //- ACMContextIdent.kind "IDENTIFIER"
+    //- ACMContextIdent.pre_text "int[][]"
     return arry.clone();
   }
 
