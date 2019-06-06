@@ -818,8 +818,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             Arrays.asList(typeNode.getVName()),
             MarkedSources.ARRAY_TAPP);
     emitAnchor(ctx, EdgeKind.REF, node.getVName());
-    JavaNode arrayNode = new JavaNode(node);
-    return arrayNode;
+    return new JavaNode(node);
   }
 
   @Override
@@ -993,11 +992,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   /** Returns the {@link JavaNode} associated with a {@link Symbol} or {@code null}. */
   private JavaNode getJavaNode(Symbol sym) {
-    Optional<String> signature = signatureGenerator.getSignature(sym);
-    if (!signature.isPresent()) {
-      return null;
-    }
-    return new JavaNode(entrySets.getNode(signatureGenerator, sym, signature.get(), null, null));
+    return signatureGenerator
+        .getSignature(sym)
+        .map(sig -> new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null)))
+        .orElse(null);
   }
 
   private void visitAnnotations(
