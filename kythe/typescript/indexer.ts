@@ -39,14 +39,7 @@ export interface VName {
 export interface Plugin {
   name: string;
   index:
-      (/**
-        * The VName for the CompilationUnit, containing compilation-wide info.
-        */
-       compilationUnit: VName,
-       /**
-        * Converts paths to their VNames.
-        */
-       pathVNames: (path: string) => VName | undefined, paths: string[],
+      (pathToVName: (path: string) => VName, paths: string[],
        program: ts.Program, emit?: (obj: {}) => void) => void;
 }
 
@@ -69,6 +62,21 @@ function toArray<T>(it: Iterator<T>): T[] {
  */
 function stripExtension(path: string): string {
   return path.replace(/\.(d\.)?ts$/, '');
+}
+
+/**
+ * getFileVName returns the VName for a given file path.
+ */
+function getFileVName(
+    path: string, cache: Map<string, VName>, compilationUnit: VName): VName {
+  const vname = cache.get(path);
+  return {
+    signature: '',
+    language: '',
+    corpus: vname && vname.corpus ? vname.corpus : compilationUnit.corpus,
+    root: vname && vname.corpus ? vname.root : compilationUnit.root,
+    path: vname && vname.path ? vname.path : path,
+  };
 }
 
 /**
@@ -184,15 +192,7 @@ class Vistor {
    * newFileVName returns a new VName for the given file path.
    */
   newFileVName(path: string): VName {
-    const vname = this.pathVNames.get(path);
-    return {
-      signature: '',
-      language: '',
-      corpus: vname && vname.corpus ? vname.corpus :
-                                      this.compilationUnit.corpus,
-      root: vname && vname.corpus ? vname.root : this.compilationUnit.root,
-      path: vname && vname.path ? vname.path : path,
-    };
+    return getFileVName(path, this.pathVNames, this.compilationUnit);
   }
 
   /**
@@ -1111,7 +1111,8 @@ export function index(
   if (plugins) {
     for (const plugin of plugins) {
       plugin.index(
-          vname, (path: string) => pathVNames.get(path), paths, program, emit);
+          (path: string) => getFileVName(path, pathVNames, vname), paths,
+          program, emit);
     }
   }
 }
