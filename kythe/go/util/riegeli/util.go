@@ -17,6 +17,8 @@
 package riegeli
 
 import (
+	"fmt"
+
 	"github.com/minio/highwayhash"
 )
 
@@ -96,12 +98,14 @@ const (
 )
 
 func interveningBlockHeaders(pos, size int) int {
+	if pos%blockSize == blockHeaderSize {
+		panic(fmt.Errorf("invalid chunk boundary: %d", pos))
+	}
 	return (size + (pos+usableBlockSize-1)%blockSize) / usableBlockSize
 }
 
 func paddingSize(pos int, h *chunkHeader) int {
 	size := chunkHeaderSize + int(h.DataSize)
-	size += interveningBlockHeaders(pos, size)
 	if int(h.NumRecords) <= size {
 		return 0
 	}
