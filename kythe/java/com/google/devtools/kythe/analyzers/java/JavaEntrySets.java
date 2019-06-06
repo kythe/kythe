@@ -151,10 +151,7 @@ public class JavaEntrySets extends KytheEntrySets {
 
       NodeKind kind = elementNodeKind(sym.getKind());
       NodeBuilder builder = kind != null ? newNode(kind) : newNode(sym.getKind().toString());
-      builder.setCorpusPath(CorpusPath.fromVName(v));
-      if (markedSource != null) {
-        builder.setProperty("code", markedSource);
-      }
+      builder.setCorpusPath(CorpusPath.fromVName(v)).setProperty("code", markedSource);
 
       if (signatureGenerator.getUseJvmSignatures()) {
         builder.setSignature(signature);
