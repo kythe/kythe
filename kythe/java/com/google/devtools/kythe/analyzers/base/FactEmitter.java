@@ -19,9 +19,11 @@ package com.google.devtools.kythe.analyzers.base;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.devtools.kythe.proto.Storage.VName;
+import java.io.Closeable;
+import java.io.IOException;
 
 /** Emitter of facts. */
-public interface FactEmitter {
+public interface FactEmitter extends Closeable {
   /**
    * Emits a single fact to some data sink. {@link edgeKind} and {@link target} must both be either
    * {@code null} (for a node entry) or non-{@code null} (for an edge entry).
@@ -42,4 +44,7 @@ public interface FactEmitter {
   public default void emitEdge(VName source, String edgeKind, VName target) {
     emit(source, edgeKind, target, "/", new byte[0]);
   }
+
+  @Override
+  public default void close() throws IOException {}
 }

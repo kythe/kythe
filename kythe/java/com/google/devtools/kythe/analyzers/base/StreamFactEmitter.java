@@ -47,4 +47,9 @@ public class StreamFactEmitter implements FactEmitter {
       throw new RuntimeException(ioe);
     }
   }
+
+  @Override
+  public void close() throws IOException {
+    stream.close();
+  }
 }

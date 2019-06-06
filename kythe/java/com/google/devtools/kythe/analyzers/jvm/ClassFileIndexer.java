@@ -79,10 +79,10 @@ public class ClassFileIndexer {
     config.parseCommandLine(args);
 
     try (OutputStream stream =
-        Strings.isNullOrEmpty(config.getOutputPath())
-            ? System.out
-            : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
-      FactEmitter emitter = new StreamFactEmitter(stream);
+            Strings.isNullOrEmpty(config.getOutputPath())
+                ? System.out
+                : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()));
+        FactEmitter emitter = new StreamFactEmitter(stream)) {
       MemoryStatisticsCollector statistics =
           config.getPrintStatistics() ? new MemoryStatisticsCollector() : null;
       KytheClassVisitor classVisitor =
