@@ -22,15 +22,17 @@ public class Files {
 
   // Ensure this private member does not affect the class node across compilations.
   private int PRIVATE_MEMBER = -42;
+
+  //- @OtherDecl defines/binding _ODecl
+  enum OtherDecl {}
+
+  //- @Inter defines/binding InterAbs
+  //- InterAbs.node/kind abs
+  //- Inter childof InterAbs
+  //- Inter.node/kind interface
+  interface Inter<T> {}
 }
 
 //- File=vname("","kythe","","kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Files.java","")
 //-   .node/kind file
 //- File.text/encoding "UTF-8"
-
-//- @OtherDecl defines/binding _ODecl
-enum OtherDecl {}
-
-//- @Inter defines/binding InterAbs
-//- _InterRaw childof InterAbs
-interface Inter<T> {}
