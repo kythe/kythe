@@ -96,7 +96,7 @@ enum TSNamespace {
 }
 
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
-class Vistor {
+class Visitor {
   /** kFile is the VName for the 'file' node representing the source file. */
   kFile: VName;
 
@@ -1101,7 +1101,7 @@ export function index(
       throw new Error(`requested indexing ${path} not found in program`);
     }
     const visitor =
-        new Vistor(vname, pathVNames, program, sourceFile, getOffsetTable);
+        new Visitor(vname, pathVNames, program, sourceFile, getOffsetTable);
     if (emit != null) {
       visitor.emit = emit;
     }
