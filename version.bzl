@@ -3,7 +3,7 @@
 MIN_VERSION = "0.25.1"
 
 # Maximum supported Bazel version.  Should match .bazelversion file.
-MAX_VERSION = "0.26.0"
+MAX_VERSION = "0.26.1"
 
 def _tuplicate(value, delim):
     rv = ()
@@ -29,6 +29,7 @@ def _bound_size(tup, size, padding = 0):
     if len(tup) >= size:
         return tup[:size]
     ret = tup
+
     for i in range(size - len(tup)):
         ret += (padding,)
     return ret
