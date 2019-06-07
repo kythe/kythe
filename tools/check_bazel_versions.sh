@@ -31,6 +31,6 @@ if [[ "$FOUND_MIN" != "$BZL_MIN" ]]; then
 fi
 
 if [[ "$FOUND_MAX" != "$BZL_MAX" ]]; then
-  echo "ERROR: .bazelminversion ($FOUND_MAX) does not match MAX_VERSION in version.bzl ($BZL_MAX)" >&2
+  echo "ERROR: .bazelversion ($FOUND_MAX) does not match MAX_VERSION in version.bzl ($BZL_MAX)" >&2
   exit 1
 fi
