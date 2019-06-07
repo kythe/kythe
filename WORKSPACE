@@ -2,13 +2,11 @@ workspace(name = "io_kythe")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
-load("//:version.bzl", "check_version")
+load("//:version.bzl", "check_version", "MAX_VERSION", "MIN_VERSION")
 
 # Check that the user has a version between our minimum supported version of
-# Bazel and our maximum supported version of Bazel, and not one of the known-bad releases.
-# When updating the supported versions, make sure to update .bazelversion to the maximum
-# and https://buildkite.com/kythe-project/bazel-minimum/settings for the minimum.
-check_version("0.25.1", "0.26")
+# Bazel and our maximum supported version of Bazel.
+check_version(MIN_VERSION, MAX_VERSION)
 
 http_archive(
     name = "bazel_toolchains",
