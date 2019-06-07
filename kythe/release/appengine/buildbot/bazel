@@ -19,22 +19,18 @@
 # Transforms USE_BAZEL_VERSION=min to USE_BAZEL_VERSION=$(<.bazelminversion).
 # The .bazelminversion file may be in the current working directory or any
 # parent directory.  The first readable file found will be used; if none are
-# found, USE_BAZEL_VERSION is unset to fallback to a .bazelversion file or using
-# 'latest'.
+# found, the script will exit unsuccessfully.
 
 if [[ "$USE_BAZEL_VERSION" == "min" ]]; then
   dir="$PWD"
-  while true; do
-    if [[ -r "$dir/.bazelminversion" ]]; then
-      USE_BAZEL_VERSION="$(<"$dir/.bazelminversion")"
-      break
-    elif [[ "$dir" == "/" ]]; then
-      echo "WARNING: unable to find .bazelminversion file in cwd or above" >&2
-      unset USE_BAZEL_VERSION
-      break
+  while [[ ! -r "$dir/.bazelminversion" ]]; do
+    if [[ "$dir" == "/" ]]; then
+      echo "ERROR: unable to find .bazelminversion file in cwd or above" >&2
+      exit 1
     fi
     dir="$(dirname "$dir")"
   done
+  USE_BAZEL_VERSION="$(<"$dir/.bazelminversion")"
 fi
 
 exec bazelisk "$@"
