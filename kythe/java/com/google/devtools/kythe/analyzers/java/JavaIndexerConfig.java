@@ -60,6 +60,13 @@ public class JavaIndexerConfig extends IndexerConfig {
   private JvmMode jvmMode = JvmMode.SEMANTIC;
 
   @Parameter(
+      names = "--emit_jvm_references",
+      description =
+          "Whether to reference the JVM graph when encountering nodes from outside the analyzed"
+              + " compilation unit")
+  private boolean jvmReferences = false;
+
+  @Parameter(
       names = "--emit_anchor_scopes",
       description =
           "Whether to emit childof edges from anchors to their lexical scope's semantic node")
@@ -94,6 +101,10 @@ public class JavaIndexerConfig extends IndexerConfig {
     return jvmMode;
   }
 
+  public boolean getEmitJvmReferences() {
+    return jvmReferences;
+  }
+
   public boolean getEmitAnchorScopes() {
     return emitAnchorScopes;
   }
@@ -115,6 +126,11 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setJvmMode(JvmMode jvmMode) {
     this.jvmMode = jvmMode;
+    return this;
+  }
+
+  public JavaIndexerConfig setEmitJvmReferences(boolean jvmReferences) {
+    this.jvmReferences = jvmReferences;
     return this;
   }
 

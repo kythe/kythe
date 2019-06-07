@@ -323,13 +323,20 @@ java_verifier_test(
     size = "small",
     srcs = ["Jvm.java"],
     extra_goals = ["//kythe/javatests/com/google/devtools/kythe/analyzers/jvm/testdata:jvm_nodes.kythe_verifier.txt"],
-    indexer_opts = ["--emit_jvm=semantic"],
     verifier_opts = [
         "--ignore_dups",
         "--convert_marked_source",
         "--nofile_vnames",
     ],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/jvm/testdata:__pkg__"],
+)
+
+java_verifier_test(
+    name = "jvm_reference_tests",
+    size = "small",
+    srcs = ["JvmCrossFile.java"],
+    indexer_opts = ["--emit_jvm_references"],
+    verifier_deps = [":files_tests"],
 )
 
 java_verifier_test(
