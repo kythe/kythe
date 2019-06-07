@@ -55,8 +55,9 @@ public class JavaIndexerConfig extends IndexerConfig {
       names = "--emit_jvm",
       description =
           "Whether to emit name nodes or full JVM language semantic nodes for each Java class(must"
-              + " be either \"names\" or \"semantic\"; \"names\" is the default and deprecated)")
-  private JvmMode jvmMode = JvmMode.NAMES;
+              + " be either \"names\" or \"semantic\"; \"semantic\" is the default and \"names\""
+              + " is deprecated)")
+  private JvmMode jvmMode = JvmMode.SEMANTIC;
 
   @Parameter(
       names = "--emit_anchor_scopes",

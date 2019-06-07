@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.java;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
 import com.google.common.flogger.FluentLogger;
+import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
@@ -90,9 +91,10 @@ public class JavaIndexer {
     }
 
     try (OutputStream stream =
-        Strings.isNullOrEmpty(config.getOutputPath())
-            ? System.out
-            : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
+            Strings.isNullOrEmpty(config.getOutputPath())
+                ? System.out
+                : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()));
+        FactEmitter emitter = new StreamFactEmitter(stream)) {
 
       if (!Strings.isNullOrEmpty(config.getIndexPackRoot())) {
         // java_indexer --index_pack=archive-root unit-key+
@@ -102,7 +104,7 @@ public class JavaIndexer {
         Archive archive = new Archive(config.getIndexPackRoot());
         for (String unitDigest : config.getCompilation()) {
           CompilationDescription desc = archive.readDescription(unitDigest);
-          analyzeCompilation(config, plugins, statistics, desc, stream);
+          analyzeCompilation(config, plugins, statistics, desc, emitter);
         }
       } else {
         // java_indexer compilation-file+
@@ -117,7 +119,7 @@ public class JavaIndexer {
                 CompilationDescription desc =
                     IndexInfoUtils.indexedCompilationToCompilationDescription(
                         indexedCompilation, reader);
-                analyzeCompilation(config, plugins, statistics, desc, stream);
+                analyzeCompilation(config, plugins, statistics, desc, emitter);
               }
             } catch (KZipException e) {
               throw new IllegalArgumentException("Unable to read kzip", e);
@@ -133,7 +135,7 @@ public class JavaIndexer {
                     + "use kzip files instead: https://kythe.io/docs/kythe-kzip.html");
             try {
               CompilationDescription desc = IndexInfoUtils.readKindexInfoFromFile(compilationPath);
-              analyzeCompilation(config, plugins, statistics, desc, stream);
+              analyzeCompilation(config, plugins, statistics, desc, emitter);
             } catch (EOFException e) {
               if (config.getIgnoreEmptyKIndex()) {
                 return;
@@ -157,7 +159,7 @@ public class JavaIndexer {
       List<Supplier<Plugin>> plugins,
       StatisticsCollector statistics,
       CompilationDescription desc,
-      OutputStream stream)
+      FactEmitter emitter)
       throws AnalysisException, IOException {
     if (!desc.getFileContents().iterator().hasNext()) {
       // Skip empty compilations.
@@ -172,7 +174,7 @@ public class JavaIndexer {
     KytheJavacAnalyzer analyzer =
         new KytheJavacAnalyzer(
             config,
-            new StreamFactEmitter(stream),
+            emitter,
             statistics == null ? NullStatisticsCollector.getInstance() : statistics,
             metadataLoaders);
     plugins.forEach(analyzer::registerPlugin);
