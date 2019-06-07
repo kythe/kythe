@@ -47,7 +47,7 @@ RUN ln -s /usr/bin/clang-3.8 /usr/bin/clang && \
     ln -s /usr/bin/clang++-3.8 /usr/bin/clang++
 
 # Install Go
-RUN wget https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz && \
+RUN wget https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go*.tar.gz && \
     rm -rf go*.tar.gz
 ENV PATH=$PATH:/usr/local/go/bin
