@@ -56,7 +56,7 @@ Kythe doesn't require implementors to use one concrete approach for passing
 mapping metadata and outputting *generates* and *imputes* edges. Below we
 describe two different approaches, each has its own pros and cons. But in
 both cases it is assumed that implementors can change Generator and Target
-Indexer. If possible *generates* approach is preferred as requires less
+Indexer. If possible the *generates* approach is preferred as it requires less
 post-processing work.
 
 TIP: You can find an example implementation at
