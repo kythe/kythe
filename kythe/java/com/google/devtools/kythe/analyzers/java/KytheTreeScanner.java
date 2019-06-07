@@ -994,7 +994,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode getJavaNode(Symbol sym) {
     if (jvmGraph != null && config.getEmitJvmReferences() && isExternal(sym)) {
       // Symbol is external to the analyzed compilation and may not be defined in Java.  Return the
-      // related JVM node to accomodate cross-language references.
+      // related JVM node to accommodate cross-language references.
       Type type = externalType(sym);
       if (type instanceof Type.MethodType) {
         JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
