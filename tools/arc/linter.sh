@@ -29,7 +29,7 @@ readonly name="$(basename "$1")"
 readonly dir="$(dirname "$1")"
 
 case $file in
-  AUTHORS|CONTRIBUTORS|WORKSPACE|third_party/*|tools/*|*.md|*BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*|go.mod|go.sum|*bazelrc|*.yml)
+  AUTHORS|CONTRIBUTORS|WORKSPACE|third_party/*|tools/*|*.md|*BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*|go.mod|go.sum|*bazelrc|*.yml|.bazel*version)
     ;; # skip copyright checks
   *)
     if ! grep -q 'Copyright 201[4-9] The Kythe Authors. All rights reserved.' "$file"; then
