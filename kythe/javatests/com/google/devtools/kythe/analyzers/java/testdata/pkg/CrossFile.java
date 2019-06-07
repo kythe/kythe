@@ -22,7 +22,7 @@ public class CrossFile {
   //- @Inner ref InnerClass
   Files.Inner f2;
 
-  //- @OtherDecl ref _ODecl
+  //- @OtherDecl ref ODecl
   OtherDecl f3;
 
   //- @Inter ref Inter
