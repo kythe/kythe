@@ -14,16 +14,19 @@ public class Files {
   //- InnerClass childof FilesClass
   public static class Inner {}
 
-  //- @staticMethod defines/binding _StaticMethod
+  //- @staticMethod defines/binding StaticMethod
+  //- StaticMethod.node/kind function
   public static void staticMethod() {}
 
-  //- @CONSTANT defines/binding _ConstantMember
+  //- @CONSTANT defines/binding ConstantMember
+  //- ConstantMember.node/kind variable
   public static final int CONSTANT = 42;
 
   // Ensure this private member does not affect the class node across compilations.
   private int PRIVATE_MEMBER = -42;
 
-  //- @OtherDecl defines/binding _ODecl
+  //- @OtherDecl defines/binding ODecl
+  //- ODecl.node/kind sum
   enum OtherDecl {}
 
   //- @Inter defines/binding InterAbs
