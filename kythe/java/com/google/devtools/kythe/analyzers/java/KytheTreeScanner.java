@@ -1004,14 +1004,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
         ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String methodName = sym.getQualifiedName().toString();
-        return new JavaNode(jvmGraph.getMethodVName(parentClass, methodName, methodJvmType));
+        return new JavaNode(JvmGraph.getMethodVName(parentClass, methodName, methodJvmType));
       } else if (type instanceof Type.ClassType) {
-        return new JavaNode(jvmGraph.getReferenceVName(referenceType(sym.type)));
+        return new JavaNode(JvmGraph.getReferenceVName(referenceType(sym.type)));
       } else if (sym instanceof Symbol.VarSymbol
           && ((Symbol.VarSymbol) sym).getKind() == ElementKind.FIELD) {
         ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String fieldName = sym.getSimpleName().toString();
-        return new JavaNode(jvmGraph.getFieldVName(parentClass, fieldName));
+        return new JavaNode(JvmGraph.getFieldVName(parentClass, fieldName));
       }
     }
 
@@ -1028,7 +1028,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     ClassSymbol cls = sym.enclClass();
     return cls != null
         && cls.sourcefile != filePositions.getSourceFile()
-        && !entrySets.fromJDK(sym);
+        && !JavaEntrySets.fromJDK(sym);
   }
 
   private void visitAnnotations(
