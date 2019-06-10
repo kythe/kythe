@@ -222,15 +222,18 @@ def java_verifier_test(
         visibility = visibility,
         deps = [kzip],
     )
+    goals = extra_goals
+    if len(goals) > 0:
+        goals += [entries] + [dep + "_entries" for dep in verifier_deps]
     return _invoke(
         verifier_test,
         name = name,
         size = size,
-        srcs = [entries] + extra_goals,
+        srcs = goals,
         opts = verifier_opts,
         tags = tags,
         visibility = visibility,
-        deps = [entries],
+        deps = [entries] + [dep + "_entries" for dep in verifier_deps],
     )
 
 def _generate_java_proto_impl(ctx):

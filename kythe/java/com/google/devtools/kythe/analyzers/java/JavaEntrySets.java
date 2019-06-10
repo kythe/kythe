@@ -345,7 +345,7 @@ public class JavaEntrySets extends KytheEntrySets {
     return sourceFile.toUri().getHost();
   }
 
-  private static boolean fromJDK(@Nullable Symbol sym) {
+  static boolean fromJDK(@Nullable Symbol sym) {
     if (sym == null || sym.enclClass() == null) {
       return false;
     }

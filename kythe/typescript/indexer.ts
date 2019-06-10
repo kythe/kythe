@@ -33,6 +33,17 @@ export interface VName {
 }
 
 /**
+ * A indexer plugin adds extra functionality with the same inputs as the base
+ * indexer.
+ */
+export interface Plugin {
+  name: string;
+  index:
+      (pathToVName: (path: string) => VName, paths: string[],
+       program: ts.Program, emit?: (obj: {}) => void) => void;
+}
+
+/**
  * toArray converts an Iterator to an array of its values.
  * It's necessary when running in ES5 environments where for-of loops
  * don't iterate through Iterators.
@@ -51,6 +62,21 @@ function toArray<T>(it: Iterator<T>): T[] {
  */
 function stripExtension(path: string): string {
   return path.replace(/\.(d\.)?ts$/, '');
+}
+
+/**
+ * getFileVName returns the VName for a given file path.
+ */
+function getFileVName(
+    path: string, cache: Map<string, VName>, compilationUnit: VName): VName {
+  const vname = cache.get(path);
+  return {
+    signature: '',
+    language: '',
+    corpus: vname && vname.corpus ? vname.corpus : compilationUnit.corpus,
+    root: vname && vname.corpus ? vname.root : compilationUnit.root,
+    path: vname && vname.path ? vname.path : path,
+  };
 }
 
 /**
@@ -81,7 +107,7 @@ enum Context {
 }
 
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
-class Vistor {
+class Visitor {
   /** kFile is the VName for the 'file' node representing the source file. */
   kFile: VName;
 
@@ -177,15 +203,7 @@ class Vistor {
    * newFileVName returns a new VName for the given file path.
    */
   newFileVName(path: string): VName {
-    const vname = this.pathVNames.get(path);
-    return {
-      signature: '',
-      language: '',
-      corpus: vname && vname.corpus ? vname.corpus :
-                                      this.compilationUnit.corpus,
-      root: vname && vname.corpus ? vname.root : this.compilationUnit.root,
-      path: vname && vname.path ? vname.path : path,
-    };
+    return getFileVName(path, this.pathVNames, this.compilationUnit);
   }
 
   /**
@@ -1095,6 +1113,8 @@ class Vistor {
  * @param pathVNames A map of file path to path-specific VName.
  * @param emit If provided, a function that receives objects as they are
  *     emitted; otherwise, they are printed to stdout.
+ * @param plugins If provided, a list of plugin indexers to run after the
+ *     TypeScript program has been indexed.
  * @param readFile If provided, a function that reads a file as bytes to a
  *     Node Buffer.  It'd be nice to just reuse program.getSourceFile but
  *     unfortunately that returns a (Unicode) string and we need to get at
@@ -1102,7 +1122,7 @@ class Vistor {
  */
 export function index(
     vname: VName, pathVNames: Map<string, VName>, paths: string[],
-    program: ts.Program, emit?: (obj: {}) => void,
+    program: ts.Program, emit?: (obj: {}) => void, plugins?: Plugin[],
     readFile: (path: string) => Buffer = fs.readFileSync) {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
@@ -1146,11 +1166,19 @@ export function index(
       throw new Error(`requested indexing ${path} not found in program`);
     }
     const visitor =
-        new Vistor(vname, pathVNames, program, sourceFile, getOffsetTable);
+        new Visitor(vname, pathVNames, program, sourceFile, getOffsetTable);
     if (emit != null) {
       visitor.emit = emit;
     }
     visitor.index();
+  }
+
+  if (plugins) {
+    for (const plugin of plugins) {
+      plugin.index(
+          (path: string) => getFileVName(path, pathVNames, vname), paths,
+          program, emit);
+    }
   }
 }
 

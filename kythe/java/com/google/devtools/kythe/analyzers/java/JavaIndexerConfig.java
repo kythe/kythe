@@ -55,8 +55,16 @@ public class JavaIndexerConfig extends IndexerConfig {
       names = "--emit_jvm",
       description =
           "Whether to emit name nodes or full JVM language semantic nodes for each Java class(must"
-              + " be either \"names\" or \"semantic\"; \"names\" is the default and deprecated)")
-  private JvmMode jvmMode = JvmMode.NAMES;
+              + " be either \"names\" or \"semantic\"; \"semantic\" is the default and \"names\""
+              + " is deprecated)")
+  private JvmMode jvmMode = JvmMode.SEMANTIC;
+
+  @Parameter(
+      names = "--emit_jvm_references",
+      description =
+          "Whether to reference the JVM graph when encountering nodes from outside the analyzed"
+              + " compilation unit")
+  private boolean jvmReferences = false;
 
   @Parameter(
       names = "--emit_anchor_scopes",
@@ -93,6 +101,10 @@ public class JavaIndexerConfig extends IndexerConfig {
     return jvmMode;
   }
 
+  public boolean getEmitJvmReferences() {
+    return jvmReferences;
+  }
+
   public boolean getEmitAnchorScopes() {
     return emitAnchorScopes;
   }
@@ -114,6 +126,11 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setJvmMode(JvmMode jvmMode) {
     this.jvmMode = jvmMode;
+    return this;
+  }
+
+  public JavaIndexerConfig setEmitJvmReferences(boolean jvmReferences) {
+    this.jvmReferences = jvmReferences;
     return this;
   }
 
