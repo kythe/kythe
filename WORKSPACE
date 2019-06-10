@@ -1,4 +1,7 @@
-workspace(name = "io_kythe")
+workspace(
+    name = "io_kythe",
+    managed_directories = {"@npm": ["node_modules"]},
+)
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
@@ -44,9 +47,6 @@ load("//tools/build_rules/external_tools:external_tools_configure.bzl", "externa
 external_tools_configure()
 
 load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
-load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
-
-node_repositories(package_json = ["//:package.json"])
 
 npm_install(
     name = "npm",
