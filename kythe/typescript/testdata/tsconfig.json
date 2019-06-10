@@ -28,6 +28,7 @@
         ]
     },
     "exclude": [
-        "compilefail.ts"
+        "compilefail.ts",
+	"plugin.ts"
     ]
 }

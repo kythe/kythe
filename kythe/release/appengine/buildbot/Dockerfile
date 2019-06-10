@@ -47,17 +47,14 @@ RUN ln -s /usr/bin/clang-3.8 /usr/bin/clang && \
     ln -s /usr/bin/clang++-3.8 /usr/bin/clang++
 
 # Install Go
-RUN wget https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz && \
+RUN wget https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go*.tar.gz && \
     rm -rf go*.tar.gz
 ENV PATH=$PATH:/usr/local/go/bin
 
-# Install Bazel minimum supported version
-RUN curl -L -o /usr/bin/bazel-0.25.1 https://github.com/bazelbuild/bazel/releases/download/0.25.1/bazel-0.25.1-linux-x86_64 && chmod +x /usr/bin/bazel-0.25.1
+# Install Bazelisk and wrapper script
 ADD bazel /usr/bin/bazel
-
-# Install latest supported Bazel version (when different from minimum)
-# RUN curl -L -o /usr/bin/bazel-0.25.1 https://github.com/bazelbuild/bazel/releases/download/0.25.1/bazel-0.25.1-linux-x86_64 && chmod +x /usr/bin/bazel-0.25.1
+RUN curl -L -o /usr/bin/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v0.0.7/bazelisk-linux-amd64 && chmod +x /usr/bin/bazelisk
 
 # Buildbot configuration
 ADD bazelrc /root/.bazelrc

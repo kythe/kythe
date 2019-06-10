@@ -1,3 +1,10 @@
+# Minimum supported Bazel version.  Should match .bazelminversion file and
+# https://buildkite.com/kythe-project/bazel-minimum/settings.
+MIN_VERSION = "0.25.1"
+
+# Maximum supported Bazel version.  Should match .bazelversion file.
+MAX_VERSION = "0.26.1"
+
 def _tuplicate(value, delim):
     rv = ()
     for field in value.split(delim):
@@ -22,6 +29,7 @@ def _bound_size(tup, size, padding = 0):
     if len(tup) >= size:
         return tup[:size]
     ret = tup
+
     for i in range(size - len(tup)):
         ret += (padding,)
     return ret
