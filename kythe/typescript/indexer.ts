@@ -332,7 +332,7 @@ class Visitor {
             // Getters and setters semantically refer to the same entities but
             // are declared differently, so setters are differentiated.
             if (ts.isSetAccessor(decl)) {
-              part += '#setter';
+              part += ':setter';
             }
             parts.push(part);
           } else {
