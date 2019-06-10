@@ -123,7 +123,7 @@ enum FactName {
   VISIBILITY = 18;
   BUILD_CONFIG = 19;
   TAG_DEPRECATED = 20;
-  VISIBILITY_TESTONLY = 21;
+  TAG_BAZEL_TESTONLY = 21;
 }
 
 enum EdgeKind {

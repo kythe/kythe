@@ -91,27 +91,27 @@ node_kinds: {
 
 fact_names: {
   prefix: "/kythe/"
-  fact_name: {key: "build/config"        value: BUILD_CONFIG}
-  fact_name: {key: "code"                value: CODE}
-  fact_name: {key: "complete"            value: COMPLETE}
-  fact_name: {key: "context/url"         value: CONTEXT_URL}
-  fact_name: {key: "details"             value: DETAILS}
-  fact_name: {key: "doc/uri"             value: DOC_URI}
-  fact_name: {key: "label"               value: LABEL}
-  fact_name: {key: "loc/end"             value: LOC_END}
-  fact_name: {key: "loc/start"           value: LOC_START}
-  fact_name: {key: "message"             value: MESSAGE}
-  fact_name: {key: "node/kind"           value: NODE_KIND}
-  fact_name: {key: "param/default"       value: PARAM_DEFAULT}
-  fact_name: {key: "ruleclass"           value: RULE_CLASS}
-  fact_name: {key: "snippet/end"         value: SNIPPET_END}
-  fact_name: {key: "snippet/start"       value: SNIPPET_START}
-  fact_name: {key: "subkind"             value: SUBKIND}
-  fact_name: {key: "text"                value: TEXT}
-  fact_name: {key: "text/encoding"       value: TEXT_ENCODING}
-  fact_name: {key: "visibility"          value: VISIBILITY}
-  fact_name: {key: "visibility/testonly" value: VISIBILITY_TESTONLY}
-  fact_name: {key: "tag/deprecated"      value: TAG_DEPRECATED}
+  fact_name: {key: "build/config"       value: BUILD_CONFIG}
+  fact_name: {key: "code"               value: CODE}
+  fact_name: {key: "complete"           value: COMPLETE}
+  fact_name: {key: "context/url"        value: CONTEXT_URL}
+  fact_name: {key: "details"            value: DETAILS}
+  fact_name: {key: "doc/uri"            value: DOC_URI}
+  fact_name: {key: "label"              value: LABEL}
+  fact_name: {key: "loc/end"            value: LOC_END}
+  fact_name: {key: "loc/start"          value: LOC_START}
+  fact_name: {key: "message"            value: MESSAGE}
+  fact_name: {key: "node/kind"          value: NODE_KIND}
+  fact_name: {key: "param/default"      value: PARAM_DEFAULT}
+  fact_name: {key: "ruleclass"          value: RULE_CLASS}
+  fact_name: {key: "snippet/end"        value: SNIPPET_END}
+  fact_name: {key: "snippet/start"      value: SNIPPET_START}
+  fact_name: {key: "subkind"            value: SUBKIND}
+  fact_name: {key: "tag/bazel/testonly" value: TAG_BAZEL_TESTONLY}
+  fact_name: {key: "tag/deprecated"     value: TAG_DEPRECATED}
+  fact_name: {key: "text"               value: TEXT}
+  fact_name: {key: "text/encoding"      value: TEXT_ENCODING}
+  fact_name: {key: "visibility"         value: VISIBILITY}
 }
 
 subkinds: {

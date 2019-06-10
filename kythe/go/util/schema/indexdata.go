@@ -71,27 +71,27 @@ var (
 	}
 
 	factNames = map[string]scpb.FactName{
-		"/kythe/build/config":        19,
-		"/kythe/code":                1,
-		"/kythe/complete":            2,
-		"/kythe/context/url":         3,
-		"/kythe/details":             4,
-		"/kythe/doc/uri":             5,
-		"/kythe/label":               6,
-		"/kythe/loc/end":             7,
-		"/kythe/loc/start":           8,
-		"/kythe/message":             9,
-		"/kythe/node/kind":           10,
-		"/kythe/param/default":       11,
-		"/kythe/ruleclass":           12,
-		"/kythe/snippet/end":         13,
-		"/kythe/snippet/start":       14,
-		"/kythe/subkind":             15,
-		"/kythe/tag/deprecated":      20,
-		"/kythe/text":                16,
-		"/kythe/text/encoding":       17,
-		"/kythe/visibility":          18,
-		"/kythe/visibility/testonly": 21,
+		"/kythe/build/config":       19,
+		"/kythe/code":               1,
+		"/kythe/complete":           2,
+		"/kythe/context/url":        3,
+		"/kythe/details":            4,
+		"/kythe/doc/uri":            5,
+		"/kythe/label":              6,
+		"/kythe/loc/end":            7,
+		"/kythe/loc/start":          8,
+		"/kythe/message":            9,
+		"/kythe/node/kind":          10,
+		"/kythe/param/default":      11,
+		"/kythe/ruleclass":          12,
+		"/kythe/snippet/end":        13,
+		"/kythe/snippet/start":      14,
+		"/kythe/subkind":            15,
+		"/kythe/tag/bazel/testonly": 21,
+		"/kythe/tag/deprecated":     20,
+		"/kythe/text":               16,
+		"/kythe/text/encoding":      17,
+		"/kythe/visibility":         18,
 	}
 
 	edgeKinds = map[string]scpb.EdgeKind{
@@ -209,7 +209,7 @@ var (
 		18: "/kythe/visibility",
 		19: "/kythe/build/config",
 		20: "/kythe/tag/deprecated",
-		21: "/kythe/visibility/testonly",
+		21: "/kythe/tag/bazel/testonly",
 	}
 
 	edgeKindsRev = map[scpb.EdgeKind]string{
