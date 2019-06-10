@@ -51,7 +51,7 @@ sed "s/DIGEST/${FILE_SHA}/g" "${SCHEMA_ROOT}/java-schema-unit-template.Compilati
 "$KINDEX_TOOL_BIN" -assemble "${TEST_FILE}".{kindex,Unit,FileData}
 
 # Index the file.
-if ! "$JAVA_INDEXER_BIN" "${TEST_FILE}.kindex" >"${TEST_FILE}.entries"; then
+if ! "$JAVA_INDEXER_BIN" --emit_jvm=NAMES "${TEST_FILE}.kindex" >"${TEST_FILE}.entries"; then
   error INDEX
 fi
 
