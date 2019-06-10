@@ -147,8 +147,8 @@ async function testPlugin() {
         };
         emit!({
           source: pluginMod,
-          fact_name: '/kythe/node/kind',
-          fact_value: Buffer.from('record').toString('base64'),
+          fact_name: '/kythe/node/pluginKind',
+          fact_value: Buffer.from('pluginRecord').toString('base64'),
         });
       }
     },
