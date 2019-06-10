@@ -992,6 +992,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   /** Returns the {@link JavaNode} associated with a {@link Symbol} or {@code null}. */
   private JavaNode getJavaNode(Symbol sym) {
+    if (sym.getKind() == ElementKind.PACKAGE) {
+      return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
+    }
+
     if (jvmGraph != null && config.getEmitJvmReferences() && isExternal(sym)) {
       // Symbol is external to the analyzed compilation and may not be defined in Java.  Return the
       // related JVM node to accommodate cross-language references.
@@ -1021,7 +1025,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // TODO(schroederc): check if Symbol comes from any source file in compilation
     // TODO(schroederc): research other methods to hueristically determine if a Symbol is defined in
     //                   a Java compilation (vs. some other JVM language)
-    return sym.enclClass().sourcefile != filePositions.getSourceFile() && !entrySets.fromJDK(sym);
+    ClassSymbol cls = sym.enclClass();
+    return cls != null
+        && cls.sourcefile != filePositions.getSourceFile()
+        && !entrySets.fromJDK(sym);
   }
 
   private void visitAnnotations(
@@ -1091,10 +1098,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   // Returns the reference node for the given symbol.
   private JavaNode getRefNode(TreeContext ctx, Symbol sym) {
-    if (sym.getKind() == ElementKind.PACKAGE) {
-      return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
-    }
-
     // If referencing a generic class, distinguish between generic vs. raw use
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
     boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
