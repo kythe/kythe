@@ -69,7 +69,7 @@ class Class implements IFace {
         this.method();
         //- @mem ref GetMember
         this.mem;
-        //- @mem ref SetMember
+        //- @mem ref GetMember
         this.mem = 0;
     }
 

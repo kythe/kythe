@@ -71,14 +71,14 @@ enum TSNamespace {
 
 /**
  * Context represent the expression context a node is being used in. A
- * GetterLike context guarantees that the node is not being set; a SetterLike
+ * Getter context guarantees that the node is not being set; a Setter
  * context guarantees the node is being set.
  *
  * The Context is used for disambiguating declarations.
  */
 enum Context {
-  GetterLike,
-  SetterLike,
+  Getter,
+  Setter,
 }
 
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
@@ -393,6 +393,7 @@ class Vistor {
   getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName {
     let vnames = this.symbolNames.get(sym);
     let declarations = sym.declarations;
+
     // Symbols with multiple declarations are disambiguated by the context
     // they are used in.
     const contextApplies = context !== undefined && declarations.length > 1;
@@ -403,17 +404,24 @@ class Vistor {
     if (!declarations || declarations.length < 1) {
       throw new Error('TODO: symbol has no declarations?');
     }
+
+    // Disambiguate symbols with multiple declarations using a context. This
+    // only applies to getters and setters currently.
     if (contextApplies) {
       switch (context) {
-        case Context.GetterLike:
-          // GetterLike guarantees the node declaration is not a setter
-          declarations = declarations.filter(decl => !ts.isSetAccessor(decl));
+        case Context.Getter:
+          declarations = declarations.filter(ts.isGetAccessor);
           break;
-        case Context.SetterLike:
-          // SetterLike guarantees the node declaration is not a setter
-          declarations = declarations.filter(decl => !ts.isGetAccessor(decl));
+        case Context.Setter:
+          declarations = declarations.filter(ts.isSetAccessor);
           break;
       }
+    }
+    // Otherwise, if there are multiple declarations but no context is
+    // provided, try to return the getter declaration.
+    else if (declarations.length > 1) {
+      const getDecls = declarations.filter(ts.isGetAccessor);
+      if (getDecls.length > 0) declarations = getDecls;
     }
 
     const decl = declarations[0];
@@ -424,10 +432,12 @@ class Vistor {
       vname.signature += '#type';
     }
 
-    // Save it in the appropriate slot in the symbolNames table.
-    if (!vnames) vnames = [null, null];
-    vnames[ns] = vname;
-    this.symbolNames.set(sym, vnames);
+    if (!contextApplies) {
+      // Save it in the appropriate slot in the symbolNames table.
+      if (!vnames) vnames = [null, null];
+      vnames[ns] = vname;
+      this.symbolNames.set(sym, vnames);
+    }
 
     return vname;
   }
@@ -811,9 +821,9 @@ class Vistor {
     let kFunc: VName|undefined = undefined;
     let context: Context|undefined = undefined;
     if (ts.isGetAccessor(decl)) {
-      context = Context.GetterLike;
+      context = Context.Getter;
     } else if (ts.isSetAccessor(decl)) {
-      context = Context.SetterLike;
+      context = Context.Setter;
     }
     if (decl.name) {
       const sym = this.getSymbolAtLocation(decl.name);
@@ -971,25 +981,7 @@ class Vistor {
       // An undeclared symbol, e.g. "undefined".
       return;
     }
-    // The identifier's parent is the node it names; that node's parent is the
-    // expression.
-    const expression = node.parent.parent;
-    let context: Context|undefined = undefined;
-    switch (expression.kind) {
-      case ts.SyntaxKind.BinaryExpression:
-        const expr = expression as ts.BinaryExpression;
-        // An assignment has a setter-like context.
-        if (this.getSymbolAtLocation(expr.left) === sym &&
-            expr.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
-          context = Context.SetterLike;
-        }
-        break;
-      default:
-        // Everything that is not an assignment has getter-like context.
-        context = Context.GetterLike;
-        break;
-    }
-    const name = this.getSymbolName(sym, TSNamespace.VALUE, context);
+    const name = this.getSymbolName(sym, TSNamespace.VALUE);
     this.emitEdge(this.newAnchor(node), 'ref', name);
   }
 
