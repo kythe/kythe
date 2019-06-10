@@ -70,11 +70,10 @@ enum TSNamespace {
 }
 
 /**
- * Context represent the expression context a node is being used in. A
- * Getter context guarantees that the node is not being set; a Setter
- * context guarantees the node is being set.
- *
- * The Context is used for disambiguating declarations.
+ * Context represents the environment a node is declared in, and only applies to
+ * nodes with multiple declarations. The context may be used for disambiguating
+ * node declarations. A Getter context means the node is declared as a getter; a
+ * Setter context means it is declared as a setter.
  */
 enum Context {
   Getter,
