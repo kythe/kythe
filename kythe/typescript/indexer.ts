@@ -857,8 +857,9 @@ class Visitor {
         }
         kFunc = this.getSymbolName(sym, TSNamespace.VALUE, context);
 
+        const declAnchor = this.newAnchor(decl.name);
         this.emitNode(kFunc, 'function');
-        this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
+        this.emitEdge(declAnchor, 'defines/binding', kFunc);
 
         // Getters/setters also emit a class property entry; for example, for a
         // getter/setter `foo` in class `A`, an entry with signature `A.foo`
@@ -869,11 +870,11 @@ class Visitor {
              !sym.declarations.find(ts.isGetAccessor))) {
           // Remove trailing ":getter"/":setter" suffix
           const propSignature =
-              kFunc.signature.split(':').splice(0, -1).join(':');
+              kFunc.signature.split(':').slice(0, -1).join(':');
           const propVName = {...kFunc, signature: propSignature};
+
           this.emitNode(propVName, 'function');
-          this.emitEdge(
-              this.newAnchor(decl.name), 'defines/binding', propVName);
+          this.emitEdge(declAnchor, 'defines/binding', propVName);
         }
 
         this.visitJSDoc(decl, kFunc);
