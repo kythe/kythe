@@ -86,7 +86,6 @@ declaration.
 -   `Constructor`
 -   `PropertyDeclaration`
 -   `MethodDeclaration`
--   `GetAccessor`
 -   `EnumDeclaration`
 -   `EnumMember`
 -   `FunctionDeclaration`
@@ -141,21 +140,39 @@ class Klass {
 class NoCtorKlass {}
 ```
 
-#### Setter
+#### Getter/Setter
 
-**Form**: `$DECLARATION_NAME:setter`
+**Form**: 
+- getter: `$DECLARATION_NAME:getter`
+- setter: `$DECLARATION_NAME:setter`
+- getter if present, otherwise setter: `$DECLARATION_NAME`
 
-**Notes**: This is to differentiate the setter from the getter, because the
-identifier for a getter and setter is the same and its symbol has multiple
-declarations.
+**Notes**: Because getters and setters refer to the same property on a class
+but provide multiple declarations, several distinctions between the declarations
+are made. Each declaration of a getter and setter will take `:getter` and
+`:setter` suffix, respectively.
+
+If a getter for a property is present, the getter will emit a binding the same
+form as the property it defines. If only a setter is present, the setter will
+emit a binding of the same form as the property it defines.
 
 **SyntaxKind**:
 
+- GetAccessor
 -   SetAccessor
 
 ```typescript
 class Klass {
+  //- @foo defines/binding VName("Klass.foo:getter", _, _, _, _)
+  //- @foo defines/binding VName("Klass.foo", _, _, _, _)
+  get foo() {}
   //- @foo defines/binding VName("Klass.foo:setter", _, _, _, _)
+  set foo(newFoo) {}
+}
+
+class KlassNoGetter {
+  //- @foo defines/binding VName("KlassNoGetter.foo:setter", _, _, _, _)
+  //- @foo defines/binding VName("KlassNoGetter.foo", _, _, _, _)
   set foo(newFoo) {}
 }
 ```
