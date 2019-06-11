@@ -41,19 +41,23 @@ class Class implements IFace {
     //- @otherMember defines/binding OtherMember
     //- OtherMember.node/kind variable
     //- OtherMember childof Class
+    //- !{ OtherMember childof ClassCtor }
     //- @member defines/binding FakeMember
     //- FakeMember.node/kind variable
+    //- FakeMember childof ClassCtor
     //- !{ FakeMember childof Class }
     constructor(public otherMember: number, member: string) {}
 
     //- @method defines/binding Method
     //- Method.node/kind function
     //- Method childof Class
-    method() {
+    //- @param defines/binding MethodParam
+    //- MethodParam childof Method
+    method(param: number) {
         //- @member ref Member
         this.member;
         //- @method ref Method
-        this.method();
+        this.method(param);
     }
 
     // TODO: ensure the method is linked to the interface too.

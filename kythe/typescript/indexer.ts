@@ -700,7 +700,9 @@ class Visitor {
    * Emits a "childof" edge on class/interface members. Takes the Parent node
    * and the VName of the node that is its child.
    */
-  emitChildOf(vname: VName, parent: ts.Node) {
+  emitChildOf(
+      vname: VName, parent: ts.Node,
+      namespace: TSNamespace = TSNamespace.TYPE) {
     const parentName = (parent as ts.ClassLikeDeclaration).name;
     if (parentName !== undefined) {
       const parentSym = this.getSymbolAtLocation(parentName);
@@ -708,7 +710,7 @@ class Visitor {
         this.todo(parentName, `parent ${parentName} has no symbol`);
         return;
       }
-      const kParent = this.getSymbolName(parentSym, TSNamespace.TYPE);
+      const kParent = this.getSymbolName(parentSym, namespace);
       this.emitEdge(vname, 'childof', kParent);
     }
   }
@@ -897,11 +899,19 @@ class Visitor {
       this.emitNode(kParam, 'variable');
       if (kFunc) this.emitEdge(kFunc, `param.${index}`, kParam);
 
-      // Class members defined in the parameters of a constructor are children
-      // of the class.
       if (this.isClassMemberInCtor(param, decl)) {
+        // Class members defined in the parameters of a constructor are children
+        // of the class.
         this.emitChildOf(kParam, decl.parent);
+      } else if (ts.isConstructorDeclaration(decl)) {
+        // Other parameters of a constructor should be children of the
+        // constructor. The constructor is the value binding of the class.
+        this.emitChildOf(kParam, decl.parent, TSNamespace.VALUE);
+      } else {
+        // All other parameters on functions are just children of that function.
+        this.emitChildOf(kParam, decl, TSNamespace.VALUE);
       }
+
 
       this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
       if (param.type) this.visitType(param.type);
