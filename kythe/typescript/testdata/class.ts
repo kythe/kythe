@@ -23,11 +23,13 @@ interface IExtended extends IFace {}
 class Class implements IFace {
     //- @member defines/binding Member
     //- Member.node/kind variable
+    //- Member childof Class
     //- !{ Member.tag/static _ }
     member: number;
 
     //- @staticMember defines/binding StaticMember
     //- StaticMember.tag/static _
+    //- StaticMember childof Class
     static staticMember: number;
 
     // This ctor declares a new member var named 'otherMember', and also
@@ -38,8 +40,10 @@ class Class implements IFace {
     //- ClassCtor.subkind constructor
     //- @otherMember defines/binding OtherMember
     //- OtherMember.node/kind variable
+    //- OtherMember childof Class
     //- @member defines/binding FakeMember
     //- FakeMember.node/kind variable
+    //- !{ FakeMember childof Class }
     constructor(public otherMember: number, member: string) {}
 
     //- @method defines/binding Method

@@ -189,6 +189,29 @@ class Visitor {
   }
 
   /**
+   * Determines whether a parameter in a constructor is a class member. Applies
+   * to class properties defined with the shorthand
+   *    constructor(private member: string)
+   */
+  isClassMemberInCtor(node: ts.Node, ctor: ts.Node): boolean {
+    return node.kind === ts.SyntaxKind.Parameter &&
+        node.parent === ctor &&  // has to be in this ctor
+        node.modifiers !== undefined &&
+        (node.modifiers.find(
+             m => m.kind === ts.SyntaxKind.PrivateKeyword ||
+                 m.kind === ts.SyntaxKind.PublicKeyword) !== undefined);
+  }
+
+  /**
+   * Determines if a node is a class or interface.
+   */
+  isClassOrInterface(node: ts.Node): boolean {
+    return node.kind === ts.SyntaxKind.ClassDeclaration ||
+        node.kind === ts.SyntaxKind.ClassExpression ||
+        node.kind === ts.SyntaxKind.InterfaceDeclaration;
+  }
+
+  /**
    * newFileVName returns a new VName for the given file path.
    */
   newFileVName(path: string): VName {
@@ -321,16 +344,9 @@ class Visitor {
           }
           break;
         case ts.SyntaxKind.Constructor:
-          // Class properties declared with the constructor shorthand:
-          //    constructor(private member: string)
-          // should be scoped to the class, not the constructor.
-          const isClassMember = startNode.kind === ts.SyntaxKind.Parameter &&
-              startNode.parent === node &&  // has to be in this ctor
-              startNode.modifiers &&
-              (startNode.modifiers.find(
-                  m => m.kind === ts.SyntaxKind.PrivateKeyword ||
-                      m.kind === ts.SyntaxKind.PublicKeyword));
-          if (!isClassMember) {
+          // Class members declared with a shorthand in the constructor should
+          // be scoped to the class, not the constructor.
+          if (!this.isClassMemberInCtor(startNode, node)) {
             parts.push('constructor');
           }
           break;
@@ -681,6 +697,23 @@ class Visitor {
   }
 
   /**
+   * Emits a "childof" edge on class/interface members. Takes the Parent node
+   * and the VName of the node that is its child.
+   */
+  emitChildOf(vname: VName, parent: ts.Node) {
+    const parentName = (parent as ts.ClassLikeDeclaration).name;
+    if (parentName !== undefined) {
+      const parentSym = this.getSymbolAtLocation(parentName);
+      if (!parentSym) {
+        this.todo(parentName, `parent ${parentName} has no symbol`);
+        return;
+      }
+      const kParent = this.getSymbolName(parentSym, TSNamespace.TYPE);
+      this.emitEdge(vname, 'childof', kParent);
+    }
+  }
+
+  /**
    * Returns the location of a text in the source code of a node.
    */
   getTextSpan(node: ts.Node, text: string): {start: number, end: number} {
@@ -764,8 +797,8 @@ class Visitor {
    * the decl parameter is the union of the attributes of the two types.
    * @return the generated VName for the declaration, if any.
    */
-  visitVariableDeclaration(decl: {
-    name: ts.BindingName|ts.PropertyName,
+  visitVariableDeclaration(decl: ts.Node&{
+    name: ts.BindingName | ts.PropertyName,
     type?: ts.TypeNode,
     initializer?: ts.Expression, kind: ts.SyntaxKind,
   }): VName|undefined {
@@ -802,6 +835,10 @@ class Visitor {
         this.emitFact(vname, 'tag/static', '');
       }
     }
+    if (vname && this.isClassOrInterface(decl.parent)) {
+      // Emit a "childof" edge on class/interface members.
+      this.emitChildOf(vname, decl.parent);
+    }
     return vname;
   }
 
@@ -836,22 +873,9 @@ class Visitor {
       this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
     }
 
-    if (kFunc && decl.parent) {
+    if (kFunc && this.isClassOrInterface(decl.parent)) {
       // Emit a "childof" edge on class/interface members.
-      if (decl.parent.kind === ts.SyntaxKind.ClassDeclaration ||
-          decl.parent.kind === ts.SyntaxKind.ClassExpression ||
-          decl.parent.kind === ts.SyntaxKind.InterfaceDeclaration) {
-        const parentName = (decl.parent as ts.ClassLikeDeclaration).name;
-        if (parentName !== undefined) {
-          const parentSym = this.getSymbolAtLocation(parentName);
-          if (!parentSym) {
-            this.todo(parentName, `parent ${parentName} has no symbol`);
-            return;
-          }
-          const kParent = this.getSymbolName(parentSym, TSNamespace.TYPE);
-          this.emitEdge(kFunc, 'childof', kParent);
-        }
-      }
+      this.emitChildOf(kFunc, decl.parent);
 
       // TODO: emit an "overrides" edge if this method overrides.
       // It appears the TS API doesn't make finding that information easy,
@@ -872,6 +896,12 @@ class Visitor {
       const kParam = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kParam, 'variable');
       if (kFunc) this.emitEdge(kFunc, `param.${index}`, kParam);
+
+      // Class members defined in the parameters of a constructor are children
+      // of the class.
+      if (this.isClassMemberInCtor(param, decl)) {
+        this.emitChildOf(kParam, decl.parent);
+      }
 
       this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
       if (param.type) this.visitType(param.type);
@@ -921,9 +951,8 @@ class Visitor {
         const span = this.getTextSpan(decl, 'constructor');
         classCtorAnchor = this.newAnchor(decl, span.start, span.end);
       } else {
-        // TODO: the specific constructor() should really be the thing tagged
-        // with constructor, but we also need to handle classes that don't
-        // declare a constructor.  Fix me later.
+        // No constructor on the class, so just point the constructor to the
+        // class identifier.
         classCtorAnchor = classAnchor;
       }
       this.emitNode(kClassCtor, 'function');
