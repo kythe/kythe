@@ -166,7 +166,7 @@ files are invisible to developers so it's not a big concern.
 
 On JavaScript Indexer side we need to parse metadata and output *imputes*
 edges. To parse metadata indexer can check last two lines of all `.js` files
-and see if they contain `// Kythe Indexind Metadata:` and if so - parse
+and see if they contain `// Kythe Indexing Metadata:` and if so - parse
 the last line as JSON.
 
 For each `meta` entry indexer should do the following:
