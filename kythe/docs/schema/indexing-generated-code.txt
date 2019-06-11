@@ -88,8 +88,7 @@ const Color = {
 === Changes to Generator
 
 To support cross-references betwen `color.js` and `Color.java` we need to update
-Generator to output the following mapping data for `Color`, `RED` and `GREEN`
-elements.
+Generator to output the following mapping data for `Color`, `RED` elements.
 
 [source,json]
 -------------------------------------------------------------------------------
