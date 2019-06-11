@@ -4,16 +4,19 @@
 class A {
   prop = 0;
 
+  //- @foo defines/binding PropFoo=VName("A.foo", _, _, _, _)
+  //- PropFoo.node/kind variable
+  //- PropFoo.subkind implicit
   //- @foo defines/binding GetFoo=VName("A.foo:getter", _, _, _, _)
   //- GetFoo.node/kind function
-  //- @foo defines/binding PropFoo=VName("A.foo", _, _, _, _)
-  //- PropFoo.node/kind function
+  //- GetFoo property/reads PropFoo
   get foo() {
     return this.prop;
   }
 
   //- @foo defines/binding SetFoo=VName("A.foo:setter", _, _, _, _)
   //- SetFoo.node/kind function
+  //- SetFoo property/writes PropFoo
   set foo(nFoo) {
     this.prop = nFoo;
   }
@@ -30,10 +33,12 @@ class A {
 class B {
   iProp = 0;
 
+  //- @prop defines/binding PropProp=VName("B.prop", _, _, _, _)
+  //- PropProp.node/kind variable
+  //- PropProp.subkind implicit
   //- @prop defines/binding GetProp=VName("B.prop:getter", _, _, _, _)
   //- GetProp.node/kind function
-  //- @prop defines/binding PropProp=VName("B.prop", _, _, _, _)
-  //- PropProp.node/kind function
+  //- GetProp property/reads PropProp
   get prop() {
     return this.iProp;
   }
@@ -48,10 +53,12 @@ class B {
 class C {
   prop = 0;
 
+  //- @mem defines/binding PropMem=VName("C.mem", _, _, _, _)
+  //- PropMem.node/kind variable
+  //- PropMem.subkind implicit
   //- @mem defines/binding SetMem=VName("C.mem:setter", _, _, _, _)
   //- SetMem.node/kind function
-  //- @mem defines/binding PropMem=VName("C.mem", _, _, _, _)
-  //- PropMem.node/kind function
+  //- SetMem property/writes PropMem
   set mem(nMem) {
     this.prop = nMem;
   }

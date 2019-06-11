@@ -718,6 +718,38 @@ class Visitor {
   }
 
   /**
+   * Emits an implicit property for a getter or setter.
+   * For instance, a getter/setter `foo` in class `A` will emit an implicit
+   * property on that class with signature `A.foo`, and create "property/reads"
+   * and "property/writes" from the getters/setters to the implicit property.
+   */
+  emitImplicitProperty(
+      decl: ts.GetAccessorDeclaration|ts.SetAccessorDeclaration, anchor: VName,
+      funcVName: VName) {
+    // Remove trailing ":getter"/":setter" suffix
+    const propSignature = funcVName.signature.split(':').slice(0, -1).join(':');
+    const implicitProp = {...funcVName, signature: propSignature};
+
+    this.emitNode(implicitProp, 'variable');
+    this.emitFact(implicitProp, 'subkind', 'implicit');
+    this.emitEdge(anchor, 'defines/binding', implicitProp);
+
+    const sym = this.getSymbolAtLocation(decl.name);
+    if (!sym) throw new Error('Getter/setter declaration has no symbols.');
+
+    if (sym.declarations.find(ts.isGetAccessor)) {
+      // Emit a "property/reads" edge between the getter and the property
+      const getter = this.getSymbolName(sym, TSNamespace.VALUE, Context.Getter);
+      this.emitEdge(getter, 'property/reads', implicitProp);
+    }
+    if (sym.declarations.find(ts.isSetAccessor)) {
+      // Emit a "property/writes" edge between the setter and the property
+      const setter = this.getSymbolName(sym, TSNamespace.VALUE, Context.Setter);
+      this.emitEdge(setter, 'property/writes', implicitProp);
+    }
+  }
+
+  /**
    * Handles code like:
    *   export default ...;
    *   export = ...;
@@ -861,20 +893,12 @@ class Visitor {
         this.emitNode(kFunc, 'function');
         this.emitEdge(declAnchor, 'defines/binding', kFunc);
 
-        // Getters/setters also emit a class property entry; for example, for a
-        // getter/setter `foo` in class `A`, an entry with signature `A.foo`
-        // will be emitted. If a getter is present, it will bind this entry,
-        // otherwise a setter will.
+        // Getters/setters also emit an implicit class property entry. If a
+        // getter is present, it will bind this entry; otherwise a setter will.
         if (ts.isGetAccessor(decl) ||
             (ts.isSetAccessor(decl) &&
              !sym.declarations.find(ts.isGetAccessor))) {
-          // Remove trailing ":getter"/":setter" suffix
-          const propSignature =
-              kFunc.signature.split(':').slice(0, -1).join(':');
-          const propVName = {...kFunc, signature: propSignature};
-
-          this.emitNode(propVName, 'function');
-          this.emitEdge(declAnchor, 'defines/binding', propVName);
+          this.emitImplicitProperty(decl, declAnchor, kFunc);
         }
 
         this.visitJSDoc(decl, kFunc);
