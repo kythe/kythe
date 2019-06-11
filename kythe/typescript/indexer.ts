@@ -330,8 +330,10 @@ class Visitor {
           if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
             let part = decl.name.text;
             // Getters and setters semantically refer to the same entities but
-            // are declared differently, so setters are differentiated.
-            if (ts.isSetAccessor(decl)) {
+            // are declared differently, so they are differentiated.
+            if (ts.isGetAccessor(decl)) {
+              part += ':getter';
+            } else if (ts.isSetAccessor(decl)) {
               part += ':setter';
             }
             parts.push(part);
@@ -854,9 +856,25 @@ class Visitor {
           return;
         }
         kFunc = this.getSymbolName(sym, TSNamespace.VALUE, context);
-        this.emitNode(kFunc, 'function');
 
+        this.emitNode(kFunc, 'function');
         this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
+
+        // Getters/setters also emit a class property entry; for example, for a
+        // getter/setter `foo` in class `A`, an entry with signature `A.foo`
+        // will be emitted. If a getter is present, it will bind this entry,
+        // otherwise a setter will.
+        if (ts.isGetAccessor(decl) ||
+            (ts.isSetAccessor(decl) &&
+             !sym.declarations.find(ts.isGetAccessor))) {
+          // Remove trailing ":getter"/":setter" suffix
+          const propSignature =
+              kFunc.signature.split(':').splice(0, -1).join(':');
+          const propVName = {...kFunc, signature: propSignature};
+          this.emitNode(propVName, 'function');
+          this.emitEdge(
+              this.newAnchor(decl.name), 'defines/binding', propVName);
+        }
 
         this.visitJSDoc(decl, kFunc);
       }
