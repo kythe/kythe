@@ -21,6 +21,7 @@ MANIFEST-*
 # Build artifacts
 /bazel-*
 /doxygen-out
+/node_modules
 
 # Symlinks
 third_party/libmemcached
