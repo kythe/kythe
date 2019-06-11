@@ -130,7 +130,7 @@ public class OptionsTest {
     ImmutableList<String> updatedArgs =
         args.updateWithJavaOptions(CompilationUnit.getDefaultInstance()).build();
     // Note the re-ordering.  Probably it doesn't matter, but enforce in test just to be sure.
-    assertThat(updatedArgs).containsAllOf("-doe", "--boot-class-path").inOrder();
+    assertThat(updatedArgs).containsAtLeast("-doe", "--boot-class-path").inOrder();
     // Also verify that we kept paths passed in.
     int idx = updatedArgs.indexOf("--boot-class-path");
     assertThat(updatedArgs).hasSize(idx + 2);
@@ -147,7 +147,7 @@ public class OptionsTest {
         ModifiableOptions.of(ImmutableList.of("--class-path", "not/a/real/path:also/fake", "-doe"));
     ImmutableList<String> updatedArgs =
         args.updateWithJavaOptions(CompilationUnit.getDefaultInstance()).build();
-    assertThat(updatedArgs).containsAllOf("--class-path", "-doe", "--boot-class-path").inOrder();
+    assertThat(updatedArgs).containsAtLeast("--class-path", "-doe", "--boot-class-path").inOrder();
     assertThat(updatedArgs.get(updatedArgs.indexOf("--class-path") + 1))
         .startsWith("not/a/real/path:also/fake");
 
@@ -172,7 +172,7 @@ public class OptionsTest {
     ImmutableList<String> updatedArgs = args.updateWithJavaOptions(cu).build();
     // Note that the unspecified --source-path and --boot-class-path get added in from details.
     assertThat(updatedArgs)
-        .containsAllOf("-doe", "--class-path", "--source-path", "--boot-class-path")
+        .containsAtLeast("-doe", "--class-path", "--source-path", "--boot-class-path")
         .inOrder();
     int classIdx = updatedArgs.indexOf("--class-path");
     assertThat(updatedArgs.get(classIdx + 1)).startsWith("class/from/details");
@@ -196,7 +196,7 @@ public class OptionsTest {
             .build();
     ImmutableList<String> updatedArgs = args.updateWithJavaOptions(cu).build();
     // --source-path comes from details, --boot-class-path comes from system.
-    assertThat(updatedArgs).containsAllOf("-doe", "--source-path", "--boot-class-path").inOrder();
+    assertThat(updatedArgs).containsAtLeast("-doe", "--source-path", "--boot-class-path").inOrder();
     assertThat(updatedArgs.get(updatedArgs.indexOf("--source-path") + 1))
         .matches("source/from/details");
     assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1)).contains(".jar");

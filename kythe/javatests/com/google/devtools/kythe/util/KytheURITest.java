@@ -28,9 +28,9 @@ public class KytheURITest extends TestCase {
 
   public void testParse() throws URISyntaxException {
     // Empty URIs.
-    assertThat(parse("")).isSameAs(KytheURI.EMPTY);
-    assertThat(parse("kythe:")).isSameAs(KytheURI.EMPTY);
-    assertThat(parse("kythe://")).isSameAs(KytheURI.EMPTY);
+    assertThat(parse("")).isSameInstanceAs(KytheURI.EMPTY);
+    assertThat(parse("kythe:")).isSameInstanceAs(KytheURI.EMPTY);
+    assertThat(parse("kythe://")).isSameInstanceAs(KytheURI.EMPTY);
 
     // Individual components.
     assertThat(parse("#sig")).isEqualTo(builder().setSignature("sig").build());

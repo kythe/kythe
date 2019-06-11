@@ -41,7 +41,7 @@ bazel --bazelrc=.bazelrc build //kythe/docs/... \
     //kythe/docs/schema:callgraph \
     //kythe/docs/schema:verifierstyle \
     //kythe/docs/schema:writing-an-indexer \
-    //kythe/docs/schema:indexing-protobuf \
+    //kythe/docs/schema:indexing-generated-code \
     //kythe/docs/schema:marked-source
 # Copy the zipped asciidoc outputs into the staging directory, unpack the
 # archives, then remove them. We do this to ensure the output retains the
@@ -79,6 +79,7 @@ trap 'rm -rf "$TMP"' EXIT ERR INT
 cd "$DIR"
 for doc in ${DOCS[@]}; do
   html=${doc%%.*}.html
+  echo "Processing $html"
   abs_path="../../../kythe/docs/$doc"
   cp "_docs/$html" "$TMP"
   { doc_header "$abs_path";

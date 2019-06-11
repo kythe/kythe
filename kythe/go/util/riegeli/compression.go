@@ -76,11 +76,33 @@ func newCompressor(opts *WriterOptions) (compressor, error) {
 		w := cbrotli.NewWriter(buf, brotliOpts)
 		return &sizePrefixedWriterTo{buf: buf, WriteCloser: w}, nil
 	case zstdCompression:
-		w := zstd.NewWriterLevel(buf, opts.compressionLevel())
-		return &sizePrefixedWriterTo{buf: buf, WriteCloser: w}, nil
+		lvl := opts.compressionLevel()
+		return &sizePrefixedWriterTo{buf: buf, WriteCloser: &batchCompressor{
+			Compress: func(src []byte) ([]byte, error) { return zstd.CompressLevel(nil, src, lvl) },
+			Buffer:   buf,
+		}}, nil
 	default:
 		return nil, fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(opts.compressionType())})
 	}
+}
+
+// A batchCompressor buffers all bytes written to it.  On Close, the Buffer is compressed.
+type batchCompressor struct {
+	Compress func([]byte) ([]byte, error)
+	Buffer   *bytes.Buffer
+}
+
+// Write implements part of the io.WriteCloser interface.
+func (b *batchCompressor) Write(buf []byte) (int, error) { return b.Buffer.Write(buf) }
+
+// Close implements part of the io.WriteCloser interface.
+func (b *batchCompressor) Close() error {
+	compressed, err := b.Compress(b.Buffer.Bytes())
+	if err != nil {
+		return err
+	}
+	*b.Buffer = *bytes.NewBuffer(compressed)
+	return nil
 }
 
 type sizePrefixedWriterTo struct {

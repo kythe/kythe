@@ -14,46 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Script to control which Bazel version is used through env variables.
+# Wrapper script to run Bazel via Bazelisk.
 #
-# By default, this script just runs /usr/bin/bazel with "$@".  The following
-# environmental variables allow the caller to switch which Bazel binary is
-# executed:
-#
-# BAZEL:         override all other variables; run this binary
-# BAZEL_VERSION: Bazel version to execute (e.g. 0.15.2)
-# BAZEL_BIN:     directory of bazel binaries (e.g. $BAZEL_BIN/bazel-0.15.2)
-# DEFAULT_BAZEL: binary to use when BAZEL and BAZEL_VERSION are not set
-#
-# Examples:
-#   ./bazel                                              # executes /usr/bin/bazel
-#   BAZEL_VERSION=0.15.2 ./bazel                         # executes /usr/bin/bazel-0.15.2
-#   BAZEL_VERSION=0.15.2 BAZEL_BIN=/opt/bazel ./bazel    # executes /opt/bazel/bazel-0.15.2
-#   BAZEL=/bin/true ./bazel                              # executes /bin/true
-#   DEFAULT_BAZEL=/bin/true ./bazel                      # executes /bin/true
-#   DEFAULT_BAZEL=/bin/true BAZEL_VERSION=0.15.2 ./bazel # executes /usr/bin/bazel-0.15.2
+# Transforms USE_BAZEL_VERSION=min to USE_BAZEL_VERSION=$(<.bazelminversion).
+# The .bazelminversion file may be in the current working directory or any
+# parent directory.  The first readable file found will be used; if none are
+# found, the script will exit unsuccessfully.
 
-SCRIPT="$(realpath "$0")"
-DEFAULT_BAZEL="${DEFAULT_BAZEL=/usr/bin/bazel}"
-BAZEL_BIN="${BAZEL_BIN:-/usr/bin}"
-
-if [[ -n "$BAZEL" ]]; then
-  exec "$BAZEL" "$@"
-fi
-
-if [[ -z "$BAZEL_VERSION" ]]; then
-  if [[ -n "$DEFAULT_BAZEL" && -x "$DEFAULT_BAZEL" ]]; then
-    DEFAULT_BAZEL="$(realpath "$DEFAULT_BAZEL")"
-    if [[ "$DEFAULT_BAZEL" != "$SCRIPT" ]]; then
-      # Use default bazel version
-      exec "$DEFAULT_BAZEL" "$@"
+if [[ "$USE_BAZEL_VERSION" == "min" ]]; then
+  dir="$PWD"
+  while [[ ! -r "$dir/.bazelminversion" ]]; do
+    if [[ "$dir" == "/" ]]; then
+      echo "ERROR: unable to find .bazelminversion file in cwd or above" >&2
+      exit 1
     fi
-  fi
-
-  # Select latest version available
-  VERSIONS=($(ls "$BAZEL_BIN"/bazel-* | xargs -L1 basename | sort -t. -h -k1,1 -k2,2 -k3,3))
-  LATEST="${VERSIONS[*]: -1}"
-  BAZEL_VERSION="${LATEST#bazel-}"
+    dir="$(dirname "$dir")"
+  done
+  USE_BAZEL_VERSION="$(<"$dir/.bazelminversion")"
 fi
 
-exec "$BAZEL_BIN/bazel-$BAZEL_VERSION" "$@"
+exec bazelisk "$@"

@@ -279,14 +279,12 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		tracePrintf(ctx, "Potential target nodes: %d", len(nodes))
 
 		// All known definition locations (Anchor.Ticket -> Anchor)
-		var defs map[string]*xpb.Anchor
+		defs := make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
+		for _, def := range decor.TargetDefinitions {
+			defs[def.Ticket] = a2a(def, false).Anchor
+		}
 		if req.TargetDefinitions {
 			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
-
-			defs = make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
-			for _, def := range decor.TargetDefinitions {
-				defs[def.Ticket] = a2a(def, false).Anchor
-			}
 		}
 		tracePrintf(ctx, "Potential target defs: %d", len(defs))
 
@@ -317,6 +315,10 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 				r.TargetDefinition = ""
 			}
 
+			if !req.SemanticScopes {
+				r.SemanticScope = ""
+			}
+
 			if req.ExtendsOverrides && (r.Kind == edges.Defines || r.Kind == edges.DefinesBinding) {
 				bindings.Add(r.TargetTicket)
 			}
@@ -335,6 +337,12 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 
 			for _, o := range decor.TargetOverride {
 				if bindings.Contains(o.Overriding) {
+					def := defs[o.OverriddenDefinition]
+					if def != nil && len(buildConfigs) != 0 && !buildConfigs.Contains(def.BuildConfig) {
+						// Skip override with undesirable build configuration.
+						continue
+					}
+
 					os, ok := reply.ExtendsOverrides[o.Overriding]
 					if !ok {
 						os = &xpb.DecorationsReply_Overrides{}
@@ -351,11 +359,9 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 					if n := nodes[o.Overridden]; n != nil {
 						reply.Nodes[o.Overridden] = n
 					}
-					if req.TargetDefinitions {
-						if def, ok := defs[o.OverriddenDefinition]; ok {
-							ov.TargetDefinition = o.OverriddenDefinition
-							reply.DefinitionLocations[o.OverriddenDefinition] = def
-						}
+					if req.TargetDefinitions && def != nil {
+						ov.TargetDefinition = o.OverriddenDefinition
+						reply.DefinitionLocations[o.OverriddenDefinition] = def
 					}
 				}
 			}
@@ -401,6 +407,7 @@ func decorationToReference(norm *span.Normalizer, d *srvpb.FileDecorations_Decor
 		Span:             span,
 		TargetDefinition: d.TargetDefinition,
 		BuildConfig:      d.Anchor.BuildConfiguration,
+		SemanticScope:    d.SemanticScope,
 	}
 }
 
@@ -806,6 +813,7 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 		Span:        a.Span,
 		Snippet:     a.Snippet,
 		SnippetSpan: a.SnippetSpan,
+		BuildConfig: a.BuildConfiguration,
 	}}
 }
 

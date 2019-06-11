@@ -149,7 +149,7 @@ java_verifier_test(
     name = "cross_file_tests",
     size = "small",
     srcs = ["CrossFile.java"],
-    deps = [":files_tests"],
+    verifier_deps = [":files_tests"],
 )
 
 java_verifier_test(
@@ -170,7 +170,7 @@ java_verifier_test(
         "--verbose",
         "--emit_jvm_signatures",
     ],
-    deps = [":jvm_files_tests"],
+    verifier_deps = [":jvm_files_tests"],
 )
 
 # TODO(#1501): This test currently fails
@@ -245,6 +245,7 @@ java_verifier_test(
     meta = [
         "Metadata.java.meta",
     ],
+    deps = ["@javax_annotation_jsr250_api//jar"],
 )
 
 java_verifier_test(
@@ -260,6 +261,7 @@ java_verifier_test(
         "ProtobufMetadata.java.pb.meta",
     ],
     vnames_config = "protobuf_vnames.json",
+    deps = ["@javax_annotation_jsr250_api//jar"],
 )
 
 java_verifier_test(
@@ -313,6 +315,7 @@ java_verifier_test(
         "Packages.java",
         "package-info.java",
     ],
+    deps = ["@com_google_code_findbugs_jsr305//jar"],
 )
 
 java_verifier_test(
@@ -320,13 +323,20 @@ java_verifier_test(
     size = "small",
     srcs = ["Jvm.java"],
     extra_goals = ["//kythe/javatests/com/google/devtools/kythe/analyzers/jvm/testdata:jvm_nodes.kythe_verifier.txt"],
-    indexer_opts = ["--emit_jvm=semantic"],
     verifier_opts = [
         "--ignore_dups",
         "--convert_marked_source",
         "--nofile_vnames",
     ],
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/jvm/testdata:__pkg__"],
+)
+
+java_verifier_test(
+    name = "jvm_reference_tests",
+    size = "small",
+    srcs = ["JvmCrossFile.java"],
+    indexer_opts = ["--emit_jvm_references"],
+    verifier_deps = [":files_tests"],
 )
 
 java_verifier_test(

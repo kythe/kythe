@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include "absl/strings/str_format.h"
 #include "cxx_extractor.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -54,8 +55,9 @@ int main(int argc, char* argv[]) {
   gflags::SetVersionString("0.1");
   gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
   if (argc != 4) {
-    fprintf(stderr, "Call as %s extra-action-file output-file vname-config\n",
-            argv[0]);
+    absl::FPrintF(stderr,
+                  "Call as %s extra-action-file output-file vname-config\n",
+                  argv[0]);
     return 1;
   }
   std::string extra_action_file = argv[1];

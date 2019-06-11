@@ -1,0 +1,609 @@
+// Copyright 2016 The Kythe Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+= Indexing Generated Code
+
+:Revision: 1.0
+:toc2:
+:toclevels: 3
+:priority: 999
+
+Source code generators like link:https://www.gnu.org/software/flex/[Flex],
+link:https://www.gnu.org/software/bison/[GNU Bison], and
+link:http://www.swig.org/[SWIG] take a high-level description of a software
+component and generate the code necessary to realize that component in a
+lower-level or general-purpose programming language. Users browsing projects
+that use these components usually want cross-references to take them
+from use sites of a generated interface to the high-level code that brought
+that interface into being. They do not normally want to see the generated
+implementation, as this is often difficult (or uninteresting) to read. This
+document describes how to encode information about generated code to permit
+cross-language links.
+
+To make the discussion easier to understand let's pretend we are working with
+two languages: SourceLang and TargetLang. SourceLang has `.source` file and TargetLang
+has `.target` files. We also have a tool (generator) that can take generate
+`foo.target` file from `foo.source` file. We have following components:
+
+* Source Indexer - Kythe indexer that takes `.source` files and outputs index
+  data.
+* Target Indexer - Kythe indexer that takes `.target` files and outputs index
+  data.
+* Generator - tool that produces `.target` files from `.source` files.
+* Post processor - Kythe tool that takes all index data produced by all
+  indexers, processes it and outputs final Kythe graph that contains data
+  for both SourceLang and TargetLang.
+
+Now we want to teach Kythe how to create cross-references between generated
+`foo.target` file and original `foo.source` file. The main idea is pretty simple:
+Generator has to output extra data containing mapping of elements in `foo.target`
+to the original elements from `foo.source`. Then when Target Indexer is indexing
+`foo.target` it will use that mapping to output *generates* or *imputes* edges.
+These edges connect nodes from `foo.target` with nodes in `foo.source`.
+
+Kythe doesn't require implementors to use one concrete approach for passing
+mapping metadata and outputting *generates* and *imputes* edges. Below we
+describe two different approaches, each has its own pros and cons. But in
+both cases it is assumed that implementors can change Generator and Target
+Indexer. If possible the *generates* approach is preferred as it requires less
+post-processing work.
+
+TIP: You can find an example implementation at
+link:https://github.com/kythe/kythe/tree/master/kythe/examples/proto[GitHub].
+The current sample web UI does not interpret the parts of the schema we will
+use; this is a work in progress.
+
+== Java To JavaScript with *imputes* edges
+
+This approach is generic and works for any combination of SourceLang and
+TargetLang. In this example we generate JavaScript files from Java file so
+SourceLang is Java and TargetLang is JavaScript. Given `Color.java`:
+
+[source,java]
+-------------------------------------------------------------------------------
+public enum Color {
+  RED;
+}
+-------------------------------------------------------------------------------
+
+Generator produces `color.js`:
+[source,javascript]
+-------------------------------------------------------------------------------
+const Color = {
+  RED: 0,
+};
+-------------------------------------------------------------------------------
+
+=== Changes to Generator
+
+To support cross-references betwen `color.js` and `Color.java` we need to update
+Generator to output the following mapping data for `Color`, `RED` elements.
+
+[source,json]
+-------------------------------------------------------------------------------
+{
+    "type": "kythe0",
+    "meta": [{
+        "type": "anchor_anchor",
+        "source_begin": 13,
+        "source_end": 18,
+        "target_begin": 6,
+        "target_end": 11,
+        "edge": "/kythe/edge/imputes",
+        "source_vname": {
+            "corpus": "corpus",
+            "path": "path/to/Color.java"
+        }
+    }, {
+        "type": "anchor_anchor",
+        "source_begin": 22,
+        "source_end": 25,
+        "target_begin": 18,
+        "target_end": 21,
+        "edge": "/kythe/edge/imputes",
+        "source_vname": {
+            "corpus": "corpus",
+            "path": "path/to/Color.java"
+        }
+    }]
+}
+-------------------------------------------------------------------------------
+
+This mapping has 2 `meta` entries. The first entry for `Color`, the second for
+`RED`. Note:
+
+* Each entry doesn't contain names of elements. Each entry contains only
+  position of elements in the source (`Color.java`) and target (`color.js`)
+  files.
+* Each position is defined as byte offset inside file and not as line/column.
+  This is required because in Kythe anchors are defined using byte offsets and
+  not line/column. In this example JavaScript indexer will process this
+  mapping and will need to output *anchor* for `Color.java` and indexer
+  doesn't have access to the `Color.java` file (it has access only to JS
+  files). Because of that JS indexer can't translate line/column to byte
+  offset.
+* Entry doesn't contain vnames of elements in `Color.java` or `color.js` and
+  instead contains positions. VNames of nodes are internal details of each
+  indexer and subject to change. Generator usually a standalone tool that
+  doesn't know rules for producing vnames for specific language so it's
+  impossible for Generator to output vnames of nodes. If in your case
+  VNames are stable and well-specified you can use simpler approach
+  using *generates* described in `Protocol Buffer` section below.
+
+To pass this mapping to the JavaScript Indexer Generator will append it
+as a comment at the last line of `color.js`:
+
+[source,javascript]
+-------------------------------------------------------------------------------
+const Color = {
+  RED: 0,
+};
+
+// Kythe Indexing Metadata:
+// {"type":"kythe0","meta":[{"type":"anchor_anchor","source_begin":13,...
+-------------------------------------------------------------------------------
+
+Inlining metadata inside `color.js` has benefit of avoiding passing extra
+files to Indexer. All Indexer needs is to know that some JavaScript files can
+contain metadata on the last line and parse it.
+
+One downside is that it adds noise to `color.js` but usually generated
+files are invisible to developers so it's not a big concern.
+
+==== Changes to JavaScript Indexer
+
+On JavaScript Indexer side we need to parse metadata and output *imputes*
+edges. To parse metadata indexer can check last two lines of all `.js` files
+and see if they contain `// Kythe Indexing Metadata:` and if so - parse
+the last line as JSON.
+
+For each `meta` entry indexer should do the following:
+
+1. Output an *anchor* using `source_begin` and `source_end`. `source_vname`
+   should be used as file containing the anchor.
+2. Find a JavaScript node that has *defines/binding* anchor with the same
+   `target_begin/end` position.
+3. Ouptut one *imputes* edge from the *anchor* created at step 1 to the node
+   found at step 2.
+
+Note that this only applies to meta entries with type `anchor_anchor`. For other
+types structure might be different. See link:https://github.com/kythe/kythe/issues/3711[issue #3711].
+
+Here is what JavaScript indexer outputs for the `Color` element using the
+rules above:
+
+[kythe,dot,"JavaScript Indexer graph",0]
+--------------------------------------------------------------------------------
+digraph G {
+size="7,7";
+coloranchorjava [label="anchor\nColor.java:0:12-17"];
+redanchorjava [label="anchor\nColor.java:1:2-5"];
+coloranchorjs [label="anchor\ncolor.js:0:6-11"];
+redanchorjs [label="anchor\ncolor.js:0:2-5"];
+colornode [label="Color node\nin JS"];
+rednode [label="RED node\nin JS"];
+
+coloranchorjs -> colornode [label = "defines/binding"];
+redanchorjs -> rednode [label = "defines/binding"];
+coloranchorjava -> colornode [label = "imputes"];
+redanchorjava -> rednode [label = "imputes"];
+}
+--------------------------------------------------------------------------------
+
+Output of Java Indexer looks like this:
+
+[kythe,dot,"Java Indexer graph",0]
+--------------------------------------------------------------------------------
+digraph G {
+size="7,7";
+coloranchorjava [label="anchor\nColor.java:0:12-17"];
+redanchorjava [label="anchor\nColor.java:1:2-5"];
+colornodejava [label="Color node\nin Java"];
+rednodejava [label="RED node\nin Java"];
+
+coloranchorjava -> colornodejava [label = "defines/binding"];
+redanchorjava -> rednodejava [label = "defines/binding"];
+}
+--------------------------------------------------------------------------------
+
+=== Post-processor
+
+Once Java and JavaScript Indexers finished their output is merged and
+postprocessor finds all anchors that have both *defines/binding* and
+*imputes* edges and creates *generates* edge:
+
+[kythe,dot,"Processed final graph",0]
+--------------------------------------------------------------------------------
+digraph G {
+size="7,7";
+coloranchorjava [label="anchor\nColor.java:0:12-17"];
+redanchorjava [label="anchor\nColor.java:1:2-5"];
+coloranchorjs [label="anchor\ncolor.js:0:6-11"];
+redanchorjs [label="anchor\ncolor.js:0:2-5"];
+colornode [label="Color node\nin JS"];
+rednode [label="RED node\nin JS"];
+colornodejava [label="Color node\nin Java"];
+rednodejava [label="RED node\nin Java"];
+
+coloranchorjs -> colornode [label = "defines/binding"];
+redanchorjs -> rednode [label = "defines/binding"];
+coloranchorjava -> colornode [label = "imputes"];
+redanchorjava -> rednode [label = "imputes"];
+coloranchorjava -> colornodejava [label = "defines/binding"];
+redanchorjava -> rednodejava [label = "defines/binding"];
+colornodejava -> colornode [label = "generates"];
+rednodejava -> rednode [label = "generates"];
+}
+--------------------------------------------------------------------------------
+
+This is the end state. Now tools using Kythe graph can see that Color enum
+in JS is generated by Color enum in Java and perform proper action (for example
+IDE upon clicking on `Color` in JS file will go to the definition of `Color`
+enum in java file.
+
+== Protocol Buffers with *generates* edges
+
+This approach is easier to implement compared to *imputes* approach described
+above, but it requires tighter integration with Indexer and Generator. When
+Generator outputs code it also adds a mapping as in the *imputes* approach,
+but instead of mapping location to location it outputs VNames of nodes from
+`foo.source`. It requires Generator to know exactly what VNames will be produced
+by the Source Indexer. This approach is feasible when either VNames either
+have simple stable form or Generator can reuse code from Source Indexer to
+generate VNames.
+
+In this example we generate C++ files from Protocol buffer definitions. So
+SourceLang is Protocol Buffers and TargetLang is C++.
+
+The Kythe project uses
+link:https://developers.google.com/protocol-buffers/[protocol buffers] for
+data interchange. The `protoc` compiler reads a domain-specific language
+that describes messages and synthesizes code that serializes, deserializes,
+and manipulates these messages. It can generate code in a number of different
+target languages by swapping out backend components. These accept an encoding
+of the message descriptions in the original source file and emit source text.
+
+[kythe,dot,"protoc architecture",0]
+--------------------------------------------------------------------------------
+digraph G {
+size="7,7";
+protosrc [label=".proto", shape=note];
+frontend [label="protoc", shape=rectangle];
+descriptor [label="descriptor", shape=note];
+backend [label="C++ language backend", shape=rectangle];
+ccsrc [label=".pb.h", shape=note];
+protosrc -> frontend;
+frontend -> descriptor;
+descriptor -> backend;
+backend -> ccsrc;
+}
+--------------------------------------------------------------------------------
+
+=== Indexing `.proto` definitions
+
+`.proto` files are written in a domain-specific programming language for
+describing various properties about messages and other data. It is interesting
+to index these on their own, as messages in one `.proto` file may be used in
+another `.proto` file. Here is a very simple example of the language:
+
+[source,c]
+--------------------------------------------------------------------------------
+syntax = "proto3";
+package kythe.examples.proto.example;
+
+// A single proto message.
+message Foo {
+}
+--------------------------------------------------------------------------------
+
+This file describes the empty message `kythe.examples.proto.example.Foo`
+using features from version 3 of the language. When run through `protoc`
+with the appropriate options set, it will generate the interface `example.pb.h`
+and the implementation `example.pb.cc`. These may be used to interact with
+`Foo` messages in $$C++$$.
+
+As it turns out, `protoc` can be coerced into saving the descriptor that it
+passes to its backends. Ordinarily, this descriptor would merely be an
+abstract version of the `.proto` input file that discards syntax and records
+only the details necessary to generate source code. If asked, `protoc` will
+also keep track of source locations (`--include_source_info`) and data about
+the `.proto` files that are (transitively) imported (`--include_imports`).
+This information is sufficient to build a Kythe graph for a given `.proto`
+definition file. It will become important later that every object that the
+descriptor describes has an address, like "4.0", that corresponds (roughly)
+to its position in the descriptor's AST. These addresses are used as keys into
+the table that keeps track of source locations in the original `.proto` file.
+
+[kythe,dot,"protoc architecture with indexer",0]
+--------------------------------------------------------------------------------
+digraph G {
+size="7,7";
+protosrc [label=".proto", shape=note];
+frontend [label="protoc", shape=rectangle];
+descriptor [label="descriptor", shape=note];
+descriptorfile [label="FileDescriptorSet", shape=note, color=blue];
+indexer [label="Kythe proto_indexer", shape=rectangle, color=blue];
+backend [label="C++ language backend", shape=rectangle];
+ccsrc [label=".pb.h", shape=note];
+entries [label="Kythe entries", shape=note, color=blue];
+protosrc -> frontend;
+frontend -> descriptor;
+frontend -> descriptorfile [color=blue];
+protosrc -> indexer [color=blue];
+descriptorfile -> indexer [color=blue];
+descriptor -> backend;
+backend -> ccsrc;
+indexer -> entries [color=blue];
+}
+--------------------------------------------------------------------------------
+
+This extra information is stored as a file that contains a
+`proto2.FileDescriptorSet` message, which in turn is a list of the
+`proto2.FileDescriptorProto` messages used in the course of processing `.proto`
+input. Note that this message does not contain `.proto` source text, so the
+`proto_indexer` must have access to the original source files.
+
+We can add a verifier assertion to check that `Foo` declares a Kythe node:
+
+[source,c]
+--------------------------------------------------------------------------------
+syntax = "proto3";
+package kythe.examples.proto.example;
+
+// A single proto message.
+//- @Foo defines/binding MessageFoo?
+message Foo {
+}
+--------------------------------------------------------------------------------
+
+and see that it was unified with the appropriate VName:
+
+.Output
+----
+MessageFoo: EVar(... = App(vname,
+    (4.0, kythe, "", kythe/examples/proto/example.proto, protobuf)))
+----
+
+== Using generated source code
+
+Imagine that we have a simple $$C++$$ user of our generated source code for
+`Foo`. Its code, with a verifier assertion, looks like this:
+
+[source,c]
+--------------------------------------------------------------------------------
+#include "kythe/examples/proto/example.pb.h"
+
+//- @Foo ref CxxFooDecl?
+void UseProto(kythe::examples::proto::example::Foo* foo) {
+}
+--------------------------------------------------------------------------------
+
+The Kythe pipeline for indexing our combined program looks like this:
+
+[kythe,dot,"first indexing pipeline",0]
+--------------------------------------------------------------------------------
+digraph G {
+size="7,7!";
+usersrc [label="proto_user.cc", shape=note, color=blue];
+ccextractor [label="C++ extractor", shape=rectangle, color=blue];
+kindex [label="proto_user.kindex", shape=note, color=blue];
+protosrc [label=".proto", shape=note];
+frontend [label="protoc", shape=rectangle];
+descriptor [label="descriptor", shape=note];
+descriptorfile [label="FileDescriptorSet", shape=note];
+indexer [label="Kythe proto_indexer", shape=rectangle];
+ccindexer [label="Kythe C++ indexer", shape=rectangle, color=blue];
+backend [label="C++ language backend", shape=rectangle];
+ccsrc [label=".pb.h", shape=note];
+entries [label="Kythe entries", shape=note];
+protosrc -> frontend;
+frontend -> descriptor;
+frontend -> descriptorfile;
+protosrc -> indexer;
+descriptorfile -> indexer;
+descriptor -> backend;
+backend -> ccsrc;
+indexer -> entries;
+usersrc -> ccextractor [color=blue];
+ccsrc -> ccextractor [color=blue];
+usersrc -> ccsrc [color=blue];
+ccextractor -> kindex [color=blue];
+kindex -> ccindexer [color=blue];
+ccindexer -> entries [color=blue];
+}
+--------------------------------------------------------------------------------
+
+When we use the verifier to inspect the resulting `CxxFooDecl`, we see that
+it has not been unified with the VName for `Foo`:
+
+.Output
+----
+CxxFooDecl: EVar(... =
+    App(vname, (srl0y/pwih+G6wsjFLMTVKQPC7lLH3/9MVK2d2aJHeE=,
+                kythe, bazel-out/genfiles, kythe/examples/proto/example.pb.h,
+                c++)))
+----
+
+This is because the `kythe::examples::proto::example::Foo` type is a $$C++$$
+type defined in `example.pb.h`. That it was defined in some original `.proto`
+file has no meaning to the $$C++$$ compiler. Furthermore, the Kythe $$C++$$
+indexer has no understanding of the `protoc` language and the VNames that the
+Kythe proto_indexer produces.
+
+Our goal is to add edges in the graph between `CxxFooDecl` and `MessageFoo`
+so that clients can take into account their relationship when displaying
+cross-references or answering other queries. We do not want to unify them in the
+same node, as they are legitimately different objects. Users may wish to
+navigate to the generated $$C++$$ code for `CxxFooDecl` or to view uses of
+`MessageFoo` in other languages. To support these different uses, we will emit
+a link:/docs/schema#generates[generates] edge such that `MessageFoo`
+*generates* `CxxFooDecl`. Clients can choose to follow the edge or to disregard
+it.
+
+Observe that the $$C++$$ indexer and `protoc` backend both observe the same
+content in the `.pb.h` file; therefore, both programs see the same offsets
+for various tokens. If the `protoc` backend were to link those offsets back
+to the objects in the `FileDescriptorProto` using well-known names--and if the
+Kythe proto_indexer guaranteed a particular mechanism for generating VNames
+from those well-known names--we could close the loop in the $$C++$$ indexer by
+emitting *generates* edges to the proto_indexer's nodes whenever the $$C++$$
+indexer trips over the `protoc` backend's marked offsets.
+
+In other words, if the `.pb.h` contained code like:
+[source,c]
+--------------------------------------------------------------------------------
+...
+class Foo {
+...
+--------------------------------------------------------------------------------
+
+and the `protoc` backend that generated it reported that the text range
+`Foo` was associated with an object in its original `FileDescriptorProto` at
+some location encoded as "4.0"&mdash;and the proto_indexer guaranteed it would
+always emit objects with signatures based on their descriptor locations--the
+$$C++$$ indexer would only need to watch for *defines/binding* edges starting at
+that text range. Should such an edge be emitted, the $$C++$$ indexer would also
+emit a *generates* edge to the `proto` node.
+
+=== Annotations in `protoc` backends
+
+We have already seen how to command the `protoc` frontend to emit location
+information for `.proto` source files. The frontend does not, however, know
+anything about the source code that its various backends emit. We must pass
+additional flags to these backends to get them to produce location information
+as `proto2.GeneratedCodeInfo` messages. These messages connect byte offsets
+in generated source code with paths in the `proto2.FileDescriptorProto` AST.
+These paths are the same ones used by the `proto2.SourceCodeInfo` message that
+the Kythe proto_indexer consumes; they are the paths we will use to link up
+`protobuf` language nodes with the nodes for generated source code.
+
+Each `protoc` backend must be individually instrumented to produce
+`proto2.GeneratedCodeInfo` messages. To turn annotation on for the $$C++$$
+backend, you can pass `--cpp_out=annotate_headers=1:normal/output/path` to
+`protoc`. In practice, you will also need to provide an `annotation_pragma_name`
+and an `annotation_guard_name`, so the full `cpp_out` value may look like
+`annotate_headers=1,annotation_pragma_name=kythe_metadata,annotation_guard_name=KYTHE_IS_RUNNING:normal/output/path`.
+
+When `annotate_headers=1` is asserted to the $$C++$$ backend, it will generate
+`.meta` files alongside any files with annotations. For example, in the same
+directory as `example.pb.h`, you will find an `example.pb.h.meta` file. This
+file contains a serialized `proto2.GeneratedCodeInfo` message. This message
+contains a series of spans in `example.pb.h`, the filenames to the `.proto`
+files that caused those spans to be generated, and the AST paths in the
+`FileDescriptorProto` for those `.proto` files. `example.pb.h` explicitly
+depends on `example.pb.h.meta` using a pragma and a preprocessor symbol:
+
+[source,c]
+--------------------------------------------------------------------------------
+// Generated by the protocol buffer compiler.  DO NOT EDIT!
+// source: kythe/examples/proto/example.proto
+
+...
+
+#ifdef KYTHE_IS_RUNNING
+#pragma kythe_metadata "kythe/examples/proto/example.pb.h.meta"
+#endif  // KYTHE_IS_RUNNING
+
+...
+--------------------------------------------------------------------------------
+
+The Kythe $$C++$$ extractor and indexer both understand what to do with this
+pragma (and both define `KYTHE_IS_RUNNING`). The extractor will add the `.meta`
+file to the `kindex` it produces; the indexer will load the `.meta` file,
+translate it from `protoc` annotations to generic Kythe metadata, and use it
+to append `generates` edges for `defines/binding` edges emitted from
+`example.pb.h`.
+
+[kythe,dot,"first indexing pipeline",0]
+--------------------------------------------------------------------------------
+digraph G {
+size="7,7!";
+usersrc [label="proto_user.cc", shape=note];
+ccextractor [label="C++ extractor", shape=rectangle];
+kindex [label="proto_user.kindex", shape=note];
+protosrc [label=".proto", shape=note];
+frontend [label="protoc", shape=rectangle];
+descriptor [label="descriptor", shape=note];
+descriptorfile [label="FileDescriptorSet", shape=note];
+indexer [label="Kythe proto_indexer", shape=rectangle];
+ccindexer [label="Kythe C++ indexer", shape=rectangle];
+backend [label="C++ language backend", shape=rectangle];
+ccsrc [label=".pb.h", shape=note];
+ccmeta [label=".pb.h.meta", shape=note, color=blue];
+entries [label="Kythe entries", shape=note];
+protosrc -> frontend;
+frontend -> descriptor;
+frontend -> descriptorfile;
+protosrc -> indexer;
+descriptorfile -> indexer;
+descriptor -> backend;
+backend -> ccsrc;
+backend -> ccmeta [color=blue];
+ccsrc -> ccmeta [color=blue];
+indexer -> entries;
+usersrc -> ccsrc;
+usersrc -> ccextractor;
+ccsrc -> ccextractor;
+ccmeta -> ccextractor [color=blue];
+ccextractor -> kindex;
+kindex -> ccindexer;
+ccindexer -> entries;
+}
+--------------------------------------------------------------------------------
+
+Now we can write verifier assertions that show we have established a link
+between the proto source and use sites of its generated code:
+
+[source,c]
+--------------------------------------------------------------------------------
+#include "kythe/examples/proto/example.pb.h"
+
+//- @Foo ref CxxFooDecl
+//- MessageFoo? generates CxxFooDecl
+//- vname(_, "kythe", "", "kythe/examples/proto/example.proto", "protobuf")
+//-     defines/binding MessageFoo
+void UseProto(kythe::examples::proto::example::Foo* foo) {
+}
+--------------------------------------------------------------------------------
+
+.Output
+----
+MessageFoo: EVar(... = App(vname,
+    (4.0, kythe, "", kythe/examples/proto/example.proto, protobuf)))
+----
+
+Of course, Kythe clients need to understand that *generates* edges should be
+followed. Solving this problem is out of this document's scope.
+
+==== Providing annotations for other languages
+
+To generate metadata for a different language backend, you must determine or
+implement the following:
+
+* The `protoc` backend for the language must be able to produce
+  `proto2.GeneratedCodeInfo` buffers.
+* There must be some way to signal to your indexer and extractor that a
+  `.meta` file is associated with a different source file.
+* That `.meta` file must be made available to the extractor during extraction.
+  For hermetic build systems, this means that the target driving `protoc` must
+  list the `.meta` file as an output. Any target that uses that `protoc`
+  target must require the `.meta` file as an input.
+* The indexer must read the `.meta` file and use it to emit `generates`
+  edges that connect up to the nodes produced by the Kythe proto_indexer.
+
+The method for annotating source code is designed such that it can
+be implemented purely at the output stage; for example, if you have an
+abstraction for emitting *defines/binding* edges from anchors, you can
+check at every edge (starting from a file with loaded metadata) whether you
+should emit an additional `generates` edge.

@@ -12,11 +12,10 @@ def kythe_rule_repositories():
 
     These repositories must be loaded before calling external.bzl%kythe_dependencies.
     """
-    maybe(
-        http_archive,
+    http_archive(
         name = "io_bazel_rules_go",
-        sha256 = "6776d68ebb897625dead17ae510eac3d5f6342367327875210df44dbe2aeeb19",
-        urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.17.1/rules_go-0.17.1.tar.gz"],
+        url = "https://github.com/bazelbuild/rules_go/releases/download/0.18.5/rules_go-0.18.5.tar.gz",
+        sha256 = "a82a352bffae6bee4e95f68a8d80a70e87f42c4741e6a448bec11998fcc82329",
     )
 
     maybe(
@@ -27,8 +26,8 @@ def kythe_rule_repositories():
     )
 
     maybe(
-        git_repository,
+        http_archive,
         name = "build_bazel_rules_nodejs",
-        remote = "https://github.com/bazelbuild/rules_nodejs.git",
-        tag = "0.16.2",
+        sha256 = "e04a82a72146bfbca2d0575947daa60fda1878c8d3a3afe868a8ec39a6b968bb",
+        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/0.31.1/rules_nodejs-0.31.1.tar.gz"],
     )

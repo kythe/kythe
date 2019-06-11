@@ -26,6 +26,7 @@
 #include <map>
 #include <set>
 
+#include "absl/strings/str_format.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -162,7 +163,7 @@ class ClaimTool {
           claim.mutable_compilation_v_name()->CopyFrom(
               claimable.second.elected_claimant->vname);
           claim.mutable_dependency_v_name()->CopyFrom(claimable.second.vname);
-          ::printf("%s", claim.DebugString().c_str());
+          absl::PrintF("%s", claim.DebugString());
         }
       }
       return;
@@ -270,7 +271,7 @@ int main(int argc, char* argv[]) {
       tool.HandleCompilationUnit(unit);
     }
     if (!std::cin.eof()) {
-      ::fprintf(stderr, "Error reading from standard input.\n");
+      absl::FPrintF(stderr, "Error reading from standard input.\n");
       return 1;
     }
   } else {
@@ -279,7 +280,7 @@ int main(int argc, char* argv[]) {
         FLAGS_index_pack, kythe::IndexPackFilesystem::OpenMode::kReadOnly,
         &error_text);
     if (!filesystem) {
-      ::fprintf(stderr, "Error reading index pack: %s\n", error_text.c_str());
+      absl::FPrintF(stderr, "Error reading index pack: %s\n", error_text);
       return 1;
     }
     kythe::IndexPack pack(std::move(filesystem));
@@ -294,19 +295,19 @@ int main(int argc, char* argv[]) {
               return true;
             },
             &error_text)) {
-      ::fprintf(stderr, "Error scanning index pack: %s\n", error_text.c_str());
+      absl::FPrintF(stderr, "Error scanning index pack: %s\n", error_text);
       return 1;
     }
   }
   tool.AssignClaims();
   tool.WriteClaimFile(STDOUT_FILENO);
   if (FLAGS_show_stats) {
-    ::printf("Number of claimables: %lu\n", tool.claimables().size());
-    ::printf(" Number of claimants: %lu\n", tool.claimants().size());
-    ::printf("   Total input count: %lu\n", tool.total_input_count());
-    ::printf(" Total include count: %lu\n", tool.total_include_count());
-    ::printf("%%claimables/includes: %f\n",
-             tool.claimables().size() * 100.0 / tool.total_include_count());
+    absl::PrintF("Number of claimables: %lu\n", tool.claimables().size());
+    absl::PrintF(" Number of claimants: %lu\n", tool.claimants().size());
+    absl::PrintF("   Total input count: %lu\n", tool.total_input_count());
+    absl::PrintF(" Total include count: %lu\n", tool.total_include_count());
+    absl::PrintF("%%claimables/includes: %f\n",
+                 tool.claimables().size() * 100.0 / tool.total_include_count());
   }
   return 0;
 }

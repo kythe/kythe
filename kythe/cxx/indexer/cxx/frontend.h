@@ -37,9 +37,6 @@ struct IndexerJob {
   std::vector<proto::FileData> virtual_files;
   /// The compilation under analysis.
   proto::CompilationUnit unit;
-  /// The absolute working directory in which indexing is taking place. This may
-  /// not exist on the local filesystem.
-  std::string working_directory;
   /// If set, this job should not produce any output.
   bool silent = false;
 };

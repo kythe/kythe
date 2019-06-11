@@ -23,6 +23,7 @@
 //       indexer -i foo.cc | verifier foo.cc
 //       indexer some/index.kindex
 
+#include "absl/strings/str_format.h"
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
@@ -83,8 +84,8 @@ int main(int argc, char* argv[]) {
   options.AllowFSAccess = context.allow_filesystem_access();
   if (FLAGS_report_profiling_events) {
     options.ReportProfileEvent = [](const char* counter, ProfilingEvent event) {
-      fprintf(stderr, "%s: %s\n", counter,
-              event == ProfilingEvent::Enter ? "enter" : "exit");
+      absl::FPrintF(stderr, "%s: %s\n", counter,
+                    event == ProfilingEvent::Enter ? "enter" : "exit");
     };
   }
 
@@ -92,7 +93,7 @@ int main(int argc, char* argv[]) {
   NullOutputStream null_stream;
 
   context.EnumerateCompilations([&](IndexerJob& job) {
-    options.EffectiveWorkingDirectory = job.working_directory;
+    options.EffectiveWorkingDirectory = job.unit.working_directory();
 
     kythe::MetadataSupports meta_supports;
     meta_supports.Add(llvm::make_unique<ProtobufMetadataSupport>());
@@ -114,7 +115,7 @@ int main(int argc, char* argv[]) {
         });
 
     if (!result.empty()) {
-      fprintf(stderr, "Error: %s\n", result.c_str());
+      absl::FPrintF(stderr, "Error: %s\n", result);
       had_errors = true;
     }
   });

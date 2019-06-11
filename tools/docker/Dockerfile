@@ -29,8 +29,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
       g++ gcc openjdk-8-jdk openjdk-8-source clang-3.6 flex asciidoc source-highlight graphviz \
-      zlib1g-dev libarchive-dev uuid-dev libssl-dev bazel cmake \
-      ca-certificates-java libcurl4-openssl-dev libsasl2-dev && \
+      zlib1g-dev libarchive-dev uuid-dev bazel \
+      ca-certificates-java libsasl2-dev && \
     apt-get clean
 
 RUN update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java

@@ -209,6 +209,11 @@ public class KytheURI implements Serializable {
         decode(signature), decode(corpus), decode(root), decode(path), decode(lang));
   }
 
+  /** Parses the given Kythe ticket string to produce a new {@link VName}. */
+  public static VName parseVName(String ticket) {
+    return parse(ticket).toVName();
+  }
+
   private static String decode(String str) {
     if (isNullOrEmpty(str)) {
       return null;

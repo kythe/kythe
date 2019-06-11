@@ -63,6 +63,7 @@ func init() {
 	beam.RegisterFunction(groupCrossRefs)
 	beam.RegisterFunction(groupEdges)
 	beam.RegisterFunction(keyByPath)
+	beam.RegisterFunction(keyCrossRef)
 	beam.RegisterFunction(keyNode)
 	beam.RegisterFunction(keyRef)
 	beam.RegisterFunction(moveSourceToKey)
@@ -148,13 +149,7 @@ func (k *KytheBeam) SplitCrossReferences() beam.PCollection {
 		// TODO(schroederc): merge_with
 	))
 
-	callsites := beam.ParDo(s, refToCallsite, k.References())
-	// TODO(schroederc): override callers
-	callers := beam.ParDo(s, constructCaller, beam.CoGroupByKey(s,
-		k.directDefinitions(),
-		k.getMarkedSources(),
-		beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, callEdge, callsites))),
-	))
+	callgraph := k.callGraph()
 
 	edges := k.edgeRelations()
 	relatedDefs := beam.ParDo(s, emitRelatedDefs, beam.CoGroupByKey(s,
@@ -168,9 +163,20 @@ func (k *KytheBeam) SplitCrossReferences() beam.PCollection {
 		refs,
 		relations,
 		relatedDefs,
-		callers,
-		callsites,
+		callgraph,
 	))
+}
+
+func (k *KytheBeam) callGraph() beam.PCollection {
+	s := k.s.Scope("CallGraph")
+	callsites := beam.ParDo(s, refToCallsite, k.References())
+	// TODO(schroederc): override callers
+	callers := beam.ParDo(s, constructCaller, beam.CoGroupByKey(s,
+		k.directDefinitions(),
+		k.getMarkedSources(),
+		beam.ParDo(s, splitEdge, filter.Distinct(s, beam.ParDo(s, callEdge, callsites))),
+	))
+	return beam.Flatten(s, callsites, callers)
 }
 
 func emitRelatedDefs(target *spb.VName, defStream func(**srvpb.ExpandedAnchor) bool, srcStream func(**spb.VName) bool, emit func(*xspb.CrossReferences)) {
@@ -278,17 +284,29 @@ func edgeToCrossRefRelation(eg *gspb.Edges, emit func(*xspb.CrossReferences)) er
 // KV<string, *srvpb.PagedCrossReferences_Page>, respectively.
 func (k *KytheBeam) CrossReferences() (sets, pages beam.PCollection) {
 	s := k.s.Scope("CrossReferences")
-	refs := beam.GroupByKey(s, beam.ParDo(s, keyRef, k.References()))
+	refs := beam.CoGroupByKey(s,
+		beam.ParDo(s, keyRef, k.References()),
+		beam.ParDo(s, keyCrossRef, k.callGraph()),
+	)
 	// TODO(schroederc): related nodes
-	// TODO(schroederc): callers
 	// TODO(schroederc): MarkedSource
 	// TODO(schroederc): source_node
 	return beam.ParDo2(s, groupCrossRefs, refs)
 }
 
+var callerKinds = map[xspb.CrossReferences_Callsite_Kind]string{
+	xspb.CrossReferences_Callsite_DIRECT:   "#internal/ref/call/direct",
+	xspb.CrossReferences_Callsite_OVERRIDE: "#internal/ref/call/override",
+}
+
 // groupCrossRefs emits *srvpb.PagedCrossReferences and *srvpb.PagedCrossReferences_Pages for a
-// single node's collection of *ppb.References.
-func groupCrossRefs(key *spb.VName, refStream func(**ppb.Reference) bool, emitSet func(string, *srvpb.PagedCrossReferences), emitPage func(string, *srvpb.PagedCrossReferences_Page)) {
+// single node's collection of *ppb.References and callsites.
+func groupCrossRefs(
+	key *spb.VName,
+	refStream func(**ppb.Reference) bool,
+	callStream func(**xspb.CrossReferences) bool,
+	emitSet func(string, *srvpb.PagedCrossReferences),
+	emitPage func(string, *srvpb.PagedCrossReferences_Page)) {
 	set := &srvpb.PagedCrossReferences{SourceTicket: kytheuri.ToString(key)}
 	// TODO(schroederc): add paging
 
@@ -313,12 +331,65 @@ func groupCrossRefs(key *spb.VName, refStream func(**ppb.Reference) bool, emitSe
 		g.Anchor = append(g.Anchor, ref.Anchor)
 	}
 
+	callers := make(map[string]*xspb.CrossReferences_Caller)
+	callsites := make(map[string][]*xspb.CrossReferences_Callsite)
+	var call *xspb.CrossReferences
+	for callStream(&call) {
+		switch e := call.Entry.(type) {
+		case *xspb.CrossReferences_Caller_:
+			callers[kytheuri.ToString(e.Caller.Caller)] = e.Caller
+		case *xspb.CrossReferences_Callsite_:
+			ticket := kytheuri.ToString(e.Callsite.Caller)
+			callsites[ticket] = append(callsites[ticket], e.Callsite)
+		}
+	}
+	for ticket, caller := range callers {
+		for _, site := range callsites[ticket] {
+			kind := callerKinds[site.Kind]
+			configs, ok := groups[kind]
+			if !ok {
+				configs = make(map[string]*srvpb.PagedCrossReferences_Group)
+				groups[kind] = configs
+			}
+			config := site.Location.BuildConfiguration
+			g, ok := configs[config]
+			if !ok {
+				g = &srvpb.PagedCrossReferences_Group{
+					Kind:        kind,
+					BuildConfig: config,
+				}
+				configs[config] = g
+				set.Group = append(set.Group, g)
+			}
+
+			var groupCaller *srvpb.PagedCrossReferences_Caller
+			for _, c := range g.Caller {
+				if c.SemanticCaller == ticket {
+					groupCaller = c
+					break
+				}
+			}
+			if groupCaller == nil {
+				groupCaller = &srvpb.PagedCrossReferences_Caller{
+					Caller:         caller.Location,
+					SemanticCaller: ticket,
+					MarkedSource:   caller.MarkedSource,
+				}
+				g.Caller = append(g.Caller, groupCaller)
+			}
+			groupCaller.Callsite = append(groupCaller.Callsite, site.Location)
+		}
+	}
+
 	sort.Slice(set.Group, func(i, j int) bool {
 		return compare.Strings(set.Group[i].BuildConfig, set.Group[j].BuildConfig).
 			AndThen(set.Group[i].Kind, set.Group[j].Kind) == compare.LT
 	})
 	for _, g := range set.Group {
 		sort.Slice(g.Anchor, func(i, j int) bool { return g.Anchor[i].Ticket < g.Anchor[j].Ticket })
+		for _, caller := range g.Caller {
+			sort.Slice(caller.Callsite, func(i, j int) bool { return caller.Callsite[i].Ticket < caller.Callsite[j].Ticket })
+		}
 	}
 
 	emitSet("xrefs:"+set.SourceTicket, set)
@@ -329,6 +400,10 @@ func keyRef(r *ppb.Reference) (*spb.VName, *ppb.Reference) {
 		Kind:   r.Kind,
 		Anchor: r.Anchor,
 	}
+}
+
+func keyCrossRef(xr *xspb.CrossReferences) (*spb.VName, *xspb.CrossReferences) {
+	return xr.Source, &xspb.CrossReferences{Entry: xr.Entry}
 }
 
 func (k *KytheBeam) decorationPieces(s beam.Scope) beam.PCollection {

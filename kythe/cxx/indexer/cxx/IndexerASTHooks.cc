@@ -547,6 +547,15 @@ void IndexerASTVisitor::MaybeRecordDefinitionRange(
   }
 }
 
+void IndexerASTVisitor::MaybeRecordFullDefinitionRange(
+    const absl::optional<GraphObserver::Range>& R,
+    const GraphObserver::NodeId& Id,
+    const absl::optional<GraphObserver::NodeId>& DeclId) {
+  if (R) {
+    Observer.recordFullDefinitionRange(R.value(), Id, DeclId);
+  }
+}
+
 GraphObserver::Implicit IndexerASTVisitor::IsImplicit(
     const GraphObserver::Range& Range) {
   return (Job->UnderneathImplicitTemplateInstantiation ||
@@ -2790,10 +2799,12 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
   std::vector<std::pair<clang::TemplateName, clang::SourceLocation>> TNs;
   bool TNsAreSpeculative = false;
   bool IsImplicit = false;
+  SourceLocation TemplateKeywordLoc;
   if (auto* FTD = Decl->getDescribedFunctionTemplate()) {
     // Function template (inc. overloads)
     InnerNode = BuildNodeIdForDecl(Decl, 0);
     OuterNode = RecordTemplate(FTD, InnerNode);
+    TemplateKeywordLoc = FTD->getSourceRange().getBegin();
   } else if (auto* MSI = Decl->getMemberSpecializationInfo()) {
     // Here, template variables are bound by our enclosing context.
     // For example:
@@ -2932,9 +2943,21 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     }
   }
 
+  bool IsFunctionDefinition = IsDefinition(Decl);
   MaybeRecordDefinitionRange(NameRangeInContext, OuterNode,
                              BuildNodeIdForDefnOfDecl(Decl));
-  bool IsFunctionDefinition = IsDefinition(Decl);
+
+  if (IsFunctionDefinition && !Decl->isImplicit() &&
+      Decl->getBody() != nullptr) {
+    SourceRange DefinitionRange(
+        TemplateKeywordLoc.isValid() ? TemplateKeywordLoc
+                                     : Decl->getSourceRange().getBegin(),
+        RangeForASTEntity(Decl->getSourceRange().getEnd()).getEnd());
+    auto DefinitionRangeInContext =
+        RangeInCurrentContext(Decl->isImplicit(), OuterNode, DefinitionRange);
+    MaybeRecordFullDefinitionRange(DefinitionRangeInContext, OuterNode,
+                                   BuildNodeIdForDefnOfDecl(Decl));
+  }
   unsigned ParamNumber = 0;
   for (const auto* Param : Decl->parameters()) {
     ConnectParam(Decl, InnerNode, IsFunctionDefinition, ParamNumber++, Param,
@@ -4545,6 +4568,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::TypeLoc& TL) {
       UNSUPPORTED_CLANG_TYPE(Atomic);
       UNSUPPORTED_CLANG_TYPE(Pipe);
       UNSUPPORTED_CLANG_TYPE(DependentVector);
+      UNSUPPORTED_CLANG_TYPE(MacroQualified);
     }
 #undef UNSUPPORTED_CLANG_TYPE
 #undef DELEGATE_TYPE

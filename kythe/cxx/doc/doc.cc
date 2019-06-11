@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -65,8 +66,9 @@ constexpr char kDocFooter[] = R"(
 int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
   ::fputs(kDocHeaderPrefix, stdout);
   if (!FLAGS_css.empty()) {
-    ::fprintf(stdout, "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">",
-              FLAGS_css.c_str());
+    absl::FPrintF(stdout,
+                  "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">",
+                  FLAGS_css);
   }
   ::fputs(kDocHeaderSuffix, stdout);
   DocumentHtmlRendererOptions options(doc_reply);
@@ -106,16 +108,16 @@ int RenderMarkedSourceFromStdin() {
   google::protobuf::io::FileInputStream file_input_stream(STDIN_FILENO);
   CHECK(
       google::protobuf::TextFormat::Parse(&file_input_stream, &marked_source));
-  ::printf("      RenderSimpleIdentifier: \"%s\"\n",
-           RenderSimpleIdentifier(marked_source).c_str());
+  absl::PrintF("      RenderSimpleIdentifier: \"%s\"\n",
+               RenderSimpleIdentifier(marked_source));
   auto params = RenderSimpleParams(marked_source);
   for (const auto& param : params) {
-    ::printf("          RenderSimpleParams: \"%s\"\n", param.c_str());
+    absl::PrintF("          RenderSimpleParams: \"%s\"\n", param);
   }
-  ::printf("RenderSimpleQualifiedName-ID: \"%s\"\n",
-           RenderSimpleQualifiedName(marked_source, false).c_str());
-  ::printf("RenderSimpleQualifiedName+ID: \"%s\"\n",
-           RenderSimpleQualifiedName(marked_source, true).c_str());
+  absl::PrintF("RenderSimpleQualifiedName-ID: \"%s\"\n",
+               RenderSimpleQualifiedName(marked_source, false));
+  absl::PrintF("RenderSimpleQualifiedName+ID: \"%s\"\n",
+               RenderSimpleQualifiedName(marked_source, true));
   return 0;
 }
 
@@ -133,25 +135,26 @@ int DocumentNodesFrom(XrefsJsonClient* client, const proto::VName& file_name) {
       doc_request.add_ticket(reference.target_ticket());
     }
   }
-  fprintf(stderr, "Looking for %d tickets\n", doc_request.ticket_size());
+  absl::FPrintF(stderr, "Looking for %d tickets\n", doc_request.ticket_size());
   CHECK(client->Documentation(doc_request, &doc_reply, &error)) << error;
   if (!FLAGS_save_response.empty()) {
     int saved =
         open(FLAGS_save_response.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0640);
     if (saved < 0) {
-      fprintf(stderr, "Couldn't open %s\n", FLAGS_save_response.c_str());
+      absl::FPrintF(stderr, "Couldn't open %s\n", FLAGS_save_response);
       return 1;
     }
     {
       google::protobuf::io::FileOutputStream outfile(saved);
       if (!google::protobuf::TextFormat::Print(doc_reply, &outfile)) {
-        fprintf(stderr, "Coudln't print to %s\n", FLAGS_save_response.c_str());
+        absl::FPrintF(stderr, "Coudln't print to %s\n",
+                      FLAGS_save_response.c_str());
         close(saved);
         return 1;
       }
     }
     if (close(saved) < 0) {
-      fprintf(stderr, "Couldn't close %s\n", FLAGS_save_response.c_str());
+      absl::FPrintF(stderr, "Couldn't close %s\n", FLAGS_save_response);
       return 1;
     }
   }
@@ -193,7 +196,7 @@ doc -common_signatures
           kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths, FLAGS_path));
     }
     if (!ticket.first) {
-      ::fprintf(stderr, "Couldn't parse URI %s\n", FLAGS_path.c_str());
+      absl::FPrintF(stderr, "Couldn't parse URI %s\n", FLAGS_path);
       return 1;
     }
     return kythe::DocumentNodesFrom(&client, ticket.second.v_name());

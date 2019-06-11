@@ -3,12 +3,14 @@
 
 package driver_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import analysis_go_proto "kythe.io/kythe/proto/analysis_go_proto"
-import common_go_proto "kythe.io/kythe/proto/common_go_proto"
-import storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	analysis_go_proto "kythe.io/kythe/proto/analysis_go_proto"
+	common_go_proto "kythe.io/kythe/proto/common_go_proto"
+	storage_go_proto "kythe.io/kythe/proto/storage_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -19,7 +21,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type InitRequest struct {
 	Protocol             string   `protobuf:"bytes,1,opt,name=protocol,proto3" json:"protocol,omitempty"`
@@ -32,16 +34,17 @@ func (m *InitRequest) Reset()         { *m = InitRequest{} }
 func (m *InitRequest) String() string { return proto.CompactTextString(m) }
 func (*InitRequest) ProtoMessage()    {}
 func (*InitRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_driver_dbd9662cf0e8cd45, []int{0}
+	return fileDescriptor_269be22dd770bd8b, []int{0}
 }
+
 func (m *InitRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InitRequest.Unmarshal(m, b)
 }
 func (m *InitRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_InitRequest.Marshal(b, m, deterministic)
 }
-func (dst *InitRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_InitRequest.Merge(dst, src)
+func (m *InitRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InitRequest.Merge(m, src)
 }
 func (m *InitRequest) XXX_Size() int {
 	return xxx_messageInfo_InitRequest.Size(m)
@@ -70,16 +73,17 @@ func (m *InitReply) Reset()         { *m = InitReply{} }
 func (m *InitReply) String() string { return proto.CompactTextString(m) }
 func (*InitReply) ProtoMessage()    {}
 func (*InitReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_driver_dbd9662cf0e8cd45, []int{1}
+	return fileDescriptor_269be22dd770bd8b, []int{1}
 }
+
 func (m *InitReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InitReply.Unmarshal(m, b)
 }
 func (m *InitReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_InitReply.Marshal(b, m, deterministic)
 }
-func (dst *InitReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_InitReply.Merge(dst, src)
+func (m *InitReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InitReply.Merge(m, src)
 }
 func (m *InitReply) XXX_Size() int {
 	return xxx_messageInfo_InitReply.Size(m)
@@ -108,16 +112,17 @@ func (m *AnalyzeRequest) Reset()         { *m = AnalyzeRequest{} }
 func (m *AnalyzeRequest) String() string { return proto.CompactTextString(m) }
 func (*AnalyzeRequest) ProtoMessage()    {}
 func (*AnalyzeRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_driver_dbd9662cf0e8cd45, []int{2}
+	return fileDescriptor_269be22dd770bd8b, []int{2}
 }
+
 func (m *AnalyzeRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AnalyzeRequest.Unmarshal(m, b)
 }
 func (m *AnalyzeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AnalyzeRequest.Marshal(b, m, deterministic)
 }
-func (dst *AnalyzeRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AnalyzeRequest.Merge(dst, src)
+func (m *AnalyzeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AnalyzeRequest.Merge(m, src)
 }
 func (m *AnalyzeRequest) XXX_Size() int {
 	return xxx_messageInfo_AnalyzeRequest.Size(m)
@@ -147,16 +152,17 @@ func (m *AnalyzeReply) Reset()         { *m = AnalyzeReply{} }
 func (m *AnalyzeReply) String() string { return proto.CompactTextString(m) }
 func (*AnalyzeReply) ProtoMessage()    {}
 func (*AnalyzeReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_driver_dbd9662cf0e8cd45, []int{3}
+	return fileDescriptor_269be22dd770bd8b, []int{3}
 }
+
 func (m *AnalyzeReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AnalyzeReply.Unmarshal(m, b)
 }
 func (m *AnalyzeReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AnalyzeReply.Marshal(b, m, deterministic)
 }
-func (dst *AnalyzeReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AnalyzeReply.Merge(dst, src)
+func (m *AnalyzeReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AnalyzeReply.Merge(m, src)
 }
 func (m *AnalyzeReply) XXX_Size() int {
 	return xxx_messageInfo_AnalyzeReply.Size(m)
@@ -194,16 +200,17 @@ func (m *FileRequest) Reset()         { *m = FileRequest{} }
 func (m *FileRequest) String() string { return proto.CompactTextString(m) }
 func (*FileRequest) ProtoMessage()    {}
 func (*FileRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_driver_dbd9662cf0e8cd45, []int{4}
+	return fileDescriptor_269be22dd770bd8b, []int{4}
 }
+
 func (m *FileRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileRequest.Unmarshal(m, b)
 }
 func (m *FileRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FileRequest.Marshal(b, m, deterministic)
 }
-func (dst *FileRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FileRequest.Merge(dst, src)
+func (m *FileRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FileRequest.Merge(m, src)
 }
 func (m *FileRequest) XXX_Size() int {
 	return xxx_messageInfo_FileRequest.Size(m)
@@ -248,16 +255,17 @@ func (m *FileReply) Reset()         { *m = FileReply{} }
 func (m *FileReply) String() string { return proto.CompactTextString(m) }
 func (*FileReply) ProtoMessage()    {}
 func (*FileReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_driver_dbd9662cf0e8cd45, []int{5}
+	return fileDescriptor_269be22dd770bd8b, []int{5}
 }
+
 func (m *FileReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileReply.Unmarshal(m, b)
 }
 func (m *FileReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FileReply.Marshal(b, m, deterministic)
 }
-func (dst *FileReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FileReply.Merge(dst, src)
+func (m *FileReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FileReply.Merge(m, src)
 }
 func (m *FileReply) XXX_Size() int {
 	return xxx_messageInfo_FileReply.Size(m)
@@ -302,16 +310,17 @@ func (m *OutRequest) Reset()         { *m = OutRequest{} }
 func (m *OutRequest) String() string { return proto.CompactTextString(m) }
 func (*OutRequest) ProtoMessage()    {}
 func (*OutRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_driver_dbd9662cf0e8cd45, []int{6}
+	return fileDescriptor_269be22dd770bd8b, []int{6}
 }
+
 func (m *OutRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_OutRequest.Unmarshal(m, b)
 }
 func (m *OutRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_OutRequest.Marshal(b, m, deterministic)
 }
-func (dst *OutRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OutRequest.Merge(dst, src)
+func (m *OutRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OutRequest.Merge(m, src)
 }
 func (m *OutRequest) XXX_Size() int {
 	return xxx_messageInfo_OutRequest.Size(m)
@@ -355,16 +364,17 @@ func (m *LogRequest) Reset()         { *m = LogRequest{} }
 func (m *LogRequest) String() string { return proto.CompactTextString(m) }
 func (*LogRequest) ProtoMessage()    {}
 func (*LogRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_driver_dbd9662cf0e8cd45, []int{7}
+	return fileDescriptor_269be22dd770bd8b, []int{7}
 }
+
 func (m *LogRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_LogRequest.Unmarshal(m, b)
 }
 func (m *LogRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_LogRequest.Marshal(b, m, deterministic)
 }
-func (dst *LogRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LogRequest.Merge(dst, src)
+func (m *LogRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LogRequest.Merge(m, src)
 }
 func (m *LogRequest) XXX_Size() int {
 	return xxx_messageInfo_LogRequest.Size(m)
@@ -400,9 +410,9 @@ func init() {
 	proto.RegisterType((*LogRequest)(nil), "kythe.driver.LogRequest")
 }
 
-func init() { proto.RegisterFile("kythe/proto/driver.proto", fileDescriptor_driver_dbd9662cf0e8cd45) }
+func init() { proto.RegisterFile("kythe/proto/driver.proto", fileDescriptor_269be22dd770bd8b) }
 
-var fileDescriptor_driver_dbd9662cf0e8cd45 = []byte{
+var fileDescriptor_269be22dd770bd8b = []byte{
 	// 368 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x92, 0xcf, 0x6b, 0xab, 0x40,
 	0x10, 0xc7, 0x51, 0x43, 0xf2, 0x1c, 0x25, 0x8f, 0xe7, 0x21, 0xf8, 0xa4, 0x94, 0xe0, 0xa5, 0x16,

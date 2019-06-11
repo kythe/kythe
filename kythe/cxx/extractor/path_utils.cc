@@ -16,6 +16,7 @@
 
 #include "path_utils.h"
 
+#include "absl/strings/str_format.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/LexDiagnostic.h"
@@ -75,7 +76,7 @@ const clang::FileEntry* LookupFileForIncludePragma(
       nullptr /* IsMapped */, nullptr /* IsFrameworkFound */,
       false /* SkipCache */);
   if (file == nullptr) {
-    fprintf(stderr, "Missing required file %s.\n", filename.str().c_str());
+    absl::FPrintF(stderr, "Missing required file %s.\n", filename.str());
   }
   return file;
 }

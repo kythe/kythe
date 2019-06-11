@@ -3,10 +3,12 @@
 
 package internal_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import serving_go_proto "kythe.io/kythe/proto/serving_go_proto"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	serving_go_proto "kythe.io/kythe/proto/serving_go_proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type Source struct {
 	Ticket               string                       `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
@@ -32,16 +34,17 @@ func (m *Source) Reset()         { *m = Source{} }
 func (m *Source) String() string { return proto.CompactTextString(m) }
 func (*Source) ProtoMessage()    {}
 func (*Source) Descriptor() ([]byte, []int) {
-	return fileDescriptor_internal_1ec8ef90c153c472, []int{0}
+	return fileDescriptor_d090b936cefd43c7, []int{0}
 }
+
 func (m *Source) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Source.Unmarshal(m, b)
 }
 func (m *Source) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Source.Marshal(b, m, deterministic)
 }
-func (dst *Source) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Source.Merge(dst, src)
+func (m *Source) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Source.Merge(m, src)
 }
 func (m *Source) XXX_Size() int {
 	return xxx_messageInfo_Source.Size(m)
@@ -85,16 +88,17 @@ func (m *Source_Edge) Reset()         { *m = Source_Edge{} }
 func (m *Source_Edge) String() string { return proto.CompactTextString(m) }
 func (*Source_Edge) ProtoMessage()    {}
 func (*Source_Edge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_internal_1ec8ef90c153c472, []int{0, 0}
+	return fileDescriptor_d090b936cefd43c7, []int{0, 0}
 }
+
 func (m *Source_Edge) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Source_Edge.Unmarshal(m, b)
 }
 func (m *Source_Edge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Source_Edge.Marshal(b, m, deterministic)
 }
-func (dst *Source_Edge) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Source_Edge.Merge(dst, src)
+func (m *Source_Edge) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Source_Edge.Merge(m, src)
 }
 func (m *Source_Edge) XXX_Size() int {
 	return xxx_messageInfo_Source_Edge.Size(m)
@@ -130,16 +134,17 @@ func (m *Source_EdgeGroup) Reset()         { *m = Source_EdgeGroup{} }
 func (m *Source_EdgeGroup) String() string { return proto.CompactTextString(m) }
 func (*Source_EdgeGroup) ProtoMessage()    {}
 func (*Source_EdgeGroup) Descriptor() ([]byte, []int) {
-	return fileDescriptor_internal_1ec8ef90c153c472, []int{0, 1}
+	return fileDescriptor_d090b936cefd43c7, []int{0, 1}
 }
+
 func (m *Source_EdgeGroup) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Source_EdgeGroup.Unmarshal(m, b)
 }
 func (m *Source_EdgeGroup) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Source_EdgeGroup.Marshal(b, m, deterministic)
 }
-func (dst *Source_EdgeGroup) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Source_EdgeGroup.Merge(dst, src)
+func (m *Source_EdgeGroup) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Source_EdgeGroup.Merge(m, src)
 }
 func (m *Source_EdgeGroup) XXX_Size() int {
 	return xxx_messageInfo_Source_EdgeGroup.Size(m)
@@ -171,16 +176,17 @@ func (m *PageToken) Reset()         { *m = PageToken{} }
 func (m *PageToken) String() string { return proto.CompactTextString(m) }
 func (*PageToken) ProtoMessage()    {}
 func (*PageToken) Descriptor() ([]byte, []int) {
-	return fileDescriptor_internal_1ec8ef90c153c472, []int{1}
+	return fileDescriptor_d090b936cefd43c7, []int{1}
 }
+
 func (m *PageToken) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PageToken.Unmarshal(m, b)
 }
 func (m *PageToken) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_PageToken.Marshal(b, m, deterministic)
 }
-func (dst *PageToken) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PageToken.Merge(dst, src)
+func (m *PageToken) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PageToken.Merge(m, src)
 }
 func (m *PageToken) XXX_Size() int {
 	return xxx_messageInfo_PageToken.Size(m)
@@ -234,16 +240,17 @@ func (m *CrossReference) Reset()         { *m = CrossReference{} }
 func (m *CrossReference) String() string { return proto.CompactTextString(m) }
 func (*CrossReference) ProtoMessage()    {}
 func (*CrossReference) Descriptor() ([]byte, []int) {
-	return fileDescriptor_internal_1ec8ef90c153c472, []int{2}
+	return fileDescriptor_d090b936cefd43c7, []int{2}
 }
+
 func (m *CrossReference) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CrossReference.Unmarshal(m, b)
 }
 func (m *CrossReference) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CrossReference.Marshal(b, m, deterministic)
 }
-func (dst *CrossReference) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CrossReference.Merge(dst, src)
+func (m *CrossReference) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CrossReference.Merge(m, src)
 }
 func (m *CrossReference) XXX_Size() int {
 	return xxx_messageInfo_CrossReference.Size(m)
@@ -302,16 +309,17 @@ func (m *CrossReference_Decoration) Reset()         { *m = CrossReference_Decora
 func (m *CrossReference_Decoration) String() string { return proto.CompactTextString(m) }
 func (*CrossReference_Decoration) ProtoMessage()    {}
 func (*CrossReference_Decoration) Descriptor() ([]byte, []int) {
-	return fileDescriptor_internal_1ec8ef90c153c472, []int{2, 0}
+	return fileDescriptor_d090b936cefd43c7, []int{2, 0}
 }
+
 func (m *CrossReference_Decoration) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CrossReference_Decoration.Unmarshal(m, b)
 }
 func (m *CrossReference_Decoration) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CrossReference_Decoration.Marshal(b, m, deterministic)
 }
-func (dst *CrossReference_Decoration) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CrossReference_Decoration.Merge(dst, src)
+func (m *CrossReference_Decoration) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CrossReference_Decoration.Merge(m, src)
 }
 func (m *CrossReference_Decoration) XXX_Size() int {
 	return xxx_messageInfo_CrossReference_Decoration.Size(m)
@@ -356,16 +364,17 @@ func (m *SortedKeyValue) Reset()         { *m = SortedKeyValue{} }
 func (m *SortedKeyValue) String() string { return proto.CompactTextString(m) }
 func (*SortedKeyValue) ProtoMessage()    {}
 func (*SortedKeyValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_internal_1ec8ef90c153c472, []int{3}
+	return fileDescriptor_d090b936cefd43c7, []int{3}
 }
+
 func (m *SortedKeyValue) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SortedKeyValue.Unmarshal(m, b)
 }
 func (m *SortedKeyValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_SortedKeyValue.Marshal(b, m, deterministic)
 }
-func (dst *SortedKeyValue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SortedKeyValue.Merge(dst, src)
+func (m *SortedKeyValue) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SortedKeyValue.Merge(m, src)
 }
 func (m *SortedKeyValue) XXX_Size() int {
 	return xxx_messageInfo_SortedKeyValue.Size(m)
@@ -409,16 +418,17 @@ func (m *Path) Reset()         { *m = Path{} }
 func (m *Path) String() string { return proto.CompactTextString(m) }
 func (*Path) ProtoMessage()    {}
 func (*Path) Descriptor() ([]byte, []int) {
-	return fileDescriptor_internal_1ec8ef90c153c472, []int{4}
+	return fileDescriptor_d090b936cefd43c7, []int{4}
 }
+
 func (m *Path) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Path.Unmarshal(m, b)
 }
 func (m *Path) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Path.Marshal(b, m, deterministic)
 }
-func (dst *Path) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Path.Merge(dst, src)
+func (m *Path) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Path.Merge(m, src)
 }
 func (m *Path) XXX_Size() int {
 	return xxx_messageInfo_Path.Size(m)
@@ -461,16 +471,17 @@ func (m *Path_Node) Reset()         { *m = Path_Node{} }
 func (m *Path_Node) String() string { return proto.CompactTextString(m) }
 func (*Path_Node) ProtoMessage()    {}
 func (*Path_Node) Descriptor() ([]byte, []int) {
-	return fileDescriptor_internal_1ec8ef90c153c472, []int{4, 0}
+	return fileDescriptor_d090b936cefd43c7, []int{4, 0}
 }
+
 func (m *Path_Node) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Path_Node.Unmarshal(m, b)
 }
 func (m *Path_Node) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Path_Node.Marshal(b, m, deterministic)
 }
-func (dst *Path_Node) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Path_Node.Merge(dst, src)
+func (m *Path_Node) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Path_Node.Merge(m, src)
 }
 func (m *Path_Node) XXX_Size() int {
 	return xxx_messageInfo_Path_Node.Size(m)
@@ -552,97 +563,13 @@ func (m *Path_Node) GetOriginal() *serving_go_proto.Node {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Path_Node) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Path_Node_OneofMarshaler, _Path_Node_OneofUnmarshaler, _Path_Node_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Path_Node) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Path_Node_RawAnchor)(nil),
 		(*Path_Node_ExpandedAnchor)(nil),
 		(*Path_Node_File)(nil),
 	}
-}
-
-func _Path_Node_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Path_Node)
-	// specialization
-	switch x := m.Specialization.(type) {
-	case *Path_Node_RawAnchor:
-		b.EncodeVarint(10<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RawAnchor); err != nil {
-			return err
-		}
-	case *Path_Node_ExpandedAnchor:
-		b.EncodeVarint(11<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ExpandedAnchor); err != nil {
-			return err
-		}
-	case *Path_Node_File:
-		b.EncodeVarint(12<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.File); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Path_Node.Specialization has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Path_Node_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Path_Node)
-	switch tag {
-	case 10: // specialization.raw_anchor
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(serving_go_proto.RawAnchor)
-		err := b.DecodeMessage(msg)
-		m.Specialization = &Path_Node_RawAnchor{msg}
-		return true, err
-	case 11: // specialization.expanded_anchor
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(serving_go_proto.ExpandedAnchor)
-		err := b.DecodeMessage(msg)
-		m.Specialization = &Path_Node_ExpandedAnchor{msg}
-		return true, err
-	case 12: // specialization.file
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(serving_go_proto.File)
-		err := b.DecodeMessage(msg)
-		m.Specialization = &Path_Node_File{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Path_Node_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Path_Node)
-	// specialization
-	switch x := m.Specialization.(type) {
-	case *Path_Node_RawAnchor:
-		s := proto.Size(x.RawAnchor)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Path_Node_ExpandedAnchor:
-		s := proto.Size(x.ExpandedAnchor)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Path_Node_File:
-		s := proto.Size(x.File)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type Path_Edge struct {
@@ -658,16 +585,17 @@ func (m *Path_Edge) Reset()         { *m = Path_Edge{} }
 func (m *Path_Edge) String() string { return proto.CompactTextString(m) }
 func (*Path_Edge) ProtoMessage()    {}
 func (*Path_Edge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_internal_1ec8ef90c153c472, []int{4, 1}
+	return fileDescriptor_d090b936cefd43c7, []int{4, 1}
 }
+
 func (m *Path_Edge) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Path_Edge.Unmarshal(m, b)
 }
 func (m *Path_Edge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Path_Edge.Marshal(b, m, deterministic)
 }
-func (dst *Path_Edge) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Path_Edge.Merge(dst, src)
+func (m *Path_Edge) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Path_Edge.Merge(m, src)
 }
 func (m *Path_Edge) XXX_Size() int {
 	return xxx_messageInfo_Path_Edge.Size(m)
@@ -716,11 +644,9 @@ func init() {
 	proto.RegisterType((*Path_Edge)(nil), "kythe.proto.internal.Path.Edge")
 }
 
-func init() {
-	proto.RegisterFile("kythe/proto/internal.proto", fileDescriptor_internal_1ec8ef90c153c472)
-}
+func init() { proto.RegisterFile("kythe/proto/internal.proto", fileDescriptor_d090b936cefd43c7) }
 
-var fileDescriptor_internal_1ec8ef90c153c472 = []byte{
+var fileDescriptor_d090b936cefd43c7 = []byte{
 	// 799 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x55, 0xd1, 0x6e, 0xe3, 0x44,
 	0x14, 0x6d, 0x12, 0x3b, 0xad, 0x6f, 0x42, 0xda, 0x1d, 0xad, 0x90, 0x6b, 0x24, 0xb6, 0x04, 0x89,

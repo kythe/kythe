@@ -3,9 +3,11 @@
 
 package filecontext_go_proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type ContextDependentVersion struct {
 	Row                  []*ContextDependentVersion_Row `protobuf:"bytes,1,rep,name=row,proto3" json:"row,omitempty"`
@@ -29,16 +31,17 @@ func (m *ContextDependentVersion) Reset()         { *m = ContextDependentVersion
 func (m *ContextDependentVersion) String() string { return proto.CompactTextString(m) }
 func (*ContextDependentVersion) ProtoMessage()    {}
 func (*ContextDependentVersion) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filecontext_2ca3a2408c9dc5a2, []int{0}
+	return fileDescriptor_3706b0669a30df70, []int{0}
 }
+
 func (m *ContextDependentVersion) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ContextDependentVersion.Unmarshal(m, b)
 }
 func (m *ContextDependentVersion) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ContextDependentVersion.Marshal(b, m, deterministic)
 }
-func (dst *ContextDependentVersion) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ContextDependentVersion.Merge(dst, src)
+func (m *ContextDependentVersion) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ContextDependentVersion.Merge(m, src)
 }
 func (m *ContextDependentVersion) XXX_Size() int {
 	return xxx_messageInfo_ContextDependentVersion.Size(m)
@@ -68,16 +71,17 @@ func (m *ContextDependentVersion_Column) Reset()         { *m = ContextDependent
 func (m *ContextDependentVersion_Column) String() string { return proto.CompactTextString(m) }
 func (*ContextDependentVersion_Column) ProtoMessage()    {}
 func (*ContextDependentVersion_Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filecontext_2ca3a2408c9dc5a2, []int{0, 0}
+	return fileDescriptor_3706b0669a30df70, []int{0, 0}
 }
+
 func (m *ContextDependentVersion_Column) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ContextDependentVersion_Column.Unmarshal(m, b)
 }
 func (m *ContextDependentVersion_Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ContextDependentVersion_Column.Marshal(b, m, deterministic)
 }
-func (dst *ContextDependentVersion_Column) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ContextDependentVersion_Column.Merge(dst, src)
+func (m *ContextDependentVersion_Column) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ContextDependentVersion_Column.Merge(m, src)
 }
 func (m *ContextDependentVersion_Column) XXX_Size() int {
 	return xxx_messageInfo_ContextDependentVersion_Column.Size(m)
@@ -115,16 +119,17 @@ func (m *ContextDependentVersion_Row) Reset()         { *m = ContextDependentVer
 func (m *ContextDependentVersion_Row) String() string { return proto.CompactTextString(m) }
 func (*ContextDependentVersion_Row) ProtoMessage()    {}
 func (*ContextDependentVersion_Row) Descriptor() ([]byte, []int) {
-	return fileDescriptor_filecontext_2ca3a2408c9dc5a2, []int{0, 1}
+	return fileDescriptor_3706b0669a30df70, []int{0, 1}
 }
+
 func (m *ContextDependentVersion_Row) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ContextDependentVersion_Row.Unmarshal(m, b)
 }
 func (m *ContextDependentVersion_Row) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ContextDependentVersion_Row.Marshal(b, m, deterministic)
 }
-func (dst *ContextDependentVersion_Row) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ContextDependentVersion_Row.Merge(dst, src)
+func (m *ContextDependentVersion_Row) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ContextDependentVersion_Row.Merge(m, src)
 }
 func (m *ContextDependentVersion_Row) XXX_Size() int {
 	return xxx_messageInfo_ContextDependentVersion_Row.Size(m)
@@ -162,11 +167,9 @@ func init() {
 	proto.RegisterType((*ContextDependentVersion_Row)(nil), "kythe.proto.ContextDependentVersion.Row")
 }
 
-func init() {
-	proto.RegisterFile("kythe/proto/filecontext.proto", fileDescriptor_filecontext_2ca3a2408c9dc5a2)
-}
+func init() { proto.RegisterFile("kythe/proto/filecontext.proto", fileDescriptor_3706b0669a30df70) }
 
-var fileDescriptor_filecontext_2ca3a2408c9dc5a2 = []byte{
+var fileDescriptor_3706b0669a30df70 = []byte{
 	// 270 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x90, 0xc1, 0x4a, 0xc4, 0x30,
 	0x18, 0x84, 0xc9, 0x16, 0x8b, 0x66, 0x59, 0x0f, 0x45, 0xb4, 0x2c, 0x88, 0x45, 0x10, 0x02, 0x42,

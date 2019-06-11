@@ -313,29 +313,32 @@ func TestReaderSeekKnownPositions(t *testing.T) {
 
 func TestReaderSeekAllPositions(t *testing.T) {
 	const N = 1e4
-	buf := writeStrings(t, &WriterOptions{}, N)
-
-	rd := NewReadSeeker(bytes.NewReader(buf.Bytes()))
+	buf := writeStrings(t, &WriterOptions{}, N).Bytes()
+	rd := NewReadSeeker(bytes.NewReader(buf))
 
 	// Ensure every byte position is seekable
 	var expected int
-	for i := 0; i < buf.Len(); i++ {
+	for i := 0; i < len(buf); i++ {
 		if err := rd.Seek(int64(i)); err != nil {
-			t.Fatalf("Error seeking to %d/%d: %v", i, buf.Len(), err)
+			t.Fatalf("Error seeking to %d/%d for %d: %v", i, len(buf), expected, err)
+		}
+		pos, err := rd.Position()
+		if err != nil {
+			t.Fatalf("Position error: %v", err)
 		}
 		rec, err := rd.Next()
 		if expected == N-1 {
 			if err != io.EOF {
-				t.Fatalf("Read past end of file at %d: %v %v", i, rec, err)
+				t.Fatalf("Read past end of file at %d (%v): %v %v", i, pos, rec, err)
 			}
 		} else if err != nil {
-			t.Fatalf("Read error at %d/%d: %v; expected: %d", i, buf.Len(), err, expected)
+			t.Fatalf("Read error at %d/%d: %v; expected: %d", i, len(buf), err, expected)
 		}
 
 		if expected != N-1 && string(rec) != fmt.Sprintf("%d", expected) {
 			expected++
 			if string(rec) != fmt.Sprintf("%d", expected) {
-				t.Fatalf("At %d/%d found: %s; expected: %d;", i, buf.Len(), hex.EncodeToString(rec), expected)
+				t.Fatalf("At %d/%d found: %s; expected: %d;", i, len(buf), string(rec), expected)
 			}
 		}
 	}
