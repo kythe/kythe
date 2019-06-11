@@ -19,6 +19,8 @@ import pkg.Files.OtherDecl;
 //- ODecl generates JvmODecl
 //- StaticMethod generates JvmStaticMethod
 
+//- @pkg ref/doc Package
+/** Tests JVM references within the {@link pkg} package.*/
 public class JvmCrossFile {
   //- @Files ref JvmFilesClass
   Files f1;
