@@ -2,6 +2,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 load("@npm_bazel_typescript//:index.bzl", "ts_library", "ts_config")
 load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
+load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_test")
 
 ts_config(
     name = "tsconfig",
@@ -43,6 +44,15 @@ ts_library(
         "@npm//@types/jasmine",
         "@npm//typescript",
     ],
+)
+
+nodejs_test(
+    name = "indexer_test",
+    data = [":test_ts"] + glob(["testdata/**/*"]) + [
+        "//kythe/go/platform/tools/entrystream",
+        "//kythe/cxx/verifier",
+    ],
+    entry_point = ":test.ts",
 )
 
 jasmine_node_test(
