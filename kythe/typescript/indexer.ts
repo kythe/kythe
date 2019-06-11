@@ -785,7 +785,7 @@ class Visitor {
       for (const exp of decl.exportClause.elements) {
         const localSym = this.getSymbolAtLocation(exp.name);
         if (!localSym) {
-          console.error(`TODO: export ${name} has no symbol`);
+          console.error(`TODO: export ${exp.name} has no symbol`);
           continue;
         }
         // TODO: import a type, not just a value.
