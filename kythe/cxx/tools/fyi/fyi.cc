@@ -595,7 +595,7 @@ bool ActionFactory::runInvocation(
           invocation, pch_container_ops, diags, action.get(), ast_unit,
           /*Persistent*/ false, llvm::StringRef(),
           /*OnlyLocalDecls*/ false,
-          /*CaptureDiagnostics*/ true,
+          /*CaptureDiagnostics*/ clang::CaptureDiagsKind::All,
           /*PrecompilePreamble*/ true,
           /*CacheCodeCompletionResults*/ false,
           /*IncludeBriefCommentsInCodeCompletion*/ false,

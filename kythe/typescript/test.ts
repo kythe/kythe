@@ -31,6 +31,13 @@ import * as ts from 'typescript';
 import * as indexer from './indexer';
 
 const KYTHE_PATH = process.env['KYTHE'] || '/opt/kythe';
+const RUNFILES = process.env['RUNFILES_DIR'];
+
+const ENTRYSTREAM = RUNFILES ?
+    path.resolve('kythe/go/platform/tools/entrystream/entrystream') :
+    path.resolve(KYTHE_PATH, 'tools/entrystream');
+const VERIFIER = RUNFILES ? path.resolve('kythe/cxx/verifier/verifier') :
+                            path.resolve(KYTHE_PATH, 'tools/verifier');
 
 /**
  * createTestCompilerHost creates a ts.CompilerHost that caches its default
@@ -72,9 +79,7 @@ function verify(
   const program = ts.createProgram([test], options, host);
 
   const verifier = child_process.spawn(
-      `${KYTHE_PATH}/tools/entrystream --read_format=json |` +
-          `${KYTHE_PATH}/tools/verifier ${test}`,
-      [], {
+      `${ENTRYSTREAM} --read_format=json | ${VERIFIER} ${test}`, [], {
         stdio: ['pipe', process.stdout, process.stderr],
         shell: true,
       });
@@ -157,6 +162,9 @@ async function testPlugin() {
 }
 
 async function testMain(args: string[]) {
+  if (RUNFILES) {
+    process.chdir('kythe/typescript');
+  }
   testLoadTsConfig();
   await testIndexer(args);
   await testPlugin();
