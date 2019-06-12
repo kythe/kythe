@@ -1289,9 +1289,13 @@ export function index(
 
   if (plugins) {
     for (const plugin of plugins) {
-      plugin.index(
-          (path: string) => getFileVName(path, pathVNames, vname), paths,
-          program, emit);
+      try {
+        plugin.index(
+            (path: string) => getFileVName(path, pathVNames, vname), paths,
+            program, emit);
+      } catch (err) {
+        console.error(`Plugin ${plugin.name} errored: ${err}`);
+      }
     }
   }
 }
