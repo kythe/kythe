@@ -95,6 +95,17 @@ enum TSNamespace {
   VALUE,
 }
 
+/**
+ * Context represents the environment a node is declared in, and only applies to
+ * nodes with multiple declarations. The context may be used for disambiguating
+ * node declarations. A Getter context means the node is declared as a getter; a
+ * Setter context means it is declared as a setter.
+ */
+enum Context {
+  Getter,
+  Setter,
+}
+
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Visitor {
   /** kFile is the VName for the 'file' node representing the source file. */
@@ -308,7 +319,8 @@ class Visitor {
         case ts.SyntaxKind.Block:
           if (node.parent &&
               (node.parent.kind === ts.SyntaxKind.FunctionDeclaration ||
-               node.parent.kind === ts.SyntaxKind.MethodDeclaration)) {
+               node.parent.kind === ts.SyntaxKind.MethodDeclaration ||
+               node.parent.kind === ts.SyntaxKind.Constructor)) {
             // A block that's an immediate child of a function is the
             // function's body, so it doesn't need a separate name.
             continue;
@@ -335,9 +347,19 @@ class Visitor {
         case ts.SyntaxKind.TypeAliasDeclaration:
         case ts.SyntaxKind.TypeParameter:
         case ts.SyntaxKind.VariableDeclaration:
+        case ts.SyntaxKind.GetAccessor:
+        case ts.SyntaxKind.SetAccessor:
           const decl = node as ts.NamedDeclaration;
           if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
-            parts.push(decl.name.text);
+            let part = decl.name.text;
+            // Getters and setters semantically refer to the same entities but
+            // are declared differently, so they are differentiated.
+            if (ts.isGetAccessor(decl)) {
+              part += ':getter';
+            } else if (ts.isSetAccessor(decl)) {
+              part += ':setter';
+            }
+            parts.push(part);
           } else {
             // TODO: handle other declarations, e.g. binding patterns.
             parts.push(this.anonName(node));
@@ -407,17 +429,46 @@ class Visitor {
     return this.typeChecker.getSymbolAtLocation(node);
   }
 
-  /** getSymbolName computes the VName (and signature) of a ts.Symbol. */
-  getSymbolName(sym: ts.Symbol, ns: TSNamespace): VName {
+  /**
+   * getSymbolName computes the VName (and signature) of a ts.Symbol. A Context
+   * can be optionally specified to help disambiguate nodes with multiple
+   * declarations. See the documentation of Context for more information.
+   */
+  getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName {
     let vnames = this.symbolNames.get(sym);
-    if (vnames && vnames[ns]) return vnames[ns]!;
+    let declarations = sym.declarations;
 
-    if (!sym.declarations || sym.declarations.length < 1) {
+    // Symbols with multiple declarations are disambiguated by the context
+    // they are used in.
+    const contextApplies = context !== undefined && declarations.length > 1;
+
+    if (!contextApplies && vnames && vnames[ns]) return vnames[ns]!;
+    // TODO: update symbolNames table to account for context kind
+
+    if (!declarations || declarations.length < 1) {
       throw new Error('TODO: symbol has no declarations?');
     }
-    // TODO: think about symbols with multiple declarations.
 
-    const decl = sym.declarations[0];
+    // Disambiguate symbols with multiple declarations using a context. This
+    // only applies to getters and setters currently.
+    if (contextApplies) {
+      switch (context) {
+        case Context.Getter:
+          declarations = declarations.filter(ts.isGetAccessor);
+          break;
+        case Context.Setter:
+          declarations = declarations.filter(ts.isSetAccessor);
+          break;
+      }
+    }
+    // Otherwise, if there are multiple declarations but no context is
+    // provided, try to return the getter declaration.
+    else if (declarations.length > 1) {
+      const getDecls = declarations.filter(ts.isGetAccessor);
+      if (getDecls.length > 0) declarations = getDecls;
+    }
+
+    const decl = declarations[0];
     const vname = this.scopedSignature(decl);
     // The signature of a value is undecorated;
     // the signature of a type has the #type suffix.
@@ -430,10 +481,12 @@ class Visitor {
       vname.signature += ':ctor';
     }
 
-    // Save it in the appropriate slot in the symbolNames table.
-    if (!vnames) vnames = [null, null];
-    vnames[ns] = vname;
-    this.symbolNames.set(sym, vnames);
+    if (!contextApplies) {
+      // Save it in the appropriate slot in the symbolNames table.
+      if (!vnames) vnames = [null, null];
+      vnames[ns] = vname;
+      this.symbolNames.set(sym, vnames);
+    }
 
     return vname;
   }
@@ -558,6 +611,17 @@ class Visitor {
     }
     const sourcePath = name.substr(1, name.length - 2);
     return this.moduleName(sourcePath);
+  }
+
+  /**
+   * Returns the location of a text in the source code of a node.
+   */
+  getTextSpan(node: ts.Node, text: string): {start: number, end: number} {
+    const ofs = node.getText().indexOf(text);
+    if (ofs < 0) throw new Error(`${text} not found in ${node.getText()}`);
+    const start = node.getStart() + ofs;
+    const end = start + text.length;
+    return {start, end};
   }
 
   /**
@@ -716,14 +780,35 @@ class Visitor {
   }
 
   /**
-   * Returns the location of a text in the source code of a node.
+   * Emits an implicit property for a getter or setter.
+   * For instance, a getter/setter `foo` in class `A` will emit an implicit
+   * property on that class with signature `A.foo`, and create "property/reads"
+   * and "property/writes" from the getters/setters to the implicit property.
    */
-  getTextSpan(node: ts.Node, text: string): {start: number, end: number} {
-    const ofs = node.getText().indexOf(text);
-    if (ofs < 0) throw new Error(`${text} not found in ${node.getText()}`);
-    const start = node.getStart() + ofs;
-    const end = start + text.length;
-    return {start, end};
+  emitImplicitProperty(
+      decl: ts.GetAccessorDeclaration|ts.SetAccessorDeclaration, anchor: VName,
+      funcVName: VName) {
+    // Remove trailing ":getter"/":setter" suffix
+    const propSignature = funcVName.signature.split(':').slice(0, -1).join(':');
+    const implicitProp = {...funcVName, signature: propSignature};
+
+    this.emitNode(implicitProp, 'variable');
+    this.emitFact(implicitProp, 'subkind', 'implicit');
+    this.emitEdge(anchor, 'defines/binding', implicitProp);
+
+    const sym = this.getSymbolAtLocation(decl.name);
+    if (!sym) throw new Error('Getter/setter declaration has no symbols.');
+
+    if (sym.declarations.find(ts.isGetAccessor)) {
+      // Emit a "property/reads" edge between the getter and the property
+      const getter = this.getSymbolName(sym, TSNamespace.VALUE, Context.Getter);
+      this.emitEdge(getter, 'property/reads', implicitProp);
+    }
+    if (sym.declarations.find(ts.isSetAccessor)) {
+      // Emit a "property/writes" edge between the setter and the property
+      const setter = this.getSymbolName(sym, TSNamespace.VALUE, Context.Setter);
+      this.emitEdge(setter, 'property/writes', implicitProp);
+    }
   }
 
   /**
@@ -847,6 +932,12 @@ class Visitor {
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
     this.visitDecorators(decl.decorators || []);
     let kFunc: VName|undefined = undefined;
+    let context: Context|undefined = undefined;
+    if (ts.isGetAccessor(decl)) {
+      context = Context.Getter;
+    } else if (ts.isSetAccessor(decl)) {
+      context = Context.Setter;
+    }
     if (decl.name) {
       const sym = this.getSymbolAtLocation(decl.name);
       if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
@@ -860,10 +951,19 @@ class Visitor {
               `function declaration ${decl.name.getText()} has no symbol`);
           return;
         }
-        kFunc = this.getSymbolName(sym, TSNamespace.VALUE);
-        this.emitNode(kFunc, 'function');
+        kFunc = this.getSymbolName(sym, TSNamespace.VALUE, context);
 
-        this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
+        const declAnchor = this.newAnchor(decl.name);
+        this.emitNode(kFunc, 'function');
+        this.emitEdge(declAnchor, 'defines/binding', kFunc);
+
+        // Getters/setters also emit an implicit class property entry. If a
+        // getter is present, it will bind this entry; otherwise a setter will.
+        if (ts.isGetAccessor(decl) ||
+            (ts.isSetAccessor(decl) &&
+             !sym.declarations.find(ts.isGetAccessor))) {
+          this.emitImplicitProperty(decl, declAnchor, kFunc);
+        }
 
         this.visitJSDoc(decl, kFunc);
       }
@@ -1002,6 +1102,20 @@ class Visitor {
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kMember);
   }
 
+  visitExpressionMember(node: ts.Node) {
+    const sym = this.getSymbolAtLocation(node);
+    if (!sym) {
+      // E.g. a field of an "any".
+      return;
+    }
+    if (!sym.declarations || sym.declarations.length === 0) {
+      // An undeclared symbol, e.g. "undefined".
+      return;
+    }
+    const name = this.getSymbolName(sym, TSNamespace.VALUE);
+    this.emitEdge(this.newAnchor(node), 'ref', name);
+  }
+
   /**
    * visitJSDoc attempts to attach a 'doc' node to a given target, by looking
    * for JSDoc comments.
@@ -1057,6 +1171,8 @@ class Visitor {
       case ts.SyntaxKind.FunctionDeclaration:
       case ts.SyntaxKind.MethodDeclaration:
       case ts.SyntaxKind.MethodSignature:
+      case ts.SyntaxKind.GetAccessor:
+      case ts.SyntaxKind.SetAccessor:
         return this.visitFunctionLikeDeclaration(
             node as ts.FunctionLikeDeclaration);
       case ts.SyntaxKind.ClassDeclaration:
@@ -1078,17 +1194,7 @@ class Visitor {
         // Assume that this identifer is occurring as part of an
         // expression; we handle identifiers that occur in other
         // circumstances (e.g. in a type) separately in visitType.
-        const sym = this.getSymbolAtLocation(node);
-        if (!sym) {
-          // E.g. a field of an "any".
-          return;
-        }
-        if (!sym.declarations || sym.declarations.length === 0) {
-          // An undeclared symbol, e.g. "undefined".
-          return;
-        }
-        const name = this.getSymbolName(sym, TSNamespace.VALUE);
-        this.emitEdge(this.newAnchor(node), 'ref', name);
+        this.visitExpressionMember(node);
         return;
       default:
         // Use default recursive processing.
