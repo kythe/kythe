@@ -249,8 +249,15 @@ def _clang_tablegen(ctx, out, *args):
     includes = ["include/", root] + [
         _join_path(root, p)
         for p in kwargs.get("-i", [])
+        # We use a "-I" section as a hack to pull out includes, sometimes it fails.
+        if not p.startswith("-")
     ]
-    opts = " ".join(["-I " + _repo_path(i) for i in includes] + kwargs["opts"])
+
+    opts = " ".join(["-I " + _repo_path(i) for i in includes] +
+                    kwargs["opts"] +
+                    [o for o in kwargs.get("-i", []) if o.startswith("-")])
+    if "OpenCLBuiltins.inc" in out:
+        print(name, kwargs)
     native.genrule(
         name = name,
         outs = [out],
