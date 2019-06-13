@@ -142,15 +142,16 @@ class NoCtorKlass {}
 
 #### Getter/Setter
 
-**Form**: 
-- getter: `$DECLARATION_NAME:getter`
-- setter: `$DECLARATION_NAME:setter`
-- getter if present, otherwise setter: `$DECLARATION_NAME`
+**Form**:
 
-**Notes**: Because getters and setters refer to the same property on a class
-but provide multiple declarations, several distinctions between the declarations
-are made. Each declaration of a getter and setter will take `:getter` and
-`:setter` suffix, respectively.
+-   getter: `$DECLARATION_NAME:getter`
+-   setter: `$DECLARATION_NAME:setter`
+-   getter if present, otherwise setter: `$DECLARATION_NAME`
+
+**Notes**: Because getters and setters refer to the same property on a class but
+provide multiple declarations, several distinctions between the declarations are
+made. Each declaration of a getter and setter will take `:getter` and `:setter`
+suffix, respectively.
 
 If a getter for a property is present, the getter will emit a binding the same
 form as the property it defines. If only a setter is present, the setter will
@@ -158,7 +159,7 @@ emit a binding of the same form as the property it defines.
 
 **SyntaxKind**:
 
-- GetAccessor
+-   GetAccessor
 -   SetAccessor
 
 ```typescript
