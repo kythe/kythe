@@ -217,9 +217,8 @@ class Visitor {
    * Determines if a node is a class or interface.
    */
   isClassOrInterface(node: ts.Node): boolean {
-    return node.kind === ts.SyntaxKind.ClassDeclaration ||
-        node.kind === ts.SyntaxKind.ClassExpression ||
-        node.kind === ts.SyntaxKind.InterfaceDeclaration;
+    return ts.isClassDeclaration(node) || ts.isClassExpression(node) ||
+        ts.isInterfaceDeclaration(node);
   }
 
   /**
