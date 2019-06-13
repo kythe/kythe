@@ -200,6 +200,28 @@ class Visitor {
   }
 
   /**
+   * Determines whether a parameter in a constructor is a class member. Applies
+   * to class properties defined with the shorthand
+   *    constructor(private member: string)
+   */
+  isClassMemberInCtor(node: ts.Node, ctor: ts.Node): boolean {
+    return node.kind === ts.SyntaxKind.Parameter &&
+        node.parent === ctor &&  // has to be in this ctor
+        node.modifiers !== undefined &&
+        (node.modifiers.find(
+             m => m.kind === ts.SyntaxKind.PrivateKeyword ||
+                 m.kind === ts.SyntaxKind.PublicKeyword) !== undefined);
+  }
+
+  /**
+   * Determines if a node is a class or interface.
+   */
+  isClassOrInterface(node: ts.Node): boolean {
+    return ts.isClassDeclaration(node) || ts.isClassExpression(node) ||
+        ts.isInterfaceDeclaration(node);
+  }
+
+  /**
    * newFileVName returns a new VName for the given file path.
    */
   newFileVName(path: string): VName {
@@ -343,7 +365,11 @@ class Visitor {
           }
           break;
         case ts.SyntaxKind.Constructor:
-          parts.push('constructor');
+          // Class members declared with a shorthand in the constructor should
+          // be scoped to the class, not the constructor.
+          if (!this.isClassMemberInCtor(startNode, node)) {
+            parts.push('constructor');
+          }
           break;
         case ts.SyntaxKind.ModuleDeclaration:
           const modDecl = node as ts.ModuleDeclaration;
@@ -447,6 +473,11 @@ class Visitor {
     // the signature of a type has the #type suffix.
     if (ns === TSNamespace.TYPE) {
       vname.signature += '#type';
+    }
+    // The signature of a class declaration value is its constructor, as the
+    // constructor has more semantic meaning.
+    if ((sym.flags & ts.SymbolFlags.Class) && ns === TSNamespace.VALUE) {
+      vname.signature += ':ctor';
     }
 
     if (!contextApplies) {
@@ -579,6 +610,17 @@ class Visitor {
     }
     const sourcePath = name.substr(1, name.length - 2);
     return this.moduleName(sourcePath);
+  }
+
+  /**
+   * Returns the location of a text in the source code of a node.
+   */
+  getTextSpan(node: ts.Node, text: string): {start: number, end: number} {
+    const ofs = node.getText().indexOf(text);
+    if (ofs < 0) throw new Error(`${text} not found in ${node.getText()}`);
+    const start = node.getStart() + ofs;
+    const end = start + text.length;
+    return {start, end};
   }
 
   /**
@@ -718,6 +760,25 @@ class Visitor {
   }
 
   /**
+   * Emits a "childof" edge on class/interface members. Takes the Parent node
+   * and the VName of the node that is its child.
+   */
+  emitChildOf(
+      vname: VName, parent: ts.Node,
+      namespace: TSNamespace = TSNamespace.TYPE) {
+    const parentName = (parent as ts.ClassLikeDeclaration).name;
+    if (parentName !== undefined) {
+      const parentSym = this.getSymbolAtLocation(parentName);
+      if (!parentSym) {
+        this.todo(parentName, `parent ${parentName} has no symbol`);
+        return;
+      }
+      const kParent = this.getSymbolName(parentSym, namespace);
+      this.emitEdge(vname, 'childof', kParent);
+    }
+  }
+
+  /**
    * Emits an implicit property for a getter or setter.
    * For instance, a getter/setter `foo` in class `A` will emit an implicit
    * property on that class with signature `A.foo`, and create "property/reads"
@@ -764,10 +825,8 @@ class Visitor {
       // So instead we link the keyword "default" itself to the VName.
       // The TypeScript AST does not expose the location of the 'default'
       // keyword so we just find it in the source text to link it.
-      const ofs = assign.getText().indexOf('default');
-      if (ofs < 0) throw new Error(`'export default' without 'default'?`);
-      const start = assign.getStart() + ofs;
-      const anchor = this.newAnchor(assign, start, start + 'default'.length);
+      const span = this.getTextSpan(assign, 'default');
+      const anchor = this.newAnchor(assign, span.start, span.end);
       this.emitEdge(anchor, 'defines/binding', this.scopedSignature(assign));
     }
   }
@@ -824,8 +883,8 @@ class Visitor {
    * the decl parameter is the union of the attributes of the two types.
    * @return the generated VName for the declaration, if any.
    */
-  visitVariableDeclaration(decl: {
-    name: ts.BindingName|ts.PropertyName,
+  visitVariableDeclaration(decl: ts.Node&{
+    name: ts.BindingName | ts.PropertyName,
     type?: ts.TypeNode,
     initializer?: ts.Expression, kind: ts.SyntaxKind,
   }): VName|undefined {
@@ -861,6 +920,10 @@ class Visitor {
       if (ts.getCombinedModifierFlags(declNode) & ts.ModifierFlags.Static) {
         this.emitFact(vname, 'tag/static', '');
       }
+    }
+    if (vname && this.isClassOrInterface(decl.parent)) {
+      // Emit a "childof" edge on class/interface members.
+      this.emitChildOf(vname, decl.parent);
     }
     return vname;
   }
@@ -911,22 +974,9 @@ class Visitor {
       this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
     }
 
-    if (kFunc && decl.parent) {
+    if (kFunc && this.isClassOrInterface(decl.parent)) {
       // Emit a "childof" edge on class/interface members.
-      if (decl.parent.kind === ts.SyntaxKind.ClassDeclaration ||
-          decl.parent.kind === ts.SyntaxKind.ClassExpression ||
-          decl.parent.kind === ts.SyntaxKind.InterfaceDeclaration) {
-        const parentName = (decl.parent as ts.ClassLikeDeclaration).name;
-        if (parentName !== undefined) {
-          const parentSym = this.getSymbolAtLocation(parentName);
-          if (!parentSym) {
-            this.todo(parentName, `parent ${parentName} has no symbol`);
-            return;
-          }
-          const kParent = this.getSymbolName(parentSym, TSNamespace.TYPE);
-          this.emitEdge(kFunc, 'childof', kParent);
-        }
-      }
+      this.emitChildOf(kFunc, decl.parent);
 
       // TODO: emit an "overrides" edge if this method overrides.
       // It appears the TS API doesn't make finding that information easy,
@@ -947,6 +997,20 @@ class Visitor {
       const kParam = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kParam, 'variable');
       if (kFunc) this.emitEdge(kFunc, `param.${index}`, kParam);
+
+      if (this.isClassMemberInCtor(param, decl)) {
+        // Class members defined in the parameters of a constructor are children
+        // of the class.
+        this.emitChildOf(kParam, decl.parent);
+      } else if (ts.isConstructorDeclaration(decl)) {
+        // Other parameters of a constructor should be children of the
+        // constructor. The constructor is the value binding of the class.
+        this.emitChildOf(kParam, decl.parent, TSNamespace.VALUE);
+      } else {
+        // All other parameters on functions are just children of that function.
+        this.emitChildOf(kParam, decl, TSNamespace.VALUE);
+      }
+
 
       this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
       if (param.type) this.visitType(param.type);
@@ -985,16 +1049,24 @@ class Visitor {
       // instances of the class) and a value (the constructor).
       const kClass = this.getSymbolName(sym, TSNamespace.TYPE);
       this.emitNode(kClass, 'record');
-      const kClassCtor = this.getSymbolName(sym, TSNamespace.VALUE);
-      this.emitNode(kClassCtor, 'function');
-      // TODO: the specific constructor() should really be the thing tagged
-      // with constructor, but we also need to handle classes that don't declare
-      // a constructor.  Fix me later.
-      this.emitFact(kClassCtor, 'subkind', 'constructor');
+      const classAnchor = this.newAnchor(decl.name);
+      this.emitEdge(classAnchor, 'defines/binding', kClass);
 
-      const anchor = this.newAnchor(decl.name);
-      this.emitEdge(anchor, 'defines/binding', kClass);
-      this.emitEdge(anchor, 'defines/binding', kClassCtor);
+      const kClassCtor = this.getSymbolName(sym, TSNamespace.VALUE);
+      let classCtorAnchor;
+      const ctor = sym.members!.get(ts.InternalSymbolName.Constructor);
+      if (ctor) {
+        const decl = ctor.declarations[0];
+        const span = this.getTextSpan(decl, 'constructor');
+        classCtorAnchor = this.newAnchor(decl, span.start, span.end);
+      } else {
+        // No constructor on the class, so just point the constructor to the
+        // class identifier.
+        classCtorAnchor = classAnchor;
+      }
+      this.emitNode(kClassCtor, 'function');
+      this.emitFact(kClassCtor, 'subkind', 'constructor');
+      this.emitEdge(classCtorAnchor, 'defines/binding', kClassCtor);
 
       this.visitJSDoc(decl, kClass);
     }
