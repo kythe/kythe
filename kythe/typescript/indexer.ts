@@ -214,6 +214,14 @@ class Visitor {
   }
 
   /**
+   * Determines is a node is a static member of a class.
+   */
+  isStaticMember(node: ts.Node, klass: ts.Declaration): boolean {
+    return ts.isPropertyDeclaration(node) && node.parent === klass &&
+        ((ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Static) > 0);
+  }
+
+  /**
    * Determines if a node is a class or interface.
    */
   isClassOrInterface(node: ts.Node): boolean {
@@ -351,6 +359,9 @@ class Visitor {
           const decl = node as ts.NamedDeclaration;
           if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
             let part = decl.name.text;
+            if (this.isStaticMember(startNode, decl)) {
+              part += '#type';
+            }
             // Getters and setters semantically refer to the same entities but
             // are declared differently, so they are differentiated.
             if (ts.isGetAccessor(decl)) {
@@ -917,7 +928,7 @@ class Visitor {
     if (decl.initializer) this.visit(decl.initializer);
     if (vname && decl.kind === ts.SyntaxKind.PropertyDeclaration) {
       const declNode = decl as ts.PropertyDeclaration;
-      if (ts.getCombinedModifierFlags(declNode) & ts.ModifierFlags.Static) {
+      if (this.isStaticMember(declNode, declNode.parent)) {
         this.emitFact(vname, 'tag/static', '');
       }
     }

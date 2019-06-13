@@ -27,10 +27,10 @@ class Class implements IFace {
     //- !{ Member.tag/static _ }
     member: number;
 
-    //- @staticMember defines/binding StaticMember
+    //- @member defines/binding StaticMember
     //- StaticMember.tag/static _
     //- StaticMember childof Class
-    static staticMember: number;
+    static member: number;
 
     // This ctor declares a new member var named 'otherMember', and also
     // declares an ordinary parameter named 'member' (to ensure we don't get
