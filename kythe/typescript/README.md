@@ -82,9 +82,7 @@ declaration.
 **SyntaxKind**:
 
 -   `NamespaceImport`
--   `ClassDeclaration`
 -   `Constructor`
--   `PropertyDeclaration`
 -   `MethodDeclaration`
 -   `EnumDeclaration`
 -   `EnumMember`
@@ -140,6 +138,30 @@ class Klass {
 class NoCtorKlass {}
 ```
 
+#### Property Declaration
+
+**Form**:
+
+-   `$CLASS[#type]?.$PROPERTY`
+
+**Notes**: Instance members on a class have a signature of form
+`$CLASS.$PROPERTY`. Static members, which belong to the class type rather than
+the value, have a form of `$CLASS#type.$PROPERTY`.
+
+**SyntaxKind**:
+
+- `PropertyDeclaration`
+
+```typescript
+class Klass {
+  //- @prop defines/binding VName("Klass.prop", _, _, _, _)
+  prop;
+
+  //- @prop defines/binding VName("Klass#type.prop", _, _, _, _)
+  static prop;
+}
+```
+
 #### Getter/Setter
 
 **Form**:
@@ -182,17 +204,14 @@ class KlassNoGetter {
 
 **Form**: `default`
 
-**Notes**: Assignment to `export` is semantically equivalent to exporting a
-variable named `default`.
+**Notes**: `export default` is semantically equivalent to exporting a variable
+named `default`. `export =` is currently not supported.
 
 **SyntaxKind**:
 
 -   `ExportAssignment`
 
 ```typescript
-//- @"export =" defines/binding VName("default", _, _, _, _)
-export = myExport;
-
 //- @default defines/binding VName("default", _, _, _, _)
 export default myExport;
 ```
@@ -282,11 +301,11 @@ The Google TypeScript build relies heavily on TypeScript's `--declaration` flag
 to enable separate compilation. The way this works is that after compiling
 library A, we generate -- using that flag -- the "API shape" of A into `a.d.ts`.
 Then when compiling a library B that uses A, we compile `b.ts` and `a.d.ts`
-together.  The Kythe process sees the same files as well.
+together. The Kythe process sees the same files as well.
 
 What this means for indexing design is that a TypeScript compilation may see
-only the generated shape of a module, and not its internals.  For example,
-given a file like
+only the generated shape of a module, and not its internals. For example, given
+a file like
 
 ```
 class C {
@@ -303,9 +322,9 @@ class C {
 }
 ```
 
-In practice, what this means is that code should not assume it can to "peek into"
-another module to determine the VNames of entities. Instead, when looking at
-some hypothetical code that accesses the `x` member of an instance of `C`, we
+In practice, what this means is that code should not assume it can to "peek
+into" another module to determine the VNames of entities. Instead, when looking
+at some hypothetical code that accesses the `x` member of an instance of `C`, we
 should use a consistent naming scheme to refer to `x`.
 
 ### Choosing VNames

@@ -16,12 +16,15 @@ import * as NspI from './declaration';
 export default NspI;
 
 // ClassDeclaration
-//- @C defines/binding VName("C", _, _, "testdata/declaration_spec", "typescript")
 //- @C defines/binding VName("C#type", _, _, "testdata/declaration_spec", "typescript")
 class C {
-  // PropertyDeclaration
+  // PropertyDeclaration instance member
   //- @property defines/binding VName("C.property", _, _, "testdata/declaration_spec", "typescript")
   property = 0;
+
+  // PropertyDeclaration static member
+  //- @property defines/binding VName("C#type.property", _, _, "testdata/declaration_spec", "typescript")
+  static property = 0;
 
   // MethodDeclaration
   //- @method defines/binding VName("C.method", _, _, "testdata/declaration_spec", "typescript")
@@ -45,7 +48,8 @@ class C {
 }
 
 // ClassDeclaration with no ctor
-//- @CC defines/binding VName("C:ctor", _, _, "testdata/declaration_spec", "typescript")
+//- @CC defines/binding VName("CC#type", _, _, "testdata/declaration_spec", "typescript")
+//- @CC defines/binding VName("CC:ctor", _, _, "testdata/declaration_spec", "typescript")
 class CC {}
 
 // EnumDeclaration
