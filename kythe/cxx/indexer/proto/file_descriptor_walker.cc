@@ -482,6 +482,9 @@ void FileDescriptorWalker::VisitNestedEnumTypes(const std::string& message_name,
       InitializeLocation(span, &location);
 
       builder_->AddEnumType(message, v_name, location);
+      if (nested_proto->options().deprecated()) {
+        builder_->SetDeprecated(v_name);
+      }
       AttachMarkedSource(v_name,
                          GenerateMarkedSourceForDescriptor(nested_proto));
     }
@@ -656,6 +659,9 @@ void FileDescriptorWalker::VisitEnumValues(const EnumDescriptor* dp,
     std::string value_vname = dp->full_name() + "." + val_dp->name();
 
     builder_->AddValueToEnum(*enum_node, v_name, value_location);
+    if (val_dp->options().deprecated()) {
+      builder_->SetDeprecated(v_name);
+    }
     AttachMarkedSource(v_name, GenerateMarkedSourceForDescriptor(val_dp));
   }
 }

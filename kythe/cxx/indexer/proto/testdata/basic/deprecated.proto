@@ -42,4 +42,22 @@ message M {
     optional string field4 = 1 [deprecated = true];
   }
 
+
+  //- @D defines/binding EnumD
+  //- EnumD.node/kind sum
+  //- EnumD.tag/deprecated ""
+  enum D {
+    option deprecated = true;
+    //- @VAL1 defines/binding Value1Node
+    //- ! { Value1Node.tag/deprecated "" }
+    VAL1 = 1;
+    //- @VAL2 defines/binding Value2Node
+    //- Value2Node.tag/deprecated ""
+    VAL2 = 2 [ deprecated = true ];
+  }
+
+  enum E {
+    VAL3 = 3;
+    VAL4 = 4 [ deprecated = true ];
+  }
 }
