@@ -31,6 +31,13 @@ import * as ts from 'typescript';
 import * as indexer from './indexer';
 
 const KYTHE_PATH = process.env['KYTHE'] || '/opt/kythe';
+const RUNFILES = process.env['RUNFILES_DIR'];
+
+const ENTRYSTREAM = RUNFILES ?
+    path.resolve('kythe/go/platform/tools/entrystream/entrystream') :
+    path.resolve(KYTHE_PATH, 'tools/entrystream');
+const VERIFIER = RUNFILES ? path.resolve('kythe/cxx/verifier/verifier') :
+                            path.resolve(KYTHE_PATH, 'tools/verifier');
 
 /**
  * createTestCompilerHost creates a ts.CompilerHost that caches its default
@@ -60,8 +67,8 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
  * be run async; if there's an error, it will reject the promise.
  */
 function verify(
-    host: ts.CompilerHost, options: ts.CompilerOptions,
-    test: string): Promise<void> {
+    host: ts.CompilerHost, options: ts.CompilerOptions, test: string,
+    plugins?: indexer.Plugin[]): Promise<void> {
   const compilationUnit: indexer.VName = {
     corpus: 'testcorpus',
     root: '',
@@ -72,16 +79,14 @@ function verify(
   const program = ts.createProgram([test], options, host);
 
   const verifier = child_process.spawn(
-      `${KYTHE_PATH}/tools/entrystream --read_format=json |` +
-          `${KYTHE_PATH}/tools/verifier ${test}`,
-      [], {
+      `${ENTRYSTREAM} --read_format=json | ${VERIFIER} ${test}`, [], {
         stdio: ['pipe', process.stdout, process.stderr],
         shell: true,
       });
 
   indexer.index(compilationUnit, new Map(), [test], program, (obj: {}) => {
     verifier.stdin.write(JSON.stringify(obj) + '\n');
-  });
+  }, plugins);
   verifier.stdin.end();
 
   return new Promise<void>((resolve, reject) => {
@@ -102,7 +107,7 @@ function testLoadTsConfig() {
   assert.deepEqual(config.fileNames, [path.resolve('testdata/alt.ts')]);
 }
 
-async function testIndexer(args: string[]) {
+async function testIndexer(args: string[], plugins?: indexer.Plugin[]) {
   const config = indexer.loadTsConfig('testdata/tsconfig.json', 'testdata');
   let testPaths = args.map(arg => path.resolve(arg));
   if (args.length === 0) {
@@ -117,7 +122,7 @@ async function testIndexer(args: string[]) {
     const start = new Date().valueOf();
     process.stdout.write(`${testName}: `);
     try {
-      await verify(host, config.options, test);
+      await verify(host, config.options, test, plugins);
     } catch (e) {
       console.log('FAIL');
       throw e;
@@ -128,9 +133,41 @@ async function testIndexer(args: string[]) {
   return 0;
 }
 
+async function testPlugin() {
+  const plugin: indexer.Plugin = {
+    name: 'TestPlugin',
+    index(
+        pathToVName: (path: string) => indexer.VName, paths: string[],
+        program: ts.Program, emit?: (obj: {}) => void) {
+      for (const testPath of paths) {
+        const relPath = path.relative(
+                                program.getCompilerOptions().rootDir!,
+                                program.getSourceFile(testPath)!.fileName)
+                            .replace(/\.(d\.)?ts$/, '');
+
+        const pluginMod = {
+          ...pathToVName(relPath),
+          signature: 'plugin-module',
+          language: 'plugin-language',
+        };
+        emit!({
+          source: pluginMod,
+          fact_name: '/kythe/node/pluginKind',
+          fact_value: Buffer.from('pluginRecord').toString('base64'),
+        });
+      }
+    },
+  };
+  return testIndexer(['testdata/plugin.ts'], [plugin]);
+}
+
 async function testMain(args: string[]) {
+  if (RUNFILES) {
+    process.chdir('kythe/typescript');
+  }
   testLoadTsConfig();
   await testIndexer(args);
+  await testPlugin();
 }
 
 testMain(process.argv.slice(2))

@@ -21,8 +21,8 @@ asciidoc_with_verifier(
 )
 
 asciidoc_with_verifier(
-    name = "indexing-protobuf",
-    src = "indexing-protobuf.txt",
+    name = "indexing-generated-code",
+    src = "indexing-generated-code.txt",
 )
 
 asciidoc_with_verifier(
