@@ -47,6 +47,7 @@ const (
 var (
 	wrapperPath  string
 	vnameRules   string
+	makeDir      string
 	errorPattern = regexp.MustCompile("ERROR: extractor failure for module ([^:]*):")
 )
 
@@ -81,18 +82,11 @@ func defaultVnamesPath() string {
 	return val
 }
 
-func makeDir() string {
-	if dir := flag.Arg(0); dir != "" {
-		return dir
-	}
-	return "."
-}
-
 func findJavaCommand() (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "make", "-n", "-p")
-	cmd.Dir = makeDir()
+	cmd.Dir = makeDir
 	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -131,7 +125,7 @@ func setEnvDefaultFunc(env []string, key string, value func() string) []string {
 func makeEnv() []string {
 	env := os.Environ()
 	env = setEnvDefaultFunc(env, javaCommandVar, mustFindJavaCommand)
-	env = setEnvDefaultFunc(env, kytheRootVar, makeDir)
+	env = setEnvDefaultFunc(env, kytheRootVar, func() string { return makeDir })
 	if len(vnameRules) > 0 {
 		env = setEnvDefaultFunc(env, kytheVnameVar, func() string { return vnameRules })
 	}
@@ -142,21 +136,24 @@ func init() {
 	setupRunfiles()
 	flag.StringVar(&wrapperPath, "java-wrapper", defaultWrapperPath(), "path to the java_wrapper executable (optional)")
 	flag.StringVar(&vnameRules, "rules", defaultVnamesPath(), "path of vnames.json file (optional)")
+	flag.StringVar(&makeDir, "jdk", "", "path to the OpenJDK11 source tree (required)")
 	flag.Usage = flagutil.SimpleUsage("Extract a configured openjdk11 source directory", "[--java-wrapper=] [path]")
 }
 
 func main() {
 	flag.Parse()
-
-	if len(wrapperPath) == 0 {
-		flagutil.UsageError("missing java-wrapper")
+	if makeDir == "" {
+		flagutil.UsageError("missing -jdk")
+	}
+	if wrapperPath == "" {
+		flagutil.UsageError("missing -java-wrapper")
 	}
 	if _, err := os.Stat(wrapperPath); err != nil {
 		flagutil.UsageErrorf("java-wrapper not found: %v", err)
 	}
 
 	cmd := exec.Command("make", javaMakeVar+"="+wrapperPath, "ENABLE_JAVAC_SERVER=no", "clean", "jdk")
-	cmd.Dir = makeDir()
+	cmd.Dir = makeDir
 	cmd.Env = makeEnv()
 	cmd.Stdout = nil // Quiet, you
 	stderr, err := cmd.StderrPipe()
