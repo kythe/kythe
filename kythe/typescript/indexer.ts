@@ -200,20 +200,6 @@ class Visitor {
   }
 
   /**
-   * Determines whether a parameter in a constructor is a class member. Applies
-   * to class properties defined with the shorthand
-   *    constructor(private member: string)
-   */
-  isClassMemberInCtor(node: ts.Node, ctor: ts.Node): boolean {
-    return node.kind === ts.SyntaxKind.Parameter &&
-        node.parent === ctor &&  // has to be in this ctor
-        node.modifiers !== undefined &&
-        (node.modifiers.find(
-             m => m.kind === ts.SyntaxKind.PrivateKeyword ||
-                 m.kind === ts.SyntaxKind.PublicKeyword) !== undefined);
-  }
-
-  /**
    * Determines if a node is a class or interface.
    */
   isClassOrInterface(node: ts.Node): boolean {
@@ -367,7 +353,7 @@ class Visitor {
         case ts.SyntaxKind.Constructor:
           // Class members declared with a shorthand in the constructor should
           // be scoped to the class, not the constructor.
-          if (!this.isClassMemberInCtor(startNode, node)) {
+          if (!ts.isParameterPropertyDeclaration(startNode)) {
             parts.push('constructor');
           }
           break;
@@ -998,7 +984,7 @@ class Visitor {
       this.emitNode(kParam, 'variable');
       if (kFunc) this.emitEdge(kFunc, `param.${index}`, kParam);
 
-      if (this.isClassMemberInCtor(param, decl)) {
+      if (ts.isParameterPropertyDeclaration(param)) {
         // Class members defined in the parameters of a constructor are children
         // of the class.
         this.emitChildOf(kParam, decl.parent);
