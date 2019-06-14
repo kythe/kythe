@@ -1,14 +1,15 @@
-workspace(name = "io_kythe")
+workspace(
+    name = "io_kythe",
+    managed_directories = {"@npm": ["node_modules"]},
+)
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
-load("//:version.bzl", "check_version")
+load("//:version.bzl", "check_version", "MAX_VERSION", "MIN_VERSION")
 
 # Check that the user has a version between our minimum supported version of
-# Bazel and our maximum supported version of Bazel, and not one of the known-bad releases.
-# When updating the supported versions, make sure to update .bazelversion to the maximum
-# and https://buildkite.com/kythe-project/bazel-minimum/settings for the minimum.
-check_version("0.25.1", "0.26")
+# Bazel and our maximum supported version of Bazel.
+check_version(MIN_VERSION, MAX_VERSION)
 
 http_archive(
     name = "bazel_toolchains",
@@ -46,15 +47,24 @@ load("//tools/build_rules/external_tools:external_tools_configure.bzl", "externa
 external_tools_configure()
 
 load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
-load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
-
-node_repositories(package_json = ["//:package.json"])
 
 npm_install(
     name = "npm",
     package_json = "//:package.json",
     package_lock_json = "//:package-lock.json",
+    # Temporarily disable node_modules symlinking until the fix for
+    # https://github.com/bazelbuild/bazel/issues/8487 makes it into a
+    # future Bazel release
+    symlink_node_modules = False,
 )
+
+load("@npm//:install_bazel_dependencies.bzl", "install_bazel_dependencies")
+
+install_bazel_dependencies()
+
+load("@npm_bazel_typescript//:index.bzl", "ts_setup_workspace")
+
+ts_setup_workspace()
 
 # This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
 bind(

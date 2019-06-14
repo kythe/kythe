@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-Indexing Generated Code from protoc
-===================================
+= Indexing Generated Code
+
 :Revision: 1.0
 :toc2:
 :toclevels: 3
@@ -31,12 +31,240 @@ implementation, as this is often difficult (or uninteresting) to read. This
 document describes how to encode information about generated code to permit
 cross-language links.
 
+To make the discussion easier to understand let's pretend we are working with
+two languages: SourceLang and TargetLang. SourceLang has `.source` file and TargetLang
+has `.target` files. We also have a tool (generator) that can take generate
+`foo.target` file from `foo.source` file. We have following components:
+
+* Source Indexer - Kythe indexer that takes `.source` files and outputs index
+  data.
+* Target Indexer - Kythe indexer that takes `.target` files and outputs index
+  data.
+* Generator - tool that produces `.target` files from `.source` files.
+* Post processor - Kythe tool that takes all index data produced by all
+  indexers, processes it and outputs final Kythe graph that contains data
+  for both SourceLang and TargetLang.
+
+Now we want to teach Kythe how to create cross-references between generated
+`foo.target` file and original `foo.source` file. The main idea is pretty simple:
+Generator has to output extra data containing mapping of elements in `foo.target`
+to the original elements from `foo.source`. Then when Target Indexer is indexing
+`foo.target` it will use that mapping to output *generates* or *imputes* edges.
+These edges connect nodes from `foo.target` with nodes in `foo.source`.
+
+Kythe doesn't require implementors to use one concrete approach for passing
+mapping metadata and outputting *generates* and *imputes* edges. Below we
+describe two different approaches, each has its own pros and cons. But in
+both cases it is assumed that implementors can change Generator and Target
+Indexer. If possible the *generates* approach is preferred as it requires less
+post-processing work.
+
 TIP: You can find an example implementation at
 link:https://github.com/kythe/kythe/tree/master/kythe/examples/proto[GitHub].
 The current sample web UI does not interpret the parts of the schema we will
 use; this is a work in progress.
 
-== Protocol Buffers
+== Java To JavaScript with *imputes* edges
+
+This approach is generic and works for any combination of SourceLang and
+TargetLang. In this example we generate JavaScript files from Java file so
+SourceLang is Java and TargetLang is JavaScript. Given `Color.java`:
+
+[source,java]
+-------------------------------------------------------------------------------
+public enum Color {
+  RED;
+}
+-------------------------------------------------------------------------------
+
+Generator produces `color.js`:
+[source,javascript]
+-------------------------------------------------------------------------------
+const Color = {
+  RED: 0,
+};
+-------------------------------------------------------------------------------
+
+=== Changes to Generator
+
+To support cross-references betwen `color.js` and `Color.java` we need to update
+Generator to output the following mapping data for `Color`, `RED` elements.
+
+[source,json]
+-------------------------------------------------------------------------------
+{
+    "type": "kythe0",
+    "meta": [{
+        "type": "anchor_anchor",
+        "source_begin": 13,
+        "source_end": 18,
+        "target_begin": 6,
+        "target_end": 11,
+        "edge": "/kythe/edge/imputes",
+        "source_vname": {
+            "corpus": "corpus",
+            "path": "path/to/Color.java"
+        }
+    }, {
+        "type": "anchor_anchor",
+        "source_begin": 22,
+        "source_end": 25,
+        "target_begin": 18,
+        "target_end": 21,
+        "edge": "/kythe/edge/imputes",
+        "source_vname": {
+            "corpus": "corpus",
+            "path": "path/to/Color.java"
+        }
+    }]
+}
+-------------------------------------------------------------------------------
+
+This mapping has 2 `meta` entries. The first entry for `Color`, the second for
+`RED`. Note:
+
+* Each entry doesn't contain names of elements. Each entry contains only
+  position of elements in the source (`Color.java`) and target (`color.js`)
+  files.
+* Each position is defined as byte offset inside file and not as line/column.
+  This is required because in Kythe anchors are defined using byte offsets and
+  not line/column. In this example JavaScript indexer will process this
+  mapping and will need to output *anchor* for `Color.java` and indexer
+  doesn't have access to the `Color.java` file (it has access only to JS
+  files). Because of that JS indexer can't translate line/column to byte
+  offset.
+* Entry doesn't contain vnames of elements in `Color.java` or `color.js` and
+  instead contains positions. VNames of nodes are internal details of each
+  indexer and subject to change. Generator usually a standalone tool that
+  doesn't know rules for producing vnames for specific language so it's
+  impossible for Generator to output vnames of nodes. If in your case
+  VNames are stable and well-specified you can use simpler approach
+  using *generates* described in `Protocol Buffer` section below.
+
+To pass this mapping to the JavaScript Indexer Generator will append it
+as a comment at the last line of `color.js`:
+
+[source,javascript]
+-------------------------------------------------------------------------------
+const Color = {
+  RED: 0,
+};
+
+// Kythe Indexing Metadata:
+// {"type":"kythe0","meta":[{"type":"anchor_anchor","source_begin":13,...
+-------------------------------------------------------------------------------
+
+Inlining metadata inside `color.js` has benefit of avoiding passing extra
+files to Indexer. All Indexer needs is to know that some JavaScript files can
+contain metadata on the last line and parse it.
+
+One downside is that it adds noise to `color.js` but usually generated
+files are invisible to developers so it's not a big concern.
+
+==== Changes to JavaScript Indexer
+
+On JavaScript Indexer side we need to parse metadata and output *imputes*
+edges. To parse metadata indexer can check last two lines of all `.js` files
+and see if they contain `// Kythe Indexing Metadata:` and if so - parse
+the last line as JSON.
+
+For each `meta` entry indexer should do the following:
+
+1. Output an *anchor* using `source_begin` and `source_end`. `source_vname`
+   should be used as file containing the anchor.
+2. Find a JavaScript node that has *defines/binding* anchor with the same
+   `target_begin/end` position.
+3. Ouptut one *imputes* edge from the *anchor* created at step 1 to the node
+   found at step 2.
+
+Note that this only applies to meta entries with type `anchor_anchor`. For other
+types structure might be different. See link:https://github.com/kythe/kythe/issues/3711[issue #3711].
+
+Here is what JavaScript indexer outputs for the `Color` element using the
+rules above:
+
+[kythe,dot,"JavaScript Indexer graph",0]
+--------------------------------------------------------------------------------
+digraph G {
+size="7,7";
+coloranchorjava [label="anchor\nColor.java:0:12-17"];
+redanchorjava [label="anchor\nColor.java:1:2-5"];
+coloranchorjs [label="anchor\ncolor.js:0:6-11"];
+redanchorjs [label="anchor\ncolor.js:0:2-5"];
+colornode [label="Color node\nin JS"];
+rednode [label="RED node\nin JS"];
+
+coloranchorjs -> colornode [label = "defines/binding"];
+redanchorjs -> rednode [label = "defines/binding"];
+coloranchorjava -> colornode [label = "imputes"];
+redanchorjava -> rednode [label = "imputes"];
+}
+--------------------------------------------------------------------------------
+
+Output of Java Indexer looks like this:
+
+[kythe,dot,"Java Indexer graph",0]
+--------------------------------------------------------------------------------
+digraph G {
+size="7,7";
+coloranchorjava [label="anchor\nColor.java:0:12-17"];
+redanchorjava [label="anchor\nColor.java:1:2-5"];
+colornodejava [label="Color node\nin Java"];
+rednodejava [label="RED node\nin Java"];
+
+coloranchorjava -> colornodejava [label = "defines/binding"];
+redanchorjava -> rednodejava [label = "defines/binding"];
+}
+--------------------------------------------------------------------------------
+
+=== Post-processor
+
+Once Java and JavaScript Indexers finished their output is merged and
+postprocessor finds all anchors that have both *defines/binding* and
+*imputes* edges and creates *generates* edge:
+
+[kythe,dot,"Processed final graph",0]
+--------------------------------------------------------------------------------
+digraph G {
+size="7,7";
+coloranchorjava [label="anchor\nColor.java:0:12-17"];
+redanchorjava [label="anchor\nColor.java:1:2-5"];
+coloranchorjs [label="anchor\ncolor.js:0:6-11"];
+redanchorjs [label="anchor\ncolor.js:0:2-5"];
+colornode [label="Color node\nin JS"];
+rednode [label="RED node\nin JS"];
+colornodejava [label="Color node\nin Java"];
+rednodejava [label="RED node\nin Java"];
+
+coloranchorjs -> colornode [label = "defines/binding"];
+redanchorjs -> rednode [label = "defines/binding"];
+coloranchorjava -> colornode [label = "imputes"];
+redanchorjava -> rednode [label = "imputes"];
+coloranchorjava -> colornodejava [label = "defines/binding"];
+redanchorjava -> rednodejava [label = "defines/binding"];
+colornodejava -> colornode [label = "generates"];
+rednodejava -> rednode [label = "generates"];
+}
+--------------------------------------------------------------------------------
+
+This is the end state. Now tools using Kythe graph can see that Color enum
+in JS is generated by Color enum in Java and perform proper action (for example
+IDE upon clicking on `Color` in JS file will go to the definition of `Color`
+enum in java file.
+
+== Protocol Buffers with *generates* edges
+
+This approach is easier to implement compared to *imputes* approach described
+above, but it requires tighter integration with Indexer and Generator. When
+Generator outputs code it also adds a mapping as in the *imputes* approach,
+but instead of mapping location to location it outputs VNames of nodes from
+`foo.source`. It requires Generator to know exactly what VNames will be produced
+by the Source Indexer. This approach is feasible when either VNames either
+have simple stable form or Generator can reuse code from Source Indexer to
+generate VNames.
+
+In this example we generate C++ files from Protocol buffer definitions. So
+SourceLang is Protocol Buffers and TargetLang is C++.
 
 The Kythe project uses
 link:https://developers.google.com/protocol-buffers/[protocol buffers] for
@@ -240,7 +468,7 @@ class Foo {
 ...
 --------------------------------------------------------------------------------
 
-and the `protoc` backend that generated it reported that the text range 
+and the `protoc` backend that generated it reported that the text range
 `Foo` was associated with an object in its original `FileDescriptorProto` at
 some location encoded as "4.0"&mdash;and the proto_indexer guaranteed it would
 always emit objects with signatures based on their descriptor locations--the
@@ -358,7 +586,7 @@ MessageFoo: EVar(... = App(vname,
 Of course, Kythe clients need to understand that *generates* edges should be
 followed. Solving this problem is out of this document's scope.
 
-=== Providing annotations for other languages
+==== Providing annotations for other languages
 
 To generate metadata for a different language backend, you must determine or
 implement the following:

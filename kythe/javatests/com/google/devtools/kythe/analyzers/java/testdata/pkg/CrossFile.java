@@ -22,10 +22,10 @@ public class CrossFile {
   //- @Inner ref InnerClass
   Files.Inner f2;
 
-  //- @OtherDecl ref _ODecl
+  //- @OtherDecl ref ODecl
   OtherDecl f3;
 
-  //- @Inter ref _InterRaw
+  //- @Inter ref Inter
   Inter i;
 
   public static void main(String[] args) {
