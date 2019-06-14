@@ -123,6 +123,11 @@ public class FileVNames {
       this.pattern = pattern;
       this.vname = vname;
     }
+
+    // GSON-required no-args constructor.
+    private BaseFileVName() {
+      this(null, null);
+    }
   }
 
   /** Subset of a {@link VName} with built-in templating '@<num>@' markers. */
@@ -135,6 +140,11 @@ public class FileVNames {
       this.corpus = corpus;
       this.root = root;
       this.path = path;
+    }
+
+    // GSON-required no-args constructor.
+    private VNameTemplate() {
+      this(null, null, null);
     }
 
     /**
