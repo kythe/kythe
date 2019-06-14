@@ -117,8 +117,8 @@ func findExtractorJar() (string, error) {
 
 func extractorArgs(args []string, jar string) []string {
 	target := targetJdk()
-	is_javac := false
-	is_bootstrap := true
+	isJavac := false
+	isBootstrap := true
 	var result []string
 	for len(args) > 0 {
 		switch a := shift(&args); a {
@@ -128,7 +128,7 @@ func extractorArgs(args []string, jar string) []string {
 				// This is not a javac invocation, don't extract.
 				return nil
 			}
-			is_javac = true
+			isJavac = true
 			result = append(result,
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.main=ALL-UNNAMED",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.util=ALL-UNNAMED",
@@ -142,7 +142,7 @@ func extractorArgs(args []string, jar string) []string {
 				// This is definitely a bootstrap compilation, don't extract it.
 				return nil
 			}
-			is_bootstrap = false
+			isBootstrap = false
 			result = append(result, a, v)
 		case "--add-modules", "--limit-modules":
 			result = append(result, a, shift(&args)+",java.logging,java.sql")
@@ -159,7 +159,7 @@ func extractorArgs(args []string, jar string) []string {
 			}
 		}
 	}
-	if !is_javac || is_bootstrap {
+	if !isJavac || isBootstrap {
 		return nil
 	}
 	return result
