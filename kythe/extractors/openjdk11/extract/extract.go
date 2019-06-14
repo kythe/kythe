@@ -19,6 +19,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"flag"
 	"io"
@@ -88,7 +89,9 @@ func makeDir() string {
 }
 
 func findJavaCommand() (string, error) {
-	cmd := exec.Command("make", "-n", "-p")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "make", "-n", "-p")
 	cmd.Dir = makeDir()
 	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
@@ -102,7 +105,7 @@ func findJavaCommand() (string, error) {
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		if strings.HasPrefix(scanner.Text(), prefix) {
-			stdout.Close()
+			cancel() // Safe to call repeatedly.
 			cmd.Wait()
 			return strings.TrimPrefix(scanner.Text(), prefix), nil
 		}
