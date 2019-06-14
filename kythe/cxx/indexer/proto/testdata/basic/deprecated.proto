@@ -56,8 +56,15 @@ message M {
     VAL2 = 2 [ deprecated = true ];
   }
 
+  //- @E defines/binding EnumE
+  //- EnumE.node/kind sum
+  //- ! { EnumE.tag/deprecated "" }
   enum E {
+    //- @VAL3 defines/binding Value3Node
+    //- ! { Value3Node.tag/deprecated "" }
     VAL3 = 3;
+    //- @VAL4 defines/binding Value4Node
+    //- Value4Node.tag/deprecated ""
     VAL4 = 4 [ deprecated = true ];
   }
 }
