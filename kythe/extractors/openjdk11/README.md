@@ -14,7 +14,7 @@ Once you have a correctly configured source tree for your platform,
 run:
 
 ```
-$ bazel run //kythe/extractors/openjdk11:extract -- path/to/openjdk11
+$ bazel run //kythe/extractors/openjdk11:extract -- /absolute/path/to/openjdk11
 ```
 
 Assuming the source tree was configured correctly, the result will be a
