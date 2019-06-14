@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-// java-wrapper wraps the real java command to invoke the standalond java extractor
+// Binary java_wrapper wraps the real java command to invoke the standalone java extractor
 // in parallel with the genuine compilation command.
+// As it interjects itself between make and a real java command, all options are
+// provided via environment variables.  See the corresponding consts and java_extractor for details.
 package main
 
 import (
@@ -35,16 +37,13 @@ import (
 )
 
 const (
-	javaCommandVar    = "KYTHE_JAVA_COMMAND"
-	javaHomeVar       = "JAVA_HOME"
-	jdkVersionVar     = "JDK_VERSION"
-	extractorJarVar   = "JAVAC_EXTRACTOR_JAR"
-	kytheRootVar      = "KYTHE_ROOT_DIRECTORY"
-	kytheOutputVar    = "KYTHE_OUTPUT_DIRECTORY"
-	kytheCorpusVar    = "KYTHE_CORPUS"
-	kytheTargetVar    = "KYTHE_ANALYSIS_TARGET"
-	defaultJdkVersion = "11"
-	extractorJarPath  = "io_kythe/kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac9_extractor_deploy.jar"
+	javaCommandVar   = "KYTHE_JAVA_COMMAND"     // Path to the real java command, required.
+	kytheRootVar     = "KYTHE_ROOT_DIRECTORY"   // Extraction root directory, set to "." if unspecified.
+	kytheOutputVar   = "KYTHE_OUTPUT_DIRECTORY" // Extraction output directory, defaults to ~/kythe-openjdk11-output
+	kytheCorpusVar   = "KYTHE_CORPUS"           // Extraction corpus to use, if KYTHE_VNAMES is unset. Defaults to openjdk11.
+	kytheTargetVar   = "KYTHE_ANALYSIS_TARGET"  // Extraction analysis target to set, defaults to the java module name.
+	extractorJarVar  = "JAVAC_EXTRACTOR_JAR"    // Path to the javac_extractor jar, default to Bazel runfiles.
+	extractorJarPath = "io_kythe/kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac9_extractor_deploy.jar"
 )
 
 var (
@@ -68,32 +67,28 @@ func outputDir() string {
 	return val
 }
 
-func targetJdk() string {
-	if val := os.Getenv(jdkVersionVar); len(val) > 0 {
-		return val
-	}
-	return defaultJdkVersion
-}
-
 func checkPath(parts ...string) error {
 	_, err := os.Stat(filepath.Join(parts...))
 	return err
 }
 
 func setupRunfiles() error {
-	if len(os.Getenv("RUNFILES_DIR")) > 0 || len(os.Getenv("RUNFILES_MANIFEST_FILE")) > 0 {
+	if os.Getenv("RUNFILES_DIR") != "" || os.Getenv("RUNFILES_MANIFEST_FILE") != "" {
 		return nil
 	}
 	for _, base := range []string{os.Args[0] + ".runfiles", "."} {
-		if root, err := filepath.Abs(base); err == nil {
-			if _, err := os.Stat(root); err == nil {
-				os.Setenv("RUNFILES_DIR", root)
-				if _, err := os.Stat(filepath.Join(root, "MANIFEST")); err == nil {
-					os.Setenv("RUNFILES_MANIFEST_FILE", filepath.Join(root, "MANIFEST"))
-				}
-				return nil
-			}
+		root, err := filepath.Abs(base)
+		if err != nil {
+			continue
+		} else if _, err := os.Stat(root); err != nil {
+			continue
 		}
+		os.Setenv("RUNFILES_DIR", root)
+		manifest := filepath.Join(root, "MANIFEST")
+		if _, err := os.Stat(manifest); err == nil {
+			os.Setenv("RUNFILES_MANIFEST_FILE", manifest)
+		}
+		return nil
 	}
 	return errors.New("unable to setup runfiles")
 }
@@ -102,10 +97,7 @@ func findJavaCommand() (string, error) {
 	if val := os.Getenv(javaCommandVar); len(val) > 0 {
 		return val, checkPath(val)
 	}
-	if val := os.Getenv(javaHomeVar); len(val) > 0 {
-		return filepath.Join(val, "bin", "java"), checkPath(val, "bin", "java")
-	}
-	return exec.LookPath("java")
+	return "", os.ErrNotExist
 }
 
 func findExtractorJar() (string, error) {
@@ -116,17 +108,17 @@ func findExtractorJar() (string, error) {
 }
 
 func extractorArgs(args []string, jar string) []string {
-	target := targetJdk()
 	isJavac := false
-	isBootstrap := true
 	var result []string
 	for len(args) > 0 {
-		switch a := shift(&args); a {
+		var a string
+		var v string
+		switch a, args = shift(args); a {
 		case "-m", "--module":
-			v := shift(&args)
+			v, args = shift(args)
 			if !strings.HasSuffix(v, ".javac.Main") {
-				// This is not a javac invocation, don't extract.
-				return nil
+				isJavac = false
+				break
 			}
 			isJavac = true
 			result = append(result,
@@ -136,18 +128,11 @@ func extractorArgs(args []string, jar string) []string {
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.api=ALL-UNNAMED",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.code=ALL-UNNAMED",
 				"-jar", jar, "-Xprefer:source")
-		case "-target":
-			v := shift(&args)
-			if v != target {
-				// This is definitely a bootstrap compilation, don't extract it.
-				return nil
-			}
-			isBootstrap = false
-			result = append(result, a, v)
 		case "--add-modules", "--limit-modules":
-			result = append(result, a, shift(&args)+",java.logging,java.sql")
+			v, args = shift(args)
+			result = append(result, a, v+",java.logging,java.sql")
 		case "--doclint-format":
-			shift(&args)
+			_, args = shift(args)
 		case "-Werror":
 		default:
 			switch {
@@ -159,7 +144,9 @@ func extractorArgs(args []string, jar string) []string {
 			}
 		}
 	}
-	if !isJavac || isBootstrap {
+	// As we can only do anything meaningful with Java compilations,
+	// but wrap the java binary, don't attempt to exact other invocations.
+	if !isJavac {
 		return nil
 	}
 	return result
@@ -167,27 +154,25 @@ func extractorArgs(args []string, jar string) []string {
 
 func extractorEnv() []string {
 	env := os.Environ()
-	env = setenvDefault(env, kytheRootVar, ".")
-	env = setenvDefault(env, kytheOutputVar, outputDir())
-	env = setenvDefault(env, kytheTargetVar, moduleName())
-	env = setenvDefault(env, kytheCorpusVar, "openjdk"+targetJdk())
+	env = setEnvDefault(env, kytheRootVar, ".")
+	env = setEnvDefault(env, kytheOutputVar, outputDir())
+	env = setEnvDefault(env, kytheTargetVar, moduleName())
+	env = setEnvDefault(env, kytheCorpusVar, "openjdk11")
 	return env
 }
 
-func setenvDefault(env []string, key, def string) []string {
+func setEnvDefault(env []string, key, def string) []string {
 	if val := os.Getenv(key); len(val) == 0 {
 		env = append(env, key+"="+def)
 	}
 	return env
 }
 
-func shift(args *[]string) string {
-	if len(*args) > 0 {
-		head := (*args)[0]
-		*args = (*args)[1:]
-		return head
+func shift(args []string) (string, []string) {
+	if len(args) > 0 {
+		return args[0], args[1:]
 	}
-	return ""
+	return "", nil
 }
 
 func init() {

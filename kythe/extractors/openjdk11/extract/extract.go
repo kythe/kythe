@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// Binary extract extracts a pre-configured OpenJDK11 source tree to produce Kythe compilation units.
 package main
 
 import (
@@ -38,7 +39,7 @@ const (
 	kytheRootVar        = "KYTHE_ROOT_DIRECTORY"
 	kytheVnameVar       = "KYTHE_VNAMES"
 	javaMakeVar         = "JAVA_CMD"
-	runfilesWrapperPath = "io_kythe/kythe/extractors/openjdk11/java-wrapper"
+	runfilesWrapperPath = "io_kythe/kythe/extractors/openjdk11/java_wrapper"
 	runfilesVnamesPath  = "io_kythe/kythe/extractors/openjdk11/vnames.json"
 )
 
@@ -49,19 +50,22 @@ var (
 )
 
 func setupRunfiles() error {
-	if len(os.Getenv("RUNFILES_DIR")) > 0 || len(os.Getenv("RUNFILES_MANIFEST_FILE")) > 0 {
+	if os.Getenv("RUNFILES_DIR") != "" || os.Getenv("RUNFILES_MANIFEST_FILE") != "" {
 		return nil
 	}
 	for _, base := range []string{os.Args[0] + ".runfiles", "."} {
-		if root, err := filepath.Abs(base); err == nil {
-			if _, err := os.Stat(root); err == nil {
-				os.Setenv("RUNFILES_DIR", root)
-				if _, err := os.Stat(filepath.Join(root, "MANIFEST")); err == nil {
-					os.Setenv("RUNFILES_MANIFEST_FILE", filepath.Join(root, "MANIFEST"))
-				}
-				return nil
-			}
+		root, err := filepath.Abs(base)
+		if err != nil {
+			continue
+		} else if _, err := os.Stat(root); err != nil {
+			continue
 		}
+		os.Setenv("RUNFILES_DIR", root)
+		manifest := filepath.Join(root, "MANIFEST")
+		if _, err := os.Stat(manifest); err == nil {
+			os.Setenv("RUNFILES_MANIFEST_FILE", manifest)
+		}
+		return nil
 	}
 	return errors.New("unable to setup runfiles")
 }
@@ -77,7 +81,7 @@ func defaultVnamesPath() string {
 }
 
 func makeDir() string {
-	if dir := flag.Arg(0); len(dir) > 0 {
+	if dir := flag.Arg(0); dir != "" {
 		return dir
 	}
 	return "."
@@ -114,33 +118,26 @@ func mustFindJavaCommand() string {
 	return java
 }
 
-func setenvDefaultFunc(env []string, key string, value func() string) []string {
+func setEnvDefaultFunc(env []string, key string, value func() string) []string {
 	if val := os.Getenv(key); len(val) == 0 {
 		env = append(env, key+"="+value())
 	}
 	return env
 }
 
-func setenvDefault(env []string, key, value string) []string {
-	if val := os.Getenv(key); len(val) == 0 {
-		env = append(env, key+"="+value)
-	}
-	return env
-}
-
 func makeEnv() []string {
 	env := os.Environ()
-	env = setenvDefaultFunc(env, javaCommandVar, mustFindJavaCommand)
-	env = setenvDefaultFunc(env, kytheRootVar, makeDir)
+	env = setEnvDefaultFunc(env, javaCommandVar, mustFindJavaCommand)
+	env = setEnvDefaultFunc(env, kytheRootVar, makeDir)
 	if len(vnameRules) > 0 {
-		env = setenvDefaultFunc(env, kytheVnameVar, func() string { return vnameRules })
+		env = setEnvDefaultFunc(env, kytheVnameVar, func() string { return vnameRules })
 	}
 	return env
 }
 
 func init() {
 	setupRunfiles()
-	flag.StringVar(&wrapperPath, "java-wrapper", defaultWrapperPath(), "path to the java-wrapper executable (optional)")
+	flag.StringVar(&wrapperPath, "java-wrapper", defaultWrapperPath(), "path to the java_wrapper executable (optional)")
 	flag.StringVar(&vnameRules, "rules", defaultVnamesPath(), "path of vnames.json file (optional)")
 	flag.Usage = flagutil.SimpleUsage("Extract a configured openjdk11 source directory", "[--java-wrapper=] [path]")
 }
@@ -155,7 +152,7 @@ func main() {
 		flagutil.UsageErrorf("java-wrapper not found: %v", err)
 	}
 
-	cmd := exec.Command("make", javaMakeVar+"="+wrapperPath, "ENABLE_JAVAC_SERVER=no", "clean-jdk", "jdk")
+	cmd := exec.Command("make", javaMakeVar+"="+wrapperPath, "ENABLE_JAVAC_SERVER=no", "clean", "jdk")
 	cmd.Dir = makeDir()
 	cmd.Env = makeEnv()
 	cmd.Stdout = nil // Quiet, you

@@ -1,8 +1,8 @@
 load("//tools:build_rules/shims.bzl", "go_binary")
 
 go_binary(
-    name = "java-wrapper",
-    srcs = ["java-wrapper.go"],
+    name = "java_wrapper",
+    srcs = ["java_wrapper/java_wrapper.go"],
     data = [
         "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor_deploy.jar",
     ],
@@ -15,10 +15,10 @@ go_binary(
 
 go_binary(
     name = "extract",
-    srcs = ["extract.go"],
+    srcs = ["extract/extract.go"],
     data = [
         "vnames.json",
-        ":java-wrapper",
+        ":java_wrapper",
     ],
     deps = [
         "//kythe/go/util/flagutil",
