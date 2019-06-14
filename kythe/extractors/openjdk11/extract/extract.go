@@ -26,6 +26,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -37,18 +38,26 @@ import (
 
 const (
 	javaCommandVar      = "KYTHE_JAVA_COMMAND"
-	kytheRootVar        = "KYTHE_ROOT_DIRECTORY"
-	kytheVnameVar       = "KYTHE_VNAMES"
-	javaMakeVar         = "JAVA_CMD"
-	runfilesWrapperPath = "io_kythe/kythe/extractors/openjdk11/java_wrapper"
-	runfilesVnamesPath  = "io_kythe/kythe/extractors/openjdk11/vnames.json"
+	wrapperExtractorVar = "KYTHE_JAVA_EXTRACTOR_JAR"
+
+	kytheRootVar   = "KYTHE_ROOT_DIRECTORY"
+	kytheOutputVar = "KYTHE_OUTPUT_DIRECTORY"
+	kytheCorpusVar = "KYTHE_CORPUS"
+	kytheVNameVar  = "KYTHE_VNAMES"
+
+	javaMakeVar           = "JAVA_CMD"
+	runfilesWrapperPath   = "io_kythe/kythe/extractors/openjdk11/java_wrapper"
+	runfilesVNamesPath    = "io_kythe/kythe/extractors/openjdk11/vnames.json"
+	runfilesExtractorPath = "io_kythe/kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac9_extractor_deploy.jar"
 )
 
 var (
-	wrapperPath  string
-	vnameRules   string
-	makeDir      string
-	errorPattern = regexp.MustCompile("ERROR: extractor failure for module ([^:]*):")
+	makeDir       string
+	outputDir     string
+	vNameRules    string
+	wrapperPath   string
+	extractorPath string
+	errorPattern  = regexp.MustCompile("ERROR: extractor failure for module ([^:]*):")
 )
 
 func setupRunfiles() error {
@@ -77,8 +86,25 @@ func defaultWrapperPath() string {
 	return val
 }
 
-func defaultVnamesPath() string {
-	val, _ := bazel.Runfile(runfilesVnamesPath)
+func defaultVNamesPath() string {
+	val, _ := bazel.Runfile(runfilesVNamesPath)
+	return val
+}
+
+func defaultExtractorPath() string {
+	val, _ := bazel.Runfile(runfilesExtractorPath)
+	return val
+}
+
+func defaultOutputDir() string {
+	val := os.Getenv(kytheOutputVar)
+	if val == "" {
+		usr, err := user.Current()
+		if err != nil {
+			log.Fatalf("ERROR: unable to determine current user: %v", err)
+		}
+		val = filepath.Join(usr.HomeDir, "kythe-openjdk11-output")
+	}
 	return val
 }
 
@@ -110,34 +136,44 @@ func findJavaCommand() (string, error) {
 func mustFindJavaCommand() string {
 	java, err := findJavaCommand()
 	if err != nil {
-		log.Fatalf("unable to determine KYTHE_JAVA_COMMAND: %v", err)
+		log.Fatalf("unable to determine %s: %v", javaCommandVar, err)
 	}
 	return java
 }
 
 func setEnvDefaultFunc(env []string, key string, value func() string) []string {
-	if val := os.Getenv(key); len(val) == 0 {
+	if val := os.Getenv(key); val == "" {
 		env = append(env, key+"="+value())
 	}
 	return env
 }
 
+func setEnvDefault(env []string, key, value string) []string {
+	return setEnvDefaultFunc(env, key, func() string { return value })
+}
+
 func makeEnv() []string {
 	env := os.Environ()
 	env = setEnvDefaultFunc(env, javaCommandVar, mustFindJavaCommand)
-	env = setEnvDefaultFunc(env, kytheRootVar, func() string { return makeDir })
-	if len(vnameRules) > 0 {
-		env = setEnvDefaultFunc(env, kytheVnameVar, func() string { return vnameRules })
+	env = setEnvDefault(env, kytheCorpusVar, "openjdk11")
+	if vNameRules != "" {
+		env = setEnvDefault(env, kytheVNameVar, vNameRules)
 	}
+	env = append(env,
+		kytheRootVar+"="+makeDir,
+		kytheOutputVar+"="+outputDir,
+		wrapperExtractorVar+"="+extractorPath)
 	return env
 }
 
 func init() {
 	setupRunfiles()
-	flag.StringVar(&wrapperPath, "java-wrapper", defaultWrapperPath(), "path to the java_wrapper executable (optional)")
-	flag.StringVar(&vnameRules, "rules", defaultVnamesPath(), "path of vnames.json file (optional)")
 	flag.StringVar(&makeDir, "jdk", "", "path to the OpenJDK11 source tree (required)")
-	flag.Usage = flagutil.SimpleUsage("Extract a configured openjdk11 source directory", "[--java-wrapper=] [path]")
+	flag.StringVar(&outputDir, "output", defaultOutputDir(), "path to which the compilations and errors should be written (optional)")
+	flag.StringVar(&vNameRules, "rules", defaultVNamesPath(), "path of vnames.json file (optional)")
+	flag.StringVar(&wrapperPath, "java_wrapper", defaultWrapperPath(), "path to the java_wrapper executable (optional)")
+	flag.StringVar(&extractorPath, "extractor_jar", defaultExtractorPath(), "path to the javac_extractor_deployt.jar (optional)")
+	flag.Usage = flagutil.SimpleUsage("Extract a configured openjdk11 source directory", "[--java_wrapper=] [path]")
 }
 
 func main() {
@@ -146,10 +182,10 @@ func main() {
 		flagutil.UsageError("missing -jdk")
 	}
 	if wrapperPath == "" {
-		flagutil.UsageError("missing -java-wrapper")
+		flagutil.UsageError("missing -java_wrapper")
 	}
 	if _, err := os.Stat(wrapperPath); err != nil {
-		flagutil.UsageErrorf("java-wrapper not found: %v", err)
+		flagutil.UsageErrorf("java_wrapper not found: %v", err)
 	}
 
 	cmd := exec.Command("make", javaMakeVar+"="+wrapperPath, "ENABLE_JAVAC_SERVER=no", "clean", "jdk")

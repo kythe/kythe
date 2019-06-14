@@ -21,29 +21,23 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"bitbucket.org/creachadair/shell"
-	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"golang.org/x/sys/unix"
 )
 
 const (
-	javaCommandVar   = "KYTHE_JAVA_COMMAND"     // Path to the real java command, required.
-	kytheRootVar     = "KYTHE_ROOT_DIRECTORY"   // Extraction root directory, set to "." if unspecified.
-	kytheOutputVar   = "KYTHE_OUTPUT_DIRECTORY" // Extraction output directory, defaults to ~/kythe-openjdk11-output
-	kytheCorpusVar   = "KYTHE_CORPUS"           // Extraction corpus to use, if KYTHE_VNAMES is unset. Defaults to openjdk11.
-	kytheTargetVar   = "KYTHE_ANALYSIS_TARGET"  // Extraction analysis target to set, defaults to the java module name.
-	extractorJarVar  = "JAVAC_EXTRACTOR_JAR"    // Path to the javac_extractor jar, default to Bazel runfiles.
-	extractorJarPath = "io_kythe/kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac9_extractor_deploy.jar"
+	javaCommandVar  = "KYTHE_JAVA_COMMAND"       // Path to the real java command, required.
+	extractorJarVar = "KYTHE_JAVA_EXTRACTOR_JAR" // Path to the javac_extractor jar, required.
+	kytheOutputVar  = "KYTHE_OUTPUT_DIRECTORY"   // Extraction output directory, required.
+	kytheTargetVar  = "KYTHE_ANALYSIS_TARGET"    // Extraction analysis target to set, defaults to the java module name.
 )
 
 var (
@@ -56,55 +50,30 @@ func moduleName() string {
 }
 
 func outputDir() string {
-	val := os.Getenv(kytheOutputVar)
-	if len(val) == 0 {
-		usr, err := user.Current()
-		if err != nil {
-			log.Fatalf("ERROR: unable to determine current user: %v", err)
+	if val := os.Getenv(kytheOutputVar); val != "" {
+		return val
+	}
+	log.Fatal("ERROR: KYTHE_OUTPUT_DIRECTORY not set")
+	return ""
+}
+
+func mustGetEnvPath(key string) string {
+	if val := os.Getenv(key); val != "" {
+		if _, err := os.Stat(val); err != nil {
+			log.Fatalf("invalid %s: %v", key, err)
 		}
-		val = filepath.Join(usr.HomeDir, "kythe-openjdk11-output")
+		return val
 	}
-	return val
+	log.Fatal(key + " not set")
+	return ""
 }
 
-func checkPath(parts ...string) error {
-	_, err := os.Stat(filepath.Join(parts...))
-	return err
+func javaCommand() string {
+	return mustGetEnvPath(javaCommandVar)
 }
 
-func setupRunfiles() error {
-	if os.Getenv("RUNFILES_DIR") != "" || os.Getenv("RUNFILES_MANIFEST_FILE") != "" {
-		return nil
-	}
-	for _, base := range []string{os.Args[0] + ".runfiles", "."} {
-		root, err := filepath.Abs(base)
-		if err != nil {
-			continue
-		} else if _, err := os.Stat(root); err != nil {
-			continue
-		}
-		os.Setenv("RUNFILES_DIR", root)
-		manifest := filepath.Join(root, "MANIFEST")
-		if _, err := os.Stat(manifest); err == nil {
-			os.Setenv("RUNFILES_MANIFEST_FILE", manifest)
-		}
-		return nil
-	}
-	return errors.New("unable to setup runfiles")
-}
-
-func findJavaCommand() (string, error) {
-	if val := os.Getenv(javaCommandVar); len(val) > 0 {
-		return val, checkPath(val)
-	}
-	return "", os.ErrNotExist
-}
-
-func findExtractorJar() (string, error) {
-	if val := os.Getenv(extractorJarVar); len(val) > 0 {
-		return val, checkPath(val)
-	}
-	return bazel.Runfile(extractorJarPath)
+func extractorJar() string {
+	return mustGetEnvPath(extractorJarVar)
 }
 
 func extractorArgs(args []string, jar string) []string {
@@ -154,15 +123,12 @@ func extractorArgs(args []string, jar string) []string {
 
 func extractorEnv() []string {
 	env := os.Environ()
-	env = setEnvDefault(env, kytheRootVar, ".")
-	env = setEnvDefault(env, kytheOutputVar, outputDir())
 	env = setEnvDefault(env, kytheTargetVar, moduleName())
-	env = setEnvDefault(env, kytheCorpusVar, "openjdk11")
 	return env
 }
 
 func setEnvDefault(env []string, key, def string) []string {
-	if val := os.Getenv(key); len(val) == 0 {
+	if val := os.Getenv(key); val == "" {
 		env = append(env, key+"="+def)
 	}
 	return env
@@ -175,19 +141,9 @@ func shift(args []string) (string, []string) {
 	return "", nil
 }
 
-func init() {
-	setupRunfiles()
-}
-
 func main() {
-	java, err := findJavaCommand()
-	if err != nil {
-		log.Fatalf("ERROR: unable to find java executable: %v", err)
-	}
-	jar, err := findExtractorJar()
-	if err != nil {
-		log.Fatalf("ERROR: unable to find extractor jar: %v", err)
-	}
+	java := javaCommand()
+	jar := extractorJar()
 	if args := extractorArgs(os.Args[1:], jar); len(args) > 0 {
 		cmd := exec.Command(java, args...)
 		cmd.Env = extractorEnv()
@@ -195,21 +151,17 @@ func main() {
 		if output, err := cmd.CombinedOutput(); err != nil {
 			w, err := os.Create(filepath.Join(outputDir(), moduleName()+".err"))
 			if err != nil {
-				log.Printf("Error creating error log for module %s: %v", moduleName(), err)
+				log.Fatalf("Error creating error log for module %s: %v", moduleName(), err)
 			}
-			defer w.Close()
-			if _, err := fmt.Fprintf(w, "--- %s\n", shell.Join(args)); err != nil {
-				log.Printf("Error writing error log for module %s: %v", moduleName(), err)
-			}
-			if _, err := w.Write(output); err != nil {
-				log.Printf("Error writing error log for module %s: %v", moduleName(), err)
-			}
+			fmt.Fprintf(w, "--- %s\n", shell.Join(args))
+			w.Write(output)
+			w.Close()
+
 			// Log, but don't abort, on extraction failures.
 			log.Printf("ERROR: extractor failure for module %s: %v", moduleName(), err)
 		}
 	}
 	// Always end by running the java command directly, as "java".
 	os.Args[0] = "java"
-	err = unix.Exec(java, os.Args, os.Environ())
-	log.Fatal(err) // If exec returns at all, it's an error.
+	log.Fatal(unix.Exec(java, os.Args, os.Environ())) // If exec returns at all, it's an error.
 }
