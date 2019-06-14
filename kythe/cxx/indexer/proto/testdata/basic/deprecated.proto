@@ -3,7 +3,13 @@ syntax = "proto2";
 package proto_kythe_test;
 option java_package = "io.kythe";
 
+//- @M defines/binding Message
+//- Message.node/kind record
+//- Message.tag/deprecated ""
 message M {
+
+  option deprecated = true;
+
   //- @field1 defines/binding F1
   //- F1.tag/deprecated ""
   optional string field1 = 1 [deprecated=true];
@@ -14,4 +20,26 @@ message M {
 
   // Fields that are annotated with [deprecated=true] should be tagged as
   // deprecated by the proto indexer.
+
+  //- @N1 defines/binding Nested1
+  //- Nested1.node/kind record
+  //- Nested1.tag/deprecated ""
+  message N1 {
+    option deprecated = true;
+
+    //- @field3 defines/binding F3
+    //- F3.tag/deprecated ""
+    optional string field3 = 1 [deprecated = true];
+  }
+
+  //- @N2 defines/binding Nested2
+  //- Nested2.node/kind record
+  //- !{ Nested2.tag/deprecated "" }
+  message N2 {
+
+    //- @field4 defines/binding F4
+    //- F4.tag/deprecated ""
+    optional string field4 = 1 [deprecated = true];
+  }
+
 }
