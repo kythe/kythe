@@ -121,7 +121,7 @@ func findJavaCommand() (string, error) {
 	if err := cmd.Start(); err != nil {
 		return "", err
 	}
-	prefix := javaMakeVar + " := "
+	const prefix = javaMakeVar + " := "
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		if strings.HasPrefix(scanner.Text(), prefix) {
