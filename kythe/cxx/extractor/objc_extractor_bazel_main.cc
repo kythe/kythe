@@ -123,7 +123,7 @@ static bool LoadSpawnInfo(const XAState& xa_state,
 
   if (ContainsUnsupportedArg(args)) {
     LOG(ERROR) << "Not extracting " << info.owner()
-              << " because it had an unsupported argument.";
+               << " because it had an unsupported argument.";
     return false;
   }
 
@@ -162,7 +162,7 @@ static bool LoadCppInfo(const XAState& xa_state,
 
   if (ContainsUnsupportedArg(args)) {
     LOG(ERROR) << "Not extracting " << info.owner()
-              << " because it had an unsupported argument.";
+               << " because it had an unsupported argument.";
     return false;
   }
 
