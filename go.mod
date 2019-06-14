@@ -5,6 +5,7 @@ require (
 	bitbucket.org/creachadair/stringset v0.0.3
 	github.com/DataDog/zstd v1.3.5
 	github.com/apache/beam v0.0.0-20190503190717-3cf3a4708c58
+	github.com/bazelbuild/rules_go v0.0.0-20190612215247-20ab48681cad
 	github.com/beevik/etree v1.1.0
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
@@ -37,6 +38,7 @@ require (
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
 	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f
+	golang.org/x/sys v0.0.0-20190130150945-aca44879d564
 	golang.org/x/text v0.3.0
 	golang.org/x/tools v0.0.0-20190228203856-589c23e65e65
 	google.golang.org/api v0.0.0-20180404000327-3097bf831ede
