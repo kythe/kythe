@@ -122,7 +122,7 @@ static bool LoadSpawnInfo(const XAState& xa_state,
   }
 
   if (ContainsUnsupportedArg(args)) {
-    LOG(INFO) << "Not extracting " << info.owner()
+    LOG(ERROR) << "Not extracting " << info.owner()
               << " because it had an unsupported argument.";
     return false;
   }
@@ -161,7 +161,7 @@ static bool LoadCppInfo(const XAState& xa_state,
   }
 
   if (ContainsUnsupportedArg(args)) {
-    LOG(INFO) << "Not extracting " << info.owner()
+    LOG(ERROR) << "Not extracting " << info.owner()
               << " because it had an unsupported argument.";
     return false;
   }
@@ -226,6 +226,7 @@ int main(int argc, char* argv[]) {
   if (success) {
     config.Extract(kythe::supported_language::Language::kObjectiveC);
   } else {
+    LOG(ERROR) << "Couldn't load extra action";
     // If we couldn't extract, just write an empty output file. This way the
     // extra_action will be a success from bazel's perspective, which should
     // remove some log spam.
