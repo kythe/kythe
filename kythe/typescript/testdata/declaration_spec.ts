@@ -19,15 +19,15 @@ export default NspI;
 //- @C defines/binding VName("C#type", _, _, "testdata/declaration_spec", "typescript")
 class C {
   // PropertyDeclaration instance member
-  //- @property defines/binding VName("C.property", _, _, "testdata/declaration_spec", "typescript")
+  //- @property defines/binding VName("C#type.property", _, _, "testdata/declaration_spec", "typescript")
   property = 0;
 
   // PropertyDeclaration static member
-  //- @property defines/binding VName("C#type.property", _, _, "testdata/declaration_spec", "typescript")
+  //- @property defines/binding VName("C.property", _, _, "testdata/declaration_spec", "typescript")
   static property = 0;
 
   // MethodDeclaration
-  //- @method defines/binding VName("C.method", _, _, "testdata/declaration_spec", "typescript")
+  //- @method defines/binding VName("C#type.method", _, _, "testdata/declaration_spec", "typescript")
   method() {}
 
   // Constructor
@@ -35,13 +35,14 @@ class C {
   constructor() {}
 
   // GetAccessor
-  //- @prop defines/binding VName("C.prop", _, _, "testdata/declaration_spec", "typescript")
+  //- @prop defines/binding VName("C#type.prop:getter", _, _, "testdata/declaration_spec", "typescript")
+  //- @prop defines/binding VName("C#type.prop", _, _, "testdata/declaration_spec", "typescript")
   get prop() {
     return this.property;
   }
 
   // SetAccessor
-  //- @prop defines/binding VName("C.prop:setter", _, _, "testdata/declaration_spec", "typescript")
+  //- @prop defines/binding VName("C#type.prop:setter", _, _, "testdata/declaration_spec", "typescript")
   set prop(nProp) {
     this.property = nProp;
   }

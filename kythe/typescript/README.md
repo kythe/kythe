@@ -6,7 +6,9 @@ This specification defines how the indexer expresses VNames for TypeScript
 declarations. You may find this useful if you are developing an application that
 relies on TypeScript code you don't want to re-index.
 
-[spec tests](./testdata/declaration_spec.ts)
+A formal listing of the specification is provided below, but the
+[spec tests](./testdata/declaration_spec.ts) may be more useful for real
+examples.
 
 ### VName signature
 
@@ -145,12 +147,15 @@ class NoCtorKlass {}
 -   `$CLASS[#type]?.$PROPERTY`
 
 **Notes**: Instance members on a class have a signature of form
-`$CLASS.$PROPERTY`. Static members, which belong to the class type rather than
-the value, have a form of `$CLASS#type.$PROPERTY`.
+`$CLASS#type.$PROPERTY`, as they belong to instances of the class type. Static
+members, which belong to the class value, have a form of `$CLASS.$PROPERTY`.
 
 **SyntaxKind**:
 
-- `PropertyDeclaration`
+-   PropertyDeclaration
+-   GetAccessor
+-   SetAccessor
+-   MethodDeclaration
 
 ```typescript
 class Klass {
