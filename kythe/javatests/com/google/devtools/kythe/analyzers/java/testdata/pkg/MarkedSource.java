@@ -215,6 +215,10 @@ public class MarkedSource {
   //- ObjId.pre_text "Object"
   void methodWithGeneric(List<Object> lst) {}
 
+  // Ensure documentation is emitted for nodes referenced before their definitions.
+  //- @Inner ref InnerClass
+  static Inner refClassBeforeDef() { return null; }
+
   //- @Inner defines/binding InnerClass
   //- InnerClass code _
   public class Inner {
