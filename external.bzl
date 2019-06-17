@@ -178,6 +178,7 @@ def _java_dependencies():
     maybe(
         git_repository,
         name = "com_google_common_flogger",
+        shallow_since = "1539871309 -0400",
         commit = "ca8ad22bc1479b5675118308f88ef3fff7d26c1f",
         remote = "https://github.com/google/flogger",
     )
@@ -337,6 +338,7 @@ def _go_dependencies():
         name = "com_github_sourcegraph_jsonrpc2",
         commit = "a3d86c792f0f5a0c0c2c4ed9157125e914cb5534",
         custom = "jsonrpc2",
+        shallow_since = "1525197737 +0100",
         importpath = "github.com/sourcegraph/jsonrpc2",
     )
 
@@ -361,6 +363,7 @@ def _go_dependencies():
         name = "com_github_sourcegraph_go_langserver",
         commit = "e526744fd766a8f42e55bd92a3843c2afcdbf08c",
         custom = "langserver",
+        shallow_since = "1527592186 +0100",
         importpath = "github.com/sourcegraph/go-langserver",
     )
 
@@ -369,6 +372,7 @@ def _go_dependencies():
         name = "com_github_sergi_go_diff",
         commit = "da645544ed44df016359bd4c0e3dc60ee3a0da43",
         custom = "diff",
+        shallow_since = "1517848389 +0100",
         importpath = "github.com/sergi/go-diff",
     )
 
@@ -385,6 +389,7 @@ def _go_dependencies():
         name = "org_golang_x_tools",
         commit = "589c23e65e65055d47b9ad4a99723bc389136265",
         custom = "x_tools",
+        shallow_since = "1551386336 +0000",
         custom_git = "https://github.com/golang/tools.git",
         importpath = "golang.org/x/tools",
         patch_args = ["-p1"],
@@ -403,7 +408,8 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_net",
-        commit = "3a22650c66bd",
+        commit = "3a22650c66bd7f4fb6d1e8072ffd7b75c8a27898",
+        shallow_since = "1550038300 +0000",
         custom = "x_net",
         custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
@@ -448,6 +454,7 @@ def _go_dependencies():
         go_repository,
         name = "org_golang_x_oauth2",
         commit = "d2e6202438beef2727060aa7cabdd924d92ebfd9",
+        shallow_since = "1534886613 +0000",
         custom = "x_oauth2",
         custom_git = "https://github.com/golang/oauth2.git",
         importpath = "golang.org/x/oauth2",
@@ -467,6 +474,7 @@ def _go_dependencies():
         build_file_proto_mode = "disable",
         commit = "3cf3a4708c588e32e85a1d4cfdb29ab5a0203efc",
         custom = "beam",
+        shallow_since = "1556910437 -0700",
         importpath = "github.com/apache/beam",
     )
 
@@ -482,6 +490,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_google_api",
+        shallow_since = "1522800207 +0000",
         commit = "3097bf831ede4a24e08a3316254e29ca726383e3",
         custom = "google_api",
         custom_git = "https://github.com/google/google-api-go-client.git",
@@ -527,6 +536,7 @@ def _go_dependencies():
         commit = "49385e6e15226593f68b26af201feec29d5bba22",
         custom = "x_sys",
         custom_git = "https://github.com/golang/sys.git",
+        shallow_since = "1535642130 +0000",
         importpath = "golang.org/x/sys",
     )
 
@@ -558,6 +568,7 @@ def _go_dependencies():
         name = "com_github_ghodss_yaml",
         commit = "c7ce16629ff4cd059ed96ed06419dd3856fd3577",
         custom = "ghodss_yaml",
+        shallow_since = "1534754878 -0700",
         importpath = "github.com/ghodss/yaml",
     )
 
@@ -606,6 +617,7 @@ def _go_dependencies():
         name = "com_github_ulikunitz_xz",
         commit = "590df8077fbcb06ad62d7714da06c00e5dd2316d",
         custom = "xz",
+        shallow_since = "1540752304 +0100",
         importpath = "github.com/ulikunitz/xz",
     )
 
