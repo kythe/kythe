@@ -305,8 +305,9 @@ class Visitor {
 
     // Traverse the containing blocks upward, gathering names from nodes that
     // introduce scopes.
-    for (let node: ts.Node|undefined = startNode; node != null;
-         node = node.parent) {
+    for (let node: ts.Node|undefined = startNode,
+                   lastNode: ts.Node|undefined = undefined;
+         node != null; lastNode = node, node = node.parent) {
       switch (node.kind) {
         case ts.SyntaxKind.ExportAssignment:
           const exportDecl = node as ts.ExportAssignment;
@@ -359,7 +360,10 @@ class Visitor {
           const decl = node as ts.NamedDeclaration;
           if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
             let part = decl.name.text;
-            if (this.isStaticMember(startNode, decl)) {
+            // Instance members of a class are scoped to the type of the class.
+            if (ts.isClassDeclaration(decl) && lastNode !== undefined &&
+                ts.isClassElement(lastNode) &&
+                !this.isStaticMember(lastNode, decl)) {
               part += '#type';
             }
             // Getters and setters semantically refer to the same entities but
