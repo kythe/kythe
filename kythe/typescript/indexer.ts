@@ -33,10 +33,11 @@ export interface VName {
 }
 
 /**
- * A plugin host holds helper methods used by the TypeScript indexer that may
- * also be useful to plugins, reducing code duplication.
+ * A indexer host holds information about the program indexing and methods used
+ * by the TypeScript indexer that may also be useful to plugins, reducing code
+ * duplication.
  */
-export interface PluginHost {
+export interface IndexerHost {
   /**
    * Converts a file path into a file VName.
    */
@@ -68,10 +69,10 @@ export interface Plugin {
   name: string;
   /**
    * Indexes a TypeScript program with extra functionality.
-   * Takes a plugin host, which provides useful properties and methods that the
-   * plugin can defer to rather than reimplementing.
+   * Takes a indexer host, which provides useful properties and methods that
+   * the plugin can defer to rather than reimplementing.
    */
-  index(host: PluginHost): void;
+  index(host: IndexerHost): void;
 }
 
 /**
@@ -122,8 +123,12 @@ enum Context {
   Setter,
 }
 
-/** IndexerHost provides useful methods for indexing a TypeScript program. */
-class IndexerHost implements PluginHost {
+/**
+ * IndexerContext provides useful information about a TypeScript program and
+ * common methods used by the TypeScript indexer and its plugins.
+ * See the IndexerHost interface definition for more details.
+ */
+class IndexerContext implements IndexerHost {
   /**
    * rootDirs is the list of rootDirs in the compiler options, sorted
    * longest first.  See this.moduleName().
@@ -198,7 +203,7 @@ class IndexerHost implements PluginHost {
 }
 
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
-class Visitor extends IndexerHost {
+class Visitor {
   /** kFile is the VName for the 'file' node representing the source file. */
   kFile: VName;
 
@@ -224,29 +229,18 @@ class Visitor extends IndexerHost {
   typeChecker: ts.TypeChecker;
 
   constructor(
-      /**
-       * The VName for the CompilationUnit, containing compilation-wide info.
-       */
-      compilationUnit: VName,
-      /**
-       * A map of path to path-specific VName.
-       */
-      pathVNames: Map<string, VName>,
-      /** All source file paths in the TypeScript program. */
-      paths: string[],
-      program: ts.Program,
+      private context: IndexerContext,
       private file: ts.SourceFile,
       private getOffsetTable: (path: string) => utf8.OffsetTable,
   ) {
-    super(compilationUnit, pathVNames, paths, program);
-    this.typeChecker = program.getTypeChecker();
+    this.typeChecker = this.context.program.getTypeChecker();
 
     this.kFile = this.newFileVName(file.fileName);
   }
 
   todo(node: ts.Node, message: string) {
     const sourceFile = node.getSourceFile();
-    const file = path.relative(this.sourceRoot, sourceFile.fileName);
+    const file = path.relative(this.context.sourceRoot, sourceFile.fileName);
     const {line, character} =
         ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
     console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
@@ -264,7 +258,7 @@ class Visitor extends IndexerHost {
    * newFileVName returns a new VName for the given file path.
    */
   newFileVName(path: string): VName {
-    return this.pathToVName(path);
+    return this.context.pathToVName(path);
   }
 
   /**
@@ -293,7 +287,7 @@ class Visitor extends IndexerHost {
 
   /** emitFact emits a new fact entry, tying an attribute to a VName. */
   emitFact(source: VName, name: string, value: string) {
-    this.emit({
+    this.context.emit({
       source,
       fact_name: '/kythe/' + name,
       fact_value: Buffer.from(value).toString('base64'),
@@ -302,7 +296,7 @@ class Visitor extends IndexerHost {
 
   /** emitEdge emits a new edge entry, relating two VNames. */
   emitEdge(source: VName, name: string, target: VName) {
-    this.emit({
+    this.context.emit({
       source,
       edge_kind: '/kythe/edge/' + name,
       target,
@@ -431,7 +425,8 @@ class Visitor extends IndexerHost {
           // ModuleDeclaration).  Otherwise, the module name is derived from the
           // name of the current file.
           if (!moduleName) {
-            moduleName = this.moduleName((node as ts.SourceFile).fileName);
+            moduleName =
+                this.context.moduleName((node as ts.SourceFile).fileName);
           }
           break;
         default:
@@ -648,7 +643,7 @@ class Visitor extends IndexerHost {
       throw new Error(`TODO: handle module symbol ${name}`);
     }
     const sourcePath = name.substr(1, name.length - 2);
-    return this.moduleName(sourcePath);
+    return this.context.moduleName(sourcePath);
   }
 
   /**
@@ -789,7 +784,8 @@ class Visitor extends IndexerHost {
    * the first letter in the file as the anchor for this.
    */
   emitModuleAnchor(sf: ts.SourceFile) {
-    const kMod = this.newVName('module', this.moduleName(this.file.fileName));
+    const kMod =
+        this.newVName('module', this.context.moduleName(this.file.fileName));
     this.emitFact(kMod, 'node/kind', 'record');
     this.emitEdge(this.kFile, 'childof', kMod);
 
@@ -1312,33 +1308,28 @@ export function index(
     return table;
   }
 
+  const indexingContext = new IndexerContext(vname, pathVNames, paths, program);
+  if (emit != null) {
+    indexingContext.emit = emit;
+  }
+
   for (const path of paths) {
     const sourceFile = program.getSourceFile(path);
     if (!sourceFile) {
       throw new Error(`requested indexing ${path} not found in program`);
     }
     const visitor = new Visitor(
-        vname,
-        pathVNames,
-        paths,
-        program,
+        indexingContext,
         sourceFile,
         getOffsetTable,
     );
-    if (emit != null) {
-      visitor.emit = emit;
-    }
     visitor.index();
   }
 
   if (plugins) {
     for (const plugin of plugins) {
       try {
-        const host = new IndexerHost(vname, pathVNames, paths, program);
-        if (emit != null) {
-          host.emit = emit;
-        }
-        plugin.index(host);
+        plugin.index(indexingContext);
       } catch (err) {
         console.error(`Plugin ${plugin.name} errored: ${err}`);
       }

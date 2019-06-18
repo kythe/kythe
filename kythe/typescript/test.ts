@@ -136,7 +136,7 @@ async function testIndexer(args: string[], plugins?: indexer.Plugin[]) {
 async function testPlugin() {
   const plugin: indexer.Plugin = {
     name: 'TestPlugin',
-    index(host: indexer.PluginHost) {
+    index(host: indexer.IndexerHost) {
       for (const testPath of host.paths) {
         const pluginMod = {
           ...host.pathToVName(host.moduleName(testPath)),
