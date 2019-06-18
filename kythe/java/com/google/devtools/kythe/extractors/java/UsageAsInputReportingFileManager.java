@@ -22,7 +22,6 @@ import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.java.filemanager.ForwardingStandardJavaFileManager;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -174,14 +173,5 @@ class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager
       return ((UsageAsInputReportingJavaFileObject) jfo).underlyingFileObject;
     }
     return jfo;
-  }
-
-  private static Method getMethodOrNull(String name, Class<?>... parameterTypes) {
-    try {
-      return StandardJavaFileManager.class.getMethod(name, parameterTypes);
-    } catch (NoSuchMethodException e) {
-      logger.atInfo().withCause(e).log("Failed to find extended StandardJavaFileManager method");
-    }
-    return null;
   }
 }
