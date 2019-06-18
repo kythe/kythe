@@ -45,8 +45,13 @@ var (
 )
 
 func moduleName() string {
+	path := os.Args[len(os.Args)-1]
 	// Hackish way to determine the likely module being compiled.
-	return modulePattern.ReplaceAllString(os.Args[len(os.Args)-1], "$1")
+	repl := modulePattern.ReplaceAllString(path, "$1")
+	if repl == path { // No match, use dirname and basename to form the module.
+		return filepath.Base(filepath.Dir(path)) + "#" + filepath.Base(path)
+	}
+	return repl
 }
 
 func outputDir() string {
@@ -91,15 +96,13 @@ func extractorArgs(args []string, jar string) []string {
 			}
 			isJavac = true
 			result = append(result,
+				"--add-modules", "java.logging,java.sql",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.main=ALL-UNNAMED",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.util=ALL-UNNAMED",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.file=ALL-UNNAMED",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.api=ALL-UNNAMED",
 				"--add-exports=jdk.compiler.interim/com.sun.tools.javac.code=ALL-UNNAMED",
 				"-jar", jar, "-Xprefer:source")
-		case "--add-modules", "--limit-modules":
-			v, args = shift(args)
-			result = append(result, a, v+",java.logging,java.sql")
 		case "--doclint-format":
 			_, args = shift(args)
 		case "-Werror":
@@ -114,7 +117,7 @@ func extractorArgs(args []string, jar string) []string {
 		}
 	}
 	// As we can only do anything meaningful with Java compilations,
-	// but wrap the java binary, don't attempt to exact other invocations.
+	// but wrap the java binary, don't attempt to extract other invocations.
 	if !isJavac {
 		return nil
 	}
