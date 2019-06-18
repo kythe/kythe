@@ -1,6 +1,12 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
+    name = "forwarding_standard_java_file_manager",
+    srcs = ["ForwardingStandardJavaFileManager.java"],
+    deps = [":flogger"],
+)
+
+java_library(
     name = "flogger",
     exports = ["@com_google_common_flogger//api"],
     runtime_deps = ["@com_google_common_flogger//api:system_backend"],
