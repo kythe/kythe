@@ -33,11 +33,11 @@ export interface VName {
 }
 
 /**
- * A indexer host holds information about the program indexing and methods used
- * by the TypeScript indexer that may also be useful to plugins, reducing code
- * duplication.
+ * An indexer context holds information about the program indexing and methods
+ * used by the TypeScript indexer that may also be useful to plugins, reducing
+ * code duplication.
  */
-export interface IndexerHost {
+export interface IndexerContext {
   /**
    * Converts a file path into a file VName.
    */
@@ -69,10 +69,10 @@ export interface Plugin {
   name: string;
   /**
    * Indexes a TypeScript program with extra functionality.
-   * Takes a indexer host, which provides useful properties and methods that
+   * Takes a indexer context, which provides useful properties and methods that
    * the plugin can defer to rather than reimplementing.
    */
-  index(host: IndexerHost): void;
+  index(context: IndexerContext): void;
 }
 
 /**
@@ -124,19 +124,16 @@ enum Context {
 }
 
 /**
- * IndexerContext provides useful information about a TypeScript program and
- * common methods used by the TypeScript indexer and its plugins.
- * See the IndexerHost interface definition for more details.
+ * StandardIndexerContext provides the standard definition of information about
+ * a TypeScript program and common methods used by the TypeScript indexer and
+ * its plugins. See the IndexerContext interface definition for more details.
  */
-class IndexerContext implements IndexerHost {
+class StandardIndexerContext implements IndexerContext {
   /**
    * rootDirs is the list of rootDirs in the compiler options, sorted
    * longest first.  See this.moduleName().
    */
   rootDirs: string[];
-
-  /** A shorter name for the rootDir in the CompilerOptions. */
-  sourceRoot: string;
 
   constructor(
       /**
@@ -151,8 +148,8 @@ class IndexerContext implements IndexerHost {
       public paths: string[],
       public program: ts.Program,
   ) {
-    this.sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
-    let rootDirs = program.getCompilerOptions().rootDirs || [this.sourceRoot];
+    const sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
+    let rootDirs = program.getCompilerOptions().rootDirs || [sourceRoot];
     rootDirs = rootDirs.map(d => d + '/');
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
@@ -226,6 +223,9 @@ class Visitor {
    */
   anonNames = new Map<ts.Node, string>();
 
+  /** A shorter name for the rootDir in the CompilerOptions. */
+  sourceRoot: string;
+
   typeChecker: ts.TypeChecker;
 
   constructor(
@@ -233,6 +233,9 @@ class Visitor {
       private file: ts.SourceFile,
       private getOffsetTable: (path: string) => utf8.OffsetTable,
   ) {
+    this.sourceRoot =
+        this.context.program.getCompilerOptions().rootDir || process.cwd();
+
     this.typeChecker = this.context.program.getTypeChecker();
 
     this.kFile = this.newFileVName(file.fileName);
@@ -240,7 +243,7 @@ class Visitor {
 
   todo(node: ts.Node, message: string) {
     const sourceFile = node.getSourceFile();
-    const file = path.relative(this.context.sourceRoot, sourceFile.fileName);
+    const file = path.relative(this.sourceRoot, sourceFile.fileName);
     const {line, character} =
         ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
     console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
@@ -1308,7 +1311,8 @@ export function index(
     return table;
   }
 
-  const indexingContext = new IndexerContext(vname, pathVNames, paths, program);
+  const indexingContext =
+      new StandardIndexerContext(vname, pathVNames, paths, program);
   if (emit != null) {
     indexingContext.emit = emit;
   }
