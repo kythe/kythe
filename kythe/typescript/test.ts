@@ -136,17 +136,14 @@ async function testIndexer(args: string[], plugins?: indexer.Plugin[]) {
 async function testPlugin() {
   const plugin: indexer.Plugin = {
     name: 'TestPlugin',
-    index(
-        pathToVName: (path: string) => indexer.VName,
-        moduleName: (path: string) => string, paths: string[],
-        program: ts.Program, emit?: (obj: {}) => void) {
-      for (const testPath of paths) {
+    index(host: indexer.PluginHost) {
+      for (const testPath of host.paths) {
         const pluginMod = {
-          ...pathToVName(moduleName(testPath)),
+          ...host.pathToVName(host.moduleName(testPath)),
           signature: 'plugin-module',
           language: 'plugin-language',
         };
-        emit!({
+        host.emit({
           source: pluginMod,
           fact_name: '/kythe/node/pluginKind',
           fact_value: Buffer.from('pluginRecord').toString('base64'),

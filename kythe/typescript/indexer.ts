@@ -33,15 +33,45 @@ export interface VName {
 }
 
 /**
+ * A plugin host holds helper methods used by the TypeScript indexer that may
+ * also be useful to plugins, reducing code duplication.
+ */
+export interface PluginHost {
+  /**
+   * Converts a file path into a file VName.
+   */
+  pathToVName(path: string): VName;
+  /**
+   * Returns the module name of a TypeScript source file.
+   * See moduleName() for more details.
+   */
+  moduleName(path: string): string;
+  /**
+   * Paths to index.
+   */
+  paths: string[];
+  /**
+   * TypeScript program.
+   */
+  program: ts.Program;
+  /**
+   * Strategy to emit Kythe entries by.
+   */
+  emit(obj: {}): void;
+}
+
+/**
  * A indexer plugin adds extra functionality with the same inputs as the base
  * indexer.
  */
 export interface Plugin {
   name: string;
-  index:
-      (pathToVName: (path: string) => VName,
-       moduleName: (path: string) => string, paths: string[],
-       program: ts.Program, emit?: (obj: {}) => void) => void;
+  /**
+   * Indexes a TypeScript program with extra functionality.
+   * Takes a plugin host, which provides useful properties and methods that the
+   * plugin can defer to rather than reimplementing.
+   */
+  index: (host: PluginHost) => void;
 }
 
 /**
@@ -63,41 +93,6 @@ function toArray<T>(it: Iterator<T>): T[] {
  */
 function stripExtension(path: string): string {
   return path.replace(/\.(d\.)?ts$/, '');
-}
-
-/**
- * getFileVName returns the VName for a given file path.
- */
-function getFileVName(
-    path: string, cache: Map<string, VName>, compilationUnit: VName): VName {
-  const vname = cache.get(path);
-  return {
-    signature: '',
-    language: '',
-    corpus: vname && vname.corpus ? vname.corpus : compilationUnit.corpus,
-    root: vname && vname.corpus ? vname.root : compilationUnit.root,
-    path: vname && vname.path ? vname.path : path,
-  };
-}
-
-/**
- * moduleName returns the ES6 module name of a path to a source file.
- * E.g. foo/bar.ts and foo/bar.d.ts both have the same module name,
- * 'foo/bar', and rootDirs (like bazel-bin/) are eliminated.
- * See README.md for a discussion of this.
- */
-function moduleName(sourcePath: string, rootDirs: string[]): string {
-  // Compute sourcePath as relative to one of the rootDirs.
-  // This canonicalizes e.g. bazel-bin/foo to just foo.
-  // Note that this.rootDirs is sorted longest first, so we'll use the
-  // longest match.
-  for (const rootDir of rootDirs) {
-    if (sourcePath.startsWith(rootDir)) {
-      sourcePath = path.relative(rootDir, sourcePath);
-      break;
-    }
-  }
-  return stripExtension(sourcePath);
 }
 
 /**
@@ -127,8 +122,83 @@ enum Context {
   Setter,
 }
 
+/** IndexerHost provides useful methods for indexing a TypeScript program. */
+class IndexerHost implements PluginHost {
+  /**
+   * rootDirs is the list of rootDirs in the compiler options, sorted
+   * longest first.  See this.moduleName().
+   */
+  rootDirs: string[];
+
+  /** A shorter name for the rootDir in the CompilerOptions. */
+  sourceRoot: string;
+
+  constructor(
+      /**
+       * The VName for the CompilationUnit, containing compilation-wide info.
+       */
+      private compilationUnit: VName,
+      /**
+       * A map of path to path-specific VName.
+       */
+      private pathVNames: Map<string, VName>,
+      /** All source file paths in the TypeScript program. */
+      public paths: string[],
+      public program: ts.Program,
+  ) {
+    this.sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
+    let rootDirs = program.getCompilerOptions().rootDirs || [this.sourceRoot];
+    rootDirs = rootDirs.map(d => d + '/');
+    rootDirs.sort((a, b) => b.length - a.length);
+    this.rootDirs = rootDirs;
+  }
+
+  /**
+   * moduleName returns the ES6 module name of a path to a source file.
+   * E.g. foo/bar.ts and foo/bar.d.ts both have the same module name,
+   * 'foo/bar', and rootDirs (like bazel-bin/) are eliminated.
+   * See README.md for a discussion of this.
+   */
+  moduleName(sourcePath: string): string {
+    // Compute sourcePath as relative to one of the rootDirs.
+    // This canonicalizes e.g. bazel-bin/foo to just foo.
+    // Note that this.rootDirs is sorted longest first, so we'll use the
+    // longest match.
+    for (const rootDir of this.rootDirs) {
+      if (sourcePath.startsWith(rootDir)) {
+        sourcePath = path.relative(rootDir, sourcePath);
+        break;
+      }
+    }
+    return stripExtension(sourcePath);
+  }
+
+  /**
+   * pathToVName returns the VName for a given file path.
+   */
+  pathToVName(path: string): VName {
+    const vname = this.pathVNames.get(path);
+    return {
+      signature: '',
+      language: '',
+      corpus: vname && vname.corpus ? vname.corpus :
+                                      this.compilationUnit.corpus,
+      root: vname && vname.corpus ? vname.root : this.compilationUnit.root,
+      path: vname && vname.path ? vname.path : path,
+    };
+  }
+
+  /**
+   * emit emits a Kythe entry, structured as a JSON object.  Defaults to
+   * emitting to stdout but users may replace it.
+   */
+  emit = (obj: {}) => {
+    console.log(JSON.stringify(obj));
+  };
+}
+
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
-class Visitor {
+class Visitor extends IndexerHost {
   /** kFile is the VName for the 'file' node representing the source file. */
   kFile: VName;
 
@@ -153,40 +223,26 @@ class Visitor {
 
   typeChecker: ts.TypeChecker;
 
-  /** A shorter name for the rootDir in the CompilerOptions. */
-  sourceRoot: string;
-
   constructor(
       /**
        * The VName for the CompilationUnit, containing compilation-wide info.
        */
-      private compilationUnit: VName,
+      compilationUnit: VName,
       /**
        * A map of path to path-specific VName.
        */
-      private pathVNames: Map<string, VName>,
-      /**
-       * Converts a path to its module name. See moduleName().
-       */
-      private moduleName: (path: string) => string,
+      pathVNames: Map<string, VName>,
+      /** All source file paths in the TypeScript program. */
+      paths: string[],
       program: ts.Program,
       private file: ts.SourceFile,
       private getOffsetTable: (path: string) => utf8.OffsetTable,
   ) {
+    super(compilationUnit, pathVNames, paths, program);
     this.typeChecker = program.getTypeChecker();
-
-    this.sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
 
     this.kFile = this.newFileVName(file.fileName);
   }
-
-  /**
-   * emit emits a Kythe entry, structured as a JSON object.  Defaults to
-   * emitting to stdout but users may replace it.
-   */
-  emit = (obj: {}) => {
-    console.log(JSON.stringify(obj));
-  };
 
   todo(node: ts.Node, message: string) {
     const sourceFile = node.getSourceFile();
@@ -208,7 +264,7 @@ class Visitor {
    * newFileVName returns a new VName for the given file path.
    */
   newFileVName(path: string): VName {
-    return getFileVName(path, this.pathVNames, this.compilationUnit);
+    return this.pathToVName(path);
   }
 
   /**
@@ -1256,15 +1312,6 @@ export function index(
     return table;
   }
 
-
-  const sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
-  // rootDirs is the list of rootDirs in the compiler options, sorted longest
-  // first.  See moduleName().
-  let rootDirs = program.getCompilerOptions().rootDirs || [sourceRoot];
-  rootDirs = rootDirs.map(d => d + '/');
-  rootDirs.sort((a, b) => b.length - a.length);
-  const moduleNameWrapper = (path: string) => moduleName(path, rootDirs);
-
   for (const path of paths) {
     const sourceFile = program.getSourceFile(path);
     if (!sourceFile) {
@@ -1273,7 +1320,7 @@ export function index(
     const visitor = new Visitor(
         vname,
         pathVNames,
-        moduleNameWrapper,
+        paths,
         program,
         sourceFile,
         getOffsetTable,
@@ -1287,9 +1334,11 @@ export function index(
   if (plugins) {
     for (const plugin of plugins) {
       try {
-        plugin.index(
-            (path: string) => getFileVName(path, pathVNames, vname),
-            moduleNameWrapper, paths, program, emit);
+        const host = new IndexerHost(vname, pathVNames, paths, program);
+        if (emit != null) {
+          host.emit = emit;
+        }
+        plugin.index(host);
       } catch (err) {
         console.error(`Plugin ${plugin.name} errored: ${err}`);
       }
