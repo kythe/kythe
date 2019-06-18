@@ -10,7 +10,6 @@ java_library(
         "UsageAsInputReportingJavaFileObject.java",
     ],
     deps = [
-        "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/java/com/google/devtools/kythe/platform/java:options",
