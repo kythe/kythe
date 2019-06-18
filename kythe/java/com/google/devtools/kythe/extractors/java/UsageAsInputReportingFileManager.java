@@ -19,6 +19,7 @@ package com.google.devtools.kythe.extractors.java;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.flogger.FluentLogger;
+import com.google.devtools.kythe.platform.java.filemanager.ForwardingStandardJavaFileManager;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -30,7 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.tools.FileObject;
-import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardJavaFileManager;
@@ -40,24 +40,9 @@ import javax.tools.StandardJavaFileManager;
  * compilation.
  */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
-class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<StandardJavaFileManager>
-    implements StandardJavaFileManager {
+class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-
-  // TODO(shahms): Remove these when we've moved to JDK9 and can invoke the methods directly.
-  //  Until then, cache the lookup of these extended StandardJavaFileManager methods.
-  private static final Method getLocationForModuleMethod =
-      getMethodOrNull("getLocationForModule", Location.class, JavaFileObject.class);
-  private static final Method containsMethod =
-      getMethodOrNull("contains", Location.class, FileObject.class);
-  private static final Method getJavaFileObjectsFromPathsMethod =
-      getMethodOrNull("getJavaFileObjectsFromPaths", Iterable.class);
-  private static final Method setLocationFromPathsMethod =
-      getMethodOrNull("setLocationFromPaths", Location.class, Collection.class);
-  private static final Method setLocationForModuleMethod =
-      getMethodOrNull("setLocationForModule", Location.class, String.class, Collection.class);
-  private static final Method asPathMethod = getMethodOrNull("asPath", FileObject.class);
 
   private final Map<URI, InputUsageRecord> inputUsageRecords = new HashMap<>();
 
@@ -154,82 +139,25 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   }
 
   @Override
-  public void setLocation(Location location, Iterable<? extends File> path) throws IOException {
-    fileManager.setLocation(location, path);
+  public Location getLocationForModule(Location location, JavaFileObject fo) throws IOException {
+    return super.getLocationForModule(location, unwrap(fo));
   }
 
   @Override
-  public Iterable<? extends File> getLocation(Location location) {
-    return fileManager.getLocation(location);
-  }
-
-  // TODO(shahms): @Override; added in JDK9
-  public Location getLocationForModule(Location location, JavaFileObject fo) throws IOException {
-    // TODO(shahms): return fileManager.getLocationForModule(location, unwrap(fo));
-    try {
-      return (Location) getLocationForModuleMethod.invoke(fileManager, location, unwrap(fo));
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("getLocationForModule called by unsupported Java version", e);
-    }
-  }
-
-  // TODO(shahms): @Override; added in JDK9
   public boolean contains(Location location, FileObject fo) throws IOException {
-    // TODO(shahms): return fileManager.contains(location, unwrap(fo));
-    try {
-      return (Boolean) containsMethod.invoke(fileManager, location, unwrap(fo));
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("contains called by unsupported Java version", e);
-    }
+    return super.contains(location, unwrap(fo));
   }
 
-  // TODO(shahms): @Override; added in JDK9
-  @SuppressWarnings({"unchecked", "IterablePathParameter"}) // safe by specification.
+  @Override
+  @SuppressWarnings({"IterablePathParameter"}) // safe by specification.
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
       Iterable<? extends Path> paths) {
-    // TODO(shahms): return Iterables.transform(
-    //      fileManager.getJavaFileObjectsFromPaths(paths), input -> map(input, null));
-    try {
-      return Iterables.transform(
-          (Iterable<? extends JavaFileObject>)
-              getJavaFileObjectsFromPathsMethod.invoke(fileManager, paths),
-          input -> map(input, null));
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException(
-          "getJavaFileObjectsFromPaths called by unsupported Java version", e);
-    }
+    return Iterables.transform(super.getJavaFileObjectsFromPaths(paths), input -> map(input, null));
   }
 
-  // TODO(shahms): @Override; added in JDK9
-  public void setLocationFromPaths(Location location, Collection<? extends Path> paths)
-      throws IOException {
-    // TODO(shahms): fileManager.setLocationFromPaths(location, paths);
-    try {
-      setLocationFromPathsMethod.invoke(fileManager, location, paths);
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("setLocationFromPaths called by unsupported Java version", e);
-    }
-  }
-
-  // TODO(shahms): @Override; added in JDK9
-  public void setLocationForModule(
-      Location location, String moduleName, Collection<? extends Path> paths) throws IOException {
-    // TODO(shahms): fileManager.setLocationForModule(location, moduleName, paths);
-    try {
-      setLocationForModuleMethod.invoke(fileManager, location, moduleName, paths);
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("setLocationForModule called by unsupported Java version", e);
-    }
-  }
-
-  // TODO(shahms): @Override; added in JDK9
+  @Override
   public Path asPath(FileObject fo) {
-    // TODO(shahms): return fileManager.asPath(unwrap(fo));
-    try {
-      return (Path) asPathMethod.invoke(fileManager, unwrap(fo));
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("asPath called by unsupported Java version", e);
-    }
+    return super.asPath(unwrap(fo));
   }
 
   // StandardJavaFileManager doesn't like it when it's asked about a JavaFileObject
