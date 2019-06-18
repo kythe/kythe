@@ -137,16 +137,12 @@ async function testPlugin() {
   const plugin: indexer.Plugin = {
     name: 'TestPlugin',
     index(
-        pathToVName: (path: string) => indexer.VName, paths: string[],
+        pathToVName: (path: string) => indexer.VName,
+        moduleName: (path: string) => string, paths: string[],
         program: ts.Program, emit?: (obj: {}) => void) {
       for (const testPath of paths) {
-        const relPath = path.relative(
-                                program.getCompilerOptions().rootDir!,
-                                program.getSourceFile(testPath)!.fileName)
-                            .replace(/\.(d\.)?ts$/, '');
-
         const pluginMod = {
-          ...pathToVName(relPath),
+          ...pathToVName(moduleName(testPath)),
           signature: 'plugin-module',
           language: 'plugin-language',
         };

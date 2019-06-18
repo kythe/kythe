@@ -39,7 +39,8 @@ export interface VName {
 export interface Plugin {
   name: string;
   index:
-      (pathToVName: (path: string) => VName, paths: string[],
+      (pathToVName: (path: string) => VName,
+       moduleName: (path: string) => string, paths: string[],
        program: ts.Program, emit?: (obj: {}) => void) => void;
 }
 
@@ -77,6 +78,26 @@ function getFileVName(
     root: vname && vname.corpus ? vname.root : compilationUnit.root,
     path: vname && vname.path ? vname.path : path,
   };
+}
+
+/**
+ * moduleName returns the ES6 module name of a path to a source file.
+ * E.g. foo/bar.ts and foo/bar.d.ts both have the same module name,
+ * 'foo/bar', and rootDirs (like bazel-bin/) are eliminated.
+ * See README.md for a discussion of this.
+ */
+function moduleName(sourcePath: string, rootDirs: string[]): string {
+  // Compute sourcePath as relative to one of the rootDirs.
+  // This canonicalizes e.g. bazel-bin/foo to just foo.
+  // Note that this.rootDirs is sorted longest first, so we'll use the
+  // longest match.
+  for (const rootDir of rootDirs) {
+    if (sourcePath.startsWith(rootDir)) {
+      sourcePath = path.relative(rootDir, sourcePath);
+      break;
+    }
+  }
+  return stripExtension(sourcePath);
 }
 
 /**
@@ -135,12 +156,6 @@ class Visitor {
   /** A shorter name for the rootDir in the CompilerOptions. */
   sourceRoot: string;
 
-  /**
-   * rootDirs is the list of rootDirs in the compiler options, sorted
-   * longest first.  See this.moduleName().
-   */
-  rootDirs: string[];
-
   constructor(
       /**
        * The VName for the CompilationUnit, containing compilation-wide info.
@@ -149,16 +164,18 @@ class Visitor {
       /**
        * A map of path to path-specific VName.
        */
-      private pathVNames: Map<string, VName>, program: ts.Program,
+      private pathVNames: Map<string, VName>,
+      /**
+       * Converts a path to its module name. See moduleName().
+       */
+      private moduleName: (path: string) => string,
+      program: ts.Program,
       private file: ts.SourceFile,
-      private getOffsetTable: (path: string) => utf8.OffsetTable) {
+      private getOffsetTable: (path: string) => utf8.OffsetTable,
+  ) {
     this.typeChecker = program.getTypeChecker();
 
     this.sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
-    let rootDirs = program.getCompilerOptions().rootDirs || [this.sourceRoot];
-    rootDirs = rootDirs.map(d => d + '/');
-    rootDirs.sort((a, b) => b.length - a.length);
-    this.rootDirs = rootDirs;
 
     this.kFile = this.newFileVName(file.fileName);
   }
@@ -177,26 +194,6 @@ class Visitor {
     const {line, character} =
         ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
     console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
-  }
-
-  /**
-   * moduleName returns the ES6 module name of a path to a source file.
-   * E.g. foo/bar.ts and foo/bar.d.ts both have the same module name,
-   * 'foo/bar', and rootDirs (like bazel-bin/) are eliminated.
-   * See README.md for a discussion of this.
-   */
-  moduleName(sourcePath: string): string {
-    // Compute sourcePath as relative to one of the rootDirs.
-    // This canonicalizes e.g. bazel-bin/foo to just foo.
-    // Note that this.rootDirs is sorted longest first, so we'll use the
-    // longest match.
-    for (const rootDir of this.rootDirs) {
-      if (sourcePath.startsWith(rootDir)) {
-        sourcePath = path.relative(rootDir, sourcePath);
-        break;
-      }
-    }
-    return stripExtension(sourcePath);
   }
 
   /**
@@ -1259,13 +1256,28 @@ export function index(
     return table;
   }
 
+
+  const sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
+  // rootDirs is the list of rootDirs in the compiler options, sorted longest
+  // first.  See moduleName().
+  let rootDirs = program.getCompilerOptions().rootDirs || [sourceRoot];
+  rootDirs = rootDirs.map(d => d + '/');
+  rootDirs.sort((a, b) => b.length - a.length);
+  const moduleNameWrapper = (path: string) => moduleName(path, rootDirs);
+
   for (const path of paths) {
     const sourceFile = program.getSourceFile(path);
     if (!sourceFile) {
       throw new Error(`requested indexing ${path} not found in program`);
     }
-    const visitor =
-        new Visitor(vname, pathVNames, program, sourceFile, getOffsetTable);
+    const visitor = new Visitor(
+        vname,
+        pathVNames,
+        moduleNameWrapper,
+        program,
+        sourceFile,
+        getOffsetTable,
+    );
     if (emit != null) {
       visitor.emit = emit;
     }
@@ -1276,8 +1288,8 @@ export function index(
     for (const plugin of plugins) {
       try {
         plugin.index(
-            (path: string) => getFileVName(path, pathVNames, vname), paths,
-            program, emit);
+            (path: string) => getFileVName(path, pathVNames, vname),
+            moduleNameWrapper, paths, program, emit);
       } catch (err) {
         console.error(`Plugin ${plugin.name} errored: ${err}`);
       }
