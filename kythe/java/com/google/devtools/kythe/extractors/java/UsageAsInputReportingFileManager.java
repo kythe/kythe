@@ -19,7 +19,7 @@ package com.google.devtools.kythe.extractors.java;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.flogger.FluentLogger;
-import com.google.devtools.kythe.common.ForwardingStandardJavaFileManager;
+import com.google.devtools.kythe.platform.java.filemanager.ForwardingStandardJavaFileManager;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;

@@ -1,6 +1,15 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
+    name = "forwarding_standard_java_file_manager",
+    srcs = ["ForwardingStandardJavaFileManager.java"],
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
+        "//third_party/javac",
+    ],
+)
+
+java_library(
     name = "filemanager",
     srcs = [
         "CompilationUnitBasedJavaFileManager.java",

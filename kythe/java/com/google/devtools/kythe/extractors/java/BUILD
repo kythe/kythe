@@ -11,10 +11,10 @@ java_library(
     ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/common:flogger",
-        "//kythe/java/com/google/devtools/kythe/common:forwarding_standard_java_file_manager",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/java/com/google/devtools/kythe/platform/java:options",
+        "//kythe/java/com/google/devtools/kythe/platform/java/filemanager:forwarding_standard_java_file_manager",
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
         "//kythe/java/com/google/devtools/kythe/util:delete_recursively",
         "//kythe/proto:analysis_java_proto",
