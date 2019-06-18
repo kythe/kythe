@@ -71,7 +71,7 @@ export interface Plugin {
    * Takes a plugin host, which provides useful properties and methods that the
    * plugin can defer to rather than reimplementing.
    */
-  index: (host: PluginHost) => void;
+  index(host: PluginHost): void;
 }
 
 /**
