@@ -396,6 +396,17 @@ public class MarkedSource {
     return arry.clone();
   }
 
+  //- @T defines/binding TVar
+  //- TVar.node/kind absvar
+  //- TVar code TVarCode
+  //- TVarCode.kind "BOX"
+  //- TVarCode child.0 TVarContext
+  //- TVarContext.kind "CONTEXT"
+  //- TVarCode child.1 TVarIdent
+  //- TVarIdent.kind "IDENTIFIER"
+  //- TVarIdent.pre_text "<T>"
+  static class Generic<T> {}
+
   //- Void code VoidId
   //- VoidId.kind "IDENTIFIER"
   //- VoidId.pre_text void
