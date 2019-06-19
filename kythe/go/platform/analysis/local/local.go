@@ -175,7 +175,7 @@ func (a *Analyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f anal
 	defer os.Remove(tmpkzip)
 
 	// Run indexer binary
-	out, err := exec.Command(a.cmd[0], append(a.cmd[1:], tmpkzip)...).Output()
+	out, err := exec.CommandContext(ctx, a.cmd[0], append(a.cmd[1:], tmpkzip)...).Output()
 	if e, ok := err.(*exec.ExitError); ok {
 		return fmt.Errorf("indexing kzip %s: %v (stderr=%s)", tmpkzip, err, string(e.Stderr))
 	} else if err != nil {
@@ -196,12 +196,9 @@ func (a *Analyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f anal
 			return fmt.Errorf("unable to write analysis output: %v", err)
 		}
 	}
-	if err := f(ctx, &apb.AnalysisOutput{
+	return f(ctx, &apb.AnalysisOutput{
 		FinalResult: &apb.AnalysisResult{Status: apb.AnalysisResult_COMPLETE},
-	}); err != nil {
-		return fmt.Errorf("unable to write analysis output: %v", err)
-	}
-	return nil
+	})
 }
 
 // saveSingleUnitKzip creates a kzip file containing the given compilation unit

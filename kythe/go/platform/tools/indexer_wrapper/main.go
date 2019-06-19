@@ -34,7 +34,7 @@ func binPath(binname string) string {
 	return filepath.Join(*kytheDir, "indexers", binname)
 }
 
-func NewDelegatingAnalyzer(fetcher analysis.Fetcher) *delegatingAnalyzer {
+func newDelegatingAnalyzer(fetcher analysis.Fetcher) *delegatingAnalyzer {
 	// Command-line invocations for known/released indexer binaries.
 	cmds := map[string][]string{
 		"c++":       []string{binPath("cxx_indexer")},
@@ -66,7 +66,7 @@ func (a *delegatingAnalyzer) Analyze(ctx context.Context, req *apb.AnalysisReque
 
 type driverContext struct{}
 
-func (driverContext) Setup(context.Context, driver.Compilation) error { return nil }
+func (driverContext) Setup(context.Context, driver.Compilation) error             { return nil }
 func (driverContext) Teardown(ctx context.Context, comp driver.Compilation) error { return nil }
 
 // log any errors that happen during analysis.
@@ -75,9 +75,7 @@ func (driverContext) AnalysisError(ctx context.Context, comp driver.Compilation,
 	return err
 }
 
-var (
-	kytheDir = flag.String("kythe_dir", "/opt/kythe", "Path to kythe release dir, which contains indexer binaries and more")
-)
+var kytheDir = flag.String("kythe_dir", "/opt/kythe", "Path to kythe release dir, which contains indexer binaries and more")
 
 func init() {
 	flag.Usage = func() {
@@ -109,7 +107,7 @@ func main() {
 	}
 
 	q := local.NewFileQueue(flag.Args(), nil)
-	a := NewDelegatingAnalyzer(q)
+	a := newDelegatingAnalyzer(q)
 
 	driver := driver.Driver{
 		Analyzer:    a,
