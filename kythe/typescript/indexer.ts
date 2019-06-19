@@ -33,11 +33,11 @@ export interface VName {
 }
 
 /**
- * An indexer context holds information about the program indexing and methods
+ * An indexer host holds information about the program indexing and methods
  * used by the TypeScript indexer that may also be useful to plugins, reducing
  * code duplication.
  */
-export interface IndexerContext {
+export interface IndexerHost {
   /**
    * Converts a file path into a file VName.
    */
@@ -69,10 +69,10 @@ export interface Plugin {
   name: string;
   /**
    * Indexes a TypeScript program with extra functionality.
-   * Takes a indexer context, which provides useful properties and methods that
+   * Takes a indexer host, which provides useful properties and methods that
    * the plugin can defer to rather than reimplementing.
    */
-  index(context: IndexerContext): void;
+  index(context: IndexerHost): void;
 }
 
 /**
@@ -128,7 +128,7 @@ enum Context {
  * a TypeScript program and common methods used by the TypeScript indexer and
  * its plugins. See the IndexerContext interface definition for more details.
  */
-class StandardIndexerContext implements IndexerContext {
+class StandardIndexerContext implements IndexerHost {
   /**
    * rootDirs is the list of rootDirs in the compiler options, sorted
    * longest first.  See this.moduleName().
@@ -229,14 +229,14 @@ class Visitor {
   typeChecker: ts.TypeChecker;
 
   constructor(
-      private context: IndexerContext,
+      private host: IndexerHost,
       private file: ts.SourceFile,
       private getOffsetTable: (path: string) => utf8.OffsetTable,
   ) {
     this.sourceRoot =
-        this.context.program.getCompilerOptions().rootDir || process.cwd();
+        this.host.program.getCompilerOptions().rootDir || process.cwd();
 
-    this.typeChecker = this.context.program.getTypeChecker();
+    this.typeChecker = this.host.program.getTypeChecker();
 
     this.kFile = this.newFileVName(file.fileName);
   }
@@ -261,7 +261,7 @@ class Visitor {
    * newFileVName returns a new VName for the given file path.
    */
   newFileVName(path: string): VName {
-    return this.context.pathToVName(path);
+    return this.host.pathToVName(path);
   }
 
   /**
@@ -290,7 +290,7 @@ class Visitor {
 
   /** emitFact emits a new fact entry, tying an attribute to a VName. */
   emitFact(source: VName, name: string, value: string) {
-    this.context.emit({
+    this.host.emit({
       source,
       fact_name: '/kythe/' + name,
       fact_value: Buffer.from(value).toString('base64'),
@@ -299,7 +299,7 @@ class Visitor {
 
   /** emitEdge emits a new edge entry, relating two VNames. */
   emitEdge(source: VName, name: string, target: VName) {
-    this.context.emit({
+    this.host.emit({
       source,
       edge_kind: '/kythe/edge/' + name,
       target,
@@ -428,8 +428,7 @@ class Visitor {
           // ModuleDeclaration).  Otherwise, the module name is derived from the
           // name of the current file.
           if (!moduleName) {
-            moduleName =
-                this.context.moduleName((node as ts.SourceFile).fileName);
+            moduleName = this.host.moduleName((node as ts.SourceFile).fileName);
           }
           break;
         default:
@@ -646,7 +645,7 @@ class Visitor {
       throw new Error(`TODO: handle module symbol ${name}`);
     }
     const sourcePath = name.substr(1, name.length - 2);
-    return this.context.moduleName(sourcePath);
+    return this.host.moduleName(sourcePath);
   }
 
   /**
@@ -788,7 +787,7 @@ class Visitor {
    */
   emitModuleAnchor(sf: ts.SourceFile) {
     const kMod =
-        this.newVName('module', this.context.moduleName(this.file.fileName));
+        this.newVName('module', this.host.moduleName(this.file.fileName));
     this.emitFact(kMod, 'node/kind', 'record');
     this.emitEdge(this.kFile, 'childof', kMod);
 
