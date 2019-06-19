@@ -215,6 +215,10 @@ public class MarkedSource {
   //- ObjId.pre_text "Object"
   void methodWithGeneric(List<Object> lst) {}
 
+  // Ensure documentation is emitted for nodes referenced before their definitions.
+  //- @Inner ref InnerClass
+  static Inner refClassBeforeDef() { return null; }
+
   //- @Inner defines/binding InnerClass
   //- InnerClass code _
   public class Inner {
@@ -391,6 +395,17 @@ public class MarkedSource {
     //- !{ArrayCloneMethod code _}
     return arry.clone();
   }
+
+  //- @T defines/binding TVar
+  //- TVar.node/kind absvar
+  //- TVar code TVarCode
+  //- TVarCode.kind "BOX"
+  //- TVarCode child.0 TVarContext
+  //- TVarContext.kind "CONTEXT"
+  //- TVarCode child.1 TVarIdent
+  //- TVarIdent.kind "IDENTIFIER"
+  //- TVarIdent.pre_text "<T>"
+  static class Generic<T> {}
 
   //- Void code VoidId
   //- VoidId.kind "IDENTIFIER"

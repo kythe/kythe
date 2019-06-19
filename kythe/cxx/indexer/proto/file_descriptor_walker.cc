@@ -482,6 +482,9 @@ void FileDescriptorWalker::VisitNestedEnumTypes(const std::string& message_name,
       InitializeLocation(span, &location);
 
       builder_->AddEnumType(message, v_name, location);
+      if (nested_proto->options().deprecated()) {
+        builder_->SetDeprecated(v_name);
+      }
       AttachMarkedSource(v_name,
                          GenerateMarkedSourceForDescriptor(nested_proto));
     }
@@ -524,6 +527,9 @@ void FileDescriptorWalker::VisitNestedTypes(const std::string& message_name,
       InitializeLocation(span, &location);
 
       builder_->AddMessageType(message, v_name, location);
+      if (nested_proto->options().deprecated()) {
+        builder_->SetDeprecated(v_name);
+      }
       AttachMarkedSource(v_name,
                          GenerateMarkedSourceForDescriptor(nested_proto));
     }
@@ -593,6 +599,9 @@ void FileDescriptorWalker::VisitMessagesAndEnums(const std::string* ns_name,
 
       builder_->AddMessageType(ns, v_name, location);
       AttachMarkedSource(v_name, GenerateMarkedSourceForDescriptor(dp));
+      if (dp->options().deprecated()) {
+        builder_->SetDeprecated(v_name);
+      }
     }
 
     // Visit nested types first and fields later for easy type resolution
@@ -650,6 +659,9 @@ void FileDescriptorWalker::VisitEnumValues(const EnumDescriptor* dp,
     std::string value_vname = dp->full_name() + "." + val_dp->name();
 
     builder_->AddValueToEnum(*enum_node, v_name, value_location);
+    if (val_dp->options().deprecated()) {
+      builder_->SetDeprecated(v_name);
+    }
     AttachMarkedSource(v_name, GenerateMarkedSourceForDescriptor(val_dp));
   }
 }
