@@ -74,6 +74,7 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -82,6 +83,7 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/sync/errgroup"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -94,6 +96,43 @@ import (
 	_ "kythe.io/kythe/proto/go_go_proto"
 	_ "kythe.io/kythe/proto/java_go_proto"
 )
+
+type Encoding int32
+
+const (
+	BOTH  Encoding = 0
+	JSON  Encoding = 1
+	PROTO Encoding = 2
+)
+
+func (e *Encoding) Set(v string) error {
+	switch {
+	case v == "BOTH":
+		*e = BOTH
+		return nil
+	case v == "JSON":
+		*e = JSON
+		return nil
+	case v == "PROTO":
+		*e = PROTO
+		return nil
+	default:
+		return fmt.Errorf("Unknown encoding %s", e)
+	}
+}
+
+func (e Encoding) String() string {
+	switch {
+	case e == BOTH:
+		return "BOTH"
+	case e == JSON:
+		return "JSON"
+	case e == PROTO:
+		return "PROTO"
+	default:
+		return "Encoding" + strconv.FormatInt(int64(e), 10)
+	}
+}
 
 // A Reader permits reading and scanning compilation records and file contents
 // stored in a .kzip archive. The Lookup and Scan methods are mutually safe for
@@ -148,13 +187,20 @@ func readUnit(digest string, f *zip.File) (*Unit, error) {
 		return nil, err
 	}
 	defer rc.Close()
-
 	var msg apb.IndexedCompilation
-	if err := jsonpb.Unmarshal(rc, &msg); err != nil {
+	if strings.HasSuffix(f.Name, ".pb") {
+		rec := make([]byte, f.UncompressedSize64)
+		if _, err = io.ReadFull(rc, rec); err != nil {
+			return nil, err
+		}
+		if err := proto.Unmarshal(rec, &msg); err != nil {
+			return nil, fmt.Errorf("Error unmarshaling for %s: %s", digest, err)
+		}
+	} else if err := jsonpb.Unmarshal(rc, &msg); err != nil {
 		return nil, err
 	}
 	return &Unit{
-		Digest: digest,
+		Digest: strings.TrimSuffix(digest, ".pb"),
 		Proto:  msg.Unit,
 		Index:  msg.Index,
 	}, nil
@@ -173,12 +219,20 @@ func (r *Reader) firstIndex(prefix string) int {
 	return n
 }
 
+func pbName(unitName string) string {
+	return unitName + ".pb"
+}
+
 // Lookup returns the specified compilation from the archive, if it exists.  If
 // the requested digest is not in the archive, ErrDigestNotFound is returned.
 func (r *Reader) Lookup(unitDigest string) (*Unit, error) {
 	needle := r.unitPath(unitDigest)
-	if pos := r.firstIndex(needle); pos >= 0 {
-		if f := r.zip.File[pos]; f.Name == needle {
+	pos := r.firstIndex(pbName(needle))
+	if pos < 0 {
+		pos = r.firstIndex(needle)
+	}
+	if pos >= 0 {
+		if f := r.zip.File[pos]; strings.TrimSuffix(f.Name, ".pb") == needle {
 			return readUnit(unitDigest, f)
 		}
 	}
@@ -198,6 +252,29 @@ func ReadConcurrency(n int) ScanOption {
 	return readConcurrency(n)
 }
 
+func (r *Reader) canonicalUnits() []*zip.File {
+	prefix := r.unitPath("") + "/"
+	pos := r.firstIndex(prefix)
+	res := make([]*zip.File, 0)
+	if pos < 0 {
+		return res
+	}
+	for _, file := range r.zip.File[pos:] {
+		if !strings.HasPrefix(file.Name, prefix) {
+			break
+		} else if file.Name == prefix {
+			continue // tolerate an empty units directory entry
+		} else if len(res) > 0 &&
+			pbName(res[len(res)-1].Name) == file.Name {
+			res[len(res)-1] = file
+		} else {
+			res = append(res, file)
+		}
+
+	}
+	return res
+}
+
 // Scan scans all the compilations stored in the archive, and invokes f for
 // each compilation record. If f reports an error, the scan is terminated and
 // that error is propagated to the caller of Scan.  At most 1 invocation of f
@@ -215,9 +292,8 @@ func (r *Reader) Scan(f func(*Unit) error, opts ...ScanOption) error {
 		}
 	}
 
-	prefix := r.unitPath("") + "/"
-	pos := r.firstIndex(prefix)
-	if pos < 0 {
+	fileUnits := r.canonicalUnits()
+	if len(fileUnits) == 0 {
 		return nil
 	}
 
@@ -226,14 +302,10 @@ func (r *Reader) Scan(f func(*Unit) error, opts ...ScanOption) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	files := make(chan *zip.File)
+
 	g.Go(func() error {
 		defer close(files)
-		for _, file := range r.zip.File[pos:] {
-			if !strings.HasPrefix(file.Name, prefix) {
-				break
-			} else if file.Name == prefix {
-				continue // tolerate an empty units directory entry
-			}
+		for _, file := range fileUnits {
 			select {
 			case <-ctx.Done():
 				return nil
@@ -242,7 +314,7 @@ func (r *Reader) Scan(f func(*Unit) error, opts ...ScanOption) error {
 		}
 		return nil
 	})
-
+	prefix := r.unitPath("") + "/"
 	units := make(chan *Unit)
 	var wg sync.WaitGroup
 	for i := 0; i < concurrency; i++ {
@@ -316,11 +388,18 @@ type Writer struct {
 	fd  stringset.Set // file digests already written
 	ud  stringset.Set // unit digests already written
 	c   io.Closer     // a closer for the underlying writer (may be nil)
+
+	encoding Encoding // What encoding to use
+}
+
+// WriterOptions describe options when creating a Writer
+type WriterOptions struct {
+	Encoding Encoding
 }
 
 // NewWriter constructs a new empty Writer that delivers output to w.  The
 // AddUnit and AddFile methods are safe for use by concurrent goroutines.
-func NewWriter(w io.Writer) (*Writer, error) {
+func NewWriterWithOptions(w io.Writer, o *WriterOptions) (*Writer, error) {
 	archive := zip.NewWriter(w)
 	// Create an entry for the root directory, which must be first.
 	root := &zip.FileHeader{
@@ -335,20 +414,33 @@ func NewWriter(w io.Writer) (*Writer, error) {
 	archive.SetComment("Kythe kzip archive")
 
 	return &Writer{
-		zip: archive,
-		fd:  stringset.New(),
-		ud:  stringset.New(),
+		zip:      archive,
+		fd:       stringset.New(),
+		ud:       stringset.New(),
+		encoding: o.Encoding,
 	}, nil
+}
+
+// NewWriter constructs a new empty Writer that delivers output to w.  The
+// AddUnit and AddFile methods are safe for use by concurrent goroutines.
+func NewWriter(w io.Writer) (*Writer, error) {
+	return NewWriterWithOptions(w, &WriterOptions{Encoding: PROTO})
+}
+
+// NewWriteCloser behaves as NewWriter, but arranges that when the *Writer is
+// closed it also closes wc.
+func NewWriteCloserWithOptions(wc io.WriteCloser, o *WriterOptions) (*Writer, error) {
+	w, err := NewWriterWithOptions(wc, o)
+	if err == nil {
+		w.c = wc
+	}
+	return w, err
 }
 
 // NewWriteCloser behaves as NewWriter, but arranges that when the *Writer is
 // closed it also closes wc.
 func NewWriteCloser(wc io.WriteCloser) (*Writer, error) {
-	w, err := NewWriter(wc)
-	if err == nil {
-		w.c = wc
-	}
-	return w, err
+	return NewWriterWithOptions(wc, &WriterOptions{})
 }
 
 // toJSON defines the encoding format for compilation messages.
@@ -374,15 +466,34 @@ func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_
 		return digest, ErrUnitExists
 	}
 
-	f, err := w.zip.CreateHeader(newFileHeader("root", "units", digest))
-	if err != nil {
-		return "", err
+	if w.encoding == JSON || w.encoding == BOTH {
+		f, err := w.zip.CreateHeader(newFileHeader("root", "units", digest))
+		if err != nil {
+			return "", err
+		}
+		if err := toJSON.Marshal(f, &apb.IndexedCompilation{
+			Unit:  unit.Proto,
+			Index: index,
+		}); err != nil {
+			return "", err
+		}
 	}
-	if err := toJSON.Marshal(f, &apb.IndexedCompilation{
-		Unit:  unit.Proto,
-		Index: index,
-	}); err != nil {
-		return "", err
+	if w.encoding == PROTO || w.encoding == BOTH {
+		f, err := w.zip.CreateHeader(newFileHeader("root", "units", pbName(digest)))
+		if err != nil {
+			return "", err
+		}
+		rec, err := proto.Marshal(&apb.IndexedCompilation{
+			Unit:  unit.Proto,
+			Index: index,
+		})
+		if err != nil {
+			return "", err
+		}
+		_, err = f.Write(rec)
+		if err != nil {
+			return "", err
+		}
 	}
 	w.ud.Add(digest)
 	return digest, nil

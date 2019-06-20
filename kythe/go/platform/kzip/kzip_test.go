@@ -32,7 +32,19 @@ import (
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
-func TestRoundTrip(t *testing.T) {
+func TestRoundTrip_PROTO(t *testing.T) {
+	testRoundTrip(kzip.PROTO, t)
+}
+
+func TestRoundTrip_BOTH(t *testing.T) {
+	testRoundTrip(kzip.BOTH, t)
+}
+
+func TestRoundTrip_JSON(t *testing.T) {
+	testRoundTrip(kzip.JSON, t)
+}
+
+func testRoundTrip(encoding kzip.Encoding, t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 
 	// Create a kzip with some interesting data.

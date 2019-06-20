@@ -38,8 +38,9 @@ import (
 type mergeCommand struct {
 	cmdutil.Info
 
-	output string
-	append bool
+	output   string
+	append   bool
+	encoding kzip.Encoding
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -54,12 +55,16 @@ func New() subcommands.Command {
 func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
 	fs.BoolVar(&c.append, "append", false, "Whether to additionally merge the contents of the existing output file, if it exists")
+	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or BOTH")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
 func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.output == "" {
 		return c.Fail("required --output path missing")
+	}
+	opts := &kzip.WriterOptions{
+		Encoding: c.encoding,
 	}
 	dir, file := filepath.Split(c.output)
 	if dir == "" {
@@ -86,7 +91,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 			}
 		}
 	}
-	if err := mergeArchives(ctx, tmpOut, archives); err != nil {
+	if err := mergeArchives(ctx, tmpOut, opts, archives); err != nil {
 		return c.Fail("Error merging archives: %v", err)
 	}
 	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
@@ -95,8 +100,8 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	return subcommands.ExitSuccess
 }
 
-func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string) error {
-	wr, err := kzip.NewWriteCloser(out)
+func mergeArchives(ctx context.Context, out io.WriteCloser, o *kzip.WriterOptions, archives []string) error {
+	wr, err := kzip.NewWriteCloserWithOptions(out, o)
 	if err != nil {
 		out.Close()
 		return fmt.Errorf("error creating writer: %v", err)

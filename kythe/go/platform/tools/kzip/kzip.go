@@ -28,6 +28,7 @@ import (
 
 	"kythe.io/kythe/go/platform/tools/kzip/createcmd"
 	"kythe.io/kythe/go/platform/tools/kzip/mergecmd"
+	"kythe.io/kythe/go/platform/tools/kzip/scancmd"
 
 	"github.com/google/subcommands"
 )
@@ -35,6 +36,7 @@ import (
 func init() {
 	subcommands.Register(createcmd.New(), "")
 	subcommands.Register(mergecmd.New(), "")
+	subcommands.Register(scancmd.New(), "")
 }
 
 func main() {
