@@ -964,7 +964,16 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     List<VName> typeParams = new ArrayList<>();
     for (JCTypeParameter tParam : params) {
       TreeContext ctx = ownerContext.down(tParam);
-      VName node = getNode(tParam.type.asElement());
+      Symbol sym = tParam.type.asElement();
+      VName node =
+          signatureGenerator
+              .getSignature(sym)
+              .map(sig -> entrySets.getNode(signatureGenerator, sym, sig, null, null))
+              .orElse(null);
+      if (node == null) {
+        logger.atWarning().log("Could not get type parameter VName: %s", tParam);
+        continue;
+      }
       emitDefinesBindingAnchorEdge(ctx, tParam.name, tParam.getStartPosition(), node);
       visitAnnotations(node, tParam.getAnnotations(), ctx);
       typeParams.add(node);
