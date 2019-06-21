@@ -97,6 +97,7 @@ import (
 	_ "kythe.io/kythe/proto/java_go_proto"
 )
 
+// Type Encoding describes how compilation units will be encoded when written to a kzip.
 type Encoding int32
 
 const (
@@ -105,6 +106,7 @@ const (
 	PROTO Encoding = 2
 )
 
+// Set updates an Encoding based on the text value
 func (e *Encoding) Set(v string) error {
 	switch {
 	case v == "BOTH":
@@ -121,6 +123,7 @@ func (e *Encoding) Set(v string) error {
 	}
 }
 
+// String stringifies an Encoding
 func (e Encoding) String() string {
 	switch {
 	case e == BOTH:
@@ -170,8 +173,9 @@ func NewReader(r io.ReaderAt, size int64) (*Reader, error) {
 	}, nil
 }
 
-func (r *Reader) unitPath(digest string) string { return path.Join(r.root, "units", digest) }
-func (r *Reader) filePath(digest string) string { return path.Join(r.root, "files", digest) }
+func (r *Reader) unitPath(digest string) string   { return path.Join(r.root, "units", digest) }
+func (r *Reader) unitPbPath(digest string) string { return path.Join(r.root, "units.pb", digest) }
+func (r *Reader) filePath(digest string) string   { return path.Join(r.root, "files", digest) }
 
 // ErrDigestNotFound is returned when a requested compilation unit or file
 // digest is not found.
@@ -188,7 +192,7 @@ func readUnit(digest string, f *zip.File) (*Unit, error) {
 	}
 	defer rc.Close()
 	var msg apb.IndexedCompilation
-	if strings.HasSuffix(f.Name, ".pb") {
+	if strings.HasPrefix(f.Name, "root/units.pb") {
 		rec := make([]byte, f.UncompressedSize64)
 		if _, err = io.ReadFull(rc, rec); err != nil {
 			return nil, err
@@ -200,14 +204,14 @@ func readUnit(digest string, f *zip.File) (*Unit, error) {
 		return nil, err
 	}
 	return &Unit{
-		Digest: strings.TrimSuffix(digest, ".pb"),
+		Digest: digest,
 		Proto:  msg.Unit,
 		Index:  msg.Index,
 	}, nil
 }
 
-// firstIndex returns the first index in the archive's file list whose path is
-// greater than or equal to with prefix, or -1 if no such index exists.
+// firstIndex returns the first index in the archive's file list whose
+// path starts with prefix, or -1 if no such index exists.
 func (r *Reader) firstIndex(prefix string) int {
 	fs := r.zip.File
 	n := sort.Search(len(fs), func(i int) bool {
@@ -216,23 +220,23 @@ func (r *Reader) firstIndex(prefix string) int {
 	if n >= len(fs) {
 		return -1
 	}
+	if !strings.HasPrefix(fs[n].Name, prefix) {
+		return -1
+	}
 	return n
-}
-
-func pbName(unitName string) string {
-	return unitName + ".pb"
 }
 
 // Lookup returns the specified compilation from the archive, if it exists.  If
 // the requested digest is not in the archive, ErrDigestNotFound is returned.
 func (r *Reader) Lookup(unitDigest string) (*Unit, error) {
-	needle := r.unitPath(unitDigest)
-	pos := r.firstIndex(pbName(needle))
+	needle := r.unitPbPath(unitDigest)
+	pos := r.firstIndex(needle)
 	if pos < 0 {
+		needle = r.unitPath(unitDigest)
 		pos = r.firstIndex(needle)
 	}
 	if pos >= 0 {
-		if f := r.zip.File[pos]; strings.TrimSuffix(f.Name, ".pb") == needle {
+		if f := r.zip.File[pos]; f.Name == needle {
 			return readUnit(unitDigest, f)
 		}
 	}
@@ -252,27 +256,28 @@ func ReadConcurrency(n int) ScanOption {
 	return readConcurrency(n)
 }
 
-func (r *Reader) canonicalUnits() []*zip.File {
-	prefix := r.unitPath("") + "/"
+func (r *Reader) canonicalUnits() (string, []*zip.File) {
+	prefix := r.unitPbPath("") + "/"
 	pos := r.firstIndex(prefix)
+	if pos < 0 {
+		prefix = r.unitPath("") + "/"
+		pos = r.firstIndex(prefix)
+	}
 	res := make([]*zip.File, 0)
 	if pos < 0 {
-		return res
+		return "", res
 	}
 	for _, file := range r.zip.File[pos:] {
 		if !strings.HasPrefix(file.Name, prefix) {
 			break
 		} else if file.Name == prefix {
 			continue // tolerate an empty units directory entry
-		} else if len(res) > 0 &&
-			pbName(res[len(res)-1].Name) == file.Name {
-			res[len(res)-1] = file
 		} else {
 			res = append(res, file)
 		}
 
 	}
-	return res
+	return prefix, res
 }
 
 // Scan scans all the compilations stored in the archive, and invokes f for
@@ -292,7 +297,7 @@ func (r *Reader) Scan(f func(*Unit) error, opts ...ScanOption) error {
 		}
 	}
 
-	fileUnits := r.canonicalUnits()
+	prefix, fileUnits := r.canonicalUnits()
 	if len(fileUnits) == 0 {
 		return nil
 	}
@@ -314,7 +319,6 @@ func (r *Reader) Scan(f func(*Unit) error, opts ...ScanOption) error {
 		}
 		return nil
 	})
-	prefix := r.unitPath("") + "/"
 	units := make(chan *Unit)
 	var wg sync.WaitGroup
 	for i := 0; i < concurrency; i++ {
@@ -479,7 +483,7 @@ func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_
 		}
 	}
 	if w.encoding == PROTO || w.encoding == BOTH {
-		f, err := w.zip.CreateHeader(newFileHeader("root", "units", pbName(digest)))
+		f, err := w.zip.CreateHeader(newFileHeader("root", "units.pb", digest))
 		if err != nil {
 			return "", err
 		}
