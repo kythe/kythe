@@ -440,7 +440,7 @@ func NewWriteCloserWithOptions(wc io.WriteCloser, o *WriterOptions) (*Writer, er
 // NewWriteCloser behaves as NewWriter, but arranges that when the *Writer is
 // closed it also closes wc.
 func NewWriteCloser(wc io.WriteCloser) (*Writer, error) {
-	return NewWriterWithOptions(wc, &WriterOptions{})
+	return NewWriteCloserWithOptions(wc, &WriterOptions{Encoding: PROTO})
 }
 
 // toJSON defines the encoding format for compilation messages.
