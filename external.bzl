@@ -713,6 +713,14 @@ def kythe_dependencies(sample_ui = True):
         urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.5.0.zip"],
     )
 
+    maybe(
+        http_archive,
+        name = "io_kythe_llvmbzlgen",
+        urls = ["https://github.com/kythe/llvmbzlgen/archive/26f54f1aca72b536145755bc2b308fa9d0b1a208.zip"],
+        sha256 = "edb69ba167ab8db1b0472fd266877169bd4a125f54c0a5ba4ad78fad9ba88efc",
+        strip_prefix = "llvmbzlgen-26f54f1aca72b536145755bc2b308fa9d0b1a208",
+    )
+
     _rule_dependencies()
     if sample_ui:
         _sample_ui_dependencies()
