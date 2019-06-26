@@ -250,7 +250,7 @@ public class ForwardingStandardJavaFileManager
   private static IllegalStateException propagateInvocationTargetErrorIfPossible(
       String methodName, ReflectiveOperationException error) {
     if (error instanceof InvocationTargetException) {
-      Throwables.propagateIfPossible(((InvocationTargetException) error).getCause());
+      Throwables.throwIfUnchecked(((InvocationTargetException) error).getCause());
     }
     return unsupportedVersionError(methodName, error);
   }
