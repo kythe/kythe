@@ -24,11 +24,12 @@ go_test(
     name = "kzip_test",
     srcs = ["kzip_test.go"],
     data = [
-        "missing-pbunit.kzip",
-        "missing-unit.kzip",
+        "testdata/missing-pbunit.kzip",
+        "testdata/missing-unit.kzip",
     ],
     deps = [
         ":kzip",
+        "//kythe/go/test/testutil",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
