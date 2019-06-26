@@ -97,13 +97,16 @@ import (
 	_ "kythe.io/kythe/proto/java_go_proto"
 )
 
-// Type Encoding describes how compilation units will be encoded when written to a kzip.
+// Encoding describes how compilation units will be encoded when written to a kzip.
 type Encoding int
 
 const (
-	EncodingJSON  Encoding = 1
+	// EncodingJSON specifies to use JSON encoding
+	EncodingJSON Encoding = 1
+	// EncodingProto specifies to use Proto encoding
 	EncodingProto Encoding = 2
-	EncodingAll   Encoding = EncodingJSON | EncodingProto
+	// EncodingAll specifies to encode using all known encodings
+	EncodingAll Encoding = EncodingJSON | EncodingProto
 
 	prefixJSON  = "units"
 	prefixProto = "pbunits"
