@@ -7,6 +7,7 @@ go_library(
     srcs = ["mergecmd.go"],
     deps = [
         "//kythe/go/platform/kzip",
+        "//kythe/go/platform/tools/kzip/flags",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/cmdutil",
         "@com_github_google_subcommands//:go_default_library",
