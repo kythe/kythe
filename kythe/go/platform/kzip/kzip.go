@@ -101,9 +101,9 @@ import (
 type Encoding int
 
 const (
-	EncodingBoth  Encoding = 0
 	EncodingJSON  Encoding = 1
 	EncodingProto Encoding = 2
+	EncodingAll   Encoding = EncodingJSON | EncodingProto
 
 	prefixJSON  = "units"
 	prefixProto = "pbunits"
@@ -112,8 +112,8 @@ const (
 // String stringifies an Encoding
 func (e Encoding) String() string {
 	switch {
-	case e == EncodingBoth:
-		return "Both"
+	case e == EncodingAll:
+		return "All"
 	case e == EncodingJSON:
 		return "JSON"
 	case e == EncodingProto:
@@ -449,9 +449,10 @@ func NewWriter(w io.Writer, options ...WriterOption) (*Writer, error) {
 	archive.SetComment("Kythe kzip archive")
 
 	kw := &Writer{
-		zip: archive,
-		fd:  stringset.New(),
-		ud:  stringset.New(),
+		zip:      archive,
+		fd:       stringset.New(),
+		ud:       stringset.New(),
+		encoding: EncodingJSON,
 	}
 	for _, opt := range options {
 		opt(kw)
@@ -492,7 +493,7 @@ func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_
 		return digest, ErrUnitExists
 	}
 
-	if w.encoding == EncodingJSON || w.encoding == EncodingBoth {
+	if w.encoding&EncodingJSON != 0 {
 		f, err := w.zip.CreateHeader(newFileHeader("root", prefixJSON, digest))
 		if err != nil {
 			return "", err
@@ -504,7 +505,7 @@ func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_
 			return "", err
 		}
 	}
-	if w.encoding == EncodingProto || w.encoding == EncodingBoth {
+	if w.encoding&EncodingProto != 0 {
 		f, err := w.zip.CreateHeader(newFileHeader("root", prefixProto, digest))
 		if err != nil {
 			return "", err

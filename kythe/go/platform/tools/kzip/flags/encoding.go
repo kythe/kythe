@@ -32,8 +32,8 @@ type EncodingFlag struct {
 func (e *EncodingFlag) Set(v string) error {
 	v = strings.ToUpper(v)
 	switch {
-	case v == "BOTH":
-		*e = EncodingFlag{kzip.EncodingBoth}
+	case v == "ALL":
+		*e = EncodingFlag{kzip.EncodingAll}
 		return nil
 	case v == "JSON":
 		*e = EncodingFlag{kzip.EncodingJSON}

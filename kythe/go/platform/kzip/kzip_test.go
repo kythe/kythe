@@ -37,8 +37,8 @@ func TestRoundTrip_Proto(t *testing.T) {
 	testRoundTrip(kzip.EncodingProto, t)
 }
 
-func TestRoundTrip_Both(t *testing.T) {
-	testRoundTrip(kzip.EncodingBoth, t)
+func TestRoundTrip_All(t *testing.T) {
+	testRoundTrip(kzip.EncodingAll, t)
 }
 
 func TestRoundTrip_JSON(t *testing.T) {
