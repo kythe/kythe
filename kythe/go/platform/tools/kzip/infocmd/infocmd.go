@@ -74,7 +74,7 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 	}
 
 	corpora := stringset.New()
-	units := 0
+	var units int
 	err = rd.Scan(func(u *kzip.Unit) error {
 		units++
 		corpora.Add(u.Proto.GetVName().GetCorpus())
