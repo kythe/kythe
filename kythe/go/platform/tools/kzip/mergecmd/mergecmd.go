@@ -55,7 +55,7 @@ func New() subcommands.Command {
 func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
 	fs.BoolVar(&c.append, "append", false, "Whether to additionally merge the contents of the existing output file, if it exists")
-	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or BOTH")
+	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
