@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -32,23 +33,23 @@ import (
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
-func TestRoundTrip_PROTO(t *testing.T) {
-	testRoundTrip(kzip.PROTO, t)
+func TestRoundTrip_Proto(t *testing.T) {
+	testRoundTrip(kzip.EncodingProto, t)
 }
 
-func TestRoundTrip_BOTH(t *testing.T) {
-	testRoundTrip(kzip.BOTH, t)
+func TestRoundTrip_Both(t *testing.T) {
+	testRoundTrip(kzip.EncodingBoth, t)
 }
 
 func TestRoundTrip_JSON(t *testing.T) {
-	testRoundTrip(kzip.JSON, t)
+	testRoundTrip(kzip.EncodingJSON, t)
 }
 
 func testRoundTrip(encoding kzip.Encoding, t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 
 	// Create a kzip with some interesting data.
-	w, err := kzip.NewWriter(buf)
+	w, err := kzip.NewWriter(buf, kzip.WithEncoding(encoding))
 	if err != nil {
 		t.Fatalf("NewWriter: unexpected error: %v", err)
 	}
@@ -366,5 +367,28 @@ func TestScanConcurrency(t *testing.T) {
 	}
 	if numUnits != N {
 		t.Errorf("Scan found %d units, want %d", numUnits, N)
+	}
+}
+
+func TestMissingJSONUnitFails(t *testing.T) {
+	b, err := ioutil.ReadFile("missing-unit.kzip")
+	if err != nil {
+		t.Fatalf("Unable to read test file missing-unit.kzip")
+	}
+	_, err = kzip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err == nil || err.Error() != "both proto and JSON units found but are not identical" {
+		t.Errorf("Unexpected error", err)
+	}
+
+}
+
+func TestMissingProtoUnitFails(t *testing.T) {
+	b, err := ioutil.ReadFile("missing-pbunit.kzip")
+	if err != nil {
+		t.Fatalf("Unable to read test file missing-pbunit.kzip")
+	}
+	_, err = kzip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err == nil || err.Error() != "both proto and JSON units found but are not identical" {
+		t.Errorf("Unexpected error", err)
 	}
 }

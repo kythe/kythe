@@ -8,7 +8,6 @@ go_binary(
     deps = [
         "//kythe/go/platform/tools/kzip/createcmd",
         "//kythe/go/platform/tools/kzip/mergecmd",
-        "//kythe/go/platform/tools/kzip/scancmd",
         "@com_github_google_subcommands//:go_default_library",
     ],
 )

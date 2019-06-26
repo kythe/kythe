@@ -26,11 +26,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
-
-	"bitbucket.org/creachadair/stringset"
 
 	"github.com/google/subcommands"
 )
@@ -40,7 +40,7 @@ type mergeCommand struct {
 
 	output   string
 	append   bool
-	encoding kzip.Encoding
+	encoding flags.EncodingFlag
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -63,9 +63,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	if c.output == "" {
 		return c.Fail("required --output path missing")
 	}
-	opts := &kzip.WriterOptions{
-		Encoding: c.encoding,
-	}
+	opts := kzip.WithEncoding(c.encoding.Encoding)
 	dir, file := filepath.Split(c.output)
 	if dir == "" {
 		dir = "."
@@ -91,7 +89,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 			}
 		}
 	}
-	if err := mergeArchives(ctx, tmpOut, opts, archives); err != nil {
+	if err := mergeArchives(ctx, tmpOut, archives, opts); err != nil {
 		return c.Fail("Error merging archives: %v", err)
 	}
 	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
@@ -100,8 +98,8 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	return subcommands.ExitSuccess
 }
 
-func mergeArchives(ctx context.Context, out io.WriteCloser, o *kzip.WriterOptions, archives []string) error {
-	wr, err := kzip.NewWriteCloserWithOptions(out, o)
+func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, opts ...kzip.WriterOption) error {
+	wr, err := kzip.NewWriteCloser(out, opts...)
 	if err != nil {
 		out.Close()
 		return fmt.Errorf("error creating writer: %v", err)

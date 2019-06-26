@@ -14,32 +14,34 @@
  * limitations under the License.
  */
 
-// Binary kzip provides tools to work with kzip archives.
-//
-// Examples:
-//   # Merge 5 kzip archives into a single file.
-//   kzip merge --output output.kzip in{0,1,2,3,4}.kzip
-package main
+// Package mergecmd provides the kzip command for merging archives.
+package flags
 
 import (
-	"context"
-	"flag"
-	"os"
+	"fmt"
+	"strings"
 
-	"kythe.io/kythe/go/platform/tools/kzip/createcmd"
-	"kythe.io/kythe/go/platform/tools/kzip/mergecmd"
-
-	"github.com/google/subcommands"
+	"kythe.io/kythe/go/platform/kzip"
 )
 
-func init() {
-	subcommands.Register(createcmd.New(), "")
-	subcommands.Register(mergecmd.New(), "")
+type EncodingFlag struct {
+	kzip.Encoding
 }
 
-func main() {
-	flag.Parse()
-	ctx := context.Background()
-
-	os.Exit(int(subcommands.Execute(ctx)))
+// Set updates an Encoding based on the text value
+func (e *EncodingFlag) Set(v string) error {
+	v = strings.ToUpper(v)
+	switch {
+	case v == "BOTH":
+		*e = EncodingFlag{kzip.EncodingBoth}
+		return nil
+	case v == "JSON":
+		*e = EncodingFlag{kzip.EncodingJSON}
+		return nil
+	case v == "PROTO":
+		*e = EncodingFlag{kzip.EncodingProto}
+		return nil
+	default:
+		return fmt.Errorf("Unknown encoding %s", e)
+	}
 }
