@@ -377,7 +377,7 @@ func TestMissingJSONUnitFails(t *testing.T) {
 	}
 	_, err = kzip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if err == nil || err.Error() != "both proto and JSON units found but are not identical" {
-		t.Errorf("Unexpected error", err)
+		t.Errorf("Unexpected error: %s", err)
 	}
 
 }
@@ -389,6 +389,6 @@ func TestMissingProtoUnitFails(t *testing.T) {
 	}
 	_, err = kzip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if err == nil || err.Error() != "both proto and JSON units found but are not identical" {
-		t.Errorf("Unexpected error", err)
+		t.Errorf("Unexpected error: %s", err)
 	}
 }
