@@ -46,7 +46,8 @@ type mergeCommand struct {
 // New creates a new subcommand for merging kzip files.
 func New() subcommands.Command {
 	return &mergeCommand{
-		Info: cmdutil.NewInfo("merge", "merge kzip files", "--output path kzip-file*"),
+		Info:     cmdutil.NewInfo("merge", "merge kzip files", "--output path kzip-file*"),
+		encoding: flags.EncodingFlag{Encoding: kzip.EncodingJSON},
 	}
 }
 
