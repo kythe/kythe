@@ -29,7 +29,17 @@ type EncodingFlag struct {
 	kzip.Encoding
 }
 
-// Set updates an Encoding based on the text value
+// String implements part of the flag.Value interface.
+func (e *EncodingFlag) String() string {
+	return e.Encoding.String()
+}
+
+// Get implements part of the flag.Getter interface.
+func (e *EncodingFlag) Get() interface{} {
+	return e.Encoding
+}
+
+// Set implements part of the flag.Value interface.
 func (e *EncodingFlag) Set(v string) error {
 	v = strings.ToUpper(v)
 	switch {
