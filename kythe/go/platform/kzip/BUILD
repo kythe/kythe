@@ -23,7 +23,10 @@ go_library(
 go_test(
     name = "kzip_test",
     srcs = ["kzip_test.go"],
-    data = glob(["testdata/*.kzip"]),
+    data = [
+        "testdata/missing-pbunit.kzip",
+        "testdata/missing-unit.kzip",
+    ],
     deps = [
         ":kzip",
         "//kythe/go/test/testutil",
