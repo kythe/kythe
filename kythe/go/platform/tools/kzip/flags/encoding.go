@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package encoding provides type EncodingFlag for use as a flag to specify Encoding.
+// Package flags provides type EncodingFlag for use as a flag to specify Encoding.
 package flags
 
 import (
