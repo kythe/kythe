@@ -65,6 +65,7 @@ occurrence of the flag being appended to the corresponding field in the compilat
 
 Any additional positional arguments are included as arguments in the compilation unit.
 `),
+		encoding: flags.EncodingFlag{Encoding: kzip.EncodingJSON},
 	}
 }
 
