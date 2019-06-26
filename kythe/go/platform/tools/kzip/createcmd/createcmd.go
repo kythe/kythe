@@ -22,6 +22,7 @@ import (
 	"flag"
 
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 	"kythe.io/kythe/go/util/flagutil"
@@ -50,6 +51,7 @@ type createCommand struct {
 	entryContext string
 	environment  repeatedEnv
 	details      repeatedAny
+	encoding     flags.EncodingFlag
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -82,6 +84,7 @@ func (c *createCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.entryContext, "entry_context", "", "Language-specific context to provide the indexer (optional)")
 	fs.Var(&c.environment, "env", "Repeated KEY=VALUE pairs of environment variables to add to the compilation unit (optional)")
 	fs.Var(&c.details, "details", "Repeated JSON-encoded Any messages to embed as compilation details (optional)")
+	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
 }
 
 // Execute implements the subcommands interface and creates the requested file.
@@ -95,7 +98,8 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		return c.Fail("missing required -source_file")
 	}
 
-	out, err := openWriter(ctx, c.output)
+	opt := kzip.WithEncoding(c.encoding.Encoding)
+	out, err := openWriter(ctx, c.output, opt)
 	if err != nil {
 		return c.Fail("error opening -output: %v", err)
 	}
@@ -130,12 +134,12 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 	return subcommands.ExitSuccess
 }
 
-func openWriter(ctx context.Context, path string) (*kzip.Writer, error) {
+func openWriter(ctx context.Context, path string, opts ...kzip.WriterOption) (*kzip.Writer, error) {
 	out, err := vfs.Create(ctx, path)
 	if err != nil {
 		return nil, err
 	}
-	return kzip.NewWriteCloser(out)
+	return kzip.NewWriteCloser(out, opts...)
 }
 
 type compilationBuilder struct {

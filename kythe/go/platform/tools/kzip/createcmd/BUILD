@@ -10,6 +10,7 @@ go_library(
     ],
     deps = [
         "//kythe/go/platform/kzip",
+        "//kythe/go/platform/tools/kzip/flags",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/cmdutil",
         "//kythe/go/util/flagutil",
