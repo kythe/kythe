@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package mergecmd provides the kzip command for merging archives.
+// Package encoding provides type EncodingFlag for use as a flag to specify Encoding.
 package flags
 
 import (
@@ -24,6 +24,7 @@ import (
 	"kythe.io/kythe/go/platform/kzip"
 )
 
+// EncodingFlag encapsulates an Encoding for use as a flag.
 type EncodingFlag struct {
 	kzip.Encoding
 }

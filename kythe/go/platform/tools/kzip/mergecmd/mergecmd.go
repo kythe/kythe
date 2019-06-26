@@ -63,7 +63,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	if c.output == "" {
 		return c.Fail("required --output path missing")
 	}
-	opts := kzip.WithEncoding(c.encoding.Encoding)
+	opt := kzip.WithEncoding(c.encoding.Encoding)
 	dir, file := filepath.Split(c.output)
 	if dir == "" {
 		dir = "."
@@ -89,7 +89,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 			}
 		}
 	}
-	if err := mergeArchives(ctx, tmpOut, archives, opts); err != nil {
+	if err := mergeArchives(ctx, tmpOut, archives, opt); err != nil {
 		return c.Fail("Error merging archives: %v", err)
 	}
 	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
