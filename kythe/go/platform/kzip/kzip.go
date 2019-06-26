@@ -292,7 +292,7 @@ func (r *Reader) canonicalUnits() (string, []*zip.File) {
 	if pos < 0 {
 		return "", nil
 	}
-	res := make([]*zip.File, 0)
+	var res []*zip.File
 	for _, file := range r.zip.File[pos:] {
 		if !strings.HasPrefix(file.Name, prefix) {
 			break
