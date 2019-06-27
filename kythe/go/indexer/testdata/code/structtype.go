@@ -2,21 +2,10 @@
 package structtype
 
 //- @T defines/binding Type
-//- Type code TypeCode
-//-
-//- TypeCode.kind "BOX"
-//- TypeCode.post_child_text " "
-//- TypeCode child.0 TType
-//- TypeCode child.1 TName
-//- TypeCode child.2 TStruct
-//-
-//- TType.pre_text "type"
+//- Type code TName
 //-
 //- TName child.0 TContext
 //- TName child.1 TIdent
-//-
-//- TStruct.pre_text "struct {...}"
-//- TStruct.kind "TYPE"
 //-
 //- TContext.kind "CONTEXT"
 //- TContext child.0 TPkg

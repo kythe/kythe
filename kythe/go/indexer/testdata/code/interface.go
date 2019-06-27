@@ -2,19 +2,14 @@
 package iface
 
 //- @Thinger defines/binding Thinger
-//- Thinger code TCode
+//- Thinger code TName
 //-
-//- TCode.kind "BOX"
-//- TCode child.0 TType
-//- TCode child.1 TName
-//- TCode child.2 TInterface
+//- TName child.0 TContext
+//- TContext.kind "CONTEXT"
 //-
-//- TType.pre_text "type"
-//-
-//- TName child.0 _TContext
-//- TName child.1 _TIdent
-//-
-//- TInterface.pre_text "interface {...}"
+//- TName child.1 TIdent
+//- TIdent.kind "IDENTIFIER"
+//- TIdent.pre_text "Thinger"
 type Thinger interface {
 	//- @Thing defines/binding Thing
 	//- Thing code MCode
