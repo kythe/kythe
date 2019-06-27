@@ -4,5 +4,5 @@ inbound_services:
   - warmup
 handlers:
 - url: /.*
-  script: _go_app
+  script: auto
   secure: always
