@@ -38,6 +38,9 @@ def check_version(min_required, max_supported):
     if not found:
         print("\nDevelopment version of bazel detected.\nDisabling version check.\nExpect the unexpected.")
         return
+    elif "rc" in found:
+        print("\nRelease candidate version of bazel detected: %s.\nDisabling version check.\nGood luck!" % (found,))
+        return
     found_version = _parse_version(found)
     min = _parse_version(min_required)
     if min > _bound_size(found_version, len(min)):
