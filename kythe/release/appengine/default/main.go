@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package server
+package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 )
 
@@ -39,7 +41,7 @@ const (
 </html>`
 )
 
-func init() {
+func main() {
 	http.Handle("/phabricator/", http.StripPrefix("/phabricator", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, phabricatorURL+r.URL.Path, http.StatusTemporaryRedirect)
 	})))
@@ -60,4 +62,12 @@ func init() {
 			http.ServeFile(w, r, filepath.Join(staticRoot, r.URL.Path))
 		}
 	})
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("Defaulting to port %s", port)
+	}
+
+	log.Printf("Listening on port %s", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }

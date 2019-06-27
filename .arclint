@@ -18,7 +18,8 @@
     "custom": {
       "type": "script-and-regex",
       "script-and-regex.script": "tools/arc/linter.sh",
-      "script-and-regex.regex": "/^((?P<name>.+?)::)?(?P<severity>warning|error|advice):(?P<line>\\d+)? (?P<message>.*)$/m"
+      "script-and-regex.regex": "/^((?P<name>.+?)::)?(?P<severity>warning|error|advice):(?P<line>\\d+)? (?P<message>.*)$/m",
+      "exclude": "!(^|/)(go\\.mod|go\\.sum|\\.[^/]*)$!"
     }
   }
 }
