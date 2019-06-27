@@ -10,7 +10,7 @@ package structtype
 //- TypeCode child.1 TName
 //- TypeCode child.2 TStruct
 //-
-//- TType.pre_text "type "
+//- TType.pre_text "type"
 //-
 //- TName child.0 TContext
 //- TName child.1 TIdent
@@ -35,8 +35,7 @@ type T struct {
 	//- FName child.0 FContext
 	//- FName child.1 FIdent
 	//-
-	//- FType.pre_text "byte"
-	//- FType.kind "TYPE"
+	//- FType.kind "LOOKUP_BY_TYPED"
 	//-
 	//- FContext.kind "CONTEXT"
 	//- FContext child.0 FPkg

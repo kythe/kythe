@@ -134,10 +134,6 @@ go_indexer_test(
     srcs = ["testdata/code/interface.go"],
     has_marked_source = True,
     import_path = "test/iface",
-    tags = [
-        "broken",
-        "manual",
-    ],
 )
 
 go_indexer_test(
@@ -152,10 +148,6 @@ go_indexer_test(
     srcs = ["testdata/code/structtype.go"],
     has_marked_source = True,
     import_path = "structtype",
-    tags = [
-        "broken",
-        "manual",
-    ],
 )
 
 go_indexer_test(

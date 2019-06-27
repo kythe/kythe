@@ -7,15 +7,13 @@ package iface
 //- TCode.kind "BOX"
 //- TCode child.0 TType
 //- TCode child.1 TName
-//- TCode child.2 TSpace
-//- TCode child.3 TInterface
+//- TCode child.2 TInterface
 //-
-//- TType.pre_text "type "
+//- TType.pre_text "type"
 //-
-//- TName child.0 TContext
-//- TName child.1 TIdent
+//- TName child.0 _TContext
+//- TName child.1 _TIdent
 //-
-//- TSpace.pre_text " "
 //- TInterface.pre_text "interface {...}"
 type Thinger interface {
 	//- @Thing defines/binding Thing
