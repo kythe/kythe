@@ -26,11 +26,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
-
-	"bitbucket.org/creachadair/stringset"
 
 	"github.com/google/subcommands"
 )
@@ -38,14 +38,16 @@ import (
 type mergeCommand struct {
 	cmdutil.Info
 
-	output string
-	append bool
+	output   string
+	append   bool
+	encoding flags.EncodingFlag
 }
 
 // New creates a new subcommand for merging kzip files.
 func New() subcommands.Command {
 	return &mergeCommand{
-		Info: cmdutil.NewInfo("merge", "merge kzip files", "--output path kzip-file*"),
+		Info:     cmdutil.NewInfo("merge", "merge kzip files", "--output path kzip-file*"),
+		encoding: flags.EncodingFlag{Encoding: kzip.EncodingJSON},
 	}
 }
 
@@ -54,6 +56,7 @@ func New() subcommands.Command {
 func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
 	fs.BoolVar(&c.append, "append", false, "Whether to additionally merge the contents of the existing output file, if it exists")
+	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
@@ -61,6 +64,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	if c.output == "" {
 		return c.Fail("required --output path missing")
 	}
+	opt := kzip.WithEncoding(c.encoding.Encoding)
 	dir, file := filepath.Split(c.output)
 	if dir == "" {
 		dir = "."
@@ -86,7 +90,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 			}
 		}
 	}
-	if err := mergeArchives(ctx, tmpOut, archives); err != nil {
+	if err := mergeArchives(ctx, tmpOut, archives, opt); err != nil {
 		return c.Fail("Error merging archives: %v", err)
 	}
 	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
@@ -95,8 +99,8 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	return subcommands.ExitSuccess
 }
 
-func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string) error {
-	wr, err := kzip.NewWriteCloser(out)
+func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, opts ...kzip.WriterOption) error {
+	wr, err := kzip.NewWriteCloser(out, opts...)
 	if err != nil {
 		out.Close()
 		return fmt.Errorf("error creating writer: %v", err)
