@@ -34,6 +34,7 @@ import (
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/flagutil"
 )
 
 var (
@@ -48,21 +49,9 @@ var (
 	verbose    = flag.Bool("v", false, "Enable verbose logging")
 
 	canonicalizePackageCorpus = flag.Bool("canonicalize_package_corpus", false, "Whether to use a package's canonical repository root URL as their corpus")
+
+	buildTags flagutil.StringList
 )
-
-// Wrapper type for using flag.Var() to collect a list of strings.
-type arrayFlags struct {
-	array *[]string
-}
-
-func (af *arrayFlags) String() string {
-	return strings.Join(*af.array, ",")
-}
-
-func (af *arrayFlags) Set(value string) error {
-	*af.array = append(*af.array, value)
-	return nil
-}
 
 func init() {
 	flag.Usage = func() {
@@ -84,7 +73,7 @@ Options:
 	flag.StringVar(&bc.GOROOT, "goroot", bc.GOROOT, "Go system root")
 	flag.BoolVar(&bc.CgoEnabled, "gocgo", bc.CgoEnabled, "Whether to allow cgo")
 	flag.StringVar(&bc.Compiler, "gocompiler", bc.Compiler, "Which Go compiler to use")
-	flag.Var(&arrayFlags{array: &bc.BuildTags}, "buildtag", "Go +build tags to enable during extraction. May be specified multiple times.")
+	flag.Var(&buildTags, "buildtags", "Comma-separated list Go +build tags to enable during extraction.")
 
 	// TODO(fromberger): Attach flags to the build and release tags (maybe).
 }
@@ -104,6 +93,8 @@ func maybeLog(msg string, args ...interface{}) {
 
 func main() {
 	flag.Parse()
+
+	bc.BuildTags = buildTags
 
 	if *outputPath == "" {
 		log.Fatal("You must provide a non-empty --output path")
