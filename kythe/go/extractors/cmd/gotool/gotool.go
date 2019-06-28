@@ -73,7 +73,7 @@ Options:
 	flag.StringVar(&bc.GOROOT, "goroot", bc.GOROOT, "Go system root")
 	flag.BoolVar(&bc.CgoEnabled, "gocgo", bc.CgoEnabled, "Whether to allow cgo")
 	flag.StringVar(&bc.Compiler, "gocompiler", bc.Compiler, "Which Go compiler to use")
-	flag.Var(&buildTags, "buildtags", "Comma-separated list Go +build tags to enable during extraction.")
+	flag.Var(&buildTags, "buildtags", "Comma-separated list of Go +build tags to enable during extraction.")
 
 	// TODO(fromberger): Attach flags to the build and release tags (maybe).
 }
