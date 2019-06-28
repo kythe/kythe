@@ -50,6 +50,20 @@ var (
 	canonicalizePackageCorpus = flag.Bool("canonicalize_package_corpus", false, "Whether to use a package's canonical repository root URL as their corpus")
 )
 
+// Wrapper type for using flag.Var() to collect a list of strings.
+type arrayFlags struct {
+	array *[]string
+}
+
+func (af *arrayFlags) String() string {
+	return strings.Join(*af.array, ",")
+}
+
+func (af *arrayFlags) Set(value string) error {
+	*af.array = append(*af.array, value)
+	return nil
+}
+
 func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: %s [options] <import-path>...
@@ -70,6 +84,7 @@ Options:
 	flag.StringVar(&bc.GOROOT, "goroot", bc.GOROOT, "Go system root")
 	flag.BoolVar(&bc.CgoEnabled, "gocgo", bc.CgoEnabled, "Whether to allow cgo")
 	flag.StringVar(&bc.Compiler, "gocompiler", bc.Compiler, "Which Go compiler to use")
+	flag.Var(&arrayFlags{array: &bc.BuildTags}, "buildtag", "Go +build tags to enable during extraction. May be specified multiple times.")
 
 	// TODO(fromberger): Attach flags to the build and release tags (maybe).
 }
