@@ -9,6 +9,7 @@ java_library(
         "KZipWriter.java",
     ],
     deps = [
+        "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_java_proto",
