@@ -5,6 +5,7 @@ java_library(
     srcs = ["ForwardingStandardJavaFileManager.java"],
     deps = [
         "//kythe/java/com/google/devtools/kythe/common:flogger",
+        "//third_party/guava",
         "//third_party/javac",
     ],
 )

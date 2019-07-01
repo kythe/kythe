@@ -27,6 +27,7 @@ import (
 	"os"
 
 	"kythe.io/kythe/go/platform/tools/kzip/createcmd"
+	"kythe.io/kythe/go/platform/tools/kzip/infocmd"
 	"kythe.io/kythe/go/platform/tools/kzip/mergecmd"
 
 	"github.com/google/subcommands"
@@ -34,6 +35,7 @@ import (
 
 func init() {
 	subcommands.Register(createcmd.New(), "")
+	subcommands.Register(infocmd.New(), "")
 	subcommands.Register(mergecmd.New(), "")
 }
 

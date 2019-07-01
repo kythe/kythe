@@ -15,9 +15,11 @@
  */
 package com.google.devtools.kythe.platform.java.filemanager;
 
+import com.google.common.base.Throwables;
 import com.google.common.flogger.FluentLogger;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -74,7 +76,7 @@ public class ForwardingStandardJavaFileManager
     try {
       return (Location) getLocationForModuleNameMethod.invoke(fileManager, location, moduleName);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("getLocationForModule called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("getLocationForModule", e, IOException.class);
     }
   }
 
@@ -84,7 +86,7 @@ public class ForwardingStandardJavaFileManager
     try {
       return (Location) getLocationForModuleFileMethod.invoke(fileManager, location, fo);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("getLocationForModule called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("getLocationForModule", e, IOException.class);
     }
   }
 
@@ -96,7 +98,7 @@ public class ForwardingStandardJavaFileManager
     try {
       return (ServiceLoader<S>) getServiceLoaderMethod.invoke(location, service);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("getServiceLoader called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("getServiceLoader", e, IOException.class);
     }
   }
 
@@ -106,7 +108,7 @@ public class ForwardingStandardJavaFileManager
     try {
       return (String) inferModuleNameMethod.invoke(fileManager, location);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("inferModuleName called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("inferModuleName", e, IOException.class);
     }
   }
 
@@ -117,8 +119,8 @@ public class ForwardingStandardJavaFileManager
     try {
       return (Iterable<Set<Location>>) listLocationsForModulesMethod.invoke(fileManager, location);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException(
-          "listLocationsForModules called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible(
+          "listLocationsForModules", e, IOException.class);
     }
   }
 
@@ -128,7 +130,7 @@ public class ForwardingStandardJavaFileManager
     try {
       return (Boolean) containsMethod.invoke(fileManager, location, fo);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("contains called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("contains", e, IOException.class);
     }
   }
 
@@ -147,8 +149,7 @@ public class ForwardingStandardJavaFileManager
       return (Iterable<? extends JavaFileObject>)
           getJavaFileObjectsFromPathsMethod.invoke(fileManager, paths);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException(
-          "getJavaFileObjectsFromPaths called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("getJavaFileObjectsFromPaths", e);
     }
   }
 
@@ -175,7 +176,7 @@ public class ForwardingStandardJavaFileManager
       return (Iterable<? extends JavaFileObject>)
           getJavaFileObjectsMethod.invoke(fileManager, (Object) paths);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("getJavaFileObjects called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("getJavaFileObjects", e);
     }
   }
 
@@ -186,7 +187,7 @@ public class ForwardingStandardJavaFileManager
     try {
       setLocationFromPathsMethod.invoke(fileManager, location, paths);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("setLocationFromPaths called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("setLocationFromPaths", e, IOException.class);
     }
   }
 
@@ -197,7 +198,7 @@ public class ForwardingStandardJavaFileManager
     try {
       setLocationForModuleMethod.invoke(fileManager, location, moduleName, paths);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("setLocationForModule called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("setLocationForModule", e, IOException.class);
     }
   }
 
@@ -213,7 +214,7 @@ public class ForwardingStandardJavaFileManager
     try {
       return (Iterable<? extends Path>) getLocationAsPathsMethod.invoke(fileManager, location);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("getLocationAsPaths called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("getLocationAsPaths", e);
     }
   }
 
@@ -233,7 +234,7 @@ public class ForwardingStandardJavaFileManager
     try {
       return (Path) asPathMethod.invoke(fileManager, fo);
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("asPath called by unsupported Java version", e);
+      throw propagateInvocationTargetErrorIfPossible("asPath", e);
     }
   }
 
@@ -244,5 +245,27 @@ public class ForwardingStandardJavaFileManager
       logger.atInfo().withCause(e).log("Failed to find extended StandardJavaFileManager method");
     }
     return null;
+  }
+
+  private static IllegalStateException propagateInvocationTargetErrorIfPossible(
+      String methodName, ReflectiveOperationException error) {
+    if (error instanceof InvocationTargetException) {
+      Throwables.throwIfUnchecked(((InvocationTargetException) error).getCause());
+    }
+    return unsupportedVersionError(methodName, error);
+  }
+
+  private static IllegalStateException propagateInvocationTargetErrorIfPossible(
+      String methodName, ReflectiveOperationException error, Class<IOException> declaredType)
+      throws IOException {
+    if (error instanceof InvocationTargetException) {
+      Throwables.propagateIfPossible(((InvocationTargetException) error).getCause(), declaredType);
+    }
+    return unsupportedVersionError(methodName, error);
+  }
+
+  private static IllegalStateException unsupportedVersionError(
+      String methodName, ReflectiveOperationException cause) {
+    return new IllegalStateException(methodName + " called by unsupported Java version", cause);
   }
 }

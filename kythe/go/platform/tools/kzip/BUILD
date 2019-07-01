@@ -7,6 +7,7 @@ go_binary(
     srcs = ["kzip.go"],
     deps = [
         "//kythe/go/platform/tools/kzip/createcmd",
+        "//kythe/go/platform/tools/kzip/infocmd",
         "//kythe/go/platform/tools/kzip/mergecmd",
         "@com_github_google_subcommands//:go_default_library",
     ],
