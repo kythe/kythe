@@ -63,8 +63,8 @@ public final class KZipReader implements KZip.Reader {
 
     Set<String> jsonUnits = new HashSet<>();
     Set<String> protoUnits = new HashSet<>();
-    String jsonPrefix = rootPrefix + KZip.Encoding.JSON.getSubdirectory();
-    String protoPrefix = rootPrefix + KZip.Encoding.PROTO.getSubdirectory();
+    String jsonPrefix = rootPrefix + KZip.Encoding.JSON.getSubdirectory() + "/";
+    String protoPrefix = rootPrefix + KZip.Encoding.PROTO.getSubdirectory() + "/";
 
     // Make sure each path in the kzip has the same root.
     // Also accumulate potential unit digests.
@@ -75,10 +75,10 @@ public final class KZipReader implements KZip.Reader {
         throw new KZipException("Invalid entry (bad root): " + name);
       }
       if (name.startsWith(jsonPrefix)) {
-	jsonUnits.add(name.substring(jsonPrefix.length() + 1));
+	jsonUnits.add(name.substring(jsonPrefix.length()));
       }
       if (name.startsWith(protoPrefix)) {
-	protoUnits.add(name.substring(protoPrefix.length() + 1));
+	protoUnits.add(name.substring(protoPrefix.length()));
       }
     }
     KZip.Encoding encoding = KZip.Encoding.PROTO;
@@ -115,7 +115,7 @@ public final class KZipReader implements KZip.Reader {
       if (descriptor.encoding() == KZip.Encoding.JSON) {
         try (InputStreamReader reader = new InputStreamReader(input, KZip.DATA_CHARSET)) {
 	  return gson.fromJson(reader, Analysis.IndexedCompilation.class);
-	} 
+	}
       }
       return Analysis.IndexedCompilation.parseFrom(input);
     } catch (IOException e) {

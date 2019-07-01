@@ -72,7 +72,7 @@ public final class KZipWriterTest {
   public void testWriteAll() throws IOException, KZipException {
     testWrite(KZip.Encoding.ALL);
   }
-  
+
   private void testWrite(KZip.Encoding encoding) throws IOException, KZipException {
     // Read in the provided kzip.
     InMemoryKZip originalKZip = readKZip(TestDataUtil.getTestFile("stringset.kzip"));
