@@ -1,7 +1,5 @@
 // Tests the behavior of getter and setter entries.
 
-
-
 // Both getters and setters
 class A {
   prop = 0;

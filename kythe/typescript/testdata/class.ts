@@ -36,7 +36,7 @@ class Class implements IFace {
     // This ctor declares a new member var named 'otherMember', and also
     // declares an ordinary parameter named 'member' (to ensure we don't get
     // confused about params to the ctor vs true member variables).
-    //- @constructor defines/binding ClassCtor=vname("Class.constructor", _, _, _, _)
+    //- @constructor defines/binding ClassCtor=vname("Class#type.constructor", _, _, _, _)
     //- ClassCtor.node/kind function
     //- ClassCtor.subkind constructor
     //- @otherMember defines/binding OtherMember
