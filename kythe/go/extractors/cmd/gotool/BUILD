@@ -11,6 +11,7 @@ go_binary(
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/vfs",
+        "//kythe/go/util/flagutil",
     ],
 )
 

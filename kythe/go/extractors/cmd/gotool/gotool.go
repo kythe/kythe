@@ -34,6 +34,7 @@ import (
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/flagutil"
 )
 
 var (
@@ -48,6 +49,8 @@ var (
 	verbose    = flag.Bool("v", false, "Enable verbose logging")
 
 	canonicalizePackageCorpus = flag.Bool("canonicalize_package_corpus", false, "Whether to use a package's canonical repository root URL as their corpus")
+
+	buildTags flagutil.StringList
 )
 
 func init() {
@@ -70,6 +73,7 @@ Options:
 	flag.StringVar(&bc.GOROOT, "goroot", bc.GOROOT, "Go system root")
 	flag.BoolVar(&bc.CgoEnabled, "gocgo", bc.CgoEnabled, "Whether to allow cgo")
 	flag.StringVar(&bc.Compiler, "gocompiler", bc.Compiler, "Which Go compiler to use")
+	flag.Var(&buildTags, "buildtags", "Comma-separated list of Go +build tags to enable during extraction.")
 
 	// TODO(fromberger): Attach flags to the build and release tags (maybe).
 }
@@ -89,6 +93,8 @@ func maybeLog(msg string, args ...interface{}) {
 
 func main() {
 	flag.Parse()
+
+	bc.BuildTags = buildTags
 
 	if *outputPath == "" {
 		log.Fatal("You must provide a non-empty --output path")
