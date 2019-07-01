@@ -31,6 +31,12 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+# golang build tags can optionally be specified with the `KYTHE_GO_BUILD_TAGS`
+# env variable.
+if [ ! -z "$KYTHE_GO_BUILD_TAGS" ]; then
+  FLAGS+=( "--buildtags=$KYTHE_GO_BUILD_TAGS" )
+fi
+
 echo "Downloading ${PACKAGES[*]}" >&2
 go get -d "${PACKAGES[@]}" || true
 
