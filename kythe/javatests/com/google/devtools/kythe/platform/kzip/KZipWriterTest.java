@@ -59,12 +59,26 @@ public final class KZipWriterTest {
    * correctly. {@link KZipReaderTest} will ensure that reading is done correctly.
    */
   @Test
-  public void testWrite() throws IOException, KZipException {
+  public void testWriteJson() throws IOException, KZipException {
+    testWrite(KZip.Encoding.JSON);
+  }
+
+  @Test
+  public void testWriteProto() throws IOException, KZipException {
+    testWrite(KZip.Encoding.PROTO);
+  }
+
+  @Test
+  public void testWriteAll() throws IOException, KZipException {
+    testWrite(KZip.Encoding.ALL);
+  }
+
+  private void testWrite(KZip.Encoding encoding) throws IOException, KZipException {
     // Read in the provided kzip.
     InMemoryKZip originalKZip = readKZip(TestDataUtil.getTestFile("stringset.kzip"));
 
     // Write out our kzip.
-    KZipWriter writer = new KZipWriter(new File(getTestTempDir(), "write_test.kzip"));
+    KZipWriter writer = new KZipWriter(new File(getTestTempDir(), "write_test.kzip"), encoding);
 
     for (Analysis.IndexedCompilation compilation : originalKZip.compilations) {
       writer.writeUnit(compilation);

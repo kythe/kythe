@@ -5,6 +5,8 @@ java_test(
         "//kythe/cxx/common/testdata:empty.kzip",
         "//kythe/cxx/common/testdata:garbage_unit.kzip",
         "//kythe/cxx/common/testdata:malformed.kzip",
+        "//kythe/cxx/common/testdata:missing-unit.kzip",
+        "//kythe/cxx/common/testdata:missing-pbunit.kzip",
         "//kythe/cxx/common/testdata:stringset.kzip",
         "//kythe/cxx/common/testdata:stringset_with_empty_file.kzip",
     ],
