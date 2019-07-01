@@ -145,19 +145,6 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 		}
 		ms = repl
 
-	case *types.TypeName:
-		// For named types, include the underlying type.
-		repl := &cpb.MarkedSource{
-			Kind:          cpb.MarkedSource_BOX,
-			PostChildText: " ",
-			Child: []*cpb.MarkedSource{
-				{PreText: "type"},
-				ms,
-				{Kind: cpb.MarkedSource_TYPE, PreText: typeName(t.Type().Underlying())},
-			},
-		}
-		ms = repl
-
 	default:
 		// TODO(fromberger): Handle other variations from go/types.
 	}

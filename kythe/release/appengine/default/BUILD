@@ -1,6 +1,6 @@
-load("//tools:build_rules/shims.bzl", "go_library")
+load("//tools:build_rules/shims.bzl", "go_binary")
 
-go_library(
+go_binary(
     name = "server",
     srcs = ["main.go"],
 )

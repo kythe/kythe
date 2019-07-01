@@ -1,6 +1,10 @@
-load("@io_kythe//tools/build_rules/llvm:configure_file.bzl", "configure_file")
+load("@io_kythe_llvmbzlgen//rules:configure_file.bzl", "configure_file")
+load("@io_kythe_llvmbzlgen//rules:llvmbuild.bzl", "llvmbuild")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:collections.bzl", "collections")
+
+# CMake paths are all rooted at the fake "/root" path.
+_ROOT_PREFIX = "/root"
 
 def _repo_path(path):
     if native.repository_name() == "@":
@@ -8,18 +12,10 @@ def _repo_path(path):
     return paths.join("external", native.repository_name()[1:], path.lstrip("/"))
 
 def _llvm_build_deps(ctx, name):
-    # TODO(shahms): Do this transformation during generation.
-    llvm_to_cmake = {
-        "Scalar": "ScalarOpts",
-        "IPO": "ipo",
-        "ObjCARC": "ObjCARCOpts",
-    }
-    cmake_to_llvm = dict([(v, k) for k, v in llvm_to_cmake.items()])
     name = _replace_prefix(name, "LLVM", "")
-    name = cmake_to_llvm.get(name, name)
     return [
-        ":LLVM" + llvm_to_cmake.get(d, d)
-        for d in ctx._config.llvm_build_deps.get(name, [])
+        ":LLVM" + d
+        for d in llvmbuild.library_dependencies(ctx._config.llvmbuildctx, name)
     ]
 
 def _root_path(ctx):
@@ -27,9 +23,11 @@ def _root_path(ctx):
 
 def _join_path(root, path):
     """Special handling for absolute paths."""
-    if path.startswith("/"):
-        return paths.normalize(path.lstrip("/"))  # CMake paths are all "rooted" at the workspace.
-    return paths.normalize(paths.join(root.lstrip("/"), path))
+    if path.startswith(_ROOT_PREFIX):
+        return paths.normalize(paths.relativize(path, _ROOT_PREFIX))
+    if root.startswith(_ROOT_PREFIX):
+        root = paths.relativize(root, _ROOT_PREFIX)
+    return paths.normalize(paths.join(root, path))
 
 def _llvm_headers(root):
     root = _replace_prefix(root, "lib/", "include/llvm/")
@@ -292,7 +290,7 @@ def _add_llvm_target(ctx, name, *args):
     sources.extend(args)
     _add_llvm_library(ctx, "LLVM" + name, *sources)
 
-def _enter_directory(ctx, path):
+def _push_directory(ctx, path):
     ctx._state.append(struct(
         path = path,
         vars = {},
@@ -301,7 +299,7 @@ def _enter_directory(ctx, path):
     ))
     return ctx
 
-def _exit_directory(ctx, path):
+def _pop_directory(ctx):
     gen_hdrs = _current(ctx).gen_hdrs
     if gen_hdrs:
         native.filegroup(
@@ -315,8 +313,8 @@ def make_context(**kwargs):
     return struct(
         _state = [],
         _config = struct(**kwargs),
-        enter_directory = _enter_directory,
-        exit_directory = _exit_directory,
+        push_directory = _push_directory,
+        pop_directory = _pop_directory,
         set = _set_cmake_var,
         configure_file = _configure_file,
         add_llvm_library = _add_llvm_library,

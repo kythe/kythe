@@ -139,11 +139,11 @@ class StandardIndexerContext implements IndexerHost {
       /**
        * The VName for the CompilationUnit, containing compilation-wide info.
        */
-      private compilationUnit: VName,
+      private readonly compilationUnit: VName,
       /**
        * A map of path to path-specific VName.
        */
-      private pathVNames: Map<string, VName>,
+      private readonly pathVNames: Map<string, VName>,
       /** All source file paths in the TypeScript program. */
       public paths: string[],
       public program: ts.Program,
@@ -229,9 +229,9 @@ class Visitor {
   typeChecker: ts.TypeChecker;
 
   constructor(
-      private host: IndexerHost,
+      private readonly host: IndexerHost,
       private file: ts.SourceFile,
-      private getOffsetTable: (path: string) => utf8.OffsetTable,
+      private readonly getOffsetTable: (path: string) => utf8.OffsetTable,
   ) {
     this.sourceRoot =
         this.host.program.getCompilerOptions().rootDir || process.cwd();
