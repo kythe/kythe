@@ -373,7 +373,7 @@ func TestScanConcurrency(t *testing.T) {
 	}
 }
 
-const testDataDir = "testdata"
+const testDataDir = "../../../cxx/common/testdata"
 
 func TestMissingJSONUnitFails(t *testing.T) {
 	b, err := ioutil.ReadFile(testutil.TestFilePath(t, filepath.Join(testDataDir, "missing-unit.kzip")))

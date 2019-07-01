@@ -15,6 +15,7 @@
  */
 package com.google.devtools.kythe.platform.kzip;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.devtools.kythe.proto.Analysis;
@@ -105,7 +106,6 @@ public class KZip {
 
   static final Charset DATA_CHARSET = StandardCharsets.UTF_8;
   static final HashFunction DATA_DIGEST = Hashing.sha256();
-  private static final String UNITS_SUBDIRECTORY = "units";
   private static final String FILES_SUBDIRECTORY = "files";
 
   private KZip() {}
@@ -117,11 +117,40 @@ public class KZip {
     return JsonUtil.registerProtoTypes(builder).create();
   }
 
-  static String getUnitsPath(String root, String digest) {
-    return Paths.get(root, UNITS_SUBDIRECTORY, digest).toString();
-  }
+  public static enum Encoding {
+    JSON("units"),
+    PROTO("pbunits"),
+    ALL("");
 
-  static String getFilesPath(String root, String digest) {
-    return Paths.get(root, FILES_SUBDIRECTORY, digest).toString();
+    private Encoding(String subdirectory) {
+      this.subdirectory = subdirectory;
+    }
+
+    String getSubdirectory() {
+      return subdirectory;
+    }
+    private final String subdirectory;
   }
+    
+  @AutoValue
+  abstract static class Descriptor {
+    abstract String root();
+    abstract Encoding encoding();
+    static Descriptor create(String root, Encoding encoding) {
+      return new AutoValue_KZip_Descriptor(root, encoding);
+    }
+
+    String getUnitsPath(String digest) {
+      return getUnitsPath(digest, encoding());
+    }
+    
+    String getUnitsPath(String digest, Encoding encoding) {
+      return Paths.get(root(), encoding.getSubdirectory(), digest).toString();
+    }
+
+    String getFilesPath(String digest) {
+      return Paths.get(root(), FILES_SUBDIRECTORY, digest).toString();
+    }
+  }
+  
 }
