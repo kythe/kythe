@@ -113,31 +113,30 @@ export class Klass {
 **Form**:
 
 -   `$CLASS#type`
--   `$CLASS:ctor`
+-   `$CLASS`
 
 **Notes**: Because a class is both a type and a value, it has to be labeled as
-such. The identifier of a class is always binded as the class type. If a class
-defines a constructor, the constructor is binded as the class value (`ctor`);
-otherwise, the class identifier is also bound as the value.
-
-This only applies to the class declarations. Signatures of identifiers within a
-class have a class component that is only `$CLASS`.
+such. Class members belong to an instance of the class type and have a signature
+with class component of `$CLASS#type`. Static members belong to the class value
+and have a signature with class component of `$CLASS`.
 
 **SyntaxKind**:
 
 -   ClassDeclaration
--   Constructor
 
 ```typescript
 //- @Klass defines/binding VName("Klass#type", _, _, _, _)
+//- @Klass defines/binding VName("Klass", _, _, _, _)
 class Klass {
-  //- @constructor defines/binding VName("Klass:ctor", _, _, _, _)
+  //- @member defines/binding VName("Klass#type.member", _, _, _, _)
+  member = 0;
+
+  //- @staticMember defines/binding VName("Klass.staticMember", _, _, _, _)
+  static staticMember = 0;
+
+  //- @constructor defines/binding VName("Klass#type.constructor", _, _, _, _)
   constructor() {}
 }
-
-//- @NoCtorKlass defines/binding VName("NoCtorKlass#type", _, _, _, _)
-//- @NoCtorKlass defines/binding VName("NoCtorKlass:ctor", _, _, _, _)
-class NoCtorKlass {}
 ```
 
 #### Property Declaration
@@ -153,6 +152,7 @@ members, which belong to the class value, have a form of `$CLASS.$PROPERTY`.
 **SyntaxKind**:
 
 -   PropertyDeclaration
+-   ParameterPropertyDeclaration
 -   GetAccessor
 -   SetAccessor
 -   MethodDeclaration
@@ -164,6 +164,9 @@ class Klass {
 
   //- @prop defines/binding VName("Klass#type.prop", _, _, _, _)
   static prop;
+
+  //- @cprop defines/binding VName("Klass#type.cprop", _, _, _, _)
+  constructor(private cprop: number) {}
 }
 ```
 

@@ -17,6 +17,7 @@ export default NspI;
 
 // ClassDeclaration
 //- @C defines/binding VName("C#type", _, _, "testdata/declaration_spec", "typescript")
+//- @C defines/binding VName("C", _, _, "testdata/declaration_spec", "typescript")
 class C {
   // PropertyDeclaration instance member
   //- @property defines/binding VName("C#type.property", _, _, "testdata/declaration_spec", "typescript")
@@ -30,9 +31,10 @@ class C {
   //- @method defines/binding VName("C#type.method", _, _, "testdata/declaration_spec", "typescript")
   method() {}
 
-  // Constructor
-  //- @constructor defines/binding VName("C:ctor", _, _, "testdata/declaration_spec", "typescript")
-  constructor() {}
+  // Constructor, ParameterPropertyDeclaration
+  //- @constructor defines/binding VName("C#type.constructor", _, _, "testdata/declaration_spec", "typescript")
+  //- @cprop defines/binding VName("C#type.cprop", _, _, "testdata/declaration_spec", "typescript")
+  constructor(private cprop: number) {}
 
   // GetAccessor
   //- @prop defines/binding VName("C#type.prop:getter", _, _, "testdata/declaration_spec", "typescript")
@@ -50,7 +52,7 @@ class C {
 
 // ClassDeclaration with no ctor
 //- @CC defines/binding VName("CC#type", _, _, "testdata/declaration_spec", "typescript")
-//- @CC defines/binding VName("CC:ctor", _, _, "testdata/declaration_spec", "typescript")
+//- @CC defines/binding VName("CC", _, _, "testdata/declaration_spec", "typescript")
 class CC {}
 
 // EnumDeclaration
