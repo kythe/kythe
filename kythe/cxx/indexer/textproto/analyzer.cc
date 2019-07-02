@@ -523,7 +523,7 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
 
   Status status = analyzer.AnalyzeSchemaComments(*file_vname, *descriptor);
   if (!status.ok()) {
-    return status;
+    LOG(ERROR) << "Error analyzing schema comments: " << status;
   }
 
   return analyzer.AnalyzeMessage(*file_vname, *proto, *descriptor, parse_tree);
