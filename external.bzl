@@ -1,7 +1,6 @@
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
@@ -13,7 +12,6 @@ def _rule_dependencies():
     gazelle_dependencies()
     go_rules_dependencies()
     go_register_toolchains()
-    rules_nodejs_dependencies()
 
 def _cc_dependencies():
     maybe(
@@ -713,6 +711,14 @@ def kythe_dependencies(sample_ui = True):
         sha256 = "ca4e3b8e4da9266c3a9101c8f4704fe2e20eb5625b2a6a7d2d7d45e3dd4efffd",
         strip_prefix = "bazel-skylib-0.5.0",
         urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.5.0.zip"],
+    )
+
+    maybe(
+        http_archive,
+        name = "io_kythe_llvmbzlgen",
+        sha256 = "6d077cfe818d08ea9184d71f73581135b69c379692771afd88392fa1fee018ac",
+        urls = ["https://github.com/kythe/llvmbzlgen/archive/435bad1d07f7a8d32979d66cd5547e1b32dca812.zip"],
+        strip_prefix = "llvmbzlgen-435bad1d07f7a8d32979d66cd5547e1b32dca812",
     )
 
     _rule_dependencies()

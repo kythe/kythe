@@ -150,7 +150,7 @@ func (e *Extractor) listPackages(query ...string) ([]*jsonPackage, error) {
 	// TODO(schroederc): support GOPACKAGESDRIVER
 	args := append([]string{"list",
 		"-compiler=" + e.BuildContext.Compiler,
-		"-tags=" + strings.Join(e.BuildContext.BuildTags, ","),
+		"-tags=" + strings.Join(e.BuildContext.BuildTags, " "),
 		"-installsuffix=" + e.BuildContext.InstallSuffix,
 		"-test",
 		"-deps",

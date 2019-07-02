@@ -43,9 +43,11 @@ import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.tree.JCTree;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
@@ -56,6 +58,7 @@ public class JavaEntrySets extends KytheEntrySets {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final Map<Symbol, VName> symbolNodes = new HashMap<>();
+  private final Set<Symbol> symbolsDocumented = new HashSet<>();
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
   private final boolean ignoreVNamePaths;
   private final boolean ignoreVNameRoots;
@@ -118,7 +121,7 @@ public class JavaEntrySets extends KytheEntrySets {
       String signature,
       MarkedSource markedSource) {
     EntrySet node;
-    if (symbolNodes.containsKey(sym)) {
+    if (symbolNodes.containsKey(sym) && (markedSource == null || symbolsDocumented.contains(sym))) {
       return symbolNodes.get(sym);
     }
 
@@ -151,7 +154,11 @@ public class JavaEntrySets extends KytheEntrySets {
 
       NodeKind kind = elementNodeKind(sym.getKind());
       NodeBuilder builder = kind != null ? newNode(kind) : newNode(sym.getKind().toString());
-      builder.setCorpusPath(CorpusPath.fromVName(v)).setProperty("code", markedSource);
+      builder.setCorpusPath(CorpusPath.fromVName(v));
+      if (markedSource != null) {
+        builder.setProperty("code", markedSource);
+        symbolsDocumented.add(sym);
+      }
 
       if (signatureGenerator.getUseJvmSignatures()) {
         builder.setSignature(signature);
@@ -342,7 +349,7 @@ public class JavaEntrySets extends KytheEntrySets {
     return sourceFile.toUri().getHost();
   }
 
-  private static boolean fromJDK(@Nullable Symbol sym) {
+  static boolean fromJDK(@Nullable Symbol sym) {
     if (sym == null || sym.enclClass() == null) {
       return false;
     }

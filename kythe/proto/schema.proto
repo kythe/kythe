@@ -122,6 +122,7 @@ enum FactName {
   TEXT_ENCODING = 17;
   VISIBILITY = 18;
   BUILD_CONFIG = 19;
+  TAG_DEPRECATED = 20;
 }
 
 enum EdgeKind {

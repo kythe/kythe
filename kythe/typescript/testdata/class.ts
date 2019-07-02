@@ -17,11 +17,10 @@ interface IFace {
 //- @IFace ref IFace
 interface IExtended extends IFace {}
 
-//- @Class defines/binding Class
+//- @Class defines/binding Class=vname("Class#type", _, _, _, _)
 //- Class.node/kind record
-//- @Class defines/binding ClassCtor
-//- ClassCtor.node/kind function
-//- ClassCtor.subkind constructor
+//- @Class defines/binding ClassValue=vname("Class", _, _, _, _)
+//- ClassValue.node/kind function
 //- @IFace ref IFace
 class Class implements IFace {
     //- @member defines/binding Member
@@ -29,20 +28,26 @@ class Class implements IFace {
     //- !{ Member.tag/static _ }
     member: number;
 
-    //- @staticMember defines/binding StaticMember
+    //- @member defines/binding StaticMember
     //- StaticMember.tag/static _
-    static staticMember: number;
+    //- !{ @member defines/binding Member }
+    static member: number;
 
-    // TODO: ClassCtor should really point at this constructor, not at the
-    // top-level class declaration.
     // This ctor declares a new member var named 'otherMember', and also
     // declares an ordinary parameter named 'member' (to ensure we don't get
     // confused about params to the ctor vs true member variables).
+    //- @constructor defines/binding ClassCtor=vname("Class#type.constructor", _, _, _, _)
+    //- ClassCtor.node/kind function
+    //- ClassCtor.subkind constructor
     //- @otherMember defines/binding OtherMember
     //- OtherMember.node/kind variable
     //- @member defines/binding FakeMember
     //- FakeMember.node/kind variable
-    constructor(public otherMember: number, member: string) {}
+    constructor(public otherMember: number, member: string) {
+      //- @Class ref ClassValue
+      //- @Class ref/call ClassCtor
+      new Class(0, 'a');
+    }
 
     //- @method defines/binding Method
     //- Method.node/kind function
@@ -59,7 +64,7 @@ class Class implements IFace {
     ifaceMethod(): void {}
 }
 
-//- @Class ref ClassCtor
+//- @Class ref ClassValue
 class Subclass extends Class {
     method() {
         //- @member ref Member
@@ -67,7 +72,7 @@ class Subclass extends Class {
     }
 }
 
-//- @Class ref ClassCtor
+//- @Class ref ClassValue
 let instance = new Class(3, 'a');
 //- @otherMember ref OtherMember
 instance.otherMember;

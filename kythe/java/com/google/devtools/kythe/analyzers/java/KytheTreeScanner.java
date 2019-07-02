@@ -818,8 +818,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             Arrays.asList(typeNode.getVName()),
             MarkedSources.ARRAY_TAPP);
     emitAnchor(ctx, EdgeKind.REF, node.getVName());
-    JavaNode arrayNode = new JavaNode(node);
-    return arrayNode;
+    return new JavaNode(node);
   }
 
   @Override
@@ -965,7 +964,16 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     List<VName> typeParams = new ArrayList<>();
     for (JCTypeParameter tParam : params) {
       TreeContext ctx = ownerContext.down(tParam);
-      VName node = getNode(tParam.type.asElement());
+      Symbol sym = tParam.type.asElement();
+      VName node =
+          signatureGenerator
+              .getSignature(sym)
+              .map(sig -> entrySets.getNode(signatureGenerator, sym, sig, null, null))
+              .orElse(null);
+      if (node == null) {
+        logger.atWarning().log("Could not get type parameter VName: %s", tParam);
+        continue;
+      }
       emitDefinesBindingAnchorEdge(ctx, tParam.name, tParam.getStartPosition(), node);
       visitAnnotations(node, tParam.getAnnotations(), ctx);
       typeParams.add(node);
@@ -993,11 +1001,43 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   /** Returns the {@link JavaNode} associated with a {@link Symbol} or {@code null}. */
   private JavaNode getJavaNode(Symbol sym) {
-    Optional<String> signature = signatureGenerator.getSignature(sym);
-    if (!signature.isPresent()) {
-      return null;
+    if (sym.getKind() == ElementKind.PACKAGE) {
+      return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
     }
-    return new JavaNode(entrySets.getNode(signatureGenerator, sym, signature.get(), null, null));
+
+    if (jvmGraph != null && config.getEmitJvmReferences() && isExternal(sym)) {
+      // Symbol is external to the analyzed compilation and may not be defined in Java.  Return the
+      // related JVM node to accommodate cross-language references.
+      Type type = externalType(sym);
+      if (type instanceof Type.MethodType) {
+        JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
+        ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
+        String methodName = sym.getQualifiedName().toString();
+        return new JavaNode(JvmGraph.getMethodVName(parentClass, methodName, methodJvmType));
+      } else if (type instanceof Type.ClassType) {
+        return new JavaNode(JvmGraph.getReferenceVName(referenceType(sym.type)));
+      } else if (sym instanceof Symbol.VarSymbol
+          && ((Symbol.VarSymbol) sym).getKind() == ElementKind.FIELD) {
+        ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
+        String fieldName = sym.getSimpleName().toString();
+        return new JavaNode(JvmGraph.getFieldVName(parentClass, fieldName));
+      }
+    }
+
+    return signatureGenerator
+        .getSignature(sym)
+        .map(sig -> new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null)))
+        .orElse(null);
+  }
+
+  private boolean isExternal(Symbol sym) {
+    // TODO(schroederc): check if Symbol comes from any source file in compilation
+    // TODO(schroederc): research other methods to hueristically determine if a Symbol is defined in
+    //                   a Java compilation (vs. some other JVM language)
+    ClassSymbol cls = sym.enclClass();
+    return cls != null
+        && cls.sourcefile != filePositions.getSourceFile()
+        && !JavaEntrySets.fromJDK(sym);
   }
 
   private void visitAnnotations(
@@ -1067,10 +1107,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   // Returns the reference node for the given symbol.
   private JavaNode getRefNode(TreeContext ctx, Symbol sym) {
-    if (sym.getKind() == ElementKind.PACKAGE) {
-      return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
-    }
-
     // If referencing a generic class, distinguish between generic vs. raw use
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
     boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;

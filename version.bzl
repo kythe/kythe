@@ -1,3 +1,9 @@
+# Minimum supported Bazel version.  Should match .bazelminversion file.
+MIN_VERSION = "0.26.0"
+
+# Maximum supported Bazel version.  Should match .bazelversion file.
+MAX_VERSION = "0.27.0"
+
 def _tuplicate(value, delim):
     rv = ()
     for field in value.split(delim):
@@ -22,6 +28,7 @@ def _bound_size(tup, size, padding = 0):
     if len(tup) >= size:
         return tup[:size]
     ret = tup
+
     for i in range(size - len(tup)):
         ret += (padding,)
     return ret
@@ -30,6 +37,9 @@ def check_version(min_required, max_supported):
     found = native.bazel_version
     if not found:
         print("\nDevelopment version of bazel detected.\nDisabling version check.\nExpect the unexpected.")
+        return
+    elif "rc" in found:
+        print("\nRelease candidate version of bazel detected: %s.\nDisabling version check.\nGood luck!" % (found,))
         return
     found_version = _parse_version(found)
     min = _parse_version(min_required)
