@@ -77,8 +77,12 @@ public final class KZipWriterTest {
     // Read in the provided kzip.
     InMemoryKZip originalKZip = readKZip(TestDataUtil.getTestFile("stringset.kzip"));
 
+    // Delete old tmp kzip (if present).
+    File tmpKZipFile = new File(getTestTempDir(), "write_test.kzip");
+    tmpKZipFile.delete();
+
     // Write out our kzip.
-    KZipWriter writer = new KZipWriter(new File(getTestTempDir(), "write_test.kzip"), encoding);
+    KZipWriter writer = new KZipWriter(tmpKZipFile, encoding);
 
     for (Analysis.IndexedCompilation compilation : originalKZip.compilations) {
       writer.writeUnit(compilation);
