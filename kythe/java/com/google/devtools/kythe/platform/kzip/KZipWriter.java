@@ -31,7 +31,7 @@ import java.util.zip.ZipOutputStream;
 public final class KZipWriter implements KZip.Writer {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private static final String ROOT_PREFIX = "root/";
+  private final KZip.Descriptor descriptor;
   private final ZipOutputStream output;
   private final Gson gson;
 
@@ -39,21 +39,26 @@ public final class KZipWriter implements KZip.Writer {
   // raising exceptions by writing duplicates.
   private final Set<String> pathsWritten;
 
+  @Deprecated
   public KZipWriter(File file) throws IOException {
-    this(file, KZip.buildGson(new GsonBuilder()));
+    this(file, KZip.Encoding.JSON);
+  }
+  
+  public KZipWriter(File file, KZip.Encoding encoding) throws IOException {
+    this(file, encoding, KZip.buildGson(new GsonBuilder()));
   }
 
-  public KZipWriter(File file, GsonBuilder gsonBuilder) throws IOException {
-    this(file, KZip.buildGson(gsonBuilder));
+  public KZipWriter(File file, KZip.Encoding encoding, GsonBuilder gsonBuilder) throws IOException {
+    this(file, encoding, KZip.buildGson(gsonBuilder));
   }
 
-  public KZipWriter(File file, Gson gson) throws IOException {
+  public KZipWriter(File file, KZip.Encoding encoding, Gson gson) throws IOException {
     FileOutputStream out = new FileOutputStream(file);
     this.output = new ZipOutputStream(out);
     this.gson = gson;
-
+    this.descriptor = KZip.Descriptor.create("root", encoding);
     // Add an entry for the root directory prefix (required by the spec).
-    ZipEntry root = new ZipEntry(ROOT_PREFIX);
+    ZipEntry root = new ZipEntry(descriptor.root() + "/");
     root.setComment("kzip root directory");
     this.output.putNextEntry(root);
     this.output.closeEntry();
@@ -66,8 +71,14 @@ public final class KZipWriter implements KZip.Writer {
     byte[] jsonData =
         gson.toJson(compilation, Analysis.IndexedCompilation.class).getBytes(KZip.DATA_CHARSET);
     String digest = KZip.DATA_DIGEST.hashBytes(jsonData).toString();
-    String compilationPath = KZip.getUnitsPath(ROOT_PREFIX, digest);
-    appendZip(jsonData, compilationPath);
+    if (descriptor.encoding().equals(KZip.Encoding.JSON)
+	|| descriptor.encoding().equals(KZip.Encoding.ALL)) {
+      appendZip(jsonData, descriptor.getUnitsPath(digest, KZip.Encoding.JSON));
+    }
+    if (descriptor.encoding().equals(KZip.Encoding.PROTO)
+	|| descriptor.encoding().equals(KZip.Encoding.ALL)) {
+      appendZip(compilation.toByteArray(), descriptor.getUnitsPath(digest, KZip.Encoding.PROTO));
+    }
     return digest;
   }
 
@@ -79,7 +90,7 @@ public final class KZipWriter implements KZip.Writer {
   @Override
   public String writeFile(byte[] data) throws IOException {
     String digest = KZip.DATA_DIGEST.hashBytes(data).toString();
-    String filePath = KZip.getFilesPath(ROOT_PREFIX, digest);
+    String filePath = descriptor.getFilesPath(digest);
     appendZip(data, filePath);
     return digest;
   }

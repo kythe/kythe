@@ -55,6 +55,24 @@ public final class KZipReaderTest {
   }
 
   @Test
+  public void testOpenFailsForMissingPbUnit() throws IOException {
+    try {
+      new KZipReader(TestDataUtil.getTestFile("missing-pbunit.kzip"));
+      fail();
+    } catch (KZipException expected) {
+    }
+  }
+
+  @Test
+  public void testOpenFailsForMissingJsonUnit() throws IOException {
+    try {
+      new KZipReader(TestDataUtil.getTestFile("missing-unit.kzip"));
+      fail();
+    } catch (KZipException expected) {
+    }
+  }
+
+  @Test
   public void testOpenFailsForEmptyFile() throws KZipException {
     try {
       new KZipReader(TestDataUtil.getTestFile("empty.kzip"));
