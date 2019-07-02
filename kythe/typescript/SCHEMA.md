@@ -1,12 +1,11 @@
 # TypeScript Indexer VName Schema
 
-This specification defines how the indexer expresses VNames for TypeScript
-declarations. You may find this useful if you are developing an application that
-relies on TypeScript code you don't want to re-index.
+This specification defines the schema for how the indexer expresses VNames for
+TypeScript declarations. You may find this useful if you are developing an
+application that relies on TypeScript code you don't want to re-index.
 
 A formal listing of the specification is provided below, but the
-[spec tests](./testdata/declaration_spec.ts) may be more useful for real
-examples.
+[schema tests](./testdata/schema.ts) may be more useful for real examples.
 
 ### VName signature
 
