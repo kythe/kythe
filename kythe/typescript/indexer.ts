@@ -366,10 +366,11 @@ class Visitor {
     for (let node: ts.Node|undefined = startNode,
                    lastNode: ts.Node|undefined = undefined;
          node != null; lastNode = node, node = node.parent) {
-      // Nodes that are rvalues of an initialization should not introduce a new
-      // scope. For instance, in `const a = class A {}`, `A` should contribute
-      // nothing to the scoped signature.
-      if (node.parent && hasExpressionInitializer(node.parent)) {
+      // Nodes that are rvalues of a named initialization should not introduce a
+      // new scope. For instance, in `const a = class A {}`, `A` should
+      // contribute nothing to the scoped signature.
+      if (node.parent && hasExpressionInitializer(node.parent) &&
+          node.parent.name.kind === ts.SyntaxKind.Identifier) {
         continue;
       }
 
