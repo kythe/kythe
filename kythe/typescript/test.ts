@@ -101,14 +101,15 @@ function verify(
 }
 
 function testLoadTsConfig() {
-  const config =
-      indexer.loadTsConfig('testdata/tsconfig-files.json', 'testdata');
+  const config = indexer.loadTsConfig(
+      'testdata/tsconfig-files.for.tests.json', 'testdata');
   // We expect the paths that were loaded to be absolute.
   assert.deepEqual(config.fileNames, [path.resolve('testdata/alt.ts')]);
 }
 
 async function testIndexer(args: string[], plugins?: indexer.Plugin[]) {
-  const config = indexer.loadTsConfig('testdata/tsconfig.json', 'testdata');
+  const config =
+      indexer.loadTsConfig('testdata/tsconfig.for.tests.json', 'testdata');
   let testPaths = args.map(arg => path.resolve(arg));
   if (args.length === 0) {
     // If no tests were passed on the command line, run all the .ts files found
