@@ -29,8 +29,7 @@ $PART[.$PART]*[#type]?
 ```
 
 where `$PART` is a component of the enclosing declaration scope and `#type` is
-appended to the signature of type declarations. `SyntaxKind`s that are type
-declarations are:
+appended to the signature of types. `SyntaxKind`s that are types are:
 
 -   `ClassDeclaration` (also a value)
 -   `EnumDeclaration` (also a value)
@@ -57,7 +56,9 @@ Signature components (`$PART`s in the schema) are defined below.
 **Form**: `module`
 
 **Notes**: The first character of TypeScript source file binds to a VName
-describing the module.
+describing the module. The module path is the file path of the module, stripped
+of `.ts` and `.d.ts` extensions and relative to the project root. See __VName
+Path__ for more.
 
 **SyntaxKind**:
 
@@ -98,9 +99,9 @@ declaration.
 
 ```typescript
 export class Klass {
-  //- @property defines/binding VName("Klass.method", _, _, _, _)
+  //- @property defines/binding VName("Klass#type.method", _, _, _, _)
   method() {
-    //- @property defines/binding VName("Klass.method.val", _, _, _, _)
+    //- @property defines/binding VName("Klass#type.method.val", _, _, _, _)
     let val;
   };
 }
@@ -252,13 +253,16 @@ Project-specific, defined by the compilation unit you pass to the indexer.
 
 ### VName path
 
--   For entire source code files
-    -   the entire file path, relative to the corpus and root.
--   For declarations with a file
+See the module name discussion in the [README](./README.md). In short,
+
+-   For file nodes
+    -   the entire file path, relative to the corpus and root. A file `a/b/c.ts`
+        will have a file node with path `a/b/c.ts`.
+-   For TypeScript nodes
     -   the file path stripped of `.d.ts` or `.ts` extensions, relative to the
-        corpus and root.
+        project root. A TypeScript anchor in a file `a/b/c.ts` with project root
+        `a/` will have a node with path of `b/c`.
 
 ### VName language
 
 Always `typescript`.
-
