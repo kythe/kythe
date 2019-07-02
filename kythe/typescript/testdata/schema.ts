@@ -1,4 +1,4 @@
-// Tests the specification of VNames for symbol declarations
+// Tests TypeScript indexer VName schema.
 
 // SourceFile
 //- FileModule=VName("module", _, _, "testdata/schema", "typescript").node/kind record
