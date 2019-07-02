@@ -459,7 +459,15 @@ class Visitor {
             }
             parts.push(part);
           } else {
-            // TODO: handle other declarations, e.g. binding patterns.
+            // Skip adding an anonymous scope for variables declared in an array
+            // or object binding pattern like `const [a] = [0]`.
+            if (decl.name &&
+                (ts.isArrayBindingPattern(decl.name) ||
+                 ts.isObjectBindingPattern(decl.name)) &&
+                decl.name.elements.find(val => val === startNode)) {
+              continue;
+            }
+
             parts.push(this.anonName(node));
           }
           break;
