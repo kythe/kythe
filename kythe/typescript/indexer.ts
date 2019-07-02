@@ -123,6 +123,28 @@ enum Context {
   Setter,
 }
 
+/*
+ * TODO(ayazhafiz): This is copied from
+ * [typescript.d.ts](https://github.com/microsoft/TypeScript/blob/463da558a11b8fcb3ee7562a8ad9a5a41a65887f/lib/typescript.d.ts#L497).
+ * We should ask if TypeScript can expose a function to determine this if this
+ * type is persistently needed.
+ */
+type HasExpressionInitializer = ts.VariableDeclaration|
+                                ts.ParameterDeclaration|ts.BindingElement|
+                                ts.PropertySignature|ts.PropertyDeclaration|
+                                ts.PropertyAssignment|ts.EnumMember;
+
+/**
+ * Determines if a node is a variable-like declaration.
+ */
+function hasExpressionInitializer(node: ts.Node):
+    node is HasExpressionInitializer {
+  return ts.isVariableDeclaration(node) || ts.isParameter(node) ||
+      ts.isBindingElement(node) || ts.isPropertySignature(node) ||
+      ts.isPropertyDeclaration(node) || ts.isPropertyAssignment(node) ||
+      ts.isEnumMember(node);
+}
+
 /**
  * StandardIndexerContext provides the standard definition of information about
  * a TypeScript program and common methods used by the TypeScript indexer and
@@ -344,6 +366,14 @@ class Visitor {
     for (let node: ts.Node|undefined = startNode,
                    lastNode: ts.Node|undefined = undefined;
          node != null; lastNode = node, node = node.parent) {
+      // Nodes that are rvalues of a named initialization should not introduce a
+      // new scope. For instance, in `const a = class A {}`, `A` should
+      // contribute nothing to the scoped signature.
+      if (node.parent && hasExpressionInitializer(node.parent) &&
+          node.parent.name.kind === ts.SyntaxKind.Identifier) {
+        continue;
+      }
+
       switch (node.kind) {
         case ts.SyntaxKind.ExportAssignment:
           const exportDecl = node as ts.ExportAssignment;
