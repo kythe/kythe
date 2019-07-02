@@ -95,7 +95,7 @@ public final class KZipReaderTest {
     try {
       KZipReader reader = new KZipReader(TestDataUtil.getTestFile("garbage_unit.kzip"));
       // Iterate over the units so we try to read in the garbage.
-      for (IndexedCompilation compilation : reader.scan()) {}
+      for (IndexedCompilation _: reader.scan()) {}
       fail();
     } catch (JsonParseException expected) {
     }
@@ -117,7 +117,7 @@ public final class KZipReaderTest {
     fail("Never read an empty file");
   }
 
-  private static final Set<String> EXPECTED_STRINGSET_FILE_DIGESTS =
+  private static final ImmutableSet<String> EXPECTED_STRINGSET_FILE_DIGESTS =
       ImmutableSet.of(
           "138b780e9b469f7b708ce7e3480e11a82bcf082a6530ea606d7f1236302048d2",
           "1990379205ae42e3fb7651b9e17441bd3a0f2feadf033fbaf2368cc1cd244f17",
