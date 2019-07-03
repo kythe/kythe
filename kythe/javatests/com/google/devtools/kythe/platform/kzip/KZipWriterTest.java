@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.devtools.kythe.platform.kzip;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -78,7 +79,8 @@ public final class KZipWriterTest {
     InMemoryKZip originalKZip = readKZip(TestDataUtil.getTestFile("stringset.kzip"));
 
     // Write out our kzip.
-    KZipWriter writer = new KZipWriter(new File(getTestTempDir(), "write_test.kzip"), encoding);
+    File tmpKZipFile = new File(getTestTempDir(), "write_test-" + encoding.toString() + ".kzip");
+    KZipWriter writer = new KZipWriter(tmpKZipFile, encoding);
 
     for (Analysis.IndexedCompilation compilation : originalKZip.compilations) {
       writer.writeUnit(compilation);
@@ -90,7 +92,7 @@ public final class KZipWriterTest {
     writer.close();
 
     // Read in the kzip we just wrote out.
-    InMemoryKZip writtenKZip = readKZip(new File(getTestTempDir(), "write_test.kzip"));
+    InMemoryKZip writtenKZip = readKZip(tmpKZipFile);
 
     // Compare the two kzips.
     assertThat(writtenKZip.compilations).containsExactlyElementsIn(originalKZip.compilations);
