@@ -415,6 +415,7 @@ class Visitor {
         case ts.SyntaxKind.NamespaceImport:
         case ts.SyntaxKind.ObjectLiteralExpression:
         case ts.SyntaxKind.Parameter:
+        case ts.SyntaxKind.PropertyAccessExpression:
         case ts.SyntaxKind.PropertyAssignment:
         case ts.SyntaxKind.PropertyDeclaration:
         case ts.SyntaxKind.PropertySignature:
@@ -983,6 +984,10 @@ class Visitor {
         for (const element of (decl.name as ts.BindingPattern).elements) {
           this.visit(element);
         }
+        break;
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
+        // Nothing meaningful can be recorded about literal expressions.
         break;
       default:
         this.todo(
