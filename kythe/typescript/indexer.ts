@@ -930,8 +930,13 @@ class Visitor {
       }
     }
     if (decl.moduleSpecifier) {
-      this.todo(
-          decl.moduleSpecifier, `handle module specifier in ${decl.getText()}`);
+      const moduleSym = this.getSymbolAtLocation(decl.moduleSpecifier);
+      if (moduleSym) {
+        const kModule = this.newVName(
+            'module', this.getModulePathFromModuleReference(moduleSym));
+        this.emitEdge(
+            this.newAnchor(decl.moduleSpecifier), 'ref/imports', kModule);
+      }
     }
   }
 
