@@ -968,6 +968,7 @@ class Visitor {
     let vname: VName|undefined;
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
+      case ts.SyntaxKind.ComputedPropertyName:
         const sym = this.getSymbolAtLocation(decl.name);
         if (!sym) {
           this.todo(
@@ -978,15 +979,16 @@ class Visitor {
         this.emitNode(vname, 'variable');
 
         this.emitEdge(this.newAnchor(decl.name), 'defines/binding', vname);
+
+        if (ts.isComputedPropertyName(decl.name)) {
+          this.visit(decl.name.expression);
+        }
         break;
       case ts.SyntaxKind.ObjectBindingPattern:
       case ts.SyntaxKind.ArrayBindingPattern:
         for (const element of (decl.name as ts.BindingPattern).elements) {
           this.visit(element);
         }
-        break;
-      case ts.SyntaxKind.ComputedPropertyName:
-        this.visit(decl.name.expression);
         break;
       default:
         this.todo(

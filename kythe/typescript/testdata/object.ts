@@ -14,6 +14,7 @@ const Object = {
   //- ShortProperty.node/kind variable
   shortProperty,
 
+  //- @"[computed]" defines/binding ComputedProperty
   //- @computed ref Computed
   [computed]: 0,
 
@@ -23,7 +24,9 @@ const Object = {
 };
 
 //- @property ref Property
-const x = Object.property;
+//- @shortProperty ref ShortProperty
+//- @computed ref ComputedProperty
+const x = Object.property || Object.shortProperty || Object.computed;
 
 //- @method ref Method
 Object.method();
