@@ -983,12 +983,10 @@ class Visitor {
       case ts.SyntaxKind.ComputedPropertyName:
         this.visit(decl.name.expression);
         break;
-      // Nothing meaningful can be indexed about a literal expression.
-      case ts.SyntaxKind.StringLiteral:
-      case ts.SyntaxKind.NumericLiteral:
-        break;
       default:
-        break;
+        this.todo(
+            decl.name,
+            `handle variable declaration: ${ts.SyntaxKind[decl.name.kind]}`);
     }
     if (decl.type) this.visitType(decl.type);
     if (decl.initializer) this.visit(decl.initializer);
