@@ -15,6 +15,7 @@ const Object = {
   shortProperty,
 
   //- @"[computed]" defines/binding ComputedProperty
+  //- ComputedProperty.node/kind variable
   //- @computed ref Computed
   [computed]: 0,
 
