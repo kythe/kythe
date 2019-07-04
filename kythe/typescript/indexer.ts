@@ -1048,7 +1048,7 @@ class Visitor {
 
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
     this.visitDecorators(decl.decorators || []);
-    let kFunc: VName|undefined = undefined;
+    let kFunc: VName;
     let context: Context|undefined = undefined;
     if (ts.isGetAccessor(decl)) {
       context = Context.Getter;
@@ -1061,6 +1061,7 @@ class Visitor {
         // TODO: it's not clear what to do with computed property named
         // functions.  They don't have a symbol.
         this.visit((decl.name as ts.ComputedPropertyName).expression);
+        kFunc = this.newVName('TODO', 'TODOPath');
       } else {
         if (!sym) {
           this.todo(
@@ -1088,11 +1089,9 @@ class Visitor {
       // TODO: choose VName for anonymous functions.
       kFunc = this.newVName('TODO', 'TODOPath');
     }
-    if (kFunc) {
-      this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
-    }
+    this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
 
-    if (kFunc && decl.parent) {
+    if (decl.parent) {
       // Emit a "childof" edge on class/interface members.
       if (decl.parent.kind === ts.SyntaxKind.ClassDeclaration ||
           decl.parent.kind === ts.SyntaxKind.ClassExpression ||
@@ -1129,7 +1128,7 @@ class Visitor {
     if (decl.body) {
       this.visit(decl.body);
     } else {
-      if (kFunc) this.emitFact(kFunc, 'complete', 'incomplete');
+      this.emitFact(kFunc, 'complete', 'incomplete');
     }
   }
 
@@ -1142,8 +1141,7 @@ class Visitor {
    * `a` having a parameter number of 0.0, but Kythe doesn't support that.
    */
   visitParameters(
-      parameters: ReadonlyArray<ts.ParameterDeclaration>,
-      kFunc: VName|undefined) {
+      parameters: ReadonlyArray<ts.ParameterDeclaration>, kFunc: VName) {
     let paramNum = 0;
     const recurseVisit =
         (param: ts.ParameterDeclaration|ts.BindingElement) => {
@@ -1159,10 +1157,9 @@ class Visitor {
               }
               const kParam = this.getSymbolName(sym, TSNamespace.VALUE);
               this.emitNode(kParam, 'variable');
-              if (kFunc) {
-                this.emitEdge(kFunc, `param.${paramNum}`, kParam);
-                ++paramNum;
-              }
+
+              this.emitEdge(kFunc, `param.${paramNum}`, kParam);
+              ++paramNum;
 
               if (ts.isParameterPropertyDeclaration(param)) {
                 // Class members defined in the parameters of a constructor are
@@ -1176,7 +1173,7 @@ class Visitor {
                     this.emitEdge(kParam, 'childof', kClass);
                   }
                 }
-              } else if (kFunc) {
+              } else {
                 this.emitEdge(kParam, 'childof', kFunc);
               }
 
