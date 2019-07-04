@@ -1118,37 +1118,7 @@ class Visitor {
       // names.
     }
 
-    for (const [index, param] of toArray(decl.parameters.entries())) {
-      this.visitDecorators(param.decorators || []);
-      const sym = this.getSymbolAtLocation(param.name);
-      if (!sym) {
-        this.todo(param.name, `param ${param.name.getText()} has no symbol`);
-        continue;
-      }
-      const kParam = this.getSymbolName(sym, TSNamespace.VALUE);
-      this.emitNode(kParam, 'variable');
-      if (kFunc) this.emitEdge(kFunc, `param.${index}`, kParam);
-
-      if (ts.isParameterPropertyDeclaration(param)) {
-        // Class members defined in the parameters of a constructor are children
-        // of the class type.
-        const parentName = param.parent.parent.name;
-        if (parentName !== undefined) {
-          const parentSym = this.getSymbolAtLocation(parentName);
-          if (parentSym !== undefined) {
-            const kClass = this.getSymbolName(parentSym, TSNamespace.TYPE);
-            this.emitEdge(kParam, 'childof', kClass);
-          }
-        }
-      } else if (kFunc) {
-        this.emitEdge(kParam, 'childof', kFunc);
-      }
-
-      this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
-      if (param.type) this.visitType(param.type);
-
-      if (param.initializer) this.visit(param.initializer);
-    }
+    this.visitParameters(decl.parameters, kFunc);
 
     if (decl.type) {
       // "type" here is the return type of the function.
@@ -1160,6 +1130,77 @@ class Visitor {
       this.visit(decl.body);
     } else {
       if (kFunc) this.emitFact(kFunc, 'complete', 'incomplete');
+    }
+  }
+
+  /**
+   * Visits a function parameters, which can be recursive in the case of
+   * parameters created via bound elements:
+   *    function foo({a, b: {c, d}}, e, f) {}
+   * In this code, a, c, d, e, f are all parameters with increasing parameter
+   * numbers [0, 4]. Ideally the parameter number would be hierarchical, with
+   * `a` having a parameter number of 0.0, but Kythe doesn't support that.
+   */
+  visitParameters(
+      parameters: ReadonlyArray<ts.ParameterDeclaration>,
+      kFunc: VName|undefined) {
+    let paramNum = 0;
+    const recurseVisit =
+        (param: ts.ParameterDeclaration|ts.BindingElement) => {
+          this.visitDecorators(param.decorators || []);
+
+          switch (param.name.kind) {
+            case ts.SyntaxKind.Identifier:
+              const sym = this.getSymbolAtLocation(param.name);
+              if (!sym) {
+                this.todo(
+                    param.name, `param ${param.name.getText()} has no symbol`);
+                return;
+              }
+              const kParam = this.getSymbolName(sym, TSNamespace.VALUE);
+              this.emitNode(kParam, 'variable');
+              if (kFunc) {
+                this.emitEdge(kFunc, `param.${paramNum}`, kParam);
+                ++paramNum;
+              }
+
+              if (ts.isParameterPropertyDeclaration(param)) {
+                // Class members defined in the parameters of a constructor are
+                // children of the class type.
+                const parentName = param.parent.parent.name;
+                if (parentName !== undefined) {
+                  const parentSym = this.getSymbolAtLocation(parentName);
+                  if (parentSym !== undefined) {
+                    const kClass =
+                        this.getSymbolName(parentSym, TSNamespace.TYPE);
+                    this.emitEdge(kParam, 'childof', kClass);
+                  }
+                }
+              } else if (kFunc) {
+                this.emitEdge(kParam, 'childof', kFunc);
+              }
+
+              this.emitEdge(
+                  this.newAnchor(param.name), 'defines/binding', kParam);
+              break;
+            case ts.SyntaxKind.ObjectBindingPattern:
+            case ts.SyntaxKind.ArrayBindingPattern:
+              const elements = toArray(param.name.elements.entries());
+              for (const [index, element] of elements) {
+                if (ts.isBindingElement(element)) {
+                  recurseVisit(element);
+                }
+              }
+            default:
+              break;
+          }
+
+          if (ts.isParameter(param) && param.type) this.visitType(param.type);
+          if (param.initializer) this.visit(param.initializer);
+        }
+
+    for (const [, element] of toArray(parameters.entries())) {
+      recurseVisit(element);
     }
   }
 
