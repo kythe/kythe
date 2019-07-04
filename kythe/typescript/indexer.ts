@@ -423,6 +423,7 @@ class Visitor {
         case ts.SyntaxKind.VariableDeclaration:
         case ts.SyntaxKind.GetAccessor:
         case ts.SyntaxKind.SetAccessor:
+        case ts.SyntaxKind.ShorthandPropertyAssignment:
           const decl = node as ts.NamedDeclaration;
           if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
             let part = decl.name.text;
@@ -967,6 +968,7 @@ class Visitor {
     let vname: VName|undefined;
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
+      case ts.SyntaxKind.ComputedPropertyName:
         const sym = this.getSymbolAtLocation(decl.name);
         if (!sym) {
           this.todo(
@@ -977,6 +979,8 @@ class Visitor {
         this.emitNode(vname, 'variable');
 
         this.emitEdge(this.newAnchor(decl.name), 'defines/binding', vname);
+
+        decl.name.forEachChild(child => this.visit(child));
         break;
       case ts.SyntaxKind.ObjectBindingPattern:
       case ts.SyntaxKind.ArrayBindingPattern:
@@ -1264,6 +1268,7 @@ class Visitor {
       case ts.SyntaxKind.PropertyAssignment:  // property in object literal
       case ts.SyntaxKind.PropertyDeclaration:
       case ts.SyntaxKind.PropertySignature:
+      case ts.SyntaxKind.ShorthandPropertyAssignment:
         const vname =
             this.visitVariableDeclaration(node as ts.PropertyDeclaration);
         if (vname) this.visitJSDoc(node, vname);
