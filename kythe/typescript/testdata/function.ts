@@ -32,6 +32,21 @@ function test(a: number, num: Num): Num {
 //- @test ref F
 test(3, {num: 3});
 
+
+// Test comoputed function names
+//- @#0"fn" defines/binding OFnStr
+const fn = 'fn';
+let o = {
+  //- @"['ofn']" defines/binding OFn
+  //- OFn.node/kind function
+  //- @fn ref OFnStr
+  [fn]() {},
+};
+
+//- @ofn ref OFn
+o.fn();
+
+// Test arrow functions
 //- @x defines/binding X
 //- X.node/kind variable
 let x: 3;
@@ -42,6 +57,7 @@ let x: 3;
 //- !{@#1x ref X}
 test((x => x + 1)(3), undefined);
 
+// Test default function arguments
 //- @x ref X
 function defaultArgument(a: number = x) {}
 

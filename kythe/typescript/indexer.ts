@@ -1092,8 +1092,6 @@ class Visitor {
     if (decl.name) {
       funcSym = this.getSymbolAtLocation(decl.name);
       if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
-        // TODO: it's not clear what to do with computed property named
-        // functions.  They don't have a symbol.
         this.visit((decl.name as ts.ComputedPropertyName).expression);
         kFunc = this.newVName('TODO', 'TODOPath');
       } else {
