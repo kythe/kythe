@@ -16,7 +16,7 @@
 
 // Package build provides information about how a given binary was built and in
 // what context.
-package build
+package build // import "kythe.io/kythe/go/util/build"
 
 import "fmt"
 

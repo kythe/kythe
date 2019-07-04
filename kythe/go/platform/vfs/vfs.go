@@ -16,7 +16,7 @@
 
 // Package vfs defines a generic file system interface commonly used by Kythe
 // libraries.
-package vfs
+package vfs // import "kythe.io/kythe/go/platform/vfs"
 
 import (
 	"context"

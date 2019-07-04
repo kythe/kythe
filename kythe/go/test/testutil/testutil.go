@@ -15,7 +15,7 @@
  */
 
 // Package testutil contains common utilities to test Kythe libraries.
-package testutil
+package testutil // import "kythe.io/kythe/go/test/testutil"
 
 import (
 	"encoding/json"

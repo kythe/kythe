@@ -15,7 +15,7 @@
  */
 
 // Package httpencoding provides functions to transparently encode/decode HTTP bodies
-package httpencoding
+package httpencoding // import "kythe.io/kythe/go/util/httpencoding"
 
 import (
 	"compress/gzip"

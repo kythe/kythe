@@ -15,7 +15,7 @@
  */
 
 // Package text contains utilities dealing with the encoding of source text.
-package text
+package text // import "kythe.io/kythe/go/util/encoding/text"
 
 import (
 	"errors"

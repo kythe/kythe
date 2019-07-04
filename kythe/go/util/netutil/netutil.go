@@ -15,7 +15,7 @@
  */
 
 // Package netutil provides network utility functions.
-package netutil
+package netutil // import "kythe.io/kythe/go/util/netutil"
 
 import (
 	"fmt"

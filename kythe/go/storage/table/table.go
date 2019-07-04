@@ -15,7 +15,7 @@
  */
 
 // Package table implements lookup table interfaces for protobufs.
-package table
+package table // import "kythe.io/kythe/go/storage/table"
 
 import (
 	"context"

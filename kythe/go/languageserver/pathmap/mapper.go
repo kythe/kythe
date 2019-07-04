@@ -16,7 +16,7 @@
 
 // Package pathmap provides utilities for matching and generating paths
 // based on a pattern string.
-package pathmap
+package pathmap // import "kythe.io/kythe/go/languageserver/pathmap"
 
 import (
 	"fmt"

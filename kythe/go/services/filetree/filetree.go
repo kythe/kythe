@@ -16,7 +16,7 @@
 
 // Package filetree defines the filetree Service interface and a simple
 // in-memory implementation.
-package filetree
+package filetree // import "kythe.io/kythe/go/services/filetree"
 
 import (
 	"context"

@@ -15,7 +15,7 @@
  */
 
 // Package stream provides utility functions to consume Entry streams.
-package stream
+package stream // import "kythe.io/kythe/go/storage/stream"
 
 import (
 	"bytes"

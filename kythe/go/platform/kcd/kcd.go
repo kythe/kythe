@@ -19,7 +19,7 @@
 //
 // Design documentation: kythe/docs/kythe-compilation-database.txt
 //
-package kcd
+package kcd // import "kythe.io/kythe/go/platform/kcd"
 
 import (
 	"context"

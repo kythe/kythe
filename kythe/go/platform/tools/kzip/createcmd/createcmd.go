@@ -15,7 +15,7 @@
  */
 
 // Package createcmd provides the kzip command for creating simple kzip archives.
-package createcmd
+package createcmd // import "kythe.io/kythe/go/platform/tools/kzip/createcmd"
 
 import (
 	"context"

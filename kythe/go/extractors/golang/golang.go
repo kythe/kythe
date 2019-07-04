@@ -32,7 +32,7 @@
 //     }
 //   }
 //
-package golang
+package golang // import "kythe.io/kythe/go/extractors/golang"
 
 import (
 	"context"

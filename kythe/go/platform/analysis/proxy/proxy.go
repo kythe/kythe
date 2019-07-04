@@ -75,7 +75,7 @@
 // will behave as if no analysis is in progress. The indexer is free at that
 // point to start a new analysis.
 //
-package proxy
+package proxy // import "kythe.io/kythe/go/platform/analysis/proxy"
 
 import (
 	"encoding/json"

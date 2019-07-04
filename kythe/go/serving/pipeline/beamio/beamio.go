@@ -15,7 +15,7 @@
  */
 
 // Package beamio provides Beam transformations for common IO patterns.
-package beamio
+package beamio // import "kythe.io/kythe/go/serving/pipeline/beamio"
 
 import (
 	"bytes"

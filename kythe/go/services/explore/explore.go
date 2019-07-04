@@ -15,7 +15,7 @@
  */
 
 // Package explore defines the ExploreService interface.
-package explore
+package explore // import "kythe.io/kythe/go/services/explore"
 
 import (
 	"context"

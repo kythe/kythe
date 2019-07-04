@@ -15,7 +15,7 @@
  */
 
 // Package schema defines constants used in the Kythe schema.
-package schema
+package schema // import "kythe.io/kythe/go/util/schema"
 
 import (
 	"kythe.io/kythe/go/util/schema/facts"

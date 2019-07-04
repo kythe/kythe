@@ -16,7 +16,7 @@
 
 // Package graphstore contains common utilities for testing GraphStore
 // implementations.
-package graphstore
+package graphstore // import "kythe.io/kythe/go/test/services/graphstore"
 
 import (
 	"context"

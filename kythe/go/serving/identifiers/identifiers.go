@@ -18,7 +18,7 @@
 // identifiers.Service.
 // The table is structured as:
 // 		qualifed_name -> IdentifierMatch
-package identifiers
+package identifiers // import "kythe.io/kythe/go/serving/identifiers"
 
 import (
 	"context"

@@ -15,7 +15,7 @@
  */
 
 // Package markedsource defines functions for rendering MarkedSource.
-package markedsource
+package markedsource // import "kythe.io/kythe/go/util/markedsource"
 
 import (
 	"bytes"

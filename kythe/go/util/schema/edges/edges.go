@@ -15,7 +15,7 @@
  */
 
 // Package edges defines constants for Kythe edges.
-package edges
+package edges // import "kythe.io/kythe/go/util/schema/edges"
 
 import (
 	"regexp"

@@ -16,7 +16,7 @@
 
 // Package assemble provides functions to build the various components (nodes,
 // edges, and decorations) of an xrefs serving table.
-package assemble
+package assemble // import "kythe.io/kythe/go/serving/xrefs/assemble"
 
 import (
 	"context"

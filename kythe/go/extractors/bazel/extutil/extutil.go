@@ -17,7 +17,7 @@
 // Package extutil implements shared code for extracting and writing output
 // from Bazel actions, either to .kindex or a .kzip files. This is a temporary
 // measure to support migrating to .kzip output.
-package extutil
+package extutil // import "kythe.io/kythe/go/extractors/bazel/extutil"
 
 import (
 	"context"
