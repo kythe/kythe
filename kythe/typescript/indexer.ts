@@ -980,9 +980,7 @@ class Visitor {
 
         this.emitEdge(this.newAnchor(decl.name), 'defines/binding', vname);
 
-        if (ts.isComputedPropertyName(decl.name)) {
-          this.visit(decl.name.expression);
-        }
+        decl.name.forEachChild(child => this.visit(child));
         break;
       case ts.SyntaxKind.ObjectBindingPattern:
       case ts.SyntaxKind.ArrayBindingPattern:
