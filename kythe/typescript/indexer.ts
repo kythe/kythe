@@ -867,9 +867,8 @@ class Visitor {
     }
 
     if (!clause.namedBindings) {
-      // TODO: I believe clause.name or clause.namedBindings are always
-      // present, which means this check is not necessary, but the types don't
-      // show that.
+      // TODO: I believe clause.name or clause.namedBindings are always present,
+      // which means this check is not necessary, but the types don't show that.
       throw new Error(`import declaration ${decl.getText()} has no bindings`);
     }
     switch (clause.namedBindings.kind) {
@@ -923,9 +922,8 @@ class Visitor {
   /**
    * Emits an implicit property for a getter or setter.
    * For instance, a getter/setter `foo` in class `A` will emit an implicit
-   * property on that class with signature `A.foo`, and create
-   * "property/reads" and "property/writes" from the getters/setters to the
-   * implicit property.
+   * property on that class with signature `A.foo`, and create "property/reads"
+   * and "property/writes" from the getters/setters to the implicit property.
    */
   emitImplicitProperty(
       decl: ts.GetAccessorDeclaration|ts.SetAccessorDeclaration, anchor: VName,
@@ -1014,8 +1012,8 @@ class Visitor {
   }
 
   visitVariableStatement(stmt: ts.VariableStatement) {
-    // A VariableStatement contains potentially multiple variable
-    // declarations, as in:
+    // A VariableStatement contains potentially multiple variable declarations,
+    // as in:
     //   var x = 3, y = 4;
     // In the (common) case where there's a single variable declared, we look
     // for documentation for that variable above the entire statement.
@@ -1111,8 +1109,7 @@ class Visitor {
         this.emitEdge(declAnchor, 'defines/binding', kFunc);
 
         // Getters/setters also emit an implicit class property entry. If a
-        // getter is present, it will bind this entry; otherwise a setter
-        // will.
+        // getter is present, it will bind this entry; otherwise a setter will.
         if (ts.isGetAccessor(decl) ||
             (ts.isSetAccessor(decl) &&
              !sym.declarations.find(ts.isGetAccessor))) {
@@ -1365,8 +1362,8 @@ class Visitor {
     const anchor = this.newAnchor(node);
     this.emitEdge(anchor, 'ref', name);
 
-    // Emit a 'ref/call' edge to a class constructor if a new class instance
-    // is instantiated.
+    // Emit a 'ref/call' edge to a class constructor if a new class instance is
+    // instantiated.
     if (ts.isNewExpression(node.parent)) {
       const classDecl = sym.declarations.find(ts.isClassDeclaration);
       if (classDecl) {
