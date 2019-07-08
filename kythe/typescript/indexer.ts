@@ -383,7 +383,7 @@ class Visitor {
             // named 'default'.
             parts.push('default');
           } else {
-            this.todo(node, 'handle ExportAssignment with =');
+            parts.push('export =');
           }
           break;
         case ts.SyntaxKind.ArrowFunction:
@@ -814,10 +814,28 @@ class Visitor {
   }
 
   /** visitImportDeclaration handles the various forms of "import ...". */
-  visitImportDeclaration(decl: ts.ImportDeclaration) {
+  visitImportDeclaration(decl: ts.ImportDeclaration|
+                         ts.ImportEqualsDeclaration) {
     // All varieties of import statements reference a module on the right,
     // so start by linking that.
-    const moduleSym = this.getSymbolAtLocation(decl.moduleSpecifier);
+    let moduleRef;
+    if (ts.isImportDeclaration(decl)) {
+      // This is a regular import declaration
+      //     import ... from ...;
+      // where the module name is moduleSpecifier.
+      moduleRef = decl.moduleSpecifier;
+    } else {
+      // This is an import equals declaration, which has two cases:
+      //     import foo = require('./bar');
+      //     import foo = M.bar;
+      // In the first case the moduleReference is an ExternalModuleReference
+      // whose module name is the expression inside the `require` call.
+      // In the second case the moduleReference is the module name.
+      moduleRef = ts.isExternalModuleReference(decl.moduleReference) ?
+          decl.moduleReference.expression :
+          decl.moduleReference;
+    }
+    const moduleSym = this.getSymbolAtLocation(moduleRef);
     if (!moduleSym) {
       // This can occur when the module failed to resolve to anything.
       // See testdata/import_missing.ts for more on how that could happen.
@@ -825,7 +843,14 @@ class Visitor {
     }
     const kModule = this.newVName(
         'module', this.getModulePathFromModuleReference(moduleSym));
-    this.emitEdge(this.newAnchor(decl.moduleSpecifier), 'ref/imports', kModule);
+    this.emitEdge(this.newAnchor(moduleRef), 'ref/imports', kModule);
+
+    if (ts.isImportEqualsDeclaration(decl)) {
+      // This is an equals import, e.g.:
+      //   import foo = require('./bar');
+      this.visitImport(decl.name);
+      return;
+    }
 
     if (!decl.importClause) {
       // This is a side-effecting import that doesn't declare anything, e.g.:
@@ -842,8 +867,9 @@ class Visitor {
     }
 
     if (!clause.namedBindings) {
-      // TODO: I believe clause.name or clause.namedBindings are always present,
-      // which means this check is not necessary, but the types don't show that.
+      // TODO: I believe clause.name or clause.namedBindings are always
+      // present, which means this check is not necessary, but the types don't
+      // show that.
       throw new Error(`import declaration ${decl.getText()} has no bindings`);
     }
     switch (clause.namedBindings.kind) {
@@ -897,8 +923,9 @@ class Visitor {
   /**
    * Emits an implicit property for a getter or setter.
    * For instance, a getter/setter `foo` in class `A` will emit an implicit
-   * property on that class with signature `A.foo`, and create "property/reads"
-   * and "property/writes" from the getters/setters to the implicit property.
+   * property on that class with signature `A.foo`, and create
+   * "property/reads" and "property/writes" from the getters/setters to the
+   * implicit property.
    */
   emitImplicitProperty(
       decl: ts.GetAccessorDeclaration|ts.SetAccessorDeclaration, anchor: VName,
@@ -933,7 +960,9 @@ class Visitor {
    */
   visitExportAssignment(assign: ts.ExportAssignment) {
     if (assign.isExportEquals) {
-      this.todo(assign, `handle export = statement`);
+      const span = this.getTextSpan(assign, 'export =');
+      const anchor = this.newAnchor(assign, span.start, span.end);
+      this.emitEdge(anchor, 'defines/binding', this.scopedSignature(assign));
     } else {
       // export default <expr>;
       // is the same as exporting the expression under the symbol named
@@ -985,8 +1014,8 @@ class Visitor {
   }
 
   visitVariableStatement(stmt: ts.VariableStatement) {
-    // A VariableStatement contains potentially multiple variable declarations,
-    // as in:
+    // A VariableStatement contains potentially multiple variable
+    // declarations, as in:
     //   var x = 3, y = 4;
     // In the (common) case where there's a single variable declared, we look
     // for documentation for that variable above the entire statement.
@@ -1082,7 +1111,8 @@ class Visitor {
         this.emitEdge(declAnchor, 'defines/binding', kFunc);
 
         // Getters/setters also emit an implicit class property entry. If a
-        // getter is present, it will bind this entry; otherwise a setter will.
+        // getter is present, it will bind this entry; otherwise a setter
+        // will.
         if (ts.isGetAccessor(decl) ||
             (ts.isSetAccessor(decl) &&
              !sym.declarations.find(ts.isGetAccessor))) {
@@ -1335,8 +1365,8 @@ class Visitor {
     const anchor = this.newAnchor(node);
     this.emitEdge(anchor, 'ref', name);
 
-    // Emit a 'ref/call' edge to a class constructor if a new class instance is
-    // instantiated.
+    // Emit a 'ref/call' edge to a class constructor if a new class instance
+    // is instantiated.
     if (ts.isNewExpression(node.parent)) {
       const classDecl = sym.declarations.find(ts.isClassDeclaration);
       if (classDecl) {
@@ -1385,7 +1415,9 @@ class Visitor {
   visit(node: ts.Node): void {
     switch (node.kind) {
       case ts.SyntaxKind.ImportDeclaration:
-        return this.visitImportDeclaration(node as ts.ImportDeclaration);
+      case ts.SyntaxKind.ImportEqualsDeclaration:
+        return this.visitImportDeclaration(
+            node as ts.ImportDeclaration | ts.ImportEqualsDeclaration);
       case ts.SyntaxKind.ExportAssignment:
         return this.visitExportAssignment(node as ts.ExportAssignment);
       case ts.SyntaxKind.ExportDeclaration:
