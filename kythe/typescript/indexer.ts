@@ -665,10 +665,9 @@ class Visitor {
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     this.visitType(decl.type);
-
-    // Emit an "aliases" edge if the aliased type is a singleton and named in
-    // the program. Nothing is emitted for built-ins or unions, which do not
-    // have exactly one symbol.
+    // Emit an "aliases" edge if the aliased type is a user-defined, named
+    // type that is not a union. This has exactly one symbol, whereas other
+    // cases do not.
     if (ts.isTypeReferenceNode(decl.type)) {
       const aliasSym = this.getSymbolAtLocation(decl.type.typeName);
       if (!aliasSym) {
