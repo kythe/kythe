@@ -1,13 +1,11 @@
 export {}
 
-//- @A defines/binding _A
+//- @A defines/binding A
 interface A {
   a: number;
 }
 
-// TODO: see TODO in visitTypeAlias.
-// B aliases A
-
 //- @B defines/binding B
 //- B.node/kind talias
+//- B aliases A
 type B = A;

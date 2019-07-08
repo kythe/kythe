@@ -665,11 +665,21 @@ class Visitor {
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     this.visitType(decl.type);
-    // TODO: in principle right here we emit an "aliases" edge.
-    // However, it's complicated by the fact that some types don't have
-    // specific names to alias, e.g.
-    //   type foo = number|string;
-    // Just punt for now.
+
+    // Emit an "aliases" edge if the aliased type is a singleton and named in
+    // the program. Nothing is emitted for built-ins or unions, which do not
+    // have exactly one symbol.
+    if (ts.isTypeReferenceNode(decl.type)) {
+      const aliasSym = this.getSymbolAtLocation(decl.type.typeName);
+      if (!aliasSym) {
+        this.todo(
+            decl.name,
+            `type reference ${decl.type.typeName.getText()} has no symbol`);
+        return;
+      }
+      const kAlias = this.getSymbolName(aliasSym, TSNamespace.TYPE);
+      this.emitEdge(kType, 'aliases', kAlias);
+    }
   }
 
   /**
