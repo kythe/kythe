@@ -32,18 +32,18 @@ function test(a: number, num: Num): Num {
 //- @test ref F
 test(3, {num: 3});
 
-
-// Test comoputed function names
+// Test computed function names by creating a constant string and checking that
+// a name computed from it is properly referenced to its computed definition.
 //- @#0"fn" defines/binding OFnStr
 const fn = 'fn';
 let o = {
-  //- @"['ofn']" defines/binding OFn
+  //- @"[fn]" defines/binding OFn
   //- OFn.node/kind function
   //- @fn ref OFnStr
   [fn]() {},
 };
 
-//- @ofn ref OFn
+//- @fn ref OFn
 o.fn();
 
 // Test arrow functions
