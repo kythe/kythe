@@ -664,19 +664,9 @@ class Visitor {
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
-    this.visitType(decl.type);
-    // Emit an "aliases" edge if the aliased type is a user-defined, named
-    // type that is not a union. This has exactly one symbol, whereas other
-    // cases do not.
-    if (ts.isTypeReferenceNode(decl.type)) {
-      const aliasSym = this.getSymbolAtLocation(decl.type.typeName);
-      if (!aliasSym) {
-        this.todo(
-            decl.name,
-            `type reference ${decl.type.typeName.getText()} has no symbol`);
-        return;
-      }
-      const kAlias = this.getSymbolName(aliasSym, TSNamespace.TYPE);
+    const kAlias = this.visitType(decl.type);
+    // Emit an "aliases" edge if the aliased type has a singular VName.
+    if (kAlias) {
       this.emitEdge(kType, 'aliases', kAlias);
     }
   }
@@ -686,11 +676,16 @@ class Visitor {
    * It's separate from visit() because bare ts.Identifiers within a normal
    * expression are values (handled by visit) but bare ts.Identifiers within
    * a type are types (handled here).
+   *
    * @return the VName of the type, if available.  (For more complex types,
    *    e.g. Array<string>, we might not have a VName for the specific type.)
    */
   visitType(node: ts.Node): VName|undefined {
     switch (node.kind) {
+      case ts.SyntaxKind.TypeReference:
+        const ref = node as ts.TypeReferenceNode;
+        (ref.typeArguments || []).forEach(type => this.visitType(type));
+        return this.visitType((node as ts.TypeReferenceNode).typeName);
       case ts.SyntaxKind.Identifier:
         const sym = this.getSymbolAtLocation(node);
         if (!sym) {
