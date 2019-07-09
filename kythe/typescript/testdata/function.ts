@@ -44,3 +44,27 @@ test((x => x + 1)(3), undefined);
 
 //- @x ref X
 function defaultArgument(a: number = x) {}
+
+//- @NestedArray defines/binding NestedArray
+type NestedArray = number[][];
+
+//- @bindingTest defines/binding BF
+//- @aa defines/binding AA
+//- AA.node/kind variable
+//- AA childof BF
+//- BF param.0 AA
+//- !{ @bb defines/binding _ }
+//- @cc defines/binding CC
+//- BF param.1 CC
+//- @dd defines/binding DD
+//- BF param.2 DD
+//- @ee defines/binding EE
+//- BF param.3 EE
+//- @ff defines/binding FF
+//- BF param.4 FF
+//- @NestedArray ref NestedArray
+function bindingTest({aa, bb: {cc, dd}}, [ee, [ff]]: NestedArray) {
+  //- @dd ref DD
+  //- @ff ref FF
+  dd = ff;
+}
