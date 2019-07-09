@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.devtools.kythe.platform.kzip;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -59,12 +60,27 @@ public final class KZipWriterTest {
    * correctly. {@link KZipReaderTest} will ensure that reading is done correctly.
    */
   @Test
-  public void testWrite() throws IOException, KZipException {
+  public void testWriteJson() throws IOException, KZipException {
+    testWrite(KZip.Encoding.JSON);
+  }
+
+  @Test
+  public void testWriteProto() throws IOException, KZipException {
+    testWrite(KZip.Encoding.PROTO);
+  }
+
+  @Test
+  public void testWriteAll() throws IOException, KZipException {
+    testWrite(KZip.Encoding.ALL);
+  }
+
+  private void testWrite(KZip.Encoding encoding) throws IOException, KZipException {
     // Read in the provided kzip.
     InMemoryKZip originalKZip = readKZip(TestDataUtil.getTestFile("stringset.kzip"));
 
     // Write out our kzip.
-    KZipWriter writer = new KZipWriter(new File(getTestTempDir(), "write_test.kzip"));
+    File tmpKZipFile = new File(getTestTempDir(), "write_test-" + encoding.toString() + ".kzip");
+    KZipWriter writer = new KZipWriter(tmpKZipFile, encoding);
 
     for (Analysis.IndexedCompilation compilation : originalKZip.compilations) {
       writer.writeUnit(compilation);
@@ -76,7 +92,7 @@ public final class KZipWriterTest {
     writer.close();
 
     // Read in the kzip we just wrote out.
-    InMemoryKZip writtenKZip = readKZip(new File(getTestTempDir(), "write_test.kzip"));
+    InMemoryKZip writtenKZip = readKZip(tmpKZipFile);
 
     // Compare the two kzips.
     assertThat(writtenKZip.compilations).containsExactlyElementsIn(originalKZip.compilations);
