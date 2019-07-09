@@ -431,6 +431,7 @@ class Visitor {
         case ts.SyntaxKind.NamespaceImport:
         case ts.SyntaxKind.ObjectLiteralExpression:
         case ts.SyntaxKind.Parameter:
+        case ts.SyntaxKind.PropertyAccessExpression:
         case ts.SyntaxKind.PropertyAssignment:
         case ts.SyntaxKind.PropertyDeclaration:
         case ts.SyntaxKind.PropertySignature:
@@ -1033,10 +1034,12 @@ class Visitor {
           this.visit(element);
         }
         break;
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
+        // Nothing meaningful can be recorded about literal expressions.
+        break;
       default:
-        this.todo(
-            decl.name,
-            `handle variable declaration: ${ts.SyntaxKind[decl.name.kind]}`);
+        break;
     }
     if (decl.type) this.visitType(decl.type);
     if (decl.initializer) this.visit(decl.initializer);
