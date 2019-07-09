@@ -1137,8 +1137,7 @@ class Visitor {
    * parameters created via bound elements:
    *    function foo({a, b: {c, d}}, e, f) {}
    * In this code, a, c, d, e, f are all parameters with increasing parameter
-   * numbers [0, 4]. Ideally the parameter number would be hierarchical, with
-   * `a` having a parameter number of 0.0, but Kythe doesn't support that.
+   * numbers [0, 4].
    */
   visitParameters(
       parameters: ReadonlyArray<ts.ParameterDeclaration>, kFunc: VName) {
@@ -1196,7 +1195,7 @@ class Visitor {
           if (param.initializer) this.visit(param.initializer);
         }
 
-    for (const [, element] of toArray(parameters.entries())) {
+    for (const element of parameters) {
       recurseVisit(element);
     }
   }
