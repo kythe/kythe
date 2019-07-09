@@ -97,19 +97,19 @@ function stripExtension(path: string): string {
 }
 
 /**
- * TSNamespace represents the two namespaces of TypeScript: types and values.
- * A given symbol may be a type, it may be a value, and the two may even
- * be unrelated.
+ * TSNamespace represents the three declaration namespaces of TypeScript: types,
+ * values, and (confusingly) namespaces. A given symbol may be a type, and/or a
+ * value, and/or a namespace.
  *
  * See the table at
  *   https://www.typescriptlang.org/docs/handbook/declaration-merging.html
- *
- * TODO: there are actually three namespaces; the third is (confusingly)
- * itself called namespaces.  Implement those in this enum and other places.
+ * for a listing of namespace groups for various declaration types and further
+ * discussion.
  */
 enum TSNamespace {
   TYPE,
   VALUE,
+  NAMESPACE,
 }
 
 /**
@@ -232,7 +232,7 @@ class Visitor {
    * in it correspond to TSNamespace values.  See the documentation of
    * TSNamespace.
    */
-  symbolNames = new Map<ts.Symbol, [VName | null, VName|null]>();
+  symbolNames = new Map<ts.Symbol, [VName | null, VName|null, VName|null]>();
 
   /**
    * anonId increments for each anonymous block, to give them unique
@@ -568,15 +568,18 @@ class Visitor {
 
     const decl = declarations[0];
     const vname = this.scopedSignature(decl);
-    // The signature of a value is undecorated;
-    // the signature of a type has the #type suffix.
+    // The signature of a value is undecorated.
+    // The signature of a type has the #type suffix.
+    // The signature of a namespace has the #namespace suffix.
     if (ns === TSNamespace.TYPE) {
       vname.signature += '#type';
+    } else if (ns === TSNamespace.NAMESPACE) {
+      vname.signature += '#namespace';
     }
 
     if (!contextApplies) {
       // Save it in the appropriate slot in the symbolNames table.
-      if (!vnames) vnames = [null, null];
+      if (!vnames) vnames = [null, null, null];
       vnames[ns] = vname;
       this.symbolNames.set(sym, vnames);
     }
@@ -594,6 +597,13 @@ class Visitor {
       const kType = this.getSymbolName(sym, TSNamespace.TYPE);
       this.emitNode(kType, 'absvar');
       this.emitEdge(this.newAnchor(param.name), 'defines/binding', kType);
+      // ...<T extends A>
+      if (param.constraint) {
+        const superType = this.visitType(param.constraint);
+        if (superType) this.emitEdge(kType, 'bounded/upper', superType);
+      }
+      // ...<T = A>
+      if (param.default) this.visitType(param.default);
     }
   }
 
@@ -667,8 +677,10 @@ class Visitor {
    * It's separate from visit() because bare ts.Identifiers within a normal
    * expression are values (handled by visit) but bare ts.Identifiers within
    * a type are types (handled here).
+   * @return the VName of the type, if available.  (For more complex types,
+   *    e.g. Array<string>, we might not have a VName for the specific type.)
    */
-  visitType(node: ts.Node): void {
+  visitType(node: ts.Node): VName|undefined {
     switch (node.kind) {
       case ts.SyntaxKind.Identifier:
         const sym = this.getSymbolAtLocation(node);
@@ -678,11 +690,26 @@ class Visitor {
         }
         const name = this.getSymbolName(sym, TSNamespace.TYPE);
         this.emitEdge(this.newAnchor(node), 'ref', name);
-        return;
-      default:
-        // Default recursion, but using visitType(), not visit().
-        return ts.forEachChild(node, n => this.visitType(n));
+        return name;
+      case ts.SyntaxKind.TypeReference:
+        const typeRef = node as ts.TypeReferenceNode;
+        if (!typeRef.typeArguments) {
+          // If it's an direct type reference, e.g. SomeInterface
+          // as opposed to SomeInterface<T>, then the VName for the type
+          // reference is just the inner type name.
+          return this.visitType(typeRef.typeName);
+        }
+        // Otherwise, leave it to the default handling.
+        break;
     }
+
+    // Default recursion, but using visitType(), not visit().
+    ts.forEachChild(node, n => {
+      this.visitType(n);
+    });
+    // Because we don't know the specific thing we visited, give the caller
+    // back no name.
+    return undefined;
   }
 
   /**
@@ -775,7 +802,7 @@ class Visitor {
         null;
     // Mark the local symbol with the remote symbol's VName so that all
     // references resolve to the remote symbol.
-    this.symbolNames.set(localSym, [kImportType, kImportValue]);
+    this.symbolNames.set(localSym, [kImportType, kImportValue, kImportType]);
 
     // The name anchor must link somewhere.  In rare cases a symbol is both
     // a type and a value that resolve to two different locations; for now,
@@ -1148,6 +1175,48 @@ class Visitor {
     }
   }
 
+  /**
+   * Visits a module declaration, which can look like any of the following:
+   *     declare module 'foo';
+   *     declare module 'foo' {}
+   *     declare module foo {}
+   *     namespace Foo {}
+   */
+  visitModuleDeclaration(decl: ts.ModuleDeclaration) {
+    let sym = this.getSymbolAtLocation(decl.name);
+    if (!sym) {
+      this.todo(
+          decl.name, `module declaration ${decl.name.getText()} has no symbol`);
+      return;
+    }
+    // A TypeScript module declaration declares both a namespace (a Kythe
+    // "record") and a value (most similar to a "package", which defines a
+    // module with declarations).
+    const kNamespace = this.getSymbolName(sym, TSNamespace.NAMESPACE);
+    this.emitNode(kNamespace, 'record');
+    this.emitFact(kNamespace, 'subkind', 'namespace');
+    const kValue = this.getSymbolName(sym, TSNamespace.VALUE);
+    this.emitNode(kValue, 'package');
+
+    const nameAnchor = this.newAnchor(decl.name);
+    this.emitEdge(nameAnchor, 'defines/binding', kNamespace);
+    this.emitEdge(nameAnchor, 'defines/binding', kValue);
+
+    // The entire module declaration defines the created namespace.
+    const defAnchor = this.newAnchor(decl);
+    this.emitEdge(defAnchor, 'defines', kValue);
+
+    if (decl.decorators) this.visitDecorators(decl.decorators);
+    if (decl.body) {
+      this.emitFact(kNamespace, 'complete', 'definition');
+      this.visit(decl.body);
+    } else {
+      // Incomplete module definition, like
+      //    declare module 'foo';
+      this.emitFact(kNamespace, 'complete', 'incomplete');
+    }
+  }
+
   visitClassDeclaration(decl: ts.ClassDeclaration) {
     this.visitDecorators(decl.decorators || []);
     if (decl.name) {
@@ -1317,7 +1386,8 @@ class Visitor {
       case ts.SyntaxKind.EnumMember:
         return this.visitEnumMember(node as ts.EnumMember);
       case ts.SyntaxKind.TypeReference:
-        return this.visitType(node as ts.TypeNode);
+        this.visitType(node as ts.TypeNode);
+        return;
       case ts.SyntaxKind.BindingElement:
         this.visitVariableDeclaration(node as ts.BindingElement);
         return;
@@ -1327,6 +1397,8 @@ class Visitor {
         // circumstances (e.g. in a type) separately in visitType.
         this.visitExpressionMember(node);
         return;
+      case ts.SyntaxKind.ModuleDeclaration:
+        return this.visitModuleDeclaration(node as ts.ModuleDeclaration);
       default:
         // Use default recursive processing.
         return ts.forEachChild(node, n => this.visit(n));
