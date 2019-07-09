@@ -108,6 +108,9 @@ class TextprotoAnalyzer {
   Status AnalyzeSchemaComments(const proto::VName& file_vname,
                                const Descriptor& msg_descriptor);
 
+  void EmitDiagnostic(const proto::VName& file_vname,
+                      absl::string_view signature, absl::string_view msg);
+
  private:
   Status AnalyzeField(const proto::VName& file_vname, const Message& proto,
                       const TextFormat::ParseInfoTree& parse_tree,
@@ -343,6 +346,19 @@ proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
   return anchor;
 }
 
+void TextprotoAnalyzer::EmitDiagnostic(const proto::VName& file_vname,
+                                       absl::string_view signature,
+                                       absl::string_view msg) {
+  proto::VName dn_vname = file_vname;
+  dn_vname.set_signature(std::string(signature));
+  recorder_->AddProperty(VNameRef(dn_vname), NodeKindID::kDiagnostic);
+  recorder_->AddProperty(VNameRef(dn_vname), PropertyID::kDiagnosticMessage,
+                         msg);
+
+  recorder_->AddEdge(VNameRef(file_vname), EdgeKindID::kTagged,
+                     VNameRef(dn_vname));
+}
+
 // Find and return the argument after --proto_message. Removes the flag and
 // argument from @args if found.
 absl::optional<std::string> ParseProtoMessageArg(
@@ -523,7 +539,10 @@ Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
 
   Status status = analyzer.AnalyzeSchemaComments(*file_vname, *descriptor);
   if (!status.ok()) {
-    return status;
+    std::string msg =
+        absl::StrCat("Error analyzing schema comments: ", status.ToString());
+    LOG(ERROR) << msg << status;
+    analyzer.EmitDiagnostic(*file_vname, "schema_comments", msg);
   }
 
   return analyzer.AnalyzeMessage(*file_vname, *proto, *descriptor, parse_tree);
