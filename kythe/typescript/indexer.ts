@@ -383,7 +383,7 @@ class Visitor {
             // named 'default'.
             parts.push('default');
           } else {
-            parts.push('export =');
+            parts.push('export=');
           }
           break;
         case ts.SyntaxKind.ArrowFunction:
