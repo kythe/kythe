@@ -15,7 +15,7 @@
  */
 
 // Package web defines utility functions for exposing services over HTTP.
-package web
+package web // import "kythe.io/kythe/go/services/web"
 
 import (
 	"bytes"

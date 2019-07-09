@@ -15,7 +15,7 @@
  */
 
 // Package keyvalue contains utilities to test keyvalue DB implementations.
-package keyvalue
+package keyvalue // import "kythe.io/kythe/go/test/storage/keyvalue"
 
 import (
 	"context"

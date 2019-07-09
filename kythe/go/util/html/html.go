@@ -15,7 +15,7 @@
  */
 
 // Package html is a set of utilities for manipulating html Nodes.
-package html
+package html // import "kythe.io/kythe/go/util/html"
 
 import (
 	"bytes"

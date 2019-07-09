@@ -19,7 +19,7 @@
 // This server implements the following capabilities:
 // 		textDocumentSync (full)
 //		referenceProvider
-package languageserver
+package languageserver // import "kythe.io/kythe/go/languageserver"
 
 import (
 	"bytes"

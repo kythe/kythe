@@ -15,7 +15,7 @@
  */
 
 // Package mergecmd provides the kzip command for merging archives.
-package mergecmd
+package mergecmd // import "kythe.io/kythe/go/platform/tools/kzip/mergecmd"
 
 import (
 	"context"

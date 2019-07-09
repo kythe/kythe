@@ -16,7 +16,7 @@
 
 // Package graphstore defines the Service and Sharded interfaces, and provides
 // some useful utility functions.
-package graphstore
+package graphstore // import "kythe.io/kythe/go/services/graphstore"
 
 import (
 	"context"

@@ -15,7 +15,7 @@
  */
 
 // Package gsutil is collection of helper functions for storage tools.
-package gsutil
+package gsutil // import "kythe.io/kythe/go/storage/gsutil"
 
 import (
 	"context"

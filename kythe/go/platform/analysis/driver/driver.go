@@ -16,7 +16,7 @@
 
 // Package driver contains a Driver implementation that sends analyses to a
 // CompilationAnalyzer based on a Queue of compilations.
-package driver
+package driver // import "kythe.io/kythe/go/platform/analysis/driver"
 
 import (
 	"context"

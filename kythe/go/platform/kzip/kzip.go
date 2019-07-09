@@ -59,7 +59,7 @@
 //   fdigest, err := w.AddFile(file)
 //   ...
 //
-package kzip
+package kzip // import "kythe.io/kythe/go/platform/kzip"
 
 import (
 	"archive/zip"

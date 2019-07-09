@@ -19,7 +19,7 @@
 //
 // C++ implementation: https://github.com/google/riegeli
 // Format spec: https://github.com/google/riegeli/blob/master/doc/riegeli_records_file_format.md
-package riegeli
+package riegeli // import "kythe.io/kythe/go/util/riegeli"
 
 import (
 	"errors"

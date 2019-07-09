@@ -20,7 +20,7 @@
 // Table format:
 //   edgeSets:<ticket>      -> srvpb.PagedEdgeSet
 //   edgePages:<page_key>   -> srvpb.EdgePage
-package graph
+package graph // import "kythe.io/kythe/go/serving/graph"
 
 import (
 	"context"

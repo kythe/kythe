@@ -16,7 +16,7 @@
 
 // Package inmemory provides a in-memory implementation of graphstore.Service
 // and keyvalue.DB.
-package inmemory
+package inmemory // import "kythe.io/kythe/go/storage/inmemory"
 
 import (
 	"context"

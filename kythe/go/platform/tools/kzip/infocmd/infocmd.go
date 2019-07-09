@@ -15,7 +15,7 @@
  */
 
 // Package infocmd provides the kzip command for obtaining info about a kzip archive.
-package infocmd
+package infocmd // import "kythe.io/kythe/go/platform/tools/kzip/infocmd"
 
 import (
 	"context"

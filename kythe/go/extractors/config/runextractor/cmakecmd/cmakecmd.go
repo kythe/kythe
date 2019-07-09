@@ -15,7 +15,7 @@
  */
 
 // Package cmakecmd extracts from a CMake-based repository.
-package cmakecmd
+package cmakecmd // import "kythe.io/kythe/go/extractors/config/runextractor/cmakecmd"
 
 import (
 	"context"

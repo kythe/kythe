@@ -15,7 +15,7 @@
  */
 
 // Package gradlecmd extracts a gradle repo.
-package gradlecmd
+package gradlecmd // import "kythe.io/kythe/go/extractors/config/runextractor/gradlecmd"
 
 import (
 	"context"

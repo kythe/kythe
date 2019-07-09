@@ -61,7 +61,7 @@
 //   if err != nil {
 //     log.Exit(err)
 //   }
-package indexpack
+package indexpack // import "kythe.io/kythe/go/platform/indexpack"
 
 import (
 	"bufio"

@@ -16,7 +16,7 @@
 
 // Package zip defines a VFS implementation that understands a zip archive as an
 // isolated, read-only file system.
-package zip
+package zip // import "kythe.io/kythe/go/platform/vfs/zip"
 
 import (
 	"archive/zip"

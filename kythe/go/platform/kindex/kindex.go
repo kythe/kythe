@@ -33,7 +33,7 @@
 // of the required inputs for the CompilationUnit.
 //
 // These proto messages are defined in //kythe/proto:analysis_proto
-package kindex
+package kindex // import "kythe.io/kythe/go/platform/kindex"
 
 import (
 	"bytes"

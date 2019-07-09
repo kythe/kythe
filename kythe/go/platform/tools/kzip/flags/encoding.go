@@ -15,7 +15,7 @@
  */
 
 // Package flags provides type EncodingFlag for use as a flag to specify Encoding.
-package flags
+package flags // import "kythe.io/kythe/go/platform/tools/kzip/flags"
 
 import (
 	"fmt"

@@ -56,7 +56,7 @@
 //
 // When rendered in wire format, the protobuf encoding is considerably more
 // compact than a naive entry stream.
-package entryset
+package entryset // import "kythe.io/kythe/go/storage/entryset"
 
 import (
 	"fmt"

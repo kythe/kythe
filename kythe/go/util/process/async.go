@@ -16,7 +16,7 @@
 
 // Package process contains an implementation of a callback-based asynchronous
 // process.
-package process
+package process // import "kythe.io/kythe/go/util/process"
 
 import (
 	"os"

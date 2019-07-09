@@ -16,7 +16,7 @@
 
 // Package vnameutil provides utilities for generating consistent VNames from
 // common path-like values (e.g., filenames, import paths).
-package vnameutil
+package vnameutil // import "kythe.io/kythe/go/util/vnameutil"
 
 import (
 	"encoding/json"

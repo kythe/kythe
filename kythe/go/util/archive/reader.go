@@ -16,7 +16,7 @@
 
 // Package archive provides support for reading the contents of archives such
 // as .zip and .tar files.
-package archive
+package archive // import "kythe.io/kythe/go/util/archive"
 
 import (
 	"archive/tar"

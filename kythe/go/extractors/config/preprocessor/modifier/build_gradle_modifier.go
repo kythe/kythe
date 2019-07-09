@@ -16,7 +16,7 @@
 
 // Package modifier provides a library for adding a forked javac executable
 // into a build.gradle file or pom.xml file.
-package modifier
+package modifier // import "kythe.io/kythe/go/extractors/config/preprocessor/modifier"
 
 import (
 	"fmt"

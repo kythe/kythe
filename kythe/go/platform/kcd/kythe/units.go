@@ -15,7 +15,7 @@
  */
 
 // Package kythe implements the kcd.Unit interface for Kythe compilations.
-package kythe
+package kythe // import "kythe.io/kythe/go/platform/kcd/kythe"
 
 import (
 	"fmt"

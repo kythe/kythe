@@ -16,7 +16,7 @@
 
 // Package memdb implements kcd.ReadWriter with an in-memory representation,
 // suitable for testing or ephemeral service-based collections.
-package memdb
+package memdb // import "kythe.io/kythe/go/platform/kcd/memdb"
 
 import (
 	"context"

@@ -22,7 +22,7 @@
 //   docs:<ticket>          -> srvpb.Document
 //   xrefs:<ticket>         -> srvpb.PagedCrossReferences
 //   xrefPages:<page_key>   -> srvpb.PagedCrossReferences_Page
-package xrefs
+package xrefs // import "kythe.io/kythe/go/serving/xrefs"
 
 import (
 	"context"
