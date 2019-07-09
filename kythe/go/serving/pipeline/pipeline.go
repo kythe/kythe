@@ -16,7 +16,7 @@
 
 // Package pipeline implements an in-process pipeline to create a combined
 // filetree and xrefs serving table from a stream of GraphStore-ordered entries.
-package pipeline
+package pipeline // import "kythe.io/kythe/go/serving/pipeline"
 
 import (
 	"bytes"

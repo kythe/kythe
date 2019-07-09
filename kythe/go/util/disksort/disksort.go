@@ -17,7 +17,7 @@
 // Package disksort implements sorting algorithms for sets of data too large to
 // fit fully in-memory.  If the number of elements becomes to large, data are
 // paged onto the disk.
-package disksort
+package disksort // import "kythe.io/kythe/go/util/disksort"
 
 import (
 	"bufio"

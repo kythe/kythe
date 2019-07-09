@@ -16,7 +16,7 @@
 
 // Package rdf implements encoding of RDF triples, as described in
 // http://www.w3.org/TR/2014/REC-n-triples-20140225/.
-package rdf
+package rdf // import "kythe.io/kythe/go/util/encoding/rdf"
 
 import (
 	"bytes"

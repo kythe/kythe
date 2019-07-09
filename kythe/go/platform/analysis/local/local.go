@@ -15,7 +15,7 @@
  */
 
 // Package local implements CompilationAnalyzer utilities for local analyses.
-package local
+package local // import "kythe.io/kythe/go/platform/analysis/local"
 
 import (
 	"context"

@@ -16,7 +16,7 @@
 
 // Package bazel implements the internal plumbing of a configurable Bazel
 // compilation unit extractor.
-package bazel
+package bazel // import "kythe.io/kythe/go/extractors/bazel"
 
 import (
 	"context"

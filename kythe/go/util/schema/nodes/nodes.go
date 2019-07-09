@@ -15,7 +15,7 @@
  */
 
 // Package nodes defines constants for Kythe nodes.
-package nodes
+package nodes // import "kythe.io/kythe/go/util/schema/nodes"
 
 // Node kind labels
 const (

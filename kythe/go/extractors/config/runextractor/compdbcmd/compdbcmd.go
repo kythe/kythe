@@ -15,7 +15,7 @@
  */
 
 // Package compdbcmd extracts from a compile_commands.json file.
-package compdbcmd
+package compdbcmd // import "kythe.io/kythe/go/extractors/config/runextractor/compdbcmd"
 
 import (
 	"context"

@@ -16,7 +16,7 @@
 
 // Package packdb implements kcd.ReadWriter using an index pack as its backing
 // store. See also: http://www.kythe.io/docs/kythe-index-pack.html.
-package packdb
+package packdb // import "kythe.io/kythe/go/platform/kcd/packdb"
 
 import (
 	"context"

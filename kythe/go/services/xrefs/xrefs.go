@@ -16,7 +16,7 @@
 
 // Package xrefs defines the xrefs Service interface and some useful utility
 // functions.
-package xrefs
+package xrefs // import "kythe.io/kythe/go/services/xrefs"
 
 import (
 	"context"

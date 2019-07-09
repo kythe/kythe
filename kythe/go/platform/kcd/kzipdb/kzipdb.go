@@ -16,7 +16,7 @@
 
 // Package kzipdb implements kcd.Reader using a kzip file as its backing
 // store. See also: http://www.kythe.io/docs/kythe-index-pack.html.
-package kzipdb
+package kzipdb // import "kythe.io/kythe/go/platform/kcd/kzipdb"
 
 import (
 	"context"

@@ -17,7 +17,7 @@
 // Package pager implements a generic SetPager that splits a stream of Groups
 // into a single Set and one-or-more associated Pages.  Useful for constructing
 // paged serving data.
-package pager
+package pager // import "kythe.io/kythe/go/util/pager"
 
 import (
 	"container/heap"

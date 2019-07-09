@@ -15,7 +15,7 @@
  */
 
 // Package compare implements comparisons between Kythe values.
-package compare
+package compare // import "kythe.io/kythe/go/util/compare"
 
 import (
 	"bytes"

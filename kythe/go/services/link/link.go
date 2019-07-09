@@ -15,7 +15,7 @@
  */
 
 // Package link implements the link resolver service.
-package link
+package link // import "kythe.io/kythe/go/services/link"
 
 import (
 	"context"

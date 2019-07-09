@@ -15,7 +15,7 @@
  */
 
 // Package beamtest contains utilities to test Apache Beam pipelines.
-package beamtest
+package beamtest // import "kythe.io/kythe/go/serving/pipeline/beamtest"
 
 import (
 	"fmt"

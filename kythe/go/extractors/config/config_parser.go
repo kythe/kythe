@@ -16,7 +16,7 @@
 
 // Package config defines configuration settings for extracting compilation records from
 // a repository using a non-bazel build system.
-package config
+package config // import "kythe.io/kythe/go/extractors/config"
 
 import (
 	"bytes"

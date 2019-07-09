@@ -16,7 +16,7 @@
 
 // Package flagutil is a collection of helper functions for Kythe binaries using
 // the flag package.
-package flagutil
+package flagutil // import "kythe.io/kythe/go/util/flagutil"
 
 import (
 	"flag"

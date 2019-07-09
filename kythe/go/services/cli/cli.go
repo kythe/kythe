@@ -15,7 +15,7 @@
  */
 
 // Package cli exposes a CLI interface to the Kythe services.
-package cli
+package cli // import "kythe.io/kythe/go/services/cli"
 
 import (
 	"context"

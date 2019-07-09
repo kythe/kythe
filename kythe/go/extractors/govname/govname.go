@@ -16,7 +16,7 @@
 
 // Package govname supports the creation of VName protobuf messages for Go
 // packages and other entities.
-package govname
+package govname // import "kythe.io/kythe/go/extractors/govname"
 
 import (
 	"go/build"

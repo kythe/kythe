@@ -19,7 +19,7 @@
 // Table format:
 //   dirs:<corpus>\n<root>\n<path> -> srvpb.FileDirectory
 //   dirs:corpusRoots              -> srvpb.CorpusRoots
-package filetree
+package filetree // import "kythe.io/kythe/go/serving/filetree"
 
 import (
 	"context"
