@@ -593,6 +593,13 @@ class Visitor {
       const kType = this.getSymbolName(sym, TSNamespace.TYPE);
       this.emitNode(kType, 'absvar');
       this.emitEdge(this.newAnchor(param.name), 'defines/binding', kType);
+      // ...<T extends A>
+      if (param.constraint) {
+        const superType = this.visitType(param.constraint);
+        if (superType) this.emitEdge(kType, 'bounded/upper', superType);
+      }
+      // ...<T = A>
+      if (param.default) this.visitType(param.default);
     }
   }
 
@@ -666,8 +673,10 @@ class Visitor {
    * It's separate from visit() because bare ts.Identifiers within a normal
    * expression are values (handled by visit) but bare ts.Identifiers within
    * a type are types (handled here).
+   * @return the VName of the type, if available.  (For more complex types,
+   *    e.g. Array<string>, we might not have a VName for the specific type.)
    */
-  visitType(node: ts.Node): void {
+  visitType(node: ts.Node): VName|undefined {
     switch (node.kind) {
       case ts.SyntaxKind.Identifier:
         const sym = this.getSymbolAtLocation(node);
@@ -677,11 +686,26 @@ class Visitor {
         }
         const name = this.getSymbolName(sym, TSNamespace.TYPE);
         this.emitEdge(this.newAnchor(node), 'ref', name);
-        return;
-      default:
-        // Default recursion, but using visitType(), not visit().
-        return ts.forEachChild(node, n => this.visitType(n));
+        return name;
+      case ts.SyntaxKind.TypeReference:
+        const typeRef = node as ts.TypeReferenceNode;
+        if (!typeRef.typeArguments) {
+          // If it's an direct type reference, e.g. SomeInterface
+          // as opposed to SomeInterface<T>, then the VName for the type
+          // reference is just the inner type name.
+          return this.visitType(typeRef.typeName);
+        }
+        // Otherwise, leave it to the default handling.
+        break;
     }
+
+    // Default recursion, but using visitType(), not visit().
+    ts.forEachChild(node, n => {
+      this.visitType(n);
+    });
+    // Because we don't know the specific thing we visited, give the caller
+    // back no name.
+    return undefined;
   }
 
   /**
@@ -1314,7 +1338,8 @@ class Visitor {
       case ts.SyntaxKind.EnumMember:
         return this.visitEnumMember(node as ts.EnumMember);
       case ts.SyntaxKind.TypeReference:
-        return this.visitType(node as ts.TypeNode);
+        this.visitType(node as ts.TypeNode);
+        return;
       case ts.SyntaxKind.BindingElement:
         this.visitVariableDeclaration(node as ts.BindingElement);
         return;
