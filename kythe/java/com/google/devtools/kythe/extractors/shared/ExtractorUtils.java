@@ -69,7 +69,7 @@ public class ExtractorUtils {
    * @throws ExtractionException
    */
   public static List<FileData> convertBytesToFileDatas(
-      final Map<String, byte[]> filePathToFileContents) throws ExtractionException {
+      final Map<String, byte[]> filePathToFileContents) {
     checkNotNull(filePathToFileContents);
 
     return filePathToFileContents.keySet().stream()
