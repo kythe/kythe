@@ -57,6 +57,7 @@ def _kzip_archive(ctx):
         args.add("--entry_context", ctx.attr.entry_context)
 
     # All arguments after a plain "--" will be passed as arguments in the compilation unit.
+    # This must come last.
     args.add_all("--", ctx.attr.args)
     ctx.actions.run(
         outputs = [ctx.outputs.kzip],
