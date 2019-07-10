@@ -1152,17 +1152,20 @@ class Visitor {
           for (const heritage of decl.parent.heritageClauses) {
             for (const baseType of heritage.types) {
               const baseSym = this.getSymbolAtLocation(baseType.expression);
-              if (!baseSym) {
-                this.todo(baseType, `heritage type ${baseSym} has no symbol`);
+              if (!baseSym || !baseSym.members) {
                 continue;
               }
+
               const funcName = funcSym.name;
               const funcFlags = funcSym.flags;
+
+              // Find a member of with the same type (same flags) and same name
+              // as the overriding method.
+              const overridenCondition = (sym: ts.Symbol) =>
+                  Boolean(sym.flags & funcFlags) && sym.name === funcName;
+
               const overriden =
-                  toArray((baseSym.members || new Map()).values())
-                      .find(
-                          (sym: ts.Symbol) => Boolean(sym.flags & funcFlags) &&
-                              sym.name === funcName);
+                  toArray(baseSym.members.values()).find(overridenCondition);
               if (overriden) {
                 this.emitEdge(
                     kFunc, 'overrides',
