@@ -684,8 +684,18 @@ class Visitor {
     switch (node.kind) {
       case ts.SyntaxKind.TypeReference:
         const ref = node as ts.TypeReferenceNode;
-        (ref.typeArguments || []).forEach(type => this.visitType(type));
-        return this.visitType((node as ts.TypeReferenceNode).typeName);
+        const kType = this.visitType((node as ts.TypeReferenceNode).typeName);
+
+        // Return no VName for types with type arguments because their VName is
+        // not qualified. E.g.
+        //   Array<string>
+        //   Array<number>
+        // have the same VName signature "Array"
+        if (ref.typeArguments) {
+          ref.typeArguments.forEach(type => this.visitType(type));
+          return;
+        }
+        return kType;
       case ts.SyntaxKind.Identifier:
         const sym = this.getSymbolAtLocation(node);
         if (!sym) {
