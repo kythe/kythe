@@ -46,7 +46,6 @@ def _kzip_archive(ctx):
     args.add("--output_key", str(ctx.label))
     args.add_joined("--source_file", ctx.files.srcs, join_with = ",")
     args.add_joined("--required_input", ctx.files.deps, join_with = ",")
-    args.add_all(ctx.attr.args, before_each = "--argument")
     args.add_all(ctx.attr.env.items(), before_each = "--env", map_each = _key_pair)
     args.add_all(ctx.attr.details, before_each = "--details")
     args.add_all("--rules", ctx.files.vnames_config)
@@ -56,6 +55,9 @@ def _kzip_archive(ctx):
         args.add("--working_directory", ctx.attr.working_directory)
     if ctx.attr.entry_context:
         args.add("--entry_context", ctx.attr.entry_context)
+
+    # All arguments after a plain "--" will be passed as arguments in the compilation unit.
+    args.add_all("--", ctx.attr.args)
     ctx.actions.run(
         outputs = [ctx.outputs.kzip],
         inputs = ctx.files.srcs + ctx.files.deps + ctx.files.vnames_config,
