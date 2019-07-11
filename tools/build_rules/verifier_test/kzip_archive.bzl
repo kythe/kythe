@@ -40,25 +40,29 @@ def _kzip_archive(ctx):
         corpus = ctx.attr.corpus,
         language = ctx.attr.lang,
         path = _single_path(ctx.files.srcs),
-        root = ctx.attr.root,
+        root = ctx.expand_location(ctx.attr.root),
     ))
     args.add("--output", ctx.outputs.kzip)
     args.add("--output_key", str(ctx.label))
     args.add_joined("--source_file", ctx.files.srcs, join_with = ",")
     args.add_joined("--required_input", ctx.files.deps, join_with = ",")
-    args.add_all(ctx.attr.env.items(), before_each = "--env", map_each = _key_pair)
-    args.add_all(ctx.attr.details, before_each = "--details")
+    args.add_all(
+        [(k, ctx.expand_location(v)) for k, v in ctx.attr.env.items()],
+        before_each = "--env",
+        map_each = _key_pair,
+    )
+    args.add_all([ctx.expand_location(d) for d in ctx.attr.details], before_each = "--details")
     args.add_all("--rules", ctx.files.vnames_config)
     if ctx.attr.has_compile_errors:
         args.add("--has_compile_errors")
     if ctx.attr.working_directory:
-        args.add("--working_directory", ctx.attr.working_directory)
+        args.add("--working_directory", ctx.expand_location(ctx.attr.working_directory))
     if ctx.attr.entry_context:
-        args.add("--entry_context", ctx.attr.entry_context)
+        args.add("--entry_context", ctx.expand_location(ctx.attr.entry_context))
 
     # All arguments after a plain "--" will be passed as arguments in the compilation unit.
     # This must come last.
-    args.add_all("--", ctx.attr.args)
+    args.add_all("--", [ctx.expand_location(a) for a in ctx.attr.args])
     ctx.actions.run(
         outputs = [ctx.outputs.kzip],
         inputs = ctx.files.srcs + ctx.files.deps + ctx.files.vnames_config,
