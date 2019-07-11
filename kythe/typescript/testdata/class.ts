@@ -15,7 +15,11 @@ interface IFace {
 }
 
 //- @IFace ref IFace
-interface IExtended extends IFace {}
+interface IExtended extends IFace {
+    //- @ifaceMethod defines/binding ExtendedIFaceMethod
+    //- ExtendedIFaceMethod overrides IFaceMethod
+    ifaceMethod(): void;
+}
 
 //- @Class defines/binding Class=vname("Class#type", _, _, _, _)
 //- Class.node/kind record
@@ -59,17 +63,27 @@ class Class implements IFace {
         this.method();
     }
 
-    // TODO: ensure the method is linked to the interface too.
-    //- @ifaceMethod defines/binding _ClassIFaceMethod
+    //- @ifaceMethod defines/binding ClassIFaceMethod
+    //- ClassIFaceMethod overrides IFaceMethod
     ifaceMethod(): void {}
 }
 
 //- @Class ref ClassValue
 class Subclass extends Class {
+    //- @method defines/binding OverridenMethod
+    //- OverridenMethod overrides Method
     method() {
         //- @member ref Member
         this.member;
     }
+}
+
+class SubSubclass extends Class implements IExtended {
+    //- @ifaceMethod defines/binding OverridenIFaceMethod
+    //- OverridenIFaceMethod overrides ClassIFaceMethod
+    //- OverridenIFaceMethod overrides ExtendedIFaceMethod
+    //- !{ OverridenIFaceMethod overrides IFaceMethod }
+    ifaceMethod() {}
 }
 
 //- @Class ref ClassValue
