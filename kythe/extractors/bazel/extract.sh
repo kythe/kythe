@@ -54,6 +54,22 @@ if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
   apt-get clean
 fi
 
+if [ -n "$KYTHE_PIP_DEPS" ]; then
+  pip install -U $KYTHE_PIP_DEPS
+fi
+
+if [ -n "$KYTHE_PIP_NO_REC_DEPS" ]; then
+  pip install -U $KYTHE_PIP_NO_REC_DEPS --no-deps
+fi
+
+# Always use bazelisk for bazel so we have complete control over the bazel
+# version being used.
+ln -s /kythe/bazelisk /usr/local/bin/bazel
+
+if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
+  eval "$KYTHE_PRE_BUILD_STEP"
+fi
+
 /kythe/bazelisk --bazelrc=/kythe/bazelrc "$@"
 
 # Collect any extracted compilations.
