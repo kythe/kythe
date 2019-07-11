@@ -1100,6 +1100,7 @@ class Visitor {
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
     this.visitDecorators(decl.decorators || []);
     let kFunc: VName;
+    let funcSym: ts.Symbol|undefined = undefined;
     let context: Context|undefined = undefined;
     if (ts.isGetAccessor(decl)) {
       context = Context.Getter;
@@ -1107,20 +1108,20 @@ class Visitor {
       context = Context.Setter;
     }
     if (decl.name) {
-      const sym = this.getSymbolAtLocation(decl.name);
+      funcSym = this.getSymbolAtLocation(decl.name);
       if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
         // TODO: it's not clear what to do with computed property named
         // functions.  They don't have a symbol.
         this.visit((decl.name as ts.ComputedPropertyName).expression);
         kFunc = this.newVName('TODO', 'TODOPath');
       } else {
-        if (!sym) {
+        if (!funcSym) {
           this.todo(
               decl.name,
               `function declaration ${decl.name.getText()} has no symbol`);
           return;
         }
-        kFunc = this.getSymbolName(sym, TSNamespace.VALUE, context);
+        kFunc = this.getSymbolName(funcSym, TSNamespace.VALUE, context);
 
         const declAnchor = this.newAnchor(decl.name);
         this.emitNode(kFunc, 'function');
@@ -1130,7 +1131,7 @@ class Visitor {
         // getter is present, it will bind this entry; otherwise a setter will.
         if (ts.isGetAccessor(decl) ||
             (ts.isSetAccessor(decl) &&
-             !sym.declarations.find(ts.isGetAccessor))) {
+             !funcSym.declarations.find(ts.isGetAccessor))) {
           this.emitImplicitProperty(decl, declAnchor, kFunc);
         }
 
@@ -1144,10 +1145,9 @@ class Visitor {
 
     if (decl.parent) {
       // Emit a "childof" edge on class/interface members.
-      if (decl.parent.kind === ts.SyntaxKind.ClassDeclaration ||
-          decl.parent.kind === ts.SyntaxKind.ClassExpression ||
-          decl.parent.kind === ts.SyntaxKind.InterfaceDeclaration) {
-        const parentName = (decl.parent as ts.ClassLikeDeclaration).name;
+      if (ts.isClassLike(decl.parent) ||
+          ts.isInterfaceDeclaration(decl.parent)) {
+        const parentName = decl.parent.name;
         if (parentName !== undefined) {
           const parentSym = this.getSymbolAtLocation(parentName);
           if (!parentSym) {
@@ -1157,15 +1157,42 @@ class Visitor {
           const kParent = this.getSymbolName(parentSym, TSNamespace.TYPE);
           this.emitEdge(kFunc, 'childof', kParent);
         }
-      }
 
-      // TODO: emit an "overrides" edge if this method overrides.
-      // It appears the TS API doesn't make finding that information easy,
-      // perhaps because it mostly cares about whether types are structrually
-      // compatible.  But I think you can start from the parent class/iface,
-      // then from there follow the "implements"/"extends" chain to other
-      // classes/ifaces, and then from there look for methods with matching
-      // names.
+        // Emit "overrides" edges if this method overrides extended classes or
+        // implemented interfaces, which are listed in the Heritage Clauses of
+        // a class or interface.
+        //     class X extends A implements B, C {}
+        //             ^^^^^^^^^-^^^^^^^^^^^^^^^----- `HeritageClause`s
+        // Look at each type listed in the heritage clauses and traverse its
+        // members. If the type has a member that matches the method visited in
+        // this function (`kFunc`), emit an "overrides" edge to that member.
+        if (funcSym && decl.parent.heritageClauses) {
+          for (const heritage of decl.parent.heritageClauses) {
+            for (const baseType of heritage.types) {
+              const baseSym = this.getSymbolAtLocation(baseType.expression);
+              if (!baseSym || !baseSym.members) {
+                continue;
+              }
+
+              const funcName = funcSym.name;
+              const funcFlags = funcSym.flags;
+
+              // Find a member of with the same type (same flags) and same name
+              // as the overriding method.
+              const overridenCondition = (sym: ts.Symbol) =>
+                  Boolean(sym.flags & funcFlags) && sym.name === funcName;
+
+              const overriden =
+                  toArray(baseSym.members.values()).find(overridenCondition);
+              if (overriden) {
+                this.emitEdge(
+                    kFunc, 'overrides',
+                    this.getSymbolName(overriden, TSNamespace.VALUE));
+              }
+            }
+          }
+        }
+      }
     }
 
     this.visitParameters(decl.parameters, kFunc);
@@ -1380,8 +1407,8 @@ class Visitor {
     const anchor = this.newAnchor(node);
     this.emitEdge(anchor, 'ref', name);
 
-    // Emit a 'ref/call' edge to a class constructor if a new class instance is
-    // instantiated.
+    // Emit a 'ref/call' edge to a class constructor if a new class instance
+    // is instantiated.
     if (ts.isNewExpression(node.parent)) {
       const classDecl = sym.declarations.find(ts.isClassDeclaration);
       if (classDecl) {
