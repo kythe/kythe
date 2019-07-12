@@ -1124,33 +1124,29 @@ class Visitor {
     if (decl.name) {
       funcSym = this.getSymbolAtLocation(decl.name);
       if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
-        // TODO: it's not clear what to do with computed property named
-        // functions.  They don't have a symbol.
         this.visit((decl.name as ts.ComputedPropertyName).expression);
-        kFunc = this.newVName('TODO', 'TODOPath');
-      } else {
-        if (!funcSym) {
-          this.todo(
-              decl.name,
-              `function declaration ${decl.name.getText()} has no symbol`);
-          return;
-        }
-        kFunc = this.getSymbolName(funcSym, TSNamespace.VALUE, context);
-
-        const declAnchor = this.newAnchor(decl.name);
-        this.emitNode(kFunc, 'function');
-        this.emitEdge(declAnchor, 'defines/binding', kFunc);
-
-        // Getters/setters also emit an implicit class property entry. If a
-        // getter is present, it will bind this entry; otherwise a setter will.
-        if (ts.isGetAccessor(decl) ||
-            (ts.isSetAccessor(decl) &&
-             !funcSym.declarations.find(ts.isGetAccessor))) {
-          this.emitImplicitProperty(decl, declAnchor, kFunc);
-        }
-
-        this.visitJSDoc(decl, kFunc);
       }
+      if (!funcSym) {
+        this.todo(
+            decl.name,
+            `function declaration ${decl.name.getText()} has no symbol`);
+        return;
+      }
+      kFunc = this.getSymbolName(funcSym, TSNamespace.VALUE, context);
+
+      const declAnchor = this.newAnchor(decl.name);
+      this.emitNode(kFunc, 'function');
+      this.emitEdge(declAnchor, 'defines/binding', kFunc);
+
+      // Getters/setters also emit an implicit class property entry. If a
+      // getter is present, it will bind this entry; otherwise a setter will.
+      if (ts.isGetAccessor(decl) ||
+          (ts.isSetAccessor(decl) &&
+           !funcSym.declarations.find(ts.isGetAccessor))) {
+        this.emitImplicitProperty(decl, declAnchor, kFunc);
+      }
+
+      this.visitJSDoc(decl, kFunc);
     } else {
       // TODO: choose VName for anonymous functions.
       kFunc = this.newVName('TODO', 'TODOPath');
