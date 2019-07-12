@@ -92,7 +92,7 @@ function bindingTest({aa, bb: {cc, dd}}, [ee, [ff]]: NestedArray) {
 //- @an defines/binding An
 let ev, an;
 (function() {
-//- !{ @ev ref Ev }
+//- !{ @ev defines/binding _Ev2=Ev }
 let ev;
 //- @an ref An
 an;
