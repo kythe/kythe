@@ -758,8 +758,9 @@ class Visitor {
     // TODO: this is hacky; it may be the case we need to use the TypeScript
     // module resolver to get the real path (?).  But it appears the symbol
     // name is the quoted(!) path to the module.
+    // TODO(ayazhafiz): Fix the above.
     if (!(name.startsWith('"') && name.endsWith('"'))) {
-      throw new Error(`TODO: handle module symbol ${name}`);
+      this.todo(sym.declarations[0], `TODO: handle module symbol ${name}`);
     }
     const sourcePath = name.substr(1, name.length - 2);
     return this.host.moduleName(sourcePath);
