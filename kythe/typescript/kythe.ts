@@ -1,4 +1,9 @@
 /**
+ * @fileoverview TypeScript typings of the Kythe schema.
+ * @author Kythe Authors
+ */
+
+/**
  * A VName (Vector Name) for a node in the Kythe schema consists of:
  *  - `signature`: a unique, opaque signature for a node
  *  - `corpus`: a collection of related files the node is defined in
@@ -76,7 +81,7 @@ export type OrdinalEdge = string&{
 };
 export function makeOrdinalEdge(edge: EdgeKind, ordinal: number): OrdinalEdge {
   const ordinalEdge = `${edge}.${ordinal}`;
-  return <OrdinalEdge>ordinalEdge;
+  return ordinalEdge as OrdinalEdge;
 }
 
 /**
