@@ -442,24 +442,42 @@ class Visitor {
         case ts.SyntaxKind.SetAccessor:
         case ts.SyntaxKind.ShorthandPropertyAssignment:
           const decl = node as ts.NamedDeclaration;
-          if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
-            let part = decl.name.text;
-            // Instance members of a class are scoped to the type of the class.
-            if (ts.isClassDeclaration(decl) && lastNode !== undefined &&
-                ts.isClassElement(lastNode) &&
-                !this.isStaticMember(lastNode, decl)) {
-              part += '#type';
+          if (decl.name) {
+            switch (decl.name.kind) {
+              case ts.SyntaxKind.Identifier:
+              case ts.SyntaxKind.StringLiteral:
+              case ts.SyntaxKind.NumericLiteral:
+              case ts.SyntaxKind.ComputedPropertyName:
+              case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
+                let part;
+                if (ts.isComputedPropertyName(decl.name)) {
+                  const sym = this.getSymbolAtLocation(decl.name);
+                  part = sym ? sym.name : this.anonName(decl.name);
+                } else {
+                  part = decl.name.text;
+                }
+                // Instance members of a class are scoped to the type of the
+                // class.
+                if (ts.isClassDeclaration(decl) && lastNode !== undefined &&
+                    ts.isClassElement(lastNode) &&
+                    !this.isStaticMember(lastNode, decl)) {
+                  part += '#type';
+                }
+                // Getters and setters semantically refer to the same entities
+                // but are declared differently, so they are differentiated.
+                if (ts.isGetAccessor(decl)) {
+                  part += ':getter';
+                } else if (ts.isSetAccessor(decl)) {
+                  part += ':setter';
+                }
+                parts.push(part);
+                break;
+              default:
+                // Skip adding an anonymous scope for variables declared in an
+                // array or object binding pattern like `const [a] = [0]`.
+                break;
             }
-            // Getters and setters semantically refer to the same entities but
-            // are declared differently, so they are differentiated.
-            if (ts.isGetAccessor(decl)) {
-              part += ':getter';
-            } else if (ts.isSetAccessor(decl)) {
-              part += ':setter';
-            }
-            parts.push(part);
           } else {
-            // TODO: handle other declarations, e.g. binding patterns.
             parts.push(this.anonName(node));
           }
           break;
