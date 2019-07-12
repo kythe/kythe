@@ -521,7 +521,7 @@ class Visitor {
           // If the node is actually some subtype that has a 'name' attribute
           // it's likely this function should have handled it.  Dynamically
           // probe for this case and warn if we missed one.
-          if ('name' in (node as any)) {
+          if ((node as any).name) {
             this.todo(
                 node,
                 `scopedSignature: ${ts.SyntaxKind[node.kind]} ` +
