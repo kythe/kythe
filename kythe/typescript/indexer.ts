@@ -688,12 +688,11 @@ class Visitor {
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
-    this.visitType(decl.type);
-    // TODO: in principle right here we emit an "aliases" edge.
-    // However, it's complicated by the fact that some types don't have
-    // specific names to alias, e.g.
-    //   type foo = number|string;
-    // Just punt for now.
+    const kAlias = this.visitType(decl.type);
+    // Emit an "aliases" edge if the aliased type has a singular VName.
+    if (kAlias) {
+      this.emitEdge(kType, 'aliases', kAlias);
+    }
   }
 
   /**
@@ -701,11 +700,26 @@ class Visitor {
    * It's separate from visit() because bare ts.Identifiers within a normal
    * expression are values (handled by visit) but bare ts.Identifiers within
    * a type are types (handled here).
+   *
    * @return the VName of the type, if available.  (For more complex types,
    *    e.g. Array<string>, we might not have a VName for the specific type.)
    */
   visitType(node: ts.Node): VName|undefined {
     switch (node.kind) {
+      case ts.SyntaxKind.TypeReference:
+        const ref = node as ts.TypeReferenceNode;
+        const kType = this.visitType((node as ts.TypeReferenceNode).typeName);
+
+        // Return no VName for types with type arguments because their VName is
+        // not qualified. E.g.
+        //   Array<string>
+        //   Array<number>
+        // have the same VName signature "Array"
+        if (ref.typeArguments) {
+          ref.typeArguments.forEach(type => this.visitType(type));
+          return;
+        }
+        return kType;
       case ts.SyntaxKind.Identifier:
         const sym = this.getSymbolAtLocation(node);
         if (!sym) {
