@@ -753,17 +753,15 @@ class Visitor {
    * getPathFromModule(the './foo' node) might return a string like
    * 'path/to/project/foo'.  See this.moduleName().
    */
-  getModulePathFromModuleReference(sym: ts.Symbol): string {
-    const name = sym.name;
-    // TODO: this is hacky; it may be the case we need to use the TypeScript
-    // module resolver to get the real path (?).  But it appears the symbol
-    // name is the quoted(!) path to the module.
-    // TODO(ayazhafiz): Fix the above.
-    if (!(name.startsWith('"') && name.endsWith('"'))) {
-      this.todo(sym.declarations[0], `TODO: handle module symbol ${name}`);
+  getModulePathFromModuleReference(sym: ts.Symbol): string|undefined {
+    const sf = sym.valueDeclaration;
+    // If the module is not a source file, it does not have a unique file path.
+    // This can happen in cases of importing local modules, like
+    //   declare namespace Foo {}
+    //   import foo = Foo;
+    if (ts.isSourceFile(sf)) {
+      return this.host.moduleName(sf.fileName);
     }
-    const sourcePath = name.substr(1, name.length - 2);
-    return this.host.moduleName(sourcePath);
   }
 
   /**
@@ -874,9 +872,11 @@ class Visitor {
       // See testdata/import_missing.ts for more on how that could happen.
       return;
     }
-    const kModule = this.newVName(
-        'module', this.getModulePathFromModuleReference(moduleSym));
-    this.emitEdge(this.newAnchor(moduleRef), 'ref/imports', kModule);
+    const modulePath = this.getModulePathFromModuleReference(moduleSym);
+    if (modulePath) {
+      const kModule = this.newVName('module', modulePath);
+      this.emitEdge(this.newAnchor(moduleRef), 'ref/imports', kModule);
+    }
 
     if (ts.isImportEqualsDeclaration(decl)) {
       // This is an equals import, e.g.:
@@ -1036,10 +1036,12 @@ class Visitor {
     if (decl.moduleSpecifier) {
       const moduleSym = this.getSymbolAtLocation(decl.moduleSpecifier);
       if (moduleSym) {
-        const kModule = this.newVName(
-            'module', this.getModulePathFromModuleReference(moduleSym));
-        this.emitEdge(
-            this.newAnchor(decl.moduleSpecifier), 'ref/imports', kModule);
+        const moduleName = this.getModulePathFromModuleReference(moduleSym);
+        if (moduleName) {
+          const kModule = this.newVName('module', moduleName);
+          this.emitEdge(
+              this.newAnchor(decl.moduleSpecifier), 'ref/imports', kModule);
+        }
       }
     }
   }
