@@ -315,6 +315,11 @@ class Visitor {
     this.emitFact(source, FactName.NODE_KIND, kind);
   }
 
+  /** emitSubkind emits a new fact entry, declaring the subkind of a VName. */
+  emitSubkind(source: VName, subkind: Subkind) {
+    this.emitFact(source, FactName.SUBKIND, subkind);
+  }
+
   /** emitFact emits a new fact entry, tying an attribute to a VName. */
   emitFact(source: VName, name: FactName, value: string) {
     this.host.emit({
@@ -966,7 +971,7 @@ class Visitor {
     const implicitProp = {...funcVName, signature: propSignature};
 
     this.emitNode(implicitProp, 'variable');
-    this.emitFact(implicitProp, FactName.SUBKIND, 'implicit');
+    this.emitSubkind(implicitProp, Subkind.IMPLICIT);
     this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, implicitProp);
 
     const sym = this.getSymbolAtLocation(decl.name);
@@ -1322,7 +1327,7 @@ class Visitor {
     // module with declarations).
     const kNamespace = this.getSymbolName(sym, TSNamespace.NAMESPACE);
     this.emitNode(kNamespace, 'record');
-    this.emitFact(kNamespace, FactName.SUBKIND, 'namespace');
+    this.emitSubkind(kNamespace, Subkind.NAMESPACE);
     const kValue = this.getSymbolName(sym, TSNamespace.VALUE);
     this.emitNode(kValue, 'package');
 
@@ -1375,7 +1380,7 @@ class Visitor {
         const ctorVName = this.getSymbolName(ctorSymbol, TSNamespace.VALUE);
 
         this.emitNode(ctorVName, 'function');
-        this.emitFact(ctorVName, FactName.SUBKIND, 'constructor');
+        this.emitSubkind(ctorVName, Subkind.CONSTRUCTOR);
         this.emitEdge(classCtorAnchor, EdgeKind.DEFINES_BINDING, ctorVName);
       }
 
