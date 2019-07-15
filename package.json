@@ -1,9 +1,9 @@
 {
   "devDependencies": {
-    "@bazel/jasmine": "^0.31.1",
+    "@bazel/jasmine": "^0.32.2",
     "@bazel/typescript": "^0.31.1",
-    "@commitlint/cli": "^8.0.0",
-    "@commitlint/config-conventional": "^8.0.0",
+    "@commitlint/cli": "^8.1.0",
+    "@commitlint/config-conventional": "^8.1.0",
     "@types/jasmine": "^3.3.13",
     "@types/node": "^7.0.4"
   },
