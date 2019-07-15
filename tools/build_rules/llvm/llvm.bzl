@@ -254,8 +254,6 @@ def _clang_tablegen(ctx, out, *args):
     opts = " ".join(["-I " + _repo_path(i) for i in includes] +
                     kwargs["opts"] +
                     [o for o in kwargs.get("-i", []) if o.startswith("-")])
-    if "OpenCLBuiltins.inc" in out:
-        print(name, kwargs)
     native.genrule(
         name = name,
         outs = [out],
