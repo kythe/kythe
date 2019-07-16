@@ -11,12 +11,12 @@ A formal listing of the specification is provided below, but the
 
 The signature description language used in this document is similar to regex.
 
--   A substring in `\b\$.*\b` is a variable.
+-   A substring matching `\b\$.*\b` is a variable.
     -   e.g. `$DECLARATION_NAME` is a variable refering to the name of
         declaration.
--   A substring in `\[.*\]\?` is matched 0 or 1 times.
+-   A substring matching `\[.*\]\?` is matched 0 or 1 times.
     -   e.g. `(hidden)?` is really `hidden` or ``.
--   A substring in `\[.*\]\*` is matched 0 or more times.
+-   A substring matching `\[.*\]\*` is matched 0 or more times.
     -   e.g. `[a]*` is ``, or`a`, or`aa`, ...
 -   All other substrings are literals.
     -   e.g. `get#$NAME` is really `get#foo` if `$NAME = foo`.
