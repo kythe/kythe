@@ -19,6 +19,9 @@
 
 #include <string>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
 #include "assertion_ast.h"
 #include "gflags/gflags.h"
@@ -29,27 +32,31 @@
 #include "kythe/proto/storage.pb.h"
 #include "verifier.h"
 
-DEFINE_bool(show_protos, false, "Show protocol buffers read from standard in");
-DEFINE_bool(show_goals, false, "Show goals after parsing");
-DEFINE_bool(ignore_dups, false, "Ignore duplicate facts during verification");
-DEFINE_bool(graphviz, false, "Only dump facts as a GraphViz-compatible graph");
-DEFINE_bool(annotated_graphviz, false, "Solve and annotate a GraphViz graph.");
-DEFINE_string(goal_prefix, "//-", "Denote goals with this string.");
-DEFINE_bool(use_file_nodes, false, "Look for assertions in UTF8 file nodes.");
-DEFINE_bool(check_for_singletons, true, "Fail on singleton variables.");
-DEFINE_string(
-    goal_regex, "",
-    "If nonempty, denote goals with this regex. "
-    "The regex must match the entire line. Expects one capture group.");
-DEFINE_bool(convert_marked_source, false,
-            "Convert MarkedSource-valued facts to subgraphs.");
-DEFINE_bool(show_anchors, false, "Show anchor locations instead of @s");
-DEFINE_bool(file_vnames, true, "Find file vnames by matching file content.");
+ABSL_FLAG(bool, show_protos, false,
+          "Show protocol buffers read from standard in");
+ABSL_FLAG(bool, show_goals, false, "Show goals after parsing");
+ABSL_FLAG(bool, ignore_dups, false,
+          "Ignore duplicate facts during verification");
+ABSL_FLAG(bool, graphviz, false,
+          "Only dump facts as a GraphViz-compatible graph");
+ABSL_FLAG(bool, annotated_graphviz, false,
+          "Solve and annotate a GraphViz graph.");
+ABSL_FLAG(std::string, goal_prefix, "//-", "Denote goals with this string.");
+ABSL_FLAG(bool, use_file_nodes, false,
+          "Look for assertions in UTF8 file nodes.");
+ABSL_FLAG(bool, check_for_singletons, true, "Fail on singleton variables.");
+ABSL_FLAG(std::string, goal_regex, "",
+          "If nonempty, denote goals with this regex. "
+          "The regex must match the entire line. Expects one capture group.");
+ABSL_FLAG(bool, convert_marked_source, false,
+          "Convert MarkedSource-valued facts to subgraphs.");
+ABSL_FLAG(bool, show_anchors, false, "Show anchor locations instead of @s");
+ABSL_FLAG(bool, file_vnames, true,
+          "Find file vnames by matching file content.");
 
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  ::gflags::SetVersionString("0.1");
-  ::gflags::SetUsageMessage(R"(Verification tool for Kythe databases.
+  absl::SetProgramUsageMessage(R"(Verification tool for Kythe databases.
 Reads Kythe facts from standard input and checks them against one or more rule
 files. See https://kythe.io/docs/kythe-verifier.html for more details on
 invocation and rule syntax.
@@ -59,41 +66,41 @@ Example:
   cat foo.entries | ${VERIFIER_BIN} goals1.cc goals2.cc
   cat foo.entries | ${VERIFIER_BIN} --use_file_nodes
 )");
-  ::gflags::ParseCommandLineFlags(&argc, &argv, true);
-  ::google::InitGoogleLogging(argv[0]);
+  std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
+  google::InitGoogleLogging(argv[0]);
 
   kythe::verifier::Verifier v;
-  if (FLAGS_goal_regex.empty()) {
-    v.SetGoalCommentPrefix(FLAGS_goal_prefix);
+  if (absl::GetFlag(FLAGS_goal_regex).empty()) {
+    v.SetGoalCommentPrefix(absl::GetFlag(FLAGS_goal_prefix));
   } else {
     std::string error;
-    if (!v.SetGoalCommentRegex(FLAGS_goal_regex, &error)) {
+    if (!v.SetGoalCommentRegex(absl::GetFlag(FLAGS_goal_regex), &error)) {
       absl::FPrintF(stderr, "While parsing goal regex: %s\n", error);
       return 1;
     }
   }
 
-  if (FLAGS_ignore_dups) {
+  if (absl::GetFlag(FLAGS_ignore_dups)) {
     v.IgnoreDuplicateFacts();
   }
 
-  if (FLAGS_annotated_graphviz) {
+  if (absl::GetFlag(FLAGS_annotated_graphviz)) {
     v.SaveEVarAssignments();
   }
 
-  if (FLAGS_use_file_nodes) {
+  if (absl::GetFlag(FLAGS_use_file_nodes)) {
     v.UseFileNodes();
   }
 
-  if (FLAGS_convert_marked_source) {
+  if (absl::GetFlag(FLAGS_convert_marked_source)) {
     v.ConvertMarkedSource();
   }
 
-  if (FLAGS_show_anchors) {
+  if (absl::GetFlag(FLAGS_show_anchors)) {
     v.ShowAnchors();
   }
 
-  if (!FLAGS_file_vnames) {
+  if (!absl::GetFlag(FLAGS_file_vnames)) {
     v.IgnoreFileVnames();
   }
 
@@ -113,7 +120,7 @@ Example:
       absl::FPrintF(stderr, "Error reading around fact %zu\n", facts);
       return 1;
     }
-    if (FLAGS_show_protos) {
+    if (absl::GetFlag(FLAGS_show_protos)) {
       entry.PrintDebugString();
       putchar('\n');
     }
@@ -128,9 +135,9 @@ Example:
     return 1;
   }
 
-  if (!FLAGS_graphviz) {
-    std::vector<std::string> rule_files(argv + 1, argv + argc);
-    if (rule_files.empty() && !FLAGS_use_file_nodes) {
+  if (!absl::GetFlag(FLAGS_graphviz)) {
+    std::vector<std::string> rule_files(remain.begin() + 1, remain.end());
+    if (rule_files.empty() && !absl::GetFlag(FLAGS_use_file_nodes)) {
       absl::FPrintF(stderr, "No rule files specified\n");
       return 1;
     }
@@ -146,11 +153,11 @@ Example:
     }
   }
 
-  if (FLAGS_check_for_singletons && v.CheckForSingletonEVars()) {
+  if (absl::GetFlag(FLAGS_check_for_singletons) && v.CheckForSingletonEVars()) {
     return 1;
   }
 
-  if (FLAGS_show_goals) {
+  if (absl::GetFlag(FLAGS_show_goals)) {
     v.ShowGoals();
   }
 
@@ -163,7 +170,8 @@ Example:
     result = 1;
   }
 
-  if (FLAGS_graphviz || FLAGS_annotated_graphviz) {
+  if (absl::GetFlag(FLAGS_graphviz) ||
+      absl::GetFlag(FLAGS_annotated_graphviz)) {
     v.DumpAsDot();
   }
 

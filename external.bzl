@@ -58,9 +58,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_absl",
-        sha256 = "3601822b4d3c7cc62d891a2d0993b902ad1858e4faf41d895678d3a7749ec503",
-        strip_prefix = "abseil-cpp-ca3f87560a0eef716195cadf66dc6b938a579ec6",
-        url = "https://github.com/abseil/abseil-cpp/archive/ca3f87560a0eef716195cadf66dc6b938a579ec6.zip",
+        sha256 = "b1ce60f1f200d5f63759ef149abcc0e5957c7df52e4b4ebe3cd28d01b964734f",
+        strip_prefix = "abseil-cpp-c964fcffac27bd4a9ff67fe393410dd1146ef8b8",
+        url = "https://github.com/abseil/abseil-cpp/archive/c964fcffac27bd4a9ff67fe393410dd1146ef8b8.zip",
     )
 
     maybe(
@@ -71,6 +71,7 @@ def _cc_dependencies():
         url = "https://github.com/google/googletest/archive/d175c8bf823e709d570772b038757fadf63bc632.zip",
     )
 
+    # Needed by google/glog.
     maybe(
         http_archive,
         name = "com_github_gflags_gflags",

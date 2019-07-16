@@ -17,6 +17,7 @@
 #include "KytheGraphObserver.h"
 
 #include "IndexerASTHooks.h"
+#include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -47,8 +48,8 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/SHA1.h"
 
-DEFINE_bool(fail_on_unimplemented_builtin, false,
-            "Fail indexer if we encounter a builtin we do not handle");
+ABSL_FLAG(bool, fail_on_unimplemented_builtin, false,
+          "Fail indexer if we encounter a builtin we do not handle");
 
 namespace kythe {
 namespace {
@@ -1046,7 +1047,7 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
     const llvm::StringRef& spelling) const {
   const auto& info = builtins_.find(spelling.str());
   if (info == builtins_.end()) {
-    if (FLAGS_fail_on_unimplemented_builtin) {
+    if (absl::GetFlag(FLAGS_fail_on_unimplemented_builtin)) {
       LOG(FATAL) << "Missing builtin " << spelling.str();
     }
     LOG(ERROR) << "Missing builtin " << spelling.str();

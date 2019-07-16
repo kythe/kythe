@@ -20,11 +20,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <cstdint>
 #include <string>
 
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
@@ -36,23 +37,23 @@
 #include "kythe/proto/claim.pb.h"
 #include "llvm/ADT/STLExtras.h"
 
-DEFINE_string(o, "-", "Output filename");
-DEFINE_string(i, "-", "Input filename");
-DEFINE_bool(ignore_unimplemented, true,
+ABSL_FLAG(std::string, o, "-", "Output filename");
+ABSL_FLAG(std::string, i, "-", "Input filename");
+ABSL_FLAG(bool, ignore_unimplemented, true,
             "Continue indexing even if we find something we don't support.");
-DEFINE_bool(flush_after_each_entry, true,
+ABSL_FLAG(bool, flush_after_each_entry, true,
             "Flush output after writing each entry.");
-DEFINE_string(static_claim, "", "Use a static claim table.");
-DEFINE_bool(claim_unknown, true, "Process files with unknown claim status.");
-DEFINE_string(cache, "", "Use a memcache instance (ex: \"--SERVER=foo:1234\")");
-DEFINE_int32(min_size, 4096, "Minimum size of an entry bundle");
-DEFINE_int32(max_size, 1024 * 32, "Maximum size of an entry bundle");
-DEFINE_bool(cache_stats, false, "Show cache stats");
-DEFINE_string(icorpus, "", "Corpus to use for files specified with -i");
-DEFINE_string(ibuild_config, "",
+ABSL_FLAG(std::string, static_claim, "", "Use a static claim table.");
+ABSL_FLAG(bool, claim_unknown, true, "Process files with unknown claim status.");
+ABSL_FLAG(std::string, cache, "", "Use a memcache instance (ex: \"--SERVER=foo:1234\")");
+ABSL_FLAG(int32_t, min_size, 4096, "Minimum size of an entry bundle");
+ABSL_FLAG(int32_t, max_size, 1024 * 32, "Maximum size of an entry bundle");
+ABSL_FLAG(bool, cache_stats, false, "Show cache stats");
+ABSL_FLAG(std::string, icorpus, "", "Corpus to use for files specified with -i");
+ABSL_FLAG(std::string, ibuild_config, "",
               "Build config to use for files specified with -i");
-DEFINE_bool(normalize_file_vnames, false, "Normalize incoming file vnames.");
-DEFINE_string(experimental_dynamic_claim_cache, "",
+ABSL_FLAG(bool, normalize_file_vnames, false, "Normalize incoming file vnames.");
+ABSL_FLAG(std::string, experimental_dynamic_claim_cache, "",
               "Use a memcache instance for dynamic claims (EXPERIMENTAL)");
 // Setting this to a value > 1 allows the same object (e.g., a transcript of
 // an include file) to be claimed multiple times. In the absence of transcript
@@ -60,9 +61,9 @@ DEFINE_string(experimental_dynamic_claim_cache, "",
 // considered when indexing a vname. This may result in (among other effects)
 // conditionally included code never being indexed if the symbols checked differ
 // between translation units.
-DEFINE_uint64(experimental_dynamic_overclaim, 1,
+ABSL_FLAG(uint64_t, experimental_dynamic_overclaim, 1,
               "Maximum number of dynamic claims per claimable (EXPERIMENTAL)");
-DEFINE_bool(test_claim, false, "Use an in-memory claim database for testing.");
+ABSL_FLAG(bool, test_claim, false, "Use an in-memory claim database for testing.");
 
 namespace kythe {
 
@@ -77,7 +78,7 @@ constexpr char kBuildDetailsURI[] = "kythe.io/proto/kythe.proto.BuildDetails";
 /// \return the input name stripped of its prefix if it's silent; an empty
 /// string otherwise.
 llvm::StringRef strip_silent_input_prefix(llvm::StringRef argument) {
-  if (FLAGS_test_claim && argument.startswith(kSilentPrefix)) {
+  if (absl::GetFlag(FLAGS_test_claim) && argument.startswith(kSilentPrefix)) {
     return argument.drop_front(::strlen(kSilentPrefix));
   }
   return {};
@@ -113,7 +114,7 @@ void DecodeStaticClaimTable(const std::string& path,
 /// \brief Normalize input file vnames by cleaning paths and clearing
 /// signatures.
 void MaybeNormalizeFileVNames(IndexerJob* job) {
-  if (!FLAGS_normalize_file_vnames) {
+  if (!absl::GetFlag(FLAGS_normalize_file_vnames)) {
     return;
   }
   for (auto& input : *job->unit.mutable_required_input()) {
@@ -223,7 +224,7 @@ bool IndexerContext::HasIndexArguments() {
   for (const auto& arg : args_) {
     auto path = llvm::StringRef(arg);
     if (path.endswith(".kindex") || path.endswith(".kzip")) {
-      CHECK_EQ("-", FLAGS_i)
+      CHECK_EQ("-", absl::GetFlag(FLAGS_i))
           << "No other input is allowed when reading from an index file or an "
           << "index pack.";
       return true;
@@ -259,13 +260,13 @@ void IndexerContext::LoadDataFromUnpackedFile(
   llvm::SmallString<1024> cwd;
   CHECK(!llvm::sys::fs::current_path(cwd));
   job.unit.set_working_directory(cwd.str());
-  if (FLAGS_i != "-") {
-    read_fd = open(FLAGS_i.c_str(), O_RDONLY);
+  if (absl::GetFlag(FLAGS_i) != "-") {
+    source_file_name = absl::GetFlag(FLAGS_i);
+    read_fd = open(source_file_name.c_str(), O_RDONLY);
     if (read_fd == -1) {
       perror("Can't open input file");
       exit(1);
     }
-    source_file_name = FLAGS_i;
   }
   args_.push_back(source_file_name);
   char buf[1024];
@@ -289,10 +290,10 @@ void IndexerContext::LoadDataFromUnpackedFile(
   for (const auto& arg : args_) {
     job.unit.add_argument(arg);
   }
-  job.unit.mutable_v_name()->set_corpus(FLAGS_icorpus);
-  if (!FLAGS_ibuild_config.empty()) {
+  job.unit.mutable_v_name()->set_corpus(absl::GetFlag(FLAGS_icorpus));
+  if (!absl::GetFlag(FLAGS_ibuild_config).empty()) {
     proto::BuildDetails details;
-    details.set_build_config(FLAGS_ibuild_config);
+    details.set_build_config(absl::GetFlag(FLAGS_ibuild_config));
     auto* any = job.unit.add_details();
     any->PackFrom(details);
     any->set_type_url(kBuildDetailsURI);
@@ -302,29 +303,29 @@ void IndexerContext::LoadDataFromUnpackedFile(
 }
 
 void IndexerContext::InitializeClaimClient() {
-  if (!FLAGS_experimental_dynamic_claim_cache.empty()) {
+  if (!absl::GetFlag(FLAGS_experimental_dynamic_claim_cache).empty()) {
     auto dynamic_claims = absl::make_unique<kythe::DynamicClaimClient>();
     dynamic_claims->set_max_redundant_claims(
-        FLAGS_experimental_dynamic_overclaim);
-    if (!dynamic_claims->OpenMemcache(FLAGS_experimental_dynamic_claim_cache)) {
+        absl::GetFlag(FLAGS_experimental_dynamic_overclaim));
+    if (!dynamic_claims->OpenMemcache(absl::GetFlag(FLAGS_experimental_dynamic_claim_cache))) {
       absl::FPrintF(stderr, "Can't open memcached\n");
       exit(1);
     }
     claim_client_ = std::move(dynamic_claims);
   } else {
     auto static_claims = absl::make_unique<kythe::StaticClaimClient>();
-    if (!FLAGS_static_claim.empty()) {
-      DecodeStaticClaimTable(FLAGS_static_claim, static_claims.get());
+    if (!absl::GetFlag(FLAGS_static_claim).empty()) {
+      DecodeStaticClaimTable(absl::GetFlag(FLAGS_static_claim), static_claims.get());
     }
-    static_claims->set_process_unknown_status(FLAGS_claim_unknown);
+    static_claims->set_process_unknown_status(absl::GetFlag(FLAGS_claim_unknown));
     claim_client_ = std::move(static_claims);
   }
 }
 
 void IndexerContext::OpenOutputStreams() {
   write_fd_ = STDOUT_FILENO;
-  if (FLAGS_o != "-") {
-    write_fd_ = ::open(FLAGS_o.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
+  if (absl::GetFlag(FLAGS_o) != "-") {
+    write_fd_ = ::open(absl::GetFlag(FLAGS_o).c_str(), O_WRONLY | O_CREAT | O_TRUNC,
                        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (write_fd_ == -1) {
       ::perror("Can't open output file");
@@ -334,8 +335,8 @@ void IndexerContext::OpenOutputStreams() {
   raw_output_ =
       absl::make_unique<google::protobuf::io::FileOutputStream>(write_fd_);
   kythe_output_ = absl::make_unique<kythe::FileOutputStream>(raw_output_.get());
-  kythe_output_->set_show_stats(FLAGS_cache_stats);
-  kythe_output_->set_flush_after_each_entry(FLAGS_flush_after_each_entry);
+  kythe_output_->set_show_stats(absl::GetFlag(FLAGS_cache_stats));
+  kythe_output_->set_flush_after_each_entry(absl::GetFlag(FLAGS_flush_after_each_entry));
 }
 
 void IndexerContext::CloseOutputStreams() {
@@ -350,10 +351,10 @@ void IndexerContext::CloseOutputStreams() {
 }
 
 void IndexerContext::OpenHashCache() {
-  if (!FLAGS_cache.empty()) {
+  if (!absl::GetFlag(FLAGS_cache).empty()) {
     auto memcache_hash_cache = llvm::make_unique<MemcachedHashCache>();
-    CHECK(memcache_hash_cache->OpenMemcache(FLAGS_cache));
-    memcache_hash_cache->SetSizeLimits(FLAGS_min_size, FLAGS_max_size);
+    CHECK(memcache_hash_cache->OpenMemcache(absl::GetFlag(FLAGS_cache)));
+    memcache_hash_cache->SetSizeLimits(absl::GetFlag(FLAGS_min_size), absl::GetFlag(FLAGS_max_size));
     hash_cache_ = std::move(memcache_hash_cache);
   }
 }
@@ -362,7 +363,7 @@ IndexerContext::IndexerContext(const std::vector<std::string>& args,
                                const std::string& default_filename)
     : args_(args),
       default_filename_(default_filename),
-      ignore_unimplemented_(FLAGS_ignore_unimplemented) {
+      ignore_unimplemented_(absl::GetFlag(FLAGS_ignore_unimplemented)) {
   args_.erase(std::remove(args_.begin(), args_.end(), std::string()),
               args_.end());
   unpacked_inputs_ = !HasIndexArguments();

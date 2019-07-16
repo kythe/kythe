@@ -25,6 +25,8 @@
 
 #include <string>
 
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -46,7 +48,8 @@ IndexWriter OpenKzipWriterOrDie(absl::string_view path) {
 
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
-  gflags::SetUsageMessage(R"(Standalone extractor for the Kythe Proto indexer.
+  absl::SetProgramUsageMessage(
+      R"(Standalone extractor for the Kythe Proto indexer.
 Creates a Kzip containing the main proto file(s) and any dependencies.
 
 Examples:
@@ -54,8 +57,8 @@ Examples:
   proto_extractor foo.proto
   proto_extractor foo.proto bar.proto
   proto_extractor foo.proto -- --proto_path dir/with/my/deps")");
-  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
-  std::vector<std::string> final_args(argv + 1, argv + argc);
+  std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
+  std::vector<std::string> final_args(remain.begin() + 1, remain.end());
 
   ProtoExtractor extractor;
   extractor.ConfigureFromEnv();

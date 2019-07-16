@@ -72,7 +72,6 @@
 
 #include "absl/strings/str_format.h"
 #include "cxx_extractor.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
@@ -200,7 +199,6 @@ static bool LoadExtraAction(const XAState& xa_state,
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.2");
   if (argc != 4 && argc != 6) {
     absl::FPrintF(
         stderr,
