@@ -83,6 +83,9 @@ export enum EdgeKind {
   TAGGED = '/kythe/edge/tagged',
   TYPED = '/kythe/edge/typed',
   UNDEFINES = '/kythe/edge/undefines',
+  // TypeScript indexer-specific edge kinds
+  PROPERTY_READS = '/kythe/edge/property/reads',
+  PROPERTY_WRITES = '/kythe/edge/property/writes',
 }
 
 /**
@@ -156,6 +159,8 @@ export enum FactName {
   TEXT = '/kythe/text',
   TEXT_ENCODING = '/kythe/text/encoding',
   VISIBILITY = '/kythe/visibility',
+  // TypeScript indexer-specific fact names
+  TAG_STATIC = '/kythe/tag/static',
 }
 
 /**
