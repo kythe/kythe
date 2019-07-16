@@ -43,6 +43,10 @@
 # Also assumes you have extractors installed as per
 # kythe/extractors/bazel/extractors.bazelrc.
 
+# Print our commands for easier debugging and exit after our first failed
+# command so we avoid silent failures.
+set -ex
+
 : ${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
 
 if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
