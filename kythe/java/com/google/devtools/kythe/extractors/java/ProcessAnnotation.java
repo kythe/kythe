@@ -16,6 +16,10 @@
 
 package com.google.devtools.kythe.extractors.java;
 
+import static com.google.auto.common.AnnotationMirrors.getAnnotationValue;
+import static com.google.auto.common.MoreElements.asType;
+
+import com.google.common.collect.ImmutableSet;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.shared.Metadata;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
@@ -23,11 +27,11 @@ import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
-import javax.annotation.Generated;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.tools.JavaFileObject;
@@ -44,6 +48,9 @@ import javax.tools.StandardLocation;
 public class ProcessAnnotation extends AbstractProcessor {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
+  private static final ImmutableSet<String> GENERATED_ANNOTATIONS =
+      ImmutableSet.of("javax.annotation.Generated", "javax.annotation.processing.Generated");
 
   UsageAsInputReportingFileManager fileManager;
 
@@ -81,15 +88,32 @@ public class ProcessAnnotation extends AbstractProcessor {
         logger.atSevere().withCause(ex).log("Error in annotation processing");
       }
     }
-    for (Element ae : roundEnv.getElementsAnnotatedWith(Generated.class)) {
-      Generated generated = ae.getAnnotation(Generated.class);
-      if (generated == null
-          || generated.comments() == null
-          || !generated.comments().startsWith(Metadata.ANNOTATION_COMMENT_PREFIX)) {
+
+    for (String annotationName : GENERATED_ANNOTATIONS) {
+      TypeElement generatedType = processingEnv.getElementUtils().getTypeElement(annotationName);
+      if (generatedType == null) {
+        // javax.annotation.processing.Generated isn't available until Java 9
         continue;
       }
-      String annotationFile =
-          generated.comments().substring(Metadata.ANNOTATION_COMMENT_PREFIX.length());
+      visitGeneratedElements(roundEnv, generatedType);
+    }
+
+    // We must return false so normal processors run after us.
+    return false;
+  }
+
+  @Override
+  public SourceVersion getSupportedSourceVersion() {
+    return SourceVersion.latest();
+  }
+
+  private void visitGeneratedElements(RoundEnvironment roundEnv, TypeElement generatedElement) {
+    for (Element ae : roundEnv.getElementsAnnotatedWith(generatedElement)) {
+      String comments = getGeneratedComments(ae, generatedElement);
+      if (comments == null || !comments.startsWith(Metadata.ANNOTATION_COMMENT_PREFIX)) {
+        continue;
+      }
+      String annotationFile = comments.substring(Metadata.ANNOTATION_COMMENT_PREFIX.length());
       if (ae instanceof ClassSymbol) {
         ClassSymbol cs = (ClassSymbol) ae;
         try {
@@ -103,12 +127,28 @@ public class ProcessAnnotation extends AbstractProcessor {
         }
       }
     }
-    // We must return false so normal processors run after us.
-    return false;
   }
 
-  @Override
-  public SourceVersion getSupportedSourceVersion() {
-    return SourceVersion.latest();
+  private static String getGeneratedComments(
+      Element annotatedElement, TypeElement generatedElement) {
+    AnnotationMirror mirror = getAnnotationMirror(annotatedElement, generatedElement);
+    if (mirror == null) {
+      return null;
+    }
+    Object value = getAnnotationValue(mirror, "comments").getValue();
+    if (value instanceof String) {
+      return (String) value;
+    }
+    return null;
+  }
+
+  private static AnnotationMirror getAnnotationMirror(Element element, TypeElement annotationType) {
+    for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {
+      TypeElement annotationTypeElement = asType(annotationMirror.getAnnotationType().asElement());
+      if (annotationTypeElement.equals(annotationType)) {
+        return annotationMirror;
+      }
+    }
+    return null;
   }
 }
