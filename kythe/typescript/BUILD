@@ -11,6 +11,12 @@ ts_config(
 )
 
 ts_library(
+    name="kythe",
+    tsconfig = ":tsconfig",
+    srcs=["kythe.ts"],
+)
+
+ts_library(
     name = "indexer",
     srcs = [
         "indexer.ts",
@@ -18,6 +24,7 @@ ts_library(
     ],
     tsconfig = ":tsconfig",
     deps = [
+        ":kythe",
         "@npm//@types/node",
         "@npm//typescript",
     ],
@@ -29,6 +36,7 @@ ts_library(
     tsconfig = ":tsconfig",
     deps = [
         ":indexer",
+        ":kythe",
         "@npm//@types/node",
         "@npm//source-map-support",
         "@npm//typescript",
