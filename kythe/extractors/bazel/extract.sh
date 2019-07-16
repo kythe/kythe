@@ -58,7 +58,12 @@ if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
   apt-get clean
 fi
 
+# It is ok if targets fail to build. We build using --keep_going and don't
+# care if some targets fail, but bazel will return a failure code if any
+# targets fail.
+set +e
 /kythe/bazelisk --bazelrc=/kythe/bazelrc "$@"
+set -e
 
 # Collect any extracted compilations.
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
