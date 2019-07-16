@@ -391,6 +391,12 @@ class Visitor {
           // Arrow functions are anonymous, so generate a unique id.
           parts.push(`arrow${this.anonId++}`);
           break;
+        case ts.SyntaxKind.FunctionExpression:
+          // Function expressions look like
+          //   (function() {})
+          // which have no name but introduce an anonymous scope.
+          parts.push(`func${this.anonId++}`);
+          break;
         case ts.SyntaxKind.Block:
           // Blocks need their own scopes for contained variable declarations.
           if (node.parent &&
