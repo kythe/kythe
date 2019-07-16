@@ -23,6 +23,7 @@ java_library(
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "//third_party/javac",
+        "@com_google_auto_auto_common//jar",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",

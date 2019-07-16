@@ -30,7 +30,9 @@ function test(a: number, num: Num): Num {
 }
 
 //- @test ref F
-test(3, {num: 3});
+test(
+    3,
+    {num: 3});
 
 // Test computed function names by creating a constant string and checking that
 // a name computed from it is properly referenced to its computed definition.
@@ -84,3 +86,14 @@ function bindingTest({aa, bb: {cc, dd}}, [ee, [ff]]: NestedArray) {
   //- @ff ref FF
   dd = ff;
 }
+
+// Test function expressions introducing an anonymous scope
+//- @ev defines/binding Ev
+//- @an defines/binding An
+let ev, an;
+(function() {
+//- !{ @ev defines/binding _Ev2=Ev }
+let ev;
+//- @an ref An
+an;
+})()
