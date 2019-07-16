@@ -139,9 +139,7 @@ class Klass {
 
 #### Property Declaration
 
-**Form**:
-
--   `$CLASS[#type]?.$PROPERTY`
+**Form**: `$CLASS[#type]?.$PROPERTY`
 
 **Notes**: Instance members on a class have a signature of form
 `$CLASS#type.$PROPERTY`, as they belong to instances of the class type. Static
@@ -208,10 +206,13 @@ class KlassNoGetter {
 
 #### Export Assignment
 
-**Form**: `default`
+**Form**:
+
+- default export: `default`
+- equals export: `export=`
 
 **Notes**: `export default` is semantically equivalent to exporting a variable
-named `default`. `export =` is currently not supported.
+named `default`. `export =` exports a variable named `export=`.
 
 **SyntaxKind**:
 
@@ -220,6 +221,8 @@ named `default`. `export =` is currently not supported.
 ```typescript
 //- @default defines/binding VName("default", _, _, _, _)
 export default myExport;
+//- @"export =" defines/binding VName("export=", _, _, _, _)
+export = { myExport };
 ```
 
 #### Anonymous Block
