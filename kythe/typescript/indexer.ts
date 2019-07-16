@@ -19,18 +19,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
+import {EdgeKind, FactName, JSONEdge, JSONFact, makeOrdinalEdge, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
 
 const LANGUAGE = 'typescript';
-
-/** VName is the type of Kythe node identities. */
-export interface VName {
-  signature: string;
-  corpus: string;
-  root: string;
-  path: string;
-  language: string;
-}
 
 /**
  * An indexer host holds information about the program indexing and methods
@@ -57,6 +49,9 @@ export interface IndexerHost {
   program: ts.Program;
   /**
    * Strategy to emit Kythe entries by.
+   *
+   * TODO(ayazhafiz): change type to `JSONFact|JSONEdge` after downstream
+   * clients are updated to use Kythe types.
    */
   emit(obj: {}): void;
 }
@@ -216,7 +211,7 @@ class StandardIndexerContext implements IndexerHost {
    * emit emits a Kythe entry, structured as a JSON object.  Defaults to
    * emitting to stdout but users may replace it.
    */
-  emit = (obj: {}) => {
+  emit = (obj: JSONFact|JSONEdge) => {
     console.log(JSON.stringify(obj));
   };
 }
@@ -308,30 +303,36 @@ class Visitor {
         {...this.kFile}, {signature: `@${start}:${end}`, language: LANGUAGE});
     this.emitNode(name, 'anchor');
     const offsetTable = this.getOffsetTable(node.getSourceFile().fileName);
-    this.emitFact(name, 'loc/start', offsetTable.lookup(start).toString());
-    this.emitFact(name, 'loc/end', offsetTable.lookup(end).toString());
+    this.emitFact(
+        name, FactName.LOC_START, offsetTable.lookup(start).toString());
+    this.emitFact(name, FactName.LOC_END, offsetTable.lookup(end).toString());
     return name;
   }
 
   /** emitNode emits a new node entry, declaring the kind of a VName. */
   emitNode(source: VName, kind: string) {
-    this.emitFact(source, 'node/kind', kind);
+    this.emitFact(source, FactName.NODE_KIND, kind);
+  }
+
+  /** emitSubkind emits a new fact entry, declaring the subkind of a VName. */
+  emitSubkind(source: VName, subkind: Subkind) {
+    this.emitFact(source, FactName.SUBKIND, subkind);
   }
 
   /** emitFact emits a new fact entry, tying an attribute to a VName. */
-  emitFact(source: VName, name: string, value: string) {
+  emitFact(source: VName, name: FactName, value: string) {
     this.host.emit({
       source,
-      fact_name: '/kythe/' + name,
+      fact_name: name,
       fact_value: Buffer.from(value).toString('base64'),
     });
   }
 
   /** emitEdge emits a new edge entry, relating two VNames. */
-  emitEdge(source: VName, name: string, target: VName) {
+  emitEdge(source: VName, kind: EdgeKind|OrdinalEdge, target: VName) {
     this.host.emit({
       source,
-      edge_kind: '/kythe/edge/' + name,
+      edge_kind: kind,
       target,
       fact_name: '/',
     });
@@ -620,11 +621,12 @@ class Visitor {
       }
       const kType = this.getSymbolName(sym, TSNamespace.TYPE);
       this.emitNode(kType, 'absvar');
-      this.emitEdge(this.newAnchor(param.name), 'defines/binding', kType);
+      this.emitEdge(
+          this.newAnchor(param.name), EdgeKind.DEFINES_BINDING, kType);
       // ...<T extends A>
       if (param.constraint) {
         const superType = this.visitType(param.constraint);
-        if (superType) this.emitEdge(kType, 'bounded/upper', superType);
+        if (superType) this.emitEdge(kType, EdgeKind.BOUNDED_UPPER, superType);
       }
       // ...<T = A>
       if (param.default) this.visitType(param.default);
@@ -668,7 +670,7 @@ class Visitor {
     }
     const kType = this.getSymbolName(sym, TSNamespace.TYPE);
     this.emitNode(kType, 'interface');
-    this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
+    this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kType);
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     if (decl.heritageClauses) this.visitHeritage(decl.heritageClauses);
@@ -685,13 +687,13 @@ class Visitor {
     }
     const kType = this.getSymbolName(sym, TSNamespace.TYPE);
     this.emitNode(kType, 'talias');
-    this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
+    this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kType);
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     const kAlias = this.visitType(decl.type);
     // Emit an "aliases" edge if the aliased type has a singular VName.
     if (kAlias) {
-      this.emitEdge(kType, 'aliases', kAlias);
+      this.emitEdge(kType, EdgeKind.ALIASES, kAlias);
     }
   }
 
@@ -727,7 +729,7 @@ class Visitor {
           return;
         }
         const name = this.getSymbolName(sym, TSNamespace.TYPE);
-        this.emitEdge(this.newAnchor(node), 'ref', name);
+        this.emitEdge(this.newAnchor(node), EdgeKind.REF, name);
         return name;
       case ts.SyntaxKind.TypeReference:
         const typeRef = node as ts.TypeReferenceNode;
@@ -848,7 +850,7 @@ class Visitor {
     // because we must choose one, just prefer linking to the value.
     // One of the value or type reference should be non-null.
     const kImport = (kImportValue || kImportType)!;
-    this.emitEdge(this.newAnchor(name), 'ref/imports', kImport);
+    this.emitEdge(this.newAnchor(name), EdgeKind.REF_IMPORTS, kImport);
     return kImport;
   }
 
@@ -882,7 +884,7 @@ class Visitor {
     }
     const kModule = this.newVName(
         'module', this.getModulePathFromModuleReference(moduleSym));
-    this.emitEdge(this.newAnchor(moduleRef), 'ref/imports', kModule);
+    this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
 
     if (ts.isImportEqualsDeclaration(decl)) {
       // This is an equals import, e.g.:
@@ -923,7 +925,8 @@ class Visitor {
         }
         const kModuleObject = this.getSymbolName(sym, TSNamespace.VALUE);
         this.emitNode(kModuleObject, 'variable');
-        this.emitEdge(this.newAnchor(name), 'defines/binding', kModuleObject);
+        this.emitEdge(
+            this.newAnchor(name), EdgeKind.DEFINES_BINDING, kModuleObject);
         break;
       case ts.SyntaxKind.NamedImports:
         // This is named imports, e.g.:
@@ -933,7 +936,8 @@ class Visitor {
           const kImport = this.visitImport(imp.name);
           if (imp.propertyName) {
             this.emitEdge(
-                this.newAnchor(imp.propertyName), 'ref/imports', kImport);
+                this.newAnchor(imp.propertyName), EdgeKind.REF_IMPORTS,
+                kImport);
           }
         }
         break;
@@ -950,12 +954,12 @@ class Visitor {
   emitModuleAnchor(sf: ts.SourceFile) {
     const kMod =
         this.newVName('module', this.host.moduleName(this.file.fileName));
-    this.emitFact(kMod, 'node/kind', 'record');
-    this.emitEdge(this.kFile, 'childof', kMod);
+    this.emitFact(kMod, FactName.NODE_KIND, 'record');
+    this.emitEdge(this.kFile, EdgeKind.CHILD_OF, kMod);
 
     // Emit the anchor, bound to the beginning of the file.
     const anchor = this.newAnchor(this.file, 0, 1);
-    this.emitEdge(anchor, 'defines/binding', kMod);
+    this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kMod);
   }
 
   /**
@@ -972,8 +976,8 @@ class Visitor {
     const implicitProp = {...funcVName, signature: propSignature};
 
     this.emitNode(implicitProp, 'variable');
-    this.emitFact(implicitProp, 'subkind', 'implicit');
-    this.emitEdge(anchor, 'defines/binding', implicitProp);
+    this.emitSubkind(implicitProp, Subkind.IMPLICIT);
+    this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, implicitProp);
 
     const sym = this.getSymbolAtLocation(decl.name);
     if (!sym) throw new Error('Getter/setter declaration has no symbols.');
@@ -981,12 +985,12 @@ class Visitor {
     if (sym.declarations.find(ts.isGetAccessor)) {
       // Emit a "property/reads" edge between the getter and the property
       const getter = this.getSymbolName(sym, TSNamespace.VALUE, Context.Getter);
-      this.emitEdge(getter, 'property/reads', implicitProp);
+      this.emitEdge(getter, EdgeKind.PROPERTY_READS, implicitProp);
     }
     if (sym.declarations.find(ts.isSetAccessor)) {
       // Emit a "property/writes" edge between the setter and the property
       const setter = this.getSymbolName(sym, TSNamespace.VALUE, Context.Setter);
-      this.emitEdge(setter, 'property/writes', implicitProp);
+      this.emitEdge(setter, EdgeKind.PROPERTY_WRITES, implicitProp);
     }
   }
 
@@ -999,7 +1003,8 @@ class Visitor {
     if (assign.isExportEquals) {
       const span = this.getTextSpan(assign, 'export =');
       const anchor = this.newAnchor(assign, span.start, span.end);
-      this.emitEdge(anchor, 'defines/binding', this.scopedSignature(assign));
+      this.emitEdge(
+          anchor, EdgeKind.DEFINES_BINDING, this.scopedSignature(assign));
     } else {
       // export default <expr>;
       // is the same as exporting the expression under the symbol named
@@ -1009,7 +1014,8 @@ class Visitor {
       // keyword so we just find it in the source text to link it.
       const span = this.getTextSpan(assign, 'default');
       const anchor = this.newAnchor(assign, span.start, span.end);
-      this.emitEdge(anchor, 'defines/binding', this.scopedSignature(assign));
+      this.emitEdge(
+          anchor, EdgeKind.DEFINES_BINDING, this.scopedSignature(assign));
     }
   }
 
@@ -1032,10 +1038,11 @@ class Visitor {
         // TODO: import a type, not just a value.
         const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
         const kExport = this.getSymbolName(remoteSym, TSNamespace.VALUE);
-        this.emitEdge(this.newAnchor(exp.name), 'ref', kExport);
+        this.emitEdge(this.newAnchor(exp.name), EdgeKind.REF, kExport);
         if (exp.propertyName) {
           // Aliased export; propertyName is the 'as <...>' bit.
-          this.emitEdge(this.newAnchor(exp.propertyName), 'ref', kExport);
+          this.emitEdge(
+              this.newAnchor(exp.propertyName), EdgeKind.REF, kExport);
         }
       }
     }
@@ -1045,7 +1052,8 @@ class Visitor {
         const kModule = this.newVName(
             'module', this.getModulePathFromModuleReference(moduleSym));
         this.emitEdge(
-            this.newAnchor(decl.moduleSpecifier), 'ref/imports', kModule);
+            this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS,
+            kModule);
       }
     }
   }
@@ -1090,7 +1098,8 @@ class Visitor {
         vname = this.getSymbolName(sym, TSNamespace.VALUE);
         this.emitNode(vname, 'variable');
 
-        this.emitEdge(this.newAnchor(decl.name), 'defines/binding', vname);
+        this.emitEdge(
+            this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, vname);
 
         decl.name.forEachChild(child => this.visit(child));
         break;
@@ -1112,7 +1121,7 @@ class Visitor {
     if (vname && decl.kind === ts.SyntaxKind.PropertyDeclaration) {
       const declNode = decl as ts.PropertyDeclaration;
       if (this.isStaticMember(declNode, declNode.parent)) {
-        this.emitFact(vname, 'tag/static', '');
+        this.emitFact(vname, FactName.TAG_STATIC, '');
       }
     }
     return vname;
@@ -1143,7 +1152,7 @@ class Visitor {
 
       const declAnchor = this.newAnchor(decl.name);
       this.emitNode(kFunc, 'function');
-      this.emitEdge(declAnchor, 'defines/binding', kFunc);
+      this.emitEdge(declAnchor, EdgeKind.DEFINES_BINDING, kFunc);
 
       // Getters/setters also emit an implicit class property entry. If a
       // getter is present, it will bind this entry; otherwise a setter will.
@@ -1158,7 +1167,7 @@ class Visitor {
       // TODO: choose VName for anonymous functions.
       kFunc = this.newVName('TODO', 'TODOPath');
     }
-    this.emitEdge(this.newAnchor(decl), 'defines', kFunc);
+    this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, kFunc);
 
     if (decl.parent) {
       // Emit a "childof" edge on class/interface members.
@@ -1172,7 +1181,7 @@ class Visitor {
             return;
           }
           const kParent = this.getSymbolName(parentSym, TSNamespace.TYPE);
-          this.emitEdge(kFunc, 'childof', kParent);
+          this.emitEdge(kFunc, EdgeKind.CHILD_OF, kParent);
         }
 
         // Emit "overrides" edges if this method overrides extended classes or
@@ -1203,7 +1212,7 @@ class Visitor {
                   toArray(baseSym.members.values()).find(overridenCondition);
               if (overriden) {
                 this.emitEdge(
-                    kFunc, 'overrides',
+                    kFunc, EdgeKind.OVERRIDES,
                     this.getSymbolName(overriden, TSNamespace.VALUE));
               }
             }
@@ -1223,7 +1232,7 @@ class Visitor {
     if (decl.body) {
       this.visit(decl.body);
     } else {
-      this.emitFact(kFunc, 'complete', 'incomplete');
+      this.emitFact(kFunc, FactName.COMPLETE, 'incomplete');
     }
   }
 
@@ -1252,7 +1261,8 @@ class Visitor {
               const kParam = this.getSymbolName(sym, TSNamespace.VALUE);
               this.emitNode(kParam, 'variable');
 
-              this.emitEdge(kFunc, `param.${paramNum}`, kParam);
+              this.emitEdge(
+                  kFunc, makeOrdinalEdge(EdgeKind.PARAM, paramNum), kParam);
               ++paramNum;
 
               if (ts.isParameterPropertyDeclaration(param)) {
@@ -1264,15 +1274,15 @@ class Visitor {
                   if (parentSym !== undefined) {
                     const kClass =
                         this.getSymbolName(parentSym, TSNamespace.TYPE);
-                    this.emitEdge(kParam, 'childof', kClass);
+                    this.emitEdge(kParam, EdgeKind.CHILD_OF, kClass);
                   }
                 }
               } else {
-                this.emitEdge(kParam, 'childof', kFunc);
+                this.emitEdge(kParam, EdgeKind.CHILD_OF, kFunc);
               }
 
               this.emitEdge(
-                  this.newAnchor(param.name), 'defines/binding', kParam);
+                  this.newAnchor(param.name), EdgeKind.DEFINES_BINDING, kParam);
               break;
             case ts.SyntaxKind.ObjectBindingPattern:
             case ts.SyntaxKind.ArrayBindingPattern:
@@ -1320,26 +1330,26 @@ class Visitor {
     // module with declarations).
     const kNamespace = this.getSymbolName(sym, TSNamespace.NAMESPACE);
     this.emitNode(kNamespace, 'record');
-    this.emitFact(kNamespace, 'subkind', 'namespace');
+    this.emitSubkind(kNamespace, Subkind.NAMESPACE);
     const kValue = this.getSymbolName(sym, TSNamespace.VALUE);
     this.emitNode(kValue, 'package');
 
     const nameAnchor = this.newAnchor(decl.name);
-    this.emitEdge(nameAnchor, 'defines/binding', kNamespace);
-    this.emitEdge(nameAnchor, 'defines/binding', kValue);
+    this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kNamespace);
+    this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kValue);
 
     // The entire module declaration defines the created namespace.
     const defAnchor = this.newAnchor(decl);
-    this.emitEdge(defAnchor, 'defines', kValue);
+    this.emitEdge(defAnchor, EdgeKind.DEFINES, kValue);
 
     if (decl.decorators) this.visitDecorators(decl.decorators);
     if (decl.body) {
-      this.emitFact(kNamespace, 'complete', 'definition');
+      this.emitFact(kNamespace, FactName.COMPLETE, 'definition');
       this.visit(decl.body);
     } else {
       // Incomplete module definition, like
       //    declare module 'foo';
-      this.emitFact(kNamespace, 'complete', 'incomplete');
+      this.emitFact(kNamespace, FactName.COMPLETE, 'incomplete');
     }
   }
 
@@ -1360,8 +1370,8 @@ class Visitor {
       this.emitNode(kClassCtor, 'function');
 
       const anchor = this.newAnchor(decl.name);
-      this.emitEdge(anchor, 'defines/binding', kClass);
-      this.emitEdge(anchor, 'defines/binding', kClassCtor);
+      this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kClass);
+      this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kClassCtor);
 
       // If the class has a constructor, emit an entry for it.
       const ctorSymbol = this.getCtorSymbol(decl);
@@ -1373,8 +1383,8 @@ class Visitor {
         const ctorVName = this.getSymbolName(ctorSymbol, TSNamespace.VALUE);
 
         this.emitNode(ctorVName, 'function');
-        this.emitFact(ctorVName, 'subkind', 'constructor');
-        this.emitEdge(classCtorAnchor, 'defines/binding', ctorVName);
+        this.emitSubkind(ctorVName, Subkind.CONSTRUCTOR);
+        this.emitEdge(classCtorAnchor, EdgeKind.DEFINES_BINDING, ctorVName);
       }
 
       this.visitJSDoc(decl, kClass);
@@ -1395,8 +1405,8 @@ class Visitor {
     this.emitNode(kValue, 'constant');
 
     const anchor = this.newAnchor(decl.name);
-    this.emitEdge(anchor, 'defines/binding', kType);
-    this.emitEdge(anchor, 'defines/binding', kValue);
+    this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kType);
+    this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, kValue);
     for (const member of decl.members) {
       this.visit(member);
     }
@@ -1407,7 +1417,7 @@ class Visitor {
     if (!sym) return;
     const kMember = this.getSymbolName(sym, TSNamespace.VALUE);
     this.emitNode(kMember, 'constant');
-    this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kMember);
+    this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kMember);
   }
 
   visitExpressionMember(node: ts.Node) {
@@ -1422,7 +1432,7 @@ class Visitor {
     }
     const name = this.getSymbolName(sym, TSNamespace.VALUE);
     const anchor = this.newAnchor(node);
-    this.emitEdge(anchor, 'ref', name);
+    this.emitEdge(anchor, EdgeKind.REF, name);
 
     // Emit a 'ref/call' edge to a class constructor if a new class instance
     // is instantiated.
@@ -1432,7 +1442,7 @@ class Visitor {
         const ctorSymbol = this.getCtorSymbol(classDecl);
         if (ctorSymbol) {
           const ctorVName = this.getSymbolName(ctorSymbol, TSNamespace.VALUE);
-          this.emitEdge(anchor, 'ref/call', ctorVName);
+          this.emitEdge(anchor, EdgeKind.REF_CALL, ctorVName);
         }
       }
     }
@@ -1466,8 +1476,8 @@ class Visitor {
     jsdoc = jsdoc.replace(/^\s+/, '').replace(/\s+$/, '');
     const doc = this.newVName(target.signature + '#doc', target.path);
     this.emitNode(doc, 'doc');
-    this.emitEdge(doc, 'documents', target);
-    this.emitFact(doc, 'text', jsdoc);
+    this.emitEdge(doc, EdgeKind.DOCUMENTS, target);
+    this.emitFact(doc, FactName.TEXT, jsdoc);
   }
 
   /** visit is the main dispatch for visiting AST nodes. */
@@ -1535,8 +1545,8 @@ class Visitor {
 
   /** index is the main entry point, starting the recursive visit. */
   index() {
-    this.emitFact(this.kFile, 'node/kind', 'file');
-    this.emitFact(this.kFile, 'text', this.file.text);
+    this.emitFact(this.kFile, FactName.NODE_KIND, 'file');
+    this.emitFact(this.kFile, FactName.TEXT, this.file.text);
 
     this.emitModuleAnchor(this.file);
 
