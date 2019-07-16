@@ -247,11 +247,11 @@ let af = () => {
 
 ### VName corpus
 
-Project-specific, defined by the compilation unit you pass to the indexer.
+Project-specific, defined by the compilation unit passed to the indexer.
 
 ### VName root
 
-Project-specific, defined by the compilation unit you pass to the indexer.
+Project-specific, defined by the compilation unit passed to the indexer.
 
 ### VName path
 
@@ -263,7 +263,7 @@ See the module name discussion in the [README](./README.md). In short,
 -   For TypeScript nodes
     -   the file path stripped of `.d.ts` or `.ts` extensions, relative to the
         project root. A TypeScript anchor in a file `a/b/c.ts` with project root
-        `a/` will have a node with path of `b/c`.
+        `a/` will define a node with path `b/c`.
 
 ### VName language
 
