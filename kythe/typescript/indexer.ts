@@ -329,10 +329,10 @@ class Visitor {
   }
 
   /** emitEdge emits a new edge entry, relating two VNames. */
-  emitEdge(source: VName, name: EdgeKind|OrdinalEdge, target: VName) {
+  emitEdge(source: VName, kind: EdgeKind|OrdinalEdge, target: VName) {
     this.host.emit({
       source,
-      edge_kind: name,
+      edge_kind: kind,
       target,
       fact_name: '/',
     });
@@ -979,14 +979,12 @@ class Visitor {
     if (sym.declarations.find(ts.isGetAccessor)) {
       // Emit a "property/reads" edge between the getter and the property
       const getter = this.getSymbolName(sym, TSNamespace.VALUE, Context.Getter);
-      this.emitEdge(
-          getter, '/kythe/edge/property/reads' as EdgeKind, implicitProp);
+      this.emitEdge(getter, EdgeKind.PROPERTY_READS, implicitProp);
     }
     if (sym.declarations.find(ts.isSetAccessor)) {
       // Emit a "property/writes" edge between the setter and the property
       const setter = this.getSymbolName(sym, TSNamespace.VALUE, Context.Setter);
-      this.emitEdge(
-          setter, '/kythe/edge/property/writes' as EdgeKind, implicitProp);
+      this.emitEdge(setter, EdgeKind.PROPERTY_WRITES, implicitProp);
     }
   }
 
@@ -1117,7 +1115,7 @@ class Visitor {
     if (vname && decl.kind === ts.SyntaxKind.PropertyDeclaration) {
       const declNode = decl as ts.PropertyDeclaration;
       if (this.isStaticMember(declNode, declNode.parent)) {
-        this.emitFact(vname, '/kythe/tag/static' as FactName, '');
+        this.emitFact(vname, FactName.TAG_STATIC, '');
       }
     }
     return vname;
