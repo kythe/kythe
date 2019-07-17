@@ -20,6 +20,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.common.flogger.FluentLogger;
@@ -106,6 +107,10 @@ import javax.tools.JavaFileObject;
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
+  /** Set of known class names used for annotating generated code. */
+  private static final ImmutableSet<String> GENERATED_ANNOTATIONS =
+      ImmutableSet.of("javax.annotation.Generated", "javax.annotation.processing.Generated");
 
   /** Maximum allowed text size for variable {@link MarkedSource.Kind.INITIALIZER}s */
   private static final int MAX_INITIALIZER_LENGTH = 80;
@@ -1339,7 +1344,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         annotationSymbol = ((JCIdent) annotation.getAnnotationType()).sym;
       }
       if (annotationSymbol == null
-          || !annotationSymbol.toString().equals("javax.annotation.Generated")) {
+          || !GENERATED_ANNOTATIONS.contains(annotationSymbol.toString())) {
         continue;
       }
       for (JCExpression arg : annotation.getArguments()) {
