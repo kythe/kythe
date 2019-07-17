@@ -8,6 +8,8 @@ filegroup(
             # Exclude meta-data tests
             "Metadata.java",
             "ProtobufMetadata.java",
+            "ProcessingMetadata.java",
+            "ProcessingProtobufMetadata.java",
         ],
     ),
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
@@ -249,6 +251,16 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "processing_metadata_tests",
+    srcs = [
+        "ProcessingMetadata.java",
+    ],
+    meta = [
+        "ProcessingMetadata.java.meta",
+    ],
+)
+
+java_verifier_test(
     name = "protobuf_metadata_tests",
     srcs = [
         "ProtobufMetadata.java",
@@ -262,6 +274,21 @@ java_verifier_test(
     ],
     vnames_config = "protobuf_vnames.json",
     deps = ["@javax_annotation_jsr250_api//jar"],
+)
+
+java_verifier_test(
+    name = "processing_protobuf_metadata_tests",
+    srcs = [
+        "ProcessingProtobufMetadata.java",
+    ],
+    indexer_opts = [
+        "--verbose",
+        "--default_metadata_corpus=default",
+    ],
+    meta = [
+        "ProcessingProtobufMetadata.java.pb.meta",
+    ],
+    vnames_config = "protobuf_vnames.json",
 )
 
 java_verifier_test(
