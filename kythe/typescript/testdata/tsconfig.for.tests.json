@@ -2,6 +2,7 @@
     "compilerOptions": {
         "module": "commonjs",
         "target": "es6",
+	"jsx": "preserve",
         // Disable searching for @types typings.  This prevents TS from looking
         // around for a node_modules directory.
         "types": [],

@@ -4,7 +4,7 @@
         "target": "es6",
         "strict": true,
         "lib": ["es6"],
-        "sourceMap": true
+        "sourceMap": true,
     },
     "include": [
         "*.ts"

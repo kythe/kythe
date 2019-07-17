@@ -448,6 +448,7 @@ class Visitor {
         case ts.SyntaxKind.GetAccessor:
         case ts.SyntaxKind.SetAccessor:
         case ts.SyntaxKind.ShorthandPropertyAssignment:
+        case ts.SyntaxKind.JsxAttribute:
           const decl = node as ts.NamedDeclaration;
           if (decl.name) {
             switch (decl.name.kind) {
@@ -529,6 +530,21 @@ class Visitor {
           if (!moduleName) {
             moduleName = this.host.moduleName((node as ts.SourceFile).fileName);
           }
+          break;
+        case ts.SyntaxKind.JsxElement:
+          // A JSX element refers to both the opening and closing tags of an
+          // element, like
+          //   <Elem></Elem>
+          // Add the opening tag to the scope name.
+          const elem = node as ts.JsxElement;
+          parts.push(elem.openingElement.tagName.getText());
+          break;
+        case ts.SyntaxKind.JsxSelfClosingElement:
+          // A self-closing element looks like
+          //   <Elem attr={attr} />
+          // Add the element tag to the scope name.
+          const scElem = node as ts.JsxSelfClosingElement;
+          parts.push(scElem.tagName.getText());
           break;
         default:
           // Most nodes are children of other nodes that do not introduce a
@@ -1539,6 +1555,9 @@ class Visitor {
         return;
       case ts.SyntaxKind.BindingElement:
         this.visitVariableDeclaration(node as ts.BindingElement);
+        return;
+      case ts.SyntaxKind.JsxAttribute:
+        this.visitVariableDeclaration(node as ts.JsxAttribute);
         return;
       case ts.SyntaxKind.Identifier:
       case ts.SyntaxKind.StringLiteral:
