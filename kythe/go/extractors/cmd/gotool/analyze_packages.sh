@@ -37,6 +37,10 @@ if [ ! -z "$KYTHE_GO_BUILD_TAGS" ]; then
   FLAGS+=( "--buildtags=$KYTHE_GO_BUILD_TAGS" )
 fi
 
+if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
+  eval "$KYTHE_PRE_BUILD_STEP"
+fi
+
 echo "Downloading ${PACKAGES[*]}" >&2
 go get -d "${PACKAGES[@]}" || true
 
