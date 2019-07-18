@@ -43,6 +43,10 @@
 # Also assumes you have extractors installed as per
 # kythe/extractors/bazel/extractors.bazelrc.
 
+# Print our commands for easier debugging and exit after our first failed
+# command so we avoid silent failures.
+set -ex
+
 : ${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
 
 if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
@@ -62,7 +66,10 @@ if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
   eval "$KYTHE_PRE_BUILD_STEP"
 fi
 
-/kythe/bazelisk --bazelrc=/kythe/bazelrc "$@"
+# It is ok if targets fail to build. We build using --keep_going and don't
+# care if some targets fail, but bazel will return a failure code if any
+# targets fail.
+/kythe/bazelisk --bazelrc=/kythe/bazelrc "$@" || true
 
 # Collect any extracted compilations.
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
