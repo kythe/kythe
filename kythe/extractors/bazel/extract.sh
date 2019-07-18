@@ -58,10 +58,6 @@ if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
   apt-get clean
 fi
 
-# Always use bazelisk for bazel so we have complete control over the bazel
-# version being used.
-ln -s /kythe/bazelisk /usr/local/bin/bazel
-
 if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
   eval "$KYTHE_PRE_BUILD_STEP"
 fi
