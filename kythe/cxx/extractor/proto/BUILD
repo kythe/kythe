@@ -10,6 +10,7 @@ cc_binary(
         "//kythe/proto:analysis_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
