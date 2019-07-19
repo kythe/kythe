@@ -71,12 +71,8 @@ public class JavacOptionsUtils {
 
   @FunctionalInterface
   private static interface OptionHandler {
-    /**
-     * Returns an iterable with the consumed and accepted options from {options, remaining}.
-     *
-     * <p>Null and an empty Iterator are equivalent.
-     */
-    Iterator<String> handleOption(String option, Iterator<String> remaining);
+    /** Returns an iterable with the consumed and accepted options from {options, remaining}. */
+    Iterable<String> handleOption(String option, Iterator<String> remaining);
   }
 
   /** Utility for converting between {@link OptionChecker} and {@link OptionHandler}. */
@@ -86,13 +82,15 @@ public class JavacOptionsUtils {
         int supported = checker.isSupportedOption(arg);
         if (supported >= 0) {
           if (supported > 0 && arg.indexOf(':') == -1 && arg.indexOf('=') == -1) {
-            return Iterators.concat(
-                Iterators.singletonIterator(arg), Iterators.limit(tail, supported));
+            return new ImmutableList.Builder<String>()
+                .add(arg)
+                .addAll(Iterators.limit(tail, supported))
+                .build();
           }
-          return Iterators.singletonIterator(arg);
+          return ImmutableList.of(arg);
         }
       }
-      return null;
+      return ImmutableList.of();
     };
   }
 
@@ -102,12 +100,15 @@ public class JavacOptionsUtils {
       for (Option opt : opts) {
         if (opt.matches(arg)) {
           if (opt.hasArg() && arg.indexOf(':') == -1 && arg.indexOf('=') == -1) {
-            return Iterators.concat(Iterators.singletonIterator(arg), Iterators.limit(tail, 1));
+            return new ImmutableList.Builder<String>()
+                .add(arg)
+                .addAll(Iterators.limit(tail, 1))
+                .build();
           }
-          return Iterators.singletonIterator(arg);
+          return ImmutableList.of(arg);
         }
       }
-      return null;
+      return ImmutableList.of();
     };
   }
 
@@ -165,9 +166,9 @@ public class JavacOptionsUtils {
               (arg, tail) -> {
                 if (opt.matches(arg)) {
                   tail.next();
-                  return ImmutableList.of(arg, repl).iterator();
+                  return ImmutableList.of(arg, repl);
                 }
-                return Iterators.singletonIterator(arg);
+                return ImmutableList.of(arg);
               });
       return this;
     }
@@ -197,12 +198,14 @@ public class JavacOptionsUtils {
       Iterator<String> args = internal.iterator();
       while (args.hasNext()) {
         String value = args.next();
-        ImmutableList<String> match = copyOrNull(handler.handleOption(value, args));
-        if (match == null) {
+        Iterable<String> match = handler.handleOption(value, args);
+        if (Iterables.isEmpty(match)) {
           unmatched.accept(value);
         } else {
-          matched.accept(match.get(0));
-          for (String positional : match.subList(1, match.size())) {
+          Iterator<String> iter = match.iterator();
+          matched.accept(iter.next());
+          while (iter.hasNext()) {
+            String positional = iter.next();
             matched.accept(positional);
             positionalMatched.accept(positional);
           }
@@ -323,10 +326,7 @@ public class JavacOptionsUtils {
       List<String> result = new ArrayList<>(internal.size());
       Iterator<String> iter = internal.iterator();
       while (iter.hasNext()) {
-        Iterator<String> next = handler.handleOption(iter.next(), iter);
-        if (next != null && next.hasNext()) {
-          Iterators.addAll(result, next);
-        }
+        Iterables.addAll(result, handler.handleOption(iter.next(), iter));
       }
       return result;
     }
@@ -341,13 +341,5 @@ public class JavacOptionsUtils {
   public static Charset getEncodingOption(List<String> options) {
     int i = options.lastIndexOf("-encoding");
     return (i >= 0) ? Charset.forName(options.get(i + 1)) : null;
-  }
-
-  /** Returns a copy of iter, unless iter is zero length or null. */
-  private static ImmutableList<String> copyOrNull(Iterator<String> iter) {
-    if (iter == null || !iter.hasNext()) {
-      return null;
-    }
-    return ImmutableList.copyOf(iter);
   }
 }
