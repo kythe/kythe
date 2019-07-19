@@ -58,6 +58,10 @@ if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
   apt-get clean
 fi
 
+if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
+  eval "$KYTHE_PRE_BUILD_STEP"
+fi
+
 # It is ok if targets fail to build. We build using --keep_going and don't
 # care if some targets fail, but bazel will return a failure code if any
 # targets fail.
