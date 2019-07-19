@@ -210,5 +210,4 @@ public class OptionsTest {
         .matches("source/from/details");
     assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1)).contains(".jar");
   }
-
 }
