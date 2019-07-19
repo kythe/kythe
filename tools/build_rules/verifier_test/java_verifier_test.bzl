@@ -23,6 +23,11 @@ load(
     "//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl",
     "proto_extract_kzip",
 )
+load(
+    "@bazel_tools//tools/jdk:toolchain_utils.bzl",
+    "find_java_runtime_toolchain",
+    "find_java_toolchain",
+)
 
 KytheGeneratedSourcesInfo = provider(
     doc = "Generated Java source directory and jar.",
@@ -64,15 +69,8 @@ def _java_extract_kzip_impl(ctx):
     # Actually compile the sources to be used as a dependency for other tests
     jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
 
-    # Use find_java_toolchain / find_java_runtime_toolchain after the next Bazel release,
-    # see: https://github.com/bazelbuild/bazel/issues/7186
-    if hasattr(java_common, "JavaToolchainInfo"):
-        java_toolchain = ctx.attr._java_toolchain[java_common.JavaToolchainInfo]
-        host_javabase = ctx.attr._host_javabase[java_common.JavaRuntimeInfo]
-    else:
-        java_toolchain = ctx.attr._java_toolchain
-        host_javabase = ctx.attr._host_javabase
-
+    java_toolchain = find_java_toolchain(ctx, ctx.attr._java_toolchain)
+    host_javabase = find_java_runtime_toolchain(ctx, ctx.attr._host_javabase)
     java_info = java_common.compile(
         ctx,
         javac_opts = ctx.attr.opts,
