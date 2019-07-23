@@ -1313,12 +1313,19 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr* E,
       SR.setEnd(RPL.getLocWithOffset(1));
     } else if (TSI != nullptr) {
       SR.setEnd(TSI->getTypeLoc().getEndLoc().getLocWithOffset(1));
+    } else if (SR.getBegin() == SR.getEnd()) {
+      // For zero-width ranges, attempt to figure out the real extent of the
+      // expression.  This includes calls to default constructors and
+      // conversions from string literals, among others.
+      SR = RangeForASTEntity(SR.getBegin());
     } else {
+      // Otherwise, include the final character in the expression forming an
+      // implicit ctor call.
       SR.setEnd(SR.getEnd().getLocWithOffset(1));
     }
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
-      RecordCallEdges(RCC.value(), BuildNodeIdForRefToDecl(Callee));
+      RecordCallEdges(*RCC, BuildNodeIdForRefToDecl(Callee));
     }
   }
   return true;
@@ -1749,8 +1756,8 @@ bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
   return true;
 }
 
-bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
-    clang::TemplateSpecializationTypeLoc TL) {
+template <typename T>
+bool IndexerASTVisitor::VisitTemplateSpecializationTypeLocHelper(T TL) {
   auto NameLocation = TL.getTemplateNameLoc();
   if (NameLocation.isFileID()) {
     if (auto RCC = ExpandedRangeInCurrentContext(NameLocation)) {
@@ -1772,7 +1779,17 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
   return true;
 }
 
-bool IndexerASTVisitor::VisitDeducedTypeLoc(clang::DeducedTypeLoc TL) {
+bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
+    clang::TemplateSpecializationTypeLoc TL) {
+  return VisitTemplateSpecializationTypeLocHelper(TL);
+}
+
+bool IndexerASTVisitor::VisitDeducedTemplateSpecializationTypeLoc(
+    clang::DeducedTemplateSpecializationTypeLoc TL) {
+  return VisitTemplateSpecializationTypeLocHelper(TL);
+}
+
+bool IndexerASTVisitor::VisitAutoTypeLoc(clang::AutoTypeLoc TL) {
   RecordTypeLocSpellingLocation(TL);
   return true;
 }
@@ -4197,6 +4214,10 @@ NodeSet IndexerASTVisitor::BuildNodeSetForAuto(clang::AutoTypeLoc TL) {
 
 NodeSet IndexerASTVisitor::BuildNodeSetForDeducedTemplateSpecialization(
     clang::DeducedTemplateSpecializationTypeLoc TL) {
+  // TODO(shahms): This should look more like TemplateSpecialization than Auto.
+  // They currently return the same thing, but only via the indirection through
+  // the deduced type.  We should also potentially emit implicit references to
+  // the deduced template parameters.
   return BuildNodeSetForDeduced(TL);
 }
 
