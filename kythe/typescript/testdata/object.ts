@@ -21,13 +21,27 @@ const Object = {
 
   //- @method defines/binding Method
   //- Method.node/kind function
-  method() {}
+  method() {},
+
+  //- @"'sliteral'" defines/binding SLiteralProperty
+  //- SLiteralProperty.node/kind variable
+  'sliteral': 0,
+
+  //- @"123" defines/binding NLiteralProperty
+  //- NLiteralProperty.node/kind variable
+  123: 'nliteral',
 };
 
 //- @property ref Property
 //- @shortProperty ref ShortProperty
 //- @computed ref ComputedProperty
 const x = Object.property || Object.shortProperty || Object.computed;
+
+//- @"'sliteral'" ref SLiteralProperty
+Object['sliteral'];
+
+//- @"123" ref NLiteralProperty
+Object[123];
 
 //- @method ref Method
 Object.method();

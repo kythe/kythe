@@ -1053,7 +1053,8 @@ class Visitor {
         if (moduleName) {
           const kModule = this.newVName('module', moduleName);
           this.emitEdge(
-              this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS, kModule);
+              this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS,
+              kModule);
         }
       }
     }
@@ -1090,6 +1091,8 @@ class Visitor {
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
       case ts.SyntaxKind.ComputedPropertyName:
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
         const sym = this.getSymbolAtLocation(decl.name);
         if (!sym) {
           this.todo(
@@ -1109,10 +1112,6 @@ class Visitor {
         for (const element of (decl.name as ts.BindingPattern).elements) {
           this.visit(element);
         }
-        break;
-      case ts.SyntaxKind.StringLiteral:
-      case ts.SyntaxKind.NumericLiteral:
-        // Nothing meaningful can be recorded about literal expressions.
         break;
       default:
         break;
@@ -1531,6 +1530,8 @@ class Visitor {
         this.visitVariableDeclaration(node as ts.BindingElement);
         return;
       case ts.SyntaxKind.Identifier:
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
         // Assume that this identifer is occurring as part of an
         // expression; we handle identifiers that occur in other
         // circumstances (e.g. in a type) separately in visitType.
