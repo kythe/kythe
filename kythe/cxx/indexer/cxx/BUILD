@@ -3,9 +3,11 @@ package(default_visibility = ["//kythe:default_visibility"])
 cc_library(
     name = "kythe_claim_client",
     srcs = [
+        "DynamicClaimClient.cc",
         "KytheClaimClient.cc",
     ],
     hdrs = [
+        "DynamicClaimClient.h",
         "KytheClaimClient.h",
     ],
     copts = [
