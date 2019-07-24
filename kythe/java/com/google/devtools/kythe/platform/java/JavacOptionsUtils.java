@@ -25,6 +25,7 @@ import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
@@ -69,41 +70,45 @@ public class JavacOptionsUtils {
   private static final Joiner PATH_JOINER = Joiner.on(':').skipNulls();
 
   @FunctionalInterface
-  private static interface OptionMatcher {
-    /**
-     * Returns 0 or more if a given option matches, or -1 if it doesn't.
-     *
-     * <p>Mostly equivalent to {@link OptionChecker.isSupportedOption}, except supports {@link
-     * FunctionalInterface}.
-     */
-    int matches(String option);
+  private static interface OptionHandler {
+    /** Returns an iterable with the consumed and accepted options from {options, remaining}. */
+    Iterable<String> handleOption(String option, Iterator<String> remaining);
   }
 
-  /** Utility for converting between {@link OptionChecker} and {@link OptionMatcher}. */
-  private static OptionMatcher fromCheckers(final Iterable<OptionChecker> checkers) {
-    return (arg) -> {
+  /** Utility for converting between {@link OptionChecker} and {@link OptionHandler}. */
+  private static OptionHandler fromCheckers(final Iterable<OptionChecker> checkers) {
+    return (arg, tail) -> {
       for (OptionChecker checker : checkers) {
         int supported = checker.isSupportedOption(arg);
         if (supported >= 0) {
-          return arg.indexOf(':') == -1 && arg.indexOf('=') == -1 ? supported : 0;
+          if (supported > 0 && arg.indexOf(':') == -1 && arg.indexOf('=') == -1) {
+            return new ImmutableList.Builder<String>()
+                .add(arg)
+                .addAll(Iterators.limit(tail, supported))
+                .build();
+          }
+          return ImmutableList.of(arg);
         }
       }
-      return -1;
+      return ImmutableList.of();
     };
   }
 
   /** Utility for matching directly specified {@link Option}s. */
-  private static OptionMatcher matchOpts(Iterable<Option> opts) {
-    return (arg) -> {
+  private static OptionHandler handleOpts(Iterable<Option> opts) {
+    return (arg, tail) -> {
       for (Option opt : opts) {
         if (opt.matches(arg)) {
-          if (!opt.hasArg()) {
-            return 0;
+          if (opt.hasArg() && arg.indexOf(':') == -1 && arg.indexOf('=') == -1) {
+            return new ImmutableList.Builder<String>()
+                .add(arg)
+                .addAll(Iterators.limit(tail, 1))
+                .build();
           }
-          return arg.indexOf(':') == -1 && arg.indexOf('=') == -1 ? 1 : 0;
+          return ImmutableList.of(arg);
         }
       }
-      return -1;
+      return ImmutableList.of();
     };
   }
 
@@ -146,46 +151,61 @@ public class JavacOptionsUtils {
 
     /** Removes the given {@link Option}s (and their arguments) from the builder. */
     public ModifiableOptions removeOptions(final Set<Option> opts) {
-      return replaceOptions(matchOpts(opts), false);
+      return replaceOptions(handleOpts(opts), false);
     }
 
     /** Keep only the matched options. */
     public ModifiableOptions keepOptions(final Set<Option> opts) {
-      return replaceOptions(matchOpts(opts), true);
+      return replaceOptions(handleOpts(opts), true);
     }
 
-    private ModifiableOptions replaceOptions(OptionMatcher matcher, boolean matched) {
+    /** If present, replace the value with the specified one. */
+    public ModifiableOptions replaceOptionValue(final Option opt, final String repl) {
+      internal =
+          handleOptions(
+              (arg, tail) -> {
+                if (opt.matches(arg)) {
+                  tail.next();
+                  return ImmutableList.of(arg, repl);
+                }
+                return ImmutableList.of(arg);
+              });
+      return this;
+    }
+
+    private ModifiableOptions replaceOptions(OptionHandler handler, boolean matched) {
       final List<String> replacements = new ArrayList<>(internal.size());
       Consumer<String> placer = (value) -> replacements.add(value);
       if (matched) {
-        acceptOptions(matcher, placer, NO_OP);
+        acceptOptions(handler, placer, NO_OP);
       } else {
-        acceptOptions(matcher, NO_OP, placer);
+        acceptOptions(handler, NO_OP, placer);
       }
       internal = replacements;
       return this;
     }
 
     private ModifiableOptions acceptOptions(
-        OptionMatcher matcher, final Consumer<String> matched, final Consumer<String> unmatched) {
-      return acceptOptions(matcher, matched, unmatched, NO_OP);
+        OptionHandler handler, final Consumer<String> matched, final Consumer<String> unmatched) {
+      return acceptOptions(handler, matched, unmatched, NO_OP);
     }
 
     private ModifiableOptions acceptOptions(
-        OptionMatcher matcher,
+        OptionHandler handler,
         final Consumer<String> matched,
         final Consumer<String> unmatched,
         final Consumer<String> positionalMatched) {
       Iterator<String> args = internal.iterator();
       while (args.hasNext()) {
         String value = args.next();
-        int match = matcher.matches(value);
-        if (match < 0) {
+        Iterable<String> match = handler.handleOption(value, args);
+        if (Iterables.isEmpty(match)) {
           unmatched.accept(value);
         } else {
-          matched.accept(value);
-          if (match > 0 && args.hasNext()) {
-            String positional = args.next();
+          Iterator<String> iter = match.iterator();
+          matched.accept(iter.next());
+          while (iter.hasNext()) {
+            String positional = iter.next();
             matched.accept(positional);
             positionalMatched.accept(positional);
           }
@@ -296,9 +316,19 @@ public class JavacOptionsUtils {
       List<String> replacements = new ArrayList<>(internal.size());
       Consumer<String> matched = (value) -> paths.addAll(PATH_SPLITTER.split(value));
       Consumer<String> unmatched = (value) -> replacements.add(value);
-      acceptOptions(matchOpts(ImmutableList.of(option)), NO_OP, unmatched, matched);
+      acceptOptions(handleOpts(ImmutableList.of(option)), NO_OP, unmatched, matched);
       internal = replacements;
       return paths.build();
+    }
+
+    /** Applies handler to the interal options and returns the result. */
+    private List<String> handleOptions(OptionHandler handler) {
+      List<String> result = new ArrayList<>(internal.size());
+      Iterator<String> iter = internal.iterator();
+      while (iter.hasNext()) {
+        Iterables.addAll(result, handler.handleOption(iter.next(), iter));
+      }
+      return result;
     }
   }
 

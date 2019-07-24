@@ -123,6 +123,15 @@ public class OptionsTest {
   }
 
   @Test
+  public void replaceOptionValue_replacesExtantValue() {
+    ModifiableOptions args =
+        ModifiableOptions.of(ImmutableList.of("-prompt", "-d", "/some/random/path", "-moreinfo"));
+    assertThat(args.replaceOptionValue(Option.D, "/another/random/path").build())
+        .containsExactly("-prompt", "-d", "/another/random/path", "-moreinfo")
+        .inOrder();
+  }
+
+  @Test
   public void updateWithJavaOptions_updatesBootClassPath() {
     ModifiableOptions args =
         ModifiableOptions.of(

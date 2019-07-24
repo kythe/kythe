@@ -10,6 +10,10 @@ filegroup(
             "ProtobufMetadata.java",
             "ProcessingMetadata.java",
             "ProcessingProtobufMetadata.java",
+            # Exclude tests of features >= Java 9 as java_library is compiled as Java 8.
+            "DiamondOperations.java",
+            "LocalInference.java",
+            "PrivateInterfaceMethods.java",
         ],
     ),
     visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
@@ -364,6 +368,47 @@ java_verifier_test(
     srcs = ["JvmCrossFile.java"],
     indexer_opts = ["--emit_jvm_references"],
     verifier_deps = [":files_tests"],
+)
+
+java_verifier_test(
+    name = "diamond_operator_test",
+    size = "small",
+    srcs = ["DiamondOperations.java"],
+    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
+    extractor_opts = [
+        "-source",
+        "9",
+        "-target",
+        "9",
+    ],
+)
+
+java_verifier_test(
+    name = "local_inference_test",
+    size = "small",
+    srcs = ["LocalInference.java"],
+    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
+    extractor_opts = [
+        "-source",
+        "11",
+        "-target",
+        "11",
+    ],
+    # TODO(#3746): We don't emit any edges for inferred locals.
+    tags = ["manual"],
+)
+
+java_verifier_test(
+    name = "private_interface_methods_test",
+    size = "small",
+    srcs = ["PrivateInterfaceMethods.java"],
+    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
+    extractor_opts = [
+        "-source",
+        "9",
+        "-target",
+        "9",
+    ],
 )
 
 java_verifier_test(

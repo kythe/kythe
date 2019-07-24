@@ -86,43 +86,6 @@ class StaticClaimClient : public KytheClaimClient {
   bool process_unknown_status_ = true;
 };
 
-/// \brief A client that makes dynamic decisions about claiming by consulting
-/// an external memcache.
-///
-/// This client is experimental and does not guarantee that entries will not be
-/// permanently dropped.
-class DynamicClaimClient : public KytheClaimClient {
- public:
-  ~DynamicClaimClient() override;
-
-  /// \brief Use a memcached instance (e.g. "--SERVER=foo:1234")
-  bool OpenMemcache(const std::string& spec);
-
-  bool Claim(const kythe::proto::VName& claimant,
-             const kythe::proto::VName& vname) override;
-
-  /// Store a local override.
-  void AssignClaim(const kythe::proto::VName& claimable,
-                   const kythe::proto::VName& claimant) override;
-
-  /// Change how many times the same VName can be claimed.
-  void set_max_redundant_claims(size_t value) { max_redundant_claims_ = value; }
-
-  void Reset() override { claim_table_.clear(); }
-
- private:
-  /// A local map from claimables to claimants.
-  std::map<kythe::proto::VName, kythe::proto::VName, VNameLess> claim_table_;
-  /// A remote map used for dynamic queries.
-  ::memcached_st* cache_ = nullptr;
-  /// The maximum number of times a VName can be claimed.
-  size_t max_redundant_claims_ = 1;
-  /// The number of claim requests ever made.
-  size_t request_count_ = 0;
-  /// The number of claim requests that were rejected (after all tries).
-  size_t rejected_requests_ = 0;
-};
-
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_INDEXER_CXX_KYTHE_CLAIM_CLIENT_H_
