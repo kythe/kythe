@@ -308,10 +308,8 @@ void IndexerContext::InitializeClaimClient() {
     auto dynamic_claims = absl::make_unique<kythe::DynamicClaimClient>();
     dynamic_claims->set_max_redundant_claims(
         FLAGS_experimental_dynamic_overclaim);
-    if (!dynamic_claims->OpenMemcache(FLAGS_experimental_dynamic_claim_cache)) {
-      absl::FPrintF(stderr, "Can't open memcached\n");
-      exit(1);
-    }
+    CHECK(dynamic_claims->OpenMemcache(FLAGS_experimental_dynamic_claim_cache))
+        << "Can't open memcached";
     claim_client_ = std::move(dynamic_claims);
   } else {
     auto static_claims = absl::make_unique<kythe::StaticClaimClient>();
