@@ -490,7 +490,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		ticket := tickets[i]
 		cr, err := t.crossReferences(ctx, ticket)
 		if err == table.ErrNoSuchKey {
-			log.Println("Missing CrossReferences:", ticket)
 			continue
 		} else if err != nil {
 			return nil, canonicalError(err, "cross-references", ticket)
@@ -894,7 +893,6 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	for _, ticket := range tickets {
 		d, err := t.lookupDocument(ctx, ticket)
 		if err == table.ErrNoSuchKey {
-			log.Printf("Missing Documentation for %s", ticket)
 			continue
 		} else if err != nil {
 			return nil, canonicalError(err, "documentation", ticket)
@@ -906,7 +904,6 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 				// TODO(schroederc): store children with root of documentation tree
 				cd, err := t.lookupDocument(ctx, child)
 				if err == table.ErrNoSuchKey {
-					log.Printf("Missing Documentation for child (of %s): %s", ticket, child)
 					continue
 				} else if err != nil {
 					return nil, canonicalError(err, "documentation child", ticket)
