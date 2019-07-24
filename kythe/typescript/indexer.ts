@@ -31,6 +31,12 @@ const LANGUAGE = 'typescript';
  */
 export interface IndexerHost {
   /**
+   * Gets the offset table for a file path.
+   * These are used to lookup UTF-8 offsets (used by Kythe) from UTF-16 offsets
+   * (used by TypeScript), and vice versa.
+   */
+  getOffsetTable(path: string): Readonly<utf8.OffsetTable>;
+  /**
    * Converts a file path into a file VName.
    */
   pathToVName(path: string): VName;
@@ -146,6 +152,8 @@ function hasExpressionInitializer(node: ts.Node):
  * its plugins. See the IndexerContext interface definition for more details.
  */
 class StandardIndexerContext implements IndexerHost {
+  private offsetTables = new Map<string, utf8.OffsetTable>();
+
   /**
    * rootDirs is the list of rootDirs in the compiler options, sorted
    * longest first.  See this.moduleName().
@@ -164,12 +172,23 @@ class StandardIndexerContext implements IndexerHost {
       /** All source file paths in the TypeScript program. */
       public paths: string[],
       public program: ts.Program,
+      private readFile: (path: string) => Buffer = fs.readFileSync,
   ) {
     const sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
     let rootDirs = program.getCompilerOptions().rootDirs || [sourceRoot];
     rootDirs = rootDirs.map(d => d + '/');
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
+  }
+
+  getOffsetTable(path: string): Readonly<utf8.OffsetTable> {
+    let table = this.offsetTables.get(path);
+    if (!table) {
+      const buf = this.readFile(path);
+      table = new utf8.OffsetTable(buf);
+      this.offsetTables.set(path, table);
+    }
+    return table;
   }
 
   /**
@@ -248,7 +267,6 @@ class Visitor {
   constructor(
       private readonly host: IndexerHost,
       private file: ts.SourceFile,
-      private readonly getOffsetTable: (path: string) => utf8.OffsetTable,
   ) {
     this.sourceRoot =
         this.host.program.getCompilerOptions().rootDir || process.cwd();
@@ -302,10 +320,11 @@ class Visitor {
     const name = Object.assign(
         {...this.kFile}, {signature: `@${start}:${end}`, language: LANGUAGE});
     this.emitNode(name, 'anchor');
-    const offsetTable = this.getOffsetTable(node.getSourceFile().fileName);
+    const offsetTable = this.host.getOffsetTable(node.getSourceFile().fileName);
     this.emitFact(
-        name, FactName.LOC_START, offsetTable.lookup(start).toString());
-    this.emitFact(name, FactName.LOC_END, offsetTable.lookup(end).toString());
+        name, FactName.LOC_START, offsetTable.lookupUtf8(start).toString());
+    this.emitFact(
+        name, FactName.LOC_END, offsetTable.lookupUtf8(end).toString());
     return name;
   }
 
@@ -1053,7 +1072,8 @@ class Visitor {
         if (moduleName) {
           const kModule = this.newVName('module', moduleName);
           this.emitEdge(
-              this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS, kModule);
+              this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS,
+              kModule);
         }
       }
     }
@@ -1605,19 +1625,8 @@ export function index(
     throw new Error(message);
   }
 
-  const offsetTables = new Map<string, utf8.OffsetTable>();
-  function getOffsetTable(path: string): utf8.OffsetTable {
-    let table = offsetTables.get(path);
-    if (!table) {
-      const buf = readFile(path);
-      table = new utf8.OffsetTable(buf);
-      offsetTables.set(path, table);
-    }
-    return table;
-  }
-
   const indexingContext =
-      new StandardIndexerContext(vname, pathVNames, paths, program);
+      new StandardIndexerContext(vname, pathVNames, paths, program, readFile);
   if (emit != null) {
     indexingContext.emit = emit;
   }
@@ -1630,7 +1639,6 @@ export function index(
     const visitor = new Visitor(
         indexingContext,
         sourceFile,
-        getOffsetTable,
     );
     visitor.index();
   }
