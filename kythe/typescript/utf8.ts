@@ -116,22 +116,49 @@ export class OffsetTable {
     }
   }
 
-  lookup(findOfs: number): number {
+  /** Looks up a UTF-8 offset from a UTF-16 offset. */
+  lookupUtf8(findOfs: number): number {
     const offset = this.offsets[Math.floor(findOfs / this.spanSize)];
     let u16 = offset[0];
     const byte = offset[1];
-    // u16 and byte is a pair of UTF-16 and UTF-8 offsets. Scan forward to find
-    // the offset to lookup for.
+    // Scan forward to find the offset to lookup for.
     const scanner = new Scanner(this.buf, byte);
+    // Scan UTF-16 offsets one by one.
     while (u16 < findOfs) {
       u16 += scanner.scan();
     }
-    // We are scanning UTF-16 offsets one by one. If it skips findOfs it means
-    // that the findOfs is in the middle of a surrogate pair, which is invalid
-    // to lookup for.
+    // If it skips findOfs then findOfs is in the middle of a surrogate pair,
+    // which is invalid to lookup.
     if (u16 > findOfs) {
-      throw new Error(`The lookup offset is invalid`);
+      throw new Error('The lookup offset is invalid');
     }
     return scanner.ofs;
+  }
+
+  /** Looks up a UTF-16 offset from a UTF-8 offset. */
+  lookupUtf16(findOfs: number): number {
+    let u16 = Infinity;
+    let byte = Infinity;
+    let span =
+        Math.min(Math.floor(findOfs / this.spanSize), this.offsets.length - 1);
+    // We may have overshot it, because the span was chosen from the UTF-16
+    // offset. If necessary, backtrack.
+    while (byte > findOfs) {
+      const offset = this.offsets[span--];
+      u16 = offset[0];
+      byte = offset[1];
+    }
+    // Scan forward to find the offset to lookup for.
+    const scanner = new Scanner(this.buf, byte);
+    // Scan UTF-16 offsets one by one.
+    while (scanner.ofs < findOfs) {
+      u16 += scanner.scan();
+    }
+    // If it skips findOfs then findOfs is in the middle of a surrogate pair,
+    // which is invalid to lookup.
+    if (scanner.ofs > findOfs) {
+      throw new Error('The lookup offset is invalid');
+    }
+    return u16;
   }
 }
