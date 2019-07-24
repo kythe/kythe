@@ -23,9 +23,9 @@ const Object = {
   //- Method.node/kind function
   method() {},
 
-  //- @"'sliteral'" defines/binding SLiteralProperty
+  //- @"'string#literal'" defines/binding SLiteralProperty
   //- SLiteralProperty.node/kind variable
-  'sliteral': 0,
+  'string#literal': 0,
 
   //- @"123" defines/binding NLiteralProperty
   //- NLiteralProperty.node/kind variable
@@ -37,8 +37,8 @@ const Object = {
 //- @computed ref ComputedProperty
 const x = Object.property || Object.shortProperty || Object.computed;
 
-//- @"'sliteral'" ref SLiteralProperty
-Object['sliteral'];
+//- @"'string#literal'" ref SLiteralProperty
+Object['string#literal'];
 
 //- @"123" ref NLiteralProperty
 Object[123];
