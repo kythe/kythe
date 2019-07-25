@@ -31,6 +31,13 @@ const LANGUAGE = 'typescript';
  */
 export interface IndexerHost {
   /**
+   * getSymbolAtLocation is the same as ts.TypeChecker.getSymbolAtLocation,
+   * except that it has a return type that properly captures that
+   * getSymbolAtLocation can return undefined.  (The TypeScript API itself is
+   * not yet null-safe, so it hasn't been annotated with full types.)
+   */
+  getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined;
+  /**
    * Computes the VName (and signature) of a ts.Symbol. A Context can be
    * optionally specified to help disambiguate nodes with multiple declarations.
    * See the documentation of Context for more information.
@@ -167,17 +174,6 @@ function isStaticMember(node: ts.Node, klass: ts.Declaration): boolean {
       ((ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Static) > 0);
 }
 
-/**
- * getSymbolAtLocation is the same as this.typeChecker.getSymbolAtLocation,
- * except that it has a return type that properly captures that
- * getSymbolAtLocation can return undefined.  (The TypeScript API itself is
- * not yet null-safe, so it hasn't been annotated with full types.)
- */
-function getSymbolAtLocation(
-    typeChecker: ts.TypeChecker, node: ts.Node): ts.Symbol|undefined {
-  return typeChecker.getSymbolAtLocation(node);
-}
-
 function todo(sourceRoot: string, node: ts.Node, message: string) {
   const sourceFile = node.getSourceFile();
   const file = path.relative(sourceRoot, sourceFile.fileName);
@@ -242,6 +238,10 @@ class StandardIndexerContext implements IndexerHost {
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
     this.typeChecker = this.program.getTypeChecker();
+  }
+
+  getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined {
+    return this.typeChecker.getSymbolAtLocation(node);
   }
 
   /**
@@ -364,7 +364,7 @@ class StandardIndexerContext implements IndexerHost {
               case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
                 let part;
                 if (ts.isComputedPropertyName(decl.name)) {
-                  const sym = getSymbolAtLocation(this.typeChecker, decl.name);
+                  const sym = this.getSymbolAtLocation(decl.name);
                   part = sym ? sym.name : this.anonName(decl.name);
                 } else {
                   part = decl.name.text;
@@ -653,7 +653,7 @@ class Visitor {
 
   visitTypeParameters(params: ReadonlyArray<ts.TypeParameterDeclaration>) {
     for (const param of params) {
-      const sym = getSymbolAtLocation(this.typeChecker, param.name);
+      const sym = this.host.getSymbolAtLocation(param.name);
       if (!sym) {
         todo(
             this.sourceRoot, param,
@@ -704,7 +704,7 @@ class Visitor {
   }
 
   visitInterfaceDeclaration(decl: ts.InterfaceDeclaration) {
-    const sym = getSymbolAtLocation(this.typeChecker, decl.name);
+    const sym = this.host.getSymbolAtLocation(decl.name);
     if (!sym) {
       todo(
           this.sourceRoot, decl.name,
@@ -723,7 +723,7 @@ class Visitor {
   }
 
   visitTypeAliasDeclaration(decl: ts.TypeAliasDeclaration) {
-    const sym = getSymbolAtLocation(this.typeChecker, decl.name);
+    const sym = this.host.getSymbolAtLocation(decl.name);
     if (!sym) {
       todo(
           this.sourceRoot, decl.name,
@@ -768,7 +768,7 @@ class Visitor {
         }
         return kType;
       case ts.SyntaxKind.Identifier:
-        const sym = getSymbolAtLocation(this.typeChecker, node);
+        const sym = this.host.getSymbolAtLocation(node);
         if (!sym) {
           todo(this.sourceRoot, node, `type ${node.getText()} has no symbol`);
           return;
@@ -833,7 +833,7 @@ class Visitor {
    */
   getCtorSymbol(klass: ts.ClassDeclaration): ts.Symbol|undefined {
     if (klass.name) {
-      const sym = getSymbolAtLocation(this.typeChecker, klass.name);
+      const sym = this.host.getSymbolAtLocation(klass.name);
       if (sym && sym.members) {
         return sym.members.get(ts.InternalSymbolName.Constructor);
       }
@@ -871,7 +871,7 @@ class Visitor {
     // anchor isn't great, so this code instead unifies all references
     // (including renaming imports) to a single VName.
 
-    const localSym = getSymbolAtLocation(this.typeChecker, name);
+    const localSym = this.host.getSymbolAtLocation(name);
     if (!localSym) {
       throw new Error(`TODO: local name ${name} has no symbol`);
     }
@@ -904,7 +904,7 @@ class Visitor {
           decl.moduleReference.expression :
           decl.moduleReference;
     }
-    const moduleSym = getSymbolAtLocation(this.typeChecker, moduleRef);
+    const moduleSym = this.host.getSymbolAtLocation(moduleRef);
     if (!moduleSym) {
       // This can occur when the module failed to resolve to anything.
       // See testdata/import_missing.ts for more on how that could happen.
@@ -947,7 +947,7 @@ class Visitor {
         // This is a namespace import, e.g.:
         //   import * as foo from 'foo';
         const name = clause.namedBindings.name;
-        const sym = getSymbolAtLocation(this.typeChecker, name);
+        const sym = this.host.getSymbolAtLocation(name);
         if (!sym) {
           todo(
               this.sourceRoot, clause,
@@ -1010,7 +1010,7 @@ class Visitor {
     this.emitSubkind(implicitProp, Subkind.IMPLICIT);
     this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, implicitProp);
 
-    const sym = getSymbolAtLocation(this.typeChecker, decl.name);
+    const sym = this.host.getSymbolAtLocation(decl.name);
     if (!sym) throw new Error('Getter/setter declaration has no symbols.');
 
     if (sym.declarations.find(ts.isGetAccessor)) {
@@ -1063,7 +1063,7 @@ class Visitor {
   visitExportDeclaration(decl: ts.ExportDeclaration) {
     if (decl.exportClause) {
       for (const exp of decl.exportClause.elements) {
-        const localSym = getSymbolAtLocation(this.typeChecker, exp.name);
+        const localSym = this.host.getSymbolAtLocation(exp.name);
         if (!localSym) {
           console.error(`TODO: export ${exp.name} has no symbol`);
           continue;
@@ -1080,8 +1080,7 @@ class Visitor {
       }
     }
     if (decl.moduleSpecifier) {
-      const moduleSym =
-          getSymbolAtLocation(this.typeChecker, decl.moduleSpecifier);
+      const moduleSym = this.host.getSymbolAtLocation(decl.moduleSpecifier);
       if (moduleSym) {
         const moduleName = this.getModulePathFromModuleReference(moduleSym);
         if (moduleName) {
@@ -1125,7 +1124,7 @@ class Visitor {
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
       case ts.SyntaxKind.ComputedPropertyName:
-        const sym = getSymbolAtLocation(this.typeChecker, decl.name);
+        const sym = this.host.getSymbolAtLocation(decl.name);
         if (!sym) {
           todo(
               this.sourceRoot, decl.name,
@@ -1175,7 +1174,7 @@ class Visitor {
       context = Context.Setter;
     }
     if (decl.name) {
-      funcSym = getSymbolAtLocation(this.typeChecker, decl.name);
+      funcSym = this.host.getSymbolAtLocation(decl.name);
       if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
         this.visit((decl.name as ts.ComputedPropertyName).expression);
       }
@@ -1212,7 +1211,7 @@ class Visitor {
           ts.isInterfaceDeclaration(decl.parent)) {
         const parentName = decl.parent.name;
         if (parentName !== undefined) {
-          const parentSym = getSymbolAtLocation(this.typeChecker, parentName);
+          const parentSym = this.host.getSymbolAtLocation(parentName);
           if (!parentSym) {
             todo(
                 this.sourceRoot, parentName,
@@ -1235,7 +1234,7 @@ class Visitor {
           for (const heritage of decl.parent.heritageClauses) {
             for (const baseType of heritage.types) {
               const baseSym =
-                  getSymbolAtLocation(this.typeChecker, baseType.expression);
+                  this.host.getSymbolAtLocation(baseType.expression);
               if (!baseSym || !baseSym.members) {
                 continue;
               }
@@ -1292,7 +1291,7 @@ class Visitor {
 
           switch (param.name.kind) {
             case ts.SyntaxKind.Identifier:
-              const sym = getSymbolAtLocation(this.typeChecker, param.name);
+              const sym = this.host.getSymbolAtLocation(param.name);
               if (!sym) {
                 todo(
                     this.sourceRoot, param.name,
@@ -1311,8 +1310,7 @@ class Visitor {
                 // children of the class type.
                 const parentName = param.parent.parent.name;
                 if (parentName !== undefined) {
-                  const parentSym =
-                      getSymbolAtLocation(this.typeChecker, parentName);
+                  const parentSym = this.host.getSymbolAtLocation(parentName);
                   if (parentSym !== undefined) {
                     const kClass =
                         this.host.getSymbolName(parentSym, TSNamespace.TYPE);
@@ -1361,7 +1359,7 @@ class Visitor {
    *     namespace Foo {}
    */
   visitModuleDeclaration(decl: ts.ModuleDeclaration) {
-    let sym = getSymbolAtLocation(this.typeChecker, decl.name);
+    let sym = this.host.getSymbolAtLocation(decl.name);
     if (!sym) {
       todo(
           this.sourceRoot, decl.name,
@@ -1399,7 +1397,7 @@ class Visitor {
   visitClassDeclaration(decl: ts.ClassDeclaration) {
     this.visitDecorators(decl.decorators || []);
     if (decl.name) {
-      const sym = getSymbolAtLocation(this.typeChecker, decl.name);
+      const sym = this.host.getSymbolAtLocation(decl.name);
       if (!sym) {
         todo(
             this.sourceRoot, decl.name,
@@ -1443,7 +1441,7 @@ class Visitor {
   }
 
   visitEnumDeclaration(decl: ts.EnumDeclaration) {
-    const sym = getSymbolAtLocation(this.typeChecker, decl.name);
+    const sym = this.host.getSymbolAtLocation(decl.name);
     if (!sym) return;
     const kType = this.host.getSymbolName(sym, TSNamespace.TYPE);
     this.emitNode(kType, 'record');
@@ -1459,7 +1457,7 @@ class Visitor {
   }
 
   visitEnumMember(decl: ts.EnumMember) {
-    const sym = getSymbolAtLocation(this.typeChecker, decl.name);
+    const sym = this.host.getSymbolAtLocation(decl.name);
     if (!sym) return;
     const kMember = this.host.getSymbolName(sym, TSNamespace.VALUE);
     this.emitNode(kMember, 'constant');
@@ -1467,7 +1465,7 @@ class Visitor {
   }
 
   visitExpressionMember(node: ts.Node) {
-    const sym = getSymbolAtLocation(this.typeChecker, node);
+    const sym = this.host.getSymbolAtLocation(node);
     if (!sym) {
       // E.g. a field of an "any".
       return;
