@@ -463,6 +463,17 @@ class Visitor {
                 } else {
                   part = decl.name.text;
                 }
+                // Wrap literals in quotes, so that characters used in other
+                // signatures do not interfere with the signature creates by a
+                // literal. For instance, a literal
+                //   obj.prop
+                // may interefere with the signature of `prop` on an object
+                // `foo`. The literal receives a signature
+                //   "obj.prop"
+                // to avoid this.
+                if (ts.isStringLiteral(decl.name)) {
+                  part = `"${part}"`;
+                }
                 // Instance members of a class are scoped to the type of the
                 // class.
                 if (ts.isClassDeclaration(decl) && lastNode !== undefined &&
