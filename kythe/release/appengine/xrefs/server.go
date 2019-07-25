@@ -39,7 +39,7 @@ import (
 var (
 	servingTable    = flag.String("serving_table", "/srv/table", "LevelDB serving table path")
 	publicResources = flag.String("public_resources", "/srv/public", "Path to directory of static resources to serve")
-	listeningAddr   = flag.String("listen", "localhost:8080", "Listening address for HTTP server")
+	listeningAddr   = flag.String("listen", "0.0.0.0:8080", "Listening address for HTTP server")
 )
 
 func main() {

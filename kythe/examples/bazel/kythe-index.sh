@@ -31,7 +31,7 @@ Paths to output artifacts are controlled with the --graphstore and --serving_tab
 defaults are $TMPDIR/gs.bazel and $TMPDIR/serving.bazel, respectively.
 
 The --serving_addr flag controls the listening address of the Kythe http_server.
-It's default is localhost:8888.  Any --webui path provided will be passed to the
+Its default is 0.0.0.0:8888.  Any --webui path provided will be passed to the
 http_server as its --public_resources flag.
 
 The --bazel_root and --kythe_repo flags control which Bazel repository to index
@@ -56,7 +56,7 @@ BAZEL_ROOT="$PWD"
 
 GRAPHSTORE="$TMPDIR"/gs.bazel
 SERVING_TABLE="$TMPDIR"/serving.bazel
-SERVING_ADDR=localhost:8888
+SERVING_ADDR=0.0.0.0:8888
 WEBUI=()
 
 EXTRACT=

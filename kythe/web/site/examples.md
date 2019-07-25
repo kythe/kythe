@@ -157,6 +157,6 @@ serving table created with the `write_tables` binary (see above).
 {% highlight bash %}
 /opt/kythe/tools/http_server \
   --public_resources /opt/kythe/web/ui \
-  --listen localhost:8080 \
+  --listen 0.0.0.0:8080 \
   --serving_table .kythe_serving
 {% endhighlight %}
