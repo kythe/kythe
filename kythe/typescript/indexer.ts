@@ -193,13 +193,13 @@ function todo(sourceRoot: string, node: ts.Node, message: string) {
  */
 class StandardIndexerContext implements IndexerHost {
   /** A shorter name for the rootDir in the CompilerOptions. */
-  sourceRoot: string;
+  private sourceRoot: string;
 
   /**
    * rootDirs is the list of rootDirs in the compiler options, sorted
    * longest first.  See this.moduleName().
    */
-  rootDirs: string[];
+  private rootDirs: string[];
 
   /**
    * symbolNames maps ts.Symbols to their assigned VNames.
@@ -450,9 +450,9 @@ class StandardIndexerContext implements IndexerHost {
   }
 
   /**
-   * getSymbolName computes the VName (and signature) of a ts.Symbol. A Context
-   * can be optionally specified to help disambiguate nodes with multiple
-   * declarations. See the documentation of Context for more information.
+   * getSymbolName computes the VName of a ts.Symbol. A Context can be
+   * optionally specified to help disambiguate nodes with multiple declarations.
+   * See the documentation of Context for more information.
    */
   getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName {
     let vnames = this.symbolNames.get(sym);
