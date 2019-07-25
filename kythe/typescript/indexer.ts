@@ -141,6 +141,33 @@ function hasExpressionInitializer(node: ts.Node):
 }
 
 /**
+ * Determines is a node is a static member of a class.
+ */
+function isStaticMember(node: ts.Node, klass: ts.Declaration): boolean {
+  return ts.isPropertyDeclaration(node) && node.parent === klass &&
+      ((ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Static) > 0);
+}
+
+/**
+ * getSymbolAtLocation is the same as this.typeChecker.getSymbolAtLocation,
+ * except that it has a return type that properly captures that
+ * getSymbolAtLocation can return undefined.  (The TypeScript API itself is
+ * not yet null-safe, so it hasn't been annotated with full types.)
+ */
+function getSymbolAtLocation(
+    typeChecker: ts.TypeChecker, node: ts.Node): ts.Symbol|undefined {
+  return typeChecker.getSymbolAtLocation(node);
+}
+
+function todo(sourceRoot: string, node: ts.Node, message: string) {
+  const sourceFile = node.getSourceFile();
+  const file = path.relative(sourceRoot, sourceFile.fileName);
+  const {line, character} =
+      ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
+  console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
+}
+
+/**
  * StandardIndexerContext provides the standard definition of information about
  * a TypeScript program and common methods used by the TypeScript indexer and
  * its plugins. See the IndexerContext interface definition for more details.
@@ -256,30 +283,6 @@ class Visitor {
     this.typeChecker = this.host.program.getTypeChecker();
 
     this.kFile = this.newFileVName(file.fileName);
-  }
-
-  todo(node: ts.Node, message: string) {
-    const sourceFile = node.getSourceFile();
-    const file = path.relative(this.sourceRoot, sourceFile.fileName);
-    const {line, character} =
-        ts.getLineAndCharacterOfPosition(sourceFile, node.getStart());
-    console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
-  }
-
-  /**
-   * Determines is a node is a static member of a class.
-   */
-  isStaticMember(node: ts.Node, klass: ts.Declaration): boolean {
-    return ts.isPropertyDeclaration(node) && node.parent === klass &&
-        ((ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Static) > 0);
-  }
-
-  /**
-   * Determines if a node is a class or interface.
-   */
-  isClassOrInterface(node: ts.Node): boolean {
-    return ts.isClassDeclaration(node) || ts.isClassExpression(node) ||
-        ts.isInterfaceDeclaration(node);
   }
 
   /**
@@ -458,7 +461,7 @@ class Visitor {
               case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
                 let part;
                 if (ts.isComputedPropertyName(decl.name)) {
-                  const sym = this.getSymbolAtLocation(decl.name);
+                  const sym = getSymbolAtLocation(this.typeChecker, decl.name);
                   part = sym ? sym.name : this.anonName(decl.name);
                 } else {
                   part = decl.name.text;
@@ -467,7 +470,7 @@ class Visitor {
                 // class.
                 if (ts.isClassDeclaration(decl) && lastNode !== undefined &&
                     ts.isClassElement(lastNode) &&
-                    !this.isStaticMember(lastNode, decl)) {
+                    !isStaticMember(lastNode, decl)) {
                   part += '#type';
                 }
                 // Getters and setters semantically refer to the same entities
@@ -529,8 +532,8 @@ class Visitor {
           // it's likely this function should have handled it.  Dynamically
           // probe for this case and warn if we missed one.
           if ('name' in (node as any)) {
-            this.todo(
-                node,
+            todo(
+                this.sourceRoot, node,
                 `scopedSignature: ${ts.SyntaxKind[node.kind]} ` +
                     `has unused 'name' property`);
           }
@@ -540,16 +543,6 @@ class Visitor {
     // The names were gathered from bottom to top, so reverse before joining.
     const sig = parts.reverse().join('.');
     return this.newVName(sig, moduleName!);
-  }
-
-  /**
-   * getSymbolAtLocation is the same as this.typeChecker.getSymbolAtLocation,
-   * except that it has a return type that properly captures that
-   * getSymbolAtLocation can return undefined.  (The TypeScript API itself is
-   * not yet null-safe, so it hasn't been annotated with full types.)
-   */
-  getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined {
-    return this.typeChecker.getSymbolAtLocation(node);
   }
 
   /**
@@ -614,9 +607,11 @@ class Visitor {
 
   visitTypeParameters(params: ReadonlyArray<ts.TypeParameterDeclaration>) {
     for (const param of params) {
-      const sym = this.getSymbolAtLocation(param.name);
+      const sym = getSymbolAtLocation(this.typeChecker, param.name);
       if (!sym) {
-        this.todo(param, `type param ${param.getText()} has no symbol`);
+        todo(
+            this.sourceRoot, param,
+            `type param ${param.getText()} has no symbol`);
         return;
       }
       const kType = this.getSymbolName(sym, TSNamespace.TYPE);
@@ -663,9 +658,11 @@ class Visitor {
   }
 
   visitInterfaceDeclaration(decl: ts.InterfaceDeclaration) {
-    const sym = this.getSymbolAtLocation(decl.name);
+    const sym = getSymbolAtLocation(this.typeChecker, decl.name);
     if (!sym) {
-      this.todo(decl.name, `interface ${decl.name.getText()} has no symbol`);
+      todo(
+          this.sourceRoot, decl.name,
+          `interface ${decl.name.getText()} has no symbol`);
       return;
     }
     const kType = this.getSymbolName(sym, TSNamespace.TYPE);
@@ -680,9 +677,11 @@ class Visitor {
   }
 
   visitTypeAliasDeclaration(decl: ts.TypeAliasDeclaration) {
-    const sym = this.getSymbolAtLocation(decl.name);
+    const sym = getSymbolAtLocation(this.typeChecker, decl.name);
     if (!sym) {
-      this.todo(decl.name, `type alias ${decl.name.getText()} has no symbol`);
+      todo(
+          this.sourceRoot, decl.name,
+          `type alias ${decl.name.getText()} has no symbol`);
       return;
     }
     const kType = this.getSymbolName(sym, TSNamespace.TYPE);
@@ -723,9 +722,9 @@ class Visitor {
         }
         return kType;
       case ts.SyntaxKind.Identifier:
-        const sym = this.getSymbolAtLocation(node);
+        const sym = getSymbolAtLocation(this.typeChecker, node);
         if (!sym) {
-          this.todo(node, `type ${node.getText()} has no symbol`);
+          todo(this.sourceRoot, node, `type ${node.getText()} has no symbol`);
           return;
         }
         const name = this.getSymbolName(sym, TSNamespace.TYPE);
@@ -788,7 +787,7 @@ class Visitor {
    */
   getCtorSymbol(klass: ts.ClassDeclaration): ts.Symbol|undefined {
     if (klass.name) {
-      const sym = this.getSymbolAtLocation(klass.name);
+      const sym = getSymbolAtLocation(this.typeChecker, klass.name);
       if (sym && sym.members) {
         return sym.members.get(ts.InternalSymbolName.Constructor);
       }
@@ -826,7 +825,7 @@ class Visitor {
     // anchor isn't great, so this code instead unifies all references
     // (including renaming imports) to a single VName.
 
-    const localSym = this.getSymbolAtLocation(name);
+    const localSym = getSymbolAtLocation(this.typeChecker, name);
     if (!localSym) {
       throw new Error(`TODO: local name ${name} has no symbol`);
     }
@@ -874,7 +873,7 @@ class Visitor {
           decl.moduleReference.expression :
           decl.moduleReference;
     }
-    const moduleSym = this.getSymbolAtLocation(moduleRef);
+    const moduleSym = getSymbolAtLocation(this.typeChecker, moduleRef);
     if (!moduleSym) {
       // This can occur when the module failed to resolve to anything.
       // See testdata/import_missing.ts for more on how that could happen.
@@ -917,10 +916,11 @@ class Visitor {
         // This is a namespace import, e.g.:
         //   import * as foo from 'foo';
         const name = clause.namedBindings.name;
-        const sym = this.getSymbolAtLocation(name);
+        const sym = getSymbolAtLocation(this.typeChecker, name);
         if (!sym) {
-          this.todo(
-              clause, `namespace import ${clause.getText()} has no symbol`);
+          todo(
+              this.sourceRoot, clause,
+              `namespace import ${clause.getText()} has no symbol`);
           return;
         }
         const kModuleObject = this.getSymbolName(sym, TSNamespace.VALUE);
@@ -979,7 +979,7 @@ class Visitor {
     this.emitSubkind(implicitProp, Subkind.IMPLICIT);
     this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, implicitProp);
 
-    const sym = this.getSymbolAtLocation(decl.name);
+    const sym = getSymbolAtLocation(this.typeChecker, decl.name);
     if (!sym) throw new Error('Getter/setter declaration has no symbols.');
 
     if (sym.declarations.find(ts.isGetAccessor)) {
@@ -1030,7 +1030,7 @@ class Visitor {
   visitExportDeclaration(decl: ts.ExportDeclaration) {
     if (decl.exportClause) {
       for (const exp of decl.exportClause.elements) {
-        const localSym = this.getSymbolAtLocation(exp.name);
+        const localSym = getSymbolAtLocation(this.typeChecker, exp.name);
         if (!localSym) {
           console.error(`TODO: export ${exp.name} has no symbol`);
           continue;
@@ -1047,13 +1047,15 @@ class Visitor {
       }
     }
     if (decl.moduleSpecifier) {
-      const moduleSym = this.getSymbolAtLocation(decl.moduleSpecifier);
+      const moduleSym =
+          getSymbolAtLocation(this.typeChecker, decl.moduleSpecifier);
       if (moduleSym) {
         const moduleName = this.getModulePathFromModuleReference(moduleSym);
         if (moduleName) {
           const kModule = this.newVName('module', moduleName);
           this.emitEdge(
-              this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS, kModule);
+              this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS,
+              kModule);
         }
       }
     }
@@ -1090,10 +1092,11 @@ class Visitor {
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
       case ts.SyntaxKind.ComputedPropertyName:
-        const sym = this.getSymbolAtLocation(decl.name);
+        const sym = getSymbolAtLocation(this.typeChecker, decl.name);
         if (!sym) {
-          this.todo(
-              decl.name, `declaration ${decl.name.getText()} has no symbol`);
+          todo(
+              this.sourceRoot, decl.name,
+              `declaration ${decl.name.getText()} has no symbol`);
           return undefined;
         }
         vname = this.getSymbolName(sym, TSNamespace.VALUE);
@@ -1121,7 +1124,7 @@ class Visitor {
     if (decl.initializer) this.visit(decl.initializer);
     if (vname && decl.kind === ts.SyntaxKind.PropertyDeclaration) {
       const declNode = decl as ts.PropertyDeclaration;
-      if (this.isStaticMember(declNode, declNode.parent)) {
+      if (isStaticMember(declNode, declNode.parent)) {
         this.emitFact(vname, FactName.TAG_STATIC, '');
       }
     }
@@ -1139,13 +1142,13 @@ class Visitor {
       context = Context.Setter;
     }
     if (decl.name) {
-      funcSym = this.getSymbolAtLocation(decl.name);
+      funcSym = getSymbolAtLocation(this.typeChecker, decl.name);
       if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
         this.visit((decl.name as ts.ComputedPropertyName).expression);
       }
       if (!funcSym) {
-        this.todo(
-            decl.name,
+        todo(
+            this.sourceRoot, decl.name,
             `function declaration ${decl.name.getText()} has no symbol`);
         return;
       }
@@ -1176,9 +1179,11 @@ class Visitor {
           ts.isInterfaceDeclaration(decl.parent)) {
         const parentName = decl.parent.name;
         if (parentName !== undefined) {
-          const parentSym = this.getSymbolAtLocation(parentName);
+          const parentSym = getSymbolAtLocation(this.typeChecker, parentName);
           if (!parentSym) {
-            this.todo(parentName, `parent ${parentName} has no symbol`);
+            todo(
+                this.sourceRoot, parentName,
+                `parent ${parentName} has no symbol`);
             return;
           }
           const kParent = this.getSymbolName(parentSym, TSNamespace.TYPE);
@@ -1196,7 +1201,8 @@ class Visitor {
         if (funcSym && decl.parent.heritageClauses) {
           for (const heritage of decl.parent.heritageClauses) {
             for (const baseType of heritage.types) {
-              const baseSym = this.getSymbolAtLocation(baseType.expression);
+              const baseSym =
+                  getSymbolAtLocation(this.typeChecker, baseType.expression);
               if (!baseSym || !baseSym.members) {
                 continue;
               }
@@ -1253,10 +1259,11 @@ class Visitor {
 
           switch (param.name.kind) {
             case ts.SyntaxKind.Identifier:
-              const sym = this.getSymbolAtLocation(param.name);
+              const sym = getSymbolAtLocation(this.typeChecker, param.name);
               if (!sym) {
-                this.todo(
-                    param.name, `param ${param.name.getText()} has no symbol`);
+                todo(
+                    this.sourceRoot, param.name,
+                    `param ${param.name.getText()} has no symbol`);
                 return;
               }
               const kParam = this.getSymbolName(sym, TSNamespace.VALUE);
@@ -1271,7 +1278,8 @@ class Visitor {
                 // children of the class type.
                 const parentName = param.parent.parent.name;
                 if (parentName !== undefined) {
-                  const parentSym = this.getSymbolAtLocation(parentName);
+                  const parentSym =
+                      getSymbolAtLocation(this.typeChecker, parentName);
                   if (parentSym !== undefined) {
                     const kClass =
                         this.getSymbolName(parentSym, TSNamespace.TYPE);
@@ -1320,10 +1328,11 @@ class Visitor {
    *     namespace Foo {}
    */
   visitModuleDeclaration(decl: ts.ModuleDeclaration) {
-    let sym = this.getSymbolAtLocation(decl.name);
+    let sym = getSymbolAtLocation(this.typeChecker, decl.name);
     if (!sym) {
-      this.todo(
-          decl.name, `module declaration ${decl.name.getText()} has no symbol`);
+      todo(
+          this.sourceRoot, decl.name,
+          `module declaration ${decl.name.getText()} has no symbol`);
       return;
     }
     // A TypeScript module declaration declares both a namespace (a Kythe
@@ -1357,9 +1366,11 @@ class Visitor {
   visitClassDeclaration(decl: ts.ClassDeclaration) {
     this.visitDecorators(decl.decorators || []);
     if (decl.name) {
-      const sym = this.getSymbolAtLocation(decl.name);
+      const sym = getSymbolAtLocation(this.typeChecker, decl.name);
       if (!sym) {
-        this.todo(decl.name, `class ${decl.name.getText()} has no symbol`);
+        todo(
+            this.sourceRoot, decl.name,
+            `class ${decl.name.getText()} has no symbol`);
         return;
       }
       // A 'class' declaration declares both a type (a 'record', representing
@@ -1398,7 +1409,7 @@ class Visitor {
   }
 
   visitEnumDeclaration(decl: ts.EnumDeclaration) {
-    const sym = this.getSymbolAtLocation(decl.name);
+    const sym = getSymbolAtLocation(this.typeChecker, decl.name);
     if (!sym) return;
     const kType = this.getSymbolName(sym, TSNamespace.TYPE);
     this.emitNode(kType, 'record');
@@ -1414,7 +1425,7 @@ class Visitor {
   }
 
   visitEnumMember(decl: ts.EnumMember) {
-    const sym = this.getSymbolAtLocation(decl.name);
+    const sym = getSymbolAtLocation(this.typeChecker, decl.name);
     if (!sym) return;
     const kMember = this.getSymbolName(sym, TSNamespace.VALUE);
     this.emitNode(kMember, 'constant');
@@ -1422,7 +1433,7 @@ class Visitor {
   }
 
   visitExpressionMember(node: ts.Node) {
-    const sym = this.getSymbolAtLocation(node);
+    const sym = getSymbolAtLocation(this.typeChecker, node);
     if (!sym) {
       // E.g. a field of an "any".
       return;
