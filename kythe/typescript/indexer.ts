@@ -464,11 +464,11 @@ class Visitor {
                   part = decl.name.text;
                 }
                 // Wrap literals in quotes, so that characters used in other
-                // signatures do not interfere with the signature creates by a
+                // signatures do not interfere with the signature created by a
                 // literal. For instance, a literal
                 //   obj.prop
                 // may interefere with the signature of `prop` on an object
-                // `foo`. The literal receives a signature
+                // `obj`. The literal receives a signature
                 //   "obj.prop"
                 // to avoid this.
                 if (ts.isStringLiteral(decl.name)) {
