@@ -45,7 +45,7 @@ import (
 var (
 	servingTable = flag.String("serving_table", "", "LevelDB serving table")
 
-	httpListeningAddr = flag.String("listen", "0.0.0.0:8080", "Listening address for HTTP server")
+	httpListeningAddr = flag.String("listen", ":8080", "Listening address for HTTP server (localhost:<port> allows access from only this machine)")
 	httpAllowOrigin   = flag.String("http_allow_origin", "", "If set, each HTTP response will contain a Access-Control-Allow-Origin header with the given value")
 	publicResources   = flag.String("public_resources", "", "Path to directory of static resources to serve")
 

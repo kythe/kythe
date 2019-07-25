@@ -107,9 +107,10 @@ fn web(kythe_dir: &Path) {
                 "-public_resources",
                 &kythe_dir.join("web/ui").to_string_lossy(),
                 "-grpc_listen",
-                "0.0.0.0:8081",
+                ":8081",  // "localhost:8081" allows access from only this machine
                 "-listen",
-                "0.0.0.0:8080"])
+                ":8080"  // "localhost:8080" allows access from only this machine
+                ])
         .spawn()
         .expect("could not start http_server");
 

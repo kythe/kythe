@@ -76,7 +76,7 @@ mkdir -p graphstore tables
 # Host the browser UI.
 /opt/kythe/tools/http_server -serving_table tables \
   -public_resources="/opt/kythe/web/ui" \
-  -listen="0.0.0.0:${BROWSE_PORT}"
+  -listen=":${BROWSE_PORT}"  # "localhost:${BROWSE_PORT}" allows access from only this machine
 ----
 
 TIP: The
