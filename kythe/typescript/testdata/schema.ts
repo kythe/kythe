@@ -23,6 +23,10 @@ class C {
   //- @property defines/binding VName("C#type.property", _, _, "testdata/schema", "typescript")
   property = 0;
 
+  // PropertyDeclarartion string literal
+  //- @"'propliteral'" defines/binding VName("C#type.\"propliteral\"", _, _, "testdata/schema", "typescript")
+  'propliteral' = 0;
+
   // PropertyDeclaration static member
   //- @property defines/binding VName("C.property", _, _, "testdata/schema", "typescript")
   static property = 0;
