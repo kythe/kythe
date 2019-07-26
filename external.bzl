@@ -555,10 +555,10 @@ def _go_dependencies():
 
     maybe(
         go_repository,
-        name = "com_github_ghodss_yaml",
-        commit = "c7ce16629ff4cd059ed96ed06419dd3856fd3577",
-        custom = "ghodss_yaml",
-        importpath = "github.com/ghodss/yaml",
+        name = "io_k8s_sigs_yaml",
+        custom = "k8s_yaml",
+        importpath = "sigs.k8s.io/yaml",
+        tag = "v1.1.0",
     )
 
     maybe(
