@@ -141,10 +141,6 @@ class KytheMetadataSupport : public MetadataSupport {
   /// \brief Load the JSON-encoded metadata from `json`.
   /// \return null on failure.
   static std::unique_ptr<MetadataFile> LoadFromJSON(absl::string_view json);
-  /// \brief Load the metadata rule from `value` into the Rule `rule`.
-  /// \return false on failure.
-  static bool LoadMetaElement(const rapidjson::Value& value,
-                              MetadataFile::Rule* rule);
 };
 
 }  // namespace kythe
