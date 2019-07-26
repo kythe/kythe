@@ -19,12 +19,31 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "google/protobuf/any.pb.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/message.h"
+#include "google/protobuf/util/json_util.h"
 #include "kythe/cxx/common/status_or.h"
 
 namespace kythe {
+
+/// \brief Deserializes a protobuf from a JSON text.
+/// \param stream The input text to parse.
+/// \param message The message to parse.
+/// \return The status message result of parsing.
+Status ParseFromJsonString(absl::string_view input,
+                           google::protobuf::Message* message);
+
+/// \brief Deserializes a protobuf from a JSON text.
+/// \param stream The input text to parse.
+/// \param options The JsonParseOptions to use.
+/// \param message The message to parse.
+/// \return The status message result of parsing.
+Status ParseFromJsonString(
+    absl::string_view input,
+    const google::protobuf::util::JsonParseOptions& options,
+    google::protobuf::Message* message);
 
 /// \brief Deserializes a protobuf from a JSON text stream.
 /// \param stream The input stream from which to read.
@@ -32,6 +51,16 @@ namespace kythe {
 /// \return The status message result of parsing.
 Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
                            google::protobuf::Message* message);
+
+/// \brief Deserializes a protobuf from a JSON text stream.
+/// \param stream The input stream from which to read.
+/// \param options The JsonParseOptions to use.
+/// \param message The message to parse.
+/// \return The status message result of parsing.
+Status ParseFromJsonStream(
+    google::protobuf::io::ZeroCopyInputStream* input,
+    const google::protobuf::util::JsonParseOptions& options,
+    google::protobuf::Message* message);
 
 /// \brief Deserializes a protobuf from its JSON form, including the format
 /// wrapper.
