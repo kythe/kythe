@@ -557,8 +557,8 @@ def _go_dependencies():
         go_repository,
         name = "io_k8s_sigs_yaml",
         custom = "k8s_yaml",
+        custom_git = "https://github.com/kubernetes-sigs/yaml",
         importpath = "sigs.k8s.io/yaml",
-        remote = "https://github.com/kubernetes-sigs/yaml",
         tag = "v1.1.0",
     )
 
