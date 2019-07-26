@@ -9,7 +9,7 @@ bazel build \
   --experimental_action_listener=//kythe/cxx/tools/generate_compile_commands:extract_json \
   --noshow_progress \
   --noshow_loading_progress \
-  $(bazel query 'kind(cc_.*, //...)') > /dev/null
+  $(bazel query 'kind(cc_.*, //...) - attr(tags, manual, //...)') > /dev/null
 
 pushd $(bazel info execution_root) > /dev/null
 echo "[" > compile_commands.json
