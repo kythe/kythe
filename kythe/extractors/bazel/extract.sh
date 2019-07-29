@@ -65,11 +65,11 @@ fi
 # It is ok if targets fail to build. We build using --keep_going and don't
 # care if some targets fail, but bazel will return a failure code if any
 # targets fail.
-/kythe/bazelisk --bazelrc=/kythe/bazelrc "$@" || true
-retval=$?
+retval=0
+/kythe/bazelisk --bazelrc=/kythe/bazelrc "$@" || retval=$?
 if [[ $retval -eq 1 ]]; then
     echo "Not all bazel targets built successfully, but continuing anyways."
-else if [[ $retval -ne 0 ]];
+elif [[ $retval -ne 0 ]]; then
     echo "Bazel build failed with exit code: $retval"
     exit 1
 fi
