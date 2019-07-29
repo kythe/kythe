@@ -11,7 +11,7 @@ docker_build(
         "@com_github_philwo_bazelisk//:bazelisk",
         "@javax_annotation_jsr250_api//jar",
     ],
-    image_name = "local_bazel_extractor",
+    image_name = "gcr.io/kythe-public/bazel-extractor",
     tags = ["manual"],
     use_cache = True,
 )
