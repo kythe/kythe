@@ -66,6 +66,13 @@ fi
 # care if some targets fail, but bazel will return a failure code if any
 # targets fail.
 /kythe/bazelisk --bazelrc=/kythe/bazelrc "$@" || true
+retval=$?
+if [ $retval -eq 1 ]; then
+    echo "Not all bazel targets built successfully, but continuing anyways."
+else if [ $retval -ne 0 ];
+    echo "Bazel build failed with exit code: $retval"
+    exit 1
+fi
 
 # Collect any extracted compilations.
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
