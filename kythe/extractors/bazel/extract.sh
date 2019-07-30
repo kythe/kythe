@@ -49,7 +49,7 @@ set -ex
 
 : ${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
 
-if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
+if [[ -n "$KYTHE_SYSTEM_DEPS" ]]; then
   echo "Installing $KYTHE_SYSTEM_DEPS"
   # TODO(jaysachs): unclear if we should bail if any packages fail to install
   apt-get update && \
@@ -58,7 +58,7 @@ if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
   apt-get clean
 fi
 
-if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
+if [[ -n "$KYTHE_PRE_BUILD_STEP" ]]; then
   eval "$KYTHE_PRE_BUILD_STEP"
 fi
 
