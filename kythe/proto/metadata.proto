@@ -60,7 +60,7 @@ message MappingRule {
 
   // Fields only relevant if type == anchor_anchor.
   kythe.proto.VName source_vname =
-      6;  // Anchor node in the source language which generated the text range.
+      6;  // Anchor node in the source file which generated the text range.
   uint32 source_begin =
       7;  // Beginning of the anchor node in the source language.
   uint32 source_end = 8;  // End of the anchor node in the source language.
