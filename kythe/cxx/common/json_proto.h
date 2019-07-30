@@ -36,7 +36,7 @@ Status ParseFromJsonString(absl::string_view input,
                            google::protobuf::Message* message);
 
 /// \brief Deserializes a protobuf from JSON text.
-/// \param stream The input text to parse.
+/// \param input The input text to parse.
 /// \param options The JsonParseOptions to use.
 /// \param message The message to parse.
 /// \return The status message result of parsing.
