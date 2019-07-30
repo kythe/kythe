@@ -463,6 +463,17 @@ class Visitor {
                 } else {
                   part = decl.name.text;
                 }
+                // Wrap literals in quotes, so that characters used in other
+                // signatures do not interfere with the signature created by a
+                // literal. For instance, a literal
+                //   obj.prop
+                // may interefere with the signature of `prop` on an object
+                // `obj`. The literal receives a signature
+                //   "obj.prop"
+                // to avoid this.
+                if (ts.isStringLiteral(decl.name)) {
+                  part = `"${part}"`;
+                }
                 // Instance members of a class are scoped to the type of the
                 // class.
                 if (ts.isClassDeclaration(decl) && lastNode !== undefined &&
@@ -1053,7 +1064,8 @@ class Visitor {
         if (moduleName) {
           const kModule = this.newVName('module', moduleName);
           this.emitEdge(
-              this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS, kModule);
+              this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS,
+              kModule);
         }
       }
     }
@@ -1090,6 +1102,8 @@ class Visitor {
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
       case ts.SyntaxKind.ComputedPropertyName:
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
         const sym = this.getSymbolAtLocation(decl.name);
         if (!sym) {
           this.todo(
@@ -1109,10 +1123,6 @@ class Visitor {
         for (const element of (decl.name as ts.BindingPattern).elements) {
           this.visit(element);
         }
-        break;
-      case ts.SyntaxKind.StringLiteral:
-      case ts.SyntaxKind.NumericLiteral:
-        // Nothing meaningful can be recorded about literal expressions.
         break;
       default:
         break;
@@ -1531,6 +1541,8 @@ class Visitor {
         this.visitVariableDeclaration(node as ts.BindingElement);
         return;
       case ts.SyntaxKind.Identifier:
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
         // Assume that this identifer is occurring as part of an
         // expression; we handle identifiers that occur in other
         // circumstances (e.g. in a type) separately in visitType.

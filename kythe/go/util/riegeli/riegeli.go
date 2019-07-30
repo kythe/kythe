@@ -337,8 +337,18 @@ func (w *Writer) Close() error {
 	return nil
 }
 
+// Position returns the current position of the Writer.
+func (w *Writer) Position() RecordPosition {
+	if !w.fileHeaderWritten {
+		return RecordPosition{ChunkBegin: int64(w.w.pos) + blockHeaderSize}
+	}
+	return RecordPosition{
+		ChunkBegin:  int64(w.w.pos),
+		RecordIndex: int64(w.recordWriter.numRecords),
+	}
+}
+
 // TODO(schroederc): add concatenation function
-// TODO(schroederc): return positions from Writer
 
 // A RecordPosition is a pointer to the starting offset of a record within a
 // Riegeli file.

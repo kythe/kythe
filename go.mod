@@ -4,11 +4,10 @@ require (
 	bitbucket.org/creachadair/shell v0.0.4
 	bitbucket.org/creachadair/stringset v0.0.3
 	github.com/DataDog/zstd v1.3.5
-	github.com/apache/beam v0.0.0-20190503190717-3cf3a4708c58
+	github.com/apache/beam v0.0.0-20190723215700-7688bcfc8ebb
 	github.com/bazelbuild/rules_go v0.0.0-20190612215247-20ab48681cad
 	github.com/beevik/etree v1.1.0
 	github.com/dsnet/compress v0.0.1 // indirect
-	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/golang/protobuf v1.3.0
 	github.com/golang/snappy v0.0.1
 	github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540
@@ -44,4 +43,5 @@ require (
 	google.golang.org/api v0.0.0-20180404000327-3097bf831ede
 	google.golang.org/grpc v1.16.0
 	gopkg.in/yaml.v2 v2.2.2 // indirect
+	sigs.k8s.io/yaml v1.1.0
 )
