@@ -35,7 +35,7 @@ namespace kythe {
 Status ParseFromJsonString(absl::string_view input,
                            google::protobuf::Message* message);
 
-/// \brief Deserializes a protobuf from a JSON text.
+/// \brief Deserializes a protobuf from JSON text.
 /// \param stream The input text to parse.
 /// \param options The JsonParseOptions to use.
 /// \param message The message to parse.
