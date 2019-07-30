@@ -29,5 +29,6 @@ java_library(
         "@com_google_protobuf//:protobuf_java",
         "@com_google_protobuf//:protobuf_java_util",
         "@javax_annotation_jsr250_api//jar",
+        "@org_checkerframework_checker_qual//jar",
     ],
 )

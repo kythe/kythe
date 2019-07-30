@@ -18,9 +18,9 @@ package com.google.devtools.kythe.extractors.java;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import javax.annotation.Nullable;
 import javax.tools.JavaFileManager.Location;
 import javax.tools.JavaFileObject;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A compilation with multiple rounds of annotation processing will create new file objects for each

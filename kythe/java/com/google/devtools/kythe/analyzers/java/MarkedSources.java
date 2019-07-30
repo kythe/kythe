@@ -28,8 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** {@link MarkedSource} utility class. */
 public final class MarkedSources {
@@ -116,7 +116,7 @@ public final class MarkedSources {
   static MarkedSource construct(
       SignatureGenerator signatureGenerator,
       Symbol sym,
-      @Nullable MarkedSource.Builder msBuilder,
+      MarkedSource.@Nullable Builder msBuilder,
       @Nullable Iterable<MarkedSource> postChildren,
       Function<Symbol, Optional<VName>> symNames) {
     MarkedSource markedType = markType(signatureGenerator, sym, symNames);
@@ -126,7 +126,7 @@ public final class MarkedSources {
   private static MarkedSource construct(
       SignatureGenerator signatureGenerator,
       Symbol sym,
-      @Nullable MarkedSource.Builder msBuilder,
+      MarkedSource.@Nullable Builder msBuilder,
       @Nullable Iterable<MarkedSource> postChildren,
       @Nullable MarkedSource markedType) {
     MarkedSource.Builder markedSource = msBuilder == null ? MarkedSource.newBuilder() : msBuilder;
