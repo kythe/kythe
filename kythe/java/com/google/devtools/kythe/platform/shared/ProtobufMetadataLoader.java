@@ -25,7 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.function.Function;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Loads protobuf metadata (stored as GeneratedCodeInfo messages). */
 public class ProtobufMetadataLoader implements MetadataLoader {

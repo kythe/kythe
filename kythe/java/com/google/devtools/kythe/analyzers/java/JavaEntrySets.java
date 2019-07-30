@@ -48,10 +48,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
 import javax.tools.JavaFileObject;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Specialization of {@link KytheEntrySets} for Java. */
 public class JavaEntrySets extends KytheEntrySets {
@@ -89,7 +89,7 @@ public class JavaEntrySets extends KytheEntrySets {
       Symbol sym,
       String signature,
       // TODO(schroederc): separate MarkedSource generation from JavaEntrySets
-      @Nullable MarkedSource.Builder msBuilder,
+      MarkedSource.@Nullable Builder msBuilder,
       @Nullable Iterable<MarkedSource> postChildren) {
     return getNode(
         signatureGenerator,
