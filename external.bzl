@@ -465,7 +465,7 @@ def _go_dependencies():
         go_repository,
         name = "com_github_apache_beam",
         build_file_proto_mode = "disable",
-        commit = "3cf3a4708c588e32e85a1d4cfdb29ab5a0203efc",
+        commit = "7688bcfc8ebb4bedf26c5c3b3fe0e13c0ec2aa6d",
         custom = "beam",
         importpath = "github.com/apache/beam",
     )
@@ -555,10 +555,11 @@ def _go_dependencies():
 
     maybe(
         go_repository,
-        name = "com_github_ghodss_yaml",
-        commit = "c7ce16629ff4cd059ed96ed06419dd3856fd3577",
-        custom = "ghodss_yaml",
-        importpath = "github.com/ghodss/yaml",
+        name = "io_k8s_sigs_yaml",
+        custom = "k8s_yaml",
+        custom_git = "https://github.com/kubernetes-sigs/yaml",
+        importpath = "sigs.k8s.io/yaml",
+        tag = "v1.1.0",
     )
 
     maybe(

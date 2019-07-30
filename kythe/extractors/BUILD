@@ -11,7 +11,17 @@ exports_files(["extractors.bzl"])
 proto_lang_toolchain(
     name = "java_proto_toolchain",
     command_line = "--java_out=annotate_code:$(OUT)",
-    runtime = "@com_google_protobuf//:protobuf_java",
+    runtime = ":protobuf_java",
+)
+
+# Clone of the java protobuf runtime that also exposes jsr250 so the generated
+# proto classes with our inserted annotations can be compiled.
+java_library(
+    name = "protobuf_java",
+    exports = [
+        "@com_google_protobuf//:protobuf_java",
+        "@javax_annotation_jsr250_api//jar",
+    ],
 )
 
 # Clone of default C++ proto toolchain with "annotate_headers" enabled for

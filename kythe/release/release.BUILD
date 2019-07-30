@@ -29,11 +29,17 @@ proto_lang_toolchain(
     runtime = ":protobuf",
 )
 
+java_import(
+    name = "jsr250",
+    jars = [ "jsr250-api-1.0.jar"],
+)
+
 java_library(
     name = "protobuf",
     visibility = ["//visibility:private"],
     exports = [
         "@com_google_protobuf//:protobuf_java",
+        ":jsr250",
     ],
     runtime_deps = [
         "@com_google_protobuf//:protobuf_java",
