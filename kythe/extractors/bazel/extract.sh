@@ -62,16 +62,15 @@ if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
   eval "$KYTHE_PRE_BUILD_STEP"
 fi
 
-# It is ok if targets fail to build. We build using --keep_going and don't
-# care if some targets fail, but bazel will return a failure code if any
-# targets fail.
-retval=0
-/kythe/bazelisk --bazelrc=/kythe/bazelrc "$@" || retval=$?
-if [[ $retval -eq 1 ]]; then
-    echo "Not all bazel targets built successfully, but continuing anyways."
-elif [[ $retval -ne 0 ]]; then
-    echo "Bazel build failed with exit code: $retval"
-    exit 1
+if [[ -n "$KYTHE_BAZEL_TARGET" ]]; then
+  sh /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" -- "$KYTHE_BAZEL_TARGET"
+else
+  # If the user supplied a bazel query, execute it and run bazel, but we have to
+  # shard the results to different bazel runs because the bazel command line
+  # cannot take many arguments. Right now we build 30 targets at a time. We can
+  # change this value or make it settable once we have more data on the
+  # implications.
+  /kythe/bazelisk query "$KYTHE_BAZEL_QUERY" | xargs -t -L 30 sh /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" --
 fi
 
 # Collect any extracted compilations.
