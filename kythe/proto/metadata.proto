@@ -32,7 +32,7 @@ message GeneratedCodeInfo {
 }
 
 // Metadata for a single mapping between a generated source range and a node
-// in the source language.
+// in the source language or file.
 message MappingRule {
   enum Type {
     NONE = 0;
@@ -60,11 +60,9 @@ message MappingRule {
 
   // Fields only relevant if type == anchor_anchor.
   kythe.proto.VName source_vname =
-      6;  // Anchor node in the source file which generated the text range.
-  uint32 source_begin =
-      7;  // Beginning of the anchor node in the source language.
-  uint32 source_end = 8;  // End of the anchor node in the source language.
-  uint32 target_begin =
-      9;  // Beginning of the range to match in the generated text.
-  uint32 target_end = 10;  // End of the range to match in the generated text.
+      6;                    // Anchor node in the generating source file.
+  uint32 source_begin = 7;  // loc/start of the anchor node in the source file.
+  uint32 source_end = 8;    // loc/end of the anchor node in the source file.
+  uint32 target_begin = 9;  // Start of the range in the generated text.
+  uint32 target_end = 10;   // End of the range in the generated text.
 }
