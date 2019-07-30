@@ -28,7 +28,7 @@
 
 namespace kythe {
 
-/// \brief Deserializes a protobuf from a JSON text.
+/// \brief Deserializes a protobuf from JSON text.
 /// \param stream The input text to parse.
 /// \param message The message to parse.
 /// \return The status message result of parsing.
