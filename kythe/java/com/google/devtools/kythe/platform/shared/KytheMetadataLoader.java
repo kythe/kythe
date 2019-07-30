@@ -32,7 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Loads Kythe JSON-formatted metadata (with the .meta extension). */
 public class KytheMetadataLoader implements MetadataLoader {
@@ -65,8 +65,7 @@ public class KytheMetadataLoader implements MetadataLoader {
       return new AutoValue_KytheMetadataLoader_RuleXorError(null, error);
     }
 
-    @Nullable
-    abstract Metadata.Rule rule();
+    abstract Metadata.@Nullable Rule rule();
 
     @Nullable
     abstract String error();

@@ -28,15 +28,15 @@
 
 namespace kythe {
 
-/// \brief Deserializes a protobuf from a JSON text.
-/// \param stream The input text to parse.
+/// \brief Deserializes a protobuf from JSON text.
+/// \param input The input text to parse.
 /// \param message The message to parse.
 /// \return The status message result of parsing.
 Status ParseFromJsonString(absl::string_view input,
                            google::protobuf::Message* message);
 
-/// \brief Deserializes a protobuf from a JSON text.
-/// \param stream The input text to parse.
+/// \brief Deserializes a protobuf from JSON text.
+/// \param input The input text to parse.
 /// \param options The JsonParseOptions to use.
 /// \param message The message to parse.
 /// \return The status message result of parsing.
@@ -53,7 +53,7 @@ Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
                            google::protobuf::Message* message);
 
 /// \brief Deserializes a protobuf from a JSON text stream.
-/// \param stream The input stream from which to read.
+/// \param input The input stream from which to read.
 /// \param options The JsonParseOptions to use.
 /// \param message The message to parse.
 /// \return The status message result of parsing.
