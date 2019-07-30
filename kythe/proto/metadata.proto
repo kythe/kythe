@@ -61,6 +61,10 @@ message MappingRule {
   // Fields only relevant if type == anchor_anchor.
   kythe.proto.VName source_vname =
       6;                    // Anchor node in the generating source file.
+                            // Note: the signature in this vname, if present,
+                            // will typically be replaced by the target indexer
+                            // using its own anchor-construction rules based on
+                            // source_begin and source_end.
   uint32 source_begin = 7;  // loc/start of the anchor node in the source file.
   uint32 source_end = 8;    // loc/end of the anchor node in the source file.
   uint32 target_begin = 9;  // Start of the range in the generated text.
