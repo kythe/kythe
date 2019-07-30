@@ -63,7 +63,7 @@ if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
 fi
 
 if [[ -n "$KYTHE_BAZEL_TARGET" ]]; then
-  sh /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" -- "$KYTHE_BAZEL_TARGET"
+  sh /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" -- $KYTHE_BAZEL_TARGET
 else
   # If the user supplied a bazel query, execute it and run bazel, but we have to
   # shard the results to different bazel runs because the bazel command line
