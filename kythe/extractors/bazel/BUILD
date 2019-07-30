@@ -4,6 +4,7 @@ docker_build(
     name = "docker",
     src = "Dockerfile",
     data = [
+        "bazel_wrapper.sh",
         "extract.sh",
         "extractors.bazelrc",
         "//kythe/release",
