@@ -89,7 +89,7 @@ public class JavaEntrySets extends KytheEntrySets {
       Symbol sym,
       String signature,
       // TODO(schroederc): separate MarkedSource generation from JavaEntrySets
-       MarkedSource.@Nullable Builder msBuilder,
+      MarkedSource.@Nullable Builder msBuilder,
       @Nullable Iterable<MarkedSource> postChildren) {
     return getNode(
         signatureGenerator,
