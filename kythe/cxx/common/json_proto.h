@@ -53,7 +53,7 @@ Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
                            google::protobuf::Message* message);
 
 /// \brief Deserializes a protobuf from a JSON text stream.
-/// \param stream The input stream from which to read.
+/// \param input The input stream from which to read.
 /// \param options The JsonParseOptions to use.
 /// \param message The message to parse.
 /// \return The status message result of parsing.
