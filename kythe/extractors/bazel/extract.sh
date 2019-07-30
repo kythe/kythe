@@ -63,7 +63,13 @@ if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
 fi
 
 if [[ -n "$KYTHE_BAZEL_TARGET" ]]; then
-  sh /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" -- "$KYTHE_BAZEL_TARGET"
+  # $KYTHE_BAZEL_TARGET is unquoted because bazel_wrapper needs to see each
+  # target expression in KYTHE_BAZEL_WRAPPER as individual arguments. For
+  # example, if KYTHE_BAZEL_TARGET=//foo/... -//foo/test/..., bazel_wrapper
+  # needs to see two valid target expressions (//foo/... and -//foo/test/...)
+  # not one invalid target expression with white space
+  # ("//foo/... -//foo/test/...").
+  sh /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" -- $KYTHE_BAZEL_TARGET
 else
   # If the user supplied a bazel query, execute it and run bazel, but we have to
   # shard the results to different bazel runs because the bazel command line
