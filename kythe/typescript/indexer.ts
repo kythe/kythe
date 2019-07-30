@@ -448,7 +448,6 @@ class Visitor {
         case ts.SyntaxKind.GetAccessor:
         case ts.SyntaxKind.SetAccessor:
         case ts.SyntaxKind.ShorthandPropertyAssignment:
-        case ts.SyntaxKind.JsxAttribute:
           const decl = node as ts.NamedDeclaration;
           if (decl.name) {
             switch (decl.name.kind) {
@@ -532,19 +531,14 @@ class Visitor {
           }
           break;
         case ts.SyntaxKind.JsxElement:
-          // A JSX element refers to both the opening and closing tags of an
-          // element, like
-          //   <Elem></Elem>
-          // Add the opening tag to the scope name.
-          const elem = node as ts.JsxElement;
-          parts.push(elem.openingElement.tagName.getText());
-          break;
         case ts.SyntaxKind.JsxSelfClosingElement:
-          // A self-closing element looks like
-          //   <Elem attr={attr} />
-          // Add the element tag to the scope name.
-          const scElem = node as ts.JsxSelfClosingElement;
-          parts.push(scElem.tagName.getText());
+        case ts.SyntaxKind.JsxAttribute:
+          // Given a unique anonymous name to all JSX nodes. This prevents
+          // conflicts in cases where attributes would otherwise have the same
+          // name, like `src` in
+          //   <img src={a} />
+          //   <img src={b} />
+          parts.push(`jsx${this.anonId++}`);
           break;
         default:
           // Most nodes are children of other nodes that do not introduce a
