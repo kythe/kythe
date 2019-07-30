@@ -145,8 +145,7 @@ export class OffsetTable {
     // offset. If necessary, backtrack.
     while (byte > findOfs) {
       const offset = this.offsets[span--];
-      u16 = offset[0];
-      byte = offset[1];
+      [u16, byte] = offset;
     }
     // Scan forward to find the offset to lookup for.
     const scanner = new Scanner(this.buf, byte);
