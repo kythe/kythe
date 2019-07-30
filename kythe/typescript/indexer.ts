@@ -141,13 +141,15 @@ export enum TSNamespace {
 }
 
 /**
- * Context represents the environment a node is declared in, and only applies to
- * nodes with multiple declarations. The context may be used for disambiguating
- * node declarations. A Getter context means the node is declared as a getter; a
- * Setter context means it is declared as a setter.
+ * Context represents the environment a node is declared in, and may be used for
+ * disambiguating a node's declarations if it has multiple.
  */
 export enum Context {
+  /** No disambiguation about a node's declarations. */
+  Any,
+  /** The node is declared as a getter. */
   Getter,
+  /** The node is declared as a setter. */
   Setter,
 }
 
@@ -190,6 +192,78 @@ function todo(sourceRoot: string, node: ts.Node, message: string) {
 }
 
 /**
+ * A SymbolVNameStore stores a mapping of symbols to the (many) VNames it may
+ * have. Each TypeScript symbol can be be of a different TypeScript namespace
+ * and be declared in a unique context, leading to a total (`TSNamespace` *
+ * `Context`) number of possible VNames for the symbol.
+ *
+ *              TSNamespace + Context
+ *              -----------   -------
+ *              TYPE          Any
+ * ts.Symbol -> VALUE         Getter  -> VName
+ *              NAMESPACE     Setter
+ *                            ...
+ *
+ * The `Any` context makes no guarantee of symbol declaration disambiguation.
+ * As a result, unless explicitly set for a given symbol and namespace, the
+ * VName of an `Any` context is lazily set to the VName of an arbitrary context.
+ */
+type NamespaceAndContext = string&{__brand: 'nsctx'};
+class SymbolVNameStore {
+  private readonly cache =
+      new Map<ts.Symbol, Map<NamespaceAndContext, Readonly<VName>>>();
+
+  /**
+   * Serializes a namespace and context as a string to lookup in the cache.
+   *
+   * Each instance of a JavaScript object is unique, so using one as a key fails
+   * because a new object would be generated every time the cache is queried.
+   */
+  private serialize(ns: TSNamespace, context: Context): NamespaceAndContext {
+    return `${ns}${context}` as NamespaceAndContext;
+  }
+
+  /** Get a symbol VName for a given namespace and context, if it exists. */
+  get(symbol: ts.Symbol, ns: TSNamespace, context: Context): VName|undefined {
+    if (this.cache.has(symbol)) {
+      const nsCtx = this.serialize(ns, context);
+      return this.cache.get(symbol)!.get(nsCtx);
+    }
+    return undefined;
+  }
+
+  /**
+   * Set a symbol VName for a given namespace and context. Throws if a VName
+   * already exists.
+   */
+  set(symbol: ts.Symbol, ns: TSNamespace, context: Context, vname: VName) {
+    let vnameMap = this.cache.get(symbol);
+    const nsCtx = this.serialize(ns, context);
+    if (vnameMap) {
+      // If there is already a map for the symbol, check that a VName is not
+      // overriden. Then set the VName for the given namespace and context.
+      if (vnameMap.has(nsCtx)) {
+        throw new Error(`VName already set with signature ${
+            vnameMap.get(nsCtx)!.signature}`);
+      }
+      vnameMap.set(nsCtx, vname);
+    } else {
+      // If there is no map for the symbol, create a new one with an entry of
+      // the VName for the given namepsace and context.
+      this.cache.set(symbol, new Map([[nsCtx, vname]]));
+    }
+
+    // Set the symbol VName for the given namespace and `Any` context, if it has
+    // not already been set.
+    const nsAny = this.serialize(ns, Context.Any);
+    vnameMap = this.cache.get(symbol)!;
+    if (!vnameMap.has(nsAny)) {
+      vnameMap.set(nsAny, vname);
+    }
+  }
+}
+
+/**
  * StandardIndexerContext provides the standard definition of information about
  * a TypeScript program and common methods used by the TypeScript indexer and
  * its plugins. See the IndexerContext interface definition for more details.
@@ -207,13 +281,9 @@ class StandardIndexerContext implements IndexerHost {
   private rootDirs: string[];
 
   /**
-   * symbolNames maps ts.Symbols to their assigned VNames.
-   * The value is a tuple of the separate TypeScript namespaces, and entries
-   * in it correspond to TSNamespace values.  See the documentation of
-   * TSNamespace.
+   * symbolNames is a store of ts.Symbols to their assigned VNames.
    */
-  private symbolNames =
-      new Map<ts.Symbol, [VName | null, VName|null, VName|null]>();
+  private symbolNames = new SymbolVNameStore();
 
   /**
    * anonId increments for each anonymous block, to give them unique
@@ -249,7 +319,6 @@ class StandardIndexerContext implements IndexerHost {
     this.rootDirs = rootDirs;
     this.typeChecker = this.program.getTypeChecker();
   }
-
 
   getOffsetTable(path: string): Readonly<utf8.OffsetTable> {
     let table = this.offsetTables.get(path);
@@ -496,24 +565,18 @@ class StandardIndexerContext implements IndexerHost {
    * optionally specified to help disambiguate nodes with multiple declarations.
    * See the documentation of Context for more information.
    */
-  getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName {
-    let vnames = this.symbolNames.get(sym);
+  getSymbolName(
+      sym: ts.Symbol, ns: TSNamespace, context: Context = Context.Any): VName {
+    const cached = this.symbolNames.get(sym, ns, context);
+    if (cached) return cached;
+
     let declarations = sym.declarations;
-
-    // Symbols with multiple declarations are disambiguated by the context
-    // they are used in.
-    const contextApplies = context !== undefined && declarations.length > 1;
-
-    if (!contextApplies && vnames && vnames[ns]) return vnames[ns]!;
-    // TODO: update symbolNames table to account for context kind
-
-    if (!declarations || declarations.length < 1) {
+    if (declarations.length < 1) {
       throw new Error('TODO: symbol has no declarations?');
     }
 
-    // Disambiguate symbols with multiple declarations using a context. This
-    // only applies to getters and setters currently.
-    if (contextApplies) {
+    // Disambiguate symbols with multiple declarations using a context.
+    if (sym.declarations.length > 1) {
       switch (context) {
         case Context.Getter:
           declarations = declarations.filter(ts.isGetAccessor);
@@ -521,13 +584,9 @@ class StandardIndexerContext implements IndexerHost {
         case Context.Setter:
           declarations = declarations.filter(ts.isSetAccessor);
           break;
+        default:
+          break;
       }
-    }
-    // Otherwise, if there are multiple declarations but no context is
-    // provided, try to return the getter declaration.
-    else if (declarations.length > 1) {
-      const getDecls = declarations.filter(ts.isGetAccessor);
-      if (getDecls.length > 0) declarations = getDecls;
     }
 
     const decl = declarations[0];
@@ -541,33 +600,35 @@ class StandardIndexerContext implements IndexerHost {
       vname.signature += '#namespace';
     }
 
-    if (!contextApplies) {
-      // Save it in the appropriate slot in the symbolNames table.
-      if (!vnames) vnames = [null, null, null];
-      vnames[ns] = vname;
-      this.symbolNames.set(sym, vnames);
-    }
-
+    // Cache the VName for future lookups.
+    this.symbolNames.set(sym, ns, context, vname);
     return vname;
   }
 
   aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName {
     // This imported symbol can refer to a type, a value, or both.
-    const kImportValue = remoteSym.flags & ts.SymbolFlags.Value ?
-        this.getSymbolName(remoteSym, TSNamespace.VALUE) :
-        null;
-    const kImportType = remoteSym.flags & ts.SymbolFlags.Type ?
-        this.getSymbolName(remoteSym, TSNamespace.TYPE) :
-        null;
-    // Mark the local symbol with the remote symbol's VName so that all
+    // Attempt to create the Kythe VName for both the symbol's type and value
+    // and mark the local symbol with the remote symbol's VName so that all
     // references resolve to the remote symbol.
-    this.symbolNames.set(localSym, [kImportType, kImportValue, kImportType]);
+    let kType, kValue;
+    if (remoteSym.flags & ts.SymbolFlags.Type) {
+      kType = this.getSymbolName(remoteSym, TSNamespace.TYPE);
+      if (kType) {
+        this.symbolNames.set(localSym, TSNamespace.TYPE, Context.Any, kType);
+      }
+    }
+    if (remoteSym.flags & ts.SymbolFlags.Value) {
+      kValue = this.getSymbolName(remoteSym, TSNamespace.VALUE);
+      if (kValue) {
+        this.symbolNames.set(localSym, TSNamespace.VALUE, Context.Any, kValue);
+      }
+    }
 
     // The name anchor must link somewhere.  In rare cases a symbol is both
     // a type and a value that resolve to two different locations; for now,
     // because we must choose one, just prefer linking to the value.
     // One of the value or type reference should be non-null.
-    return (kImportValue || kImportType)!;
+    return (kValue || kType)!;
   }
 
   /**
@@ -884,7 +945,7 @@ class Visitor {
   }
 
   /**
-   * visitImportSpecifier handles a single entry in an import statement, e.g.
+   * visitImport handles a single entry in an import statement, e.g.
    * "bar" in code like
    *   import {foo, bar} from 'baz';
    * See visitImportDeclaration for the code handling the entire statement.
