@@ -98,32 +98,64 @@ describe('utf8 create offset table', () => {
   });
 });
 
-describe('utf8 lookup', () => {
+describe('lookupUtf8', () => {
   it('should throw an error at invalid lookup positions', () => {
     const buf = Buffer.from('🐶');
     const table = new OffsetTable(buf, 1);
-    expect(() => table.lookup(0)).not.toThrow();
+    expect(() => table.lookupUtf8(0)).not.toThrow();
     // offset 1 is within a surrogate pair so it's invalid.
-    expect(() => table.lookup(1)).toThrowError('The lookup offset is invalid');
+    expect(() => table.lookupUtf8(1))
+        .toThrowError('The lookup offset is invalid');
   });
 
   it('should find the offsets when span size is greater than 1', () => {
     const buf = Buffer.from('🐶•🐶•');
     const table = new OffsetTable(buf, 32);
-    expect(table.lookup(0)).toEqual(0);
-    expect(table.lookup(2)).toEqual(4);
-    expect(table.lookup(3)).toEqual(7);
-    expect(table.lookup(5)).toEqual(11);
-    expect(table.lookup(6)).toEqual(14);
+    expect(table.lookupUtf8(0)).toEqual(0);
+    expect(table.lookupUtf8(2)).toEqual(4);
+    expect(table.lookupUtf8(3)).toEqual(7);
+    expect(table.lookupUtf8(5)).toEqual(11);
+    expect(table.lookupUtf8(6)).toEqual(14);
   });
 
   it('should find the offsets when there are multiple spans', () => {
     const buf = Buffer.from('🐶•🐶•');
     const table = new OffsetTable(buf, 2);
-    expect(table.lookup(0)).toEqual(0);
-    expect(table.lookup(2)).toEqual(4);
-    expect(table.lookup(3)).toEqual(7);
-    expect(table.lookup(5)).toEqual(11);
-    expect(table.lookup(6)).toEqual(14);
+    expect(table.lookupUtf8(0)).toEqual(0);
+    expect(table.lookupUtf8(2)).toEqual(4);
+    expect(table.lookupUtf8(3)).toEqual(7);
+    expect(table.lookupUtf8(5)).toEqual(11);
+    expect(table.lookupUtf8(6)).toEqual(14);
+  });
+});
+
+describe('lookupUtf16', () => {
+  it('should throw an error at invalid lookup positions', () => {
+    const buf = Buffer.from('🐶');
+    const table = new OffsetTable(buf, 1);
+    expect(() => table.lookupUtf16(0)).not.toThrow();
+    // offset 1 is within a surrogate pair so it's invalid.
+    expect(() => table.lookupUtf16(1))
+        .toThrowError('The lookup offset is invalid');
+  });
+
+  it('should find the offsets when span size is greater than 1', () => {
+    const buf = Buffer.from('🐶•🐶•');
+    const table = new OffsetTable(buf, 32);
+    expect(table.lookupUtf16(0)).toEqual(0);
+    expect(table.lookupUtf16(4)).toEqual(2);
+    expect(table.lookupUtf16(7)).toEqual(3);
+    expect(table.lookupUtf16(11)).toEqual(5);
+    expect(table.lookupUtf16(14)).toEqual(6);
+  });
+
+  it('should find the offsets when there are multiple spans', () => {
+    const buf = Buffer.from('🐶•🐶•');
+    const table = new OffsetTable(buf, 2);
+    expect(table.lookupUtf16(0)).toEqual(0);
+    expect(table.lookupUtf16(4)).toEqual(2);
+    expect(table.lookupUtf16(7)).toEqual(3);
+    expect(table.lookupUtf16(11)).toEqual(5);
+    expect(table.lookupUtf16(14)).toEqual(6);
   });
 });
