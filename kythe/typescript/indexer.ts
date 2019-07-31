@@ -195,16 +195,16 @@ function todo(sourceRoot: string, node: ts.Node, message: string) {
  * its plugins. See the IndexerContext interface definition for more details.
  */
 class StandardIndexerContext implements IndexerHost {
-  private offsetTables = new Map<string, utf8.OffsetTable>();
+  private readonly offsetTables = new Map<string, utf8.OffsetTable>();
 
   /** A shorter name for the rootDir in the CompilerOptions. */
-  private sourceRoot: string;
+  private readonly sourceRoot: string;
 
   /**
    * rootDirs is the list of rootDirs in the compiler options, sorted
    * longest first.  See this.moduleName().
    */
-  private rootDirs: string[];
+  private readonly rootDirs: string[];
 
   /**
    * symbolNames maps ts.Symbols to their assigned VNames.
@@ -212,7 +212,7 @@ class StandardIndexerContext implements IndexerHost {
    * in it correspond to TSNamespace values.  See the documentation of
    * TSNamespace.
    */
-  private symbolNames =
+  private readonly symbolNames =
       new Map<ts.Symbol, [VName | null, VName|null, VName|null]>();
 
   /**
@@ -224,9 +224,9 @@ class StandardIndexerContext implements IndexerHost {
   /**
    * anonNames maps nodes to the anonymous names assigned to them.
    */
-  private anonNames = new Map<ts.Node, string>();
+  private readonly anonNames = new Map<ts.Node, string>();
 
-  private typeChecker: ts.TypeChecker;
+  private readonly typeChecker: ts.TypeChecker;
 
   constructor(
       /**
@@ -240,7 +240,7 @@ class StandardIndexerContext implements IndexerHost {
       /** All source file paths in the TypeScript program. */
       public paths: string[],
       public program: ts.Program,
-      private readFile: (path: string) => Buffer = fs.readFileSync,
+      private readonly readFile: (path: string) => Buffer = fs.readFileSync,
   ) {
     this.sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
     let rootDirs = program.getCompilerOptions().rootDirs || [this.sourceRoot];
@@ -616,7 +616,7 @@ class Visitor {
 
   constructor(
       private readonly host: IndexerHost,
-      private file: ts.SourceFile,
+      private readonly file: ts.SourceFile,
   ) {
     this.sourceRoot =
         this.host.program.getCompilerOptions().rootDir || process.cwd();
