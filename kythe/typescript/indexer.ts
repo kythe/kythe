@@ -174,7 +174,7 @@ function hasExpressionInitializer(node: ts.Node):
 }
 
 /**
- * Determines is a node is a static member of a class.
+ * Determines if a node is a static member of a class.
  */
 function isStaticMember(node: ts.Node, klass: ts.Declaration): boolean {
   return ts.isPropertyDeclaration(node) && node.parent === klass &&
