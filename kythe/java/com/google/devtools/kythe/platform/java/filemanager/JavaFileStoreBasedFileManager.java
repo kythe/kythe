@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
-import com.google.common.flogger.FluentLogger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -36,7 +35,6 @@ import javax.tools.StandardLocation;
 /** {@link StandardJavaFileManager} backed by a {@link JavaFileStore}. */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 public class JavaFileStoreBasedFileManager extends ForwardingStandardJavaFileManager {
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   protected JavaFileStore javaFileStore;
 

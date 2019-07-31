@@ -155,8 +155,7 @@ final class CompilationUnitFileSystemProvider extends FileSystemProvider {
     throw new UnsupportedOperationException();
   }
 
-  private static CompilationUnitPath toCompilationUnitPath(Path path)
-      throws ProviderMismatchException {
+  private static CompilationUnitPath toCompilationUnitPath(Path path) {
     checkNotNull(path);
     if (!(path instanceof CompilationUnitPath)) {
       throw new ProviderMismatchException();
