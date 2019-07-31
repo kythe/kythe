@@ -19,7 +19,7 @@ package com.google.devtools.kythe.platform.shared.filesystem;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 
-/** {@link BasicFileAttributes} implementat for {@link CompilationUnitFileSystem}.  */
+/** {@link BasicFileAttributes} implementat for {@link CompilationUnitFileSystem}. */
 final class CompilationUnitFileAttributes implements BasicFileAttributes {
   private final long size;
 
