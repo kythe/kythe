@@ -50,8 +50,9 @@ export interface IndexerHost {
    */
   getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName;
   /**
-   * Aliases a local symbol to the VNames of a remote symbol.
-   * Returns the aliased name.
+   * Aliases a local symbol to a remote symbol. Returns the aliased name.
+   * This is used to return a remote symbol's VNames for a local symbol when a
+   * symbol is imported into a file.
    */
   aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName;
   /**
