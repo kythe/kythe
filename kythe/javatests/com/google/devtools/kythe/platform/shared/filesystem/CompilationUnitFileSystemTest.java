@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -77,8 +78,10 @@ public final class CompilationUnitFileSystemTest {
             .addFile("/absolute/nested/path/with/empty/file", "")
             .build();
     try {
-      List<String> found =
-          Files.walk(fileSystem.getPath("/")).map(Path::toString).collect(Collectors.toList());
+      List<String> found;
+      try (Stream<Path> stream = Files.walk(fileSystem.getPath("/"))) {
+        found = stream.map(Path::toString).collect(Collectors.toList());
+      }
       assertThat(found)
           .containsExactly(
               "/",
@@ -108,8 +111,10 @@ public final class CompilationUnitFileSystemTest {
             .setWorkingDirectory("/a/different/path")
             .build();
     try {
-      List<String> found =
-          Files.walk(fileSystem.getPath("/")).map(Path::toString).collect(Collectors.toList());
+      List<String> found;
+      try (Stream<Path> stream = Files.walk(fileSystem.getPath("/"))) {
+        found = stream.map(Path::toString).collect(Collectors.toList());
+      }
       assertThat(found)
           .containsExactly(
               "/",
@@ -142,18 +147,21 @@ public final class CompilationUnitFileSystemTest {
             .addFile("/absolute/nested/path/with/empty/file", "absoluteContents")
             .build();
     try {
-      List<String> contents =
-          Files.walk(fileSystem.getPath("/"))
-              .filter(p -> Files.isRegularFile(p))
-              .map(
-                  p -> {
-                    try {
-                      return new String(Files.readAllBytes(p));
-                    } catch (IOException exc) {
-                      throw new RuntimeException(exc);
-                    }
-                  })
-              .collect(Collectors.toList());
+      List<String> contents;
+      try (Stream<Path> stream = Files.walk(fileSystem.getPath("/"))) {
+        contents =
+            stream
+                .filter(p -> Files.isRegularFile(p))
+                .map(
+                    p -> {
+                      try {
+                        return new String(Files.readAllBytes(p));
+                      } catch (IOException exc) {
+                        throw new RuntimeException(exc);
+                      }
+                    })
+                .collect(Collectors.toList());
+      }
       assertThat(contents).containsExactly("relativeContents", "absoluteContents");
     } catch (IOException exc) {
       throw new RuntimeException(exc);
