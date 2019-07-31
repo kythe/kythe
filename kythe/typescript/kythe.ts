@@ -94,7 +94,7 @@ export enum EdgeKind {
  * This is represented as a branded string that is incompatible with a string
  * but can be compared to a string.
  */
-export type OrdinalEdge = string & {
+export type OrdinalEdge = string&{
   __ordinalBrand: 'ordinal';
 };
 export function makeOrdinalEdge(edge: EdgeKind, ordinal: number): OrdinalEdge {
@@ -226,6 +226,6 @@ export interface JSONFact {
 export interface JSONEdge {
   source: VName;
   target: VName;
-  edge_kind: EdgeKind | OrdinalEdge;
+  edge_kind: EdgeKind|OrdinalEdge;
   fact_name: '/';
 }

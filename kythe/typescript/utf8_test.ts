@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { OffsetTable } from './utf8';
+import {OffsetTable} from './utf8';
 
 describe('utf8 create offset table', () => {
   it('should handle 1-byte character encoding', () => {
@@ -85,9 +85,8 @@ describe('lookupUtf8', () => {
     const table = new OffsetTable(buf, 1);
     expect(() => table.lookupUtf8(0)).not.toThrow();
     // offset 1 is within a surrogate pair so it's invalid.
-    expect(() => table.lookupUtf8(1)).toThrowError(
-      'The lookup offset is invalid'
-    );
+    expect(() => table.lookupUtf8(1))
+        .toThrowError('The lookup offset is invalid');
   });
 
   it('should find the offsets when span size is greater than 1', () => {
@@ -117,9 +116,8 @@ describe('lookupUtf16', () => {
     const table = new OffsetTable(buf, 1);
     expect(() => table.lookupUtf16(0)).not.toThrow();
     // offset 1 is within a surrogate pair so it's invalid.
-    expect(() => table.lookupUtf16(1)).toThrowError(
-      'The lookup offset is invalid'
-    );
+    expect(() => table.lookupUtf16(1))
+        .toThrowError('The lookup offset is invalid');
   });
 
   it('should find the offsets when span size is greater than 1', () => {
