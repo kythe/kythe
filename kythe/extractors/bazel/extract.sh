@@ -49,7 +49,7 @@ set -ex
 
 : ${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
 
-if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
+if [[ -n "$KYTHE_SYSTEM_DEPS" ]]; then
   echo "Installing $KYTHE_SYSTEM_DEPS"
   # TODO(jaysachs): unclear if we should bail if any packages fail to install
   apt-get update && \
@@ -58,19 +58,25 @@ if [ -n "$KYTHE_SYSTEM_DEPS" ]; then
   apt-get clean
 fi
 
-if [ -n "$KYTHE_PRE_BUILD_STEP" ]; then
+if [[ -n "$KYTHE_PRE_BUILD_STEP" ]]; then
   eval "$KYTHE_PRE_BUILD_STEP"
 fi
 
 if [[ -n "$KYTHE_BAZEL_TARGET" ]]; then
-  sh /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" -- "$KYTHE_BAZEL_TARGET"
+  # $KYTHE_BAZEL_TARGET is unquoted because bazel_wrapper needs to see each
+  # target expression in KYTHE_BAZEL_WRAPPER as individual arguments. For
+  # example, if KYTHE_BAZEL_TARGET=//foo/... -//foo/test/..., bazel_wrapper
+  # needs to see two valid target expressions (//foo/... and -//foo/test/...)
+  # not one invalid target expression with white space
+  # ("//foo/... -//foo/test/...").
+  /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" -- $KYTHE_BAZEL_TARGET
 else
   # If the user supplied a bazel query, execute it and run bazel, but we have to
   # shard the results to different bazel runs because the bazel command line
   # cannot take many arguments. Right now we build 30 targets at a time. We can
   # change this value or make it settable once we have more data on the
   # implications.
-  /kythe/bazelisk query "$KYTHE_BAZEL_QUERY" | xargs -t -L 30 sh /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" --
+  /kythe/bazelisk query "$KYTHE_BAZEL_QUERY" | xargs -t -L 30 /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" --
 fi
 
 # Collect any extracted compilations.
