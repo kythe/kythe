@@ -189,8 +189,17 @@ public class JavaFileStoreBasedFileManager extends ForwardingStandardJavaFileMan
   @Override
   public boolean contains(Location location, FileObject file) throws IOException {
     if (file instanceof CustomFileObject) {
-      // We don't currently support modules.
-      return !location.isModuleOrientedLocation() && super.contains(location, file);
+      // The URI paths for custom file objects will always include an
+      // extra leading '/'.
+      String filePath = file.toUri().getPath().substring(1);
+      // Do a trivial prefix-search based on the search paths for the given location.
+      Set<String> paths = getSearchPaths(location);
+      for (String path : paths) {
+        if (filePath.startsWith(path)) {
+          return true;
+        }
+      }
+      return false;
     }
     return super.contains(location, file);
   }

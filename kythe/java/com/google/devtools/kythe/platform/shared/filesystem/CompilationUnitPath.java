@@ -178,6 +178,11 @@ final class CompilationUnitPath implements Path {
   }
 
   @Override
+  public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... events) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Iterator<Path> iterator() {
     return new Iterator<Path>() {
       private final Iterator<Path> inner = path.iterator();

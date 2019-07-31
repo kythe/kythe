@@ -148,7 +148,7 @@ public final class CompilationUnitFileSystemTest {
               .map(
                   p -> {
                     try {
-                      return Files.readString(p);
+                      return new String(Files.readAllBytes(p));
                     } catch (IOException exc) {
                       throw new RuntimeException(exc);
                     }
