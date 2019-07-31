@@ -52,7 +52,7 @@ export interface IndexerHost {
   /**
    * Aliases a local symbol to a remote symbol. Returns the aliased name.
    * This is used to return a remote symbol's VNames for a local symbol when a
-   * symbol is imported into a file.
+   * symbol is imported into a file; @see Visitor#visitImport.
    */
   aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName;
   /**
