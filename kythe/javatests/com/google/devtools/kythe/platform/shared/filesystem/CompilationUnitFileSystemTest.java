@@ -25,6 +25,7 @@ import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -38,11 +39,11 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class CompilationUnitFileSystemTest {
   private static class FileSystemBuilder {
-    private ImmutableMap.Builder<String, byte[]> inputFiles = new ImmutableMap.Builder<>();
+    private final ImmutableMap.Builder<String, byte[]> inputFiles = new ImmutableMap.Builder<>();
     private String workingDirectory = "";
 
     FileSystemBuilder addFile(String path, String contents) {
-      inputFiles.put(path, contents.getBytes());
+      inputFiles.put(path, contents.getBytes(StandardCharsets.UTF_8));
       return this;
     }
 
@@ -155,7 +156,7 @@ public final class CompilationUnitFileSystemTest {
                 .map(
                     p -> {
                       try {
-                        return new String(Files.readAllBytes(p));
+                        return new String(Files.readAllBytes(p), StandardCharsets.UTF_8);
                       } catch (IOException exc) {
                         throw new RuntimeException(exc);
                       }

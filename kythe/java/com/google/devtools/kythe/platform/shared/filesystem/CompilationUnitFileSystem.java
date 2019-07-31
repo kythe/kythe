@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitFileTree;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -50,9 +49,7 @@ import java.util.stream.Collectors;
  */
 final class CompilationUnitFileSystem extends FileSystem {
 
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-
-  private static final Set<String> SUPPORTED_VIEWS = ImmutableSet.of("basic");
+  private static final ImmutableSet<String> SUPPORTED_VIEWS = ImmutableSet.of("basic");
 
   private final CompilationUnitFileSystemProvider provider;
   private final CompilationUnitPath rootDirectory;
@@ -211,7 +208,7 @@ final class CompilationUnitFileSystem extends FileSystem {
 
   byte[] read(Path file) throws IOException {
     String digest = digest(file);
-    if (digest == null || digest == CompilationUnitFileTree.DIRECTORY_DIGEST) {
+    if (digest == null || digest.equals(CompilationUnitFileTree.DIRECTORY_DIGEST)) {
       throw new FileNotFoundException(file.toString());
     }
     try {
@@ -227,6 +224,6 @@ final class CompilationUnitFileSystem extends FileSystem {
       throw new FileNotFoundException(path.toString());
     }
     return new CompilationUnitFileAttributes(
-        digest == CompilationUnitFileTree.DIRECTORY_DIGEST ? -1 : 1);
+        digest.equals(CompilationUnitFileTree.DIRECTORY_DIGEST) ? -1 : 1);
   }
 }
