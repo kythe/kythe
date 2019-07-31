@@ -19,9 +19,11 @@ package infocmd // import "kythe.io/kythe/go/platform/tools/kzip/infocmd"
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/cmdutil"
@@ -33,7 +35,8 @@ import (
 type infoCommand struct {
 	cmdutil.Info
 
-	input string
+	input       string
+	writeFormat string
 }
 
 // New creates a new subcommand for obtaining info on a kzip file.
@@ -47,12 +50,17 @@ func New() subcommands.Command {
 // for the info command.
 func (c *infoCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.input, "input", "", "Path for input kzip file (required)")
+	fs.StringVar(&c.writeFormat, "write_format", "text", "Output of info summary. Can be 'text' (human-readable), or 'json'.")
 }
 
 // Execute implements the subcommands interface and gathers info from the requested file.
 func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.input == "" {
 		return c.Fail("required --input path missing")
+	}
+	c.writeFormat = strings.ToLower(c.writeFormat)
+	if c.writeFormat != "text" && c.writeFormat != "json" {
+		return c.Fail("--write_format invalid. Must be 'text' or 'json'")
 	}
 	f, err := os.Open(c.input)
 	if err != nil {
@@ -73,19 +81,63 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 		return c.Fail("error creating reader: %v", err)
 	}
 
+	// Get file and unit counts broken down by corpus, language.
+	fileBreakdown := make(map[string]map[string]int)
+	unitBreakdown := make(map[string]map[string]int)
+	var totalFiles, totalUnits int
 	corpora := stringset.New()
-	var units int
 	err = rd.Scan(func(u *kzip.Unit) error {
-		units++
+		totalUnits++
+		if _, ok := unitBreakdown[u.Proto.GetVName().GetCorpus()]; !ok {
+			unitBreakdown[u.Proto.GetVName().GetCorpus()] = make(map[string]int)
+		}
+		unitBreakdown[u.Proto.GetVName().GetCorpus()][u.Proto.GetVName().GetLanguage()]++
 		corpora.Add(u.Proto.GetVName().GetCorpus())
 		for _, ri := range u.Proto.RequiredInput {
+			totalFiles++
+			if _, ok := fileBreakdown[ri.GetVName().GetCorpus()]; !ok {
+				fileBreakdown[ri.GetVName().GetCorpus()] = make(map[string]int)
+			}
 			corpora.Add(ri.GetVName().GetCorpus())
+			fileBreakdown[ri.GetVName().GetCorpus()][ri.GetVName().GetLanguage()]++
 		}
 		return nil
 	})
 	if err != nil {
 		return c.Fail("error while scanning: %v", err)
 	}
-	fmt.Printf("%d compilation units, corpora: %s\n", units, corpora)
+
+	if c.writeFormat == "text" {
+		fmt.Printf("%d compilation units, %d input files, corpora: %s\n", totalUnits, totalFiles, corpora)
+		printBreakdown := func(b map[string]map[string]int) {
+			for corpus, sub := range b {
+				if corpus == "" {
+					corpus = "<empty corpus>"
+				}
+				fmt.Println("  " + corpus)
+				for lang, count := range sub {
+					if lang == "" {
+						lang = "<empty lang>"
+					}
+					fmt.Printf("    %s: %d\n", lang, count)
+				}
+			}
+		}
+		fmt.Printf("Unit Counts (by corpus, language):\n")
+		printBreakdown(unitBreakdown)
+		fmt.Printf("\nFile Counts (by corpus, language):\n")
+		printBreakdown(fileBreakdown)
+	} else if c.writeFormat == "json" {
+		out := make(map[string]interface{})
+		out["unit_counts"] = unitBreakdown
+		out["file_counts"] = fileBreakdown
+		out["total_files"] = totalFiles
+		out["total_units"] = totalUnits
+		data, err := json.Marshal(&out)
+		if err != nil {
+			return c.Fail("error marshaling json output: %v", err)
+		}
+		fmt.Print(string(data))
+	}
 	return subcommands.ExitSuccess
 }
