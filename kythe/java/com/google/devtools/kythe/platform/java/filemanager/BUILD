@@ -34,7 +34,6 @@ java_library(
     ],
 )
 
-# TODO(shahms): move this to platform/shared/filesystem.
 java_library(
     name = "filetree",
     srcs = [

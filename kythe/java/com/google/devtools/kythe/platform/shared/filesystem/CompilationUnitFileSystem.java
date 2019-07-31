@@ -23,7 +23,15 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-/** A FileSystem over CompilationUnit and FileDataProvider. */
+/**
+ * A {@link FileSystem} over a {@link CompilationUnit} and {@link FileDataProvider}.
+ *
+ * <p>Presents a view of a filesystem whose contents are those paths specified in the required_input
+ * of the CompilationUnit and file contents are provided by the associated FileDataProvider.
+ *
+ * <p>The compilation working_directory is used as the filesystem root directory, against which
+ * relative paths will be resolved.
+ */
 final class CompilationUnitFileSystem extends FileSystem {
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
@@ -160,7 +168,8 @@ final class CompilationUnitFileSystem extends FileSystem {
 
   String digest(Path file) throws IOException {
     checkNotNull(file);
-    if (file.equals(getRootDirectory())) {
+    file = getRootDirectory().resolve(file);
+    if (file.getFileName() == null) {
       // Special case root because getFileName() on "/" returns null.
       return CompilationUnitFileTree.DIRECTORY_DIGEST;
     }
@@ -176,7 +185,8 @@ final class CompilationUnitFileSystem extends FileSystem {
   }
 
   Iterable<Path> list(Path dir) throws IOException {
-    Map<String, String> entries = compilationFileTree.list(dir.toString());
+    final Path abs = getRootDirectory().resolve(dir);
+    Map<String, String> entries = compilationFileTree.list(abs.toString());
     if (entries == null) {
       throw new FileNotFoundException(dir.toString());
     }

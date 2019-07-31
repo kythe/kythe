@@ -36,28 +36,46 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class CompilationUnitFileSystemTest {
-  private List<FileData> fileData =
-      ExtractorUtils.convertBytesToFileDatas(
-          new ImmutableMap.Builder<String, byte[]>()
-              .put("relative/nested/path/with/empty/file", "relativeContents".getBytes())
-              .put("/absolute/nested/path/with/empty/file", "absoluteContents".getBytes())
-              .build());
+  private static class FileSystemBuilder {
+    private ImmutableMap.Builder<String, byte[]> inputFiles = new ImmutableMap.Builder<>();
+    private String workingDirectory = "";
 
-  private CompilationUnit compilationUnit =
-      CompilationUnit.newBuilder()
-          .addAllRequiredInput(ExtractorUtils.toFileInputs(fileData))
-          .build();
+    FileSystemBuilder addFile(String path, String contents) {
+      inputFiles.put(path, contents.getBytes());
+      return this;
+    }
 
-  private FileDataProvider fileDataProvider = new FileDataCache(fileData);
+    FileSystemBuilder setWorkingDirectory(String path) {
+      workingDirectory = path;
+      return this;
+    }
 
-  private CompilationUnitFileSystem fileSystem =
-      CompilationUnitFileSystem.create(compilationUnit, fileDataProvider);
+    CompilationUnitFileSystem build() {
+      List<FileData> fileData = ExtractorUtils.convertBytesToFileDatas(inputFiles.build());
+      CompilationUnit compilationUnit =
+          CompilationUnit.newBuilder()
+              .addAllRequiredInput(ExtractorUtils.toFileInputs(fileData))
+              .setWorkingDirectory(workingDirectory)
+              .build();
+      FileDataProvider fileDataProvider = new FileDataCache(fileData);
+      return CompilationUnitFileSystem.create(compilationUnit, fileDataProvider);
+    }
+  }
+
+  static FileSystemBuilder builder() {
+    return new FileSystemBuilder();
+  }
 
   @Before
   public void setUp() {}
 
   @Test
   public void filesWalk_includesAllFiles() {
+    CompilationUnitFileSystem fileSystem =
+        builder()
+            .addFile("relative/nested/path/with/empty/file", "")
+            .addFile("/absolute/nested/path/with/empty/file", "")
+            .build();
     try {
       List<String> found =
           Files.walk(fileSystem.getPath("/")).map(Path::toString).collect(Collectors.toList());
@@ -82,7 +100,47 @@ public final class CompilationUnitFileSystemTest {
   }
 
   @Test
+  public void filesWalk_includesAllFilesFromWorkingDirectoy() {
+    CompilationUnitFileSystem fileSystem =
+        builder()
+            .addFile("relative/nested/path/with/empty/file", "")
+            .addFile("/absolute/nested/path/with/empty/file", "")
+            .setWorkingDirectory("/a/different/path")
+            .build();
+    try {
+      List<String> found =
+          Files.walk(fileSystem.getPath("/")).map(Path::toString).collect(Collectors.toList());
+      assertThat(found)
+          .containsExactly(
+              "/",
+              "/absolute",
+              "/absolute/nested",
+              "/absolute/nested/path",
+              "/absolute/nested/path/with",
+              "/absolute/nested/path/with/empty",
+              "/absolute/nested/path/with/empty/file",
+              "/a/different/path/relative",
+              "/a/different/path/relative/nested",
+              "/a/different/path/relative/nested/path",
+              "/a/different/path/relative/nested/path/with",
+              "/a/different/path/relative/nested/path/with/empty",
+              "/a/different/path/relative/nested/path/with/empty/file",
+              // Entries added due to the working directory.
+              "/a",
+              "/a/different",
+              "/a/different/path");
+    } catch (IOException exc) {
+      throw new RuntimeException(exc);
+    }
+  }
+
+  @Test
   public void filesWalk_readsAllFiles() {
+    CompilationUnitFileSystem fileSystem =
+        builder()
+            .addFile("relative/nested/path/with/empty/file", "relativeContents")
+            .addFile("/absolute/nested/path/with/empty/file", "absoluteContents")
+            .build();
     try {
       List<String> contents =
           Files.walk(fileSystem.getPath("/"))
