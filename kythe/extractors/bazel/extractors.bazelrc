@@ -1,5 +1,6 @@
+# TODO: specify the repo override on the command line when invoking the extractors with this bazelrc
 # Setup the local repository for the Kythe extraction tools.
-build --override_repository kythe_release=/kythe
+# build --override_repository kythe_release=/kythe
 
 # By default, keep building after errors.
 build --keep_going
