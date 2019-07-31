@@ -457,6 +457,16 @@ class StandardIndexerContext implements IndexerHost {
             moduleName = this.moduleName((node as ts.SourceFile).fileName);
           }
           break;
+        case ts.SyntaxKind.JsxElement:
+        case ts.SyntaxKind.JsxSelfClosingElement:
+        case ts.SyntaxKind.JsxAttribute:
+          // Given a unique anonymous name to all JSX nodes. This prevents
+          // conflicts in cases where attributes would otherwise have the same
+          // name, like `src` in
+          //   <img src={a} />
+          //   <img src={b} />
+          parts.push(`jsx${this.anonId++}`);
+          break;
         default:
           // Most nodes are children of other nodes that do not introduce a
           // new namespace, e.g. "return x;", so ignore all other parents
@@ -1603,6 +1613,9 @@ class Visitor {
         return;
       case ts.SyntaxKind.BindingElement:
         this.visitVariableDeclaration(node as ts.BindingElement);
+        return;
+      case ts.SyntaxKind.JsxAttribute:
+        this.visitVariableDeclaration(node as ts.JsxAttribute);
         return;
       case ts.SyntaxKind.Identifier:
       case ts.SyntaxKind.StringLiteral:
