@@ -16,20 +16,18 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
+import com.google.common.flogger.FluentLogger;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.tools.FileObject;
-import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardJavaFileManager;
@@ -37,8 +35,8 @@ import javax.tools.StandardLocation;
 
 /** {@link StandardJavaFileManager} backed by a {@link JavaFileStore}. */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
-public class JavaFileStoreBasedFileManager
-    extends ForwardingJavaFileManager<StandardJavaFileManager> implements StandardJavaFileManager {
+public class JavaFileStoreBasedFileManager extends ForwardingStandardJavaFileManager {
+  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   protected JavaFileStore javaFileStore;
 
@@ -135,18 +133,11 @@ public class JavaFileStoreBasedFileManager
       CustomJavaFileObject cjfo = (CustomJavaFileObject) file;
       return cjfo.getClassName();
     }
-    return fileManager.inferBinaryName(location, file);
+    return super.inferBinaryName(location, file);
   }
 
   public JavaFileObject getJavaFileFromPath(String file, Kind kind) {
     return javaFileStore.findByPath(file, kind);
-  }
-
-  @Override
-  public JavaFileObject getJavaFileForOutput(
-      Location location, String className, JavaFileObject.Kind kind, FileObject sibling)
-      throws IOException {
-    return fileManager.getJavaFileForOutput(location, className, kind, sibling);
   }
 
   @Override
@@ -196,25 +187,20 @@ public class JavaFileStoreBasedFileManager
   }
 
   @Override
-  public Iterable<? extends File> getLocation(Location location) {
-    return fileManager.getLocation(location);
+  public boolean contains(Location location, FileObject file) throws IOException {
+    if (file instanceof CustomFileObject) {
+      // We don't currently support modules.
+      return !location.isModuleOrientedLocation() && super.contains(location, file);
+    }
+    return super.contains(location, file);
   }
 
   @Override
-  public void setLocation(Location location, Iterable<? extends File> path) throws IOException {
-    fileManager.setLocation(location, path);
-  }
-
-  // TODO(schroederc): @Override; method added in JDK9
-  public void setLocationFromPaths(Location location, Collection<? extends Path> paths)
-      throws IOException {
-    try {
-      StandardJavaFileManager.class
-          .getMethod("setLocationFromPaths", Location.class, Collection.class)
-          .invoke(fileManager, location, paths);
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-      throw new IllegalStateException("setLocationFromPaths called by unsupported Java version", e);
+  public Path asPath(FileObject file) {
+    if (file instanceof CustomFileObject) {
+      return ((CustomFileObject) file).path;
     }
+    return super.asPath(file);
   }
 
   public static Kind getKind(String name) {
@@ -236,6 +222,6 @@ public class JavaFileStoreBasedFileManager
     } else if (b instanceof CustomFileObject) {
       return b.equals(a);
     }
-    return fileManager.isSameFile(a, b);
+    return super.isSameFile(a, b);
   }
 }

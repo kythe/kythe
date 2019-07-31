@@ -15,13 +15,14 @@ java_library(
     srcs = [
         "CompilationUnitBasedJavaFileManager.java",
         "CompilationUnitBasedJavaFileStore.java",
-        "CompilationUnitFileTree.java",
         "CustomFileObject.java",
         "CustomJavaFileObject.java",
         "JavaFileStore.java",
         "JavaFileStoreBasedFileManager.java",
     ],
     deps = [
+        ":filetree",
+        ":forwarding_standard_java_file_manager",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
@@ -30,5 +31,15 @@ java_library(
         "//third_party/javac",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
+    ],
+)
+
+java_library(
+    name = "filetree",
+    srcs = [
+        "CompilationUnitFileTree.java",
+    ],
+    deps = [
+        "//kythe/proto:analysis_java_proto",
     ],
 )
