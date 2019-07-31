@@ -34,11 +34,12 @@ import * as kythe from './kythe';
 const KYTHE_PATH = process.env['KYTHE'] || '/opt/kythe';
 const RUNFILES = process.env['RUNFILES_DIR'];
 
-const ENTRYSTREAM = RUNFILES ?
-    path.resolve('kythe/go/platform/tools/entrystream/entrystream') :
-    path.resolve(KYTHE_PATH, 'tools/entrystream');
-const VERIFIER = RUNFILES ? path.resolve('kythe/cxx/verifier/verifier') :
-                            path.resolve(KYTHE_PATH, 'tools/verifier');
+const ENTRYSTREAM = RUNFILES
+  ? path.resolve('kythe/go/platform/tools/entrystream/entrystream')
+  : path.resolve(KYTHE_PATH, 'tools/entrystream');
+const VERIFIER = RUNFILES
+  ? path.resolve('kythe/cxx/verifier/verifier')
+  : path.resolve(KYTHE_PATH, 'tools/verifier');
 
 /**
  * createTestCompilerHost creates a ts.CompilerHost that caches its default
@@ -49,16 +50,20 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
   const compilerHost = ts.createCompilerHost(options);
 
   const libPath = compilerHost.getDefaultLibFileName(options);
-  const libSource =
-      compilerHost.getSourceFile(libPath, ts.ScriptTarget.ES2015)!;
+  const libSource = compilerHost.getSourceFile(
+    libPath,
+    ts.ScriptTarget.ES2015
+  )!;
 
   const hostGetSourceFile = compilerHost.getSourceFile;
-  compilerHost.getSourceFile =
-      (fileName: string, languageVersion: ts.ScriptTarget,
-       onError?: (message: string) => void): ts.SourceFile|undefined => {
-        if (fileName === libPath) return libSource;
-        return hostGetSourceFile(fileName, languageVersion, onError);
-      };
+  compilerHost.getSourceFile = (
+    fileName: string,
+    languageVersion: ts.ScriptTarget,
+    onError?: (message: string) => void
+  ): ts.SourceFile | undefined => {
+    if (fileName === libPath) return libSource;
+    return hostGetSourceFile(fileName, languageVersion, onError);
+  };
   return compilerHost;
 }
 
@@ -68,8 +73,11 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
  * be run async; if there's an error, it will reject the promise.
  */
 function verify(
-    host: ts.CompilerHost, options: ts.CompilerOptions, test: string,
-    plugins?: indexer.Plugin[]): Promise<void> {
+  host: ts.CompilerHost,
+  options: ts.CompilerOptions,
+  test: string,
+  plugins?: indexer.Plugin[]
+): Promise<void> {
   const compilationUnit: kythe.VName = {
     corpus: 'testcorpus',
     root: '',
@@ -80,18 +88,28 @@ function verify(
   const program = ts.createProgram([test], options, host);
 
   const verifier = child_process.spawn(
-      `${ENTRYSTREAM} --read_format=json | ${VERIFIER} ${test}`, [], {
-        stdio: ['pipe', process.stdout, process.stderr],
-        shell: true,
-      });
+    `${ENTRYSTREAM} --read_format=json | ${VERIFIER} ${test}`,
+    [],
+    {
+      stdio: ['pipe', process.stdout, process.stderr],
+      shell: true,
+    }
+  );
 
-  indexer.index(compilationUnit, new Map(), [test], program, (obj: {}) => {
-    verifier.stdin.write(JSON.stringify(obj) + '\n');
-  }, plugins);
+  indexer.index(
+    compilationUnit,
+    new Map(),
+    [test],
+    program,
+    (obj: {}) => {
+      verifier.stdin.write(JSON.stringify(obj) + '\n');
+    },
+    plugins
+  );
   verifier.stdin.end();
 
   return new Promise<void>((resolve, reject) => {
-    verifier.on('close', (exitCode) => {
+    verifier.on('close', exitCode => {
       if (exitCode === 0) {
         resolve();
       } else {
@@ -103,14 +121,18 @@ function verify(
 
 function testLoadTsConfig() {
   const config = indexer.loadTsConfig(
-      'testdata/tsconfig-files.for.tests.json', 'testdata');
+    'testdata/tsconfig-files.for.tests.json',
+    'testdata'
+  );
   // We expect the paths that were loaded to be absolute.
-  assert.deepEqual(config.fileNames, [path.resolve('testdata/alt.ts')]);
+  assert.deepStrictEqual(config.fileNames, [path.resolve('testdata/alt.ts')]);
 }
 
 async function testIndexer(args: string[], plugins?: indexer.Plugin[]) {
-  const config =
-      indexer.loadTsConfig('testdata/tsconfig.for.tests.json', 'testdata');
+  const config = indexer.loadTsConfig(
+    'testdata/tsconfig.for.tests.json',
+    'testdata'
+  );
   let testPaths = args.map(arg => path.resolve(arg));
   if (args.length === 0) {
     // If no tests were passed on the command line, run all the .ts files found
@@ -166,10 +188,10 @@ async function testMain(args: string[]) {
 }
 
 testMain(process.argv.slice(2))
-    .then(() => {
-      process.exitCode = 0;
-    })
-    .catch((e) => {
-      console.error(e);
-      process.exitCode = 1;
-    });
+  .then(() => {
+    process.exitCode = 0;
+  })
+  .catch(e => {
+    console.error(e);
+    process.exitCode = 1;
+  });

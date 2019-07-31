@@ -139,8 +139,10 @@ export class OffsetTable {
   lookupUtf16(findOfs: number): number {
     let u16 = Infinity;
     let byte = Infinity;
-    let span =
-        Math.min(Math.floor(findOfs / this.spanSize), this.offsets.length - 1);
+    let span = Math.min(
+      Math.floor(findOfs / this.spanSize),
+      this.offsets.length - 1
+    );
     // We may have overshot it, because the span was chosen from the UTF-16
     // offset. If necessary, backtrack.
     while (byte > findOfs) {

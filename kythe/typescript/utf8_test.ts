@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-import {OffsetTable} from './utf8';
+import { OffsetTable } from './utf8';
 
 describe('utf8 create offset table', () => {
   it('should handle 1-byte character encoding', () => {
     const buf = Buffer.from('123');
     const table = new OffsetTable(buf, 1);
     expect(table.buf.length).toEqual(3);
-    expect(table.offsets).toEqual([
-      [0, 0],
-      [1, 1],
-      [2, 2],
-      [3, 3],
-    ]);
+    expect(table.offsets).toEqual([[0, 0], [1, 1], [2, 2], [3, 3]]);
   });
 
   it('should handle 3-byte character encoding', () => {
@@ -34,13 +29,7 @@ describe('utf8 create offset table', () => {
     const table = new OffsetTable(buf, 1);
     // Number of bytes = 1 + 1 + 3 + 1 = 6
     expect(table.buf.length).toEqual(6);
-    expect(table.offsets).toEqual([
-      [0, 0],
-      [1, 1],
-      [2, 2],
-      [3, 5],
-      [4, 6],
-    ]);
+    expect(table.offsets).toEqual([[0, 0], [1, 1], [2, 2], [3, 5], [4, 6]]);
   });
 
   it('should handle 4-byte character encoding', () => {
@@ -63,13 +52,7 @@ describe('utf8 create offset table', () => {
     const table = new OffsetTable(buf, 1);
     // Number of bytes = 4 + 3 + 4 + 3 = 14
     expect(table.buf.length).toEqual(14);
-    expect(table.offsets).toEqual([
-      [0, 0],
-      [2, 4],
-      [3, 7],
-      [5, 11],
-      [6, 14],
-    ]);
+    expect(table.offsets).toEqual([[0, 0], [2, 4], [3, 7], [5, 11], [6, 14]]);
   });
 
   it('should work when span size is greater than 1', () => {
@@ -92,9 +75,7 @@ describe('utf8 create offset table', () => {
     const table = new OffsetTable(buf, 32);
     // Number of bytes = 4 + 3 + 4 + 3 = 14
     expect(table.buf.length).toEqual(14);
-    expect(table.offsets).toEqual([
-      [0, 0],
-    ]);
+    expect(table.offsets).toEqual([[0, 0]]);
   });
 });
 
@@ -104,8 +85,9 @@ describe('lookupUtf8', () => {
     const table = new OffsetTable(buf, 1);
     expect(() => table.lookupUtf8(0)).not.toThrow();
     // offset 1 is within a surrogate pair so it's invalid.
-    expect(() => table.lookupUtf8(1))
-        .toThrowError('The lookup offset is invalid');
+    expect(() => table.lookupUtf8(1)).toThrowError(
+      'The lookup offset is invalid'
+    );
   });
 
   it('should find the offsets when span size is greater than 1', () => {
@@ -135,8 +117,9 @@ describe('lookupUtf16', () => {
     const table = new OffsetTable(buf, 1);
     expect(() => table.lookupUtf16(0)).not.toThrow();
     // offset 1 is within a surrogate pair so it's invalid.
-    expect(() => table.lookupUtf16(1))
-        .toThrowError('The lookup offset is invalid');
+    expect(() => table.lookupUtf16(1)).toThrowError(
+      'The lookup offset is invalid'
+    );
   });
 
   it('should find the offsets when span size is greater than 1', () => {
