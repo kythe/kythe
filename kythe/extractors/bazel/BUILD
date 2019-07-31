@@ -16,3 +16,9 @@ docker_build(
     tags = ["manual"],
     use_cache = True,
 )
+
+filegroup(
+    name = "extractors_bazelrc",
+    srcs = ["extractors.bazelrc"],
+    visibility = ["//kythe:default_visibility"],
+)
