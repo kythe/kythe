@@ -66,7 +66,6 @@ public class ExtractorUtils {
    *
    * @param filePathToFileDatas map with file contents.
    * @return fully populated FileInput protos
-   * @throws ExtractionException
    */
   public static List<FileData> convertBytesToFileDatas(
       final Map<String, byte[]> filePathToFileContents) {

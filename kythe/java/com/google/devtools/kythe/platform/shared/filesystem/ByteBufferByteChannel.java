@@ -36,7 +36,7 @@ class ByteBufferByteChannel implements SeekableByteChannel {
 
   @Override
   public boolean isOpen() {
-    return buffer == null ? false : true;
+    return buffer != null;
   }
 
   @Override
@@ -46,7 +46,7 @@ class ByteBufferByteChannel implements SeekableByteChannel {
 
   @Override
   public int read(ByteBuffer dst) throws IOException {
-    if (buffer == null) {
+    if (!isOpen()) {
       throw new ClosedChannelException();
     }
     int wanted = dst.remaining();
@@ -72,7 +72,7 @@ class ByteBufferByteChannel implements SeekableByteChannel {
 
   @Override
   public SeekableByteChannel position(long newPosition) throws IOException {
-    checkArgument(newPosition > 0);
+    checkArgument(newPosition >= 0);
     position = newPosition;
     return this;
   }

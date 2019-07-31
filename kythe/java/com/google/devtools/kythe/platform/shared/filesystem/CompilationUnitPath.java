@@ -91,7 +91,7 @@ final class CompilationUnitPath implements Path {
 
   @Override
   public boolean startsWith(Path other) {
-    return getFileSystem() == other.getFileSystem() ? path.startsWith(unwrap(other)) : false;
+    return getFileSystem() == other.getFileSystem() && path.startsWith(unwrap(other));
   }
 
   @Override
@@ -101,7 +101,7 @@ final class CompilationUnitPath implements Path {
 
   @Override
   public boolean endsWith(Path other) {
-    return getFileSystem() == other.getFileSystem() ? path.endsWith(unwrap(other)) : false;
+    return getFileSystem() == other.getFileSystem() && path.endsWith(unwrap(other));
   }
 
   @Override
