@@ -73,11 +73,13 @@ Path__ for more.
 
 #### Named Declaration
 
-**Form**: `$DECLARATION_NAME`
+**Form**: `$DECLARATION_NAME | "$DECLARATION_NAME"`
 
 **Notes**: Every named declaration is guaranteed to have a signature of the form
 `$SCOPE[.$SCOPE]*` where `$SCOPE` is the name of each encompassing named
 declaration.
+
+If the declaration is a string literal, its name is wrapped in quotes.
 
 **SyntaxKind**:
 
@@ -103,6 +105,9 @@ export class Klass {
     //- @property defines/binding VName("Klass#type.method.val", _, _, _, _)
     let val;
   };
+
+  //- @"'propliteral'" defines/binding VName("Klass#type.\"propliteral\"", _, _, _, _)
+  'propliteral' = 0;
 }
 ```
 
