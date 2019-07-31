@@ -651,3 +651,15 @@ go_kythe_proto(
         ":storage_go_proto",
     ],
 )
+
+# Generated code metadata rule descriptor.
+proto_library(
+    name = "metadata_proto",
+    srcs = ["metadata.proto"],
+    deps = [":storage_proto"],
+)
+
+cc_proto_library(
+    name = "metadata_cc_proto",
+    deps = [":metadata_proto"],
+)
