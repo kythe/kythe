@@ -34,5 +34,6 @@ java_library(
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
+        "@org_checkerframework_checker_qual//jar",
     ],
 )

@@ -219,6 +219,13 @@ def _java_dependencies():
 
     maybe(
         native.maven_jar,
+        name = "org_checkerframework_checker_qual",
+        artifact = "org.checkerframework:checker-qual:2.9.0",
+        sha1 = "8f783c7cdcda9f3639459d33cad5d5307b5512ba",
+    )
+
+    maybe(
+        native.maven_jar,
         name = "org_ow2_asm_asm",
         artifact = "org.ow2.asm:asm:7.0",
         sha1 = "d74d4ba0dee443f68fb2dcb7fcdb945a2cd89912",

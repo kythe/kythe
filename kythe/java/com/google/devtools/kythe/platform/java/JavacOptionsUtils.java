@@ -42,8 +42,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 import javax.tools.OptionChecker;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A utility class for dealing with javac command-line options.
