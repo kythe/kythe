@@ -66,9 +66,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_googletest",
-        sha256 = "89cebb92b9a7eb32c53e180ccc0db8f677c3e838883c5fbd07e6412d7e1f12c7",
-        strip_prefix = "googletest-d175c8bf823e709d570772b038757fadf63bc632",
-        url = "https://github.com/google/googletest/archive/d175c8bf823e709d570772b038757fadf63bc632.zip",
+	sha256 = "ff7a82736e158c077e76188232eac77913a15dac0b22508c390ab3f88e6d6d86",
+        strip_prefix = "googletest-b6cd405286ed8635ece71c72f118e659f4ade3fb",
+        url = "https://github.com/google/googletest/archive/b6cd405286ed8635ece71c72f118e659f4ade3fb.zip",
     )
 
     maybe(
