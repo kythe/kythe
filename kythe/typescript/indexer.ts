@@ -15,7 +15,6 @@
  */
 
 import 'source-map-support/register';
-
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
@@ -1053,9 +1052,6 @@ class Visitor {
           const kImport = this.visitImport(imp.name);
           if (imp.propertyName) {
             this.visitImport(imp.name, imp.propertyName);
-            // this.emitEdge(
-            //    this.newAnchor(imp.propertyName), EdgeKind.REF_IMPORTS,
-            //    kImport);
           }
         }
         break;
