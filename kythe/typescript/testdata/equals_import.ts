@@ -3,7 +3,7 @@
 
 //- @obj ref/imports Def=vname("export=", _, _, "testdata/equals_export", _)
 //- LocalObj=vname("obj", _, _, "testdata/equals_import", _).node/kind name
-//- Def generates LocalObj
+//- Def named LocalObj
 import obj = require('./equals_export');
 
 //- @obj ref LocalObj

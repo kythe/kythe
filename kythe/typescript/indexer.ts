@@ -906,20 +906,20 @@ class Visitor {
     // (including renaming imports) to the remote symbol.
     //
     // This is done by exploiting Kythe graph edges. A "name" node is defined
-    // for the local symbol which the remote symbol is said to "generates".
-    // "generates" is an edge between two semantic nodes that provides for
-    // folding references. That is, a graph like
+    // for the local symbol which is "named" by the remote symbol. The "named"
+    // edge between two semantic nodes provides a nice functionality of folding
+    // references. That is, a graph like
     //
-    //   LocalUsage    LocalSymbol  RemoteSymbol      RemoteAnchor
-    //        \___________/^ ^\_________/ ^\_______________/
-    //             ref         generates    defines/binding
+    //   LocalUsage    LocalSymbol  RemoteSymbol        RemoteAnchor
+    //        \___________/^ ^\_________/ ^\_________________/
+    //             ref           named       defines/binding
     //
     // will produce a UI cross-reference from LocalUsage to RemoteAnchor as if
     // the graph were
     //
-    //   LocalUsage    RemoteSymbol      RemoteAnchor
-    //        \___________/^ ^\_______________/
-    //             ref         defines/binding
+    //   LocalUsage    RemoteSymbol        RemoteAnchor
+    //        \___________/^ ^\_________________/
+    //             ref          defines/binding
 
     const localSym = this.host.getSymbolAtLocation(name);
     if (!localSym) {
@@ -931,20 +931,20 @@ class Visitor {
     const localImportAnchor = this.newAnchor(name);
 
     // The imported symbol can refer to a type, a value, or both. Attempt to
-    // create "name"s for the local symbol and "generates" edges to the remote
-    // symbol in both cases.
+    // create "name"s for the local symbol and "named" edges from the remote
+    // symbol to the local symbol in both cases.
     //
     // Also attempt to emit a "ref/imports" from the referencing node to the
-    // to the remote definition in both cases. If the referecning node is
-    // different not the local symbol node, skip emitting "name" nodes and
-    // "generates" edges, as this is already done for the local symbol node.
+    // to the remote definition in both cases. If the referencing node is
+    // different from the local symbol node, skip emitting "name" nodes and
+    // "named" edges, as this is already done for the local symbol node.
     let kRemoteValue, kRemoteType;
     if (remoteSym.flags & ts.SymbolFlags.Value) {
       kRemoteValue = this.host.getSymbolName(remoteSym, TSNamespace.VALUE);
       const kLocalValue = this.host.getSymbolName(localSym, TSNamespace.VALUE);
 
       this.emitNode(kLocalValue, NodeKind.NAME);
-      this.emitEdge(kRemoteValue, EdgeKind.GENERATES, kLocalValue);
+      this.emitEdge(kRemoteValue, EdgeKind.NAMED, kLocalValue);
 
       this.emitEdge(localImportAnchor, EdgeKind.REF_IMPORTS, kRemoteValue);
     }
@@ -953,7 +953,7 @@ class Visitor {
       const kLocalType = this.host.getSymbolName(localSym, TSNamespace.TYPE);
 
       this.emitNode(kLocalType, NodeKind.NAME);
-      this.emitEdge(kRemoteType, EdgeKind.GENERATES, kLocalType);
+      this.emitEdge(kRemoteType, EdgeKind.NAMED, kLocalType);
 
       this.emitEdge(localImportAnchor, EdgeKind.REF_IMPORTS, kRemoteType);
     }
