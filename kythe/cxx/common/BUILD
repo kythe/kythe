@@ -278,6 +278,18 @@ cc_library(
 )
 
 cc_library(
+    name = "kzip_encoding",
+    srcs = [],
+    hdrs = ["kzip_encoding.h"],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "kzip_reader",
     srcs = ["kzip_reader.cc"],
     hdrs = ["kzip_reader.h"],
@@ -287,11 +299,13 @@ cc_library(
     deps = [
         ":index_reader",
         ":json_proto",
+        ":kzip_encoding",
         ":libzip/error",
         ":status_or",
         "//kythe/proto:analysis_cc_proto",
         "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@org_libzip//:zip",
@@ -304,6 +318,8 @@ cc_test(
     data = [
         "//kythe/cxx/common/testdata:empty.kzip",
         "//kythe/cxx/common/testdata:malformed.kzip",
+        "//kythe/cxx/common/testdata:missing-pbunit.kzip",
+        "//kythe/cxx/common/testdata:missing-unit.kzip",
         "//kythe/cxx/common/testdata:stringset.kzip",
     ],
     deps = [
@@ -325,6 +341,7 @@ cc_library(
     deps = [
         ":index_writer",
         ":json_proto",
+        ":kzip_encoding",
         ":libzip/error",
         "//kythe/proto:analysis_cc_proto",
         "@boringssl//:crypto",

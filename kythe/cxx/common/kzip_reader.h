@@ -24,6 +24,7 @@
 
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/common/index_reader.h"
+#include "kythe/cxx/common/kzip_encoding.h"
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/proto/analysis.pb.h"
 
@@ -56,12 +57,17 @@ class KzipReader : public IndexReaderInterface {
   };
   using ZipHandle = std::unique_ptr<zip_t, Discard>;
 
-  explicit KzipReader(ZipHandle archive, absl::string_view basename);
+  explicit KzipReader(ZipHandle archive, absl::string_view basename,
+                      KzipEncoding encoding);
 
   zip_t* archive() { return archive_.get(); }
 
+  absl::optional<absl::string_view> UnitDigest(absl::string_view path);
+
   ZipHandle archive_;
   absl::string_view root_;  // Memory owned by `archive_`.
+  KzipEncoding encoding_;
+  std::string unitPrefix_;
 };
 
 }  // namespace kythe

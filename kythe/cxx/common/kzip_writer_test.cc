@@ -23,6 +23,7 @@
 #include <unordered_set>
 
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "glog/logging.h"
@@ -36,6 +37,7 @@
 namespace kythe {
 namespace {
 using ::testing::ElementsAre;
+using ::testing::Values;
 
 absl::string_view TestTmpdir() {
   return absl::StripSuffix(std::getenv("TEST_TMPDIR"), "/");
@@ -64,8 +66,11 @@ WithStatusFn<T> WithStatus(Status* status, T function) {
 
 std::string TestOutputFile(absl::string_view basename) {
   const auto* test_info = testing::UnitTest::GetInstance()->current_test_info();
-  return absl::StrCat(TestTmpdir(), "/", test_info->test_case_name(), "_",
-                      test_info->name(), "_", basename);
+  const auto filename =
+      absl::StrReplaceAll(absl::StrCat(test_info->test_case_name(), "_",
+                                       test_info->name(), "_", basename),
+                          {{"/", "-"}});
+  return absl::StrCat(TestTmpdir(), "/", filename);
 }
 
 StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
@@ -126,7 +131,9 @@ ReadDigests(IndexReader* reader) {
   return digests;
 }
 
-TEST(KzipWriterTest, RecapitulatesSimpleKzip) {
+class FullKzipWriterTest : public ::testing::TestWithParam<KzipEncoding> {};
+
+TEST_P(FullKzipWriterTest, RecapitulatesSimpleKzip) {
   // This forces the GoDetails proto descriptor to be added to the pool so we
   // can deserialize it. If we don't do this, we get an error like:
   // "Invalid type URL, unknown type: kythe.proto.GoDetails for type Any".
@@ -136,7 +143,8 @@ TEST(KzipWriterTest, RecapitulatesSimpleKzip) {
   ASSERT_TRUE(reader.ok()) << reader.status();
 
   std::string output_file = TestOutputFile("stringset.kzip");
-  StatusOr<IndexWriter> writer = KzipWriter::Create(output_file);
+  LOG(INFO) << output_file;
+  StatusOr<IndexWriter> writer = KzipWriter::Create(output_file, GetParam());
   ASSERT_TRUE(writer.ok()) << writer.status();
   auto written_digests = CopyIndex(&*reader, &*writer);
   ASSERT_TRUE(written_digests.ok()) << written_digests.status();
@@ -185,7 +193,7 @@ TEST(KzipWriterTest, IncludesDirectoryEntries) {
       // We don't really care about the rest of the entries, but it's easy
       // enough to fix the order of the subdirectories and minimally harmful.
       ElementsAre(
-          "root/", "root/units/", "root/files/",
+          "root/", "root/files/", "root/units/",
           "root/files/"
           "d1b2a59fbea7e20077af9f91b27e95e865061b270be03ff539ab3b73587882e8"));
 }
@@ -208,5 +216,8 @@ TEST(KzipWriterTest, DuplicateFilesAreIgnored) {
   }
 }
 
+INSTANTIATE_TEST_SUITE_P(AllEncodings, FullKzipWriterTest,
+                         Values(KzipEncoding::Json, KzipEncoding::Proto,
+                                KzipEncoding::All));
 }  // namespace
 }  // namespace kythe

@@ -18,9 +18,11 @@
 
 #include <openssl/sha.h>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
@@ -90,15 +92,12 @@ class ZipFileInputStream : public google::protobuf::io::ZeroCopyInputStream {
   google::protobuf::io::CopyingInputStreamAdaptor impl_{&input_};
 };
 
-absl::optional<absl::string_view> UnitDigest(absl::string_view path) {
-  path.remove_prefix(std::min(path.find('/'), path.size()));
-  if (!absl::ConsumePrefix(&path, "/units/") || path.empty()) {
-    return absl::nullopt;
-  }
-  return path;
-}
+typedef struct Options {
+  absl::string_view root;
+  KzipEncoding encoding;
+} KzipOptions;
 
-StatusOr<absl::string_view> Validate(zip_t* archive) {
+StatusOr<Options> Validate(zip_t* archive) {
   if (!zip_get_num_entries(archive, 0)) {
     return InvalidArgumentError("Empty kzip archive");
   }
@@ -112,14 +111,37 @@ StatusOr<absl::string_view> Validate(zip_t* archive) {
   }
   root.remove_suffix(root.size() - slashpos);
   VLOG(1) << "Using archive root: " << root;
+  absl::flat_hash_set<std::string> protoUnits;
+  absl::flat_hash_set<std::string> jsonUnits;
   for (int i = 0; i < zip_get_num_entries(archive, 0); ++i) {
     absl::string_view name = zip_get_name(archive, i, 0);
     if (!absl::StartsWith(name, root)) {
       return InvalidArgumentError(
           absl::StrCat("Malformed kzip: invalid entry: ", name));
     }
+    std::vector<std::string> parts = absl::StrSplit(name, '/');
+    if (parts.size() == 3 && parts[2] != "") {
+      if (parts[1] == kJsonUnitsDir) {
+        jsonUnits.insert(parts[2]);
+      } else if (parts[1] == kProtoUnitsDir) {
+        protoUnits.insert(parts[2]);
+      }
+    }
   }
-  return root;
+  KzipEncoding encoding = KzipEncoding::Json;
+  if (jsonUnits.size() == 0) {
+    encoding = KzipEncoding::Proto;
+  } else if (protoUnits.size() != 0) {
+    std::vector<std::string> diff;
+    std::set_symmetric_difference(jsonUnits.begin(), jsonUnits.end(),
+                                  protoUnits.begin(), protoUnits.end(),
+                                  std::inserter(diff, diff.end()));
+    if (diff.size() != 0) {
+      return InvalidArgumentError(absl::StrCat(
+          "Malformed kzip: multiple unit encodings but different entries"));
+    }
+  }
+  return KzipOptions({root, encoding});
 }
 
 absl::optional<zip_uint64_t> FileSize(zip_t* archive, zip_uint64_t index) {
@@ -153,18 +175,37 @@ StatusOr<std::string> ReadTextFile(zip_t* archive, const std::string& path) {
   return UnknownError(absl::StrCat("Unable to read: ", path));
 }
 
+absl::string_view DirNameForEncoding(KzipEncoding encoding) {
+  if (encoding == KzipEncoding::Json) {
+    return kJsonUnitsDir;
+  }
+  if (encoding == KzipEncoding::Proto) {
+    return kProtoUnitsDir;
+  }
+  LOG(FATAL) << "Unsupported encoding: " << static_cast<int>(encoding);
+  return "";
+}
+
 }  // namespace
+
+absl::optional<absl::string_view> KzipReader::UnitDigest(
+    absl::string_view path) {
+  if (!absl::ConsumePrefix(&path, unitPrefix_) || path.empty()) {
+    return absl::nullopt;
+  }
+  return path;
+}
 
 /* static */
 StatusOr<IndexReader> KzipReader::Open(absl::string_view path) {
   int error;
   if (auto archive =
           ZipHandle(zip_open(std::string(path).c_str(), ZIP_RDONLY, &error))) {
-    if (auto root = Validate(archive.get())) {
-      return IndexReader(
-          absl::WrapUnique(new KzipReader(std::move(archive), *root)));
+    if (auto options = Validate(archive.get())) {
+      return IndexReader(absl::WrapUnique(new KzipReader(
+          std::move(archive), (*options).root, (*options).encoding)));
     } else {
-      return root.status();
+      return options.status();
     }
   }
   return libzip::Error(error).ToStatus();
@@ -175,29 +216,42 @@ StatusOr<IndexReader> KzipReader::FromSource(zip_source_t* source) {
   libzip::Error error;
   if (auto archive =
           ZipHandle(zip_open_from_source(source, ZIP_RDONLY, error.get()))) {
-    if (auto root = Validate(archive.get())) {
-      return IndexReader(
-          absl::WrapUnique(new KzipReader(std::move(archive), *root)));
+    if (auto options = Validate(archive.get())) {
+      return IndexReader(absl::WrapUnique(new KzipReader(
+          std::move(archive), (*options).root, (*options).encoding)));
     } else {
       // Ensure source is retained when `archive` is deleted.
       // It is the callers responsitility to free it on error.
       zip_source_keep(source);
-      return root.status();
+      return options.status();
     }
   }
   return error.ToStatus();
 }
 
-KzipReader::KzipReader(ZipHandle archive, absl::string_view root)
-    : archive_(std::move(archive)), root_(root) {}
+KzipReader::KzipReader(ZipHandle archive, absl::string_view root,
+                       KzipEncoding encoding)
+    : archive_(std::move(archive)),
+      root_(root),
+      encoding_(encoding),
+      unitPrefix_(absl::StrCat(root, "/", DirNameForEncoding(encoding), "/")) {
+}
 
 StatusOr<proto::IndexedCompilation> KzipReader::ReadUnit(
     absl::string_view digest) {
-  std::string path = absl::StrCat(root_, "/units/", digest);
+  std::string path = absl::StrCat(unitPrefix_, digest);
+
   if (auto file = ZipFile(zip_fopen(archive(), path.c_str(), 0))) {
     proto::IndexedCompilation unit;
     ZipFileInputStream input(file.get());
-    Status status = ParseFromJsonStream(&input, &unit);
+    Status status;
+    if (encoding_ == KzipEncoding::Json) {
+      status = ParseFromJsonStream(&input, &unit);
+    } else {
+      if (!unit.ParseFromZeroCopyStream(&input)) {
+        status = InvalidArgumentError("Failure parsing proto unit");
+      }
+    }
     if (!status.ok()) {
       Status zip_status = libzip::ToStatus(zip_file_get_error(file.get()));
       if (!zip_status.ok()) {
