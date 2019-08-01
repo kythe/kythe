@@ -53,6 +53,7 @@ const (
 
 var (
 	makeDir       string
+	makeTargets   = flagutil.StringList{"clean", "jdk"}
 	outputDir     string
 	vNameRules    string
 	wrapperPath   string
@@ -173,6 +174,7 @@ func init() {
 	flag.StringVar(&vNameRules, "rules", defaultVNamesPath(), "path of vnames.json file (optional)")
 	flag.StringVar(&wrapperPath, "java_wrapper", defaultWrapperPath(), "path to the java_wrapper executable (optional)")
 	flag.StringVar(&extractorPath, "extractor_jar", defaultExtractorPath(), "path to the javac_extractor_deployt.jar (optional)")
+	flag.Var(&makeTargets, "targets", "comma-separated list of make targets to build")
 	flag.Usage = flagutil.SimpleUsage("Extract a configured openjdk11 source directory", "[--java_wrapper=] [path]")
 }
 
@@ -188,7 +190,7 @@ func main() {
 		flagutil.UsageErrorf("java_wrapper not found: %v", err)
 	}
 
-	cmd := exec.Command("make", javaMakeVar+"="+wrapperPath, "ENABLE_JAVAC_SERVER=no", "clean", "jdk")
+	cmd := exec.Command("make", append([]string{javaMakeVar + "=" + wrapperPath, "ENABLE_JAVAC_SERVER=no"}, makeTargets...)...)
 	cmd.Dir = makeDir
 	cmd.Env = makeEnv()
 	cmd.Stdout = nil // Quiet, you
