@@ -168,4 +168,15 @@ public final class CompilationUnitFileSystemTest {
       throw new RuntimeException(exc);
     }
   }
+
+  @Test
+  public void toRealPath_usesCompilationRoot() {
+    CompilationUnitFileSystem fileSystem =
+        builder().setWorkingDirectory("/working/directory").build();
+
+    assertThat(fileSystem.getPath("relative/path").toAbsolutePath().toString())
+        .isEqualTo("/working/directory/relative/path");
+    assertThat(fileSystem.getPath("/absolute/path").toAbsolutePath().toString())
+        .isEqualTo("/absolute/path");
+  }
 }

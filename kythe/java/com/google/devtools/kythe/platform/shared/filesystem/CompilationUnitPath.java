@@ -157,7 +157,8 @@ final class CompilationUnitPath implements Path {
 
   @Override
   public Path toAbsolutePath() {
-    return isAbsolute() ? this : null;
+    // We treat our root directory as the "working" directory for path manipulation.
+    return fileSystem.getRootDirectory().resolve(this);
   }
 
   @Override
