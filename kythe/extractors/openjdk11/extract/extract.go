@@ -53,13 +53,34 @@ const (
 
 var (
 	makeDir       string
-	makeTargets   = flagutil.StringList{"clean", "jdk"}
+	makeTargets   = targetList{"clean", "jdk"}
 	outputDir     string
 	vNameRules    string
 	wrapperPath   string
 	extractorPath string
 	errorPattern  = regexp.MustCompile("ERROR: extractor failure for module ([^:]*):")
 )
+
+// targetList is a simple comma-separated list of strings used
+// for the -targets flag.
+// flagutil.StringList always accumulates values, which we don't want.
+type targetList []string
+
+// Set implements part of the flag.Getter interface for targetList and will
+// set the new value from s.
+func (tl *targetList) Set(s string) error {
+	*tl = strings.Split(s, ",")
+	return nil
+}
+
+// String implements part of the flag.Getter interface for targetList and will
+// return the value as a comma-separate string.
+func (tl *targetList) String() string {
+	if tl == nil {
+		return ""
+	}
+	return strings.Join(*tl, ",")
+}
 
 func setupRunfiles() error {
 	if os.Getenv("RUNFILES_DIR") != "" || os.Getenv("RUNFILES_MANIFEST_FILE") != "" {
