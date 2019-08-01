@@ -15,11 +15,12 @@
  */
 
 import 'source-map-support/register';
+
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
-import {EdgeKind, FactName, JSONEdge, JSONFact, makeOrdinalEdge, OrdinalEdge, Subkind, VName} from './kythe';
+import {EdgeKind, FactName, JSONEdge, JSONFact, makeOrdinalEdge, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
 
 const LANGUAGE = 'typescript';
@@ -49,12 +50,6 @@ export interface IndexerHost {
    * See the documentation of Context for more information.
    */
   getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName;
-  /**
-   * Aliases a local symbol to a remote symbol. Returns the aliased name.
-   * This is used to return a remote symbol's VNames for a local symbol when a
-   * symbol is imported into a file; @see Visitor#visitImport.
-   */
-  aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName;
   /**
    * scopedSignature computes a scoped name for a ts.Node.
    * E.g. if you have a function `foo` containing a block containing a variable
@@ -358,6 +353,7 @@ class StandardIndexerContext implements IndexerHost {
         case ts.SyntaxKind.EnumMember:
         case ts.SyntaxKind.FunctionDeclaration:
         case ts.SyntaxKind.InterfaceDeclaration:
+        case ts.SyntaxKind.ImportEqualsDeclaration:
         case ts.SyntaxKind.ImportSpecifier:
         case ts.SyntaxKind.ExportSpecifier:
         case ts.SyntaxKind.MethodDeclaration:
@@ -431,6 +427,19 @@ class StandardIndexerContext implements IndexerHost {
           // be scoped to the class, not the constructor.
           if (!ts.isParameterPropertyDeclaration(startNode)) {
             parts.push('constructor');
+          }
+          break;
+        case ts.SyntaxKind.ImportClause:
+          // An import clause can have one of two forms:
+          //   import foo from './bar';
+          //   import {foo as far} from './bar';
+          // In the first case the clause has a name "foo". In this case add the
+          // name of the clause to the signature.
+          // In the second case the clause has no name because its imports are
+          // named bindings. This contributes nothing to the signature.
+          const importClause = node as ts.ImportClause;
+          if (importClause.name) {
+            parts.push(importClause.name.text);
           }
           break;
         case ts.SyntaxKind.ModuleDeclaration:
@@ -549,25 +558,6 @@ class StandardIndexerContext implements IndexerHost {
     }
 
     return vname;
-  }
-
-  aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName {
-    // This imported symbol can refer to a type, a value, or both.
-    const kImportValue = remoteSym.flags & ts.SymbolFlags.Value ?
-        this.getSymbolName(remoteSym, TSNamespace.VALUE) :
-        null;
-    const kImportType = remoteSym.flags & ts.SymbolFlags.Type ?
-        this.getSymbolName(remoteSym, TSNamespace.TYPE) :
-        null;
-    // Mark the local symbol with the remote symbol's VName so that all
-    // references resolve to the remote symbol.
-    this.symbolNames.set(localSym, [kImportType, kImportValue, kImportType]);
-
-    // The name anchor must link somewhere.  In rare cases a symbol is both
-    // a type and a value that resolve to two different locations; for now,
-    // because we must choose one, just prefer linking to the value.
-    // One of the value or type reference should be non-null.
-    return (kImportValue || kImportType)!;
   }
 
   /**
@@ -884,16 +874,19 @@ class Visitor {
   }
 
   /**
-   * visitImportSpecifier handles a single entry in an import statement, e.g.
+   * visitImport handles a single entry in an import statement, e.g.
    * "bar" in code like
    *   import {foo, bar} from 'baz';
    * See visitImportDeclaration for the code handling the entire statement.
    *
+   * @param name TypeScript import declaration node
+   * @param customRef optional TypeScript node to emit an "ref/imports" edge
+   *   from. If not set, a "ref/imports" edge is emitted from `name`.
    * @return The VName for the import.
    */
-  visitImport(name: ts.Node): VName {
+  visitImport(name: ts.Node, customRef?: ts.Node): VName {
     // An import both aliases a symbol from another module
-    // (call it the "remote" symbol) and it defines a local symbol.
+    // (call it the remote symbol) and it defines a local symbol.
     //
     // Those two symbols often have the same name, with statements like:
     //   import {foo} from 'bar';
@@ -905,23 +898,74 @@ class Visitor {
     // one for the local and one for the remote.  In principle for the
     // simple import statement
     //   import {foo} from 'bar';
-    // the "foo" should be both:
-    // - a ref/imports to the remote symbol
-    // - a defines/binding for the local symbol
+    // "foo" should both:
+    //   - "ref/imports" the remote symbol
+    //   - "defines/binding" the local symbol
     //
     // But in Kythe the UI for stacking multiple references out from a single
     // anchor isn't great, so this code instead unifies all references
-    // (including renaming imports) to a single VName.
+    // (including renaming imports) to the remote symbol.
+    //
+    // This is done by exploiting Kythe graph edges. A "name" node is defined
+    // for the local symbol that the remote symbol "generates". "generates"
+    // provides an edge between two semantic nodes that allows for folding
+    // references. A graph like
+    //
+    //   LocalUsage    LocalSymbol  RemoteSymbol      RemoteAnchor
+    //        \___________/^ ^\_________/ ^\_______________/
+    //             ref         generates    defines/binding
+    //
+    // will produce a cross-reference from LocalUsage to RemoteAnchor as if the
+    // graph was
+    //
+    //   LocalUsage    RemoteSymbol      RemoteAnchor
+    //        \___________/^ ^\_______________/
+    //             ref         defines/binding
 
     const localSym = this.host.getSymbolAtLocation(name);
     if (!localSym) {
       throw new Error(`TODO: local name ${name} has no symbol`);
     }
-
     const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
-    const kImportName = this.host.aliasSymbol(localSym, remoteSym);
-    this.emitEdge(this.newAnchor(name), EdgeKind.REF_IMPORTS, kImportName);
-    return kImportName;
+
+    // Anchor to the local import name.
+    const localImportAnchor = this.newAnchor(customRef || name);
+
+    // The imported symbol can refer to a type, a value, or both. Attempt to
+    // create "name"s for the local symbol and "generates" edges to the remote
+    // symbol in both cases.
+    // Also attempt to emit a "ref/imports" from the local import name to the
+    // to the remote definition in both cases.
+    //
+    // If a customRef to emit a "ref/imports" from is specified, skip emitting
+    // "name" nodes and "generates" edges as they should be emitted on just the
+    // import name.
+    let kLocalValue, kLocalType;
+    if (remoteSym.flags & ts.SymbolFlags.Value) {
+      const kRemoteValue =
+          this.host.getSymbolName(remoteSym, TSNamespace.VALUE);
+      kLocalValue = this.host.getSymbolName(localSym, TSNamespace.VALUE);
+
+      if (!customRef) {
+        this.emitNode(kLocalValue, NodeKind.NAME);
+        this.emitEdge(kRemoteValue, EdgeKind.GENERATES, kLocalValue);
+      }
+      this.emitEdge(localImportAnchor, EdgeKind.REF_IMPORTS, kRemoteValue);
+    }
+    if (remoteSym.flags & ts.SymbolFlags.Type) {
+      const kRemoteType = this.host.getSymbolName(remoteSym, TSNamespace.TYPE);
+      kLocalType = this.host.getSymbolName(localSym, TSNamespace.TYPE);
+
+      if (!customRef) {
+        this.emitNode(kLocalType, NodeKind.NAME);
+        this.emitEdge(kRemoteType, EdgeKind.GENERATES, kLocalType);
+      }
+      this.emitEdge(localImportAnchor, EdgeKind.REF_IMPORTS, kRemoteType);
+    }
+
+    // The local import is now known to have a value or type VName, if not both.
+    // Because one VName must be chosen, prefer the value.
+    return (kLocalValue || kLocalType)!;
   }
 
   /** visitImportDeclaration handles the various forms of "import ...". */
@@ -1008,9 +1052,10 @@ class Visitor {
         for (const imp of imports) {
           const kImport = this.visitImport(imp.name);
           if (imp.propertyName) {
-            this.emitEdge(
-                this.newAnchor(imp.propertyName), EdgeKind.REF_IMPORTS,
-                kImport);
+            this.visitImport(imp.name, imp.propertyName);
+            // this.emitEdge(
+            //    this.newAnchor(imp.propertyName), EdgeKind.REF_IMPORTS,
+            //    kImport);
           }
         }
         break;
