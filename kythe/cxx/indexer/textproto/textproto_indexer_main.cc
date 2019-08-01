@@ -20,6 +20,7 @@
 #include <functional>
 #include <iostream>
 
+#include "gflags/gflags.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
