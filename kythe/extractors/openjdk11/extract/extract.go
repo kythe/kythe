@@ -53,12 +53,34 @@ const (
 
 var (
 	makeDir       string
+	makeTargets   = targetList{"clean", "jdk"}
 	outputDir     string
 	vNameRules    string
 	wrapperPath   string
 	extractorPath string
 	errorPattern  = regexp.MustCompile("ERROR: extractor failure for module ([^:]*):")
 )
+
+// targetList is a simple comma-separated list of strings used
+// for the -targets flag.
+// flagutil.StringList always accumulates values, which we don't want.
+type targetList []string
+
+// Set implements part of the flag.Getter interface for targetList and will
+// set the new value from s.
+func (tl *targetList) Set(s string) error {
+	*tl = strings.Split(s, ",")
+	return nil
+}
+
+// String implements part of the flag.Getter interface for targetList and will
+// return the value as a comma-separate string.
+func (tl *targetList) String() string {
+	if tl == nil {
+		return ""
+	}
+	return strings.Join(*tl, ",")
+}
 
 func setupRunfiles() error {
 	if os.Getenv("RUNFILES_DIR") != "" || os.Getenv("RUNFILES_MANIFEST_FILE") != "" {
@@ -173,6 +195,7 @@ func init() {
 	flag.StringVar(&vNameRules, "rules", defaultVNamesPath(), "path of vnames.json file (optional)")
 	flag.StringVar(&wrapperPath, "java_wrapper", defaultWrapperPath(), "path to the java_wrapper executable (optional)")
 	flag.StringVar(&extractorPath, "extractor_jar", defaultExtractorPath(), "path to the javac_extractor_deployt.jar (optional)")
+	flag.Var(&makeTargets, "targets", "comma-separated list of make targets to build")
 	flag.Usage = flagutil.SimpleUsage("Extract a configured openjdk11 source directory", "[--java_wrapper=] [path]")
 }
 
@@ -188,7 +211,7 @@ func main() {
 		flagutil.UsageErrorf("java_wrapper not found: %v", err)
 	}
 
-	cmd := exec.Command("make", javaMakeVar+"="+wrapperPath, "ENABLE_JAVAC_SERVER=no", "clean", "jdk")
+	cmd := exec.Command("make", append([]string{javaMakeVar + "=" + wrapperPath, "ENABLE_JAVAC_SERVER=no"}, makeTargets...)...)
 	cmd.Dir = makeDir
 	cmd.Env = makeEnv()
 	cmd.Stdout = nil // Quiet, you
