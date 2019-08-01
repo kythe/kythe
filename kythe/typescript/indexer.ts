@@ -210,14 +210,14 @@ function todo(sourceRoot: string, node: ts.Node, message: string) {
  */
 type NamespaceAndContext = string&{__brand: 'nsctx'};
 class SymbolVNameStore {
-  private readonly cache =
+  private readonly store =
       new Map<ts.Symbol, Map<NamespaceAndContext, Readonly<VName>>>();
 
   /**
-   * Serializes a namespace and context as a string to lookup in the cache.
+   * Serializes a namespace and context as a string to lookup in the store.
    *
    * Each instance of a JavaScript object is unique, so using one as a key fails
-   * because a new object would be generated every time the cache is queried.
+   * because a new object would be generated every time the store is queried.
    */
   private serialize(ns: TSNamespace, context: Context): NamespaceAndContext {
     return `${ns}${context}` as NamespaceAndContext;
@@ -225,9 +225,9 @@ class SymbolVNameStore {
 
   /** Get a symbol VName for a given namespace and context, if it exists. */
   get(symbol: ts.Symbol, ns: TSNamespace, context: Context): VName|undefined {
-    if (this.cache.has(symbol)) {
+    if (this.store.has(symbol)) {
       const nsCtx = this.serialize(ns, context);
-      return this.cache.get(symbol)!.get(nsCtx);
+      return this.store.get(symbol)!.get(nsCtx);
     }
     return undefined;
   }
@@ -237,7 +237,7 @@ class SymbolVNameStore {
    * already exists.
    */
   set(symbol: ts.Symbol, ns: TSNamespace, context: Context, vname: VName) {
-    let vnameMap = this.cache.get(symbol);
+    let vnameMap = this.store.get(symbol);
     const nsCtx = this.serialize(ns, context);
     if (vnameMap) {
       // If there is already a map for the symbol, check that a VName is not
@@ -250,13 +250,13 @@ class SymbolVNameStore {
     } else {
       // If there is no map for the symbol, create a new one with an entry of
       // the VName for the given namepsace and context.
-      this.cache.set(symbol, new Map([[nsCtx, vname]]));
+      this.store.set(symbol, new Map([[nsCtx, vname]]));
     }
 
     // Set the symbol VName for the given namespace and `Any` context, if it has
     // not already been set.
     const nsAny = this.serialize(ns, Context.Any);
-    vnameMap = this.cache.get(symbol)!;
+    vnameMap = this.store.get(symbol)!;
     if (!vnameMap.has(nsAny)) {
       vnameMap.set(nsAny, vname);
     }
@@ -567,8 +567,8 @@ class StandardIndexerContext implements IndexerHost {
    */
   getSymbolName(
       sym: ts.Symbol, ns: TSNamespace, context: Context = Context.Any): VName {
-    const cached = this.symbolNames.get(sym, ns, context);
-    if (cached) return cached;
+    const stored = this.symbolNames.get(sym, ns, context);
+    if (stored) return stored;
 
     let declarations = sym.declarations;
     if (declarations.length < 1) {
