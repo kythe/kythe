@@ -2,6 +2,8 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+load("@io_bazel_rules_java//java:repositories.bzl", "rules_java_dependencies")
+load("@io_bazel_rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
@@ -12,6 +14,8 @@ def _rule_dependencies():
     gazelle_dependencies()
     go_rules_dependencies()
     go_register_toolchains()
+    rules_java_dependencies()
+    rules_proto_dependencies()
 
 def _cc_dependencies():
     maybe(
@@ -729,8 +733,9 @@ def kythe_dependencies(sample_ui = True):
         strip_prefix = "llvmbzlgen-435bad1d07f7a8d32979d66cd5547e1b32dca812",
     )
 
+    _bindings()
     _rule_dependencies()
+
     if sample_ui:
         _sample_ui_dependencies()
-    _bindings()
     _extractor_image_dependencies()

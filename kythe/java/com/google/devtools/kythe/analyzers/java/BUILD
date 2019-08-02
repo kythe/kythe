@@ -1,3 +1,5 @@
+load("@io_bazel_rules_java//java:defs.bzl", "java_library", "java_binary")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(

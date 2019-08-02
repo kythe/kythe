@@ -18,6 +18,20 @@ def kythe_rule_repositories():
         sha256 = "a82a352bffae6bee4e95f68a8d80a70e87f42c4741e6a448bec11998fcc82329",
     )
 
+    http_archive(
+        name = "io_bazel_rules_java",
+        url = "https://github.com/bazelbuild/rules_java/archive/973a93dd2d698929264d1028836f6b9cc60ff817.zip",
+        sha256 = "a6cb0dbe343b67c7d4f3f11a68e327acdfc71fee1e17affa4e605129fc56bb15",
+        strip_prefix = "rules_java-973a93dd2d698929264d1028836f6b9cc60ff817",
+    )
+
+    http_archive(
+        name = "io_bazel_rules_proto",
+        sha256 = "e4fe70af52135d2ee592a07f916e6e1fc7c94cf8786c15e8c0d0f08b1fe5ea16",
+        strip_prefix = "rules_proto-97d8af4dc474595af3900dd85cb3a29ad28cc313",
+        url = "https://github.com/bazelbuild/rules_proto/archive/97d8af4dc474595af3900dd85cb3a29ad28cc313.zip",
+    )
+
     maybe(
         http_archive,
         name = "bazel_gazelle",
