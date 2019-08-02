@@ -34,8 +34,7 @@ import (
 type infoCommand struct {
 	cmdutil.Info
 
-	input       string
-	writeFormat string
+	input string
 }
 
 // New creates a new subcommand for obtaining info on a kzip file.
