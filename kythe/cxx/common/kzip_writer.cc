@@ -179,7 +179,7 @@ Status KzipWriter::Close() {
 
 StatusOr<std::string> KzipWriter::InsertFile(absl::string_view path, absl::string_view content) {
   // Initially insert an empty string for the file content.
-  auto insertion = contents_.emplace(path, "");
+  auto insertion = contents_.emplace(std::string(path), "");
   if (insertion.second) {
     // Only copy in the real content if it was actually inserted into the map.
     auto& entry = insertion.first;
