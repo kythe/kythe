@@ -141,7 +141,7 @@ StatusOr<KzipOptions> Validate(zip_t* archive) {
           "Malformed kzip: multiple unit encodings but different entries"));
     }
   }
-  return KzipOptions({root, encoding});
+  return KzipOptions{root, encoding};
 }
 
 absl::optional<zip_uint64_t> FileSize(zip_t* archive, zip_uint64_t index) {
@@ -219,7 +219,7 @@ StatusOr<IndexReader> KzipReader::FromSource(zip_source_t* source) {
           ZipHandle(zip_open_from_source(source, ZIP_RDONLY, error.get()))) {
     if (auto options = Validate(archive.get())) {
       return IndexReader(absl::WrapUnique(new KzipReader(
-          std::move(archive), (*options).root, (*options).encoding)));
+          std::move(archive), options->root, options->encoding)));
     } else {
       // Ensure source is retained when `archive` is deleted.
       // It is the callers responsitility to free it on error.
