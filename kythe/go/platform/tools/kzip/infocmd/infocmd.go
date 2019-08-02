@@ -23,7 +23,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/cmdutil"
@@ -50,17 +49,12 @@ func New() subcommands.Command {
 // for the info command.
 func (c *infoCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.input, "input", "", "Path for input kzip file (required)")
-	fs.StringVar(&c.writeFormat, "write_format", "text", "Output of info summary. Can be 'text' (human-readable), or 'json'.")
 }
 
 // Execute implements the subcommands interface and gathers info from the requested file.
 func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.input == "" {
 		return c.Fail("required --input path missing")
-	}
-	c.writeFormat = strings.ToLower(c.writeFormat)
-	if c.writeFormat != "text" && c.writeFormat != "json" {
-		return c.Fail("--write_format invalid. Must be 'text' or 'json'")
 	}
 	f, err := os.Open(c.input)
 	if err != nil {
@@ -107,37 +101,17 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 		return c.Fail("error while scanning: %v", err)
 	}
 
-	if c.writeFormat == "text" {
-		fmt.Printf("%d compilation units, %d input files, corpora: %s\n", totalUnits, totalFiles, corpora)
-		printBreakdown := func(b map[string]map[string]int) {
-			for corpus, sub := range b {
-				if corpus == "" {
-					corpus = "<empty corpus>"
-				}
-				fmt.Println("  " + corpus)
-				for lang, count := range sub {
-					if lang == "" {
-						lang = "<empty lang>"
-					}
-					fmt.Printf("    %s: %d\n", lang, count)
-				}
-			}
-		}
-		fmt.Printf("Unit Counts (by corpus, language):\n")
-		printBreakdown(unitBreakdown)
-		fmt.Printf("\nFile Counts (by corpus, language):\n")
-		printBreakdown(fileBreakdown)
-	} else if c.writeFormat == "json" {
-		out := make(map[string]interface{})
-		out["unit_counts"] = unitBreakdown
-		out["file_counts"] = fileBreakdown
-		out["total_files"] = totalFiles
-		out["total_units"] = totalUnits
-		data, err := json.Marshal(&out)
-		if err != nil {
-			return c.Fail("error marshaling json output: %v", err)
-		}
-		fmt.Print(string(data))
+	// Write output as json.
+	out := make(map[string]interface{})
+	out["unit_counts"] = unitBreakdown
+	out["file_counts"] = fileBreakdown
+	out["total_files"] = totalFiles
+	out["total_units"] = totalUnits
+	data, err := json.MarshalIndent(&out, "", "  ")
+	if err != nil {
+		return c.Fail("error marshaling json output: %v", err)
 	}
+	fmt.Print(string(data))
+
 	return subcommands.ExitSuccess
 }
