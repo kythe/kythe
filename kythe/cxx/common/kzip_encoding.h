@@ -17,8 +17,6 @@
 #ifndef KYTHE_CXX_COMMON_KZIP_ENCODING_H_
 #define KYTHE_CXX_COMMON_KZIP_ENCODING_H_
 
-#include "absl/strings/string_view.h"
-
 namespace kythe {
 
 enum class KzipEncoding {
