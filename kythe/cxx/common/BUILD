@@ -279,7 +279,6 @@ cc_library(
 
 cc_library(
     name = "kzip_encoding",
-    srcs = [],
     hdrs = ["kzip_encoding.h"],
     visibility = [
         "//visibility:private",

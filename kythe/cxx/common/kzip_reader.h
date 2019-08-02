@@ -65,9 +65,9 @@ class KzipReader : public IndexReaderInterface {
   absl::optional<absl::string_view> UnitDigest(absl::string_view path);
 
   ZipHandle archive_;
-  absl::string_view root_;  // Memory owned by `archive_`.
   KzipEncoding encoding_;
-  std::string unitPrefix_;
+  std::string files_prefix_;
+  std::string unit_prefix_;
 };
 
 }  // namespace kythe

@@ -22,13 +22,10 @@
 namespace kythe {
 
 enum class KzipEncoding {
-  Json = 1,           ///< JSON encoded
-  Proto = 2,          ///< Proto encodedo
-  All = Json | Proto  ///< All encodings
+  kJson = 1,           ///< JSON encoded
+  kProto = 2,          ///< Proto encodedo
+  kAll = kJson | kProto  ///< All encodings
 };
-
-constexpr /* inline */ absl::string_view kJsonUnitsDir = "units";
-constexpr /* inline */ absl::string_view kProtoUnitsDir = "pbunits";
 
 }  // namespace kythe
 

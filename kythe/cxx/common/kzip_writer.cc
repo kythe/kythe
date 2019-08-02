@@ -33,10 +33,10 @@
 namespace kythe {
 namespace {
 
-const std::string kRoot = "root/";
-const std::string kJsonUnitRoot = absl::StrCat(kRoot, kJsonUnitsDir, "/");
-const std::string kProtoUnitRoot = absl::StrCat(kRoot, kProtoUnitsDir, "/");
-const std::string kFileRoot = absl::StrCat(kRoot, "files/");
+constexpr absl::string_view kRoot = "root/";
+constexpr absl::string_view kJsonUnitRoot = "root/units/";
+constexpr absl::string_view kProtoUnitRoot = "root/pbunits/";
+constexpr absl::string_view kFileRoot = "root/files/";
 
 std::string SHA256Digest(absl::string_view content) {
   std::array<unsigned char, SHA256_DIGEST_LENGTH> buf;
@@ -64,6 +64,11 @@ absl::string_view Basename(absl::string_view path) {
     return path;
   }
   return absl::ClippedSubstr(path, pos + 1);
+}
+
+bool HasEncoding(KzipEncoding lhs, KzipEncoding rhs) {
+  return static_cast<typename std::underlying_type<KzipEncoding>::type>(lhs) &
+         static_cast<typename std::underlying_type<KzipEncoding>::type>(rhs);
 }
 
 }  // namespace
@@ -99,14 +104,14 @@ KzipWriter::~KzipWriter() {
 
 // Creates entries for the three directories if not already present.
 Status KzipWriter::InitializeArchive(zip_t* archive) {
-  std::vector<std::string> dirs = {kRoot, kFileRoot};
-  if (encoding_ == KzipEncoding::Json || encoding_ == KzipEncoding::All) {
-    dirs.emplace_back(kJsonUnitRoot);
+  std::vector<absl::string_view> dirs = {kRoot, kFileRoot};
+  if (HasEncoding(encoding_, KzipEncoding::kJson)) {
+    dirs.push_back(kJsonUnitRoot);
   }
-  if (encoding_ == KzipEncoding::Proto || encoding_ == KzipEncoding::All) {
-    dirs.emplace_back(kProtoUnitRoot);
+  if (HasEncoding(encoding_, KzipEncoding::kProto)) {
+    dirs.push_back(kProtoUnitRoot);
   }
-  for (const auto name : dirs) {
+  for (const auto& name : dirs) {
     if (zip_dir_add(archive, name.data(), ZIP_FL_ENC_UTF_8) < 0) {
       Status status = libzip::ToStatus(zip_get_error(archive));
       zip_error_clear(archive);
@@ -130,32 +135,19 @@ StatusOr<std::string> KzipWriter::WriteUnit(
     return json.status();
   }
   auto digest = SHA256Digest(*json);
-  StatusOr<std::string> result(InternalError("unsupported encoding"));
-  if (encoding_ == KzipEncoding::Json || encoding_ == KzipEncoding::All) {
-    auto file = InsertFile(absl::StrCat(kJsonUnitRoot, digest), *json);
-    if (file.inserted()) {
-      auto status = WriteTextFile(archive_, file.path(), file.contents());
-      if (!status.ok()) {
-        contents_.erase(file.path());
-        return status;
-      }
+  StatusOr<std::string> result = InternalError("unsupported encoding");;
+  if (HasEncoding(encoding_, KzipEncoding::kJson)) {
+    result = InsertFile(absl::StrCat(kJsonUnitRoot, digest), *json);
+    if (!result) {
+      return result;
     }
-    result = std::string(file.digest());
   }
-  if (encoding_ == KzipEncoding::Proto || encoding_ == KzipEncoding::All) {
+  if (HasEncoding(encoding_, KzipEncoding::kProto)) {
     std::string contents;
     if (!unit.SerializeToString(&contents)) {
       return InternalError("Failure serializing compilation unit");
     }
-    auto file = InsertFile(absl::StrCat(kProtoUnitRoot, digest), contents);
-    if (file.inserted()) {
-      auto status = WriteTextFile(archive_, file.path(), file.contents());
-      if (!status.ok()) {
-        contents_.erase(file.path());
-        return status;
-      }
-    }
-    result = std::string(file.digest());
+    result = InsertFile(absl::StrCat(kProtoUnitRoot, digest), contents);
   }
   return result;
 }
@@ -168,16 +160,7 @@ StatusOr<std::string> KzipWriter::WriteFile(absl::string_view content) {
     }
     initialized_ = true;
   }
-  auto file =
-      InsertFile(absl::StrCat(kFileRoot, SHA256Digest(content)), content);
-  if (file.inserted()) {
-    auto status = WriteTextFile(archive_, file.path(), file.contents());
-    if (!status.ok()) {
-      contents_.erase(file.path());
-      return status;
-    }
-  }
-  return std::string(file.digest());
+  return InsertFile(absl::StrCat(kFileRoot, SHA256Digest(content)), content);
 }
 
 Status KzipWriter::Close() {
@@ -194,19 +177,20 @@ Status KzipWriter::Close() {
   return result;
 }
 
-auto KzipWriter::InsertFile(absl::string_view path, absl::string_view content)
-    -> InsertionResult {
+StatusOr<std::string> KzipWriter::InsertFile(absl::string_view path, absl::string_view content) {
   // Initially insert an empty string for the file content.
-  auto result = InsertionResult{contents_.emplace(path, "")};
-  if (result.inserted()) {
+  auto insertion = contents_.emplace(path, "");
+  if (insertion.second) {
     // Only copy in the real content if it was actually inserted into the map.
-    result.insertion.first->second = std::string(content);
+    auto& entry = insertion.first;
+    entry->second = std::string(content);
+    auto status = WriteTextFile(archive_, entry->first, entry->second);
+    if (!status.ok()) {
+      contents_.erase(entry->first);
+      return status;
+    }
   }
-  return result;
-}
-
-inline absl::string_view KzipWriter::InsertionResult::digest() const {
-  return Basename(path());
+  return std::string(Basename(path));
 }
 
 }  // namespace kythe

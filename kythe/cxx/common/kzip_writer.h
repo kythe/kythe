@@ -35,21 +35,16 @@ class KzipWriter : public IndexWriterInterface {
  public:
   /// \brief Constructs a Kzip IndexWriter which will create and write to
   /// \param path Path to the file to create. Must not currently exist.
-  static StatusOr<IndexWriter> Create(absl::string_view path) {
-    return Create(path, KzipEncoding::Json);
-  }
-  /// \brief Constructs a Kzip IndexWriter which will create and write to
-  /// \param path Path to the file to create. Must not currently exist.
   /// \param encoding Encoding to use for compilation units.
   static StatusOr<IndexWriter> Create(absl::string_view path,
-                                      KzipEncoding encoding);
+                                      KzipEncoding encoding = KzipEncoding::kJson);
   /// \brief Constructs an IndexWriter from the libzip source pointer.
   /// \param source zip_source_t to use as backing store.
   /// See https://libzip.org/documentation/zip_source.html for ownership.
   /// \param flags Flags to use when opening `source`.
   /// \param encoding Encoding to use for compilation units.
   static StatusOr<IndexWriter> FromSource(zip_source_t* source,
-                                          KzipEncoding encoding,
+                                          KzipEncoding encoding = KzipEncoding::kJson,
                                           int flags = ZIP_CREATE | ZIP_EXCL);
 
   /// \brief Destroys the KzipWriter.
@@ -71,18 +66,9 @@ class KzipWriter : public IndexWriterInterface {
   using Contents = std::string;
   using FileMap = std::unordered_map<Path, Contents>;
 
-  struct InsertionResult {
-    absl::string_view digest() const;
-    const std::string& path() const { return insertion.first->first; }
-    absl::string_view contents() const { return insertion.first->second; }
-    bool inserted() const { return insertion.second; }
-
-    std::pair<FileMap::iterator, bool> insertion;
-  };
-
   explicit KzipWriter(zip_t* archive, KzipEncoding encoding);
 
-  InsertionResult InsertFile(absl::string_view path, absl::string_view content);
+  StatusOr<std::string> InsertFile(absl::string_view path, absl::string_view content);
 
   Status InitializeArchive(zip_t* archive);
 

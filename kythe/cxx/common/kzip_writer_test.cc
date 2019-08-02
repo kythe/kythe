@@ -217,7 +217,7 @@ TEST(KzipWriterTest, DuplicateFilesAreIgnored) {
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEncodings, FullKzipWriterTest,
-                         Values(KzipEncoding::Json, KzipEncoding::Proto,
-                                KzipEncoding::All));
+                         Values(KzipEncoding::kJson, KzipEncoding::kProto,
+                                KzipEncoding::kAll));
 }  // namespace
 }  // namespace kythe
