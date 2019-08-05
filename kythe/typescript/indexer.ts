@@ -862,9 +862,15 @@ class Visitor {
   /**
    * Returns the location of a text in the source code of a node.
    */
-  getTextSpan(node: ts.Node, text: string): {start: number, end: number} {
+  getTextSpan(node: ts.Node, text: string): {
+    start: number,
+    end: number,
+  }|undefined {
     const ofs = node.getText().indexOf(text);
-    if (ofs < 0) throw new Error(`${text} not found in ${node.getText()}`);
+    if (ofs < 0) {
+      todo(this.sourceRoot, node, `${text} not found in ${node.getText()}`);
+      return;
+    }
     const start = node.getStart() + ofs;
     const end = start + text.length;
     return {start, end};
@@ -1084,6 +1090,7 @@ class Visitor {
   visitExportAssignment(assign: ts.ExportAssignment) {
     if (assign.isExportEquals) {
       const span = this.getTextSpan(assign, 'export =');
+      if (!span) return;
       const anchor = this.newAnchor(assign, span.start, span.end);
       this.emitEdge(
           anchor, EdgeKind.DEFINES_BINDING, this.host.scopedSignature(assign));
@@ -1095,6 +1102,7 @@ class Visitor {
       // The TypeScript AST does not expose the location of the 'default'
       // keyword so we just find it in the source text to link it.
       const span = this.getTextSpan(assign, 'default');
+      if (!span) return;
       const anchor = this.newAnchor(assign, span.start, span.end);
       this.emitEdge(
           anchor, EdgeKind.DEFINES_BINDING, this.host.scopedSignature(assign));
@@ -1468,14 +1476,17 @@ class Visitor {
       if (ctorSymbol) {
         const ctorDecl = ctorSymbol.declarations[0];
         const span = this.getTextSpan(ctorDecl, 'constructor');
-        const classCtorAnchor = this.newAnchor(ctorDecl, span.start, span.end);
+        if (span) {
+          const classCtorAnchor =
+              this.newAnchor(ctorDecl, span.start, span.end);
 
-        const ctorVName =
-            this.host.getSymbolName(ctorSymbol, TSNamespace.VALUE);
+          const ctorVName =
+              this.host.getSymbolName(ctorSymbol, TSNamespace.VALUE);
 
-        this.emitNode(ctorVName, 'function');
-        this.emitSubkind(ctorVName, Subkind.CONSTRUCTOR);
-        this.emitEdge(classCtorAnchor, EdgeKind.DEFINES_BINDING, ctorVName);
+          this.emitNode(ctorVName, 'function');
+          this.emitSubkind(ctorVName, Subkind.CONSTRUCTOR);
+          this.emitEdge(classCtorAnchor, EdgeKind.DEFINES_BINDING, ctorVName);
+        }
       }
 
       this.visitJSDoc(decl, kClass);
