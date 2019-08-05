@@ -854,7 +854,9 @@ class Visitor {
     // This can happen in cases of importing local modules, like
     //   declare namespace Foo {}
     //   import foo = Foo;
-    if (ts.isSourceFile(sf)) {
+    // Check that the value declaration actually exists. TypeScript doesn't
+    // enforce strict non-null checks in the compiler.
+    if (sf && ts.isSourceFile(sf)) {
       return this.host.moduleName(sf.fileName);
     }
   }
