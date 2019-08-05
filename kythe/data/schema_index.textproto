@@ -40,6 +40,8 @@ edge_kinds: {
   edge_kind: {key: "overrides/root"           value: OVERRIDES_ROOT}
   edge_kind: {key: "overrides/transitive"     value: OVERRIDES_TRANSITIVE}
   edge_kind: {key: "param"                    value: PARAM}
+  edge_kind: {key: "property/reads"           value: PROPERTY_READS}
+  edge_kind: {key: "property/writes"          value: PROPERTY_WRITES}
   edge_kind: {key: "ref"                      value: REF}
   edge_kind: {key: "ref/implicit"             value: REF_IMPLICIT}
   edge_kind: {key: "ref/call"                 value: REF_CALL}
