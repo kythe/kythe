@@ -20,8 +20,8 @@
 namespace kythe {
 
 enum class KzipEncoding {
-  kJson = 1,           ///< JSON encoded
-  kProto = 2,          ///< Proto encodedo
+  kJson = 1,             ///< JSON encoded
+  kProto = 2,            ///< Proto encodedo
   kAll = kJson | kProto  ///< All encodings
 };
 

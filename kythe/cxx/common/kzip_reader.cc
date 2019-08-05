@@ -17,6 +17,7 @@
 #include "kythe/cxx/common/kzip_reader.h"
 
 #include <openssl/sha.h>
+
 #include <set>
 
 #include "absl/strings/escaping.h"
@@ -235,8 +236,7 @@ KzipReader::KzipReader(ZipHandle archive, absl::string_view root,
     : archive_(std::move(archive)),
       encoding_(encoding),
       files_prefix_(absl::StrCat(root, "/files/")),
-      unit_prefix_(absl::StrCat(root, DirNameForEncoding(encoding))) {
-}
+      unit_prefix_(absl::StrCat(root, DirNameForEncoding(encoding))) {}
 
 StatusOr<proto::IndexedCompilation> KzipReader::ReadUnit(
     absl::string_view digest) {
