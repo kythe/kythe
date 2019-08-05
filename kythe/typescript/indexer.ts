@@ -508,7 +508,7 @@ class StandardIndexerContext implements IndexerHost {
     // TODO: update symbolNames table to account for context kind
 
     if (!declarations || declarations.length < 1) {
-      throw new Error('TODO: symbol has no declarations?');
+      console.warn(`TODO: symbol ${sym.name} has no declarations`);
     }
 
     // Disambiguate symbols with multiple declarations using a context. This
@@ -891,7 +891,7 @@ class Visitor {
    *
    * @return The VName for the import.
    */
-  visitImport(name: ts.Node): VName {
+  visitImport(name: ts.Node): VName|undefined {
     // An import both aliases a symbol from another module
     // (call it the "remote" symbol) and it defines a local symbol.
     //
@@ -915,7 +915,8 @@ class Visitor {
 
     const localSym = this.host.getSymbolAtLocation(name);
     if (!localSym) {
-      throw new Error(`TODO: local name ${name} has no symbol`);
+      todo(this.sourceRoot, name, `local name ${name} has no symbol`);
+      return;
     }
 
     const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
@@ -982,7 +983,10 @@ class Visitor {
     if (!clause.namedBindings) {
       // TODO: I believe clause.name or clause.namedBindings are always present,
       // which means this check is not necessary, but the types don't show that.
-      throw new Error(`import declaration ${decl.getText()} has no bindings`);
+      todo(
+          this.sourceRoot, clause,
+          `import declaration ${decl.getText()} has no bindings`);
+      return;
     }
     switch (clause.namedBindings.kind) {
       case ts.SyntaxKind.NamespaceImport:
@@ -1007,7 +1011,7 @@ class Visitor {
         const imports = clause.namedBindings.elements;
         for (const imp of imports) {
           const kImport = this.visitImport(imp.name);
-          if (imp.propertyName) {
+          if (kImport && imp.propertyName) {
             this.emitEdge(
                 this.newAnchor(imp.propertyName), EdgeKind.REF_IMPORTS,
                 kImport);
@@ -1053,7 +1057,10 @@ class Visitor {
     this.emitEdge(anchor, EdgeKind.DEFINES_BINDING, implicitProp);
 
     const sym = this.host.getSymbolAtLocation(decl.name);
-    if (!sym) throw new Error('Getter/setter declaration has no symbols.');
+    if (!sym) {
+      todo(this.sourceRoot, decl, `Getter/setter ${decl.name} has no symbols.`);
+      return;
+    }
 
     if (sym.declarations.find(ts.isGetAccessor)) {
       // Emit a "property/reads" edge between the getter and the property
