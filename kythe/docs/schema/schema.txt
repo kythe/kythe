@@ -961,7 +961,7 @@ property/writes
 Brief description::
   A *property/writes* B if A is a writer of the property B
 Points from::
-  semantic nodes
+  function nodes
 Points toward::
   variable/property nodes
 Ordinals are used::
