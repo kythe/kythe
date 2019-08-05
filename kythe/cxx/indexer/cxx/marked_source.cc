@@ -93,7 +93,7 @@ std::string Reformat(const clang::LangOptions& lang_options,
   auto Source = llvm::MemoryBuffer::getMemBuffer(source_text);
   InMemoryFileSystem->addFileNoOwn(kReplacementFile, 0, Source.get());
   clang::FileID ID =
-      Sources.createFileID(Files.getFile(kReplacementFile),
+      Sources.createFileID(*Files.getFile(kReplacementFile),
                            clang::SourceLocation(), clang::SrcMgr::C_User);
   clang::Rewriter Rewrite(Sources, lang_options);
   clang::tooling::applyAllReplacements(*replacements, Rewrite);
