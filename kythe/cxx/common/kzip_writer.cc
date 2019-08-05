@@ -135,7 +135,8 @@ StatusOr<std::string> KzipWriter::WriteUnit(
     return json.status();
   }
   auto digest = SHA256Digest(*json);
-  StatusOr<std::string> result = InternalError("unsupported encoding");;
+  StatusOr<std::string> result = InternalError("unsupported encoding");
+  ;
   if (HasEncoding(encoding_, KzipEncoding::kJson)) {
     result = InsertFile(absl::StrCat(kJsonUnitRoot, digest), *json);
     if (!result) {
@@ -177,7 +178,8 @@ Status KzipWriter::Close() {
   return result;
 }
 
-StatusOr<std::string> KzipWriter::InsertFile(absl::string_view path, absl::string_view content) {
+StatusOr<std::string> KzipWriter::InsertFile(absl::string_view path,
+                                             absl::string_view content) {
   // Initially insert an empty string for the file content.
   auto insertion = contents_.emplace(std::string(path), "");
   if (insertion.second) {
