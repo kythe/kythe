@@ -37,6 +37,7 @@ type jsonPackage struct {
 	Root       string
 	Export     string
 	Goroot     bool
+	Module     *jsonModule
 
 	GoFiles      []string
 	CFiles       []string
@@ -68,6 +69,14 @@ type jsonPackage struct {
 	DepOnly bool
 
 	Error *jsonPackageError
+}
+
+// Fields must match go list;
+// see $GOROOT/src/cmd/go/internal/modinfo/info.go.
+// Note that this just contains the subset of the fields we're interested in.
+type jsonModule struct {
+	Path string // module path
+	Dir  string // directory holding files for this module, if any
 }
 
 func (pkg *jsonPackage) buildPackage() *build.Package {
@@ -110,6 +119,10 @@ func (pkg *jsonPackage) buildPackage() *build.Package {
 		bp.SrcRoot = filepath.Join(bp.Root, "src")
 		bp.PkgRoot = filepath.Join(bp.Root, "pkg")
 		bp.BinDir = filepath.Join(bp.Root, "bin")
+	} else if pkg.Module != nil {
+		// Package is contained inside a module, use the module directory as the
+		// root.
+		bp.Root = pkg.Module.Dir
 	}
 	return bp
 }
