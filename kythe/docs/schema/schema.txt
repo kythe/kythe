@@ -946,7 +946,7 @@ property/reads
 Brief description::
   A *property/reads* B if A is a reader of the property B
 Points from::
-  semantic nodes
+  function nodes
 Points toward::
   variable/property nodes
 Ordinals are used::
