@@ -47,7 +47,7 @@
 # command so we avoid silent failures.
 set -ex
 
-: ${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
+: "${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}" "${KYTHE_KZIP_ENCODING:=JSON}"
 
 if [[ -n "$KYTHE_SYSTEM_DEPS" ]]; then
   echo "Installing $KYTHE_SYSTEM_DEPS"
@@ -78,8 +78,6 @@ else
   # implications.
   /kythe/bazelisk query "$KYTHE_BAZEL_QUERY" | xargs -t -L 30 /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" --
 fi
-
-KYTHE_KZIP_ENCODING=${KYTHE_KZIP_ENCODING:-JSON}
 
 # Collect any extracted compilations.
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
