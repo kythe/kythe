@@ -79,9 +79,11 @@ else
   /kythe/bazelisk query "$KYTHE_BAZEL_QUERY" | xargs -t -L 30 /kythe/bazel_wrapper.sh --bazelrc=/kythe/bazelrc "$@" --
 fi
 
+KYTHE_KZIP_ENCODING=${KYTHE_KZIP_ENCODING:-JSON}
+
 # Collect any extracted compilations.
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 find bazel-out/*/extra_actions/external/kythe_release -name '*.kzip' | \
-  xargs -r /kythe/tools/kzip merge --append --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
+  xargs -r /kythe/tools/kzip merge --append --encoding "$KYTHE_KZIP_ENCODING" --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
 /kythe/fix_permissions.sh "$KYTHE_OUTPUT_DIRECTORY"
 test -f "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
