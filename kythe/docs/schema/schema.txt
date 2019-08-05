@@ -941,7 +941,7 @@ using T = int*;
 
 [[property/reads]]
 property/reads
-~~~~~
+~~~~~~~~~~~~~~
 
 Brief description::
   A *property/reads* B if A is a reader of the property B
@@ -956,7 +956,7 @@ See also::
 
 [[property/writes]]
 property/writes
-~~~~~
+~~~~~~~~~~~~~~~
 
 Brief description::
   A *property/writes* B if A is a writer of the property B
