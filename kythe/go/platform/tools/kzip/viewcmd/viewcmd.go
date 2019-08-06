@@ -28,13 +28,14 @@ import (
 	"strings"
 	"time"
 
+	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/util/cmdutil"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
-	"kythe.io/kythe/go/platform/kzip"
-	"kythe.io/kythe/go/util/cmdutil"
 )
 
 type cmd struct {
@@ -65,7 +66,7 @@ func (c *cmd) SetFlags(fs *flag.FlagSet) {
 
 // Execute implements part of subcommands.Command.
 func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	hasErrors := false
+	var hasErrors bool
 	for _, path := range fs.Args() {
 		ext := filepath.Ext(path)
 		base := filepath.Base(strings.TrimSuffix(path, ext))
@@ -127,14 +128,14 @@ func (c *cmd) writeFiles(fd []fileData) error {
 	if c.extractDir == "" {
 		return nil
 	}
-	var g errgroup.Group
+	g, ctx := errgroup.WithContext(context.Background())
 	start := time.Now()
 	defer func() { log.Printf("Extracted %d files in %v", len(fd), time.Since(start)) }()
 	sem := semaphore.NewWeighted(64) // limit concurrency on large compilations
 	for _, file := range fd {
 		file := file
 		g.Go(func() error {
-			sem.Acquire(context.Background(), 1)
+			sem.Acquire(ctx, 1)
 			defer sem.Release(1)
 
 			path := filepath.Join(c.extractDir, file.path)
