@@ -35,13 +35,6 @@ import (
 	"golang.org/x/sync/semaphore"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/cmdutil"
-
-	// These are common detail messages used by Kythe compilations, and
-	// required for JSON (un)marshaling to work.
-	_ "kythe.io/kythe/proto/buildinfo_go_proto"
-	_ "kythe.io/kythe/proto/cxx_go_proto"
-	_ "kythe.io/kythe/proto/go_go_proto"
-	_ "kythe.io/kythe/proto/java_go_proto"
 )
 
 type cmd struct {

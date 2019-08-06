@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "viewcmd",
     srcs = [
+        "protodeps.go",
         "viewcmd.go",
     ],
     deps = [
