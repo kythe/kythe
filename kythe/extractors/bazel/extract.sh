@@ -47,7 +47,7 @@
 # command so we avoid silent failures.
 set -ex
 
-: ${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}
+: "${KYTHE_OUTPUT_DIRECTORY:?Missing output directory}" "${KYTHE_KZIP_ENCODING:=JSON}"
 
 if [[ -n "$KYTHE_SYSTEM_DEPS" ]]; then
   echo "Installing $KYTHE_SYSTEM_DEPS"
@@ -82,6 +82,6 @@ fi
 # Collect any extracted compilations.
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 find bazel-out/*/extra_actions/external/kythe_release -name '*.kzip' | \
-  xargs -r /kythe/tools/kzip merge --append --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
+  xargs -r /kythe/tools/kzip merge --append --encoding "$KYTHE_KZIP_ENCODING" --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
 /kythe/fix_permissions.sh "$KYTHE_OUTPUT_DIRECTORY"
 test -f "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
