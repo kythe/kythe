@@ -48,6 +48,7 @@ ENV PATH=$PATH:/usr/local/go/bin
 
 # Install extra linters
 RUN go get github.com/bazelbuild/buildtools/buildifier
+RUN go get golang.org/x/lint/golint
 ENV PATH=$PATH:/root/go/bin
 RUN wget https://github.com/google/google-java-format/releases/download/google-java-format-1.7/google-java-format-1.7-all-deps.jar && \
    mv google-java-format-1.7-all-deps.jar /usr/bin/google-java-format.jar && \
