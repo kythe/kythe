@@ -76,10 +76,6 @@ func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}
 	for _, path := range fs.Args() {
 		ext := filepath.Ext(path)
 		base := filepath.Base(strings.TrimSuffix(path, ext))
-		if ext != ".kzip" {
-			log.Printf("Unknown file type %q (skipped)", path)
-			continue
-		}
 
 		f, err := os.Open(path)
 		if err != nil {
