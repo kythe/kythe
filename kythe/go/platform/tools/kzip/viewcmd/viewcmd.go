@@ -15,25 +15,26 @@
  */
 
 // Package viewcmd displays the contents of compilation units stored in .kzip files.
-package viewcmd
+package viewcmd // import "kythe.io/kythe/go/platform/tools/kzip/viewcmd"
 
 import (
 	"context"
-	"fmt"
 	"flag"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-	"log"
+
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"github.com/google/subcommands"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
-	"github.com/google/subcommands"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/cmdutil"
-	"github.com/golang/protobuf/jsonpb"
 
 	// These are common detail messages used by Kythe compilations, and
 	// required for JSON (un)marshaling to work.
