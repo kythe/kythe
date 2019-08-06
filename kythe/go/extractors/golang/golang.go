@@ -79,9 +79,6 @@ type Extractor struct {
 	// The configuration for constructing VNames for packages.
 	PackageVNameOptions
 
-	// The local path against which relative imports should be resolved.
-	LocalPath string
-
 	// An alternative installation path for compiled packages.  If this is set,
 	// and a compiled package cannot be found in the normal location, the
 	// extractor will try in this location.
