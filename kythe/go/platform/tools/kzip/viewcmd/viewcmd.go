@@ -1,0 +1,179 @@
+/*
+ * Copyright 2019 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Package viewcmd displays the contents of compilation units stored in .kzip files.
+package viewcmd
+
+import (
+	"context"
+	"fmt"
+	"flag"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+	"log"
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
+	"github.com/google/subcommands"
+	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/util/cmdutil"
+	"github.com/golang/protobuf/jsonpb"
+
+	// These are common detail messages used by Kythe compilations, and
+	// required for JSON (un)marshaling to work.
+	_ "kythe.io/kythe/proto/buildinfo_go_proto"
+	_ "kythe.io/kythe/proto/cxx_go_proto"
+	_ "kythe.io/kythe/proto/go_go_proto"
+	_ "kythe.io/kythe/proto/java_go_proto"
+)
+
+type cmd struct {
+	cmdutil.Info
+	extractDir string
+}
+
+// New returns an implementation of the "view" subcommand.
+func New() subcommands.Command {
+	const usage = `Usage: view [options] <file-path>...
+
+Print or extract compilation units stored in .kzip files.  By default, the
+compilation unit is printed to stdout in JSON format.
+
+With -extract the compilation record and the full contents of all the required
+input files are extracted into the named directory, preserving the path
+structure specified in the compilation record.`
+
+	return &cmd{
+		Info: cmdutil.NewInfo("view", "view compilation units stored in .kzip files", usage),
+	}
+}
+
+// SetFlags implements part of subcommands.Command.
+func (c *cmd) SetFlags(fs *flag.FlagSet) {
+	fs.StringVar(&c.extractDir, "extract", "", "Extract files to this directory")
+}
+
+// Execute implements part of subcommands.Command.
+func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
+	hasErrors := false
+	for _, path := range fs.Args() {
+		ext := filepath.Ext(path)
+		base := filepath.Base(strings.TrimSuffix(path, ext))
+		if ext != ".kzip" {
+			log.Printf("Unknown file type %q (skipped)", path)
+			continue
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			log.Printf("Error opening .kzip file: %v", err)
+			hasErrors = true
+			continue
+		}
+		defer f.Close()
+
+		err = kzip.Scan(f, func(r *kzip.Reader, unit *kzip.Unit) error {
+			if err := c.writeUnit(base+"-"+unit.Digest, unit.Proto); err != nil {
+				return fmt.Errorf("writing unit: %v", err)
+			} else if fd, err := c.kzipFiles(r, unit); err != nil {
+				return fmt.Errorf("extracting files: %v", err)
+			} else {
+				return c.writeFiles(fd)
+			}
+		})
+		if err != nil {
+			log.Printf("Error scanning .kzip file: %v", err)
+			hasErrors = true
+		}
+	}
+	if hasErrors {
+		return subcommands.ExitFailure
+	}
+	return subcommands.ExitSuccess
+}
+
+var marshaler = &jsonpb.Marshaler{OrigName: true}
+
+func (c *cmd) writeUnit(base string, msg proto.Message) error {
+	if c.extractDir == "" {
+		err := marshaler.Marshal(os.Stdout, msg)
+		if err == nil {
+			fmt.Println()
+		}
+		return err
+	}
+	if err := os.MkdirAll(c.extractDir, 0750); err != nil {
+		return fmt.Errorf("creating output directory: %v", err)
+	}
+	f, err := os.Create(filepath.Join(c.extractDir, base+".unit"))
+	if err != nil {
+		return err
+	}
+	err = marshaler.Marshal(f, msg)
+	cerr := f.Close()
+	if err != nil {
+		return err
+	}
+	return cerr
+}
+
+func (c *cmd) writeFiles(fd []fileData) error {
+	if c.extractDir == "" {
+		return nil
+	}
+	var g errgroup.Group
+	start := time.Now()
+	defer func() { log.Printf("Extracted %d files in %v", len(fd), time.Since(start)) }()
+	sem := semaphore.NewWeighted(64) // limit concurrency on large compilations
+	for _, file := range fd {
+		file := file
+		g.Go(func() error {
+			sem.Acquire(context.Background(), 1)
+			defer sem.Release(1)
+
+			path := filepath.Join(c.extractDir, file.path)
+			dir := filepath.Dir(path)
+			if err := os.MkdirAll(dir, 0750); err != nil {
+				return err
+			}
+			return ioutil.WriteFile(path, file.data, 0644)
+		})
+	}
+	return g.Wait()
+}
+
+type fileData struct {
+	path string
+	data []byte
+}
+
+// kzipFiles extracts the file paths and contents from a kzip compilation.
+func (c *cmd) kzipFiles(r *kzip.Reader, unit *kzip.Unit) ([]fileData, error) {
+	out := make([]fileData, len(unit.Proto.RequiredInput))
+	for i, ri := range unit.Proto.RequiredInput {
+		info := ri.GetInfo()
+		out[i].path = info.GetPath()
+		data, err := r.ReadAll(info.GetDigest())
+		if err != nil {
+			return nil, err
+		}
+		out[i].data = data
+	}
+	return out, nil
+}
