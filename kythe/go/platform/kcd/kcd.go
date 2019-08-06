@@ -243,7 +243,7 @@ type Unit interface {
 
 	// Digest writes a unique representation of the unit to w sufficient to
 	// generate a content-addressable digest.
-	Digest(w io.Writer)
+	Digest(w io.Writer) error
 }
 
 // Index represents the indexable terms of a compilation.

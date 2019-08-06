@@ -93,11 +93,12 @@ subdirectories, one named `units` and one named `files`.
 
 A *unit file* is a file containing a compilation unit description.
 The name of a unit file is computed by digesting the JSON
-representation of the compilation unit with SHA256, and encoding the
-resulting hash as a string of lowercase ASCII hexadecimal digits. This
-string becomes the filename of the unit file. Note that the digest
-should only process the CompilationUnit itself, and should not include
-the other contents of the wrapper message.
+representation of the `kythe.proto.IndexedCompilation` with SHA256,
+and encoding the resulting hash as a string of lowercase ASCII
+hexadecimal digits. This string becomes the filename of the unit
+file. Note that the digest should only process the CompilationUnit
+itself, and should not include the other contents of the wrapper
+message.
 
 A *data file* is a file containing an unstructured blob of raw (uncompressed)
 file data.  The name name of a data file is computed by hashing the file

@@ -19,6 +19,7 @@ package kythe
 import (
 	"bytes"
 	"reflect"
+	"regexp"
 	"sort"
 	"testing"
 
@@ -128,8 +129,17 @@ func keys(v interface{}) (keys []string) {
 	return
 }
 
+var wsre, _ = regexp.Compile("\\s")
+
+func stripWhitespace(s string) string {
+	return wsre.ReplaceAllString(s, "")
+}
+
 func TestDigest(t *testing.T) {
-	const empty = "CU\n\x00\x00\x00\x00\x00ARG\nOUT\n\x00SRC\nCWD\n\x00CTX\n\x00"
+	const empty = "{}"
+	buildInfo, _ := ptypes.MarshalAny(&bipb.BuildDetails{
+		BuildTarget: "T",
+	})
 	tests := []struct {
 		unit *apb.CompilationUnit
 		want string
@@ -144,12 +154,19 @@ func TestDigest(t *testing.T) {
 				Language:  "L",
 			},
 			Argument: []string{"a1", "a2"},
-		}, "CU\nS\x00C\x00\x00P\x00L\x00" +
-			"ARG\na1\x00a2\x00" +
-			"OUT\n\x00" +
-			"SRC\n" +
-			"CWD\n\x00" +
-			"CTX\n\x00",
+		}, stripWhitespace(`
+			{
+			  "v_name": {
+			    "signature": "S",
+			    "corpus": "C",
+			    "path": "P",
+			    "language": "L"
+			  },
+			  "argument": [
+			    "a1",
+			    "a2"
+			  ]
+			}`),
 		},
 		{&apb.CompilationUnit{
 			RequiredInput: []*apb.CompilationUnit_FileInput{{
@@ -161,23 +178,41 @@ func TestDigest(t *testing.T) {
 				Name:  "feefie",
 				Value: "fofum",
 			}},
-			Details: []*anypb.Any{{
-				TypeUrl: "type",
-				Value:   []byte("nasaldemons"),
-			}},
-		}, "CU\n\x00\x00\x00\x00\x00" +
-			"RI\nRIS\x00\x00\x00\x00\x00" +
-			"IN\npath\x00digest\x00" +
-			"ARG\n" +
-			"OUT\nblah\x00" +
-			"SRC\nCWD\n\x00CTX\n\x00" +
-			"ENV\nfeefie\x00fofum\x00" +
-			"DET\ntype\x00nasaldemons\x00",
+			Details: []*anypb.Any{buildInfo},
+		}, stripWhitespace(`
+			{
+			  "required_input": [
+			    {
+			      "v_name": {
+				"signature": "RIS"
+			      },
+			      "info": {
+				"path": "path",
+				"digest": "digest"
+			      }
+			    }
+			  ],
+			  "output_key": "blah",
+			  "environment": [
+			    {
+			      "name": "feefie",
+			      "value": "fofum"
+			    }
+			  ],
+			  "details": [
+			    {
+			      "@type": "kythe.io/proto/kythe.proto.BuildDetails",
+			      "build_target": "T"
+			    }
+			  ]
+			}`),
 		},
 	}
 	for _, test := range tests {
 		var buf bytes.Buffer
-		Unit{Proto: test.unit}.Digest(&buf)
+		if err := (Unit{Proto: test.unit}.Digest(&buf)); err != nil {
+			t.Errorf("Digest: %s", err)
+		}
 		got := buf.String()
 		if got != test.want {
 			t.Errorf("Digest: got %q, want %q\nInput: %+v", got, test.want, test.unit)

@@ -48,7 +48,10 @@ type stubUnit struct {
 	Unit
 }
 
-func (s stubUnit) Digest(w io.Writer) { w.Write([]byte(s.bits)) }
+func (s stubUnit) Digest(w io.Writer) error {
+	_, err := w.Write([]byte(s.bits))
+	return err
+}
 
 func regexps(exprs ...string) (res []*regexp.Regexp) {
 	for _, expr := range exprs {
