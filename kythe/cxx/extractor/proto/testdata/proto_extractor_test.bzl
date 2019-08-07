@@ -48,7 +48,8 @@ def _kzip_diff_test_impl(ctx):
     # Write a script that `bazel test` will execute.
     script = " ".join([
         ctx.executable.diff_bin.short_path,
-        ctx.executable.kindex_tool.short_path,
+        ctx.executable.kzip_tool.short_path,
+        ctx.executable.jq.short_path,
         ctx.files.kzip[0].short_path,
         ctx.files.golden_file[0].short_path,
     ])
@@ -59,7 +60,8 @@ def _kzip_diff_test_impl(ctx):
 
     runfiles = ctx.runfiles(files = [
         ctx.executable.diff_bin,
-        ctx.executable.kindex_tool,
+        ctx.executable.kzip_tool,
+        ctx.executable.jq,
         ctx.file.kzip,
         ctx.file.golden_file,
     ])
@@ -75,10 +77,15 @@ kzip_diff_test = rule(
             executable = True,
             default = Label("//kythe/cxx/extractor/proto/testdata:kzip_diff_test"),
         ),
-        "kindex_tool": attr.label(
+        "kzip_tool": attr.label(
             cfg = "host",
             executable = True,
-            default = Label("//kythe/cxx/tools:kindex_tool"),
+            default = Label("//kythe/go/platform/tools/kzip"),
+        ),
+        "jq": attr.label(
+            cfg = "host",
+            executable = True,
+            default = Label("@com_github_stedolan_jq//:jq"),
         ),
     },
     test = True,
