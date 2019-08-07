@@ -49,7 +49,7 @@ function skip_inplace() {
 }
 
 
-set -ex
+set -e
 
 KZIP_TOOL=$1; shift
 FORMATJSON=$1; shift
