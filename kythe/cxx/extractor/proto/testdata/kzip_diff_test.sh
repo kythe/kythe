@@ -16,6 +16,7 @@
 set -e
 
 KZIP_TOOL=$1; shift
+JQ=$1; shift
 KZIP=$1; shift
 GOLDEN=$1; shift
 
@@ -26,7 +27,7 @@ UNIT=$("${KZIP_TOOL}" view "${TEST_TMPDIR}/file.kzip")
 UNIT_FILE="${TEST_TMPDIR}/$(basename $GOLDEN)"
 # Remove working_directory, which will change depending on the machine the test
 # is run on.
-echo "$UNIT" | jq 'del(.working_directory)' > "$UNIT_FILE"
+echo "$UNIT" | $JQ 'del(.working_directory)' > "$UNIT_FILE"
 
 echo
 echo "Diffing generated unit against golden"
