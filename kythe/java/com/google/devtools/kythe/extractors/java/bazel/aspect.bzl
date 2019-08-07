@@ -52,7 +52,8 @@ def _extract_java(target, ctx):
     for jar in info.outputs.jars:
         output_jar += [jar.class_jar.path]
 
-    # TODO(schroederc): sourcegendir
+    # TODO(schroederc): sourcegendir is currently extracted from raw arguments;
+    # we need to embed it there or put it elsewhere
     xa = struct(**{
         "owner": str(target.label),
         "mnemonic": _mnemonic,
