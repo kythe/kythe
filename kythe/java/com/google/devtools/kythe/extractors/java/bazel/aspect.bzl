@@ -48,9 +48,6 @@ def _extract_java(target, ctx):
         processorpath += [j.path for j in annotations.processor_classpath.to_list()]
         processors = annotations.processor_classnames
 
-    # Skip --release options; -source/-target/-bootclasspath are already set
-    opts = _remove_flags(compilation.javac_options, {"--release": 1})
-
     output_jar = []
     for jar in info.outputs.jars:
         output_jar += [jar.class_jar.path]
@@ -63,7 +60,7 @@ def _extract_java(target, ctx):
             outputjar = output_jar,
             classpath = classpath,
             source_file = source_files,
-            javac_opt = opts,
+            javac_opt = compilation.javac_options,
             processor = processors,
             processorpath = processorpath,
             bootclasspath = bootclasspath,
@@ -102,18 +99,6 @@ def _extract_java_aspect(target, ctx):
     if not kzip:
         return struct()
     return [OutputGroupInfo(kzip = [kzip])]
-
-def _remove_flags(lst, to_remove):
-    res = []
-    skip = 0
-    for flag in lst:
-        if skip > 0:
-            skip -= 1
-        elif flag in to_remove:
-            skip += to_remove[flag]
-        else:
-            res += [flag]
-    return res
 
 # Aspect to run the Bazel Javac extractor on all specified Java targets.
 extract_java_aspect = aspect(
