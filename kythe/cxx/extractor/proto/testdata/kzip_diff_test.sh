@@ -52,6 +52,7 @@ function skip_inplace() {
 set -ex
 
 KZIP_TOOL=$1; shift
+FORMATJSON=$1; shift
 KZIP=$1; shift
 GOLDEN=$1; shift
 
@@ -59,7 +60,7 @@ GOLDEN=$1; shift
 cp $KZIP "${TEST_TMPDIR}/file.kzip"
 # Extract json version of compilation unit from kzip.
 UNIT_FILE="${TEST_TMPDIR}/$(basename $GOLDEN)"
-"${KZIP_TOOL}" view "${TEST_TMPDIR}/file.kzip" | python -m json.tool > "$UNIT_FILE"
+"${KZIP_TOOL}" view "${TEST_TMPDIR}/file.kzip" | "$FORMATJSON" > "$UNIT_FILE"
 # Remove working_directory, which will change depending on the machine the test
 # is run on.
 skip_inplace "working_directory" 0 $UNIT_FILE
