@@ -29,6 +29,7 @@ def _extract_java(target, ctx):
     if not javac_action:
         return None
 
+    owner = str(target.label)
     kzip = ctx.actions.declare_file(ctx.label.name + ".xa.java.kzip")
 
     info = target[JavaInfo]
@@ -49,11 +50,14 @@ def _extract_java(target, ctx):
         processors = annotations.processor_classnames
 
     output_jar = [jar.class_jar.path for jar in info.outputs.jars]
+    if len(output_jar) > 1:
+        print("WARNING: multiple outputs for " + owner + ": " + str(output_jar))
+        output_jar = [output_jar[0]]
 
     # TODO(schroederc): sourcegendir is currently extracted from raw arguments;
     # we need to embed it there or put it elsewhere
     xa = struct(**{
-        "owner": str(target.label),
+        "owner": owner,
         "mnemonic": _mnemonic,
         "[blaze.JavaCompileInfo.java_compile_info]": struct(
             outputjar = output_jar,
