@@ -155,6 +155,8 @@ basic cross-reference capabilities.  The following command can be run over the
 serving table created with the `write_tables` binary (see above).
 
 {% highlight bash %}
+# --listen localhost:8080 allows access from only this machine; change to
+# --listen :8080 to allow access from any machine
 /opt/kythe/tools/http_server \
   --public_resources /opt/kythe/web/ui \
   --listen localhost:8080 \
