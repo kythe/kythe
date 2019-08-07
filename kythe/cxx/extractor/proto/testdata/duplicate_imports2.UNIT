@@ -1,33 +1,33 @@
 {
-  "required_input": [
-    {
-      "v_name": {
-        "path": "kythe/cxx/extractor/proto/testdata/relative_imports.proto"
-      },
-      "info": {
-        "path": "kythe/cxx/extractor/proto/testdata/relative_imports.proto",
-        "digest": "c91db27db87695c42ab03479f5393d83fd881c5c4982579b0115a20c36342d2c"
-      }
-    },
-    {
-      "v_name": {
-        "path": "kythe/cxx/extractor/proto/testdata/subdir/other.proto"
-      },
-      "info": {
-        "path": "kythe/cxx/extractor/proto/testdata/subdir/other.proto",
-        "digest": "c9d3571c48d70781dc7d4984b1b8974f44cb5953c3be17cacacc15f35f5981eb"
-      }
-    }
-  ],
-  "argument": [
-    "kythe/cxx/extractor/proto/testdata/subdir/other.proto",
-    "kythe/cxx/extractor/proto/testdata/relative_imports.proto",
-    "--",
-    "--proto_path",
-    "kythe/cxx/extractor/proto/testdata/subdir"
-  ],
-  "source_file": [
-    "kythe/cxx/extractor/proto/testdata/subdir/other.proto",
-    "kythe/cxx/extractor/proto/testdata/relative_imports.proto"
-  ]
+    "argument": [
+        "kythe/cxx/extractor/proto/testdata/subdir/other.proto",
+        "kythe/cxx/extractor/proto/testdata/relative_imports.proto",
+        "--",
+        "--proto_path",
+        "kythe/cxx/extractor/proto/testdata/subdir"
+    ],
+    "required_input": [
+        {
+            "info": {
+                "digest": "c91db27db87695c42ab03479f5393d83fd881c5c4982579b0115a20c36342d2c",
+                "path": "kythe/cxx/extractor/proto/testdata/relative_imports.proto"
+            },
+            "v_name": {
+                "path": "kythe/cxx/extractor/proto/testdata/relative_imports.proto"
+            }
+        },
+        {
+            "info": {
+                "digest": "c9d3571c48d70781dc7d4984b1b8974f44cb5953c3be17cacacc15f35f5981eb",
+                "path": "kythe/cxx/extractor/proto/testdata/subdir/other.proto"
+            },
+            "v_name": {
+                "path": "kythe/cxx/extractor/proto/testdata/subdir/other.proto"
+            }
+        }
+    ],
+    "source_file": [
+        "kythe/cxx/extractor/proto/testdata/subdir/other.proto",
+        "kythe/cxx/extractor/proto/testdata/relative_imports.proto"
+    ],
 }
