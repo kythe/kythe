@@ -66,30 +66,30 @@ def _extract_java(target, ctx):
             bootclasspath = bootclasspath,
         ),
     })
-    textXA = ctx.actions.declare_file(ctx.label.name + ".xa.textproto")
+    text_xa = ctx.actions.declare_file(ctx.label.name + ".xa.textproto")
     ctx.actions.write(
-        output = textXA,
+        output = text_xa,
         content = xa.to_proto(),
     )
 
     xa = ctx.actions.declare_file(ctx.label.name + ".xa")
-    xaArgs = ctx.actions.args()
-    xaArgs.add_all([textXA, xa])
+    xa_args = ctx.actions.args()
+    xa_args.add_all([text_xa, xa])
     ctx.actions.run(
         outputs = [xa],
-        inputs = [textXA],
-        arguments = [xaArgs],
+        inputs = [text_xa],
+        arguments = [xa_args],
         executable = ctx.executable._write_extra_action,
     )
 
-    extractArgs = ctx.actions.args()
-    extractArgs.add_all([xa, kzip, ctx.file._java_aspect_vnames_config])
+    extract_args = ctx.actions.args()
+    extract_args.add_all([xa, kzip, ctx.file._java_aspect_vnames_config])
     deps = [javac_action.inputs]
     ctx.actions.run(
         outputs = [kzip],
         inputs = depset([xa, ctx.file._java_aspect_vnames_config], transitive = deps),
         executable = ctx.executable._java_bazel_extractor,
-        arguments = [extractArgs],
+        arguments = [extract_args],
     )
 
     return kzip
