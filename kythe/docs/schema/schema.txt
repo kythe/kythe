@@ -501,8 +501,8 @@ lines owing to heuristics in Clang's comment parser.
 
 [kythe,C++,"Comments document objects."]
 --------------------------------------------------------------------------------
-int v;   //- @"/// An empty class." documents ClassC
-         //- ClassC.node/kind record
+//- @"/// An empty class." documents ClassC
+//- ClassC.node/kind record
 /// An empty class.
 class C { };
 --------------------------------------------------------------------------------
