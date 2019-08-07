@@ -217,7 +217,8 @@ The initial definition of a VName will include the following 5 fields:
    relative to the corpus root. Typically the interpretation is that a
    VName with an empty Root corresponds to a file under version
    control in (one of) the repository(ies) being analyzed; a non-empty
-   Root would indicate an external dependency or a generated file.
+   Root would indicate an system dependency or a generated file, or in
+   some cases, an external dependency.
    +
    +
    _Rationale:_ Usually a corpus will comprise a single rooted tree of files,
