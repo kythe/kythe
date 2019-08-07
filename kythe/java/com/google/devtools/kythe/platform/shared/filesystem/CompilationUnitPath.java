@@ -157,7 +157,8 @@ final class CompilationUnitPath implements Path {
 
   @Override
   public Path toAbsolutePath() {
-    return isAbsolute() ? this : null;
+    // We treat our root directory as the "working" directory for path manipulation.
+    return fileSystem.getRootDirectory().resolve(this);
   }
 
   @Override
@@ -178,14 +179,21 @@ final class CompilationUnitPath implements Path {
   }
 
   @Override
+  public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... events) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Iterator<Path> iterator() {
     return new Iterator<Path>() {
       private final Iterator<Path> inner = path.iterator();
 
+      @Override
       public boolean hasNext() {
         return inner.hasNext();
       }
 
+      @Override
       public Path next() {
         return wrap(inner.next());
       }
@@ -233,17 +241,19 @@ final class CompilationUnitPath implements Path {
   DirectoryStream<Path> newDirectoryStream(DirectoryStream.Filter<? super Path> filter)
       throws IOException {
     final Iterable<Path> entries = fileSystem.list(this);
-    final List<Path> filtered = new ArrayList<Path>();
+    final List<Path> filtered = new ArrayList<>();
     for (Path p : entries) {
       if (filter.accept(p)) {
         filtered.add(p);
       }
     }
     return new DirectoryStream<Path>() {
+      @Override
       public Iterator<Path> iterator() {
         return filtered.iterator();
       }
 
+      @Override
       public void close() throws IOException {}
     };
   }

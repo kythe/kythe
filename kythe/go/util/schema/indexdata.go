@@ -118,6 +118,8 @@ var (
 		"/kythe/edge/overrides/root":           22,
 		"/kythe/edge/overrides/transitive":     23,
 		"/kythe/edge/param":                    24,
+		"/kythe/edge/property/reads":           44,
+		"/kythe/edge/property/writes":          45,
 		"/kythe/edge/ref":                      25,
 		"/kythe/edge/ref/call":                 26,
 		"/kythe/edge/ref/call/implicit":        27,
@@ -254,6 +256,8 @@ var (
 		41: "/kythe/edge/tagged",
 		42: "/kythe/edge/typed",
 		43: "/kythe/edge/undefines",
+		44: "/kythe/edge/property/reads",
+		45: "/kythe/edge/property/writes",
 	}
 )
 

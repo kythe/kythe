@@ -1,3 +1,6 @@
+load("@io_bazel_rules_proto//proto:defs.bzl", "proto_library")
+load("@io_bazel_rules_java//java:defs.bzl", "java_proto_library")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache 2.0

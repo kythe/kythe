@@ -41,8 +41,7 @@ var (
 	bc = build.Default // A shallow copy of the default build settings
 
 	corpus     = flag.String("corpus", "", "Default corpus name to use")
-	localPath  = flag.String("local_path", "", "Directory where relative imports are resolved")
-	outputPath = flag.String("output", "", "Output path (indexpack directory or .kzip filename)")
+	outputPath = flag.String("output", "", "KZip output path")
 	extraFiles = flag.String("extra_files", "", "Additional files to include in each compilation (CSV)")
 	byDir      = flag.Bool("bydir", false, "Import by directory rather than import path")
 	keepGoing  = flag.Bool("continue", false, "Continue past errors")
@@ -57,8 +56,7 @@ func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: %s [options] <import-path>...
 Extract Kythe compilation records from Go import paths specified on the command line.
-Outputs are written to an index pack unless --kindex is set, in which case they
-are written to individual .kindex files in the output directory.
+Output is written to a .kzip file specified by --output.
 
 Options:
 `, filepath.Base(os.Args[0]))
@@ -103,7 +101,6 @@ func main() {
 	ctx := context.Background()
 	ext := &golang.Extractor{
 		BuildContext: bc,
-		LocalPath:    *localPath,
 
 		PackageVNameOptions: golang.PackageVNameOptions{
 			DefaultCorpus:             *corpus,

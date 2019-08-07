@@ -25,10 +25,12 @@ import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,11 +39,11 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class CompilationUnitFileSystemTest {
   private static class FileSystemBuilder {
-    private ImmutableMap.Builder<String, byte[]> inputFiles = new ImmutableMap.Builder<>();
+    private final ImmutableMap.Builder<String, byte[]> inputFiles = new ImmutableMap.Builder<>();
     private String workingDirectory = "";
 
     FileSystemBuilder addFile(String path, String contents) {
-      inputFiles.put(path, contents.getBytes());
+      inputFiles.put(path, contents.getBytes(StandardCharsets.UTF_8));
       return this;
     }
 
@@ -77,8 +79,10 @@ public final class CompilationUnitFileSystemTest {
             .addFile("/absolute/nested/path/with/empty/file", "")
             .build();
     try {
-      List<String> found =
-          Files.walk(fileSystem.getPath("/")).map(Path::toString).collect(Collectors.toList());
+      List<String> found;
+      try (Stream<Path> stream = Files.walk(fileSystem.getPath("/"))) {
+        found = stream.map(Path::toString).collect(Collectors.toList());
+      }
       assertThat(found)
           .containsExactly(
               "/",
@@ -108,8 +112,10 @@ public final class CompilationUnitFileSystemTest {
             .setWorkingDirectory("/a/different/path")
             .build();
     try {
-      List<String> found =
-          Files.walk(fileSystem.getPath("/")).map(Path::toString).collect(Collectors.toList());
+      List<String> found;
+      try (Stream<Path> stream = Files.walk(fileSystem.getPath("/"))) {
+        found = stream.map(Path::toString).collect(Collectors.toList());
+      }
       assertThat(found)
           .containsExactly(
               "/",
@@ -142,21 +148,35 @@ public final class CompilationUnitFileSystemTest {
             .addFile("/absolute/nested/path/with/empty/file", "absoluteContents")
             .build();
     try {
-      List<String> contents =
-          Files.walk(fileSystem.getPath("/"))
-              .filter(p -> Files.isRegularFile(p))
-              .map(
-                  p -> {
-                    try {
-                      return Files.readString(p);
-                    } catch (IOException exc) {
-                      throw new RuntimeException(exc);
-                    }
-                  })
-              .collect(Collectors.toList());
+      List<String> contents;
+      try (Stream<Path> stream = Files.walk(fileSystem.getPath("/"))) {
+        contents =
+            stream
+                .filter(p -> Files.isRegularFile(p))
+                .map(
+                    p -> {
+                      try {
+                        return new String(Files.readAllBytes(p), StandardCharsets.UTF_8);
+                      } catch (IOException exc) {
+                        throw new RuntimeException(exc);
+                      }
+                    })
+                .collect(Collectors.toList());
+      }
       assertThat(contents).containsExactly("relativeContents", "absoluteContents");
     } catch (IOException exc) {
       throw new RuntimeException(exc);
     }
+  }
+
+  @Test
+  public void toRealPath_usesCompilationRoot() {
+    CompilationUnitFileSystem fileSystem =
+        builder().setWorkingDirectory("/working/directory").build();
+
+    assertThat(fileSystem.getPath("relative/path").toAbsolutePath().toString())
+        .isEqualTo("/working/directory/relative/path");
+    assertThat(fileSystem.getPath("/absolute/path").toAbsolutePath().toString())
+        .isEqualTo("/absolute/path");
   }
 }

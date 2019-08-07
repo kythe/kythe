@@ -1,3 +1,4 @@
+load("@io_bazel_rules_java//java:defs.bzl", "java_library", "java_test")
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 shell_tool_test(

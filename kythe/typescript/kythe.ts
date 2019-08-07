@@ -64,6 +64,8 @@ export enum EdgeKind {
   OVERRIDES_ROOT = '/kythe/edge/overrides/root',
   OVERRIDES_TRANSITIVE = '/kythe/edge/overrides/transitive',
   PARAM = '/kythe/edge/param',
+  PROPERTY_READS = '/kythe/edge/property/reads',
+  PROPERTY_WRITES = '/kythe/edge/property/writes',
   REF = '/kythe/edge/ref',
   REF_IMPLICIT = '/kythe/edge/ref/implicit',
   REF_CALL = '/kythe/edge/ref/call',
@@ -83,9 +85,6 @@ export enum EdgeKind {
   TAGGED = '/kythe/edge/tagged',
   TYPED = '/kythe/edge/typed',
   UNDEFINES = '/kythe/edge/undefines',
-  // TypeScript indexer-specific edge kinds
-  PROPERTY_READS = '/kythe/edge/property/reads',
-  PROPERTY_WRITES = '/kythe/edge/property/writes',
 }
 
 /**
