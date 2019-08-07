@@ -1,28 +1,35 @@
-required_input {
-  v_name {
-    corpus: "custom_corpus"
-    path: "kythe/cxx/extractor/textproto/testdata/example.proto"
-  }
-  info {
-    path: "kythe/cxx/extractor/textproto/testdata/example.proto"
-    digest: "b51fdc6bd2a3b2cbb0c1609cb8d62dcc8940853d6dfd0147c26f73a402e4cc3a"
-  }
+{
+  "required_input": [
+    {
+      "v_name": {
+        "corpus": "custom_corpus",
+        "path": "kythe/cxx/extractor/textproto/testdata/example.proto"
+      },
+      "info": {
+        "path": "kythe/cxx/extractor/textproto/testdata/example.proto",
+        "digest": "b51fdc6bd2a3b2cbb0c1609cb8d62dcc8940853d6dfd0147c26f73a402e4cc3a"
+      }
+    },
+    {
+      "v_name": {
+        "corpus": "custom_corpus",
+        "path": "kythe/cxx/extractor/textproto/testdata/simple.pbtxt"
+      },
+      "info": {
+        "path": "kythe/cxx/extractor/textproto/testdata/simple.pbtxt",
+        "digest": "40e64606167c9bea6f8c2a60f489901565aca97c6a676d25db195d4af91bcb9f"
+      }
+    }
+  ],
+  "argument": [
+    "kythe/cxx/extractor/textproto/testdata/simple.pbtxt",
+    "--proto_message",
+    "textproto_test.MyMessage",
+    "--",
+    "--proto_path",
+    "kythe/cxx/extractor/textproto/testdata"
+  ],
+  "source_file": [
+    "kythe/cxx/extractor/textproto/testdata/simple.pbtxt"
+  ]
 }
-required_input {
-  v_name {
-    corpus: "custom_corpus"
-    path: "kythe/cxx/extractor/textproto/testdata/simple.pbtxt"
-  }
-  info {
-    path: "kythe/cxx/extractor/textproto/testdata/simple.pbtxt"
-    digest: "40e64606167c9bea6f8c2a60f489901565aca97c6a676d25db195d4af91bcb9f"
-  }
-}
-argument: "kythe/cxx/extractor/textproto/testdata/simple.pbtxt"
-argument: "--proto_message"
-argument: "textproto_test.MyMessage"
-argument: "--"
-argument: "--proto_path"
-argument: "kythe/cxx/extractor/textproto/testdata"
-source_file: "kythe/cxx/extractor/textproto/testdata/simple.pbtxt"
-entry_context: "hash0"
