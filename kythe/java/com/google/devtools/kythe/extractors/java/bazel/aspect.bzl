@@ -48,9 +48,7 @@ def _extract_java(target, ctx):
         processorpath += [j.path for j in annotations.processor_classpath.to_list()]
         processors = annotations.processor_classnames
 
-    output_jar = []
-    for jar in info.outputs.jars:
-        output_jar += [jar.class_jar.path]
+    output_jar = [jar.class_jar.path for jar in info.outputs.jars]
 
     # TODO(schroederc): sourcegendir is currently extracted from raw arguments;
     # we need to embed it there or put it elsewhere
