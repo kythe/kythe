@@ -102,7 +102,6 @@ def _extract_java_aspect(target, ctx):
 # Aspect to run the Bazel Javac extractor on all specified Java targets.
 extract_java_aspect = aspect(
     _extract_java_aspect,
-    attr_aspects = ["srcs"],
     attrs = {
         "_write_extra_action": attr.label(
             default = Label("@io_kythe//kythe/go/util/tools/write_extra_action"),
