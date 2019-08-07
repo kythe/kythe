@@ -49,7 +49,6 @@ def _kzip_diff_test_impl(ctx):
     script = " ".join([
         ctx.executable.diff_bin.short_path,
         ctx.executable.kzip_tool.short_path,
-        ctx.executable.jq.short_path,
         ctx.files.kzip[0].short_path,
         ctx.files.golden_file[0].short_path,
     ])
@@ -61,7 +60,6 @@ def _kzip_diff_test_impl(ctx):
     runfiles = ctx.runfiles(files = [
         ctx.executable.diff_bin,
         ctx.executable.kzip_tool,
-        ctx.executable.jq,
         ctx.file.kzip,
         ctx.file.golden_file,
     ])
@@ -81,11 +79,6 @@ kzip_diff_test = rule(
             cfg = "host",
             executable = True,
             default = Label("//kythe/go/platform/tools/kzip"),
-        ),
-        "jq": attr.label(
-            cfg = "host",
-            executable = True,
-            default = Label("@com_github_stedolan_jq//:jq"),
         ),
     },
     test = True,

@@ -1,33 +1,33 @@
 {
-  "required_input": [
-    {
-      "v_name": {
-        "path": "subdir.proto"
-      },
-      "info": {
-        "path": "subdir.proto",
-        "digest": "b51fdc6bd2a3b2cbb0c1609cb8d62dcc8940853d6dfd0147c26f73a402e4cc3a"
-      }
-    },
-    {
-      "v_name": {
-        "path": "subdir.pbtxt"
-      },
-      "info": {
-        "path": "subdir.pbtxt",
-        "digest": "f68ebecf9ed486124180fd0a25fb41200435b8bc0aee39f061c71f3d18dcaff6"
-      }
-    }
-  ],
-  "argument": [
-    "kythe/cxx/extractor/textproto/testdata/subdir/subdir.pbtxt",
-    "--proto_message",
-    "textproto_test.MyMessage",
-    "--",
-    "--proto_path",
-    "kythe/cxx/extractor/textproto/testdata/subdir"
-  ],
-  "source_file": [
-    "subdir.pbtxt"
-  ]
+    "argument": [
+        "kythe/cxx/extractor/textproto/testdata/subdir/subdir.pbtxt",
+        "--proto_message",
+        "textproto_test.MyMessage",
+        "--",
+        "--proto_path",
+        "kythe/cxx/extractor/textproto/testdata/subdir"
+    ],
+    "required_input": [
+        {
+            "info": {
+                "digest": "b51fdc6bd2a3b2cbb0c1609cb8d62dcc8940853d6dfd0147c26f73a402e4cc3a",
+                "path": "subdir.proto"
+            },
+            "v_name": {
+                "path": "subdir.proto"
+            }
+        },
+        {
+            "info": {
+                "digest": "f68ebecf9ed486124180fd0a25fb41200435b8bc0aee39f061c71f3d18dcaff6",
+                "path": "subdir.pbtxt"
+            },
+            "v_name": {
+                "path": "subdir.pbtxt"
+            }
+        }
+    ],
+    "source_file": [
+        "subdir.pbtxt"
+    ],
 }
