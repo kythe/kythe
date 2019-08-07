@@ -2,15 +2,15 @@
 package main
 
 import (
-	"os"
 	"encoding/json"
 	"log"
+	"os"
 )
 
 func main() {
 	obj := make(map[string]interface{})
 	d := json.NewDecoder(os.Stdin)
-	if err:= d.Decode(&obj); err != nil {
+	if err := d.Decode(&obj); err != nil {
 		log.Fatal(err)
 	}
 
