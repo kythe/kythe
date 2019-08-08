@@ -54,7 +54,7 @@ type Reader interface {
 	Stat(ctx context.Context, path string) (os.FileInfo, error)
 
 	// Open opens an existing file for reading, as os.Open.
-	Open(ctx context.Context, path string) (io.ReadCloser, error)
+	Open(ctx context.Context, path string) (FileReader, error)
 
 	// Glob returns all the paths matching the specified glob pattern, as
 	// filepath.Glob.
@@ -68,7 +68,7 @@ type Writer interface {
 	MkdirAll(ctx context.Context, path string, mode os.FileMode) error
 
 	// Create creates a new file for writing, as os.Create.
-	Create(ctx context.Context, path string) (io.WriteCloser, error)
+	Create(ctx context.Context, path string) (FileWriter, error)
 
 	// CreateTempFile creates a new temp file returning a TempFile. The
 	// name of the file is constructed from dir pattern and per
@@ -85,6 +85,20 @@ type Writer interface {
 
 	// Remove deletes the file specified by path, as os.Remove.
 	Remove(ctx context.Context, path string) error
+}
+
+// FileReader composes interfaces from io that readable files from the vfs must
+// implement.
+type FileReader interface {
+	io.ReadCloser
+	io.ReaderAt
+	io.Seeker
+}
+
+// FileReader composes interfaces from io that writable files from the vfs must
+// implement.
+type FileWriter interface {
+	io.WriteCloser
 }
 
 // Default is the global default VFS used by Kythe libraries that wish to access
@@ -112,10 +126,10 @@ func MkdirAll(ctx context.Context, path string, mode os.FileMode) error {
 }
 
 // Open opens an existing file for reading, using the Default VFS.
-func Open(ctx context.Context, path string) (io.ReadCloser, error) { return Default.Open(ctx, path) }
+func Open(ctx context.Context, path string) (FileReader, error) { return Default.Open(ctx, path) }
 
 // Create creates a new file for writing, using the Default VFS.
-func Create(ctx context.Context, path string) (io.WriteCloser, error) {
+func Create(ctx context.Context, path string) (FileWriter, error) {
 	return Default.Create(ctx, path)
 }
 
@@ -151,15 +165,15 @@ func (LocalFS) MkdirAll(_ context.Context, path string, mode os.FileMode) error 
 }
 
 // Open implements part of the VFS interface.
-func (LocalFS) Open(_ context.Context, path string) (io.ReadCloser, error) {
+func (LocalFS) Open(_ context.Context, path string) (FileReader, error) {
 	if path == "-" {
-		return ioutil.NopCloser(os.Stdin), nil
+		return stdinWrapper{os.Stdin}, nil
 	}
 	return os.Open(path)
 }
 
 // Create implements part of the VFS interface.
-func (LocalFS) Create(_ context.Context, path string) (io.WriteCloser, error) {
+func (LocalFS) Create(_ context.Context, path string) (FileWriter, error) {
 	return os.Create(path)
 }
 
@@ -207,3 +221,14 @@ func (UnsupportedWriter) Rename(_ context.Context, _, _ string) error { return E
 
 // Remove implements part of Writer interface.  It is not supported.
 func (UnsupportedWriter) Remove(_ context.Context, _ string) error { return ErrNotSupported }
+
+// stdinWrapper is similar in purpose to ioutil.NopCloser, but allows access to
+// other os.File methods that implement FileReader rather than restricting to
+// just ioutil.ReadCloser.
+type stdinWrapper struct {
+	*os.File
+}
+
+func (_ stdinWrapper) Close() error {
+	return nil
+}
