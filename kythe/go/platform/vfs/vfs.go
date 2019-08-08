@@ -202,7 +202,7 @@ func (LocalFS) Glob(_ context.Context, glob string) ([]string, error) {
 type UnsupportedWriter struct{ Reader }
 
 // Create implements part of Writer interface.  It is not supported.
-func (UnsupportedWriter) Create(_ context.Context, _ string) (io.WriteCloser, error) {
+func (UnsupportedWriter) Create(_ context.Context, _ string) (FileWriter, error) {
 	return nil, ErrNotSupported
 }
 
@@ -221,6 +221,22 @@ func (UnsupportedWriter) Rename(_ context.Context, _, _ string) error { return E
 
 // Remove implements part of Writer interface.  It is not supported.
 func (UnsupportedWriter) Remove(_ context.Context, _ string) error { return ErrNotSupported }
+
+// UnseekableFileReader implements the io.Seeker and io.ReaderAt at portion of
+// FileReader with stubs that always return ErrNotSupported.
+type UnseekableFileReader struct {
+	io.ReadCloser
+}
+
+// ReadAt implements io.ReaderAt interface. It is not supported.
+func (UnseekableFileReader) ReadAt([]byte, int64) (int, error) {
+	return 0, ErrNotSupported
+}
+
+// Seek implements io.Seeker interface. It is not supported.
+func (UnseekableFileReader) Seek(int64, int) (int64, error) {
+	return 0, ErrNotSupported
+}
 
 // stdinWrapper is similar in purpose to ioutil.NopCloser, but allows access to
 // other os.File methods that implement FileReader rather than restricting to
