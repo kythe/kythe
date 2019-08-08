@@ -42,12 +42,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import javax.tools.JavaFileManager;
 import javax.tools.OptionChecker;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
@@ -100,18 +98,8 @@ public class JavacOptionsUtils {
 
   /** Returns the JRE 9-style bootclasspath. */
   private static ImmutableList<String> getBootclassPath() throws IOException {
-    Context context = new Context();
-    JavacTool.create()
-        .getTask(
-            /* out = */ null,
-            /* fileManager = */ null,
-            /* diagnosticListener = */ null,
-            /* options = */ Arrays.asList("--system", JAVA_HOME.toString()),
-            /* classes = */ null,
-            /* compilationUnits = */ null,
-            context);
     StandardJavaFileManager fileManager =
-        (StandardJavaFileManager) context.get(JavaFileManager.class);
+        JavacTool.create().getStandardFileManager(null, null, null);
 
     ImmutableList.Builder<String> paths = ImmutableList.builder();
     for (File file : fileManager.getLocation(StandardLocation.PLATFORM_CLASS_PATH)) {
