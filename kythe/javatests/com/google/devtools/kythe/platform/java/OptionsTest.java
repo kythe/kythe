@@ -143,7 +143,7 @@ public class OptionsTest {
     int idx = updatedArgs.indexOf("--boot-class-path");
     assertThat(updatedArgs).hasSize(idx + 2);
     assertThat(updatedArgs.get(idx + 1)).startsWith("not/a/real/path:also/fake");
-    assertThat(updatedArgs.get(idx + 1)).contains("lib/modules");
+    assertThat(updatedArgs.get(idx + 1)).matches(".*(\\.jar|lib/modules)");
   }
 
   @Test
@@ -157,7 +157,7 @@ public class OptionsTest {
         .startsWith("not/a/real/path:also/fake");
 
     assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1))
-        .contains("lib/modules");
+        .matches(".*(\\.jar|lib/modules)");
   }
 
   @Test
@@ -206,6 +206,6 @@ public class OptionsTest {
     assertThat(updatedArgs.get(updatedArgs.indexOf("--source-path") + 1))
         .matches("source/from/details");
     assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1))
-        .contains("lib/modules");
+        .matches(".*(\\.jar|lib/modules)");
   }
 }
