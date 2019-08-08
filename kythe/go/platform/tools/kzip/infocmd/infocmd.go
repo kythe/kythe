@@ -24,8 +24,8 @@ import (
 	"fmt"
 
 	"kythe.io/kythe/go/platform/kzip"
-	"kythe.io/kythe/go/util/cmdutil"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/cmdutil"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/google/subcommands"
