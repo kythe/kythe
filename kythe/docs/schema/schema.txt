@@ -1736,8 +1736,9 @@ Brief description::
   <<file>> or <<anchor>>.  These can often result from errors while building or
   analyzing a compilation and allow an analyzer to surface errors to end-users.
   Each diagnostic is linked to the related <<file>> or <<anchor>> using a
-  <<tagged>> edge (where the diagnostic node is the target of the edge). In principle, a diagnostic could also be related to a semantic
-  node; but that a user-facing UI might not be able to display anything meaningful
+  <<tagged>> edge (where the diagnostic node is the target of the edge).
+  In principle, a diagnostic could also be related to a semantic node;
+  but that a user-facing UI might not be able to display anything meaningful
   without a concrete anchor.
 Facts::
   message:::
@@ -1750,17 +1751,6 @@ Facts::
   context/url:::
     URL leading to more detailed information concerning this diagnostic or a
     related group of diagnostics (optional).
-
-[kythe,C++,"Warning message from compiler."]
---------------------------------------------------------------------------------
-//- @v defines/binding V
-//- V.node/kind variable
-//- @v tagged VDiagnostic
-//- VDiagnostic.node/kind diagnostic
-//- VDiagnostic.message "WARNING: Unused variable"
-int v;
---------------------------------------------------------------------------------
-
 
 [[doc]]
 doc
