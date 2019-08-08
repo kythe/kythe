@@ -51,7 +51,10 @@ cd "$TMPDIR/release"
 cd kythe-*
 
 # Ensure the various tools work on test inputs
+# TODO(justbuchanan): remove `viewindex` in favor of `kzip view`
 tools/viewindex "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" | \
+  jq . >/dev/null
+tools/kzip view "$TEST_REPOSRCDIR/kythe/testdata/test.kzip" | \
   jq . >/dev/null
 tools/indexpack --to_archive indexpack.test "$TEST_REPOSRCDIR/kythe/testdata/test.kindex"
 tools/entrystream < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" | \
@@ -81,7 +84,7 @@ java "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}" \
 
 # Ensure the Java indexer works on a curated test compilation
 java "${KYTHE_JAVA_RUNTIME_OPTIONS[@]}"  \
-  -jar indexers/java_indexer.jar "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" > entries
+  -jar indexers/java_indexer.jar "$TEST_REPOSRCDIR/kythe/testdata/test.kzip" > entries
 # TODO(zarko): add C++ test kindex entries
 
 # Ensure basic Kythe pipeline toolset works
