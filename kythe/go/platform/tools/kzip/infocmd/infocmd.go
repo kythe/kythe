@@ -60,26 +60,13 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 		return c.Fail("error opening archive: %v", err)
 	}
 	defer f.Close()
-	stat, err := f.Stat()
-	if err != nil {
-		return c.Fail("unable to stat input: %v", err)
-	}
-	size := stat.Size()
-	if size == 0 {
-		return c.Fail("empty .kzip: %v", c.input)
-	}
-
-	rd, err := kzip.NewReader(f, size)
-	if err != nil {
-		return c.Fail("error creating reader: %v", err)
-	}
 
 	// Get file and unit counts broken down by corpus, language.
 	fileBreakdown := make(map[string]map[string]int)
 	unitBreakdown := make(map[string]map[string]int)
 	var totalFiles, totalUnits int
 	corpora := stringset.New()
-	err = rd.Scan(func(u *kzip.Unit) error {
+	err = kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
 		totalUnits++
 		if _, ok := unitBreakdown[u.Proto.GetVName().GetCorpus()]; !ok {
 			unitBreakdown[u.Proto.GetVName().GetCorpus()] = make(map[string]int)
