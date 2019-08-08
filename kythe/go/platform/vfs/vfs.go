@@ -68,7 +68,7 @@ type Writer interface {
 	MkdirAll(ctx context.Context, path string, mode os.FileMode) error
 
 	// Create creates a new file for writing, as os.Create.
-	Create(ctx context.Context, path string) (FileWriter, error)
+	Create(ctx context.Context, path string) (io.WriteCloser, error)
 
 	// CreateTempFile creates a new temp file returning a TempFile. The
 	// name of the file is constructed from dir pattern and per
@@ -93,12 +93,6 @@ type FileReader interface {
 	io.ReadCloser
 	io.ReaderAt
 	io.Seeker
-}
-
-// FileReader composes interfaces from io that writable files from the vfs must
-// implement.
-type FileWriter interface {
-	io.WriteCloser
 }
 
 // Default is the global default VFS used by Kythe libraries that wish to access
@@ -129,7 +123,7 @@ func MkdirAll(ctx context.Context, path string, mode os.FileMode) error {
 func Open(ctx context.Context, path string) (FileReader, error) { return Default.Open(ctx, path) }
 
 // Create creates a new file for writing, using the Default VFS.
-func Create(ctx context.Context, path string) (FileWriter, error) {
+func Create(ctx context.Context, path string) (io.WriteCloser, error) {
 	return Default.Create(ctx, path)
 }
 
@@ -173,7 +167,7 @@ func (LocalFS) Open(_ context.Context, path string) (FileReader, error) {
 }
 
 // Create implements part of the VFS interface.
-func (LocalFS) Create(_ context.Context, path string) (FileWriter, error) {
+func (LocalFS) Create(_ context.Context, path string) (io.WriteCloser, error) {
 	return os.Create(path)
 }
 
@@ -202,7 +196,7 @@ func (LocalFS) Glob(_ context.Context, glob string) ([]string, error) {
 type UnsupportedWriter struct{ Reader }
 
 // Create implements part of Writer interface.  It is not supported.
-func (UnsupportedWriter) Create(_ context.Context, _ string) (FileWriter, error) {
+func (UnsupportedWriter) Create(_ context.Context, _ string) (io.WriteCloser, error) {
 	return nil, ErrNotSupported
 }
 
