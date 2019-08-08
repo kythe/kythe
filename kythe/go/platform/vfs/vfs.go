@@ -239,6 +239,6 @@ type stdinWrapper struct {
 	*os.File
 }
 
-func (_ stdinWrapper) Close() error {
+func (stdinWrapper) Close() error {
 	return nil
 }
