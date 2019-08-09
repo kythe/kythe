@@ -145,7 +145,10 @@ export enum TSNamespace {
  * disambiguating a node's declarations if it has multiple.
  */
 export enum Context {
-  /** No disambiguation about a node's declarations. */
+  /**
+   * No disambiguation about a node's declarations. May be lazily generated
+   * from other contexts; see SymbolVNameStore documentation.
+   */
   Any,
   /** The node is declared as a getter. */
   Getter,
@@ -191,6 +194,7 @@ function todo(sourceRoot: string, node: ts.Node, message: string) {
   console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
 }
 
+type NamespaceAndContext = string&{__brand: 'nsctx'};
 /**
  * A SymbolVNameStore stores a mapping of symbols to the (many) VNames it may
  * have. Each TypeScript symbol can be be of a different TypeScript namespace
@@ -208,7 +212,6 @@ function todo(sourceRoot: string, node: ts.Node, message: string) {
  * As a result, unless explicitly set for a given symbol and namespace, the
  * VName of an `Any` context is lazily set to the VName of an arbitrary context.
  */
-type NamespaceAndContext = string&{__brand: 'nsctx'};
 class SymbolVNameStore {
   private readonly store =
       new Map<ts.Symbol, Map<NamespaceAndContext, Readonly<VName>>>();
@@ -240,16 +243,12 @@ class SymbolVNameStore {
     let vnameMap = this.store.get(symbol);
     const nsCtx = this.serialize(ns, context);
     if (vnameMap) {
-      // If there is already a map for the symbol, check that a VName is not
-      // overriden. Then set the VName for the given namespace and context.
       if (vnameMap.has(nsCtx)) {
         throw new Error(`VName already set with signature ${
             vnameMap.get(nsCtx)!.signature}`);
       }
       vnameMap.set(nsCtx, vname);
     } else {
-      // If there is no map for the symbol, create a new one with an entry of
-      // the VName for the given namepsace and context.
       this.store.set(symbol, new Map([[nsCtx, vname]]));
     }
 
@@ -280,9 +279,7 @@ class StandardIndexerContext implements IndexerHost {
    */
   private rootDirs: string[];
 
-  /**
-   * symbolNames is a store of ts.Symbols to their assigned VNames.
-   */
+  /** symbolNames is a store of ts.Symbols to their assigned VNames. */
   private symbolNames = new SymbolVNameStore();
 
   /**
@@ -607,8 +604,8 @@ class StandardIndexerContext implements IndexerHost {
 
   aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName {
     // This imported symbol can refer to a type, a value, or both.
-    // Attempt to create the Kythe VName for both the symbol's type and value
-    // and mark the local symbol with the remote symbol's VName so that all
+    // Attempt to create VNames for both the symbol's type and value and mark
+    // the local symbos with the remote symbol's VName(s) so that all
     // references resolve to the remote symbol.
     let kType, kValue;
     if (remoteSym.flags & ts.SymbolFlags.Type) {
