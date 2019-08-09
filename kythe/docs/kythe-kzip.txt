@@ -56,22 +56,32 @@ archive that we call a *kzip* file, conventionally given the file extension
 [literal]
 root/           # Any valid non-empty directory name
    units/
-     abcd1234   # Compilation unit (see below for format)
+     abcd1234   # Compilation unit (JSON format, see below for details)
      …          # (name is hex-coded SHA256 of record content)
    files/
      1a2b3c4e   # File contents, uncompressed
      …          # (name is hex-coded SHA256 of uncompressed file content)
 
-
 This organization separates the compilation unit descriptions from their file
 data, which are shared among multiple compilations.
+
+`.kzip` can offer alternate structures, in which compilation units are formatted in other encodings. Currently the only other encoding defined and supported is "proto". In this case, the directory structure will look like
+
+[literal]
+root/           # Any valid non-empty directory name
+   pbunits/
+     abcd1234   # Compilation unit (proto format, see below for details)
+     …          # (name is hex-coded SHA256 of record content)
+   files/
+     1a2b3c4e   # File contents, uncompressed
+     …          # (name is hex-coded SHA256 of uncompressed file content)
 
 === Directory and File Layout
 
 A kzip is a ZIP file containing a top-level root directory that contains two
 subdirectories, one named `units` and one named `files`.
 
- * The `units` subdirectory may contain only unit files.
+ * The `units` (or `pbunits`) subdirectory may contain only unit files.
 
  * The `files` subdirectory may contain only data files.
 
@@ -81,12 +91,13 @@ subdirectories, one named `units` and one named `files`.
  * Other files or subdirectories in the root or other subdirectories should be
    ignored by a tool processing the kzip file.
 
-A *unit file* is a file containing a compilation unit description.  The name of
-a unit file is computed by digesting the compilation unit with SHA256, and
-encoding the resulting hash as a string of lowercase ASCII hexadecimal
-digits. This string becomes the filename of the unit file. Note that the digest
-should only process the CompilationUnit itself, and should not include the
-other contents of the wrapper message.
+A *unit file* is a file containing a compilation unit description.
+The name of a unit file is computed by digesting the JSON
+representation of the compilation unit with SHA256, and encoding the
+resulting hash as a string of lowercase ASCII hexadecimal digits. This
+string becomes the filename of the unit file. Note that the digest
+should only process the CompilationUnit itself, and should not include
+the other contents of the wrapper message.
 
 A *data file* is a file containing an unstructured blob of raw (uncompressed)
 file data.  The name name of a data file is computed by hashing the file
@@ -112,3 +123,7 @@ The content of a unit file is the canonical JSON encoding of a
 The `"unit"` key is required, and must contain the canonical JSON encoding of a
 `kythe.proto.CompilationUnit` protobuf message.  The `"index"` key is optional,
 but if set must contain the canonical JSON encoding of an `Index` message.
+
+For the `proto` encoding of compilation units, the content of the unit
+is the standard wire-encoding of the `kythe.proto.IndexedCompilation`
+protobuf message.

@@ -1735,6 +1735,11 @@ Brief description::
   A *diagnostic* is a node with a message concerning some aspect of the related
   <<file>> or <<anchor>>.  These can often result from errors while building or
   analyzing a compilation and allow an analyzer to surface errors to end-users.
+  Each diagnostic is linked to the related <<file>> or <<anchor>> using a
+  <<tagged>> edge (where the diagnostic node is the target of the edge).
+  In principle, a diagnostic could also be related to a semantic node;
+  but that a user-facing UI might not be able to display anything meaningful
+  without a concrete anchor.
 Facts::
   message:::
     A relatively short, one-line, human-readable string explaining the
