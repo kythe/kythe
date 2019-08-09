@@ -54,7 +54,7 @@ type Reader interface {
 	Stat(ctx context.Context, path string) (os.FileInfo, error)
 
 	// Open opens an existing file for reading, as os.Open.
-	Open(ctx context.Context, path string) (io.ReadCloser, error)
+	Open(ctx context.Context, path string) (FileReader, error)
 
 	// Glob returns all the paths matching the specified glob pattern, as
 	// filepath.Glob.
@@ -87,6 +87,14 @@ type Writer interface {
 	Remove(ctx context.Context, path string) error
 }
 
+// FileReader composes interfaces from io that readable files from the vfs must
+// implement.
+type FileReader interface {
+	io.ReadCloser
+	io.ReaderAt
+	io.Seeker
+}
+
 // Default is the global default VFS used by Kythe libraries that wish to access
 // the file system.  This is usually the LocalFS and should only be changed in
 // very specialized cases (i.e. don't change it).
@@ -112,7 +120,7 @@ func MkdirAll(ctx context.Context, path string, mode os.FileMode) error {
 }
 
 // Open opens an existing file for reading, using the Default VFS.
-func Open(ctx context.Context, path string) (io.ReadCloser, error) { return Default.Open(ctx, path) }
+func Open(ctx context.Context, path string) (FileReader, error) { return Default.Open(ctx, path) }
 
 // Create creates a new file for writing, using the Default VFS.
 func Create(ctx context.Context, path string) (io.WriteCloser, error) {
@@ -151,9 +159,9 @@ func (LocalFS) MkdirAll(_ context.Context, path string, mode os.FileMode) error 
 }
 
 // Open implements part of the VFS interface.
-func (LocalFS) Open(_ context.Context, path string) (io.ReadCloser, error) {
+func (LocalFS) Open(_ context.Context, path string) (FileReader, error) {
 	if path == "-" {
-		return ioutil.NopCloser(os.Stdin), nil
+		return stdinWrapper{os.Stdin}, nil
 	}
 	return os.Open(path)
 }
@@ -207,3 +215,30 @@ func (UnsupportedWriter) Rename(_ context.Context, _, _ string) error { return E
 
 // Remove implements part of Writer interface.  It is not supported.
 func (UnsupportedWriter) Remove(_ context.Context, _ string) error { return ErrNotSupported }
+
+// UnseekableFileReader implements the io.Seeker and io.ReaderAt at portion of
+// FileReader with stubs that always return ErrNotSupported.
+type UnseekableFileReader struct {
+	io.ReadCloser
+}
+
+// ReadAt implements io.ReaderAt interface. It is not supported.
+func (UnseekableFileReader) ReadAt([]byte, int64) (int, error) {
+	return 0, ErrNotSupported
+}
+
+// Seek implements io.Seeker interface. It is not supported.
+func (UnseekableFileReader) Seek(int64, int) (int64, error) {
+	return 0, ErrNotSupported
+}
+
+// stdinWrapper is similar in purpose to ioutil.NopCloser, but allows access to
+// other os.File methods that implement FileReader rather than restricting to
+// just ioutil.ReadCloser.
+type stdinWrapper struct {
+	*os.File
+}
+
+func (stdinWrapper) Close() error {
+	return nil
+}

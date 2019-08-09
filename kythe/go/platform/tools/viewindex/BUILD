@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_binary(
     name = "viewindex",
     srcs = ["viewindex.go"],
+    deprecation = "Please use `kzip view` instead",
     deps = [
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/kzip",

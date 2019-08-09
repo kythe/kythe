@@ -19,11 +19,12 @@ package infocmd // import "kythe.io/kythe/go/platform/tools/kzip/infocmd"
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
 
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"bitbucket.org/creachadair/stringset"
@@ -54,38 +55,49 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 	if c.input == "" {
 		return c.Fail("required --input path missing")
 	}
-	f, err := os.Open(c.input)
+	f, err := vfs.Open(ctx, c.input)
 	if err != nil {
 		return c.Fail("error opening archive: %v", err)
 	}
 	defer f.Close()
-	stat, err := f.Stat()
-	if err != nil {
-		return c.Fail("unable to stat input: %v", err)
-	}
-	size := stat.Size()
-	if size == 0 {
-		return c.Fail("empty .kzip: %v", c.input)
-	}
 
-	rd, err := kzip.NewReader(f, size)
-	if err != nil {
-		return c.Fail("error creating reader: %v", err)
-	}
-
+	// Get file and unit counts broken down by corpus, language.
+	fileBreakdown := make(map[string]map[string]int)
+	unitBreakdown := make(map[string]map[string]int)
+	var totalFiles, totalUnits int
 	corpora := stringset.New()
-	var units int
-	err = rd.Scan(func(u *kzip.Unit) error {
-		units++
+	err = kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
+		totalUnits++
+		if _, ok := unitBreakdown[u.Proto.GetVName().GetCorpus()]; !ok {
+			unitBreakdown[u.Proto.GetVName().GetCorpus()] = make(map[string]int)
+		}
+		unitBreakdown[u.Proto.GetVName().GetCorpus()][u.Proto.GetVName().GetLanguage()]++
 		corpora.Add(u.Proto.GetVName().GetCorpus())
 		for _, ri := range u.Proto.RequiredInput {
+			totalFiles++
+			if _, ok := fileBreakdown[ri.GetVName().GetCorpus()]; !ok {
+				fileBreakdown[ri.GetVName().GetCorpus()] = make(map[string]int)
+			}
 			corpora.Add(ri.GetVName().GetCorpus())
+			fileBreakdown[ri.GetVName().GetCorpus()][ri.GetVName().GetLanguage()]++
 		}
 		return nil
 	})
 	if err != nil {
 		return c.Fail("error while scanning: %v", err)
 	}
-	fmt.Printf("%d compilation units, corpora: %s\n", units, corpora)
+
+	// Write output as json.
+	out := make(map[string]interface{})
+	out["unit_counts"] = unitBreakdown
+	out["file_counts"] = fileBreakdown
+	out["total_files"] = totalFiles
+	out["total_units"] = totalUnits
+	data, err := json.MarshalIndent(&out, "", "  ")
+	if err != nil {
+		return c.Fail("error marshaling json output: %v", err)
+	}
+	fmt.Print(string(data))
+
 	return subcommands.ExitSuccess
 }

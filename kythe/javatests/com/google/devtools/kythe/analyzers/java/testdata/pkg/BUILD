@@ -1,3 +1,4 @@
+load("@io_bazel_rules_java//java:defs.bzl", "java_library")
 load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
 
 filegroup(
@@ -419,4 +420,40 @@ java_verifier_test(
         "Definitions.java",
     ],
     extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
+)
+
+# Duplicate a few tests to extract/verifier native Bazel Java compilation targets
+java_library(
+    name = "classes",
+    srcs = ["Classes.java"],
+)
+
+java_verifier_test(
+    name = "classes_xa_test",
+    compilation = ":classes",
+)
+
+java_library(
+    name = "files",
+    srcs = ["Files.java"],
+)
+
+java_verifier_test(
+    name = "files_xa_test",
+    compilation = ":files",
+)
+
+java_library(
+    name = "cross_file",
+    srcs = ["CrossFile.java"],
+    deps = [":files"],
+)
+
+java_verifier_test(
+    name = "cross_file_xa_test",
+    compilation = ":cross_file",
+    verifier_opts = [
+        "--ignore_dups",
+        "--nocheck_for_singletons",  # TODO(schroederc): verify Files.java goals
+    ],
 )

@@ -1,3 +1,5 @@
+load("@io_bazel_rules_java//java:defs.bzl", "java_library", "java_binary")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
@@ -70,11 +72,6 @@ java_library(
 java_binary(
     name = "indexer",
     srcs = ["JavaIndexer.java"],
-    data = ["//third_party/javac:java_compiler_jar"],
-    jvm_flags = [
-        "--add-opens=jdk.compiler/com.sun.tools.javac.api=java.compiler",
-        "--patch-module=java.compiler=$${RUNPATH}$(location //third_party/javac:java_compiler_jar)",
-    ],
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexer",
     deps = [
         ":analyzer",

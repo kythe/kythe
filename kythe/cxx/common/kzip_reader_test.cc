@@ -74,6 +74,16 @@ TEST(KzipReaderTest, OpenFailsForEmptyFile) {
             StatusCode::kInvalidArgument);
 }
 
+TEST(KzipReaderTest, OpenFailsForMissingPbUnit) {
+  EXPECT_EQ(KzipReader::Open(TestFile("missing-pbunit.kzip")).status().code(),
+            StatusCode::kInvalidArgument);
+}
+
+TEST(KzipReaderTest, OpenFailsForMissingUnit) {
+  EXPECT_EQ(KzipReader::Open(TestFile("missing-unit.kzip")).status().code(),
+            StatusCode::kInvalidArgument);
+}
+
 TEST(KzipReaderTest, OpenFailsForMissingRoot) {
   EXPECT_EQ(KzipReader::Open(TestFile("malformed.kzip")).status().code(),
             StatusCode::kInvalidArgument);

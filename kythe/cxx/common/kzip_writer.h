@@ -23,6 +23,7 @@
 
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/common/index_writer.h"
+#include "kythe/cxx/common/kzip_encoding.h"
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/proto/analysis.pb.h"
 
@@ -34,13 +35,17 @@ class KzipWriter : public IndexWriterInterface {
  public:
   /// \brief Constructs a Kzip IndexWriter which will create and write to
   /// \param path Path to the file to create. Must not currently exist.
-  static StatusOr<IndexWriter> Create(absl::string_view path);
+  /// \param encoding Encoding to use for compilation units.
+  static StatusOr<IndexWriter> Create(
+      absl::string_view path, KzipEncoding encoding = KzipEncoding::kJson);
   /// \brief Constructs an IndexWriter from the libzip source pointer.
   /// \param source zip_source_t to use as backing store.
   /// See https://libzip.org/documentation/zip_source.html for ownership.
   /// \param flags Flags to use when opening `source`.
-  static StatusOr<IndexWriter> FromSource(zip_source_t* source,
-                                          int flags = ZIP_CREATE | ZIP_EXCL);
+  /// \param encoding Encoding to use for compilation units.
+  static StatusOr<IndexWriter> FromSource(
+      zip_source_t* source, KzipEncoding encoding = KzipEncoding::kJson,
+      int flags = ZIP_CREATE | ZIP_EXCL);
 
   /// \brief Destroys the KzipWriter.
   ~KzipWriter() override;
@@ -61,18 +66,12 @@ class KzipWriter : public IndexWriterInterface {
   using Contents = std::string;
   using FileMap = std::unordered_map<Path, Contents>;
 
-  struct InsertionResult {
-    absl::string_view digest() const;
-    const std::string& path() const { return insertion.first->first; }
-    absl::string_view contents() const { return insertion.first->second; }
-    bool inserted() const { return insertion.second; }
+  explicit KzipWriter(zip_t* archive, KzipEncoding encoding);
 
-    std::pair<FileMap::iterator, bool> insertion;
-  };
+  StatusOr<std::string> InsertFile(absl::string_view path,
+                                   absl::string_view content);
 
-  explicit KzipWriter(zip_t* archive);
-
-  InsertionResult InsertFile(absl::string_view root, absl::string_view content);
+  Status InitializeArchive(zip_t* archive);
 
   bool initialized_ = false;  // Whether or not the `root` entry exists.
   zip_t* archive_;  // Owned, but must be manually deleted via `Close`.
@@ -81,6 +80,7 @@ class KzipWriter : public IndexWriterInterface {
   // This must be a node-based container to ensure pointer stability of the file
   // contents.
   FileMap contents_;
+  KzipEncoding encoding_;
 };
 
 }  // namespace kythe

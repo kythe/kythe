@@ -1,3 +1,5 @@
+load("@io_bazel_rules_java//java:defs.bzl", "java_test")
+
 java_test(
     name = "stream_fact_emitter_test",
     size = "small",
