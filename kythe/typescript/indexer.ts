@@ -850,13 +850,16 @@ class Visitor {
    */
   getModulePathFromModuleReference(sym: ts.Symbol): string|undefined {
     const sf = sym.valueDeclaration;
+    // Check that the value declaration actually exists. TypeScript doesn't
+    // enforce strict non-null checks in the compiler.
+    // See https://github.com/microsoft/TypeScript/issues/24706 for movement on
+    // correct typing.
+    if (!sf) return;
     // If the module is not a source file, it does not have a unique file path.
     // This can happen in cases of importing local modules, like
     //   declare namespace Foo {}
     //   import foo = Foo;
-    // Check that the value declaration actually exists. TypeScript doesn't
-    // enforce strict non-null checks in the compiler.
-    if (sf && ts.isSourceFile(sf)) {
+    if (ts.isSourceFile(sf)) {
       return this.host.moduleName(sf.fileName);
     }
   }
