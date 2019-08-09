@@ -22,7 +22,7 @@ fi
 
 BAZELOUT="$(bazel info workspace)/bazel-out"
 bazel build \
-  --experimental_action_listener=//kythe/cxx/extractor:extract_kindex_objc \
+  --experimental_action_listener=//kythe/extractors:extract_kzip_objc \
   --experimental_extra_action_top_level_only \
   --experimental_proto_extra_actions \
   --ios_sdk_version=10.0 \

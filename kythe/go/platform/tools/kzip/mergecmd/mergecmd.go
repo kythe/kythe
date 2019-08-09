@@ -23,15 +23,14 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"path/filepath"
 
-	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/google/subcommands"
 )
 
@@ -108,7 +107,7 @@ func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, o
 
 	filesAdded := stringset.New()
 	for _, path := range archives {
-		if err := mergeInto(wr, path, filesAdded); err != nil {
+		if err := mergeInto(ctx, wr, path, filesAdded); err != nil {
 			wr.Close()
 			return err
 		}
@@ -120,14 +119,14 @@ func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, o
 	return nil
 }
 
-func mergeInto(wr *kzip.Writer, path string, filesAdded stringset.Set) error {
-	f, err := os.Open(path)
+func mergeInto(ctx context.Context, wr *kzip.Writer, path string, filesAdded stringset.Set) error {
+	f, err := vfs.Open(ctx, path)
 	if err != nil {
 		return fmt.Errorf("error opening archive: %v", err)
 	}
 	defer f.Close()
 
-	stat, err := f.Stat()
+	stat, err := vfs.Stat(ctx, path)
 	if err != nil {
 		return err
 	}

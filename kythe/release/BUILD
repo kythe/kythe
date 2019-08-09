@@ -127,6 +127,7 @@ sh_test(
         "//kythe/java/com/google/devtools/kythe/util:test_srcs",
         "//kythe/testdata:entries",
         "//kythe/testdata:test.kindex",
+        "//kythe/testdata:test.kzip",
         "//third_party/guava",
         "//third_party/javac:javac_jar",
         "@com_github_stedolan_jq//:jq",

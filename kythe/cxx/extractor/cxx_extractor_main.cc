@@ -17,7 +17,7 @@
 // cxx_extractor is meant to be a drop-in replacement for clang/gcc's frontend.
 // It collects all of the resources that clang would use to compile a single
 // source file (as determined by the command line arguments) and produces a
-// .kindex file.
+// .kzip file.
 //
 // We read environment variables KYTHE_CORPUS (to set the default corpus),
 // KYTHE_ROOT_DIRECTORY (to set the default root directory and to configure
