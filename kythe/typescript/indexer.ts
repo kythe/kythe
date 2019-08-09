@@ -508,6 +508,7 @@ class StandardIndexerContext implements IndexerHost {
     // TODO: update symbolNames table to account for context kind
 
     if (!declarations || declarations.length < 1) {
+      // No call to `todo` because the symbol node is unknown.
       console.warn(`TODO: symbol ${sym.name} has no declarations`);
     }
 
