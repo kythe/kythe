@@ -605,7 +605,7 @@ class StandardIndexerContext implements IndexerHost {
   aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName {
     // This imported symbol can refer to a type, a value, or both.
     // Attempt to create VNames for both the symbol's type and value and mark
-    // the local symbos with the remote symbol's VName(s) so that all
+    // the local symbol with the remote symbol's VName(s) so that all
     // references resolve to the remote symbol.
     let kType, kValue;
     if (remoteSym.flags & ts.SymbolFlags.Type) {
