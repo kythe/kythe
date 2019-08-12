@@ -60,12 +60,12 @@ void ReadGzippedDelimitedProtoSequence(const std::string& path, ClosureType f) {
   int fd = ::open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
   CHECK_GE(fd, 0) << "Couldn't open input file " << path << ": "
                   << ::strerror(errno);
-  io::FileInputStream file_input_stream(fd);
-  io::GzipInputStream gzip_input_stream(&file_input_stream);
+  proto2::io::FileInputStream file_input_stream(fd);
+  proto2::io::GzipInputStream gzip_input_stream(&file_input_stream);
   google::protobuf::uint32 byte_size;
   for (;;) {
-    io::CodedInputStream coded_input_stream(&gzip_input_stream);
-    coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+    proto2::io::CodedInputStream coded_input_stream(&gzip_input_stream);
+    coded_input_stream.SetTotalBytesLimit(INT_MAX);
     if (!coded_input_stream.ReadVarint32(&byte_size)) {
       break;
     }
