@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
  * <p>The compilation working_directory is used as the filesystem root directory, against which
  * relative paths will be resolved.
  */
-final class CompilationUnitFileSystem extends FileSystem {
+public final class CompilationUnitFileSystem extends FileSystem {
 
   private static final ImmutableSet<String> SUPPORTED_VIEWS = ImmutableSet.of("basic");
 
