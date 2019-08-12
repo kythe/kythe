@@ -179,7 +179,7 @@ final class CompilationUnitFileSystem extends FileSystem {
     }
   }
 
-  String digest(Path file) throws IOException {
+  String digest(Path file) {
     checkNotNull(file);
     file = getRootDirectory().resolve(file);
     if (file.getFileName() == null) {
