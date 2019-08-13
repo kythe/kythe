@@ -199,27 +199,4 @@ public class JavaCompilationDetails {
 
     return arguments.removeUnsupportedOptions().build();
   }
-
-  /** Writes nothing, used to reduce noise from the javac analysis output. */
-  private static class NullWriter extends Writer {
-    private static NullWriter instance = null;
-
-    private NullWriter() {}
-
-    public static NullWriter getInstance() {
-      if (instance == null) {
-        instance = new NullWriter();
-      }
-      return instance;
-    }
-
-    @Override
-    public void flush() {}
-
-    @Override
-    public void close() {}
-
-    @Override
-    public void write(char[] cbuf, int off, int len) {}
-  }
 }
