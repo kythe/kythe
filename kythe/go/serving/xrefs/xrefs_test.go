@@ -402,7 +402,7 @@ var (
 			SourceTicket: "kythe:#aliasNode",
 			SourceNode:   getNode("kythe:#aliasNode"),
 			Group: []*srvpb.PagedCrossReferences_Group{{
-				Kind: "/kythe/edge/aliases",
+				Kind: "%/kythe/edge/aliases",
 				RelatedNode: []*srvpb.PagedCrossReferences_RelatedNode{{
 					Node: getNode("kythe://someCorpus?lang=otpl#signature"),
 				}},
@@ -1310,7 +1310,7 @@ func TestCrossReferencesIndirection(t *testing.T) {
 	t.Run("talias", func(t *testing.T) {
 		// Enable indirection for talias nodes.
 		experimentalCrossReferenceIndirectionKinds = nil
-		experimentalCrossReferenceIndirectionKinds.Set("talias=/kythe/edge/aliases")
+		experimentalCrossReferenceIndirectionKinds.Set("talias=%/kythe/edge/aliases")
 
 		reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
 			Ticket:        []string{ticket},
