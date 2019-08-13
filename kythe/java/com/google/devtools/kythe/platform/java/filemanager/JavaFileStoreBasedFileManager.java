@@ -179,7 +179,7 @@ public class JavaFileStoreBasedFileManager extends ForwardingStandardJavaFileMan
 
   @Override
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
-      Iterable<? extends Path> paths) {
+      @SuppressWarnings("IterablePathParameter") Iterable<? extends Path> paths) {
     return getJavaFileObjectsFromFiles(Iterables.transform(paths, Path::toFile));
   }
 
