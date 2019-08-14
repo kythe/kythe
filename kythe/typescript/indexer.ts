@@ -1559,6 +1559,28 @@ class Visitor {
   }
 
   /**
+   * Emits a reference from a "this" keyword to the type of the "this" object.
+   */
+  visitThisKeyword(keyword: ts.ThisExpression) {
+    const sym = this.host.getSymbolAtLocation(keyword);
+    if (!sym) {
+      // "this" refers to an object with no particular type, e.g.
+      //   let obj = {
+      //     foo() { this.foo(); }
+      //   };
+      return;
+    }
+    if (!sym.declarations || sym.declarations.length === 0) {
+      // "this" keyword is `globalThis`, which has no declarations.
+      return;
+    }
+
+    const type = this.host.getSymbolName(sym, TSNamespace.TYPE);
+    const thisAnchor = this.newAnchor(keyword);
+    this.emitEdge(thisAnchor, EdgeKind.REF, type);
+  }
+
+  /**
    * visitJSDoc attempts to attach a 'doc' node to a given target, by looking
    * for JSDoc comments.
    */
@@ -1650,6 +1672,8 @@ class Visitor {
         // circumstances (e.g. in a type) separately in visitType.
         this.visitExpressionMember(node);
         return;
+      case ts.SyntaxKind.ThisKeyword:
+        return this.visitThisKeyword(node as ts.ThisExpression);
       case ts.SyntaxKind.ModuleDeclaration:
         return this.visitModuleDeclaration(node as ts.ModuleDeclaration);
       default:
