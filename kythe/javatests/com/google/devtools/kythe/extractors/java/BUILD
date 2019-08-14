@@ -1,4 +1,4 @@
-load("@io_bazel_rules_java//java:defs.bzl", "java_binary", "java_test")
+load("@rules_java//java:defs.bzl", "java_binary", "java_test")
 
 java_test(
     name = "java_extractor_test",
