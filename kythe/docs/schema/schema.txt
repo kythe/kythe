@@ -79,7 +79,7 @@ aliases
 Brief description::
   A *aliases* T if A may be used in place of T.
 Commonly arises from::
-  typedefs
+  typedefs, imports
 Points from::
   <<talias>>
 Points toward::
@@ -948,7 +948,7 @@ Brief description::
 Points from::
   function nodes
 Points toward::
-  variable/property nodes
+  variable or property nodes
 Ordinals are used::
   never
 See also::
@@ -963,7 +963,7 @@ Brief description::
 Points from::
   function nodes
 Points toward::
-  variable/property nodes
+  variable or property nodes
 Ordinals are used::
   never
 See also::
@@ -2270,6 +2270,11 @@ Facts::
   complete:::
     * `incomplete` if this is only a declaration.
     * `definition` if this is a variable definition.
+Subkinds::
+  * `local` for variables in function scope.
+  * `local/parameter` for variables passed into functions.
+  * `field` for variables that are data members of some record.
+  * `import` for variables that reference objects in other modules.
 
 [kythe,C++,"Variables are variables."]
 --------------------------------------------------------------------------------
@@ -2283,6 +2288,7 @@ int x;
 public class E {
   //- @f defines/binding Field
   //- Field.node/kind variable
+  //- Field.subkind field
   Optional<String> f;
 }
 --------------------------------------------------------------------------------
@@ -2292,6 +2298,7 @@ public class E {
 public class E {
   //- @arg defines/binding Param
   //- Param.node/kind variable
+  //- Param.subkind local/parameter
   void f(String arg) {}
 }
 --------------------------------------------------------------------------------
@@ -2302,6 +2309,7 @@ public class E {
   void f() {
     //- @var defines/binding Local
     //- Local.node/kind variable
+    //- Local.subkind local
     String var;
   }
 }
