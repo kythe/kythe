@@ -886,6 +886,12 @@ class Visitor {
         }
         // Otherwise, leave it to the default handling.
         break;
+      case ts.SyntaxKind.TypeQuery:
+        // This is a 'typeof' expression, which takes a value as its argument,
+        // so use visit() instead of visitType().
+        const typeQuery = node as ts.TypeQueryNode;
+        this.visit(typeQuery.exprName);
+        return;  // Avoid default recursion.
     }
 
     // Default recursion, but using visitType(), not visit().
