@@ -1376,6 +1376,75 @@ func TestCrossReferencesIndirection(t *testing.T) {
 		}
 	})
 
+	t.Run("wildcard", func(t *testing.T) {
+		// Enable indirection for any nodes with a reverse aliases edge.
+		experimentalCrossReferenceIndirectionKinds = nil
+		experimentalCrossReferenceIndirectionKinds.Set("*=%/kythe/edge/aliases")
+
+		reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+			Ticket:        []string{ticket},
+			ReferenceKind: xpb.CrossReferencesRequest_ALL_REFERENCES,
+		})
+		testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+
+		expected := &xpb.CrossReferencesReply_CrossReferenceSet{
+			Ticket: ticket,
+
+			Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
+				Ticket: "kythe:?path=somewhere#0-9",
+				Kind:   "/kythe/edge/ref",
+				Parent: "kythe:?path=somewhere",
+
+				Span: &cpb.Span{
+					Start: &cpb.Point{LineNumber: 1},
+					End:   &cpb.Point{ByteOffset: 9, LineNumber: 1, ColumnOffset: 9},
+				},
+			}}, {Anchor: &xpb.Anchor{
+				Ticket: "kythe:?path=some/utf16/file#0-4",
+				Kind:   "/kythe/edge/ref",
+				Parent: "kythe:?path=some/utf16/file",
+
+				Span: &cpb.Span{
+					Start: &cpb.Point{LineNumber: 1},
+					End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+				},
+			}}, {Anchor: &xpb.Anchor{
+				Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
+				Kind:   "/kythe/edge/ref",
+				Parent: "kythe://c?path=/a/path",
+
+				Span: &cpb.Span{
+					Start: &cpb.Point{
+						ByteOffset:   51,
+						LineNumber:   4,
+						ColumnOffset: 15,
+					},
+					End: &cpb.Point{
+						ByteOffset:   55,
+						LineNumber:   5,
+						ColumnOffset: 2,
+					},
+				},
+			}}},
+		}
+
+		if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+			References: 3,
+		}, reply.Total); err != nil {
+			t.Error(err)
+		}
+
+		xr := reply.CrossReferences[ticket]
+		if xr == nil {
+			t.Fatalf("Missing expected CrossReferences; found: %#v", reply)
+		}
+
+		sort.Sort(byOffset(xr.Reference))
+		if err := testutil.DeepEqual(expected, xr); err != nil {
+			t.Fatal(err)
+		}
+	})
+
 	t.Run("single_indirect", func(t *testing.T) {
 		// Enable single indirection for talias nodes.
 		experimentalCrossReferenceIndirectionKinds = nil
