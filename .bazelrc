@@ -1,10 +1,6 @@
 # Remote Build Execution requires a strong hash function, such as SHA256.
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 
-# Compatibility options
-build --incompatible_require_ctx_in_configure_features # remove in 0.26
-build --incompatible_string_join_requires_strings      # remove in 0.27
-
 # TODO(#3816): fix build with this enabled
 build --incompatible_list_based_execution_strategy_selection=false
 
