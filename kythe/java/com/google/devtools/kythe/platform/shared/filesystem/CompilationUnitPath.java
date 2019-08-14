@@ -16,8 +16,6 @@
 
 package com.google.devtools.kythe.platform.shared.filesystem;
 
-import static com.google.common.base.Preconditions.checkState;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -143,12 +141,17 @@ final class CompilationUnitPath implements Path {
 
   @Override
   public URI toUri() {
-    checkState(isAbsolute(), "Absolute path required.");
+    if (!isAbsolute()) {
+      return toAbsolutePath().toUri();
+    }
     try {
       return new URI(
           fileSystem.provider().getScheme(),
-          /* host= */ null,
-          /* path= */ path.toString(),
+          // The Java indexer uses the URI host to find a file digest which it uses as a lookup
+          // key for the file VName.  While it should probably just use the path directly,
+          // it's easy enough to support this here.
+          /* host= */ fileSystem.digest(this),
+          /* path= */ toString(),
           /* fragment= */ null);
     } catch (URISyntaxException ex) {
       throw new AssertionError(ex);

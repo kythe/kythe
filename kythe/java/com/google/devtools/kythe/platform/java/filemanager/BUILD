@@ -1,4 +1,4 @@
-load("@io_bazel_rules_java//java:defs.bzl", "java_library")
+load("@rules_java//java:defs.bzl", "java_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -31,6 +31,7 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:java_java_proto",
         "//third_party/javac",
+        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
     ],
