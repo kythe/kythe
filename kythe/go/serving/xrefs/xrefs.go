@@ -63,7 +63,7 @@ var (
 
 func init() {
 	flag.Var(&experimentalCrossReferenceIndirectionKinds, "experimental_cross_reference_indirection_kinds",
-		`Comma-separated set of key-value pairs (node_kind=edge_kind) to indirect through in CrossReferences.  For example, "talias=/kythe/edge/aliases" indicates that the targets of a 'talias' node's '/kythe/edge/aliases' related nodes will have their cross-references merged into the root 'talias' node's.`)
+		`Comma-separated set of key-value pairs (node_kind=edge_kind) to indirect through in CrossReferences.  For example, "talias=/kythe/edge/aliases" indicates that the targets of a 'talias' node's '/kythe/edge/aliases' related nodes will have their cross-references merged into the root 'talias' node's.  A "*=edge_kind" entry indicates to indirect through the specified edge kind for any node kind.`)
 }
 
 type staticLookupTables interface {
@@ -538,7 +538,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 		// Read the set of indirection edge kinds for the given node kind.
 		nodeKind := nodeKind(cr.SourceNode)
-		indirections := experimentalCrossReferenceIndirectionKinds[nodeKind]
+		indirections := experimentalCrossReferenceIndirectionKinds[nodeKind].
+			Union(experimentalCrossReferenceIndirectionKinds["*"])
 
 		for _, grp := range cr.Group {
 			// Filter anchor groups based on requested build configs
