@@ -19,7 +19,6 @@ package infocmd // import "kythe.io/kythe/go/platform/tools/kzip/infocmd"
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"os"
 	"strings"
@@ -27,8 +26,10 @@ import (
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
 )
@@ -72,23 +73,23 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 
 	// Get file and unit counts broken down by corpus, language.
 	kzipInfo := &apb.KzipInfo{Corpora: make(map[string]*apb.KzipInfo_CorpusInfo)}
+	corpusInfo := func(corpus string) *apb.KzipInfo_CorpusInfo {
+		i := kzipInfo.Corpora[corpus]
+		if i == nil {
+			i = &apb.KzipInfo_CorpusInfo{
+				Files: make(map[string]int32),
+				Units: make(map[string]int32),
+			}
+			kzipInfo.Corpora[corpus] = i
+		}
+		return i
+	}
+
 	err = kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
 		kzipInfo.TotalUnits++
-		if kzipInfo.Corpora[u.Proto.GetVName().GetCorpus()] == nil {
-			kzipInfo.Corpora[u.Proto.GetVName().GetCorpus()] = &apb.KzipInfo_CorpusInfo{
-				Files: make(map[string]int32),
-				Units: make(map[string]int32)}
-		}
-		kzipInfo.Corpora[u.Proto.GetVName().GetCorpus()].Units[u.Proto.GetVName().GetLanguage()]++
-
+		corpusInfo(u.Proto.GetVName().GetCorpus()).Units[u.Proto.GetVName().GetLanguage()]++
 		for _, ri := range u.Proto.RequiredInput {
-			kzipInfo.TotalFiles++
-			if kzipInfo.Corpora[ri.GetVName().GetCorpus()] == nil {
-				kzipInfo.Corpora[ri.GetVName().GetCorpus()] = &apb.KzipInfo_CorpusInfo{
-					Files: make(map[string]int32),
-					Units: make(map[string]int32)}
-			}
-			kzipInfo.Corpora[ri.GetVName().GetCorpus()].Files[ri.GetVName().GetLanguage()]++
+			corpusInfo(ri.GetVName().GetCorpus()).Files[ri.GetVName().GetLanguage()]++
 		}
 		return nil
 	})
@@ -98,8 +99,10 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 
 	switch c.writeFormat {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.Encode(kzipInfo)
+		m := jsonpb.Marshaler{OrigName: true}
+		if err := m.Marshal(os.Stdout, kzipInfo); err != nil {
+			return c.Fail("marshaling json: %v", err)
+		}
 	case "proto":
 		proto.MarshalText(os.Stdout, kzipInfo)
 	}
