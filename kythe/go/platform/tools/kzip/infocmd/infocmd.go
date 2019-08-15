@@ -27,7 +27,7 @@ import (
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
-	spb "kythe.io/kythe/proto/storage_go_proto"
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
@@ -71,11 +71,11 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 	}
 
 	// Get file and unit counts broken down by corpus, language.
-	kzipInfo := &spb.KzipInfo{Corpora: make(map[string]*spb.KzipInfo_CorpusInfo)}
+	kzipInfo := &apb.KzipInfo{Corpora: make(map[string]*apb.KzipInfo_CorpusInfo)}
 	err = kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
 		kzipInfo.TotalUnits++
 		if kzipInfo.Corpora[u.Proto.GetVName().GetCorpus()] == nil {
-			kzipInfo.Corpora[u.Proto.GetVName().GetCorpus()] = &spb.KzipInfo_CorpusInfo{
+			kzipInfo.Corpora[u.Proto.GetVName().GetCorpus()] = &apb.KzipInfo_CorpusInfo{
 				Files: make(map[string]int32),
 				Units: make(map[string]int32)}
 		}
@@ -84,7 +84,7 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 		for _, ri := range u.Proto.RequiredInput {
 			kzipInfo.TotalFiles++
 			if kzipInfo.Corpora[ri.GetVName().GetCorpus()] == nil {
-				kzipInfo.Corpora[ri.GetVName().GetCorpus()] = &spb.KzipInfo_CorpusInfo{
+				kzipInfo.Corpora[ri.GetVName().GetCorpus()] = &apb.KzipInfo_CorpusInfo{
 					Files: make(map[string]int32),
 					Units: make(map[string]int32)}
 			}
