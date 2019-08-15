@@ -54,8 +54,6 @@ def _extract_java(target, ctx):
         print("WARNING: multiple outputs for " + owner + ": " + str(output_jar))
         output_jar = [output_jar[0]]
 
-    # TODO(schroederc): sourcegendir is currently extracted from raw arguments;
-    # we need to embed it there or put it elsewhere
     xa = struct(**{
         "owner": owner,
         "mnemonic": _mnemonic,

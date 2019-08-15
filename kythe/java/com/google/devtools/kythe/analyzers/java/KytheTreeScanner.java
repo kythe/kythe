@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.common.flogger.FluentLogger;
@@ -33,7 +34,6 @@ import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.ReferenceType;
-import com.google.devtools.kythe.platform.java.filemanager.JavaFileStoreBasedFileManager;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
@@ -103,6 +103,7 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.NestingKind;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
@@ -129,7 +130,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final Map<Integer, Integer> commentClaims = new HashMap<>();
   private final BiConsumer<JCTree, VName> nodeConsumer;
   private final Context javaContext;
-  private final JavaFileStoreBasedFileManager fileManager;
+  private final StandardJavaFileManager fileManager;
   private final MetadataLoaders metadataLoaders;
   private final JvmGraph jvmGraph;
   private List<Metadata> metadata;
@@ -143,7 +144,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       SourceText src,
       Context javaContext,
       BiConsumer<JCTree, VName> nodeConsumer,
-      JavaFileStoreBasedFileManager fileManager,
+      StandardJavaFileManager fileManager,
       MetadataLoaders metadataLoaders,
       JvmGraph jvmGraph,
       JavaIndexerConfig config) {
@@ -177,7 +178,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JCCompilationUnit compilation,
       BiConsumer<JCTree, VName> nodeConsumer,
       SourceText src,
-      JavaFileStoreBasedFileManager fileManager,
+      StandardJavaFileManager fileManager,
       MetadataLoaders metadataLoaders,
       JavaIndexerConfig config)
       throws IOException {
@@ -1318,7 +1319,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (fullPath.startsWith("/")) {
         fullPath = fullPath.substring(1);
       }
-      FileObject file = fileManager.getJavaFileFromPath(fullPath, JavaFileObject.Kind.OTHER);
+      FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath), null);
       if (file == null) {
         logger.atWarning().log("Can't find metadata %s for %s at %s", path, uri, fullPath);
         return;

@@ -25,7 +25,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptions;
 import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitBasedJavaFileManager;
-import com.google.devtools.kythe.platform.java.filemanager.JavaFileStoreBasedFileManager;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.source.tree.CompilationUnitTree;
@@ -40,6 +39,7 @@ import javax.tools.Diagnostic.Kind;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
 
 /** Provides a {@link JavacAnalyzer} with access to compilation information. */
 public class JavaCompilationDetails {
@@ -49,7 +49,7 @@ public class JavaCompilationDetails {
   private final CompilationUnit compilationUnit;
   private final Throwable analysisCrash;
   private final Charset encoding;
-  private final JavaFileStoreBasedFileManager fileManager;
+  private final StandardJavaFileManager fileManager;
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -70,8 +70,9 @@ public class JavaCompilationDetails {
     List<String> options = optionsFromCompilationUnit(compilationUnit, processors);
     Charset encoding = JavacOptionsUtils.getEncodingOption(options);
 
-    // Create a JavaFileStoreBasedFileManager that uses the fileDataProvider and compilationUnit
-    JavaFileStoreBasedFileManager fileManager =
+    // Create a CompilationUnitBasedJavaFileManager that uses the fileDataProvider and
+    // compilationUnit
+    StandardJavaFileManager fileManager =
         new CompilationUnitBasedJavaFileManager(
             fileDataProvider,
             compilationUnit,
@@ -121,7 +122,7 @@ public class JavaCompilationDetails {
       CompilationUnit compilationUnit,
       Throwable analysisCrash,
       Charset encoding,
-      JavaFileStoreBasedFileManager fileManager) {
+      StandardJavaFileManager fileManager) {
     this.javac = javac;
     this.diagnostics = diagnostics;
     this.asts = asts;
@@ -179,7 +180,7 @@ public class JavaCompilationDetails {
   }
 
   /** @return The file manager for the source files in this compilation */
-  public JavaFileStoreBasedFileManager getFileManager() {
+  public StandardJavaFileManager getFileManager() {
     return fileManager;
   }
 
@@ -197,28 +198,5 @@ public class JavaCompilationDetails {
     }
 
     return arguments.removeUnsupportedOptions().build();
-  }
-
-  /** Writes nothing, used to reduce noise from the javac analysis output. */
-  private static class NullWriter extends Writer {
-    private static NullWriter instance = null;
-
-    private NullWriter() {}
-
-    public static NullWriter getInstance() {
-      if (instance == null) {
-        instance = new NullWriter();
-      }
-      return instance;
-    }
-
-    @Override
-    public void flush() {}
-
-    @Override
-    public void close() {}
-
-    @Override
-    public void write(char[] cbuf, int off, int len) {}
   }
 }

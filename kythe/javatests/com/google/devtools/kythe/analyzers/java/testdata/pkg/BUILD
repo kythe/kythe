@@ -1,4 +1,4 @@
-load("@io_bazel_rules_java//java:defs.bzl", "java_library")
+load("@rules_java//java:defs.bzl", "java_library")
 load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
 
 filegroup(
@@ -6,6 +6,8 @@ filegroup(
     srcs = glob(
         ["**/*.java"],
         exclude = [
+            # Exclude tests with dependencies
+            "AutoValues.java",
             # Exclude meta-data tests
             "Metadata.java",
             "ProtobufMetadata.java",
@@ -456,4 +458,15 @@ java_verifier_test(
         "--ignore_dups",
         "--nocheck_for_singletons",  # TODO(schroederc): verify Files.java goals
     ],
+)
+
+java_library(
+    name = "auto_values",
+    srcs = ["AutoValues.java"],
+    deps = ["//kythe/java/com/google/devtools/kythe/common:autovalue"],
+)
+
+java_verifier_test(
+    name = "auto_values_test",
+    compilation = ":auto_values",
 )

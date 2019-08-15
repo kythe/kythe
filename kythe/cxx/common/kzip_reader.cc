@@ -43,7 +43,7 @@ constexpr absl::string_view kProtoUnitsDir = "/pbunits/";
 struct ZipFileClose {
   void operator()(zip_file_t* file) {
     if (file != nullptr) {
-      CHECK(zip_fclose(file) == 0);
+      CHECK_EQ(zip_fclose(file), 0);
     }
   }
 };
@@ -59,7 +59,7 @@ class ZipFileInputStream : public google::protobuf::io::ZeroCopyInputStream {
 
   void BackUp(int count) override { impl_.BackUp(count); }
   bool Skip(int count) override { return impl_.Skip(count); }
-  google::protobuf::int64 ByteCount() const override {
+  google::protobuf::io::ByteCountInt64 ByteCount() const override {
     return impl_.ByteCount();
   }
 
@@ -130,14 +130,14 @@ StatusOr<KzipOptions> Validate(zip_t* archive) {
     }
   }
   KzipEncoding encoding = KzipEncoding::kJson;
-  if (json_units.size() == 0) {
+  if (json_units.empty()) {
     encoding = KzipEncoding::kProto;
-  } else if (proto_units.size() != 0) {
+  } else if (!proto_units.empty()) {
     std::vector<absl::string_view> diff;
     std::set_symmetric_difference(json_units.begin(), json_units.end(),
                                   proto_units.begin(), proto_units.end(),
                                   std::inserter(diff, diff.end()));
-    if (diff.size() != 0) {
+    if (!diff.empty()) {
       return InvalidArgumentError(absl::StrCat(
           "Malformed kzip: multiple unit encodings but different entries"));
     }

@@ -1,4 +1,4 @@
-load("@io_bazel_rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
