@@ -94,3 +94,17 @@ java_binary(
         "@com_google_protobuf//:protobuf_java",
     ],
 )
+
+java_library(
+    name = "auto_value_plugin",
+    srcs = ["AutoValuePlugin.java"],
+    deps = [
+        ":plugin",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
+        "//third_party/javac",
+    ],
+)
