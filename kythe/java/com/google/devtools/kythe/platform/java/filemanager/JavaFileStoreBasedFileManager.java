@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
+import com.google.common.collect.Iterables;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -168,20 +169,23 @@ public class JavaFileStoreBasedFileManager extends ForwardingStandardJavaFileMan
 
   @Override
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromStrings(Iterable<String> names) {
-    List<File> files = new ArrayList<>();
-    for (String name : names) {
-      files.add(new File(name));
-    }
-    return getJavaFileObjectsFromFiles(files);
+    return getJavaFileObjectsFromFiles(Iterables.transform(names, File::new));
   }
 
   @Override
   public Iterable<? extends JavaFileObject> getJavaFileObjects(String... names) {
-    List<File> files = new ArrayList<>();
-    for (String name : names) {
-      files.add(new File(name));
-    }
-    return getJavaFileObjectsFromFiles(files);
+    return getJavaFileObjectsFromStrings(Arrays.asList(names));
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
+      @SuppressWarnings("IterablePathParameter") Iterable<? extends Path> paths) {
+    return getJavaFileObjectsFromFiles(Iterables.transform(paths, Path::toFile));
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjects(Path... paths) {
+    return getJavaFileObjectsFromPaths(Arrays.asList(paths));
   }
 
   @Override

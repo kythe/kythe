@@ -2,8 +2,8 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
-load("@io_bazel_rules_java//java:repositories.bzl", "rules_java_dependencies")
-load("@io_bazel_rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
+load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
@@ -18,6 +18,14 @@ def _rule_dependencies():
     rules_proto_dependencies()
 
 def _cc_dependencies():
+    maybe(
+        http_archive,
+        name = "rules_cc",
+        sha256 = "29daf0159f0cf552fcff60b49d8bcd4f08f08506d2da6e41b07058ec50cfeaec",
+        strip_prefix = "rules_cc-b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e",
+        urls = ["https://github.com/bazelbuild/rules_cc/archive/b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e.tar.gz"],
+    )
+
     maybe(
         http_archive,
         name = "net_zlib",
@@ -697,11 +705,21 @@ def _sample_ui_dependencies():
         version = "2.5.3",
     )
 
+def _py_dependencies():
+    maybe(
+        http_archive,
+        name = "rules_python",  # Needed by com_google_protobuf.
+        sha256 = "e5470e92a18aa51830db99a4d9c492cc613761d5bdb7131c04bd92b9834380f6",
+        strip_prefix = "rules_python-4b84ad270387a7c439ebdccfd530e2339601ef27",
+        urls = ["https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz"],
+    )
+
 def kythe_dependencies(sample_ui = True):
     """Defines external repositories for Kythe dependencies.
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
     """
+    _py_dependencies()
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
@@ -712,9 +730,10 @@ def kythe_dependencies(sample_ui = True):
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "ef62ee52bedc3a0ec0aeb7911279243119d53eac7f8bbbec833761c07e802bcb",
-        strip_prefix = "protobuf-8e5ea65953f3c47e01bca360ecf3abdf2c8b1c33",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/8e5ea65953f3c47e01bca360ecf3abdf2c8b1c33.zip"],
+        sha256 = "ee128d0b67751cd1095009849c9a13a30b2562f0351d91d30c1ea36379443a07",
+        strip_prefix = "protobuf-402c28a321fce010ad0b9f99010a78890cae7f34",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/402c28a321fce010ad0b9f99010a78890cae7f34.zip"],
+        repo_mapping = {"@zlib": "@net_zlib"},
     )
 
     maybe(

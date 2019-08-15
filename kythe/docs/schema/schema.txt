@@ -79,7 +79,7 @@ aliases
 Brief description::
   A *aliases* T if A may be used in place of T.
 Commonly arises from::
-  typedefs
+  typedefs, imports
 Points from::
   <<talias>>
 Points toward::
@@ -198,6 +198,7 @@ Notes::
 [kythe,Java,"Generic type parameters can be bound."]
 --------------------------------------------------------------------------------
 package pkg;
+import java.util.Optional;
 public class E {
   //- @"Optional<?>" ref OptionalWild
   //- OptionalWild.node/kind tapp
@@ -801,10 +802,10 @@ See also::
 [kythe,Java,"Classes have JVM binary names."]
 --------------------------------------------------------------------------------
 package pkg;
-//- @C defines/binding CClass
-//- CClass named CClassName = vname("pkg.C", "", "", "", "jvm")
-//- CClassName.node/kind name
-public class C {}
+//- @E defines/binding EClass
+//- EClass named EClassName = vname("pkg.E", "", "", "", "jvm")
+//- EClassName.node/kind name
+public class E {}
 --------------------------------------------------------------------------------
 
 [[overrides]]
@@ -939,7 +940,7 @@ Ordinals are used::
 using T = int*;
 --------------------------------------------------------------------------------
 
-[[property/reads]]
+[[propertyreads]]
 property/reads
 ~~~~~~~~~~~~~~
 
@@ -948,13 +949,13 @@ Brief description::
 Points from::
   function nodes
 Points toward::
-  variable/property nodes
+  variable or property nodes
 Ordinals are used::
   never
 See also::
-  <<property/writes>>
+  <<propertywrites,[property/writes]>>
 
-[[property/writes]]
+[[propertywrites]]
 property/writes
 ~~~~~~~~~~~~~~~
 
@@ -963,11 +964,11 @@ Brief description::
 Points from::
   function nodes
 Points toward::
-  variable/property nodes
+  variable or property nodes
 Ordinals are used::
   never
 See also::
-  <<property/reads>>
+  <<propertyreads,[property/reads]>>
 
 [[ref]]
 ref
@@ -1563,15 +1564,15 @@ template <> class C<int, float> { };
 
 [kythe,Java,"Generic classes are abs nodes."]
 --------------------------------------------------------------------------------
-//- @Generics defines/binding GAbs
-//- Class childof GAbs
-//- GAbs.node/kind abs
-//- GAbs param.0 TVar
-//- @T defines/binding TVar
-//- TVar.node/kind absvar
-public class Generics<T> {
+public class E {
+  //- @Generics defines/binding GAbs
+  //- Class childof GAbs
+  //- GAbs.node/kind abs
+  //- GAbs param.0 TVar
+  //- @T defines/binding TVar
+  //- TVar.node/kind absvar
+  public static class Generics<T> {}
 }
-
 --------------------------------------------------------------------------------
 
 [[absvar]]
@@ -1735,6 +1736,11 @@ Brief description::
   A *diagnostic* is a node with a message concerning some aspect of the related
   <<file>> or <<anchor>>.  These can often result from errors while building or
   analyzing a compilation and allow an analyzer to surface errors to end-users.
+  Each diagnostic is linked to the related <<file>> or <<anchor>> using a
+  <<tagged>> edge (where the diagnostic node is the target of the edge).
+  In principle, a diagnostic could also be related to a semantic node;
+  but that a user-facing UI might not be able to display anything meaningful
+  without a concrete anchor.
 Facts::
   message:::
     A relatively short, one-line, human-readable string explaining the
@@ -1826,9 +1832,11 @@ Brief description::
 
 [kythe,Java,"Interfaces are interfaces."]
 --------------------------------------------------------------------------------
-//- @I defines/binding Interface
-//- Interface.node/kind interface
-public interface I {}
+public class E {
+  //- @I defines/binding Interface
+  //- Interface.node/kind interface
+  public static interface I {}
+}
 --------------------------------------------------------------------------------
 
 [[function]]
@@ -1971,12 +1979,12 @@ Notes::
 [kythe,Java,"JVM binary class names, as used for classloading, are names."]
 --------------------------------------------------------------------------------
 package pkg;
-//- @C defines/binding CClass
-//- CClass named CClassName = vname("pkg.C", "", "", "", "jvm")
-//- CClassName.node/kind name
-public class C {
+//- @E defines/binding EClass
+//- EClass named EClassName = vname("pkg.E", "", "", "", "jvm")
+//- EClassName.node/kind name
+public class E {
   //- @Inner defines/binding InnerClass
-  //- InnerClass named InnerClassName = vname("pkg.C$Inner", "", "", "", "jvm")
+  //- InnerClass named InnerClassName = vname("pkg.E$Inner", "", "", "", "jvm")
   //- InnerClassName.node/kind name
   public class Inner {}
 }
@@ -2265,6 +2273,11 @@ Facts::
   complete:::
     * `incomplete` if this is only a declaration.
     * `definition` if this is a variable definition.
+Subkinds::
+  * `local` for variables in function scope.
+  * `local/parameter` for variables passed into functions.
+  * `field` for variables that are data members of some record.
+  * `import` for variables that reference objects in other modules.
 
 [kythe,C++,"Variables are variables."]
 --------------------------------------------------------------------------------
@@ -2275,9 +2288,11 @@ int x;
 
 [kythe,Java,"Fields are variables."]
 --------------------------------------------------------------------------------
+import java.util.Optional;
 public class E {
   //- @f defines/binding Field
   //- Field.node/kind variable
+  //- Field.subkind field
   Optional<String> f;
 }
 --------------------------------------------------------------------------------
@@ -2287,6 +2302,7 @@ public class E {
 public class E {
   //- @arg defines/binding Param
   //- Param.node/kind variable
+  //- Param.subkind local/parameter
   void f(String arg) {}
 }
 --------------------------------------------------------------------------------
@@ -2297,6 +2313,7 @@ public class E {
   void f() {
     //- @var defines/binding Local
     //- Local.node/kind variable
+    //- Local.subkind local
     String var;
   }
 }
@@ -2868,7 +2885,7 @@ public class E {
     //- ResourceVar.node/kind variable
     //- ResourceVar.subkind local/resource
     try (OutputStream resource = System.out) {
-      resource.write("hello");
+      resource.write("hello".getBytes());
 
       //- @exception defines/binding ExceptionVar
       //- ExceptionVar.node/kind variable

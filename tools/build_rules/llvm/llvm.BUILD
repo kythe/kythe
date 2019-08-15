@@ -95,11 +95,6 @@ TARGET_DEFAULTS = {
             ":tools_clang_include_clang_Serialization_genhdrs",
         ],
     },
-    "ClangDriverOptions": {
-        "textual_hdrs": [
-            "tools/clang/include/clang/Frontend/LangStandards.def",
-        ],
-    },
 }
 
 cc_library(

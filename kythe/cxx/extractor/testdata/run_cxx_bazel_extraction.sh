@@ -17,7 +17,7 @@ set -o pipefail
 
 BAZELOUT="$(bazel info workspace)/bazel-out"
 bazel build \
-  --experimental_action_listener=//kythe/cxx/extractor:extract_kindex \
+  --experimental_action_listener=//kythe/extractors:extract_kzip_cxx \
   --experimental_extra_action_top_level_only \
   --experimental_proto_extra_actions \
   :cc_lib
