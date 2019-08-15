@@ -38,7 +38,7 @@ var (
 	pageSize = flag.Int("page_size", 0, "Set the default xrefs page size")
 
 	serverAddr = flag.String("server", "localhost:8080",
-		"The address of the Kythe service to use")
+		"The address of the Kythe service to use (:8080 allows access from other machines)")
 )
 
 func main() {

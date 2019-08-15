@@ -231,6 +231,39 @@ func TestEmptyRecord(t *testing.T) {
 	}
 }
 
+func TestWriterSeek(t *testing.T) {
+	const N = 1e3
+
+	buf := bytes.NewBuffer(nil)
+	wr := NewWriter(buf, nil)
+
+	positions := make([]RecordPosition, N)
+	for i := 0; i < N; i++ {
+		positions[i] = wr.Position()
+		if err := wr.PutProto(numToProto(i)); err != nil {
+			t.Fatalf("Error PutProto(%d): %v", i, err)
+		}
+	}
+	if err := wr.Close(); err != nil {
+		t.Fatalf("Error Close: %v", err)
+	}
+
+	rd := NewReadSeeker(bytes.NewReader(buf.Bytes()))
+	for i, p := range positions {
+		if err := rd.SeekToRecord(p); err != nil {
+			t.Fatalf("Error seeking to record %d at %v: %v", i, p, err)
+		}
+
+		expected := numToProto(i)
+		var found rtpb.Complex
+		if err := rd.NextProto(&found); err != nil {
+			t.Fatalf("Read error: %v", err)
+		} else if diff := compare.ProtoDiff(&found, expected); diff != "" {
+			t.Errorf("Unexpected record:  (-: found; +: expected)\n%s", diff)
+		}
+	}
+}
+
 func TestReaderSeekRecords(t *testing.T) {
 	const N = 1e4
 	buf := writeStrings(t, &WriterOptions{}, N)

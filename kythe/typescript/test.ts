@@ -29,6 +29,7 @@ import * as path from 'path';
 import * as ts from 'typescript';
 
 import * as indexer from './indexer';
+import * as kythe from './kythe';
 
 const KYTHE_PATH = process.env['KYTHE'] || '/opt/kythe';
 const RUNFILES = process.env['RUNFILES_DIR'];
@@ -69,7 +70,7 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
 function verify(
     host: ts.CompilerHost, options: ts.CompilerOptions, test: string,
     plugins?: indexer.Plugin[]): Promise<void> {
-  const compilationUnit: indexer.VName = {
+  const compilationUnit: kythe.VName = {
     corpus: 'testcorpus',
     root: '',
     path: '',
@@ -146,7 +147,7 @@ async function testPlugin() {
         };
         context.emit({
           source: pluginMod,
-          fact_name: '/kythe/node/pluginKind',
+          fact_name: '/kythe/node/pluginKind' as kythe.FactName,
           fact_value: Buffer.from('pluginRecord').toString('base64'),
         });
       }

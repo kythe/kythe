@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_library", "java_binary")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
@@ -24,7 +26,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/platform/java",
-        "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
@@ -40,6 +41,7 @@ java_library(
         "@com_beust_jcommander//jar",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:protobuf_java",
+        "@org_checkerframework_checker_qual//jar",
     ],
 )
 
@@ -69,11 +71,6 @@ java_library(
 java_binary(
     name = "indexer",
     srcs = ["JavaIndexer.java"],
-    data = ["//third_party/javac:java_compiler_jar"],
-    jvm_flags = [
-        "--add-opens=jdk.compiler/com.sun.tools.javac.api=java.compiler",
-        "--patch-module=java.compiler=$${RUNPATH}$(location //third_party/javac:java_compiler_jar)",
-    ],
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexer",
     deps = [
         ":analyzer",

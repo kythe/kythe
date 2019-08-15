@@ -132,10 +132,15 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitTemplateTypeParmTypeLoc(clang::TemplateTypeParmTypeLoc TL);
   bool VisitSubstTemplateTypeParmTypeLoc(
       clang::SubstTemplateTypeParmTypeLoc TL);
+
+  template <typename T>
+  bool VisitTemplateSpecializationTypeLocHelper(T TL);
   bool VisitTemplateSpecializationTypeLoc(
       clang::TemplateSpecializationTypeLoc TL);
-  // Handles AutoTypeLoc and DeducedTemplateSpecializationTypeLoc
-  bool VisitDeducedTypeLoc(clang::DeducedTypeLoc TL);
+  bool VisitDeducedTemplateSpecializationTypeLoc(
+      clang::DeducedTemplateSpecializationTypeLoc TL);
+
+  bool VisitAutoTypeLoc(clang::AutoTypeLoc TL);
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);

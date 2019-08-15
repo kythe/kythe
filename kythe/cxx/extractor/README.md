@@ -1,7 +1,7 @@
 ## Bazel C++ extractor
 
 An extractor that builds index files from a Bazel-based project. Extractor
-builds a kindex file for each `cc_library` and `cc_binary` in the project. This
+builds a kzip file for each `cc_library` and `cc_binary` in the project. This
 extractor based on Bazel
 [action_listener](https://docs.bazel.build/versions/master/be/extra-actions.html)
 rule.
@@ -20,9 +20,9 @@ the project.
 extra_action(
     name = "extractor",
     cmd = ("/opt/kythe/extractors/bazel_cxx_extractor " +
-           "$(EXTRA_ACTION_FILE) $(output $(ACTION_ID).cxx.kindex) $(location :vnames.json)"),
+           "$(EXTRA_ACTION_FILE) $(output $(ACTION_ID).cxx.kzip) $(location :vnames.json)"),
     data = [":vnames.json"],
-    out_templates = ["$(ACTION_ID).cxx.kindex"],
+    out_templates = ["$(ACTION_ID).cxx.kzip"],
 )
 
 action_listener(
@@ -59,12 +59,12 @@ bazel test --experimental_action_listener=:extract_cxx  //...
 bazel test --experimental_action_listener=:extract_cxx  //java/some/folder:foo
 ```
 
-Extracted kindex files will be in
-`bazel-out/local-fastbuild/extra_actions/extractor` folder. One kindex file per
+Extracted kzip files will be in
+`bazel-out/local-fastbuild/extra_actions/extractor` folder. One kzip file per
 target.
 
 ```shell
-find -L bazel-out -name '*cxx.kindex'
+find -L bazel-out -name '*cxx.kzip'
 ```
 
 #### Development

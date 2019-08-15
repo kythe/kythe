@@ -23,6 +23,12 @@ load(
     "//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl",
     "proto_extract_kzip",
 )
+load(
+    "@bazel_tools//tools/jdk:toolchain_utils.bzl",
+    "find_java_runtime_toolchain",
+    "find_java_toolchain",
+)
+load("//kythe/java/com/google/devtools/kythe/extractors/java/bazel:aspect.bzl", "extract_java")
 
 KytheGeneratedSourcesInfo = provider(
     doc = "Generated Java source directory and jar.",
@@ -64,15 +70,8 @@ def _java_extract_kzip_impl(ctx):
     # Actually compile the sources to be used as a dependency for other tests
     jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
 
-    # Use find_java_toolchain / find_java_runtime_toolchain after the next Bazel release,
-    # see: https://github.com/bazelbuild/bazel/issues/7186
-    if hasattr(java_common, "JavaToolchainInfo"):
-        java_toolchain = ctx.attr._java_toolchain[java_common.JavaToolchainInfo]
-        host_javabase = ctx.attr._host_javabase[java_common.JavaRuntimeInfo]
-    else:
-        java_toolchain = ctx.attr._java_toolchain
-        host_javabase = ctx.attr._host_javabase
-
+    java_toolchain = find_java_toolchain(ctx, ctx.attr._java_toolchain)
+    host_javabase = find_java_runtime_toolchain(ctx, ctx.attr._host_javabase)
     java_info = java_common.compile(
         ctx,
         javac_opts = ctx.attr.opts,
@@ -152,7 +151,8 @@ _default_java_extractor_opts = [
 
 def java_verifier_test(
         name,
-        srcs,
+        srcs = None,
+        compilation = None,
         meta = [],
         verifier_deps = [],
         deps = [],
@@ -170,6 +170,7 @@ def java_verifier_test(
 
     Args:
       srcs: The compilation's source file inputs; each file's verifier goals will be checked
+      compilation: Specific Bazel Java target compilation to extract, analyze, and verify
       verifier_deps: Optional list of java_verifier_test targets to be used as Java compilation dependencies
       deps: Optional list of Java compilation dependencies
       meta: Optional list of Kythe metadata files
@@ -181,20 +182,24 @@ def java_verifier_test(
       extra_goals: List of text files containing verifier goals additional to those in srcs
       vnames_config: Optional path to a VName configuration file
     """
-    kzip = _invoke(
-        java_extract_kzip,
-        name = name + "_kzip",
-        testonly = True,
-        srcs = srcs,
-        data = meta,
-        extractor = extractor,
-        opts = extractor_opts,
-        tags = tags,
-        visibility = visibility,
-        vnames_config = vnames_config,
-        # This is a hack to depend on the .jar producer.
-        deps = deps + [d + "_kzip" for d in verifier_deps],
-    )
+    if compilation:
+        kzip = name + "_kzip"
+        extract_java(name = kzip, compilation = compilation, testonly = True)
+    else:
+        kzip = _invoke(
+            java_extract_kzip,
+            name = name + "_kzip",
+            testonly = True,
+            srcs = srcs,
+            data = meta,
+            extractor = extractor,
+            opts = extractor_opts,
+            tags = tags,
+            visibility = visibility,
+            vnames_config = vnames_config,
+            # This is a hack to depend on the .jar producer.
+            deps = deps + [d + "_kzip" for d in verifier_deps],
+        )
     indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer"
     tools = []
     if load_plugin:

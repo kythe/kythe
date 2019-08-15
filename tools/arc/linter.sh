@@ -29,7 +29,7 @@ readonly name="$(basename "$1")"
 readonly dir="$(dirname "$1")"
 
 case $file in
-  AUTHORS|CONTRIBUTORS|WORKSPACE|third_party/*|tools/*|*.md|*BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*|go.mod|go.sum|*bazelrc|*.yml|.bazel*version)
+  AUTHORS|CONTRIBUTORS|WORKSPACE|third_party/*|tools/*|*.md|*BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*|go.mod|go.sum|*bazelrc|*.yml|.bazel*version|*.lock)
     ;; # skip copyright checks
   *)
     if ! grep -q 'Copyright 201[4-9] The Kythe Authors. All rights reserved.' "$file"; then
@@ -59,8 +59,9 @@ case $file in
       gofmt -l "$file" | sed 's/^/gofmt::error:1 /'
     fi ;;
   *.h|*.cc|*.c|*.proto|*.js)
-    if command -v clang-format &>/dev/null; then
-      if ! diff -q <(clang-format --style=file "$file") "$file"; then
+    cf="$(command -v clang-format-7 clang-format 2>/dev/null | head -n1)"
+    if [[ -n "$cf" ]]; then
+      if ! diff -q <("$cf" --style=file "$file") "$file"; then
         echo "clang-format::error:1 $file"
       fi
     fi ;;

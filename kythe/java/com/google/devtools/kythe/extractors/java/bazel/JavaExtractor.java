@@ -40,6 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -128,12 +129,13 @@ public class JavaExtractor {
         logger.atWarning().withCause(ioe).log(
             "Failed to find generated sources directory from javac parameters");
       }
-      if (genSrcDir.isPresent()) {
-        javacOpts.add("-s");
-        javacOpts.add(genSrcDir.get().toString());
-        // javac expects the directory to already exist.
-        Files.createDirectories(genSrcDir.get());
+      if (!genSrcDir.isPresent()) {
+        genSrcDir = Optional.of(Files.createTempDirectory("sourcegendir"));
       }
+      javacOpts.add("-s");
+      javacOpts.add(genSrcDir.get().toString());
+      // javac expects the directory to already exist.
+      Files.createDirectories(genSrcDir.get());
     }
 
     CompilationDescription description =
@@ -236,6 +238,9 @@ public class JavaExtractor {
           return Optional.of(Paths.get(params.readLine()));
         }
       }
+      return Optional.absent();
+    } catch (NoSuchFileException nsfe) {
+      // params file is not guaranteed to exist; convert to missing path
       return Optional.absent();
     }
   }

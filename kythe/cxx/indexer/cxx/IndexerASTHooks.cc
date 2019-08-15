@@ -782,32 +782,23 @@ void IndexerASTVisitor::HandleFileLevelComments(
   // Find the block of comments for the given file. This behavior is not well-
   // defined by Clang, which commits only to the RawComments being
   // "sorted in order of appearance in the translation unit".
-  if (RCL.getComments().empty()) {
+  const std::map<unsigned, RawComment*>* FileComments =
+      RCL.getCommentsInFile(Id);
+  if (FileComments == nullptr || FileComments->empty()) {
     return;
   }
   // Find the first RawComment whose start location is greater or equal to
   // the start of the file whose FileID is Id.
-  auto C = std::lower_bound(
-      RCL.getComments().begin(), RCL.getComments().end(), StartIdLoc,
-      [&](clang::RawComment* const T1, const decltype(StartIdLoc)& T2) {
-        return Context.getSourceManager().getDecomposedLoc(T1->getBeginLoc()) <
-               T2;
-      });
+  RawComment* C = FileComments->begin()->second;
   // Walk through the comments in Id starting with the one at the top. If we
   // ever leave Id, then we're done. (The first time around the loop, if C isn't
   // already in Id, this check will immediately break;.)
-  if (C != RCL.getComments().end()) {
-    auto CommentIdLoc =
-        Context.getSourceManager().getDecomposedLoc((*C)->getBeginLoc());
-    if (CommentIdLoc.first != Id) {
-      return;
-    }
-    // Here's a simple heuristic: the first comment in a file is the file-level
-    // comment. This is bad for files with (e.g.) license blocks, but we can
-    // gradually refine as necessary.
-    if (VisitedComments.find(*C) == VisitedComments.end()) {
-      VisitComment(*C, Context.getTranslationUnitDecl(), FileNode);
-    }
+  //
+  // Here's a simple heuristic: the first comment in a file is the file-level
+  // comment. This is bad for files with (e.g.) license blocks, but we can
+  // gradually refine as necessary.
+  if (VisitedComments.find(C) == VisitedComments.end()) {
+    VisitComment(C, Context.getTranslationUnitDecl(), FileNode);
     return;
   }
 }
@@ -1314,12 +1305,19 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr* E,
       SR.setEnd(RPL.getLocWithOffset(1));
     } else if (TSI != nullptr) {
       SR.setEnd(TSI->getTypeLoc().getEndLoc().getLocWithOffset(1));
+    } else if (SR.getBegin() == SR.getEnd()) {
+      // For zero-width ranges, attempt to figure out the real extent of the
+      // expression.  This includes calls to default constructors and
+      // conversions from string literals, among others.
+      SR = RangeForASTEntity(SR.getBegin());
     } else {
+      // Otherwise, include the final character in the expression forming an
+      // implicit ctor call.
       SR.setEnd(SR.getEnd().getLocWithOffset(1));
     }
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
-      RecordCallEdges(RCC.value(), BuildNodeIdForRefToDecl(Callee));
+      RecordCallEdges(*RCC, BuildNodeIdForRefToDecl(Callee));
     }
   }
   return true;
@@ -1750,8 +1748,8 @@ bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
   return true;
 }
 
-bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
-    clang::TemplateSpecializationTypeLoc TL) {
+template <typename T>
+bool IndexerASTVisitor::VisitTemplateSpecializationTypeLocHelper(T TL) {
   auto NameLocation = TL.getTemplateNameLoc();
   if (NameLocation.isFileID()) {
     if (auto RCC = ExpandedRangeInCurrentContext(NameLocation)) {
@@ -1773,7 +1771,17 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
   return true;
 }
 
-bool IndexerASTVisitor::VisitDeducedTypeLoc(clang::DeducedTypeLoc TL) {
+bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
+    clang::TemplateSpecializationTypeLoc TL) {
+  return VisitTemplateSpecializationTypeLocHelper(TL);
+}
+
+bool IndexerASTVisitor::VisitDeducedTemplateSpecializationTypeLoc(
+    clang::DeducedTemplateSpecializationTypeLoc TL) {
+  return VisitTemplateSpecializationTypeLocHelper(TL);
+}
+
+bool IndexerASTVisitor::VisitAutoTypeLoc(clang::AutoTypeLoc TL) {
   RecordTypeLocSpellingLocation(TL);
   return true;
 }
@@ -4200,6 +4208,10 @@ NodeSet IndexerASTVisitor::BuildNodeSetForAuto(clang::AutoTypeLoc TL) {
 
 NodeSet IndexerASTVisitor::BuildNodeSetForDeducedTemplateSpecialization(
     clang::DeducedTemplateSpecializationTypeLoc TL) {
+  // TODO(shahms): This should look more like TemplateSpecialization than Auto.
+  // They currently return the same thing, but only via the indirection through
+  // the deduced type.  We should also potentially emit implicit references to
+  // the deduced template parameters.
   return BuildNodeSetForDeduced(TL);
 }
 

@@ -57,8 +57,10 @@ class Class implements IFace {
     //- Method.node/kind function
     //- Method childof Class
     method() {
+        //- @this ref Class
         //- @member ref Member
         this.member;
+        //- @this ref Class
         //- @method ref Method
         this.method();
     }

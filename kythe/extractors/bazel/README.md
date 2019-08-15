@@ -31,5 +31,5 @@ docker run \
   gcr.io/kythe-public/bazel-extractor build \
   --define kythe_corpus=github.com/protocolbuffers/protobuf //...
 
-viewindex output/compilations.kzip
+kzip view output/compilations.kzip
 ```

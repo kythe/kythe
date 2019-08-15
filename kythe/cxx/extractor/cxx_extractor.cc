@@ -773,11 +773,11 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
                                           llvm::StringRef search_path,
                                           llvm::StringRef relative_path) {
   CHECK(!current_files_.top().file_path.empty());
-  const auto* search_path_entry =
+  const auto search_path_entry =
       source_manager_->getFileManager().getDirectory(search_path);
-  const auto* current_file_parent_entry =
-      source_manager_->getFileManager()
-          .getFile(current_files_.top().file_path.c_str())
+  const auto current_file_parent_entry =
+      (*source_manager_->getFileManager().getFile(
+           current_files_.top().file_path.c_str()))
           ->getDir();
   // If the include file was found relatively to the current file's parent
   // directory or a search path, we need to normalize it. This is necessary
@@ -786,7 +786,7 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
   // we will get an error when we replay the compilation, as the virtual
   // file system is not aware of inodes.
   llvm::SmallString<1024> out_name;
-  if (search_path_entry == current_file_parent_entry) {
+  if (*search_path_entry == current_file_parent_entry) {
     auto parent =
         llvm::sys::path::parent_path(current_files_.top().file_path.c_str())
             .str();

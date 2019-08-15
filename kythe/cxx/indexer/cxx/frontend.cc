@@ -23,15 +23,17 @@
 #include <cstdint>
 #include <string>
 
+#include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
-#include "absl/flags/flag.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "kythe/cxx/common/indexing/MemcachedHashCache.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/indexer/cxx/DynamicClaimClient.h"
 #include "kythe/cxx/indexer/cxx/proto_conversions.h"
 #include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/claim.pb.h"
@@ -40,21 +42,25 @@
 ABSL_FLAG(std::string, o, "-", "Output filename");
 ABSL_FLAG(std::string, i, "-", "Input filename");
 ABSL_FLAG(bool, ignore_unimplemented, true,
-            "Continue indexing even if we find something we don't support.");
+          "Continue indexing even if we find something we don't support.");
 ABSL_FLAG(bool, flush_after_each_entry, true,
-            "Flush output after writing each entry.");
+          "Flush output after writing each entry.");
 ABSL_FLAG(std::string, static_claim, "", "Use a static claim table.");
-ABSL_FLAG(bool, claim_unknown, true, "Process files with unknown claim status.");
-ABSL_FLAG(std::string, cache, "", "Use a memcache instance (ex: \"--SERVER=foo:1234\")");
+ABSL_FLAG(bool, claim_unknown, true,
+          "Process files with unknown claim status.");
+ABSL_FLAG(std::string, cache, "",
+          "Use a memcache instance (ex: \"--SERVER=foo:1234\")");
 ABSL_FLAG(int32_t, min_size, 4096, "Minimum size of an entry bundle");
 ABSL_FLAG(int32_t, max_size, 1024 * 32, "Maximum size of an entry bundle");
 ABSL_FLAG(bool, cache_stats, false, "Show cache stats");
-ABSL_FLAG(std::string, icorpus, "", "Corpus to use for files specified with -i");
+ABSL_FLAG(std::string, icorpus, "",
+          "Corpus to use for files specified with -i");
 ABSL_FLAG(std::string, ibuild_config, "",
-              "Build config to use for files specified with -i");
-ABSL_FLAG(bool, normalize_file_vnames, false, "Normalize incoming file vnames.");
+          "Build config to use for files specified with -i");
+ABSL_FLAG(bool, normalize_file_vnames, false,
+          "Normalize incoming file vnames.");
 ABSL_FLAG(std::string, experimental_dynamic_claim_cache, "",
-              "Use a memcache instance for dynamic claims (EXPERIMENTAL)");
+          "Use a memcache instance for dynamic claims (EXPERIMENTAL)");
 // Setting this to a value > 1 allows the same object (e.g., a transcript of
 // an include file) to be claimed multiple times. In the absence of transcript
 // labels, setting this value to 1 means that only one environment will be
@@ -62,8 +68,9 @@ ABSL_FLAG(std::string, experimental_dynamic_claim_cache, "",
 // conditionally included code never being indexed if the symbols checked differ
 // between translation units.
 ABSL_FLAG(uint64_t, experimental_dynamic_overclaim, 1,
-              "Maximum number of dynamic claims per claimable (EXPERIMENTAL)");
-ABSL_FLAG(bool, test_claim, false, "Use an in-memory claim database for testing.");
+          "Maximum number of dynamic claims per claimable (EXPERIMENTAL)");
+ABSL_FLAG(bool, test_claim, false,
+          "Use an in-memory claim database for testing.");
 
 namespace kythe {
 
@@ -307,17 +314,17 @@ void IndexerContext::InitializeClaimClient() {
     auto dynamic_claims = absl::make_unique<kythe::DynamicClaimClient>();
     dynamic_claims->set_max_redundant_claims(
         absl::GetFlag(FLAGS_experimental_dynamic_overclaim));
-    if (!dynamic_claims->OpenMemcache(absl::GetFlag(FLAGS_experimental_dynamic_claim_cache))) {
-      absl::FPrintF(stderr, "Can't open memcached\n");
-      exit(1);
-    }
+    CHECK(dynamic_claims->OpenMemcache(FLAGS_experimental_dynamic_claim_cache))
+        << "Can't open memcached";
     claim_client_ = std::move(dynamic_claims);
   } else {
     auto static_claims = absl::make_unique<kythe::StaticClaimClient>();
     if (!absl::GetFlag(FLAGS_static_claim).empty()) {
-      DecodeStaticClaimTable(absl::GetFlag(FLAGS_static_claim), static_claims.get());
+      DecodeStaticClaimTable(absl::GetFlag(FLAGS_static_claim),
+                             static_claims.get());
     }
-    static_claims->set_process_unknown_status(absl::GetFlag(FLAGS_claim_unknown));
+    static_claims->set_process_unknown_status(
+        absl::GetFlag(FLAGS_claim_unknown));
     claim_client_ = std::move(static_claims);
   }
 }
@@ -325,8 +332,9 @@ void IndexerContext::InitializeClaimClient() {
 void IndexerContext::OpenOutputStreams() {
   write_fd_ = STDOUT_FILENO;
   if (absl::GetFlag(FLAGS_o) != "-") {
-    write_fd_ = ::open(absl::GetFlag(FLAGS_o).c_str(), O_WRONLY | O_CREAT | O_TRUNC,
-                       S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    write_fd_ =
+        ::open(absl::GetFlag(FLAGS_o).c_str(), O_WRONLY | O_CREAT | O_TRUNC,
+               S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (write_fd_ == -1) {
       ::perror("Can't open output file");
       ::exit(1);
@@ -336,7 +344,8 @@ void IndexerContext::OpenOutputStreams() {
       absl::make_unique<google::protobuf::io::FileOutputStream>(write_fd_);
   kythe_output_ = absl::make_unique<kythe::FileOutputStream>(raw_output_.get());
   kythe_output_->set_show_stats(absl::GetFlag(FLAGS_cache_stats));
-  kythe_output_->set_flush_after_each_entry(absl::GetFlag(FLAGS_flush_after_each_entry));
+  kythe_output_->set_flush_after_each_entry(
+      absl::GetFlag(FLAGS_flush_after_each_entry));
 }
 
 void IndexerContext::CloseOutputStreams() {
@@ -354,7 +363,8 @@ void IndexerContext::OpenHashCache() {
   if (!absl::GetFlag(FLAGS_cache).empty()) {
     auto memcache_hash_cache = llvm::make_unique<MemcachedHashCache>();
     CHECK(memcache_hash_cache->OpenMemcache(absl::GetFlag(FLAGS_cache)));
-    memcache_hash_cache->SetSizeLimits(absl::GetFlag(FLAGS_min_size), absl::GetFlag(FLAGS_max_size));
+    memcache_hash_cache->SetSizeLimits(absl::GetFlag(FLAGS_min_size),
+                                       absl::GetFlag(FLAGS_max_size));
     hash_cache_ = std::move(memcache_hash_cache);
   }
 }

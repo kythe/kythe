@@ -2,6 +2,8 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
@@ -12,8 +14,18 @@ def _rule_dependencies():
     gazelle_dependencies()
     go_rules_dependencies()
     go_register_toolchains()
+    rules_java_dependencies()
+    rules_proto_dependencies()
 
 def _cc_dependencies():
+    maybe(
+        http_archive,
+        name = "rules_cc",
+        sha256 = "29daf0159f0cf552fcff60b49d8bcd4f08f08506d2da6e41b07058ec50cfeaec",
+        strip_prefix = "rules_cc-b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e",
+        urls = ["https://github.com/bazelbuild/rules_cc/archive/b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e.tar.gz"],
+    )
+
     maybe(
         http_archive,
         name = "net_zlib",
@@ -66,9 +78,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_googletest",
-        sha256 = "89cebb92b9a7eb32c53e180ccc0db8f677c3e838883c5fbd07e6412d7e1f12c7",
-        strip_prefix = "googletest-d175c8bf823e709d570772b038757fadf63bc632",
-        url = "https://github.com/google/googletest/archive/d175c8bf823e709d570772b038757fadf63bc632.zip",
+        sha256 = "2f56064481649b68c98afb1b14d7b1c5e2a62ef0b48b6ba0a71f60ddd6628458",
+        strip_prefix = "googletest-8756ef905878f727e8122ba25f483c887cbc3c17",
+        url = "https://github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
     )
 
     # Needed by google/glog for the moment.
@@ -215,6 +227,13 @@ def _java_dependencies():
         name = "com_google_errorprone_error_prone_annotations",
         artifact = "com.google.errorprone:error_prone_annotations:2.3.1",
         sha1 = "a6a2b2df72fd13ec466216049b303f206bd66c5d",
+    )
+
+    maybe(
+        native.maven_jar,
+        name = "org_checkerframework_checker_qual",
+        artifact = "org.checkerframework:checker-qual:2.9.0",
+        sha1 = "8f783c7cdcda9f3639459d33cad5d5307b5512ba",
     )
 
     maybe(
@@ -465,7 +484,7 @@ def _go_dependencies():
         go_repository,
         name = "com_github_apache_beam",
         build_file_proto_mode = "disable",
-        commit = "3cf3a4708c588e32e85a1d4cfdb29ab5a0203efc",
+        commit = "7688bcfc8ebb4bedf26c5c3b3fe0e13c0ec2aa6d",
         custom = "beam",
         importpath = "github.com/apache/beam",
     )
@@ -555,10 +574,11 @@ def _go_dependencies():
 
     maybe(
         go_repository,
-        name = "com_github_ghodss_yaml",
-        commit = "c7ce16629ff4cd059ed96ed06419dd3856fd3577",
-        custom = "ghodss_yaml",
-        importpath = "github.com/ghodss/yaml",
+        name = "io_k8s_sigs_yaml",
+        custom = "k8s_yaml",
+        custom_git = "https://github.com/kubernetes-sigs/yaml",
+        importpath = "sigs.k8s.io/yaml",
+        tag = "v1.1.0",
     )
 
     maybe(
@@ -685,11 +705,21 @@ def _sample_ui_dependencies():
         version = "2.5.3",
     )
 
+def _py_dependencies():
+    maybe(
+        http_archive,
+        name = "rules_python",  # Needed by com_google_protobuf.
+        sha256 = "e5470e92a18aa51830db99a4d9c492cc613761d5bdb7131c04bd92b9834380f6",
+        strip_prefix = "rules_python-4b84ad270387a7c439ebdccfd530e2339601ef27",
+        urls = ["https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz"],
+    )
+
 def kythe_dependencies(sample_ui = True):
     """Defines external repositories for Kythe dependencies.
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
     """
+    _py_dependencies()
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
@@ -700,9 +730,10 @@ def kythe_dependencies(sample_ui = True):
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "ef62ee52bedc3a0ec0aeb7911279243119d53eac7f8bbbec833761c07e802bcb",
-        strip_prefix = "protobuf-8e5ea65953f3c47e01bca360ecf3abdf2c8b1c33",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/8e5ea65953f3c47e01bca360ecf3abdf2c8b1c33.zip"],
+        sha256 = "ee128d0b67751cd1095009849c9a13a30b2562f0351d91d30c1ea36379443a07",
+        strip_prefix = "protobuf-402c28a321fce010ad0b9f99010a78890cae7f34",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/402c28a321fce010ad0b9f99010a78890cae7f34.zip"],
+        repo_mapping = {"@zlib": "@net_zlib"},
     )
 
     maybe(
@@ -721,8 +752,9 @@ def kythe_dependencies(sample_ui = True):
         strip_prefix = "llvmbzlgen-435bad1d07f7a8d32979d66cd5547e1b32dca812",
     )
 
+    _bindings()
     _rule_dependencies()
+
     if sample_ui:
         _sample_ui_dependencies()
-    _bindings()
     _extractor_image_dependencies()

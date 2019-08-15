@@ -22,7 +22,7 @@
 // For example:
 //
 //  action_listener(
-//    name = "extract_kindex",
+//    name = "extract_kzip",
 //    extra_actions = [":extra_action"],
 //    mnemonics = ["ObjcCompile"],
 //    visibility = ["//visibility:public"],
@@ -32,7 +32,7 @@
 //    name = "extra_action",
 //    cmd = "$(location :objc_extractor_binary) \
 //             $(EXTRA_ACTION_FILE) \
-//             $(output $(ACTION_ID).objc.kindex) \
+//             $(output $(ACTION_ID).objc.kzip) \
 //             $(location :vnames_config) \
 //             $(location :get_devdir) \
 //             $(location :get_sdkroot)",
@@ -41,7 +41,7 @@
 //      ":get_sdkroot",
 //      ":vnames_config",
 //    ],
-//    out_templates = ["$(ACTION_ID).objc.kindex"],
+//    out_templates = ["$(ACTION_ID).objc.kzip"],
 //    tools = [":objc_extractor_binary"],
 //  )
 //

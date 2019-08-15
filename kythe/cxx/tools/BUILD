@@ -82,6 +82,7 @@ cc_library(
 
 cc_binary(
     name = "kindex_tool",
+    deprecation = "kindex has been deprecated in favor of kzip",
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":cmdlib",

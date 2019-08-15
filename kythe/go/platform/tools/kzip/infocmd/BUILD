@@ -9,6 +9,7 @@ go_library(
     ],
     deps = [
         "//kythe/go/platform/kzip",
+        "//kythe/go/platform/vfs",
         "//kythe/go/util/cmdutil",
         "@com_github_google_subcommands//:go_default_library",
         "@org_bitbucket_creachadair_stringset//:go_default_library",

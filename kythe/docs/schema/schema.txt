@@ -79,7 +79,7 @@ aliases
 Brief description::
   A *aliases* T if A may be used in place of T.
 Commonly arises from::
-  typedefs
+  typedefs, imports
 Points from::
   <<talias>>
 Points toward::
@@ -939,6 +939,36 @@ Ordinals are used::
 using T = int*;
 --------------------------------------------------------------------------------
 
+[[property/reads]]
+property/reads
+~~~~~~~~~~~~~~
+
+Brief description::
+  A *property/reads* B if A is a reader of the property B
+Points from::
+  function nodes
+Points toward::
+  variable or property nodes
+Ordinals are used::
+  never
+See also::
+  <<property/writes>>
+
+[[property/writes]]
+property/writes
+~~~~~~~~~~~~~~~
+
+Brief description::
+  A *property/writes* B if A is a writer of the property B
+Points from::
+  function nodes
+Points toward::
+  variable or property nodes
+Ordinals are used::
+  never
+See also::
+  <<property/reads>>
+
 [[ref]]
 ref
 ~~~
@@ -1705,6 +1735,11 @@ Brief description::
   A *diagnostic* is a node with a message concerning some aspect of the related
   <<file>> or <<anchor>>.  These can often result from errors while building or
   analyzing a compilation and allow an analyzer to surface errors to end-users.
+  Each diagnostic is linked to the related <<file>> or <<anchor>> using a
+  <<tagged>> edge (where the diagnostic node is the target of the edge).
+  In principle, a diagnostic could also be related to a semantic node;
+  but that a user-facing UI might not be able to display anything meaningful
+  without a concrete anchor.
 Facts::
   message:::
     A relatively short, one-line, human-readable string explaining the
@@ -2235,6 +2270,11 @@ Facts::
   complete:::
     * `incomplete` if this is only a declaration.
     * `definition` if this is a variable definition.
+Subkinds::
+  * `local` for variables in function scope.
+  * `local/parameter` for variables passed into functions.
+  * `field` for variables that are data members of some record.
+  * `import` for variables that reference objects in other modules.
 
 [kythe,C++,"Variables are variables."]
 --------------------------------------------------------------------------------
@@ -2248,6 +2288,7 @@ int x;
 public class E {
   //- @f defines/binding Field
   //- Field.node/kind variable
+  //- Field.subkind field
   Optional<String> f;
 }
 --------------------------------------------------------------------------------
@@ -2257,6 +2298,7 @@ public class E {
 public class E {
   //- @arg defines/binding Param
   //- Param.node/kind variable
+  //- Param.subkind local/parameter
   void f(String arg) {}
 }
 --------------------------------------------------------------------------------
@@ -2267,6 +2309,7 @@ public class E {
   void f() {
     //- @var defines/binding Local
     //- Local.node/kind variable
+    //- Local.subkind local
     String var;
   }
 }

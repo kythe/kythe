@@ -55,6 +55,10 @@ type Service interface {
 }
 
 var (
+	// ErrPermissionDenied is returned by an implementation of a method when the
+	// user is not allowed to view the content because of some restrictions.
+	ErrPermissionDenied = status.Error(codes.PermissionDenied, "access denied")
+
 	// ErrDecorationsNotFound is returned by an implementation of the Decorations
 	// method when decorations for the given file cannot be found.
 	ErrDecorationsNotFound = status.Error(codes.NotFound, "file decorations not found")

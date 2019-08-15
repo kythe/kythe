@@ -28,9 +28,11 @@ cc_library(
     name = "caching_output",
     srcs = [
         "KytheCachingOutput.cc",
+        "MemcachedHashCache.cc",
     ],
     hdrs = [
         "KytheCachingOutput.h",
+        "MemcachedHashCache.h",
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [

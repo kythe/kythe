@@ -26,11 +26,16 @@ TARGET_DEFAULTS = {
             "include/llvm/*.h",
         ]),
     },
-    "LLVMTransformUtils": {
-        "hdrs": glob(["include/llvm-c/Transforms/**/*.h"]),
+    "LLVMRemarks": {
+        # Technically BitstreamWriter, but it's header-only
+        # and BitstreamReader is equivalent.
+        "deps": [":LLVMBitstreamReader"],
     },
     "LLVMScalarOpts": {
         "deps": [":LLVMTarget"],
+    },
+    "LLVMTransformUtils": {
+        "hdrs": glob(["include/llvm-c/Transforms/**/*.h"]),
     },
     "LLVMX86CodeGen": {
         "deps": [":LLVMipo"],
@@ -88,11 +93,6 @@ TARGET_DEFAULTS = {
     "clangSerialization": {
         "textual_hdrs": [
             ":tools_clang_include_clang_Serialization_genhdrs",
-        ],
-    },
-    "ClangDriverOptions": {
-        "textual_hdrs": [
-            "tools/clang/include/clang/Frontend/LangStandards.def",
         ],
     },
 }
