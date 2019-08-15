@@ -21,20 +21,23 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
+	"os"
+	"strings"
 
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+	spb "kythe.io/kythe/proto/storage_go_proto"
 
-	"bitbucket.org/creachadair/stringset"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
 )
 
 type infoCommand struct {
 	cmdutil.Info
 
-	input string
+	input       string
+	writeFormat string
 }
 
 // New creates a new subcommand for obtaining info on a kzip file.
@@ -48,6 +51,7 @@ func New() subcommands.Command {
 // for the info command.
 func (c *infoCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.input, "input", "", "Path for input kzip file (required)")
+	fs.StringVar(&c.writeFormat, "write_format", "json", "Output format, can be 'json' or 'proto'")
 }
 
 // Execute implements the subcommands interface and gathers info from the requested file.
@@ -61,25 +65,30 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 	}
 	defer f.Close()
 
+	c.writeFormat = strings.ToLower(c.writeFormat)
+	if c.writeFormat != "json" && c.writeFormat != "proto" {
+		return c.Fail("Invalid --write_format. Can be 'json' or 'proto'.")
+	}
+
 	// Get file and unit counts broken down by corpus, language.
-	fileBreakdown := make(map[string]map[string]int)
-	unitBreakdown := make(map[string]map[string]int)
-	var totalFiles, totalUnits int
-	corpora := stringset.New()
+	kzipInfo := &spb.KzipInfo{Corpora: make(map[string]*spb.KzipInfo_CorpusInfo)}
 	err = kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
-		totalUnits++
-		if _, ok := unitBreakdown[u.Proto.GetVName().GetCorpus()]; !ok {
-			unitBreakdown[u.Proto.GetVName().GetCorpus()] = make(map[string]int)
+		kzipInfo.TotalUnits++
+		if kzipInfo.Corpora[u.Proto.GetVName().GetCorpus()] == nil {
+			kzipInfo.Corpora[u.Proto.GetVName().GetCorpus()] = &spb.KzipInfo_CorpusInfo{
+				Files: make(map[string]int32),
+				Units: make(map[string]int32)}
 		}
-		unitBreakdown[u.Proto.GetVName().GetCorpus()][u.Proto.GetVName().GetLanguage()]++
-		corpora.Add(u.Proto.GetVName().GetCorpus())
+		kzipInfo.Corpora[u.Proto.GetVName().GetCorpus()].Units[u.Proto.GetVName().GetLanguage()]++
+
 		for _, ri := range u.Proto.RequiredInput {
-			totalFiles++
-			if _, ok := fileBreakdown[ri.GetVName().GetCorpus()]; !ok {
-				fileBreakdown[ri.GetVName().GetCorpus()] = make(map[string]int)
+			kzipInfo.TotalFiles++
+			if kzipInfo.Corpora[ri.GetVName().GetCorpus()] == nil {
+				kzipInfo.Corpora[ri.GetVName().GetCorpus()] = &spb.KzipInfo_CorpusInfo{
+					Files: make(map[string]int32),
+					Units: make(map[string]int32)}
 			}
-			corpora.Add(ri.GetVName().GetCorpus())
-			fileBreakdown[ri.GetVName().GetCorpus()][ri.GetVName().GetLanguage()]++
+			kzipInfo.Corpora[ri.GetVName().GetCorpus()].Files[ri.GetVName().GetLanguage()]++
 		}
 		return nil
 	})
@@ -87,17 +96,13 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 		return c.Fail("error while scanning: %v", err)
 	}
 
-	// Write output as json.
-	out := make(map[string]interface{})
-	out["unit_counts"] = unitBreakdown
-	out["file_counts"] = fileBreakdown
-	out["total_files"] = totalFiles
-	out["total_units"] = totalUnits
-	data, err := json.MarshalIndent(&out, "", "  ")
-	if err != nil {
-		return c.Fail("error marshaling json output: %v", err)
+	switch c.writeFormat {
+	case "json":
+		enc := json.NewEncoder(os.Stdout)
+		enc.Encode(kzipInfo)
+	case "proto":
+		proto.MarshalText(os.Stdout, kzipInfo)
 	}
-	fmt.Print(string(data))
 
 	return subcommands.ExitSuccess
 }
