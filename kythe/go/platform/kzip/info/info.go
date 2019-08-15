@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package infocmd provides the kzip command for obtaining info about a kzip archive.
+// Package info provides utilities for summarizing the contents of a kzip.
 package info // import "kythe.io/kythe/go/platform/kzip/info"
 
 import (
