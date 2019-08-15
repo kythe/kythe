@@ -23,11 +23,9 @@ import (
 	"os"
 	"strings"
 
-	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/kzip/info"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
-
-	apb "kythe.io/kythe/proto/analysis_go_proto"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -62,7 +60,7 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 	}
 	f, err := vfs.Open(ctx, c.input)
 	if err != nil {
-		return c.Fail("error opening archive: %v", err)
+		return c.Fail("opening archive: %v", err)
 	}
 	defer f.Close()
 
@@ -71,32 +69,10 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 		return c.Fail("Invalid --write_format. Can be 'json' or 'proto'.")
 	}
 
-	// Get file and unit counts broken down by corpus, language.
-	kzipInfo := &apb.KzipInfo{Corpora: make(map[string]*apb.KzipInfo_CorpusInfo)}
-	corpusInfo := func(corpus string) *apb.KzipInfo_CorpusInfo {
-		i := kzipInfo.Corpora[corpus]
-		if i == nil {
-			i = &apb.KzipInfo_CorpusInfo{
-				Files: make(map[string]int32),
-				Units: make(map[string]int32),
-			}
-			kzipInfo.Corpora[corpus] = i
-		}
-		return i
-	}
-
-	err = kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
-		kzipInfo.TotalUnits++
-		corpusInfo(u.Proto.GetVName().GetCorpus()).Units[u.Proto.GetVName().GetLanguage()]++
-		for _, ri := range u.Proto.RequiredInput {
-			corpusInfo(ri.GetVName().GetCorpus()).Files[ri.GetVName().GetLanguage()]++
-		}
-		return nil
-	})
+	kzipInfo, err := info.KzipInfo(f)
 	if err != nil {
-		return c.Fail("error while scanning: %v", err)
+		return c.Fail("scanning kzip: %v", err)
 	}
-
 	switch c.writeFormat {
 	case "json":
 		m := jsonpb.Marshaler{OrigName: true}
