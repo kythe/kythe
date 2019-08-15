@@ -23,7 +23,7 @@ import (
 	"os"
 	"strings"
 
-	"kythe.io/kythe/go/platform/tools/kzip/infocmd/info"
+	"kythe.io/kythe/go/platform/kzip/info"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 
