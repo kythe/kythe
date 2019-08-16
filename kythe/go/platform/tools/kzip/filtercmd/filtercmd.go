@@ -83,7 +83,7 @@ func (c *filterCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 	if err != nil {
 		return c.Fail("Error creating temp output: %v", err)
 	}
-	units := stringset.FromKeys(fs.Args())
+	units := stringset.New(fs.Args()...)
 	if err := filterArchive(ctx, tmpOut, c.input, units, opt); err != nil {
 		return c.Fail("Error filtering archives: %v", err)
 	}
@@ -121,10 +121,9 @@ func filterArchive(ctx context.Context, out io.WriteCloser, input string, digest
 	if err != nil {
 		return fmt.Errorf("error creating writer: %v", err)
 	}
-	defer wr.Close()
 
 	// scan the input, and for matching units, copy into output
-	return rd.Scan(func(u *kzip.Unit) error {
+	err = rd.Scan(func(u *kzip.Unit) error {
 		if !digests.Contains(u.Digest) {
 			// non-matching unit, do not copy
 			return nil
@@ -143,7 +142,12 @@ func filterArchive(ctx context.Context, out io.WriteCloser, input string, digest
 				}
 			}
 		}
-		_, err = wr.AddUnit(u.Proto, u.Index)
+		_, err := wr.AddUnit(u.Proto, u.Index)
 		return err
 	})
+	if err == nil {
+		return wr.Close()
+	}
+	wr.Close()
+	return err
 }
