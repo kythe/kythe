@@ -772,12 +772,6 @@ void InsertAnchorMarks(std::string& Text, std::vector<MiniAnchor>& Anchors) {
 
 void IndexerASTVisitor::HandleFileLevelComments(
     clang::FileID Id, const GraphObserver::NodeId& FileNode) {
-  const auto& RCL = Context.getRawCommentList();
-  auto IdStart = Context.getSourceManager().getLocForStartOfFile(Id);
-  if (!IdStart.isFileID() || !IdStart.isValid()) {
-    return;
-  }
-  auto StartIdLoc = Context.getSourceManager().getDecomposedLoc(IdStart);
   // Find the block of comments for the given file. This behavior is not well-
   // defined by Clang, which commits only to the RawComments being
   // "sorted in order of appearance in the translation unit".
@@ -798,7 +792,6 @@ void IndexerASTVisitor::HandleFileLevelComments(
   // gradually refine as necessary.
   if (VisitedComments.find(C) == VisitedComments.end()) {
     VisitComment(C, Context.getTranslationUnitDecl(), FileNode);
-    return;
   }
 }
 
