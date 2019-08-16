@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package mergecmd provides the kzip command for merging archives.
+// Package stripcmd provides the kzip command for stripping archives.
 package stripcmd // import "kythe.io/kythe/go/platform/tools/kzip/stripcmd"
 
 import (
@@ -59,7 +59,7 @@ func (c *stripCommand) SetFlags(fs *flag.FlagSet) {
 	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
 }
 
-// Execute implements the subcommands interface and merges the provided files.
+// Execute implements the subcommands interface and strips the input file.
 func (c *stripCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.output == "" {
 		return c.Fail("required --output path missing")
@@ -94,12 +94,6 @@ func (c *stripCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 }
 
 func stripArchive(ctx context.Context, out io.WriteCloser, input string, digests stringset.Set, opts ...kzip.WriterOption) error {
-	wr, err := kzip.NewWriteCloser(out, opts...)
-	if err != nil {
-		out.Close()
-		return fmt.Errorf("error creating writer: %v", err)
-	}
-
 	filesAdded := stringset.New()
 
 	f, err := vfs.Open(ctx, input)
@@ -123,8 +117,16 @@ func stripArchive(ctx context.Context, out io.WriteCloser, input string, digests
 		return fmt.Errorf("error creating reader: %v", err)
 	}
 
+	wr, err := kzip.NewWriteCloser(out, opts...)
+	if err != nil {
+		out.Close()
+		return fmt.Errorf("error creating writer: %v", err)
+	}
+
+	// scan the input, and for matching units, copy into output
 	err = rd.Scan(func(u *kzip.Unit) error {
 		if !digests.Contains(u.Digest) {
+			// non-matching unit, do not copy
 			return nil
 		}
 		for _, ri := range u.Proto.RequiredInput {
