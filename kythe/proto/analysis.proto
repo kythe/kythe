@@ -177,6 +177,24 @@ message CompilationUnit {
   repeated google.protobuf.Any details = 11;
 }
 
+// KzipInfo contains a summary of the contents of a kzip. It provides a
+// breakdown of files and units by corpus and lanugage.
+message KzipInfo {
+  message Count {
+    string language = 1;
+    int32 count = 2;
+  }
+
+  message CorpusInfo {
+    map<string, int32> files = 1;
+    map<string, int32> units = 2;
+  }
+
+  map<string, CorpusInfo> corpora = 1;
+  int32 total_files = 2;
+  int32 total_units = 3;
+}
+
 // A FilesRequest specifies a collection of files to be fetched from a
 // FileDataService.
 message FilesRequest {

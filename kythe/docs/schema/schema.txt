@@ -198,6 +198,7 @@ Notes::
 [kythe,Java,"Generic type parameters can be bound."]
 --------------------------------------------------------------------------------
 package pkg;
+import java.util.Optional;
 public class E {
   //- @"Optional<?>" ref OptionalWild
   //- OptionalWild.node/kind tapp
@@ -801,10 +802,10 @@ See also::
 [kythe,Java,"Classes have JVM binary names."]
 --------------------------------------------------------------------------------
 package pkg;
-//- @C defines/binding CClass
-//- CClass named CClassName = vname("pkg.C", "", "", "", "jvm")
-//- CClassName.node/kind name
-public class C {}
+//- @E defines/binding EClass
+//- EClass named EClassName = vname("pkg.E", "", "", "", "jvm")
+//- EClassName.node/kind name
+public class E {}
 --------------------------------------------------------------------------------
 
 [[overrides]]
@@ -939,7 +940,7 @@ Ordinals are used::
 using T = int*;
 --------------------------------------------------------------------------------
 
-[[property/reads]]
+[[propertyreads]]
 property/reads
 ~~~~~~~~~~~~~~
 
@@ -952,9 +953,9 @@ Points toward::
 Ordinals are used::
   never
 See also::
-  <<property/writes>>
+  <<propertywrites,[property/writes]>>
 
-[[property/writes]]
+[[propertywrites]]
 property/writes
 ~~~~~~~~~~~~~~~
 
@@ -967,7 +968,7 @@ Points toward::
 Ordinals are used::
   never
 See also::
-  <<property/reads>>
+  <<propertyreads,[property/reads]>>
 
 [[ref]]
 ref
@@ -1563,15 +1564,15 @@ template <> class C<int, float> { };
 
 [kythe,Java,"Generic classes are abs nodes."]
 --------------------------------------------------------------------------------
-//- @Generics defines/binding GAbs
-//- Class childof GAbs
-//- GAbs.node/kind abs
-//- GAbs param.0 TVar
-//- @T defines/binding TVar
-//- TVar.node/kind absvar
-public class Generics<T> {
+public class E {
+  //- @Generics defines/binding GAbs
+  //- Class childof GAbs
+  //- GAbs.node/kind abs
+  //- GAbs param.0 TVar
+  //- @T defines/binding TVar
+  //- TVar.node/kind absvar
+  public static class Generics<T> {}
 }
-
 --------------------------------------------------------------------------------
 
 [[absvar]]
@@ -1831,9 +1832,11 @@ Brief description::
 
 [kythe,Java,"Interfaces are interfaces."]
 --------------------------------------------------------------------------------
-//- @I defines/binding Interface
-//- Interface.node/kind interface
-public interface I {}
+public class E {
+  //- @I defines/binding Interface
+  //- Interface.node/kind interface
+  public static interface I {}
+}
 --------------------------------------------------------------------------------
 
 [[function]]
@@ -1976,12 +1979,12 @@ Notes::
 [kythe,Java,"JVM binary class names, as used for classloading, are names."]
 --------------------------------------------------------------------------------
 package pkg;
-//- @C defines/binding CClass
-//- CClass named CClassName = vname("pkg.C", "", "", "", "jvm")
-//- CClassName.node/kind name
-public class C {
+//- @E defines/binding EClass
+//- EClass named EClassName = vname("pkg.E", "", "", "", "jvm")
+//- EClassName.node/kind name
+public class E {
   //- @Inner defines/binding InnerClass
-  //- InnerClass named InnerClassName = vname("pkg.C$Inner", "", "", "", "jvm")
+  //- InnerClass named InnerClassName = vname("pkg.E$Inner", "", "", "", "jvm")
   //- InnerClassName.node/kind name
   public class Inner {}
 }
@@ -2285,6 +2288,7 @@ int x;
 
 [kythe,Java,"Fields are variables."]
 --------------------------------------------------------------------------------
+import java.util.Optional;
 public class E {
   //- @f defines/binding Field
   //- Field.node/kind variable
@@ -2881,7 +2885,7 @@ public class E {
     //- ResourceVar.node/kind variable
     //- ResourceVar.subkind local/resource
     try (OutputStream resource = System.out) {
-      resource.write("hello");
+      resource.write("hello".getBytes());
 
       //- @exception defines/binding ExceptionVar
       //- ExceptionVar.node/kind variable
