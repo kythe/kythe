@@ -254,28 +254,14 @@ func newRecordChunkReader(c *chunk) (recordReader, error) {
 
 	// Decode sizes/values, if necessary
 	if rec.CompressionType != noCompression {
-		sizesDec, err := newDecompressor(bytes.NewReader(rec.CompressedSizes), rec.CompressionType)
-		if err != nil {
-			return nil, err
-		}
-		sizesBuf, err = ioutil.ReadAll(sizesDec)
+		sizesBuf, err = decompress(bytes.NewReader(rec.CompressedSizes), rec.CompressionType)
 		if err != nil {
 			return nil, fmt.Errorf("error decompressing record sizes: %v", err)
-		} else if err := sizesDec.Close(); err != nil {
-			return nil, fmt.Errorf("error closing record sizes decompressor: %v", err)
 		}
 
-		valsDec, err := newDecompressor(bytes.NewReader(rec.CompressedValues), rec.CompressionType)
+		valsBuf, err = decompress(bytes.NewReader(rec.CompressedValues), rec.CompressionType)
 		if err != nil {
-			return nil, err
-		}
-		valsBuf = make([]byte, c.Header.DecodedDataSize)
-		if _, err := io.ReadFull(valsDec, valsBuf); err != nil {
 			return nil, fmt.Errorf("error decompressing record values: %v", err)
-		} else if b, err := valsDec.ReadByte(); c.Header.DecodedDataSize != 0 && err == nil {
-			return nil, fmt.Errorf("read past end of expected record values buffer: %v %v", b, err)
-		} else if err := valsDec.Close(); err != nil {
-			return nil, fmt.Errorf("error closing record values decompressor: %v", err)
 		}
 	} else if uint64(len(valsBuf)) != c.Header.DecodedDataSize {
 		return nil, fmt.Errorf("bad uncompressed DecodedDataSize: %d vs %d", len(valsBuf), c.Header.DecodedDataSize)
