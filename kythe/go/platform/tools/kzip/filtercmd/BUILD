@@ -3,8 +3,8 @@ load("//tools:build_rules/shims.bzl", "go_library")
 package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
-    name = "stripcmd",
-    srcs = ["stripcmd.go"],
+    name = "filtercmd",
+    srcs = ["filtercmd.go"],
     deps = [
         "//kythe/go/platform/kzip",
         "//kythe/go/platform/tools/kzip/flags",

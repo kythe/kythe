@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-// Package stripcmd provides the kzip command for stripping archives.
-package stripcmd // import "kythe.io/kythe/go/platform/tools/kzip/stripcmd"
+// Package filtercmd provides the kzip command for filtering archives.
+package filtercmd // import "kythe.io/kythe/go/platform/tools/kzip/filtercmd"
 
 import (
 	"context"
@@ -34,7 +34,7 @@ import (
 	"github.com/google/subcommands"
 )
 
-type stripCommand struct {
+type filterCommand struct {
 	cmdutil.Info
 
 	input    string
@@ -45,22 +45,22 @@ type stripCommand struct {
 
 // New creates a new subcommand for merging kzip files.
 func New() subcommands.Command {
-	return &stripCommand{
-		Info:     cmdutil.NewInfo("strip", "strip units from kzip file", "--input path --output path unit-hash*"),
+	return &filterCommand{
+		Info:     cmdutil.NewInfo("filter", "filter units from kzip file", "--input path --output path unit-hash*"),
 		encoding: flags.EncodingFlag{Encoding: kzip.EncodingJSON},
 	}
 }
 
 // SetFlags implements the subcommands interface and provides command-specific flags
 // for merging kzip files.
-func (c *stripCommand) SetFlags(fs *flag.FlagSet) {
+func (c *filterCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
 	fs.StringVar(&c.input, "input", "", "Path to input kzip file")
 	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
 }
 
-// Execute implements the subcommands interface and strips the input file.
-func (c *stripCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+// Execute implements the subcommands interface and filters the input file.
+func (c *filterCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.output == "" {
 		return c.Fail("required --output path missing")
 	}
@@ -84,8 +84,8 @@ func (c *stripCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 		return c.Fail("Error creating temp output: %v", err)
 	}
 	units := stringset.FromKeys(fs.Args())
-	if err := stripArchive(ctx, tmpOut, c.input, units, opt); err != nil {
-		return c.Fail("Error stripping archives: %v", err)
+	if err := filterArchive(ctx, tmpOut, c.input, units, opt); err != nil {
+		return c.Fail("Error filtering archives: %v", err)
 	}
 	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
 		return c.Fail("Error renaming tmp to output: %v", err)
@@ -93,7 +93,7 @@ func (c *stripCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	return subcommands.ExitSuccess
 }
 
-func stripArchive(ctx context.Context, out io.WriteCloser, input string, digests stringset.Set, opts ...kzip.WriterOption) error {
+func filterArchive(ctx context.Context, out io.WriteCloser, input string, digests stringset.Set, opts ...kzip.WriterOption) error {
 	filesAdded := stringset.New()
 
 	f, err := vfs.Open(ctx, input)
@@ -119,12 +119,12 @@ func stripArchive(ctx context.Context, out io.WriteCloser, input string, digests
 
 	wr, err := kzip.NewWriteCloser(out, opts...)
 	if err != nil {
-		out.Close()
 		return fmt.Errorf("error creating writer: %v", err)
 	}
+	defer wr.Close()
 
 	// scan the input, and for matching units, copy into output
-	err = rd.Scan(func(u *kzip.Unit) error {
+	return rd.Scan(func(u *kzip.Unit) error {
 		if !digests.Contains(u.Digest) {
 			// non-matching unit, do not copy
 			return nil
@@ -146,9 +146,4 @@ func stripArchive(ctx context.Context, out io.WriteCloser, input string, digests
 		_, err = wr.AddUnit(u.Proto, u.Index)
 		return err
 	})
-
-	if err := wr.Close(); err != nil {
-		return fmt.Errorf("error closing writer: %v", err)
-	}
-	return nil
 }
