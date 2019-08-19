@@ -918,9 +918,8 @@ class Visitor {
     // This can happen in cases of importing local modules, like
     //   declare namespace Foo {}
     //   import foo = Foo;
-    if (ts.isSourceFile(sf)) {
-      return this.host.moduleName(sf.fileName);
-    }
+    if (!ts.isSourceFile(sf)) return undefined;
+    return this.host.moduleName(sf.fileName);
   }
 
   /**
@@ -1436,6 +1435,7 @@ class Visitor {
                   recurseVisit(element);
                 }
               }
+              break;
             default:
               break;
           }
