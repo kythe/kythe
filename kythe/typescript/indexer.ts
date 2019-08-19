@@ -230,7 +230,7 @@ class SymbolVNameStore {
   get(symbol: ts.Symbol, ns: TSNamespace, context: Context): VName|undefined {
     if (this.store.has(symbol)) {
       const nsCtx = this.serialize(ns, context);
-      return this.store.get(symbol)!.get(nsCtx);
+      return this.store.get(symbol).get(nsCtx);
     }
     return undefined;
   }
@@ -245,7 +245,7 @@ class SymbolVNameStore {
     if (vnameMap) {
       if (vnameMap.has(nsCtx)) {
         throw new Error(`VName already set with signature ${
-            vnameMap.get(nsCtx)!.signature}`);
+            vnameMap.get(nsCtx).signature}`);
       }
       vnameMap.set(nsCtx, vname);
     } else {
@@ -255,7 +255,7 @@ class SymbolVNameStore {
     // Set the symbol VName for the given namespace and `Any` context, if it has
     // not already been set.
     const nsAny = this.serialize(ns, Context.Any);
-    vnameMap = this.store.get(symbol)!;
+    vnameMap = this.store.get(symbol);
     if (!vnameMap.has(nsAny)) {
       vnameMap.set(nsAny, vname);
     }
@@ -280,7 +280,7 @@ class StandardIndexerContext implements IndexerHost {
   private rootDirs: string[];
 
   /** symbolNames is a store of ts.Symbols to their assigned VNames. */
-  private symbolNames = new SymbolVNameStore();
+  private readonly symbolNames = new SymbolVNameStore();
 
   /**
    * anonId increments for each anonymous block, to give them unique
@@ -625,7 +625,7 @@ class StandardIndexerContext implements IndexerHost {
     // a type and a value that resolve to two different locations; for now,
     // because we must choose one, just prefer linking to the value.
     // One of the value or type reference should be non-null.
-    return (kValue || kType)!;
+    return (kValue || kType);
   }
 
   /**
