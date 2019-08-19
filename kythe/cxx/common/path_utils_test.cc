@@ -16,12 +16,23 @@
 
 #include "kythe/cxx/common/path_utils.h"
 
+#include <unistd.h>
+
 #include <string>
+#include <system_error>
 
 #include "gtest/gtest.h"
+#include "kythe/cxx/common/status_or.h"
 
 namespace kythe {
 namespace {
+
+std::error_code symlink(const char* target, const char* linkpath) {
+  if (::symlink(target, linkpath) < 0) {
+    return std::error_code(errno, std::generic_category());
+  }
+  return std::error_code();
+}
 
 TEST(PathUtilsTest, CleanPath) {
   EXPECT_EQ("/a/c", CleanPath("/../../a/c"));
@@ -49,13 +60,13 @@ TEST(PathUtilsTest, JoinPath) {
 }
 
 TEST(PathUtilsTest, RelativizePath) {
-  std::string current_dir;
-  ASSERT_TRUE(GetCurrentDirectory(&current_dir));
+  StatusOr<std::string> current_dir = GetCurrentDirectory();
+  ASSERT_TRUE(current_dir.ok());
 
-  std::string cwd_foo = JoinPath(current_dir, "foo");
+  std::string cwd_foo = JoinPath(*current_dir, "foo");
 
   EXPECT_EQ("foo", RelativizePath("foo", "."));
-  EXPECT_EQ("foo", RelativizePath("foo", current_dir));
+  EXPECT_EQ("foo", RelativizePath("foo", *current_dir));
   EXPECT_EQ("bar", RelativizePath("foo/bar", "foo"));
   EXPECT_EQ("bar", RelativizePath("foo/bar", cwd_foo));
   EXPECT_EQ("foo", RelativizePath(cwd_foo, "."));
@@ -70,18 +81,38 @@ TEST(PathUtilsTest, RelativizePath) {
 }
 
 TEST(PathUtilsTest, MakeCleanAbsolutePath) {
-  std::string current_dir;
-  ASSERT_TRUE(GetCurrentDirectory(&current_dir));
+  std::string current_dir = GetCurrentDirectory().ValueOrDie();
 
-  EXPECT_EQ(current_dir, MakeCleanAbsolutePath("."));
+  EXPECT_EQ(current_dir, MakeCleanAbsolutePath(".").ValueOrDie());
 
-  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c"));
-  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c/."));
-  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/./.."));
-  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/../."));
-  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/.."));
-  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/../c/.."));
-  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/b/c/../../.."));
+  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c").ValueOrDie());
+  EXPECT_EQ("/a/b/c", MakeCleanAbsolutePath("/a/b/c/.").ValueOrDie());
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/./..").ValueOrDie());
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/../.").ValueOrDie());
+  EXPECT_EQ("/a/b", MakeCleanAbsolutePath("/a/b/c/..").ValueOrDie());
+  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/../c/..").ValueOrDie());
+  EXPECT_EQ("/", MakeCleanAbsolutePath("/a/b/c/../../..").ValueOrDie());
+}
+
+TEST(PathUtilsTest, RealPath) {
+  // Since RealPath accesses the filesystem, we can't make very many
+  // guarantees about its behavior, but we would like it to return an
+  // error if a path doesn't exist.
+  StatusOr<std::string> result = RealPath("/this/path/should/not/exist");
+  EXPECT_EQ(StatusCode::kNotFound, result.status().code());
+
+  // Check that testing::TempDir() points to itself.
+  static std::string kTempDir = CleanPath(testing::TempDir());
+  result = RealPath(kTempDir);
+  ASSERT_TRUE(result.ok());
+  ASSERT_EQ(kTempDir, *result);
+
+  // If so, check that RealPath resolves a known link.
+  static std::string kLinkPath = testing::TempDir() + "link";
+  ASSERT_EQ(std::error_code(), symlink(kTempDir.c_str(), kLinkPath.c_str()));
+  result = RealPath(kLinkPath);
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(kTempDir, *result);
 }
 
 }  // namespace
