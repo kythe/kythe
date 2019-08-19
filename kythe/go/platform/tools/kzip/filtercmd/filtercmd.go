@@ -1,0 +1,153 @@
+/*
+ * Copyright 2019 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Package filtercmd provides the kzip command for filtering archives.
+package filtercmd // import "kythe.io/kythe/go/platform/tools/kzip/filtercmd"
+
+import (
+	"context"
+	"flag"
+	"fmt"
+	"io"
+	"log"
+	"path/filepath"
+
+	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/tools/kzip/flags"
+	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/cmdutil"
+
+	"bitbucket.org/creachadair/stringset"
+	"github.com/google/subcommands"
+)
+
+type filterCommand struct {
+	cmdutil.Info
+
+	input    string
+	output   string
+	append   bool
+	encoding flags.EncodingFlag
+}
+
+// New creates a new subcommand for merging kzip files.
+func New() subcommands.Command {
+	return &filterCommand{
+		Info:     cmdutil.NewInfo("filter", "filter units from kzip file", "--input path --output path unit-hash*"),
+		encoding: flags.EncodingFlag{Encoding: kzip.EncodingJSON},
+	}
+}
+
+// SetFlags implements the subcommands interface and provides command-specific flags
+// for merging kzip files.
+func (c *filterCommand) SetFlags(fs *flag.FlagSet) {
+	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
+	fs.StringVar(&c.input, "input", "", "Path to input kzip file")
+	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
+}
+
+// Execute implements the subcommands interface and filters the input file.
+func (c *filterCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	if c.output == "" {
+		return c.Fail("required --output path missing")
+	}
+	if c.input == "" {
+		return c.Fail("required --input path missing")
+	}
+	opt := kzip.WithEncoding(c.encoding.Encoding)
+	dir, file := filepath.Split(c.output)
+	if dir == "" {
+		dir = "."
+	}
+	tmpOut, err := vfs.CreateTempFile(ctx, dir, file)
+	tmpName := tmpOut.Name()
+	defer func() {
+		if tmpOut != nil {
+			tmpOut.Close()
+			vfs.Remove(ctx, tmpName)
+		}
+	}()
+	if err != nil {
+		return c.Fail("Error creating temp output: %v", err)
+	}
+	units := stringset.New(fs.Args()...)
+	if err := filterArchive(ctx, tmpOut, c.input, units, opt); err != nil {
+		return c.Fail("Error filtering archives: %v", err)
+	}
+	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
+		return c.Fail("Error renaming tmp to output: %v", err)
+	}
+	return subcommands.ExitSuccess
+}
+
+func filterArchive(ctx context.Context, out io.WriteCloser, input string, digests stringset.Set, opts ...kzip.WriterOption) error {
+	filesAdded := stringset.New()
+
+	f, err := vfs.Open(ctx, input)
+	if err != nil {
+		return fmt.Errorf("error opening archive: %v", err)
+	}
+	defer f.Close()
+
+	stat, err := vfs.Stat(ctx, input)
+	if err != nil {
+		return err
+	}
+	size := stat.Size()
+	if size == 0 {
+		log.Printf("Skipping empty .kzip: %s", input)
+		return nil
+	}
+
+	rd, err := kzip.NewReader(f, size)
+	if err != nil {
+		return fmt.Errorf("error creating reader: %v", err)
+	}
+
+	wr, err := kzip.NewWriteCloser(out, opts...)
+	if err != nil {
+		return fmt.Errorf("error creating writer: %v", err)
+	}
+
+	// scan the input, and for matching units, copy into output
+	err = rd.Scan(func(u *kzip.Unit) error {
+		if !digests.Contains(u.Digest) {
+			// non-matching unit, do not copy
+			return nil
+		}
+		for _, ri := range u.Proto.RequiredInput {
+			if filesAdded.Add(ri.Info.Digest) {
+				r, err := rd.Open(ri.Info.Digest)
+				if err != nil {
+					return fmt.Errorf("error opening file: %v", err)
+				}
+				if _, err := wr.AddFile(r); err != nil {
+					r.Close()
+					return fmt.Errorf("error adding file: %v", err)
+				} else if err := r.Close(); err != nil {
+					return fmt.Errorf("error closing file: %v", err)
+				}
+			}
+		}
+		_, err := wr.AddUnit(u.Proto, u.Index)
+		return err
+	})
+	if err == nil {
+		return wr.Close()
+	}
+	wr.Close()
+	return err
+}

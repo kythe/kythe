@@ -351,7 +351,7 @@ void IndexerContext::CloseOutputStreams() {
 
 void IndexerContext::OpenHashCache() {
   if (!FLAGS_cache.empty()) {
-    auto memcache_hash_cache = llvm::make_unique<MemcachedHashCache>();
+    auto memcache_hash_cache = absl::make_unique<MemcachedHashCache>();
     CHECK(memcache_hash_cache->OpenMemcache(FLAGS_cache));
     memcache_hash_cache->SetSizeLimits(FLAGS_min_size, FLAGS_max_size);
     hash_cache_ = std::move(memcache_hash_cache);
