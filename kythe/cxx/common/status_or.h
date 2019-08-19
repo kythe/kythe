@@ -58,33 +58,57 @@ class ABSL_MUST_USE_RESULT StatusOr final {
   template <typename U>
   StatusOr& operator=(StatusOr<U>&& other);
 
+  /// \brief Return this->status().ok()
   ABSL_MUST_USE_RESULT bool ok() const { return this->status_.ok(); }
 
-#if defined(__clang__) && __clang_major__ == 3 && __clang_minor__ == 5
-  // clang 3.5 will choose the incorrect overload if the ref-qualifiers
-  // are present.
-  // TODO: either bump the minimum version of clang we require or find a
-  // reasonable fix for this.
-  const Status& status() const { return this->status_; }
-  Status status() { return this->status_; }
-#else
+  /// \brief Return the contained status.
   const Status& status() const& { return this->status_; }
   Status status() && { return std::move(this->status_); }
-#endif
 
+  /// \brief Return this->ok()
   explicit operator bool() const { return this->ok(); }
 
+  /// \brief Access the contained value. Undefined behavior if !ok().
   const T* operator->() const { return this->value_.operator->(); }
   T* operator->() { return this->value_.operator->(); }
 
+  /// \brief Access the contained value. Undefined behavior if !ok().
   const T& operator*() const& { return *this->value_; }
   T& operator*() & { return *this->value_; }
   const T&& operator*() const&& { return *std::move(this->value_); }
   T&& operator*() && { return *std::move(this->value_); }
 
+  /// \brief Access the contained value.  CHECK-fail if !ok().
+  const T& ValueOrDie() const& {
+    this->EnsureOk();
+    return *this->value_;
+  }
+  T& ValueOrDie() & {
+    this->EnsureOk();
+    return *this->value_;
+  }
+  const T&& ValueOrDie() const&& {
+    this->EnsureOk();
+    return *std::move(this->value_);
+  }
+  T&& ValueOrDie() && {
+    this->EnsureOk();
+    return *std::move(this->value_);
+  }
+
+  // Returns a copy of the current value if this->ok() == true. Otherwise
+  // returns a default value.
+  template <typename U>
+  T value_or(U&& default_value) const&;
+  template <typename U>
+  T value_or(U&& default_value) &&;
+
  private:
   template <typename U>
   friend class StatusOr;
+
+  // CHECK-fail with a reasonable message if !ok().
+  void EnsureOk() const;
 
   // As we always have to have a Status reference for the accessor,
   // unconditionally include such a member.
@@ -147,6 +171,30 @@ StatusOr<T>& StatusOr<T>::operator=(StatusOr<U>&& other) {
   this->status_ = std::move(other.status_);
   this->value_ = std::move(other.value_);
   return *this;
+}
+
+template <typename T>
+template <typename U>
+T StatusOr<T>::value_or(U&& default_value) const& {
+  if (ok()) {
+    return **this;
+  }
+  return std::forward<U>(default_value);
+}
+
+template <typename T>
+template <typename U>
+T StatusOr<T>::value_or(U&& default_value) && {
+  if (ok()) {
+    return *std::move(*this);
+  }
+  return std::forward<U>(default_value);
+}
+
+template <typename T>
+void StatusOr<T>::EnsureOk() const {
+  CHECK(ok()) << "Attempting to fetch value instead of handling error "
+              << status();
 }
 
 }  // namespace kythe
