@@ -856,7 +856,7 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
     main_source_file_ = inputs[0].getFile();
     auto* preprocessor = &getCompilerInstance().getPreprocessor();
     preprocessor->addPPCallbacks(
-        llvm::make_unique<ExtractorPPCallbacks>(ExtractorState{
+        absl::make_unique<ExtractorPPCallbacks>(ExtractorState{
             index_writer_, &getCompilerInstance().getSourceManager(),
             preprocessor, &main_source_file_, &main_source_file_transcript_,
             &source_files_, &main_source_file_stdin_alternate_}));

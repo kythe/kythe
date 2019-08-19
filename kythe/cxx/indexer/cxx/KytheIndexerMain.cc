@@ -24,6 +24,7 @@
 //       indexer some/index.kindex
 
 #include "absl/strings/str_format.h"
+#include "absl/memory/memory.h"
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
@@ -96,13 +97,13 @@ int main(int argc, char* argv[]) {
     options.EffectiveWorkingDirectory = job.unit.working_directory();
 
     kythe::MetadataSupports meta_supports;
-    meta_supports.Add(llvm::make_unique<ProtobufMetadataSupport>());
-    meta_supports.Add(llvm::make_unique<KytheMetadataSupport>());
+    meta_supports.Add(absl::make_unique<ProtobufMetadataSupport>());
+    meta_supports.Add(absl::make_unique<KytheMetadataSupport>());
 
     kythe::LibrarySupports library_supports;
-    library_supports.push_back(llvm::make_unique<GoogleFlagsLibrarySupport>());
-    library_supports.push_back(llvm::make_unique<GoogleProtoLibrarySupport>());
-    library_supports.push_back(llvm::make_unique<ImputedConstructorSupport>());
+    library_supports.push_back(absl::make_unique<GoogleFlagsLibrarySupport>());
+    library_supports.push_back(absl::make_unique<GoogleProtoLibrarySupport>());
+    library_supports.push_back(absl::make_unique<ImputedConstructorSupport>());
 
     std::string result = IndexCompilationUnit(
         job.unit, job.virtual_files, *context.claim_client(),
