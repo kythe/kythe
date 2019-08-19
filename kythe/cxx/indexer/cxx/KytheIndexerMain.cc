@@ -23,8 +23,8 @@
 //       indexer -i foo.cc | verifier foo.cc
 //       indexer some/index.kindex
 
-#include "absl/strings/str_format.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
