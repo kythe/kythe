@@ -58,7 +58,8 @@ class ABSL_MUST_USE_RESULT StatusOr final {
   template <typename U>
   StatusOr& operator=(StatusOr<U>&& other);
 
-  /// \brief Returns this->status().ok()
+  /// \brief Returns whether or not the status is OK (and thus the StatusOr
+  ///        contains a value).
   ABSL_MUST_USE_RESULT bool ok() const { return this->status().ok(); }
 
   /// \brief Returns the contained status.
