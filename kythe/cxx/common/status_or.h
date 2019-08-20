@@ -65,7 +65,7 @@ class ABSL_MUST_USE_RESULT StatusOr final {
   const Status& status() const& { return this->status_; }
   Status status() && { return std::move(this->status_); }
 
-  /// \brief Returns this->ok()
+  /// \brief Equivalent to this->ok().
   explicit operator bool() const { return this->ok(); }
 
   /// \brief Accesses the contained value. Undefined behavior if !ok().

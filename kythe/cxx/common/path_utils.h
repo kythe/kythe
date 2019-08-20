@@ -57,8 +57,7 @@ class PathRealizer {
   /// \brief Transforms the resolved, absolute version of `path` into a path
   ///        relative to the configured root.
   /// \return A path relative to root, if `path` is, else a resolved `path` or
-  /// an
-  ///         error if the path cannot be resolved.
+  ///         an error if the path cannot be resolved.
   StatusOr<std::string> Relativize(absl::string_view path) const;
 
  private:
