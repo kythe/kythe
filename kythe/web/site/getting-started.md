@@ -67,6 +67,7 @@ apt-get install \
 {% endhighlight %}
 
 #### Troubleshooting bazel/clang/llvm errors
+
 You must either have `/usr/bin/clang` aliased properly, or the `CC` env var set
 for Bazel:
 
@@ -103,6 +104,14 @@ then you need to clean and rebuild your TOOLCHAIN:
 {% highlight bash %}
 bazel clean --expunge && bazel build @local_config_cc//:toolchain
 {% endhighlight %}
+
+Note also that Kythe depends on LLVM, which in turn requires support for C++14.
+In most installations, C++14 is not enabled by default, so the default Kythe
+`.bazelrc` includes the necessary flag (`-std=c++14`) to enable it.
+
+If you have user-specific Bazel settings that override the defaults, you may
+need to include these flags explicitly. If you get errors about undefined C++14
+names (such as `std::is_final`), check for this.
 
 ## Building Kythe
 
