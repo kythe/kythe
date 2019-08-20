@@ -26,11 +26,13 @@
 #include <unordered_map>
 #include <utility>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/MacroArgs.h"
@@ -541,15 +543,14 @@ std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
 void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
                                    const std::string& in_path) {
   std::string path = FixStdinPath(file, in_path);
-  auto contents =
-      source_files_->insert(std::make_pair(in_path, SourceFile{std::string()}));
+  auto contents = source_files_->insert({in_path, SourceFile{""}});
   if (contents.second) {
     const llvm::MemoryBuffer* buffer =
         source_manager_->getMemoryBufferForFile(file);
     contents.first->second.file_content.assign(buffer->getBufferStart(),
                                                buffer->getBufferEnd());
-    contents.first->second.vname.CopyFrom(index_writer_->VNameForPath(
-        RelativizePath(path, index_writer_->root_directory())));
+    contents.first->second.vname.CopyFrom(
+        index_writer_->VNameForPath(index_writer_->RelativizePath(path)));
     VLOG(1) << "added content for " << path << ": mapped to "
             << contents.first->second.vname.DebugString() << "\n";
   }
@@ -613,8 +614,7 @@ void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
         source_manager_->getFileEntryForID(source_manager_->getFileID(loc));
     if (file_ref) {
       auto vname = index_writer_->VNameForPath(
-          RelativizePath(FixStdinPath(file_ref, filename_ref),
-                         index_writer_->root_directory()));
+          index_writer_->RelativizePath(FixStdinPath(file_ref, filename_ref)));
       history()->Update(ToStringRef(vname.signature()));
       history()->Update(ToStringRef(vname.corpus()));
       history()->Update(ToStringRef(vname.root()));
@@ -965,6 +965,24 @@ kythe::proto::VName CompilationWriter::VNameForPath(const std::string& path) {
   return out;
 }
 
+std::string CompilationWriter::RelativizePath(absl::string_view path) {
+  if (!canonicalizer_.has_value()) {
+    if (StatusOr<PathCanonicalizer> canonicalizer =
+            PathCanonicalizer::Create(root_directory_, path_policy_)) {
+      canonicalizer_ = *std::move(canonicalizer);
+    } else {
+      LOG(INFO) << "Error making relative path: " << canonicalizer.status();
+      return std::string(path);
+    }
+  }
+  if (StatusOr<std::string> relative = canonicalizer_->Relativize(path)) {
+    return *std::move(relative);
+  } else {
+    LOG(INFO) << "Error making relative path: " << relative.status();
+    return std::string(path);
+  }
+}
+
 void CompilationWriter::FillFileInput(
     const std::string& clang_path, const SourceFile& source_file,
     kythe::proto::CompilationUnit::FileInput* file_input) {
@@ -990,12 +1008,11 @@ void CompilationWriter::InsertExtraIncludes(
   auto fs = llvm::vfs::getRealFileSystem();
   std::set<std::string> normalized_clang_paths;
   for (const auto& input : unit->required_input()) {
-    normalized_clang_paths.insert(
-        RelativizePath(input.info().path(), root_directory()));
+    normalized_clang_paths.insert(RelativizePath(input.info().path()));
   }
   for (const auto& path : extra_includes_) {
     status_checked_paths_.erase(path);
-    auto normalized = RelativizePath(path, root_directory());
+    auto normalized = RelativizePath(path);
     status_checked_paths_.erase(normalized);
     if (normalized_clang_paths.count(normalized) != 0) {
       // This file is redundant with a required input after normalization.
@@ -1059,7 +1076,7 @@ void CompilationWriter::OpenedForRead(const std::string& path) {
 
 void CompilationWriter::DirectoryOpenedForStatus(const std::string& path) {
   if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
-    status_checked_paths_.insert(RelativizePath(path, root_directory()));
+    status_checked_paths_.insert(RelativizePath(path));
   }
 }
 
@@ -1266,8 +1283,13 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
           getenv("KYTHE_EXCLUDE_AUTOCONFIGURATION_FILES")) {
     index_writer_.set_exclude_autoconfiguration_files(true);
   }
-  if (const char* env_kythe_build_confg = getenv("KYTHE_BUILD_CONFIG")) {
-    SetBuildConfig(env_kythe_build_confg);
+  if (const char* env_kythe_build_config = getenv("KYTHE_BUILD_CONFIG")) {
+    SetBuildConfig(env_kythe_build_config);
+  }
+  if (const char* env_path_policy = getenv("KYTHE_CANONICALIZE_VNAME_PATHS")) {
+    index_writer_.set_path_canonicalization_policy(
+        ParseCanonicalizationPolicy(env_path_policy)
+            .value_or(PathCanonicalizer::Policy::kCleanOnly));
   }
 }
 

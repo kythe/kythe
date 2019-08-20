@@ -56,11 +56,6 @@ absl::string_view PathPrefix(absl::string_view path) {
   }
 }
 
-bool IsProperPathPrefix(absl::string_view s, absl::string_view prefix) {
-  return absl::StartsWith(s, prefix) &&
-         (s.size() == prefix.size() || s[prefix.size()] == '/');
-}
-
 absl::string_view TrimPathPrefix(const absl::string_view path,
                                  absl::string_view prefix) {
   absl::string_view result = path;
@@ -152,7 +147,7 @@ StatusOr<std::string> PathCanonicalizer::Relativize(
   switch (policy_) {
     case Policy::kPreferRelative:
       if (auto resolved = MaybeRealPath(realizer_, path)) {
-        if (IsAbsolutePath(*resolved)) {
+        if (!IsAbsolutePath(*resolved)) {
           return *std::move(resolved);
         }
       }
@@ -167,6 +162,21 @@ StatusOr<std::string> PathCanonicalizer::Relativize(
   }
   LOG(FATAL) << "Unknown policy: " << static_cast<int>(policy_);
   return std::string(path);
+}
+
+absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
+    absl::string_view policy) {
+  using Policy = PathCanonicalizer::Policy;
+  if (policy == "0" || policy == "clean-only") {
+    return Policy::kCleanOnly;
+  }
+  if (policy == "1" || policy == "prefer-relative") {
+    return Policy::kPreferRelative;
+  }
+  if (policy == "2" || policy == "prefer-real") {
+    return Policy::kPreferReal;
+  }
+  return absl::nullopt;
 }
 
 std::string JoinPath(absl::string_view a, absl::string_view b) {

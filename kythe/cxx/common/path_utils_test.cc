@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/common/path_utils.h"
 
+#include <stdio.h>
 #include <unistd.h>
 
 #include <string>
@@ -27,8 +28,23 @@
 namespace kythe {
 namespace {
 
-std::error_code symlink(const char* target, const char* linkpath) {
-  if (::symlink(target, linkpath) < 0) {
+std::error_code Symlink(const std::string& target,
+                        const std::string& linkpath) {
+  if (::symlink(target.c_str(), linkpath.c_str()) < 0) {
+    return std::error_code(errno, std::generic_category());
+  }
+  return std::error_code();
+}
+
+std::error_code MakeDirectory(const std::string& path) {
+  if (::mkdir(path.c_str(), 0755) < 0) {
+    return std::error_code(errno, std::generic_category());
+  }
+  return std::error_code();
+}
+
+std::error_code Remove(const std::string& path) {
+  if (::remove(path.c_str()) < 0) {
     return std::error_code(errno, std::generic_category());
   }
   return std::error_code();
@@ -102,17 +118,118 @@ TEST(PathUtilsTest, RealPath) {
   EXPECT_EQ(StatusCode::kNotFound, result.status().code());
 
   // Check that testing::TempDir() points to itself.
-  static std::string kTempDir = CleanPath(testing::TempDir());
-  result = RealPath(kTempDir);
+  const std::string temp_dir = CleanPath(testing::TempDir());
+  result = RealPath(temp_dir);
   ASSERT_TRUE(result.ok());
-  ASSERT_EQ(kTempDir, *result);
+  ASSERT_EQ(temp_dir, *result);
 
   // If so, check that RealPath resolves a known link.
-  static std::string kLinkPath = testing::TempDir() + "link";
-  ASSERT_EQ(std::error_code(), symlink(kTempDir.c_str(), kLinkPath.c_str()));
-  result = RealPath(kLinkPath);
+  const std::string link_path = JoinPath(temp_dir, "link");
+  ASSERT_EQ(std::error_code(), Symlink(temp_dir, link_path));
+  result = RealPath(link_path);
   ASSERT_TRUE(result.ok());
-  EXPECT_EQ(kTempDir, *result);
+  EXPECT_EQ(temp_dir, *result);
+}
+
+class CanonicalizerTest : public ::testing::Test {
+ public:
+  void SetUp() override {
+    const testing::TestInfo* test_info =
+        testing::UnitTest::GetInstance()->current_test_info();
+    std::string root =
+        JoinPath(JoinPath(testing::TempDir(), test_info->test_suite_name()),
+                 test_info->name());
+    ASSERT_EQ(std::error_code(), MakeDirectory(root));
+    filesystem_.push_back(root);
+  }
+
+  void TearDown() override {
+    std::sort(filesystem_.rbegin(), filesystem_.rend());
+    for (const std::string& path : filesystem_) {
+      EXPECT_EQ(std::error_code(), Remove(path));
+    }
+  }
+
+  void AddDirectory(const std::string& name) {
+    std::string path = JoinPath(root(), name);
+    ASSERT_EQ(std::error_code(), MakeDirectory(path));
+    filesystem_.push_back(path);
+  }
+
+  void AddSymlink(const std::string& target, const std::string& name) {
+    std::string path = JoinPath(root(), name);
+    ASSERT_EQ(std::error_code(), Symlink(target, path));
+    filesystem_.push_back(path);
+  }
+
+  const std::string& root() { return filesystem_.front(); }
+
+  static void SetUpTestSuite() {
+    CHECK_EQ(std::error_code(),
+             MakeDirectory(JoinPath(testing::TempDir(), "CanonicalizerTest")));
+  }
+
+  static void TearDownTestSuite() {
+    CHECK_EQ(std::error_code(),
+             Remove(JoinPath(testing::TempDir(), "CanonicalizerTest")));
+  }
+
+ private:
+  std::vector<std::string> filesystem_;
+};
+
+TEST_F(CanonicalizerTest, CanonicalizerCleanPathOnly) {
+  AddDirectory("concrete");
+  AddDirectory("concrete/subdir");
+  AddDirectory("concrete/file");
+  AddSymlink("concrete", "link");
+
+  PathCanonicalizer canonicalizer =
+      PathCanonicalizer::Create(root(), PathCanonicalizer::Policy::kCleanOnly)
+          .ValueOrDie();
+  EXPECT_EQ("link/file",
+            canonicalizer.Relativize(JoinPath(root(), "link/subdir/../file"))
+                .value_or(""));
+}
+
+TEST_F(CanonicalizerTest, CanonicalizerPreferRelative) {
+  AddDirectory("base");
+  AddDirectory("elsewhere");
+  AddDirectory("elsewhere/subdir");
+  AddDirectory("elsewhere/file");
+  AddSymlink("../elsewhere", "base/link");
+
+  const std::string base = JoinPath(root(), "base");
+  PathCanonicalizer canonicalizer =
+      PathCanonicalizer::Create(base,
+                                PathCanonicalizer::Policy::kPreferRelative)
+          .ValueOrDie();
+  // link/file points somewhere outside of "base", so prefer the relative path,
+  // even if it's an unresolved symlink.
+  EXPECT_EQ("link/file",
+            canonicalizer.Relativize(JoinPath(base, "link/subdir/../file"))
+                .value_or(""));
+}
+
+TEST_F(CanonicalizerTest, CanonicalizerPreferReal) {
+  AddDirectory("base");
+  AddDirectory("elsewhere");
+  AddDirectory("elsewhere/subdir");
+  AddDirectory("elsewhere/file");
+  AddSymlink("../elsewhere", "base/link");
+
+  const std::string base = JoinPath(root(), "base");
+  PathCanonicalizer canonicalizer =
+      PathCanonicalizer::Create(base, PathCanonicalizer::Policy::kPreferReal)
+          .ValueOrDie();
+  // Use the resolved path, even if it points outside of the base.
+  EXPECT_EQ(JoinPath(root(), "elsewhere/file"),
+            canonicalizer.Relativize(JoinPath(base, "link/subdir/../file"))
+                .value_or(""));
+  // Unless the link is bad, then use the cleaned path.
+  EXPECT_EQ("bad/file",
+            canonicalizer.Relativize(JoinPath(base, "bad/subdir/../file"))
+                .value_or(""));
 }
 
 }  // namespace

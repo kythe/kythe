@@ -78,7 +78,7 @@ class PathCanonicalizer {
 
   /// \brief Creates a new PathCanonicalizer with the given root and policy.
   static StatusOr<PathCanonicalizer> Create(absl::string_view root,
-                                            Policy policy);
+                                            Policy policy = Policy::kCleanOnly);
 
   /// \brief Transforms the provided path into a relative path depending on
   ///        configured policy.
@@ -93,6 +93,13 @@ class PathCanonicalizer {
   PathCleaner cleaner_;
   absl::optional<PathRealizer> realizer_;
 };
+
+/// \brief Parses a string into a PathCanonicalizer::Policy.
+///
+/// Parses either integeral values of enumerators or lower-case,
+/// dash-separated names: "clean-only", "prefer-relative", "prefer-real".
+absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
+    absl::string_view policy);
 
 /// \brief Append path `b` to path `a`, cleaning and returning the result.
 std::string JoinPath(absl::string_view a, absl::string_view b);
