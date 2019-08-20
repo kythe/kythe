@@ -12,9 +12,8 @@ build --auto_cpu_environment_group=//buildenv:cpu
 
 # Ensure clang is used, by default, over any other C++ installation (e.g. gcc).
 # LLVM requires C++14, so ensure that is used.
-build --cxxopt=-std=c++14 --host_cxxopt=-std=c++14
 build --client_env=CC=clang
-build --client_env=BAZEL_CXXOPTS=-std=c++14
+build --cxxopt=-std=c++14 --host_cxxopt=-std=c++14 --client_env=BAZEL_CXXOPTS=-std=c++14
 
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env
