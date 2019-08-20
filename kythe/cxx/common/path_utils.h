@@ -46,7 +46,7 @@ class PathCleaner {
   std::string root_;
 };
 
-/// \brief PathRealized relativizes paths against a root using RealPath.
+/// \brief PathRealizer relativizes paths against a root using RealPath.
 class PathRealizer {
  public:
   /// \brief Creates a PathCleaner using the given root.
@@ -108,7 +108,7 @@ std::string JoinPath(absl::string_view a, absl::string_view b);
 /// trailing "/".
 std::string CleanPath(absl::string_view input);
 
-// \brief Return true if path is absolute.
+// \brief Returns true if path is absolute.
 bool IsAbsolutePath(absl::string_view path);
 
 /// \brief Relativize `to_relativize` with respect to `relativize_against`.

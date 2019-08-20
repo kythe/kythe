@@ -58,27 +58,27 @@ class ABSL_MUST_USE_RESULT StatusOr final {
   template <typename U>
   StatusOr& operator=(StatusOr<U>&& other);
 
-  /// \brief Return this->status().ok()
-  ABSL_MUST_USE_RESULT bool ok() const { return this->status_.ok(); }
+  /// \brief Returns this->status().ok()
+  ABSL_MUST_USE_RESULT bool ok() const { return this->status().ok(); }
 
-  /// \brief Return the contained status.
+  /// \brief Returns the contained status.
   const Status& status() const& { return this->status_; }
   Status status() && { return std::move(this->status_); }
 
-  /// \brief Return this->ok()
+  /// \brief Returns this->ok()
   explicit operator bool() const { return this->ok(); }
 
-  /// \brief Access the contained value. Undefined behavior if !ok().
+  /// \brief Accesses the contained value. Undefined behavior if !ok().
   const T* operator->() const { return this->value_.operator->(); }
   T* operator->() { return this->value_.operator->(); }
 
-  /// \brief Access the contained value. Undefined behavior if !ok().
+  /// \brief Accesses the contained value. Undefined behavior if !ok().
   const T& operator*() const& { return *this->value_; }
   T& operator*() & { return *this->value_; }
   const T&& operator*() const&& { return *std::move(this->value_); }
   T&& operator*() && { return *std::move(this->value_); }
 
-  /// \brief Access the contained value.  CHECK-fail if !ok().
+  /// \brief Accesses the contained value.  CHECK-fail if !ok().
   const T& ValueOrDie() const& {
     this->EnsureOk();
     return *this->value_;
