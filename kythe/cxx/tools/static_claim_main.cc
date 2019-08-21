@@ -172,8 +172,8 @@ class ClaimTool {
       }
       return;
     }
-    namespace io = google::protobuf::io;
     {
+      namespace io = google::protobuf::io;
       io::FileOutputStream file_output_stream(out_fd);
       io::GzipOutputStream::Options options;
       options.format = io::GzipOutputStream::GZIP;
@@ -190,7 +190,7 @@ class ClaimTool {
         }
       }
       CHECK(!coded_stream.HadError());
-    }  // namespace google::protobuf::io;
+    }
     CHECK(::close(out_fd) == 0) << "errno was: " << errno;
   }
 
