@@ -78,9 +78,14 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/extractor/language.h"
 #include "objc_bazel_support.h"
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
+
+DEFINE_string(canonicalize_vname_paths, "clean-only",
+              "Policy to use when canonicalization VName paths: "
+              "clean-only (default), prefer-relative, prefer-real.");
 
 struct XAState {
   std::string extra_action_file;
@@ -201,12 +206,22 @@ int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
   gflags::SetVersionString("0.2");
+  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
   if (argc != 4 && argc != 6) {
     absl::FPrintF(
         stderr,
         "Invalid number of arguments:\n\tCall as %s extra-action-file "
         "output-file vname-config [devdir-script sdkroot-script]\n",
         argv[0]);
+    return 1;
+  }
+  kythe::PathCanonicalizer::Policy vname_policy;
+  if (auto policy_flag =
+          kythe::ParseCanonicalizationPolicy(FLAGS_canonicalize_vname_paths)) {
+    vname_policy = *policy_flag;
+  } else {
+    absl::FPrintF(stderr, "Unrecognized canonicalization policy: %s\n",
+                  FLAGS_canonicalize_vname_paths);
     return 1;
   }
   XAState xa_state;
@@ -222,6 +237,7 @@ int main(int argc, char* argv[]) {
   }
 
   kythe::ExtractorConfiguration config;
+  config.SetPathCanonizalizationPolicy(vname_policy);
   bool success = LoadExtraAction(xa_state, config);
   if (success) {
     config.Extract(kythe::supported_language::Language::kObjectiveC);
