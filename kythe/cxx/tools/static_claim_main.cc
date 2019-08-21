@@ -190,7 +190,7 @@ class ClaimTool {
         }
       }
       CHECK(!coded_stream.HadError());
-    }  // namespace io=google::protobuf::io;
+    }  // namespace google::protobuf::io;
     CHECK(::close(out_fd) == 0) << "errno was: " << errno;
   }
 
