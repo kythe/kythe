@@ -43,7 +43,7 @@ public final class KZipWriter implements KZip.Writer {
   public KZipWriter(File file) throws IOException {
     this(file, KZip.Encoding.JSON);
   }
-  
+
   public KZipWriter(File file, KZip.Encoding encoding) throws IOException {
     this(file, encoding, KZip.buildGson(new GsonBuilder()));
   }
@@ -72,11 +72,11 @@ public final class KZipWriter implements KZip.Writer {
         gson.toJson(compilation, Analysis.IndexedCompilation.class).getBytes(KZip.DATA_CHARSET);
     String digest = KZip.DATA_DIGEST.hashBytes(jsonData).toString();
     if (descriptor.encoding().equals(KZip.Encoding.JSON)
-	|| descriptor.encoding().equals(KZip.Encoding.ALL)) {
+        || descriptor.encoding().equals(KZip.Encoding.ALL)) {
       appendZip(jsonData, descriptor.getUnitsPath(digest, KZip.Encoding.JSON));
     }
     if (descriptor.encoding().equals(KZip.Encoding.PROTO)
-	|| descriptor.encoding().equals(KZip.Encoding.ALL)) {
+        || descriptor.encoding().equals(KZip.Encoding.ALL)) {
       appendZip(compilation.toByteArray(), descriptor.getUnitsPath(digest, KZip.Encoding.PROTO));
     }
     return digest;
