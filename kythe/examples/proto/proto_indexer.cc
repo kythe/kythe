@@ -22,8 +22,10 @@
 #include <fcntl.h>
 
 #include <map>
+#include <string>
 
-#include "gflags/gflags.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "glog/logging.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -32,7 +34,7 @@
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
 
-DEFINE_string(corpus_name, "kythe", "Use this corpus in VNames.");
+ABSL_FLAG(std::string, corpus_name, "kythe", "Use this corpus in VNames.");
 
 namespace kythe {
 namespace {
@@ -105,7 +107,7 @@ bool ProtoFiles::IndexFile(const gpb::string& path,
   }
   proto::VName file_vname;
   file_vname.set_path(path);
-  file_vname.set_corpus(FLAGS_corpus_name);
+  file_vname.set_corpus(absl::GetFlag(FLAGS_corpus_name));
   recorder->AddFileContent(kythe::VNameRef(file_vname), buffer);
   InsertFile(path, std::move(buffer));
   return true;
@@ -329,9 +331,8 @@ int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   FLAGS_logtostderr = true;
   google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.1");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  std::vector<std::string> final_args(argv + 1, argv + argc);
+  std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
+  std::vector<std::string> final_args(remain.begin() + 1, remain.end());
   google::protobuf::io::FileOutputStream out_stream(STDOUT_FILENO);
   FileOutputStream stream(&out_stream);
   KytheGraphRecorder recorder(&stream);
