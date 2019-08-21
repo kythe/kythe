@@ -83,21 +83,16 @@ def _cc_dependencies():
         url = "https://github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
     )
 
-    # Needed by google/glog for the moment.
-    maybe(
-        http_archive,
-        name = "com_github_gflags_gflags",
-        sha256 = "19713a36c9f32b33df59d1c79b4958434cb005b5b47dc5400a7a4b078111d9b5",
-        strip_prefix = "gflags-2.2.2",
-        url = "https://github.com/gflags/gflags/archive/v2.2.2.zip",
-    )
-
     maybe(
         http_archive,
         name = "com_github_google_glog",
         strip_prefix = "glog-ba8a9f6952d04d1403b97df24e6836227751454e",
         sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
         url = "https://github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
+        build_file_content = "\n".join([
+            "load(\"//:bazel/glog.bzl\", \"glog_library\")",
+            "glog_library(with_gflags=0)",
+        ]),
     )
 
     maybe(

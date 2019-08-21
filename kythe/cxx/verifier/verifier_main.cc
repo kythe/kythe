@@ -24,7 +24,6 @@
 #include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
 #include "assertion_ast.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
