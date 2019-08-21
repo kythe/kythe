@@ -31,6 +31,8 @@ import java.util.zip.ZipOutputStream;
 public final class KZipWriter implements KZip.Writer {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private static final KZip.Encoding DEFAULT_ENCODING = KZip.Encoding.JSON;
+
   private final KZip.Descriptor descriptor;
   private final ZipOutputStream output;
   private final Gson gson;
@@ -41,9 +43,9 @@ public final class KZipWriter implements KZip.Writer {
 
   @Deprecated
   public KZipWriter(File file) throws IOException {
-    this(file, KZip.Encoding.JSON);
+    this(file, DEFAULT_ENCODING);
   }
-  
+
   public KZipWriter(File file, KZip.Encoding encoding) throws IOException {
     this(file, encoding, KZip.buildGson(new GsonBuilder()));
   }
