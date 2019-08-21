@@ -15,6 +15,7 @@
  */
 
 #include "absl/flags/usage.h"
+#include "absl/memory/memory.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
@@ -38,8 +39,8 @@ int main(int argc, const char** argv) {
   absl::SetProgramUsageMessage("fyi: repair a C++ file with missing includes");
   clang::tooling::CommonOptionsParser options(argc, argv, fyi_options);
   kythe::JsonClient::InitNetwork();
-  auto xrefs_db = llvm::make_unique<kythe::XrefsJsonClient>(
-      llvm::make_unique<kythe::JsonClient>(), xrefs);
+  auto xrefs_db = absl::make_unique<kythe::XrefsJsonClient>(
+      absl::make_unique<kythe::JsonClient>(), xrefs);
   clang::tooling::ClangTool tool(options.getCompilations(),
                                  options.getSourcePathList());
   kythe::fyi::ActionFactory factory(std::move(xrefs_db), 5);

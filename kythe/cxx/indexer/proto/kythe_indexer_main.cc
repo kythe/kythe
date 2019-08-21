@@ -197,7 +197,7 @@ Examples:
       std::vector<proto::FileData> files;
       proto::CompilationUnit unit;
 
-      GetCurrentDirectory(unit.mutable_working_directory());
+      unit.set_working_directory(GetCurrentDirectory().ValueOrDie());
       FileVNameGenerator file_vnames;
       kythe::proto::VName default_vname;
       default_vname.set_corpus(absl::GetFlag(FLAGS_default_corpus));

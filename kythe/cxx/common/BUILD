@@ -52,6 +52,7 @@ cc_library(
     hdrs = ["path_utils.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        ":status_or",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
     ],

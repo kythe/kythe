@@ -122,6 +122,10 @@ Status DataLossError(absl::string_view message);
 /// \brief Return an Unauthenticated error with the given message.
 Status UnauthenticatedError(absl::string_view message);
 
+/// \brief Return an error converted from a POSIX errno value.
+StatusCode ErrnoToStatusCode(int error_number);
+Status ErrnoToStatus(int error_number);
+
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_COMMON_STATUS_H_

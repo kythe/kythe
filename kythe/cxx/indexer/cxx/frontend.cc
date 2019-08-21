@@ -314,7 +314,8 @@ void IndexerContext::InitializeClaimClient() {
     auto dynamic_claims = absl::make_unique<kythe::DynamicClaimClient>();
     dynamic_claims->set_max_redundant_claims(
         absl::GetFlag(FLAGS_experimental_dynamic_overclaim));
-    CHECK(dynamic_claims->OpenMemcache(FLAGS_experimental_dynamic_claim_cache))
+    CHECK(dynamic_claims->OpenMemcache(
+        absl::GetFlag(FLAGS_experimental_dynamic_claim_cache)))
         << "Can't open memcached";
     claim_client_ = std::move(dynamic_claims);
   } else {
@@ -361,7 +362,7 @@ void IndexerContext::CloseOutputStreams() {
 
 void IndexerContext::OpenHashCache() {
   if (!absl::GetFlag(FLAGS_cache).empty()) {
-    auto memcache_hash_cache = llvm::make_unique<MemcachedHashCache>();
+    auto memcache_hash_cache = absl::make_unique<MemcachedHashCache>();
     CHECK(memcache_hash_cache->OpenMemcache(absl::GetFlag(FLAGS_cache)));
     memcache_hash_cache->SetSizeLimits(absl::GetFlag(FLAGS_min_size),
                                        absl::GetFlag(FLAGS_max_size));

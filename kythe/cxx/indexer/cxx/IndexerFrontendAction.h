@@ -33,6 +33,7 @@
 #include "GraphObserver.h"
 #include "IndexerASTHooks.h"
 #include "IndexerPPCallbacks.h"
+#include "absl/memory/memory.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
@@ -142,14 +143,14 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       Observer->setLangOptions(&CI.getLangOpts());
       Observer->setPreprocessor(&CI.getPreprocessor());
     }
-    return llvm::make_unique<IndexerASTConsumer>(
+    return absl::make_unique<IndexerASTConsumer>(
         Observer, IgnoreUnimplemented, TemplateMode, Verbosity, ObjCFwdDocs,
         CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist, UsrByteSize);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance& CI) override {
     if (Observer) {
-      CI.getPreprocessor().addPPCallbacks(llvm::make_unique<IndexerPPCallbacks>(
+      CI.getPreprocessor().addPPCallbacks(absl::make_unique<IndexerPPCallbacks>(
           CI.getPreprocessor(), *Observer, Verbosity));
     }
     CI.getLangOpts().CommentOpts.ParseAllComments = true;

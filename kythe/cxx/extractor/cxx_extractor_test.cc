@@ -23,6 +23,7 @@
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/proto/analysis.pb.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
