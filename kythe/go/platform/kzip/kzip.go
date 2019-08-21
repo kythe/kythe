@@ -110,6 +110,8 @@ const (
 
 	prefixJSON  = "units"
 	prefixProto = "pbunits"
+
+	defaultEncoding = EncodingJSON
 )
 
 // String stringifies an Encoding
@@ -455,7 +457,7 @@ func NewWriter(w io.Writer, options ...WriterOption) (*Writer, error) {
 		zip:      archive,
 		fd:       stringset.New(),
 		ud:       stringset.New(),
-		encoding: EncodingJSON,
+		encoding: defaultEncoding,
 	}
 	for _, opt := range options {
 		opt(kw)

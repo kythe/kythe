@@ -195,4 +195,7 @@ StatusOr<std::string> KzipWriter::InsertFile(absl::string_view path,
   return std::string(Basename(path));
 }
 
+/* static */
+KzipEncoding KzipWriter::DefaultEncoding() { return KzipEncoding::kJson; }
+
 }  // namespace kythe
