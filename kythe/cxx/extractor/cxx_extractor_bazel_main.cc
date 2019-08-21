@@ -37,7 +37,8 @@
 
 ABSL_FLAG(std::string, build_config, "",
           "Human readable description of the build configuration.");
-ABSL_FLAG(std::string, canonicalize_vname_paths, "clean-only",
+ABSL_FLAG(kythe::PathCanonicalizer::Policy, canonicalize_vname_paths,
+          kythe::PathCanonicalizer::Policy::kCleanOnly,
           "Policy to use when canonicalization VName paths: "
           "clean-only (default), prefer-relative, prefer-real.");
 
@@ -66,15 +67,6 @@ int main(int argc, char* argv[]) {
                   remain[0]);
     return 1;
   }
-  kythe::PathCanonicalizer::Policy vname_policy;
-  if (auto policy_flag = kythe::ParseCanonicalizationPolicy(
-          absl::GetFlag(FLAGS_canonicalize_vname_paths))) {
-    vname_policy = *policy_flag;
-  } else {
-    absl::FPrintF(stderr, "Unrecognized canonicalization policy: %s\n",
-                  absl::GetFlag(FLAGS_canonicalize_vname_paths));
-    return 1;
-  }
   std::string extra_action_file = remain[1];
   std::string output_file = remain[2];
   std::string vname_config = remain[3];
@@ -98,7 +90,8 @@ int main(int argc, char* argv[]) {
   config.SetTargetName(info.owner());
   config.SetBuildConfig(absl::GetFlag(FLAGS_build_config));
   config.SetCompilationOutputPath(cpp_info.output_file());
-  config.SetPathCanonizalizationPolicy(vname_policy);
+  config.SetPathCanonizalizationPolicy(
+      absl::GetFlag(FLAGS_canonicalize_vname_paths));
   config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();
   return 0;
