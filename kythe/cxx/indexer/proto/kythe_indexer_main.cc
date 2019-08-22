@@ -29,10 +29,12 @@
 
 #include <string>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -48,12 +50,13 @@
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
 
-DEFINE_string(o, "-", "Output filename.");
-DEFINE_bool(flush_after_each_entry, false,
-            "Flush output after writing each entry.");
-DEFINE_string(index_file, "", ".kzip file containing compilation unit.");
-DEFINE_string(default_corpus, "", "Default corpus for VNames.");
-DEFINE_string(default_root, "", "Default root for VNames.");
+ABSL_FLAG(std::string, o, "-", "Output filename.");
+ABSL_FLAG(bool, flush_after_each_entry, false,
+          "Flush output after writing each entry.");
+ABSL_FLAG(std::string, index_file, "",
+          ".kzip file containing compilation unit.");
+ABSL_FLAG(std::string, default_corpus, "", "Default corpus for VNames.");
+ABSL_FLAG(std::string, default_root, "", "Default root for VNames.");
 
 namespace kythe {
 namespace {
@@ -132,7 +135,8 @@ bool ReadProtoFile(int fd, const std::string& relative_path,
 
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
-  gflags::SetUsageMessage(R"(Command-line frontend for the Kythe Proto indexer.
+  absl::SetProgramUsageMessage(
+      R"(Command-line frontend for the Kythe Proto indexer.
 Invokes the Kythe Proto indexer on compilation unit(s). By default writes binary
 Kythe artifacts to STDOUT as a sequence of Entity protos; this destination can
 be overridden with the argument of -o.
@@ -152,22 +156,22 @@ Examples:
   indexer -index_file index.kzip
   indexer -o foo.bin -- -Isome/path -Isome/other/path foo.proto
   indexer foo.proto bar.proto | verifier foo.proto bar.proto")");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-
-  std::vector<std::string> final_args(argv + 1, argv + argc);
+  std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
+  std::vector<std::string> final_args(remain.begin() + 1, remain.end());
 
   std::string kzip_file;
-  if (!FLAGS_index_file.empty()) {
+  if (!absl::GetFlag(FLAGS_index_file).empty()) {
     CHECK(final_args.empty())
         << "No positional arguments are allowed when reading "
         << "from an index file.";
-    kzip_file = FLAGS_index_file;
+    kzip_file = absl::GetFlag(FLAGS_index_file);
   }
 
   int write_fd = STDOUT_FILENO;
-  if (FLAGS_o != "-") {
-    write_fd = ::open(FLAGS_o.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
-                      S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if (absl::GetFlag(FLAGS_o) != "-") {
+    write_fd =
+        ::open(absl::GetFlag(FLAGS_o).c_str(), O_WRONLY | O_CREAT | O_TRUNC,
+               S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     CHECK(write_fd != -1) << "Can't open output file";
   }
 
@@ -176,7 +180,8 @@ Examples:
   {
     google::protobuf::io::FileOutputStream raw_output(write_fd);
     kythe::FileOutputStream kythe_output(&raw_output);
-    kythe_output.set_flush_after_each_entry(FLAGS_flush_after_each_entry);
+    kythe_output.set_flush_after_each_entry(
+        absl::GetFlag(FLAGS_flush_after_each_entry));
 
     if (!kzip_file.empty()) {
       DecodeKzipFile(kzip_file, [&](const proto::CompilationUnit& unit,
@@ -195,8 +200,8 @@ Examples:
       unit.set_working_directory(GetCurrentDirectory().ValueOrDie());
       FileVNameGenerator file_vnames;
       kythe::proto::VName default_vname;
-      default_vname.set_corpus(FLAGS_default_corpus);
-      default_vname.set_root(FLAGS_default_root);
+      default_vname.set_corpus(absl::GetFlag(FLAGS_default_corpus));
+      default_vname.set_root(absl::GetFlag(FLAGS_default_root));
       file_vnames.set_default_base_vname(default_vname);
       bool stdin_requested = false;
       for (const std::string& arg : final_args) {

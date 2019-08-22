@@ -25,9 +25,12 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <string>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/str_format.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -42,9 +45,10 @@ using kythe::proto::ClaimAssignment;
 using kythe::proto::CompilationUnit;
 using kythe::proto::VName;
 
-DEFINE_bool(text, false, "Dump output as text instead of protobuf.");
-DEFINE_bool(show_stats, false, "Show some statistics.");
-DEFINE_string(index_pack, "", "Read from an index pack instead of stdin.");
+ABSL_FLAG(bool, text, false, "Dump output as text instead of protobuf.");
+ABSL_FLAG(bool, show_stats, false, "Show some statistics.");
+ABSL_FLAG(std::string, index_pack, "",
+          "Read from an index pack instead of stdin.");
 
 struct Claimable;
 
@@ -156,7 +160,7 @@ class ClaimTool {
   /// \brief Export claim data to `out_fd` in the format specified by
   /// `FLAGS_text`.
   void WriteClaimFile(int out_fd) {
-    if (FLAGS_text) {
+    if (absl::GetFlag(FLAGS_text)) {
       for (auto& claimable : claimables_) {
         if (claimable.second.elected_claimant) {
           ClaimAssignment claim;
@@ -168,8 +172,8 @@ class ClaimTool {
       }
       return;
     }
-    namespace io = google::protobuf::io;
     {
+      namespace io = google::protobuf::io;
       io::FileOutputStream file_output_stream(out_fd);
       io::GzipOutputStream::Options options;
       options.format = io::GzipOutputStream::GZIP;
@@ -186,7 +190,7 @@ class ClaimTool {
         }
       }
       CHECK(!coded_stream.HadError());
-    }  // namespace io=google::protobuf::io;
+    }
     CHECK(::close(out_fd) == 0) << "errno was: " << errno;
   }
 
@@ -256,12 +260,11 @@ class ClaimTool {
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.1");
-  gflags::SetUsageMessage("static_claim: assign ownership for analysis");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::SetProgramUsageMessage("static_claim: assign ownership for analysis");
+  absl::ParseCommandLine(argc, argv);
   std::string next_index_file;
   ClaimTool tool;
-  if (FLAGS_index_pack.empty()) {
+  if (absl::GetFlag(FLAGS_index_pack).empty()) {
     while (getline(std::cin, next_index_file)) {
       if (next_index_file.empty()) {
         continue;
@@ -277,8 +280,8 @@ int main(int argc, char* argv[]) {
   } else {
     std::string error_text;
     auto filesystem = kythe::IndexPackPosixFilesystem::Open(
-        FLAGS_index_pack, kythe::IndexPackFilesystem::OpenMode::kReadOnly,
-        &error_text);
+        absl::GetFlag(FLAGS_index_pack),
+        kythe::IndexPackFilesystem::OpenMode::kReadOnly, &error_text);
     if (!filesystem) {
       absl::FPrintF(stderr, "Error reading index pack: %s\n", error_text);
       return 1;
@@ -301,7 +304,7 @@ int main(int argc, char* argv[]) {
   }
   tool.AssignClaims();
   tool.WriteClaimFile(STDOUT_FILENO);
-  if (FLAGS_show_stats) {
+  if (absl::GetFlag(FLAGS_show_stats)) {
     absl::PrintF("Number of claimables: %lu\n", tool.claimables().size());
     absl::PrintF(" Number of claimants: %lu\n", tool.claimants().size());
     absl::PrintF("   Total input count: %lu\n", tool.total_input_count());

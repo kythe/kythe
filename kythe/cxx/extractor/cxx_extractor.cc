@@ -39,7 +39,6 @@
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/file_utils.h"
 #include "kythe/cxx/common/json_proto.h"

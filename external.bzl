@@ -70,9 +70,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_absl",
-        sha256 = "3601822b4d3c7cc62d891a2d0993b902ad1858e4faf41d895678d3a7749ec503",
-        strip_prefix = "abseil-cpp-ca3f87560a0eef716195cadf66dc6b938a579ec6",
-        url = "https://github.com/abseil/abseil-cpp/archive/ca3f87560a0eef716195cadf66dc6b938a579ec6.zip",
+        sha256 = "c1b570e3d48527c6eb5d8668cd4d2a24b704110700adc0db44b002c058fdf5d0",
+        strip_prefix = "abseil-cpp-c6c3c1b498e4ee939b24be59cae29d59c3863be8",
+        url = "https://github.com/abseil/abseil-cpp/archive/c6c3c1b498e4ee939b24be59cae29d59c3863be8.zip",
     )
 
     maybe(
@@ -85,19 +85,14 @@ def _cc_dependencies():
 
     maybe(
         http_archive,
-        name = "com_github_gflags_gflags",
-        sha256 = "19713a36c9f32b33df59d1c79b4958434cb005b5b47dc5400a7a4b078111d9b5",
-        strip_prefix = "gflags-2.2.2",
-        url = "https://github.com/gflags/gflags/archive/v2.2.2.zip",
-    )
-
-    maybe(
-        http_archive,
         name = "com_github_google_glog",
-        build_file = "@io_kythe//third_party:googlelog.BUILD",
-        sha256 = "ce61883437240d650be724043e8b3c67e257690f876ca9fd53ace2a791cfea6c",
-        strip_prefix = "glog-bac8811710c77ac3718be1c4801f43d37c1aea46",
-        url = "https://github.com/google/glog/archive/bac8811710c77ac3718be1c4801f43d37c1aea46.zip",
+        strip_prefix = "glog-ba8a9f6952d04d1403b97df24e6836227751454e",
+        sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
+        url = "https://github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
+        build_file_content = "\n".join([
+            "load(\"//:bazel/glog.bzl\", \"glog_library\")",
+            "glog_library(with_gflags=0)",
+        ]),
     )
 
     maybe(

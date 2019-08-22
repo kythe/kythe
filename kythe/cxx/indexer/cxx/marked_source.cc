@@ -16,20 +16,20 @@
 
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 
+#include "absl/flags/flag.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/Format/Format.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Sema/Template.h"
-#include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
-DEFINE_bool(reformat_marked_source, false,
-            "Reformat source code used in MarkedSource (experimental).");
-DEFINE_bool(pretty_print_function_prototypes, false,
-            "Synthesize new function prototypes (experimental).");
+ABSL_FLAG(bool, reformat_marked_source, false,
+          "Reformat source code used in MarkedSource (experimental).");
+ABSL_FLAG(bool, pretty_print_function_prototypes, false,
+          "Synthesize new function prototypes (experimental).");
 
 namespace kythe {
 namespace {
@@ -804,7 +804,7 @@ MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
     return absl::nullopt;
   }
   MarkedSource out_sig;
-  if (FLAGS_reformat_marked_source) {
+  if (absl::GetFlag(FLAGS_reformat_marked_source)) {
     clang::tooling::Replacements replacements;
     bool incomplete = false;
     // Weirdly, Clang tooling complains if we don't make a copy of `range` here.
@@ -858,7 +858,7 @@ absl::optional<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
   if (llvm::isa<clang::VarDecl>(decl_) || llvm::isa<clang::FieldDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);
   } else if (const auto* func = llvm::dyn_cast<clang::FunctionDecl>(decl_)) {
-    if (FLAGS_pretty_print_function_prototypes) {
+    if (absl::GetFlag(FLAGS_pretty_print_function_prototypes)) {
       return GenerateMarkedSourceForFunction(func);
     } else {
       return GenerateMarkedSourceUsingSource(decl_id);
