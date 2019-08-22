@@ -129,13 +129,16 @@ public class KZip {
     String getSubdirectory() {
       return subdirectory;
     }
+
     private final String subdirectory;
   }
 
   @AutoValue
   abstract static class Descriptor {
     abstract String root();
+
     abstract Encoding encoding();
+
     static Descriptor create(String root, Encoding encoding) {
       return new AutoValue_KZip_Descriptor(root, encoding);
     }
@@ -152,5 +155,4 @@ public class KZip {
       return Paths.get(root(), FILES_SUBDIRECTORY, digest).toString();
     }
   }
-
 }

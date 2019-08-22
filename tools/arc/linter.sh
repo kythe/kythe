@@ -61,9 +61,11 @@ case $file in
   *.h|*.cc|*.c|*.proto|*.js)
     cf="$(command -v clang-format-7 clang-format 2>/dev/null | head -n1)"
     if [[ -n "$cf" ]]; then
-      if ! diff -q <("$cf" --style=file "$file") "$file"; then
-        echo "clang-format::error:1 $file"
-      fi
+      diff \
+        --unchanged-line-format='' \
+        --new-line-format='clang-format::error:%dn -%L' \
+        --old-line-format='clang-format::error:%dn +%L' \
+        <("$cf" --style=file "$file") "$file" || true
     fi ;;
 esac
 

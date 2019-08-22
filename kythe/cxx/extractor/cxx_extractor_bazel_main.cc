@@ -28,11 +28,15 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/extractor/language.h"
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
 
 DEFINE_string(build_config, "",
               "Human readable description of the build configuration.");
+DEFINE_string(canonicalize_vname_paths, "clean-only",
+              "Policy to use when canonicalization VName paths: "
+              "clean-only (default), prefer-relative, prefer-real.");
 
 static void LoadExtraAction(const std::string& path,
                             blaze::ExtraActionInfo* info,
@@ -60,6 +64,15 @@ int main(int argc, char* argv[]) {
                   argv[0]);
     return 1;
   }
+  kythe::PathCanonicalizer::Policy vname_policy;
+  if (auto policy_flag =
+          kythe::ParseCanonicalizationPolicy(FLAGS_canonicalize_vname_paths)) {
+    vname_policy = *policy_flag;
+  } else {
+    absl::FPrintF(stderr, "Unrecognized canonicalization policy: %s\n",
+                  FLAGS_canonicalize_vname_paths);
+    return 1;
+  }
   std::string extra_action_file = argv[1];
   std::string output_file = argv[2];
   std::string vname_config = argv[3];
@@ -83,6 +96,7 @@ int main(int argc, char* argv[]) {
   config.SetTargetName(info.owner());
   config.SetBuildConfig(FLAGS_build_config);
   config.SetCompilationOutputPath(cpp_info.output_file());
+  config.SetPathCanonizalizationPolicy(vname_policy);
   config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();
   return 0;
