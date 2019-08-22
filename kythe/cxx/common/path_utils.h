@@ -93,6 +93,19 @@ class PathCanonicalizer {
   absl::optional<PathRealizer> realizer_;
 };
 
+/// \brief Parses a flag string as a PathCanonicalizer::Policy.
+///
+/// This is an extension point for the Abseil Flags library to allow
+/// using PathCanonicalizer directly as a flag.
+bool AbslParseFlag(absl::string_view text, PathCanonicalizer::Policy* policy,
+                   std::string* error);
+
+/// \brief Returns the flag string representation of PathCanonicalizer::Policy.
+///
+/// This is an extension point for the Abseil Flags library to allow
+/// using PathCanonicalizer directly as a flag.
+std::string AbslUnparseFlag(PathCanonicalizer::Policy policy);
+
 /// \brief Parses a string into a PathCanonicalizer::Policy.
 ///
 /// Parses either integeral values of enumerators or lower-case,

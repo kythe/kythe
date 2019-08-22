@@ -179,6 +179,30 @@ absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
   return absl::nullopt;
 }
 
+bool AbslParseFlag(absl::string_view text, PathCanonicalizer::Policy* policy,
+                   std::string* error) {
+  if (auto parsed = ParseCanonicalizationPolicy(text)) {
+    *policy = *parsed;
+    return true;
+  }
+  *error = "policy not one of: clean-only, prefer-relative, prefer-real";
+  return false;
+}
+
+std::string AbslUnparseFlag(PathCanonicalizer::Policy policy) {
+  using Policy = PathCanonicalizer::Policy;
+  switch (policy) {
+    case Policy::kCleanOnly:
+      return "clean-only";
+    case Policy::kPreferRelative:
+      return "prefer-relative";
+    case Policy::kPreferReal:
+      return "prefer-real";
+  }
+  LOG(FATAL) << "Invalid path policy provided: " << static_cast<int>(policy);
+  return "(unknown)";
+}
+
 std::string JoinPath(absl::string_view a, absl::string_view b) {
   return absl::StrCat(absl::StripSuffix(a, "/"), "/",
                       absl::StripPrefix(b, "/"));

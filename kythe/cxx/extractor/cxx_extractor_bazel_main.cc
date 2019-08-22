@@ -20,9 +20,12 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <string>
+
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "absl/strings/str_format.h"
 #include "cxx_extractor.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
@@ -32,11 +35,12 @@
 #include "kythe/cxx/extractor/language.h"
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
 
-DEFINE_string(build_config, "",
-              "Human readable description of the build configuration.");
-DEFINE_string(canonicalize_vname_paths, "clean-only",
-              "Policy to use when canonicalization VName paths: "
-              "clean-only (default), prefer-relative, prefer-real.");
+ABSL_FLAG(std::string, build_config, "",
+          "Human readable description of the build configuration.");
+ABSL_FLAG(kythe::PathCanonicalizer::Policy, canonicalize_vname_paths,
+          kythe::PathCanonicalizer::Policy::kCleanOnly,
+          "Policy to use when canonicalization VName paths: "
+          "clean-only (default), prefer-relative, prefer-real.");
 
 static void LoadExtraAction(const std::string& path,
                             blaze::ExtraActionInfo* info,
@@ -56,26 +60,16 @@ static void LoadExtraAction(const std::string& path,
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.1");
-  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
-  if (argc != 4) {
+  std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
+  if (remain.size() != 4) {
     absl::FPrintF(stderr,
                   "Call as %s extra-action-file output-file vname-config\n",
-                  argv[0]);
+                  remain[0]);
     return 1;
   }
-  kythe::PathCanonicalizer::Policy vname_policy;
-  if (auto policy_flag =
-          kythe::ParseCanonicalizationPolicy(FLAGS_canonicalize_vname_paths)) {
-    vname_policy = *policy_flag;
-  } else {
-    absl::FPrintF(stderr, "Unrecognized canonicalization policy: %s\n",
-                  FLAGS_canonicalize_vname_paths);
-    return 1;
-  }
-  std::string extra_action_file = argv[1];
-  std::string output_file = argv[2];
-  std::string vname_config = argv[3];
+  std::string extra_action_file = remain[1];
+  std::string output_file = remain[2];
+  std::string vname_config = remain[3];
   blaze::ExtraActionInfo info;
   blaze::CppCompileInfo cpp_info;
   LoadExtraAction(extra_action_file, &info, &cpp_info);
@@ -94,9 +88,10 @@ int main(int argc, char* argv[]) {
   config.SetArgs(args);
   config.SetVNameConfig(vname_config);
   config.SetTargetName(info.owner());
-  config.SetBuildConfig(FLAGS_build_config);
+  config.SetBuildConfig(absl::GetFlag(FLAGS_build_config));
   config.SetCompilationOutputPath(cpp_info.output_file());
-  config.SetPathCanonizalizationPolicy(vname_policy);
+  config.SetPathCanonizalizationPolicy(
+      absl::GetFlag(FLAGS_canonicalize_vname_paths));
   config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();
   return 0;

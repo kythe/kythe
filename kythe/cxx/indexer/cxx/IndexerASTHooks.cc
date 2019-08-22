@@ -20,6 +20,7 @@
 #include <tuple>
 
 #include "GraphObserver.h"
+#include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/optional.h"
 #include "clang/AST/Attr.h"
@@ -45,7 +46,6 @@
 #include "clang/Index/USRGeneration.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/Sema/Lookup.h"
-#include "gflags/gflags.h"
 #include "indexed_parent_iterator.h"
 #include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
@@ -54,12 +54,12 @@
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 
-DEFINE_bool(experimental_alias_template_instantiations, false,
-            "Ignore template instantation information when generating IDs.");
-DEFINE_bool(experimental_threaded_claiming, false,
-            "Defer answering claims and submit them in bulk when possible.");
-DEFINE_bool(emit_anchors_on_builtins, true,
-            "Emit anchors on builtin types like int and float.");
+ABSL_FLAG(bool, experimental_alias_template_instantiations, false,
+          "Ignore template instantation information when generating IDs.");
+ABSL_FLAG(bool, experimental_threaded_claiming, false,
+          "Defer answering claims and submit them in bulk when possible.");
+ABSL_FLAG(bool, emit_anchors_on_builtins, true,
+          "Emit anchors on builtin types like int and float.");
 
 namespace kythe {
 
@@ -210,7 +210,7 @@ bool ConstructorOverridesInitializer(const clang::CXXConstructorDecl* Ctor,
 /// \return true if `D` should not be visited because its name will never be
 /// uttered due to aliasing rules.
 bool SkipAliasedDecl(const clang::Decl* D) {
-  return FLAGS_experimental_alias_template_instantiations &&
+  return absl::GetFlag(FLAGS_experimental_alias_template_instantiations) &&
          (FindSpecializedTemplate(D) != D);
 }
 
@@ -338,20 +338,21 @@ class PruneCheck {
       // ** modulo wacky macros
       //
       GenerateCleanupId(decl);
-      if (FLAGS_experimental_threaded_claiming ||
+      if (absl::GetFlag(FLAGS_experimental_threaded_claiming) ||
           !visitor_->Observer.claimImplicitNode(cleanup_id_)) {
         can_prune_ = Prunability::kDeferred;
       }
     } else if (llvm::isa<clang::ClassTemplateSpecializationDecl>(decl)) {
       GenerateCleanupId(decl);
-      if (FLAGS_experimental_threaded_claiming ||
+      if (absl::GetFlag(FLAGS_experimental_threaded_claiming) ||
           !visitor_->Observer.claimImplicitNode(cleanup_id_)) {
         can_prune_ = Prunability::kDeferIncompleteFunctions;
       }
     }
   }
   ~PruneCheck() {
-    if (!FLAGS_experimental_threaded_claiming && !cleanup_id_.empty()) {
+    if (!absl::GetFlag(FLAGS_experimental_threaded_claiming) &&
+        !cleanup_id_.empty()) {
       visitor_->Observer.finishImplicitNode(cleanup_id_);
     }
   }
@@ -372,7 +373,7 @@ class PruneCheck {
     // It's critical that we distinguish between different argument lists
     // here even if aliasing is turned on; otherwise we will drop data.
     // If aliasing is off, the NodeId already contains this information.
-    if (FLAGS_experimental_alias_template_instantiations) {
+    if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
       llvm::raw_string_ostream ostream(cleanup_id_);
       for (const auto& Current :
            RootTraversal(visitor_->getAllParents(), decl)) {
@@ -1076,7 +1077,7 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
       }
     }
   }
-  if (FLAGS_experimental_threaded_claiming) {
+  if (absl::GetFlag(FLAGS_experimental_threaded_claiming)) {
     if (Decl != Job->Decl) {
       PruneCheck Prune(this, Decl);
       auto can_prune = Prune.can_prune();
@@ -1700,7 +1701,7 @@ IndexerASTVisitor::BuildNodeIdForDeclContext(const clang::DeclContext* DC) {
 void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
     const clang::Decl* Decl, const GraphObserver::NodeId& DeclNode) {
   if (const DeclContext* DC = Decl->getDeclContext()) {
-    if (FLAGS_experimental_alias_template_instantiations) {
+    if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
       if (!Job->UnderneathImplicitTemplateInstantiation) {
         if (auto ContextId = BuildNodeIdForRefToDeclContext(DC)) {
           Observer.recordChildOfEdge(DeclNode, ContextId.value());
@@ -1719,7 +1720,7 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr* DRE) {
 }
 
 bool IndexerASTVisitor::VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL) {
-  if (FLAGS_emit_anchors_on_builtins) {
+  if (absl::GetFlag(FLAGS_emit_anchors_on_builtins)) {
     RecordTypeLocSpellingLocation(TL);
   }
   return true;
@@ -2537,7 +2538,7 @@ IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange& SR) {
     return absl::nullopt;
   }
   if (!Job->RangeContext.empty() &&
-      !FLAGS_experimental_alias_template_instantiations) {
+      !absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
     return GraphObserver::Range(SR, Job->RangeContext.back());
   } else {
     return GraphObserver::Range(SR, Observer.getClaimTokenForRange(SR));
@@ -2987,15 +2988,17 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                 E = MF->end_overridden_methods();
            O != E; ++O) {
         Observer.recordOverridesEdge(
-            InnerNode, FLAGS_experimental_alias_template_instantiations
-                           ? BuildNodeIdForRefToDecl(*O)
-                           : BuildNodeIdForDecl(*O));
+            InnerNode,
+            absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
+                ? BuildNodeIdForRefToDecl(*O)
+                : BuildNodeIdForDecl(*O));
       }
       MapOverrideRoots(MF, [&](const CXXMethodDecl* R) {
         Observer.recordOverridesRootEdge(
-            InnerNode, FLAGS_experimental_alias_template_instantiations
-                           ? BuildNodeIdForRefToDecl(R)
-                           : BuildNodeIdForDecl(R));
+            InnerNode,
+            absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
+                ? BuildNodeIdForRefToDecl(R)
+                : BuildNodeIdForDecl(R));
       });
     }
   }
@@ -3460,7 +3463,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // Some NodeIds are stable in the face of changes to that data, such as
   // the IDs given to class definitions (in part because of the language rules).
 
-  if (FLAGS_experimental_alias_template_instantiations) {
+  if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
     Decl = FindSpecializedTemplate(Decl);
   }
 
@@ -3535,7 +3538,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
         Ostream << "#";
       }
     }
-    if (!FLAGS_experimental_alias_template_instantiations) {
+    if (!absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
       if (const auto* CTSD =
               dyn_cast<ClassTemplateSpecializationDecl>(Current.decl)) {
         // Inductively, we can break after the first implicit instantiation*
@@ -5087,14 +5090,14 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
   Decl->getOverriddenMethods(overrides);
   for (const auto& O : overrides) {
     Observer.recordOverridesEdge(
-        Node, FLAGS_experimental_alias_template_instantiations
+        Node, absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
                   ? BuildNodeIdForRefToDecl(O)
                   : BuildNodeIdForDecl(O));
   }
   if (!overrides.empty()) {
     MapOverrideRoots(Decl, [&](const ObjCMethodDecl* R) {
       Observer.recordOverridesRootEdge(
-          Node, FLAGS_experimental_alias_template_instantiations
+          Node, absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
                     ? BuildNodeIdForRefToDecl(R)
                     : BuildNodeIdForDecl(R));
     });
