@@ -116,7 +116,6 @@ TEST(PathUtilsTest, RealPath) {
   // error if a path doesn't exist.
   StatusOr<std::string> result = RealPath("/this/path/should/not/exist");
   EXPECT_EQ(StatusCode::kNotFound, result.status().code());
-
   // Check that testing::TempDir() points to itself.
   const std::string temp_dir = CleanPath(testing::TempDir());
   result = RealPath(temp_dir);
@@ -124,11 +123,12 @@ TEST(PathUtilsTest, RealPath) {
   ASSERT_EQ(temp_dir, *result);
 
   // If so, check that RealPath resolves a known link.
-  const std::string link_path = JoinPath(temp_dir, "link");
+  const std::string link_path = JoinPath(temp_dir, "PathUtilsTestLink");
   ASSERT_EQ(std::error_code(), Symlink(temp_dir, link_path));
   result = RealPath(link_path);
   ASSERT_TRUE(result.ok());
   EXPECT_EQ(temp_dir, *result);
+  EXPECT_EQ(std::error_code(), Remove(link_path));
 }
 
 class CanonicalizerTest : public ::testing::Test {
