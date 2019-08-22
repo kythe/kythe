@@ -113,6 +113,7 @@ const (
 	prefixProto = "pbunits"
 )
 
+// EncodingFor converts a string to an Encoding.
 func EncodingFor(v string) (Encoding, error) {
 	v = strings.ToUpper(v)
 	switch {
