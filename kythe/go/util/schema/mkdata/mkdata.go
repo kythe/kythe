@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-// Program mkdata converts a text protobuf containing Kythe schema descriptors
-// into a Go source file that can be compiled into the schema package.
+// Program mkdata parses the kythe.proto.schema.Metadata from the Kythe
+// schema.proto file descriptor into a Go/Java source file that can be compiled
+// into the schema util package.
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"flag"
 	"fmt"
 	"go/format"
@@ -31,42 +34,78 @@ import (
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 
+	dpb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 )
 
 var (
 	language    = flag.String("language", "", "Generated target language (supported: go java)")
-	inputPath   = flag.String("input", "", "Path of input data file (textpb)")
 	outputPath  = flag.String("output", "", "Path of output source file")
 	packageName = flag.String("package", "", "Package name to generate")
 )
 
+type SchemaIndex struct {
+	NodeKinds map[string]scpb.NodeKind
+	Subkinds  map[string]scpb.Subkind
+	EdgeKinds map[string]scpb.EdgeKind
+	FactNames map[string]scpb.FactName
+}
+
 func main() {
 	flag.Parse()
 	switch {
-	case *inputPath == "":
-		log.Fatal("You must provide a data -input path")
 	case *outputPath == "":
 		log.Fatal("You must provide a source -output path")
 	case *packageName == "":
 		log.Fatal("You must provide a source -package name")
 	}
 
-	// Read and decode the schema constants.
-	data, err := ioutil.ReadFile(*inputPath)
+	protoFile := scpb.E_Metadata.Filename
+	rd, err := gzip.NewReader(bytes.NewReader(proto.FileDescriptor(protoFile)))
 	if err != nil {
-		log.Fatalf("Reading input data: %v", err)
+		log.Fatalf("Failed to read schema.proto file descriptor: %v", err)
 	}
-	var index scpb.Index
-	if err := proto.UnmarshalText(string(data), &index); err != nil {
-		log.Fatalf("Invalid schema data: %v", err)
+	rec, err := ioutil.ReadAll(rd)
+	if err != nil {
+		log.Fatalf("Failed to decompress schema.proto file descriptor: %v", err)
+	}
+	var fd dpb.FileDescriptorProto
+	if err := proto.Unmarshal(rec, &fd); err != nil {
+		log.Fatalf("Failed to unmarshal schema.proto file descriptor: %v", err)
+	}
+
+	index := &SchemaIndex{
+		NodeKinds: make(map[string]scpb.NodeKind),
+		Subkinds:  make(map[string]scpb.Subkind),
+		EdgeKinds: make(map[string]scpb.EdgeKind),
+		FactNames: make(map[string]scpb.FactName),
+	}
+	for _, enum := range fd.EnumType {
+		for _, val := range enum.Value {
+			ext, err := proto.GetExtension(val.Options, scpb.E_Metadata)
+			if err == nil {
+				md := ext.(*scpb.Metadata)
+				switch enum.GetName() {
+				case "EdgeKind":
+					index.EdgeKinds[md.Label] = scpb.EdgeKind(val.GetNumber())
+				case "NodeKind":
+					index.NodeKinds[md.Label] = scpb.NodeKind(val.GetNumber())
+				case "FactName":
+					index.FactNames[md.Label] = scpb.FactName(val.GetNumber())
+				case "Subkind":
+					index.Subkinds[md.Label] = scpb.Subkind(val.GetNumber())
+				default:
+					log.Printf("Unknown Kythe enum %s with Metadata: %+v", enum.GetName(), md)
+				}
+			}
+		}
 	}
 
 	switch *language {
 	case "go":
-		generateGo(&index)
+		generateGo(protoFile, index)
 	case "java":
-		generateJava(&index)
+		generateJava(protoFile, index)
 	default:
 		log.Fatalf("You must provide a supported generated language (go or java): found %q", *language)
 	}
@@ -88,7 +127,7 @@ const copyrightHeader = `/*
  * limitations under the License.
  */`
 
-func generateGo(index *scpb.Index) {
+func generateGo(protoFile string, index *SchemaIndex) {
 	src := new(strings.Builder)
 	fmt.Fprintln(src, copyrightHeader)
 	fmt.Fprintf(src, "\n\npackage %s\n", *packageName)
@@ -96,56 +135,44 @@ func generateGo(index *scpb.Index) {
 // This is a generated file -- do not edit it by hand.
 // Input file: %s
 
-`, *inputPath)
+`, protoFile)
 
 	fmt.Fprintln(src, `import scpb "kythe.io/kythe/proto/schema_go_proto"`)
 	fmt.Fprintln(src, `var (`)
 
 	fmt.Fprintln(src, "nodeKinds = map[string]scpb.NodeKind{")
 	nodeKindsRev := make(map[scpb.NodeKind]string)
-	for _, kinds := range index.NodeKinds {
-		for _, name := range stringset.FromKeys(kinds.NodeKind).Elements() {
-			enum := kinds.NodeKind[name]
-			fullName := kinds.Prefix + name
-			fmt.Fprintf(src, "%q: %d,\n", fullName, enum)
-			nodeKindsRev[enum] = fullName
-		}
+	for _, name := range stringset.FromKeys(index.NodeKinds).Elements() {
+		enum := index.NodeKinds[name]
+		fmt.Fprintf(src, "%q: %d,\n", name, enum)
+		nodeKindsRev[enum] = name
 	}
 	fmt.Fprintln(src, "}")
 
 	fmt.Fprintln(src, "\nsubkinds = map[string]scpb.Subkind{")
 	subkindsRev := make(map[scpb.Subkind]string)
-	for _, kinds := range index.Subkinds {
-		for _, name := range stringset.FromKeys(kinds.Subkind).Elements() {
-			enum := kinds.Subkind[name]
-			fullName := kinds.Prefix + name
-			fmt.Fprintf(src, "%q: %d,\n", fullName, enum)
-			subkindsRev[enum] = fullName
-		}
+	for _, name := range stringset.FromKeys(index.Subkinds).Elements() {
+		enum := index.Subkinds[name]
+		fmt.Fprintf(src, "%q: %d,\n", name, enum)
+		subkindsRev[enum] = name
 	}
 	fmt.Fprintln(src, "}")
 
 	fmt.Fprintln(src, "\nfactNames = map[string]scpb.FactName{")
 	factNamesRev := make(map[scpb.FactName]string)
-	for _, kinds := range index.FactNames {
-		for _, name := range stringset.FromKeys(kinds.FactName).Elements() {
-			enum := kinds.FactName[name]
-			fullName := kinds.Prefix + name
-			fmt.Fprintf(src, "%q: %d,\n", fullName, enum)
-			factNamesRev[enum] = fullName
-		}
+	for _, name := range stringset.FromKeys(index.FactNames).Elements() {
+		enum := index.FactNames[name]
+		fmt.Fprintf(src, "%q: %d,\n", name, enum)
+		factNamesRev[enum] = name
 	}
 	fmt.Fprintln(src, "}")
 
 	fmt.Fprintln(src, "\nedgeKinds = map[string]scpb.EdgeKind{")
 	edgeKindsRev := make(map[scpb.EdgeKind]string)
-	for _, kinds := range index.EdgeKinds {
-		for _, name := range stringset.FromKeys(kinds.EdgeKind).Elements() {
-			enum := kinds.EdgeKind[name]
-			fullName := kinds.Prefix + name
-			fmt.Fprintf(src, "%q: %d,\n", fullName, enum)
-			edgeKindsRev[enum] = fullName
-		}
+	for _, name := range stringset.FromKeys(index.EdgeKinds).Elements() {
+		enum := index.EdgeKinds[name]
+		fmt.Fprintf(src, "%q: %d,\n", name, enum)
+		edgeKindsRev[enum] = name
 	}
 	fmt.Fprintln(src, "}")
 
@@ -239,11 +266,11 @@ func sortedKeys(v interface{}) []interface{} {
 	return vals
 }
 
-func generateJava(index *scpb.Index) {
+func generateJava(protoFile string, index *SchemaIndex) {
 	src := new(strings.Builder)
 	fmt.Fprintln(src, copyrightHeader)
 	fmt.Fprintln(src, "\n// This is a generated file -- do not edit it by hand.")
-	fmt.Fprintf(src, "// Input file: %s\n\n", *inputPath)
+	fmt.Fprintf(src, "// Input file: %s\n\n", protoFile)
 	fmt.Fprintf(src, "package %s;\n", *packageName)
 
 	fmt.Fprintln(src, "import com.google.common.collect.ImmutableBiMap;")
@@ -257,42 +284,30 @@ func generateJava(index *scpb.Index) {
 	fmt.Fprintln(src, "private Schema() {}")
 
 	fmt.Fprintln(src, "private static final ImmutableBiMap<String, NodeKind> NODE_KINDS = ImmutableBiMap.<String, NodeKind>builder()")
-	for _, kinds := range index.NodeKinds {
-		for _, name := range stringset.FromKeys(kinds.NodeKind).Elements() {
-			enum := kinds.NodeKind[name]
-			fullName := kinds.Prefix + name
-			fmt.Fprintf(src, ".put(%q, NodeKind.%s)\n", fullName, enum)
-		}
+	for _, name := range stringset.FromKeys(index.NodeKinds).Elements() {
+		enum := index.NodeKinds[name]
+		fmt.Fprintf(src, ".put(%q, NodeKind.%s)\n", name, enum)
 	}
 	fmt.Fprintln(src, ".build();")
 
 	fmt.Fprintln(src, "private static final ImmutableBiMap<String, Subkind> SUBKINDS = ImmutableBiMap.<String, Subkind>builder()")
-	for _, kinds := range index.Subkinds {
-		for _, name := range stringset.FromKeys(kinds.Subkind).Elements() {
-			enum := kinds.Subkind[name]
-			fullName := kinds.Prefix + name
-			fmt.Fprintf(src, ".put(%q, Subkind.%s)\n", fullName, enum)
-		}
+	for _, name := range stringset.FromKeys(index.Subkinds).Elements() {
+		enum := index.Subkinds[name]
+		fmt.Fprintf(src, ".put(%q, Subkind.%s)\n", name, enum)
 	}
 	fmt.Fprintln(src, ".build();")
 
 	fmt.Fprintln(src, "private static final ImmutableBiMap<String, EdgeKind> EDGE_KINDS = ImmutableBiMap.<String, EdgeKind>builder()")
-	for _, kinds := range index.EdgeKinds {
-		for _, name := range stringset.FromKeys(kinds.EdgeKind).Elements() {
-			enum := kinds.EdgeKind[name]
-			fullName := kinds.Prefix + name
-			fmt.Fprintf(src, ".put(%q, EdgeKind.%s)\n", fullName, enum)
-		}
+	for _, name := range stringset.FromKeys(index.EdgeKinds).Elements() {
+		enum := index.EdgeKinds[name]
+		fmt.Fprintf(src, ".put(%q, EdgeKind.%s)\n", name, enum)
 	}
 	fmt.Fprintln(src, ".build();")
 
 	fmt.Fprintln(src, "private static final ImmutableBiMap<String, FactName> FACT_NAMES = ImmutableBiMap.<String, FactName>builder()")
-	for _, kinds := range index.FactNames {
-		for _, name := range stringset.FromKeys(kinds.FactName).Elements() {
-			enum := kinds.FactName[name]
-			fullName := kinds.Prefix + name
-			fmt.Fprintf(src, ".put(%q, FactName.%s)\n", fullName, enum)
-		}
+	for _, name := range stringset.FromKeys(index.FactNames).Elements() {
+		enum := index.FactNames[name]
+		fmt.Fprintf(src, ".put(%q, FactName.%s)\n", name, enum)
 	}
 	fmt.Fprintln(src, ".build();")
 
