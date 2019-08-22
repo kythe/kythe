@@ -131,6 +131,19 @@ TEST(PathUtilsTest, RealPath) {
   EXPECT_EQ(std::error_code(), Remove(link_path));
 }
 
+TEST(PathUtilsTest, CanonicalizerPolicyParseTest) {
+  std::string error;
+  PathCanonicalizer::Policy policy;
+  ASSERT_TRUE(AbslParseFlag("clean-only", &policy, &error));
+  EXPECT_EQ(PathCanonicalizer::Policy::kCleanOnly, policy);
+  ASSERT_TRUE(AbslParseFlag("prefer-relative", &policy, &error));
+  EXPECT_EQ(PathCanonicalizer::Policy::kPreferRelative, policy);
+  ASSERT_TRUE(AbslParseFlag("prefer-real", &policy, &error));
+  EXPECT_EQ(PathCanonicalizer::Policy::kPreferReal, policy);
+  ASSERT_FALSE(AbslParseFlag("some-random-junk", &policy, &error));
+  EXPECT_NE("", error);
+}
+
 class CanonicalizerTest : public ::testing::Test {
  public:
   void SetUp() override {
