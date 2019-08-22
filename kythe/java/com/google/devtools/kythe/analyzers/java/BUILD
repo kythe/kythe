@@ -98,8 +98,8 @@ java_binary(
 java_library(
     name = "auto_value_plugin",
     srcs = [
-        "AutoValueClass.java",
         "AutoValuePlugin.java",
+        "ResolvedAutoValue.java",
     ],
     deps = [
         ":plugin",

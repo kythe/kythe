@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 
 @AutoValue
 /* Record of resolved {@link Symbol}s for an {@link AutoValue} and its generated class. */
-abstract class AutoValueClass {
+abstract class ResolvedAutoValue {
   @AutoValue
   abstract static class Property {
     abstract String name();
@@ -35,7 +35,7 @@ abstract class AutoValueClass {
     abstract Optional<GeneratedSymbol> setter();
 
     static Builder builder() {
-      return new AutoValue_AutoValueClass_Property.Builder();
+      return new AutoValue_ResolvedAutoValue_Property.Builder();
     }
 
     Stream<GeneratedSymbol> stream() {
@@ -68,7 +68,7 @@ abstract class AutoValueClass {
   }
 
   static Builder builder() {
-    return new AutoValue_AutoValueClass.Builder();
+    return new AutoValue_ResolvedAutoValue.Builder();
   }
 
   @AutoValue.Builder
@@ -84,7 +84,7 @@ abstract class AutoValueClass {
       return this;
     }
 
-    abstract AutoValueClass build();
+    abstract ResolvedAutoValue build();
   }
 
   @AutoValue
@@ -94,7 +94,7 @@ abstract class AutoValueClass {
     abstract Symbol generatedSym();
 
     static Builder builder() {
-      return new AutoValue_AutoValueClass_GeneratedSymbol.Builder();
+      return new AutoValue_ResolvedAutoValue_GeneratedSymbol.Builder();
     }
 
     Stream<Symbol> stream() {
