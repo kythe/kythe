@@ -23,6 +23,7 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
@@ -196,6 +197,21 @@ StatusOr<std::string> KzipWriter::InsertFile(absl::string_view path,
 }
 
 /* static */
-KzipEncoding KzipWriter::DefaultEncoding() { return KzipEncoding::kJson; }
+KzipEncoding KzipWriter::DefaultEncoding() {
+  if (const char* env_enc = getenv("KYTHE_KZIP_ENCODING")) {
+    std::string enc = absl::AsciiStrToUpper(env_enc);
+    if (enc == "JSON") {
+      return KzipEncoding::kJson;
+    }
+    if (enc == "PROTO") {
+      return KzipEncoding::kProto;
+    }
+    if (enc == "ALL") {
+      return KzipEncoding::kAll;
+    }
+    LOG(ERROR) << "Unknown encoding '" << enc << "', using JSON";
+  }
+  return KzipEncoding::kJson;
+}
 
 }  // namespace kythe

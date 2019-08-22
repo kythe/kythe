@@ -31,7 +31,20 @@ import java.util.zip.ZipOutputStream;
 public final class KZipWriter implements KZip.Writer {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
-  private static final KZip.Encoding DEFAULT_ENCODING = KZip.Encoding.JSON;
+  private static final KZip.Encoding DEFAULT_ENCODING;
+
+  static {
+    KZip.Encoding encoding = KZip.Encoding.JSON;
+    String encodingStr = System.getenv("KYTHE_KZIP_ENCODING");
+    if (encodingStr != null) {
+      try {
+        encoding = KZip.Encoding.valueOf(encodingStr);
+      } catch (IllegalArgumentException e) {
+        System.err.printf("Unknown kzip encoding '%s', using %s", encodingStr, encoding);
+      }
+    }
+    DEFAULT_ENCODING = encoding;
+  }
 
   private final KZip.Descriptor descriptor;
   private final ZipOutputStream output;
