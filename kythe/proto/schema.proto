@@ -132,11 +132,13 @@ enum EdgeKind {
   GENERATES = 16 [(metadata).label = "/kythe/edge/generates"];
   IMPUTES = 17 [(metadata).label = "/kythe/edge/imputes"];
   INSTANTIATES = 18 [(metadata).label = "/kythe/edge/instantiates"];
-  INSTANTIATES_SPECULATIVE = 19 [(metadata).label = "/kythe/edge/instantiates/speculative"];
+  INSTANTIATES_SPECULATIVE = 19
+      [(metadata).label = "/kythe/edge/instantiates/speculative"];
   NAMED = 20 [(metadata).label = "/kythe/edge/named"];
   OVERRIDES = 21 [(metadata).label = "/kythe/edge/overrides"];
   OVERRIDES_ROOT = 22 [(metadata).label = "/kythe/edge/overrides/root"];
-  OVERRIDES_TRANSITIVE = 23 [(metadata).label = "/kythe/edge/overrides/transitive"];
+  OVERRIDES_TRANSITIVE = 23
+      [(metadata).label = "/kythe/edge/overrides/transitive"];
   PARAM = 24 [(metadata).label = "/kythe/edge/param"];
   PROPERTY_READS = 44 [(metadata).label = "/kythe/edge/property/reads"];
   PROPERTY_WRITES = 45 [(metadata).label = "/kythe/edge/property/writes"];
@@ -145,7 +147,8 @@ enum EdgeKind {
   REF_CALL_IMPLICIT = 27 [(metadata).label = "/kythe/edge/ref/call/implicit"];
   REF_DOC = 28 [(metadata).label = "/kythe/edge/ref/doc"];
   REF_EXPANDS = 29 [(metadata).label = "/kythe/edge/ref/expands"];
-  REF_EXPANDS_TRANSITIVE = 30 [(metadata).label = "/kythe/edge/ref/expands/transitive"];
+  REF_EXPANDS_TRANSITIVE = 30
+      [(metadata).label = "/kythe/edge/ref/expands/transitive"];
   REF_FILE = 31 [(metadata).label = "/kythe/edge/ref/file"];
   REF_IMPLICIT = 32 [(metadata).label = "/kythe/edge/ref/implicit"];
   REF_IMPORTS = 33 [(metadata).label = "/kythe/edge/ref/imports"];
@@ -155,7 +158,8 @@ enum EdgeKind {
   REF_QUERIES = 37 [(metadata).label = "/kythe/edge/ref/queries"];
   SATISFIES = 38 [(metadata).label = "/kythe/edge/satisfies"];
   SPECIALIZES = 39 [(metadata).label = "/kythe/edge/specializes"];
-  SPECIALIZES_SPECULATIVE = 40 [(metadata).label = "/kythe/edge/specializes/speculative"];
+  SPECIALIZES_SPECULATIVE = 40
+      [(metadata).label = "/kythe/edge/specializes/speculative"];
   TAGGED = 41 [(metadata).label = "/kythe/edge/tagged"];
   TYPED = 42 [(metadata).label = "/kythe/edge/typed"];
   UNDEFINES = 43 [(metadata).label = "/kythe/edge/undefines"];
