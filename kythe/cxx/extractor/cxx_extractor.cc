@@ -1235,6 +1235,12 @@ void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
   if (final_args_.size() >= 3 && final_args_[1] == "--with_executable") {
     executable = final_args_[2];
     final_args_.erase(final_args_.begin() + 1, final_args_.begin() + 3);
+    // Clang tooling infrastructure expects that CommandLine[0] is a tool path
+    // relative to which the builtin headers can be found, so ensure these
+    // two paths are consistent.
+    // We also need to ensure that the executable path seen here is the one
+    // provided to the indexer.
+    final_args_[0] = executable;
   }
   // TODO(zarko): Does this really need to be InitializeAllTargets()?
   // We may have made the precondition too strict.

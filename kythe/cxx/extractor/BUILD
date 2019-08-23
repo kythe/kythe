@@ -182,28 +182,15 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "cmdlib",
-    srcs = [
-        "cxx_extractor_main.cc",
-    ],
-    hdrs = [
-        "cxx_extractor.h",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
+cc_binary(
+    name = "cxx_extractor",
+    srcs = ["cxx_extractor_main.cc"],
     deps = [
         ":lib",
         ":supported_language",
-        "//external:zlib",
-        "//kythe/proto:analysis_cc_proto",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
-        "@com_googlesource_code_re2//:re2",
-        "@org_llvm//:clangTooling",
     ],
 )
 
@@ -275,13 +262,6 @@ cc_test(
         ":objc_bazel_support_library",
         "//third_party:gtest",
         "@com_github_google_glog//:glog",
-    ],
-)
-
-cc_binary(
-    name = "cxx_extractor",
-    deps = [
-        ":cmdlib",
     ],
 )
 

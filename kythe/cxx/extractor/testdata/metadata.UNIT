@@ -27,7 +27,7 @@ required_input {
     digest: "1d6faa9e1a76d13f3ab8558a3640158b1f0a54f624a4e37ddc3ef41ed4191058"
   }
 }
-argument: "./kythe/cxx/extractor/cxx_extractor"
+argument: "/usr/bin/g++"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"

@@ -52,7 +52,7 @@ s|TEST_CWD|${PWD}/|" \
     "${BASE_DIR}/main_source_file_no_env_dep_with.UNIT" | \
     skip "-target" 1 |
     skip "signature" 0 |
-    diff - "${INDEX_PATH_WITH_MACRO}_UNIT"
+    diff -u - "${INDEX_PATH_WITH_MACRO}_UNIT"
 
 EC_HASH=$(sed -ne '/^entry_context:/ {s/.*entry_context: \"\(.*\)\"$/\1/; p;}' \
     "${INDEX_PATH_WITHOUT_MACRO}_UNIT")
@@ -61,4 +61,4 @@ s|TEST_CWD|${PWD}/|" \
     "${BASE_DIR}/main_source_file_no_env_dep_without.UNIT" | \
     skip "-target" 1 |
     skip "signature" 0 |
-    diff - "${INDEX_PATH_WITHOUT_MACRO}_UNIT"
+    diff -u - "${INDEX_PATH_WITHOUT_MACRO}_UNIT"

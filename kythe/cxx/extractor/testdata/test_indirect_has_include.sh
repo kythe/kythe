@@ -35,4 +35,4 @@ skip_inplace "signature" 0 "${INDEX_PATH}_UNIT"
 sed "s|TEST_CWD|${PWD}/|" "${BASE_DIR}/indirect_has_include_test.UNIT${PF_SUFFIX}" | \
     skip "-target" 1 |
     skip "signature" 0 |
-    diff - "${INDEX_PATH}_UNIT"
+    diff -u - "${INDEX_PATH}_UNIT"
