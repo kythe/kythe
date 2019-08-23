@@ -1040,8 +1040,7 @@ class Visitor {
       this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
     }
 
-
-    // TODO(#3934): See discussion.
+    // TODO(#4021): See discussion.
     // Pending changes, an anchor in a Code Search UI cannot currently be
     // displayed as a node definition and as referencing other nodes.  Instead,
     // for non-renamed imports the local node definition is placed on the
@@ -1066,7 +1065,7 @@ class Visitor {
       // This is an equals import, e.g.:
       //   import foo = require('./bar');
       //
-      // TODO(#3934): Bind the local definition and reference the remote
+      // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
       this.visitImport(decl.name, importTextAnchor, this.newAnchor(decl.name));
       return;
@@ -1083,7 +1082,7 @@ class Visitor {
       // This is a default import, e.g.:
       //   import foo from './bar';
       //
-      // TODO(#3934): Bind the local definition and reference the remote
+      // TODO(#4021): Bind the local definition and reference the remote
       // definition on the import name.
       this.visitImport(
           clause.name, importTextAnchor, this.newAnchor(clause.name));
@@ -1124,7 +1123,7 @@ class Visitor {
           // the local definition on "import" and reference the remote
           // definition on the import name.
           //
-          // TODO(#3934): Unify binding and reference anchors.
+          // TODO(#4021): Unify binding and reference anchors.
           let bindingAnchor, refAnchor;
           if (imp.propertyName) {
             bindingAnchor = this.newAnchor(imp.name);
