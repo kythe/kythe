@@ -748,19 +748,22 @@ void ExtractorPPCallbacks::InclusionDirective(
     LOG(WARNING) << "Search path was " << SearchPath.str();
     LOG(WARNING) << "Relative path was " << RelativePath.str();
     LOG(WARNING) << "Imported was set to " << Imported;
-    const auto* options =
-        &preprocessor_->getHeaderSearchInfo().getHeaderSearchOpts();
-    LOG(WARNING) << "Resource directory is " << options->ResourceDir;
-    for (const auto& entry : options->UserEntries) {
-      LOG(WARNING) << "User entry (" << IncludeDirGroupToString(entry.Group)
-                   << "): " << entry.Path;
-    }
-    for (const auto& prefix : options->SystemHeaderPrefixes) {
-      // This is not a search path. If an include path starts with this prefix,
-      // it is considered a system header.
-      LOG(WARNING) << "System header prefix: " << prefix.Prefix;
-    }
-    LOG(WARNING) << "Sysroot set to " << options->Sysroot;
+    static bool logged = [&] {
+      const auto* options =
+          &preprocessor_->getHeaderSearchInfo().getHeaderSearchOpts();
+      LOG(WARNING) << "Resource directory is " << options->ResourceDir;
+      for (const auto& entry : options->UserEntries) {
+        LOG(WARNING) << "User entry (" << IncludeDirGroupToString(entry.Group)
+                     << "): " << entry.Path;
+      }
+      for (const auto& prefix : options->SystemHeaderPrefixes) {
+        // This is not a search path. If an include path starts with this
+        // prefix, it is considered a system header.
+        LOG(WARNING) << "System header prefix: " << prefix.Prefix;
+      }
+      LOG(WARNING) << "Sysroot set to " << options->Sysroot;
+      return true;
+    }();
     return;
   }
   last_inclusion_directive_path_ =
