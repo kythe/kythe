@@ -62,7 +62,7 @@ _INDEXER_FLAGS = {
     "ibuild_config": "",
 }
 
-def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
+def _compiler_options(ctx, cc_toolchain, copts, cc_info):
     """Returns the list of compiler flags from the C++ toolchain."""
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
@@ -76,12 +76,13 @@ def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
         user_compile_flags = copts,
         include_directories = cc_info.compilation_context.includes,
         quote_include_directories = cc_info.compilation_context.quote_includes,
-        system_include_directories = depset(direct = includes, transitive = [cc_info.compilation_context.system_includes]),
+        system_include_directories = cc_info.compilation_context.system_includes,
         add_legacy_cxx_options = True,
     )
 
     # TODO(schroederc): use memory-efficient Args, when available
     args = ctx.actions.args()
+    args.add("--with_executable", cc_toolchain.compiler_executable)
     args.add_all(cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
         action_name = CPP_COMPILE_ACTION_NAME,
@@ -252,10 +253,6 @@ cc_kythe_proto_library = rule(
 
 def _cc_extract_kzip_impl(ctx):
     cpp = find_cpp_toolchain(ctx)
-    if cpp.libc == "macosx":
-        toolchain_includes = cpp.built_in_include_directories
-    else:
-        toolchain_includes = []
     cc_info = cc_common.merge_cc_infos(cc_infos = [
         src[CcInfo]
         for src in ctx.attr.srcs + ctx.attr.deps
@@ -271,13 +268,16 @@ def _cc_extract_kzip_impl(ctx):
                 ctx,
                 cpp,
                 ctx.attr.opts,
-                toolchain_includes,
                 cc_info,
             ),
             vnames_config = ctx.file.vnames_config,
             deps = depset(
                 direct = ctx.files.srcs,
-                transitive = [depset(ctx.files.deps), cc_info.compilation_context.headers],
+                transitive = [
+                    depset(ctx.files.deps),
+                    cc_info.compilation_context.headers,
+                    cpp.all_files,
+                ],
             ),
         )
         for src in ctx.files.srcs
