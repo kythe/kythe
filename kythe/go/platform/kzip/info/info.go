@@ -45,6 +45,7 @@ func KzipInfo(f kzip.File) (*apb.KzipInfo, error) {
 		kzipInfo.TotalUnits++
 		corpusInfo(u.Proto.GetVName().GetCorpus()).Units[u.Proto.GetVName().GetLanguage()]++
 		for _, ri := range u.Proto.RequiredInput {
+			kzipInfo.TotalFiles++
 			corpusInfo(ri.GetVName().GetCorpus()).Files[ri.GetVName().GetLanguage()]++
 		}
 		return nil

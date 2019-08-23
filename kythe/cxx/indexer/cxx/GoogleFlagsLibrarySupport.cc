@@ -127,12 +127,13 @@ static clang::SourceRange GetVarDeclFlagDeclLoc(
   }
   auto DefTokText = llvm::StringRef(FileBuf.substr(
       FileIdOffset.second, FileIdEndOffset.second - FileIdOffset.second));
-  bool IsFlagDef = DefTokText.startswith("DEFINE_");
+  bool IsFlagDef =
+      DefTokText.startswith("DEFINE_") || DefTokText.startswith("ABSL_FLAG");
   if (!IsFlagDef && !DefTokText.startswith("DECLARE_")) {
     return clang::SourceLocation();
   }
   if (IsFlagDef && (Decl->getDefinition() != Decl)) {
-    // Reject internal declarataions.
+    // Reject internal declarations.
     return clang::SourceLocation();
   }
   // Note that we still get FLAGS_foo, FLAGS_nofoo, FLAGS_nonofoo. We'll lex the
