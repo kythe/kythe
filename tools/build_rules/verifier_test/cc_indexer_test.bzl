@@ -88,7 +88,12 @@ def _compiler_options(ctx, cc_toolchain, copts, cc_info):
         action_name = CPP_COMPILE_ACTION_NAME,
         variables = variables,
     ))
-    return args
+    env = cc_common.get_environment_variables(
+        feature_configuration = feature_configuration,
+        action_name = CPP_COMPILE_ACTION_NAME,
+        variables = variables,
+    )
+    return args, env
 
 def _compile_and_link(ctx, cc_info_providers, sources, headers):
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -258,18 +263,15 @@ def _cc_extract_kzip_impl(ctx):
         for src in ctx.attr.srcs + ctx.attr.deps
         if CcInfo in src
     ])
+    opts, env = _compiler_options(ctx, cpp, ctx.attr.opts, cc_info)
     outputs = depset([
         extract(
             srcs = depset([src]),
             ctx = ctx,
             extractor = ctx.executable.extractor,
             kzip = ctx.actions.declare_file("{}/{}.kzip".format(ctx.label.name, src.basename)),
-            opts = _compiler_options(
-                ctx,
-                cpp,
-                ctx.attr.opts,
-                cc_info,
-            ),
+            opts = opts,
+            env = env,
             vnames_config = ctx.file.vnames_config,
             deps = depset(
                 direct = ctx.files.srcs,
