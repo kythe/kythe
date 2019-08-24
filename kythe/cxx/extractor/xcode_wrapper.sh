@@ -51,4 +51,4 @@ for ARG in "$@" ; do
   UPDATEDARGS+=("${ARG}")
 done
 
-echo "$EXTRACTOR" "${UPDATEDARGS[@]}"
+exec "$EXTRACTOR" "${UPDATEDARGS[@]}"
