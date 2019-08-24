@@ -317,3 +317,10 @@ cc_test(
         ":testlib",
     ],
 )
+
+sh_binary(
+    name = "xcode_wrapper",
+    srcs = ["xcode_wrapper.sh"],
+    data = [":cxx_extractor"],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+)
