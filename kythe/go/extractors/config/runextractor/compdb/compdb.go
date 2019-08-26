@@ -123,7 +123,7 @@ func extractorEnv() ([]string, error) {
 
 	}
 	if !outputFound {
-		return nil, errors.New("Missing mandatory environment variable: KYTHE_OUTPUT_DIRECTORY")
+		return nil, errors.New("missing mandatory environment variable: KYTHE_OUTPUT_DIRECTORY")
 	}
 	return env, nil
 }

@@ -124,7 +124,7 @@ func getRepos() ([]string, error) {
 	case *reposFile != "":
 		return getReposFromFile()
 	default:
-		return nil, fmt.Errorf("Invalid state - need a source of repos")
+		return nil, fmt.Errorf("invalid state - need a source of repos")
 	}
 }
 

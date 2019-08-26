@@ -44,6 +44,7 @@ var (
 	packageName = flag.String("package", "", "Package name to generate")
 )
 
+// A SchemaIndex is a glossary of Kythe enum values and their labels.
 type SchemaIndex struct {
 	NodeKinds map[string]scpb.NodeKind
 	Subkinds  map[string]scpb.Subkind

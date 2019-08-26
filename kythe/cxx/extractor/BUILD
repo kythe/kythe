@@ -182,28 +182,14 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "cmdlib",
-    srcs = [
-        "cxx_extractor_main.cc",
-    ],
-    hdrs = [
-        "cxx_extractor.h",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
+cc_binary(
+    name = "cxx_extractor",
+    srcs = ["cxx_extractor_main.cc"],
     deps = [
         ":lib",
         ":supported_language",
-        "//external:zlib",
-        "//kythe/proto:analysis_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
-        "@com_googlesource_code_re2//:re2",
-        "@org_llvm//:clangTooling",
     ],
 )
 
@@ -279,13 +265,6 @@ cc_test(
 )
 
 cc_binary(
-    name = "cxx_extractor",
-    deps = [
-        ":cmdlib",
-    ],
-)
-
-cc_binary(
     name = "cxx_extractor_bazel",
     visibility = ["//visibility:public"],
     deps = [
@@ -336,4 +315,11 @@ cc_test(
     deps = [
         ":testlib",
     ],
+)
+
+sh_binary(
+    name = "xcode_wrapper",
+    srcs = ["xcode_wrapper.sh"],
+    data = [":cxx_extractor"],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
 )
