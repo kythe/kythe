@@ -20,7 +20,7 @@ required_input {
 }
 argument: "-target"
 argument: "x86_64-unknown-linux-gnu"
-argument: "../../../cxx_extractor"
+argument: "/dummy/bin/g++"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"

@@ -62,6 +62,8 @@ public enum EdgeKind {
   OVERRIDES_ROOT("overrides/root"),
   OVERRIDES_TRANSITIVE("overrides/transitive"),
   PARAM("param"),
+  PROPERTY_READS("property/reads"),
+  PROPERTY_WRITES("property/writes"),
   SATISFIES("satisfies"),
   SPECIALIZES("specializes"),
   SPECIALIZES_SPECULATIVE("specializes/speculative"),
