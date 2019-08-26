@@ -25,6 +25,7 @@
 #   https://secure.phabricator.com/book/phabricator/article/arcanist_lint_script_and_regex/
 
 readonly file="$1"
+readonly fullpath="$PWD/$file"
 readonly name="$(basename "$1")"
 readonly dir="$(dirname "$1")"
 
@@ -56,7 +57,8 @@ case $file in
     fi ;;
   *.go)
     if command -v jq &>/dev/null && command -v staticcheck &>/dev/null; then
-      staticcheck -f json "$file" | jq -r '"staticcheck::" + .severity + ":" + (.location.line | tostring) + " " + (.message | gsub("\n"; " "))'
+      staticcheck -f json "./$dir" | jq -r --arg file "$fullpath" \
+        'select(.location.file == $file) | "staticcheck::" + .severity + ":" + (.location.line | tostring) + " " + (.message | gsub("\n"; " "))'
     fi
     if command -v gofmt &>/dev/null; then
       gofmt -l "$file" | sed 's/^/gofmt::error:1 /'

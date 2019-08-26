@@ -95,7 +95,7 @@ public final class KZipReaderTest {
     try {
       KZipReader reader = new KZipReader(TestDataUtil.getTestFile("garbage_unit.kzip"));
       // Iterate over the units so we try to read in the garbage.
-      for (IndexedCompilation compilation: reader.scan()) {}
+      for (IndexedCompilation compilation : reader.scan()) {}
       fail();
     } catch (JsonParseException expected) {
     }
