@@ -352,6 +352,17 @@ message CrossReferencesRequest {
   // definition location populated (assuming it has one).
   bool node_definitions = 8;
 
+  enum TotalsMethod {
+    UNSPECIFIED_TOTALS = 0;
+    PRECISE_TOTALS = 1;
+    APPROXIMATE_TOTALS = 2;
+  }
+  // Method for aggregating the total xrefs requested.  If PRECISE, the totals
+  // will be accurate across all requested tickets and pages.  If APPROXIMATE,
+  // the totals may be partial/approximate so that the server can return results
+  // as soon as possible.
+  TotalsMethod totals_method = 16;
+
   // The cross-references matching a request are organized into logical pages.
   // The size of each page is a number of distinct cross-references
   // (definitions, references, documentation, and related nodes).
@@ -482,6 +493,7 @@ message CrossReferencesReply {
     map<string, int64> related_nodes_by_relation = 6;
   }
   // Total number of cross-references on all pages matching requested filters.
+  // This may be an approximation if allowed by the CrossReferencesRequest.
   Total total = 5;
 
   // A map from ticket to cross-references for each ticket specified in the

@@ -496,6 +496,12 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 	var foundCrossRefs bool
 	for i := 0; i < len(tickets); i++ {
+		// TODO(schroederc): change default behavior to APPROXIMATE rather than PRECISE totals
+		if req.TotalsMethod == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
+			log.Printf("WARNING: stopping CrossReferences index reads after %d/%d tickets", i, len(tickets))
+			break
+		}
+
 		ticket := tickets[i]
 		cr, err := t.crossReferences(ctx, ticket)
 		if err == table.ErrNoSuchKey {
@@ -740,6 +746,8 @@ type refStats struct {
 	skip, total, max int
 }
 
+func (s *refStats) done() bool { return s.total == s.max }
+
 func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 	if s.skip > int(idx.Count) {
 		s.skip -= int(idx.Count)
@@ -751,7 +759,7 @@ func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group) bool {
 	cs := grp.Caller
 
-	if s.total == s.max {
+	if s.done() {
 		// We've already hit our cap; return true that we're done.
 		return true
 	} else if s.skip > len(cs) {
@@ -780,7 +788,7 @@ func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, g
 		}
 		crs.Caller = append(crs.Caller, ra)
 	}
-	return s.total == s.max // return whether we've hit our cap
+	return s.done() // return whether we've hit our cap
 }
 
 func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group, patterns []*regexp.Regexp) bool {
