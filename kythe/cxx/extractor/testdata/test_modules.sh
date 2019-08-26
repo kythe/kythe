@@ -17,7 +17,7 @@ TEST_NAME="test_modules"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
-    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+    "./${EXTRACTOR}" --with_executable "/dummy/bin/g++" \
     -fmodules \
     -fmodule-map-file="kythe/cxx/extractor/testdata/modfoo.modulemap" \
     -I./kythe/cxx/extractor \

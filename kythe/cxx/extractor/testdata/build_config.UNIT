@@ -18,7 +18,7 @@ required_input {
     }
   }
 }
-argument: "/usr/bin/g++"
+argument: "/dummy/bin/g++"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"

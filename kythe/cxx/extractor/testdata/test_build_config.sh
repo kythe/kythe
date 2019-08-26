@@ -21,7 +21,7 @@ TEST_NAME="test_build_config"
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
 export KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}"
 export KYTHE_BUILD_CONFIG="test-build-config"
-"./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+"./${EXTRACTOR}" --with_executable "/dummy/bin/g++" \
     -I./kythe/cxx/extractor \
     ./kythe/cxx/extractor/testdata/build_config.cc
 [[ $(ls -1 "${OUT_DIR}"/*.kzip | wc -l) -eq 1 ]]

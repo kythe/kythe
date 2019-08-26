@@ -26,7 +26,7 @@ required_input {
     digest: "ebebe3a0bf6fb1d21593bcf52d899124ea175ac04eae16a366ed0b9220ae0d06"
   }
 }
-argument: "/usr/bin/clang++"
+argument: "/dummy/bin/clang++"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"

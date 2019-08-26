@@ -24,7 +24,7 @@ readonly REAL_KINDEX_TOOL="$PWD/$KINDEX_TOOL"
 cd kythe/cxx/extractor/testdata/altroot/altpath
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
 KYTHE_ROOT_DIRECTORY="${BASE_DIR}/altroot" \
-    "../../../cxx_extractor" --with_executable "/usr/bin/g++" \
+    "../../../cxx_extractor" --with_executable "/dummy/bin/g++" \
     file.cc
 [[ $(ls -1 "${OUT_DIR}"/*.kzip | wc -l) -eq 1 ]]
 INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kzip)

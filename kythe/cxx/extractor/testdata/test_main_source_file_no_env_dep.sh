@@ -25,11 +25,11 @@ TEST_NAME="test_main_source_file_no_env_dep"
 mkdir -p "${OUT_DIR}/with"
 mkdir -p "${OUT_DIR}/without"
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}/without" \
-    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+    "./${EXTRACTOR}" --with_executable "/dummy/bin/g++" \
     -I./kythe/cxx/extractor/testdata \
     ./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}/with" \
-    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+    "./${EXTRACTOR}" --with_executable "/dummy/bin/g++" \
     -I./kythe/cxx/extractor/testdata \
     -DMACRO ./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc
 [[ $(ls -1 "${OUT_DIR}"/with/*.kzip | wc -l) -eq 1 ]]
