@@ -70,13 +70,18 @@ def _compiler_options(ctx, cc_toolchain, copts, cc_info):
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
     )
+
+    system_includes = [cc_info.compilation_context.system_includes]
+    if cc_toolchain.libc == "macosx":
+        system_includes.append(depset(cc_toolchain.built_in_include_directories))
+
     variables = cc_common.create_compile_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
         user_compile_flags = copts,
         include_directories = cc_info.compilation_context.includes,
         quote_include_directories = cc_info.compilation_context.quote_includes,
-        system_include_directories = cc_info.compilation_context.system_includes,
+        system_include_directories = depset(transitive = system_includes),
         add_legacy_cxx_options = True,
     )
 
