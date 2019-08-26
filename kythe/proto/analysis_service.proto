@@ -37,7 +37,8 @@ service CompilationAnalyzer {
   // If the RPC implementation does not support out-of-band error messages, the
   // analyzer may report status by setting the final_result field of its last
   // AnalysisOutput message.
-  rpc Analyze(AnalysisRequest) returns (stream AnalysisOutput) {}
+  rpc Analyze(AnalysisRequest) returns (stream AnalysisOutput) {
+  }
 }
 
 // FileDataServices are used by a CompilationAnalyzer to retrieve the contents
@@ -54,5 +55,6 @@ service FileDataService {
   // For each requested file, one or both of the path and digest fields must be
   // nonempty, otherwise an error is returned.  It is not an error for there to
   // be no requested files, however.
-  rpc Get(FilesRequest) returns (stream FileData) {}
+  rpc Get(FilesRequest) returns (stream FileData) {
+  }
 }
