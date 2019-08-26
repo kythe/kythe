@@ -245,7 +245,7 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
       getters = trimPropertyNames(getters);
     }
     // Separately, setters must either be all prefixed or not prefixed; trim prefixes, if found.
-    if (setters.keySet().stream().allMatch(s -> s.startsWith("set"))) {
+    if (setters.keySet().stream().allMatch(AutoValuePlugin::isPrefixedSetter)) {
       setters = trimPropertyNames(setters);
     }
 
@@ -302,6 +302,10 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
 
   private static boolean isPrefixedGetter(String name) {
     return name.startsWith("get") || name.startsWith("is");
+  }
+
+  private static boolean isPrefixedSetter(String name) {
+    return name.startsWith("set");
   }
 
   private static String propertyName(String name) {
