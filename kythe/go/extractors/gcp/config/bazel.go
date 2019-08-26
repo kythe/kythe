@@ -48,9 +48,7 @@ func (b bazelGenerator) extractSteps(corpus string, target *rpb.ExtractionTarget
 	if len(target.IndividualTargets) == 0 {
 		args = append(args, defaultBazelTarget)
 	} else {
-		for _, buildTarget := range target.IndividualTargets {
-			args = append(args, buildTarget)
-		}
+		args = append(args, target.IndividualTargets...)
 	}
 
 	return []*cloudbuild.BuildStep{

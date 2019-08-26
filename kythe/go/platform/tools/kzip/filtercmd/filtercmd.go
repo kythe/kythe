@@ -39,7 +39,6 @@ type filterCommand struct {
 
 	input    string
 	output   string
-	append   bool
 	encoding flags.EncodingFlag
 }
 

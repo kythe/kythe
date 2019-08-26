@@ -55,6 +55,9 @@ case $file in
       google-java-format -n "$file" | sed 's/^/google-java-format::error:1 /'
     fi ;;
   *.go)
+    if command -v jq &>/dev/null && command -v staticcheck &>/dev/null; then
+      staticcheck -f json "$file" | jq -r '"staticcheck::" + .severity + ":" + (.location.line | tostring) + " " + (.message | gsub("\n"; " "))'
+    fi
     if command -v gofmt &>/dev/null; then
       gofmt -l "$file" | sed 's/^/gofmt::error:1 /'
     fi ;;

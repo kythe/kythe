@@ -30,7 +30,7 @@ RUN apt-get update && \
       # Kythe C++ dependencies
       gcc uuid-dev flex clang bison \
       # Kythe misc dependencies
-      asciidoc source-highlight graphviz curl parallel && \
+      asciidoc source-highlight graphviz curl parallel jq && \
     apt-get clean
 
 # Install Buildbot
@@ -49,6 +49,7 @@ ENV PATH=$PATH:/usr/local/go/bin
 # Install extra linters
 RUN go get github.com/bazelbuild/buildtools/buildifier
 RUN go get golang.org/x/lint/golint
+RUN go get honnef.co/go/tools/cmd/staticcheck
 ENV PATH=$PATH:/root/go/bin
 RUN wget https://github.com/google/google-java-format/releases/download/google-java-format-1.7/google-java-format-1.7-all-deps.jar && \
    mv google-java-format-1.7-all-deps.jar /usr/bin/google-java-format.jar && \

@@ -34,7 +34,6 @@ type compdbCommand struct {
 	cmdutil.Info
 
 	extractor string
-	sourceDir string
 	path      string
 }
 
