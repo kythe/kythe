@@ -360,8 +360,8 @@ message CrossReferencesRequest {
     PRECISE_TOTALS = 1;
     APPROXIMATE_TOTALS = 2;
   }
-  // Quality the aggregated xref totals returned for the requested tickets.  If
-  // PRECISE, the totals will be accurate across all requested tickets and
+  // Quality of the aggregated xref totals returned for the requested tickets.
+  // If PRECISE, the totals will be accurate across all requested tickets and
   // pages.  If APPROXIMATE, the totals may be partial/approximate so that the
   // server can return results as soon as possible.
   TotalsQuality totals_quality = 16;
