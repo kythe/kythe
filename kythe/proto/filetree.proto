@@ -24,13 +24,16 @@ option java_package = "com.google.devtools.kythe.proto";
 // FileTreeService provides an interface to explore a tree of files.
 service FileTreeService {
   // CorpusRoots returns all known corpus/root pairs for stored files.
-  rpc CorpusRoots(CorpusRootsRequest) returns (CorpusRootsReply) {}
+  rpc CorpusRoots(CorpusRootsRequest) returns (CorpusRootsReply) {
+  }
 
   // Directory returns the file/sub-directory contents of the given directory.
-  rpc Directory(DirectoryRequest) returns (DirectoryReply) {}
+  rpc Directory(DirectoryRequest) returns (DirectoryReply) {
+  }
 }
 
-message CorpusRootsRequest {}
+message CorpusRootsRequest {
+}
 
 message CorpusRootsReply {
   message Corpus {
