@@ -124,7 +124,7 @@ func EncodingFor(v string) (Encoding, error) {
 	case v == "PROTO":
 		return EncodingProto, nil
 	default:
-		return EncodingJSON, fmt.Errorf("Unknown encoding %s", v)
+		return EncodingJSON, fmt.Errorf("unknown encoding %s", v)
 	}
 }
 

@@ -39,7 +39,6 @@ import (
 	"golang.org/x/net/http2"
 
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
-	_ "kythe.io/kythe/go/storage/leveldb"
 )
 
 var (
