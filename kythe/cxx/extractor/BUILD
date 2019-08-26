@@ -189,7 +189,6 @@ cc_binary(
         ":lib",
         ":supported_language",
         "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
     ],
 )
