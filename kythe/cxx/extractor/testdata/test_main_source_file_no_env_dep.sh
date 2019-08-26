@@ -25,11 +25,11 @@ TEST_NAME="test_main_source_file_no_env_dep"
 mkdir -p "${OUT_DIR}/with"
 mkdir -p "${OUT_DIR}/without"
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}/without" \
-    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+    "./${EXTRACTOR}" --with_executable "/dummy/bin/g++" \
     -I./kythe/cxx/extractor/testdata \
     ./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}/with" \
-    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+    "./${EXTRACTOR}" --with_executable "/dummy/bin/g++" \
     -I./kythe/cxx/extractor/testdata \
     -DMACRO ./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc
 [[ $(ls -1 "${OUT_DIR}"/with/*.kzip | wc -l) -eq 1 ]]
@@ -52,7 +52,7 @@ s|TEST_CWD|${PWD}/|" \
     "${BASE_DIR}/main_source_file_no_env_dep_with.UNIT" | \
     skip "-target" 1 |
     skip "signature" 0 |
-    diff - "${INDEX_PATH_WITH_MACRO}_UNIT"
+    diff -u - "${INDEX_PATH_WITH_MACRO}_UNIT"
 
 EC_HASH=$(sed -ne '/^entry_context:/ {s/.*entry_context: \"\(.*\)\"$/\1/; p;}' \
     "${INDEX_PATH_WITHOUT_MACRO}_UNIT")
@@ -61,4 +61,4 @@ s|TEST_CWD|${PWD}/|" \
     "${BASE_DIR}/main_source_file_no_env_dep_without.UNIT" | \
     skip "-target" 1 |
     skip "signature" 0 |
-    diff - "${INDEX_PATH_WITHOUT_MACRO}_UNIT"
+    diff -u - "${INDEX_PATH_WITHOUT_MACRO}_UNIT"

@@ -129,6 +129,7 @@ def extract(
         srcs,
         opts,
         deps = [],
+        env = {},
         vnames_config = None,
         mnemonic = "ExtractCompilation"):
     """Run the extractor tool under an environment to produce the given kzip
@@ -142,13 +143,15 @@ def extract(
       srcs: Files passed to extractor tool; the compilation's source file inputs
       opts: List of options (or Args object) passed to the extractor tool before source files
       deps: Dependencies for the extractor's action (not passed to extractor on command-line)
+      env: Dictionary of environment variables to provide.
       vnames_config: Optional path to a VName configuration file
       mnemonic: Mnemonic of the extractor's action
     """
-    env = {
+    final_env = {
         "KYTHE_OUTPUT_FILE": kzip.path,
         "KYTHE_ROOT_DIRECTORY": ".",
     }
+    final_env.update(env)
 
     if type(srcs) != "depset":
         srcs = depset(direct = srcs)
@@ -156,7 +159,7 @@ def extract(
         deps = depset(direct = deps)
     direct_inputs = []
     if vnames_config:
-        env["KYTHE_VNAMES"] = vnames_config.path
+        final_env["KYTHE_VNAMES"] = vnames_config.path
         direct_inputs += [vnames_config]
     inputs = depset(direct = direct_inputs, transitive = [srcs, deps])
 
@@ -173,7 +176,7 @@ def extract(
         mnemonic = mnemonic,
         executable = extractor,
         arguments = [args],
-        env = env,
+        env = final_env,
     )
     return kzip
 

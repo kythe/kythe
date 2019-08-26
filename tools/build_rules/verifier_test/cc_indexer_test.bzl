@@ -62,7 +62,7 @@ _INDEXER_FLAGS = {
     "ibuild_config": "",
 }
 
-def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
+def _compiler_options(ctx, cc_toolchain, copts, cc_info):
     """Returns the list of compiler flags from the C++ toolchain."""
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
@@ -70,24 +70,35 @@ def _compiler_options(ctx, cc_toolchain, copts, includes, cc_info):
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
     )
+
+    system_includes = [cc_info.compilation_context.system_includes]
+    if cc_toolchain.libc == "macosx":
+        system_includes.append(depset(cc_toolchain.built_in_include_directories))
+
     variables = cc_common.create_compile_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
         user_compile_flags = copts,
         include_directories = cc_info.compilation_context.includes,
         quote_include_directories = cc_info.compilation_context.quote_includes,
-        system_include_directories = depset(direct = includes, transitive = [cc_info.compilation_context.system_includes]),
+        system_include_directories = depset(transitive = system_includes),
         add_legacy_cxx_options = True,
     )
 
     # TODO(schroederc): use memory-efficient Args, when available
     args = ctx.actions.args()
+    args.add("--with_executable", cc_toolchain.compiler_executable)
     args.add_all(cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
         action_name = CPP_COMPILE_ACTION_NAME,
         variables = variables,
     ))
-    return args
+    env = cc_common.get_environment_variables(
+        feature_configuration = feature_configuration,
+        action_name = CPP_COMPILE_ACTION_NAME,
+        variables = variables,
+    )
+    return args, env
 
 def _compile_and_link(ctx, cc_info_providers, sources, headers):
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -252,32 +263,28 @@ cc_kythe_proto_library = rule(
 
 def _cc_extract_kzip_impl(ctx):
     cpp = find_cpp_toolchain(ctx)
-    if cpp.libc == "macosx":
-        toolchain_includes = cpp.built_in_include_directories
-    else:
-        toolchain_includes = []
     cc_info = cc_common.merge_cc_infos(cc_infos = [
         src[CcInfo]
         for src in ctx.attr.srcs + ctx.attr.deps
         if CcInfo in src
     ])
+    opts, env = _compiler_options(ctx, cpp, ctx.attr.opts, cc_info)
     outputs = depset([
         extract(
             srcs = depset([src]),
             ctx = ctx,
             extractor = ctx.executable.extractor,
             kzip = ctx.actions.declare_file("{}/{}.kzip".format(ctx.label.name, src.basename)),
-            opts = _compiler_options(
-                ctx,
-                cpp,
-                ctx.attr.opts,
-                toolchain_includes,
-                cc_info,
-            ),
+            opts = opts,
+            env = env,
             vnames_config = ctx.file.vnames_config,
             deps = depset(
                 direct = ctx.files.srcs,
-                transitive = [depset(ctx.files.deps), cc_info.compilation_context.headers],
+                transitive = [
+                    depset(ctx.files.deps),
+                    cc_info.compilation_context.headers,
+                    cpp.all_files,
+                ],
             ),
         )
         for src in ctx.files.srcs

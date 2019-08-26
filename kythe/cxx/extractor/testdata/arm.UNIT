@@ -18,7 +18,7 @@ required_input {
     }
   }
 }
-argument: "./kythe/cxx/extractor/cxx_extractor"
+argument: "arm-none-linux-gnueabi-g++"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"
