@@ -57,8 +57,8 @@ import java.util.Optional;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeKind;
 
-@AutoService(Plugin.class)
 /** Kythe {@link Plugin} that emits property entries for {@link AutoValue} classes. */
+@AutoService(Plugin.class)
 public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
   private static final ImmutableSet<String> GENERATED_ANNOTATIONS =
       ImmutableSet.of("javax.annotation.Generated", "javax.annotation.processing.Generated");
@@ -186,7 +186,6 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
     for (JCTree def : classDef.getMembers()) {
       if (def instanceof JCMethodDecl) {
         JCMethodDecl method = (JCMethodDecl) def;
-        String name = method.sym.getSimpleName().toString();
         if (method.getParameters().isEmpty()
             && !isVoid(method.getReturnType())
             && !types.overridesObjectMethod(classDef.sym, method.sym)) {
@@ -212,14 +211,14 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
                   .setAbstractSym(builderClass.sym)
                   .setGeneratedSym(subClass.sym)
                   .build());
-          Scope builderScope = builderClass.type.tsym.members();
 
           // Search builder for setter methods.
           for (JCTree builderDef : subClass.getMembers()) {
             if (builderDef instanceof JCMethodDecl) {
               JCMethodDecl method = (JCMethodDecl) builderDef;
               Type retType = ((MethodType) method.type).restype;
-              if (method.getParameters().size() == 1 && builderClass.type.equals(retType)) {
+              if (method.getParameters().size() == 1
+                  && types.isSameType(builderClass.type, retType)) {
                 Optional<Symbol> abstractSym =
                     findAbstractMethod((ClassSymbol) builderClass.sym, method.sym);
                 if (abstractSym.isPresent()) {
