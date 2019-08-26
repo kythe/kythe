@@ -497,7 +497,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	var foundCrossRefs bool
 	for i := 0; i < len(tickets); i++ {
 		// TODO(schroederc): change default behavior to APPROXIMATE rather than PRECISE totals
-		if req.TotalsMethod == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
+		if req.TotalsQuality == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
 			log.Printf("WARNING: stopping CrossReferences index reads after %d/%d tickets", i, len(tickets))
 			break
 		}
