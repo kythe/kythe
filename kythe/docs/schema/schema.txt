@@ -955,6 +955,8 @@ Ordinals are used::
 See also::
   <<propertywrites,[property/writes]>>
 
+// TODO(schroederc): add support for AutoValue in schema examples
+
 [[propertywrites]]
 property/writes
 ~~~~~~~~~~~~~~~
