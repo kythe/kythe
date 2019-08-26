@@ -116,11 +116,10 @@ TEST(PathUtilsTest, RealPath) {
   // error if a path doesn't exist.
   StatusOr<std::string> result = RealPath("/this/path/should/not/exist");
   EXPECT_EQ(StatusCode::kNotFound, result.status().code());
-  // Check that testing::TempDir() points to itself.
-  const std::string temp_dir = CleanPath(testing::TempDir());
-  result = RealPath(temp_dir);
-  ASSERT_TRUE(result.ok());
-  ASSERT_EQ(temp_dir, *result);
+
+  // Some systems symlink their temporary directory, so use RealPath()
+  // here to deal with that.
+  const std::string temp_dir = RealPath(testing::TempDir()).ValueOrDie();
 
   // If so, check that RealPath resolves a known link.
   const std::string link_path = JoinPath(temp_dir, "PathUtilsTestLink");
@@ -150,7 +149,8 @@ class CanonicalizerTest : public ::testing::Test {
     const testing::TestInfo* test_info =
         testing::UnitTest::GetInstance()->current_test_info();
     std::string root =
-        JoinPath(JoinPath(testing::TempDir(), test_info->test_suite_name()),
+        JoinPath(JoinPath(RealPath(testing::TempDir()).ValueOrDie(),
+                          test_info->test_suite_name()),
                  test_info->name());
     ASSERT_EQ(std::error_code(), MakeDirectory(root));
     filesystem_.push_back(root);
