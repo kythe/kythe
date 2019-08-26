@@ -469,4 +469,5 @@ java_library(
 java_verifier_test(
     name = "auto_values_test",
     compilation = ":auto_values",
+    load_plugin = "//kythe/java/com/google/devtools/kythe/analyzers/java:auto_value_plugin",
 )
