@@ -27,6 +27,12 @@ load(
     "extract",
     "verifier_test",
 )
+load(
+    "@io_kythe//kythe/cxx/extractor:toolchain.bzl",
+    "CXX_EXTRACTOR_TOOLCHAINS",
+    "CxxExtractorToolchainInfo",
+    "find_extractor_toolchain",
+)
 
 UNSUPPORTED_FEATURES = [
     "thin_lto",
@@ -259,7 +265,7 @@ cc_kythe_proto_library = rule(
 )
 
 def _cc_extract_kzip_impl(ctx):
-    extractor_toolchain = ctx.toolchains["@io_kythe//kythe/cxx/extractor:toolchain_type"].cxx_extractor_info
+    extractor_toolchain = find_extractor_toolchain(ctx)
     cpp = extractor_toolchain.cc_toolchain
     cc_info = cc_common.merge_cc_infos(cc_infos = [
         src[CcInfo]
@@ -316,11 +322,6 @@ cc_extract_kzip = rule(
             These will be included in the resulting .kzip CompilationUnits.
             """,
         ),
-        "extractor": attr.label(
-            default = Label("//kythe/cxx/extractor:cxx_extractor"),
-            executable = True,
-            cfg = "host",
-        ),
         "opts": attr.string_list(
             doc = "Options which will be passed to the extractor as arguments.",
         ),
@@ -348,6 +349,11 @@ cc_extract_kzip = rule(
                 [CxxCompilationUnits],
             ],
         ),
+        "_cxx_extractor_toolchain": attr.label(
+            doc = "Fallback cxx_extractor_toolchain to use.",
+            default = Label("@io_kythe//kythe/cxx/extractor:cxx_extractor_default"),
+            providers = [CxxExtractorToolchainInfo],
+        ),
     },
     doc = """cc_extract_kzip extracts srcs into CompilationUnits.
 
@@ -355,7 +361,7 @@ cc_extract_kzip = rule(
     of the source.
     """,
     fragments = ["cpp"],
-    toolchains = ["@io_kythe//kythe/cxx/extractor:toolchain_type"],
+    toolchains = CXX_EXTRACTOR_TOOLCHAINS,
     implementation = _cc_extract_kzip_impl,
 )
 

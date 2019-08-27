@@ -20,20 +20,24 @@ CxxExtractorToolchainInfo = provider(
     fields = ["cc_toolchain", "extractor_binary", "compiler_executable"],
 )
 
+CXX_EXTRACTOR_TOOLCHAINS = ["@io_kythe//kythe/cxx/extractor:toolchain_type"]
+
 def _cxx_extractor_toolchain_impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)
     if ctx.attr.compiler_executable:
-      compiler_executable = ctx.attr.compiler_executable
+        compiler_executable = ctx.attr.compiler_executable
     else:
-      compiler_executable = cc_toolchain.compiler_executable
+        compiler_executable = cc_toolchain.compiler_executable
+    cxx_extractor = CxxExtractorToolchainInfo(
+        extractor_binary = ctx.attr.extractor.files_to_run,
+        compiler_executable = ctx.attr.compiler_executable,
+        cc_toolchain = cc_toolchain,
+    )
     return [
         platform_common.ToolchainInfo(
-            cxx_extractor_info = CxxExtractorToolchainInfo(
-                extractor_binary = ctx.attr.extractor.files_to_run,
-                compiler_executable = ctx.attr.compiler_executable,
-                cc_toolchain = cc_toolchain,
-            ),
+            cxx_extractor_info = cxx_extractor,
         ),
+        cxx_extractor,
     ]
 
 cxx_extractor_toolchain = rule(
@@ -49,6 +53,18 @@ cxx_extractor_toolchain = rule(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
     },
+    provides = [CxxExtractorToolchainInfo, platform_common.ToolchainInfo],
     fragments = ["cpp"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
 )
+
+def register_toolchains():
+    native.register_toolchains(
+        "@io_kythe//kythe/cxx/extractor:linux_toolchain",
+        "@io_kythe//kythe/cxx/extractor:macos_toolchain",
+    )
+
+def find_extractor_toolchain(ctx):
+    if "@io_kythe//kythe/cxx/extractor:toolchain_type" in ctx.toolchains:
+        return ctx.toolchains["@io_kythe//kythe/cxx/extractor:toolchain_type"].cxx_extractor_info
+    return ctx.attr._cxx_extractor_toolchain[CxxExtractorToolchainInfo]
