@@ -173,6 +173,10 @@ def _cc_dependencies():
     )
 
     lexyacc_configure()
+    native.register_toolchains(
+        "@io_kythe//kythe/cxx/extractor:linux_toolchain",
+        "@io_kythe//kythe/cxx/extractor:macos_toolchain",
+    )
 
 def _java_dependencies():
     maybe(
