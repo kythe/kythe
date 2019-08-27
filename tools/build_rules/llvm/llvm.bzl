@@ -113,9 +113,14 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
             visibility = ["//visibility:private"],
         )
         depends.append(":" + name + "_defs")
+    subdirs = {
+        paths.dirname(s): True
+        for s in srcs
+        if paths.dirname(s)
+    }.keys()
     sources = (
         [_join_path(root, s) for s in srcs] +
-        _llvm_srcglob(root, additional_header_dirs) +
+        _llvm_srcglob(root, additional_header_dirs + subdirs) +
         _current(ctx).table_outs
     )
     includes = [root]
