@@ -76,11 +76,8 @@ export interface IndexerHost {
   program: ts.Program;
   /**
    * Strategy to emit Kythe entries by.
-   *
-   * TODO(ayazhafiz): change type to `JSONFact|JSONEdge` after downstream
-   * clients are updated to use Kythe types.
    */
-  emit(obj: {}): void;
+  emit(obj: JSONFact|JSONEdge): void;
 }
 
 /**
