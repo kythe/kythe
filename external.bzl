@@ -9,6 +9,7 @@ load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
+load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 
 def _rule_dependencies():
     gazelle_dependencies()
@@ -173,6 +174,7 @@ def _cc_dependencies():
     )
 
     lexyacc_configure()
+    cxx_extractor_register_toolchains()
 
 def _java_dependencies():
     maybe(

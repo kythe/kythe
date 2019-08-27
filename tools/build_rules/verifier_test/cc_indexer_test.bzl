@@ -27,6 +27,12 @@ load(
     "extract",
     "verifier_test",
 )
+load(
+    "@io_kythe//kythe/cxx/extractor:toolchain.bzl",
+    "CXX_EXTRACTOR_TOOLCHAINS",
+    "CxxExtractorToolchainInfo",
+    "find_extractor_toolchain",
+)
 
 UNSUPPORTED_FEATURES = [
     "thin_lto",
@@ -62,8 +68,9 @@ _INDEXER_FLAGS = {
     "ibuild_config": "",
 }
 
-def _compiler_options(ctx, cc_toolchain, copts, cc_info):
+def _compiler_options(ctx, extractor_toolchain, copts, cc_info):
     """Returns the list of compiler flags from the C++ toolchain."""
+    cc_toolchain = extractor_toolchain.cc_toolchain
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
@@ -71,23 +78,19 @@ def _compiler_options(ctx, cc_toolchain, copts, cc_info):
         unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
     )
 
-    system_includes = [cc_info.compilation_context.system_includes]
-    if cc_toolchain.libc == "macosx":
-        system_includes.append(depset(cc_toolchain.built_in_include_directories))
-
     variables = cc_common.create_compile_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
         user_compile_flags = copts,
         include_directories = cc_info.compilation_context.includes,
         quote_include_directories = cc_info.compilation_context.quote_includes,
-        system_include_directories = depset(transitive = system_includes),
+        system_include_directories = cc_info.compilation_context.system_includes,
         add_legacy_cxx_options = True,
     )
 
     # TODO(schroederc): use memory-efficient Args, when available
     args = ctx.actions.args()
-    args.add("--with_executable", cc_toolchain.compiler_executable)
+    args.add("--with_executable", extractor_toolchain.compiler_executable)
     args.add_all(cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
         action_name = CPP_COMPILE_ACTION_NAME,
@@ -262,18 +265,19 @@ cc_kythe_proto_library = rule(
 )
 
 def _cc_extract_kzip_impl(ctx):
-    cpp = find_cpp_toolchain(ctx)
+    extractor_toolchain = find_extractor_toolchain(ctx)
+    cpp = extractor_toolchain.cc_toolchain
     cc_info = cc_common.merge_cc_infos(cc_infos = [
         src[CcInfo]
         for src in ctx.attr.srcs + ctx.attr.deps
         if CcInfo in src
     ])
-    opts, env = _compiler_options(ctx, cpp, ctx.attr.opts, cc_info)
+    opts, env = _compiler_options(ctx, extractor_toolchain, ctx.attr.opts, cc_info)
     outputs = depset([
         extract(
             srcs = depset([src]),
             ctx = ctx,
-            extractor = ctx.executable.extractor,
+            extractor = extractor_toolchain.extractor_binary,
             kzip = ctx.actions.declare_file("{}/{}.kzip".format(ctx.label.name, src.basename)),
             opts = opts,
             env = env,
@@ -318,11 +322,6 @@ cc_extract_kzip = rule(
             These will be included in the resulting .kzip CompilationUnits.
             """,
         ),
-        "extractor": attr.label(
-            default = Label("//kythe/cxx/extractor:cxx_extractor"),
-            executable = True,
-            cfg = "host",
-        ),
         "opts": attr.string_list(
             doc = "Options which will be passed to the extractor as arguments.",
         ),
@@ -350,9 +349,10 @@ cc_extract_kzip = rule(
                 [CxxCompilationUnits],
             ],
         ),
-        # Do not add references, temporary attribute for find_cpp_toolchain.
-        "_cc_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+        "_cxx_extractor_toolchain": attr.label(
+            doc = "Fallback cxx_extractor_toolchain to use.",
+            default = Label("@io_kythe//kythe/cxx/extractor:cxx_extractor_default"),
+            providers = [CxxExtractorToolchainInfo],
         ),
     },
     doc = """cc_extract_kzip extracts srcs into CompilationUnits.
@@ -361,7 +361,7 @@ cc_extract_kzip = rule(
     of the source.
     """,
     fragments = ["cpp"],
-    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+    toolchains = CXX_EXTRACTOR_TOOLCHAINS,
     implementation = _cc_extract_kzip_impl,
 )
 
