@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+"""Rules and macros related to Kythe verifier-based tests."""
 
 KytheVerifierSources = provider(
     doc = "Input files which the verifier should inspect for assertions.",
@@ -132,12 +132,15 @@ def extract(
         env = {},
         vnames_config = None,
         mnemonic = "ExtractCompilation"):
-    """Run the extractor tool under an environment to produce the given kzip
+    """Create an extract action using the provided tool and inputs.
+
+    Runs the extractor tool under an environment to produce the given kzip
     output file.  The extractor is passed each string from opts after expanding
     any build artifact locations and then each File's path from the srcs
     collection.
 
     Args:
+      ctx: The Bazel rule context to use for actions.
       kzip: Declared .kzip output File
       extractor: Executable extractor tool to invoke
       srcs: Files passed to extractor tool; the compilation's source file inputs
@@ -146,6 +149,9 @@ def extract(
       env: Dictionary of environment variables to provide.
       vnames_config: Optional path to a VName configuration file
       mnemonic: Mnemonic of the extractor's action
+
+    Returns:
+      The output file generated.
     """
     final_env = {
         "KYTHE_OUTPUT_FILE": kzip.path,

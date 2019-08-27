@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""C++ Verifier toolchain support rules and macros."""
+
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 CxxExtractorToolchainInfo = provider(
