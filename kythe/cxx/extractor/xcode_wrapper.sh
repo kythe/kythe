@@ -49,11 +49,14 @@ if [[ -z "${WRAPPER_DEVDIR}" ]] ; then
   WRAPPER_DEVDIR="$(xcode-select -p)"
 fi
 
+CLANG_PATH=$(xcrun -f clang)
+
 # Subsitute toolkit path placeholders.
 UPDATEDARGS=()
 for ARG in "$@" ; do
   ARG="${ARG//__BAZEL_XCODE_DEVELOPER_DIR__/${WRAPPER_DEVDIR}}"
   ARG="${ARG//__BAZEL_XCODE_SDKROOT__/${SDKROOT}}"
+  ARG="${ARG//__KYTHE_XCODE_CLANG_PATH__/${CLANG_PATH}}"
   UPDATEDARGS+=("${ARG}")
 done
 

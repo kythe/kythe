@@ -321,8 +321,10 @@ cc_test(
 sh_binary(
     name = "xcode_wrapper",
     srcs = ["xcode_wrapper.sh"],
-    data = [":cxx_extractor"],
-    deps = ["@bazel_tools//tools/bash/runfiles"],
+    data = [
+      ":cxx_extractor",
+      "@bazel_tools//tools/bash/runfiles",
+    ],
 )
 
 toolchain_type(name = "toolchain_type")
@@ -345,7 +347,8 @@ toolchain(
 
 cxx_extractor_toolchain(
     name = "cxx_extractor_macos",
-    extractor = "//kythe/cxx/extractor:xcode_wrapper",
+    extractor = ":xcode_wrapper",
+    compiler_executable = "__KYTHE_XCODE_CLANG_PATH__",
 )
 
 toolchain(

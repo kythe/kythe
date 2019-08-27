@@ -72,23 +72,19 @@ def _compiler_options(ctx, extractor_toolchain, copts, cc_info):
         unsupported_features = ctx.disabled_features + UNSUPPORTED_FEATURES,
     )
 
-    system_includes = [
-        cc_info.compilation_context.system_includes,
-        extractor_toolchain.system_includes,
-    ]
     variables = cc_common.create_compile_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
         user_compile_flags = copts,
         include_directories = cc_info.compilation_context.includes,
         quote_include_directories = cc_info.compilation_context.quote_includes,
-        system_include_directories = depset(transitive = system_includes),
+        system_include_directories = cc_info.compilation_context.system_includes,
         add_legacy_cxx_options = True,
     )
 
     # TODO(schroederc): use memory-efficient Args, when available
     args = ctx.actions.args()
-    args.add("--with_executable", cc_toolchain.compiler_executable)
+    args.add("--with_executable", extractor_toolchain.compiler_executable)
     args.add_all(cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
         action_name = CPP_COMPILE_ACTION_NAME,

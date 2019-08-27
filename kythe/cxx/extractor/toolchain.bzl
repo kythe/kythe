@@ -17,21 +17,20 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 CxxExtractorToolchainInfo = provider(
     doc = "Provides required information for C++/ObjectiveC extractors.",
-    fields = ["cc_toolchain", "extractor_binary", "system_includes"],
+    fields = ["cc_toolchain", "extractor_binary", "compiler_executable"],
 )
 
 def _cxx_extractor_toolchain_impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)
-    if ctx.attr.include_cc_builtin_directories:
-        system_includes = depset(cc_toolchain.built_in_include_directories)
+    if ctx.attr.compiler_executable:
+      compiler_executable = ctx.attr.compiler_executable
     else:
-        system_includes = depset()
-
+      compiler_executable = cc_toolchain.compiler_executable
     return [
         platform_common.ToolchainInfo(
             cxx_extractor_info = CxxExtractorToolchainInfo(
-                extractor_binary = ctx.executable.extractor,
-                system_includes = system_includes,
+                extractor_binary = ctx.attr.extractor.files_to_run,
+                compiler_executable = ctx.attr.compiler_executable,
                 cc_toolchain = cc_toolchain,
             ),
         ),
@@ -45,9 +44,7 @@ cxx_extractor_toolchain = rule(
             default = Label("//kythe/cxx/extractor:cxx_extractor"),
             cfg = "host",
         ),
-        "include_cc_builtin_directories": attr.bool(
-            default = False,
-        ),
+        "compiler_executable": attr.string(),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
