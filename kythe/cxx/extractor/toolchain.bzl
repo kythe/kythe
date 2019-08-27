@@ -30,7 +30,7 @@ def _cxx_extractor_toolchain_impl(ctx):
         compiler_executable = cc_toolchain.compiler_executable
     cxx_extractor = CxxExtractorToolchainInfo(
         extractor_binary = ctx.attr.extractor.files_to_run,
-        compiler_executable = ctx.attr.compiler_executable,
+        compiler_executable = compiler_executable,
         cc_toolchain = cc_toolchain,
     )
     return [
