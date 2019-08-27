@@ -1,6 +1,7 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
+load(":toolchain.bzl", "cxx_extractor_toolchain")
 
 cc_library(
     name = "index_pack",
@@ -320,6 +321,50 @@ cc_test(
 sh_binary(
     name = "xcode_wrapper",
     srcs = ["xcode_wrapper.sh"],
-    data = [":cxx_extractor"],
-    deps = ["@bazel_tools//tools/bash/runfiles"],
+    data = [
+        ":cxx_extractor",
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+toolchain_type(name = "toolchain_type")
+
+alias(
+    name = "cxx_extractor_default",
+    actual = "cxx_extractor_linux",
+    visibility = [PUBLIC_VISIBILITY],
+)
+
+cxx_extractor_toolchain(
+    name = "cxx_extractor_linux",
+)
+
+toolchain(
+    name = "linux_toolchain",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    toolchain = ":cxx_extractor_linux",
+    toolchain_type = ":toolchain_type",
+)
+
+cxx_extractor_toolchain(
+    name = "cxx_extractor_macos",
+    compiler_executable = "__KYTHE_XCODE_CLANG_PATH__",
+    extractor = ":xcode_wrapper",
+)
+
+toolchain(
+    name = "macos_toolchain",
+    exec_compatible_with = [
+        "@platforms//os:osx",
+    ],
+    target_compatible_with = [
+        "@platforms//os:osx",
+    ],
+    toolchain = ":cxx_extractor_macos",
+    toolchain_type = ":toolchain_type",
 )

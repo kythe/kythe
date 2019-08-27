@@ -59,6 +59,9 @@ var (
 	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
 
 	experimentalCrossReferenceIndirectionKinds flagutil.StringMultimap
+
+	// TODO(schroederc): remove once relevant clients specify their required quality
+	defaultTotalsQuality = flag.String("experimental_default_totals_quality", "PRECISE_TOTALS", "Default TotalsQuality when unspecified in CrossReferencesRequest")
 )
 
 func init() {
@@ -494,11 +497,15 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS ||
 		len(req.Filter) > 0)
 
+	totalsQuality := req.TotalsQuality
+	if totalsQuality == xpb.CrossReferencesRequest_UNSPECIFIED_TOTALS {
+		totalsQuality = xpb.CrossReferencesRequest_TotalsQuality(xpb.CrossReferencesRequest_TotalsQuality_value[strings.ToUpper(*defaultTotalsQuality)])
+	}
+
 	var foundCrossRefs bool
 	for i := 0; i < len(tickets); i++ {
-		// TODO(schroederc): change default behavior to APPROXIMATE rather than PRECISE totals
-		if req.TotalsQuality == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
-			log.Printf("WARNING: stopping CrossReferences index reads after %d/%d tickets", i, len(tickets))
+		if totalsQuality == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
+			log.Printf("WARNING: stopping CrossReferences index reads after %d/%d tickets (TotalsQuality: %s)", i, len(tickets), totalsQuality)
 			break
 		}
 
