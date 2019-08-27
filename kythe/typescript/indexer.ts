@@ -150,22 +150,11 @@ export enum Context {
   Setter,
 }
 
-/*
- * TODO(ayazhafiz): This is copied from
- * [typescript.d.ts](https://github.com/microsoft/TypeScript/blob/463da558a11b8fcb3ee7562a8ad9a5a41a65887f/lib/typescript.d.ts#L497).
- * We should ask if TypeScript can expose a function to determine this if this
- * type is persistently needed.
- */
-type HasExpressionInitializer = ts.VariableDeclaration|
-                                ts.ParameterDeclaration|ts.BindingElement|
-                                ts.PropertySignature|ts.PropertyDeclaration|
-                                ts.PropertyAssignment|ts.EnumMember;
-
 /**
  * Determines if a node is a variable-like declaration.
  */
 function hasExpressionInitializer(node: ts.Node):
-    node is HasExpressionInitializer {
+    node is ts.HasExpressionInitializer {
   return ts.isVariableDeclaration(node) || ts.isParameter(node) ||
       ts.isBindingElement(node) || ts.isPropertySignature(node) ||
       ts.isPropertyDeclaration(node) || ts.isPropertyAssignment(node) ||
