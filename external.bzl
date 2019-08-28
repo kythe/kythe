@@ -312,7 +312,7 @@ def _go_dependencies():
         importpath = "github.com/golang/protobuf",
         patch_args = ["-p1"],
         patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
-        tag = "v1.3.0",
+        tag = "v1.3.1",
     )
 
     maybe(
@@ -342,7 +342,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sync",
-        commit = "42b317875d0f",
+        commit = "112230192c58",
         custom = "sync",
         custom_git = "https://github.com/golang/sync.git",
         importpath = "golang.org/x/sync",
@@ -399,7 +399,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_tools",
-        commit = "589c23e65e65055d47b9ad4a99723bc389136265",
+        commit = "c8855242db9c1762032abe33c2dff50de3ec9d05",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
         importpath = "golang.org/x/tools",
@@ -419,7 +419,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_net",
-        commit = "3a22650c66bd",
+        commit = "3b0461eec859",
         custom = "x_net",
         custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
@@ -540,7 +540,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sys",
-        commit = "49385e6e15226593f68b26af201feec29d5bba22",
+        commit = "d0b11bdaac8a",
         custom = "x_sys",
         custom_git = "https://github.com/golang/sys.git",
         importpath = "golang.org/x/sys",
@@ -731,14 +731,6 @@ def kythe_dependencies(sample_ui = True):
         strip_prefix = "protobuf-402c28a321fce010ad0b9f99010a78890cae7f34",
         urls = ["https://github.com/protocolbuffers/protobuf/archive/402c28a321fce010ad0b9f99010a78890cae7f34.zip"],
         repo_mapping = {"@zlib": "@net_zlib"},
-    )
-
-    maybe(
-        http_archive,
-        name = "bazel_skylib",
-        sha256 = "ca4e3b8e4da9266c3a9101c8f4704fe2e20eb5625b2a6a7d2d7d45e3dd4efffd",
-        strip_prefix = "bazel-skylib-0.5.0",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.5.0.zip"],
     )
 
     maybe(
