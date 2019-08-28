@@ -14,9 +14,17 @@ def kythe_rule_repositories():
     """
     maybe(
         http_archive,
+        name = "bazel_skylib",
+        sha256 = "2ea8a5ed2b448baf4a6855d3ce049c4c452a6470b1efd1504fdb7c1c134d220a",
+        strip_prefix = "bazel-skylib-0.8.0",
+        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.8.0.tar.gz"],
+    )
+
+    maybe(
+        http_archive,
         name = "io_bazel_rules_go",
-        url = "https://github.com/bazelbuild/rules_go/releases/download/0.18.5/rules_go-0.18.5.tar.gz",
-        sha256 = "a82a352bffae6bee4e95f68a8d80a70e87f42c4741e6a448bec11998fcc82329",
+        url = "https://github.com/bazelbuild/rules_go/releases/download/0.19.3/rules_go-0.19.3.tar.gz",
+        sha256 = "313f2c7a23fecc33023563f082f381a32b9b7254f727a7dd2d6380ccc6dfe09b",
     )
 
     maybe(
