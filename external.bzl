@@ -12,9 +12,9 @@ load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 
 def _rule_dependencies():
-    gazelle_dependencies()
     go_rules_dependencies()
     go_register_toolchains()
+    gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
 
