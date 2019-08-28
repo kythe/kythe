@@ -1,13 +1,12 @@
 load("@rules_java//java:defs.bzl", "java_library")
 load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
+load("//kythe/java/com/google/devtools/kythe/extractors/java/bazel:aspect.bzl", "extract_java")
 
-filegroup(
-    name = "pkg_files",
+java_library(
+    name = "pkg",
     srcs = glob(
         ["**/*.java"],
         exclude = [
-            # Exclude tests with dependencies
-            "AutoValues.java",
             # Exclude meta-data tests
             "Metadata.java",
             "ProtobufMetadata.java",
@@ -19,15 +18,16 @@ filegroup(
             "PrivateInterfaceMethods.java",
         ],
     ),
-    visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/common:autovalue",
+        "@com_google_code_findbugs_jsr305//jar",
+    ],
 )
 
-java_library(
-    name = "pkg",
-    srcs = [":pkg_files"],
-    visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
-    exports = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/regression"],
-    deps = ["@com_google_code_findbugs_jsr305//jar"],
+extract_java(
+    name = "pkg_kzip",
+    compilation = ":pkg",
+    visibility = ["//visibility:public"],
 )
 
 # TODO(schroederc): requires related nodes generated in pipeline
