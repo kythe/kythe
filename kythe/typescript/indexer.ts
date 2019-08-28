@@ -152,6 +152,9 @@ export enum Context {
 
 /**
  * Determines if a node is a variable-like declaration.
+ *
+ * TODO(https://github.com/microsoft/TypeScript/issues/33115): Replace this with
+ * a native `ts.isHasExpressionInitializer` if TypeScript ever adds it.
  */
 function hasExpressionInitializer(node: ts.Node):
     node is ts.HasExpressionInitializer {
