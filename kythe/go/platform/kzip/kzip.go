@@ -513,9 +513,7 @@ var toJSON = &jsonpb.Marshaler{OrigName: true}
 func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_Index) (string, error) {
 	unit := kythe.Unit{Proto: cu}
 	unit.Canonicalize()
-	hash := sha256.New()
-	unit.Digest(hash)
-	digest := hex.EncodeToString(hash.Sum(nil))
+	digest := unit.Digest()
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
