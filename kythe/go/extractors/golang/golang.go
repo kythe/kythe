@@ -93,7 +93,6 @@ type Extractor struct {
 	DirToImport func(path string) (string, error)
 
 	pmap map[string]*build.Package // Map of import path to build package
-	fmap map[string]string         // Map of file path to content digest
 }
 
 // addPackage imports the specified package, if it has not already been
@@ -116,20 +115,6 @@ func (e *Extractor) mapPackage(importPath string, bp *build.Package) {
 	} else {
 		e.pmap[importPath] = bp
 	}
-}
-
-// readFile reads the contents of path as resolved through the extracted settings.
-func (e *Extractor) readFile(ctx context.Context, path string) ([]byte, error) {
-	data, err := vfs.ReadFile(ctx, path)
-	if err != nil {
-		// If there's an alternative installation path, and this is a path that
-		// could potentially be there, try that.
-		if i := strings.Index(path, "/pkg/"); i >= 0 && e.AltInstallPath != "" {
-			alt := e.AltInstallPath + path[i:]
-			return vfs.ReadFile(ctx, alt)
-		}
-	}
-	return data, err
 }
 
 // findPackages returns the first *Package value in Packages having the given
