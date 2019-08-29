@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.platform.java;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -144,10 +143,7 @@ public class OptionsTest {
     int idx = updatedArgs.indexOf("--boot-class-path");
     assertThat(updatedArgs).hasSize(idx + 2);
     assertThat(updatedArgs.get(idx + 1)).startsWith("not/a/real/path:also/fake");
-    assertThat(updatedArgs.get(idx + 1)).contains(".jar");
-    assertWithMessage("--boot-class-path should have a bunch of jars added")
-        .that(updatedArgs.get(idx + 1).length() > 50)
-        .isTrue();
+    assertThat(updatedArgs.get(idx + 1)).matches(".*(\\.jar|lib/modules)");
   }
 
   @Test
@@ -160,7 +156,8 @@ public class OptionsTest {
     assertThat(updatedArgs.get(updatedArgs.indexOf("--class-path") + 1))
         .startsWith("not/a/real/path:also/fake");
 
-    assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1)).contains(".jar");
+    assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1))
+        .matches(".*(\\.jar|lib/modules)");
   }
 
   @Test
@@ -208,6 +205,7 @@ public class OptionsTest {
     assertThat(updatedArgs).containsAtLeast("-doe", "--source-path", "--boot-class-path").inOrder();
     assertThat(updatedArgs.get(updatedArgs.indexOf("--source-path") + 1))
         .matches("source/from/details");
-    assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1)).contains(".jar");
+    assertThat(updatedArgs.get(updatedArgs.indexOf("--boot-class-path") + 1))
+        .matches(".*(\\.jar|lib/modules)");
   }
 }

@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -71,7 +72,7 @@ func (c *cmd) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}
 		ext := filepath.Ext(path)
 		base := filepath.Base(strings.TrimSuffix(path, ext))
 
-		f, err := os.Open(path)
+		f, err := vfs.Open(ctx, path)
 		if err != nil {
 			log.Printf("Error opening .kzip file: %v", err)
 			hasErrors = true

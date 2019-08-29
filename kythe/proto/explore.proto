@@ -51,29 +51,35 @@ service ExploreService {
   // The Callers/Callees functions are distinct from XrefService.CrossReferences
   // in that these functions capture the semantic relationships between methods,
   // rather than the locations in the code base where a method is called.
-  rpc Callers(CallersRequest) returns (CallersReply) {}
+  rpc Callers(CallersRequest) returns (CallersReply) {
+  }
 
   // Returns the (recursive) callees of a specified function (that is, what
   // functions this function calls), as a directed graph.
-  rpc Callees(CalleesRequest) returns (CalleesReply) {}
+  rpc Callees(CalleesRequest) returns (CalleesReply) {
+  }
 
   // Returns the parents of a specified node (for example,
   // the file for a class, or the class for a function).
   // Note that in some cases a node may have more than one parent.
-  rpc Parents(ParentsRequest) returns (ParentsReply) {}
+  rpc Parents(ParentsRequest) returns (ParentsReply) {
+  }
 
   // Returns the children of a specified node (for example,
   // the classes contained in a file, or the functions contained in a class).
-  rpc Children(ChildrenRequest) returns (ChildrenReply) {}
+  rpc Children(ChildrenRequest) returns (ChildrenReply) {
+  }
 
   // Returns the hierarchy (supertypes and subtypes, including implementations)
   // of a specified type, as a directed acyclic graph.
   // NOT YET IMPLEMENTED
-  rpc TypeHierarchy(TypeHierarchyRequest) returns (TypeHierarchyReply) {}
+  rpc TypeHierarchy(TypeHierarchyRequest) returns (TypeHierarchyReply) {
+  }
 
   // Returns the parameters of a specified function.
   // NOT YET IMPLEMENTED
-  rpc Parameters(ParametersRequest) returns (ParametersReply) {}
+  rpc Parameters(ParametersRequest) returns (ParametersReply) {
+  }
 }
 
 // Shared/utility messages

@@ -70,7 +70,7 @@ func benchWrite(b *testing.B, out io.Writer, pos int, opts *WriterOptions, gen f
 }
 
 var benchOptions = []string{
-	"defaults",
+	"default",
 	"uncompressed",
 	"brotli",
 	"zstd",

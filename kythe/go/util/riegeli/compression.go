@@ -26,38 +26,28 @@ import (
 	"github.com/google/brotli/go/cbrotli"
 )
 
-// A decompressor decodes a compressed Riegeli block.
-type decompressor interface {
-	byteReader
-	io.Closer
-}
-
-func newDecompressor(r byteReader, c compressionType) (decompressor, error) {
-	if c == noCompression {
-		return &nopDecompressorClose{r}, nil
-	}
-
-	if _, err := binary.ReadUvarint(r); err != nil {
-		return nil, fmt.Errorf("bad varint prefix for compressed block: %v", err)
-	}
+func decompress(r byteReader, c compressionType) ([]byte, error) {
+	var rd io.ReadCloser
 	switch c {
 	case brotliCompression:
-		return &byteReadCloser{cbrotli.NewReader(r)}, nil
+		rd = cbrotli.NewReader(r)
 	case zstdCompression:
-		return &byteReadCloser{zstd.NewReader(r)}, nil
+		rd = zstd.NewReader(r)
 	default:
 		return nil, fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(c)})
 	}
-}
 
-// A byteReadCloser trivially implements io.ByteReader for a io.ReadCloser.
-type byteReadCloser struct{ io.ReadCloser }
-
-// ReadByte implements the io.ByteReader interface.
-func (b byteReadCloser) ReadByte() (byte, error) {
-	var buf [1]byte
-	_, err := io.ReadFull(b.ReadCloser, buf[:])
-	return buf[0], err
+	size, err := binary.ReadUvarint(r)
+	if err != nil {
+		rd.Close()
+		return nil, fmt.Errorf("bad varint prefix for compressed block: %v", err)
+	}
+	decoded := make([]byte, size)
+	if _, err := io.ReadFull(rd, decoded); err != nil {
+		rd.Close()
+		return nil, err
+	}
+	return decoded, rd.Close()
 }
 
 // A compressor builds a Riegeli compressed block.
@@ -108,7 +98,15 @@ func (b *batchCompressor) Close() error {
 type sizePrefixedWriterTo struct {
 	buf *bytes.Buffer
 	io.WriteCloser
-	prefix []byte
+	prefix       []byte
+	uncompressed uint64
+}
+
+// Write implements part of the compressor interface.
+func (w *sizePrefixedWriterTo) Write(b []byte) (int, error) {
+	n, err := w.WriteCloser.Write(b)
+	w.uncompressed += uint64(n)
+	return n, err
 }
 
 // Close implements part of the compressor interface.
@@ -118,7 +116,7 @@ func (w *sizePrefixedWriterTo) Close() error {
 	}
 
 	w.prefix = make([]byte, binary.MaxVarintLen64)
-	n := int64(binary.PutUvarint(w.prefix[:], uint64(w.buf.Len())))
+	n := int64(binary.PutUvarint(w.prefix[:], w.uncompressed))
 	w.prefix = w.prefix[:n]
 
 	return nil
@@ -149,12 +147,6 @@ type writerTo interface {
 	// Len returns the total data that will be written by WriteTo.
 	Len() int
 }
-
-// A nopDecompressorClose trivially implements io.Closer for a byteReader.
-type nopDecompressorClose struct{ byteReader }
-
-// Close implements the io.Closer interface.
-func (nopDecompressorClose) Close() error { return nil }
 
 // A nopCompressorClose trivially implements io.Closer for a writerTo.
 type nopCompressorClose struct{ writerTo }

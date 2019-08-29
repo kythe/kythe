@@ -35,8 +35,10 @@ import (
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
+	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/tickets"
 	"kythe.io/kythe/go/util/span"
 
@@ -55,7 +57,17 @@ import (
 
 var (
 	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
+
+	experimentalCrossReferenceIndirectionKinds flagutil.StringMultimap
+
+	// TODO(schroederc): remove once relevant clients specify their required quality
+	defaultTotalsQuality = flag.String("experimental_default_totals_quality", "PRECISE_TOTALS", "Default TotalsQuality when unspecified in CrossReferencesRequest")
 )
+
+func init() {
+	flag.Var(&experimentalCrossReferenceIndirectionKinds, "experimental_cross_reference_indirection_kinds",
+		`Comma-separated set of key-value pairs (node_kind=edge_kind) to indirect through in CrossReferences.  For example, "talias=/kythe/edge/aliases" indicates that the targets of a 'talias' node's '/kythe/edge/aliases' related nodes will have their cross-references merged into the root 'talias' node's.  A "*=edge_kind" entry indicates to indirect through the specified edge kind for any node kind.`)
+}
 
 type staticLookupTables interface {
 	fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error)
@@ -485,8 +497,18 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS ||
 		len(req.Filter) > 0)
 
+	totalsQuality := req.TotalsQuality
+	if totalsQuality == xpb.CrossReferencesRequest_UNSPECIFIED_TOTALS {
+		totalsQuality = xpb.CrossReferencesRequest_TotalsQuality(xpb.CrossReferencesRequest_TotalsQuality_value[strings.ToUpper(*defaultTotalsQuality)])
+	}
+
 	var foundCrossRefs bool
 	for i := 0; i < len(tickets); i++ {
+		if totalsQuality == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
+			log.Printf("WARNING: stopping CrossReferences index reads after %d/%d tickets (TotalsQuality: %s)", i, len(tickets), totalsQuality)
+			break
+		}
+
 		ticket := tickets[i]
 		cr, err := t.crossReferences(ctx, ticket)
 		if err == table.ErrNoSuchKey {
@@ -523,16 +545,14 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		if *mergeCrossReferences {
 			// Add any additional merge nodes to the set of table lookups
 			for _, mergeNode := range cr.MergeWith {
-				if prevMerge, ok := mergeInto[mergeNode]; ok {
-					if prevMerge != ticket {
-						log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
-					}
-					continue
-				}
-				tickets = append(tickets, mergeNode)
-				mergeInto[mergeNode] = ticket
+				tickets = addMergeNode(mergeInto, tickets, ticket, mergeNode)
 			}
 		}
+
+		// Read the set of indirection edge kinds for the given node kind.
+		nodeKind := nodeKind(cr.SourceNode)
+		indirections := experimentalCrossReferenceIndirectionKinds[nodeKind].
+			Union(experimentalCrossReferenceIndirectionKinds["*"])
 
 		for _, grp := range cr.Group {
 			// Filter anchor groups based on requested build configs
@@ -556,10 +576,19 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp, req.AnchorText)
 				}
-			case len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind):
-				reply.Total.RelatedNodesByRelation[grp.Kind] += int64(len(grp.RelatedNode))
-				if wantMoreCrossRefs {
-					stats.addRelatedNodes(reply, crs, grp, patterns)
+			case len(grp.RelatedNode) > 0:
+				// If requested, add related nodes to merge node set.
+				if indirections.Contains(grp.Kind) {
+					for _, rn := range grp.RelatedNode {
+						tickets = addMergeNode(mergeInto, tickets, ticket, rn.Node.GetTicket())
+					}
+				}
+
+				if len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, grp.Kind) {
+					reply.Total.RelatedNodesByRelation[grp.Kind] += int64(len(grp.RelatedNode))
+					if wantMoreCrossRefs {
+						stats.addRelatedNodes(reply, crs, grp, patterns)
+					}
 				}
 			case xrefs.IsCallerKind(req.CallerKind, grp.Kind):
 				reply.Total.Callers += int64(len(grp.Caller))
@@ -603,14 +632,32 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					}
 					stats.addAnchors(&crs.Reference, p.Group, req.AnchorText)
 				}
-			case len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind):
-				reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
-				if wantMoreCrossRefs && !stats.skipPage(idx) {
-					p, err := t.crossReferencesPage(ctx, idx.PageKey)
+			case xrefs.IsRelatedNodeKind(nil, idx.Kind):
+				var p *srvpb.PagedCrossReferences_Page
+
+				// If requested, add related nodes to merge node set.
+				if indirections.Contains(idx.Kind) {
+					p, err = t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
-					stats.addRelatedNodes(reply, crs, p.Group, patterns)
+
+					for _, rn := range p.Group.RelatedNode {
+						tickets = addMergeNode(mergeInto, tickets, ticket, rn.Node.GetTicket())
+					}
+				}
+
+				if len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(relatedKinds, idx.Kind) {
+					reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
+					if wantMoreCrossRefs && !stats.skipPage(idx) {
+						if p == nil {
+							p, err = t.crossReferencesPage(ctx, idx.PageKey)
+							if err != nil {
+								return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+							}
+						}
+						stats.addRelatedNodes(reply, crs, p.Group, patterns)
+					}
 				}
 			case xrefs.IsCallerKind(req.CallerKind, idx.Kind):
 				reply.Total.Callers += int64(idx.Count)
@@ -669,6 +716,27 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	return reply, nil
 }
 
+func addMergeNode(mergeMap map[string]string, allTickets []string, rootNode, mergeNode string) []string {
+	if prevMerge, ok := mergeMap[mergeNode]; ok {
+		if prevMerge != rootNode {
+			log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
+		}
+		return allTickets
+	}
+	allTickets = append(allTickets, mergeNode)
+	mergeMap[mergeNode] = rootNode
+	return allTickets
+}
+
+func nodeKind(n *srvpb.Node) string {
+	for _, f := range n.Fact {
+		if f.Name == facts.NodeKind {
+			return string(f.Value)
+		}
+	}
+	return ""
+}
+
 func sumTotalCrossRefs(ts *xpb.CrossReferencesReply_Total) int {
 	var relatedNodes int
 	for _, cnt := range ts.RelatedNodesByRelation {
@@ -685,6 +753,8 @@ type refStats struct {
 	skip, total, max int
 }
 
+func (s *refStats) done() bool { return s.total == s.max }
+
 func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 	if s.skip > int(idx.Count) {
 		s.skip -= int(idx.Count)
@@ -696,7 +766,7 @@ func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group) bool {
 	cs := grp.Caller
 
-	if s.total == s.max {
+	if s.done() {
 		// We've already hit our cap; return true that we're done.
 		return true
 	} else if s.skip > len(cs) {
@@ -725,7 +795,7 @@ func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, g
 		}
 		crs.Caller = append(crs.Caller, ra)
 	}
-	return s.total == s.max // return whether we've hit our cap
+	return s.done() // return whether we've hit our cap
 }
 
 func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group, patterns []*regexp.Regexp) bool {

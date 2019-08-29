@@ -25,7 +25,6 @@ cc_library(
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":status_or",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_absl//absl/strings",
@@ -53,6 +52,7 @@ cc_library(
     hdrs = ["path_utils.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        ":status_or",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
     ],
@@ -111,7 +111,6 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:metadata_cc_proto",
         "//kythe/proto:storage_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/memory",
@@ -142,7 +141,6 @@ cc_library(
         "//kythe/proto:graph_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "//kythe/proto:xref_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_protobuf//:protobuf",
@@ -217,8 +215,9 @@ cc_library(
     deps = [
         ":net_client",
         "//external:zlib",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
     ],
@@ -242,7 +241,6 @@ cc_library(
     deps = [
         ":kythe_uri",
         "//third_party:gtest",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
     ],

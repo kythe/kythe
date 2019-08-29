@@ -36,9 +36,11 @@
 #include <sys/stat.h>
 
 #include <set>
+#include <string>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "absl/strings/str_format.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -50,9 +52,9 @@
 using kythe::proto::ClaimAssignment;
 using kythe::proto::CompilationUnit;
 
-DEFINE_string(index_pack, "", "Read from this index pack.");
-DEFINE_string(static_claim, "", "Read from this claim file.");
-DEFINE_bool(slice_dependencies, false, "Describe a miminal index pack.");
+ABSL_FLAG(std::string, index_pack, "", "Read from this index pack.");
+ABSL_FLAG(std::string, static_claim, "", "Read from this claim file.");
+ABSL_FLAG(bool, slice_dependencies, false, "Describe a miminal index pack.");
 
 template <typename ProtoType, typename ClosureType>
 void ReadGzippedDelimitedProtoSequence(const std::string& path, ClosureType f) {
@@ -65,7 +67,7 @@ void ReadGzippedDelimitedProtoSequence(const std::string& path, ClosureType f) {
   google::protobuf::uint32 byte_size;
   for (;;) {
     io::CodedInputStream coded_input_stream(&gzip_input_stream);
-    coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+    coded_input_stream.SetTotalBytesLimit(INT_MAX);
     if (!coded_input_stream.ReadVarint32(&byte_size)) {
       break;
     }
@@ -79,15 +81,15 @@ void ReadGzippedDelimitedProtoSequence(const std::string& path, ClosureType f) {
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  gflags::SetVersionString("0.1");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  CHECK(!FLAGS_index_pack.empty()) << "Need an index pack.";
-  CHECK(!FLAGS_static_claim.empty()) << "Need a static claim table.";
-  const std::set<std::string> paths(argv + 1, argv + argc);
+  std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
+  CHECK(!absl::GetFlag(FLAGS_index_pack).empty()) << "Need an index pack.";
+  CHECK(!absl::GetFlag(FLAGS_static_claim).empty())
+      << "Need a static claim table.";
+  const std::set<std::string> paths(remain.begin() + 1, remain.end());
   CHECK(!paths.empty()) << "Specify one or more paths.";
   std::set<std::string> compilations;
   ReadGzippedDelimitedProtoSequence<ClaimAssignment>(
-      FLAGS_static_claim,
+      absl::GetFlag(FLAGS_static_claim),
       [&compilations, &paths](const ClaimAssignment& claim) {
         if (paths.count(claim.dependency_v_name().path())) {
           compilations.insert(claim.compilation_v_name().signature());
@@ -95,8 +97,8 @@ int main(int argc, char* argv[]) {
       });
   std::string error_text;
   auto filesystem = kythe::IndexPackPosixFilesystem::Open(
-      FLAGS_index_pack, kythe::IndexPackFilesystem::OpenMode::kReadOnly,
-      &error_text);
+      absl::GetFlag(FLAGS_index_pack),
+      kythe::IndexPackFilesystem::OpenMode::kReadOnly, &error_text);
   if (!filesystem) {
     absl::FPrintF(stderr, "Error reading index pack: %s\n", error_text);
     return 1;
@@ -112,9 +114,9 @@ int main(int argc, char* argv[]) {
             bool claimed = compilations.count(unit.v_name().signature());
             for (const auto& input : unit.required_input()) {
               if (paths.count(input.v_name().path())) {
-                if (!FLAGS_slice_dependencies || claimed) {
+                if (!absl::GetFlag(FLAGS_slice_dependencies) || claimed) {
                   absl::PrintF("units/%s.unit\n", file_id);
-                  if (!FLAGS_slice_dependencies && claimed) {
+                  if (!absl::GetFlag(FLAGS_slice_dependencies) && claimed) {
                     absl::PrintF("# prev claim contains");
                     for (const auto& arg : unit.source_file()) {
                       absl::PrintF(" %s", arg);
@@ -123,7 +125,7 @@ int main(int argc, char* argv[]) {
                   }
                 }
               }
-              if (FLAGS_slice_dependencies && claimed) {
+              if (absl::GetFlag(FLAGS_slice_dependencies) && claimed) {
                 absl::PrintF("files/%s.data\n", input.info().digest());
               }
             }

@@ -1,5 +1,5 @@
-load("@io_bazel_rules_proto//proto:defs.bzl", "proto_library")
-load("@io_bazel_rules_java//java:defs.bzl", "java_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_java//java:defs.bzl", "java_proto_library")
 
 package(default_visibility = ["//kythe:proto_visibility"])
 
@@ -33,7 +33,10 @@ filegroup(
 proto_library(
     name = "schema_proto",
     srcs = ["schema.proto"],
-    deps = [":storage_proto"],
+    deps = [
+        ":storage_proto",
+        "@com_google_protobuf//:descriptor_proto",
+    ],
 )
 
 go_kythe_proto(

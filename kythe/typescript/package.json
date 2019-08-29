@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "source-map-support": "^0.4.11",
-    "typescript": "~3.3.3"
+    "typescript": "~3.5.3"
   },
   "devDependencies": {
     "@types/jasmine": "^2.8.8",

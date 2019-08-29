@@ -1,4 +1,4 @@
-load("@io_bazel_rules_java//java:defs.bzl", "java_library", "java_binary")
+load("@rules_java//java:defs.bzl", "java_library", "java_binary")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -26,7 +26,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/platform/java",
-        "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
@@ -93,5 +92,23 @@ java_binary(
         "@com_beust_jcommander//jar",
         "@com_google_common_flogger//api",
         "@com_google_protobuf//:protobuf_java",
+    ],
+)
+
+java_library(
+    name = "auto_value_plugin",
+    srcs = [
+        "AutoValuePlugin.java",
+        "ResolvedAutoValue.java",
+    ],
+    deps = [
+        ":plugin",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/common:autovalue",
+        "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
+        "//third_party/javac",
     ],
 )
