@@ -37,13 +37,6 @@ func TestHexDigest(t *testing.T) {
 	}
 }
 
-type stubUnit struct {
-	bits string
-	Unit
-}
-
-func (s stubUnit) Digest() string { return s.bits }
-
 func regexps(exprs ...string) (res []*regexp.Regexp) {
 	for _, expr := range exprs {
 		res = append(res, regexp.MustCompile(expr))
