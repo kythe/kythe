@@ -28,12 +28,10 @@ build --host_javabase=@bazel_tools//tools/jdk:remote_jdk11
 build:remote --remote_instance_name=projects/kythe-repo/instances/default_instance --project_id=kythe-repo
 
 build:remote --auth_enabled=true
-build:remote --tls_enabled=true
-
 build:remote --jobs=50
 build:remote --remote_timeout=3600
-build:remote --remote_cache=remotebuildexecution.googleapis.com
-build:remote --remote_executor=remotebuildexecution.googleapis.com
+build:remote --remote_cache=grpcs://remotebuildexecution.googleapis.com
+build:remote --remote_executor=grpcs://remotebuildexecution.googleapis.com
 
 # TODO(schroederc): add buildeventservice
 # build:remote --bes_backend="buildeventservice.googleapis.com"
