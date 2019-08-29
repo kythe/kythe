@@ -51,7 +51,7 @@ def _cc_dependencies():
 
     maybe(
         http_archive,
-        name = "boringssl",  # Must match upstream workspace name.
+        name = "boringssl",
         # Gitiles creates gzip files with an embedded timestamp, so we cannot use
         # sha256 to validate the archives.  We must rely on the commit hash and https.
         # Commits must come from the master-with-bazel branch.
@@ -182,6 +182,7 @@ def _java_dependencies():
         http_archive,
         name = "google_bazel_common",
         strip_prefix = "bazel-common-b3778739a9c67eaefe0725389f03cf821392ac67",
+        sha256 = "4ae0fd0af627be9523a166b88d1298375335f418dcc13a82e9e77a0089a4d254",
         urls = ["https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip"],
     )
     maybe(
