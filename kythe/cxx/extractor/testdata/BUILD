@@ -222,6 +222,25 @@ shell_tool_test(
     },
 )
 
+shell_tool_test(
+    name = "installed_dir",
+    data = [
+        # Clang resolves the include directory relative to `bin`,
+        # so the former needs to exist.
+        "bin/clang",
+        "include/c++/v1/dummy",
+        "installed_dir.UNIT",
+        "installed_dir.cc",
+        "skip_functions.sh",
+        "test_common.sh",
+    ],
+    scriptfile = "test_installed_dir.sh",
+    tools = {
+        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
+        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
+    },
+)
+
 cc_extractor_test(
     name = "recursish_macro_test",
     size = "small",

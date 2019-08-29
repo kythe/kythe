@@ -21,7 +21,6 @@ def asciidoc_with_verifier(name, src, tags = None):
             "//kythe/go/indexer/cmd/go_example:go_example",
             "//kythe/go/platform/tools/shasum_tool",
             "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
-            "//kythe/cxx/tools:kindex_tool",
             "//kythe/cxx/verifier",
             "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor",
         ],

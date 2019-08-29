@@ -20,7 +20,7 @@ TEST_NAME="test_extract_transcript"
 . ./kythe/cxx/extractor/testdata/test_common.sh
 . ./kythe/cxx/extractor/testdata/skip_functions.sh
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
-    "./${EXTRACTOR}" --with_executable "/usr/bin/g++" \
+    "./${EXTRACTOR}" --with_executable "/dummy/bin/g++" \
     -I./kythe/cxx/extractor/testdata \
     ./kythe/cxx/extractor/testdata/transcript_main.cc
 [[ $(ls -1 "${OUT_DIR}"/*.kzip | wc -l) -eq 1 ]]
@@ -34,4 +34,4 @@ skip_inplace "signature" 0 "${INDEX_PATH}_UNIT"
 sed "s|TEST_CWD|${PWD}/|" "${BASE_DIR}/transcript_main.UNIT" | \
     skip "-target" 1 |
     skip "signature" 0 |
-    diff - "${INDEX_PATH}_UNIT"
+    diff -u - "${INDEX_PATH}_UNIT"

@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/tools/fyi/fyi.h"
 
+#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "clang/Frontend/ASTUnit.h"
@@ -320,9 +321,9 @@ class Action : public clang::ASTFrontendAction,
     if (tracker_->state() == FileTracker::State::kBusy) {
       tracker_->BeginPass();
       compiler.getPreprocessor().addPPCallbacks(
-          llvm::make_unique<PreprocessorHooks>(this));
+          absl::make_unique<PreprocessorHooks>(this));
     }
-    return llvm::make_unique<clang::ASTConsumer>();
+    return absl::make_unique<clang::ASTConsumer>();
   }
 
   /// \copydoc ASTFrontendAction::ExecuteAction
@@ -587,7 +588,7 @@ bool ActionFactory::runInvocation(
   clang::ASTUnit* ast_unit = nullptr;
   // We only consider one full parse on one input file for now, so we only ever
   // need one Action.
-  auto action = llvm::make_unique<Action>(*this);
+  auto action = absl::make_unique<Action>(*this);
   do {
     BeginNextIteration();
     if (!ast_unit) {

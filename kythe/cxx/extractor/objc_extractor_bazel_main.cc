@@ -70,17 +70,24 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "absl/strings/str_format.h"
 #include "cxx_extractor.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/extractor/language.h"
 #include "objc_bazel_support.h"
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
+
+ABSL_FLAG(kythe::PathCanonicalizer::Policy, canonicalize_vname_paths,
+          kythe::PathCanonicalizer::Policy::kCleanOnly,
+          "Policy to use when canonicalization VName paths: "
+          "clean-only (default), prefer-relative, prefer-real.");
 
 struct XAState {
   std::string extra_action_file;
@@ -200,28 +207,30 @@ static bool LoadExtraAction(const XAState& xa_state,
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.2");
-  if (argc != 4 && argc != 6) {
+  std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
+  if (remain.size() != 4 && remain.size() != 6) {
     absl::FPrintF(
         stderr,
         "Invalid number of arguments:\n\tCall as %s extra-action-file "
         "output-file vname-config [devdir-script sdkroot-script]\n",
-        argv[0]);
+        remain[0]);
     return 1;
   }
   XAState xa_state;
-  xa_state.extra_action_file = argv[1];
-  xa_state.output_file = argv[2];
-  xa_state.vname_config = argv[3];
-  if (argc == 6) {
-    xa_state.devdir_script = argv[4];
-    xa_state.sdkroot_script = argv[5];
+  xa_state.extra_action_file = remain[1];
+  xa_state.output_file = remain[2];
+  xa_state.vname_config = remain[3];
+  if (remain.size() == 6) {
+    xa_state.devdir_script = remain[4];
+    xa_state.sdkroot_script = remain[5];
   } else {
     xa_state.devdir_script = "";
     xa_state.sdkroot_script = "";
   }
 
   kythe::ExtractorConfiguration config;
+  config.SetPathCanonizalizationPolicy(
+      absl::GetFlag(FLAGS_canonicalize_vname_paths));
   bool success = LoadExtraAction(xa_state, config);
   if (success) {
     config.Extract(kythe::supported_language::Language::kObjectiveC);

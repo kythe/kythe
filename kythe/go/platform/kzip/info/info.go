@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package infocmd provides the kzip command for obtaining info about a kzip archive.
+// Package info provides utilities for summarizing the contents of a kzip.
 package info // import "kythe.io/kythe/go/platform/kzip/info"
 
 import (
@@ -45,6 +45,7 @@ func KzipInfo(f kzip.File) (*apb.KzipInfo, error) {
 		kzipInfo.TotalUnits++
 		corpusInfo(u.Proto.GetVName().GetCorpus()).Units[u.Proto.GetVName().GetLanguage()]++
 		for _, ri := range u.Proto.RequiredInput {
+			kzipInfo.TotalFiles++
 			corpusInfo(ri.GetVName().GetCorpus()).Files[ri.GetVName().GetLanguage()]++
 		}
 		return nil

@@ -40,7 +40,8 @@ service LinkService {
   // Resolve returns the links matching the specified request.  The server is
   // permitted to limit the size of the result set in order to ensure fast
   // responses. The server will report an error if its limits are exceeded.
-  rpc Resolve(LinkRequest) returns (LinkReply) {}
+  rpc Resolve(LinkRequest) returns (LinkReply) {
+  }
 }
 
 message LinkRequest {

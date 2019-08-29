@@ -33,7 +33,10 @@ filegroup(
 proto_library(
     name = "schema_proto",
     srcs = ["schema.proto"],
-    deps = [":storage_proto"],
+    deps = [
+        ":storage_proto",
+        "@com_google_protobuf//:descriptor_proto",
+    ],
 )
 
 go_kythe_proto(

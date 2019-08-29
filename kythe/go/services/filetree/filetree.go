@@ -167,15 +167,6 @@ func (m *Map) ensureDir(corpus, root, path string) *ftpb.DirectoryReply {
 	return dir
 }
 
-func addToSet(strs []string, str string) []string {
-	for _, s := range strs {
-		if s == str {
-			return strs
-		}
-	}
-	return append(strs, str)
-}
-
 func addEntry(entries []*ftpb.DirectoryReply_Entry, e *ftpb.DirectoryReply_Entry) []*ftpb.DirectoryReply_Entry {
 	for _, x := range entries {
 		if proto.Equal(x, e) {

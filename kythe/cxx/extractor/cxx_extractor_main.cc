@@ -36,18 +36,19 @@
 // compiler header files embedded into the extractor's executable will be
 // mapped to /kythe_builtins and used.
 
-#include "cxx_extractor.h"
-#include "gflags/gflags.h"
+#include <string>
+#include <vector>
+
+#include "glog/logging.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/extractor/cxx_extractor.h"
 #include "kythe/cxx/extractor/language.h"
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.1");
-  std::vector<std::string> args(argv, argv + argc);
   kythe::ExtractorConfiguration config;
-  config.SetArgs(args);
+  config.SetArgs(std::vector<std::string>(argv, argv + argc));
   config.InitializeFromEnvironment();
   bool success = config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();

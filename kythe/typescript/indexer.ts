@@ -19,7 +19,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
-import {EdgeKind, FactName, JSONEdge, JSONFact, makeOrdinalEdge, OrdinalEdge, Subkind, VName} from './kythe';
+import {EdgeKind, FactName, JSONEdge, JSONFact, makeOrdinalEdge, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
 
 const LANGUAGE = 'typescript';
@@ -49,12 +49,6 @@ export interface IndexerHost {
    * See the documentation of Context for more information.
    */
   getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName;
-  /**
-   * Aliases a local symbol to a remote symbol. Returns the aliased name.
-   * This is used to return a remote symbol's VNames for a local symbol when a
-   * symbol is imported into a file; @see Visitor#visitImport.
-   */
-  aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName;
   /**
    * scopedSignature computes a scoped name for a ts.Node.
    * E.g. if you have a function `foo` containing a block containing a variable
@@ -141,13 +135,18 @@ export enum TSNamespace {
 }
 
 /**
- * Context represents the environment a node is declared in, and only applies to
- * nodes with multiple declarations. The context may be used for disambiguating
- * node declarations. A Getter context means the node is declared as a getter; a
- * Setter context means it is declared as a setter.
+ * Context represents the environment a node is declared in, and may be used for
+ * disambiguating a node's declarations if it has multiple.
  */
 export enum Context {
+  /**
+   * No disambiguation about a node's declarations. May be lazily generated
+   * from other contexts; see SymbolVNameStore documentation.
+   */
+  Any,
+  /** The node is declared as a getter. */
   Getter,
+  /** The node is declared as a setter. */
   Setter,
 }
 
@@ -189,6 +188,74 @@ function todo(sourceRoot: string, node: ts.Node, message: string) {
   console.warn(`TODO: ${file}:${line}:${character}: ${message}`);
 }
 
+type NamespaceAndContext = string&{__brand: 'nsctx'};
+/**
+ * A SymbolVNameStore stores a mapping of symbols to the (many) VNames it may
+ * have. Each TypeScript symbol can be be of a different TypeScript namespace
+ * and be declared in a unique context, leading to a total (`TSNamespace` *
+ * `Context`) number of possible VNames for the symbol.
+ *
+ *              TSNamespace + Context
+ *              -----------   -------
+ *              TYPE          Any
+ * ts.Symbol -> VALUE         Getter  -> VName
+ *              NAMESPACE     Setter
+ *                            ...
+ *
+ * The `Any` context makes no guarantee of symbol declaration disambiguation.
+ * As a result, unless explicitly set for a given symbol and namespace, the
+ * VName of an `Any` context is lazily set to the VName of an arbitrary context.
+ */
+class SymbolVNameStore {
+  private readonly store =
+      new Map<ts.Symbol, Map<NamespaceAndContext, Readonly<VName>>>();
+
+  /**
+   * Serializes a namespace and context as a string to lookup in the store.
+   *
+   * Each instance of a JavaScript object is unique, so using one as a key fails
+   * because a new object would be generated every time the store is queried.
+   */
+  private serialize(ns: TSNamespace, context: Context): NamespaceAndContext {
+    return `${ns}${context}` as NamespaceAndContext;
+  }
+
+  /** Get a symbol VName for a given namespace and context, if it exists. */
+  get(symbol: ts.Symbol, ns: TSNamespace, context: Context): VName|undefined {
+    if (this.store.has(symbol)) {
+      const nsCtx = this.serialize(ns, context);
+      return this.store.get(symbol)!.get(nsCtx);
+    }
+    return undefined;
+  }
+
+  /**
+   * Set a symbol VName for a given namespace and context. Throws if a VName
+   * already exists.
+   */
+  set(symbol: ts.Symbol, ns: TSNamespace, context: Context, vname: VName) {
+    let vnameMap = this.store.get(symbol);
+    const nsCtx = this.serialize(ns, context);
+    if (vnameMap) {
+      if (vnameMap.has(nsCtx)) {
+        throw new Error(`VName already set with signature ${
+            vnameMap.get(nsCtx)!.signature}`);
+      }
+      vnameMap.set(nsCtx, vname);
+    } else {
+      this.store.set(symbol, new Map([[nsCtx, vname]]));
+    }
+
+    // Set the symbol VName for the given namespace and `Any` context, if it has
+    // not already been set.
+    const nsAny = this.serialize(ns, Context.Any);
+    vnameMap = this.store.get(symbol)!;
+    if (!vnameMap.has(nsAny)) {
+      vnameMap.set(nsAny, vname);
+    }
+  }
+}
+
 /**
  * StandardIndexerContext provides the standard definition of information about
  * a TypeScript program and common methods used by the TypeScript indexer and
@@ -206,14 +273,8 @@ class StandardIndexerContext implements IndexerHost {
    */
   private rootDirs: string[];
 
-  /**
-   * symbolNames maps ts.Symbols to their assigned VNames.
-   * The value is a tuple of the separate TypeScript namespaces, and entries
-   * in it correspond to TSNamespace values.  See the documentation of
-   * TSNamespace.
-   */
-  private symbolNames =
-      new Map<ts.Symbol, [VName | null, VName|null, VName|null]>();
+  /** symbolNames is a store of ts.Symbols to their assigned VNames. */
+  private symbolNames = new SymbolVNameStore();
 
   /**
    * anonId increments for each anonymous block, to give them unique
@@ -249,7 +310,6 @@ class StandardIndexerContext implements IndexerHost {
     this.rootDirs = rootDirs;
     this.typeChecker = this.program.getTypeChecker();
   }
-
 
   getOffsetTable(path: string): Readonly<utf8.OffsetTable> {
     let table = this.offsetTables.get(path);
@@ -358,6 +418,7 @@ class StandardIndexerContext implements IndexerHost {
         case ts.SyntaxKind.EnumMember:
         case ts.SyntaxKind.FunctionDeclaration:
         case ts.SyntaxKind.InterfaceDeclaration:
+        case ts.SyntaxKind.ImportEqualsDeclaration:
         case ts.SyntaxKind.ImportSpecifier:
         case ts.SyntaxKind.ExportSpecifier:
         case ts.SyntaxKind.MethodDeclaration:
@@ -433,6 +494,20 @@ class StandardIndexerContext implements IndexerHost {
             parts.push('constructor');
           }
           break;
+        case ts.SyntaxKind.ImportClause:
+          // An import clause can have one of two forms:
+          //   import foo from './bar';
+          //   import {foo as far} from './bar';
+          // In the first case the clause has a name "foo". In this case add the
+          // name of the clause to the signature.
+          // In the second case the clause has no explicit name. This
+          // contributes nothing to the signature without risk of naming
+          // conflicts because TS imports are essentially file-global lvalues.
+          const importClause = node as ts.ImportClause;
+          if (importClause.name) {
+            parts.push(importClause.name.text);
+          }
+          break;
         case ts.SyntaxKind.ModuleDeclaration:
           const modDecl = node as ts.ModuleDeclaration;
           if (modDecl.name.kind === ts.SyntaxKind.StringLiteral) {
@@ -496,24 +571,18 @@ class StandardIndexerContext implements IndexerHost {
    * optionally specified to help disambiguate nodes with multiple declarations.
    * See the documentation of Context for more information.
    */
-  getSymbolName(sym: ts.Symbol, ns: TSNamespace, context?: Context): VName {
-    let vnames = this.symbolNames.get(sym);
+  getSymbolName(
+      sym: ts.Symbol, ns: TSNamespace, context: Context = Context.Any): VName {
+    const stored = this.symbolNames.get(sym, ns, context);
+    if (stored) return stored;
+
     let declarations = sym.declarations;
-
-    // Symbols with multiple declarations are disambiguated by the context
-    // they are used in.
-    const contextApplies = context !== undefined && declarations.length > 1;
-
-    if (!contextApplies && vnames && vnames[ns]) return vnames[ns]!;
-    // TODO: update symbolNames table to account for context kind
-
-    if (!declarations || declarations.length < 1) {
+    if (declarations.length < 1) {
       throw new Error('TODO: symbol has no declarations?');
     }
 
-    // Disambiguate symbols with multiple declarations using a context. This
-    // only applies to getters and setters currently.
-    if (contextApplies) {
+    // Disambiguate symbols with multiple declarations using a context.
+    if (sym.declarations.length > 1) {
       switch (context) {
         case Context.Getter:
           declarations = declarations.filter(ts.isGetAccessor);
@@ -521,13 +590,9 @@ class StandardIndexerContext implements IndexerHost {
         case Context.Setter:
           declarations = declarations.filter(ts.isSetAccessor);
           break;
+        default:
+          break;
       }
-    }
-    // Otherwise, if there are multiple declarations but no context is
-    // provided, try to return the getter declaration.
-    else if (declarations.length > 1) {
-      const getDecls = declarations.filter(ts.isGetAccessor);
-      if (getDecls.length > 0) declarations = getDecls;
     }
 
     const decl = declarations[0];
@@ -541,33 +606,9 @@ class StandardIndexerContext implements IndexerHost {
       vname.signature += '#namespace';
     }
 
-    if (!contextApplies) {
-      // Save it in the appropriate slot in the symbolNames table.
-      if (!vnames) vnames = [null, null, null];
-      vnames[ns] = vname;
-      this.symbolNames.set(sym, vnames);
-    }
-
+    // Cache the VName for future lookups.
+    this.symbolNames.set(sym, ns, context, vname);
     return vname;
-  }
-
-  aliasSymbol(localSym: ts.Symbol, remoteSym: ts.Symbol): VName {
-    // This imported symbol can refer to a type, a value, or both.
-    const kImportValue = remoteSym.flags & ts.SymbolFlags.Value ?
-        this.getSymbolName(remoteSym, TSNamespace.VALUE) :
-        null;
-    const kImportType = remoteSym.flags & ts.SymbolFlags.Type ?
-        this.getSymbolName(remoteSym, TSNamespace.TYPE) :
-        null;
-    // Mark the local symbol with the remote symbol's VName so that all
-    // references resolve to the remote symbol.
-    this.symbolNames.set(localSym, [kImportType, kImportValue, kImportType]);
-
-    // The name anchor must link somewhere.  In rare cases a symbol is both
-    // a type and a value that resolve to two different locations; for now,
-    // because we must choose one, just prefer linking to the value.
-    // One of the value or type reference should be non-null.
-    return (kImportValue || kImportType)!;
   }
 
   /**
@@ -613,6 +654,11 @@ class StandardIndexerContext implements IndexerHost {
     console.log(JSON.stringify(obj));
   };
 }
+
+type ImportVNameSet = {
+  [where in 'type' | 'value']?:
+      {local: Readonly<VName>, remote: Readonly<VName>}
+};
 
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Visitor {
@@ -860,9 +906,8 @@ class Visitor {
     // This can happen in cases of importing local modules, like
     //   declare namespace Foo {}
     //   import foo = Foo;
-    if (ts.isSourceFile(sf)) {
-      return this.host.moduleName(sf.fileName);
-    }
+    if (!ts.isSourceFile(sf)) return undefined;
+    return this.host.moduleName(sf.fileName);
   }
 
   /**
@@ -890,16 +935,21 @@ class Visitor {
   }
 
   /**
-   * visitImportSpecifier handles a single entry in an import statement, e.g.
+   * visitImport handles a single entry in an import statement, e.g.
    * "bar" in code like
    *   import {foo, bar} from 'baz';
    * See visitImportDeclaration for the code handling the entire statement.
    *
-   * @return The VName for the import.
+   * @param name TypeScript import declaration node
+   * @param bindingAnchor anchor that "defines/binding" the local import
+   *     definition
+   * @param refAnchor anchor that "ref" the import's remote declaration
    */
-  visitImport(name: ts.Node): VName {
+  visitImport(
+      name: ts.Node, bindingAnchor: Readonly<VName>,
+      refAnchor: Readonly<VName>) {
     // An import both aliases a symbol from another module
-    // (call it the "remote" symbol) and it defines a local symbol.
+    // (call it the remote symbol) and it defines a local symbol.
     //
     // Those two symbols often have the same name, with statements like:
     //   import {foo} from 'bar';
@@ -911,23 +961,49 @@ class Visitor {
     // one for the local and one for the remote.  In principle for the
     // simple import statement
     //   import {foo} from 'bar';
-    // the "foo" should be both:
-    // - a ref/imports to the remote symbol
-    // - a defines/binding for the local symbol
-    //
-    // But in Kythe the UI for stacking multiple references out from a single
-    // anchor isn't great, so this code instead unifies all references
-    // (including renaming imports) to a single VName.
+    // "foo" should both:
+    //   - "ref/imports" the remote symbol
+    //   - "defines/binding" the local symbol
 
     const localSym = this.host.getSymbolAtLocation(name);
     if (!localSym) {
       throw new Error(`TODO: local name ${name} has no symbol`);
     }
-
     const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
-    const kImportName = this.host.aliasSymbol(localSym, remoteSym);
-    this.emitEdge(this.newAnchor(name), EdgeKind.REF_IMPORTS, kImportName);
-    return kImportName;
+
+    // The imported symbol can refer to a type, a value, or both. Attempt to
+    // define local imports and reference remote definitions in both cases.
+    if (remoteSym.flags & ts.SymbolFlags.Value) {
+      const kRemoteValue =
+          this.host.getSymbolName(remoteSym, TSNamespace.VALUE);
+      const kLocalValue = this.host.getSymbolName(localSym, TSNamespace.VALUE);
+
+      // The local import value is a "variable" with an "import" subkind, and
+      // aliases its remote definition.
+      this.emitNode(kLocalValue, NodeKind.VARIABLE);
+      this.emitFact(kLocalValue, FactName.SUBKIND, Subkind.IMPORT);
+      this.emitEdge(kLocalValue, EdgeKind.ALIASES, kRemoteValue);
+
+      // Emit edges from the binding and referencing anchors to the import's
+      // local and remote definition, respectively.
+      this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalValue);
+      this.emitEdge(refAnchor, EdgeKind.REF_IMPORTS, kRemoteValue);
+    }
+    if (remoteSym.flags & ts.SymbolFlags.Type) {
+      const kRemoteType = this.host.getSymbolName(remoteSym, TSNamespace.TYPE);
+      const kLocalType = this.host.getSymbolName(localSym, TSNamespace.TYPE);
+
+      // The local import value is a "talias" (type alias) with an "import"
+      // subkind, and aliases its remote definition.
+      this.emitNode(kLocalType, NodeKind.TALIAS);
+      this.emitFact(kLocalType, FactName.SUBKIND, Subkind.IMPORT);
+      this.emitEdge(kLocalType, EdgeKind.ALIASES, kRemoteType);
+
+      // Emit edges from the binding and referencing anchors to the import's
+      // local and remote definition, respectively.
+      this.emitEdge(bindingAnchor, EdgeKind.DEFINES_BINDING, kLocalType);
+      this.emitEdge(refAnchor, EdgeKind.REF_IMPORTS, kRemoteType);
+    }
   }
 
   /** visitImportDeclaration handles the various forms of "import ...". */
@@ -964,10 +1040,34 @@ class Visitor {
       this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
     }
 
+    // TODO(#4021): See discussion.
+    // Pending changes, an anchor in a Code Search UI cannot currently be
+    // displayed as a node definition and as referencing other nodes.  Instead,
+    // for non-renamed imports the local node definition is placed on the
+    // "import" text:
+    //   //- @foo ref BarFoo
+    //   //- @import defines/binding LocalFoo
+    //   //- LocalFoo aliases BarFoo
+    //   import {foo} from 'bar';
+    // For renamed imports the definition and references are separated as
+    // expected:
+    //   //- @foo ref BarFoo
+    //   //- @baz defines/binding LocalBaz
+    //   //- @baz aliases BarFoo
+    //   import {foo as baz} from 'bar';
+    //
+    // Create an anchor for the import text.
+    const importTextSpan = this.getTextSpan(decl, 'import');
+    const importTextAnchor =
+        this.newAnchor(decl, importTextSpan.start, importTextSpan.end);
+
     if (ts.isImportEqualsDeclaration(decl)) {
       // This is an equals import, e.g.:
       //   import foo = require('./bar');
-      this.visitImport(decl.name);
+      //
+      // TODO(#4021): Bind the local definition and reference the remote
+      // definition on the import name.
+      this.visitImport(decl.name, importTextAnchor, this.newAnchor(decl.name));
       return;
     }
 
@@ -981,7 +1081,11 @@ class Visitor {
     if (clause.name) {
       // This is a default import, e.g.:
       //   import foo from './bar';
-      this.visitImport(clause.name);
+      //
+      // TODO(#4021): Bind the local definition and reference the remote
+      // definition on the import name.
+      this.visitImport(
+          clause.name, importTextAnchor, this.newAnchor(clause.name));
       return;
     }
 
@@ -1012,12 +1116,23 @@ class Visitor {
         //   import {bar, baz} from 'foo';
         const imports = clause.namedBindings.elements;
         for (const imp of imports) {
-          const kImport = this.visitImport(imp.name);
+          // If the named import has a property name, e.g. `bar` in
+          //   import {bar as baz} from 'foo';
+          // bind the local definition on the import name "baz" and reference
+          // the remote definition on the property name "bar". Otherwise, bind
+          // the local definition on "import" and reference the remote
+          // definition on the import name.
+          //
+          // TODO(#4021): Unify binding and reference anchors.
+          let bindingAnchor, refAnchor;
           if (imp.propertyName) {
-            this.emitEdge(
-                this.newAnchor(imp.propertyName), EdgeKind.REF_IMPORTS,
-                kImport);
+            bindingAnchor = this.newAnchor(imp.name);
+            refAnchor = this.newAnchor(imp.propertyName);
+          } else {
+            bindingAnchor = importTextAnchor;
+            refAnchor = this.newAnchor(imp.name);
           }
+          this.visitImport(imp.name, bindingAnchor, refAnchor);
         }
         break;
     }
@@ -1378,6 +1493,7 @@ class Visitor {
                   recurseVisit(element);
                 }
               }
+              break;
             default:
               break;
           }

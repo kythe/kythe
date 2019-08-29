@@ -233,7 +233,15 @@ func (c *Compilation) Unit() *apb.CompilationUnit {
 // is added to the required inputs, attributed to the designated path, and also
 // to the file data slice.  If v != nil it is used as the vname of the input
 // added.
-func (c *Compilation) AddFile(path string, r io.Reader, v *spb.VName) error {
+func (c *Compilation) AddFile(path string, r io.Reader, v *spb.VName, details ...proto.Message) error {
+	var anys []*ptypes.Any
+	for _, d := range details {
+		any, err := ptypes.MarshalAny(d)
+		if err != nil {
+			return fmt.Errorf("unable to marshal %T to Any: %v", d, err)
+		}
+		anys = append(anys, any)
+	}
 	fd, err := FileData(path, r)
 	if err != nil {
 		return err
@@ -241,8 +249,9 @@ func (c *Compilation) AddFile(path string, r io.Reader, v *spb.VName) error {
 	c.Files = append(c.Files, fd)
 	unit := c.Unit()
 	unit.RequiredInput = append(unit.RequiredInput, &apb.CompilationUnit_FileInput{
-		VName: v,
-		Info:  fd.Info,
+		VName:   v,
+		Info:    fd.Info,
+		Details: anys,
 	})
 	return nil
 }

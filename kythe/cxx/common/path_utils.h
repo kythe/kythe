@@ -18,10 +18,100 @@
 #define KYTHE_CXX_COMMON_PATH_UTILS_H_
 
 #include <string>
+#include <utility>
 
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
+#include "kythe/cxx/common/status_or.h"
 
 namespace kythe {
+
+/// \brief PathCleaner relativizes paths against a root using CleanPath.
+class PathCleaner {
+ public:
+  /// \brief Creates a PathCleaner using the given root.
+  /// \param root The root against which to relativize.
+  ///             Will be cleaned and made an absolute path.
+  static StatusOr<PathCleaner> Create(absl::string_view root);
+
+  /// \brief Transforms the cleaned, absolute version of `path` into a path
+  ///        relative to the configured root.
+  /// \return A path relative to root, if `path` is, else a cleaned `path` or an
+  ///         error if the current directory cannot be determined.
+  StatusOr<std::string> Relativize(absl::string_view path) const;
+
+ private:
+  explicit PathCleaner(std::string root) : root_(std::move(root)) {}
+
+  std::string root_;
+};
+
+/// \brief PathRealizer relativizes paths against a root using RealPath.
+class PathRealizer {
+ public:
+  /// \brief Creates a PathCleaner using the given root.
+  /// \param root The root against which to relativize.
+  ///             Will be resolved and made an absolute path.
+  static StatusOr<PathRealizer> Create(absl::string_view root);
+
+  /// \brief Transforms the resolved, absolute version of `path` into a path
+  ///        relative to the configured root.
+  /// \return A path relative to root, if `path` is, else a resolved `path` or
+  ///         an error if the path cannot be resolved.
+  StatusOr<std::string> Relativize(absl::string_view path) const;
+
+ private:
+  explicit PathRealizer(std::string root) : root_(std::move(root)) {}
+
+  std::string root_;
+};
+
+/// \brief PathCanonicalizer relatives paths against a root.
+class PathCanonicalizer {
+ public:
+  enum class Policy {
+    kCleanOnly = 0,       ///< Only clean paths when applying canonicalizer.
+    kPreferRelative = 1,  ///< Use clean paths if real path is absolute.
+    kPreferReal = 2,      ///< Use real path, except if errors.
+  };
+
+  /// \brief Creates a new PathCanonicalizer with the given root and policy.
+  static StatusOr<PathCanonicalizer> Create(absl::string_view root,
+                                            Policy policy = Policy::kCleanOnly);
+
+  /// \brief Transforms the provided path into a relative path depending on
+  ///        configured policy.
+  StatusOr<std::string> Relativize(absl::string_view path) const;
+
+ private:
+  explicit PathCanonicalizer(Policy policy, PathCleaner cleaner,
+                             absl::optional<PathRealizer> realizer)
+      : policy_(policy), cleaner_(cleaner), realizer_(realizer) {}
+
+  Policy policy_;
+  PathCleaner cleaner_;
+  absl::optional<PathRealizer> realizer_;
+};
+
+/// \brief Parses a flag string as a PathCanonicalizer::Policy.
+///
+/// This is an extension point for the Abseil Flags library to allow
+/// using PathCanonicalizer directly as a flag.
+bool AbslParseFlag(absl::string_view text, PathCanonicalizer::Policy* policy,
+                   std::string* error);
+
+/// \brief Returns the flag string representation of PathCanonicalizer::Policy.
+///
+/// This is an extension point for the Abseil Flags library to allow
+/// using PathCanonicalizer directly as a flag.
+std::string AbslUnparseFlag(PathCanonicalizer::Policy policy);
+
+/// \brief Parses a string into a PathCanonicalizer::Policy.
+///
+/// Parses either integeral values of enumerators or lower-case,
+/// dash-separated names: "clean-only", "prefer-relative", "prefer-real".
+absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
+    absl::string_view policy);
 
 /// \brief Append path `b` to path `a`, cleaning and returning the result.
 std::string JoinPath(absl::string_view a, absl::string_view b);
@@ -30,7 +120,7 @@ std::string JoinPath(absl::string_view a, absl::string_view b);
 /// trailing "/".
 std::string CleanPath(absl::string_view input);
 
-// \brief Return true if path is absolute.
+// \brief Returns true if path is absolute.
 bool IsAbsolutePath(absl::string_view path);
 
 /// \brief Relativize `to_relativize` with respect to `relativize_against`.
@@ -46,17 +136,15 @@ bool IsAbsolutePath(absl::string_view path);
 std::string RelativizePath(absl::string_view to_relativize,
                            absl::string_view relativize_against);
 
-/// \brief Convert `in_path` to an absolute path, eliminating `.` and `..`.
-/// \param in_path The path to convert.
-std::string MakeCleanAbsolutePath(absl::string_view in_path);
+/// \brief Convert `path` to an absolute path, eliminating `.` and `..`.
+/// \param path The path to convert.
+StatusOr<std::string> MakeCleanAbsolutePath(absl::string_view path);
 
-/// \brief Sets `*dir` to the process's current working directory.
-///
-/// On success, sets `*dir` and returns true.
-///
-/// On failure, returns false; `*dir` is unchanged but `errno` is set
-/// to indicate the error as per `getcwd(3)`.
-bool GetCurrentDirectory(std::string* dir);
+/// \brief Returns the process's current working directory or an error.
+StatusOr<std::string> GetCurrentDirectory();
+
+/// \brief Returns the result of resolving symbolic links.
+StatusOr<std::string> RealPath(absl::string_view path);
 
 }  // namespace kythe
 
