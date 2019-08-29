@@ -15,7 +15,7 @@
  */
 
 // Package extutil implements shared code for extracting and writing output
-// from Bazel actions, either to .kindex or a .kzip files. This is a temporary
+// from Bazel actions to .kzip files. This is a temporary
 // measure to support migrating to .kzip output.
 package extutil // import "kythe.io/kythe/go/extractors/bazel/extutil"
 
@@ -30,21 +30,12 @@ import (
 // ExtractAndWrite extracts a spawn action through c and writes the results to
 // the specified output file. The output format is based on the file extension:
 //
-//   .kindex   -- writes a kindex file
 //   .kzip     -- writes a kzip file
 //   otherwise -- reports an error
 //
+// Deprecated: use bazel.ExtractToKzip
 func ExtractAndWrite(ctx context.Context, c *bazel.Config, ai *bazel.ActionInfo, outputPath string) error {
 	switch ext := filepath.Ext(outputPath); ext {
-	case ".kindex":
-		cu, err := c.Extract(ctx, ai)
-		if err != nil {
-			return fmt.Errorf("extracting: %v", err)
-		}
-		if err := bazel.Write(cu, outputPath); err != nil {
-			return fmt.Errorf("writing kindex: %v", err)
-		}
-
 	case ".kzip":
 		w, err := bazel.NewKZIP(outputPath)
 		if err != nil {
