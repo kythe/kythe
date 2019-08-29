@@ -52,9 +52,10 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "boringssl",
+        # Gitiles creates gzip files with an embedded timestamp, so we cannot use
+        # sha256 to validate the archives.  We must rely on the commit hash and https.
         # Commits must come from the master-with-bazel branch.
         url = "https://boringssl.googlesource.com/boringssl/+archive/4be3aa87917b20fedc45fa1fc5b6a2f3738612ad.tar.gz",
-        sha256 = "32999cd5e52b65fc5dd15aef2e9a7a5f93c0b49654c8e6e948a6383ad099ff26",
     )
 
     maybe(
