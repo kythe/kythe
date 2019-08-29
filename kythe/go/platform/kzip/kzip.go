@@ -472,7 +472,7 @@ func NewWriter(w io.Writer, options ...WriterOption) (*Writer, error) {
 		Comment: "kzip root directory",
 	}
 	root.SetMode(os.ModeDir | 0755)
-	root.SetModTime(time.Now())
+	root.Modified = time.Now()
 	if _, err := archive.CreateHeader(root); err != nil {
 		return nil, err
 	}
@@ -606,7 +606,7 @@ func (w *Writer) Close() error {
 func newFileHeader(parts ...string) *zip.FileHeader {
 	fh := &zip.FileHeader{Name: path.Join(parts...), Method: zip.Deflate}
 	fh.SetMode(0600)
-	fh.SetModTime(time.Now())
+	fh.Modified = time.Now()
 	return fh
 }
 
