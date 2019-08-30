@@ -5,12 +5,33 @@ load(
     "objc_bazel_extractor_test",
 )
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
+load("//tools:build_rules/shims.bzl", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
 filegroup(
     name = "skip",
     srcs = ["skip_functions.sh"],
+)
+
+go_test(
+    name = "root_directory_test",
+    srcs = ["root_directory_test.go"],
+    data = [
+        "altroot/altpath/file.cc",
+        "//kythe/cxx/extractor:cxx_extractor",
+    ],
+    deps = [
+        "//kythe/go/platform/kzip",
+        "//kythe/proto:analysis_go_proto",
+        "//kythe/proto:filecontext_go_proto",
+        "//kythe/proto:storage_go_proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//ptypes:go_default_library",
+        "@com_github_golang_protobuf//ptypes/any:go_default_library",
+        "@com_github_google_go_cmp//cmp:go_default_library",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+    ],
 )
 
 shell_tool_test(
