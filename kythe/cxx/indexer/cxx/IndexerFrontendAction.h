@@ -229,7 +229,9 @@ class StdinAdjustSingleFrontendActionFactory
 
   /// Note that FrontendActionFactory::create() specifies that the
   /// returned action is owned by the caller.
-  clang::FrontendAction* create() override { return Action.release(); }
+  std::unique_ptr<clang::FrontendAction> create() override {
+    return std::move(Action);
+  }
 };
 
 /// \brief Options that control how the indexer behaves.
