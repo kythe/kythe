@@ -139,19 +139,19 @@ Definitions:
 
 Any strings are emitted as the as described by a UTF-8 encoding.
 
-Let `v` be a VName, as a `kythe.proto.VName`. Then a digest of `v` is
+Let `v` be a `kythe.proto.VName`. Then a digest of `v` is
 
     `v.signature NULL v.corpus NULL v.root NULL v.path NULL v.language NULL`
 
-Let `cu` be a compilation unit, as a
-`kythe.proto.CompilationUnit`. Then a digest of `cu` is computed as:
+Let `cu` be an instance of `kythe.proto.CompilationUnit`. Then a
+digest of `cu` is computed as:
 
     `"CU" NL cu.vname NULL`
 
 followed by, for each required input:
 
-    `"RI" NL cu.required_input.vname NULL`
-    `"IN" NL cu.required_input.info.path NULL cu.required_input.info.digest NULL`
+    `"RI" NL cu.required_input[i].vname NULL`
+    `"IN" NL cu.required_input[i].info.path NULL cu.required_input[i].info.digest NULL`
 
 followed by:
 
