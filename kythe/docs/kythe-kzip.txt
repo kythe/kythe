@@ -144,9 +144,10 @@ All strings are emitted in UTF-8 encoding.
 
 ==== Canonical form
 For the purposes of computing the digest, a compilation unit should
-be in "canonical form". This is defined as:
+be in *_canonical form_*. This is defined as:
 
-- the field `required_input` is deduplicated and sorted according the tuple `(cu.required_input.digest, cu.required_input.path)`
+- the field `required_input` is deduplicated and sorted according to
+  `cu.required_input.path`
 - the field `environment` is sorted by `environment.name`
 - the field `source_file` is sorted
 - the field `details` is sorted by `details.type_url`
