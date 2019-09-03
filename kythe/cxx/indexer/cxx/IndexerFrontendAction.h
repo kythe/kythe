@@ -116,10 +116,10 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       std::vector<clang::DirectoryLookup> Lookups;
       unsigned CurrentIdx = 0;
       for (const auto& Path : HeaderConfig.paths) {
-        const auto DirEnt = FileManager.getDirectory(Path.path);
+        auto DirEnt = FileManager.getDirectoryRef(Path.path);
         if (DirEnt) {
           Lookups.push_back(clang::DirectoryLookup(
-              *DirEnt, Path.characteristic_kind, Path.is_framework));
+              DirEnt.get(), Path.characteristic_kind, Path.is_framework));
           ++CurrentIdx;
         } else {
           // This can happen if a path was included in the HeaderSearchInfo,
