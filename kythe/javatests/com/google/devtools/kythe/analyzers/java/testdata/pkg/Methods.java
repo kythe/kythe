@@ -12,6 +12,7 @@ public class Methods {
   //- VoidBuiltin=vname("void#builtin","","","","java").node/kind tbuiltin
 
   //- @Methods defines/binding Ctor
+  //- @"public Methods() {}" defines Ctor
   //- Ctor.node/kind function
   //- Ctor childof Class
   //- Ctor typed CtorType
@@ -34,6 +35,7 @@ public class Methods {
   }
 
   //- @noop defines/binding NoOp
+  //- @"private void noop() {}" defines NoOp
   //- NoOp typed NullFunc
   //- NullFunc.node/kind tapp
   //- NullFunc param.0 FnBuiltin
