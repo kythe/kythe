@@ -11,9 +11,9 @@ build --workspace_status_command tools/buildstamp/get_workspace_status
 build --auto_cpu_environment_group=//buildenv:cpu
 
 # Ensure clang is used, by default, over any other C++ installation (e.g. gcc).
-# LLVM requires C++14, so ensure that is used.
 build --client_env=CC=clang
-build --cxxopt=-std=c++14 --host_cxxopt=-std=c++14 --client_env=BAZEL_CXXOPTS=-std=c++14
+# We require C++17, but bazel defaults to C++0x (pre-C++11).
+build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 --client_env=BAZEL_CXXOPTS=-std=c++17
 
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env
