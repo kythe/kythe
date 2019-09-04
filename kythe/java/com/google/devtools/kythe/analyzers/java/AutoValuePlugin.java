@@ -138,7 +138,19 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
   }
 
   private JCClassDecl findAnnotatedSuperclass(ClassType classType, String annotationName) {
-    while (classType.supertype_field instanceof ClassType) {
+    while (true) {
+      for (Type i : classType.interfaces_field) {
+        JCTree superTypeTree = javacTrees.getTree(i.asElement());
+        if (superTypeTree instanceof JCClassDecl) {
+          JCClassDecl cls = (JCClassDecl) superTypeTree;
+          if (getAnnotation(annotationName, cls.getModifiers().getAnnotations()).isPresent()) {
+            return cls;
+          }
+        }
+      }
+      if (!(classType.supertype_field instanceof ClassType)) {
+        return null;
+      }
       classType = (ClassType) classType.supertype_field;
       JCTree superTypeTree = javacTrees.getTree(classType.asElement());
       if (superTypeTree instanceof JCClassDecl) {
@@ -148,7 +160,6 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
         }
       }
     }
-    return null;
   }
 
   private Optional<ResolvedAutoValue> resolveGeneratedAutoValue(JCClassDecl classDef) {
