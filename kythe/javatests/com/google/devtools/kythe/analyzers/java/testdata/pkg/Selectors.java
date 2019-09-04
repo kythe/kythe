@@ -43,4 +43,55 @@ public class Selectors {
     public T get();
     public boolean isPresent();
   }
+
+  //- @A defines/binding ARecord
+  //- AThis typed ARecord
+  //- ASuper typed Object
+  class A {
+    //- @Object ref Object
+    Object o;
+
+    //- @str defines/binding AStr
+    //- !{ @str defines/binding BStr }
+    String str;
+
+    @Override
+    public String toString() {
+      //- @str ref AStr
+      //- @this ref AThis
+      //- !{ @this ref BThis }
+      return this.str;
+    }
+
+    public String toSuperString() {
+      //- @super ref ASuper
+      //- !{ @super ref BSuper }
+      return super.toString();
+    }
+  }
+
+  //- @B defines/binding BRecord
+  //- BThis typed BRecord
+  //- BSuper typed ARecord
+  class B extends A {
+    //- @str defines/binding BStr
+    //- !{ @str defines/binding AStr }
+    String str;
+
+    @Override
+    public String toString() {
+      //- @str ref BStr
+      //- @this ref BThis
+      //- !{ @this ref AThis }
+      return this.str;
+    }
+
+    @Override
+    public String toSuperString() {
+      //- @str ref AStr
+      //- @super ref BSuper
+      //- !{ @super ref ASuper }
+      return super.str;
+    }
+  }
 }
