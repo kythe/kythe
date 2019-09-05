@@ -51,6 +51,7 @@ import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
+import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.TypeTag;
@@ -92,9 +93,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import javax.lang.model.element.ElementKind;
@@ -133,8 +136,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final StandardJavaFileManager fileManager;
   private final MetadataLoaders metadataLoaders;
   private final JvmGraph jvmGraph;
-  private List<Metadata> metadata;
+  private final Set<VName> emittedIdentType = new HashSet<>();
 
+  private List<Metadata> metadata;
   private KytheDocTreeScanner docScanner;
 
   private KytheTreeScanner(
@@ -266,7 +270,23 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (ident.sym == null) {
       return emitDiagnostic(ctx, "missing identifier symbol", null, null);
     }
-    return emitSymUsage(ctx, ident.sym);
+    JavaNode node = emitSymUsage(ctx, ident.sym);
+    if (node != null && ident.sym instanceof VarSymbol) {
+      // Emit typed edges for "this"/"super" on reference since there is no definition location.
+      // TODO(schroederc): possibly add implicit definition on class declaration
+      if ("this".equals(ident.sym.getSimpleName().toString())
+          && !emittedIdentType.contains(node.getVName())) {
+        JavaNode typeNode = getRefNode(ctx, ident.sym.enclClass());
+        entrySets.emitEdge(node.getVName(), EdgeKind.TYPED, typeNode.getVName());
+        emittedIdentType.add(node.getVName());
+      } else if ("super".equals(ident.sym.getSimpleName().toString())
+          && !emittedIdentType.contains(node.getVName())) {
+        JavaNode typeNode = getRefNode(ctx, ident.sym.enclClass().getSuperclass().asElement());
+        entrySets.emitEdge(node.getVName(), EdgeKind.TYPED, typeNode.getVName());
+        emittedIdentType.add(node.getVName());
+      }
+    }
+    return node;
   }
 
   @Override
