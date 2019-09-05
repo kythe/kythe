@@ -18,9 +18,8 @@ package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.collect.Lists;
 import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.Env;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
@@ -46,14 +45,15 @@ public class CompilationUnits {
   private static final byte[] TAG_CWD = "CWD".getBytes(CHARSET);
   private static final byte[] TAG_DET = "DET".getBytes(CHARSET);
   private static final byte[] TAG_ENV = "ENV".getBytes(CHARSET);
-
+  private static final byte NL = 10;
+  private static final byte NULL = 0;
   /**
    * Computes the standard digest for the specified {@link CompilationUnit} in stringified
    * hexidecimal form.
    */
   public static String digestFor(CompilationUnit compilationUnit) {
     CompilationUnit unit = canonicalize(compilationUnit);
-    ByteArrayDataOutput w = ByteStreams.newDataOutput();
+    Hasher w = DIGEST.newHasher();
     putv(w, TAG_CU, compilationUnit.getVName());
     for (FileInput ri : compilationUnit.getRequiredInputList()) {
       putv(w, TAG_RI, ri.getVName());
@@ -68,30 +68,30 @@ public class CompilationUnits {
       put(w, TAG_ENV, env.getName(), env.getValue());
     }
     for (Any d : unit.getDetailsList()) {
-      w.write(TAG_DET);
-      w.writeByte(10);
-      w.write(d.getTypeUrl().getBytes(CHARSET));
-      w.writeByte(0);
-      w.write(d.getValue().toByteArray());
-      w.writeByte(0);
+      w.putBytes(TAG_DET);
+      w.putByte(NL);
+      w.putString(d.getTypeUrl(), CHARSET);
+      w.putByte(NULL);
+      w.putBytes(d.getValue().toByteArray());
+      w.putByte(NULL);
     }
-    return DIGEST.hashBytes(w.toByteArray()).toString();
+    return w.hash().toString();
   }
 
-  private static void putv(ByteArrayDataOutput w, byte[] tag, VName v) {
+  private static void putv(Hasher w, byte[] tag, VName v) {
     put(w, tag, v.getSignature(), v.getCorpus(), v.getRoot(), v.getPath(), v.getLanguage());
   }
 
-  private static void put(ByteArrayDataOutput w, byte[] tag, String... vals) {
+  private static void put(Hasher w, byte[] tag, String... vals) {
     put(w, tag, Arrays.asList(vals));
   }
 
-  private static void put(ByteArrayDataOutput w, byte[] tag, Iterable<String> vals) {
-    w.write(tag);
-    w.writeByte(10);
+  private static void put(Hasher w, byte[] tag, Iterable<String> vals) {
+    w.putBytes(tag);
+    w.putByte(NL);
     for (String val : vals) {
-      w.write(val.getBytes(CHARSET));
-      w.writeByte(0);
+      w.putString(val, CHARSET);
+      w.putByte(NULL);
     }
   }
 
@@ -121,9 +121,7 @@ public class CompilationUnits {
       if (compareInputs(ri.get(i), ri.get(j)) != 0) {
         i++;
         if (i != j) {
-          FileInput tmp = ri.get(i);
           ri.set(i, ri.get(j));
-          ri.set(j, tmp);
         }
       }
       j++;
