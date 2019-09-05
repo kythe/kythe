@@ -18,6 +18,7 @@ package com.google.devtools.kythe.platform.kzip;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.devtools.kythe.platform.shared.TestDataUtil;
 import com.google.devtools.kythe.proto.Analysis;
 import com.google.devtools.kythe.proto.Go.GoDetails;
 import com.google.devtools.kythe.util.JsonUtil;

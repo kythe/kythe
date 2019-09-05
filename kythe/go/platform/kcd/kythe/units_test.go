@@ -17,10 +17,14 @@
 package kythe
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/ptypes"
 
 	anypb "github.com/golang/protobuf/ptypes/any"
@@ -127,45 +131,28 @@ func keys(v interface{}) (keys []string) {
 	return
 }
 
+const testDataDir = "../../../../cxx/common/testdata"
+
 func TestDigest(t *testing.T) {
-	const empty = "56bf5044e1b5c4c1cc7c4b131ac2fb979d288460e63352b10eef80ca35bd0a7b"
-	tests := []struct {
-		unit *apb.CompilationUnit
-		want string
-	}{
-		{nil, empty},
-		{new(apb.CompilationUnit), empty},
-		{&apb.CompilationUnit{
-			VName: &spb.VName{
-				Signature: "S",
-				Corpus:    "C",
-				Path:      "P",
-				Language:  "L",
-			},
-			Argument: []string{"a1", "a2"},
-		}, "e9e170dcfca53c8126755bbc8b703994dedd3af32584291e01fba164ab5d3f32",
-		},
-		{&apb.CompilationUnit{
-			RequiredInput: []*apb.CompilationUnit_FileInput{{
-				VName: &spb.VName{Signature: "RIS"},
-				Info:  &apb.FileInfo{Path: "path", Digest: "digest"},
-			}},
-			OutputKey: "blah",
-			Environment: []*apb.CompilationUnit_Env{{
-				Name:  "feefie",
-				Value: "fofum",
-			}},
-			Details: []*anypb.Any{{
-				TypeUrl: "type",
-				Value:   []byte("nasaldemons"),
-			}},
-		}, "bb761979683e7c268e967eb5bcdedaa7fa5d1d472b0826b00b69acafbaad7ee6",
-		},
+	tests := []string{
+		"56bf5044e1b5c4c1cc7c4b131ac2fb979d288460e63352b10eef80ca35bd0a7b",
+		"e9e170dcfca53c8126755bbc8b703994dedd3af32584291e01fba164ab5d3f32",
+		"bb761979683e7c268e967eb5bcdedaa7fa5d1d472b0826b00b69acafbaad7ee6",
 	}
+
 	for _, test := range tests {
-		got := Unit{Proto: test.unit}.Digest()
-		if got != test.want {
-			t.Errorf("Digest: got %q, want %q\nInput: %+v", got, test.want, test.unit)
+		b, err := ioutil.ReadFile(testutil.TestFilePath(t, filepath.Join(testDataDir, test+".pbtxt")))
+		if err != nil {
+			t.Fatalf("error reading test proto: %v", err)
+		}
+		var unit apb.CompilationUnit
+		if err := proto.UnmarshalText(string(b), &unit); err != nil {
+			t.Fatalf("error unmarshaling proto: %v", err)
+		}
+		got := Unit{Proto: &unit}.Digest()
+		if got != test {
+
+			t.Errorf("Digest: got %q, want %q\nInput: %+v", got, test, unit)
 		}
 	}
 }
