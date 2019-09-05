@@ -147,10 +147,11 @@ func TestDigest(t *testing.T) {
 		}
 		var unit apb.CompilationUnit
 		if err := proto.UnmarshalText(string(b), &unit); err != nil {
-			t.Fatal("error unmarshaling proto: %v", err)
+			t.Fatalf("error unmarshaling proto: %v", err)
 		}
 		got := Unit{Proto: &unit}.Digest()
 		if got != test {
+
 			t.Errorf("Digest: got %q, want %q\nInput: %+v", got, test, unit)
 		}
 	}
