@@ -50,12 +50,18 @@ def _cc_dependencies():
     )
 
     maybe(
-        http_archive,
-        name = "boringssl",  # Must match upstream workspace name.
-        # Gitiles creates gzip files with an embedded timestamp, so we cannot use
-        # sha256 to validate the archives.  We must rely on the commit hash and https.
+        git_repository,
+        name = "boringssl",
+        # Use the github mirror because the official source at
+        # https://boringssl.googlesource.com/boringssl does not allow
+        # unauthenticated git clone and the archives suffer from
+        # https://github.com/google/gitiles/issues/84 preventing the use of
+        # sha256sum on archives.
+        remote = "https://github.com/google/boringssl",
         # Commits must come from the master-with-bazel branch.
-        url = "https://boringssl.googlesource.com/boringssl/+archive/4be3aa87917b20fedc45fa1fc5b6a2f3738612ad.tar.gz",
+        # branch = "master-with-bazel",
+        commit = "e0c35d6c06fd800de1092f0b4d4326570ca2617a",
+        shallow_since = "1566966435 +0000",
     )
 
     maybe(
@@ -182,6 +188,7 @@ def _java_dependencies():
         http_archive,
         name = "google_bazel_common",
         strip_prefix = "bazel-common-b3778739a9c67eaefe0725389f03cf821392ac67",
+        sha256 = "4ae0fd0af627be9523a166b88d1298375335f418dcc13a82e9e77a0089a4d254",
         urls = ["https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip"],
     )
     maybe(

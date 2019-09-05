@@ -1,0 +1,8 @@
+v_name {
+  signature: "S"
+  corpus: "C"
+  path: "P"
+  language: "L"
+}
+argument: "a1"
+argument: "a2"

@@ -188,7 +188,7 @@ func (db *DB) WriteUnit(_ context.Context, revision, corpus, formatKey string, u
 	if err != nil {
 		return "", err
 	}
-	digest := kcd.UnitDigest(unit)
+	digest := unit.Digest()
 	if db.Unit == nil {
 		db.Unit = make(map[string]Unit)
 	}
