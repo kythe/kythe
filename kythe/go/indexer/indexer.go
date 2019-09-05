@@ -18,8 +18,7 @@
 //
 // Usage example: Indexing a Kythe CompilationUnit message.
 //
-//   // Obtain a compilation from some source, e.g., an index pack.
-//   var pack *indexpack.Archive = ...
+//   // Obtain a compilation from some source, e.g., an kzip.
 //   var unit *apb.CompilationUnit = ...
 //
 //   // Parse the sources and resolve types.
