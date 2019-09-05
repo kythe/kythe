@@ -19,7 +19,7 @@ unique_ptr<T> make_unique(Args&&... args) {
 struct B {
   //- @B defines/binding ConsB1
   explicit B(int, void*);
-  //- @B defines/binding ConstB2
+  //- @B defines/binding ConsB2
   explicit B(char);
 };
 
