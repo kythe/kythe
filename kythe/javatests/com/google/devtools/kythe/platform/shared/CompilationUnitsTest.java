@@ -18,13 +18,14 @@ package com.google.devtools.kythe.platform.shared;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.io.Files;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.Env;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
-import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.Any;
-import com.google.protobuf.ByteString;
+import com.google.protobuf.TextFormat;
+import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -32,49 +33,29 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class CompilationUnitsTest {
 
+  private CompilationUnit readCompilationUnit(String basename) throws Exception {
+    String text =
+        Files.asCharSource(TestDataUtil.getTestFile(basename + ".pbtxt"), StandardCharsets.UTF_8)
+            .read();
+    return TextFormat.parse(text, CompilationUnit.class);
+  }
+
   @Test
-  public void testEmpty() {
+  public void testEmpty() throws Exception {
     final String expected = "56bf5044e1b5c4c1cc7c4b131ac2fb979d288460e63352b10eef80ca35bd0a7b";
-    assertThat(CompilationUnits.digestFor(CompilationUnit.getDefaultInstance()))
-        .isEqualTo(expected);
+    assertThat(CompilationUnits.digestFor(readCompilationUnit(expected))).isEqualTo(expected);
   }
 
   @Test
-  public void testBasic() {
+  public void testBasic() throws Exception {
     final String expected = "e9e170dcfca53c8126755bbc8b703994dedd3af32584291e01fba164ab5d3f32";
-    assertThat(
-            CompilationUnits.digestFor(
-                CompilationUnit.newBuilder()
-                    .addArgument("a1")
-                    .addArgument("a2")
-                    .setVName(
-                        VName.newBuilder()
-                            .setSignature("S")
-                            .setCorpus("C")
-                            .setPath("P")
-                            .setLanguage("L"))
-                    .build()))
-        .isEqualTo(expected);
+    assertThat(CompilationUnits.digestFor(readCompilationUnit(expected))).isEqualTo(expected);
   }
 
   @Test
-  public void testFull() {
+  public void testFull() throws Exception {
     final String expected = "bb761979683e7c268e967eb5bcdedaa7fa5d1d472b0826b00b69acafbaad7ee6";
-    assertThat(
-            CompilationUnits.digestFor(
-                CompilationUnit.newBuilder()
-                    .addRequiredInput(
-                        FileInput.newBuilder()
-                            .setVName(VName.newBuilder().setSignature("RIS"))
-                            .setInfo(FileInfo.newBuilder().setPath("path").setDigest("digest")))
-                    .setOutputKey("blah")
-                    .addEnvironment(Env.newBuilder().setName("feefie").setValue("fofum"))
-                    .addDetails(
-                        Any.newBuilder()
-                            .setTypeUrl("type")
-                            .setValue(ByteString.copyFromUtf8("nasaldemons")))
-                    .build()))
-        .isEqualTo(expected);
+    assertThat(CompilationUnits.digestFor(readCompilationUnit(expected))).isEqualTo(expected);
   }
 
   @Test

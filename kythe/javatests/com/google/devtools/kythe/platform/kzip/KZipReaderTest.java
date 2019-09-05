@@ -19,6 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.TestCase.fail;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.devtools.kythe.platform.shared.TestDataUtil;
 import com.google.devtools.kythe.proto.Analysis;
 import com.google.devtools.kythe.proto.Analysis.IndexedCompilation;
 import com.google.devtools.kythe.proto.Go.GoDetails;

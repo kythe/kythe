@@ -72,3 +72,9 @@ java_library(
         "@org_checkerframework_checker_qual//jar",
     ],
 )
+
+java_library(
+    name = "test_util",
+    testonly = 1,
+    srcs = ["TestDataUtil.java"],
+)
