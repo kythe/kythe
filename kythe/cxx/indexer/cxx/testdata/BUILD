@@ -1583,6 +1583,8 @@ cc_indexer_test(
     tags = ["libraries"],
 )
 
+# Note: this depends on the platform <memory> header and
+# as such is a cc_extractor_test rather than hermetic cc_indexer_test.
 cc_extractor_test(
     name = "make_shared_factories",
     srcs = ["libraries/make_shared_factories.cc"],
