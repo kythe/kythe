@@ -33,7 +33,7 @@ class ImputedConstructorSupport : public LibrarySupport {
  public:
   explicit ImputedConstructorSupport(
       std::unordered_set<std::string> allowed_constructor_patterns = {
-          "std(::\\w+)*::make_unique", "absl::make_unique",
+          "std(::\\w+)*::make_(unique|shared)", "absl::make_unique",
           "llvm::make_unique"});
 
   explicit ImputedConstructorSupport(
