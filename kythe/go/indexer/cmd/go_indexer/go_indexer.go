@@ -15,7 +15,7 @@
  */
 
 // Program go_indexer implements a Kythe indexer for the Go language.  Input is
-// read from one or more .kzip, .kindex, or index pack paths.
+// read from one or more .kzip paths.
 package main
 
 import (
@@ -32,7 +32,6 @@ import (
 
 	"kythe.io/kythe/go/indexer"
 	"kythe.io/kythe/go/platform/delimited"
-	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/metadata"
 
@@ -57,12 +56,8 @@ func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: %s [options] <path>...
 
-Generate Kythe graph data for the compilations stored in .kzip, .kindex, or
-index packs named by the path arguments. Output is written to stdout.
-
-If --indexpack is set, the paths are treated as index packs. If --zip is set,
-the index packs are treaed as ZIP files. Otherwise, the paths must end in .kzip
-or .kindex and will be decoded accordingly.
+Generate Kythe graph data for the compilations stored in .kzip format
+named by the path arguments. Output is written to stdout.
 
 By default, the output is a delimited stream of wire-format Kythe Entry
 protobuf messages. With the --json flag, output is instead a stream of
@@ -158,7 +153,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 type visitFunc func(context.Context, *apb.CompilationUnit, indexer.Fetcher) error
 
 // visitPath invokes visit for each compilation denoted by path, which is
-// either a .kindex file (with a single compilation) or an index pack.
+// must be a .kzip file (with a single compilation).
 func visitPath(ctx context.Context, path string, visit visitFunc) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -166,12 +161,6 @@ func visitPath(ctx context.Context, path string, visit visitFunc) error {
 	}
 	defer f.Close()
 	switch ext := filepath.Ext(path); ext {
-	case ".kindex":
-		idx, err := kindex.New(f)
-		if err != nil {
-			return fmt.Errorf("reading .kindex: %v", err)
-		}
-		return visit(ctx, idx.Proto, idx)
 	case ".kzip":
 		return kzip.Scan(f, func(r *kzip.Reader, unit *kzip.Unit) error {
 			return visit(ctx, unit.Proto, kzipFetcher{r})

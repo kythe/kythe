@@ -12,9 +12,9 @@ load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 
 def _rule_dependencies():
-    gazelle_dependencies()
     go_rules_dependencies()
     go_register_toolchains()
+    gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
 
@@ -50,12 +50,18 @@ def _cc_dependencies():
     )
 
     maybe(
-        http_archive,
-        name = "boringssl",  # Must match upstream workspace name.
-        # Gitiles creates gzip files with an embedded timestamp, so we cannot use
-        # sha256 to validate the archives.  We must rely on the commit hash and https.
+        git_repository,
+        name = "boringssl",
+        # Use the github mirror because the official source at
+        # https://boringssl.googlesource.com/boringssl does not allow
+        # unauthenticated git clone and the archives suffer from
+        # https://github.com/google/gitiles/issues/84 preventing the use of
+        # sha256sum on archives.
+        remote = "https://github.com/google/boringssl",
         # Commits must come from the master-with-bazel branch.
-        url = "https://boringssl.googlesource.com/boringssl/+archive/4be3aa87917b20fedc45fa1fc5b6a2f3738612ad.tar.gz",
+        # branch = "master-with-bazel",
+        commit = "e0c35d6c06fd800de1092f0b4d4326570ca2617a",
+        shallow_since = "1566966435 +0000",
     )
 
     maybe(
@@ -182,6 +188,7 @@ def _java_dependencies():
         http_archive,
         name = "google_bazel_common",
         strip_prefix = "bazel-common-b3778739a9c67eaefe0725389f03cf821392ac67",
+        sha256 = "4ae0fd0af627be9523a166b88d1298375335f418dcc13a82e9e77a0089a4d254",
         urls = ["https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip"],
     )
     maybe(
@@ -312,7 +319,7 @@ def _go_dependencies():
         importpath = "github.com/golang/protobuf",
         patch_args = ["-p1"],
         patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
-        tag = "v1.3.0",
+        tag = "v1.3.1",
     )
 
     maybe(
@@ -342,7 +349,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sync",
-        commit = "42b317875d0f",
+        commit = "112230192c58",
         custom = "sync",
         custom_git = "https://github.com/golang/sync.git",
         importpath = "golang.org/x/sync",
@@ -399,7 +406,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_tools",
-        commit = "589c23e65e65055d47b9ad4a99723bc389136265",
+        commit = "c8855242db9c1762032abe33c2dff50de3ec9d05",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
         importpath = "golang.org/x/tools",
@@ -419,7 +426,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_net",
-        commit = "3a22650c66bd",
+        commit = "3b0461eec859",
         custom = "x_net",
         custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
@@ -540,7 +547,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sys",
-        commit = "49385e6e15226593f68b26af201feec29d5bba22",
+        commit = "d0b11bdaac8a",
         custom = "x_sys",
         custom_git = "https://github.com/golang/sys.git",
         importpath = "golang.org/x/sys",
@@ -731,14 +738,6 @@ def kythe_dependencies(sample_ui = True):
         strip_prefix = "protobuf-402c28a321fce010ad0b9f99010a78890cae7f34",
         urls = ["https://github.com/protocolbuffers/protobuf/archive/402c28a321fce010ad0b9f99010a78890cae7f34.zip"],
         repo_mapping = {"@zlib": "@net_zlib"},
-    )
-
-    maybe(
-        http_archive,
-        name = "bazel_skylib",
-        sha256 = "ca4e3b8e4da9266c3a9101c8f4704fe2e20eb5625b2a6a7d2d7d45e3dd4efffd",
-        strip_prefix = "bazel-skylib-0.5.0",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.5.0.zip"],
     )
 
     maybe(

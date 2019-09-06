@@ -13,7 +13,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deprecation = "Please use :kzip_{reader,writer}",
-    visibility = [PUBLIC_VISIBILITY],
+    visibility = ["//kythe/cxx/tools:__pkg__"],
     deps = [
         "//external:libuuid",
         "//external:zlib",
@@ -27,8 +27,9 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "index_pack_testlib",
+cc_test(
+    name = "index_pack_test",
+    size = "small",
     testonly = 1,
     srcs = ["index_pack_test.cc"],
     copts = [
@@ -45,12 +46,6 @@ cc_library(
         "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
     ],
-)
-
-cc_test(
-    name = "index_pack_test",
-    size = "small",
-    deps = [":index_pack_testlib"],
 )
 
 cc_library(

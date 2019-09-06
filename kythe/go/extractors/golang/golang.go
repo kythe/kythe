@@ -44,7 +44,7 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/govname"
-	"kythe.io/kythe/go/platform/indexpack"
+	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/ptypes"
@@ -93,7 +93,6 @@ type Extractor struct {
 	DirToImport func(path string) (string, error)
 
 	pmap map[string]*build.Package // Map of import path to build package
-	fmap map[string]string         // Map of file path to content digest
 }
 
 // addPackage imports the specified package, if it has not already been
@@ -116,43 +115,6 @@ func (e *Extractor) mapPackage(importPath string, bp *build.Package) {
 	} else {
 		e.pmap[importPath] = bp
 	}
-}
-
-// readFile reads the contents of path as resolved through the extracted settings.
-func (e *Extractor) readFile(ctx context.Context, path string) ([]byte, error) {
-	data, err := vfs.ReadFile(ctx, path)
-	if err != nil {
-		// If there's an alternative installation path, and this is a path that
-		// could potentially be there, try that.
-		if i := strings.Index(path, "/pkg/"); i >= 0 && e.AltInstallPath != "" {
-			alt := e.AltInstallPath + path[i:]
-			return vfs.ReadFile(ctx, alt)
-		}
-	}
-	return data, err
-}
-
-// fetchAndStore reads the contents of path and stores them into a, returning
-// the digest of the contents.  The path to digest mapping is cached so that
-// repeated uses of the same file will avoid redundant work.
-func (e *Extractor) fetchAndStore(ctx context.Context, path string, a *indexpack.Archive) (string, error) {
-	if digest, ok := e.fmap[path]; ok {
-		return digest, nil
-	}
-	data, err := e.readFile(ctx, path)
-	if err != nil {
-		return "", err
-	}
-	name, err := a.WriteFile(ctx, data)
-	if err != nil {
-		return "", err
-	}
-	digest := strings.TrimSuffix(name, filepath.Ext(name))
-	if e.fmap == nil {
-		e.fmap = make(map[string]string)
-	}
-	e.fmap[path] = digest
-	return digest, err
 }
 
 // findPackages returns the first *Package value in Packages having the given
@@ -365,48 +327,6 @@ func (p *Package) Extract() error {
 	return nil
 }
 
-// Store writes the compilation units of p to the specified archive and returns
-// its unit file names.  This has the side-effect of updating the required
-// inputs of the compilations so that they contain the proper digest values.
-func (p *Package) Store(ctx context.Context, a *indexpack.Archive) ([]string, error) {
-	const formatKey = "kythe"
-
-	var unitFiles []string
-	for _, cu := range p.Units {
-		// Pack the required inputs into the archive.
-		for _, ri := range cu.RequiredInput {
-			// Check whether we already did this, so Store can be idempotent.
-			//
-			// When addFiles first adds the required input to the record, we
-			// know its path but have not yet fetched its contents -- that step
-			// is deferred until we are ready to store them for output (i.e.,
-			// now).  Once we have fetched the file contents, we'll update the
-			// field with the correct digest value.  We only want to do this
-			// once, per input, however.
-			path := ri.Info.Digest
-			if !strings.Contains(path, "/") {
-				continue
-			}
-
-			// Fetch the file and store it into the archive.  We may get a
-			// cache hit here, handled by fetchAndStore.
-			digest, err := p.ext.fetchAndStore(ctx, path, a)
-			if err != nil {
-				return nil, err
-			}
-			ri.Info.Digest = digest
-		}
-
-		// Pack the compilation unit into the archive.
-		fn, err := a.WriteUnit(ctx, formatKey, cu)
-		if err != nil {
-			return nil, err
-		}
-		unitFiles = append(unitFiles, fn)
-	}
-	return unitFiles, nil
-}
-
 // mapFetcher implements analysis.Fetcher by dispatching to a preloaded map
 // from digests to contents.
 type mapFetcher map[string][]byte
@@ -421,7 +341,7 @@ func (m mapFetcher) Fetch(_, digest string) ([]byte, error) {
 
 // EachUnit calls f with a compilation record for each unit in p.  If f reports
 // an error, that error is returned by EachUnit.
-func (p *Package) EachUnit(ctx context.Context, f func(*kindex.Compilation) error) error {
+func (p *Package) EachUnit(ctx context.Context, f func(cu *apb.CompilationUnit, fetcher analysis.Fetcher) error) error {
 	fetcher := make(mapFetcher)
 	for _, cu := range p.Units {
 		// Ensure all the file contents are loaded, and update the digests.
@@ -442,11 +362,7 @@ func (p *Package) EachUnit(ctx context.Context, f func(*kindex.Compilation) erro
 			ri.Info.Digest = fd.Info.Digest
 		}
 
-		idx, err := kindex.FromUnit(cu, fetcher)
-		if err != nil {
-			return fmt.Errorf("loading compilation: %v", err)
-		}
-		if err := f(idx); err != nil {
+		if err := f(cu, fetcher); err != nil {
 			return err
 		}
 	}

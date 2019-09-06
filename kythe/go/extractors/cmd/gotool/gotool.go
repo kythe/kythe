@@ -31,10 +31,12 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/golang"
-	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/flagutil"
+
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
 var (
@@ -149,12 +151,16 @@ func main() {
 	}
 	for _, pkg := range ext.Packages {
 		maybeLog("Package %q:\n\t// %s", pkg.Path, pkg.BuildPackage.Doc)
-		if err := pkg.EachUnit(ctx, func(cu *kindex.Compilation) error {
-			if _, err := w.AddUnit(cu.Proto, nil); err != nil {
+		if err := pkg.EachUnit(ctx, func(cu *apb.CompilationUnit, fetcher analysis.Fetcher) error {
+			if _, err := w.AddUnit(cu, nil); err != nil {
 				return err
 			}
-			for _, fd := range cu.Files {
-				if _, err := w.AddFile(bytes.NewReader(fd.Content)); err != nil {
+			for _, ri := range cu.RequiredInput {
+				fd, err := fetcher.Fetch(ri.Info.Path, ri.Info.Digest)
+				if err != nil {
+					return err
+				}
+				if _, err := w.AddFile(bytes.NewReader(fd)); err != nil {
 					return err
 				}
 			}
