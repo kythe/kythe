@@ -1,4 +1,4 @@
-load("@bazel_skylib//:lib.bzl", "shell")
+load("@bazel_skylib//lib:shell.bzl", "shell")
 
 _toolchain_type = "//tools/build_rules/external_tools:external_tools_toolchain_type"
 

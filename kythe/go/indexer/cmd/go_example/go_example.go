@@ -31,10 +31,11 @@ import (
 
 	"kythe.io/kythe/go/extractors/golang"
 	"kythe.io/kythe/go/indexer"
+	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/delimited"
-	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
 
+	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
@@ -103,8 +104,8 @@ func main() {
 
 	rw := delimited.NewWriter(os.Stdout)
 	for _, pkg := range pkgs {
-		if err := pkg.EachUnit(ctx, func(unit *kindex.Compilation) error {
-			pi, err := indexer.Resolve(unit.Proto, unit, &indexer.ResolveOptions{
+		if err := pkg.EachUnit(ctx, func(unit *apb.CompilationUnit, f analysis.Fetcher) error {
+			pi, err := indexer.Resolve(unit, f, &indexer.ResolveOptions{
 				Info: indexer.XRefTypeInfo(),
 			})
 			if err != nil {

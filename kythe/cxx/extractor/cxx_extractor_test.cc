@@ -216,7 +216,7 @@ class CxxExtractorTest : public testing::Test {
               had_errors, ".");
         });
     clang::tooling::ToolInvocation invocation(
-        final_arguments, extractor.release(), file_manager.get());
+        final_arguments, std::move(extractor), file_manager.get());
     invocation.run();
   }
 

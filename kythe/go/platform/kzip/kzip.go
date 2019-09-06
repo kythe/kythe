@@ -472,7 +472,7 @@ func NewWriter(w io.Writer, options ...WriterOption) (*Writer, error) {
 		Comment: "kzip root directory",
 	}
 	root.SetMode(os.ModeDir | 0755)
-	root.SetModTime(time.Now())
+	root.Modified = time.Now()
 	if _, err := archive.CreateHeader(root); err != nil {
 		return nil, err
 	}
@@ -513,9 +513,7 @@ var toJSON = &jsonpb.Marshaler{OrigName: true}
 func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_Index) (string, error) {
 	unit := kythe.Unit{Proto: cu}
 	unit.Canonicalize()
-	hash := sha256.New()
-	unit.Digest(hash)
-	digest := hex.EncodeToString(hash.Sum(nil))
+	digest := unit.Digest()
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -608,7 +606,7 @@ func (w *Writer) Close() error {
 func newFileHeader(parts ...string) *zip.FileHeader {
 	fh := &zip.FileHeader{Name: path.Join(parts...), Method: zip.Deflate}
 	fh.SetMode(0600)
-	fh.SetModTime(time.Now())
+	fh.Modified = time.Now()
 	return fh
 }
 

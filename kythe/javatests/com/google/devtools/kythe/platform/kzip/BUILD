@@ -14,8 +14,8 @@ java_test(
     ],
     test_class = "com.google.devtools.kythe.platform.kzip.KZipReaderTest",
     deps = [
-        ":test_util",
         "//kythe/java/com/google/devtools/kythe/platform/kzip",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:test_util",
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:go_java_proto",
@@ -33,8 +33,8 @@ java_test(
     data = ["//kythe/cxx/common/testdata:stringset.kzip"],
     test_class = "com.google.devtools.kythe.platform.kzip.KZipWriterTest",
     deps = [
-        ":test_util",
         "//kythe/java/com/google/devtools/kythe/platform/kzip",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:test_util",
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:go_java_proto",
@@ -42,9 +42,4 @@ java_test(
         "@com_google_protobuf//:protobuf_java_util",
         "@junit_junit//jar",
     ],
-)
-
-java_library(
-    name = "test_util",
-    srcs = ["TestDataUtil.java"],
 )

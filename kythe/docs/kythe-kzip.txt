@@ -57,10 +57,10 @@ archive that we call a *kzip* file, conventionally given the file extension
 root/           # Any valid non-empty directory name
    units/
      abcd1234   # Compilation unit (JSON format, see below for details)
-     …          # (name is hex-coded SHA256 of record content)
+     ...        # (name is hex-coded SHA256 of record content)
    files/
      1a2b3c4e   # File contents, uncompressed
-     …          # (name is hex-coded SHA256 of uncompressed file content)
+     ...        # (name is hex-coded SHA256 of uncompressed file content)
 
 This organization separates the compilation unit descriptions from their file
 data, which are shared among multiple compilations.
@@ -71,10 +71,10 @@ data, which are shared among multiple compilations.
 root/           # Any valid non-empty directory name
    pbunits/
      abcd1234   # Compilation unit (proto format, see below for details)
-     …          # (name is hex-coded SHA256 of record content)
+     ...        # (name is hex-coded SHA256 of record content)
    files/
      1a2b3c4e   # File contents, uncompressed
-     …          # (name is hex-coded SHA256 of uncompressed file content)
+     ...        # (name is hex-coded SHA256 of uncompressed file content)
 
 === Directory and File Layout
 
@@ -92,12 +92,12 @@ subdirectories, one named `units` and one named `files`.
    ignored by a tool processing the kzip file.
 
 A *unit file* is a file containing a compilation unit description.
-The name of a unit file is computed by digesting the JSON
-representation of the compilation unit with SHA256, and encoding the
-resulting hash as a string of lowercase ASCII hexadecimal digits. This
-string becomes the filename of the unit file. Note that the digest
-should only process the CompilationUnit itself, and should not include
-the other contents of the wrapper message.
+The name of a unit file is computed by digesting the compilation unit
+with SHA256, and encoding the resulting hash as a string of lowercase
+ASCII hexadecimal digits. This string becomes the filename of the unit
+file. Note that the digest should only process the CompilationUnit
+itself, and should not include the other contents of the wrapper
+message. Details on the digesting algorithm are described below.
 
 A *data file* is a file containing an unstructured blob of raw (uncompressed)
 file data.  The name name of a data file is computed by hashing the file
@@ -127,3 +127,73 @@ but if set must contain the canonical JSON encoding of an `Index` message.
 For the `proto` encoding of compilation units, the content of the unit
 is the standard wire-encoding of the `kythe.proto.IndexedCompilation`
 protobuf message.
+
+=== Computing the digest for a Compilation Unit
+
+The representative implementation can be found in
+`kythe/go/platform/kcd/kythe/units.go`.
+
+==== Definitions
+
+`NULL`::
+the one-byte value corresponding to ASCII NULL (`\0x00`)
+`NL`::
+the one-byte value corresponding to ASCII newline (`\x0a`)
+
+All strings are emitted in UTF-8 encoding.
+
+==== Canonical form
+For the purposes of computing the digest, a compilation unit should
+be in *_canonical form_*. This is defined as:
+
+- the field `required_input` is deduplicated and sorted according to
+  `cu.required_input.path`
+- the field `environment` is sorted by `environment.name`
+- the field `source_file` is sorted
+- the field `details` is sorted by `details.type_url`
+
+==== Digest computation
+Let `v` be a `kythe.proto.VName`. Then a digest of `v` is
+
+....
+   v.signature NULL v.corpus NULL v.root NULL v.path NULL v.language NULL
+....
+
+Let `cu` be an instance of `kythe.proto.CompilationUnit`. Then a
+digest of `cu` is computed as the sequence
+
+....
+   "CU" NL cu.vname NULL
+....
+
+followed by, for each required input:
+
+....
+   "RI" NL cu.required_input[i].vname NULL
+   "IN" NL cu.required_input[i].info.path NULL cu.required_input[i].info.digest NULL
+....
+
+followed by:
+
+....
+   "ARG" NL cu.argument[0] NULL cu.argument[1] NULL ...
+   "OUT" NL cu.output_key NULL
+   "SRC" NL cu.source_file[0] NULL cu.source_file[1] NULL ...
+   "CWD" NL cu.working_directory NULL
+   "CTX" NL cu.entry_context NULL
+....
+
+followed by, for each `cu.environment`:
+
+....
+   "ENV" NL cu.environment[i].name NULL cu.environment[i].value NULL
+....
+
+finally followed by, for each `cu.details`:
+
+....
+   "DET" NL cu.details[i].type_url NULL cu.details[i].value NULL
+....
+
+For the `cu.details.value`, this is the sequence of bytes of the
+wire-encoding proto representation of the value.

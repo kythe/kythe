@@ -2,8 +2,9 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 
-cc_library(
-    name = "cmdlib",
+cc_binary(
+    name = "kindex_tool",
+    testonly = 1,
     srcs = [
         "kindex_tool_main.cc",
     ],
@@ -11,6 +12,11 @@ cc_library(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+    ],
+    visibility = [
+        "//kythe/cxx/extractor/testdata:__pkg__",
+        "//kythe/cxx/indexer/cxx/testdata:__pkg__",
+        "//kythe/cxx/tools/testdata:__pkg__",
     ],
     deps = [
         "//external:zlib",
@@ -31,8 +37,8 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "claimcmdlib",
+cc_binary(
+    name = "static_claim",
     srcs = [
         "static_claim_main.cc",
     ],
@@ -57,8 +63,8 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "shucklib",
+cc_binary(
+    name = "shuck",
     srcs = [
         "shuck_main.cc",
     ],
@@ -77,29 +83,6 @@ cc_library(
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_binary(
-    name = "kindex_tool",
-    deprecation = "kindex has been deprecated in favor of kzip",
-    visibility = [PUBLIC_VISIBILITY],
-    deps = [
-        ":cmdlib",
-    ],
-)
-
-cc_binary(
-    name = "shuck",
-    deps = [
-        ":shucklib",
-    ],
-)
-
-cc_binary(
-    name = "static_claim",
-    deps = [
-        ":claimcmdlib",
     ],
 )
 

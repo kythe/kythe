@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.devtools.kythe.platform.kzip;
+package com.google.devtools.kythe.platform.shared;
 
 import java.io.File;
 
-final class TestDataUtil {
+public final class TestDataUtil {
 
   // This must match the name from the workspace(name={name}) rule in the root WORKSPACE file.
   private static final String DEFAULT_WORKSPACE = "io_kythe";
 
   /**
-   * Load a test kzip file from one of the files provided to the test. See the BUILD target of the
-   * test for the list of files that can be accessed.
+   * Load a test file from one of the files provided to the test. See the BUILD target of the test
+   * for the list of files that can be accessed.
    */
-  static File getTestFile(String name) {
+  public static File getTestFile(String name) {
     File testDataRoot = new File(TestDataUtil.getTestRoot(), "kythe/cxx/common/testdata");
     return new File(testDataRoot, name);
   }

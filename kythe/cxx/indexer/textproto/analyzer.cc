@@ -405,7 +405,7 @@ std::string FullPathToRelative(
 
     // If this substitution matches, apply it and return the simplified path.
     absl::string_view relpath = full_path;
-    if (ConsumePrefix(&relpath, dir)) {
+    if (absl::ConsumePrefix(&relpath, dir)) {
       std::string result = sub.first.empty() ? std::string(relpath)
                                              : JoinPath(sub.first, relpath);
       (*file_substitution_cache)[result] = std::string(full_path);

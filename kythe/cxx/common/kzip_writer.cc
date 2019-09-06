@@ -23,6 +23,7 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/memory/memory.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
 #include "glog/logging.h"

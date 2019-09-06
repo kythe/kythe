@@ -23,7 +23,6 @@
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
-#include "kythe/cxx/extractor/index_pack.h"
 #include "kythe/cxx/indexer/cxx/KytheClaimClient.h"
 #include "kythe/proto/analysis.pb.h"
 #include "llvm/Support/FileSystem.h"
