@@ -1533,28 +1533,30 @@ class Visitor {
     // "record") and a value (most similar to a "package", which defines a
     // module with declarations).
     const kNamespace = this.host.getSymbolName(sym, TSNamespace.NAMESPACE);
-    this.emitNode(kNamespace, 'record');
-    this.emitSubkind(kNamespace, Subkind.NAMESPACE);
     const kValue = this.host.getSymbolName(sym, TSNamespace.VALUE);
-    this.emitNode(kValue, 'package');
+    // It's possible that same namespace appears multiple time. We need to
+    // emit only single node for that namespace and single defines/binding
+    // edge.
+    if (sym.valueDeclaration === decl) {
+      this.emitNode(kNamespace, 'record');
+      this.emitSubkind(kNamespace, Subkind.NAMESPACE);
+      this.emitNode(kValue, 'package');
 
-    const nameAnchor = this.newAnchor(decl.name);
-    this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kNamespace);
-    this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kValue);
+      const nameAnchor = this.newAnchor(decl.name);
+      this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kNamespace);
+      this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kValue);
+      // If no body then it is incomplete module definition, like declare module
+      // 'foo';
+      this.emitFact(
+          kNamespace, FactName.COMPLETE,
+          decl.body ? 'definition' : 'incomplete');
+    }
 
     // The entire module declaration defines the created namespace.
-    const defAnchor = this.newAnchor(decl);
-    this.emitEdge(defAnchor, EdgeKind.DEFINES, kValue);
+    this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, kValue);
 
     if (decl.decorators) this.visitDecorators(decl.decorators);
-    if (decl.body) {
-      this.emitFact(kNamespace, FactName.COMPLETE, 'definition');
-      this.visit(decl.body);
-    } else {
-      // Incomplete module definition, like
-      //    declare module 'foo';
-      this.emitFact(kNamespace, FactName.COMPLETE, 'incomplete');
-    }
+    if (decl.body) this.visit(decl.body);
   }
 
   visitClassDeclaration(decl: ts.ClassDeclaration) {
