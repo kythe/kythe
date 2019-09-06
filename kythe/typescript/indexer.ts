@@ -88,6 +88,7 @@ export interface IndexerHost {
  * indexer.
  */
 export interface Plugin {
+  /** Name of the plugin. It will be printed to stderr when running plugin. */
   name: string;
   /**
    * Indexes a TypeScript program with extra functionality.
@@ -1860,6 +1861,7 @@ export function index(
 
   if (plugins) {
     for (const plugin of plugins) {
+      console.warn(`${plugin.name} plugin is running.`);
       try {
         plugin.index(indexingContext);
       } catch (err) {
