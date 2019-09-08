@@ -225,7 +225,8 @@ The initial definition of a VName will include the following 5 fields:
    root _may_ be shaped like a path (say, if it names a directory), but it is
    not required to; it can be an opaque label like `generated` or `branch_name`
    if that makes sense for the corpus in question.  If the Root is intended to
-   denote a directory path, it should be _cleaned_ as described under *Path*.
+   denote a directory path, it should be _cleaned_ as described under *Path*
+   and should not end with a "/".
 
  * *Path.* A path-structured label describing the ``location'' of the named
    object relative to the corpus and the root. For code, this will typically be
@@ -240,12 +241,21 @@ The initial definition of a VName will include the following 5 fields:
    path can't be represented without "escaping" from its designated root
    directory, it's usually a good sign that a separate Root label should be
    assigned.
+   +
+   +
+   The components of a path are separated by "/"s, even if the
+   underlying operating system uses a different separator. The path
+   must not start with a "/" -- that is, it is relative to the *Root*.
 
  * *Language.* The language this name belongs to. The schema defines specific
    labels for each supported language, so we don't wind up with a confusion of
    names like "cxx", "cpp", "C\+\+", etc. As a rule of thumb, we will use the
    common name of the language, in lowercase ("c++", "python", "elisp",
    "objectivec").
+   +
+   +
+   The *language* is empty (that is, "") for some nodes, such as
+   link:schema#file[file].
 
 Other fields can be added as necessary—for example, if a Branch or Client label
 becomes necessary. As a rule, we try to keep the number of essential VName
