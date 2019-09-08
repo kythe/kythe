@@ -42,7 +42,7 @@ VName conventions
 -----------------
 
 By default, assume that the VNames of nodes should be chosen according to the
-following rules:
+following rules (more details are given in the link:kythe-storage#TermVName[storage model]):
 
   * `language`: the source language.
   * `corpus`: the node's containing corpus.
