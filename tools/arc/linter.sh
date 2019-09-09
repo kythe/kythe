@@ -25,6 +25,7 @@
 #   https://secure.phabricator.com/book/phabricator/article/arcanist_lint_script_and_regex/
 
 readonly file="$1"
+readonly fullpath="$PWD/$file"
 readonly name="$(basename "$1")"
 readonly dir="$(dirname "$1")"
 
@@ -55,15 +56,21 @@ case $file in
       google-java-format -n "$file" | sed 's/^/google-java-format::error:1 /'
     fi ;;
   *.go)
+    if command -v jq &>/dev/null && command -v staticcheck &>/dev/null; then
+      staticcheck -f json "./$dir" | jq -r --arg file "$fullpath" \
+        'select(.location.file == $file) | "staticcheck::" + .severity + ":" + (.location.line | tostring) + " " + (.message | gsub("\n"; " "))'
+    fi
     if command -v gofmt &>/dev/null; then
       gofmt -l "$file" | sed 's/^/gofmt::error:1 /'
     fi ;;
   *.h|*.cc|*.c|*.proto|*.js)
     cf="$(command -v clang-format-7 clang-format 2>/dev/null | head -n1)"
     if [[ -n "$cf" ]]; then
-      if ! diff -q <("$cf" --style=file "$file") "$file"; then
-        echo "clang-format::error:1 $file"
-      fi
+      diff \
+        --unchanged-line-format='' \
+        --new-line-format='clang-format::error:%dn -%L' \
+        --old-line-format='clang-format::error:%dn +%L' \
+        <("$cf" --style=file "$file") "$file" || true
     fi ;;
 esac
 

@@ -225,7 +225,7 @@ func copyNode(n *html.Node) *html.Node {
 func Zip(n *html.Node, path string) (*html.Node, error) {
 	for i, step := range path {
 		if n == nil {
-			return nil, fmt.Errorf("Ran into nil Node after %d steps: %q", i, path)
+			return nil, fmt.Errorf("ran into nil Node after %d steps: %q", i, path)
 		}
 		switch step {
 		case 'f':
@@ -239,7 +239,7 @@ func Zip(n *html.Node, path string) (*html.Node, error) {
 		case 'u':
 			n = n.Parent
 		default:
-			return nil, fmt.Errorf("Invalid zip path (%q) rune: %q", path, step)
+			return nil, fmt.Errorf("invalid zip path (%q) rune: %q", path, step)
 		}
 	}
 	return n, nil

@@ -59,6 +59,9 @@ var (
 	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
 
 	experimentalCrossReferenceIndirectionKinds flagutil.StringMultimap
+
+	// TODO(schroederc): remove once relevant clients specify their required quality
+	defaultTotalsQuality = flag.String("experimental_default_totals_quality", "PRECISE_TOTALS", "Default TotalsQuality when unspecified in CrossReferencesRequest")
 )
 
 func init() {
@@ -494,8 +497,18 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS ||
 		len(req.Filter) > 0)
 
+	totalsQuality := req.TotalsQuality
+	if totalsQuality == xpb.CrossReferencesRequest_UNSPECIFIED_TOTALS {
+		totalsQuality = xpb.CrossReferencesRequest_TotalsQuality(xpb.CrossReferencesRequest_TotalsQuality_value[strings.ToUpper(*defaultTotalsQuality)])
+	}
+
 	var foundCrossRefs bool
 	for i := 0; i < len(tickets); i++ {
+		if totalsQuality == xpb.CrossReferencesRequest_APPROXIMATE_TOTALS && stats.done() {
+			log.Printf("WARNING: stopping CrossReferences index reads after %d/%d tickets (TotalsQuality: %s)", i, len(tickets), totalsQuality)
+			break
+		}
+
 		ticket := tickets[i]
 		cr, err := t.crossReferences(ctx, ticket)
 		if err == table.ErrNoSuchKey {
@@ -740,6 +753,8 @@ type refStats struct {
 	skip, total, max int
 }
 
+func (s *refStats) done() bool { return s.total == s.max }
+
 func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 	if s.skip > int(idx.Count) {
 		s.skip -= int(idx.Count)
@@ -751,7 +766,7 @@ func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group) bool {
 	cs := grp.Caller
 
-	if s.total == s.max {
+	if s.done() {
 		// We've already hit our cap; return true that we're done.
 		return true
 	} else if s.skip > len(cs) {
@@ -780,7 +795,7 @@ func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, g
 		}
 		crs.Caller = append(crs.Caller, ra)
 	}
-	return s.total == s.max // return whether we've hit our cap
+	return s.done() // return whether we've hit our cap
 }
 
 func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group, patterns []*regexp.Regexp) bool {

@@ -27,14 +27,14 @@ TextprotoSchema ParseTextprotoSchemaComments(absl::string_view textproto) {
   TextprotoSchema schema;
 
   for (absl::string_view line : absl::StrSplit(textproto, '\n')) {
-    if (ConsumePrefix(&line, "#")) {
+    if (absl::ConsumePrefix(&line, "#")) {
       line = absl::StripLeadingAsciiWhitespace(line);
-      if (ConsumePrefix(&line, "proto-file:")) {
-        schema.proto_file = StripAsciiWhitespace(line);
-      } else if (ConsumePrefix(&line, "proto-message:")) {
-        schema.proto_message = StripAsciiWhitespace(line);
-      } else if (ConsumePrefix(&line, "proto-import:")) {
-        schema.proto_imports.push_back(StripAsciiWhitespace(line));
+      if (absl::ConsumePrefix(&line, "proto-file:")) {
+        schema.proto_file = absl::StripAsciiWhitespace(line);
+      } else if (absl::ConsumePrefix(&line, "proto-message:")) {
+        schema.proto_message = absl::StripAsciiWhitespace(line);
+      } else if (absl::ConsumePrefix(&line, "proto-import:")) {
+        schema.proto_imports.push_back(absl::StripAsciiWhitespace(line));
       }
     } else if (line.empty()) {
       // Skip blank lines.

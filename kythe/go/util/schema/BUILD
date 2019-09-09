@@ -19,11 +19,9 @@ go_library(
 
 genrule(
     name = "schema_index",
-    srcs = ["//kythe/data:schema_index.textproto"],
     outs = ["schema_index.go"],
     cmd = " ".join([
         "$(location //kythe/go/util/schema/mkdata) --language go --package schema",
-        "-input '$(location //kythe/data:schema_index.textproto)'",
         "-output '$@'",
     ]),
     tools = ["//kythe/go/util/schema/mkdata"],

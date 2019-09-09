@@ -344,10 +344,10 @@ bool AssertionParser::ValidateTopLocationSpec(const yy::location& location,
 }
 
 AstNode* AssertionParser::CreateAnchorSpec(const yy::location& location) {
-  size_t line_number;
-  bool use_line_number;
-  bool must_be_unambiguous;
-  int match_number;
+  size_t line_number = -1;
+  bool use_line_number = false;
+  bool must_be_unambiguous = false;
+  int match_number = -1;
   if (!ValidateTopLocationSpec(location, &line_number, &use_line_number,
                                &must_be_unambiguous, &match_number)) {
     return verifier_.empty_string_id();
@@ -363,10 +363,10 @@ AstNode* AssertionParser::CreateAnchorSpec(const yy::location& location) {
 
 AstNode* AssertionParser::CreateOffsetSpec(const yy::location& location,
                                            bool at_end) {
-  size_t line_number;
-  bool use_line_number;
-  bool must_be_unambiguous;
-  int match_number;
+  size_t line_number = -1;
+  bool use_line_number = false;
+  bool must_be_unambiguous = false;
+  int match_number = -1;
   if (!ValidateTopLocationSpec(location, &line_number, &use_line_number,
                                &must_be_unambiguous, &match_number)) {
     return verifier_.empty_string_id();

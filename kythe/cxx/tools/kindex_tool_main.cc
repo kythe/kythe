@@ -26,10 +26,14 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <string>
+
 #include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
@@ -44,13 +48,15 @@
 #include "kythe/proto/filecontext.pb.h"
 #include "re2/re2.h"
 
-DEFINE_string(assemble, "", "Assemble positional args into output file");
-DEFINE_string(explode, "", "Explode this kindex file into its constituents");
-DEFINE_bool(canonicalize_hashes, false,
-            "Replace transcripts with sequence numbers");
-DEFINE_bool(suppress_details, false, "Suppress CU details.");
-DEFINE_string(keep_details_matching, "",
-              "If present, include these details when suppressing the rest.");
+ABSL_FLAG(std::string, assemble, "",
+          "Assemble positional args into output file");
+ABSL_FLAG(std::string, explode, "",
+          "Explode this kindex file into its constituents");
+ABSL_FLAG(bool, canonicalize_hashes, false,
+          "Replace transcripts with sequence numbers");
+ABSL_FLAG(bool, suppress_details, false, "Suppress CU details.");
+ABSL_FLAG(std::string, keep_details_matching, "",
+          "If present, include these details when suppressing the rest.");
 
 namespace {
 
@@ -110,12 +116,12 @@ void DumpCompilationUnit(const std::string& path,
   int out_fd =
       open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
   CHECK_GE(out_fd, 0) << "Couldn't open " << out_path << " for writing.";
-  if (FLAGS_suppress_details) {
-    if (FLAGS_keep_details_matching.empty()) {
+  if (absl::GetFlag(FLAGS_suppress_details)) {
+    if (absl::GetFlag(FLAGS_keep_details_matching).empty()) {
       unit->clear_details();
     } else {
       google::protobuf::RepeatedPtrField<google::protobuf::Any> keep;
-      re2::RE2 detail_pattern(FLAGS_keep_details_matching);
+      re2::RE2 detail_pattern(absl::GetFlag(FLAGS_keep_details_matching));
       for (const auto& detail : *unit->mutable_details()) {
         if (re2::RE2::FullMatch(detail.type_url(), detail_pattern)) {
           *keep.Add() = detail;
@@ -124,7 +130,7 @@ void DumpCompilationUnit(const std::string& path,
       unit->mutable_details()->Swap(&keep);
     }
   }
-  if (FLAGS_canonicalize_hashes) {
+  if (absl::GetFlag(FLAGS_canonicalize_hashes)) {
     CanonicalizeHash(&hash_table, unit->mutable_entry_context());
     for (auto& input : *unit->mutable_required_input()) {
       for (auto& row : MutableContextRows(&input)) {
@@ -257,8 +263,7 @@ int main(int argc, char* argv[]) {
   kythe::proto::CxxCompilationUnitDetails link_cxx_details;
   kythe::proto::BuildDetails link_build_details;
   google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.1");
-  gflags::SetUsageMessage(R"(kindex_tool: work with .kindex files
+  absl::SetProgramUsageMessage(R"(kindex_tool: work with .kindex files
 kindex_tool -explode some/file.kindex (or .kzip)
   dumps some/file.kindex to some/file.kindex_UNIT, some/file.kindex_sha2...
   as ascii protobufs
@@ -266,17 +271,18 @@ kindex_tool -explode some/file.kindex (or .kzip)
 kindex_tool -assemble some/file.kindex some/unit some/content...
   assembles some/file.kindex using some/unit as the CompilationUnit and
   any other input files as FileData)");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  if (!FLAGS_explode.empty()) {
-    if (absl::EndsWith(FLAGS_explode, ".kzip")) {
-      DumpKzipFile(FLAGS_explode);
+  std::vector<char*> remain = absl::ParseCommandLine(argc, argv);
+  if (!absl::GetFlag(FLAGS_explode).empty()) {
+    if (absl::EndsWith(absl::GetFlag(FLAGS_explode), ".kzip")) {
+      DumpKzipFile(absl::GetFlag(FLAGS_explode));
     } else {
-      DumpIndexFile(FLAGS_explode);
+      DumpIndexFile(absl::GetFlag(FLAGS_explode));
     }
-  } else if (!FLAGS_assemble.empty()) {
+  } else if (!absl::GetFlag(FLAGS_assemble).empty()) {
     CHECK(argc >= 2) << "Need at least the unit.";
-    std::vector<std::string> constituent_parts(argv + 1, argv + argc);
-    BuildIndexFile(FLAGS_assemble, constituent_parts);
+    std::vector<std::string> constituent_parts(remain.begin() + 1,
+                                               remain.end());
+    BuildIndexFile(absl::GetFlag(FLAGS_assemble), constituent_parts);
   } else {
     absl::FPrintF(stderr, "Specify either -assemble or -explode.\n");
     return -1;

@@ -17,7 +17,7 @@
 package schema
 
 // This is a generated file -- do not edit it by hand.
-// Input file: kythe/data/schema_index.textproto
+// Input file: kythe/proto/schema.proto
 
 import scpb "kythe.io/kythe/proto/schema_go_proto"
 

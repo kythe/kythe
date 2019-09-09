@@ -16,6 +16,7 @@
 package com.google.devtools.kythe.platform.kzip;
 
 import com.google.common.flogger.FluentLogger;
+import com.google.devtools.kythe.platform.shared.CompilationUnits;
 import com.google.devtools.kythe.proto.Analysis;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -31,6 +32,21 @@ import java.util.zip.ZipOutputStream;
 public final class KZipWriter implements KZip.Writer {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private static final KZip.Encoding DEFAULT_ENCODING;
+
+  static {
+    KZip.Encoding encoding = KZip.Encoding.JSON;
+    String encodingStr = System.getenv("KYTHE_KZIP_ENCODING");
+    if (encodingStr != null) {
+      try {
+        encoding = KZip.Encoding.valueOf(encodingStr);
+      } catch (IllegalArgumentException e) {
+        System.err.printf("Unknown kzip encoding '%s', using %s", encodingStr, encoding);
+      }
+    }
+    DEFAULT_ENCODING = encoding;
+  }
+
   private final KZip.Descriptor descriptor;
   private final ZipOutputStream output;
   private final Gson gson;
@@ -41,9 +57,9 @@ public final class KZipWriter implements KZip.Writer {
 
   @Deprecated
   public KZipWriter(File file) throws IOException {
-    this(file, KZip.Encoding.JSON);
+    this(file, DEFAULT_ENCODING);
   }
-  
+
   public KZipWriter(File file, KZip.Encoding encoding) throws IOException {
     this(file, encoding, KZip.buildGson(new GsonBuilder()));
   }
@@ -68,15 +84,15 @@ public final class KZipWriter implements KZip.Writer {
 
   @Override
   public String writeUnit(Analysis.IndexedCompilation compilation) throws IOException {
-    byte[] jsonData =
-        gson.toJson(compilation, Analysis.IndexedCompilation.class).getBytes(KZip.DATA_CHARSET);
-    String digest = KZip.DATA_DIGEST.hashBytes(jsonData).toString();
+    String digest = CompilationUnits.digestFor(compilation.getUnit());
     if (descriptor.encoding().equals(KZip.Encoding.JSON)
-	|| descriptor.encoding().equals(KZip.Encoding.ALL)) {
+        || descriptor.encoding().equals(KZip.Encoding.ALL)) {
+      byte[] jsonData =
+          gson.toJson(compilation, Analysis.IndexedCompilation.class).getBytes(KZip.DATA_CHARSET);
       appendZip(jsonData, descriptor.getUnitsPath(digest, KZip.Encoding.JSON));
     }
     if (descriptor.encoding().equals(KZip.Encoding.PROTO)
-	|| descriptor.encoding().equals(KZip.Encoding.ALL)) {
+        || descriptor.encoding().equals(KZip.Encoding.ALL)) {
       appendZip(compilation.toByteArray(), descriptor.getUnitsPath(digest, KZip.Encoding.PROTO));
     }
     return digest;

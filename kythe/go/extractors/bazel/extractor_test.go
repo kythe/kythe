@@ -238,31 +238,6 @@ func TestExtractToFile(t *testing.T) {
 	}
 }
 
-func TestExtractor(t *testing.T) {
-	res := new(results)
-	config := res.newConfig()
-
-	t.Log("Extra action info:\n", proto.MarshalTextString(xa))
-
-	cu, err := config.Extract(context.Background(), ai)
-	if err != nil {
-		t.Errorf("Error in extraction: %v", err)
-	}
-	res.checkValues(t, cu.Proto)
-
-	for i, fd := range cu.Files {
-		if got := fd.Info.Digest; got != wantDigest {
-			t.Errorf("File data %d: wrong digest: got %q, want %q", i+1, got, wantDigest)
-		}
-		if got := string(fd.Content); got != "" {
-			t.Errorf("File data %d: wrong content: got %q, want empty", i+1, got)
-		}
-	}
-	if a, b := len(cu.Files), len(cu.Proto.RequiredInput); a != b {
-		t.Errorf("File count mismatch: %d file data, %d required inputs", a, b)
-	}
-}
-
 func TestFetchInputs(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "TestFetchInputs")
 	if err != nil {

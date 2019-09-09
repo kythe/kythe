@@ -13,6 +13,7 @@ java_library(
     deps = [
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:units",
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",

@@ -241,9 +241,9 @@ type Unit interface {
 	// canonicalization is unit-dependent, and may safely be a no-op.
 	Canonicalize()
 
-	// Digest writes a unique representation of the unit to w sufficient to
-	// generate a content-addressable digest.
-	Digest(w io.Writer)
+	// Digest produces a unique string representation of a unit sufficient to
+	// serve as a content-addressable digest.
+	Digest() string
 }
 
 // Index represents the indexable terms of a compilation.
@@ -259,14 +259,6 @@ type Index struct {
 func HexDigest(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
-}
-
-// UnitDigest computes a hex-encoded SHA256 digest of the data in a compilation
-// unit.
-func UnitDigest(u Unit) string {
-	sha := sha256.New()
-	u.Digest(sha)
-	return hex.EncodeToString(sha.Sum(nil)[:])
 }
 
 // IsValidDigest reports whether s is valid as a digest computed by the

@@ -45,7 +45,8 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
   if (!(absl::EndsWith(filename, ".pb.h.meta") ||
         absl::EndsWith(filename, ".pb.h") ||
         absl::EndsWith(filename, ".proto.h.meta") ||
-        absl::EndsWith(filename, ".proto.h"))) {
+        absl::EndsWith(filename, ".proto.h") ||
+        absl::EndsWith(filename, ".stubby.h"))) {
     return nullptr;
   }
   proto::VName context_vname;

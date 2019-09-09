@@ -37,14 +37,14 @@ class KzipWriter : public IndexWriterInterface {
   /// \param path Path to the file to create. Must not currently exist.
   /// \param encoding Encoding to use for compilation units.
   static StatusOr<IndexWriter> Create(
-      absl::string_view path, KzipEncoding encoding = KzipEncoding::kJson);
+      absl::string_view path, KzipEncoding encoding = DefaultEncoding());
   /// \brief Constructs an IndexWriter from the libzip source pointer.
   /// \param source zip_source_t to use as backing store.
   /// See https://libzip.org/documentation/zip_source.html for ownership.
   /// \param flags Flags to use when opening `source`.
   /// \param encoding Encoding to use for compilation units.
   static StatusOr<IndexWriter> FromSource(
-      zip_source_t* source, KzipEncoding encoding = KzipEncoding::kJson,
+      zip_source_t* source, KzipEncoding encoding = DefaultEncoding(),
       int flags = ZIP_CREATE | ZIP_EXCL);
 
   /// \brief Destroys the KzipWriter.
@@ -72,6 +72,8 @@ class KzipWriter : public IndexWriterInterface {
                                    absl::string_view content);
 
   Status InitializeArchive(zip_t* archive);
+
+  static KzipEncoding DefaultEncoding();
 
   bool initialized_ = false;  // Whether or not the `root` entry exists.
   zip_t* archive_;  // Owned, but must be manually deleted via `Close`.

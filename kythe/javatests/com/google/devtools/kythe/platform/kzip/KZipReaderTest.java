@@ -19,6 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.TestCase.fail;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.devtools.kythe.platform.shared.TestDataUtil;
 import com.google.devtools.kythe.proto.Analysis;
 import com.google.devtools.kythe.proto.Analysis.IndexedCompilation;
 import com.google.devtools.kythe.proto.Go.GoDetails;
@@ -95,7 +96,7 @@ public final class KZipReaderTest {
     try {
       KZipReader reader = new KZipReader(TestDataUtil.getTestFile("garbage_unit.kzip"));
       // Iterate over the units so we try to read in the garbage.
-      for (IndexedCompilation compilation: reader.scan()) {}
+      for (IndexedCompilation unused : reader.scan()) {}
       fail();
     } catch (JsonParseException expected) {
     }

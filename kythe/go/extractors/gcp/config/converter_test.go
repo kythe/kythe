@@ -124,8 +124,6 @@ type testcase struct {
 	// YAML files not guaranteed to be in testdata, could be elsewhere.
 	yamlDir  string
 	yamlFile string
-
-	expectedError error
 }
 
 func (tc testcase) getJSONFile(t *testing.T) string {

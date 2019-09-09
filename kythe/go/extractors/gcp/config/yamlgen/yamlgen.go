@@ -33,6 +33,7 @@ var (
 
 func main() {
 	flag.Parse()
+	verifyFlags()
 
 	yamlData, err := config.KytheToYAML(*input)
 	if err != nil {
