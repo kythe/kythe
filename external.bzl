@@ -9,11 +9,12 @@ load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
+load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 
 def _rule_dependencies():
-    gazelle_dependencies()
     go_rules_dependencies()
     go_register_toolchains()
+    gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
 
@@ -49,12 +50,18 @@ def _cc_dependencies():
     )
 
     maybe(
-        http_archive,
-        name = "boringssl",  # Must match upstream workspace name.
-        # Gitiles creates gzip files with an embedded timestamp, so we cannot use
-        # sha256 to validate the archives.  We must rely on the commit hash and https.
+        git_repository,
+        name = "boringssl",
+        # Use the github mirror because the official source at
+        # https://boringssl.googlesource.com/boringssl does not allow
+        # unauthenticated git clone and the archives suffer from
+        # https://github.com/google/gitiles/issues/84 preventing the use of
+        # sha256sum on archives.
+        remote = "https://github.com/google/boringssl",
         # Commits must come from the master-with-bazel branch.
-        url = "https://boringssl.googlesource.com/boringssl/+archive/4be3aa87917b20fedc45fa1fc5b6a2f3738612ad.tar.gz",
+        # branch = "master-with-bazel",
+        commit = "e0c35d6c06fd800de1092f0b4d4326570ca2617a",
+        shallow_since = "1566966435 +0000",
     )
 
     maybe(
@@ -70,9 +77,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_absl",
-        sha256 = "3601822b4d3c7cc62d891a2d0993b902ad1858e4faf41d895678d3a7749ec503",
-        strip_prefix = "abseil-cpp-ca3f87560a0eef716195cadf66dc6b938a579ec6",
-        url = "https://github.com/abseil/abseil-cpp/archive/ca3f87560a0eef716195cadf66dc6b938a579ec6.zip",
+        sha256 = "c1b570e3d48527c6eb5d8668cd4d2a24b704110700adc0db44b002c058fdf5d0",
+        strip_prefix = "abseil-cpp-c6c3c1b498e4ee939b24be59cae29d59c3863be8",
+        url = "https://github.com/abseil/abseil-cpp/archive/c6c3c1b498e4ee939b24be59cae29d59c3863be8.zip",
     )
 
     maybe(
@@ -85,19 +92,14 @@ def _cc_dependencies():
 
     maybe(
         http_archive,
-        name = "com_github_gflags_gflags",
-        sha256 = "19713a36c9f32b33df59d1c79b4958434cb005b5b47dc5400a7a4b078111d9b5",
-        strip_prefix = "gflags-2.2.2",
-        url = "https://github.com/gflags/gflags/archive/v2.2.2.zip",
-    )
-
-    maybe(
-        http_archive,
         name = "com_github_google_glog",
-        build_file = "@io_kythe//third_party:googlelog.BUILD",
-        sha256 = "ce61883437240d650be724043e8b3c67e257690f876ca9fd53ace2a791cfea6c",
-        strip_prefix = "glog-bac8811710c77ac3718be1c4801f43d37c1aea46",
-        url = "https://github.com/google/glog/archive/bac8811710c77ac3718be1c4801f43d37c1aea46.zip",
+        strip_prefix = "glog-ba8a9f6952d04d1403b97df24e6836227751454e",
+        sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
+        url = "https://github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
+        build_file_content = "\n".join([
+            "load(\"//:bazel/glog.bzl\", \"glog_library\")",
+            "glog_library(with_gflags=0)",
+        ]),
     )
 
     maybe(
@@ -178,6 +180,7 @@ def _cc_dependencies():
     )
 
     lexyacc_configure()
+    cxx_extractor_register_toolchains()
 
 def _java_dependencies():
     maybe(
@@ -185,6 +188,7 @@ def _java_dependencies():
         http_archive,
         name = "google_bazel_common",
         strip_prefix = "bazel-common-b3778739a9c67eaefe0725389f03cf821392ac67",
+        sha256 = "4ae0fd0af627be9523a166b88d1298375335f418dcc13a82e9e77a0089a4d254",
         urls = ["https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip"],
     )
     maybe(
@@ -315,7 +319,7 @@ def _go_dependencies():
         importpath = "github.com/golang/protobuf",
         patch_args = ["-p1"],
         patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
-        tag = "v1.3.0",
+        tag = "v1.3.1",
     )
 
     maybe(
@@ -345,7 +349,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sync",
-        commit = "42b317875d0f",
+        commit = "112230192c58",
         custom = "sync",
         custom_git = "https://github.com/golang/sync.git",
         importpath = "golang.org/x/sync",
@@ -402,7 +406,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_tools",
-        commit = "589c23e65e65055d47b9ad4a99723bc389136265",
+        commit = "c8855242db9c1762032abe33c2dff50de3ec9d05",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
         importpath = "golang.org/x/tools",
@@ -422,7 +426,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_net",
-        commit = "3a22650c66bd",
+        commit = "3b0461eec859",
         custom = "x_net",
         custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
@@ -543,7 +547,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sys",
-        commit = "49385e6e15226593f68b26af201feec29d5bba22",
+        commit = "d0b11bdaac8a",
         custom = "x_sys",
         custom_git = "https://github.com/golang/sys.git",
         importpath = "golang.org/x/sys",
@@ -734,14 +738,6 @@ def kythe_dependencies(sample_ui = True):
         strip_prefix = "protobuf-402c28a321fce010ad0b9f99010a78890cae7f34",
         urls = ["https://github.com/protocolbuffers/protobuf/archive/402c28a321fce010ad0b9f99010a78890cae7f34.zip"],
         repo_mapping = {"@zlib": "@net_zlib"},
-    )
-
-    maybe(
-        http_archive,
-        name = "bazel_skylib",
-        sha256 = "ca4e3b8e4da9266c3a9101c8f4704fe2e20eb5625b2a6a7d2d7d45e3dd4efffd",
-        strip_prefix = "bazel-skylib-0.5.0",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.5.0.zip"],
     )
 
     maybe(

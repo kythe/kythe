@@ -33,6 +33,7 @@
 #include "GraphObserver.h"
 #include "IndexerASTHooks.h"
 #include "IndexerPPCallbacks.h"
+#include "absl/memory/memory.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
@@ -115,10 +116,10 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       std::vector<clang::DirectoryLookup> Lookups;
       unsigned CurrentIdx = 0;
       for (const auto& Path : HeaderConfig.paths) {
-        const auto DirEnt = FileManager.getDirectory(Path.path);
+        auto DirEnt = FileManager.getDirectoryRef(Path.path);
         if (DirEnt) {
           Lookups.push_back(clang::DirectoryLookup(
-              *DirEnt, Path.characteristic_kind, Path.is_framework));
+              DirEnt.get(), Path.characteristic_kind, Path.is_framework));
           ++CurrentIdx;
         } else {
           // This can happen if a path was included in the HeaderSearchInfo,
@@ -142,14 +143,14 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       Observer->setLangOptions(&CI.getLangOpts());
       Observer->setPreprocessor(&CI.getPreprocessor());
     }
-    return llvm::make_unique<IndexerASTConsumer>(
+    return absl::make_unique<IndexerASTConsumer>(
         Observer, IgnoreUnimplemented, TemplateMode, Verbosity, ObjCFwdDocs,
         CppFwdDocs, Supports, ShouldStopIndexing, CreateWorklist, UsrByteSize);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance& CI) override {
     if (Observer) {
-      CI.getPreprocessor().addPPCallbacks(llvm::make_unique<IndexerPPCallbacks>(
+      CI.getPreprocessor().addPPCallbacks(absl::make_unique<IndexerPPCallbacks>(
           CI.getPreprocessor(), *Observer, Verbosity));
     }
     CI.getLangOpts().CommentOpts.ParseAllComments = true;
@@ -228,7 +229,9 @@ class StdinAdjustSingleFrontendActionFactory
 
   /// Note that FrontendActionFactory::create() specifies that the
   /// returned action is owned by the caller.
-  clang::FrontendAction* create() override { return Action.release(); }
+  std::unique_ptr<clang::FrontendAction> create() override {
+    return std::move(Action);
+  }
 };
 
 /// \brief Options that control how the indexer behaves.

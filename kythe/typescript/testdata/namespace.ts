@@ -17,3 +17,28 @@ namespace N {
 //- @N ref NValue
 //- @obj ref NObj
 N.obj;
+
+// Repeat same namespace to make
+// sure we don't output duplicate
+// facts.
+//- SecondNdef defines NValue
+//- SecondNdef.loc/start @^"namespace"
+namespace N {
+  export const pinky = 1;
+  //- SecondNdef.loc/end @$"}"
+}
+
+//- @Z defines/binding ZNamespace
+//- ZNamespace.node/kind record
+//- ZNamespace.subkind namespace
+//- @Z defines/binding ZValue
+//- ZValue.node/kind package
+//- Zdef defines ZValue
+//- Zdef.loc/start @^"Z"
+//- ThirdNDef defines NValue
+//- ThirdNDef.loc/start @^"namespace"
+namespace N.Z {
+  export const blinky = 2;
+  //- Zdef.loc/end @$"}"
+  //- ThirdNDef.loc/end @$"}"
+}

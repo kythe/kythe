@@ -94,10 +94,7 @@ func validProtoTag(tag uint64) bool {
 
 // hasSubtype returns whether a tag has an associated subtype.
 func hasSubtype(tag uint64) bool {
-	if protoWireType(tag&7) == protoVarintType {
-		return true
-	}
-	return false
+	return protoWireType(tag&7) == protoVarintType
 }
 
 // A backwardWriter buffers each []byte pushed into it and allows them to be

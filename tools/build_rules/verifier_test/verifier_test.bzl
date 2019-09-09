@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+"""Rules and macros related to Kythe verifier-based tests."""
 
 KytheVerifierSources = provider(
     doc = "Input files which the verifier should inspect for assertions.",
@@ -129,26 +129,35 @@ def extract(
         srcs,
         opts,
         deps = [],
+        env = {},
         vnames_config = None,
         mnemonic = "ExtractCompilation"):
-    """Run the extractor tool under an environment to produce the given kzip
+    """Create an extract action using the provided tool and inputs.
+
+    Runs the extractor tool under an environment to produce the given kzip
     output file.  The extractor is passed each string from opts after expanding
     any build artifact locations and then each File's path from the srcs
     collection.
 
     Args:
+      ctx: The Bazel rule context to use for actions.
       kzip: Declared .kzip output File
       extractor: Executable extractor tool to invoke
       srcs: Files passed to extractor tool; the compilation's source file inputs
       opts: List of options (or Args object) passed to the extractor tool before source files
       deps: Dependencies for the extractor's action (not passed to extractor on command-line)
+      env: Dictionary of environment variables to provide.
       vnames_config: Optional path to a VName configuration file
       mnemonic: Mnemonic of the extractor's action
+
+    Returns:
+      The output file generated.
     """
-    env = {
+    final_env = {
         "KYTHE_OUTPUT_FILE": kzip.path,
         "KYTHE_ROOT_DIRECTORY": ".",
     }
+    final_env.update(env)
 
     if type(srcs) != "depset":
         srcs = depset(direct = srcs)
@@ -156,7 +165,7 @@ def extract(
         deps = depset(direct = deps)
     direct_inputs = []
     if vnames_config:
-        env["KYTHE_VNAMES"] = vnames_config.path
+        final_env["KYTHE_VNAMES"] = vnames_config.path
         direct_inputs += [vnames_config]
     inputs = depset(direct = direct_inputs, transitive = [srcs, deps])
 
@@ -173,7 +182,7 @@ def extract(
         mnemonic = mnemonic,
         executable = extractor,
         arguments = [args],
-        env = env,
+        env = final_env,
     )
     return kzip
 

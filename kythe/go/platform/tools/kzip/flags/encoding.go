@@ -18,9 +18,6 @@
 package flags // import "kythe.io/kythe/go/platform/tools/kzip/flags"
 
 import (
-	"fmt"
-	"strings"
-
 	"kythe.io/kythe/go/platform/kzip"
 )
 
@@ -41,18 +38,9 @@ func (e *EncodingFlag) Get() interface{} {
 
 // Set implements part of the flag.Value interface.
 func (e *EncodingFlag) Set(v string) error {
-	v = strings.ToUpper(v)
-	switch {
-	case v == "ALL":
-		*e = EncodingFlag{kzip.EncodingAll}
-		return nil
-	case v == "JSON":
-		*e = EncodingFlag{kzip.EncodingJSON}
-		return nil
-	case v == "PROTO":
-		*e = EncodingFlag{kzip.EncodingProto}
-		return nil
-	default:
-		return fmt.Errorf("Unknown encoding %s", e)
+	enc, err := kzip.EncodingFor(v)
+	if err != nil {
+		*e = EncodingFlag{enc}
 	}
+	return err
 }

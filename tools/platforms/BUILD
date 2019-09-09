@@ -13,7 +13,7 @@ platform(
     remote_execution_properties = """
         properties: {
           name: "container-image"
-          value:"docker://gcr.io/kythe-repo/kythe-builder@sha256:b0b900680b081e78102926741587a9cfc23bbb1c434fef44cb4cdcf001658376"
+          value:"docker://gcr.io/kythe-repo/kythe-builder@sha256:9c246bf536f38ddd1fc9b492a4677b099127f0600cb1807ca6c96c6aa31a4f53"
         }
         """,
 )
