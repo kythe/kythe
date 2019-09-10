@@ -20,10 +20,13 @@ package govname // import "kythe.io/kythe/go/extractors/govname"
 
 import (
 	"go/build"
+	"log"
 	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/vcs"
+
+	"kythe.io/kythe/go/util/vnameutil"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -47,6 +50,10 @@ type PackageVNameOptions struct {
 	// canonicalized as its VCS repository root URL rather than the Go import path
 	// corresponding to the VCS repository root.
 	CanonicalizePackageCorpus bool
+
+	// Rules optionally provides a list of rules to apply to go package and file
+	// paths to customize output vnames. See the vnameutil package for details.
+	Rules vnameutil.Rules
 }
 
 // ForPackage returns a VName for a Go package.
@@ -57,6 +64,8 @@ type PackageVNameOptions struct {
 // component of the import path is used as the corpus name, except for packages
 // under GOROOT which are attributed to the special corpus "golang.org".
 //
+// If a set of vname rules is provided, they are applied first and used if
+// applicable. Note that vname rules are ignored for go stdlib packages.
 //
 // Examples:
 //   ForPackage(<kythe.io/kythe/go/util/schema>, &{CanonicalizePackageCorpus: false}) => {
@@ -87,6 +96,25 @@ type PackageVNameOptions struct {
 //		 Signature: "package",
 //   }
 func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
+	if !pkg.Goroot && opts != nil && opts.Rules != nil {
+		relpath, err := filepath.Rel(pkg.Root, pkg.Dir)
+		if err != nil {
+			log.Fatalf("relativizing path %q against dir %q: %v", pkg.Dir, pkg.Root, err)
+		}
+		if relpath == "." {
+			relpath = ""
+		}
+
+		v2, ok := opts.Rules.Apply(relpath)
+		if ok {
+			v2.Language = Language
+			v2.Signature = packageSig
+			return v2
+		} else {
+			log.Printf("No vname rules matched, continuing with non-rules-based vname logic.")
+		}
+	}
+
 	ip := pkg.ImportPath
 	v := &spb.VName{Language: Language, Signature: packageSig}
 

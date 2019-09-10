@@ -385,6 +385,16 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 			Corpus: p.ext.DefaultCorpus,
 			Path:   trimmed,
 		}
+
+		if p.ext.Rules != nil {
+			v2, ok := p.ext.Rules.Apply(trimmed)
+			if ok {
+				vn.Corpus = v2.Corpus
+				vn.Root = v2.Root
+				vn.Path = v2.Path
+			}
+		}
+
 		if vn.Corpus == "" {
 			// If no default corpus is specified, use the package's corpus for each of
 			// its files.  The package corpus is based on the rules in
