@@ -246,6 +246,9 @@ The initial definition of a VName will include the following 5 fields:
    The components of a path are separated by "/"s, even if the
    underlying operating system uses a different separator. The path
    must not start with a "/" -- that is, it is relative to the *Root*.
+   If the root is empty, it is treated as meaning the top of the
+   corpus (e.g., the same as "/" if the corpus maps directly to the
+   file system).
 
  * *Language.* The language this name belongs to. The schema defines specific
    labels for each supported language, so we don't wind up with a confusion of
