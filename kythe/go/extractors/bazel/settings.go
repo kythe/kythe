@@ -20,11 +20,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"kythe.io/kythe/go/util/vnameutil"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"kythe.io/kythe/go/util/vnameutil"
 
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
