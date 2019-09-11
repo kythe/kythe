@@ -110,8 +110,6 @@ func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 			v2.Language = Language
 			v2.Signature = packageSig
 			return v2
-		} else {
-			log.Printf("No vname rules matched, continuing with non-rules-based vname logic.")
 		}
 	}
 
