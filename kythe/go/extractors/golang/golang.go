@@ -51,6 +51,8 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 
+	anypb "github.com/golang/protobuf/ptypes/any"
+	
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	gopb "kythe.io/kythe/proto/go_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -386,12 +388,24 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 			Path:   trimmed,
 		}
 
+		var details []*anypb.Any
 		if p.ext.Rules != nil {
 			v2, ok := p.ext.Rules.Apply(trimmed)
 			if ok {
 				vn.Corpus = v2.Corpus
 				vn.Root = v2.Root
 				vn.Path = v2.Path
+
+				if govname.ImportPath(vn, p.ext.BuildContext.GOROOT) != p.BuildPackage.ImportPath {
+					// Add GoPackageInfo if constructed VName differs from actual ImportPath.
+					if info, err := ptypes.MarshalAny(&gopb.GoPackageInfo{
+						ImportPath: p.BuildPackage.ImportPath,
+					}); err == nil {
+						details = append(details, info)
+					} else {
+						log.Printf("WARNING: failed to marshal GoPackageInfo for input: %v", err)
+					}
+				}
 			}
 		}
 
@@ -413,6 +427,7 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 				Path:   trimmed,
 				Digest: path, // provisional, until the file is loaded
 			},
+			Details: details,
 		})
 	}
 }
