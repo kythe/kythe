@@ -65,6 +65,11 @@ path-segment = 1*{unreserved | pct-encoded | "/"}  -- RFC 3987
 Note that the order of the attributes (the `attrs` production) is fixed, to
 ensure that a Kythe URI has a canonical string encoding.
 
+For queries, path-segment is resolved as specified in
+http://tools.ietf.org/html/rfc3986#section-5.2.4[RFC 3986 Section 5.2.4 (Remove Dot Segments)].
+
+See also link:kythe-storage-text#TermVName[Vector-Name (*VName*)]
+
 Examples (subject to change):
 
 * Empty (no fields): `kythe:`
