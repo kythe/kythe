@@ -1604,6 +1604,8 @@ anchor
 
 Brief description::
   An *anchor* connects concrete syntax to abstract syntax.
+  An *anchor* is within the <<file>> with the same *Path*, *Root*, *Corpus*
+  (<<file>>s do not have a *Language*, so it is not used for matching).
 Naming convention::
   Path:::
     The *Path* of the <<file>> containing this anchor (or empty if there is no
