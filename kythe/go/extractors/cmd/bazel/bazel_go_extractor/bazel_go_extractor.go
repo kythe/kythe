@@ -78,7 +78,7 @@ func main() {
 	// Load vname rewriting rules. We handle this directly, becaues the Bazel
 	// Go rules have some pathological symlink handling that the normal rules
 	// need to be patched for.
-	rules, err := bazel.LoadRules(vnameRuleFile)
+	rules, err := vnameutil.LoadRules(vnameRuleFile)
 	if err != nil {
 		log.Fatalf("Error loading vname rules: %v", err)
 	}

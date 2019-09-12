@@ -21,6 +21,7 @@ package vnameutil // import "kythe.io/kythe/go/util/vnameutil"
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"regexp"
 	"strings"
 
@@ -169,6 +170,23 @@ func ParseRules(data []byte) (Rules, error) {
 	var rules Rules
 	for _, r := range rr {
 		rules = append(rules, r.toRule())
+	}
+	return rules, nil
+}
+
+// LoadRules loads and parses the vname mapping rules in path.
+// If path == "", this returns nil without error (no rules).
+func LoadRules(path string) (Rules, error) {
+	if path == "" {
+		return nil, nil
+	}
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading vname rules: %v", err)
+	}
+	rules, err := ParseRules(data)
+	if err != nil {
+		return nil, fmt.Errorf("parsing vname rules: %v", err)
 	}
 	return rules, nil
 }
