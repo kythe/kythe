@@ -248,6 +248,11 @@ The initial definition of a VName includes the following 5 fields:
    assigned.
    +
    +
+   When a path is specified in a query, the query processor *may*
+   normalize it before executing the query (but this is up to the
+   tool); but all stored paths must be normalized.
+   +
+   +
    The components of a path are separated by "/"s. The path
    must not start with a "/" -- that is, it is relative to the *Root*.
    If the root is empty, it is treated as meaning the top of the
