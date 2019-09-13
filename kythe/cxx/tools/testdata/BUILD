@@ -29,21 +29,6 @@ shell_tool_test(
     },
 )
 
-shell_tool_test(
-    name = "test_claim_tool_index_pack",
-    data = [
-        "claim_test.expected",
-        "claim_test_1.kindex_UNIT",
-        "claim_test_2.kindex_UNIT",
-    ],
-    scriptfile = "test_claim_tool_index_pack.sh",
-    tools = {
-        "CLAIM_TOOL_BIN": "//kythe/cxx/tools:static_claim",
-        "INDEX_PACK_BIN": "//kythe/go/platform/tools/indexpack",
-        "KINDEX_TOOL_BIN": "//kythe/cxx/tools:kindex_tool",
-    },
-)
-
 # TODO(#2375): (closed?) requires declarations generated in pipeline
 # sh_test(
 #     name = "def_decl_test",
