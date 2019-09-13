@@ -10,7 +10,7 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/golang/protobuf v1.3.1
 	github.com/golang/snappy v0.0.1
-	github.com/google/brotli v0.0.0-20180626090807-ee2a5e1540
+	github.com/google/brotli v1.0.7
 	github.com/google/go-cmp v0.2.0
 	github.com/google/martian v2.1.0+incompatible // indirect
 	github.com/google/orderedcode v0.0.1
@@ -28,7 +28,7 @@ require (
 	github.com/pierrec/lz4 v0.0.0-20190131084431-473cd7ce01a1 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/sergi/go-diff v0.0.0-20180205163309-da645544ed44
-	github.com/sourcegraph/go-langserver v0.0.0-20180529120946-e526744fd766
+	github.com/sourcegraph/go-langserver v2.0.0+incompatible
 	github.com/sourcegraph/jsonrpc2 v0.0.0-20180501180217-a3d86c792f0f
 	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/syndtr/goleveldb v0.0.0-20180521045021-5d6fca44a948
