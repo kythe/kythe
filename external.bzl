@@ -105,9 +105,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "org_brotli",
-        sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
-        strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9",
-        url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+        sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
+        strip_prefix = "brotli-1.0.7",
+        url = "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
     )
 
     maybe(
@@ -382,7 +382,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_sourcegraph_go_langserver",
-        commit = "e526744fd766a8f42e55bd92a3843c2afcdbf08c",
+        tag = "v2.0.0",
         custom = "langserver",
         importpath = "github.com/sourcegraph/go-langserver",
     )
@@ -644,9 +644,9 @@ def _go_dependencies():
     maybe(
         http_archive,
         name = "org_brotli_go",
-        sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
-        strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9/go",
-        url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+        sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
+        strip_prefix = "brotli-1.0.7/go",
+        url = "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
     )
 
 def _bindings():
