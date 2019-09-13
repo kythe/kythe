@@ -261,7 +261,7 @@ int main(int argc, char* argv[]) {
   absl::ParseCommandLine(argc, argv);
   std::string next_index_file;
   ClaimTool tool;
-  while (getline(std::cin, next_index_file)) {
+  while (std::getline(std::cin, next_index_file)) {
     if (next_index_file.empty()) {
       continue;
     }
