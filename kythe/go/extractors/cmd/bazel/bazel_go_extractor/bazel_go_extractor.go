@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/bazel"
-	"kythe.io/kythe/go/extractors/bazel/extutil"
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/vnameutil"
 
@@ -78,7 +77,7 @@ func main() {
 	// Load vname rewriting rules. We handle this directly, becaues the Bazel
 	// Go rules have some pathological symlink handling that the normal rules
 	// need to be patched for.
-	rules, err := bazel.LoadRules(vnameRuleFile)
+	rules, err := vnameutil.LoadRules(vnameRuleFile)
 	if err != nil {
 		log.Fatalf("Error loading vname rules: %v", err)
 	}
@@ -100,7 +99,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	if err := extutil.ExtractAndWrite(ctx, config, ai, outputFile); err != nil {
+	if err := config.ExtractToKzip(ctx, ai, outputFile); err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
 }

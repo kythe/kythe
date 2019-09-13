@@ -35,6 +35,7 @@ import (
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/vnameutil"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
@@ -43,6 +44,7 @@ var (
 	bc = build.Default // A shallow copy of the default build settings
 
 	corpus     = flag.String("corpus", "", "Default corpus name to use")
+	rulesFile  = flag.String("rules", "", "Path to vnames.json file that maps file paths to output corpus, root, and path.")
 	outputPath = flag.String("output", "", "KZip output path")
 	extraFiles = flag.String("extra_files", "", "Additional files to include in each compilation (CSV)")
 	byDir      = flag.Bool("bydir", false, "Import by directory rather than import path")
@@ -100,12 +102,23 @@ func main() {
 		log.Fatal("You must provide a non-empty --output path")
 	}
 
+	// Rules for rewriting package and file VNames.
+	var rules vnameutil.Rules
+	if *rulesFile != "" {
+		var err error
+		rules, err = vnameutil.LoadRules(*rulesFile)
+		if err != nil {
+			log.Fatalf("loading rules file: %v", err)
+		}
+	}
+
 	ctx := context.Background()
 	ext := &golang.Extractor{
 		BuildContext: bc,
 
 		PackageVNameOptions: golang.PackageVNameOptions{
 			DefaultCorpus:             *corpus,
+			Rules:                     rules,
 			CanonicalizePackageCorpus: *canonicalizePackageCorpus,
 		},
 	}

@@ -56,7 +56,6 @@ tools/viewindex "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" | \
   jq . >/dev/null
 tools/kzip view "$TEST_REPOSRCDIR/kythe/testdata/test.kzip" | \
   jq . >/dev/null
-tools/indexpack --to_archive indexpack.test "$TEST_REPOSRCDIR/kythe/testdata/test.kindex"
 tools/entrystream < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" | \
   tools/entrystream --write_format=json | \
   tools/entrystream --read_format=json --entrysets >/dev/null
