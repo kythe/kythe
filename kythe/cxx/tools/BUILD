@@ -50,7 +50,6 @@ cc_binary(
     deps = [
         "//external:zlib",
         "//kythe/cxx/common:lib",
-        "//kythe/cxx/extractor:index_pack",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:claim_cc_proto",
         "//kythe/proto:filecontext_cc_proto",
@@ -58,29 +57,6 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_binary(
-    name = "shuck",
-    srcs = [
-        "shuck_main.cc",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        "//external:zlib",
-        "//kythe/cxx/extractor:index_pack",
-        "//kythe/proto:analysis_cc_proto",
-        "//kythe/proto:claim_cc_proto",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
     ],
