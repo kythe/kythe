@@ -36,7 +36,6 @@
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/vname_ordering.h"
-#include "kythe/cxx/extractor/index_pack.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
 #include "kythe/proto/filecontext.pb.h"
@@ -47,8 +46,6 @@ using kythe::proto::VName;
 
 ABSL_FLAG(bool, text, false, "Dump output as text instead of protobuf.");
 ABSL_FLAG(bool, show_stats, false, "Show some statistics.");
-ABSL_FLAG(std::string, index_pack, "",
-          "Read from an index pack instead of stdin.");
 
 struct Claimable;
 
@@ -264,43 +261,17 @@ int main(int argc, char* argv[]) {
   absl::ParseCommandLine(argc, argv);
   std::string next_index_file;
   ClaimTool tool;
-  if (absl::GetFlag(FLAGS_index_pack).empty()) {
-    while (getline(std::cin, next_index_file)) {
-      if (next_index_file.empty()) {
-        continue;
-      }
-      CompilationUnit unit;
-      ReadCompilationUnit(next_index_file, &unit);
-      tool.HandleCompilationUnit(unit);
+  while (getline(std::cin, next_index_file)) {
+    if (next_index_file.empty()) {
+      continue;
     }
-    if (!std::cin.eof()) {
-      absl::FPrintF(stderr, "Error reading from standard input.\n");
-      return 1;
-    }
-  } else {
-    std::string error_text;
-    auto filesystem = kythe::IndexPackPosixFilesystem::Open(
-        absl::GetFlag(FLAGS_index_pack),
-        kythe::IndexPackFilesystem::OpenMode::kReadOnly, &error_text);
-    if (!filesystem) {
-      absl::FPrintF(stderr, "Error reading index pack: %s\n", error_text);
-      return 1;
-    }
-    kythe::IndexPack pack(std::move(filesystem));
-    if (!pack.ScanData(
-            kythe::IndexPackFilesystem::DataKind::kCompilationUnit,
-            [&tool, &pack](const std::string& file_id) {
-              std::string error_text;
-              CompilationUnit unit;
-              CHECK(pack.ReadCompilationUnit(file_id, &unit, &error_text))
-                  << "Error reading unit " << file_id << ": " << error_text;
-              tool.HandleCompilationUnit(unit);
-              return true;
-            },
-            &error_text)) {
-      absl::FPrintF(stderr, "Error scanning index pack: %s\n", error_text);
-      return 1;
-    }
+    CompilationUnit unit;
+    ReadCompilationUnit(next_index_file, &unit);
+    tool.HandleCompilationUnit(unit);
+  }
+  if (!std::cin.eof()) {
+    absl::FPrintF(stderr, "Error reading from standard input.\n");
+    return 1;
   }
   tool.AssignClaims();
   tool.WriteClaimFile(STDOUT_FILENO);
