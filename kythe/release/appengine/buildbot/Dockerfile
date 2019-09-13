@@ -22,7 +22,7 @@ RUN apt-get update && \
       # Linter dependencies
       arcanist clang-format shellcheck \
       # Required by go tool build of Kythe
-      libleveldb-dev libbrotli-dev \
+      golang-go libleveldb-dev libbrotli-dev \
       # Bazel's fallback @local_jdk
       openjdk-11-jdk \
       # Bazel dependencies
@@ -40,12 +40,6 @@ RUN pip3 install buildbot-www buildbot-console-view buildbot-grid-view buildbot-
 RUN pip3 install --upgrade six service_identity pyasn1 cryptography pyopenssl
 RUN pip3 install buildbot-worker
 
-# Install Go
-RUN wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go*.tar.gz && \
-    rm -rf go*.tar.gz
-ENV PATH=$PATH:/usr/local/go/bin
-
 # Install extra linters
 RUN go get github.com/bazelbuild/buildtools/buildifier
 RUN go get golang.org/x/lint/golint
@@ -58,7 +52,10 @@ RUN wget https://github.com/google/google-java-format/releases/download/google-j
 
 # Install Bazelisk and wrapper script
 ADD bazel /usr/bin/bazel
-RUN curl -L -o /usr/bin/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v0.0.7/bazelisk-linux-amd64 && chmod +x /usr/bin/bazelisk
+RUN curl -L -o /usr/bin/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v1.0/bazelisk-linux-amd64 && chmod +x /usr/bin/bazelisk
+
+# Install go wrapper script
+ADD go /usr/local/bin/go
 
 # Buildbot configuration
 ADD bazelrc /root/.bazelrc
