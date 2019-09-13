@@ -31,7 +31,6 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/extractors/bazel"
-	"kythe.io/kythe/go/extractors/bazel/extutil"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -162,7 +161,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	if err := extutil.ExtractAndWrite(ctx, config, ai, *outputPath); err != nil {
+	if err := config.ExtractToKzip(ctx, ai, *outputPath); err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
 	log.Printf("Finished extracting [%v elapsed]", time.Since(start))
