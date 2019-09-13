@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/bazel"
-	"kythe.io/kythe/go/extractors/bazel/extutil"
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/vnameutil"
 
@@ -100,7 +99,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	if err := extutil.ExtractAndWrite(ctx, config, ai, outputFile); err != nil {
+	if err := config.ExtractToKzip(ctx, ai, outputFile); err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
 }
