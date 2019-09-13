@@ -239,7 +239,6 @@ filegroup(
         "//kythe/cxx/verifier",
         "//kythe/go/platform/tools/dedup_stream",
         "//kythe/go/platform/tools/entrystream",
-        "//kythe/go/platform/tools/indexpack",
         "//kythe/go/platform/tools/kzip",
         "//kythe/go/platform/tools/kzip_validator",
         "//kythe/go/platform/tools/viewindex",
