@@ -26,16 +26,6 @@ This document specifies a compact persistent storage representation for
 compilation records, suitable for use by Kythe to generate cross-reference data
 and to apply other static analysis tools to source files.
 
-The format described below replaces the storage formats described in the
-link:http://www.kythe.io/docs/kythe-index-pack.html[Kythe index pack format]
-specification. Unlike an indexpack, the kzip format does not directly support
-concurrent writers. As far as we know, no one has made any use of this feature.
-If necessary, the directory structure of a kzip is such that writers may
-construct the tree concurrently using the same strategy, and then pack the
-results into a ZIP file after the fact. The only differences are that the
-stored files are not compressed individually, and the filename suffixes used by
-the indexpack format are dropped.
-
 == Background
 
 To generate cross-references, Kythe captures a record of each compilation that

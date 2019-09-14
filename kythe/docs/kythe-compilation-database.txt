@@ -156,9 +156,6 @@ defined in `kythe/go/platform/kcd`.
 
 ==== Concrete implementations:
 
--   Indexpack (`packdb.go`).
-    Build target: `//kythe/go/platform/kcd:packdb`
-
 -   In-memory (`memdb.go`).
     Build target: `//kythe/go/platform/kcd:memdb`
 
