@@ -4,51 +4,6 @@ load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load(":toolchain.bzl", "cxx_extractor_toolchain")
 
 cc_library(
-    name = "index_pack",
-    srcs = ["index_pack.cc"],
-    hdrs = ["index_pack.h"],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deprecation = "Please use :kzip_{reader,writer}",
-    visibility = ["//kythe/cxx/tools:__pkg__"],
-    deps = [
-        "//external:libuuid",
-        "//external:zlib",
-        "//kythe/cxx/common:lib",
-        "//kythe/proto:analysis_cc_proto",
-        "//kythe/proto:filecontext_cc_proto",
-        "@boringssl//:crypto",
-        "@com_google_absl//absl/memory",
-        "@com_google_protobuf//:protobuf",
-        "@org_llvm//:LLVMSupport",
-    ],
-)
-
-cc_test(
-    name = "index_pack_test",
-    size = "small",
-    testonly = 1,
-    srcs = ["index_pack_test.cc"],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":index_pack",
-        "//external:zlib",
-        "//third_party:gtest",
-        "@com_github_google_glog//:glog",
-        "@com_github_tencent_rapidjson//:rapidjson",
-        "@com_google_absl//absl/memory",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_library(
     name = "cxx_details",
     srcs = [
         "cxx_details.cc",
