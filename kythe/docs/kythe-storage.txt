@@ -250,7 +250,7 @@ The initial definition of a VName includes the following 5 fields:
    +
    When a path is specified in a query, the query processor *may*
    normalize it before executing the query (but this is up to the
-   tool); but all stored paths must be normalized.
+   tool); but all paths that are stored or output must be normalized.
    +
    +
    The components of a path are separated by "/"s. The path
