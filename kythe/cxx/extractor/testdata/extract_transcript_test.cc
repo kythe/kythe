@@ -1,5 +1,36 @@
+/*
+ * Copyright 2019 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <string>
+#include <vector>
+
+#include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+#include "kythe/cxx/extractor/testlib.h"
+#include "kythe/proto/analysis.pb.h"
+
+namespace kythe {
+namespace {
+using ::testing::Optional;
+using ::testing::SizeIs;
+
+constexpr absl::string_view kExpectedCompilation = R"(
 v_name {
-  signature: "cu#e8d4988b9b4b7ce4ddd5a847e14ff23d2dc408b009c5533ad7bee8200aa10ebe"
   language: "c++"
 }
 required_input {
@@ -70,6 +101,8 @@ required_input {
   }
 }
 argument: "/dummy/bin/g++"
+argument: "-target"
+argument: "dummy-target"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"
@@ -80,3 +113,24 @@ argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/transcript_main.cc"
 working_directory: "TEST_CWD"
 entry_context: "hash0"
+)";
+
+TEST(CxxExtractorTest, TextExtractedTranscript) {
+  absl::optional<std::vector<kythe::proto::CompilationUnit>> compilations =
+      ExtractCompilations({{
+          "--with_executable",
+          "/dummy/bin/g++",
+          "-I./kythe/cxx/extractor/testdata",
+          "./kythe/cxx/extractor/testdata/transcript_main.cc",
+      }});
+  ASSERT_THAT(compilations, Optional(SizeIs(1)));
+  CanonicalizeHashes(&compilations->front());
+  compilations->front().clear_details();
+  compilations->front().set_argument(2, "dummy-target");
+  compilations->front().set_working_directory("TEST_CWD");
+
+  EXPECT_THAT(compilations->front(), EquivToCompilation(kExpectedCompilation));
+}
+
+}  // namespace
+}  // namespace kythe

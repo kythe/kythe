@@ -116,6 +116,12 @@ absl::optional<PathCanonicalizer::Policy> ParseCanonicalizationPolicy(
 /// \brief Append path `b` to path `a`, cleaning and returning the result.
 std::string JoinPath(absl::string_view a, absl::string_view b);
 
+/// \brief Returns the part of the path before the final '/'.
+absl::string_view Dirname(absl::string_view path);
+
+/// \brief Returns the part of the path after the final '/'.
+absl::string_view Basename(absl::string_view path);
+
 /// \brief Collapse duplicate "/"s, resolve ".." and "." path elements, remove
 /// trailing "/".
 std::string CleanPath(absl::string_view input);
@@ -145,6 +151,7 @@ StatusOr<std::string> GetCurrentDirectory();
 
 /// \brief Returns the result of resolving symbolic links.
 StatusOr<std::string> RealPath(absl::string_view path);
+
 
 }  // namespace kythe
 

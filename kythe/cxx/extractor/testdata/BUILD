@@ -5,7 +5,6 @@ load(
     "objc_bazel_extractor_test",
 )
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
-load("//tools:build_rules/shims.bzl", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -14,54 +13,33 @@ filegroup(
     srcs = ["skip_functions.sh"],
 )
 
-go_test(
+cc_test(
     name = "root_directory_test",
-    srcs = ["root_directory_test.go"],
+    srcs = ["root_directory_test.cc"],
     data = [
         "altroot/altpath/file.cc",
-        "//kythe/cxx/extractor:cxx_extractor",
     ],
     deps = [
-        "//kythe/go/platform/kzip",
-        "//kythe/proto:analysis_go_proto",
-        "//kythe/proto:filecontext_go_proto",
-        "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_golang_protobuf//ptypes:go_default_library",
-        "@com_github_golang_protobuf//ptypes/any:go_default_library",
-        "@com_github_google_go_cmp//cmp:go_default_library",
-        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+        "//kythe/cxx/common:path_utils",
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
     ],
 )
 
-shell_tool_test(
-    name = "root_directory",
-    data = [
-        "altroot/altpath/file.cc",
-        "altroot_altpath_file.UNIT",
-        "skip_functions.sh",
-        "test_common.sh",
+cc_test(
+    name = "alternate_platform_test",
+    srcs = ["alternate_platform_test.cc"],
+    data = ["arm.cc"],
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
     ],
-    scriptfile = "test_root_directory.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
-)
-
-shell_tool_test(
-    name = "alternate_platform",
-    data = [
-        "arm.UNIT",
-        "arm.cc",
-        "skip_functions.sh",
-        "test_common.sh",
-    ],
-    scriptfile = "test_alternate_platform.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
 )
 
 shell_tool_test(
@@ -96,21 +74,21 @@ shell_tool_test(
     },
 )
 
-shell_tool_test(
-    name = "extract_transcript",
+cc_test(
+    name = "extract_transcript_test",
+    srcs = ["extract_transcript_test.cc"],
     data = [
-        "skip_functions.sh",
-        "test_common.sh",
         "transcript_a.h",
         "transcript_b.h",
-        "transcript_main.UNIT",
         "transcript_main.cc",
     ],
-    scriptfile = "test_extract_transcript.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+    ],
 )
 
 cc_test(
