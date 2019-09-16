@@ -81,7 +81,7 @@ extractor_action(
     ],
     data = ["//external:vnames_config"],
     extractor = "@io_kythe//kythe/go/extractors/cmd/bazel:bazel_go_extractor",
-    mnemonics = ["GoCompile"],
+    mnemonics = ["GoCompilePkg"],
     output = "$(ACTION_ID).go.kzip",
 )
 

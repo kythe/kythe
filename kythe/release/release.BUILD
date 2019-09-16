@@ -146,7 +146,7 @@ extractor_action(
     ],
     data = [":vnames_config"],
     extractor = ":bazel_go_extractor",
-    mnemonics = ["GoCompile"],
+    mnemonics = ["GoCompilePkg"],
     output = "$(ACTION_ID).go.kzip",
 )
 
