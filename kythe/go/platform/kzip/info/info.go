@@ -56,3 +56,34 @@ func KzipInfo(f kzip.File) (*apb.KzipInfo, error) {
 
 	return kzipInfo, nil
 }
+
+// MergeKzipInfo combines the counts from multiple KzipInfos.
+func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
+	kzipInfo := &apb.KzipInfo{Corpora: make(map[string]*apb.KzipInfo_CorpusInfo)}
+	corpusInfo := func(corpus string) *apb.KzipInfo_CorpusInfo {
+		i := kzipInfo.Corpora[corpus]
+		if i == nil {
+			i = &apb.KzipInfo_CorpusInfo{
+				Files: make(map[string]int32),
+				Units: make(map[string]int32),
+			}
+			kzipInfo.Corpora[corpus] = i
+		}
+		return i
+	}
+
+	for _, i := range infos {
+		kzipInfo.TotalUnits += i.TotalUnits
+		kzipInfo.TotalFiles += i.TotalFiles
+		for corpus, cinfo := range i.Corpora {
+			mergedCorpInfo := corpusInfo(corpus)
+			for lang, fileCount := range cinfo.Files {
+				mergedCorpInfo.Files[lang] += fileCount
+			}
+			for lang, unitCount := range cinfo.Units {
+				mergedCorpInfo.Units[lang] += unitCount
+			}
+		}
+	}
+	return kzipInfo
+}
