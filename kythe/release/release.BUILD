@@ -137,6 +137,7 @@ extractor_action(
     output = "$(ACTION_ID).jvm.kzip",
 )
 
+# We only support Bazel rules_go 0.19.0 and up.
 extractor_action(
     name = "extract_kzip_go",
     args = [
