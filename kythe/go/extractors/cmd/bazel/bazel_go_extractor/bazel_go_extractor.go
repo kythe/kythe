@@ -70,7 +70,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading extra action: %v", err)
 	}
-	if m := info.GetMnemonic(); m != "GoCompile" {
+	if m := info.GetMnemonic(); m != "GoCompilePkg" {
 		log.Fatalf("Extractor is not applicable to this action: %q", m)
 	}
 
@@ -168,7 +168,7 @@ func (e *extractor) fixup(unit *apb.CompilationUnit) error {
 	})
 }
 
-// compileArgs records the build information extracted from the GoCompile
+// compileArgs records the build information extracted from the GoCompilePkg
 // action's argument list.
 type compileArgs struct {
 	original    []string          // the original args, as provided
