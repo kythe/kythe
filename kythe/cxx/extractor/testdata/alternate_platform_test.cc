@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#include <string>
-#include <vector>
-
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "gmock/gmock.h"
@@ -26,6 +23,7 @@
 
 namespace kythe {
 namespace {
+using ::kythe::proto::CompilationUnit;
 using ::testing::Optional;
 using ::testing::SizeIs;
 
@@ -35,11 +33,11 @@ v_name {
 }
 required_input {
   v_name {
-    path: "kythe/cxx/extractor/testdata/has_include.cc"
+    path: "kythe/cxx/extractor/testdata/arm.cc"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/has_include.cc"
-    digest: "e677eeace3b0ee0d5c67483c320c519d5c2add77fa67637ca78fabdb3729666e"
+    path: "./kythe/cxx/extractor/testdata/arm.cc"
+    digest: "122b0dc24be3e4d4360ceffdbc00bdd2d6c4ea0600befbad7fbeac1946a9c677"
   }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
@@ -49,43 +47,34 @@ required_input {
     }
   }
 }
-required_input {
-  v_name {
-    path: "kythe/cxx/extractor/testdata/has_include.h"
-  }
-  info {
-    path: "./kythe/cxx/extractor/testdata/has_include.h"
-    digest: "ebebe3a0bf6fb1d21593bcf52d899124ea175ac04eae16a366ed0b9220ae0d06"
-  }
-}
-argument: "/dummy/bin/clang++"
+argument: "arm-none-linux-gnueabi-g++"
 argument: "-target"
-argument: "dummy-target"
+argument: "armv4t-none-linux-gnueabi"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"
+argument: "-target"
+argument: "arm-none-linux-gnueabi"
 argument: "--driver-mode=g++"
-argument: "-I./kythe/cxx/extractor"
-argument: "./kythe/cxx/extractor/testdata/has_include.cc"
+argument: "-Ikythe/cxx/extractor"
+argument: "./kythe/cxx/extractor/testdata/arm.cc"
 argument: "-fsyntax-only"
-source_file: "./kythe/cxx/extractor/testdata/has_include.cc"
+source_file: "./kythe/cxx/extractor/testdata/arm.cc"
 working_directory: "TEST_CWD"
-entry_context: "hash0"
-)";
+entry_context: "hash0")";
 
-TEST(CxxExtractorTest, TextHasIncludeExtraction) {
-  absl::optional<std::vector<kythe::proto::CompilationUnit>> compilations =
-      ExtractCompilations({{
-          "--with_executable",
-          "/dummy/bin/clang++",
-          "-I./kythe/cxx/extractor",
-          "./kythe/cxx/extractor/testdata/has_include.cc",
-      }});
+TEST(CxxExtractorTest, TestAlternatePlatformExtraction) {
+  absl::optional<std::vector<CompilationUnit>> compilations =
+      ExtractCompilations({{"--with_executable", "arm-none-linux-gnueabi-g++",
+                            "-mcpu=cortex-a15", "-Ikythe/cxx/extractor",
+                            "./kythe/cxx/extractor/testdata/arm.cc"}});
   ASSERT_THAT(compilations, Optional(SizeIs(1)));
+
+  // Fix up things which may legitmately vary between runs.
+  // TODO(shahms): use gMock protobuf matchers when available.
   CanonicalizeHashes(&compilations->front());
-  compilations->front().clear_details();
-  compilations->front().set_argument(2, "dummy-target");
   compilations->front().set_working_directory("TEST_CWD");
+  compilations->front().clear_details();
 
   EXPECT_THAT(compilations->front(), EquivToCompilation(kExpectedCompilation));
 }

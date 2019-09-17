@@ -35,60 +35,30 @@ v_name {
 }
 required_input {
   v_name {
-    path: "kythe/cxx/extractor/testdata/indirect_has_include.cc"
+    path: "kythe/cxx/extractor/testdata/metadata.cc"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/indirect_has_include.cc"
-    digest: "6b406c26560e435ba485a141440055fc21c55492b41653003e13715292b7d76d"
+    path: "./kythe/cxx/extractor/testdata/metadata.cc"
+    digest: "72269be69625ca9015a59bf7342dce1a30e96ddda51196c9f6ae6c4cbdefb7ea"
   }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
       row {
         source_context: "hash0"
-        column {
-          offset: 35
-          linked_context: "hash1"
-        }
       }
     }
   }
 }
 required_input {
   v_name {
-    path: "kythe/cxx/extractor/testdata/has_include.h"
+    path: "kythe/cxx/extractor/testdata/metadata.cc.meta"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/./has_include.h"
-    digest: "ebebe3a0bf6fb1d21593bcf52d899124ea175ac04eae16a366ed0b9220ae0d06"
-  }
-  details {
-    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
-      row {
-        source_context: "hash2"
-      }
-    }
+    path: "./kythe/cxx/extractor/testdata/metadata.cc.meta"
+    digest: "1d6faa9e1a76d13f3ab8558a3640158b1f0a54f624a4e37ddc3ef41ed4191058"
   }
 }
-required_input {
-  v_name {
-    path: "kythe/cxx/extractor/testdata/indirect_has_include.h"
-  }
-  info {
-    path: "./kythe/cxx/extractor/testdata/indirect_has_include.h"
-    digest: "e92d9e48bed6844a99ebc827f38300af75762c2c2516b98dc560e680568a677a"
-  }
-  details {
-    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
-      row {
-        source_context: "hash1"
-        column {
-          linked_context: "hash2"
-        }
-      }
-    }
-  }
-}
-argument: "/dummy/bin/clang++"
+argument: "/dummy/bin/g++"
 argument: "-target"
 argument: "dummy-target"
 argument: "-DKYTHE_IS_RUNNING=1"
@@ -96,20 +66,20 @@ argument: "-resource-dir"
 argument: "/kythe_builtins"
 argument: "--driver-mode=g++"
 argument: "-I./kythe/cxx/extractor"
-argument: "./kythe/cxx/extractor/testdata/indirect_has_include.cc"
+argument: "./kythe/cxx/extractor/testdata/metadata.cc"
 argument: "-fsyntax-only"
-source_file: "./kythe/cxx/extractor/testdata/indirect_has_include.cc"
+source_file: "./kythe/cxx/extractor/testdata/metadata.cc"
 working_directory: "TEST_CWD"
 entry_context: "hash0"
 )";
 
-TEST(CxxExtractorTest, TextHasIncludeExtraction) {
+TEST(CxxExtractorTest, TextMetadataExtraction) {
   absl::optional<std::vector<kythe::proto::CompilationUnit>> compilations =
       ExtractCompilations({{
           "--with_executable",
-          "/dummy/bin/clang++",
+          "/dummy/bin/g++",
           "-I./kythe/cxx/extractor",
-          "./kythe/cxx/extractor/testdata/indirect_has_include.cc",
+          "./kythe/cxx/extractor/testdata/metadata.cc",
       }});
   ASSERT_THAT(compilations, Optional(SizeIs(1)));
   CanonicalizeHashes(&compilations->front());
@@ -119,6 +89,5 @@ TEST(CxxExtractorTest, TextHasIncludeExtraction) {
 
   EXPECT_THAT(compilations->front(), EquivToCompilation(kExpectedCompilation));
 }
-
 }  // namespace
 }  // namespace kythe
