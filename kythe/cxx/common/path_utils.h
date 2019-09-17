@@ -152,7 +152,6 @@ StatusOr<std::string> GetCurrentDirectory();
 /// \brief Returns the result of resolving symbolic links.
 StatusOr<std::string> RealPath(absl::string_view path);
 
-
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_COMMON_PATH_UTILS_H_
