@@ -140,37 +140,37 @@ shell_tool_test(
     },
 )
 
-shell_tool_test(
-    name = "has_include",
+cc_test(
+    name = "has_include_test",
+    srcs = ["has_include_test.cc"],
     data = [
-        "has_include_test.UNIT",
-        "has_include_test.cc",
-        "has_include_test.h",
-        "skip_functions.sh",
-        "test_common.sh",
+        "has_include.cc",
+        "has_include.h",
     ],
-    scriptfile = "test_has_include.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+    ],
 )
 
-shell_tool_test(
-    name = "indirect_has_include",
+cc_test(
+    name = "indirect_has_include_test",
+    srcs = ["indirect_has_include_test.cc"],
     data = [
-        "has_include_test.h",
-        "indirect_has_include_test.UNIT",
-        "indirect_has_include_test.cc",
-        "indirect_has_include_test.h",
-        "skip_functions.sh",
-        "test_common.sh",
+        "has_include.h",
+        "indirect_has_include.cc",
+        "indirect_has_include.h",
     ],
-    scriptfile = "test_indirect_has_include.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+    ],
 )
 
 shell_tool_test(
