@@ -41,7 +41,7 @@ constexpr absl::string_view kProtoUnitRoot = "root/pbunits/";
 constexpr absl::string_view kFileRoot = "root/files/";
 // Set all file modified times to 0 so zip file diffs only show content diffs,
 // not zip creation time diffs.
-const time_t kModTime = 0;
+constexpr time_t kModTime = 0;
 
 std::string SHA256Digest(absl::string_view content) {
   std::array<unsigned char, SHA256_DIGEST_LENGTH> buf;
@@ -55,12 +55,8 @@ Status WriteTextFile(zip_t* archive, const std::string& path,
                      absl::string_view content) {
   if (auto source =
           zip_source_buffer(archive, content.data(), content.size(), 0)) {
-    if (auto idx =
-            zip_file_add(archive, path.c_str(), source, ZIP_FL_ENC_UTF_8);
-        idx >= 0) {
-      if (idx == 0) {
-        return OkStatus();
-      }
+    auto idx = zip_file_add(archive, path.c_str(), source, ZIP_FL_ENC_UTF_8);
+    if (idx >= 0) {
       // If a file was added, set the last modified time.
       if (zip_file_set_mtime(archive, idx, kModTime, 0) == 0) {
         return OkStatus();
