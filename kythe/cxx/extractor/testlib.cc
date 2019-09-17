@@ -50,7 +50,7 @@ class EquivToCompilationImpl
       ::testing::MatchResultListener* listener) const override {
     std::string delta;
     if (!EquivalentCompilations(expected_, actual, &delta)) {
-      *listener << delta;
+      *listener << "\n" << delta;
       return false;
     }
     return true;

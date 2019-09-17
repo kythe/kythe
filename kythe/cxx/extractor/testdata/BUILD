@@ -42,36 +42,36 @@ cc_test(
     ],
 )
 
-shell_tool_test(
-    name = "main_source_file_no_env_dep",
-    data = [
-        "main_source_file_no_env_dep.cc",
-        "main_source_file_no_env_dep_with.UNIT",
-        "main_source_file_no_env_dep_without.UNIT",
-        "skip_functions.sh",
-        "test_common.sh",
-    ],
-    scriptfile = "test_main_source_file_no_env_dep.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
-)
-
-shell_tool_test(
-    name = "main_source_file_env_dep",
+cc_test(
+    name = "main_source_file_env_dep_test",
+    srcs = ["main_source_file_env_dep_test.cc"],
     data = [
         "main_source_file_env_dep.cc",
-        "main_source_file_env_dep_with.UNIT",
-        "main_source_file_env_dep_without.UNIT",
-        "skip_functions.sh",
-        "test_common.sh",
     ],
-    scriptfile = "test_main_source_file_env_dep.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+    ],
+)
+
+cc_test(
+    name = "main_source_file_no_env_dep_test",
+    srcs = ["main_source_file_no_env_dep_test.cc"],
+    data = [
+        "main_source_file_no_env_dep.cc",
+    ],
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+    ],
 )
 
 cc_test(
