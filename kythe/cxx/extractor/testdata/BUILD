@@ -173,20 +173,20 @@ cc_test(
     ],
 )
 
-shell_tool_test(
-    name = "metadata",
+cc_test(
+    name = "metadata_test",
+    srcs = ["metadata_test.cc"],
     data = [
-        "metadata.UNIT",
         "metadata.cc",
         "metadata.cc.meta",
-        "skip_functions.sh",
-        "test_common.sh",
     ],
-    scriptfile = "test_metadata.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+    ],
 )
 
 shell_tool_test(
