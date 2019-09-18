@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-#include <string>
-#include <vector>
-
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/testlib.h"
@@ -26,8 +22,6 @@
 
 namespace kythe {
 namespace {
-using ::testing::Optional;
-using ::testing::SizeIs;
 
 constexpr absl::string_view kExpectedCompilation = R"(
 v_name {
@@ -74,20 +68,18 @@ entry_context: "hash0"
 )";
 
 TEST(CxxExtractorTest, TextMetadataExtraction) {
-  absl::optional<std::vector<kythe::proto::CompilationUnit>> compilations =
-      ExtractCompilations({{
-          "--with_executable",
-          "/dummy/bin/g++",
-          "-I./kythe/cxx/extractor",
-          "./kythe/cxx/extractor/testdata/metadata.cc",
-      }});
-  ASSERT_THAT(compilations, Optional(SizeIs(1)));
-  CanonicalizeHashes(&compilations->front());
-  compilations->front().clear_details();
-  compilations->front().set_argument(2, "dummy-target");
-  compilations->front().set_working_directory("TEST_CWD");
+  kythe::proto::CompilationUnit unit = ExtractSingleCompilationOrDie({{
+      "--with_executable",
+      "/dummy/bin/g++",
+      "-I./kythe/cxx/extractor",
+      "./kythe/cxx/extractor/testdata/metadata.cc",
+  }});
+  CanonicalizeHashes(&unit);
+  unit.clear_details();
+  unit.set_argument(2, "dummy-target");
+  unit.set_working_directory("TEST_CWD");
 
-  EXPECT_THAT(compilations->front(), EquivToCompilation(kExpectedCompilation));
+  EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));
 }
 }  // namespace
 }  // namespace kythe

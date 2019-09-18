@@ -16,7 +16,6 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/testlib.h"
@@ -24,10 +23,7 @@
 
 namespace kythe {
 namespace {
-
 using ::kythe::proto::CompilationUnit;
-using ::testing::Optional;
-using ::testing::SizeIs;
 
 constexpr absl::string_view kExpectedCompilation = R"(
 v_name {
@@ -66,19 +62,17 @@ entry_context: "hash0"
 )";
 
 TEST(CxxExtractorTest, TestSourceFileEnvDepWithoutMacro) {
-  absl::optional<std::vector<CompilationUnit>> compilations =
-      ExtractCompilations(
-          {{"--with_executable", "/dummy/bin/g++",
-            "-I./kythe/cxx/extractor/testdata",
-            "./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc"}});
-  ASSERT_THAT(compilations, Optional(SizeIs(1)));
+  CompilationUnit unit = ExtractSingleCompilationOrDie(
+      {{"--with_executable", "/dummy/bin/g++",
+        "-I./kythe/cxx/extractor/testdata",
+        "./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc"}});
 
   // Fix up things which may legitmately vary between runs.
   // TODO(shahms): use gMock protobuf matchers when available.
-  CanonicalizeHashes(&compilations->front());
-  compilations->front().set_argument(2, "dummy-target");
-  compilations->front().set_working_directory("TEST_CWD");
-  compilations->front().clear_details();
+  CanonicalizeHashes(&unit);
+  unit.set_argument(2, "dummy-target");
+  unit.set_working_directory("TEST_CWD");
+  unit.clear_details();
 
   CompilationUnit expected =
       ParseTextCompilationUnitOrDie(kExpectedCompilation);
@@ -86,25 +80,23 @@ TEST(CxxExtractorTest, TestSourceFileEnvDepWithoutMacro) {
   expected.mutable_argument()->erase(
       absl::c_find(*expected.mutable_argument(), "-DMACRO"));
 
-  EXPECT_THAT(compilations->front(), EquivToCompilation(expected));
+  EXPECT_THAT(unit, EquivToCompilation(expected));
 }
 
 TEST(CxxExtractorTest, TestSourceFileEnvDepWithMacro) {
-  absl::optional<std::vector<CompilationUnit>> compilations =
-      ExtractCompilations(
-          {{"--with_executable", "/dummy/bin/g++",
-            "-I./kythe/cxx/extractor/testdata", "-DMACRO",
-            "./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc"}});
-  ASSERT_THAT(compilations, Optional(SizeIs(1)));
+  CompilationUnit unit = ExtractSingleCompilationOrDie(
+      {{"--with_executable", "/dummy/bin/g++",
+        "-I./kythe/cxx/extractor/testdata", "-DMACRO",
+        "./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc"}});
 
   // Fix up things which may legitmately vary between runs.
   // TODO(shahms): use gMock protobuf matchers when available.
-  CanonicalizeHashes(&compilations->front());
-  compilations->front().set_argument(2, "dummy-target");
-  compilations->front().set_working_directory("TEST_CWD");
-  compilations->front().clear_details();
+  CanonicalizeHashes(&unit);
+  unit.set_argument(2, "dummy-target");
+  unit.set_working_directory("TEST_CWD");
+  unit.clear_details();
 
-  EXPECT_THAT(compilations->front(), EquivToCompilation(kExpectedCompilation));
+  EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));
 }
 
 }  // namespace
