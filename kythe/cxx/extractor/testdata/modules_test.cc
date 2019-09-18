@@ -22,8 +22,6 @@
 
 namespace kythe {
 namespace {
-using ::testing::Optional;
-using ::testing::SizeIs;
 
 constexpr absl::string_view kExpectedCompilation = R"(
 v_name {
