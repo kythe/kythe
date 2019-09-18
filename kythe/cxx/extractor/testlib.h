@@ -45,7 +45,8 @@ absl::optional<std::vector<kythe::proto::CompilationUnit>> ExtractCompilations(
 
 /// \brief Runs the C++ extractor using the provided options and returns the
 /// resulting CompilationUnit or exits.
-kythe::proto::CompilationUnit ExtractSingleCompilationOrDie(ExtractorOptions options);
+kythe::proto::CompilationUnit ExtractSingleCompilationOrDie(
+    ExtractorOptions options);
 
 /// \brief Resolves the provided workspace-relative path to find the absolute
 /// runfiles path of the given file.
