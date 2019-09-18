@@ -15,7 +15,6 @@
  */
 
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/testlib.h"
@@ -24,8 +23,6 @@
 namespace kythe {
 namespace {
 using ::kythe::proto::CompilationUnit;
-using ::testing::Optional;
-using ::testing::SizeIs;
 
 constexpr absl::string_view kExpectedCompilation = R"(
 v_name {
@@ -64,19 +61,17 @@ working_directory: "TEST_CWD"
 entry_context: "hash0")";
 
 TEST(CxxExtractorTest, TestAlternatePlatformExtraction) {
-  absl::optional<std::vector<CompilationUnit>> compilations =
-      ExtractCompilations({{"--with_executable", "arm-none-linux-gnueabi-g++",
-                            "-mcpu=cortex-a15", "-Ikythe/cxx/extractor",
-                            "./kythe/cxx/extractor/testdata/arm.cc"}});
-  ASSERT_THAT(compilations, Optional(SizeIs(1)));
+  CompilationUnit unit = ExtractSingleCompilationOrDie(
+      {{"--with_executable", "arm-none-linux-gnueabi-g++", "-mcpu=cortex-a15",
+        "-Ikythe/cxx/extractor", "./kythe/cxx/extractor/testdata/arm.cc"}});
 
   // Fix up things which may legitmately vary between runs.
   // TODO(shahms): use gMock protobuf matchers when available.
-  CanonicalizeHashes(&compilations->front());
-  compilations->front().set_working_directory("TEST_CWD");
-  compilations->front().clear_details();
+  CanonicalizeHashes(&unit);
+  unit.set_working_directory("TEST_CWD");
+  unit.clear_details();
 
-  EXPECT_THAT(compilations->front(), EquivToCompilation(kExpectedCompilation));
+  EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));
 }
 
 }  // namespace

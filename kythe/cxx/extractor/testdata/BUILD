@@ -38,7 +38,6 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest_main",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 
@@ -54,7 +53,6 @@ cc_test(
         "//third_party:gtest_main",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 
@@ -70,7 +68,6 @@ cc_test(
         "//third_party:gtest_main",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 
@@ -87,7 +84,6 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest_main",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 
@@ -152,7 +148,6 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest_main",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 
@@ -169,7 +164,6 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest_main",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 
@@ -185,59 +179,57 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest_main",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
     ],
 )
 
-shell_tool_test(
-    name = "modules",
+cc_test(
+    name = "modules_test",
+    srcs = ["modules_test.cc"],
     data = [
         "modfoo.h",
         "modfoo.modulemap",
-        "modules.UNIT",
         "modules.cc",
-        "skip_functions.sh",
-        "test_common.sh",
     ],
-    scriptfile = "test_modules.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+    ],
 )
 
-shell_tool_test(
-    name = "build_config",
+cc_test(
+    name = "build_config_test",
+    srcs = ["build_config_test.cc"],
     data = [
-        "build_config.UNIT",
         "build_config.cc",
-        "skip_functions.sh",
-        "test_common.sh",
     ],
-    scriptfile = "test_build_config.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:buildinfo_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
 )
 
-shell_tool_test(
-    name = "installed_dir",
+cc_test(
+    name = "installed_dir_test",
+    srcs = ["installed_dir_test.cc"],
     data = [
         # Clang resolves the include directory relative to `bin`,
         # so the former needs to exist.
         "bin/clang",
         "include/c++/v1/dummy",
-        "installed_dir.UNIT",
         "installed_dir.cc",
-        "skip_functions.sh",
-        "test_common.sh",
     ],
-    scriptfile = "test_installed_dir.sh",
-    tools = {
-        "EXTRACTOR": "//kythe/cxx/extractor:cxx_extractor",
-        "KINDEX_TOOL": "//kythe/cxx/tools:kindex_tool",
-    },
+    deps = [
+        "//kythe/cxx/extractor:testlib",
+        "//kythe/proto:analysis_cc_proto",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/strings",
+    ],
 )
 
 cc_extractor_test(

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <string>
+
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "gmock/gmock.h"
@@ -24,12 +26,11 @@
 
 namespace kythe {
 namespace {
-using ::kythe::proto::CompilationUnit;
-using ::testing::Optional;
 using ::testing::SizeIs;
+using ::kythe::proto::CompilationUnit;
 
 constexpr absl::string_view kFilePath =
-    "io_kythe/kythe/cxx/extractor/testdata/altroot/altpath/file.cc";
+    "kythe/cxx/extractor/testdata/altroot/altpath/file.cc";
 
 constexpr absl::string_view kExpectedCompilation = R"(
 v_name {
@@ -81,19 +82,17 @@ TEST(RootDirectoryTest, AlternateRootDirectoryExtracts) {
       {"KYTHE_ROOT_DIRECTORY", root_directory},
   };
 
-  absl::optional<std::vector<CompilationUnit>> compilations =
-      ExtractCompilations(std::move(extraction));
-  ASSERT_THAT(compilations, Optional(SizeIs(1)));
-  ASSERT_THAT(compilations->front().argument(), SizeIs(9));
+  CompilationUnit unit = ExtractSingleCompilationOrDie(std::move(extraction));
+  ASSERT_THAT(unit.argument(), SizeIs(9));
 
   // Fix up things which may legitmately vary between runs.
   // TODO(shahms): use gMock protobuf matchers when available.
-  CanonicalizeHashes(&compilations->front());
-  compilations->front().set_argument(2, "dummy-target");
-  compilations->front().set_working_directory("TEST_CWD");
-  compilations->front().clear_details();
+  CanonicalizeHashes(&unit);
+  unit.set_argument(2, "dummy-target");
+  unit.set_working_directory("TEST_CWD");
+  unit.clear_details();
 
-  EXPECT_THAT(compilations->front(), EquivToCompilation(kExpectedCompilation));
+  EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));
 }
 
 }  // namespace

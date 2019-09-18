@@ -22,6 +22,8 @@
 
 namespace kythe {
 namespace {
+using ::testing::Optional;
+using ::testing::SizeIs;
 
 constexpr absl::string_view kExpectedCompilation = R"(
 v_name {
@@ -29,85 +31,68 @@ v_name {
 }
 required_input {
   v_name {
-    path: "kythe/cxx/extractor/testdata/indirect_has_include.cc"
+    path: "kythe/cxx/extractor/testdata/modules.cc"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/indirect_has_include.cc"
-    digest: "6b406c26560e435ba485a141440055fc21c55492b41653003e13715292b7d76d"
+    path: "./kythe/cxx/extractor/testdata/modules.cc"
+    digest: "65f89e233c735e33c51ab2445b0586b102d03430d3ed177e021a33b1fffeac9f"
   }
   details {
     [type.googleapis.com/kythe.proto.ContextDependentVersion] {
       row {
         source_context: "hash0"
-        column {
-          offset: 35
-          linked_context: "hash1"
-        }
       }
     }
   }
 }
 required_input {
   v_name {
-    path: "kythe/cxx/extractor/testdata/has_include.h"
+    path: "kythe/cxx/extractor/testdata/modfoo.h"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/./has_include.h"
-    digest: "ebebe3a0bf6fb1d21593bcf52d899124ea175ac04eae16a366ed0b9220ae0d06"
-  }
-  details {
-    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
-      row {
-        source_context: "hash2"
-      }
-    }
+    path: "./kythe/cxx/extractor/testdata/modfoo.h"
+    digest: "cd8c82152d321ecfa60a7ab3ccec78ad7168abf22dd93150ccee7fea420ad432"
   }
 }
 required_input {
   v_name {
-    path: "kythe/cxx/extractor/testdata/indirect_has_include.h"
+    path: "kythe/cxx/extractor/testdata/modfoo.modulemap"
   }
   info {
-    path: "./kythe/cxx/extractor/testdata/indirect_has_include.h"
-    digest: "e92d9e48bed6844a99ebc827f38300af75762c2c2516b98dc560e680568a677a"
-  }
-  details {
-    [type.googleapis.com/kythe.proto.ContextDependentVersion] {
-      row {
-        source_context: "hash1"
-        column {
-          linked_context: "hash2"
-        }
-      }
-    }
+    path: "kythe/cxx/extractor/testdata/modfoo.modulemap"
+    digest: "94416d419ecab4bce80084ef89587c4ca31a3cabad12498bd98aa213b1dd5189"
   }
 }
-argument: "/dummy/bin/clang++"
+argument: "/dummy/bin/g++"
 argument: "-target"
 argument: "dummy-target"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"
 argument: "--driver-mode=g++"
+argument: "-fmodules"
+argument: "-fmodule-map-file=kythe/cxx/extractor/testdata/modfoo.modulemap"
 argument: "-I./kythe/cxx/extractor"
-argument: "./kythe/cxx/extractor/testdata/indirect_has_include.cc"
+argument: "./kythe/cxx/extractor/testdata/modules.cc"
 argument: "-fsyntax-only"
-source_file: "./kythe/cxx/extractor/testdata/indirect_has_include.cc"
+source_file: "./kythe/cxx/extractor/testdata/modules.cc"
 working_directory: "TEST_CWD"
 entry_context: "hash0"
 )";
 
-TEST(CxxExtractorTest, TextHasIncludeExtraction) {
+TEST(CxxExtractorTest, TestModulesExtraction) {
   kythe::proto::CompilationUnit unit = ExtractSingleCompilationOrDie({{
       "--with_executable",
-      "/dummy/bin/clang++",
+      "/dummy/bin/g++",
+      "-fmodules",
+      "-fmodule-map-file=kythe/cxx/extractor/testdata/modfoo.modulemap",
       "-I./kythe/cxx/extractor",
-      "./kythe/cxx/extractor/testdata/indirect_has_include.cc",
+      "./kythe/cxx/extractor/testdata/modules.cc",
   }});
   CanonicalizeHashes(&unit);
-  unit.clear_details();
   unit.set_argument(2, "dummy-target");
   unit.set_working_directory("TEST_CWD");
+  unit.clear_details();
 
   EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));
 }

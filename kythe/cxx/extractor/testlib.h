@@ -43,6 +43,10 @@ struct ExtractorOptions {
 absl::optional<std::vector<kythe::proto::CompilationUnit>> ExtractCompilations(
     ExtractorOptions options);
 
+/// \brief Runs the C++ extractor using the provided options and returns the
+/// resulting CompilationUnit or exits.
+kythe::proto::CompilationUnit ExtractSingleCompilationOrDie(ExtractorOptions options);
+
 /// \brief Resolves the provided workspace-relative path to find the absolute
 /// runfiles path of the given file.
 absl::optional<std::string> ResolveRunfiles(absl::string_view path);
@@ -66,5 +70,6 @@ bool EquivalentCompilations(const kythe::proto::CompilationUnit& lhs,
 /// \brief Parses a TextFormat CompilationUnit protocol buffer or aborts.
 kythe::proto::CompilationUnit ParseTextCompilationUnitOrDie(
     absl::string_view text);
+
 }  // namespace kythe
 #endif  // KYTHE_CXX_EXTRACTOR_TESTLIB_H_

@@ -47,8 +47,11 @@ namespace kpb = ::kythe::proto;
 using HashMap = ::absl::flat_hash_map<gpb::string, std::size_t>;
 using ::bazel::tools::cpp::runfiles::Runfiles;
 
+// Path prefix joined to runfiles to form the workspace-relative path.
+constexpr absl::string_view kWorkspaceRoot = "io_kythe";
+
 constexpr absl::string_view kExtractorPath =
-    "io_kythe/kythe/cxx/extractor/cxx_extractor";
+    "kythe/cxx/extractor/cxx_extractor";
 
 void CanonicalizeHash(HashMap* hashes, gpb::string* hash) {
   auto inserted = hashes->insert({*hash, hashes->size()});
@@ -285,11 +288,22 @@ absl::optional<std::string> ResolveRunfiles(absl::string_view path) {
     LOG(ERROR) << error;
     return absl::nullopt;
   }
-  std::string resolved = runfiles->Rlocation(std::string(path));
+  std::string resolved = runfiles->Rlocation(JoinPath(kWorkspaceRoot, path));
   if (resolved.empty()) {
     return absl::nullopt;
   }
   return resolved;
+}
+
+kpb::CompilationUnit ExtractSingleCompilationOrDie(ExtractorOptions options) {
+  if (absl::optional<std::vector<kpb::CompilationUnit>> result =
+          ExtractCompilations(std::move(options))) {
+    CHECK(result->size() == 1)
+        << "unexpected number of extracted compilations: " << result->size();
+    return std::move(result->front());
+  } else {
+    LOG(FATAL) << "Unable to extract compilation";
+  }
 }
 
 bool EquivalentCompilations(const kpb::CompilationUnit& lhs,
