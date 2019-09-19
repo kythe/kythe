@@ -10,6 +10,7 @@ go_library(
     deps = [
         "//kythe/go/platform/kzip",
         "//kythe/proto:analysis_go_proto",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
     ],
 )
 

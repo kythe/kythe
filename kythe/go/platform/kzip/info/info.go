@@ -19,6 +19,9 @@ package info // import "kythe.io/kythe/go/platform/kzip/info"
 
 import (
 	"fmt"
+	"log"
+
+	"bitbucket.org/creachadair/stringset"
 
 	"kythe.io/kythe/go/platform/kzip"
 
@@ -43,10 +46,30 @@ func KzipInfo(f kzip.File) (*apb.KzipInfo, error) {
 
 	err := kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
 		kzipInfo.TotalUnits++
-		corpusInfo(u.Proto.GetVName().GetCorpus()).Units[u.Proto.GetVName().GetLanguage()]++
+
+		// The unit VName generally does not specify a corpus, so we have to
+		// determine corpus from the source files.
+		var srcCorpora stringset.Set
+		srcs := stringset.New(u.Proto.SourceFile...)
+
 		for _, ri := range u.Proto.RequiredInput {
 			kzipInfo.TotalFiles++
-			corpusInfo(ri.GetVName().GetCorpus()).Files[ri.GetVName().GetLanguage()]++
+			// File VNames don't generally specify a language, so we determine
+			// it from the unit VName.
+			corpusInfo(ri.GetVName().GetCorpus()).Files[u.Proto.GetVName().GetLanguage()]++
+			if srcs.Contains(ri.Info.Path) {
+				srcCorpora.Add(ri.GetVName().GetCorpus())
+			}
+		}
+		if len(srcCorpora) == 1 {
+			unitCorpus := srcCorpora.Elements()[0]
+			corpusInfo(unitCorpus).Units[u.Proto.GetVName().GetLanguage()]++
+		} else if u.Proto.GetVName().GetCorpus() != "" {
+			unitCorpus := u.Proto.GetVName().GetCorpus()
+			corpusInfo(unitCorpus).Units[u.Proto.GetVName().GetLanguage()]++
+		} else {
+			// This is a warning for now, but may become an error.
+			log.Printf("Unable to determine unit corpus. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), srcCorpora, u.Proto.SourceFile)
 		}
 		return nil
 	})
