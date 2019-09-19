@@ -339,6 +339,9 @@ DEF_TRAVERSE_TYPEPAIR(InjectedClassNameType, {});
 DEF_TRAVERSE_TYPEPAIR(ParenType, {
   return getDerived().TraverseTypePair(TL.getInnerLoc(), T->getInnerType());
 });
+DEF_TRAVERSE_TYPEPAIR(MacroQualifiedType, {
+  return getDerived().TraverseTypePair(TL.getInnerLoc(), T->getUnderlyingType());
+});
 DEF_TRAVERSE_TYPEPAIR(AttributedType, {
   return getDerived().TraverseTypePair(TL.getModifiedLoc(),
                                        T->getModifiedType());

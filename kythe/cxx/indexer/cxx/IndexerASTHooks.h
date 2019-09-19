@@ -87,6 +87,7 @@ class PruneCheck;
 /// writes it to a `GraphObserver`.
 class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   using Base = RecursiveTypeVisitor;
+
  public:
   IndexerASTVisitor(clang::ASTContext& C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, Verbosity V,
@@ -135,12 +136,14 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitSubstTemplateTypeParmTypeLoc(
       clang::SubstTemplateTypeParmTypeLoc TL);
 
-  template <typename T>
-  bool VisitTemplateSpecializationTypeLocHelper(T TL);
+  template <typename TypeLoc, typename Type>
+  bool VisitTemplateSpecializationTypePairHelper(TypeLoc Written,
+                                                 const Type* Resolved);
   bool VisitTemplateSpecializationTypeLoc(
       clang::TemplateSpecializationTypeLoc TL);
-  bool VisitDeducedTemplateSpecializationTypeLoc(
-      clang::DeducedTemplateSpecializationTypeLoc TL);
+  bool VisitDeducedTemplateSpecializationTypePair(
+      clang::DeducedTemplateSpecializationTypeLoc TL,
+      const clang::DeducedTemplateSpecializationType* T);
 
   bool VisitAutoTypePair(clang::AutoTypeLoc TL, const clang::AutoType* T);
 
@@ -161,7 +164,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   // Emit edges for an anchor pointing to the indicated type.
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc TL);
-  NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc Written, const clang::Type* Resolved);
+  NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc Written,
+                                        const clang::Type* Resolved);
 
   bool TraverseDeclarationNameInfo(clang::DeclarationNameInfo NameInfo);
 

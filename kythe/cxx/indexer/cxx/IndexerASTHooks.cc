@@ -1752,15 +1752,16 @@ bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
   return true;
 }
 
-template <typename T>
-bool IndexerASTVisitor::VisitTemplateSpecializationTypeLocHelper(T TL) {
-  auto NameLocation = TL.getTemplateNameLoc();
+template <typename TypeLoc, typename Type>
+bool IndexerASTVisitor::VisitTemplateSpecializationTypePairHelper(
+    TypeLoc Written, const Type* Resolved) {
+  auto NameLocation = Written.getTemplateNameLoc();
   if (NameLocation.isFileID()) {
     if (auto RCC = ExpandedRangeInCurrentContext(NameLocation)) {
       if (auto TemplateName =
-              BuildNodeIdForTemplateName(TL.getTypePtr()->getTemplateName())) {
+              BuildNodeIdForTemplateName(Resolved->getTemplateName())) {
         NodeId DeclNode = [&] {
-          if (const auto* Decl = TL.getTypePtr()->getAsCXXRecordDecl()) {
+          if (const auto* Decl = Resolved->getAsCXXRecordDecl()) {
             return BuildNodeIdForDecl(Decl);
           }
           return TemplateName.value();
@@ -1771,18 +1772,19 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypeLocHelper(T TL) {
       }
     }
   }
-  RecordTypeLocSpellingLocation(TL);
+  RecordTypeLocSpellingLocation(Written, Resolved);
   return true;
 }
 
 bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
     clang::TemplateSpecializationTypeLoc TL) {
-  return VisitTemplateSpecializationTypeLocHelper(TL);
+  return VisitTemplateSpecializationTypePairHelper(TL, TL.getTypePtr());
 }
 
-bool IndexerASTVisitor::VisitDeducedTemplateSpecializationTypeLoc(
-    clang::DeducedTemplateSpecializationTypeLoc TL) {
-  return VisitTemplateSpecializationTypeLocHelper(TL);
+bool IndexerASTVisitor::VisitDeducedTemplateSpecializationTypePair(
+    clang::DeducedTemplateSpecializationTypeLoc TL,
+    const clang::DeducedTemplateSpecializationType* T) {
+  return VisitTemplateSpecializationTypePairHelper(TL, T);
 }
 
 bool IndexerASTVisitor::VisitAutoTypePair(clang::AutoTypeLoc TL,
