@@ -2,30 +2,16 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
-sh_test(
-    name = "test_kindex_tool",
-    size = "small",
-    srcs = [
-        "test_kindex_tool.sh",
-    ],
-    data = [
-        "java.kindex_UNIT",
-        "java.kindex_cf28b786fa21d0c45156e8011ac809afc454703fa03d767a5aeeed382f902795",
-        "//kythe/cxx/tools:kindex_tool",
-    ],
-)
-
 shell_tool_test(
-    name = "test_claim_tool_kindex",
+    name = "test_claim_tool_kzip",
     data = [
         "claim_test.expected",
-        "claim_test_1.kindex_UNIT",
-        "claim_test_2.kindex_UNIT",
+        "claim_test_1.kzip_UNIT.json",
+        "claim_test_2.kzip_UNIT.json",
     ],
-    scriptfile = "test_claim_tool_kindex.sh",
+    scriptfile = "test_claim_tool_kzip.sh",
     tools = {
         "CLAIM_TOOL_BIN": "//kythe/cxx/tools:static_claim",
-        "KINDEX_TOOL_BIN": "//kythe/cxx/tools:kindex_tool",
     },
 )
 
