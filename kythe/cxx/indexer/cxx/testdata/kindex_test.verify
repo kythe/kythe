@@ -1,6 +1,0 @@
-//- MainAnchor defines/binding MainClass
-//- MainClass.node/kind record
-//- HeaderAnchor defines/binding HeaderClass
-//- HeaderClass.node/kind record
-//- CcFile=vname("","fake_corpus",SameRoot,"/fake/test.cc","c++").node/kind file
-//- HFile=vname("","fake_corpus",SameRoot,"/fake/test.h","c++").node/kind file
