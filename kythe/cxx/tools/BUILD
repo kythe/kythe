@@ -14,7 +14,6 @@ cc_binary(
         "-Wno-implicit-fallthrough",
     ],
     visibility = [
-        "//kythe/cxx/indexer/cxx/testdata:__pkg__",
         "//kythe/cxx/tools/testdata:__pkg__",
     ],
     deps = [
