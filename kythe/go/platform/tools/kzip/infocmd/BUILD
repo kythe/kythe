@@ -8,6 +8,7 @@ go_library(
         "infocmd.go",
     ],
     deps = [
+        "//kythe/go/platform/kzip",
         "//kythe/go/platform/kzip/info",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/cmdutil",

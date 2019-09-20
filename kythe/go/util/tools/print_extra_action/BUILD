@@ -7,7 +7,7 @@ action_listener(
     extra_actions = [":printer"],
     mnemonics = [
         "CppCompile",
-        "GoCompile",
+        "GoCompilePkg",
         "JavaIjar",
         "Javac",
     ],

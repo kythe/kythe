@@ -7,32 +7,6 @@ load(
     "cc_extractor_test",
 )
 
-sh_test(
-    name = "kindex",
-    size = "small",
-    srcs = [
-        "test_kindex.sh",
-    ],
-    data = [
-        "kindex_repo_test.header",
-        "kindex_repo_test.header2",
-        "kindex_repo_test.main",
-        "kindex_repo_test.unit",
-        "kindex_repo_test.verify",
-        "kindex_test.header",
-        "kindex_test.main",
-        "kindex_test.unit",
-        "kindex_test.verify",
-        "windows_test.header",
-        "windows_test.main",
-        "windows_test.unit",
-        "windows_test.verify",
-        "//kythe/cxx/indexer/cxx:indexer",
-        "//kythe/cxx/tools:kindex_tool",
-        "//kythe/cxx/verifier",
-    ],
-)
-
 cc_indexer_test(
     name = "static_variable_test",
     srcs = ["basic/static_variable.cc"],

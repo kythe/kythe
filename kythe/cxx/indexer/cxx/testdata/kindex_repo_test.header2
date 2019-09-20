@@ -1,5 +1,0 @@
-content: "class Header2;\n"
-info {
-  path: "../../x/y/z.h"
-  digest: "uncheckedh"
-}

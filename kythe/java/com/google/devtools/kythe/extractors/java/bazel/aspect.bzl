@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//tools/build_rules/verifier_test:verifier_test.bzl", "extract")
-
 _mnemonic = "Javac"
 
 def _extract_java(target, ctx):
