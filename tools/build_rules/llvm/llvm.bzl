@@ -113,9 +113,14 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
             visibility = ["//visibility:private"],
         )
         depends.append(":" + name + "_defs")
+    subdirs = {
+        paths.dirname(s): True
+        for s in srcs
+        if paths.dirname(s)
+    }.keys()
     sources = (
         [_join_path(root, s) for s in srcs] +
-        _llvm_srcglob(root, additional_header_dirs) +
+        _llvm_srcglob(root, additional_header_dirs + subdirs) +
         _current(ctx).table_outs
     )
     includes = [root]
@@ -277,9 +282,10 @@ def _add_public_tablegen_target(ctx, name):
         include = paths.dirname(out)
         if include not in includes and "include" in include:
             includes.append(include)
+    textual_hdrs = ctx._config.target_defaults.get(name, {}).get("textual_hdrs", [])
     native.cc_library(
         name = name,
-        textual_hdrs = _current(ctx).table_outs + ctx._config.target_defaults.get(name, {}).get("textual_hdrs", []),
+        textual_hdrs = table_outs + textual_hdrs,
         includes = includes,
     )
 

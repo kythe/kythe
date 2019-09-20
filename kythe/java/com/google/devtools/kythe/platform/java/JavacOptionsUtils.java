@@ -34,7 +34,11 @@ import com.sun.tools.javac.api.JavacTool;
 import com.sun.tools.javac.file.JavacFileManager;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.Context;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -42,8 +46,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 import javax.tools.OptionChecker;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.StandardLocation;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * A utility class for dealing with javac command-line options.
@@ -52,18 +58,54 @@ import javax.tools.OptionChecker;
  */
 public class JavacOptionsUtils {
 
+  private static final Path JAVA_HOME = Paths.get(StandardSystemProperty.JAVA_HOME.value());
   private static final ImmutableList<String> JRE_JARS =
-      ImmutableList.of(
-          "lib/rt.jar", "lib/resources.jar", "lib/jsse.jar", "lib/jce.jar", "lib/charsets.jar");
+      ImmutableList.of("rt.jar", "resources.jar", "jsse.jar", "jce.jar", "charsets.jar");
   private static final ImmutableList<String> JRE_PATHS;
 
   static {
-    ImmutableList.Builder<String> paths = ImmutableList.builder();
-    Path javaHome = Paths.get(StandardSystemProperty.JAVA_HOME.value());
-    for (String jreJar : JRE_JARS) {
-      paths.add(javaHome.resolve(jreJar).toString());
+    try {
+      ImmutableList<String> paths = getBootClassPath8();
+      if (paths.isEmpty()) {
+        paths = getBootclassPath();
+      }
+      JRE_PATHS = paths;
+    } catch (IOException ioe) {
+      throw new IllegalStateException(ioe);
     }
-    JRE_PATHS = paths.build();
+  }
+
+  /** Returns the JRE 8-style bootclasspath. */
+  private static ImmutableList<String> getBootClassPath8() throws IOException {
+    Path jreLib = JAVA_HOME.resolve("lib");
+    ImmutableList.Builder<String> jars = ImmutableList.builder();
+    Path extDir = jreLib.resolve("ext");
+    if (Files.exists(extDir)) {
+      try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(extDir, "*.jar")) {
+        for (Path extJar : dirStream) {
+          jars.add(extJar.toString());
+        }
+      }
+    }
+    for (String jar : JRE_JARS) {
+      Path path = jreLib.resolve(jar);
+      if (Files.exists(path)) {
+        jars.add(path.toString());
+      }
+    }
+    return jars.build();
+  }
+
+  /** Returns the JRE 9-style bootclasspath. */
+  private static ImmutableList<String> getBootclassPath() throws IOException {
+    StandardJavaFileManager fileManager =
+        JavacTool.create().getStandardFileManager(null, null, null);
+
+    ImmutableList.Builder<String> paths = ImmutableList.builder();
+    for (File file : fileManager.getLocation(StandardLocation.PLATFORM_CLASS_PATH)) {
+      paths.add(file.toString());
+    }
+    return paths.build();
   }
 
   private static final Splitter PATH_SPLITTER = Splitter.on(':').trimResults().omitEmptyStrings();

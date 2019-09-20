@@ -1,10 +1,6 @@
 # Remote Build Execution requires a strong hash function, such as SHA256.
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 
-# Compatibility options
-build --incompatible_require_ctx_in_configure_features # remove in 0.26
-build --incompatible_string_join_requires_strings      # remove in 0.27
-
 # TODO(#3816): fix build with this enabled
 build --incompatible_list_based_execution_strategy_selection=false
 
@@ -16,6 +12,8 @@ build --auto_cpu_environment_group=//buildenv:cpu
 
 # Ensure clang is used, by default, over any other C++ installation (e.g. gcc).
 build --client_env=CC=clang
+# We require C++14, but bazel defaults to C++0x (pre-C++11).
+build --cxxopt=-std=c++14 --host_cxxopt=-std=c++14 --client_env=BAZEL_CXXOPTS=-std=c++14
 
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env
@@ -30,12 +28,10 @@ build --host_javabase=@bazel_tools//tools/jdk:remote_jdk11
 build:remote --remote_instance_name=projects/kythe-repo/instances/default_instance --project_id=kythe-repo
 
 build:remote --auth_enabled=true
-build:remote --tls_enabled=true
-
 build:remote --jobs=50
 build:remote --remote_timeout=3600
-build:remote --remote_cache=remotebuildexecution.googleapis.com
-build:remote --remote_executor=remotebuildexecution.googleapis.com
+build:remote --remote_cache=grpcs://remotebuildexecution.googleapis.com
+build:remote --remote_executor=grpcs://remotebuildexecution.googleapis.com
 
 # TODO(schroederc): add buildeventservice
 # build:remote --bes_backend="buildeventservice.googleapis.com"

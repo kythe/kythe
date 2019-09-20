@@ -1,3 +1,4 @@
+load("@rules_java//java:defs.bzl", "java_library", "java_test")
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 shell_tool_test(
@@ -7,7 +8,6 @@ shell_tool_test(
     tools = {
         "entrystream": "//kythe/go/platform/tools/entrystream",
         "indexer": "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
-        "indexpack": "//kythe/go/platform/tools/indexpack",
     },
 )
 

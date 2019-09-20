@@ -67,7 +67,7 @@ const clang::FileEntry* LookupFileForIncludePragma(
   } else {
     result_filename->append(filename.begin(), filename.end());
   }
-  const clang::FileEntry* file = preprocessor->LookupFile(
+  llvm::Optional<clang::FileEntryRef> file = preprocessor->LookupFile(
       filename_token.getLocation(),
       preprocessor->getLangOpts().MSVCCompat ? normalized_path.c_str()
                                              : filename,
@@ -75,10 +75,11 @@ const clang::FileEntry* LookupFileForIncludePragma(
       search_path, relative_path, nullptr /* SuggestedModule */,
       nullptr /* IsMapped */, nullptr /* IsFrameworkFound */,
       false /* SkipCache */);
-  if (file == nullptr) {
+  if (!file) {
     absl::FPrintF(stderr, "Missing required file %s.\n", filename.str());
+    return nullptr;
   }
-  return file;
+  return &file->getFileEntry();
 }
 
 }  // namespace cxx_extractor

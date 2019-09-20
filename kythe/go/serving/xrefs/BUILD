@@ -13,6 +13,7 @@ go_library(
         "//kythe/go/serving/xrefs/columnar",
         "//kythe/go/storage/keyvalue",
         "//kythe/go/storage/table",
+        "//kythe/go/util/flagutil",
         "//kythe/go/util/keys",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+#include "absl/flags/usage.h"
+#include "absl/memory/memory.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
-#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/net_client.h"
 #include "kythe/cxx/tools/fyi/fyi.h"
@@ -35,12 +36,11 @@ static cl::opt<std::string> xrefs("xrefs",
 int main(int argc, const char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  gflags::SetVersionString("0.1");
-  gflags::SetUsageMessage("fyi: repair a C++ file with missing includes");
+  absl::SetProgramUsageMessage("fyi: repair a C++ file with missing includes");
   clang::tooling::CommonOptionsParser options(argc, argv, fyi_options);
   kythe::JsonClient::InitNetwork();
-  auto xrefs_db = llvm::make_unique<kythe::XrefsJsonClient>(
-      llvm::make_unique<kythe::JsonClient>(), xrefs);
+  auto xrefs_db = absl::make_unique<kythe::XrefsJsonClient>(
+      absl::make_unique<kythe::JsonClient>(), xrefs);
   clang::tooling::ClangTool tool(options.getCompilations(),
                                  options.getSourcePathList());
   kythe::fyi::ActionFactory factory(std::move(xrefs_db), 5);

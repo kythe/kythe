@@ -42,6 +42,7 @@ func TestParseOptions(t *testing.T) {
 		"uncompressed",
 		"zstd",
 		"zstd:5",
+		"snappy",
 		"brotli,transpose",
 		"transpose,uncompressed",
 		"brotli:5,transpose",
@@ -88,6 +89,7 @@ var testedOptions = []string{
 	"uncompressed",
 	"brotli",
 	"zstd",
+	"snappy",
 
 	"transpose",
 	"uncompressed,transpose",
@@ -228,6 +230,39 @@ func TestEmptyRecord(t *testing.T) {
 
 	if rec, err := rd.Next(); err != io.EOF {
 		t.Fatalf("Unexpected Next record/error: %v %v", rec, err)
+	}
+}
+
+func TestWriterSeek(t *testing.T) {
+	const N = 1e3
+
+	buf := bytes.NewBuffer(nil)
+	wr := NewWriter(buf, nil)
+
+	positions := make([]RecordPosition, N)
+	for i := 0; i < N; i++ {
+		positions[i] = wr.Position()
+		if err := wr.PutProto(numToProto(i)); err != nil {
+			t.Fatalf("Error PutProto(%d): %v", i, err)
+		}
+	}
+	if err := wr.Close(); err != nil {
+		t.Fatalf("Error Close: %v", err)
+	}
+
+	rd := NewReadSeeker(bytes.NewReader(buf.Bytes()))
+	for i, p := range positions {
+		if err := rd.SeekToRecord(p); err != nil {
+			t.Fatalf("Error seeking to record %d at %v: %v", i, p, err)
+		}
+
+		expected := numToProto(i)
+		var found rtpb.Complex
+		if err := rd.NextProto(&found); err != nil {
+			t.Fatalf("Read error: %v", err)
+		} else if diff := compare.ProtoDiff(&found, expected); diff != "" {
+			t.Errorf("Unexpected record:  (-: found; +: expected)\n%s", diff)
+		}
 	}
 }
 

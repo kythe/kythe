@@ -102,9 +102,7 @@ class WrappedOutputStream : public ZeroCopyOutputStream {
     return wrapped_->Next(data, size);
   }
   void BackUp(int count) override { return wrapped_->BackUp(count); }
-  google::protobuf::int64 ByteCount() const override {
-    return wrapped_->ByteCount();
-  }
+  int64_t ByteCount() const override { return wrapped_->ByteCount(); }
   bool WriteAliasedRaw(const void* data, int size) override {
     return wrapped_->WriteAliasedRaw(data, size);
   }
@@ -123,9 +121,7 @@ class GzipStringOutputStream : public ZeroCopyOutputStream {
     return gzip_stream_.Next(data, size);
   }
   void BackUp(int count) override { return gzip_stream_.BackUp(count); }
-  google::protobuf::int64 ByteCount() const override {
-    return gzip_stream_.ByteCount();
-  }
+  int64_t ByteCount() const override { return gzip_stream_.ByteCount(); }
   bool WriteAliasedRaw(const void* data, int size) override {
     return gzip_stream_.WriteAliasedRaw(data, size);
   }

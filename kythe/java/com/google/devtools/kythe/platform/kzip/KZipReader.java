@@ -75,16 +75,16 @@ public final class KZipReader implements KZip.Reader {
         throw new KZipException("Invalid entry (bad root): " + name);
       }
       if (name.startsWith(jsonPrefix)) {
-	jsonUnits.add(name.substring(jsonPrefix.length()));
+        jsonUnits.add(name.substring(jsonPrefix.length()));
       }
       if (name.startsWith(protoPrefix)) {
-	protoUnits.add(name.substring(protoPrefix.length()));
+        protoUnits.add(name.substring(protoPrefix.length()));
       }
     }
     KZip.Encoding encoding = KZip.Encoding.PROTO;
     if (jsonUnits.isEmpty()) {
       if (protoUnits.isEmpty()) {
-	throw new KZipException("kzip contains no compilation units");
+        throw new KZipException("kzip contains no compilation units");
       }
     } else if (protoUnits.isEmpty()) {
       encoding = KZip.Encoding.JSON;
@@ -114,8 +114,8 @@ public final class KZipReader implements KZip.Reader {
     try (InputStream input = zipFile.getInputStream(entry)) {
       if (descriptor.encoding() == KZip.Encoding.JSON) {
         try (InputStreamReader reader = new InputStreamReader(input, KZip.DATA_CHARSET)) {
-	  return gson.fromJson(reader, Analysis.IndexedCompilation.class);
-	}
+          return gson.fromJson(reader, Analysis.IndexedCompilation.class);
+        }
       }
       return Analysis.IndexedCompilation.parseFrom(input);
     } catch (IOException e) {

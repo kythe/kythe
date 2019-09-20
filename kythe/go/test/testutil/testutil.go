@@ -29,9 +29,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
+	"sigs.k8s.io/yaml"
 )
 
 // DeepEqual determines if expected is deeply equal to got, returning a

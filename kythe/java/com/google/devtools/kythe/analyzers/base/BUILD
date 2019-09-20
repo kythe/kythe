@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
 package(default_visibility = ["//visibility:public"])
 
 java_library(
@@ -27,6 +29,7 @@ java_library(
         "//kythe/proto:schema_java_proto",
         "//third_party/guava",
         "@com_google_code_findbugs_jsr305//jar",
+        "@org_checkerframework_checker_qual//jar",
     ],
 )
 
@@ -50,6 +53,7 @@ java_library(
         "//third_party/guava",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:protobuf_java",
+        "@org_checkerframework_checker_qual//jar",
     ],
 )
 

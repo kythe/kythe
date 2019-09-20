@@ -10,13 +10,14 @@ go_library(
     ],
     deps = [
         "//kythe/go/extractors/govname",
-        "//kythe/go/platform/indexpack",
+        "//kythe/go/platform/analysis",
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/ptypes",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:go_go_proto",
         "//kythe/proto:storage_go_proto",
+        "@io_bazel_rules_go//proto/wkt:any_go_proto",
         "@org_bitbucket_creachadair_stringset//:go_default_library",
     ],
 )

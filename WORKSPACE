@@ -52,10 +52,6 @@ npm_install(
     name = "npm",
     package_json = "//:package.json",
     package_lock_json = "//:package-lock.json",
-    # Temporarily disable node_modules symlinking until the fix for
-    # https://github.com/bazelbuild/bazel/issues/8487 makes it into a
-    # future Bazel release
-    symlink_node_modules = False,
 )
 
 load("@npm//:install_bazel_dependencies.bzl", "install_bazel_dependencies")

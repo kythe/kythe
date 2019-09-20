@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_library", "java_binary")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
@@ -24,7 +26,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/platform/java",
-        "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
@@ -40,6 +41,7 @@ java_library(
         "@com_beust_jcommander//jar",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:protobuf_java",
+        "@org_checkerframework_checker_qual//jar",
     ],
 )
 
@@ -69,11 +71,6 @@ java_library(
 java_binary(
     name = "indexer",
     srcs = ["JavaIndexer.java"],
-    data = ["//third_party/javac:java_compiler_jar"],
-    jvm_flags = [
-        "--add-opens=jdk.compiler/com.sun.tools.javac.api=java.compiler",
-        "--patch-module=java.compiler=$${RUNPATH}$(location //third_party/javac:java_compiler_jar)",
-    ],
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexer",
     deps = [
         ":analyzer",
@@ -81,7 +78,6 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:stream_fact_emitter",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
-        "//kythe/java/com/google/devtools/kythe/platform/indexpack",
         "//kythe/java/com/google/devtools/kythe/platform/java",
         "//kythe/java/com/google/devtools/kythe/platform/kzip",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
@@ -95,5 +91,23 @@ java_binary(
         "@com_beust_jcommander//jar",
         "@com_google_common_flogger//api",
         "@com_google_protobuf//:protobuf_java",
+    ],
+)
+
+java_library(
+    name = "auto_value_plugin",
+    srcs = [
+        "AutoValuePlugin.java",
+        "ResolvedAutoValue.java",
+    ],
+    deps = [
+        ":plugin",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/java/com/google/devtools/kythe/common:autovalue",
+        "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
+        "//third_party/javac",
     ],
 )

@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
 package(default_visibility = ["//visibility:public"])
 
 java_library(
@@ -49,5 +51,30 @@ java_library(
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_code_gson_gson//jar",
         "@com_google_protobuf//:protobuf_java",
+        "@org_checkerframework_checker_qual//jar",
     ],
+)
+
+java_library(
+    name = "units",
+    srcs = [
+        "CompilationUnits.java",
+    ],
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
+        "//kythe/java/com/google/devtools/kythe/common:autovalue",
+        "//kythe/java/com/google/devtools/kythe/common:flogger",
+        "//kythe/proto:analysis_java_proto",
+        "//kythe/proto:storage_java_proto",
+        "//third_party/guava",
+        "@com_google_code_findbugs_jsr305//jar",
+        "@com_google_protobuf//:protobuf_java",
+        "@org_checkerframework_checker_qual//jar",
+    ],
+)
+
+java_library(
+    name = "test_util",
+    testonly = 1,
+    srcs = ["TestDataUtil.java"],
 )

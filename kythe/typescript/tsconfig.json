@@ -3,6 +3,8 @@
         "module": "commonjs",
         "target": "es6",
         "strict": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
         "lib": ["es6"],
         "sourceMap": true
     },

@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
@@ -29,5 +31,6 @@ java_library(
         "@com_google_protobuf//:protobuf_java",
         "@com_google_protobuf//:protobuf_java_util",
         "@javax_annotation_jsr250_api//jar",
+        "@org_checkerframework_checker_qual//jar",
     ],
 )

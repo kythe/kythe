@@ -1,3 +1,6 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_java//java:defs.bzl", "java_proto_library")
+
 package(default_visibility = ["//kythe:proto_visibility"])
 
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
@@ -30,7 +33,10 @@ filegroup(
 proto_library(
     name = "schema_proto",
     srcs = ["schema.proto"],
-    deps = [":storage_proto"],
+    deps = [
+        ":storage_proto",
+        "@com_google_protobuf//:descriptor_proto",
+    ],
 )
 
 go_kythe_proto(
@@ -650,4 +656,16 @@ go_kythe_proto(
         ":common_go_proto",
         ":storage_go_proto",
     ],
+)
+
+# Generated code metadata rule descriptor.
+proto_library(
+    name = "metadata_proto",
+    srcs = ["metadata.proto"],
+    deps = [":storage_proto"],
+)
+
+cc_proto_library(
+    name = "metadata_cc_proto",
+    deps = [":metadata_proto"],
 )

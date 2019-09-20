@@ -1,3 +1,4 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load("//kythe/proto:go.bzl", "go_kythe_proto")
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
@@ -19,6 +20,7 @@ go_library(
         "//third_party/riegeli:records_metadata_go_proto",
         "@com_github_datadog_zstd//:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_snappy//:go_default_library",
         "@com_github_minio_highwayhash//:go_default_library",
         "@org_brotli_go//cbrotli",
     ],
@@ -42,6 +44,7 @@ go_test(
         "testdata/golden.entries.brotli.riegeli",
         "testdata/golden.entries.brotli_transpose.riegeli",
         "testdata/golden.entries.json",
+        "testdata/golden.entries.snappy.riegeli",
         "testdata/golden.entries.uncompressed.riegeli",
         "testdata/golden.entries.uncompressed_transpose.riegeli",
         "testdata/golden.entries.zstd.riegeli",

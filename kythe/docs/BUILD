@@ -8,11 +8,6 @@ asciidoc(
 )
 
 asciidoc(
-    name = "kythe-index-pack",
-    src = "kythe-index-pack.txt",
-)
-
-asciidoc(
     name = "kythe-overview",
     src = "kythe-overview.txt",
 )

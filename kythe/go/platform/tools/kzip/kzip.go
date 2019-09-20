@@ -27,16 +27,20 @@ import (
 	"os"
 
 	"kythe.io/kythe/go/platform/tools/kzip/createcmd"
+	"kythe.io/kythe/go/platform/tools/kzip/filtercmd"
 	"kythe.io/kythe/go/platform/tools/kzip/infocmd"
 	"kythe.io/kythe/go/platform/tools/kzip/mergecmd"
+	"kythe.io/kythe/go/platform/tools/kzip/viewcmd"
 
 	"github.com/google/subcommands"
 )
 
 func init() {
 	subcommands.Register(createcmd.New(), "")
+	subcommands.Register(filtercmd.New(), "")
 	subcommands.Register(infocmd.New(), "")
 	subcommands.Register(mergecmd.New(), "")
+	subcommands.Register(viewcmd.New(), "")
 }
 
 func main() {

@@ -4,32 +4,7 @@ load(
     "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
     "cc_indexer_test",
     "objc_indexer_test",
-)
-
-sh_test(
-    name = "kindex",
-    size = "small",
-    srcs = [
-        "test_kindex.sh",
-    ],
-    data = [
-        "kindex_repo_test.header",
-        "kindex_repo_test.header2",
-        "kindex_repo_test.main",
-        "kindex_repo_test.unit",
-        "kindex_repo_test.verify",
-        "kindex_test.header",
-        "kindex_test.main",
-        "kindex_test.unit",
-        "kindex_test.verify",
-        "windows_test.header",
-        "windows_test.main",
-        "windows_test.unit",
-        "windows_test.verify",
-        "//kythe/cxx/indexer/cxx:indexer",
-        "//kythe/cxx/tools:kindex_tool",
-        "//kythe/cxx/verifier",
-    ],
+    "cc_extractor_test",
 )
 
 cc_indexer_test(
@@ -1579,6 +1554,14 @@ cc_indexer_test(
     name = "make_unique_factories",
     srcs = ["libraries/make_unique_factories.cc"],
     ignore_dups = True,
+    tags = ["libraries"],
+)
+
+# Note: this depends on the platform <memory> header and
+# as such is a cc_extractor_test rather than hermetic cc_indexer_test.
+cc_extractor_test(
+    name = "make_shared_factories",
+    srcs = ["libraries/make_shared_factories.cc"],
     tags = ["libraries"],
 )
 

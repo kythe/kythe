@@ -29,10 +29,16 @@ proto_lang_toolchain(
     runtime = ":protobuf",
 )
 
+java_import(
+    name = "jsr250",
+    jars = ["jsr250-api-1.0.jar"],
+)
+
 java_library(
     name = "protobuf",
     visibility = ["//visibility:private"],
     exports = [
+        ":jsr250",
         "@com_google_protobuf//:protobuf_java",
     ],
     runtime_deps = [
@@ -131,6 +137,7 @@ extractor_action(
     output = "$(ACTION_ID).jvm.kzip",
 )
 
+# We only support Bazel rules_go 0.19.0 and up.
 extractor_action(
     name = "extract_kzip_go",
     args = [
@@ -140,7 +147,7 @@ extractor_action(
     ],
     data = [":vnames_config"],
     extractor = ":bazel_go_extractor",
-    mnemonics = ["GoCompile"],
+    mnemonics = ["GoCompilePkg"],
     output = "$(ACTION_ID).go.kzip",
 )
 

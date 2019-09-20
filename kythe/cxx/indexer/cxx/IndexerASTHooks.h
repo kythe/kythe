@@ -653,13 +653,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   void Work(clang::Decl* InitialDecl,
             std::unique_ptr<IndexerWorklist> NewWorklist) {
     Worklist = std::move(NewWorklist);
-    Worklist->EnqueueJob(llvm::make_unique<IndexJob>(InitialDecl));
+    Worklist->EnqueueJob(absl::make_unique<IndexJob>(InitialDecl));
     while (!ShouldStopIndexing() && Worklist->DoWork())
       ;
     Observer.iterateOverClaimedFiles(
         [this, InitialDecl](clang::FileID Id,
                             const GraphObserver::NodeId& FileNode) {
-          RunJob(llvm::make_unique<IndexJob>(InitialDecl, Id, FileNode));
+          RunJob(absl::make_unique<IndexJob>(InitialDecl, Id, FileNode));
           return !ShouldStopIndexing();
         });
     Worklist.reset();

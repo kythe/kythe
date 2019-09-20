@@ -20,6 +20,7 @@
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/util/json_util.h"
 #include "google/protobuf/util/type_resolver.h"
@@ -32,6 +33,7 @@
 namespace kythe {
 namespace {
 using ::google::protobuf::DescriptorPool;
+using ::google::protobuf::util::JsonParseOptions;
 using ::google::protobuf::util::TypeResolver;
 
 class PermissiveTypeResolver : public TypeResolver {
@@ -99,6 +101,12 @@ Status WriteMessageAsJsonToStringInternal(
                   std::string(status.error_message()));
   }
   return OkStatus();
+}
+
+JsonParseOptions DefaultParseOptions() {
+  JsonParseOptions options;
+  options.case_insensitive_enum_parsing = false;
+  return options;
 }
 
 }  // namespace
@@ -171,11 +179,9 @@ bool MergeJsonWithMessage(const std::string& in, std::string* format_key,
     auto resolver =
         MakeTypeResolverForPool(message->GetDescriptor()->file()->pool());
 
-    google::protobuf::util::JsonParseOptions options;
-    options.case_insensitive_enum_parsing = false;
     auto status = google::protobuf::util::JsonToBinaryString(
         resolver.get(), message->GetDescriptor()->full_name(), content, &binary,
-        options);
+        DefaultParseOptions());
 
     if (!status.ok()) {
       LOG(ERROR) << status.ToString() << ": " << content;
@@ -187,14 +193,13 @@ bool MergeJsonWithMessage(const std::string& in, std::string* format_key,
 }
 
 Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
+                           const JsonParseOptions& options,
                            google::protobuf::Message* message) {
   auto resolver =
       MakeTypeResolverForPool(message->GetDescriptor()->file()->pool());
 
   std::string binary;
   google::protobuf::io::StringOutputStream output(&binary);
-  google::protobuf::util::JsonParseOptions options;
-  options.case_insensitive_enum_parsing = false;
   auto status = google::protobuf::util::JsonToBinaryStream(
       resolver.get(), message->GetDescriptor()->full_name(), input, &output,
       options);
@@ -208,6 +213,23 @@ Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
         "JSON transcoder produced invalid protobuf output.");
   }
   return OkStatus();
+}
+
+Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
+                           google::protobuf::Message* message) {
+  return ParseFromJsonStream(input, DefaultParseOptions(), message);
+}
+
+Status ParseFromJsonString(absl::string_view input,
+                           const JsonParseOptions& options,
+                           google::protobuf::Message* message) {
+  google::protobuf::io::ArrayInputStream stream(input.data(), input.size());
+  return ParseFromJsonStream(&stream, options, message);
+}
+
+Status ParseFromJsonString(absl::string_view input,
+                           google::protobuf::Message* message) {
+  return ParseFromJsonString(input, DefaultParseOptions(), message);
 }
 
 void PackAny(const google::protobuf::Message& message, const char* type_uri,

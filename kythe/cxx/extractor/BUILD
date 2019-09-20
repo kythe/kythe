@@ -1,57 +1,7 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
-
-cc_library(
-    name = "index_pack",
-    srcs = ["index_pack.cc"],
-    hdrs = ["index_pack.h"],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deprecation = "Please use :kzip_{reader,writer}",
-    visibility = [PUBLIC_VISIBILITY],
-    deps = [
-        "//external:libuuid",
-        "//external:zlib",
-        "//kythe/cxx/common:lib",
-        "//kythe/proto:analysis_cc_proto",
-        "//kythe/proto:filecontext_cc_proto",
-        "@boringssl//:crypto",
-        "@com_google_absl//absl/memory",
-        "@com_google_protobuf//:protobuf",
-        "@org_llvm//:LLVMSupport",
-    ],
-)
-
-cc_library(
-    name = "index_pack_testlib",
-    testonly = 1,
-    srcs = ["index_pack_test.cc"],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":index_pack",
-        "//external:zlib",
-        "//third_party:gtest",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
-        "@com_github_tencent_rapidjson//:rapidjson",
-        "@com_google_absl//absl/memory",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_test(
-    name = "index_pack_test",
-    size = "small",
-    deps = [":index_pack_testlib"],
-)
+load(":toolchain.bzl", "cxx_extractor_toolchain")
 
 cc_library(
     name = "cxx_details",
@@ -115,9 +65,9 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "commandline_testlib",
-    testonly = 1,
+cc_test(
+    name = "commandline_test",
+    size = "small",
     srcs = [
         "CommandLineUtilsTest.cc",
     ],
@@ -129,14 +79,6 @@ cc_library(
     deps = [
         ":command_line_utils",
         "//third_party:gtest",
-    ],
-)
-
-cc_test(
-    name = "commandline_test",
-    size = "small",
-    deps = [
-        ":commandline_testlib",
     ],
 )
 
@@ -172,8 +114,8 @@ cc_library(
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/llvm/src:preprocessor_util_lib",
         "@boringssl//:crypto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
@@ -183,74 +125,14 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "cmdlib",
-    srcs = [
-        "cxx_extractor_main.cc",
-    ],
-    hdrs = [
-        "cxx_extractor.h",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
+cc_binary(
+    name = "cxx_extractor",
+    srcs = ["cxx_extractor_main.cc"],
     deps = [
         ":lib",
         ":supported_language",
-        "//external:zlib",
-        "//kythe/proto:analysis_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
-        "@com_googlesource_code_re2//:re2",
-        "@org_llvm//:clangTooling",
-    ],
-)
-
-cc_library(
-    name = "bazelcmdlib",
-    srcs = [
-        "cxx_extractor_bazel_main.cc",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":lib",
-        ":supported_language",
-        "//external:zlib",
-        "//third_party/bazel:extra_actions_base_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
-        "@com_google_protobuf//:protobuf",
-        "@com_googlesource_code_re2//:re2",
-    ],
-)
-
-cc_library(
-    name = "objcbazelcmdlib",
-    srcs = [
-        "objc_extractor_bazel_main.cc",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":lib",
-        ":objc_bazel_support_library",
-        ":supported_language",
-        "//external:zlib",
-        "//third_party/bazel:extra_actions_base_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
-        "@com_github_google_glog//:glog",
-        "@com_google_protobuf//:protobuf",
-        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -277,36 +159,61 @@ cc_test(
 )
 
 cc_binary(
-    name = "cxx_extractor",
-    deps = [
-        ":cmdlib",
-    ],
-)
-
-cc_binary(
     name = "cxx_extractor_bazel",
+    srcs = [
+        "cxx_extractor_bazel_main.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
     visibility = ["//visibility:public"],
     deps = [
-        ":bazelcmdlib",
+        ":lib",
+        ":supported_language",
+        "//external:zlib",
+        "//third_party/bazel:extra_actions_base_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_protobuf//:protobuf",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
 cc_binary(
     name = "objc_extractor_bazel",
+    srcs = [
+        "objc_extractor_bazel_main.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
     visibility = ["//visibility:public"],
     deps = [
-        ":objcbazelcmdlib",
+        ":lib",
+        ":objc_bazel_support_library",
+        ":supported_language",
+        "//external:zlib",
+        "//kythe/cxx/common:path_utils",
+        "//third_party/bazel:extra_actions_base_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_protobuf//:protobuf",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
-cc_library(
-    name = "testlib",
-    testonly = 1,
+cc_test(
+    name = "test",
+    size = "small",
     srcs = [
         "cxx_extractor_test.cc",
-    ],
-    hdrs = [
-        "cxx_extractor.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -316,6 +223,7 @@ cc_library(
     deps = [
         ":lib",
         "//external:zlib",
+        "//kythe/cxx/common:path_utils",
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest",
         "@com_github_google_glog//:glog",
@@ -327,10 +235,75 @@ cc_library(
     ],
 )
 
-cc_test(
-    name = "test",
-    size = "small",
+cc_library(
+    name = "testlib",
+    testonly = 1,
+    srcs = ["testlib.cc"],
+    hdrs = ["testlib.h"],
+    data = [":cxx_extractor"],
     deps = [
-        ":testlib",
+        "//kythe/cxx/common:kzip_reader",
+        "//kythe/cxx/common:path_utils",
+        "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:cxx_cc_proto",
+        "//kythe/proto:filecontext_cc_proto",
+        "//third_party:gtest",
+        "@bazel_tools//tools/cpp/runfiles",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@org_llvm//:LLVMSupport",
     ],
+)
+
+sh_binary(
+    name = "xcode_wrapper",
+    srcs = ["xcode_wrapper.sh"],
+    data = [
+        ":cxx_extractor",
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+toolchain_type(name = "toolchain_type")
+
+alias(
+    name = "cxx_extractor_default",
+    actual = "cxx_extractor_linux",
+    visibility = [PUBLIC_VISIBILITY],
+)
+
+cxx_extractor_toolchain(
+    name = "cxx_extractor_linux",
+)
+
+toolchain(
+    name = "linux_toolchain",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    toolchain = ":cxx_extractor_linux",
+    toolchain_type = ":toolchain_type",
+)
+
+cxx_extractor_toolchain(
+    name = "cxx_extractor_macos",
+    compiler_executable = "__KYTHE_XCODE_CLANG_PATH__",
+    extractor = ":xcode_wrapper",
+)
+
+toolchain(
+    name = "macos_toolchain",
+    exec_compatible_with = [
+        "@platforms//os:osx",
+    ],
+    target_compatible_with = [
+        "@platforms//os:osx",
+    ],
+    toolchain = ":cxx_extractor_macos",
+    toolchain_type = ":toolchain_type",
 )

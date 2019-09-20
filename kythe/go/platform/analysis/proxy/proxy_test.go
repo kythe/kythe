@@ -218,12 +218,12 @@ func TestErrors(t *testing.T) {
 			},
 		},
 		reqs: []testreq{
-			{Type: "analysis"},                                            // succeeds
+			{Type: "analysis"}, // succeeds
 			{Type: "output", Args: []*spb.Entry{{EdgeKind: "ok"}}},        // succeeds
 			{Type: "output", Args: []*spb.Entry{{EdgeKind: "fail"}}},      // fails
 			{Type: "output", Args: []*spb.Entry{{EdgeKind: "wah"}}},       // fails
 			{Type: "done", Args: status{OK: false, Message: "cat abuse"}}, // fails
-			{Type: "analysis"},                                            // succeeds
+			{Type: "analysis"}, // succeeds
 		},
 		want: []string{
 			analysisReply,
