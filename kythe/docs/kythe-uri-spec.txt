@@ -68,7 +68,7 @@ ensure that a Kythe URI has a canonical string encoding.
 For queries, path-segment is resolved as specified in
 http://tools.ietf.org/html/rfc3986#section-5.2.4[RFC 3986 Section 5.2.4 (Remove Dot Segments)].
 
-See also link:kythe-storage-text#TermVName[Vector-Name (*VName*)]
+See also link:kythe-storage.html#TermVName[Vector-Name (*VName*)]
 
 Examples (subject to change):
 
