@@ -267,7 +267,7 @@ The initial definition of a VName includes the following 5 fields:
    +
    +
    The *language* is empty (that is, "") for some nodes, such as
-   link:schema#file[file].
+   link:schema/schema.html#file[file].
 
 Other fields can be added as necessary—for example, if a Branch or Client label
 becomes necessary. As a rule, we try to keep the number of essential VName
