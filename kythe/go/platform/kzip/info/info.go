@@ -54,8 +54,8 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 
 		for _, ri := range u.Proto.RequiredInput {
 			kzipInfo.TotalFiles++
-			// File VNames don't generally specify a language, so we determine
-			// it from the unit VName.
+			// Determine language from the unit VName (note that file VNames are
+			// forbidden from specifying a language).
 			corpusInfo(ri.GetVName().GetCorpus()).Files[u.Proto.GetVName().GetLanguage()]++
 			if srcs.Contains(ri.Info.Path) {
 				srcCorpora.Add(ri.GetVName().GetCorpus())
