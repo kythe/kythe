@@ -179,7 +179,7 @@ data. Updating existing VNames to a new projection is a trivial mechanical
 rewriting process, particularly when the new projection is an extension of the
 old one.
 
-See also link:kythe-uri-spec[Kythe URI Specification],
+See also link:kythe-uri-spec.html[Kythe URI Specification],
 which is essentially the same, except that a VName uses UTF-8 and
 a URI uses `pct-encoded` values.
 
