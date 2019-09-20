@@ -47,9 +47,13 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 	err := kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
 		kzipInfo.TotalUnits++
 
-		// The unit VName generally does not specify a corpus, so we have to
-		// determine corpus from the source files.
-		var srcCorpora stringset.Set
+		// The corpus may be specified in the unit VName or in the source file
+		// VNames. Record all values of corpus seen and afterwards check that a
+		// single value is specified.
+		var corpora stringset.Set
+		if u.Proto.GetVName().GetCorpus() != "" {
+			corpora.Add(u.Proto.GetVName().GetCorpus())
+		}
 		srcs := stringset.New(u.Proto.SourceFile...)
 
 		for _, ri := range u.Proto.RequiredInput {
@@ -58,18 +62,14 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 			// forbidden from specifying a language).
 			corpusInfo(ri.GetVName().GetCorpus()).Files[u.Proto.GetVName().GetLanguage()]++
 			if srcs.Contains(ri.Info.Path) {
-				srcCorpora.Add(ri.GetVName().GetCorpus())
+				corpora.Add(ri.GetVName().GetCorpus())
 			}
 		}
-		if len(srcCorpora) == 1 {
-			unitCorpus := srcCorpora.Elements()[0]
-			corpusInfo(unitCorpus).Units[u.Proto.GetVName().GetLanguage()]++
-		} else if u.Proto.GetVName().GetCorpus() != "" {
-			unitCorpus := u.Proto.GetVName().GetCorpus()
-			corpusInfo(unitCorpus).Units[u.Proto.GetVName().GetLanguage()]++
+		if len(corpora) == 1 {
+			corpusInfo(corpora.Elements()[0]).Units[u.Proto.GetVName().GetLanguage()]++
 		} else {
 			// This is a warning for now, but may become an error.
-			log.Printf("Unable to determine unit corpus. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), srcCorpora, u.Proto.SourceFile)
+			log.Printf("Unable to determine unit corpus. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), corpora, u.Proto.SourceFile)
 		}
 		return nil
 	}, scanOpts...)
