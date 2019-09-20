@@ -29,7 +29,7 @@ import (
 )
 
 // KzipInfo scans a kzip and counts contained files and units, giving a breakdown by corpus and language.
-func KzipInfo(f kzip.File) (*apb.KzipInfo, error) {
+func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 	// Get file and unit counts broken down by corpus, language.
 	kzipInfo := &apb.KzipInfo{Corpora: make(map[string]*apb.KzipInfo_CorpusInfo)}
 	corpusInfo := func(corpus string) *apb.KzipInfo_CorpusInfo {
@@ -72,7 +72,7 @@ func KzipInfo(f kzip.File) (*apb.KzipInfo, error) {
 			log.Printf("Unable to determine unit corpus. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), srcCorpora, u.Proto.SourceFile)
 		}
 		return nil
-	})
+	}, scanOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("scanning kzip: %v", err)
 	}
