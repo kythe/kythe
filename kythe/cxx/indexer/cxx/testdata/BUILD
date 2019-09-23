@@ -2039,6 +2039,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_depname_path_graph",
     srcs = ["template/template_depname_path_graph.cc"],
+    ignore_dups = True,
     tags = ["template"],
 )
 

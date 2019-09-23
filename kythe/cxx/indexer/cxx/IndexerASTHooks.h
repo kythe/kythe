@@ -477,21 +477,28 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   absl::optional<GraphObserver::NodeId> RecordLookupEdgeForDependentName(
       const GraphObserver::NodeId& DId, const clang::DeclarationName& Name);
 
-  /// \brief Builds a NodeId for the DependentName at IdLoc.
+  /// \brief Builds a NodeId for the DependentName.
   ///
-  /// \param NNSLoc The qualifier preceding the name.
-  /// \param IdLoc The starting location of the name itself.
-  GraphObserver::NodeId BuildNodeIdForDependentLoc(
-      const clang::NestedNameSpecifierLoc& NNSLoc,
-      const clang::SourceLocation& IdLoc);
+  /// \param Prefix The qualifier preceding the name.
+  /// \param Identifier The identifier in question.
+  GraphObserver::NodeId BuildNodeIdForDependentIdentifier(
+      const clang::NestedNameSpecifier* Prefix,
+      const clang::IdentifierInfo* Identifier);
 
-  /// \brief Builds a NodeId for the DependentName at IdRange.
+  /// \brief Builds a NodeId for the DependentName.
   ///
-  /// \param NNSLoc The qualifier preceding the name.
-  /// \param IdRange The source range of the name itself.
-  GraphObserver::NodeId BuildNodeIdForDependentRange(
-      const clang::NestedNameSpecifierLoc& NNSLoc,
-      const clang::SourceRange& IdRange);
+  /// \param Prefix The qualifier preceding the name.
+  /// \param Identifier The DeclarationName in question.
+  GraphObserver::NodeId BuildNodeIdForDependentName(
+      const clang::NestedNameSpecifier* Prefix,
+      const clang::DeclarationName& Identifier);
+
+  /// \brief Builds a NodeId for the provided NestedNameSpecifier, depending on
+  /// its type.
+  ///
+  /// \param NNSLoc The NestedNameSpecifierLoc from which to construct a NodeId.
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForNestedNameSpecifier(
+      const clang::NestedNameSpecifier* NNS);
 
   /// \brief Builds a NodeId for the provided NestedNameSpecifier, depending on
   /// its type.
