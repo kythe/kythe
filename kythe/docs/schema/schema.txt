@@ -42,7 +42,7 @@ VName conventions
 -----------------
 
 By default, assume that the VNames of nodes should be chosen according to the
-following rules:
+following rules (more details are given in the link:../kythe-storage.html#TermVName[storage model]):
 
   * `language`: the source language.
   * `corpus`: the node's containing corpus.
@@ -1604,6 +1604,8 @@ anchor
 
 Brief description::
   An *anchor* connects concrete syntax to abstract syntax.
+  An *anchor* is within the <<file>> with the same *Path*, *Root*, *Corpus*
+  (<<file>>s do not have a *Language*, so it is not used for matching).
 Naming convention::
   Path:::
     The *Path* of the <<file>> containing this anchor (or empty if there is no
