@@ -22,7 +22,7 @@ option go_package = "storage_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 // VName is a proto representation of a vector name.
-// See also 
+// See also
 // https://kythe.io/docs/kythe-storage.html#_a_id_termvname_a_vector_name_strong_vname_strong
 //
 // Rules:
