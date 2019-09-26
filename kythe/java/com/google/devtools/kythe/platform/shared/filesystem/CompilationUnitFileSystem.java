@@ -173,7 +173,7 @@ public final class CompilationUnitFileSystem extends FileSystem {
 
   String digest(Path file) {
     checkNotNull(file);
-    file = getRootDirectory().resolve(file);
+    file = getRootDirectory().resolve(file).normalize();
     if (file.getFileName() == null) {
       // Special case root because getFileName() on "/" returns null.
       return CompilationUnitFileTree.DIRECTORY_DIGEST;
@@ -190,7 +190,7 @@ public final class CompilationUnitFileSystem extends FileSystem {
   }
 
   Iterable<Path> list(Path dir) throws IOException {
-    final Path abs = getRootDirectory().resolve(dir);
+    final Path abs = getRootDirectory().resolve(dir).normalize();
     Map<String, String> entries = compilationFileTree.list(abs.toString());
     if (entries == null) {
       throw new FileNotFoundException(dir.toString());
