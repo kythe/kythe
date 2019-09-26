@@ -131,7 +131,10 @@ extractor_action(
     ],
     data = ["//external:vnames_config"],
     extractor = "@io_kythe//kythe/go/extractors/cmd/bazel:extract_kzip",
-    mnemonics = ["TypeScriptCompile"],
+    mnemonics = [
+        "TypeScriptCompile",
+        "AngularTemplateCompile",
+    ],
     output = "$(ACTION_ID).typescript.kzip",
 )
 
