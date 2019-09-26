@@ -164,7 +164,10 @@ extractor_action(
     ],
     data = [":vnames_config"],
     extractor = ":bazel_extract_kzip",
-    mnemonics = ["TypeScriptCompile"],
+    mnemonics = [
+        "TypeScriptCompile",
+        "AngularTemplateCompile",
+    ],
     output = "$(ACTION_ID).typescript.kzip",
 )
 
