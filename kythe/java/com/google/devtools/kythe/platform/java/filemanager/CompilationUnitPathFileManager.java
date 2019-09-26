@@ -128,6 +128,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     if (Files.exists(result)) {
       return result;
     }
+    logger.atFine().log("Falling back to filesystem for %s", result);
     return Paths.get(path, rest);
   }
 
