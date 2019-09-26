@@ -42,9 +42,9 @@ public final class KZipWriter implements KZip.Writer {
     String encodingStr = System.getenv("KYTHE_KZIP_ENCODING");
     if (encodingStr != null) {
       try {
-        encoding = KZip.Encoding.valueOf(encodingStr);
+        encoding = KZip.Encoding.valueOf(encodingStr.toUpperCase());
       } catch (IllegalArgumentException e) {
-        System.err.printf("Unknown kzip encoding '%s', using %s", encodingStr, encoding);
+        logger.atWarning().log("Unknown kzip encoding '%s', using %s", encodingStr, encoding);
       }
     }
     DEFAULT_ENCODING = encoding;
