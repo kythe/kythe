@@ -102,17 +102,9 @@ public final class CompilationUnitFileSystem extends FileSystem {
   public void close() throws IOException {
     synchronized (this) {
       if (closed) return;
-      try {
-        fileDataProvider.close();
-      } catch (IOException e) {
-        throw e;
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      } finally {
-        fileDataProvider = null;
-        compilationFileTree = null;
-        closed = true;
-      }
+      fileDataProvider = null;
+      compilationFileTree = null;
+      closed = true;
     }
   }
 

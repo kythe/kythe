@@ -38,6 +38,17 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class CompilationUnitFileSystemTest {
+  private static class UncloseableFileDataCache extends FileDataCache {
+    public UncloseableFileDataCache(List<FileData> fileData) {
+      super(fileData);
+    }
+
+    @Override
+    public void close() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
   private static class FileSystemBuilder {
     private final ImmutableMap.Builder<String, byte[]> inputFiles = new ImmutableMap.Builder<>();
     private String workingDirectory = "";
@@ -59,7 +70,7 @@ public final class CompilationUnitFileSystemTest {
               .addAllRequiredInput(ExtractorUtils.toFileInputs(fileData))
               .setWorkingDirectory(workingDirectory)
               .build();
-      FileDataProvider fileDataProvider = new FileDataCache(fileData);
+      FileDataProvider fileDataProvider = new UncloseableFileDataCache(fileData);
       return CompilationUnitFileSystem.create(compilationUnit, fileDataProvider);
     }
   }
