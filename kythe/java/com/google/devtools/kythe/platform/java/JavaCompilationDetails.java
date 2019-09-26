@@ -25,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptions;
 import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitBasedJavaFileManager;
+import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitPathFileManager;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.source.tree.CompilationUnitTree;
@@ -55,6 +56,8 @@ public class JavaCompilationDetails {
 
   private static final Charset DEFAULT_ENCODING = UTF_8;
 
+  private static final boolean USE_EXPERIMENTAL_PATH_BASED_FILE_MANAGER = true;
+
   private static final Predicate<Diagnostic<?>> ERROR_DIAGNOSTIC =
       diag -> diag.getKind() == Kind.ERROR;
 
@@ -73,11 +76,16 @@ public class JavaCompilationDetails {
     // Create a CompilationUnitBasedJavaFileManager that uses the fileDataProvider and
     // compilationUnit
     StandardJavaFileManager fileManager =
-        new CompilationUnitBasedJavaFileManager(
-            fileDataProvider,
-            compilationUnit,
-            compiler.getStandardFileManager(diagnosticsCollector, null, null),
-            encoding);
+        USE_EXPERIMENTAL_PATH_BASED_FILE_MANAGER
+            ? new CompilationUnitPathFileManager(
+                compilationUnit,
+                fileDataProvider,
+                compiler.getStandardFileManager(diagnosticsCollector, null, null))
+            : new CompilationUnitBasedJavaFileManager(
+                fileDataProvider,
+                compilationUnit,
+                compiler.getStandardFileManager(diagnosticsCollector, null, null),
+                encoding);
 
     Iterable<? extends JavaFileObject> sources =
         fileManager.getJavaFileObjectsFromStrings(compilationUnit.getSourceFileList());
