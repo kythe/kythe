@@ -61,10 +61,10 @@ func (c *filterCommand) SetFlags(fs *flag.FlagSet) {
 // Execute implements the subcommands interface and filters the input file.
 func (c *filterCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.output == "" {
-		return c.Fail("required --output path missing")
+		return c.Fail("Required --output path missing")
 	}
 	if c.input == "" {
-		return c.Fail("required --input path missing")
+		return c.Fail("Required --input path missing")
 	}
 	opt := kzip.WithEncoding(c.encoding.Encoding)
 	dir, file := filepath.Split(c.output)

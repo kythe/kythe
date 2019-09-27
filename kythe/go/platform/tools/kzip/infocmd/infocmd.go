@@ -59,11 +59,11 @@ func (c *infoCommand) SetFlags(fs *flag.FlagSet) {
 // Execute implements the subcommands interface and gathers info from the requested file.
 func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.input == "" {
-		return c.Fail("required --input path missing")
+		return c.Fail("Required --input path missing")
 	}
 	f, err := vfs.Open(ctx, c.input)
 	if err != nil {
-		return c.Fail("opening archive: %v", err)
+		return c.Fail("Opening archive: %v", err)
 	}
 	defer f.Close()
 
@@ -74,13 +74,13 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 
 	kzipInfo, err := info.KzipInfo(f, kzip.ReadConcurrency(c.readConcurrency))
 	if err != nil {
-		return c.Fail("scanning kzip: %v", err)
+		return c.Fail("Scanning kzip: %v", err)
 	}
 	switch c.writeFormat {
 	case "json":
 		m := jsonpb.Marshaler{OrigName: true}
 		if err := m.Marshal(os.Stdout, kzipInfo); err != nil {
-			return c.Fail("marshaling json: %v", err)
+			return c.Fail("Marshaling json: %v", err)
 		}
 	case "proto":
 		proto.MarshalText(os.Stdout, kzipInfo)
