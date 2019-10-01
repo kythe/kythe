@@ -23,7 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 
@@ -86,7 +86,8 @@ func (r Rules) ApplyDefault(input string, v *spb.VName) *spb.VName {
 	return v
 }
 
-func convertRule(r *spb.VNameRewriteRule) (Rule, error) {
+// ConvertRule compiles a VNameRewriteRule proto into a Rule that can be applied to strings.
+func ConvertRule(r *spb.VNameRewriteRule) (Rule, error) {
 	pattern := "^" + strings.TrimSuffix(strings.TrimPrefix(r.Pattern, "^"), "$") + "$"
 	re, err := regexp.Compile(pattern)
 	if err != nil {
@@ -127,7 +128,10 @@ func expectDelim(de *json.Decoder, expected json.Delim) error {
 	return nil
 }
 
-// ParseRules parses Rules from JSON-encoded data in the following format:
+// ParseRules reads Rules data from a byte array.
+func ParseRules(data []byte) (Rules, error) { return ReadRules(bytes.NewReader(data)) }
+
+// ReadRules parses Rules from JSON-encoded data in the following format:
 //
 //   [
 //     {
@@ -143,8 +147,8 @@ func expectDelim(de *json.Decoder, expected json.Delim) error {
 // Each pattern is an RE2 regexp pattern.  Patterns are implicitly anchored at
 // both ends.  The template strings may contain markers of the form @n@, that
 // will be replaced by the n'th regexp group on a successful input match.
-func ParseRules(data []byte) (Rules, error) {
-	de := json.NewDecoder(bytes.NewReader(data))
+func ReadRules(r io.Reader) (Rules, error) {
+	de := json.NewDecoder(r)
 
 	// Check for start of array.
 	if err := expectDelim(de, '['); err != nil {
@@ -158,7 +162,7 @@ func ParseRules(data []byte) (Rules, error) {
 		if err := jsonpb.UnmarshalNext(de, &pb); err != nil {
 			return nil, err
 		}
-		r, err := convertRule(&pb)
+		r, err := ConvertRule(&pb)
 		if err != nil {
 			return nil, err
 		}
@@ -187,13 +191,10 @@ func LoadRules(path string) (Rules, error) {
 	if path == "" {
 		return nil, nil
 	}
-	data, err := ioutil.ReadFile(path)
+	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading vname rules: %v", err)
+		return nil, fmt.Errorf("opening vname rules file: %v", err)
 	}
-	rules, err := ParseRules(data)
-	if err != nil {
-		return nil, fmt.Errorf("parsing vname rules: %v", err)
-	}
-	return rules, nil
+	defer f.Close()
+	return ReadRules(f)
 }
