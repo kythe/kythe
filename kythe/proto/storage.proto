@@ -185,3 +185,16 @@ message ShardRequest {
   int64 index = 1;
   int64 shards = 2;
 }
+
+// A VNameRewriteRule associates a regular expression pattern with a VName
+// template.  A rule can be applied to a string to produce a VName.
+message VNameRewriteRule {
+  // An RE2 pattern to match against an input string.  Patterns are implicitly
+  // anchored at both ends.
+  string pattern = 1;
+
+  // A template VName to populate with matches from the input.  The template
+  // strings may contain markers of the form @n@, that will be replaced by the
+  // n'th regexp group on a successful input match.
+  VName v_name = 2 [json_name = "vname"];
+}
