@@ -19,11 +19,15 @@
 package vnameutil // import "kythe.io/kythe/go/util/vnameutil"
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"regexp"
 	"strings"
+
+	"github.com/golang/protobuf/jsonpb"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -114,6 +118,15 @@ func fixTemplate(s string) string {
 		})
 }
 
+func expectDelim(de *json.Decoder, expected json.Delim) error {
+	if tok, err := de.Token(); err != nil {
+		return err
+	} else if delim, ok := tok.(json.Delim); !ok || delim != expected {
+		return fmt.Errorf("expected %s; found %s", expected, tok)
+	}
+	return nil
+}
+
 // ParseRules parses Rules from JSON-encoded data in the following format:
 //
 //   [
@@ -131,18 +144,40 @@ func fixTemplate(s string) string {
 // both ends.  The template strings may contain markers of the form @n@, that
 // will be replaced by the n'th regexp group on a successful input match.
 func ParseRules(data []byte) (Rules, error) {
-	var rr []*spb.VNameRewriteRule
-	if err := json.Unmarshal(data, &rr); err != nil {
+	de := json.NewDecoder(bytes.NewReader(data))
+
+	// Check for start of array.
+	if err := expectDelim(de, '['); err != nil {
 		return nil, err
 	}
+
+	// Parse each element of the array as a VNameRewriteRule.
 	var rules Rules
-	for _, vr := range rr {
-		r, err := convertRule(vr)
+	for de.More() {
+		var pb spb.VNameRewriteRule
+		if err := jsonpb.UnmarshalNext(de, &pb); err != nil {
+			return nil, err
+		}
+		r, err := convertRule(&pb)
 		if err != nil {
 			return nil, err
 		}
 		rules = append(rules, r)
 	}
+
+	// Check for end of array.
+	if err := expectDelim(de, ']'); err != nil {
+		return nil, err
+	}
+
+	// Check for EOF
+	if tok, err := de.Token(); err != io.EOF {
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("expected EOF; found: %s", tok)
+	}
+
 	return rules, nil
 }
 
