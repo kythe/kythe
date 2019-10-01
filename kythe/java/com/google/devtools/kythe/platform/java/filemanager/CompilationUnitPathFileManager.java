@@ -119,6 +119,11 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   private Path getPath(String path, String... rest) {
+    // TODO(shahms): Mirror some of the semantics from the legacy JavaFileManager:
+    //   1) always prefer source files (likely via list?)
+    //   2) never fall back to file system for source files
+    //    a) we should likely never fall back to file system except for platform class path
+    //
     // TODO(shahms): This is something of a hack to work around the fact that:
     // 1) The bootclasspath typically comes from the default filesystem.
     // 2) We set bootclasspath from JavaDetails
