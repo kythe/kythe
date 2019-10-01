@@ -82,29 +82,22 @@ func (r Rules) ApplyDefault(input string, v *spb.VName) *spb.VName {
 	return v
 }
 
-// rewriteRule implements JSON marshaling and unmarshaling for storing rules in
-// a file.
-type rewriteRule struct {
-	Pattern pattern `json:"pattern"`
-	VName   struct {
-		Corpus    string `json:"corpus,omitempty"`
-		Path      string `json:"path,omitempty"`
-		Root      string `json:"root,omitempty"`
-		Signature string `json:"signature,omitempty"`
-	} `json:"vname"`
-}
-
-// toRule converts a rewriteRule to a Rule.
-func (r *rewriteRule) toRule() Rule {
-	return Rule{
-		Regexp: r.Pattern.Regexp,
-		VName: &spb.VName{
-			Corpus:    fixTemplate(r.VName.Corpus),
-			Path:      fixTemplate(r.VName.Path),
-			Root:      fixTemplate(r.VName.Root),
-			Signature: fixTemplate(r.VName.Signature),
-		},
+func convertRule(r *spb.VNameRewriteRule) (Rule, error) {
+	pattern := "^" + strings.TrimSuffix(strings.TrimPrefix(r.Pattern, "^"), "$") + "$"
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return Rule{}, fmt.Errorf("invalid regular expression: %v", err)
 	}
+	return Rule{
+		Regexp: re,
+		VName: &spb.VName{
+			Corpus:    fixTemplate(r.Vname.GetCorpus()),
+			Path:      fixTemplate(r.Vname.GetPath()),
+			Root:      fixTemplate(r.Vname.GetRoot()),
+			Language:  fixTemplate(r.Vname.GetLanguage()),
+			Signature: fixTemplate(r.Vname.GetSignature()),
+		},
+	}, nil
 }
 
 var fieldRE = regexp.MustCompile(`@(\w+)@`)
@@ -119,31 +112,6 @@ func fixTemplate(s string) string {
 		func(s string) string {
 			return "${" + strings.Trim(s, "@") + "}"
 		})
-}
-
-type pattern struct {
-	*regexp.Regexp
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface, accepting a string
-// value that encodes a valid RE2 regular expression.
-func (p *pattern) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-	if !strings.HasPrefix(s, "^") {
-		s = "^" + s
-	}
-	if !strings.HasSuffix(s, "$") {
-		s += "$"
-	}
-	r, err := regexp.Compile(s)
-	if err != nil {
-		return fmt.Errorf("invalid regular expression: %v", err)
-	}
-	p.Regexp = r
-	return nil
 }
 
 // ParseRules parses Rules from JSON-encoded data in the following format:
@@ -163,13 +131,17 @@ func (p *pattern) UnmarshalJSON(data []byte) error {
 // both ends.  The template strings may contain markers of the form @n@, that
 // will be replaced by the n'th regexp group on a successful input match.
 func ParseRules(data []byte) (Rules, error) {
-	var rr []*rewriteRule
+	var rr []*spb.VNameRewriteRule
 	if err := json.Unmarshal(data, &rr); err != nil {
 		return nil, err
 	}
 	var rules Rules
-	for _, r := range rr {
-		rules = append(rules, r.toRule())
+	for _, vr := range rr {
+		r, err := convertRule(vr)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, r)
 	}
 	return rules, nil
 }
