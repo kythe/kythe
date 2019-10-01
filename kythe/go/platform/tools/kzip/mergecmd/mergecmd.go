@@ -69,6 +69,9 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 		dir = "."
 	}
 	tmpOut, err := vfs.CreateTempFile(ctx, dir, file)
+	if err != nil {
+		return c.Fail("Error creating temp output: %v", err)
+	}
 	tmpName := tmpOut.Name()
 	defer func() {
 		if tmpOut != nil {
@@ -76,9 +79,6 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 			vfs.Remove(ctx, tmpName)
 		}
 	}()
-	if err != nil {
-		return c.Fail("Error creating temp output: %v", err)
-	}
 	archives := fs.Args()
 	if c.append {
 		orig, err := vfs.Open(ctx, c.output)
