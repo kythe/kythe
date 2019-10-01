@@ -13,6 +13,7 @@ java_library(
         ":options",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
+        "//kythe/java/com/google/devtools/kythe/platform/java/filemanager:path_filemanager",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
