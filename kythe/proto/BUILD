@@ -597,23 +597,13 @@ java_proto_library(
 proto_library(
     name = "extraction_config_proto",
     srcs = ["extraction_config.proto"],
-    visibility = [
-        "//kythe:proto_visibility",
-    ],
 )
 
-go_proto_library(
-    name = "extraction_config_go_proto",
-    importpath = "kythe.io/kythe/proto/extraction_config_go_proto",
-    proto = ":extraction_config_proto",
-)
+go_kythe_proto(proto = ":extraction_config_proto")
 
 proto_library(
     name = "repo_proto",
     srcs = ["repo.proto"],
-    visibility = [
-        "//kythe:proto_visibility",
-    ],
 )
 
 go_kythe_proto(proto = ":repo_proto")

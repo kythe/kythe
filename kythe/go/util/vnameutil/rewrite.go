@@ -19,11 +19,15 @@
 package vnameutil // import "kythe.io/kythe/go/util/vnameutil"
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"regexp"
 	"strings"
+
+	"github.com/golang/protobuf/jsonpb"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -82,29 +86,22 @@ func (r Rules) ApplyDefault(input string, v *spb.VName) *spb.VName {
 	return v
 }
 
-// rewriteRule implements JSON marshaling and unmarshaling for storing rules in
-// a file.
-type rewriteRule struct {
-	Pattern pattern `json:"pattern"`
-	VName   struct {
-		Corpus    string `json:"corpus,omitempty"`
-		Path      string `json:"path,omitempty"`
-		Root      string `json:"root,omitempty"`
-		Signature string `json:"signature,omitempty"`
-	} `json:"vname"`
-}
-
-// toRule converts a rewriteRule to a Rule.
-func (r *rewriteRule) toRule() Rule {
-	return Rule{
-		Regexp: r.Pattern.Regexp,
-		VName: &spb.VName{
-			Corpus:    fixTemplate(r.VName.Corpus),
-			Path:      fixTemplate(r.VName.Path),
-			Root:      fixTemplate(r.VName.Root),
-			Signature: fixTemplate(r.VName.Signature),
-		},
+func convertRule(r *spb.VNameRewriteRule) (Rule, error) {
+	pattern := "^" + strings.TrimSuffix(strings.TrimPrefix(r.Pattern, "^"), "$") + "$"
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return Rule{}, fmt.Errorf("invalid regular expression: %v", err)
 	}
+	return Rule{
+		Regexp: re,
+		VName: &spb.VName{
+			Corpus:    fixTemplate(r.VName.GetCorpus()),
+			Path:      fixTemplate(r.VName.GetPath()),
+			Root:      fixTemplate(r.VName.GetRoot()),
+			Language:  fixTemplate(r.VName.GetLanguage()),
+			Signature: fixTemplate(r.VName.GetSignature()),
+		},
+	}, nil
 }
 
 var fieldRE = regexp.MustCompile(`@(\w+)@`)
@@ -121,28 +118,12 @@ func fixTemplate(s string) string {
 		})
 }
 
-type pattern struct {
-	*regexp.Regexp
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface, accepting a string
-// value that encodes a valid RE2 regular expression.
-func (p *pattern) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
+func expectDelim(de *json.Decoder, expected json.Delim) error {
+	if tok, err := de.Token(); err != nil {
 		return err
+	} else if delim, ok := tok.(json.Delim); !ok || delim != expected {
+		return fmt.Errorf("expected %s; found %s", expected, tok)
 	}
-	if !strings.HasPrefix(s, "^") {
-		s = "^" + s
-	}
-	if !strings.HasSuffix(s, "$") {
-		s += "$"
-	}
-	r, err := regexp.Compile(s)
-	if err != nil {
-		return fmt.Errorf("invalid regular expression: %v", err)
-	}
-	p.Regexp = r
 	return nil
 }
 
@@ -163,14 +144,40 @@ func (p *pattern) UnmarshalJSON(data []byte) error {
 // both ends.  The template strings may contain markers of the form @n@, that
 // will be replaced by the n'th regexp group on a successful input match.
 func ParseRules(data []byte) (Rules, error) {
-	var rr []*rewriteRule
-	if err := json.Unmarshal(data, &rr); err != nil {
+	de := json.NewDecoder(bytes.NewReader(data))
+
+	// Check for start of array.
+	if err := expectDelim(de, '['); err != nil {
 		return nil, err
 	}
+
+	// Parse each element of the array as a VNameRewriteRule.
 	var rules Rules
-	for _, r := range rr {
-		rules = append(rules, r.toRule())
+	for de.More() {
+		var pb spb.VNameRewriteRule
+		if err := jsonpb.UnmarshalNext(de, &pb); err != nil {
+			return nil, err
+		}
+		r, err := convertRule(&pb)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, r)
 	}
+
+	// Check for end of array.
+	if err := expectDelim(de, ']'); err != nil {
+		return nil, err
+	}
+
+	// Check for EOF
+	if tok, err := de.Token(); err != io.EOF {
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("expected EOF; found: %s", tok)
+	}
+
 	return rules, nil
 }
 
