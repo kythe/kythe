@@ -86,7 +86,8 @@ func (r Rules) ApplyDefault(input string, v *spb.VName) *spb.VName {
 	return v
 }
 
-func convertRule(r *spb.VNameRewriteRule) (Rule, error) {
+// ConvertRule compiles a VNameRewriteRule proto into a Rule that can be applied to strings.
+func ConvertRule(r *spb.VNameRewriteRule) (Rule, error) {
 	pattern := "^" + strings.TrimSuffix(strings.TrimPrefix(r.Pattern, "^"), "$") + "$"
 	re, err := regexp.Compile(pattern)
 	if err != nil {
@@ -161,7 +162,7 @@ func ReadRules(r io.Reader) (Rules, error) {
 		if err := jsonpb.UnmarshalNext(de, &pb); err != nil {
 			return nil, err
 		}
-		r, err := convertRule(&pb)
+		r, err := ConvertRule(&pb)
 		if err != nil {
 			return nil, err
 		}
