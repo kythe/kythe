@@ -2,7 +2,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 load("@npm_bazel_typescript//:index.bzl", "ts_library", "ts_config")
 load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
-load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_test")
+load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test")
 
 ts_config(
     name = "tsconfig",
@@ -11,9 +11,9 @@ ts_config(
 )
 
 ts_library(
-    name="kythe",
+    name = "kythe",
+    srcs = ["kythe.ts"],
     tsconfig = ":tsconfig",
-    srcs=["kythe.ts"],
 )
 
 ts_library(
