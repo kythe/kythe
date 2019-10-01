@@ -91,11 +91,11 @@ func convertRule(r *spb.VNameRewriteRule) (Rule, error) {
 	return Rule{
 		Regexp: re,
 		VName: &spb.VName{
-			Corpus:    fixTemplate(r.Vname.GetCorpus()),
-			Path:      fixTemplate(r.Vname.GetPath()),
-			Root:      fixTemplate(r.Vname.GetRoot()),
-			Language:  fixTemplate(r.Vname.GetLanguage()),
-			Signature: fixTemplate(r.Vname.GetSignature()),
+			Corpus:    fixTemplate(r.VName.GetCorpus()),
+			Path:      fixTemplate(r.VName.GetPath()),
+			Root:      fixTemplate(r.VName.GetRoot()),
+			Language:  fixTemplate(r.VName.GetLanguage()),
+			Signature: fixTemplate(r.VName.GetSignature()),
 		},
 	}, nil
 }
