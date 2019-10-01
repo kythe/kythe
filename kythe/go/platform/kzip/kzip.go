@@ -215,9 +215,6 @@ func unitPrefix(root string, fs []*zip.File) (string, error) {
 		return fs[i].Name > protoDir
 	})
 	hasProto := p < len(fs) && strings.HasPrefix(fs[p].Name, protoDir)
-	if !hasJSON && !hasProto {
-		return "", fmt.Errorf("no compilation units found")
-	}
 	if hasJSON && hasProto {
 		// validate that they have identical units based on hash
 		for p < len(fs) && j < len(fs) {
