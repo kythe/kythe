@@ -79,7 +79,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     return Optional.empty();
   }
 
-  /** Translates the argument list locations into Map<Location, Collection<Path>> */
+  /** Translates the argument list locations into {@code Map<Location, Collection<Path>>} */
   private Map<Location, Collection<Path>> toLocationMap(Collection<String> arguments) {
     // TODO(shahms): Actually implement this.  Although, it's not critical as the compiler will
     // apply the options directly otherwise.
@@ -94,7 +94,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     return ImmutableMap.of();
   }
 
-  /** Translates the JavaDetails locations into Map<Location, Collection<Path>> */
+  /** Translates the JavaDetails locations into {@code Map<Location, Collection<Path>>} */
   private Map<Location, Collection<Path>> toLocationMap(JavaDetails details) {
     return Maps.filterValues(
         new ImmutableMap.Builder<Location, Collection<Path>>()
