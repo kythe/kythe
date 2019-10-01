@@ -1844,7 +1844,6 @@ export function index(
 
   if (plugins) {
     for (const plugin of plugins) {
-      console.warn(`${plugin.name} plugin is running.`);
       try {
         plugin.index(indexingContext);
       } catch (err) {
