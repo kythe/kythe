@@ -33,13 +33,15 @@ import javax.tools.JavaCompiler;
 public class JavacAnalysisDriver {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
   private final List<Processor> processors;
+  private final boolean useExperimentalPathFileManager;
 
   public JavacAnalysisDriver() {
-    this(ImmutableList.of());
+    this(ImmutableList.of(), false);
   }
 
-  public JavacAnalysisDriver(List<Processor> processors) {
+  public JavacAnalysisDriver(List<Processor> processors, boolean useExperimentalPathFileManager) {
     this.processors = processors;
+    this.useExperimentalPathFileManager = useExperimentalPathFileManager;
   }
 
   /**
@@ -62,6 +64,7 @@ public class JavacAnalysisDriver {
     }
 
     analyzer.analyzeCompilationUnit(
-        JavaCompilationDetails.createDetails(compilationUnit, fileDataProvider, processors));
+        JavaCompilationDetails.createDetails(
+            compilationUnit, fileDataProvider, processors, useExperimentalPathFileManager));
   }
 }

@@ -18,6 +18,7 @@ package com.google.devtools.kythe.platform.java.filemanager;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.flogger.FluentLogger;
@@ -48,12 +49,18 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final CompilationUnitFileSystem fileSystem;
+  private final ImmutableSet<String> defaultPlatformClassPath;
 
   public CompilationUnitPathFileManager(
       CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider,
       StandardJavaFileManager fileManager) {
     super(fileManager);
+    defaultPlatformClassPath =
+        ImmutableSet.copyOf(
+            Iterables.transform(
+                fileManager.getLocationAsPaths(StandardLocation.PLATFORM_CLASS_PATH),
+                p -> p.normalize().toString()));
 
     fileSystem = CompilationUnitFileSystem.create(compilationUnit, fileDataProvider);
     // When compiled for Java 9+ this is ambiguous, so disambiguate to the compatibility shim.
@@ -61,9 +68,10 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     setLocations(
         findJavaDetails(compilationUnit)
             .map(details -> toLocationMap(details))
-            .orElseGet(() -> toLocationMap(compilationUnit.getArgumentList())));
+            .orElseGet(() -> logEmptyLocationMap()));
   }
 
+  /** Extracts the embedded JavaDetails message, if any, from the CompilationUnit. */
   private static Optional<JavaDetails> findJavaDetails(CompilationUnit unit) {
     for (Any details : unit.getDetailsList()) {
       try {
@@ -79,18 +87,13 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     return Optional.empty();
   }
 
-  /** Translates the argument list locations into {@code Map<Location, Collection<Path>>} */
-  private Map<Location, Collection<Path>> toLocationMap(Collection<String> arguments) {
-    // TODO(shahms): Actually implement this.  Although, it's not critical as the compiler will
-    // apply the options directly otherwise.
-    logger.atWarning().log("Compilation missing JavaDetails; falling back to flag parsing");
-    // classpath.add("");
-    // classpath.addAll(getPathSet(unit.getArgumentList(), "-cp"));
-    // classpath.addAll(getPathSet(unit.getArgumentList(), "-classpath"));
-    // sourcepath.add("");
-    // sourcepath.addAll(getPathSet(unit.getArgumentList(), "-sourcepath"));
-    // bootclasspath.add("");
-    // bootclasspath.addAll(getPathSet(unit.getArgumentList(), "-bootclasspath"));
+  /** Logs that path handling will fall back to Javac's option parsing. */
+  private static Map<Location, Collection<Path>> logEmptyLocationMap() {
+    // It's expected that extractors which use JavaDetails will remove the corresponding
+    // arguments from the command line.  Those extractors which don't use JavaDetails
+    // (or options not present in the details), will remain on the command line and be
+    // parsed as normal, relying on getPath() to map into the compilation unit.
+    logger.atInfo().log("Compilation missing JavaDetails; falling back to flag parsing");
     return ImmutableMap.of();
   }
 
@@ -103,11 +106,11 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
             .put(StandardLocation.SOURCE_PATH, toPaths(details.getSourcepathList()))
             .put(
                 StandardLocation.PLATFORM_CLASS_PATH,
-                // bootclasspath should default to the local filesystem,
-                // while the others should come from the compilation unit.
-                toPaths(details.getBootclasspathList(), Paths::get))
+                // bootclasspath should fall back to the local filesystem,
+                // while the others should only come from the compilation unit.
+                toPaths(details.getBootclasspathList(), this::getPath))
             .build(),
-        v -> !Iterables.isEmpty(v));
+        v -> !v.isEmpty());
   }
 
   private Collection<Path> toPaths(Collection<String> paths) {
@@ -119,18 +122,13 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   private Path getPath(String path, String... rest) {
-    // TODO(shahms): Mirror some of the semantics from the legacy JavaFileManager:
-    //   1) always prefer source files (likely via list?)
-    //   2) never fall back to file system for source files
-    //    a) we should likely never fall back to file system except for platform class path
-    //
-    // TODO(shahms): This is something of a hack to work around the fact that:
-    // 1) The bootclasspath typically comes from the default filesystem.
-    // 2) We set bootclasspath from JavaDetails
-    // 3) Then JavaCompilationDetails sets it using command line flags, which picks up
-    //    the default path factory.
+    // In order to support paths passed via command line options rather than
+    // JavaDetails, prevent loading source files from outside the
+    // CompilationUnit (#818), and allow JDK classes to be provided by the
+    // platform we always form CompilationUnit paths unless that path is not
+    // present in the CompilationUnit and is part of the default boot class path.
     Path result = fileSystem.getPath(path, rest);
-    if (Files.exists(result)) {
+    if (Files.exists(result) || !defaultPlatformClassPath.contains(result.normalize().toString())) {
       return result;
     }
     logger.atFine().log("Falling back to filesystem for %s", result);

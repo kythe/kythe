@@ -18,6 +18,7 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
@@ -166,7 +167,7 @@ public class JavaIndexer {
             metadataLoaders);
     plugins.forEach(analyzer::registerPlugin);
 
-    new JavacAnalysisDriver()
+    new JavacAnalysisDriver(ImmutableList.of(), config.getUseExperimentalPathFileManager())
         .analyze(analyzer, desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()));
   }
 
@@ -208,6 +209,11 @@ public class JavaIndexer {
         description = "Write the entries to this file (or stdout if unspecified)")
     private String outputPath;
 
+    @Parameter(
+        names = "--experimental_use_path_file_manager",
+        description = "Use the experimental Path-based FileManager on JDK9+")
+    private boolean useExperimentalPathFileManager;
+
     public StandaloneConfig() {
       super("java-indexer");
     }
@@ -238,6 +244,10 @@ public class JavaIndexer {
 
     public final List<String> getCompilation() {
       return compilation;
+    }
+
+    public final boolean getUseExperimentalPathFileManager() {
+      return useExperimentalPathFileManager;
     }
   }
 }
