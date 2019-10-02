@@ -451,6 +451,9 @@ func (p *Package) addInput(cu *apb.CompilationUnit, bp *build.Package) {
 		// Populate the vname for the input based on the corpus of the package.
 		fi := cu.RequiredInput[len(cu.RequiredInput)-1]
 		fi.VName = p.ext.vnameFor(bp)
+		// Because the VName has changed, a previously-added details message (if
+		// any) is no longer valid.
+		fi.Details = nil
 
 		if govname.ImportPath(fi.VName, p.ext.BuildContext.GOROOT) != bp.ImportPath {
 			// Add GoPackageInfo if constructed VName differs from actual ImportPath.
