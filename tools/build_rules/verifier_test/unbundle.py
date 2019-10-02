@@ -22,68 +22,70 @@ import os.path
 
 
 class BundleWriter(object):
-  def __init__(self, root):
-    self.includes = []
-    self.root = os.path.join(root, "test_bundle")
-    self.current = None
-    self.open("test.cc")
 
-  def open(self, path):
-    make_dirs(os.path.dirname(os.path.join(self.root, path)))
-    if self.current is not None:
-      self.current.close()
-    self.current = open(os.path.join(self.root, path), "w")
+    def __init__(self, root):
+        self.includes = []
+        self.root = os.path.join(root, "test_bundle")
+        self.current = None
+        self.open("test.cc")
 
-  def add_include(self, path):
-    self.includes.append(path)
+    def open(self, path):
+        make_dirs(os.path.dirname(os.path.join(self.root, path)))
+        if self.current is not None:
+            self.current.close()
+        self.current = open(os.path.join(self.root, path), "w")
 
-  def close(self):
-    self.current.close()
-    self.current = None
+    def add_include(self, path):
+        self.includes.append(path)
 
-    cflagspath = os.path.join(os.path.dirname(self.root), "cflags")
-    with open(cflagspath, "w") as cflags:
-      for path in self.includes:
-        cflags.write("-I")
-        cflags.write(os.path.join(self.root, path))
-        cflags.write("\n")
+    def close(self):
+        self.current.close()
+        self.current = None
 
-  def write(self, line):
-    self.current.write(line)
+        cflagspath = os.path.join(os.path.dirname(self.root), "cflags")
+        with open(cflagspath, "w") as cflags:
+            for path in self.includes:
+                cflags.write("-I")
+                cflags.write(os.path.join(self.root, path))
+                cflags.write("\n")
+
+    def write(self, line):
+        self.current.write(line)
 
 
 @contextlib.contextmanager
 def open_writer(root):
-  writer = BundleWriter(root)
-  try:
-    yield writer
-  finally:
-    writer.close()
+    writer = BundleWriter(root)
+    try:
+        yield writer
+    finally:
+        writer.close()
 
 
 def make_dirs(path):
-  try:
-    os.makedirs(path)
-  except OSError as error:
-    # Suppress creation failure for even the leaf directory.
-    if error.errno != errno.EEXIST:
-      raise
+    try:
+        os.makedirs(path)
+    except OSError as error:
+        # Suppress creation failure for even the leaf directory.
+        if error.errno != errno.EEXIST:
+            raise
 
 
 def main():
-  parser = argparse.ArgumentParser()
-  parser.add_argument("input", type=argparse.FileType("r"))
-  parser.add_argument("output_root")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", type=argparse.FileType("r"))
+    parser.add_argument("output_root")
 
-  args = parser.parse_args()
-  with open_writer(args.output_root) as writer:
-    for line in args.input:
-      if line.startswith('#example '):
-        writer.open(line.split(None, 1)[1].strip())
-      elif line.startswith('#incdir '):
-        writer.add_include(line.split(None, 1)[1].strip())
-      else:
-        writer.write(line)
+    args = parser.parse_args()
+    with open_writer(args.output_root) as writer:
+        for line in args.input:
+            if line.startswith('#example '):
+                writer.open(line.split(None, 1)[1].strip())
+            elif line.startswith('#incdir '):
+                writer.add_include(line.split(None, 1)[1].strip())
+            else:
+                writer.write(line)
+
 
 if __name__ == "__main__":
-  main()
+    main()
