@@ -85,6 +85,7 @@ export interface IndexerHost {
  * indexer.
  */
 export interface Plugin {
+  /** Name of the plugin. It will be printed to stderr when running plugin. */
   name: string;
   /**
    * Indexes a TypeScript program with extra functionality.
@@ -147,22 +148,14 @@ export enum Context {
   Setter,
 }
 
-/*
- * TODO(ayazhafiz): This is copied from
- * [typescript.d.ts](https://github.com/microsoft/TypeScript/blob/463da558a11b8fcb3ee7562a8ad9a5a41a65887f/lib/typescript.d.ts#L497).
- * We should ask if TypeScript can expose a function to determine this if this
- * type is persistently needed.
- */
-type HasExpressionInitializer = ts.VariableDeclaration|
-                                ts.ParameterDeclaration|ts.BindingElement|
-                                ts.PropertySignature|ts.PropertyDeclaration|
-                                ts.PropertyAssignment|ts.EnumMember;
-
 /**
  * Determines if a node is a variable-like declaration.
+ *
+ * TODO(https://github.com/microsoft/TypeScript/issues/33115): Replace this with
+ * a native `ts.isHasExpressionInitializer` if TypeScript ever adds it.
  */
 function hasExpressionInitializer(node: ts.Node):
-    node is HasExpressionInitializer {
+    node is ts.HasExpressionInitializer {
   return ts.isVariableDeclaration(node) || ts.isParameter(node) ||
       ts.isBindingElement(node) || ts.isPropertySignature(node) ||
       ts.isPropertyDeclaration(node) || ts.isPropertyAssignment(node) ||
@@ -1529,28 +1522,30 @@ class Visitor {
     // "record") and a value (most similar to a "package", which defines a
     // module with declarations).
     const kNamespace = this.host.getSymbolName(sym, TSNamespace.NAMESPACE);
-    this.emitNode(kNamespace, 'record');
-    this.emitSubkind(kNamespace, Subkind.NAMESPACE);
     const kValue = this.host.getSymbolName(sym, TSNamespace.VALUE);
-    this.emitNode(kValue, 'package');
+    // It's possible that same namespace appears multiple time. We need to
+    // emit only single node for that namespace and single defines/binding
+    // edge.
+    if (sym.valueDeclaration === decl) {
+      this.emitNode(kNamespace, 'record');
+      this.emitSubkind(kNamespace, Subkind.NAMESPACE);
+      this.emitNode(kValue, 'package');
 
-    const nameAnchor = this.newAnchor(decl.name);
-    this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kNamespace);
-    this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kValue);
+      const nameAnchor = this.newAnchor(decl.name);
+      this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kNamespace);
+      this.emitEdge(nameAnchor, EdgeKind.DEFINES_BINDING, kValue);
+      // If no body then it is incomplete module definition, like declare module
+      // 'foo';
+      this.emitFact(
+          kNamespace, FactName.COMPLETE,
+          decl.body ? 'definition' : 'incomplete');
+    }
 
     // The entire module declaration defines the created namespace.
-    const defAnchor = this.newAnchor(decl);
-    this.emitEdge(defAnchor, EdgeKind.DEFINES, kValue);
+    this.emitEdge(this.newAnchor(decl), EdgeKind.DEFINES, kValue);
 
     if (decl.decorators) this.visitDecorators(decl.decorators);
-    if (decl.body) {
-      this.emitFact(kNamespace, FactName.COMPLETE, 'definition');
-      this.visit(decl.body);
-    } else {
-      // Incomplete module definition, like
-      //    declare module 'foo';
-      this.emitFact(kNamespace, FactName.COMPLETE, 'incomplete');
-    }
+    if (decl.body) this.visit(decl.body);
   }
 
   visitClassDeclaration(decl: ts.ClassDeclaration) {
@@ -1811,31 +1806,20 @@ class Visitor {
 export function index(
     vname: VName, pathVNames: Map<string, VName>, paths: string[],
     program: ts.Program, emit?: (obj: {}) => void, plugins?: Plugin[],
-    readFile: (path: string) => Buffer = fs.readFileSync) {
+    readFile: (path: string) => Buffer = fs.readFileSync): ts.Diagnostic[] {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
   // e.g. type-check the standard library unless we were explicitly told to.
-  const diags = new Set<ts.Diagnostic>();
+  const diags: ts.Diagnostic[] = [];
   for (const path of paths) {
     for (const diag of ts.getPreEmitDiagnostics(
              program, program.getSourceFile(path))) {
-      diags.add(diag);
+      diags.push(diag);
     }
   }
-  if (diags.size > 0) {
-    const message = ts.formatDiagnostics(Array.from(diags), {
-      getCurrentDirectory() {
-        return program.getCompilerOptions().rootDir!;
-      },
-      getCanonicalFileName(fileName: string) {
-        return fileName;
-      },
-      getNewLine() {
-        return '\n';
-      },
-    });
-    throw new Error(message);
-  }
+  // Note: don't abort if there are diagnostics.  This allows us to
+  // index programs with errors.  We return these diagnostics at the end
+  // so the caller can act on them if it wants.
 
   const indexingContext =
       new StandardIndexerContext(vname, pathVNames, paths, program, readFile);
@@ -1864,6 +1848,8 @@ export function index(
       }
     }
   }
+
+  return diags;
 }
 
 /**

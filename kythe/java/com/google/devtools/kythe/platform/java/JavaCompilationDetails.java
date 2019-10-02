@@ -25,12 +25,14 @@ import com.google.common.collect.Iterables;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptions;
 import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitBasedJavaFileManager;
+import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitPathFileManager;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import java.io.Writer;
+import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.util.List;
 import javax.annotation.processing.Processor;
@@ -54,6 +56,7 @@ public class JavaCompilationDetails {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private static final Charset DEFAULT_ENCODING = UTF_8;
+  private static final boolean USE_EXPERIMENTAL_PATH_FILE_MANAGER = false;
 
   private static final Predicate<Diagnostic<?>> ERROR_DIAGNOSTIC =
       diag -> diag.getKind() == Kind.ERROR;
@@ -73,11 +76,18 @@ public class JavaCompilationDetails {
     // Create a CompilationUnitBasedJavaFileManager that uses the fileDataProvider and
     // compilationUnit
     StandardJavaFileManager fileManager =
-        new CompilationUnitBasedJavaFileManager(
-            fileDataProvider,
-            compilationUnit,
-            compiler.getStandardFileManager(diagnosticsCollector, null, null),
-            encoding);
+        // The Path-based JavaFileManager is only compatible with JDK9+ and for now,
+        // we have to remain compatible with JDK8.
+        USE_EXPERIMENTAL_PATH_FILE_MANAGER && isJdk9OrNewer()
+            ? new CompilationUnitPathFileManager(
+                compilationUnit,
+                fileDataProvider,
+                compiler.getStandardFileManager(diagnosticsCollector, null, null))
+            : new CompilationUnitBasedJavaFileManager(
+                fileDataProvider,
+                compilationUnit,
+                compiler.getStandardFileManager(diagnosticsCollector, null, null),
+                encoding);
 
     Iterable<? extends JavaFileObject> sources =
         fileManager.getJavaFileObjectsFromStrings(compilationUnit.getSourceFileList());
@@ -198,5 +208,17 @@ public class JavaCompilationDetails {
     }
 
     return arguments.removeUnsupportedOptions().build();
+  }
+
+  /** Returns true if the runtime version is >= JRE 9 */
+  private static boolean isJdk9OrNewer() {
+    try {
+      Method versionMethod = Runtime.class.getMethod("version");
+      Object version = versionMethod.invoke(null);
+      return ((int) version.getClass().getMethod("major").invoke(version) >= 9);
+    } catch (ReflectiveOperationException e) {
+      logger.atInfo().log("Falling back to legacy FileManager on JDK8 or older");
+      return false;
+    }
   }
 }

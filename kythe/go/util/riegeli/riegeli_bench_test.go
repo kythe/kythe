@@ -71,13 +71,16 @@ func benchWrite(b *testing.B, out io.Writer, pos int, opts *WriterOptions, gen f
 
 var benchOptions = []string{
 	"default",
+
 	"uncompressed",
 	"brotli",
+	"snappy",
 	"zstd",
 
-	"transpose",
 	"uncompressed,transpose",
 	"brotli,transpose",
+	"snappy,transpose",
+	"zstd,transpose",
 }
 
 func BenchmarkWriteNull(b *testing.B) {

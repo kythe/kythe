@@ -71,6 +71,8 @@ func (c *compressionLevel) String() string {
 			return fmt.Sprintf("%s:%d", zstdOption, c.level)
 		}
 		return zstdOption
+	case snappyCompression:
+		return snappyOption
 	default:
 		panic(fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(c.compressionType)}))
 	}
@@ -81,6 +83,9 @@ func (*compressionLevel) isCompressionType() {}
 var (
 	// NoCompression indicates that no compression will be used to encode chunks.
 	NoCompression CompressionType = &compressionLevel{noCompression, 0}
+
+	// SnappyCompression indicates to use Snappy compression.
+	SnappyCompression CompressionType = &compressionLevel{snappyCompression, 0}
 )
 
 // BrotliCompression returns a CompressionType for Brotli compression with the
@@ -125,6 +130,7 @@ const (
 	transposeOption    = "transpose"
 	uncompressedOption = "uncompressed"
 	zstdOption         = "zstd"
+	snappyOption       = "snappy"
 )
 
 // ParseOptions decodes a WriterOptions from text:
@@ -149,6 +155,8 @@ func ParseOptions(s string) (*WriterOptions, error) {
 		kv := strings.SplitN(opt, ":", 2)
 		switch kv[0] {
 		case defaultOptions: // ignore
+		case snappyOption:
+			opts.Compression = SnappyCompression
 		case brotliOption:
 			level := DefaultBrotliLevel
 			if len(kv) != 1 {

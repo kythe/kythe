@@ -113,6 +113,12 @@ const (
 	prefixProto = "pbunits"
 )
 
+var (
+	// Use a constant file modification time in the kzip so file diffs only compare the contents,
+	// not when the kzips were created.
+	modifiedTime = time.Unix(0, 0)
+)
+
 // EncodingFor converts a string to an Encoding.
 func EncodingFor(v string) (Encoding, error) {
 	v = strings.ToUpper(v)
@@ -209,9 +215,6 @@ func unitPrefix(root string, fs []*zip.File) (string, error) {
 		return fs[i].Name > protoDir
 	})
 	hasProto := p < len(fs) && strings.HasPrefix(fs[p].Name, protoDir)
-	if !hasJSON && !hasProto {
-		return "", fmt.Errorf("no compilation units found")
-	}
 	if hasJSON && hasProto {
 		// validate that they have identical units based on hash
 		for p < len(fs) && j < len(fs) {
@@ -468,11 +471,11 @@ func NewWriter(w io.Writer, options ...WriterOption) (*Writer, error) {
 	archive := zip.NewWriter(w)
 	// Create an entry for the root directory, which must be first.
 	root := &zip.FileHeader{
-		Name:    "root/",
-		Comment: "kzip root directory",
+		Name:     "root/",
+		Comment:  "kzip root directory",
+		Modified: modifiedTime,
 	}
 	root.SetMode(os.ModeDir | 0755)
-	root.Modified = time.Now()
 	if _, err := archive.CreateHeader(root); err != nil {
 		return nil, err
 	}
@@ -606,7 +609,7 @@ func (w *Writer) Close() error {
 func newFileHeader(parts ...string) *zip.FileHeader {
 	fh := &zip.FileHeader{Name: path.Join(parts...), Method: zip.Deflate}
 	fh.SetMode(0600)
-	fh.Modified = time.Now()
+	fh.Modified = modifiedTime
 	return fh
 }
 

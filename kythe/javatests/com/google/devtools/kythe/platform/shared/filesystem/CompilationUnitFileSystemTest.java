@@ -38,6 +38,17 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class CompilationUnitFileSystemTest {
+  private static class UncloseableFileDataCache extends FileDataCache {
+    public UncloseableFileDataCache(List<FileData> fileData) {
+      super(fileData);
+    }
+
+    @Override
+    public void close() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
   private static class FileSystemBuilder {
     private final ImmutableMap.Builder<String, byte[]> inputFiles = new ImmutableMap.Builder<>();
     private String workingDirectory = "";
@@ -59,7 +70,7 @@ public final class CompilationUnitFileSystemTest {
               .addAllRequiredInput(ExtractorUtils.toFileInputs(fileData))
               .setWorkingDirectory(workingDirectory)
               .build();
-      FileDataProvider fileDataProvider = new FileDataCache(fileData);
+      FileDataProvider fileDataProvider = new UncloseableFileDataCache(fileData);
       return CompilationUnitFileSystem.create(compilationUnit, fileDataProvider);
     }
   }
@@ -135,6 +146,48 @@ public final class CompilationUnitFileSystemTest {
               "/a",
               "/a/different",
               "/a/different/path");
+    } catch (IOException exc) {
+      throw new RuntimeException(exc);
+    }
+  }
+
+  @Test
+  public void filesWalk_usesWorkingDirectoyForRelativePaths() {
+    CompilationUnitFileSystem fileSystem =
+        builder()
+            .addFile("relative/nested/path/with/empty/file", "")
+            .addFile("/absolute/nested/path/with/empty/file", "")
+            .setWorkingDirectory("/a/different/path")
+            .build();
+    try {
+      List<String> found;
+      try (Stream<Path> stream = Files.walk(fileSystem.getPath("."))) {
+        found = stream.map(Path::toString).collect(Collectors.toList());
+      }
+      assertThat(found)
+          .containsExactly(
+              ".",
+              "./relative",
+              "./relative/nested",
+              "./relative/nested/path",
+              "./relative/nested/path/with",
+              "./relative/nested/path/with/empty",
+              "./relative/nested/path/with/empty/file");
+      List<String> absolute;
+      try (Stream<Path> stream = Files.walk(fileSystem.getPath("."))) {
+        absolute =
+            stream.map(Path::toAbsolutePath).map(Path::toString).collect(Collectors.toList());
+      }
+      assertThat(absolute)
+          .containsExactly(
+              // This looks odd, but mirrors the behavior of the default filesystem.
+              "/a/different/path/.",
+              "/a/different/path/./relative",
+              "/a/different/path/./relative/nested",
+              "/a/different/path/./relative/nested/path",
+              "/a/different/path/./relative/nested/path/with",
+              "/a/different/path/./relative/nested/path/with/empty",
+              "/a/different/path/./relative/nested/path/with/empty/file");
     } catch (IOException exc) {
       throw new RuntimeException(exc);
     }

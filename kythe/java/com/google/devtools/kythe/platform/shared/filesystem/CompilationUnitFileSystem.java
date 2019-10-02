@@ -102,17 +102,9 @@ public final class CompilationUnitFileSystem extends FileSystem {
   public void close() throws IOException {
     synchronized (this) {
       if (closed) return;
-      try {
-        fileDataProvider.close();
-      } catch (IOException e) {
-        throw e;
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      } finally {
-        fileDataProvider = null;
-        compilationFileTree = null;
-        closed = true;
-      }
+      fileDataProvider = null;
+      compilationFileTree = null;
+      closed = true;
     }
   }
 
@@ -181,7 +173,7 @@ public final class CompilationUnitFileSystem extends FileSystem {
 
   String digest(Path file) {
     checkNotNull(file);
-    file = getRootDirectory().resolve(file);
+    file = getRootDirectory().resolve(file).normalize();
     if (file.getFileName() == null) {
       // Special case root because getFileName() on "/" returns null.
       return CompilationUnitFileTree.DIRECTORY_DIGEST;
@@ -198,7 +190,7 @@ public final class CompilationUnitFileSystem extends FileSystem {
   }
 
   Iterable<Path> list(Path dir) throws IOException {
-    final Path abs = getRootDirectory().resolve(dir);
+    final Path abs = getRootDirectory().resolve(dir).normalize();
     Map<String, String> entries = compilationFileTree.list(abs.toString());
     if (entries == null) {
       throw new FileNotFoundException(dir.toString());

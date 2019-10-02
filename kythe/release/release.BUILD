@@ -137,6 +137,7 @@ extractor_action(
     output = "$(ACTION_ID).jvm.kzip",
 )
 
+# We only support Bazel rules_go 0.19.0 and up.
 extractor_action(
     name = "extract_kzip_go",
     args = [
@@ -146,7 +147,7 @@ extractor_action(
     ],
     data = [":vnames_config"],
     extractor = ":bazel_go_extractor",
-    mnemonics = ["GoCompile"],
+    mnemonics = ["GoCompilePkg"],
     output = "$(ACTION_ID).go.kzip",
 )
 
@@ -163,7 +164,10 @@ extractor_action(
     ],
     data = [":vnames_config"],
     extractor = ":bazel_extract_kzip",
-    mnemonics = ["TypeScriptCompile"],
+    mnemonics = [
+        "TypeScriptCompile",
+        "AngularTemplateCompile",
+    ],
     output = "$(ACTION_ID).typescript.kzip",
 )
 

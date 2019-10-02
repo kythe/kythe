@@ -94,6 +94,22 @@ absl::optional<std::string> MaybeRealPath(
   return absl::nullopt;
 }
 
+struct PathParts {
+  absl::string_view dir, base;
+};
+
+PathParts SplitPath(absl::string_view path) {
+  std::string::difference_type pos = path.find_last_of('/');
+
+  // Handle the case with no '/' in 'path'.
+  if (pos == absl::string_view::npos) return {path.substr(0, 0), path};
+
+  // Handle the case with a single leading '/' in 'path'.
+  if (pos == 0) return {path.substr(0, 1), absl::ClippedSubstr(path, 1)};
+
+  return {path.substr(0, pos), absl::ClippedSubstr(path, pos + 1)};
+}
+
 }  // namespace
 
 StatusOr<PathCleaner> PathCleaner::Create(absl::string_view root) {
@@ -252,24 +268,12 @@ StatusOr<std::string> MakeCleanAbsolutePath(absl::string_view path) {
   }
 }
 
-struct PathParts {
-  absl::string_view dir, base;
-};
-
-PathParts SplitPath(absl::string_view path) {
-  std::string::difference_type pos = path.find_last_of('/');
-
-  // Handle the case with no '/' in 'path'.
-  if (pos == absl::string_view::npos) return {path.substr(0, 0), path};
-
-  // Handle the case with a single leading '/' in 'path'.
-  if (pos == 0) return {path.substr(0, 1), absl::ClippedSubstr(path, 1)};
-
-  return {path.substr(0, pos), absl::ClippedSubstr(path, pos + 1)};
-}
-
 absl::string_view Dirname(absl::string_view path) {
   return SplitPath(path).dir;
+}
+
+absl::string_view Basename(absl::string_view path) {
+  return SplitPath(path).base;
 }
 
 std::string RelativizePath(absl::string_view to_relativize,

@@ -105,9 +105,9 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "org_brotli",
-        sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
-        strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9",
-        url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+        sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
+        strip_prefix = "brotli-1.0.7",
+        url = "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
     )
 
     maybe(
@@ -382,7 +382,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_sourcegraph_go_langserver",
-        commit = "e526744fd766a8f42e55bd92a3843c2afcdbf08c",
+        tag = "v2.0.0",
         custom = "langserver",
         importpath = "github.com/sourcegraph/go-langserver",
     )
@@ -644,9 +644,9 @@ def _go_dependencies():
     maybe(
         http_archive,
         name = "org_brotli_go",
-        sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
-        strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9/go",
-        url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+        sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
+        strip_prefix = "brotli-1.0.7/go",
+        url = "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
     )
 
 def _bindings():
@@ -730,13 +730,12 @@ def kythe_dependencies(sample_ui = True):
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
-    # TODO(justbuchanan): update to the next tagged release when available
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "ee128d0b67751cd1095009849c9a13a30b2562f0351d91d30c1ea36379443a07",
-        strip_prefix = "protobuf-402c28a321fce010ad0b9f99010a78890cae7f34",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/402c28a321fce010ad0b9f99010a78890cae7f34.zip"],
+        sha256 = "2ba20d91341ef88259896a5dfaf55666d11648caa0964342991e30a96b7cd630",
+        strip_prefix = "protobuf-3.10.0-rc1",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.10.0-rc1.zip"],
         repo_mapping = {"@zlib": "@net_zlib"},
     )
 

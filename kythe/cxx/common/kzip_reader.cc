@@ -60,9 +60,7 @@ class ZipFileInputStream : public google::protobuf::io::ZeroCopyInputStream {
 
   void BackUp(int count) override { impl_.BackUp(count); }
   bool Skip(int count) override { return impl_.Skip(count); }
-  google::protobuf::io::ByteCountInt64 ByteCount() const override {
-    return impl_.ByteCount();
-  }
+  int64_t ByteCount() const override { return impl_.ByteCount(); }
 
  private:
   class CopyingZipInputStream

@@ -128,6 +128,7 @@ void ProtoGraphBuilder::AddFieldToMessage(const VName* parent,
                                           const Location& location) {
   VName anchor = CreateAndAddAnchorNode(location);
   AddNode(field, NodeKindID::kVariable);
+  recorder_->AddProperty(VNameRef(field), PropertyID::kSubkind, "field");
   AddEdge(anchor, field, EdgeKindID::kDefinesBinding);
   if (parent != nullptr) {
     AddEdge(field, *parent, EdgeKindID::kChildOf);
