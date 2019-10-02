@@ -52,7 +52,7 @@ go_protos = check_output([
 # Then strip off each :baz_proto, convert it to a filename "baz.proto",
 # and copy the generated output "baz.pb.go" into the source tree.
 if call(['bazel', 'build'] + go_protos) != 0:
-    print 'Build failed'
+    print('Build failed')
     sys.exit(1)
 
 for rule in go_protos:
@@ -63,19 +63,19 @@ for rule in go_protos:
     # Example: blah_go_proto -> blah.proto
     proto_file = re.sub('_go_proto$', '.proto', proto)
 
-    print 'Copying Go protobuf source for %s' % rule
+    print('Copying Go protobuf source for %s' % rule)
     generated_file = re.sub('.proto$', '.pb.go', proto_file)
     generated_path = glob.glob(
         os.path.join(bazel_bin, rule_dir, '*', proto + '%', import_base, proto,
                      generated_file)).pop()
 
     if os.path.isdir(output_dir):
-        print 'Deleting and recreating old protobuf directory: %s' % output_dir
+        print('Deleting and recreating old protobuf directory: %s' % output_dir)
         shutil.rmtree(output_dir)
     else:
-        print 'Creating new Go protobuf: %s' % generated_file
+        print('Creating new Go protobuf: %s' % generated_file)
 
     # Ensure the output directory exists, and update permissions after copying.
-    os.makedirs(output_dir, 0755)
+    os.makedirs(output_dir, 0o755)
     shutil.copy(generated_path, output_dir)
-    os.chmod(os.path.join(output_dir, generated_file), 0644)
+    os.chmod(os.path.join(output_dir, generated_file), 0o644)
