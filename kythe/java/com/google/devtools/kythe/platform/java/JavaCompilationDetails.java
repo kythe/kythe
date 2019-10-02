@@ -56,7 +56,6 @@ public class JavaCompilationDetails {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private static final Charset DEFAULT_ENCODING = UTF_8;
-  private static final boolean USE_EXPERIMENTAL_PATH_FILE_MANAGER = false;
 
   private static final Predicate<Diagnostic<?>> ERROR_DIAGNOSTIC =
       diag -> diag.getKind() == Kind.ERROR;
@@ -64,7 +63,8 @@ public class JavaCompilationDetails {
   public static JavaCompilationDetails createDetails(
       CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider,
-      List<Processor> processors) {
+      List<Processor> processors,
+      boolean useExperimentalPathFileManager) {
 
     JavaCompiler compiler = JavacAnalysisDriver.getCompiler();
     DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
@@ -78,7 +78,7 @@ public class JavaCompilationDetails {
     StandardJavaFileManager fileManager =
         // The Path-based JavaFileManager is only compatible with JDK9+ and for now,
         // we have to remain compatible with JDK8.
-        USE_EXPERIMENTAL_PATH_FILE_MANAGER && isJdk9OrNewer()
+        useExperimentalPathFileManager && isJdk9OrNewer()
             ? new CompilationUnitPathFileManager(
                 compilationUnit,
                 fileDataProvider,
