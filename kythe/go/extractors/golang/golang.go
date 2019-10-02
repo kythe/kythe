@@ -51,6 +51,8 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 
+	anypb "github.com/golang/protobuf/ptypes/any"
+
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	gopb "kythe.io/kythe/proto/go_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -385,6 +387,28 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 			Corpus: p.ext.DefaultCorpus,
 			Path:   trimmed,
 		}
+
+		var details []*anypb.Any
+		if p.ext.Rules != nil {
+			v2, ok := p.ext.Rules.Apply(trimmed)
+			if ok {
+				vn.Corpus = v2.Corpus
+				vn.Root = v2.Root
+				vn.Path = v2.Path
+
+				if govname.ImportPath(vn, p.ext.BuildContext.GOROOT) != p.BuildPackage.ImportPath {
+					// Add GoPackageInfo if constructed VName differs from actual ImportPath.
+					if info, err := ptypes.MarshalAny(&gopb.GoPackageInfo{
+						ImportPath: p.BuildPackage.ImportPath,
+					}); err == nil {
+						details = append(details, info)
+					} else {
+						log.Printf("WARNING: failed to marshal GoPackageInfo for input: %v", err)
+					}
+				}
+			}
+		}
+
 		if vn.Corpus == "" {
 			// If no default corpus is specified, use the package's corpus for each of
 			// its files.  The package corpus is based on the rules in
@@ -403,6 +427,7 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 				Path:   trimmed,
 				Digest: path, // provisional, until the file is loaded
 			},
+			Details: details,
 		})
 	}
 }
@@ -426,6 +451,9 @@ func (p *Package) addInput(cu *apb.CompilationUnit, bp *build.Package) {
 		// Populate the vname for the input based on the corpus of the package.
 		fi := cu.RequiredInput[len(cu.RequiredInput)-1]
 		fi.VName = p.ext.vnameFor(bp)
+		// Because the VName has changed, a previously-added details message (if
+		// any) is no longer valid.
+		fi.Details = nil
 
 		if govname.ImportPath(fi.VName, p.ext.BuildContext.GOROOT) != bp.ImportPath {
 			// Add GoPackageInfo if constructed VName differs from actual ImportPath.

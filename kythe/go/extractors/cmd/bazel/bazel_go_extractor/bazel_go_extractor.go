@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/extractors/bazel"
-	"kythe.io/kythe/go/extractors/bazel/extutil"
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/vnameutil"
 
@@ -71,14 +70,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading extra action: %v", err)
 	}
-	if m := info.GetMnemonic(); m != "GoCompile" {
+	if m := info.GetMnemonic(); m != "GoCompilePkg" {
 		log.Fatalf("Extractor is not applicable to this action: %q", m)
 	}
 
 	// Load vname rewriting rules. We handle this directly, becaues the Bazel
 	// Go rules have some pathological symlink handling that the normal rules
 	// need to be patched for.
-	rules, err := bazel.LoadRules(vnameRuleFile)
+	rules, err := vnameutil.LoadRules(vnameRuleFile)
 	if err != nil {
 		log.Fatalf("Error loading vname rules: %v", err)
 	}
@@ -100,7 +99,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	if err := extutil.ExtractAndWrite(ctx, config, ai, outputFile); err != nil {
+	if err := config.ExtractToKzip(ctx, ai, outputFile); err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
 }
@@ -169,7 +168,7 @@ func (e *extractor) fixup(unit *apb.CompilationUnit) error {
 	})
 }
 
-// compileArgs records the build information extracted from the GoCompile
+// compileArgs records the build information extracted from the GoCompilePkg
 // action's argument list.
 type compileArgs struct {
 	original    []string          // the original args, as provided

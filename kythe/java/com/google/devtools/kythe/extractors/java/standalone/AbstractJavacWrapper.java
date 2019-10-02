@@ -57,9 +57,6 @@ import java.util.List;
  *
  * <p>KYTHE_OUTPUT_DIRECTORY: directory path to store the resulting .kzip file, if KYTHE_OUTPUT_FILE
  * is not set
- *
- * <p>KYTHE_INDEX_PACK: if set to a non-empty value, interpret KYTHE_OUTPUT_DIRECTORY as the root of
- * an indexpack instead of a collection of .kindex files
  */
 public abstract class AbstractJavacWrapper {
   public static final String DEFAULT_CORPUS = "kythe";
@@ -72,8 +69,8 @@ public abstract class AbstractJavacWrapper {
 
   /**
    * Given the command-line arguments to javac, construct a {@link CompilationUnit} and write it to
-   * a .kindex file or indexpack. Parameters to the extraction logic are passed by environment
-   * variables (see class comment).
+   * a .kindex file. Parameters to the extraction logic are passed by environment variables (see
+   * class comment).
    */
   public void process(String[] args) {
     JsonUtil.usingTypeRegistry(JsonUtil.JSON_TYPE_REGISTRY);

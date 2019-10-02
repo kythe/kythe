@@ -107,6 +107,7 @@ import javax.lang.model.element.NestingKind;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
@@ -277,11 +278,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if ("this".equals(ident.sym.getSimpleName().toString())
           && !emittedIdentType.contains(node.getVName())) {
         JavaNode typeNode = getRefNode(ctx, ident.sym.enclClass());
+        if (typeNode == null) {
+          return emitDiagnostic(ctx, "failed to resolve symbol reference", null, null);
+        }
         entrySets.emitEdge(node.getVName(), EdgeKind.TYPED, typeNode.getVName());
         emittedIdentType.add(node.getVName());
       } else if ("super".equals(ident.sym.getSimpleName().toString())
           && !emittedIdentType.contains(node.getVName())) {
         JavaNode typeNode = getRefNode(ctx, ident.sym.enclClass().getSuperclass().asElement());
+        if (typeNode == null) {
+          return emitDiagnostic(ctx, "failed to resolve symbol reference", null, null);
+        }
         entrySets.emitEdge(node.getVName(), EdgeKind.TYPED, typeNode.getVName());
         emittedIdentType.add(node.getVName());
       }
@@ -786,6 +793,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   public JavaNode visitNewClass(JCNewClass newClass, TreeContext owner) {
     TreeContext ctx = owner.down(newClass);
 
+    if (newClass == null || newClass.constructor == null) {
+      logger.atInfo().log("Unexpected null class or constructor: %s", newClass);
+      return emitDiagnostic(ctx, "error analyzing class", null, null);
+    }
     VName ctorNode = getNode(newClass.constructor);
     if (ctorNode == null) {
       return emitDiagnostic(ctx, "error analyzing class", null, null);
@@ -916,8 +927,29 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // emit tags/deprecated if a @Deprecated annotation is present even if there isn't @deprecated
       // javadoc
       if (modifiers.getAnnotations().stream()
-          .map(a -> a.annotationType.type.tsym.getQualifiedName())
-          .anyMatch(n -> n.contentEquals("java.lang.Deprecated"))) {
+          .map(
+              a -> {
+                if (a == null) {
+                  logger.atWarning().log("annotation was null in %s", node.getPath());
+                  return null;
+                } else if (a.annotationType == null) {
+                  logger.atWarning().log(
+                      "%s -- a.annotationType was null in %s", a, node.getPath());
+                  return null;
+                } else if (a.annotationType.type == null) {
+                  logger.atWarning().log(
+                      "%s -- a.annotationType.type was null in %s",
+                      a.annotationType, node.getPath());
+                  return null;
+                } else if (a.annotationType.type.tsym == null) {
+                  logger.atWarning().log(
+                      "%s -- a.annotationType.type.tsym was null in %s",
+                      a.annotationType.type, node.getPath());
+                  return null;
+                }
+                return a.annotationType.type.tsym.getQualifiedName();
+              })
+          .anyMatch(n -> n != null && n.contentEquals("java.lang.Deprecated"))) {
         deprecation = Optional.of("");
       }
     }
@@ -1020,13 +1052,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   /** Returns the node associated with a {@link Symbol} or {@code null}. */
-  private VName getNode(Symbol sym) {
+  private @Nullable VName getNode(Symbol sym) {
     JavaNode node = getJavaNode(sym);
     return node == null ? null : node.getVName();
   }
 
   /** Returns the {@link JavaNode} associated with a {@link Symbol} or {@code null}. */
-  private JavaNode getJavaNode(Symbol sym) {
+  private @Nullable JavaNode getJavaNode(Symbol sym) {
     if (sym.getKind() == ElementKind.PACKAGE) {
       return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
     }
@@ -1137,8 +1169,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
     boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
     try {
-      if (sym != null
-          && SignatureGenerator.isArrayHelperClass(sym.enclClass())
+      if (sym == null) {
+        logger.atWarning().log("sym was null");
+        return null;
+      }
+      if (SignatureGenerator.isArrayHelperClass(sym.enclClass())
           && ctx.getTree() instanceof JCFieldAccess) {
         signatureGenerator.setArrayTypeContext(((JCFieldAccess) ctx.getTree()).selected.type);
       }

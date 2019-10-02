@@ -610,7 +610,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
-						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					stats.addAnchors(&crs.Definition, p.Group, req.AnchorText)
 				}
@@ -619,7 +619,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
-						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					stats.addAnchors(&crs.Declaration, p.Group, req.AnchorText)
 				}
@@ -628,7 +628,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
-						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					stats.addAnchors(&crs.Reference, p.Group, req.AnchorText)
 				}

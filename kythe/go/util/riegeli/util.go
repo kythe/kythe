@@ -78,6 +78,7 @@ const (
 	noCompression     compressionType = 0
 	brotliCompression compressionType = 0x62
 	zstdCompression   compressionType = 0x7a
+	snappyCompression compressionType = 0x73
 )
 
 // A recordChunk is the standard chunk type for user records in a Riegeli file.

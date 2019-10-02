@@ -1828,31 +1828,20 @@ class Visitor {
 export function index(
     vname: VName, pathVNames: Map<string, VName>, paths: string[],
     program: ts.Program, emit?: (obj: {}) => void, plugins?: Plugin[],
-    readFile: (path: string) => Buffer = fs.readFileSync) {
+    readFile: (path: string) => Buffer = fs.readFileSync): ts.Diagnostic[] {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
   // e.g. type-check the standard library unless we were explicitly told to.
-  const diags = new Set<ts.Diagnostic>();
+  const diags: ts.Diagnostic[] = [];
   for (const path of paths) {
     for (const diag of ts.getPreEmitDiagnostics(
              program, program.getSourceFile(path))) {
-      diags.add(diag);
+      diags.push(diag);
     }
   }
-  if (diags.size > 0) {
-    const message = ts.formatDiagnostics(Array.from(diags), {
-      getCurrentDirectory() {
-        return program.getCompilerOptions().rootDir!;
-      },
-      getCanonicalFileName(fileName: string) {
-        return fileName;
-      },
-      getNewLine() {
-        return '\n';
-      },
-    });
-    throw new Error(message);
-  }
+  // Note: don't abort if there are diagnostics.  This allows us to
+  // index programs with errors.  We return these diagnostics at the end
+  // so the caller can act on them if it wants.
 
   const indexingContext =
       new StandardIndexerContext(vname, pathVNames, paths, program, readFile);
@@ -1874,7 +1863,6 @@ export function index(
 
   if (plugins) {
     for (const plugin of plugins) {
-      console.warn(`${plugin.name} plugin is running.`);
       try {
         plugin.index(indexingContext);
       } catch (err) {
@@ -1882,6 +1870,8 @@ export function index(
       }
     }
   }
+
+  return diags;
 }
 
 /**

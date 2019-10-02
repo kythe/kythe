@@ -17,8 +17,12 @@ FROM gcr.io/cloud-builders/bazel
 # Install C++ compilers for cc_* rule support.
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y gcc clang && \
+    apt-get install -y gcc clang-6.0 && \
     apt-get clean
+
+# Create clang symlinks
+RUN ln -s /usr/bin/clang-6.0 /usr/bin/clang && \
+    ln -s /usr/bin/clang++-6.0 /usr/bin/clang++
 
 # Extract the Kythe release archive to /kythe
 COPY kythe/release/kythe-v*.tar.gz /tmp/

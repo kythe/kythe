@@ -46,7 +46,7 @@ load("//tools/build_rules/external_tools:external_tools_configure.bzl", "externa
 
 external_tools_configure()
 
-load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
+load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
 
 npm_install(
     name = "npm",

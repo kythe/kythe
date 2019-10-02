@@ -10,7 +10,10 @@ go_library(
         "rewrite.go",
     ],
     visibility = [PUBLIC_VISIBILITY],
-    deps = ["//kythe/proto:storage_go_proto"],
+    deps = [
+        "//kythe/proto:storage_go_proto",
+        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
+    ],
 )
 
 go_test(

@@ -42,6 +42,7 @@ func TestParseOptions(t *testing.T) {
 		"uncompressed",
 		"zstd",
 		"zstd:5",
+		"snappy",
 		"brotli,transpose",
 		"transpose,uncompressed",
 		"brotli:5,transpose",
@@ -88,6 +89,7 @@ var testedOptions = []string{
 	"uncompressed",
 	"brotli",
 	"zstd",
+	"snappy",
 
 	"transpose",
 	"uncompressed,transpose",
