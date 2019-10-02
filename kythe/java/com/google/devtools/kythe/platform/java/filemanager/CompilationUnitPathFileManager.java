@@ -59,8 +59,9 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     defaultPlatformClassPath =
         ImmutableSet.copyOf(
             Iterables.transform(
-                fileManager.getLocationAsPaths(StandardLocation.PLATFORM_CLASS_PATH),
-                p -> p.normalize().toString()));
+                // TODO(shahms): use getLocationAsPaths on Java 9
+                fileManager.getLocation(StandardLocation.PLATFORM_CLASS_PATH),
+                f -> f.toPath().normalize().toString()));
 
     fileSystem = CompilationUnitFileSystem.create(compilationUnit, fileDataProvider);
     // When compiled for Java 9+ this is ambiguous, so disambiguate to the compatibility shim.
