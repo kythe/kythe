@@ -435,7 +435,12 @@ public class JavaCompilationUnitExtractor {
       throws ExtractionException {
     for (InputUsageRecord input : fileManager.getUsages()) {
       processRequiredInput(
-          input.fileObject(), input.location(), fileManager, sourceFiles, genSrcDir, results);
+          input.fileObject(),
+          input.location().orElse(null),
+          fileManager,
+          sourceFiles,
+          genSrcDir,
+          results);
     }
   }
 
