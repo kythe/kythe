@@ -18,7 +18,6 @@ package com.google.devtools.kythe.extractors.java.standalone;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.common.base.Optional;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.sun.tools.javac.file.JavacFileManager;
@@ -32,6 +31,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 
@@ -110,7 +110,7 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
     }
 
     // Find generated source directory by the -s argument.
-    Optional<Path> genSrcDir = Optional.fromNullable(options.get(Option.S)).transform(Paths::get);
+    Optional<Path> genSrcDir = Optional.ofNullable(options.get(Option.S)).map(Paths::get);
 
     String analysisTarget =
         readEnvironmentVariable("KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sources));
