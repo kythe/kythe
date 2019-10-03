@@ -19,7 +19,6 @@ package com.google.devtools.kythe.extractors.java;
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -38,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import junit.framework.TestCase;
@@ -80,7 +80,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -120,7 +120,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -165,7 +165,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -207,7 +207,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -252,7 +252,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -295,7 +295,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -339,7 +339,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -379,7 +379,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -421,7 +421,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -462,7 +462,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -541,7 +541,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             processorpath,
             processors,
-            Optional.absent(),
+            Optional.empty(),
             options,
             "output");
 
@@ -638,7 +638,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 
@@ -675,7 +675,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             EMPTY,
             EMPTY,
-            Optional.absent(),
+            Optional.empty(),
             EMPTY,
             "output");
 

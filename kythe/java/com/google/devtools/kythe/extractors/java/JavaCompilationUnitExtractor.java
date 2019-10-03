@@ -21,7 +21,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
@@ -81,6 +80,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -810,7 +810,7 @@ public class JavaCompilationUnitExtractor {
 
       // Ensure generated source directory is relative to root.
       genSrcDir =
-          genSrcDir.transform(
+          genSrcDir.map(
               p -> Paths.get(ExtractorUtils.tryMakeRelative(rootDirectory, p.toString())));
 
       for (String source : sources) {
