@@ -194,7 +194,7 @@ func init() {
 	flag.StringVar(&outputDir, "output", defaultOutputDir(), "path to which the compilations and errors should be written (optional)")
 	flag.StringVar(&vNameRules, "rules", defaultVNamesPath(), "path of vnames.json file (optional)")
 	flag.StringVar(&wrapperPath, "java_wrapper", defaultWrapperPath(), "path to the java_wrapper executable (optional)")
-	flag.StringVar(&extractorPath, "extractor_jar", defaultExtractorPath(), "path to the javac_extractor_deployt.jar (optional)")
+	flag.StringVar(&extractorPath, "extractor_jar", defaultExtractorPath(), "path to the javac_extractor_deploy.jar (optional)")
 	flag.Var(&makeTargets, "targets", "comma-separated list of make targets to build")
 	flag.Usage = flagutil.SimpleUsage("Extract a configured openjdk11 source directory", "[--java_wrapper=] [path]")
 }
