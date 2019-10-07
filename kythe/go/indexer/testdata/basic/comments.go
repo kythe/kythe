@@ -58,6 +58,22 @@ const (
 // alpha is a function.
 func alpha() {}
 
+//- ImportantComment documents Param
+//- ImportantComment.text "load-bearing comment"
+//- EhComment documents Eh
+//- EhComment.text "idk"
+
+//- @+5"importantParam" defines/binding Param
+//- @+6"ehParam" defines/binding Eh
+
+func beta(
+	// load-bearing comment
+	importantParam string,
+
+	ehParam string, // idk
+) {
+}
+
 //- Alpha.node/kind function
 //- AlphaDoc.node/kind doc
 //- AlphaDoc.text "alpha is a function."
