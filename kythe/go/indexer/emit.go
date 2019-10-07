@@ -470,7 +470,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 			mapFields(st.Fields, func(i int, id *ast.Ident) {
 				target := e.writeVarBinding(id, nodes.Field, nil)
 				f := st.Fields.List[i]
-				e.writeDoc(f.Doc, target)
+				e.writeDoc(firstNonEmptyComment(f.Doc, f.Comment), target)
 				e.emitAnonMembers(f.Type)
 			})
 
@@ -491,7 +491,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 					e.writeEdge(anchor, target, edges.DefinesBinding)
 					e.writeFact(target, facts.NodeKind, nodes.Variable)
 					e.writeFact(target, facts.Subkind, nodes.Field)
-					e.writeDoc(field.Doc, target)
+					e.writeDoc(firstNonEmptyComment(field.Doc, field.Comment), target)
 				}
 			}
 		}
@@ -679,12 +679,12 @@ func (e *emitter) emitAnonMembers(expr ast.Expr) {
 	if st, ok := expr.(*ast.StructType); ok {
 		mapFields(st.Fields, func(i int, id *ast.Ident) {
 			target := e.writeVarBinding(id, nodes.Field, nil) // no parent
-			e.writeDoc(st.Fields.List[i].Doc, target)
+			e.writeDoc(firstNonEmptyComment(st.Fields.List[i].Doc, st.Fields.List[i].Comment), target)
 		})
 	} else if it, ok := expr.(*ast.InterfaceType); ok {
 		mapFields(it.Methods, func(i int, id *ast.Ident) {
 			target := e.writeBinding(id, nodes.Function, nil) // no parent
-			e.writeDoc(it.Methods.List[i].Doc, target)
+			e.writeDoc(firstNonEmptyComment(it.Methods.List[i].Doc, it.Methods.List[i].Comment), target)
 		})
 	}
 }
@@ -1194,11 +1194,11 @@ func specComment(spec ast.Spec, stack stackFunc) *ast.CommentGroup {
 	var comment *ast.CommentGroup
 	switch t := spec.(type) {
 	case *ast.TypeSpec:
-		comment = t.Doc
+		comment = firstNonEmptyComment(t.Doc, t.Comment)
 	case *ast.ValueSpec:
-		comment = t.Doc
+		comment = firstNonEmptyComment(t.Doc, t.Comment)
 	case *ast.ImportSpec:
-		comment = t.Doc
+		comment = firstNonEmptyComment(t.Doc, t.Comment)
 	}
 	if comment == nil {
 		if t, ok := stack(1).(*ast.GenDecl); ok {
@@ -1206,4 +1206,13 @@ func specComment(spec ast.Spec, stack stackFunc) *ast.CommentGroup {
 		}
 	}
 	return comment
+}
+
+func firstNonEmptyComment(cs ...*ast.CommentGroup) *ast.CommentGroup {
+	for _, c := range cs {
+		if c != nil && len(c.List) > 0 {
+			return c
+		}
+	}
+	return nil
 }
