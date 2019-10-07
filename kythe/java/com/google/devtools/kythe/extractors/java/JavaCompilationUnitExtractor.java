@@ -208,6 +208,7 @@ public class JavaCompilationUnitExtractor {
       unit.addSourceFile(sourceFile);
     }
     unit.setOutputKey(outputPath);
+    unit.setWorkingDirectory(rootDirectory);
     unit.addDetails(
         Any.newBuilder()
             .setTypeUrl(JAVA_DETAILS_URL)
