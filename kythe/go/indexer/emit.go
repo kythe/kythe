@@ -120,6 +120,7 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 
 	// Traverse the AST of each file in the package for xref entries.
 	for _, file := range pi.Files {
+		e.cmap = ast.NewCommentMap(pi.FileSet, file, file.Comments)
 		e.writeDoc(file.Doc, pi.VName)                        // capture package comments
 		e.writeRef(file.Name, pi.VName, edges.DefinesBinding) // define a binding for the package
 		ast.Walk(newASTVisitor(func(node ast.Node, stack stackFunc) bool {
@@ -167,6 +168,7 @@ type emitter struct {
 	rmap     map[*ast.File]map[int]metadata.Rules // see applyRules
 	anchored map[ast.Node]struct{}                // see writeAnchor
 	firstErr error
+	cmap     ast.CommentMap // current file's CommentMap
 }
 
 // visitIdent handles referring identifiers. Declaring identifiers are handled
@@ -659,7 +661,12 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 		if sig.Params().At(i) != nil {
 			if param := e.writeBinding(id, nodes.Variable, info.vname); param != nil {
 				e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
-				e.emitAnonMembers(ftype.Params.List[i].Type)
+
+				field := ftype.Params.List[i]
+				e.emitAnonMembers(field.Type)
+
+				// Field object does not associate any comments with the parameter; use CommentMap to find them
+				e.writeDoc(firstNonEmptyComment(e.cmap.Filter(field).Comments()...), param)
 			}
 		}
 		paramIndex++
