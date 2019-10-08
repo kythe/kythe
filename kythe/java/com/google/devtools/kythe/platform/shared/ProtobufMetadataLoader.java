@@ -83,7 +83,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
   /** @return a function that looks up the VName for some filename in the given CompilationUnit. */
   private static Function<String, VName> lookupVNameFromCompilationUnit(CompilationUnit unit) {
     HashMap<String, VName> map = new HashMap<>();
-    Path root = Paths.get(unit.getWorkingDirectory().equals("") ? "/" : unit.getWorkingDirectory());
+    Path root = Paths.get("/", unit.getWorkingDirectory());
     for (CompilationUnit.FileInput input : unit.getRequiredInputList()) {
       map.put(root.resolve(input.getInfo().getPath()).toString(), input.getVName());
     }
