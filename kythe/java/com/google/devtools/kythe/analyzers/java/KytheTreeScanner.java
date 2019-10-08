@@ -34,6 +34,7 @@ import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.ReferenceType;
+import com.google.devtools.kythe.platform.java.filemanager.ForwardingStandardJavaFileManager;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
@@ -1424,17 +1425,24 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   /** Resovles a string as a source-file relative path */
   private String resolveSourcePath(String path) {
     try {
-      return fileManager.asPath(filePositions.getSourceFile()).resolveSibling(path).toString();
+      // TODO(shahms): Remove this cast/check/fallback when we only support JDK9+.
+      if (fileManager instanceof ForwardingStandardJavaFileManager) {
+        return ((ForwardingStandardJavaFileManager) fileManager)
+            .asPath(filePositions.getSourceFile())
+            .resolveSibling(path)
+            .toString();
+      }
     } catch (UnsupportedOperationException
         | IllegalArgumentException
         | NullPointerException unused) {
-      URI uri = filePositions.getSourceFile().toUri();
-      String fullPath = uri.resolve(path).getPath();
-      if (fullPath.startsWith("/")) {
-        fullPath = fullPath.substring(1);
-      }
-      return fullPath;
     }
+    // Fallback to URI-based path resolution when asPath is unsupported.
+    URI uri = filePositions.getSourceFile().toUri();
+    String fullPath = uri.resolve(path).getPath();
+    if (fullPath.startsWith("/")) {
+      fullPath = fullPath.substring(1);
+    }
+    return fullPath;
   }
 
   private Type externalType(Symbol sym) {
