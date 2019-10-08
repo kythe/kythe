@@ -23,6 +23,8 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.function.Function;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -81,10 +83,11 @@ public class ProtobufMetadataLoader implements MetadataLoader {
   /** @return a function that looks up the VName for some filename in the given CompilationUnit. */
   private static Function<String, VName> lookupVNameFromCompilationUnit(CompilationUnit unit) {
     HashMap<String, VName> map = new HashMap<>();
+    Path root = Paths.get(unit.getWorkingDirectory().equals("") ? "/" : unit.getWorkingDirectory());
     for (CompilationUnit.FileInput input : unit.getRequiredInputList()) {
-      map.put(input.getInfo().getPath(), input.getVName());
+      map.put(root.resolve(input.getInfo().getPath()).toString(), input.getVName());
     }
-    return map::get;
+    return p -> map.get(root.resolve(p).toString());
   }
 
   @Override

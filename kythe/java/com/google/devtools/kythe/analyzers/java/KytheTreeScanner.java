@@ -1370,10 +1370,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private void loadAnnotationsFile(String path) {
     URI uri = filePositions.getSourceFile().toUri();
     try {
-      String fullPath = uri.resolve(path).getPath();
-      if (fullPath.startsWith("/")) {
-        fullPath = fullPath.substring(1);
-      }
+      String fullPath = resolveSourcePath(path);
       FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath), null);
       if (file == null) {
         logger.atWarning().log("Can't find metadata %s for %s at %s", path, uri, fullPath);
@@ -1421,6 +1418,22 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           loadAnnotationsFile(comments.substring(Metadata.ANNOTATION_COMMENT_PREFIX.length()));
         }
       }
+    }
+  }
+
+  /** Resovles a string as a source-file relative path */
+  private String resolveSourcePath(String path) {
+    try {
+      return fileManager.asPath(filePositions.getSourceFile()).resolveSibling(path).toString();
+    } catch (UnsupportedOperationException
+        | IllegalArgumentException
+        | NullPointerException unused) {
+      URI uri = filePositions.getSourceFile().toUri();
+      String fullPath = uri.resolve(path).getPath();
+      if (fullPath.startsWith("/")) {
+        fullPath = fullPath.substring(1);
+      }
+      return fullPath;
     }
   }
 
