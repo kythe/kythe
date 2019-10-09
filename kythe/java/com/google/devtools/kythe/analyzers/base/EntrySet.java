@@ -60,7 +60,7 @@ public final class EntrySet {
   private final ImmutableMap<String, byte[]> properties;
 
   /** Used to detect when an {@link EntrySet} was not emitted exactly once. */
-  private boolean emitted;
+  private volatile boolean emitted;
 
   protected EntrySet(
       VName source,
