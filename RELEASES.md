@@ -141,18 +141,7 @@
 #### Bug Fixes
 
 *   bump nokogiri to 1.10.4 (#4007) ([870a5830](https://github.com/kythe/kythe/commit/870a58307f7bd3506d32405b7ef37b54b3a4d4d7))
-*   correct chunk position starting a block boundary (#3782) ([341fd2cf](https://github.com/kythe/kythe/commit/341fd2cf93d484941f25e5f2e6c60276e8c2786c))
 *   update vulnerable outdated js-yaml NPM package (#3740) ([b873a1c6](https://github.com/kythe/kythe/commit/b873a1c676ce204ff8e66ffe765531c1f544b68e))
-*   remove Option.D from compilation unit again (#3670) ([8a0bdfda](https://github.com/kythe/kythe/commit/8a0bdfda6346fc0cb33ac0d842bba536e40347ec))
-*   resolve #3557 by codifying behavior of filtering (#3563) ([0dcf0845](https://github.com/kythe/kythe/commit/0dcf084575ee2f26df9ef3e0320448d35f8c13f9))
-*   pin gcp extraction example and tests to :stable (#3534) ([8f9c34a3](https://github.com/kythe/kythe/commit/8f9c34a331752401455cdc09220e5e444d6ae35d))
-*   pin gradle/maven extraction to jdk8 instead of using gcp provided image (#3524) ([5fd55cd1](https://github.com/kythe/kythe/commit/5fd55cd186ecd93ad66b8ff63bb4ba0ac50c55d4))
-*   downstream change from java bazel (#3518) ([36e2e54e](https://github.com/kythe/kythe/commit/36e2e54e46607d4f12b8f486dc00f61c3b4eaa52))
-*   downstream fix to provider syntax (#3508) ([752037dc](https://github.com/kythe/kythe/commit/752037dc9eed8bc0fdde7f68aed4dc7814acdd0b))
-*   go style errors introduced in previous commit (#3502) ([202187c5](https://github.com/kythe/kythe/commit/202187c59cd7f14d38bdc115a33e291c58be3738))
-*   propagating a downstream fix on typescript (#3496) ([04b7bb2d](https://github.com/kythe/kythe/commit/04b7bb2dc5ce7a8f8aca0bad16e4eefb28252404))
-*   address part of #3459 by claiming comments for annotation lines (#3489) ([bcddb97c](https://github.com/kythe/kythe/commit/bcddb97c57a97dcd0cc1580c5213f899a2d8230b))
-*   extract test files in TEST_TMPDIR instead of runfiles dir (#29) ([f94a1299](https://github.com/kythe/kythe/commit/f94a1299e12b25e9e363df194edcaa15f1bdfb45))
 *   get toolchains for remote builds working correctly (#7) ([b034a8f3](https://github.com/kythe/kythe/commit/b034a8f360f7279b8a0025e91a24fb394c5c7e91))
 * **api:**  filter decoration overrides by desired build configs (#3739) ([3f4ef51b](https://github.com/kythe/kythe/commit/3f4ef51b7ba9c347ebc7bca151d19a6bc55a5309))
 * **cxx_extractor:**
@@ -202,10 +191,12 @@
   *  and tests should use ambient langtools (#4053) ([7f680e94](https://github.com/kythe/kythe/commit/7f680e94bb60ca23219421f6479dbf1c63a8f37b))
   *  support missing -s in aspect extraction (#3986) ([7609b970](https://github.com/kythe/kythe/commit/7609b9700e6a30a5ec052e9baa713e59f073bee0))
   *  deal with both kinds of Generated annotations (#3889) ([048134fd](https://github.com/kythe/kythe/commit/048134fd919bd263d996c22c226df70955bf23c7))
+  *  remove Option.D from compilation unit again (#3670) ([8a0bdfda](https://github.com/kythe/kythe/commit/8a0bdfda6346fc0cb33ac0d842bba536e40347ec))
   *  use reflection to access/override JDK bits. (#3612) ([72915498](https://github.com/kythe/kythe/commit/72915498ba2b803b180543db35bcfa894a2c4c03))
   *  Don't include time in kzips for java (#4085) ([3c25f1a0](https://github.com/kythe/kythe/commit/3c25f1a07109179ace64dc3517a49b7f4b07dbc0))
 * **java_indexer:**
   *  cast to base with asPath to support JDK8 (#4137) ([1ab8b883](https://github.com/kythe/kythe/commit/1ab8b8831a0e711e9334d322cbccc90fc56bdecf))
+*   address part of #3459 by claiming comments for annotation lines (#3489) ([bcddb97c](https://github.com/kythe/kythe/commit/bcddb97c57a97dcd0cc1580c5213f899a2d8230b))
   *  use Path to resolve metadata (fixes #4135) (#4136) ([e03d4726](https://github.com/kythe/kythe/commit/e03d47265ea4b60b369bc420245ec1a73a953814))
   *  use Java 8 method instead of Java 9 method (#4123) ([fad7b765](https://github.com/kythe/kythe/commit/fad7b765316fbb9c782b843af52f2455fe90cdfb))
   *  accept AutoValue.Builder interface definitions (#4054) ([e12eee78](https://github.com/kythe/kythe/commit/e12eee78695c8881eccb32e9ac608020f3804f27))
@@ -231,6 +222,7 @@
   *  skip synthesized map entry types (#26) ([c23d4d52](https://github.com/kythe/kythe/commit/c23d4d5271cb22174328a6b77be6086c7dd55c22))
   *  close file after use in SourceTree.Read() (#18) ([da1c9cc0](https://github.com/kythe/kythe/commit/da1c9cc0779b92748249be34d2d455934f6943a1))
   *  add missing dependency (#11) ([d534eedb](https://github.com/kythe/kythe/commit/d534eedba09d341bcc6f45725074d7519640934a))
+  *  extract test files in TEST_TMPDIR instead of runfiles dir (#29) ([f94a1299](https://github.com/kythe/kythe/commit/f94a1299e12b25e9e363df194edcaa15f1bdfb45))
 * **serving:**
   *  properly return lookup errors (#3764) ([d5c0e4ec](https://github.com/kythe/kythe/commit/d5c0e4ec7a5505f3f63a76a1ec53a860319163b0))
 * **tests:**
@@ -245,6 +237,7 @@
   *  do not consider the empty kzip an error (#4111) ([7dc45432](https://github.com/kythe/kythe/commit/7dc45432a46c138d6363b91dcdca4e83f1cb33a0))
   *  check error before result (#4110) ([3207a48f](https://github.com/kythe/kythe/commit/3207a48f4d89d8a50e80984da437e944e4e66c23))
   *  use uncompressed riegeli block size when decompressing (#3997) ([a6040e85](https://github.com/kythe/kythe/commit/a6040e8507514fb3dc2963b854f8856fb6de01dd))
+  *  correct chunk position starting a block boundary (#3782) ([341fd2cf](https://github.com/kythe/kythe/commit/341fd2cf93d484941f25e5f2e6c60276e8c2786c))
   *  fix #3246 (#3737) ([c2d7ee67](https://github.com/kythe/kythe/commit/c2d7ee679e295bedb2a274b408e04a75d18213ac))
   *  allow sample UI dependencies to be disabled (#3717) ([4c687714](https://github.com/kythe/kythe/commit/4c68771432d0e7335fcee427fdd1ef5bbe95ea8d))
   *  migrate 'kythe ls' filters from deprecated FileTree API (#3566) ([5c3e9c27](https://github.com/kythe/kythe/commit/5c3e9c27ea899a49e730c2a47e28515f11ea46b5))
