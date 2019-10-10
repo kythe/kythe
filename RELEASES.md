@@ -11,13 +11,9 @@
   *  add set of build configs per Corpus in CorpusRootsReply (#3572) ([96cb400a](https://github.com/kythe/kythe/commit/96cb400a36dfa146d91fb98fad75ba66a24d1aaa))
   *  add build configurations per FileTree entry (#3523) ([b5eddd52](https://github.com/kythe/kythe/commit/b5eddd52caa6251e6543b6b6be1f0ad43784e27f))
   *  add CrossReferencesRequest filter for build config (#3512) ([cc9d2d66](https://github.com/kythe/kythe/commit/cc9d2d6650ef83832d8bbdaf86f2c6c33b8efbb6))
-* **bazel:**
-  *  support package installation at extraction time to support system dependencies (#3641) ([e7d15468](https://github.com/kythe/kythe/commit/e7d15468b396e7a3926b2c601984a0ca678ecbda))
-  *  Use bazelisk in Bazel extractor Dockerfile extraction. (#3596) ([94e70cde](https://github.com/kythe/kythe/commit/94e70cde56a6f2c2413a47a4dc125a5f35dd94fb))
 * **cxx_common:**
   *  support proto encoding of compilation units in kzips (#3940) ([512fe0df](https://github.com/kythe/kythe/commit/512fe0df53b6b17f5feaafa11af41494fa89111b))
   *  document and implement kythe metadata as proto (#3912) ([b19a1745](https://github.com/kythe/kythe/commit/b19a1745edfa2333a27b0d6f390fe983fb3b7244))
-  *  proto plugin to embed metadata in C++ headers (#3511) ([0d2ea56e](https://github.com/kythe/kythe/commit/0d2ea56e8754056f86bfd177ee4e419316c8df7c))
   *  Add ref imports edge field (#3465) ([c9c6f6e5](https://github.com/kythe/kythe/commit/c9c6f6e5c1bcd427518f0fb4282c31da08f05ee6))
 * **cxx_extractor:**
   *  use a toolchain for configuring cxx_extractor (#4030) ([f1bed7e9](https://github.com/kythe/kythe/commit/f1bed7e9f9cfdc70c58838352dcaaae132035b56))
@@ -26,13 +22,15 @@
   *  provide defines spans for functions (#3708) ([8cd2434b](https://github.com/kythe/kythe/commit/8cd2434b921b32bc2f941431c563cfabc6b384f9))
   *  add tests and fix support for C++/proto metadata references (#3531) ([dd8fe901](https://github.com/kythe/kythe/commit/dd8fe901eef8703782c0ac6e4ad1159d1edf4a15))
 * **docker_extract:**  support selecting encoding for kzip generation (#3947) ([154cec53](https://github.com/kythe/kythe/commit/154cec53334408a851ba3fb17a5e5672ecdadeb6))
+  *  support package installation at extraction time to support system dependencies (#3641) ([e7d15468](https://github.com/kythe/kythe/commit/e7d15468b396e7a3926b2c601984a0ca678ecbda))
+  *  Use bazelisk in Bazel extractor Dockerfile extraction. (#3596) ([94e70cde](https://github.com/kythe/kythe/commit/94e70cde56a6f2c2413a47a4dc125a5f35dd94fb))
+  *  add generic GCB Bazel extraction config (#3509) ([abeff3e6](https://github.com/kythe/kythe/commit/abeff3e6a444e5d02d408f22180300cfa6a79931))
+  *  add Bazel extraction Docker image (#3499) ([2af62973](https://github.com/kythe/kythe/commit/2af6297310eae2a8c95bcfbb69f722d0e338cd26))
 * **extraction:**
   *  export VNameRewriteRule proto conversion function (#4117) ([4147ebd0](https://github.com/kythe/kythe/commit/4147ebd00aa68202773472444d178b6edbb99d9e))
   *  add support to parse VName rules from any io.Reader (#4116) ([95dae46c](https://github.com/kythe/kythe/commit/95dae46c890807d3d34d177077f0fdf92a7161cb))
   *  add proto definition for VName rewrite rules (#4114) ([a9302fc3](https://github.com/kythe/kythe/commit/a9302fc3f57ca04e3c20df14cc93f7ba61a7742c))
   *  allow details to be added to a kindex required input (#4017) ([255fb53d](https://github.com/kythe/kythe/commit/255fb53d56982676cd858f94a32cc64f9561a318))
-  *  add generic GCB Bazel extraction config (#3509) ([abeff3e6](https://github.com/kythe/kythe/commit/abeff3e6a444e5d02d408f22180300cfa6a79931))
-  *  add Bazel extraction Docker image (#3499) ([2af62973](https://github.com/kythe/kythe/commit/2af6297310eae2a8c95bcfbb69f722d0e338cd26))
   *  allow extractor to infer corpus from sources (#45) ([bc7fc996](https://github.com/kythe/kythe/commit/bc7fc996b0f8a978a34ae66723d8c23c631c6746))
 * **go extractor:**
   *  add vnames.json support (#4069) ([99cecdb6](https://github.com/kythe/kythe/commit/99cecdb661da783bd33aa9856e533775c95268c3))
@@ -78,6 +76,7 @@
   *  Add standalone proto extractor (#21) ([c1c53ce4](https://github.com/kythe/kythe/commit/c1c53ce41624166e0eb1540cda243d38ac430d3b))
   *  add extra_action and action_listener (#43) ([956304df](https://github.com/kythe/kythe/commit/956304df4bfb584c5b6655f44cb395c6c00928b1))
   *  emit deprecation tags for proto fields (#3677) ([418a3d9a](https://github.com/kythe/kythe/commit/418a3d9a451cd779a0e0b0576ba4069008956658))
+  *  proto plugin to embed metadata in C++ headers (#3511) ([0d2ea56e](https://github.com/kythe/kythe/commit/0d2ea56e8754056f86bfd177ee4e419316c8df7c))
 * **schema:**
   *  embed metadata in schema.proto source file (#4020) ([902b1344](https://github.com/kythe/kythe/commit/902b13444bd6eacb43a4f7be3487eabad32e97ce))
   *  add Java utility to convert Node/Entry protos (#3714) ([19567cea](https://github.com/kythe/kythe/commit/19567ceadbffbe3d1ba9c481568a84e5daebeb7f))
