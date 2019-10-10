@@ -50,6 +50,9 @@ elif [[ -n "$(git diff --name-only)" ]]; then
   exit 1
 fi
 
+# Make sure https://github.com/clog-tool/clog-cli is installed.
+hash clog || { echo "ERROR: Please install clog"; exit 1; }
+
 previous_version=$(awk '/^release_version =/ { print substr($3, 2, length($3)-2) }' kythe/release/BUILD)
 
 echo "Previous version: $previous_version"
