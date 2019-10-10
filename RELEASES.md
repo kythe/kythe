@@ -27,9 +27,6 @@
   *  add generic GCB Bazel extraction config (#3509) ([abeff3e6](https://github.com/kythe/kythe/commit/abeff3e6a444e5d02d408f22180300cfa6a79931))
   *  add Bazel extraction Docker image (#3499) ([2af62973](https://github.com/kythe/kythe/commit/2af6297310eae2a8c95bcfbb69f722d0e338cd26))
 * **extraction:**
-  *  export VNameRewriteRule proto conversion function (#4117) ([4147ebd0](https://github.com/kythe/kythe/commit/4147ebd00aa68202773472444d178b6edbb99d9e))
-  *  add support to parse VName rules from any io.Reader (#4116) ([95dae46c](https://github.com/kythe/kythe/commit/95dae46c890807d3d34d177077f0fdf92a7161cb))
-  *  add proto definition for VName rewrite rules (#4114) ([a9302fc3](https://github.com/kythe/kythe/commit/a9302fc3f57ca04e3c20df14cc93f7ba61a7742c))
   *  allow details to be added to a kindex required input (#4017) ([255fb53d](https://github.com/kythe/kythe/commit/255fb53d56982676cd858f94a32cc64f9561a318))
   *  allow extractor to infer corpus from sources (#45) ([bc7fc996](https://github.com/kythe/kythe/commit/bc7fc996b0f8a978a34ae66723d8c23c631c6746))
 * **go extractor:**
@@ -46,7 +43,6 @@
   *  convert variadic function parameters from slice (#3615) ([0f638176](https://github.com/kythe/kythe/commit/0f6381768ebfa838a67d92c63e8b1bcaa1da3622))
   *  add typed edges for bindings (#3611) ([7f70f99d](https://github.com/kythe/kythe/commit/7f70f99d39aec353d3ed56ac28b72ea5a11022db))
   *  emit bindings for anonymous interface members (#3610) ([d7af13c2](https://github.com/kythe/kythe/commit/d7af13c248daa4cbe5ad333eccc4ca86a4bd8552))
-* **indexing:**  add LOOKUP_BY_TYPED kind to MarkedSource (#3669) ([ee383c41](https://github.com/kythe/kythe/commit/ee383c4155f973c1785a95d41c4f8c9eb10a9dbe))
 * **java_common:**
   *  add forwarding method for setPathFactory (#4101) ([699004c1](https://github.com/kythe/kythe/commit/699004c16493c2f7ebdd45b5de5fcc4a82ee6a3a))
   *  use the standard compilation unit digest for kzip (#4060) ([e5ef23b2](https://github.com/kythe/kythe/commit/e5ef23b2e6180afb3f293119a59dc6773deac56a))
@@ -143,14 +139,13 @@
 *   update vulnerable outdated js-yaml NPM package (#3740) ([b873a1c6](https://github.com/kythe/kythe/commit/b873a1c676ce204ff8e66ffe765531c1f544b68e))
 *   get toolchains for remote builds working correctly (#7) ([b034a8f3](https://github.com/kythe/kythe/commit/b034a8f360f7279b8a0025e91a24fb394c5c7e91))
 * **api:**  filter decoration overrides by desired build configs (#3739) ([3f4ef51b](https://github.com/kythe/kythe/commit/3f4ef51b7ba9c347ebc7bca151d19a6bc55a5309))
-* **cxx_extractor:**
-  *  better support cuda extractions (#3747) ([2d7f89c6](https://github.com/kythe/kythe/commit/2d7f89c69a1cc816d21c7d86faf6791d4afda8e7))
 * **cxx_common:**
   *  fix path_utils_test when tempdir is a symlink (#4022) ([f71af3dd](https://github.com/kythe/kythe/commit/f71af3dd8ca3975698c304565d9ccdc00154de85))
   *  update LLVM to r367622 (#3944) ([1d7123f9](https://github.com/kythe/kythe/commit/1d7123f9e3d5c79d72ebac600e9d8e5bfa654b7b))
   *  anticipate changes in Bison 3.3 syntax (#3513) ([d14cb507](https://github.com/kythe/kythe/commit/d14cb50782d1056472615f2265e939df778243f5))
 * **cxx_extractor:**
   *  use the right compiler executable (#4032) ([a2015717](https://github.com/kythe/kythe/commit/a2015717012b1f334b1c8e8880ac140a34773744))
+  *  better support cuda extractions (#3747) ([2d7f89c6](https://github.com/kythe/kythe/commit/2d7f89c69a1cc816d21c7d86faf6791d4afda8e7))
   *  include executable name in extracted arguments (#4023) ([58a62498](https://github.com/kythe/kythe/commit/58a62498b30691d63a621ae119c07d750c71cdc5))
   *  Set cxx extractor kzip times to a constant (#4086) ([642c9330](https://github.com/kythe/kythe/commit/642c933026acafd44f49de81f12e9f21e4fb6de0))
 * **cxx_indexer:**
@@ -176,7 +171,6 @@
   *  always emit anchor for anon value types (#3605) ([d97ca443](https://github.com/kythe/kythe/commit/d97ca443b265685c10e7caa7d4cc1c9f97933ee7))
 * **java:**
   *  handle more null data from java (#4082) ([e878b5f5](https://github.com/kythe/kythe/commit/e878b5f58a8a7174b2c83373b89f60b99ce9b092))
-  *  minor java changes as suggested by downstream analyzers (#3860) ([7a9ed0ec](https://github.com/kythe/kythe/commit/7a9ed0ec6aee13c8fba1ccf8d4581939805d21d2))
   *  accept either JRE 8 or JRE 9 style classpath in test (#3972) ([3ea7de6c](https://github.com/kythe/kythe/commit/3ea7de6ccd55e30a693e60996468a14f78151630))
 * **java_build:**  remove jvm_flags which complicate running on newer JDKs (#3955) ([b4bdb395](https://github.com/kythe/kythe/commit/b4bdb395bd108415e5d8deab65a6538915d31a6c))
 * **java_common:**
@@ -195,9 +189,8 @@
   *  Don't include time in kzips for java (#4085) ([3c25f1a0](https://github.com/kythe/kythe/commit/3c25f1a07109179ace64dc3517a49b7f4b07dbc0))
 * **java_indexer:**
   *  cast to base with asPath to support JDK8 (#4137) ([1ab8b883](https://github.com/kythe/kythe/commit/1ab8b8831a0e711e9334d322cbccc90fc56bdecf))
-*   address part of #3459 by claiming comments for annotation lines (#3489) ([bcddb97c](https://github.com/kythe/kythe/commit/bcddb97c57a97dcd0cc1580c5213f899a2d8230b))
+  *  address part of #3459 by claiming comments for annotation lines (#3489) ([bcddb97c](https://github.com/kythe/kythe/commit/bcddb97c57a97dcd0cc1580c5213f899a2d8230b))
   *  use Path to resolve metadata (fixes #4135) (#4136) ([e03d4726](https://github.com/kythe/kythe/commit/e03d47265ea4b60b369bc420245ec1a73a953814))
-  *  use Java 8 method instead of Java 9 method (#4123) ([fad7b765](https://github.com/kythe/kythe/commit/fad7b765316fbb9c782b843af52f2455fe90cdfb))
   *  accept AutoValue.Builder interface definitions (#4054) ([e12eee78](https://github.com/kythe/kythe/commit/e12eee78695c8881eccb32e9ac608020f3804f27))
   *  implement JDK9+ path-based FileObject methods (#3976) ([bb70a39f](https://github.com/kythe/kythe/commit/bb70a39fd24d353f0f1d481e1d5822fc0f461361))
   *  dynamically resolve JRE 9 bootclasspath (#3970) ([f95e4395](https://github.com/kythe/kythe/commit/f95e4395998737b8b5d769c28682b39a9b75da38))
@@ -220,7 +213,6 @@
   *  empty deprecation message and additional test case (#3678) ([d56bc1d3](https://github.com/kythe/kythe/commit/d56bc1d3f43badb99c313288c50aa8109b2e141d))
   *  skip synthesized map entry types (#26) ([c23d4d52](https://github.com/kythe/kythe/commit/c23d4d5271cb22174328a6b77be6086c7dd55c22))
   *  close file after use in SourceTree.Read() (#18) ([da1c9cc0](https://github.com/kythe/kythe/commit/da1c9cc0779b92748249be34d2d455934f6943a1))
-  *  add missing dependency (#11) ([d534eedb](https://github.com/kythe/kythe/commit/d534eedba09d341bcc6f45725074d7519640934a))
   *  extract test files in TEST_TMPDIR instead of runfiles dir (#29) ([f94a1299](https://github.com/kythe/kythe/commit/f94a1299e12b25e9e363df194edcaa15f1bdfb45))
 * **serving:**
   *  properly return lookup errors (#3764) ([d5c0e4ec](https://github.com/kythe/kythe/commit/d5c0e4ec7a5505f3f63a76a1ec53a860319163b0))
