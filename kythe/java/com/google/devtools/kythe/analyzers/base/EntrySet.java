@@ -60,7 +60,7 @@ public final class EntrySet {
   private final ImmutableMap<String, byte[]> properties;
 
   /** Used to detect when an {@link EntrySet} was not emitted exactly once. */
-  private volatile boolean emitted;
+  private boolean emitted;
 
   protected EntrySet(
       VName source,
@@ -96,10 +96,10 @@ public final class EntrySet {
     if (emitted) {
       logger.atWarning().log("EntrySet already emitted: %s", this);
     }
+    emitted = true;
     for (Map.Entry<String, byte[]> entry : properties.entrySet()) {
       emitter.emit(source, edgeKind, target, entry.getKey(), entry.getValue());
     }
-    emitted = true;
   }
 
   /**
