@@ -201,7 +201,8 @@ The initial definition of a VName includes the following 5 fields:
    Examples: "chromium", "aosp", "bitbucket.org/creachadair/stringset".
    +
    +
-   We reserve the corpus name `kythe` for the Kythe open-source project itself.
+   We reserve corpus names prefixed with `kythe` for the Kythe
+   open-source project itself.
    +
    +
    _Note:_ It is possible, though not recommended, to use a local directory
