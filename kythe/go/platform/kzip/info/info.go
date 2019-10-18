@@ -55,11 +55,11 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 		cuLang := u.Proto.GetVName().GetLanguage()
 		cuInfo := cuLangInfo(cuLang, corpusInfo(cuCorpus, kzipInfo))
 		cuInfo.Count++
-		cuInfo.SourceFiles += int32(srcs.Len())
-		kzipInfo.TotalSourceFiles += int32(srcs.Len())
+		cuInfo.Sources += int32(srcs.Len())
+		kzipInfo.TotalSources += int32(srcs.Len())
 
 		for _, ri := range u.Proto.RequiredInput {
-			kzipInfo.TotalRequiredInputFiles++
+			kzipInfo.TotalRequiredInputs++
 			// Determine language from the unit VName (note that file VNames are
 			// forbidden from specifying a language).
 			cuInfo.RequiredInputs++
@@ -87,14 +87,14 @@ func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
 
 	for _, i := range infos {
 		kzipInfo.TotalUnits += i.GetTotalUnits()
-		kzipInfo.TotalRequiredInputFiles += i.GetTotalRequiredInputFiles()
-		kzipInfo.TotalSourceFiles += i.GetTotalSourceFiles()
+		kzipInfo.TotalRequiredInputs += i.GetTotalRequiredInputs()
+		kzipInfo.TotalSources += i.GetTotalSources()
 		for corpus, cinfo := range i.GetCorpora() {
 			mergedCorpInfo := corpusInfo(corpus, kzipInfo)
 			for lang, cu := range cinfo.GetCompilationUnits() {
 				cui := cuLangInfo(lang, mergedCorpInfo)
 				cui.Count += cu.GetCount()
-				cui.SourceFiles += cu.GetSourceFiles()
+				cui.Sources += cu.GetSources()
 				cui.RequiredInputs += cu.GetRequiredInputs()
 			}
 			for lang, fileCount := range cinfo.GetRequiredInputs() {

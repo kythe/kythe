@@ -27,15 +27,15 @@ import (
 func TestMergeKzipInfo(t *testing.T) {
 	infos := []*apb.KzipInfo{
 		{
-			TotalUnits:              1,
-			TotalSourceFiles:        1,
-			TotalRequiredInputFiles: 2,
+			TotalUnits:          1,
+			TotalSources:        1,
+			TotalRequiredInputs: 2,
 			Corpora: map[string]*apb.KzipInfo_CorpusInfo{
 				"corpus1": {
 					CompilationUnits: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
 						"python": {
 							Count:          1,
-							SourceFiles:    1,
+							Sources:        1,
 							RequiredInputs: 2,
 						},
 					},
@@ -44,20 +44,20 @@ func TestMergeKzipInfo(t *testing.T) {
 			},
 		},
 		{
-			TotalUnits:              1,
-			TotalSourceFiles:        0,
-			TotalRequiredInputFiles: 2,
+			TotalUnits:          1,
+			TotalSources:        0,
+			TotalRequiredInputs: 2,
 			Corpora: map[string]*apb.KzipInfo_CorpusInfo{
 				"corpus1": {
 					CompilationUnits: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
 						"python": {
 							Count:          1,
-							SourceFiles:    0,
+							Sources:        0,
 							RequiredInputs: 0,
 						},
 						"go": {
 							Count:          0,
-							SourceFiles:    0,
+							Sources:        0,
 							RequiredInputs: 2,
 						},
 					},
@@ -68,20 +68,20 @@ func TestMergeKzipInfo(t *testing.T) {
 	}
 
 	want := &apb.KzipInfo{
-		TotalUnits:              2,
-		TotalSourceFiles:        1,
-		TotalRequiredInputFiles: 4,
+		TotalUnits:          2,
+		TotalSources:        1,
+		TotalRequiredInputs: 4,
 		Corpora: map[string]*apb.KzipInfo_CorpusInfo{
 			"corpus1": {
 				CompilationUnits: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
 					"python": {
 						Count:          2,
-						SourceFiles:    1,
+						Sources:        1,
 						RequiredInputs: 2,
 					},
 					"go": {
 						Count:          0,
-						SourceFiles:    0,
+						Sources:        0,
 						RequiredInputs: 2,
 					},
 				},

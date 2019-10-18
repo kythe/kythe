@@ -191,7 +191,7 @@ message KzipInfo {
       // Number of compilation units that have a specific corpus in their VName.
       int32 count = 1;
       // Number of source files mentioned in these compilation units.
-      int32 source_files = 2;
+      int32 sources = 2;
       // Number of required inputs mentioned in these compilation units.
       int32 required_inputs = 3;
     }
@@ -205,8 +205,8 @@ message KzipInfo {
 
   map<string, CorpusInfo> corpora = 1;
   int32 total_units = 3;
-  int32 total_source_files = 4;
-  int32 total_required_input_files = 5;
+  int32 total_sources = 4;
+  int32 total_required_inputs = 5;
 }
 
 // A FilesRequest specifies a collection of files to be fetched from a
