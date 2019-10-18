@@ -27,37 +27,42 @@ import (
 func TestMergeKzipInfo(t *testing.T) {
 	infos := []*apb.KzipInfo{
 		{
-			TotalUnits: 1,
-			TotalFiles: 2,
+			TotalUnits:              1,
+			TotalSourceFiles:        1,
+			TotalRequiredInputFiles: 2,
 			Corpora: map[string]*apb.KzipInfo_CorpusInfo{
 				"corpus1": {
-					Files: map[string]int32{"python": 2},
-					Units: map[string]int32{"python": 1},
+					Units:              map[string]int32{"python": 1},
+					SourceFiles:        map[string]int32{"python": 1},
+					RequiredInputFiles: map[string]int32{"python": 2},
 				},
 			},
 		},
 		{
-			TotalUnits: 1,
-			TotalFiles: 2,
+			TotalUnits:              1,
+			TotalSourceFiles:        0,
+			TotalRequiredInputFiles: 2,
 			Corpora: map[string]*apb.KzipInfo_CorpusInfo{
 				"corpus1": {
-					Files: map[string]int32{"go": 2},
-					Units: map[string]int32{"python": 1},
+					Units:              map[string]int32{"python": 1},
+					RequiredInputFiles: map[string]int32{"go": 2},
 				},
 			},
 		},
 	}
 
 	want := &apb.KzipInfo{
-		TotalUnits: 2,
-		TotalFiles: 4,
+		TotalUnits:              2,
+		TotalSourceFiles:        1,
+		TotalRequiredInputFiles: 4,
 		Corpora: map[string]*apb.KzipInfo_CorpusInfo{
 			"corpus1": {
-				Files: map[string]int32{
+				Units:       map[string]int32{"python": 2},
+				SourceFiles: map[string]int32{"python": 1},
+				RequiredInputFiles: map[string]int32{
 					"go":     2,
 					"python": 2,
 				},
-				Units: map[string]int32{"python": 2},
 			},
 		},
 	}

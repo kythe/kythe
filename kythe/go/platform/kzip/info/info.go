@@ -28,6 +28,10 @@ import (
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
+// If the compilation unit doesn't set a corpus, use this corpus so we have somewhere to record the
+// stats.
+const unknownCorpus = "__UNKNOWN_CORPUS__"
+
 // KzipInfo scans a kzip and counts contained files and units, giving a breakdown by corpus and language.
 func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 	// Get file and unit counts broken down by corpus, language.
@@ -36,8 +40,9 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 		i := kzipInfo.Corpora[corpus]
 		if i == nil {
 			i = &apb.KzipInfo_CorpusInfo{
-				Files: make(map[string]int32),
-				Units: make(map[string]int32),
+				Units:              make(map[string]int32),
+				SourceFiles:        make(map[string]int32),
+				RequiredInputFiles: make(map[string]int32),
 			}
 			kzipInfo.Corpora[corpus] = i
 		}
@@ -47,29 +52,34 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 	err := kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
 		kzipInfo.TotalUnits++
 
+		srcs := stringset.New(u.Proto.SourceFile...)
 		// The corpus may be specified in the unit VName or in the source file
 		// VNames. Record all values of corpus seen and afterwards check that a
 		// single value is specified.
 		var corpora stringset.Set
-		if u.Proto.GetVName().GetCorpus() != "" {
-			corpora.Add(u.Proto.GetVName().GetCorpus())
+		cuCorpus := u.Proto.GetVName().GetCorpus()
+		if cuCorpus != "" {
+			corpora.Add(cuCorpus)
+		} else {
+			log.Printf("Warning: Corpus not set for compilation unit %v", u.Proto.GetVName())
+			cuCorpus = unknownCorpus
 		}
-		srcs := stringset.New(u.Proto.SourceFile...)
+		corpusInfo(cuCorpus).SourceFiles[u.Proto.GetVName().GetLanguage()] += int32(srcs.Len())
+		kzipInfo.TotalSourceFiles += int32(srcs.Len())
+		corpusInfo(cuCorpus).Units[u.Proto.GetVName().GetLanguage()]++
 
 		for _, ri := range u.Proto.RequiredInput {
-			kzipInfo.TotalFiles++
+			kzipInfo.TotalRequiredInputFiles++
 			// Determine language from the unit VName (note that file VNames are
 			// forbidden from specifying a language).
-			corpusInfo(ri.GetVName().GetCorpus()).Files[u.Proto.GetVName().GetLanguage()]++
+			corpusInfo(ri.GetVName().GetCorpus()).RequiredInputFiles[u.Proto.GetVName().GetLanguage()]++
 			if srcs.Contains(ri.Info.Path) {
 				corpora.Add(ri.GetVName().GetCorpus())
 			}
 		}
-		if len(corpora) == 1 {
-			corpusInfo(corpora.Elements()[0]).Units[u.Proto.GetVName().GetLanguage()]++
-		} else {
+		if len(corpora) != 1 {
 			// This is a warning for now, but may become an error.
-			log.Printf("Unable to determine unit corpus. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), corpora, u.Proto.SourceFile)
+			log.Printf("Multiple corpora in unit. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), corpora, u.Proto.SourceFile)
 		}
 		return nil
 	}, scanOpts...)
@@ -87,8 +97,9 @@ func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
 		i := kzipInfo.Corpora[corpus]
 		if i == nil {
 			i = &apb.KzipInfo_CorpusInfo{
-				Files: make(map[string]int32),
-				Units: make(map[string]int32),
+				Units:              make(map[string]int32),
+				SourceFiles:        make(map[string]int32),
+				RequiredInputFiles: make(map[string]int32),
 			}
 			kzipInfo.Corpora[corpus] = i
 		}
@@ -97,11 +108,15 @@ func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
 
 	for _, i := range infos {
 		kzipInfo.TotalUnits += i.TotalUnits
-		kzipInfo.TotalFiles += i.TotalFiles
+		kzipInfo.TotalRequiredInputFiles += i.TotalRequiredInputFiles
+		kzipInfo.TotalSourceFiles += i.TotalSourceFiles
 		for corpus, cinfo := range i.Corpora {
 			mergedCorpInfo := corpusInfo(corpus)
-			for lang, fileCount := range cinfo.Files {
-				mergedCorpInfo.Files[lang] += fileCount
+			for lang, fileCount := range cinfo.RequiredInputFiles {
+				mergedCorpInfo.RequiredInputFiles[lang] += fileCount
+			}
+			for lang, fileCount := range cinfo.SourceFiles {
+				mergedCorpInfo.SourceFiles[lang] += fileCount
 			}
 			for lang, unitCount := range cinfo.Units {
 				mergedCorpInfo.Units[lang] += unitCount

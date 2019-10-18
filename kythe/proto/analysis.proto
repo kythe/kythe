@@ -180,14 +180,19 @@ message CompilationUnit {
 // KzipInfo contains a summary of the contents of a kzip. It provides a
 // breakdown of files and units by corpus and lanugage.
 message KzipInfo {
+  reserved 2;
+
   message CorpusInfo {
-    map<string, int32> files = 1;
+    reserved 1;
     map<string, int32> units = 2;
+    map<string, int32> source_files = 3;
+    map<string, int32> required_input_files = 4;
   }
 
   map<string, CorpusInfo> corpora = 1;
-  int32 total_files = 2;
   int32 total_units = 3;
+  int32 total_source_files = 4;
+  int32 total_required_input_files = 5;
 }
 
 // A FilesRequest specifies a collection of files to be fetched from a
