@@ -36,18 +36,6 @@ const unknownCorpus = "__UNKNOWN_CORPUS__"
 func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 	// Get file and unit counts broken down by corpus, language.
 	kzipInfo := &apb.KzipInfo{Corpora: make(map[string]*apb.KzipInfo_CorpusInfo)}
-	corpusInfo := func(corpus string) *apb.KzipInfo_CorpusInfo {
-		i := kzipInfo.Corpora[corpus]
-		if i == nil {
-			i = &apb.KzipInfo_CorpusInfo{
-				Units:              make(map[string]int32),
-				SourceFiles:        make(map[string]int32),
-				RequiredInputFiles: make(map[string]int32),
-			}
-			kzipInfo.Corpora[corpus] = i
-		}
-		return i
-	}
 
 	err := kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
 		kzipInfo.TotalUnits++
@@ -64,15 +52,18 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 			log.Printf("Warning: Corpus not set for compilation unit %v", u.Proto.GetVName())
 			cuCorpus = unknownCorpus
 		}
-		corpusInfo(cuCorpus).SourceFiles[u.Proto.GetVName().GetLanguage()] += int32(srcs.Len())
+		cuLang := u.Proto.GetVName().GetLanguage()
+		cuInfo := cuLangInfo(cuLang, corpusInfo(cuCorpus, kzipInfo))
+		cuInfo.Count++
+		cuInfo.SourceFiles += int32(srcs.Len())
 		kzipInfo.TotalSourceFiles += int32(srcs.Len())
-		corpusInfo(cuCorpus).Units[u.Proto.GetVName().GetLanguage()]++
 
 		for _, ri := range u.Proto.RequiredInput {
 			kzipInfo.TotalRequiredInputFiles++
 			// Determine language from the unit VName (note that file VNames are
 			// forbidden from specifying a language).
-			corpusInfo(ri.GetVName().GetCorpus()).RequiredInputFiles[u.Proto.GetVName().GetLanguage()]++
+			cuInfo.RequiredInputs++
+			corpusInfo(ri.GetVName().GetCorpus(), kzipInfo).RequiredInputs[cuLang]++
 			if srcs.Contains(ri.Info.Path) {
 				corpora.Add(ri.GetVName().GetCorpus())
 			}
@@ -93,35 +84,44 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 // MergeKzipInfo combines the counts from multiple KzipInfos.
 func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
 	kzipInfo := &apb.KzipInfo{Corpora: make(map[string]*apb.KzipInfo_CorpusInfo)}
-	corpusInfo := func(corpus string) *apb.KzipInfo_CorpusInfo {
-		i := kzipInfo.Corpora[corpus]
-		if i == nil {
-			i = &apb.KzipInfo_CorpusInfo{
-				Units:              make(map[string]int32),
-				SourceFiles:        make(map[string]int32),
-				RequiredInputFiles: make(map[string]int32),
-			}
-			kzipInfo.Corpora[corpus] = i
-		}
-		return i
-	}
 
 	for _, i := range infos {
-		kzipInfo.TotalUnits += i.TotalUnits
-		kzipInfo.TotalRequiredInputFiles += i.TotalRequiredInputFiles
-		kzipInfo.TotalSourceFiles += i.TotalSourceFiles
-		for corpus, cinfo := range i.Corpora {
-			mergedCorpInfo := corpusInfo(corpus)
-			for lang, fileCount := range cinfo.RequiredInputFiles {
-				mergedCorpInfo.RequiredInputFiles[lang] += fileCount
+		kzipInfo.TotalUnits += i.GetTotalUnits()
+		kzipInfo.TotalRequiredInputFiles += i.GetTotalRequiredInputFiles()
+		kzipInfo.TotalSourceFiles += i.GetTotalSourceFiles()
+		for corpus, cinfo := range i.GetCorpora() {
+			mergedCorpInfo := corpusInfo(corpus, kzipInfo)
+			for lang, cu := range cinfo.GetCompilationUnits() {
+				cui := cuLangInfo(lang, mergedCorpInfo)
+				cui.Count += cu.GetCount()
+				cui.SourceFiles += cu.GetSourceFiles()
+				cui.RequiredInputs += cu.GetRequiredInputs()
 			}
-			for lang, fileCount := range cinfo.SourceFiles {
-				mergedCorpInfo.SourceFiles[lang] += fileCount
-			}
-			for lang, unitCount := range cinfo.Units {
-				mergedCorpInfo.Units[lang] += unitCount
+			for lang, fileCount := range cinfo.GetRequiredInputs() {
+				mergedCorpInfo.RequiredInputs[lang] += fileCount
 			}
 		}
 	}
 	return kzipInfo
+}
+
+func corpusInfo(corpus string, kzipInfo *apb.KzipInfo) *apb.KzipInfo_CorpusInfo {
+	i := kzipInfo.GetCorpora()[corpus]
+	if i == nil {
+		i = &apb.KzipInfo_CorpusInfo{
+			CompilationUnits: make(map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits),
+			RequiredInputs:   make(map[string]int32),
+		}
+		kzipInfo.Corpora[corpus] = i
+	}
+	return i
+}
+
+func cuLangInfo(lang string, c *apb.KzipInfo_CorpusInfo) *apb.KzipInfo_CorpusInfo_CompilationUnits {
+	cui := c.CompilationUnits[lang]
+	if cui == nil {
+		cui = &apb.KzipInfo_CorpusInfo_CompilationUnits{}
+		c.CompilationUnits[lang] = cui
+	}
+	return cui
 }

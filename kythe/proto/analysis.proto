@@ -183,10 +183,24 @@ message KzipInfo {
   reserved 2;
 
   message CorpusInfo {
-    reserved 1;
-    map<string, int32> units = 2;
-    map<string, int32> source_files = 3;
-    map<string, int32> required_input_files = 4;
+    reserved 1, 2;
+
+    // The count of data present in compilation units that belong to a specific
+    // corpus.
+    message CompilationUnits {
+      // Number of compilation units that have a specific corpus in their VName.
+      int32 count = 1;
+      // Number of source files mentioned in these compilation units.
+      int32 source_files = 2;
+      // Number of required inputs mentioned in these compilation units.
+      int32 required_inputs = 3;
+    }
+
+    map<string, CompilationUnits> compilation_units = 3;
+    // Required input files that have their corpus set to this in their VName.
+    // It is possible for a required input to have a different corpus than the
+    // compilation unit it is mentioned in.
+    map<string, int32> required_inputs = 4;
   }
 
   map<string, CorpusInfo> corpora = 1;
