@@ -185,8 +185,8 @@ message KzipInfo {
   message CorpusInfo {
     reserved 1, 2;
 
-    // The count of data present in compilation units that belong to a specific
-    // corpus.
+    // The count of data present in compilation units for a given corpus and
+    // language.
     message CompilationUnits {
       // Number of compilation units that have a specific corpus in their VName.
       int32 count = 1;
@@ -194,11 +194,11 @@ message KzipInfo {
       int32 sources = 2;
       // Number of required inputs mentioned in these compilation units.
       int32 required_inputs = 3;
-      string language = 4;
     }
 
-    // Compilation unit stats for this corpus.
-    CompilationUnits units = 3;
+    // Map from compilation unit language to stats about compilation units with
+    // that langauge.
+    map<string, CompilationUnits> units = 3;
   }
 
   // Map from corpus name to corpus info.
