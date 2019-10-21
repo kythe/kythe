@@ -180,11 +180,6 @@ message CompilationUnit {
 // KzipInfo contains a summary of the contents of a kzip. It provides a
 // breakdown of files and units by corpus and lanugage.
 message KzipInfo {
-  message Count {
-    string language = 1;
-    int32 count = 2;
-  }
-
   message CorpusInfo {
     map<string, int32> files = 1;
     map<string, int32> units = 2;
