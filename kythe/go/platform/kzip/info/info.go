@@ -77,15 +77,15 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 // KzipInfoTotalCount returns the total CompilationUnits counts for infos split apart by language.
 func KzipInfoTotalCount(infos []*apb.KzipInfo) apb.KzipInfo_CorpusInfo {
 	totals := apb.KzipInfo_CorpusInfo{
-		Units: make(map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits),
+		LanguageCompilationUnits: make(map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits),
 	}
 	for _, info := range infos {
 		for _, i := range info.GetCorpora() {
-			for lang, stats := range i.GetUnits() {
-				langTotal := totals.Units[lang]
+			for lang, stats := range i.GetLanguageCompilationUnits() {
+				langTotal := totals.LanguageCompilationUnits[lang]
 				if langTotal == nil {
 					langTotal = &apb.KzipInfo_CorpusInfo_CompilationUnits{}
-					totals.Units[lang] = langTotal
+					totals.LanguageCompilationUnits[lang] = langTotal
 				}
 				langTotal.Count += stats.GetCount()
 				langTotal.Sources += stats.GetSources()
@@ -103,7 +103,7 @@ func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
 	for _, i := range infos {
 		for corpus, cinfo := range i.GetCorpora() {
 			mergedCorpInfo := corpusInfo(corpus, kzipInfo)
-			for lang, cu := range cinfo.GetUnits() {
+			for lang, cu := range cinfo.GetLanguageCompilationUnits() {
 				cui := cuLangInfo(lang, mergedCorpInfo)
 				cui.Count += cu.GetCount()
 				cui.Sources += cu.GetSources()
@@ -118,7 +118,7 @@ func corpusInfo(corpus string, kzipInfo *apb.KzipInfo) *apb.KzipInfo_CorpusInfo 
 	i := kzipInfo.GetCorpora()[corpus]
 	if i == nil {
 		i = &apb.KzipInfo_CorpusInfo{
-			Units: make(map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits),
+			LanguageCompilationUnits: make(map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits),
 		}
 		kzipInfo.Corpora[corpus] = i
 	}
@@ -126,10 +126,10 @@ func corpusInfo(corpus string, kzipInfo *apb.KzipInfo) *apb.KzipInfo_CorpusInfo 
 }
 
 func cuLangInfo(lang string, c *apb.KzipInfo_CorpusInfo) *apb.KzipInfo_CorpusInfo_CompilationUnits {
-	cui := c.Units[lang]
+	cui := c.LanguageCompilationUnits[lang]
 	if cui == nil {
 		cui = &apb.KzipInfo_CorpusInfo_CompilationUnits{}
-		c.Units[lang] = cui
+		c.LanguageCompilationUnits[lang] = cui
 	}
 	return cui
 }
