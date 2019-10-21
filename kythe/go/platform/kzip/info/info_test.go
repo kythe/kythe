@@ -19,7 +19,7 @@ package info
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
+	"kythe.io/kythe/go/util/compare"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
@@ -27,43 +27,111 @@ import (
 func TestMergeKzipInfo(t *testing.T) {
 	infos := []*apb.KzipInfo{
 		{
-			TotalUnits: 1,
-			TotalFiles: 2,
 			Corpora: map[string]*apb.KzipInfo_CorpusInfo{
 				"corpus1": {
-					Files: map[string]int32{"python": 2},
-					Units: map[string]int32{"python": 1},
+					Units: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
+						"python": {
+							Count:          1,
+							Sources:        1,
+							RequiredInputs: 2,
+						},
+					},
 				},
 			},
 		},
 		{
-			TotalUnits: 1,
-			TotalFiles: 2,
 			Corpora: map[string]*apb.KzipInfo_CorpusInfo{
 				"corpus1": {
-					Files: map[string]int32{"go": 2},
-					Units: map[string]int32{"python": 1},
+					Units: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
+						"python": {
+							Count:          1,
+							Sources:        0,
+							RequiredInputs: 0,
+						},
+						"go": {
+							Count:          1,
+							Sources:        0,
+							RequiredInputs: 2,
+						},
+					},
+				},
+				"corpus2": {
+					Units: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
+						"python": {
+							Count:          4,
+							Sources:        5,
+							RequiredInputs: 9,
+						},
+						"java": {
+							Count:          3,
+							Sources:        3,
+							RequiredInputs: 20,
+						},
+					},
 				},
 			},
 		},
 	}
 
 	want := &apb.KzipInfo{
-		TotalUnits: 2,
-		TotalFiles: 4,
 		Corpora: map[string]*apb.KzipInfo_CorpusInfo{
 			"corpus1": {
-				Files: map[string]int32{
-					"go":     2,
-					"python": 2,
+				Units: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
+					"python": {
+						Count:          2,
+						Sources:        1,
+						RequiredInputs: 2,
+					},
+					"go": {
+						Count:          1,
+						Sources:        0,
+						RequiredInputs: 2,
+					},
 				},
-				Units: map[string]int32{"python": 2},
+			},
+			"corpus2": {
+				Units: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
+					"python": {
+						Count:          4,
+						Sources:        5,
+						RequiredInputs: 9,
+					},
+					"java": {
+						Count:          3,
+						Sources:        3,
+						RequiredInputs: 20,
+					},
+				},
+			},
+		},
+	}
+	wantTotal := apb.KzipInfo_CorpusInfo{
+		Units: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
+			"python": {
+				Count:          6,
+				Sources:        6,
+				RequiredInputs: 11,
+			},
+			"go": {
+				Count:          1,
+				Sources:        0,
+				RequiredInputs: 2,
+			},
+			"java": {
+				Count:          3,
+				Sources:        3,
+				RequiredInputs: 20,
 			},
 		},
 	}
 
 	got := MergeKzipInfo(infos)
-	if !proto.Equal(got, want) {
-		t.Errorf("got %v, want %v", got, want)
+	gotTotal := KzipInfoTotalCount(infos)
+	if diff := compare.ProtoDiff(got, want); diff != "" {
+		t.Errorf("Merged kzips don't match: (-: found, +: expected)\n%s", diff)
+	}
+	if diff := compare.ProtoDiff(&gotTotal, &wantTotal); diff != "" {
+		t.Errorf("got %v, want %v", gotTotal, wantTotal)
+		t.Errorf("Merged kzips don't match: (-: found, +: expected)\n%s", diff)
 	}
 }
