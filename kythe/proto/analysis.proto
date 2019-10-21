@@ -197,7 +197,7 @@ message KzipInfo {
     }
 
     // Map from compilation unit language to stats about compilation units with
-    // that langauge.
+    // that language.
     map<string, CompilationUnits> units = 3;
   }
 

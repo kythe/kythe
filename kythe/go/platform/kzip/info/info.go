@@ -74,6 +74,7 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 	return kzipInfo, nil
 }
 
+// KzipInfoTotalCount returns the total CompilationUnits counts for infos split apart by language.
 func KzipInfoTotalCount(infos []*apb.KzipInfo) apb.KzipInfo_CorpusInfo {
 	totals := apb.KzipInfo_CorpusInfo{
 		Units: make(map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits),
