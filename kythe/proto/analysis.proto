@@ -199,6 +199,14 @@ message KzipInfo {
     // Map from compilation unit language to stats about compilation units with
     // that language.
     map<string, CompilationUnits> language_compilation_units = 3;
+
+    message RequiredInputs {
+      int32 count = 1;
+    }
+
+    // Map from required input language to count of required inputs that have
+    // this corpus in their VName.
+    map<string, RequiredInputs> language_required_inputs = 4;
   }
 
   // Map from corpus name to corpus info.

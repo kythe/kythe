@@ -36,6 +36,11 @@ func TestMergeKzipInfo(t *testing.T) {
 							RequiredInputs: 2,
 						},
 					},
+					LanguageRequiredInputs: map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs{
+						"python": {
+							Count: 2,
+						},
+					},
 				},
 			},
 		},
@@ -54,6 +59,11 @@ func TestMergeKzipInfo(t *testing.T) {
 							RequiredInputs: 2,
 						},
 					},
+					LanguageRequiredInputs: map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs{
+						"python": {
+							Count: 1,
+						},
+					},
 				},
 				"corpus2": {
 					LanguageCompilationUnits: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
@@ -66,6 +76,19 @@ func TestMergeKzipInfo(t *testing.T) {
 							Count:          3,
 							Sources:        3,
 							RequiredInputs: 20,
+						},
+					},
+				},
+				"unnamed_required_input_corpus": {
+					LanguageRequiredInputs: map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs{
+						"python": {
+							Count: 9,
+						},
+						"java": {
+							Count: 20,
+						},
+						"go": {
+							Count: 2,
 						},
 					},
 				},
@@ -88,6 +111,11 @@ func TestMergeKzipInfo(t *testing.T) {
 						RequiredInputs: 2,
 					},
 				},
+				LanguageRequiredInputs: map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs{
+					"python": {
+						Count: 3,
+					},
+				},
 			},
 			"corpus2": {
 				LanguageCompilationUnits: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
@@ -100,6 +128,19 @@ func TestMergeKzipInfo(t *testing.T) {
 						Count:          3,
 						Sources:        3,
 						RequiredInputs: 20,
+					},
+				},
+			},
+			"unnamed_required_input_corpus": {
+				LanguageRequiredInputs: map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs{
+					"python": {
+						Count: 9,
+					},
+					"java": {
+						Count: 20,
+					},
+					"go": {
+						Count: 2,
 					},
 				},
 			},
@@ -121,6 +162,17 @@ func TestMergeKzipInfo(t *testing.T) {
 				Count:          3,
 				Sources:        3,
 				RequiredInputs: 20,
+			},
+		},
+		LanguageRequiredInputs: map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs{
+			"python": {
+				Count: 12,
+			},
+			"java": {
+				Count: 20,
+			},
+			"go": {
+				Count: 2,
 			},
 		},
 	}
