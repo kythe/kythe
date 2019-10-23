@@ -73,6 +73,14 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 	return kzipInfo, nil
 }
 
+// TODO sal
+func requiredInputCorpus(u *kzip.Unit, ri *apb.CompilationUnit_FileInput) string {
+	if c := ri.GetVName().GetCorpus(); c != "" {
+		return c
+	}
+	return u.Proto.GetVName().GetCorpus()
+}
+
 // KzipInfoTotalCount returns the total CompilationUnits counts for infos split apart by language.
 func KzipInfoTotalCount(infos []*apb.KzipInfo) apb.KzipInfo_CorpusInfo {
 	totals := apb.KzipInfo_CorpusInfo{
