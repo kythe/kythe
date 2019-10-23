@@ -53,7 +53,7 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 
 		var srcCorpora stringset.Set
 		for _, ri := range u.Proto.RequiredInput {
-			riCorpus := ri.GetVName().GetCorpus()
+			riCorpus := requiredInputCorpus(u, ri)
 			requiredInputInfo(riCorpus, cuLang, kzipInfo).Count++
 			if srcs.Contains(ri.Info.Path) {
 				sourceInfo(riCorpus, cuLang, kzipInfo).Count++
@@ -73,7 +73,10 @@ func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 	return kzipInfo, nil
 }
 
-// TODO sal
+// requiredInputCorpus computes the corpus for a required input. It follows the rules in the
+// CompilationUnit proto comments in kythe/proto/analysis.proto that say that any
+// required_input that does not set corpus in its VName should inherit corpus from the compilation
+// unit's VName.
 func requiredInputCorpus(u *kzip.Unit, ri *apb.CompilationUnit_FileInput) string {
 	if c := ri.GetVName().GetCorpus(); c != "" {
 		return c
