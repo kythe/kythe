@@ -73,7 +73,11 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 		return c.Fail("Invalid --write_format. Can be 'json' or 'proto'.")
 	}
 
-	kzipInfo, err := info.KzipInfo(f, kzip.ReadConcurrency(c.readConcurrency))
+	s, err := os.Stat(c.input)
+	if err != nil {
+		return c.Fail("Couldn't stat kzip file: %v", err)
+	}
+	kzipInfo, err := info.KzipInfo(f, s.Size(), kzip.ReadConcurrency(c.readConcurrency))
 	if err != nil {
 		return c.Fail("Scanning kzip: %v", err)
 	}
