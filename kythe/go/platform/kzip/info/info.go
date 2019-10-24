@@ -32,10 +32,15 @@ import (
 // stats.
 const unspecifiedCorpus = "__UNSPECIFIED_CORPUS__"
 
-// KzipInfo scans a kzip and counts contained files and units, giving a breakdown by corpus and language.
-func KzipInfo(f kzip.File, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
+// KzipInfo scans the kzip in f and counts contained files and units, giving a breakdown by corpus
+// and language. It also records the size (in bytes) of the kzip specified by fileSize in the
+// returned KzipInfo.
+func KzipInfo(f kzip.File, fileSize int64, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
 	// Get file and unit counts broken down by corpus, language.
-	kzipInfo := &apb.KzipInfo{Corpora: make(map[string]*apb.KzipInfo_CorpusInfo)}
+	kzipInfo := &apb.KzipInfo{
+		Corpora: make(map[string]*apb.KzipInfo_CorpusInfo),
+		Size:    fileSize,
+	}
 
 	err := kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
 		srcs := stringset.New(u.Proto.SourceFile...)
@@ -141,6 +146,7 @@ func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
 				c.Count += sources.GetCount()
 			}
 		}
+		kzipInfo.Size += i.Size
 	}
 	return kzipInfo
 }

@@ -46,6 +46,7 @@ func TestMergeKzipInfo(t *testing.T) {
 					},
 				},
 			},
+			Size: 10,
 		},
 		{
 			Corpora: map[string]*apb.KzipInfo_CorpusInfo{
@@ -96,6 +97,7 @@ func TestMergeKzipInfo(t *testing.T) {
 					},
 				},
 			},
+			Size: 30,
 		},
 	}
 
@@ -153,6 +155,7 @@ func TestMergeKzipInfo(t *testing.T) {
 				},
 			},
 		},
+		Size: 40,
 	}
 	wantTotal := apb.KzipInfo_CorpusInfo{
 		LanguageCompilationUnits: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
