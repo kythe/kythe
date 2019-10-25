@@ -1,5 +1,13 @@
-# Setup the local repository for the Kythe extraction tools.
-build --override_repository kythe_release=/kythe
+# This file configures bazel for extraction using the binaries from a Kythe
+# release.
+
+# Example usage:
+#   KYTHE_RELEASE=/opt/kythe
+#   bazel \
+#     --bazelrc=$KYTHE_RELEASE/extractors.bazelrc
+#     build \
+#     --override_repository kythe_release=$KYTHE_RELEASE \
+#     //targets/to:extract
 
 # By default, keep building after errors.
 build --keep_going

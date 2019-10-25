@@ -53,6 +53,7 @@ genrule(
         ":misc",
         "//kythe/proto:public",
         "//third_party:licenses",
+        "//kythe/extractors/bazel:extractors_bazelrc",
     ],
     outs = [
         "kythe-" + release_version + ".tar.gz",
@@ -86,6 +87,7 @@ genrule(
         "--cp $(location proto_extractor) extractors/proto_extractor",
         "--cp $(location textproto_extractor) extractors/textproto_extractor",
         "--cp $(location cc_proto_metadata_plugin) tools/cc_proto_metadata_plugin",
+        "--cp $(location //kythe/extractors/bazel:extractors_bazelrc) ./",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
         "--relpaths 'third_party' --path 'third_party' $(locations //third_party:licenses)",
