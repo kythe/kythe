@@ -44,12 +44,10 @@ func TestMergeKzipInfo(t *testing.T) {
 							Count: 1,
 						},
 					},
-					LanguageSourcesWithoutRequiredInputs: map[string]int64{
-						"python": 1,
-					},
 				},
 			},
-			Size: 10,
+			CriticalKzipErrors: []string{"foo.py doesn't have a required_input"},
+			Size:               10,
 		},
 		{
 			Corpora: map[string]*apb.KzipInfo_CorpusInfo{
@@ -66,9 +64,6 @@ func TestMergeKzipInfo(t *testing.T) {
 						"python": {
 							Count: 1,
 						},
-					},
-					LanguageSourcesWithoutRequiredInputs: map[string]int64{
-						"python": 6,
 					},
 				},
 				"corpus2": {
@@ -103,7 +98,8 @@ func TestMergeKzipInfo(t *testing.T) {
 					},
 				},
 			},
-			Size: 30,
+			CriticalKzipErrors: []string{"foo2.py doesn't have a required_input"},
+			Size:               30,
 		},
 	}
 
@@ -127,9 +123,6 @@ func TestMergeKzipInfo(t *testing.T) {
 					"python": {
 						Count: 1,
 					},
-				},
-				LanguageSourcesWithoutRequiredInputs: map[string]int64{
-					"python": 7,
 				},
 			},
 			"corpus2": {
@@ -164,7 +157,8 @@ func TestMergeKzipInfo(t *testing.T) {
 				},
 			},
 		},
-		Size: 40,
+		CriticalKzipErrors: []string{"foo.py doesn't have a required_input", "foo2.py doesn't have a required_input"},
+		Size:               40,
 	}
 	wantTotal := apb.KzipInfo_CorpusInfo{
 		LanguageCompilationUnits: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{
@@ -196,9 +190,6 @@ func TestMergeKzipInfo(t *testing.T) {
 			"java": {
 				Count: 3,
 			},
-		},
-		LanguageSourcesWithoutRequiredInputs: map[string]int64{
-			"python": 7,
 		},
 	}
 
