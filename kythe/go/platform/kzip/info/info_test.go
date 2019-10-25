@@ -44,6 +44,9 @@ func TestMergeKzipInfo(t *testing.T) {
 							Count: 1,
 						},
 					},
+					LanguageSourcesWithoutRequiredInputs: map[string]int64{
+						"python": 1,
+					},
 				},
 			},
 			Size: 10,
@@ -63,6 +66,9 @@ func TestMergeKzipInfo(t *testing.T) {
 						"python": {
 							Count: 1,
 						},
+					},
+					LanguageSourcesWithoutRequiredInputs: map[string]int64{
+						"python": 6,
 					},
 				},
 				"corpus2": {
@@ -121,6 +127,9 @@ func TestMergeKzipInfo(t *testing.T) {
 					"python": {
 						Count: 1,
 					},
+				},
+				LanguageSourcesWithoutRequiredInputs: map[string]int64{
+					"python": 7,
 				},
 			},
 			"corpus2": {
@@ -187,6 +196,9 @@ func TestMergeKzipInfo(t *testing.T) {
 			"java": {
 				Count: 3,
 			},
+		},
+		LanguageSourcesWithoutRequiredInputs: map[string]int64{
+			"python": 7,
 		},
 	}
 

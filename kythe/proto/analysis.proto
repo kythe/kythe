@@ -209,6 +209,7 @@ message KzipInfo {
     // Map from language to count of sources that have this corpus in their
     // required_input VName.
     map<string, RequiredInputs> language_sources = 5;
+    map<string, int64> language_sources_without_required_inputs = 6;
   }
 
   // Map from corpus name to corpus info.
