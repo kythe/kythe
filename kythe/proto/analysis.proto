@@ -215,6 +215,10 @@ message KzipInfo {
   map<string, CorpusInfo> corpora = 1;
   // Size in bytes of all the kzips that contributed to this KzipInfo.
   int64 size = 4;
+  // Error messages detected when computing KzipInfo. For example, source files
+  // with no corresponding required_input. If there are any items in this field,
+  // it indicates that this kzip has serious problems and should not be used.
+  repeated string critical_kzip_errors = 5;
 }
 
 // A FilesRequest specifies a collection of files to be fetched from a

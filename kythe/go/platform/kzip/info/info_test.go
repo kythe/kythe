@@ -46,7 +46,8 @@ func TestMergeKzipInfo(t *testing.T) {
 					},
 				},
 			},
-			Size: 10,
+			CriticalKzipErrors: []string{"foo.py doesn't have a required_input"},
+			Size:               10,
 		},
 		{
 			Corpora: map[string]*apb.KzipInfo_CorpusInfo{
@@ -97,7 +98,8 @@ func TestMergeKzipInfo(t *testing.T) {
 					},
 				},
 			},
-			Size: 30,
+			CriticalKzipErrors: []string{"foo2.py doesn't have a required_input"},
+			Size:               30,
 		},
 	}
 
@@ -155,7 +157,8 @@ func TestMergeKzipInfo(t *testing.T) {
 				},
 			},
 		},
-		Size: 40,
+		CriticalKzipErrors: []string{"foo.py doesn't have a required_input", "foo2.py doesn't have a required_input"},
+		Size:               40,
 	}
 	wantTotal := apb.KzipInfo_CorpusInfo{
 		LanguageCompilationUnits: map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits{

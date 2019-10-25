@@ -57,13 +57,20 @@ func KzipInfo(f kzip.File, fileSize int64, scanOpts ...kzip.ScanOption) (*apb.Kz
 		cuInfo.Count++
 
 		var srcCorpora stringset.Set
+		srcsWithRI := stringset.New()
 		for _, ri := range u.Proto.RequiredInput {
 			riCorpus := requiredInputCorpus(u, ri)
 			requiredInputInfo(riCorpus, cuLang, kzipInfo).Count++
 			if srcs.Contains(ri.Info.Path) {
 				sourceInfo(riCorpus, cuLang, kzipInfo).Count++
 				srcCorpora.Add(riCorpus)
+				srcsWithRI.Add(ri.Info.Path)
 			}
+		}
+		srcsWithoutRI := srcs.Diff(srcsWithRI)
+		for path := range srcsWithoutRI {
+			msg := fmt.Sprintf("source %q in CU %v doesn't have a required_input entry", path, u.Proto.GetVName())
+			kzipInfo.CriticalKzipErrors = append(kzipInfo.CriticalKzipErrors, msg)
 		}
 		if srcCorpora.Len() != 1 {
 			// This is a warning for now, but may become an error.
@@ -146,6 +153,7 @@ func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
 				c.Count += sources.GetCount()
 			}
 		}
+		kzipInfo.CriticalKzipErrors = append(kzipInfo.GetCriticalKzipErrors(), i.GetCriticalKzipErrors()...)
 		kzipInfo.Size += i.Size
 	}
 	return kzipInfo
