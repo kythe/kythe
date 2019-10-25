@@ -36,9 +36,6 @@ ADD kythe/extractors/bazel/bazel_wrapper.sh /kythe/
 ADD kythe/release/base/fix_permissions.sh /kythe/
 ADD external/javax_annotation_jsr250_api/jar/jsr250-api-1.0.jar /kythe/
 
-# Bazel repository setup
-ADD kythe/extractors/bazel/extractors.bazelrc /kythe/bazelrc
-
 # Bazelisk
 ADD external/com_github_philwo_bazelisk/linux_amd64_stripped/bazelisk /kythe/
 
