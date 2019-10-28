@@ -6,6 +6,7 @@
     "@commitlint/config-conventional": "^8.2.0",
     "@types/jasmine": "^3.4.4",
     "@types/node": "^7.10.8",
+    "eslint": "^6.6.0",
     "eslint-plugin-compat": "^3.3.0"
   },
   "dependencies": {
