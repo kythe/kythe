@@ -26,7 +26,7 @@ RUN ln -s /usr/bin/clang-6.0 /usr/bin/clang && \
 
 # Extract the Kythe release archive to /kythe
 COPY kythe/release/kythe-v*.tar.gz /tmp/
-RUN tar xzf /tmp/kythe-v*.tar.gz && \
+RUN tar --no-same-owner -xzf /tmp/kythe-v*.tar.gz && \
     mv kythe-v*/ /kythe && \
     rm /tmp/kythe-v*.tar.gz
 
