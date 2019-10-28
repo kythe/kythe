@@ -13,8 +13,12 @@ bazel build \
 
 pushd $(bazel info execution_root) > /dev/null
 echo "[" > compile_commands.json
-find . -name '*.compile_command.json' -exec bash -c 'cat {} && echo ,' \; >> compile_commands.json
-sed -i '$s/,$//' compile_commands.json
+COUNT=0
+find . -name '*.compile_command.json' -print0 | while read -r -d '' fname; do
+  if ((COUNT++)); then
+    echo ',' >> compile_commands.json
+  fi
+  cat "$fname" >> compile_commands.json
+done
 echo "]" >> compile_commands.json
 popd > /dev/null
-
