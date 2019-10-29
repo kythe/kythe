@@ -11,7 +11,7 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//third_party/guava",
-        "@com_beust_jcommander//jar",
+        "@maven//:com_beust_jcommander",
     ],
 )
 
@@ -27,9 +27,9 @@ java_library(
         "//kythe/proto:java_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "@com_beust_jcommander//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_protobuf//:protobuf_java_util",
+        "@maven//:com_beust_jcommander",
     ],
 )

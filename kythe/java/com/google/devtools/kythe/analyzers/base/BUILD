@@ -15,7 +15,7 @@ java_library(
 java_library(
     name = "config",
     srcs = ["IndexerConfig.java"],
-    deps = ["@com_beust_jcommander//jar"],
+    deps = ["@maven//:com_beust_jcommander"],
 )
 
 java_library(
@@ -28,8 +28,8 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/util/schema",
         "//kythe/proto:schema_java_proto",
         "//third_party/guava",
-        "@com_google_code_findbugs_jsr305//jar",
-        "@org_checkerframework_checker_qual//jar",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 
@@ -51,9 +51,9 @@ java_library(
         "//kythe/proto:common_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@org_checkerframework_checker_qual//jar",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 

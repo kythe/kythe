@@ -48,10 +48,10 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "@com_google_code_findbugs_jsr305//jar",
-        "@com_google_code_gson_gson//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@org_checkerframework_checker_qual//jar",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_code_gson_gson",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 
@@ -67,9 +67,9 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@org_checkerframework_checker_qual//jar",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 

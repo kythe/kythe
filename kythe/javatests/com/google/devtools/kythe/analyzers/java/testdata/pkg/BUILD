@@ -20,7 +20,7 @@ java_library(
     ),
     deps = [
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
-        "@com_google_code_findbugs_jsr305//jar",
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
 )
 
@@ -254,7 +254,7 @@ java_verifier_test(
     meta = [
         "Metadata.java.meta",
     ],
-    deps = ["@javax_annotation_jsr250_api//jar"],
+    deps = ["@maven//:javax_annotation_jsr250_api"],
 )
 
 java_verifier_test(
@@ -280,7 +280,7 @@ java_verifier_test(
         "ProtobufMetadata.java.pb.meta",
     ],
     vnames_config = "protobuf_vnames.json",
-    deps = ["@javax_annotation_jsr250_api//jar"],
+    deps = ["@maven//:javax_annotation_jsr250_api"],
 )
 
 java_verifier_test(
@@ -349,7 +349,7 @@ java_verifier_test(
         "Packages.java",
         "package-info.java",
     ],
-    deps = ["@com_google_code_findbugs_jsr305//jar"],
+    deps = ["@maven//:com_google_code_findbugs_jsr305"],
 )
 
 java_verifier_test(

@@ -31,9 +31,9 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:java_java_proto",
         "//third_party/javac",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_guava_guava",
     ],
 )
 
@@ -49,9 +49,9 @@ java_library(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:java_java_proto",
         "//third_party/javac",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_guava_guava",
     ],
 )
 

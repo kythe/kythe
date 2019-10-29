@@ -48,7 +48,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
         "//third_party/guava",
         "//third_party/truth",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )
 

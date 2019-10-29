@@ -9,6 +9,6 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/analyzers/jvm:jvm_graph",
         "//third_party/guava",
         "//third_party/truth",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )
