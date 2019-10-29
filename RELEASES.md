@@ -1,5 +1,19 @@
 # Release Notes
 
+## [v0.0.32] - 2019-10-28
+
+#### Bug Fixes
+
+* **bazel-extractor:**  fix permissions when extracting release archive (#4168) ([063dea79](https://github.com/kythe/kythe/commit/063dea79312bab56d32d8245cd7fcdeab6ddaeec))
+* **docs:**  update note on Go stdlib corpus name (#4148) ([6f79e64b](https://github.com/kythe/kythe/commit/6f79e64bf06bf40cb7fe5920c1215816799f3d7f))
+* **java:**  record EntrySet emission before calling emitter (#4145) ([019f297f](https://github.com/kythe/kythe/commit/019f297f7ebd65ba572b952976b6ecb868e6e625))
+* **tools:**  fix generate_compilation_database on macOS (#4166) (#4167) ([1999be3e](https://github.com/kythe/kythe/commit/1999be3ea60ca0d7c3f5db15a79519ae180f944f))
+
+#### Features
+
+* **kzip info:**  default --read_concurrency to numcpu (#4157) ([7fb5423d](https://github.com/kythe/kythe/commit/7fb5423d214b02eccab4174d9714dc0bc85c731e))
+* **release:**  add extractors.bazelrc to release (#4163) ([b1e68e29](https://github.com/kythe/kythe/commit/b1e68e292a1da3b49cc7daebd8abd7e1a9dd5f09))
+
 ## [v0.0.31] - 2019-10-10
 
 #### Features
@@ -682,7 +696,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.31...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.32...HEAD
+[v0.0.32] https://github.com/kythe/kythe/compare/v0.0.31...v0.0.32
 [v0.0.31] https://github.com/kythe/kythe/compare/v0.0.30...v0.0.31
 [v0.0.30] https://github.com/kythe/kythe/compare/v0.0.29...v0.0.30
 [v0.0.29] https://github.com/kythe/kythe/compare/v0.0.28...v0.0.29
