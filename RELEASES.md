@@ -1,5 +1,11 @@
 # Release Notes
 
+## [v0.0.33] - 2019-10-30
+
+#### Features
+
+* **release:**  Add runextractor to the release (#4171) ([5d16675f](https://github.com/kythe/kythe/commit/5d16675f41dd8874c733d760794460d472860253))
+
 ## [v0.0.32] - 2019-10-28
 
 #### Bug Fixes
@@ -696,7 +702,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.32...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.33...HEAD
+[v0.0.33] https://github.com/kythe/kythe/compare/v0.0.32...v0.0.33
 [v0.0.32] https://github.com/kythe/kythe/compare/v0.0.31...v0.0.32
 [v0.0.31] https://github.com/kythe/kythe/compare/v0.0.30...v0.0.31
 [v0.0.30] https://github.com/kythe/kythe/compare/v0.0.29...v0.0.30
