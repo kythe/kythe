@@ -99,6 +99,8 @@ run cmake for your repository**.
 Set the following three environment variables:
 
 *   `KYTHE_ROOT_DIRECTORY`: The absolute path for file input to be extracted.
+    This is generally the root of the repository. All files extracted will be
+    stored relative to this path.
 *   `KYTHE_OUTPUT_DIRECTORY`: The absolute path for storing output.
 *   `KYTHE_CORPUS`: The corpus label for extracted files.
 
@@ -106,7 +108,12 @@ Set the following three environment variables:
 $ export KYTHE_ROOT_DIRECTORY="/absolute/path/to/repo/root"
 $ export KYTHE_OUTPUT_DIRECTORY="/tmp/kythe-output"
 $ export KYTHE_CORPUS="github.com/myproject/myrepo"
+
+# $CMAKE_ROOT_DIRECTORY is passed into the -sourcedir flag. This value should be
+# the directory that contains the top-level CMakeLists.txt file. In many
+# repositories this path is the same as $KYTHE_ROOT_DIRECTORY.
 $ export CMAKE_ROOT_DIRECTORY="/absolute/path/to/cmake/root"
+
 $ /opt/kythe/tools/runextractor cmake \
     -extractor=/opt/kythe/extractors/cxx_extractor \
     -sourcedir=$CMAKE_ROOT_DIRECTORY
