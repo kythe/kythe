@@ -46,6 +46,8 @@ Kythe uses Bazel to build itself and has implemented Bazel
 that use Kythe's Java and C++ extractors.  This effectively allows Bazel to
 extract each compilation as it is run during the build.
 
+### Extracting the Kythe repository
+
 Add the flag
 `--experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_java`
 to make Bazel extract Java compilations and
@@ -70,6 +72,24 @@ does a full extraction using Bazel and then moves the compilations into the
 directory structure used by the
 [kythe/kythe]({{site.data.development.source_browser}}/kythe/release/kythe.sh)
 Docker image.
+
+### Extracting other Bazel based repositories
+
+You can use the Kythe release to extract compilations from other Bazel based
+repositories.
+
+{% highlight bash%}
+# Download and unpack the latest Kythe release
+wget -O /tmp/kythe.tar.gz \
+    https://github.com/kythe/kythe/releases/download/$KYTHE_VERSION/kythe-$KYTHE_VERSION.tar.gz
+tar --no-same-owner -xvzf /tmp/kythe.tar.gz --directory /opt
+echo 'KYTHE_DIR=/opt/kythe-$KYTHE_VERSION' >> $BASH_ENV
+
+# Build the repository with extraction enabled
+bazel --bazelrc=$KYTHE_DIR/extractors.bazelrc \
+    build --override_repository kythe_release=$KYTHE_DIR \
+    //...
+{% endhighlight %}
 
 ## Indexing Compilations
 
