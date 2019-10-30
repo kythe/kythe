@@ -228,6 +228,9 @@ message FileDecorations {
 
   // List of file diagnostics.
   repeated kythe.proto.common.Diagnostic diagnostic = 6;
+
+  // List of tickets for files that generate this file.
+  repeated string generated_by = 7;
 }
 
 // PagedCrossReferences are used for efficiently storing pre-cached data for
