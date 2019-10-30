@@ -239,6 +239,7 @@ filegroup(
     name = "tools",
     srcs = [
         "//kythe/cxx/verifier",
+        "//kythe/go/extractors/config/runextractor",
         "//kythe/go/platform/tools/dedup_stream",
         "//kythe/go/platform/tools/entrystream",
         "//kythe/go/platform/tools/kzip",
