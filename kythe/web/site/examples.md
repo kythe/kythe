@@ -91,6 +91,27 @@ bazel --bazelrc=$KYTHE_DIR/extractors.bazelrc \
     //...
 {% endhighlight %}
 
+## Extracting CMake based repositories
+
+**These instructions assume your environment is already set up to successfully
+run cmake for your repository**.
+
+Set the following three environment variables:
+
+*   `KYTHE_ROOT_DIRECTORY`: The absolute path for file input to be extracted.
+*   `KYTHE_OUTPUT_DIRECTORY`: The absolute path for storing output.
+*   `KYTHE_CORPUS`: The corpus label for extracted files.
+
+```shell
+$ export KYTHE_ROOT_DIRECTORY="/absolute/path/to/repo/root"
+$ export KYTHE_OUTPUT_DIRECTORY="/tmp/kythe-output"
+$ export KYTHE_CORPUS="github.com/myproject/myrepo"
+$ export CMAKE_ROOT_DIRECTORY="/absolute/path/to/cmake/root"
+$ /opt/kythe/tools/runextractor cmake \
+    -extractor=/opt/kythe/extractors/cxx_extractor \
+    -sourcedir=$CMAKE_ROOT_DIRECTORY
+```
+
 ## Indexing Compilations
 
 All Kythe indexers analyze compilations emitted from
