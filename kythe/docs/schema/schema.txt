@@ -610,9 +610,8 @@ and target languages do not share Kythe indexers, it is still semantically
 useful to connect the nodes they emit. For example, one might want to list
 all the $$C++$$ and Java uses of a particular service call, starting at the
 specification of that service. The specification and its generated artifacts
-may be joined by the *generates* edge.  Both semantic nodes and their enclosing
-files may be related by the *generates* relation.
-
+may be joined by the *generates* edge.  Either both the specification and its
+generated artifact are file nodes or both are semantic nodes.
 
 [[instantiates]]
 instantiates
