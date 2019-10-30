@@ -128,8 +128,10 @@ func cleanBuild(dir string) {
 	}
 }
 
-// runIn changes the cmd working directory to dir and call Run.
+// runIn changes the cmd working directory to dir and calls Run. The cmd's
+// stderr is forwarded to stderr.
 func runIn(cmd *exec.Cmd, dir string) error {
 	cmd.Dir = dir
+	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
