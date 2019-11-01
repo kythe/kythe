@@ -5,7 +5,7 @@
     "@commitlint/cli": "^8.1.0",
     "@commitlint/config-conventional": "^8.1.0",
     "@types/jasmine": "^3.3.13",
-    "@types/node": "^7.0.4"
+    "@types/node": "^10.0.0"
   },
   "dependencies": {
     "source-map-support": "^0.5.12",
