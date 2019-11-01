@@ -3,6 +3,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
+load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
@@ -196,6 +197,35 @@ def _java_dependencies():
         name = "com_google_common_flogger",
         commit = "ca8ad22bc1479b5675118308f88ef3fff7d26c1f",
         remote = "https://github.com/google/flogger",
+    )
+    maven_install(
+        name = "maven",
+        artifacts = [
+            "com.beust:jcommander:1.48",
+            "com.google.auto.service:auto-service:1.0-rc4",
+            "com.google.auto.value:auto-value:1.5.4",
+            "com.google.auto:auto-common:0.10",
+            "com.google.code.findbugs:jsr305:3.0.1",
+            "com.google.code.gson:gson:2.8.5",
+            "com.google.common.html.types:types:1.0.8",
+            "com.google.errorprone:error_prone_annotations:2.3.1",
+            "com.google.guava:guava:26.0-jre",
+            "com.google.re2j:re2j:1.2",
+            "com.google.truth:truth:1.0",
+            "com.googlecode.java-diff-utils:diffutils:1.3.0",
+            "javax.annotation:jsr250-api:1.0",
+            "junit:junit:4.12",
+            "org.checkerframework:checker-qual:2.9.0",
+            "org.ow2.asm:asm:7.0",
+        ],
+        repositories = [
+            "https://jcenter.bintray.com",
+            "https://maven.google.com",
+            "https://repo1.maven.org/maven2",
+        ],
+        fetch_sources = True,
+        generate_compat_repositories = True, # Required by bazel-common's dependencies
+        version_conflict_policy = "pinned",
     )
 
 def _go_dependencies():

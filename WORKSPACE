@@ -68,46 +68,5 @@ bind(
     actual = "@maven//:com_google_errorprone_error_prone_annotations",
 )
 
-RULES_JVM_EXTERNAL_TAG = "2.9"
-RULES_JVM_EXTERNAL_SHA = "e5b97a31a3e8feed91636f42e19b11c49487b85e5de2f387c999ea14d77c7f45"
-
-http_archive(
-    name = "rules_jvm_external",
-    strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
-    sha256 = RULES_JVM_EXTERNAL_SHA,
-    url = "https://github.com/bazelbuild/rules_jvm_external/archive/%s.zip" % RULES_JVM_EXTERNAL_TAG,
-)
-
-load("@rules_jvm_external//:defs.bzl", "maven_install")
-
-maven_install(
-    name = "maven",
-    artifacts = [
-        "com.beust:jcommander:1.48",
-        "com.google.auto.service:auto-service:1.0-rc4",
-        "com.google.auto.value:auto-value:1.5.4",
-        "com.google.auto:auto-common:0.10",
-        "com.google.code.findbugs:jsr305:3.0.1",
-        "com.google.code.gson:gson:2.8.5",
-        "com.google.common.html.types:types:1.0.8",
-        "com.google.errorprone:error_prone_annotations:2.3.1",
-        "com.google.guava:guava:26.0-jre",
-        "com.google.re2j:re2j:1.2",
-        "com.google.truth:truth:1.0",
-        "com.googlecode.java-diff-utils:diffutils:1.3.0",
-        "javax.annotation:jsr250-api:1.0",
-        "junit:junit:4.12",
-        "org.checkerframework:checker-qual:2.9.0",
-        "org.ow2.asm:asm:7.0",
-    ],
-    repositories = [
-        "https://jcenter.bintray.com",
-        "https://maven.google.com",
-        "https://repo1.maven.org/maven2",
-    ],
-    fetch_sources = True,
-    generate_compat_repositories = True, # Required by bazel-common's dependencies
-    version_conflict_policy = "pinned",
-)
 load("@maven//:compat.bzl", "compat_repositories")
 compat_repositories()
