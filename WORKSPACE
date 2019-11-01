@@ -65,7 +65,7 @@ ts_setup_workspace()
 # This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
 bind(
     name = "error_prone_annotations",
-    actual = "@com_google_errorprone_error_prone_annotations//jar:jar",
+    actual = "@maven//:com_google_errorprone_error_prone_annotations",
 )
 
 RULES_JVM_EXTERNAL_TAG = "2.9"

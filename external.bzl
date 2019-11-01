@@ -565,7 +565,7 @@ def _bindings():
     maybe(
         native.bind,
         name = "gson",  # required by @com_google_protobuf
-        actual = "@com_google_code_gson_gson//jar",
+        actual = "@maven//:com_google_code_gson_gson",
     )
 
     maybe(
