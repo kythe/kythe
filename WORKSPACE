@@ -71,6 +71,13 @@ bind(
 RULES_JVM_EXTERNAL_TAG = "2.9"
 RULES_JVM_EXTERNAL_SHA = "e5b97a31a3e8feed91636f42e19b11c49487b85e5de2f387c999ea14d77c7f45"
 
+http_archive(
+    name = "rules_jvm_external",
+    strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
+    sha256 = RULES_JVM_EXTERNAL_SHA,
+    url = "https://github.com/bazelbuild/rules_jvm_external/archive/%s.zip" % RULES_JVM_EXTERNAL_TAG,
+)
+
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 
 maven_install(
@@ -100,4 +107,3 @@ maven_install(
     ],
     fetch_sources = True,
 )
-
