@@ -106,4 +106,7 @@ maven_install(
         "https://repo1.maven.org/maven2",
     ],
     fetch_sources = True,
+    generate_compat_repositories = True, # Required by bazel-common's dependencies
 )
+load("@maven//:compat.bzl", "compat_repositories")
+compat_repositories()
