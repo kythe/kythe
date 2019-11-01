@@ -9,6 +9,6 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/analyzers/base:stream_fact_emitter",
         "//kythe/proto:storage_java_proto",
         "//third_party/truth",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )

@@ -17,7 +17,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
-        "@com_google_code_gson_gson//jar",
         "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_gson_gson",
     ],
 )

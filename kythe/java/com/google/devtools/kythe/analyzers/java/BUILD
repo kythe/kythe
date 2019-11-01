@@ -39,10 +39,10 @@ java_library(
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "//third_party/javac",
-        "@com_beust_jcommander//jar",
-        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@org_checkerframework_checker_qual//jar",
+        "@maven//:com_beust_jcommander",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 
@@ -89,9 +89,9 @@ java_binary(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "@com_beust_jcommander//jar",
         "@com_google_common_flogger//api",
         "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_beust_jcommander",
     ],
 )
 

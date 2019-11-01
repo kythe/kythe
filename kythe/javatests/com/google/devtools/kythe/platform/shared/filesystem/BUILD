@@ -13,6 +13,6 @@ java_test(
         "//kythe/proto:analysis_java_proto",
         "//third_party/guava",
         "//third_party/truth",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )

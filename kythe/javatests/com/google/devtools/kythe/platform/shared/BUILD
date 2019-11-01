@@ -21,9 +21,9 @@ java_test(
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "//third_party/truth",
-        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@junit_junit//jar",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:junit_junit",
     ],
 )
 
@@ -37,7 +37,7 @@ java_test(
         "//third_party/guava",
         "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )
 
@@ -49,6 +49,6 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//third_party/guava",
         "//third_party/truth",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )

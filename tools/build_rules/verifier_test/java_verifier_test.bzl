@@ -362,7 +362,7 @@ def java_proto_verifier_test(
         vnames_config = vnames_config,
         deps = [
             "@com_google_protobuf//:protobuf_java",
-            "@javax_annotation_jsr250_api//jar",
+            "@maven//:javax_annotation_jsr250_api",
         ],
     )
 

@@ -3,6 +3,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
+load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
@@ -197,117 +198,34 @@ def _java_dependencies():
         commit = "ca8ad22bc1479b5675118308f88ef3fff7d26c1f",
         remote = "https://github.com/google/flogger",
     )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_code_gson_gson",
-        artifact = "com.google.code.gson:gson:2.8.5",
-        sha1 = "f645ed69d595b24d4cf8b3fbb64cc505bede8829",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_guava_guava",
-        artifact = "com.google.guava:guava:26.0-jre",
-        sha1 = "6a806eff209f36f635f943e16d97491f00f6bfab",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_re2j_re2j",
-        artifact = "com.google.re2j:re2j:1.2",
-        sha1 = "4361eed4abe6f84d982cbb26749825f285996dd2",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_code_findbugs_jsr305",
-        artifact = "com.google.code.findbugs:jsr305:3.0.1",
-        sha1 = "f7be08ec23c21485b9b5a1cf1654c2ec8c58168d",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_errorprone_error_prone_annotations",
-        artifact = "com.google.errorprone:error_prone_annotations:2.3.1",
-        sha1 = "a6a2b2df72fd13ec466216049b303f206bd66c5d",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "org_checkerframework_checker_qual",
-        artifact = "org.checkerframework:checker-qual:2.9.0",
-        sha1 = "8f783c7cdcda9f3639459d33cad5d5307b5512ba",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "org_ow2_asm_asm",
-        artifact = "org.ow2.asm:asm:7.0",
-        sha1 = "d74d4ba0dee443f68fb2dcb7fcdb945a2cd89912",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "junit_junit",
-        artifact = "junit:junit:4.12",
-        sha1 = "2973d150c0dc1fefe998f834810d68f278ea58ec",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_beust_jcommander",
-        artifact = "com.beust:jcommander:1.48",
-        sha1 = "bfcb96281ea3b59d626704f74bc6d625ff51cbce",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_truth_truth",
-        artifact = "com.google.truth:truth:1.0",
-        sha1 = "998e5fb3fa31df716574b4c9e8d374855e800451",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_googlecode_java_diff_utils",
-        artifact = "com.googlecode.java-diff-utils:diffutils:1.3.0",
-        sha1 = "7e060dd5b19431e6d198e91ff670644372f60fbd",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_auto_value_auto_value",
-        artifact = "com.google.auto.value:auto-value:1.5.4",
-        sha1 = "65183ddd1e9542d69d8f613fdae91540d04e1476",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_auto_service_auto_service",
-        artifact = "com.google.auto.service:auto-service:1.0-rc4",
-        sha1 = "44954d465f3b9065388bbd2fc08a3eb8fd07917c",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_auto_auto_common",
-        artifact = "com.google.auto:auto-common:0.10",
-        sha1 = "c8f153ebe04a17183480ab4016098055fb474364",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "javax_annotation_jsr250_api",
-        artifact = "javax.annotation:jsr250-api:1.0",
-        sha1 = "5025422767732a1ab45d93abfea846513d742dcf",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_common_html_types",
-        artifact = "com.google.common.html.types:types:1.0.8",
-        sha1 = "9e9cf7bc4b2a60efeb5f5581fe46d17c068e0777",
+    maven_install(
+        name = "maven",
+        artifacts = [
+            "com.beust:jcommander:1.48",
+            "com.google.auto.service:auto-service:1.0-rc4",
+            "com.google.auto.value:auto-value:1.5.4",
+            "com.google.auto:auto-common:0.10",
+            "com.google.code.findbugs:jsr305:3.0.1",
+            "com.google.code.gson:gson:2.8.5",
+            "com.google.common.html.types:types:1.0.8",
+            "com.google.errorprone:error_prone_annotations:2.3.1",
+            "com.google.guava:guava:26.0-jre",
+            "com.google.re2j:re2j:1.2",
+            "com.google.truth:truth:1.0",
+            "com.googlecode.java-diff-utils:diffutils:1.3.0",
+            "javax.annotation:jsr250-api:1.0",
+            "junit:junit:4.12",
+            "org.checkerframework:checker-qual:2.9.0",
+            "org.ow2.asm:asm:7.0",
+        ],
+        repositories = [
+            "https://jcenter.bintray.com",
+            "https://maven.google.com",
+            "https://repo1.maven.org/maven2",
+        ],
+        fetch_sources = True,
+        generate_compat_repositories = True, # Required by bazel-common's dependencies
+        version_conflict_policy = "pinned",
     )
 
 def _go_dependencies():
@@ -677,7 +595,7 @@ def _bindings():
     maybe(
         native.bind,
         name = "gson",  # required by @com_google_protobuf
-        actual = "@com_google_code_gson_gson//jar",
+        actual = "@maven//:com_google_code_gson_gson",
     )
 
     maybe(

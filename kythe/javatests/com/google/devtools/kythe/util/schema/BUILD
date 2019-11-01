@@ -15,6 +15,6 @@ java_test(
         "//third_party/guava",
         "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )

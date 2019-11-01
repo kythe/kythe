@@ -20,10 +20,10 @@ java_test(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:go_java_proto",
         "//third_party/truth",
-        "@com_google_code_gson_gson//jar",
-        "@com_google_guava_guava//jar",
         "@com_google_protobuf//:protobuf_java_util",
-        "@junit_junit//jar",
+        "@maven//:com_google_code_gson_gson",
+        "@maven//:com_google_guava_guava",
+        "@maven//:junit_junit",
     ],
 )
 
@@ -40,6 +40,6 @@ java_test(
         "//kythe/proto:go_java_proto",
         "//third_party/truth",
         "@com_google_protobuf//:protobuf_java_util",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )

@@ -16,7 +16,7 @@ java_verifier_test(
 java_library(
     name = "testdata",
     srcs = glob(["*.java"]),
-    deps = ["@com_google_code_findbugs_jsr305//jar"],  # needed for pkg/package-info.java
+    deps = ["@maven//:com_google_code_findbugs_jsr305"],  # needed for pkg/package-info.java
 )
 
 extract_java(

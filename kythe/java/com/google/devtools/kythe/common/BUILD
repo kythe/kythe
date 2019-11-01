@@ -12,8 +12,8 @@ java_plugin(
     name = "auto_plugin",
     processor_class = "com.google.auto.value.processor.AutoValueProcessor",
     deps = [
-        "@com_google_auto_auto_common//jar",
-        "@com_google_auto_value_auto_value//jar",
+        "@maven//:com_google_auto_auto_common",
+        "@maven//:com_google_auto_value_auto_value",
     ],
 )
 
@@ -21,8 +21,8 @@ java_library(
     name = "autovalue",
     exported_plugins = [":auto_plugin"],
     exports = [
-        "@com_google_auto_value_auto_value//jar",
-        "@javax_annotation_jsr250_api//jar",
+        "@maven//:com_google_auto_value_auto_value",
+        "@maven//:javax_annotation_jsr250_api",
     ],
 )
 
@@ -31,8 +31,8 @@ java_plugin(
     processor_class = "com.google.auto.service.processor.AutoServiceProcessor",
     deps = [
         "//third_party/guava",
-        "@com_google_auto_auto_common//jar",
-        "@com_google_auto_service_auto_service//jar",
+        "@maven//:com_google_auto_auto_common",
+        "@maven//:com_google_auto_service_auto_service",
     ],
 )
 
@@ -40,7 +40,7 @@ java_library(
     name = "autoservice",
     exported_plugins = [":auto_service_plugin"],
     exports = [
-        "@com_google_auto_service_auto_service//jar",
-        "@javax_annotation_jsr250_api//jar",
+        "@maven//:com_google_auto_service_auto_service",
+        "@maven//:javax_annotation_jsr250_api",
     ],
 )
