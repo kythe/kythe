@@ -25,7 +25,6 @@ import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
-import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.proto.Buildinfo.BuildDetails;
 import com.google.devtools.kythe.proto.Java.JarDetails;
@@ -94,6 +93,7 @@ public class JvmExtractor {
     JarDetails.Builder jarDetails = JarDetails.newBuilder();
     for (Path path : options.jarOrClassFiles) {
       compilation.addArgument(path.toString());
+      compilation.addSourceFile(path.toString());
       if (path.toString().endsWith(JAR_FILE_EXT)) {
         VName jarVName = ExtractorUtils.lookupVName(fileVNames, relativizer, path.toString());
         int jarIndex = jarDetails.getJarCount();
@@ -109,13 +109,10 @@ public class JvmExtractor {
                 .setValue(
                     JarEntryDetails.newBuilder().setJarContainer(jarIndex).build().toByteString())
                 .build();
-        List<FileInput> inputs =
+        compilation.addAllRequiredInput(
             ExtractorUtils.toFileInputs(fileVNames, relativizer, jarContents).stream()
                 .map(i -> i.toBuilder().addDetails(jarEntryDetails).build())
-                .collect(Collectors.toList());
-        compilation.addAllRequiredInput(inputs);
-        compilation.addAllSourceFile(
-            inputs.stream().map(i -> i.getVName().getPath()).collect(Collectors.toList()));
+                .collect(Collectors.toList()));
       } else {
         classFiles.add(path.toString());
       }
