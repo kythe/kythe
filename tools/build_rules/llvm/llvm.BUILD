@@ -3,6 +3,12 @@ package(
 )
 
 TARGET_DEFAULTS = {
+    "llvm-tblgen": {
+        "srcs": glob([
+            "utils/TableGen/GlobalISel/*.cpp",
+            "utils/TableGen/GlobalISel/*.h",
+        ]),
+    },
     "LLVMSupport": {
         "linkopts": [
             "-pthread",
@@ -29,7 +35,15 @@ TARGET_DEFAULTS = {
     "LLVMRemarks": {
         # Technically BitstreamWriter, but it's header-only
         # and BitstreamReader is equivalent.
-        "deps": [":LLVMBitstreamReader"],
+        "deps": [
+            ":LLVMBitstreamReader",
+            # Below are required by the ObjectFile layering violation.
+            ":LLVMBinaryFormat",
+            ":LLVMMC",
+        ],
+        "srcs": [
+            "/root/include/llvm/Object/ObjectFile.h",
+        ],
     },
     "LLVMScalarOpts": {
         "deps": [":LLVMTarget"],
@@ -52,6 +66,11 @@ TARGET_DEFAULTS = {
         "textual_hdrs": [
             "tools/clang/include/clang/Basic/Version.inc",
             ":tools_clang_include_clang_Basic_genhdrs",
+        ],
+        "srcs": [
+            ":tools_clang_include_clang_Sema_AttrParsedAttrList_inc",
+            ":tools_clang_include_clang_Sema_AttrParsedAttrKinds_inc",
+            ":tools_clang_include_clang_Sema_AttrSpellingListIndex_inc",
         ],
     },
     "clangCodeGen": {
