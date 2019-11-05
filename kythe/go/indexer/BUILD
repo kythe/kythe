@@ -103,6 +103,12 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "scopes_test",
+    srcs = ["testdata/basic/scopes.go"],
+    emit_anchor_scopes = True,
+)
+
+go_indexer_test(
     name = "comment_test",
     srcs = ["testdata/basic/comments.go"],
 )
