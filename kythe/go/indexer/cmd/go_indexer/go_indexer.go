@@ -40,13 +40,14 @@ import (
 )
 
 var (
-	doJSON      = flag.Bool("json", false, "Write output as JSON")
-	doLibNodes  = flag.Bool("libnodes", false, "Emit nodes for standard library packages")
-	doCodeFacts = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
-	metaSuffix  = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
-	docBase     = flag.String("docbase", "http://godoc.org", "If set, use as the base URL for godoc links")
-	verbose     = flag.Bool("verbose", false, "Emit verbose log information")
-	contOnErr   = flag.Bool("continue", false, "Log errors encountered during analysis but do not exit unsuccessfully")
+	doJSON         = flag.Bool("json", false, "Write output as JSON")
+	doLibNodes     = flag.Bool("libnodes", false, "Emit nodes for standard library packages")
+	doCodeFacts    = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
+	doAnchorScopes = flag.Bool("anchor_scopes", false, "Emit childof edges to an anchor's semantic scope")
+	metaSuffix     = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
+	docBase        = flag.String("docbase", "http://godoc.org", "If set, use as the base URL for godoc links")
+	verbose        = flag.Bool("verbose", false, "Emit verbose log information")
+	contOnErr      = flag.Bool("continue", false, "Log errors encountered during analysis but do not exit unsuccessfully")
 
 	writeEntry func(context.Context, *spb.Entry) error
 	docURL     *url.URL
@@ -145,6 +146,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
 		EmitStandardLibs: *doLibNodes,
 		EmitMarkedSource: *doCodeFacts,
+		EmitAnchorScopes: *doAnchorScopes,
 		EmitLinkages:     *metaSuffix != "",
 		DocBase:          docURL,
 	})

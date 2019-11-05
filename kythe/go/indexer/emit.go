@@ -55,6 +55,9 @@ type EmitOptions struct {
 	// If true, emit linkages specified by metadata rules.
 	EmitLinkages bool
 
+	// If true, emit childof edges for an anchor's semantic scope.
+	EmitAnchorScopes bool
+
 	// If set, use this as the base URL for links to godoc.  The import path is
 	// appended to the path of this URL to obtain the target URL to link to.
 	DocBase *url.URL
@@ -65,6 +68,13 @@ func (e *EmitOptions) emitMarkedSource() bool {
 		return false
 	}
 	return e.EmitMarkedSource
+}
+
+func (e *EmitOptions) emitAnchorScopes() bool {
+	if e == nil {
+		return false
+	}
+	return e.EmitAnchorScopes
 }
 
 // shouldEmit reports whether the indexer should emit a node for the given
@@ -191,7 +201,10 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		})
 		return
 	}
-	e.writeRef(id, target, edges.Ref)
+	ref := e.writeRef(id, target, edges.Ref)
+	if e.opts.emitAnchorScopes() {
+		e.writeEdge(ref, e.callContext(stack).vname, edges.ChildOf)
+	}
 	if call, ok := isCall(id, obj, stack); ok {
 		callAnchor := e.writeRef(call, target, edges.RefCall)
 
