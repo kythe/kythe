@@ -150,6 +150,9 @@ def _go_entries(ctx):
     if ctx.attr.has_marked_source:
         iargs.append("-code")
 
+    if ctx.attr.emit_anchor_scopes:
+        iargs.append("-anchor_scopes")
+
     # If the test wants linkage metadata, enable support for it in the indexer.
     if ctx.attr.metadata_suffix:
         iargs += ["-meta", ctx.attr.metadata_suffix]
@@ -172,6 +175,9 @@ go_entries = rule(
     attrs = {
         # Whether to enable explosion of MarkedSource facts.
         "has_marked_source": attr.bool(default = False),
+
+        # Whether to enable anchor scope edges.
+        "emit_anchor_scopes": attr.bool(default = False),
 
         # The go_extract output to pass to the indexer.
         "kzip": attr.label(
@@ -225,6 +231,7 @@ def _go_indexer(
         importpath = None,
         data = None,
         has_marked_source = False,
+        emit_anchor_scopes = False,
         allow_duplicates = False,
         metadata_suffix = ""):
     if len(deps) > 0:
@@ -249,6 +256,7 @@ def _go_indexer(
     go_entries(
         name = entries,
         has_marked_source = has_marked_source,
+        emit_anchor_scopes = emit_anchor_scopes,
         kzip = ":" + kzip,
         metadata_suffix = metadata_suffix,
     )
@@ -266,6 +274,7 @@ def go_indexer_test(
         log_entries = False,
         data = None,
         has_marked_source = False,
+        emit_anchor_scopes = False,
         allow_duplicates = False,
         metadata_suffix = ""):
     entries = _go_indexer(
@@ -273,6 +282,7 @@ def go_indexer_test(
         srcs = srcs,
         data = data,
         has_marked_source = has_marked_source,
+        emit_anchor_scopes = emit_anchor_scopes,
         importpath = import_path,
         metadata_suffix = metadata_suffix,
         deps = deps,
