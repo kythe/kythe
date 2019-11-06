@@ -22,6 +22,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
+import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
@@ -628,6 +629,47 @@ public class JavaExtractorTest extends TestCase {
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).isEmpty();
     assertThat(details.getBootclasspathList()).containsExactly("!PLATFORM_CLASS_PATH_JAR!");
+  }
+
+  public void testSourceInJar() throws ExtractionException, InvalidProtocolBufferException {
+    JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
+
+    List<String> sources = testFiles("src_in_jar/C1.java");
+    List<String> classpath = ImmutableList.of(join(TEST_DATA_DIR, "src_in_jar/pack.jar"));
+
+    CompilationDescription description =
+        java.extract(
+            TARGET1,
+            sources,
+            classpath,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.empty(),
+            EMPTY,
+            "output");
+
+    CompilationUnit unit = description.getCompilationUnit();
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileCount()).isEqualTo(1);
+    assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
+
+    // Ensure the source jar and the class jar are included in the required inputs.
+    assertThat(getInfos(unit.getRequiredInputList()))
+        .containsAtLeast(
+            makeFileInfo(sources.get(0)),
+            makeFileInfo(
+                "!CLASS_PATH_JAR!/pack2/C3.class",
+                join(TEST_DATA_DIR, "src_in_jar/pack2/C3.class")),
+            makeFileInfo(
+                "!SOURCE_JAR!/pack/C2.java", join(TEST_DATA_DIR, "src_in_jar/pack/C2.java")));
+
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList()).containsExactly("!SOURCE_JAR!");
+    // Ensure the classpath is set for replay.
+    assertThat(details.getClasspathList()).containsExactly("!CLASS_PATH_JAR!");
   }
 
   private List<String> testFiles(String... files) {

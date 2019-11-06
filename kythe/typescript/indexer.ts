@@ -250,6 +250,15 @@ class SymbolVNameStore {
 }
 
 /**
+ * isParameterPropertyDeclaration wraps ts.isParameterPropertyDeclaration and
+ * exposes an API that's compatible across TypeScript 3.5 & 3.6.
+ */
+function isParameterPropertyDeclaration(node: ts.Node, parent: ts.Node): node is ts.ParameterPropertyDeclaration {
+  // TODO: remove/inline once fully on TypeScript 3.6+
+  return (ts.isParameterPropertyDeclaration as any)(node, parent);
+}
+
+/**
  * StandardIndexerContext provides the standard definition of information about
  * a TypeScript program and common methods used by the TypeScript indexer and
  * its plugins. See the IndexerContext interface definition for more details.
@@ -483,7 +492,7 @@ class StandardIndexerContext implements IndexerHost {
         case ts.SyntaxKind.Constructor:
           // Class members declared with a shorthand in the constructor should
           // be scoped to the class, not the constructor.
-          if (!ts.isParameterPropertyDeclaration(startNode)) {
+          if (!isParameterPropertyDeclaration(startNode, startNode.parent)) {
             parts.push('constructor');
           }
           break;
@@ -1459,7 +1468,7 @@ class Visitor {
                   kFunc, makeOrdinalEdge(EdgeKind.PARAM, paramNum), kParam);
               ++paramNum;
 
-              if (ts.isParameterPropertyDeclaration(param)) {
+              if (isParameterPropertyDeclaration(param, param.parent)) {
                 // Class members defined in the parameters of a constructor are
                 // children of the class type.
                 const parentName = param.parent.parent.name;
