@@ -34,7 +34,7 @@ RUN tar --no-same-owner -xzf /tmp/kythe-v*.tar.gz && \
 ADD kythe/extractors/bazel/extract.sh /kythe/
 ADD kythe/extractors/bazel/bazel_wrapper.sh /kythe/
 ADD kythe/release/base/fix_permissions.sh /kythe/
-ADD external/javax_annotation_jsr250_api/jar/jsr250-api-1.0.jar /kythe/
+ADD external/maven/v1/https/jcenter.bintray.com/javax/annotation/jsr250-api/1.0/jsr250-api-1.0.jar /kythe/
 
 # Bazelisk
 ADD external/com_github_philwo_bazelisk/linux_amd64_stripped/bazelisk /kythe/
