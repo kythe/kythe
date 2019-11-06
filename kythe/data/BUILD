@@ -18,6 +18,7 @@ construct_vnames_config(
 filegroup(
     name = "raw_vnames_config",
     srcs = [
+        "simple_vnames.json",
         "vnames.cxx.json",
         "vnames.go.json",
         "vnames.java.json",

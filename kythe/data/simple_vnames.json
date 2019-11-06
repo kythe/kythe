@@ -1,0 +1,32 @@
+[
+  {
+    "pattern": "bazel-out/[^/]+/bin/external/[^/]+/(.+)",
+    "vname": {
+      "corpus": "CORPUS",
+      "path": "@1@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/([^/]+)/external/[^/]+/(.+)",
+    "vname": {
+      "corpus": "CORPUS",
+      "root": "bazel-out/@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/(\\w+)/(.*)",
+    "vname": {
+      "corpus": "CORPUS",
+      "path": "@2@",
+      "root": "bazel-out/@1@"
+    }
+  },
+  {
+    "pattern": "(.*)",
+    "vname": {
+      "corpus": "CORPUS",
+      "path": "@1@"
+    }
+  }
+]

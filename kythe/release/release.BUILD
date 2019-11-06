@@ -11,14 +11,28 @@ exports_files([
 load(":extractors.bzl", "extractor_action")
 load(":vnames.bzl", "construct_vnames_config")
 
+config_setting(
+    name = "assign_external_projects_to_separate_corpora",
+    values = {
+        "define": "kythe_assign_external_projects_to_separate_corpora=true",
+    },
+)
+
 construct_vnames_config(
     name = "vnames_config",
-    srcs = [
-        "vnames.cxx.json",
-        "vnames.go.json",
-        "vnames.java.json",
-        "vnames.json",
-    ],
+    srcs = select({
+        "//conditions:default": [
+            # by default, the simple vname rules are used, which map everything
+            # to the corpus set via `--define kythe_corpus=<my corpus>`.
+            "simple_vnames.json",
+        ],
+        ":assign_external_projects_to_separate_corpora": [
+            "vnames.cxx.json",
+            "vnames.go.json",
+            "vnames.java.json",
+            "vnames.json",
+        ],
+    }),
 )
 
 # Clone of default Java proto toolchain with "annotate_code" enabled for
