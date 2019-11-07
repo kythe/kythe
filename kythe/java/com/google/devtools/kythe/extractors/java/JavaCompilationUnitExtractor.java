@@ -141,6 +141,7 @@ public class JavaCompilationUnitExtractor {
   private final String jdkJar;
   private final String rootDirectory;
   private final FileVNames fileVNames;
+  private String systemDir;
 
   /**
    * Creates an instance of the JavaExtractor to store java compilation information in an .kindex
@@ -187,6 +188,14 @@ public class JavaCompilationUnitExtractor {
     } catch (IOException ioe) {
       throw new ExtractionException("Root directory does not exist", ioe, false);
     }
+  }
+
+  /**
+   * Use this value for the -system javac option. {@code systemDir} should either be a path to the
+   * system module directory or "none" which is a special value to javac.
+   */
+  public void useSystemDirectory(String systemDir) {
+    this.systemDir = systemDir;
   }
 
   private CompilationUnit buildCompilationUnit(
@@ -252,7 +261,6 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> sourcepath,
       Iterable<String> processorpath,
       Iterable<String> processors,
-      Optional<String> systemDir,
       Optional<Path> genSrcDir,
       Iterable<String> options,
       String outputPath)
@@ -278,7 +286,6 @@ public class JavaCompilationUnitExtractor {
               sourcepath,
               processorpath,
               processors,
-              systemDir,
               genSrcDir,
               options);
     } else {
@@ -692,7 +699,6 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> sourcepath,
       Iterable<String> processorpath,
       Iterable<String> processors,
-      Optional<String> systemDir,
       Optional<Path> genSrcDir,
       Iterable<String> options)
       throws ExtractionException {
@@ -836,9 +842,7 @@ public class JavaCompilationUnitExtractor {
       }
 
       getAdditionalSourcePaths(compilationUnits, results);
-      if (systemDir.isPresent()) {
-        addSystemFiles(systemDir.get(), results);
-      }
+      addSystemFiles(results);
 
       // Find files potentially used for resolving .* imports.
       findOnDemandImportedFiles(compilationUnits, fileManager);
@@ -886,8 +890,10 @@ public class JavaCompilationUnitExtractor {
    * system, and the latter contains such file system. The analyzer will be also invoked with
    * --system and thus will need them.
    */
-  private void addSystemFiles(String systemDir, AnalysisResults results)
-      throws ExtractionException {
+  private void addSystemFiles(AnalysisResults results) throws ExtractionException {
+    if (Strings.isNullOrEmpty(systemDir)) {
+      return;
+    }
     for (String fname : ImmutableList.of("jrt-fs.jar", "modules")) {
       Path modPath = Paths.get(systemDir, "lib", fname);
       String relativePath = ExtractorUtils.tryMakeRelative(rootDirectory, modPath.toString());

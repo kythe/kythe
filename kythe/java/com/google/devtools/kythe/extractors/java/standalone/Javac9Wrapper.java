@@ -68,8 +68,9 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
 
     // Retrieve system path (the value of --system=, unless it equals 'none'
     String sysd = options.get(Option.SYSTEM);
-    Optional<String> systemDir =
-        (sysd == null || "none".equals(sysd)) ? Optional.empty() : Optional.of(sysd);
+    if (sysd != null && !"none".equals(sysd)) {
+      javaCompilationUnitExtractor.useSystemDirectory(sysd);
+    }
 
     EnumSet<Option> claimed =
         EnumSet.of(
@@ -128,7 +129,6 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
         sourcePaths,
         processorPaths,
         processors,
-        systemDir,
         genSrcDir,
         completeOptions,
         outputDirectory);
