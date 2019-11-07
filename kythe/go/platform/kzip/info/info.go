@@ -53,7 +53,7 @@ func KzipInfo(f kzip.File, fileSize int64, scanOpts ...kzip.ScanOption) (*apb.Kz
 		for _, ri := range u.Proto.RequiredInput {
 			riCorpus := requiredInputCorpus(u, ri)
 			if riCorpus == "" {
-				msg := strings.TrimSuffix(fmt.Sprintf("unable to determine corpus for required_input %q in CU %v", ri.Info.Path, u.Proto.GetVName()), " ")
+				msg := strings.TrimSpace(fmt.Sprintf("unable to determine corpus for required_input %q in CU %v", ri.Info.Path, u.Proto.GetVName()))
 				kzipInfo.CriticalKzipErrors = append(kzipInfo.CriticalKzipErrors, msg)
 				return nil
 			}
