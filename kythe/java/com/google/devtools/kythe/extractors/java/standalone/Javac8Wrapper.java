@@ -113,6 +113,7 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
         sourcePaths,
         processorPaths,
         processors,
+        Optional.empty(),
         genSrcDir,
         completeOptions,
         outputDirectory);

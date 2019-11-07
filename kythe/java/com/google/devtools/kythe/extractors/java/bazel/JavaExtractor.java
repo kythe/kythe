@@ -138,6 +138,9 @@ public class JavaExtractor {
       Files.createDirectories(genSrcDir.get());
     }
 
+    // TODO(salguarnieri) Read -system module directory from the javac arguments.
+    Optional<String> systemDir = Optional.empty();
+
     CompilationDescription description =
         new JavaCompilationUnitExtractor(FileVNames.fromFile(vNamesConfigPath), USER_DIR.value())
             .extract(
@@ -148,6 +151,7 @@ public class JavaExtractor {
                 sourcepaths,
                 jInfo.getProcessorpathList(),
                 jInfo.getProcessorList(),
+                systemDir,
                 genSrcDir,
                 javacOpts,
                 jInfo.getOutputjar());
