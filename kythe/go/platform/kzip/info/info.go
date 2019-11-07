@@ -20,6 +20,7 @@ package info // import "kythe.io/kythe/go/platform/kzip/info"
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"bitbucket.org/creachadair/stringset"
 
@@ -28,15 +29,11 @@ import (
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
-// If the compilation unit doesn't set a corpus, use this corpus so we have somewhere to record the
-// stats.
-const unspecifiedCorpus = "__UNSPECIFIED_CORPUS__"
-
 // KzipInfo scans the kzip in f and counts contained files and units, giving a breakdown by corpus
 // and language. It also records the size (in bytes) of the kzip specified by fileSize in the
 // returned KzipInfo.
 func KzipInfo(f kzip.File, fileSize int64, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
-	// Get file and unit counts broken down by corpus, language.
+	// Get file counts broken down by corpus, language.
 	kzipInfo := &apb.KzipInfo{
 		Corpora: make(map[string]*apb.KzipInfo_CorpusInfo),
 		Size:    fileSize,
@@ -44,22 +41,23 @@ func KzipInfo(f kzip.File, fileSize int64, scanOpts ...kzip.ScanOption) (*apb.Kz
 
 	err := kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
 		srcs := stringset.New(u.Proto.SourceFile...)
-		// The corpus may be specified in the unit VName or in the source file
-		// VNames. Record all values of corpus seen and afterwards check that a
-		// single value is specified.
-		cuCorpus := u.Proto.GetVName().GetCorpus()
-		if cuCorpus == "" {
-			log.Printf("Warning: Corpus not set for compilation unit %v", u.Proto.GetVName())
-			cuCorpus = unspecifiedCorpus
-		}
 		cuLang := u.Proto.GetVName().GetLanguage()
-		cuInfo := cuLangInfo(cuCorpus, cuLang, kzipInfo)
-		cuInfo.Count++
+		if cuLang == "" {
+			msg := fmt.Sprintf("CU does not specify a language %v", u.Proto.GetVName())
+			kzipInfo.CriticalKzipErrors = append(kzipInfo.CriticalKzipErrors, msg)
+			return nil
+		}
 
 		var srcCorpora stringset.Set
 		srcsWithRI := stringset.New()
 		for _, ri := range u.Proto.RequiredInput {
 			riCorpus := requiredInputCorpus(u, ri)
+			if riCorpus == "" {
+				// Trim spaces to work around the fact that log("%v", proto) is inconsistent about trailing spaces in google3 vs open-source go.
+				msg := strings.TrimSpace(fmt.Sprintf("unable to determine corpus for required_input %q in CU %v", ri.Info.Path, u.Proto.GetVName()))
+				kzipInfo.CriticalKzipErrors = append(kzipInfo.CriticalKzipErrors, msg)
+				return nil
+			}
 			requiredInputInfo(riCorpus, cuLang, kzipInfo).Count++
 			if srcs.Contains(ri.Info.Path) {
 				sourceInfo(riCorpus, cuLang, kzipInfo).Count++
@@ -99,20 +97,11 @@ func requiredInputCorpus(u *kzip.Unit, ri *apb.CompilationUnit_FileInput) string
 // KzipInfoTotalCount returns the total CompilationUnits counts for infos split apart by language.
 func KzipInfoTotalCount(infos []*apb.KzipInfo) apb.KzipInfo_CorpusInfo {
 	totals := apb.KzipInfo_CorpusInfo{
-		LanguageCompilationUnits: make(map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits),
-		LanguageRequiredInputs:   make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
-		LanguageSources:          make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
+		LanguageRequiredInputs: make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
+		LanguageSources:        make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
 	}
 	for _, info := range infos {
 		for _, i := range info.GetCorpora() {
-			for lang, stats := range i.GetLanguageCompilationUnits() {
-				langTotal := totals.LanguageCompilationUnits[lang]
-				if langTotal == nil {
-					langTotal = &apb.KzipInfo_CorpusInfo_CompilationUnits{}
-					totals.LanguageCompilationUnits[lang] = langTotal
-				}
-				langTotal.Count += stats.GetCount()
-			}
 			for lang, stats := range i.GetLanguageRequiredInputs() {
 				total := totals.LanguageRequiredInputs[lang]
 				if total == nil {
@@ -140,10 +129,6 @@ func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
 
 	for _, i := range infos {
 		for corpus, cinfo := range i.GetCorpora() {
-			for lang, cu := range cinfo.GetLanguageCompilationUnits() {
-				cui := cuLangInfo(corpus, lang, kzipInfo)
-				cui.Count += cu.GetCount()
-			}
 			for lang, inputs := range cinfo.GetLanguageRequiredInputs() {
 				c := requiredInputInfo(corpus, lang, kzipInfo)
 				c.Count += inputs.GetCount()
@@ -157,16 +142,6 @@ func MergeKzipInfo(infos []*apb.KzipInfo) *apb.KzipInfo {
 		kzipInfo.Size += i.Size
 	}
 	return kzipInfo
-}
-
-func cuLangInfo(corpus, lang string, kzipInfo *apb.KzipInfo) *apb.KzipInfo_CorpusInfo_CompilationUnits {
-	c := corpusInfo(corpus, kzipInfo)
-	cui := c.LanguageCompilationUnits[lang]
-	if cui == nil {
-		cui = &apb.KzipInfo_CorpusInfo_CompilationUnits{}
-		c.LanguageCompilationUnits[lang] = cui
-	}
-	return cui
 }
 
 func requiredInputInfo(corpus, lang string, kzipInfo *apb.KzipInfo) *apb.KzipInfo_CorpusInfo_RequiredInputs {
@@ -193,9 +168,8 @@ func corpusInfo(corpus string, kzipInfo *apb.KzipInfo) *apb.KzipInfo_CorpusInfo 
 	i := kzipInfo.GetCorpora()[corpus]
 	if i == nil {
 		i = &apb.KzipInfo_CorpusInfo{
-			LanguageCompilationUnits: make(map[string]*apb.KzipInfo_CorpusInfo_CompilationUnits),
-			LanguageRequiredInputs:   make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
-			LanguageSources:          make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
+			LanguageRequiredInputs: make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
+			LanguageSources:        make(map[string]*apb.KzipInfo_CorpusInfo_RequiredInputs),
 		}
 		kzipInfo.Corpora[corpus] = i
 	}
