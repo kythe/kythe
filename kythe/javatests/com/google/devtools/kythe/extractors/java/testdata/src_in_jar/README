@@ -1,0 +1,6 @@
+This test tests that sources found in jars are handled properly.
+
+The jar was built with:
+
+javac pack2/C3.java
+jar cf pack.jar pack/C2.java pack2/C3.class

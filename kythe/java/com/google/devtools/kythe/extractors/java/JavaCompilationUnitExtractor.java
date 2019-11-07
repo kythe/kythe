@@ -413,7 +413,16 @@ public class JavaCompilationUnitExtractor {
           // the correct sourcepath to add is the directory containing that
           // package.
           String packageSubDir = packageName.replace('.', '/');
-          String path = compilationUnit.getSourceFile().toUri().getPath();
+          URI uri = compilationUnit.getSourceFile().toUri();
+          // If the user included source files in their jars, we don't record anything special here
+          // because we pick up this source jar and the classpath/sourcepath usage with our other
+          // compiler hooks.
+          if ("jar".equals(uri.getScheme())) {
+            logger.atWarning().log(
+                "Detected a source in a jar file: %s - %s", uri, compilationUnit);
+            continue;
+          }
+          String path = uri.getPath();
           // This needs to be lastIndexOf as there are source jars that
           // contain the same package name in the files contained in them
           // as the path the source jars live in. As we extract the source

@@ -22,6 +22,7 @@ go_test(
     library = "entryset",
     deps = [
         "//kythe/go/test/testutil",
+        "//kythe/go/util/compare",
         "//kythe/go/util/kytheuri",
     ],
 )

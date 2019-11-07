@@ -16,4 +16,5 @@ go_test(
     size = "small",
     srcs = ["proxy_test.go"],
     library = "proxy",
+    deps = ["//kythe/go/util/compare"],
 )
