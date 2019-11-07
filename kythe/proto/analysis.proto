@@ -183,20 +183,7 @@ message KzipInfo {
   reserved 2, 3;
 
   message CorpusInfo {
-    reserved 1, 2;
-
-    // The count of data present in compilation units for a given corpus and
-    // language.
-    message CompilationUnits {
-      reserved 2, 3;
-
-      // Number of compilation units that have a specific corpus in their VName.
-      int32 count = 1;
-    }
-
-    // Map from compilation unit language to stats about compilation units with
-    // that language.
-    map<string, CompilationUnits> language_compilation_units = 3;
+    reserved 1, 2, 3;
 
     message RequiredInputs {
       // TODO(salguarnieri) Add count of unique inputs for this corpus?
