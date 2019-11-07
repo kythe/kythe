@@ -1040,6 +1040,14 @@ class Visitor {
     if (modulePath) {
       const kModule = this.newVName('module', modulePath);
       this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
+    } else {
+      // Check if module being imported is declared via `declare module`
+      // and if so - output ref to that statement.
+      const decl = moduleSym.valueDeclaration;
+      if (ts.isModuleDeclaration(decl)) {
+        const kModule =  this.host.getSymbolName(moduleSym, TSNamespace.NAMESPACE);
+        this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
+      }
     }
 
     // TODO(#4021): See discussion.
