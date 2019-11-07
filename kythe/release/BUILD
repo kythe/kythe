@@ -108,6 +108,7 @@ filegroup(
         "//:LICENSE",
         "//:RELEASES.md",
         "//kythe/data:raw_vnames_config",
+        "//kythe/data:simple_vnames_config",
         "//kythe/data:vnames.bzl",
         "//kythe/extractors:extractors.bzl",
     ],

@@ -26,6 +26,11 @@ filegroup(
 )
 
 filegroup(
+    name = "simple_vnames_config",
+    srcs = ["simple_vnames.json"],
+)
+
+filegroup(
     name = "empty_vnames_config",
     srcs = ["empty_vnames.json"],
 )
