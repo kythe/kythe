@@ -49,6 +49,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import javax.lang.model.element.Name;
 import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
 
 /** {@link JavacAnalyzer} to emit Kythe nodes and edges. */
 public class KytheJavacAnalyzer extends JavacAnalyzer {
@@ -148,7 +149,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
       }
       Plugin.KytheGraph graph =
           new KytheGraphImpl(
-              context, src.getPositions(), symNodes, Collections.unmodifiableMap(nodes));
+              context, entrySets, src.getPositions(), symNodes, Collections.unmodifiableMap(nodes));
       for (Supplier<Plugin> p : plugins) {
         try {
           Plugin plugin = p.get();
@@ -162,16 +163,19 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
 
   private static class KytheGraphImpl implements Plugin.KytheGraph {
     private final Context javaContext;
+    private final JavaEntrySets entrySets;
     private final SourceText.Positions filePositions;
     private final Map<JCTree, Plugin.KytheNode> treeNodes;
     private final Map<Symbol, Plugin.KytheNode> symNodes;
 
     KytheGraphImpl(
         Context javaContext,
+        JavaEntrySets entrySets,
         SourceText.Positions filePositions,
         Map<Symbol, Plugin.KytheNode> symNodes,
         Map<JCTree, Plugin.KytheNode> treeNodes) {
       this.javaContext = javaContext;
+      this.entrySets = entrySets;
       this.filePositions = filePositions;
       this.symNodes = symNodes;
       this.treeNodes = treeNodes;
@@ -180,6 +184,11 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     @Override
     public Context getJavaContext() {
       return javaContext;
+    }
+
+    @Override
+    public Optional<Plugin.KytheNode> getNode(JavaFileObject file) {
+      return Optional.ofNullable(file).map(entrySets::getFileVName).map(KytheNodeImpl::new);
     }
 
     @Override

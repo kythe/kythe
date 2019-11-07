@@ -95,6 +95,15 @@ public class AutoValuePlugin extends Plugin.Scanner<Void, Void> {
   }
 
   private void emitAutoValue(ResolvedAutoValue autoValue) {
+    // Emit `file` -[generates]-> `generated_file`
+    Optional<KytheNode> file =
+        kytheGraph.getNode(autoValue.symbol().abstractSym().outermostClass().sourcefile);
+    Optional<KytheNode> genFile =
+        kytheGraph.getNode(autoValue.symbol().generatedSym().outermostClass().sourcefile);
+    if (file.isPresent() && genFile.isPresent()) {
+      entrySets.emitEdge(file.get().getVName(), EdgeKind.GENERATES, genFile.get().getVName());
+    }
+
     // Emit `abstract` -[generates]-> `generated` edge for each GeneratedSymbol
     autoValue.stream()
         .forEach(

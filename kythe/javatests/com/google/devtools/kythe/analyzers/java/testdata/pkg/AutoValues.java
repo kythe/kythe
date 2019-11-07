@@ -2,6 +2,14 @@ package com.google.devtools.kythe.analyzers.java.testdata.pkg;
 
 import com.google.auto.value.AutoValue;
 
+//- File=vname("", Corpus, Root, Path, "").node/kind file
+//- GeneratedFile=vname("", GenCorpus, GenRoot, GenPath, "").node/kind file
+//- File generates GeneratedFile
+
+//- GeneratedDef=vname(_, GenCorpus, GenRoot, GenPath, _).node/kind anchor
+//- GeneratedDef defines/binding AutoStringPair
+
+//- @AutoValues=vname(_, Corpus, Root, Path, _).node/kind anchor
 public final class AutoValues {
   @AutoValue
   //- @StringPair defines/binding StringPair

@@ -26,6 +26,7 @@ import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
 import java.util.Optional;
 import javax.lang.model.element.Name;
+import javax.tools.JavaFileObject;
 
 /** Plugin interface for the Kythe Java analyzer. */
 public interface Plugin {
@@ -33,6 +34,9 @@ public interface Plugin {
   public static interface KytheGraph {
     /** Returns the current Java {@link Context}. */
     public Context getJavaContext();
+
+    /** Returns the {@link KytheNode} associated with the given {@link JavaFileObject}. */
+    public Optional<KytheNode> getNode(JavaFileObject file);
 
     /** Returns the {@link KytheNode} associated with the given {@link JCTree}. */
     public Optional<KytheNode> getNode(JCTree tree);
