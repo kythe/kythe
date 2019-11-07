@@ -1,13 +1,6 @@
 [
   {
-    "pattern": "bazel-out/[^/]+/bin/external/[^/]+/(.+)",
-    "vname": {
-      "corpus": "CORPUS",
-      "path": "@1@"
-    }
-  },
-  {
-    "pattern": "bazel-out/[^/]+/([^/]+)/external/[^/]+/(.+)",
+    "pattern": "bazel-out/[^/]+/([^/]+/external/[^/]+)/(.+)",
     "vname": {
       "corpus": "CORPUS",
       "root": "bazel-out/@1@",
