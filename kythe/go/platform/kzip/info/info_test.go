@@ -212,7 +212,7 @@ var infoTests = []struct {
 			},
 		},
 		&apb.KzipInfo{
-			CriticalKzipErrors: []string{"unable to determine corpus for required_input \"file1.py\" in CU language:\"python\" "},
+			CriticalKzipErrors: []string{"unable to determine corpus for required_input \"file1.py\" in CU language:\"python\""},
 		},
 	},
 }
