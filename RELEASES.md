@@ -4,13 +4,10 @@
 
 #### Bug Fixes
 
-* **extractor:**  fix jsr250 path after #4180 (#4190) ([bf8c2099](https://github.com/kythe/kythe/commit/bf8c2099d4544e70ea30f2cee8cff4a8e6c32465))
 * **java extractor:**  Handle source files in jars (#4188) ([df711e31](https://github.com/kythe/kythe/commit/df711e3158718a923e11ecc86e51ab4e261ddfb5), closes [#4186](https://github.com/kythe/kythe/issues/4186))
 * **jvm extractor:**
   *  use class files as srcs, not jar (#4191) ([907857c7](https://github.com/kythe/kythe/commit/907857c775341728505ab7dc67bcad8112901c02))
-  *  use class files as srcs, not jar (#4179) ([8b2c5e43](https://github.com/kythe/kythe/commit/8b2c5e4390c8be89f8cbb162a826441794599850))
 * **kzip info:**
-  *  trim extra spaces from error message (#4196) ([d7e48d64](https://github.com/kythe/kythe/commit/d7e48d64bdd00167f74f0431d0a1c4e7a72f779d))
   *  don't count compilation units by corpus (#4195) ([88f5db4b](https://github.com/kythe/kythe/commit/88f5db4b54ba9482596dcabcb71f860f7a09fd8c))
 
 #### Features
