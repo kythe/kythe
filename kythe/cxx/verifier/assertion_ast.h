@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
+#include <ctype.h>
+#include <regex>
 
 #include "glog/logging.h"
 #include "kythe/cxx/verifier/location.hh"
@@ -35,6 +37,10 @@ typedef size_t Symbol;
 /// \brief Maps strings to `Symbol`s.
 class SymbolTable {
  public:
+  SymbolTable() {
+    id_regex = std::regex("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*");
+  }
+
   /// \brief Returns the `Symbol` associated with `string`, or makes a new one.
   Symbol intern(const std::string& string) {
     const auto old = symbols_.find(string);
@@ -58,10 +64,30 @@ class SymbolTable {
     auto* text = reverse_map_[symbol];
     if (text == &unique_symbol_) {
       return "(unique#" + std::to_string(symbol) + ")";
-    } else if (!text->empty()) {
+    } else if (!text->empty() && regex_match(*text, id_regex)) {
       return *text;
     } else {
-      return "\"\"";
+      std::string quoted("\"");
+      for (const unsigned char& c : *text) {
+        if (isprint(c) && c != '\\' && c != '"') {
+          quoted += c;
+        } else {
+          switch(c) {
+          case '"':  quoted += "\\\"";  break;
+          case '\\': quoted += "\\\\"; break;
+          case '\t': quoted += "\\t";  break;
+          case '\r': quoted += "\\r";  break;
+          case '\n': quoted += "\\n";  break;
+          default:
+            char const* const hexdig = "0123456789ABCDEF";
+            quoted += "\\x";
+            quoted += hexdig[c >> 4];
+            quoted += hexdig[c & 0x0F];
+          }
+        }
+      }
+      quoted += "\"";
+      return quoted;
     }
   }
 
@@ -79,6 +105,8 @@ class SymbolTable {
   std::vector<const std::string*> reverse_map_;
   /// The text to use for unique() symbols.
   std::string unique_symbol_ = "(unique)";
+  /// Used for quoting strings - see assertions.lex:
+  std::regex id_regex;
 };
 
 /// \brief Performs bump-pointer allocation of pointer-aligned memory.
