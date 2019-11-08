@@ -68,8 +68,7 @@ public class JavaExtractorTest extends TestCase {
   public void testJavaExtractorSimple() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
-    List<String> sources =
-        Lists.newArrayList(join(TEST_DATA_DIR, "/pkg/A.java"), join(TEST_DATA_DIR, "/pkg/B.java"));
+    List<String> sources = testFiles("/pkg/A.java", "/pkg/B.java");
 
     // Index the specified sources
     CompilationDescription description =
@@ -670,6 +669,35 @@ public class JavaExtractorTest extends TestCase {
     assertThat(details.getSourcepathList()).containsExactly("!SOURCE_JAR!");
     // Ensure the classpath is set for replay.
     assertThat(details.getClasspathList()).containsExactly("!CLASS_PATH_JAR!");
+  }
+
+  public void testSystemDir() throws ExtractionException, InvalidProtocolBufferException {
+    JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
+
+    List<String> sources = testFiles("/pkg/A.java", "/pkg/B.java");
+
+    java.useSystemDirectory(join(TEST_DATA_DIR, "/system_modules"));
+
+    CompilationDescription description =
+        java.extract(
+            TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, Optional.empty(), EMPTY, "output");
+
+    CompilationUnit unit = description.getCompilationUnit();
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileCount()).isEqualTo(2);
+    assertThat(unit.getSourceFileList()).containsExactlyElementsIn(sources).inOrder();
+
+    List<String> requiredInputs =
+        unit.getRequiredInputList().stream()
+            .map(f -> f.getInfo().getPath())
+            .collect(Collectors.toList());
+    assertThat(requiredInputs)
+        .containsAtLeast(
+            join(TEST_DATA_DIR, "/pkg/A.java"),
+            join(TEST_DATA_DIR, "/pkg/B.java"),
+            join(TEST_DATA_DIR, "/system_modules/lib/jrt-fs.jar"),
+            join(TEST_DATA_DIR, "/system_modules/lib/modules"));
   }
 
   private List<String> testFiles(String... files) {
