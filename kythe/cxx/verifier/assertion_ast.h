@@ -37,9 +37,9 @@ typedef size_t Symbol;
 /// \brief Maps strings to `Symbol`s.
 class SymbolTable {
  public:
-  SymbolTable() {
-    id_regex = std::regex("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*");
-  }
+  SymbolTable() :
+   unique_symbol_("(unique)"),
+   id_regex_(std::regex("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*")) { }
 
   /// \brief Returns the `Symbol` associated with `string`, or makes a new one.
   Symbol intern(const std::string& string) {
@@ -64,7 +64,7 @@ class SymbolTable {
     auto* text = reverse_map_[symbol];
     if (text == &unique_symbol_) {
       return "(unique#" + std::to_string(symbol) + ")";
-    } else if (!text->empty() && regex_match(*text, id_regex)) {
+    } else if (!text->empty() && regex_match(*text, id_regex_)) {
       return *text;
     } else {
       std::string quoted("\"");
@@ -104,9 +104,9 @@ class SymbolTable {
   /// Maps `Symbol`s back to their original text.
   std::vector<const std::string*> reverse_map_;
   /// The text to use for unique() symbols.
-  std::string unique_symbol_ = "(unique)";
+  const std::string unique_symbol_;
   /// Used for quoting strings - see assertions.lex:
-  std::regex id_regex;
+  const std::regex id_regex_;
 };
 
 /// \brief Performs bump-pointer allocation of pointer-aligned memory.
