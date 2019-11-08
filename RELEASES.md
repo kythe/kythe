@@ -5,10 +5,8 @@
 #### Bug Fixes
 
 * **java extractor:**  Handle source files in jars (#4188) ([df711e31](https://github.com/kythe/kythe/commit/df711e3158718a923e11ecc86e51ab4e261ddfb5), closes [#4186](https://github.com/kythe/kythe/issues/4186))
-* **jvm extractor:**
-  *  use class files as srcs, not jar (#4191) ([907857c7](https://github.com/kythe/kythe/commit/907857c775341728505ab7dc67bcad8112901c02))
-* **kzip info:**
-  *  don't count compilation units by corpus (#4195) ([88f5db4b](https://github.com/kythe/kythe/commit/88f5db4b54ba9482596dcabcb71f860f7a09fd8c))
+* **jvm extractor:** use class files as srcs, not jar (#4191) ([907857c7](https://github.com/kythe/kythe/commit/907857c775341728505ab7dc67bcad8112901c02))
+* **kzip info:** don't count compilation units by corpus (#4195) ([88f5db4b](https://github.com/kythe/kythe/commit/88f5db4b54ba9482596dcabcb71f860f7a09fd8c))
 
 #### Features
 
@@ -17,7 +15,6 @@
 * **java extractor:**  Include system modules in the compilation unit (#4194) ([b4b1b975](https://github.com/kythe/kythe/commit/b4b1b9759cff964cacc7bd0c825c264c7b1bc42b))
 * **java_indexer:**  add `generates` edge to generated AutoValue sources (#4193) ([f7614b19](https://github.com/kythe/kythe/commit/f7614b19e4384c97e076821d07b4fd7f3eacf389))
 * **runextractor:**  pipe underlying cmake stderr to stderr (#4178) ([aacea997](https://github.com/kythe/kythe/commit/aacea9970071ab4d7952daeab54bdf48c1d5ca2b))
-* **schema:**  support the generates relation between file nodes (#4177) ([ec5330b9](https://github.com/kythe/kythe/commit/ec5330b9c6f4f4d989b354277eeb2b95c3c3cb69))
 * **typescript_indexer:**  add references to imports of 3rd party modules. (#4165) ([1ed21f01](https://github.com/kythe/kythe/commit/1ed21f01549f5ecc2db1181fffea85c37a86c1d1))
 
 ## [v0.0.33] - 2019-10-30
