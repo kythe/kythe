@@ -21,11 +21,13 @@
 #include <unordered_map>
 #include <vector>
 #include <ctype.h>
-#include <regex>
 
 #include "glog/logging.h"
 #include "kythe/cxx/verifier/location.hh"
 #include "pretty_printer.h"
+#include "re2/re2.h"
+#include "absl/strings/escaping.h"
+#include "absl/strings/str_cat.h"
 
 namespace kythe {
 namespace verifier {
@@ -37,9 +39,8 @@ typedef size_t Symbol;
 /// \brief Maps strings to `Symbol`s.
 class SymbolTable {
  public:
-  SymbolTable() :
-   unique_symbol_("(unique)"),
-   id_regex_(std::regex("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*")) { }
+  explicit SymbolTable() :
+    id_regex_("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*") { }
 
   /// \brief Returns the `Symbol` associated with `string`, or makes a new one.
   Symbol intern(const std::string& string) {
@@ -63,31 +64,11 @@ class SymbolTable {
   std::string PrettyText(Symbol symbol) const {
     auto* text = reverse_map_[symbol];
     if (text == &unique_symbol_) {
-      return "(unique#" + std::to_string(symbol) + ")";
-    } else if (!text->empty() && regex_match(*text, id_regex_)) {
+      return absl::StrCat("(unique#", std::to_string(symbol), ")");
+    } else if (!text->empty() && RE2::FullMatch(*text, id_regex_)) {
       return *text;
     } else {
-      std::string quoted("\"");
-      for (const unsigned char& c : *text) {
-        if (isprint(c) && c != '\\' && c != '"') {
-          quoted += c;
-        } else {
-          switch(c) {
-          case '"':  quoted += "\\\"";  break;
-          case '\\': quoted += "\\\\"; break;
-          case '\t': quoted += "\\t";  break;
-          case '\r': quoted += "\\r";  break;
-          case '\n': quoted += "\\n";  break;
-          default:
-            char const* const hexdig = "0123456789ABCDEF";
-            quoted += "\\x";
-            quoted += hexdig[c >> 4];
-            quoted += hexdig[c & 0x0F];
-          }
-        }
-      }
-      quoted += "\"";
-      return quoted;
+      return absl::StrCat("\"", absl::CHexEscape(*text), "\"");
     }
   }
 
@@ -104,9 +85,9 @@ class SymbolTable {
   /// Maps `Symbol`s back to their original text.
   std::vector<const std::string*> reverse_map_;
   /// The text to use for unique() symbols.
-  const std::string unique_symbol_;
+  std::string unique_symbol_ = "(unique)";
   /// Used for quoting strings - see assertions.lex:
-  const std::regex id_regex_;
+  RE2 id_regex_;
 };
 
 /// \brief Performs bump-pointer allocation of pointer-aligned memory.
