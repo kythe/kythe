@@ -244,7 +244,10 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		return nil, err
 	}
 
-	reply := &xpb.DecorationsReply{Location: loc}
+	reply := &xpb.DecorationsReply{
+		Location:    loc,
+		GeneratedBy: decor.GeneratedBy,
+	}
 
 	if req.SourceText {
 		reply.Encoding = decor.File.Encoding
