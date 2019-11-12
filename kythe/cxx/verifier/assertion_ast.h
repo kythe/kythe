@@ -17,17 +17,17 @@
 #ifndef KYTHE_CXX_VERIFIER_ASSERTION_AST_H_
 #define KYTHE_CXX_VERIFIER_ASSERTION_AST_H_
 
+#include <ctype.h>
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
-#include <ctype.h>
 
+#include "absl/strings/escaping.h"
+#include "absl/strings/str_cat.h"
 #include "glog/logging.h"
 #include "kythe/cxx/verifier/location.hh"
 #include "pretty_printer.h"
 #include "re2/re2.h"
-#include "absl/strings/escaping.h"
-#include "absl/strings/str_cat.h"
 
 namespace kythe {
 namespace verifier {
@@ -39,8 +39,7 @@ typedef size_t Symbol;
 /// \brief Maps strings to `Symbol`s.
 class SymbolTable {
  public:
-  explicit SymbolTable() :
-    id_regex_("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*") { }
+  explicit SymbolTable() : id_regex_("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*") {}
 
   /// \brief Returns the `Symbol` associated with `string`, or makes a new one.
   Symbol intern(const std::string& string) {
