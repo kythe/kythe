@@ -141,6 +141,7 @@ public class JavaCompilationUnitExtractor {
   private final String jdkJar;
   private final String rootDirectory;
   private final FileVNames fileVNames;
+  private String systemDir;
 
   /**
    * Creates an instance of the JavaExtractor to store java compilation information in an .kindex
@@ -187,6 +188,14 @@ public class JavaCompilationUnitExtractor {
     } catch (IOException ioe) {
       throw new ExtractionException("Root directory does not exist", ioe, false);
     }
+  }
+
+  /**
+   * Use this value for the -system javac option. {@code systemDir} should either be a path to the
+   * system module directory or "none" which is a special value to javac.
+   */
+  public void useSystemDirectory(String systemDir) {
+    this.systemDir = systemDir;
   }
 
   private CompilationUnit buildCompilationUnit(
@@ -833,6 +842,7 @@ public class JavaCompilationUnitExtractor {
       }
 
       getAdditionalSourcePaths(compilationUnits, results);
+      addSystemFiles(results);
 
       // Find files potentially used for resolving .* imports.
       findOnDemandImportedFiles(compilationUnits, fileManager);
@@ -869,6 +879,33 @@ public class JavaCompilationUnitExtractor {
         fileManager.setLocation(location, files);
       } catch (IOException e) {
         throw new ExtractionException(String.format("Couldn't set %s", location), e, false);
+      }
+    }
+  }
+
+  /**
+   * Adds the files from "system" directory. When --system=DIR option is present, the compiler looks
+   * for system classes (e.g., java.lang.*) in DIR, which contains two files: DIR/lib/jrt-fs.jar and
+   * DIR/lib/modules. The former is a regular jar containing the implementation of a "module" file
+   * system, and the latter contains such file system. The analyzer will be also invoked with
+   * --system and thus will need them.
+   */
+  private void addSystemFiles(AnalysisResults results) throws ExtractionException {
+    if (Strings.isNullOrEmpty(systemDir)) {
+      return;
+    }
+    for (String fname : ImmutableList.of("jrt-fs.jar", "modules")) {
+      Path modPath = Paths.get(systemDir, "lib", fname);
+      String relativePath = ExtractorUtils.tryMakeRelative(rootDirectory, modPath.toString());
+      if (results.fileContents.containsKey(relativePath)) {
+        continue;
+      }
+      try {
+        results.fileContents.put(relativePath, Files.readAllBytes(modPath));
+        results.relativePaths.put(relativePath, relativePath);
+      } catch (IOException e) {
+        throw new ExtractionException(
+            String.format("Bad system directory, cannot read %s", modPath), e, false);
       }
     }
   }

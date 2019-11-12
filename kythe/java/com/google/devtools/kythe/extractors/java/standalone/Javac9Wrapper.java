@@ -66,6 +66,12 @@ public class Javac9Wrapper extends AbstractJavacWrapper {
     // Retrieve the list of processors provided by the -processor argument.
     List<String> processors = splitCSV(options.get(Option.PROCESSOR));
 
+    // Retrieve system path (the value of --system=, unless it equals 'none'
+    String sysd = options.get(Option.SYSTEM);
+    if (sysd != null && !"none".equals(sysd)) {
+      javaCompilationUnitExtractor.useSystemDirectory(sysd);
+    }
+
     EnumSet<Option> claimed =
         EnumSet.of(
             Option.CLASS_PATH, Option.SOURCE_PATH,
