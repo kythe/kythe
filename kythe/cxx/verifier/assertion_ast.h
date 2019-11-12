@@ -17,13 +17,17 @@
 #ifndef KYTHE_CXX_VERIFIER_ASSERTION_AST_H_
 #define KYTHE_CXX_VERIFIER_ASSERTION_AST_H_
 
+#include <ctype.h>
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
 
+#include "absl/strings/escaping.h"
+#include "absl/strings/str_cat.h"
 #include "glog/logging.h"
 #include "kythe/cxx/verifier/location.hh"
 #include "pretty_printer.h"
+#include "re2/re2.h"
 
 namespace kythe {
 namespace verifier {
@@ -35,6 +39,8 @@ typedef size_t Symbol;
 /// \brief Maps strings to `Symbol`s.
 class SymbolTable {
  public:
+  explicit SymbolTable() : id_regex_("[%#]?[_a-zA-Z/][a-zA-Z_0-9/]*") {}
+
   /// \brief Returns the `Symbol` associated with `string`, or makes a new one.
   Symbol intern(const std::string& string) {
     const auto old = symbols_.find(string);
@@ -57,11 +63,11 @@ class SymbolTable {
   std::string PrettyText(Symbol symbol) const {
     auto* text = reverse_map_[symbol];
     if (text == &unique_symbol_) {
-      return "(unique#" + std::to_string(symbol) + ")";
-    } else if (!text->empty()) {
+      return absl::StrCat("(unique#", std::to_string(symbol), ")");
+    } else if (!text->empty() && RE2::FullMatch(*text, id_regex_)) {
       return *text;
     } else {
-      return "\"\"";
+      return absl::StrCat("\"", absl::CHexEscape(*text), "\"");
     }
   }
 
@@ -79,6 +85,8 @@ class SymbolTable {
   std::vector<const std::string*> reverse_map_;
   /// The text to use for unique() symbols.
   std::string unique_symbol_ = "(unique)";
+  /// Used for quoting strings - see assertions.lex:
+  RE2 id_regex_;
 };
 
 /// \brief Performs bump-pointer allocation of pointer-aligned memory.
