@@ -2672,6 +2672,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "category",
     srcs = ["objc/categories/base+foo.m"],
+    ignore_dups = True,
     tags = ["objc"],
     deps = [
         "objc/categories/base.h",
@@ -3056,6 +3057,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "property_custom_getter_setter",
     srcs = ["objc/property_custom_getter_setter.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
@@ -3085,6 +3087,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "property_getter_setter",
     srcs = ["objc/property_getter_setter.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
