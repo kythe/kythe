@@ -2601,6 +2601,7 @@ objc_indexer_test(
     srcs = ["objc/marked_property.m"],
     check_for_singletons = True,
     convert_marked_source = True,
+    ignore_dups = True,
     tags = [
         "marked_source",
         "objc",
@@ -3061,12 +3062,14 @@ objc_indexer_test(
 objc_indexer_test(
     name = "property_decl_defn",
     srcs = ["objc/property_decl_defn.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
 objc_indexer_test(
     name = "property_decl_defn_class",
     srcs = ["objc/property_decl_defn_class.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
@@ -3156,6 +3159,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "single_file_category",
     srcs = ["objc/categories/single_file_category.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
