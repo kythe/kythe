@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteStreams;
+import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.java.KytheDocTreeScanner.DocCommentVisitResult;
@@ -325,7 +326,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (jvmGraph != null) {
         // Emit corresponding JVM node
         JvmGraph.Type.ReferenceType referenceType = referenceType(classDef.sym.type);
-        VName jvmNode = jvmGraph.emitClassNode(referenceType);
+        VName jvmNode =
+            jvmGraph.emitClassNode(entrySets.jvmCorpusPath(classDef.sym), referenceType);
         entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
       } else {
         // Emit NAME nodes for the jvm binary name of classes.
@@ -471,16 +473,18 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     // Emit corresponding JVM node
     if (jvmGraph != null) {
+      CorpusPath corpusPath = entrySets.jvmCorpusPath(methodDef.sym);
       JvmGraph.Type.MethodType methodJvmType =
           toMethodJvmType((Type.MethodType) externalType(methodDef.sym));
       ReferenceType parentClass = referenceType(externalType(owner.getTree().type.tsym));
       String methodName = methodDef.name.toString();
-      VName jvmNode = jvmGraph.emitMethodNode(parentClass, methodName, methodJvmType);
+      VName jvmNode = jvmGraph.emitMethodNode(corpusPath, parentClass, methodName, methodJvmType);
       entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
 
       for (int i = 0; i < params.size(); i++) {
         JavaNode param = params.get(i);
-        VName paramJvmNode = jvmGraph.emitParameterNode(parentClass, methodName, methodJvmType, i);
+        VName paramJvmNode =
+            jvmGraph.emitParameterNode(corpusPath, parentClass, methodName, methodJvmType, i);
         entrySets.emitEdge(param.getVName(), EdgeKind.GENERATES, paramJvmNode);
         entrySets.emitEdge(jvmNode, EdgeKind.PARAM, paramJvmNode, i);
       }
@@ -639,7 +643,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (jvmGraph != null && varDef.sym.getKind().isField()) {
       VName jvmNode =
           jvmGraph.emitFieldNode(
-              referenceType(externalType(owner.getTree().type.tsym)), varDef.name.toString());
+              entrySets.jvmCorpusPath(varDef.sym),
+              referenceType(externalType(owner.getTree().type.tsym)),
+              varDef.name.toString());
       entrySets.emitEdge(varNode, EdgeKind.GENERATES, jvmNode);
     }
 
@@ -1068,18 +1074,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // Symbol is external to the analyzed compilation and may not be defined in Java.  Return the
       // related JVM node to accommodate cross-language references.
       Type type = externalType(sym);
+      CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
       if (type instanceof Type.MethodType) {
         JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
         ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String methodName = sym.getQualifiedName().toString();
-        return new JavaNode(JvmGraph.getMethodVName(parentClass, methodName, methodJvmType));
+        return new JavaNode(
+            JvmGraph.getMethodVName(corpusPath, parentClass, methodName, methodJvmType));
       } else if (type instanceof Type.ClassType) {
-        return new JavaNode(JvmGraph.getReferenceVName(referenceType(sym.type)));
+        return new JavaNode(JvmGraph.getReferenceVName(corpusPath, referenceType(sym.type)));
       } else if (sym instanceof Symbol.VarSymbol
           && ((Symbol.VarSymbol) sym).getKind() == ElementKind.FIELD) {
         ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String fieldName = sym.getSimpleName().toString();
-        return new JavaNode(JvmGraph.getFieldVName(parentClass, fieldName));
+        return new JavaNode(JvmGraph.getFieldVName(corpusPath, parentClass, fieldName));
       }
     }
 

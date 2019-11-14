@@ -18,6 +18,7 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Preconditions;
 import com.google.common.flogger.FluentLogger;
+import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.java.Plugin.KytheNode;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
@@ -203,20 +204,26 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
 
     @Override
     public Optional<Plugin.KytheNode> getJvmNode(Symbol sym) {
+      CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
       switch (sym.getKind()) {
         case CLASS:
         case ENUM:
         case INTERFACE:
-          return referenceJvmType(sym).map(JvmGraph::getReferenceVName).map(KytheNodeImpl::new);
+          return referenceJvmType(sym)
+              .map(t -> JvmGraph.getReferenceVName(corpusPath, t))
+              .map(KytheNodeImpl::new);
         case METHOD:
         case CONSTRUCTOR:
           return forMethodAndEnclosingClass(
               sym,
               (method, enclosingClass) ->
-                  JvmGraph.getMethodVName(enclosingClass, sym.getSimpleName().toString(), method));
+                  JvmGraph.getMethodVName(
+                      corpusPath, enclosingClass, sym.getSimpleName().toString(), method));
         case FIELD:
           return referenceJvmType(sym.enclClass())
-              .map(classType -> JvmGraph.getFieldVName(classType, sym.getSimpleName().toString()))
+              .map(
+                  classType ->
+                      JvmGraph.getFieldVName(corpusPath, classType, sym.getSimpleName().toString()))
               .map(KytheNodeImpl::new);
 
         case PARAMETER:
@@ -225,6 +232,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
               enclosingMethod,
               (methodType, enclosingClass) ->
                   JvmGraph.getParameterVName(
+                      corpusPath,
                       enclosingClass,
                       enclosingMethod.getSimpleName().toString(),
                       methodType,
