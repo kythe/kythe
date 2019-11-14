@@ -51,20 +51,17 @@ languages together.  Each JVM VName will have its language component set to
 "jvm" and have a well-defined signature corresponding to a JVM entity using the
 entity's qualified named (and possibly a differentiating JVM type descriptor).
 These VName signatures are unrelated to the JVM concept of a signature.  All
-other VName fields (i.e.  corpus/root/path) are empty.  See below for
+other VName fields (i.e.  corpus/root/path) can be left empty.  See below for
 descriptions of each signature per node kind.
 
 ```
 signature: <qualified_name> + <type_descriptor>?
 language: "jvm"
-corpus: <empty>
-root: <empty>
-path: <empty>
 ```
 
-It is left to future iterations to use the corpus/root/path components to
-possibly differentiate between same-named JVM entities generated across corpora
-(or Java modules).
+A JVM VName *may* be refined by a corpus/root/path to distinguish between JVM
+nodes that share a signature but should not be considered identical.  Usually
+only a non-empty corpus is necessary to make these distinctions.
 
 #### JVM nodes
 
