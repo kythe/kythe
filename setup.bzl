@@ -53,8 +53,8 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "build_bazel_rules_nodejs",
-        sha256 = "1249a60f88e4c0a46d78de06be04d3d41e7421dcfa0c956de65309a7b7ecf6f4",
-        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/0.38.0/rules_nodejs-0.38.0.tar.gz"],
+        sha256 = "9901bc17138a79135048fb0c107ee7a56e91815ec6594c08cb9a17b80276d62b",
+        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/0.40.0/rules_nodejs-0.40.0.tar.gz"],
     )
 
     maybe(
@@ -62,5 +62,5 @@ def kythe_rule_repositories():
         name = "rules_jvm_external",
         sha256 = "e5b97a31a3e8feed91636f42e19b11c49487b85e5de2f387c999ea14d77c7f45",
         strip_prefix = "rules_jvm_external-2.9",
-        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/2.9.zip"]
+        urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/2.9.zip"],
     )
