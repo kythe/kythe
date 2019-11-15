@@ -41,3 +41,10 @@ cc_binary(
         "@com_google_protobuf//:protoc_lib",
     ],
 )
+
+filegroup(
+    name = "proto_metadata_plugin_source",
+    srcs = [
+        "proto_metadata_plugin.cc",
+    ],
+)

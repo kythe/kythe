@@ -72,9 +72,18 @@ proto_lang_toolchain(
     runtime = "@com_google_protobuf//:protobuf",
 )
 
-filegroup(
+cc_binary(
     name = "cc_proto_metadata_plugin",
-    srcs = ["tools/cc_proto_metadata_plugin"],
+    srcs = ["tools/cc_proto_metadata_plugin.cc"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+        "@com_google_protobuf//:protoc_lib",
+    ]
 )
 
 filegroup(

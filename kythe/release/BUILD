@@ -38,7 +38,6 @@ genrule(
         ":bazel_proto_extractor",
         ":javac_extractor",
         ":javac_wrapper",
-        ":cc_proto_metadata_plugin",
         ":cxx_extractor",
         ":go_extractor",
         ":java_indexer",
@@ -46,6 +45,8 @@ genrule(
         ":cxx_indexer",
         ":go_indexer",
         ":proto_extractor",
+        ":external.bzl",
+        "//kythe/cxx/tools:proto_metadata_plugin_source",
         "@maven//:javax_annotation_jsr250_api",
         ":proto_indexer",
         ":textproto_extractor",
@@ -69,6 +70,7 @@ genrule(
         "$(locations misc)",
         "--cp $(location release.BUILD) BUILD",
         "--cp $(location release.WORKSPACE) WORKSPACE",
+        "--cp $(location external.bzl) ./",
         "--cp $(location java_indexer) indexers/java_indexer.jar",
         "--cp $(location jvm_indexer) indexers/jvm_indexer.jar",
         "--cp $(location cxx_indexer) indexers/cxx_indexer",
@@ -88,7 +90,7 @@ genrule(
         "--cp $(location go_extractor) extractors/go_extractor",
         "--cp $(location proto_extractor) extractors/proto_extractor",
         "--cp $(location textproto_extractor) extractors/textproto_extractor",
-        "--cp $(location cc_proto_metadata_plugin) tools/cc_proto_metadata_plugin",
+        "--cp $(location //kythe/cxx/tools:proto_metadata_plugin_source) tools/cc_proto_metadata_plugin.cc",
         "--cp $(location //kythe/extractors/bazel:extractors_bazelrc) ./",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
@@ -118,7 +120,7 @@ filegroup(
 
 sh_test(
     name = "release_test",
-    timeout = "short",
+    timeout = "moderate",
     srcs = ["release_test.sh"],
     args = [
         # Since go binaries are not located at their bazel target path (//go/binary
@@ -231,11 +233,6 @@ filegroup(
 filegroup(
     name = "textproto_indexer",
     srcs = ["//kythe/cxx/indexer/textproto:textproto_indexer"],
-)
-
-filegroup(
-    name = "cc_proto_metadata_plugin",
-    srcs = ["//kythe/cxx/tools:proto_metadata_plugin"],
 )
 
 filegroup(

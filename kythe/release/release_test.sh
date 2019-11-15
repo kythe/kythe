@@ -61,6 +61,9 @@ tools/entrystream < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" | \
   tools/entrystream --read_format=json --entrysets >/dev/null
 tools/triples < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" >/dev/null
 
+# ensure proto_metadata_plugin builds
+bazel build //:cc_proto_metadata_plugin
+
 # TODO(zarko): add cxx extractor tests
 
 rm -rf "$TMPDIR/java_compilation"
