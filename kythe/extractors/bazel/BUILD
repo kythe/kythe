@@ -9,7 +9,6 @@ docker_build(
         "//kythe/release",
         "//kythe/release/base:fix_permissions.sh",
         "@com_github_philwo_bazelisk//:bazelisk",
-        "@maven//:javax_annotation_jsr250_api",
     ],
     image_name = "gcr.io/kythe-public/bazel-extractor",
     tags = ["manual"],
