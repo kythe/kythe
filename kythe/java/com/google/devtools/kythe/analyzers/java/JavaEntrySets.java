@@ -336,6 +336,12 @@ public class JavaEntrySets extends KytheEntrySets {
     return h;
   }
 
+  /** Returns the JVM {@link CorpusPath} for the given {@link Symbol}. */
+  public CorpusPath jvmCorpusPath(Symbol sym) {
+    return new CorpusPath(
+        Optional.ofNullable(lookupVName(sym.enclClass())).map(VName::getCorpus).orElse(""), "", "");
+  }
+
   @Nullable
   private VName lookupVName(@Nullable ClassSymbol cls) {
     if (cls == null) {
