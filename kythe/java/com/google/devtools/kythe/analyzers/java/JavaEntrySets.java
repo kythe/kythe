@@ -48,10 +48,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
 import javax.tools.JavaFileObject;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Specialization of {@link KytheEntrySets} for Java. */
 public class JavaEntrySets extends KytheEntrySets {
@@ -89,7 +89,7 @@ public class JavaEntrySets extends KytheEntrySets {
       Symbol sym,
       String signature,
       // TODO(schroederc): separate MarkedSource generation from JavaEntrySets
-      @Nullable MarkedSource.Builder msBuilder,
+      MarkedSource.@Nullable Builder msBuilder,
       @Nullable Iterable<MarkedSource> postChildren) {
     return getNode(
         signatureGenerator,
@@ -197,6 +197,11 @@ public class JavaEntrySets extends KytheEntrySets {
     EntrySet node = emitAndReturn(builder);
     emitOrdinalEdges(node.getVName(), EdgeKind.PARAM, params);
     return node;
+  }
+
+  /** Returns the {@link VName} for the given file. */
+  public VName getFileVName(JavaFileObject sourceFile) {
+    return getFileVName(getDigest(sourceFile));
   }
 
   /** Emits and returns a new {@link EntrySet} representing the Java file. */
@@ -329,6 +334,12 @@ public class JavaEntrySets extends KytheEntrySets {
     int h = hashes.hashCode();
     symbolHashes.put(sym, h);
     return h;
+  }
+
+  /** Returns the JVM {@link CorpusPath} for the given {@link Symbol}. */
+  public CorpusPath jvmCorpusPath(Symbol sym) {
+    return new CorpusPath(
+        Optional.ofNullable(lookupVName(sym.enclClass())).map(VName::getCorpus).orElse(""), "", "");
   }
 
   @Nullable

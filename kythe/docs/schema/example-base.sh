@@ -32,7 +32,7 @@ cd "$OUTDIR"
 export CXX_INDEXER_BIN=
 export GO_INDEXER_BIN=
 export JAVA_INDEXER_BIN=
-export KINDEX_TOOL_BIN=
+export JAVA_EXTRACTOR_BIN=
 export VERIFIER_BIN=
 export SHASUM_TOOL=
 

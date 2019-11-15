@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.jvm;
 
+import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
@@ -23,6 +24,7 @@ import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -37,6 +39,7 @@ public final class KytheClassVisitor extends ClassVisitor {
   private final KytheEntrySets entrySets;
   private final VName enclosingJarFile;
 
+  private CorpusPath corpusPath;
   private JvmGraph.Type.ReferenceType classType;
   private VName classVName;
 
@@ -83,13 +86,16 @@ public final class KytheClassVisitor extends ClassVisitor {
       String signature,
       String superName,
       String[] interfaces) {
+    corpusPath =
+        new CorpusPath(
+            Optional.ofNullable(enclosingJarFile).map(VName::getCorpus).orElse(""), "", "");
     classType = JvmGraph.Type.referenceType(name);
     classVName =
         flagSet(access, Opcodes.ACC_ENUM)
-            ? jvmGraph.emitEnumNode(classType)
+            ? jvmGraph.emitEnumNode(corpusPath, classType)
             : flagSet(access, Opcodes.ACC_INTERFACE)
-                ? jvmGraph.emitInterfaceNode(classType)
-                : jvmGraph.emitClassNode(classType);
+                ? jvmGraph.emitInterfaceNode(corpusPath, classType)
+                : jvmGraph.emitClassNode(corpusPath, classType);
     if (enclosingJarFile != null) {
       entrySets.emitEdge(
           entrySets.newImplicitAnchorAndEmit(enclosingJarFile).getVName(),
@@ -100,13 +106,15 @@ public final class KytheClassVisitor extends ClassVisitor {
       entrySets.emitEdge(
           classVName,
           EdgeKind.EXTENDS,
-          JvmGraph.getReferenceVName(JvmGraph.Type.referenceType(superName)));
+          // TODO(schroederc): allow indexer to understand references outside of the enclosing jar
+          JvmGraph.getReferenceVName(corpusPath, JvmGraph.Type.referenceType(superName)));
     }
     for (String iface : interfaces) {
       entrySets.emitEdge(
           classVName,
           EdgeKind.EXTENDS,
-          jvmGraph.emitInterfaceNode(JvmGraph.Type.referenceType(iface)));
+          // TODO(schroederc): allow indexer to understand references outside of the enclosing jar
+          jvmGraph.emitInterfaceNode(corpusPath, JvmGraph.Type.referenceType(iface)));
     }
     super.visit(version, access, name, signature, superName, interfaces);
   }
@@ -115,9 +123,9 @@ public final class KytheClassVisitor extends ClassVisitor {
   public void visitInnerClass(String name, String outerName, String innerName, int access) {
     if (outerName != null) { // avoid anonymous/local classes
       entrySets.emitEdge(
-          JvmGraph.getReferenceVName(JvmGraph.Type.referenceType(name)),
+          JvmGraph.getReferenceVName(corpusPath, JvmGraph.Type.referenceType(name)),
           EdgeKind.CHILDOF,
-          JvmGraph.getReferenceVName(JvmGraph.Type.referenceType(outerName)));
+          JvmGraph.getReferenceVName(corpusPath, JvmGraph.Type.referenceType(outerName)));
     }
     super.visitInnerClass(name, outerName, innerName, access);
   }
@@ -126,7 +134,7 @@ public final class KytheClassVisitor extends ClassVisitor {
   public MethodVisitor visitMethod(
       int access, String methodName, String desc, String signature, String[] exceptions) {
     JvmGraph.Type.MethodType methodType = JvmGraph.Type.rawMethodType(desc);
-    VName methodVName = jvmGraph.emitMethodNode(classType, methodName, methodType);
+    VName methodVName = jvmGraph.emitMethodNode(corpusPath, classType, methodName, methodType);
     entrySets.emitEdge(methodVName, EdgeKind.CHILDOF, classVName);
 
     return new MethodVisitor(ASM_API_LEVEL) {
@@ -135,7 +143,8 @@ public final class KytheClassVisitor extends ClassVisitor {
       @Override
       public void visitParameter(String parameterName, int access) {
         VName parameterVName =
-            jvmGraph.emitParameterNode(classType, methodName, methodType, parameterIndex);
+            jvmGraph.emitParameterNode(
+                corpusPath, classType, methodName, methodType, parameterIndex);
         entrySets.emitEdge(parameterVName, EdgeKind.CHILDOF, methodVName);
         entrySets.emitEdge(methodVName, EdgeKind.PARAM, parameterVName, parameterIndex);
 
@@ -148,7 +157,7 @@ public final class KytheClassVisitor extends ClassVisitor {
   @Override
   public FieldVisitor visitField(
       int access, String name, String desc, String signature, Object value) {
-    VName fieldVName = jvmGraph.emitFieldNode(classType, name);
+    VName fieldVName = jvmGraph.emitFieldNode(corpusPath, classType, name);
     entrySets.emitEdge(fieldVName, EdgeKind.CHILDOF, classVName);
     return super.visitField(access, name, desc, signature, value);
   }

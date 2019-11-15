@@ -20,7 +20,7 @@
 //
 // A stream consists of a sequence of such records packed consecutively without
 // additional padding.  There are no checksums or compression.
-package delimited
+package delimited // import "kythe.io/kythe/go/platform/delimited"
 
 import (
 	"bufio"

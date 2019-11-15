@@ -30,7 +30,6 @@ import (
 
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/ptypes"
-	"kythe.io/kythe/go/util/vnameutil"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
@@ -85,23 +84,6 @@ func LoadAction(path string) (*xapb.ExtraActionInfo, error) {
 	}
 	log.Printf("Read %d bytes from extra action file %q", len(xa), path)
 	return &info, nil
-}
-
-// LoadRules loads and parses the vname mapping rules in path.
-// If path == "", this returns nil without error (no rules).
-func LoadRules(path string) (vnameutil.Rules, error) {
-	if path == "" {
-		return nil, nil
-	}
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading vname rules: %v", err)
-	}
-	rules, err := vnameutil.ParseRules(data)
-	if err != nil {
-		return nil, fmt.Errorf("parsing vname rules: %v", err)
-	}
-	return rules, nil
 }
 
 // PackageName extracts the base name of a Bazel package from a target label,

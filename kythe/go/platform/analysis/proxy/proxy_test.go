@@ -21,8 +21,9 @@ import (
 	"errors"
 	"io"
 	"log"
-	"reflect"
 	"testing"
+
+	"kythe.io/kythe/go/util/compare"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
@@ -218,12 +219,12 @@ func TestErrors(t *testing.T) {
 			},
 		},
 		reqs: []testreq{
-			{Type: "analysis"},                                            // succeeds
+			{Type: "analysis"}, // succeeds
 			{Type: "output", Args: []*spb.Entry{{EdgeKind: "ok"}}},        // succeeds
 			{Type: "output", Args: []*spb.Entry{{EdgeKind: "fail"}}},      // fails
 			{Type: "output", Args: []*spb.Entry{{EdgeKind: "wah"}}},       // fails
 			{Type: "done", Args: status{OK: false, Message: "cat abuse"}}, // fails
-			{Type: "analysis"},                                            // succeeds
+			{Type: "analysis"}, // succeeds
 		},
 		want: []string{
 			analysisReply,
@@ -243,8 +244,8 @@ func TestErrors(t *testing.T) {
 			t.Errorf("Unexpected error from proxy: %v", err)
 		}
 		t.Logf(" - responses: %+v", rsps)
-		if !reflect.DeepEqual(rsps, test.want) {
-			t.Errorf("Incorrect responses; wanted %+v", test.want)
+		if diff := compare.ProtoDiff(rsps, test.want); diff != "" {
+			t.Errorf("Incorrect responses; wanted %+v: %s", test.want, diff)
 		}
 	}
 }
@@ -286,8 +287,8 @@ func TestAnalysisWorks(t *testing.T) {
 	if !doneCalled {
 		t.Error("The handler's Done method was never called")
 	}
-	if !reflect.DeepEqual(gotEntries, testEntries) {
-		t.Errorf("Incorrect entries:\n got: %+v\nwant: %+v", gotEntries, testEntries)
+	if diff := compare.ProtoDiff(gotEntries, testEntries); diff != "" {
+		t.Errorf("Incorrect entries:\n got: %+v\nwant: %+v: %s", gotEntries, testEntries, diff)
 	}
 
 	// Verify that we got the expected replies back from the proxy.
@@ -298,7 +299,7 @@ func TestAnalysisWorks(t *testing.T) {
 		`{"rsp":"error","args":"notfound"}`, // from File (2)
 		`{"rsp":"ok"}`,                      // from Done
 	}
-	if !reflect.DeepEqual(rsps, want) {
-		t.Errorf("Wrong incorrect responses:\n got: %+v\nwant: %+v", rsps, want)
+	if diff := compare.ProtoDiff(rsps, want); diff != "" {
+		t.Errorf("Wrong incorrect responses:\n got: %+v\nwant: %+v: %s", rsps, want, diff)
 	}
 }

@@ -44,6 +44,7 @@ var (
 		"uncompressed_transpose",
 		"brotli",
 		"brotli_transpose",
+		"snappy",
 		"zstd",
 	}
 )

@@ -36,13 +36,15 @@ import stat
 import sys
 
 # Find the locations of the workspace root and the generated files directory.
-workspace   = check_output(['bazel', 'info', 'workspace']).strip()
-bazel_bin   = check_output(['bazel', 'info', 'bazel-bin']).strip()
-targets     = '//kythe/proto/...'
+workspace = check_output(['bazel', 'info', 'workspace']).strip()
+bazel_bin = check_output(['bazel', 'info', 'bazel-bin']).strip()
+targets = '//kythe/proto/...'
 import_base = 'kythe.io/kythe/proto'
 
 go_protos = check_output([
-    'bazel', 'query', 'kind("go_proto_library", %s)' % targets,
+    'bazel',
+    'query',
+    'kind("go_proto_library", %s)' % targets,
 ]).split()
 
 # Each rule has the form //foo/bar:baz_proto.
@@ -50,30 +52,30 @@ go_protos = check_output([
 # Then strip off each :baz_proto, convert it to a filename "baz.proto",
 # and copy the generated output "baz.pb.go" into the source tree.
 if call(['bazel', 'build'] + go_protos) != 0:
-  print 'Build failed'
-  sys.exit(1)
+    print('Build failed')
+    sys.exit(1)
 
 for rule in go_protos:
-  # Example: //kythe/proto:blah_go_proto -> kythe/proto, blah_go_proto
-  rule_dir, proto = rule.lstrip('/').rsplit(':', 1)
-  # Example: $ROOT/kythe/proto/blah_go_proto
-  output_dir = os.path.join(workspace, rule_dir, proto)
-  # Example: blah_go_proto -> blah.proto
-  proto_file = re.sub('_go_proto$', '.proto', proto)
+    # Example: //kythe/proto:blah_go_proto -> kythe/proto, blah_go_proto
+    rule_dir, proto = rule.lstrip('/').rsplit(':', 1)
+    # Example: $ROOT/kythe/proto/blah_go_proto
+    output_dir = os.path.join(workspace, rule_dir, proto)
+    # Example: blah_go_proto -> blah.proto
+    proto_file = re.sub('_go_proto$', '.proto', proto)
 
-  print 'Copying Go protobuf source for %s' % rule
-  generated_file = re.sub('.proto$', '.pb.go', proto_file)
-  generated_path = glob.glob(
-      os.path.join(bazel_bin, rule_dir, '*', proto+'%',
-                   import_base, proto, generated_file)).pop()
+    print('Copying Go protobuf source for %s' % rule)
+    generated_file = re.sub('.proto$', '.pb.go', proto_file)
+    generated_path = glob.glob(
+        os.path.join(bazel_bin, rule_dir, '*', proto + '%', import_base, proto,
+                     generated_file)).pop()
 
-  if os.path.isdir(output_dir):
-    print 'Deleting and recreating old protobuf directory: %s' % output_dir
-    shutil.rmtree(output_dir)
-  else:
-    print 'Creating new Go protobuf: %s' % generated_file
+    if os.path.isdir(output_dir):
+        print('Deleting and recreating old protobuf directory: %s' % output_dir)
+        shutil.rmtree(output_dir)
+    else:
+        print('Creating new Go protobuf: %s' % generated_file)
 
-  # Ensure the output directory exists, and update permissions after copying.
-  os.makedirs(output_dir, 0755)
-  shutil.copy(generated_path, output_dir)
-  os.chmod(os.path.join(output_dir, generated_file), 0644)
+    # Ensure the output directory exists, and update permissions after copying.
+    os.makedirs(output_dir, 0o755)
+    shutil.copy(generated_path, output_dir)
+    os.chmod(os.path.join(output_dir, generated_file), 0o644)

@@ -17,7 +17,7 @@
 // Package ptypes is a thin wrapper around the golang.org/protobuf/ptypes
 // package that adds support for Kythe message types, and handles some type
 // format conversions.
-package ptypes
+package ptypes // import "kythe.io/kythe/go/util/ptypes"
 
 import (
 	"sort"

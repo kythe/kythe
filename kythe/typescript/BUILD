@@ -2,12 +2,18 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 load("@npm_bazel_typescript//:index.bzl", "ts_library", "ts_config")
 load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
-load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_test")
+load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_test")
 
 ts_config(
     name = "tsconfig",
     src = "tsconfig.json",
     deps = [],
+)
+
+ts_library(
+    name = "kythe",
+    srcs = ["kythe.ts"],
+    tsconfig = ":tsconfig",
 )
 
 ts_library(
@@ -18,6 +24,7 @@ ts_library(
     ],
     tsconfig = ":tsconfig",
     deps = [
+        ":kythe",
         "@npm//@types/node",
         "@npm//typescript",
     ],
@@ -29,6 +36,7 @@ ts_library(
     tsconfig = ":tsconfig",
     deps = [
         ":indexer",
+        ":kythe",
         "@npm//@types/node",
         "@npm//source-map-support",
         "@npm//typescript",

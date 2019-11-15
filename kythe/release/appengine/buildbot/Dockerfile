@@ -12,27 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:stretch
-
-RUN echo "deb http://ftp.debian.org/debian stretch-backports main" >>/etc/apt/sources.list
+FROM debian:buster
 
 RUN apt-get update && \
     apt-get upgrade -y && \
-    # Required by go tool build of Kythe
-    apt-get -t stretch-backports install -y libbrotli-dev && \
     apt-get install -y \
       # Buildbot dependencies
       python3 python3-dev python3-pip wget git \
+      # Linter dependencies
+      arcanist clang-format shellcheck \
       # Required by go tool build of Kythe
-      libleveldb-dev \
+      golang-go libleveldb-dev libbrotli-dev \
       # Bazel's fallback @local_jdk
-      openjdk-8-jdk \
+      openjdk-11-jdk \
       # Bazel dependencies
       pkg-config zip g++ zlib1g-dev unzip \
       # Kythe C++ dependencies
-      gcc uuid-dev flex clang-3.8 bison \
+      gcc uuid-dev flex clang bison \
       # Kythe misc dependencies
-      asciidoc source-highlight graphviz curl parallel && \
+      asciidoc source-highlight graphviz curl parallel jq && \
     apt-get clean
 
 # Install Buildbot
@@ -42,19 +40,22 @@ RUN pip3 install buildbot-www buildbot-console-view buildbot-grid-view buildbot-
 RUN pip3 install --upgrade six service_identity pyasn1 cryptography pyopenssl
 RUN pip3 install buildbot-worker
 
-# Kythe symlink for Kythe to pickup clang installation
-RUN ln -s /usr/bin/clang-3.8 /usr/bin/clang && \
-    ln -s /usr/bin/clang++-3.8 /usr/bin/clang++
-
-# Install Go
-RUN wget https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go*.tar.gz && \
-    rm -rf go*.tar.gz
-ENV PATH=$PATH:/usr/local/go/bin
+# Install extra linters
+RUN go get github.com/bazelbuild/buildtools/buildifier
+RUN go get golang.org/x/lint/golint
+RUN go get honnef.co/go/tools/cmd/staticcheck
+ENV PATH=$PATH:/root/go/bin
+RUN wget https://github.com/google/google-java-format/releases/download/google-java-format-1.7/google-java-format-1.7-all-deps.jar && \
+   mv google-java-format-1.7-all-deps.jar /usr/bin/google-java-format.jar && \
+   echo 'exec java -jar /usr/bin/google-java-format.jar "$@"' >/usr/bin/google-java-format && \
+   chmod +x /usr/bin/google-java-format
 
 # Install Bazelisk and wrapper script
 ADD bazel /usr/bin/bazel
-RUN curl -L -o /usr/bin/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v0.0.7/bazelisk-linux-amd64 && chmod +x /usr/bin/bazelisk
+RUN curl -L -o /usr/bin/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v1.0/bazelisk-linux-amd64 && chmod +x /usr/bin/bazelisk
+
+# Install go wrapper script
+ADD go /usr/local/bin/go
 
 # Buildbot configuration
 ADD bazelrc /root/.bazelrc

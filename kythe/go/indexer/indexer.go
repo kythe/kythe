@@ -18,8 +18,7 @@
 //
 // Usage example: Indexing a Kythe CompilationUnit message.
 //
-//   // Obtain a compilation from some source, e.g., an index pack.
-//   var pack *indexpack.Archive = ...
+//   // Obtain a compilation from some source, e.g., an kzip.
 //   var unit *apb.CompilationUnit = ...
 //
 //   // Parse the sources and resolve types.
@@ -32,7 +31,7 @@
 //   // Type information from http://godoc.org/go/types is now available
 //   // from pi.Info, which is a *types.Info record.
 //
-package indexer
+package indexer // import "kythe.io/kythe/go/indexer"
 
 import (
 	"bytes"

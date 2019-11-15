@@ -23,6 +23,7 @@
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/proto/analysis.pb.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -215,7 +216,7 @@ class CxxExtractorTest : public testing::Test {
               had_errors, ".");
         });
     clang::tooling::ToolInvocation invocation(
-        final_arguments, extractor.release(), file_manager.get());
+        final_arguments, std::move(extractor), file_manager.get());
     invocation.run();
   }
 

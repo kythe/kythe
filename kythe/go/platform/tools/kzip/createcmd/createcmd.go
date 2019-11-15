@@ -15,7 +15,7 @@
  */
 
 // Package createcmd provides the kzip command for creating simple kzip archives.
-package createcmd
+package createcmd // import "kythe.io/kythe/go/platform/tools/kzip/createcmd"
 
 import (
 	"context"
@@ -92,17 +92,17 @@ func (c *createCommand) SetFlags(fs *flag.FlagSet) {
 func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	switch {
 	case c.uri.Corpus == "":
-		return c.Fail("missing required -uri")
+		return c.Fail("Missing required -uri")
 	case c.output == "":
-		return c.Fail("missing required -output")
+		return c.Fail("Missing required -output")
 	case c.source.Len() == 0:
-		return c.Fail("missing required -source_file")
+		return c.Fail("Missing required -source_file")
 	}
 
 	opt := kzip.WithEncoding(c.encoding.Encoding)
 	out, err := openWriter(ctx, c.output, opt)
 	if err != nil {
-		return c.Fail("error opening -output: %v", err)
+		return c.Fail("Error opening -output: %v", err)
 	}
 
 	// Create a new compilation populating its VName with the values specified
@@ -127,10 +127,10 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 
 	c.inputs.Update(c.source)
 	if err := cb.addFiles(ctx, c.inputs.Elements()); err != nil {
-		return c.Fail("error adding input files: %v", err)
+		return c.Fail("Error adding input files: %v", err)
 	}
 	if err := cb.done(); err != nil {
-		return c.Fail("error writing compilation to -output: %v", err)
+		return c.Fail("Error writing compilation to -output: %v", err)
 	}
 	return subcommands.ExitSuccess
 }

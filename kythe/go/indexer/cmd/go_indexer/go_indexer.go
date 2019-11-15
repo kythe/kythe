@@ -15,7 +15,7 @@
  */
 
 // Program go_indexer implements a Kythe indexer for the Go language.  Input is
-// read from one or more .kzip, .kindex, or index pack paths.
+// read from one or more .kzip paths.
 package main
 
 import (
@@ -32,7 +32,6 @@ import (
 
 	"kythe.io/kythe/go/indexer"
 	"kythe.io/kythe/go/platform/delimited"
-	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/metadata"
 
@@ -41,13 +40,14 @@ import (
 )
 
 var (
-	doJSON      = flag.Bool("json", false, "Write output as JSON")
-	doLibNodes  = flag.Bool("libnodes", false, "Emit nodes for standard library packages")
-	doCodeFacts = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
-	metaSuffix  = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
-	docBase     = flag.String("docbase", "http://godoc.org", "If set, use as the base URL for godoc links")
-	verbose     = flag.Bool("verbose", false, "Emit verbose log information")
-	contOnErr   = flag.Bool("continue", false, "Log errors encountered during analysis but do not exit unsuccessfully")
+	doJSON         = flag.Bool("json", false, "Write output as JSON")
+	doLibNodes     = flag.Bool("libnodes", false, "Emit nodes for standard library packages")
+	doCodeFacts    = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
+	doAnchorScopes = flag.Bool("anchor_scopes", false, "Emit childof edges to an anchor's semantic scope")
+	metaSuffix     = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
+	docBase        = flag.String("docbase", "http://godoc.org", "If set, use as the base URL for godoc links")
+	verbose        = flag.Bool("verbose", false, "Emit verbose log information")
+	contOnErr      = flag.Bool("continue", false, "Log errors encountered during analysis but do not exit unsuccessfully")
 
 	writeEntry func(context.Context, *spb.Entry) error
 	docURL     *url.URL
@@ -57,12 +57,8 @@ func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: %s [options] <path>...
 
-Generate Kythe graph data for the compilations stored in .kzip, .kindex, or
-index packs named by the path arguments. Output is written to stdout.
-
-If --indexpack is set, the paths are treated as index packs. If --zip is set,
-the index packs are treaed as ZIP files. Otherwise, the paths must end in .kzip
-or .kindex and will be decoded accordingly.
+Generate Kythe graph data for the compilations stored in .kzip format
+named by the path arguments. Output is written to stdout.
 
 By default, the output is a delimited stream of wire-format Kythe Entry
 protobuf messages. With the --json flag, output is instead a stream of
@@ -150,6 +146,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
 		EmitStandardLibs: *doLibNodes,
 		EmitMarkedSource: *doCodeFacts,
+		EmitAnchorScopes: *doAnchorScopes,
 		EmitLinkages:     *metaSuffix != "",
 		DocBase:          docURL,
 	})
@@ -158,7 +155,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 type visitFunc func(context.Context, *apb.CompilationUnit, indexer.Fetcher) error
 
 // visitPath invokes visit for each compilation denoted by path, which is
-// either a .kindex file (with a single compilation) or an index pack.
+// must be a .kzip file (with a single compilation).
 func visitPath(ctx context.Context, path string, visit visitFunc) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -166,12 +163,6 @@ func visitPath(ctx context.Context, path string, visit visitFunc) error {
 	}
 	defer f.Close()
 	switch ext := filepath.Ext(path); ext {
-	case ".kindex":
-		idx, err := kindex.New(f)
-		if err != nil {
-			return fmt.Errorf("reading .kindex: %v", err)
-		}
-		return visit(ctx, idx.Proto, idx)
 	case ".kzip":
 		return kzip.Scan(f, func(r *kzip.Reader, unit *kzip.Unit) error {
 			return visit(ctx, unit.Proto, kzipFetcher{r})

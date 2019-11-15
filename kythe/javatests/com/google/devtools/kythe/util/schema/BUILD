@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_test")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_test(
@@ -13,6 +15,6 @@ java_test(
         "//third_party/guava",
         "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )

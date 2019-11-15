@@ -17,7 +17,7 @@
 // Package kytheuri provides a type to represent Kythe URIs.  This package
 // supports parsing a Kythe URI from a string, and converting back and forth
 // between a Kythe URI and a Kythe VName protobuf message.
-package kytheuri
+package kytheuri // import "kythe.io/kythe/go/util/kytheuri"
 
 import (
 	"errors"

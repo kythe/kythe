@@ -20,7 +20,6 @@ import static com.google.common.base.StandardSystemProperty.USER_DIR;
 import static com.google.common.io.Files.touch;
 import static java.util.stream.Collectors.toCollection;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteSource;
@@ -40,11 +39,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -120,7 +121,7 @@ public class JavaExtractor {
     javacOpts.add(output.toString());
 
     // Add the generated sources directory if any processors could be invoked.
-    Optional<Path> genSrcDir = Optional.absent();
+    Optional<Path> genSrcDir = Optional.empty();
     if (!jInfo.getProcessorList().isEmpty()) {
       try {
         genSrcDir = readGeneratedSourceDirParam(jInfo);
@@ -128,14 +129,16 @@ public class JavaExtractor {
         logger.atWarning().withCause(ioe).log(
             "Failed to find generated sources directory from javac parameters");
       }
-      if (genSrcDir.isPresent()) {
-        javacOpts.add("-s");
-        javacOpts.add(genSrcDir.get().toString());
-        // javac expects the directory to already exist.
-        Files.createDirectories(genSrcDir.get());
+      if (!genSrcDir.isPresent()) {
+        genSrcDir = Optional.of(Files.createTempDirectory("sourcegendir"));
       }
+      javacOpts.add("-s");
+      javacOpts.add(genSrcDir.get().toString());
+      // javac expects the directory to already exist.
+      Files.createDirectories(genSrcDir.get());
     }
 
+    // TODO(salguarnieri) Read -system module directory from the javac arguments.
     CompilationDescription description =
         new JavaCompilationUnitExtractor(FileVNames.fromFile(vNamesConfigPath), USER_DIR.value())
             .extract(
@@ -236,7 +239,10 @@ public class JavaExtractor {
           return Optional.of(Paths.get(params.readLine()));
         }
       }
-      return Optional.absent();
+      return Optional.empty();
+    } catch (NoSuchFileException nsfe) {
+      // params file is not guaranteed to exist; convert to missing path
+      return Optional.empty();
     }
   }
 }

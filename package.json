@@ -1,14 +1,14 @@
 {
   "devDependencies": {
-    "@bazel/jasmine": "^0.31.1",
-    "@bazel/typescript": "^0.31.1",
-    "@commitlint/cli": "^7.2.1",
-    "@commitlint/config-conventional": "^7.1.2",
-    "@types/jasmine": "^3.3.13",
-    "@types/node": "^7.0.4"
+    "@bazel/jasmine": "^0.38.3",
+    "@bazel/typescript": "^0.38.3",
+    "@commitlint/cli": "^8.2.0",
+    "@commitlint/config-conventional": "^8.2.0",
+    "@types/jasmine": "^3.4.6",
+    "@types/node": "^10.17.5"
   },
   "dependencies": {
-    "source-map-support": "^0.5.12",
+    "source-map-support": "^0.5.16",
     "typescript": "~3.3.3"
   },
   "license": "Apache-2.0"

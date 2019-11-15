@@ -18,7 +18,7 @@ package com.google.devtools.kythe.analyzers.base;
 
 import com.google.devtools.kythe.util.schema.Schema;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Schema-defined Kythe node kinds. */
 public enum NodeKind {

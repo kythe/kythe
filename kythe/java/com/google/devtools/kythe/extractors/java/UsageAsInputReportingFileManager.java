@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
@@ -66,29 +67,31 @@ class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager
   public Iterable<JavaFileObject> list(
       Location location, String packageName, Set<Kind> kinds, boolean recurse) throws IOException {
     return Iterables.transform(
-        fileManager.list(location, packageName, kinds, recurse), input -> map(input, location));
+        fileManager.list(location, packageName, kinds, recurse),
+        input -> map(input, Optional.of(location)));
   }
 
   /** Wraps a JavaFileObject in a UsageAsInputReportingJavaFileObject, shares existing instances. */
-  private JavaFileObject map(JavaFileObject item, Location location) {
+  private JavaFileObject map(JavaFileObject item, Optional<Location> location) {
     if (item == null) {
       return item;
     }
     InputUsageRecord usage =
         inputUsageRecords.computeIfAbsent(item.toUri(), k -> new InputUsageRecord(item, location));
+    usage.updateLocation(location);
     return new UsageAsInputReportingJavaFileObject(item, usage);
   }
 
   /** Helper to match loading source files and tracking their usage. */
   public Iterable<JavaFileObject> getJavaFileForSources(Iterable<String> sources) {
     return Iterables.transform(
-        fileManager.getJavaFileObjectsFromStrings(sources), input -> map(input, null));
+        fileManager.getJavaFileObjectsFromStrings(sources), input -> map(input, Optional.empty()));
   }
 
   @Override
   public JavaFileObject getJavaFileForInput(
       final Location location, final String className, final Kind kind) throws IOException {
-    return map(fileManager.getJavaFileForInput(location, className, kind), location);
+    return map(fileManager.getJavaFileForInput(location, className, kind), Optional.of(location));
   }
 
   @Override
@@ -97,7 +100,8 @@ class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager
     // A java file opened initially for output might later get reopened for input (e.g.,
     // source files generated during annotation processing), so we need to track them too.
     return map(
-        fileManager.getJavaFileForOutput(location, className, kind, unwrap(sibling)), location);
+        fileManager.getJavaFileForOutput(location, className, kind, unwrap(sibling)),
+        Optional.of(location));
   }
 
   @Override
@@ -131,7 +135,7 @@ class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromFiles(
       Iterable<? extends File> files) {
     return Iterables.transform(
-        fileManager.getJavaFileObjectsFromFiles(files), input -> map(input, null));
+        fileManager.getJavaFileObjectsFromFiles(files), input -> map(input, Optional.empty()));
   }
 
   @Override
@@ -145,10 +149,11 @@ class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager
   }
 
   @Override
-  @SuppressWarnings({"IterablePathParameter"}) // safe by specification.
+  @SuppressWarnings({"IterablePathParameter"})
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
       Iterable<? extends Path> paths) {
-    return Iterables.transform(super.getJavaFileObjectsFromPaths(paths), input -> map(input, null));
+    return Iterables.transform(
+        super.getJavaFileObjectsFromPaths(paths), input -> map(input, Optional.empty()));
   }
 
   @Override

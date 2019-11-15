@@ -15,7 +15,7 @@
  */
 
 // Package mavencmd extracts a maven repo.
-package mavencmd
+package mavencmd // import "kythe.io/kythe/go/extractors/config/runextractor/mavencmd"
 
 import (
 	"context"

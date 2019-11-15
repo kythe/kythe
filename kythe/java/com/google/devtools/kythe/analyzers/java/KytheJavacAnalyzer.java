@@ -18,6 +18,7 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Preconditions;
 import com.google.common.flogger.FluentLogger;
+import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.java.Plugin.KytheNode;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
@@ -49,6 +50,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import javax.lang.model.element.Name;
 import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
 
 /** {@link JavacAnalyzer} to emit Kythe nodes and edges. */
 public class KytheJavacAnalyzer extends JavacAnalyzer {
@@ -148,7 +150,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
       }
       Plugin.KytheGraph graph =
           new KytheGraphImpl(
-              context, src.getPositions(), symNodes, Collections.unmodifiableMap(nodes));
+              context, entrySets, src.getPositions(), symNodes, Collections.unmodifiableMap(nodes));
       for (Supplier<Plugin> p : plugins) {
         try {
           Plugin plugin = p.get();
@@ -162,16 +164,19 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
 
   private static class KytheGraphImpl implements Plugin.KytheGraph {
     private final Context javaContext;
+    private final JavaEntrySets entrySets;
     private final SourceText.Positions filePositions;
     private final Map<JCTree, Plugin.KytheNode> treeNodes;
     private final Map<Symbol, Plugin.KytheNode> symNodes;
 
     KytheGraphImpl(
         Context javaContext,
+        JavaEntrySets entrySets,
         SourceText.Positions filePositions,
         Map<Symbol, Plugin.KytheNode> symNodes,
         Map<JCTree, Plugin.KytheNode> treeNodes) {
       this.javaContext = javaContext;
+      this.entrySets = entrySets;
       this.filePositions = filePositions;
       this.symNodes = symNodes;
       this.treeNodes = treeNodes;
@@ -180,6 +185,11 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     @Override
     public Context getJavaContext() {
       return javaContext;
+    }
+
+    @Override
+    public Optional<Plugin.KytheNode> getNode(JavaFileObject file) {
+      return Optional.ofNullable(file).map(entrySets::getFileVName).map(KytheNodeImpl::new);
     }
 
     @Override
@@ -194,20 +204,26 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
 
     @Override
     public Optional<Plugin.KytheNode> getJvmNode(Symbol sym) {
+      CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
       switch (sym.getKind()) {
         case CLASS:
         case ENUM:
         case INTERFACE:
-          return referenceJvmType(sym).map(JvmGraph::getReferenceVName).map(KytheNodeImpl::new);
+          return referenceJvmType(sym)
+              .map(t -> JvmGraph.getReferenceVName(corpusPath, t))
+              .map(KytheNodeImpl::new);
         case METHOD:
         case CONSTRUCTOR:
           return forMethodAndEnclosingClass(
               sym,
               (method, enclosingClass) ->
-                  JvmGraph.getMethodVName(enclosingClass, sym.getSimpleName().toString(), method));
+                  JvmGraph.getMethodVName(
+                      corpusPath, enclosingClass, sym.getSimpleName().toString(), method));
         case FIELD:
           return referenceJvmType(sym.enclClass())
-              .map(classType -> JvmGraph.getFieldVName(classType, sym.getSimpleName().toString()))
+              .map(
+                  classType ->
+                      JvmGraph.getFieldVName(corpusPath, classType, sym.getSimpleName().toString()))
               .map(KytheNodeImpl::new);
 
         case PARAMETER:
@@ -216,6 +232,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
               enclosingMethod,
               (methodType, enclosingClass) ->
                   JvmGraph.getParameterVName(
+                      corpusPath,
                       enclosingClass,
                       enclosingMethod.getSimpleName().toString(),
                       methodType,

@@ -22,7 +22,7 @@
 //   <child ticket>    -> srvpb.Relatives (parents)
 //   <called ticket>   -> srvpb.Callgraph (callers)
 //   <calling ticket>  -> srvpb.Callgraph (callees)
-package explore
+package explore // import "kythe.io/kythe/go/serving/explore"
 
 import (
 	"context"

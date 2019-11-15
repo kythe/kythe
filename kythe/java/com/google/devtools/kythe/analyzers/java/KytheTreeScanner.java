@@ -20,10 +20,13 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteStreams;
+import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.java.KytheDocTreeScanner.DocCommentVisitResult;
@@ -32,7 +35,7 @@ import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph.Type.ReferenceType;
-import com.google.devtools.kythe.platform.java.filemanager.JavaFileStoreBasedFileManager;
+import com.google.devtools.kythe.platform.java.filemanager.ForwardingStandardJavaFileManager;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
@@ -50,6 +53,7 @@ import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
+import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.TypeTag;
@@ -91,9 +95,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import javax.lang.model.element.ElementKind;
@@ -102,10 +108,16 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.NestingKind;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
+
+  /** Set of known class names used for annotating generated code. */
+  private static final ImmutableSet<String> GENERATED_ANNOTATIONS =
+      ImmutableSet.of("javax.annotation.Generated", "javax.annotation.processing.Generated");
 
   /** Maximum allowed text size for variable {@link MarkedSource.Kind.INITIALIZER}s */
   private static final int MAX_INITIALIZER_LENGTH = 80;
@@ -124,11 +136,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final Map<Integer, Integer> commentClaims = new HashMap<>();
   private final BiConsumer<JCTree, VName> nodeConsumer;
   private final Context javaContext;
-  private final JavaFileStoreBasedFileManager fileManager;
+  private final StandardJavaFileManager fileManager;
   private final MetadataLoaders metadataLoaders;
   private final JvmGraph jvmGraph;
-  private List<Metadata> metadata;
+  private final Set<VName> emittedIdentType = new HashSet<>();
 
+  private List<Metadata> metadata;
   private KytheDocTreeScanner docScanner;
 
   private KytheTreeScanner(
@@ -138,7 +151,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       SourceText src,
       Context javaContext,
       BiConsumer<JCTree, VName> nodeConsumer,
-      JavaFileStoreBasedFileManager fileManager,
+      StandardJavaFileManager fileManager,
       MetadataLoaders metadataLoaders,
       JvmGraph jvmGraph,
       JavaIndexerConfig config) {
@@ -172,7 +185,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JCCompilationUnit compilation,
       BiConsumer<JCTree, VName> nodeConsumer,
       SourceText src,
-      JavaFileStoreBasedFileManager fileManager,
+      StandardJavaFileManager fileManager,
       MetadataLoaders metadataLoaders,
       JavaIndexerConfig config)
       throws IOException {
@@ -260,7 +273,29 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (ident.sym == null) {
       return emitDiagnostic(ctx, "missing identifier symbol", null, null);
     }
-    return emitSymUsage(ctx, ident.sym);
+    JavaNode node = emitSymUsage(ctx, ident.sym);
+    if (node != null && ident.sym instanceof VarSymbol) {
+      // Emit typed edges for "this"/"super" on reference since there is no definition location.
+      // TODO(schroederc): possibly add implicit definition on class declaration
+      if ("this".equals(ident.sym.getSimpleName().toString())
+          && !emittedIdentType.contains(node.getVName())) {
+        JavaNode typeNode = getRefNode(ctx, ident.sym.enclClass());
+        if (typeNode == null) {
+          return emitDiagnostic(ctx, "failed to resolve symbol reference", null, null);
+        }
+        entrySets.emitEdge(node.getVName(), EdgeKind.TYPED, typeNode.getVName());
+        emittedIdentType.add(node.getVName());
+      } else if ("super".equals(ident.sym.getSimpleName().toString())
+          && !emittedIdentType.contains(node.getVName())) {
+        JavaNode typeNode = getRefNode(ctx, ident.sym.enclClass().getSuperclass().asElement());
+        if (typeNode == null) {
+          return emitDiagnostic(ctx, "failed to resolve symbol reference", null, null);
+        }
+        entrySets.emitEdge(node.getVName(), EdgeKind.TYPED, typeNode.getVName());
+        emittedIdentType.add(node.getVName());
+      }
+    }
+    return node;
   }
 
   @Override
@@ -291,7 +326,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (jvmGraph != null) {
         // Emit corresponding JVM node
         JvmGraph.Type.ReferenceType referenceType = referenceType(classDef.sym.type);
-        VName jvmNode = jvmGraph.emitClassNode(referenceType);
+        VName jvmNode =
+            jvmGraph.emitClassNode(entrySets.jvmCorpusPath(classDef.sym), referenceType);
         entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
       } else {
         // Emit NAME nodes for the jvm binary name of classes.
@@ -437,16 +473,18 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     // Emit corresponding JVM node
     if (jvmGraph != null) {
+      CorpusPath corpusPath = entrySets.jvmCorpusPath(methodDef.sym);
       JvmGraph.Type.MethodType methodJvmType =
           toMethodJvmType((Type.MethodType) externalType(methodDef.sym));
       ReferenceType parentClass = referenceType(externalType(owner.getTree().type.tsym));
       String methodName = methodDef.name.toString();
-      VName jvmNode = jvmGraph.emitMethodNode(parentClass, methodName, methodJvmType);
+      VName jvmNode = jvmGraph.emitMethodNode(corpusPath, parentClass, methodName, methodJvmType);
       entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
 
       for (int i = 0; i < params.size(); i++) {
         JavaNode param = params.get(i);
-        VName paramJvmNode = jvmGraph.emitParameterNode(parentClass, methodName, methodJvmType, i);
+        VName paramJvmNode =
+            jvmGraph.emitParameterNode(corpusPath, parentClass, methodName, methodJvmType, i);
         entrySets.emitEdge(param.getVName(), EdgeKind.GENERATES, paramJvmNode);
         entrySets.emitEdge(jvmNode, EdgeKind.PARAM, paramJvmNode, i);
       }
@@ -605,7 +643,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (jvmGraph != null && varDef.sym.getKind().isField()) {
       VName jvmNode =
           jvmGraph.emitFieldNode(
-              referenceType(externalType(owner.getTree().type.tsym)), varDef.name.toString());
+              entrySets.jvmCorpusPath(varDef.sym),
+              referenceType(externalType(owner.getTree().type.tsym)),
+              varDef.name.toString());
       entrySets.emitEdge(varNode, EdgeKind.GENERATES, jvmNode);
     }
 
@@ -760,6 +800,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   public JavaNode visitNewClass(JCNewClass newClass, TreeContext owner) {
     TreeContext ctx = owner.down(newClass);
 
+    if (newClass == null || newClass.constructor == null) {
+      logger.atInfo().log("Unexpected null class or constructor: %s", newClass);
+      return emitDiagnostic(ctx, "error analyzing class", null, null);
+    }
     VName ctorNode = getNode(newClass.constructor);
     if (ctorNode == null) {
       return emitDiagnostic(ctx, "error analyzing class", null, null);
@@ -890,8 +934,29 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // emit tags/deprecated if a @Deprecated annotation is present even if there isn't @deprecated
       // javadoc
       if (modifiers.getAnnotations().stream()
-          .map(a -> a.annotationType.type.tsym.getQualifiedName())
-          .anyMatch(n -> n.contentEquals("java.lang.Deprecated"))) {
+          .map(
+              a -> {
+                if (a == null) {
+                  logger.atWarning().log("annotation was null in %s", node.getPath());
+                  return null;
+                } else if (a.annotationType == null) {
+                  logger.atWarning().log(
+                      "%s -- a.annotationType was null in %s", a, node.getPath());
+                  return null;
+                } else if (a.annotationType.type == null) {
+                  logger.atWarning().log(
+                      "%s -- a.annotationType.type was null in %s",
+                      a.annotationType, node.getPath());
+                  return null;
+                } else if (a.annotationType.type.tsym == null) {
+                  logger.atWarning().log(
+                      "%s -- a.annotationType.type.tsym was null in %s",
+                      a.annotationType.type, node.getPath());
+                  return null;
+                }
+                return a.annotationType.type.tsym.getQualifiedName();
+              })
+          .anyMatch(n -> n != null && n.contentEquals("java.lang.Deprecated"))) {
         deprecation = Optional.of("");
       }
     }
@@ -994,13 +1059,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   /** Returns the node associated with a {@link Symbol} or {@code null}. */
-  private VName getNode(Symbol sym) {
+  private @Nullable VName getNode(Symbol sym) {
     JavaNode node = getJavaNode(sym);
     return node == null ? null : node.getVName();
   }
 
   /** Returns the {@link JavaNode} associated with a {@link Symbol} or {@code null}. */
-  private JavaNode getJavaNode(Symbol sym) {
+  private @Nullable JavaNode getJavaNode(Symbol sym) {
     if (sym.getKind() == ElementKind.PACKAGE) {
       return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
     }
@@ -1009,18 +1074,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // Symbol is external to the analyzed compilation and may not be defined in Java.  Return the
       // related JVM node to accommodate cross-language references.
       Type type = externalType(sym);
+      CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
       if (type instanceof Type.MethodType) {
         JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
         ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String methodName = sym.getQualifiedName().toString();
-        return new JavaNode(JvmGraph.getMethodVName(parentClass, methodName, methodJvmType));
+        return new JavaNode(
+            JvmGraph.getMethodVName(corpusPath, parentClass, methodName, methodJvmType));
       } else if (type instanceof Type.ClassType) {
-        return new JavaNode(JvmGraph.getReferenceVName(referenceType(sym.type)));
+        return new JavaNode(JvmGraph.getReferenceVName(corpusPath, referenceType(sym.type)));
       } else if (sym instanceof Symbol.VarSymbol
           && ((Symbol.VarSymbol) sym).getKind() == ElementKind.FIELD) {
         ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String fieldName = sym.getSimpleName().toString();
-        return new JavaNode(JvmGraph.getFieldVName(parentClass, fieldName));
+        return new JavaNode(JvmGraph.getFieldVName(corpusPath, parentClass, fieldName));
       }
     }
 
@@ -1111,8 +1178,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
     boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
     try {
-      if (sym != null
-          && SignatureGenerator.isArrayHelperClass(sym.enclClass())
+      if (sym == null) {
+        logger.atWarning().log("sym was null");
+        return null;
+      }
+      if (SignatureGenerator.isArrayHelperClass(sym.enclClass())
           && ctx.getTree() instanceof JCFieldAccess) {
         signatureGenerator.setArrayTypeContext(((JCFieldAccess) ctx.getTree()).selected.type);
       }
@@ -1309,11 +1379,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private void loadAnnotationsFile(String path) {
     URI uri = filePositions.getSourceFile().toUri();
     try {
-      String fullPath = uri.resolve(path).getPath();
-      if (fullPath.startsWith("/")) {
-        fullPath = fullPath.substring(1);
-      }
-      FileObject file = fileManager.getJavaFileFromPath(fullPath, JavaFileObject.Kind.OTHER);
+      String fullPath = resolveSourcePath(path);
+      FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath), null);
       if (file == null) {
         logger.atWarning().log("Can't find metadata %s for %s at %s", path, uri, fullPath);
         return;
@@ -1339,7 +1406,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         annotationSymbol = ((JCIdent) annotation.getAnnotationType()).sym;
       }
       if (annotationSymbol == null
-          || !annotationSymbol.toString().equals("javax.annotation.Generated")) {
+          || !GENERATED_ANNOTATIONS.contains(annotationSymbol.toString())) {
         continue;
       }
       for (JCExpression arg : annotation.getArguments()) {
@@ -1361,6 +1428,29 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         }
       }
     }
+  }
+
+  /** Resovles a string as a source-file relative path */
+  private String resolveSourcePath(String path) {
+    try {
+      // TODO(shahms): Remove this cast/check/fallback when we only support JDK9+.
+      if (fileManager instanceof ForwardingStandardJavaFileManager) {
+        return ((ForwardingStandardJavaFileManager) fileManager)
+            .asPath(filePositions.getSourceFile())
+            .resolveSibling(path)
+            .toString();
+      }
+    } catch (UnsupportedOperationException
+        | IllegalArgumentException
+        | NullPointerException unused) {
+    }
+    // Fallback to URI-based path resolution when asPath is unsupported.
+    URI uri = filePositions.getSourceFile().toUri();
+    String fullPath = uri.resolve(path).getPath();
+    if (fullPath.startsWith("/")) {
+      fullPath = fullPath.substring(1);
+    }
+    return fullPath;
   }
 
   private Type externalType(Symbol sym) {

@@ -1,24 +1,33 @@
+load("@rules_java//java:defs.bzl", "java_library")
 load("//tools/build_rules/verifier_test:java_verifier_test.bzl", "java_verifier_test")
+load("//kythe/java/com/google/devtools/kythe/extractors/java/bazel:aspect.bzl", "extract_java")
 
-filegroup(
-    name = "pkg_files",
+java_library(
+    name = "pkg",
     srcs = glob(
         ["**/*.java"],
         exclude = [
             # Exclude meta-data tests
             "Metadata.java",
             "ProtobufMetadata.java",
+            "ProcessingMetadata.java",
+            "ProcessingProtobufMetadata.java",
+            # Exclude tests of features >= Java 9 as java_library is compiled as Java 8.
+            "DiamondOperations.java",
+            "LocalInference.java",
+            "PrivateInterfaceMethods.java",
         ],
     ),
-    visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/common:autovalue",
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
 )
 
-java_library(
-    name = "pkg",
-    srcs = [":pkg_files"],
-    visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:__subpackages__"],
-    exports = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/regression"],
-    deps = ["@com_google_code_findbugs_jsr305//jar"],
+extract_java(
+    name = "pkg_kzip",
+    compilation = ":pkg",
+    visibility = ["//visibility:public"],
 )
 
 # TODO(schroederc): requires related nodes generated in pipeline
@@ -245,7 +254,17 @@ java_verifier_test(
     meta = [
         "Metadata.java.meta",
     ],
-    deps = ["@javax_annotation_jsr250_api//jar"],
+    deps = ["@maven//:javax_annotation_jsr250_api"],
+)
+
+java_verifier_test(
+    name = "processing_metadata_tests",
+    srcs = [
+        "ProcessingMetadata.java",
+    ],
+    meta = [
+        "ProcessingMetadata.java.meta",
+    ],
 )
 
 java_verifier_test(
@@ -261,7 +280,22 @@ java_verifier_test(
         "ProtobufMetadata.java.pb.meta",
     ],
     vnames_config = "protobuf_vnames.json",
-    deps = ["@javax_annotation_jsr250_api//jar"],
+    deps = ["@maven//:javax_annotation_jsr250_api"],
+)
+
+java_verifier_test(
+    name = "processing_protobuf_metadata_tests",
+    srcs = [
+        "ProcessingProtobufMetadata.java",
+    ],
+    indexer_opts = [
+        "--verbose",
+        "--default_metadata_corpus=default",
+    ],
+    meta = [
+        "ProcessingProtobufMetadata.java.pb.meta",
+    ],
+    vnames_config = "protobuf_vnames.json",
 )
 
 java_verifier_test(
@@ -315,7 +349,7 @@ java_verifier_test(
         "Packages.java",
         "package-info.java",
     ],
-    deps = ["@com_google_code_findbugs_jsr305//jar"],
+    deps = ["@maven//:com_google_code_findbugs_jsr305"],
 )
 
 java_verifier_test(
@@ -340,6 +374,47 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "diamond_operator_test",
+    size = "small",
+    srcs = ["DiamondOperations.java"],
+    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
+    extractor_opts = [
+        "-source",
+        "9",
+        "-target",
+        "9",
+    ],
+)
+
+java_verifier_test(
+    name = "local_inference_test",
+    size = "small",
+    srcs = ["LocalInference.java"],
+    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
+    extractor_opts = [
+        "-source",
+        "11",
+        "-target",
+        "11",
+    ],
+    # TODO(#3746): We don't emit any edges for inferred locals.
+    tags = ["manual"],
+)
+
+java_verifier_test(
+    name = "private_interface_methods_test",
+    size = "small",
+    srcs = ["PrivateInterfaceMethods.java"],
+    extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
+    extractor_opts = [
+        "-source",
+        "9",
+        "-target",
+        "9",
+    ],
+)
+
+java_verifier_test(
     name = "release9_test",
     size = "small",
     srcs = [
@@ -347,4 +422,52 @@ java_verifier_test(
         "Definitions.java",
     ],
     extractor = "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac9_extractor",
+)
+
+# Duplicate a few tests to extract/verifier native Bazel Java compilation targets
+java_library(
+    name = "classes",
+    srcs = ["Classes.java"],
+)
+
+java_verifier_test(
+    name = "classes_xa_test",
+    compilation = ":classes",
+)
+
+java_library(
+    name = "files",
+    srcs = ["Files.java"],
+)
+
+java_verifier_test(
+    name = "files_xa_test",
+    compilation = ":files",
+)
+
+java_library(
+    name = "cross_file",
+    srcs = ["CrossFile.java"],
+    deps = [":files"],
+)
+
+java_verifier_test(
+    name = "cross_file_xa_test",
+    compilation = ":cross_file",
+    verifier_opts = [
+        "--ignore_dups",
+        "--nocheck_for_singletons",  # TODO(schroederc): verify Files.java goals
+    ],
+)
+
+java_library(
+    name = "auto_values",
+    srcs = ["AutoValues.java"],
+    deps = ["//kythe/java/com/google/devtools/kythe/common:autovalue"],
+)
+
+java_verifier_test(
+    name = "auto_values_test",
+    compilation = ":auto_values",
+    load_plugin = "//kythe/java/com/google/devtools/kythe/analyzers/java:auto_value_plugin",
 )

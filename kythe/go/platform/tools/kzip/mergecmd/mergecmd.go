@@ -15,7 +15,7 @@
  */
 
 // Package mergecmd provides the kzip command for merging archives.
-package mergecmd
+package mergecmd // import "kythe.io/kythe/go/platform/tools/kzip/mergecmd"
 
 import (
 	"context"
@@ -23,15 +23,14 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"path/filepath"
 
-	"bitbucket.org/creachadair/stringset"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/google/subcommands"
 )
 
@@ -62,7 +61,7 @@ func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 // Execute implements the subcommands interface and merges the provided files.
 func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.output == "" {
-		return c.Fail("required --output path missing")
+		return c.Fail("Required --output path missing")
 	}
 	opt := kzip.WithEncoding(c.encoding.Encoding)
 	dir, file := filepath.Split(c.output)
@@ -70,6 +69,9 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 		dir = "."
 	}
 	tmpOut, err := vfs.CreateTempFile(ctx, dir, file)
+	if err != nil {
+		return c.Fail("Error creating temp output: %v", err)
+	}
 	tmpName := tmpOut.Name()
 	defer func() {
 		if tmpOut != nil {
@@ -77,9 +79,6 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 			vfs.Remove(ctx, tmpName)
 		}
 	}()
-	if err != nil {
-		return c.Fail("Error creating temp output: %v", err)
-	}
 	archives := fs.Args()
 	if c.append {
 		orig, err := vfs.Open(ctx, c.output)
@@ -108,7 +107,7 @@ func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, o
 
 	filesAdded := stringset.New()
 	for _, path := range archives {
-		if err := mergeInto(wr, path, filesAdded); err != nil {
+		if err := mergeInto(ctx, wr, path, filesAdded); err != nil {
 			wr.Close()
 			return err
 		}
@@ -120,14 +119,14 @@ func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, o
 	return nil
 }
 
-func mergeInto(wr *kzip.Writer, path string, filesAdded stringset.Set) error {
-	f, err := os.Open(path)
+func mergeInto(ctx context.Context, wr *kzip.Writer, path string, filesAdded stringset.Set) error {
+	f, err := vfs.Open(ctx, path)
 	if err != nil {
 		return fmt.Errorf("error opening archive: %v", err)
 	}
 	defer f.Close()
 
-	stat, err := f.Stat()
+	stat, err := vfs.Stat(ctx, path)
 	if err != nil {
 		return err
 	}

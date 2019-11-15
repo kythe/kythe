@@ -16,7 +16,7 @@
 
 // Package leveldb implements a graphstore.Service using a LevelDB backend
 // database.
-package leveldb
+package leveldb // import "kythe.io/kythe/go/storage/leveldb"
 
 import (
 	"bytes"

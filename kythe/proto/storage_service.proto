@@ -29,13 +29,15 @@ service GraphStore {
   // Read responds with all Entry messages that match the given ReadRequest.
   // The Read operation should be implemented with time complexity proportional
   // to the size of the return set.
-  rpc Read(ReadRequest) returns (stream Entry) {}
+  rpc Read(ReadRequest) returns (stream Entry) {
+  }
 
   // Scan responds with all Entry messages matching the given ScanRequest.  If a
   // ScanRequest field is empty, any entry value for that field matches and will
   // be returned.  Scan is similar to Read, but with no time complexity
   // restrictions.
-  rpc Scan(ScanRequest) returns (stream Entry) {}
+  rpc Scan(ScanRequest) returns (stream Entry) {
+  }
 
   // Write atomically inserts or updates a collection of entries into the store.
   // Each update is a tuple of the form (kind, target, fact, value).  For each
@@ -44,7 +46,8 @@ service GraphStore {
   // value') that may exist.  Note that this operation cannot delete any data
   // from the store; entries are only ever inserted or updated.  Apart from
   // acting atomically, no other constraints are placed on the implementation.
-  rpc Write(WriteRequest) returns (WriteReply) {}
+  rpc Write(WriteRequest) returns (WriteReply) {
+  }
 }
 
 // ShardedGraphStores can be arbitrarily sharded for parallel processing.
@@ -52,8 +55,10 @@ service GraphStore {
 // results when the store is being written to.  Shards are indexed from 0.
 service ShardedGraphStore {
   // Count returns the number of entries in the given shard.
-  rpc Count(CountRequest) returns (CountReply) {}
+  rpc Count(CountRequest) returns (CountReply) {
+  }
 
   // Shard responds with each Entry in the given shard.
-  rpc Shard(ShardRequest) returns (stream Entry) {}
+  rpc Shard(ShardRequest) returns (stream Entry) {
+  }
 }

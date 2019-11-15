@@ -23,7 +23,7 @@
 // shatter the served DecorationsReply and CrossReferencesReply messages, and
 // feeding the resulting entries into the verifier, one can write integration
 // tests between the Kythe indexers and Kythe server.
-package xrefs
+package xrefs // import "kythe.io/kythe/go/test/services/xrefs"
 
 import (
 	"context"

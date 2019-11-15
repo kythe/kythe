@@ -16,7 +16,6 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -29,9 +28,11 @@ cc_library(
     name = "caching_output",
     srcs = [
         "KytheCachingOutput.cc",
+        "MemcachedHashCache.cc",
     ],
     hdrs = [
         "KytheCachingOutput.h",
+        "MemcachedHashCache.h",
     ],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
@@ -41,7 +42,6 @@ cc_library(
         "//kythe/proto:common_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "@boringssl//:crypto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",

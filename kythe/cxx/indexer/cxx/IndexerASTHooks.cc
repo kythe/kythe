@@ -20,6 +20,7 @@
 #include <tuple>
 
 #include "GraphObserver.h"
+#include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/optional.h"
 #include "clang/AST/Attr.h"
@@ -45,7 +46,6 @@
 #include "clang/Index/USRGeneration.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/Sema/Lookup.h"
-#include "gflags/gflags.h"
 #include "indexed_parent_iterator.h"
 #include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
@@ -54,12 +54,12 @@
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 
-DEFINE_bool(experimental_alias_template_instantiations, false,
-            "Ignore template instantation information when generating IDs.");
-DEFINE_bool(experimental_threaded_claiming, false,
-            "Defer answering claims and submit them in bulk when possible.");
-DEFINE_bool(emit_anchors_on_builtins, true,
-            "Emit anchors on builtin types like int and float.");
+ABSL_FLAG(bool, experimental_alias_template_instantiations, false,
+          "Ignore template instantation information when generating IDs.");
+ABSL_FLAG(bool, experimental_threaded_claiming, false,
+          "Defer answering claims and submit them in bulk when possible.");
+ABSL_FLAG(bool, emit_anchors_on_builtins, true,
+          "Emit anchors on builtin types like int and float.");
 
 namespace kythe {
 
@@ -90,6 +90,33 @@ bool TokenQuotesIdentifier(const clang::SourceManager& SM,
     default:
       return false;
   }
+}
+
+absl::optional<llvm::StringRef> GetDeclarationName(
+    const clang::DeclarationName& Name, bool IgnoreUnimplemented) {
+  switch (Name.getNameKind()) {
+    case clang::DeclarationName::Identifier:
+      return Name.getAsIdentifierInfo()->getName();
+    case clang::DeclarationName::CXXConstructorName:
+      return "#ctor";
+    case clang::DeclarationName::CXXDestructorName:
+      return "#dtor";
+// TODO(zarko): Fill in the remaining relevant DeclarationName cases.
+#define UNEXPECTED_DECLARATION_NAME_KIND(kind)                         \
+  case clang::DeclarationName::kind:                                   \
+    CHECK(IgnoreUnimplemented) << "Unexpected DeclaraionName::" #kind; \
+    return absl::nullopt;
+      UNEXPECTED_DECLARATION_NAME_KIND(ObjCZeroArgSelector);
+      UNEXPECTED_DECLARATION_NAME_KIND(ObjCOneArgSelector);
+      UNEXPECTED_DECLARATION_NAME_KIND(ObjCMultiArgSelector);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXConversionFunctionName);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXOperatorName);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXLiteralOperatorName);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXUsingDirective);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXDeductionGuideName);
+#undef UNEXPECTED_DECLARATION_NAME_KIND
+  }
+  return absl::nullopt;
 }
 
 /// \brief Finds the first CXXConstructExpr child of the given
@@ -210,7 +237,7 @@ bool ConstructorOverridesInitializer(const clang::CXXConstructorDecl* Ctor,
 /// \return true if `D` should not be visited because its name will never be
 /// uttered due to aliasing rules.
 bool SkipAliasedDecl(const clang::Decl* D) {
-  return FLAGS_experimental_alias_template_instantiations &&
+  return absl::GetFlag(FLAGS_experimental_alias_template_instantiations) &&
          (FindSpecializedTemplate(D) != D);
 }
 
@@ -338,20 +365,21 @@ class PruneCheck {
       // ** modulo wacky macros
       //
       GenerateCleanupId(decl);
-      if (FLAGS_experimental_threaded_claiming ||
+      if (absl::GetFlag(FLAGS_experimental_threaded_claiming) ||
           !visitor_->Observer.claimImplicitNode(cleanup_id_)) {
         can_prune_ = Prunability::kDeferred;
       }
     } else if (llvm::isa<clang::ClassTemplateSpecializationDecl>(decl)) {
       GenerateCleanupId(decl);
-      if (FLAGS_experimental_threaded_claiming ||
+      if (absl::GetFlag(FLAGS_experimental_threaded_claiming) ||
           !visitor_->Observer.claimImplicitNode(cleanup_id_)) {
         can_prune_ = Prunability::kDeferIncompleteFunctions;
       }
     }
   }
   ~PruneCheck() {
-    if (!FLAGS_experimental_threaded_claiming && !cleanup_id_.empty()) {
+    if (!absl::GetFlag(FLAGS_experimental_threaded_claiming) &&
+        !cleanup_id_.empty()) {
       visitor_->Observer.finishImplicitNode(cleanup_id_);
     }
   }
@@ -372,7 +400,7 @@ class PruneCheck {
     // It's critical that we distinguish between different argument lists
     // here even if aliasing is turned on; otherwise we will drop data.
     // If aliasing is off, the NodeId already contains this information.
-    if (FLAGS_experimental_alias_template_instantiations) {
+    if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
       llvm::raw_string_ostream ostream(cleanup_id_);
       for (const auto& Current :
            RootTraversal(visitor_->getAllParents(), decl)) {
@@ -773,41 +801,26 @@ void InsertAnchorMarks(std::string& Text, std::vector<MiniAnchor>& Anchors) {
 void IndexerASTVisitor::HandleFileLevelComments(
     clang::FileID Id, const GraphObserver::NodeId& FileNode) {
   const auto& RCL = Context.getRawCommentList();
-  auto IdStart = Context.getSourceManager().getLocForStartOfFile(Id);
-  if (!IdStart.isFileID() || !IdStart.isValid()) {
-    return;
-  }
-  auto StartIdLoc = Context.getSourceManager().getDecomposedLoc(IdStart);
   // Find the block of comments for the given file. This behavior is not well-
   // defined by Clang, which commits only to the RawComments being
   // "sorted in order of appearance in the translation unit".
-  if (RCL.getComments().empty()) {
+  const std::map<unsigned, RawComment*>* FileComments =
+      RCL.getCommentsInFile(Id);
+  if (FileComments == nullptr || FileComments->empty()) {
     return;
   }
   // Find the first RawComment whose start location is greater or equal to
   // the start of the file whose FileID is Id.
-  auto C = std::lower_bound(
-      RCL.getComments().begin(), RCL.getComments().end(), StartIdLoc,
-      [&](clang::RawComment* const T1, const decltype(StartIdLoc)& T2) {
-        return Context.getSourceManager().getDecomposedLoc(T1->getBeginLoc()) <
-               T2;
-      });
+  RawComment* C = FileComments->begin()->second;
   // Walk through the comments in Id starting with the one at the top. If we
   // ever leave Id, then we're done. (The first time around the loop, if C isn't
   // already in Id, this check will immediately break;.)
-  if (C != RCL.getComments().end()) {
-    auto CommentIdLoc =
-        Context.getSourceManager().getDecomposedLoc((*C)->getBeginLoc());
-    if (CommentIdLoc.first != Id) {
-      return;
-    }
-    // Here's a simple heuristic: the first comment in a file is the file-level
-    // comment. This is bad for files with (e.g.) license blocks, but we can
-    // gradually refine as necessary.
-    if (VisitedComments.find(*C) == VisitedComments.end()) {
-      VisitComment(*C, Context.getTranslationUnitDecl(), FileNode);
-    }
-    return;
+  //
+  // Here's a simple heuristic: the first comment in a file is the file-level
+  // comment. This is bad for files with (e.g.) license blocks, but we can
+  // gradually refine as necessary.
+  if (VisitedComments.find(C) == VisitedComments.end()) {
+    VisitComment(C, Context.getTranslationUnitDecl(), FileNode);
   }
 }
 
@@ -1091,7 +1104,7 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
       }
     }
   }
-  if (FLAGS_experimental_threaded_claiming) {
+  if (absl::GetFlag(FLAGS_experimental_threaded_claiming)) {
     if (Decl != Job->Decl) {
       PruneCheck Prune(this, Decl);
       auto can_prune = Prune.can_prune();
@@ -1313,12 +1326,19 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr* E,
       SR.setEnd(RPL.getLocWithOffset(1));
     } else if (TSI != nullptr) {
       SR.setEnd(TSI->getTypeLoc().getEndLoc().getLocWithOffset(1));
+    } else if (SR.getBegin() == SR.getEnd()) {
+      // For zero-width ranges, attempt to figure out the real extent of the
+      // expression.  This includes calls to default constructors and
+      // conversions from string literals, among others.
+      SR = RangeForASTEntity(SR.getBegin());
     } else {
+      // Otherwise, include the final character in the expression forming an
+      // implicit ctor call.
       SR.setEnd(SR.getEnd().getLocWithOffset(1));
     }
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
-      RecordCallEdges(RCC.value(), BuildNodeIdForRefToDecl(Callee));
+      RecordCallEdges(*RCC, BuildNodeIdForRefToDecl(Callee));
     }
   }
   return true;
@@ -1708,7 +1728,7 @@ IndexerASTVisitor::BuildNodeIdForDeclContext(const clang::DeclContext* DC) {
 void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
     const clang::Decl* Decl, const GraphObserver::NodeId& DeclNode) {
   if (const DeclContext* DC = Decl->getDeclContext()) {
-    if (FLAGS_experimental_alias_template_instantiations) {
+    if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
       if (!Job->UnderneathImplicitTemplateInstantiation) {
         if (auto ContextId = BuildNodeIdForRefToDeclContext(DC)) {
           Observer.recordChildOfEdge(DeclNode, ContextId.value());
@@ -1727,7 +1747,7 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr* DRE) {
 }
 
 bool IndexerASTVisitor::VisitBuiltinTypeLoc(clang::BuiltinTypeLoc TL) {
-  if (FLAGS_emit_anchors_on_builtins) {
+  if (absl::GetFlag(FLAGS_emit_anchors_on_builtins)) {
     RecordTypeLocSpellingLocation(TL);
   }
   return true;
@@ -1749,8 +1769,8 @@ bool IndexerASTVisitor::VisitTemplateTypeParmTypeLoc(
   return true;
 }
 
-bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
-    clang::TemplateSpecializationTypeLoc TL) {
+template <typename T>
+bool IndexerASTVisitor::VisitTemplateSpecializationTypeLocHelper(T TL) {
   auto NameLocation = TL.getTemplateNameLoc();
   if (NameLocation.isFileID()) {
     if (auto RCC = ExpandedRangeInCurrentContext(NameLocation)) {
@@ -1772,7 +1792,17 @@ bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
   return true;
 }
 
-bool IndexerASTVisitor::VisitDeducedTypeLoc(clang::DeducedTypeLoc TL) {
+bool IndexerASTVisitor::VisitTemplateSpecializationTypeLoc(
+    clang::TemplateSpecializationTypeLoc TL) {
+  return VisitTemplateSpecializationTypeLocHelper(TL);
+}
+
+bool IndexerASTVisitor::VisitDeducedTemplateSpecializationTypeLoc(
+    clang::DeducedTemplateSpecializationTypeLoc TL) {
+  return VisitTemplateSpecializationTypeLocHelper(TL);
+}
+
+bool IndexerASTVisitor::VisitAutoTypeLoc(clang::AutoTypeLoc TL) {
   RecordTypeLocSpellingLocation(TL);
   return true;
 }
@@ -2535,7 +2565,7 @@ IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange& SR) {
     return absl::nullopt;
   }
   if (!Job->RangeContext.empty() &&
-      !FLAGS_experimental_alias_template_instantiations) {
+      !absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
     return GraphObserver::Range(SR, Job->RangeContext.back());
   } else {
     return GraphObserver::Range(SR, Observer.getClaimTokenForRange(SR));
@@ -2985,15 +3015,17 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
                 E = MF->end_overridden_methods();
            O != E; ++O) {
         Observer.recordOverridesEdge(
-            InnerNode, FLAGS_experimental_alias_template_instantiations
-                           ? BuildNodeIdForRefToDecl(*O)
-                           : BuildNodeIdForDecl(*O));
+            InnerNode,
+            absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
+                ? BuildNodeIdForRefToDecl(*O)
+                : BuildNodeIdForDecl(*O));
       }
       MapOverrideRoots(MF, [&](const CXXMethodDecl* R) {
         Observer.recordOverridesRootEdge(
-            InnerNode, FLAGS_experimental_alias_template_instantiations
-                           ? BuildNodeIdForRefToDecl(R)
-                           : BuildNodeIdForDecl(R));
+            InnerNode,
+            absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
+                ? BuildNodeIdForRefToDecl(R)
+                : BuildNodeIdForDecl(R));
       });
     }
   }
@@ -3458,7 +3490,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // Some NodeIds are stable in the face of changes to that data, such as
   // the IDs given to class definitions (in part because of the language rules).
 
-  if (FLAGS_experimental_alias_template_instantiations) {
+  if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
     Decl = FindSpecializedTemplate(Decl);
   }
 
@@ -3533,7 +3565,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
         Ostream << "#";
       }
     }
-    if (!FLAGS_experimental_alias_template_instantiations) {
+    if (!absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
       if (const auto* CTSD =
               dyn_cast<ClassTemplateSpecializationDecl>(Current.decl)) {
         // Inductively, we can break after the first implicit instantiation*
@@ -3742,8 +3774,9 @@ bool IndexerASTVisitor::TraverseNestedNameSpecifierLoc(
     case NestedNameSpecifier::TypeSpec:
       break;  // This is handled by VisitDependentNameTypeLoc.
     case NestedNameSpecifier::Identifier: {
-      auto DId = BuildNodeIdForDependentRange(NNS.getPrefix(),
-                                              NNS.getLocalSourceRange());
+      auto DId = BuildNodeIdForDependentIdentifier(
+          NNS.getPrefix().getNestedNameSpecifier(),
+          NNS.getNestedNameSpecifier()->getAsIdentifier());
       if (auto RCC = ExplicitRangeInCurrentContext(NNS.getLocalSourceRange())) {
         Observer.recordDeclUseLocation(*RCC, DId,
                                        GraphObserver::Claimability::Claimable,
@@ -3756,34 +3789,36 @@ bool IndexerASTVisitor::TraverseNestedNameSpecifierLoc(
   return Base::TraverseNestedNameSpecifierLoc(NNS);
 }
 
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentRange(
-    const clang::NestedNameSpecifierLoc& NNSLoc,
-    const clang::SourceRange& IdRange) {
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentIdentifier(
+    const clang::NestedNameSpecifier* Prefix,
+    const clang::IdentifierInfo* Identifier) {
+  return BuildNodeIdForDependentName(Prefix,
+                                     clang::DeclarationName(Identifier));
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentName(
+    const clang::NestedNameSpecifier* Prefix,
+    const clang::DeclarationName& Identifier) {
   // TODO(zarko): Need a better way to generate stablish names here.
   // In particular, it would be nice if a dependent name A::B::C
   // and a dependent name A::B::D were represented as ::C and ::D off
   // of the same dependent root A::B. (Does this actually make sense,
   // though? Could A::B resolve to a different entity in each case?)
-  std::string Identity = "#nns@";  // Nested name specifier.
+  std::string Identity = "#nns::";  // Nested name specifier.
+
   llvm::raw_string_ostream Ostream(Identity);
-  if (auto Range = ExplicitRangeInCurrentContext(NNSLoc.getSourceRange())) {
-    Observer.AppendRangeToStream(Ostream, *Range);
+  if (auto PId = BuildNodeIdForNestedNameSpecifier(Prefix)) {
+    Ostream << PId->IdentityRef();
   } else {
-    Ostream << "invalid";
+    Ostream << "(invalid)";
   }
-  Ostream << "@";
-  if (auto RCC = ExplicitRangeInCurrentContext(IdRange)) {
-    Observer.AppendRangeToStream(Ostream, *RCC);
+  Ostream << "::";
+  if (auto Name = GetDeclarationName(Identifier, IgnoreUnimplemented)) {
+    Ostream << *Name;
   } else {
-    Ostream << "invalid";
+    Ostream << "(invalid)";
   }
   return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
-}
-
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDependentLoc(
-    const clang::NestedNameSpecifierLoc& NNS,
-    const clang::SourceLocation& IdLoc) {
-  return BuildNodeIdForDependentRange(NNS, RangeForASTEntity(IdLoc));
 }
 
 absl::optional<GraphObserver::NodeId>
@@ -3800,8 +3835,8 @@ IndexerASTVisitor::RecordParamEdgesForDependentName(
       case NestedNameSpecifier::Identifier:
         // Hashcons the identifiers.
         if (auto Subtree = RecordParamEdgesForDependentName(
-                BuildNodeIdForDependentRange(NNSLoc.getPrefix(),
-                                             NNSLoc.getLocalSourceRange()),
+                BuildNodeIdForDependentIdentifier(NNS->getPrefix(),
+                                                  NNS->getAsIdentifier()),
                 NNSLoc.getPrefix(), Root)) {
           if (RecordLookupEdgeForDependentName(*Subtree,
                                                NNS->getAsIdentifier())) {
@@ -3827,51 +3862,37 @@ IndexerASTVisitor::RecordParamEdgesForDependentName(
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::RecordLookupEdgeForDependentName(
     const GraphObserver::NodeId& DId, const clang::DeclarationName& Name) {
-  switch (Name.getNameKind()) {
-    case clang::DeclarationName::Identifier:
-      Observer.recordLookupNode(DId,
-                                Name.getAsIdentifierInfo()->getNameStart());
-      break;
-    case clang::DeclarationName::CXXConstructorName:
-      Observer.recordLookupNode(DId, "#ctor");
-      break;
-    case clang::DeclarationName::CXXDestructorName:
-      Observer.recordLookupNode(DId, "#dtor");
-      break;
-// TODO(zarko): Fill in the remaining relevant DeclarationName cases.
-#define UNEXPECTED_DECLARATION_NAME_KIND(kind)                         \
-  case clang::DeclarationName::kind:                                   \
-    CHECK(IgnoreUnimplemented) << "Unexpected DeclaraionName::" #kind; \
-    return absl::nullopt;
-      UNEXPECTED_DECLARATION_NAME_KIND(ObjCZeroArgSelector);
-      UNEXPECTED_DECLARATION_NAME_KIND(ObjCOneArgSelector);
-      UNEXPECTED_DECLARATION_NAME_KIND(ObjCMultiArgSelector);
-      UNEXPECTED_DECLARATION_NAME_KIND(CXXConversionFunctionName);
-      UNEXPECTED_DECLARATION_NAME_KIND(CXXOperatorName);
-      UNEXPECTED_DECLARATION_NAME_KIND(CXXLiteralOperatorName);
-      UNEXPECTED_DECLARATION_NAME_KIND(CXXUsingDirective);
-      UNEXPECTED_DECLARATION_NAME_KIND(CXXDeductionGuideName);
-#undef UNEXPECTED_DECLARATION_NAME_KIND
+  if (auto Lookup = GetDeclarationName(Name, IgnoreUnimplemented)) {
+    Observer.recordLookupNode(DId, *Lookup);
+    return DId;
   }
-  return DId;
+  return absl::nullopt;
 }
 
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForNestedNameSpecifierLoc(
     const clang::NestedNameSpecifierLoc& NNSLoc) {
-  auto* NNS = NNSLoc.getNestedNameSpecifier();
+  if (!NNSLoc) {
+    return absl::nullopt;
+  }
+  return BuildNodeIdForNestedNameSpecifier(NNSLoc.getNestedNameSpecifier());
+}
+
+absl::optional<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForNestedNameSpecifier(
+    const clang::NestedNameSpecifier* NNS) {
+  if (!NNS) {
+    return absl::nullopt;
+  }
   switch (NNS->getKind()) {
     case NestedNameSpecifier::Identifier:
-      return BuildNodeIdForDependentRange(NNSLoc.getPrefix(),
-                                          NNSLoc.getLocalSourceRange());
+      return BuildNodeIdForDependentIdentifier(NNS->getPrefix(),
+                                               NNS->getAsIdentifier());
     case NestedNameSpecifier::Namespace:
       return BuildNodeIdForDecl(NNS->getAsNamespace());
     case NestedNameSpecifier::NamespaceAlias:
       return BuildNodeIdForDecl(NNS->getAsNamespaceAlias());
     case NestedNameSpecifier::TypeSpec:
-      if (auto SubId = BuildNodeIdForType(NNSLoc.getTypeLoc())) {
-        return SubId;
-      }
       if (auto SubId =
               BuildNodeIdForType(clang::QualType(NNS->getAsType(), 0))) {
         return SubId;
@@ -3900,7 +3921,8 @@ IndexerASTVisitor::RecordEdgesForDependentName(
     return absl::nullopt;
   }
   if (auto IdOut = RecordParamEdgesForDependentName(
-          BuildNodeIdForDependentLoc(NNSLoc, IdLoc), NNSLoc, Root)) {
+          BuildNodeIdForDependentName(NNSLoc.getNestedNameSpecifier(), Id),
+          NNSLoc, Root)) {
     return RecordLookupEdgeForDependentName(*IdOut, Id);
   }
   return absl::nullopt;
@@ -4197,6 +4219,10 @@ NodeSet IndexerASTVisitor::BuildNodeSetForAuto(clang::AutoTypeLoc TL) {
 
 NodeSet IndexerASTVisitor::BuildNodeSetForDeducedTemplateSpecialization(
     clang::DeducedTemplateSpecializationTypeLoc TL) {
+  // TODO(shahms): This should look more like TemplateSpecialization than Auto.
+  // They currently return the same thing, but only via the indirection through
+  // the deduced type.  We should also potentially emit implicit references to
+  // the deduced template parameters.
   return BuildNodeSetForDeduced(TL);
 }
 
@@ -4342,7 +4368,9 @@ NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
 
 NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
     clang::DependentNameTypeLoc TL) {
-  return BuildNodeIdForDependentLoc(TL.getQualifierLoc(), TL.getNameLoc());
+  return BuildNodeIdForDependentIdentifier(
+      TL.getQualifierLoc().getNestedNameSpecifier(),
+      TL.getTypePtr()->getIdentifier());
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
@@ -5081,14 +5109,14 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
   Decl->getOverriddenMethods(overrides);
   for (const auto& O : overrides) {
     Observer.recordOverridesEdge(
-        Node, FLAGS_experimental_alias_template_instantiations
+        Node, absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
                   ? BuildNodeIdForRefToDecl(O)
                   : BuildNodeIdForDecl(O));
   }
   if (!overrides.empty()) {
     MapOverrideRoots(Decl, [&](const ObjCMethodDecl* R) {
       Observer.recordOverridesRootEdge(
-          Node, FLAGS_experimental_alias_template_instantiations
+          Node, absl::GetFlag(FLAGS_experimental_alias_template_instantiations)
                     ? BuildNodeIdForRefToDecl(R)
                     : BuildNodeIdForDecl(R));
     });
@@ -5276,13 +5304,14 @@ bool IndexerASTVisitor::VisitObjCIvarRefExpr(
 
 bool IndexerASTVisitor::VisitObjCMessageExpr(
     const clang::ObjCMessageExpr* Expr) {
+  SourceRange SR = Expr->getSourceRange();
   // The end of the source range for ObjCMessageExpr is the location of the
   // right brace. We actually want to include the right brace in the range
   // we record, so get the location *after* the right brace.
-  const auto AfterBrace =
-      ConsumeToken(Expr->getEndLoc(), clang::tok::r_square).getEnd();
-  const SourceRange SR(Expr->getBeginLoc(), AfterBrace);
-  if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
+  if (SR.getBegin() != SR.getEnd()) {
+    SR.setEnd(SR.getEnd().getLocWithOffset(1));
+  }
+  if (auto RCC = ExpandedRangeInCurrentContext(SR)) {
     // This does not take dynamic dispatch into account when looking for the
     // method definition.
     if (const auto* Callee = FindMethodDefn(Expr->getMethodDecl(),

@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
@@ -53,9 +55,9 @@ java_library(
         "//kythe/proto:buildinfo_java_proto",
         "//kythe/proto:java_java_proto",
         "//third_party/guava",
-        "@com_google_code_gson_gson//jar",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_protobuf//:protobuf_java_util",
+        "@maven//:com_google_code_gson_gson",
     ],
 )
 

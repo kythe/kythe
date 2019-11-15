@@ -16,7 +16,7 @@
 
 // Package api provides a union of the filetree, xrefs, and graph interfaces
 // and a command-line flag parser.
-package api
+package api // import "kythe.io/kythe/go/serving/api"
 
 import (
 	"context"

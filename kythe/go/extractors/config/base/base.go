@@ -16,7 +16,7 @@
 
 // Package base and its subpackages define default config data for different
 // builders (cmake, gradle, maven).
-package base
+package base // import "kythe.io/kythe/go/extractors/config/base"
 
 import (
 	"log"

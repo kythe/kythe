@@ -15,7 +15,7 @@
  */
 
 // Package cmakecmd extracts from a CMake-based repository.
-package cmakecmd
+package cmakecmd // import "kythe.io/kythe/go/extractors/config/runextractor/cmakecmd"
 
 import (
 	"context"
@@ -74,16 +74,16 @@ func (c *cmakeCommand) verifyFlags() error {
 // Execute implements the subcommands interface and runs cmake extraction.
 func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
 	if err := c.verifyFlags(); err != nil {
-		return c.Fail("incorrect flags: %v", err)
+		return c.Fail("Incorrect flags: %v", err)
 	}
 	// Since we have to change our working directory, resolve all of our paths early.
 	extractor, err := filepath.Abs(c.extractor)
 	if err != nil {
-		return c.Fail("unable to resolve path to extractor: %v", err)
+		return c.Fail("Unable to resolve path to extractor: %v", err)
 	}
 	sourceDir, err := filepath.Abs(c.sourceDir)
 	if err != nil {
-		return c.Fail("unable to resolve source directory: %v", err)
+		return c.Fail("Unable to resolve source directory: %v", err)
 	}
 	var buildDir string
 	if c.buildDir == "" {
@@ -91,32 +91,32 @@ func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 		buildDir = filepath.Join(sourceDir, "build-"+uuid.New().String())
 		if err := os.Mkdir(buildDir, 0755); err != nil {
 			// Unlike below, we need to fail if the "unique" directory exists.
-			return c.Fail("unable to create build directory: %v", err)
+			return c.Fail("Unable to create build directory: %v", err)
 		}
 		// Only clean up the build directory if it was unspecified.
 		defer cleanBuild(buildDir)
 	} else {
 		buildDir, err = filepath.Abs(c.buildDir)
 		if err != nil {
-			return c.Fail("unable to resolve build directory: %v", err)
+			return c.Fail("Unable to resolve build directory: %v", err)
 		}
 	}
 
 	// Create the build directory if it doesn't already exist.
 	if err := os.MkdirAll(buildDir, 0755); err != nil {
-		return c.Fail("unable to create build directory: %v", err)
+		return c.Fail("Unable to create build directory: %v", err)
 	}
 
 	if err := runIn(exec.CommandContext(ctx, "cmake", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", sourceDir), buildDir); err != nil {
-		return c.Fail("error configuring cmake: %v", err)
+		return c.Fail("Error configuring cmake: %v", err)
 	}
 
 	if err := runIn(exec.CommandContext(ctx, "cmake", "--build", "."), buildDir); err != nil {
-		return c.Fail("error building repository: %v", err)
+		return c.Fail("Error building repository: %v", err)
 	}
 
 	if err := compdb.ExtractCompilations(ctx, extractor, filepath.Join(buildDir, "compile_commands.json")); err != nil {
-		return c.Fail("error extracting repository: %v", err)
+		return c.Fail("Error extracting repository: %v", err)
 	}
 	return subcommands.ExitSuccess
 }
@@ -128,8 +128,10 @@ func cleanBuild(dir string) {
 	}
 }
 
-// runIn changes the cmd working directory to dir and call Run.
+// runIn changes the cmd working directory to dir and calls Run. The cmd's
+// stderr is forwarded to stderr.
 func runIn(cmd *exec.Cmd, dir string) error {
 	cmd.Dir = dir
+	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }

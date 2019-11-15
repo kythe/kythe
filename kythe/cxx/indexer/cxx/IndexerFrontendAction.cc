@@ -44,7 +44,7 @@ namespace kythe {
 bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
                    llvm::Twine code, const std::string& filename) {
   if (tool_action == nullptr) return false;
-  return clang::tooling::runToolOnCode(tool_action.release(), code, filename);
+  return clang::tooling::runToolOnCode(std::move(tool_action), code, filename);
 }
 
 namespace {

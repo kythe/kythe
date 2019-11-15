@@ -15,7 +15,7 @@
  */
 
 // Package nodes provides Beam transformations over *scpb.Nodes.
-package nodes
+package nodes // import "kythe.io/kythe/go/serving/pipeline/nodes"
 
 import (
 	"bytes"

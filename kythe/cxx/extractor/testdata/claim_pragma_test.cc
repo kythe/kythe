@@ -237,7 +237,7 @@ class FakeCompilationWriterSink : public kythe::CompilationWriterSink {
 
     EXPECT_THAT(
         unit.argument(),
-        ElementsAre("dummy-executable", "-target", ::testing::_,
+        ElementsAre("/dummy/path/to/g++", "-target", ::testing::_,
                     "-DKYTHE_IS_RUNNING=1", "-resource-dir", "/kythe_builtins",
                     "--driver-mode=g++", "-I./kythe/cxx/extractor/testdata",
                     "./kythe/cxx/extractor/testdata/claim_main.cc",

@@ -3,6 +3,12 @@ package(
 )
 
 TARGET_DEFAULTS = {
+    "llvm-tblgen": {
+        "srcs": glob([
+            "utils/TableGen/GlobalISel/*.cpp",
+            "utils/TableGen/GlobalISel/*.h",
+        ]),
+    },
     "LLVMSupport": {
         "linkopts": [
             "-pthread",
@@ -26,11 +32,24 @@ TARGET_DEFAULTS = {
             "include/llvm/*.h",
         ]),
     },
-    "LLVMTransformUtils": {
-        "hdrs": glob(["include/llvm-c/Transforms/**/*.h"]),
+    "LLVMRemarks": {
+        # Technically BitstreamWriter, but it's header-only
+        # and BitstreamReader is equivalent.
+        "deps": [
+            ":LLVMBitstreamReader",
+            # Below are required by the ObjectFile layering violation.
+            ":LLVMBinaryFormat",
+            ":LLVMMC",
+        ],
+        "srcs": [
+            "/root/include/llvm/Object/ObjectFile.h",
+        ],
     },
     "LLVMScalarOpts": {
         "deps": [":LLVMTarget"],
+    },
+    "LLVMTransformUtils": {
+        "hdrs": glob(["include/llvm-c/Transforms/**/*.h"]),
     },
     "LLVMX86CodeGen": {
         "deps": [":LLVMipo"],
@@ -47,6 +66,11 @@ TARGET_DEFAULTS = {
         "textual_hdrs": [
             "tools/clang/include/clang/Basic/Version.inc",
             ":tools_clang_include_clang_Basic_genhdrs",
+        ],
+        "srcs": [
+            ":tools_clang_include_clang_Sema_AttrParsedAttrList_inc",
+            ":tools_clang_include_clang_Sema_AttrParsedAttrKinds_inc",
+            ":tools_clang_include_clang_Sema_AttrSpellingListIndex_inc",
         ],
     },
     "clangCodeGen": {
@@ -88,11 +112,6 @@ TARGET_DEFAULTS = {
     "clangSerialization": {
         "textual_hdrs": [
             ":tools_clang_include_clang_Serialization_genhdrs",
-        ],
-    },
-    "ClangDriverOptions": {
-        "textual_hdrs": [
-            "tools/clang/include/clang/Frontend/LangStandards.def",
         ],
     },
 }

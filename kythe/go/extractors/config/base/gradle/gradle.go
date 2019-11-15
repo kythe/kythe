@@ -16,7 +16,7 @@
 
 // Package gradle defines a default kythe.proto.ExtractionConfiguration for Java
 // using Gradle.
-package gradle
+package gradle // import "kythe.io/kythe/go/extractors/config/base/gradle"
 
 // DefaultConfig describes a kythe.proto.ExtractionConfiguration object for a
 // basic Gradle repository, including the extractor entrypoint using a

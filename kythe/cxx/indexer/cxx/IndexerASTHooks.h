@@ -132,10 +132,15 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitTemplateTypeParmTypeLoc(clang::TemplateTypeParmTypeLoc TL);
   bool VisitSubstTemplateTypeParmTypeLoc(
       clang::SubstTemplateTypeParmTypeLoc TL);
+
+  template <typename T>
+  bool VisitTemplateSpecializationTypeLocHelper(T TL);
   bool VisitTemplateSpecializationTypeLoc(
       clang::TemplateSpecializationTypeLoc TL);
-  // Handles AutoTypeLoc and DeducedTemplateSpecializationTypeLoc
-  bool VisitDeducedTypeLoc(clang::DeducedTypeLoc TL);
+  bool VisitDeducedTemplateSpecializationTypeLoc(
+      clang::DeducedTemplateSpecializationTypeLoc TL);
+
+  bool VisitAutoTypeLoc(clang::AutoTypeLoc TL);
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);
@@ -472,21 +477,28 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   absl::optional<GraphObserver::NodeId> RecordLookupEdgeForDependentName(
       const GraphObserver::NodeId& DId, const clang::DeclarationName& Name);
 
-  /// \brief Builds a NodeId for the DependentName at IdLoc.
+  /// \brief Builds a NodeId for the DependentName.
   ///
-  /// \param NNSLoc The qualifier preceding the name.
-  /// \param IdLoc The starting location of the name itself.
-  GraphObserver::NodeId BuildNodeIdForDependentLoc(
-      const clang::NestedNameSpecifierLoc& NNSLoc,
-      const clang::SourceLocation& IdLoc);
+  /// \param Prefix The qualifier preceding the name.
+  /// \param Identifier The identifier in question.
+  GraphObserver::NodeId BuildNodeIdForDependentIdentifier(
+      const clang::NestedNameSpecifier* Prefix,
+      const clang::IdentifierInfo* Identifier);
 
-  /// \brief Builds a NodeId for the DependentName at IdRange.
+  /// \brief Builds a NodeId for the DependentName.
   ///
-  /// \param NNSLoc The qualifier preceding the name.
-  /// \param IdRange The source range of the name itself.
-  GraphObserver::NodeId BuildNodeIdForDependentRange(
-      const clang::NestedNameSpecifierLoc& NNSLoc,
-      const clang::SourceRange& IdRange);
+  /// \param Prefix The qualifier preceding the name.
+  /// \param Identifier The DeclarationName in question.
+  GraphObserver::NodeId BuildNodeIdForDependentName(
+      const clang::NestedNameSpecifier* Prefix,
+      const clang::DeclarationName& Identifier);
+
+  /// \brief Builds a NodeId for the provided NestedNameSpecifier, depending on
+  /// its type.
+  ///
+  /// \param NNSLoc The NestedNameSpecifierLoc from which to construct a NodeId.
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForNestedNameSpecifier(
+      const clang::NestedNameSpecifier* NNS);
 
   /// \brief Builds a NodeId for the provided NestedNameSpecifier, depending on
   /// its type.
@@ -641,13 +653,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   void Work(clang::Decl* InitialDecl,
             std::unique_ptr<IndexerWorklist> NewWorklist) {
     Worklist = std::move(NewWorklist);
-    Worklist->EnqueueJob(llvm::make_unique<IndexJob>(InitialDecl));
+    Worklist->EnqueueJob(absl::make_unique<IndexJob>(InitialDecl));
     while (!ShouldStopIndexing() && Worklist->DoWork())
       ;
     Observer.iterateOverClaimedFiles(
         [this, InitialDecl](clang::FileID Id,
                             const GraphObserver::NodeId& FileNode) {
-          RunJob(llvm::make_unique<IndexJob>(InitialDecl, Id, FileNode));
+          RunJob(absl::make_unique<IndexJob>(InitialDecl, Id, FileNode));
           return !ShouldStopIndexing();
         });
     Worklist.reset();

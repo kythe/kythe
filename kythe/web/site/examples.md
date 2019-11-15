@@ -46,6 +46,8 @@ Kythe uses Bazel to build itself and has implemented Bazel
 that use Kythe's Java and C++ extractors.  This effectively allows Bazel to
 extract each compilation as it is run during the build.
 
+### Extracting the Kythe repository
+
 Add the flag
 `--experimental_action_listener=@io_kythe//kythe/extractors:extract_kzip_java`
 to make Bazel extract Java compilations and
@@ -70,6 +72,52 @@ does a full extraction using Bazel and then moves the compilations into the
 directory structure used by the
 [kythe/kythe]({{site.data.development.source_browser}}/kythe/release/kythe.sh)
 Docker image.
+
+### Extracting other Bazel based repositories
+
+You can use the Kythe release to extract compilations from other Bazel based
+repositories.
+
+{% highlight bash%}
+# Download and unpack the latest Kythe release
+wget -O /tmp/kythe.tar.gz \
+    https://github.com/kythe/kythe/releases/download/$KYTHE_VERSION/kythe-$KYTHE_VERSION.tar.gz
+tar --no-same-owner -xvzf /tmp/kythe.tar.gz --directory /opt
+echo 'KYTHE_DIR=/opt/kythe-$KYTHE_VERSION' >> $BASH_ENV
+
+# Build the repository with extraction enabled
+bazel --bazelrc=$KYTHE_DIR/extractors.bazelrc \
+    build --override_repository kythe_release=$KYTHE_DIR \
+    //...
+{% endhighlight %}
+
+## Extracting CMake based repositories
+
+**These instructions assume your environment is already set up to successfully
+run cmake for your repository**.
+
+Set the following three environment variables:
+
+*   `KYTHE_ROOT_DIRECTORY`: The absolute path for file input to be extracted.
+    This is generally the root of the repository. All files extracted will be
+    stored relative to this path.
+*   `KYTHE_OUTPUT_DIRECTORY`: The absolute path for storing output.
+*   `KYTHE_CORPUS`: The corpus label for extracted files.
+
+```shell
+$ export KYTHE_ROOT_DIRECTORY="/absolute/path/to/repo/root"
+$ export KYTHE_OUTPUT_DIRECTORY="/tmp/kythe-output"
+$ export KYTHE_CORPUS="github.com/myproject/myrepo"
+
+# $CMAKE_ROOT_DIRECTORY is passed into the -sourcedir flag. This value should be
+# the directory that contains the top-level CMakeLists.txt file. In many
+# repositories this path is the same as $KYTHE_ROOT_DIRECTORY.
+$ export CMAKE_ROOT_DIRECTORY="/absolute/path/to/cmake/root"
+
+$ /opt/kythe/tools/runextractor cmake \
+    -extractor=/opt/kythe/extractors/cxx_extractor \
+    -sourcedir=$CMAKE_ROOT_DIRECTORY
+```
 
 ## Indexing Compilations
 
@@ -155,6 +203,8 @@ basic cross-reference capabilities.  The following command can be run over the
 serving table created with the `write_tables` binary (see above).
 
 {% highlight bash %}
+# --listen localhost:8080 allows access from only this machine; change to
+# --listen :8080 to allow access from any machine
 /opt/kythe/tools/http_server \
   --public_resources /opt/kythe/web/ui \
   --listen localhost:8080 \

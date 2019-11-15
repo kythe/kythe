@@ -16,7 +16,7 @@
 
 // Package memdb implements kcd.ReadWriter with an in-memory representation,
 // suitable for testing or ephemeral service-based collections.
-package memdb
+package memdb // import "kythe.io/kythe/go/platform/kcd/memdb"
 
 import (
 	"context"
@@ -188,7 +188,7 @@ func (db *DB) WriteUnit(_ context.Context, revision, corpus, formatKey string, u
 	if err != nil {
 		return "", err
 	}
-	digest := kcd.UnitDigest(unit)
+	digest := unit.Digest()
 	if db.Unit == nil {
 		db.Unit = make(map[string]Unit)
 	}

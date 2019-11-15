@@ -46,16 +46,12 @@ load("//tools/build_rules/external_tools:external_tools_configure.bzl", "externa
 
 external_tools_configure()
 
-load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
+load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
 
 npm_install(
     name = "npm",
     package_json = "//:package.json",
     package_lock_json = "//:package-lock.json",
-    # Temporarily disable node_modules symlinking until the fix for
-    # https://github.com/bazelbuild/bazel/issues/8487 makes it into a
-    # future Bazel release
-    symlink_node_modules = False,
 )
 
 load("@npm//:install_bazel_dependencies.bzl", "install_bazel_dependencies")
@@ -69,5 +65,8 @@ ts_setup_workspace()
 # This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
 bind(
     name = "error_prone_annotations",
-    actual = "@com_google_errorprone_error_prone_annotations//jar:jar",
+    actual = "@maven//:com_google_errorprone_error_prone_annotations",
 )
+
+load("@maven//:compat.bzl", "compat_repositories")
+compat_repositories()

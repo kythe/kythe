@@ -34,7 +34,6 @@ extractors, and tools directly supported by the Kythe team.
    - directory_indexer        :: Emits Kythe file nodes for some local paths
    - entrystream              :: Generic Kythe entry stream processor
    - http_server              :: HTTP server for Kythe service APIs (xrefs, filetree, graph)
-   - indexpack                :: Converts between .kindex archives and indexpacks
    - kythe                    :: CLI for the service APIs exposed by http_server
    - kzip                     :: Utility to manipulate .kzip archives
    - read_entries             :: Dumps a GraphStore's contents as an entry stream

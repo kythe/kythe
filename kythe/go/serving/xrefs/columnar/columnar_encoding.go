@@ -15,7 +15,7 @@
  */
 
 // Package columnar implements the columnar table format for a Kythe xrefs service.
-package columnar
+package columnar // import "kythe.io/kythe/go/serving/xrefs/columnar"
 
 import (
 	"crypto/sha256"

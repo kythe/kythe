@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_test")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_test(
@@ -11,7 +13,7 @@ java_test(
         "//kythe/proto:storage_java_proto",
         "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )
 
@@ -27,7 +29,7 @@ java_test(
         "//third_party/guava",
         "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )
 
@@ -41,7 +43,7 @@ java_test(
         "//kythe/proto:storage_java_proto",
         "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )
 
@@ -54,7 +56,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/util:position_mappings",
         "//third_party/guava",
         "//third_party/truth",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )
 
@@ -69,6 +71,6 @@ java_test(
         "//third_party/guava",
         "//third_party/truth",
         "@com_google_protobuf//:protobuf_java",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )

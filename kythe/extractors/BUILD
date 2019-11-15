@@ -1,3 +1,6 @@
+load("@rules_proto//proto:defs.bzl", "proto_lang_toolchain")
+load("@rules_java//java:defs.bzl", "java_library")
+
 package(default_visibility = ["//visibility:public"])
 
 load(":extractors.bzl", "extractor_action")
@@ -11,7 +14,17 @@ exports_files(["extractors.bzl"])
 proto_lang_toolchain(
     name = "java_proto_toolchain",
     command_line = "--java_out=annotate_code:$(OUT)",
-    runtime = "@com_google_protobuf//:protobuf_java",
+    runtime = ":protobuf_java",
+)
+
+# Clone of the java protobuf runtime that also exposes jsr250 so the generated
+# proto classes with our inserted annotations can be compiled.
+java_library(
+    name = "protobuf_java",
+    exports = [
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:javax_annotation_jsr250_api",
+    ],
 )
 
 # Clone of default C++ proto toolchain with "annotate_headers" enabled for
@@ -58,6 +71,7 @@ extractor_action(
     output = "$(ACTION_ID).java.kzip",
 )
 
+# We only support Bazel rules_go 0.19.0 and up.
 extractor_action(
     name = "extract_kzip_go",
     args = [
@@ -68,7 +82,7 @@ extractor_action(
     ],
     data = ["//external:vnames_config"],
     extractor = "@io_kythe//kythe/go/extractors/cmd/bazel:bazel_go_extractor",
-    mnemonics = ["GoCompile"],
+    mnemonics = ["GoCompilePkg"],
     output = "$(ACTION_ID).go.kzip",
 )
 
@@ -117,7 +131,10 @@ extractor_action(
     ],
     data = ["//external:vnames_config"],
     extractor = "@io_kythe//kythe/go/extractors/cmd/bazel:extract_kzip",
-    mnemonics = ["TypeScriptCompile"],
+    mnemonics = [
+        "TypeScriptCompile",
+        "AngularTemplateCompile",
+    ],
     output = "$(ACTION_ID).typescript.kzip",
 )
 

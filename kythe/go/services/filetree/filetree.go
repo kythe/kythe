@@ -16,7 +16,7 @@
 
 // Package filetree defines the filetree Service interface and a simple
 // in-memory implementation.
-package filetree
+package filetree // import "kythe.io/kythe/go/services/filetree"
 
 import (
 	"context"
@@ -165,15 +165,6 @@ func (m *Map) ensureDir(corpus, root, path string) *ftpb.DirectoryReply {
 		}
 	}
 	return dir
-}
-
-func addToSet(strs []string, str string) []string {
-	for _, s := range strs {
-		if s == str {
-			return strs
-		}
-	}
-	return append(strs, str)
 }
 
 func addEntry(entries []*ftpb.DirectoryReply_Entry, e *ftpb.DirectoryReply_Entry) []*ftpb.DirectoryReply_Entry {

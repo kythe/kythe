@@ -16,7 +16,7 @@
 
 // Package compdb contains functionality necessary for extracting from a
 // compile_commands.json file.
-package compdb
+package compdb // import "kythe.io/kythe/go/extractors/config/runextractor/compdb"
 
 import (
 	"context"
@@ -123,7 +123,7 @@ func extractorEnv() ([]string, error) {
 
 	}
 	if !outputFound {
-		return nil, errors.New("Missing mandatory environment variable: KYTHE_OUTPUT_DIRECTORY")
+		return nil, errors.New("missing mandatory environment variable: KYTHE_OUTPUT_DIRECTORY")
 	}
 	return env, nil
 }

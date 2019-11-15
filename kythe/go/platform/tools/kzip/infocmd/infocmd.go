@@ -15,25 +15,31 @@
  */
 
 // Package infocmd provides the kzip command for obtaining info about a kzip archive.
-package infocmd
+package infocmd // import "kythe.io/kythe/go/platform/tools/kzip/infocmd"
 
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
+	"runtime"
+	"strings"
 
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/kzip/info"
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 
-	"bitbucket.org/creachadair/stringset"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
 )
 
 type infoCommand struct {
 	cmdutil.Info
 
-	input string
+	input           string
+	writeFormat     string
+	readConcurrency int
 }
 
 // New creates a new subcommand for obtaining info on a kzip file.
@@ -47,45 +53,43 @@ func New() subcommands.Command {
 // for the info command.
 func (c *infoCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.input, "input", "", "Path for input kzip file (required)")
+	fs.StringVar(&c.writeFormat, "write_format", "json", "Output format, can be 'json' or 'proto'")
+	fs.IntVar(&c.readConcurrency, "read_concurrency", runtime.NumCPU(), "Max concurrency of reading compilation units from the kzip. Defaults to the number of cpu cores.")
 }
 
 // Execute implements the subcommands interface and gathers info from the requested file.
 func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.input == "" {
-		return c.Fail("required --input path missing")
+		return c.Fail("Required --input path missing")
 	}
-	f, err := os.Open(c.input)
+	f, err := vfs.Open(ctx, c.input)
 	if err != nil {
-		return c.Fail("error opening archive: %v", err)
+		return c.Fail("Opening archive: %v", err)
 	}
 	defer f.Close()
-	stat, err := f.Stat()
-	if err != nil {
-		return c.Fail("unable to stat input: %v", err)
-	}
-	size := stat.Size()
-	if size == 0 {
-		return c.Fail("empty .kzip: %v", c.input)
+
+	c.writeFormat = strings.ToLower(c.writeFormat)
+	if c.writeFormat != "json" && c.writeFormat != "proto" {
+		return c.Fail("Invalid --write_format. Can be 'json' or 'proto'.")
 	}
 
-	rd, err := kzip.NewReader(f, size)
+	s, err := os.Stat(c.input)
 	if err != nil {
-		return c.Fail("error creating reader: %v", err)
+		return c.Fail("Couldn't stat kzip file: %v", err)
 	}
-
-	corpora := stringset.New()
-	var units int
-	err = rd.Scan(func(u *kzip.Unit) error {
-		units++
-		corpora.Add(u.Proto.GetVName().GetCorpus())
-		for _, ri := range u.Proto.RequiredInput {
-			corpora.Add(ri.GetVName().GetCorpus())
+	kzipInfo, err := info.KzipInfo(f, s.Size(), kzip.ReadConcurrency(c.readConcurrency))
+	if err != nil {
+		return c.Fail("Scanning kzip: %v", err)
+	}
+	switch c.writeFormat {
+	case "json":
+		m := jsonpb.Marshaler{OrigName: true}
+		if err := m.Marshal(os.Stdout, kzipInfo); err != nil {
+			return c.Fail("Marshaling json: %v", err)
 		}
-		return nil
-	})
-	if err != nil {
-		return c.Fail("error while scanning: %v", err)
+	case "proto":
+		proto.MarshalText(os.Stdout, kzipInfo)
 	}
-	fmt.Printf("%d compilation units, corpora: %s\n", units, corpora)
+
 	return subcommands.ExitSuccess
 }

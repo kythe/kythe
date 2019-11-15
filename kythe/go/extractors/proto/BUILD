@@ -6,7 +6,6 @@ go_binary(
     visibility = ["//visibility:public"],
     deps = [
         "//kythe/go/extractors/bazel",
-        "//kythe/go/extractors/bazel/extutil",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_go_proto",
         "@org_bitbucket_creachadair_stringset//:go_default_library",

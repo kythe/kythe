@@ -2,18 +2,32 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
+load("@rules_jvm_external//:defs.bzl", "maven_install")
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
+load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 
 def _rule_dependencies():
-    gazelle_dependencies()
     go_rules_dependencies()
     go_register_toolchains()
+    gazelle_dependencies()
+    rules_java_dependencies()
+    rules_proto_dependencies()
 
 def _cc_dependencies():
+    maybe(
+        http_archive,
+        name = "rules_cc",
+        sha256 = "29daf0159f0cf552fcff60b49d8bcd4f08f08506d2da6e41b07058ec50cfeaec",
+        strip_prefix = "rules_cc-b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e",
+        urls = ["https://github.com/bazelbuild/rules_cc/archive/b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e.tar.gz"],
+    )
+
     maybe(
         http_archive,
         name = "net_zlib",
@@ -37,12 +51,18 @@ def _cc_dependencies():
     )
 
     maybe(
-        http_archive,
-        name = "boringssl",  # Must match upstream workspace name.
-        # Gitiles creates gzip files with an embedded timestamp, so we cannot use
-        # sha256 to validate the archives.  We must rely on the commit hash and https.
+        git_repository,
+        name = "boringssl",
+        # Use the github mirror because the official source at
+        # https://boringssl.googlesource.com/boringssl does not allow
+        # unauthenticated git clone and the archives suffer from
+        # https://github.com/google/gitiles/issues/84 preventing the use of
+        # sha256sum on archives.
+        remote = "https://github.com/google/boringssl",
         # Commits must come from the master-with-bazel branch.
-        url = "https://boringssl.googlesource.com/boringssl/+archive/4be3aa87917b20fedc45fa1fc5b6a2f3738612ad.tar.gz",
+        # branch = "master-with-bazel",
+        commit = "e0c35d6c06fd800de1092f0b4d4326570ca2617a",
+        shallow_since = "1566966435 +0000",
     )
 
     maybe(
@@ -58,42 +78,37 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_absl",
-        sha256 = "3601822b4d3c7cc62d891a2d0993b902ad1858e4faf41d895678d3a7749ec503",
-        strip_prefix = "abseil-cpp-ca3f87560a0eef716195cadf66dc6b938a579ec6",
-        url = "https://github.com/abseil/abseil-cpp/archive/ca3f87560a0eef716195cadf66dc6b938a579ec6.zip",
+        sha256 = "c1b570e3d48527c6eb5d8668cd4d2a24b704110700adc0db44b002c058fdf5d0",
+        strip_prefix = "abseil-cpp-c6c3c1b498e4ee939b24be59cae29d59c3863be8",
+        url = "https://github.com/abseil/abseil-cpp/archive/c6c3c1b498e4ee939b24be59cae29d59c3863be8.zip",
     )
 
     maybe(
         http_archive,
         name = "com_google_googletest",
-        sha256 = "89cebb92b9a7eb32c53e180ccc0db8f677c3e838883c5fbd07e6412d7e1f12c7",
-        strip_prefix = "googletest-d175c8bf823e709d570772b038757fadf63bc632",
-        url = "https://github.com/google/googletest/archive/d175c8bf823e709d570772b038757fadf63bc632.zip",
-    )
-
-    maybe(
-        http_archive,
-        name = "com_github_gflags_gflags",
-        sha256 = "19713a36c9f32b33df59d1c79b4958434cb005b5b47dc5400a7a4b078111d9b5",
-        strip_prefix = "gflags-2.2.2",
-        url = "https://github.com/gflags/gflags/archive/v2.2.2.zip",
+        sha256 = "2f56064481649b68c98afb1b14d7b1c5e2a62ef0b48b6ba0a71f60ddd6628458",
+        strip_prefix = "googletest-8756ef905878f727e8122ba25f483c887cbc3c17",
+        url = "https://github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
     )
 
     maybe(
         http_archive,
         name = "com_github_google_glog",
-        build_file = "@io_kythe//third_party:googlelog.BUILD",
-        sha256 = "ce61883437240d650be724043e8b3c67e257690f876ca9fd53ace2a791cfea6c",
-        strip_prefix = "glog-bac8811710c77ac3718be1c4801f43d37c1aea46",
-        url = "https://github.com/google/glog/archive/bac8811710c77ac3718be1c4801f43d37c1aea46.zip",
+        strip_prefix = "glog-ba8a9f6952d04d1403b97df24e6836227751454e",
+        sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
+        url = "https://github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
+        build_file_content = "\n".join([
+            "load(\"//:bazel/glog.bzl\", \"glog_library\")",
+            "glog_library(with_gflags=0)",
+        ]),
     )
 
     maybe(
         http_archive,
         name = "org_brotli",
-        sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
-        strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9",
-        url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+        sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
+        strip_prefix = "brotli-1.0.7",
+        url = "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
     )
 
     maybe(
@@ -166,6 +181,7 @@ def _cc_dependencies():
     )
 
     lexyacc_configure()
+    cxx_extractor_register_toolchains()
 
 def _java_dependencies():
     maybe(
@@ -173,6 +189,7 @@ def _java_dependencies():
         http_archive,
         name = "google_bazel_common",
         strip_prefix = "bazel-common-b3778739a9c67eaefe0725389f03cf821392ac67",
+        sha256 = "4ae0fd0af627be9523a166b88d1298375335f418dcc13a82e9e77a0089a4d254",
         urls = ["https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip"],
     )
     maybe(
@@ -181,110 +198,34 @@ def _java_dependencies():
         commit = "ca8ad22bc1479b5675118308f88ef3fff7d26c1f",
         remote = "https://github.com/google/flogger",
     )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_code_gson_gson",
-        artifact = "com.google.code.gson:gson:2.8.5",
-        sha1 = "f645ed69d595b24d4cf8b3fbb64cc505bede8829",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_guava_guava",
-        artifact = "com.google.guava:guava:26.0-jre",
-        sha1 = "6a806eff209f36f635f943e16d97491f00f6bfab",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_re2j_re2j",
-        artifact = "com.google.re2j:re2j:1.2",
-        sha1 = "4361eed4abe6f84d982cbb26749825f285996dd2",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_code_findbugs_jsr305",
-        artifact = "com.google.code.findbugs:jsr305:3.0.1",
-        sha1 = "f7be08ec23c21485b9b5a1cf1654c2ec8c58168d",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_errorprone_error_prone_annotations",
-        artifact = "com.google.errorprone:error_prone_annotations:2.3.1",
-        sha1 = "a6a2b2df72fd13ec466216049b303f206bd66c5d",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "org_ow2_asm_asm",
-        artifact = "org.ow2.asm:asm:7.0",
-        sha1 = "d74d4ba0dee443f68fb2dcb7fcdb945a2cd89912",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "junit_junit",
-        artifact = "junit:junit:4.12",
-        sha1 = "2973d150c0dc1fefe998f834810d68f278ea58ec",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_beust_jcommander",
-        artifact = "com.beust:jcommander:1.48",
-        sha1 = "bfcb96281ea3b59d626704f74bc6d625ff51cbce",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_truth_truth",
-        artifact = "com.google.truth:truth:0.44",
-        sha1 = "11eff954c0c14da7d43276d7b3bcf71463105368",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_googlecode_java_diff_utils",
-        artifact = "com.googlecode.java-diff-utils:diffutils:1.3.0",
-        sha1 = "7e060dd5b19431e6d198e91ff670644372f60fbd",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_auto_value_auto_value",
-        artifact = "com.google.auto.value:auto-value:1.5.4",
-        sha1 = "65183ddd1e9542d69d8f613fdae91540d04e1476",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_auto_service_auto_service",
-        artifact = "com.google.auto.service:auto-service:1.0-rc4",
-        sha1 = "44954d465f3b9065388bbd2fc08a3eb8fd07917c",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_auto_auto_common",
-        artifact = "com.google.auto:auto-common:0.10",
-        sha1 = "c8f153ebe04a17183480ab4016098055fb474364",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "javax_annotation_jsr250_api",
-        artifact = "javax.annotation:jsr250-api:1.0",
-        sha1 = "5025422767732a1ab45d93abfea846513d742dcf",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_common_html_types",
-        artifact = "com.google.common.html.types:types:1.0.8",
-        sha1 = "9e9cf7bc4b2a60efeb5f5581fe46d17c068e0777",
+    maven_install(
+        name = "maven",
+        artifacts = [
+            "com.beust:jcommander:1.48",
+            "com.google.auto.service:auto-service:1.0-rc4",
+            "com.google.auto.value:auto-value:1.5.4",
+            "com.google.auto:auto-common:0.10",
+            "com.google.code.findbugs:jsr305:3.0.1",
+            "com.google.code.gson:gson:2.8.5",
+            "com.google.common.html.types:types:1.0.8",
+            "com.google.errorprone:error_prone_annotations:2.3.1",
+            "com.google.guava:guava:26.0-jre",
+            "com.google.re2j:re2j:1.2",
+            "com.google.truth:truth:1.0",
+            "com.googlecode.java-diff-utils:diffutils:1.3.0",
+            "javax.annotation:jsr250-api:1.0",
+            "junit:junit:4.12",
+            "org.checkerframework:checker-qual:2.9.0",
+            "org.ow2.asm:asm:7.0",
+        ],
+        repositories = [
+            "https://jcenter.bintray.com",
+            "https://maven.google.com",
+            "https://repo1.maven.org/maven2",
+        ],
+        fetch_sources = True,
+        generate_compat_repositories = True, # Required by bazel-common's dependencies
+        version_conflict_policy = "pinned",
     )
 
 def _go_dependencies():
@@ -296,7 +237,7 @@ def _go_dependencies():
         importpath = "github.com/golang/protobuf",
         patch_args = ["-p1"],
         patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
-        tag = "v1.3.0",
+        tag = "v1.3.1",
     )
 
     maybe(
@@ -326,7 +267,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sync",
-        commit = "42b317875d0f",
+        commit = "112230192c58",
         custom = "sync",
         custom_git = "https://github.com/golang/sync.git",
         importpath = "golang.org/x/sync",
@@ -359,7 +300,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "com_github_sourcegraph_go_langserver",
-        commit = "e526744fd766a8f42e55bd92a3843c2afcdbf08c",
+        tag = "v2.0.0",
         custom = "langserver",
         importpath = "github.com/sourcegraph/go-langserver",
     )
@@ -383,7 +324,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_tools",
-        commit = "589c23e65e65055d47b9ad4a99723bc389136265",
+        commit = "c8855242db9c1762032abe33c2dff50de3ec9d05",
         custom = "x_tools",
         custom_git = "https://github.com/golang/tools.git",
         importpath = "golang.org/x/tools",
@@ -403,7 +344,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_net",
-        commit = "3a22650c66bd",
+        commit = "3b0461eec859",
         custom = "x_net",
         custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
@@ -465,7 +406,7 @@ def _go_dependencies():
         go_repository,
         name = "com_github_apache_beam",
         build_file_proto_mode = "disable",
-        commit = "3cf3a4708c588e32e85a1d4cfdb29ab5a0203efc",
+        commit = "7688bcfc8ebb4bedf26c5c3b3fe0e13c0ec2aa6d",
         custom = "beam",
         importpath = "github.com/apache/beam",
     )
@@ -524,7 +465,7 @@ def _go_dependencies():
     maybe(
         go_repository,
         name = "org_golang_x_sys",
-        commit = "49385e6e15226593f68b26af201feec29d5bba22",
+        commit = "d0b11bdaac8a",
         custom = "x_sys",
         custom_git = "https://github.com/golang/sys.git",
         importpath = "golang.org/x/sys",
@@ -555,10 +496,11 @@ def _go_dependencies():
 
     maybe(
         go_repository,
-        name = "com_github_ghodss_yaml",
-        commit = "c7ce16629ff4cd059ed96ed06419dd3856fd3577",
-        custom = "ghodss_yaml",
-        importpath = "github.com/ghodss/yaml",
+        name = "io_k8s_sigs_yaml",
+        custom = "k8s_yaml",
+        custom_git = "https://github.com/kubernetes-sigs/yaml",
+        importpath = "sigs.k8s.io/yaml",
+        tag = "v1.1.0",
     )
 
     maybe(
@@ -620,9 +562,9 @@ def _go_dependencies():
     maybe(
         http_archive,
         name = "org_brotli_go",
-        sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
-        strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9/go",
-        url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+        sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
+        strip_prefix = "brotli-1.0.7/go",
+        url = "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
     )
 
 def _bindings():
@@ -653,7 +595,7 @@ def _bindings():
     maybe(
         native.bind,
         name = "gson",  # required by @com_google_protobuf
-        actual = "@com_google_code_gson_gson//jar",
+        actual = "@maven//:com_google_code_gson_gson",
     )
 
     maybe(
@@ -685,32 +627,34 @@ def _sample_ui_dependencies():
         version = "2.5.3",
     )
 
+def _py_dependencies():
+    maybe(
+        http_archive,
+        name = "rules_python",  # Needed by com_google_protobuf.
+        sha256 = "e5470e92a18aa51830db99a4d9c492cc613761d5bdb7131c04bd92b9834380f6",
+        strip_prefix = "rules_python-4b84ad270387a7c439ebdccfd530e2339601ef27",
+        urls = ["https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz"],
+    )
+
 def kythe_dependencies(sample_ui = True):
     """Defines external repositories for Kythe dependencies.
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
     """
+    _py_dependencies()
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
-    # TODO(justbuchanan): update to the next tagged release when available
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "ef62ee52bedc3a0ec0aeb7911279243119d53eac7f8bbbec833761c07e802bcb",
-        strip_prefix = "protobuf-8e5ea65953f3c47e01bca360ecf3abdf2c8b1c33",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/8e5ea65953f3c47e01bca360ecf3abdf2c8b1c33.zip"],
-    )
-
-    maybe(
-        http_archive,
-        name = "bazel_skylib",
-        sha256 = "ca4e3b8e4da9266c3a9101c8f4704fe2e20eb5625b2a6a7d2d7d45e3dd4efffd",
-        strip_prefix = "bazel-skylib-0.5.0",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.5.0.zip"],
+        sha256 = "2ba20d91341ef88259896a5dfaf55666d11648caa0964342991e30a96b7cd630",
+        strip_prefix = "protobuf-3.10.0-rc1",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.10.0-rc1.zip"],
+        repo_mapping = {"@zlib": "@net_zlib"},
     )
 
     maybe(
@@ -721,8 +665,9 @@ def kythe_dependencies(sample_ui = True):
         strip_prefix = "llvmbzlgen-435bad1d07f7a8d32979d66cd5547e1b32dca812",
     )
 
+    _bindings()
     _rule_dependencies()
+
     if sample_ui:
         _sample_ui_dependencies()
-    _bindings()
     _extractor_image_dependencies()

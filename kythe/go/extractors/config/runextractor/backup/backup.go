@@ -26,7 +26,7 @@
 //    defer tmp.Release()
 //    // ... do real work ...
 //    tmp.Restore()
-package backup
+package backup // import "kythe.io/kythe/go/extractors/config/runextractor/backup"
 
 import (
 	"io"

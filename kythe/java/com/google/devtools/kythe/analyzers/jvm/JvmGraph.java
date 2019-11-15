@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.jvm;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
@@ -55,17 +56,35 @@ public class JvmGraph {
   }
 
   /** Returns the {@link VName} corresponding to the given class/enum/interface type. */
+  @Deprecated
   public static VName getReferenceVName(Type.ReferenceType referenceType) {
-    return VName.newBuilder()
+    return getReferenceVName(CorpusPath.EMPTY, referenceType);
+  }
+
+  /** Returns the {@link VName} corresponding to the given class/enum/interface type. */
+  public static VName getReferenceVName(CorpusPath corpusPath, Type.ReferenceType referenceType) {
+    return corpusPath
+        .toVNameBuilder()
         .setSignature(referenceType.qualifiedName)
         .setLanguage(JVM_LANGUAGE)
         .build();
   }
 
   /** Returns the {@link VName} corresponding to the given method type. */
+  @Deprecated
   public static VName getMethodVName(
       Type.ReferenceType parentClass, String name, Type.MethodType methodType) {
-    return VName.newBuilder()
+    return getMethodVName(CorpusPath.EMPTY, parentClass, name, methodType);
+  }
+
+  /** Returns the {@link VName} corresponding to the given method type. */
+  public static VName getMethodVName(
+      CorpusPath corpusPath,
+      Type.ReferenceType parentClass,
+      String name,
+      Type.MethodType methodType) {
+    return corpusPath
+        .toVNameBuilder()
         .setSignature(methodSignature(parentClass, name, methodType))
         .setLanguage(JVM_LANGUAGE)
         .build();
@@ -77,20 +96,45 @@ public class JvmGraph {
    * <p>Parameter indices are used because names are only optionally retained in class files and not
    * required by the spec.
    */
+  @Deprecated
   public static VName getParameterVName(
       Type.ReferenceType parentClass,
       String methodName,
       Type.MethodType methodType,
       int parameterIndex) {
-    return VName.newBuilder()
+    return getParameterVName(CorpusPath.EMPTY, parentClass, methodName, methodType, parameterIndex);
+  }
+
+  /**
+   * Returns the {@link VName} corresponding to the given parameter of a method type.
+   *
+   * <p>Parameter indices are used because names are only optionally retained in class files and not
+   * required by the spec.
+   */
+  public static VName getParameterVName(
+      CorpusPath corpusPath,
+      Type.ReferenceType parentClass,
+      String methodName,
+      Type.MethodType methodType,
+      int parameterIndex) {
+    return corpusPath
+        .toVNameBuilder()
         .setSignature(parameterSignature(parentClass, methodName, methodType, parameterIndex))
         .setLanguage(JVM_LANGUAGE)
         .build();
   }
 
   /** Returns the {@link VName} corresponding to the given field type. */
+  @Deprecated
   public static VName getFieldVName(Type.ReferenceType parentClass, String name) {
-    return VName.newBuilder()
+    return getFieldVName(CorpusPath.EMPTY, parentClass, name);
+  }
+
+  /** Returns the {@link VName} corresponding to the given field type. */
+  public static VName getFieldVName(
+      CorpusPath corpusPath, Type.ReferenceType parentClass, String name) {
+    return corpusPath
+        .toVNameBuilder()
         .setSignature(parentClass.qualifiedName + "." + name)
         .setLanguage(JVM_LANGUAGE)
         .build();
@@ -110,55 +154,107 @@ public class JvmGraph {
   }
 
   /** Emits and returns a Kythe {@code record} node for a JVM class. */
+  @Deprecated
   public VName emitClassNode(Type.ReferenceType refType) {
-    return emitNode(NodeKind.RECORD_CLASS, refType.qualifiedName, markedSource(refType));
+    return emitClassNode(CorpusPath.EMPTY, refType);
+  }
+
+  /** Emits and returns a Kythe {@code record} node for a JVM class. */
+  public VName emitClassNode(CorpusPath corpusPath, Type.ReferenceType refType) {
+    return emitNode(
+        NodeKind.RECORD_CLASS, getReferenceVName(corpusPath, refType), markedSource(refType));
   }
 
   /** Emits and returns a Kythe {@code interface} node for a JVM interface. */
+  @Deprecated
   public VName emitInterfaceNode(Type.ReferenceType refType) {
-    return emitNode(NodeKind.INTERFACE, refType.qualifiedName, markedSource(refType));
+    return emitInterfaceNode(CorpusPath.EMPTY, refType);
+  }
+  /** Emits and returns a Kythe {@code interface} node for a JVM interface. */
+  public VName emitInterfaceNode(CorpusPath corpusPath, Type.ReferenceType refType) {
+    return emitNode(
+        NodeKind.INTERFACE, getReferenceVName(corpusPath, refType), markedSource(refType));
   }
 
   /** Emits and returns a Kythe {@code sum} node for a JVM enum class. */
+  @Deprecated
   public VName emitEnumNode(Type.ReferenceType refType) {
-    return emitNode(NodeKind.SUM_ENUM_CLASS, refType.qualifiedName, markedSource(refType));
+    return emitEnumNode(CorpusPath.EMPTY, refType);
+  }
+
+  /** Emits and returns a Kythe {@code sum} node for a JVM enum class. */
+  public VName emitEnumNode(CorpusPath corpusPath, Type.ReferenceType refType) {
+    return emitNode(
+        NodeKind.SUM_ENUM_CLASS, getReferenceVName(corpusPath, refType), markedSource(refType));
   }
 
   /** Emits and returns a Kythe {@code variable} node for a JVM field. */
+  @Deprecated
   public VName emitFieldNode(Type.ReferenceType parentClass, String name) {
-    return emitNode(NodeKind.VARIABLE_FIELD, parentClass.qualifiedName + "." + name);
+    return emitFieldNode(CorpusPath.EMPTY, parentClass, name);
+  }
+
+  /** Emits and returns a Kythe {@code variable} node for a JVM field. */
+  public VName emitFieldNode(CorpusPath corpusPath, Type.ReferenceType parentClass, String name) {
+    return emitNode(NodeKind.VARIABLE_FIELD, getFieldVName(corpusPath, parentClass, name));
+  }
+
+  /** Emits and returns a Kythe {@code function} node for a JVM method. */
+  @Deprecated
+  public VName emitMethodNode(
+      Type.ReferenceType parentClass, String methodName, Type.MethodType type) {
+    return emitMethodNode(CorpusPath.EMPTY, parentClass, methodName, type);
   }
 
   /** Emits and returns a Kythe {@code function} node for a JVM method. */
   public VName emitMethodNode(
-      Type.ReferenceType parentClass, String methodName, Type.MethodType type) {
+      CorpusPath corpusPath,
+      Type.ReferenceType parentClass,
+      String methodName,
+      Type.MethodType type) {
     return emitNode(
         methodName.equals("<init>") ? NodeKind.FUNCTION_CONSTRUCTOR : NodeKind.FUNCTION,
-        methodSignature(parentClass, methodName, type));
+        getMethodVName(corpusPath, parentClass, methodName, type));
   }
 
   /**
    * Emits and returns a Kythe {@code variable/local/parameter} node for a JVM parameter to a
    * method.
    *
-   * @see #getParameterVName(ReferenceType, String, MethodType, int)
+   * @see #getParameterVName(Type.ReferenceType, String, Type.MethodType, int)
+   */
+  @Deprecated
+  public VName emitParameterNode(
+      Type.ReferenceType parentClass,
+      String methodName,
+      Type.MethodType methodType,
+      int parameterIndex) {
+    return emitParameterNode(CorpusPath.EMPTY, parentClass, methodName, methodType, parameterIndex);
+  }
+
+  /**
+   * Emits and returns a Kythe {@code variable/local/parameter} node for a JVM parameter to a
+   * method.
+   *
+   * @see #getParameterVName(Type.ReferenceType, String, Type.MethodType, int)
    */
   public VName emitParameterNode(
+      CorpusPath corpusPath,
       Type.ReferenceType parentClass,
       String methodName,
       Type.MethodType methodType,
       int parameterIndex) {
     return emitNode(
         NodeKind.VARIABLE_PARAMETER,
-        parameterSignature(parentClass, methodName, methodType, parameterIndex));
+        getParameterVName(corpusPath, parentClass, methodName, methodType, parameterIndex));
   }
 
-  private VName emitNode(NodeKind nodeKind, String signature) {
-    return emitNode(nodeKind, signature, null);
+  private VName emitNode(NodeKind nodeKind, VName name) {
+    return emitNode(nodeKind, name, null);
   }
 
-  private VName emitNode(NodeKind nodeKind, String signature, MarkedSource markedSource) {
-    NodeBuilder builder = entrySets.newNode(nodeKind).setSignature(signature);
+  private VName emitNode(NodeKind nodeKind, VName name, MarkedSource markedSource) {
+    NodeBuilder builder = entrySets.newNode(nodeKind, name);
     if (markedSource != null) {
       builder.setProperty("code", markedSource);
     }

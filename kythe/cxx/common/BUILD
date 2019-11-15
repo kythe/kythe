@@ -25,7 +25,6 @@ cc_library(
     visibility = [PUBLIC_VISIBILITY],
     deps = [
         ":status_or",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_absl//absl/strings",
@@ -53,6 +52,7 @@ cc_library(
     hdrs = ["path_utils.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        ":status_or",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
     ],
@@ -109,13 +109,13 @@ cc_library(
         "//external:zlib",
         "//kythe/cxx/common/schema:edges",
         "//kythe/proto:analysis_cc_proto",
+        "//kythe/proto:metadata_cc_proto",
         "//kythe/proto:storage_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
-        "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:cc_wkt_protos",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
@@ -141,7 +141,6 @@ cc_library(
         "//kythe/proto:graph_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "//kythe/proto:xref_cc_proto",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_protobuf//:protobuf",
@@ -216,8 +215,9 @@ cc_library(
     deps = [
         ":net_client",
         "//external:zlib",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
     ],
@@ -241,7 +241,6 @@ cc_library(
     deps = [
         ":kythe_uri",
         "//third_party:gtest",
-        "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
     ],
@@ -277,6 +276,14 @@ cc_library(
 )
 
 cc_library(
+    name = "kzip_encoding",
+    hdrs = ["kzip_encoding.h"],
+    visibility = [
+        "//visibility:private",
+    ],
+)
+
+cc_library(
     name = "kzip_reader",
     srcs = ["kzip_reader.cc"],
     hdrs = ["kzip_reader.h"],
@@ -286,11 +293,14 @@ cc_library(
     deps = [
         ":index_reader",
         ":json_proto",
+        ":kzip_encoding",
         ":libzip/error",
         ":status_or",
         "//kythe/proto:analysis_cc_proto",
         "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@org_libzip//:zip",
@@ -303,6 +313,8 @@ cc_test(
     data = [
         "//kythe/cxx/common/testdata:empty.kzip",
         "//kythe/cxx/common/testdata:malformed.kzip",
+        "//kythe/cxx/common/testdata:missing-pbunit.kzip",
+        "//kythe/cxx/common/testdata:missing-unit.kzip",
         "//kythe/cxx/common/testdata:stringset.kzip",
     ],
     deps = [
@@ -324,10 +336,12 @@ cc_library(
     deps = [
         ":index_writer",
         ":json_proto",
+        ":kzip_encoding",
         ":libzip/error",
         "//kythe/proto:analysis_cc_proto",
         "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@org_libzip//:zip",

@@ -15,7 +15,7 @@
  */
 
 // Package facts defines constants for Kythe facts.
-package facts
+package facts // import "kythe.io/kythe/go/util/schema/facts"
 
 const prefix = "/kythe/" // duplicated to avoid a circular import
 

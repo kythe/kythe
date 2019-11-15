@@ -16,7 +16,7 @@
 
 // Package testutil provides support functions for unit testing implementations
 // of the kcd.ReadWriter interface.
-package testutil
+package testutil // import "kythe.io/kythe/go/platform/kcd/testutil"
 
 import (
 	"context"

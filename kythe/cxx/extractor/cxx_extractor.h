@@ -30,6 +30,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/index_writer.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/extractor/cxx_details.h"
 #include "kythe/cxx/extractor/language.h"
 #include "kythe/proto/analysis.pb.h"
@@ -172,8 +173,17 @@ class CompilationWriter {
   /// \return true on success, false on failure
   bool SetVNameConfiguration(const std::string& json_string);
   /// \brief Configure the path used for the root.
-  void set_root_directory(const std::string& dir) { root_directory_ = dir; }
+  void set_root_directory(const std::string& dir) {
+    canonicalizer_.reset();
+    root_directory_ = dir;
+  }
   const std::string& root_directory() const { return root_directory_; }
+
+  /// \brief Configure the path canonicalization configuration.
+  void set_path_canonicalization_policy(PathCanonicalizer::Policy policy) {
+    canonicalizer_.reset();
+    path_policy_ = policy;
+  }
   /// \brief Don't include empty directories.
   void set_exclude_empty_dirs(bool exclude) { exclude_empty_dirs_ = exclude; }
   /// \brief Don't include files read during autoconfiguration.
@@ -215,6 +225,9 @@ class CompilationWriter {
   /// \param path The path (likely from Clang) to the file.
   kythe::proto::VName VNameForPath(const std::string& path);
 
+  /// \brief Attempts to generate a root-relative path.
+  std::string RelativizePath(absl::string_view path);
+
  private:
   /// Called to read and insert content for extra include files.
   void InsertExtraIncludes(kythe::proto::CompilationUnit* unit,
@@ -229,6 +242,9 @@ class CompilationWriter {
   std::string corpus_ = "";
   /// The directory to use to generate relative paths.
   std::string root_directory_ = ".";
+  /// The policy to use when generating relative paths.
+  PathCanonicalizer::Policy path_policy_ =
+      PathCanonicalizer::Policy::kCleanOnly;
   /// If nonempty, the name of the target that generated this compilation.
   std::string target_name_;
   /// If nonempty, the rule type that generated this compilation.
@@ -248,6 +264,10 @@ class CompilationWriter {
   bool exclude_empty_dirs_ = false;
   /// Don't include files read during the autoconfiguration phase.
   bool exclude_autoconfiguration_files_ = false;
+
+  /// The canonicalizer to use when constructing relative paths.
+  /// Lazily built from policy and root above.
+  absl::optional<PathCanonicalizer> canonicalizer_;
 };
 
 /// \brief Creates a `FrontendAction` that records information about a
@@ -286,6 +306,10 @@ class ExtractorConfiguration {
   /// \brief Record the output path produced by this compilation.
   void SetCompilationOutputPath(const std::string& path) {
     compilation_output_path_ = path;
+  }
+  /// \brief Sets the canonicalization policy to use for VName paths.
+  void SetPathCanonizalizationPolicy(PathCanonicalizer::Policy policy) {
+    index_writer_.set_path_canonicalization_policy(policy);
   }
   /// \brief Executes the extractor with this configuration, returning true on
   /// success.

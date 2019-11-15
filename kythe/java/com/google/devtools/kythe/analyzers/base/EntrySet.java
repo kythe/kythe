@@ -96,10 +96,10 @@ public final class EntrySet {
     if (emitted) {
       logger.atWarning().log("EntrySet already emitted: %s", this);
     }
+    emitted = true;
     for (Map.Entry<String, byte[]> entry : properties.entrySet()) {
       emitter.emit(source, edgeKind, target, entry.getKey(), entry.getValue());
     }
-    emitted = true;
   }
 
   /**

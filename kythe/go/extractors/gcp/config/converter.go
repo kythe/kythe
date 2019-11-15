@@ -17,7 +17,7 @@
 // Package config contains logic for converting
 // kythe.proto.extraction.RepoConfig to cloudbuild.yaml format as specified by
 // https://cloud.google.com/cloud-build/docs/build-config.
-package config
+package config // import "kythe.io/kythe/go/extractors/gcp/config"
 
 import (
 	"fmt"
@@ -28,9 +28,9 @@ import (
 
 	rpb "kythe.io/kythe/proto/repo_go_proto"
 
-	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/api/cloudbuild/v1"
+	"sigs.k8s.io/yaml"
 )
 
 // Constants that map input/output substitutions.

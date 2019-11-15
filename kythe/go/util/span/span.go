@@ -16,7 +16,7 @@
 
 // Package span implements utilities to resolve byte offsets within a file to
 // line and column numbers.
-package span
+package span // import "kythe.io/kythe/go/util/span"
 
 import (
 	"bytes"

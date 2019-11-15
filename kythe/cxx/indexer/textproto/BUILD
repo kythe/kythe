@@ -9,6 +9,9 @@ cc_binary(
         "//kythe/cxx/common/indexing:output",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
         "@com_google_protobuf//:protobuf",
     ],
 )

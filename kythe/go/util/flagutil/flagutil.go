@@ -16,13 +16,14 @@
 
 // Package flagutil is a collection of helper functions for Kythe binaries using
 // the flag package.
-package flagutil
+package flagutil // import "kythe.io/kythe/go/util/flagutil"
 
 import (
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"kythe.io/kythe/go/util/build"
@@ -137,6 +138,54 @@ func (f *StringSet) String() string {
 func (f *StringSet) Get() interface{} {
 	if f == nil {
 		return stringset.Set(nil)
+	}
+	return *f
+}
+
+// StringMultimap implements a flag.Value that accepts an set of key-value entries as a CSV.
+type StringMultimap map[string]stringset.Set
+
+// Set implements part of the flag.Getter interface and will append new values to the flag.
+func (f *StringMultimap) Set(s string) error {
+	if *f == nil {
+		*f = make(map[string]stringset.Set)
+	}
+	m := *f
+	for _, e := range strings.Split(s, ",") {
+		pair := strings.SplitN(e, "=", 2)
+		if len(pair) != 2 {
+			return fmt.Errorf("invalid key-value entry: %q", e)
+		}
+		key, val := pair[0], pair[1]
+		set := m[key]
+		if set == nil {
+			set = stringset.New()
+			m[key] = set
+		}
+		set.Add(val)
+	}
+	return nil
+}
+
+// String implements part of the flag.Getter interface and returns a string-ish value for the flag.
+func (f *StringMultimap) String() string {
+	if f == nil || *f == nil {
+		return "{}"
+	}
+	entries := make([]string, 0, len(*f))
+	for k, vs := range *f {
+		for _, v := range vs.Elements() {
+			entries = append(entries, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
+	sort.Strings(entries)
+	return strings.Join(entries, ",")
+}
+
+// Get implements flag.Getter and returns a slice of string values.
+func (f *StringMultimap) Get() interface{} {
+	if f == nil {
+		return map[string]stringset.Set(nil)
 	}
 	return *f
 }

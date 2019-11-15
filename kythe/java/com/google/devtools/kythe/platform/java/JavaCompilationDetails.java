@@ -25,13 +25,14 @@ import com.google.common.collect.Iterables;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.java.JavacOptionsUtils.ModifiableOptions;
 import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitBasedJavaFileManager;
-import com.google.devtools.kythe.platform.java.filemanager.JavaFileStoreBasedFileManager;
+import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitPathFileManager;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import java.io.Writer;
+import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.util.List;
 import javax.annotation.processing.Processor;
@@ -40,6 +41,7 @@ import javax.tools.Diagnostic.Kind;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
 
 /** Provides a {@link JavacAnalyzer} with access to compilation information. */
 public class JavaCompilationDetails {
@@ -49,7 +51,7 @@ public class JavaCompilationDetails {
   private final CompilationUnit compilationUnit;
   private final Throwable analysisCrash;
   private final Charset encoding;
-  private final JavaFileStoreBasedFileManager fileManager;
+  private final StandardJavaFileManager fileManager;
 
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
@@ -61,7 +63,8 @@ public class JavaCompilationDetails {
   public static JavaCompilationDetails createDetails(
       CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider,
-      List<Processor> processors) {
+      List<Processor> processors,
+      boolean useExperimentalPathFileManager) {
 
     JavaCompiler compiler = JavacAnalysisDriver.getCompiler();
     DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
@@ -70,13 +73,21 @@ public class JavaCompilationDetails {
     List<String> options = optionsFromCompilationUnit(compilationUnit, processors);
     Charset encoding = JavacOptionsUtils.getEncodingOption(options);
 
-    // Create a JavaFileStoreBasedFileManager that uses the fileDataProvider and compilationUnit
-    JavaFileStoreBasedFileManager fileManager =
-        new CompilationUnitBasedJavaFileManager(
-            fileDataProvider,
-            compilationUnit,
-            compiler.getStandardFileManager(diagnosticsCollector, null, null),
-            encoding);
+    // Create a CompilationUnitBasedJavaFileManager that uses the fileDataProvider and
+    // compilationUnit
+    StandardJavaFileManager fileManager =
+        // The Path-based JavaFileManager is only compatible with JDK9+ and for now,
+        // we have to remain compatible with JDK8.
+        useExperimentalPathFileManager && isJdk9OrNewer()
+            ? new CompilationUnitPathFileManager(
+                compilationUnit,
+                fileDataProvider,
+                compiler.getStandardFileManager(diagnosticsCollector, null, null))
+            : new CompilationUnitBasedJavaFileManager(
+                fileDataProvider,
+                compilationUnit,
+                compiler.getStandardFileManager(diagnosticsCollector, null, null),
+                encoding);
 
     Iterable<? extends JavaFileObject> sources =
         fileManager.getJavaFileObjectsFromStrings(compilationUnit.getSourceFileList());
@@ -121,7 +132,7 @@ public class JavaCompilationDetails {
       CompilationUnit compilationUnit,
       Throwable analysisCrash,
       Charset encoding,
-      JavaFileStoreBasedFileManager fileManager) {
+      StandardJavaFileManager fileManager) {
     this.javac = javac;
     this.diagnostics = diagnostics;
     this.asts = asts;
@@ -179,7 +190,7 @@ public class JavaCompilationDetails {
   }
 
   /** @return The file manager for the source files in this compilation */
-  public JavaFileStoreBasedFileManager getFileManager() {
+  public StandardJavaFileManager getFileManager() {
     return fileManager;
   }
 
@@ -199,26 +210,15 @@ public class JavaCompilationDetails {
     return arguments.removeUnsupportedOptions().build();
   }
 
-  /** Writes nothing, used to reduce noise from the javac analysis output. */
-  private static class NullWriter extends Writer {
-    private static NullWriter instance = null;
-
-    private NullWriter() {}
-
-    public static NullWriter getInstance() {
-      if (instance == null) {
-        instance = new NullWriter();
-      }
-      return instance;
+  /** Returns true if the runtime version is >= JRE 9 */
+  private static boolean isJdk9OrNewer() {
+    try {
+      Method versionMethod = Runtime.class.getMethod("version");
+      Object version = versionMethod.invoke(null);
+      return ((int) version.getClass().getMethod("major").invoke(version) >= 9);
+    } catch (ReflectiveOperationException e) {
+      logger.atInfo().log("Falling back to legacy FileManager on JDK8 or older");
+      return false;
     }
-
-    @Override
-    public void flush() {}
-
-    @Override
-    public void close() {}
-
-    @Override
-    public void write(char[] cbuf, int off, int len) {}
   }
 }

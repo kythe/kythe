@@ -16,7 +16,7 @@
 
 // Package config defines configuration settings for extracting compilation records from
 // a repository using a non-bazel build system.
-package config
+package config // import "kythe.io/kythe/go/extractors/config"
 
 import (
 	"bytes"
@@ -119,7 +119,7 @@ WORKDIR %[2]s
 	for _, cmd := range config.RunCommand {
 		fmt.Fprintf(&buf, "RUN %s ", cmd.Command)
 		for i, arg := range cmd.Arg {
-			fmt.Fprintf(&buf, shell.Quote(arg))
+			fmt.Fprintf(&buf, "%s", shell.Quote(arg))
 			if i < len(cmd.Arg)-1 {
 				fmt.Fprintf(&buf, " ")
 			}

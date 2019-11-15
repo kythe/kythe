@@ -15,11 +15,12 @@
  */
 
 // Package kythe implements the kcd.Unit interface for Kythe compilations.
-package kythe
+package kythe // import "kythe.io/kythe/go/platform/kcd/kythe"
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
-	"io"
 	"sort"
 	"strings"
 
@@ -94,15 +95,16 @@ func (u Unit) Canonicalize() {
 }
 
 // Digest satisfies part of the kcd.Unit interface.
-func (u Unit) Digest(w io.Writer) {
+func (u Unit) Digest() string {
+	sha := sha256.New()
 	pb := u.Proto
 	if pb == nil {
 		pb = new(apb.CompilationUnit)
 	}
 	put := func(tag string, ss ...string) {
-		fmt.Fprintln(w, tag)
+		fmt.Fprintln(sha, tag)
 		for _, s := range ss {
-			fmt.Fprint(w, s, "\x00")
+			fmt.Fprint(sha, s, "\x00")
 		}
 	}
 	putv := func(tag string, v *spb.VName) {
@@ -124,6 +126,7 @@ func (u Unit) Digest(w io.Writer) {
 	for _, d := range pb.Details {
 		put("DET", d.TypeUrl, string(d.Value))
 	}
+	return hex.EncodeToString(sha.Sum(nil)[:])
 }
 
 // ConvertUnit reports whether v can be converted to a Kythe kcd.Unit, and if

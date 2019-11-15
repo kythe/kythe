@@ -17,7 +17,7 @@
 // Package validation contains logic for verifing the contents of a kzip.
 // For now we consider a set of kzip files "valid" if they contain files
 // covering all of a given source repo.
-package validation
+package validation // import "kythe.io/kythe/go/extractors/validation"
 
 import (
 	"fmt"
