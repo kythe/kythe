@@ -1,5 +1,17 @@
 # Release Notes
 
+## [v0.0.35] - 2019-11-15
+
+#### Bug Fixes
+
+* **release:**  include jsr250-api.jar in release archive (#3778) ([1d8fcb97](https://github.com/kythe/kythe/commit/1d8fcb97d20481ea614eae08d9a43a2a547f645e))
+
+#### Features
+
+* **java_indexer:**  plumb CorpusPaths for JVM nodes (#4205) ([d83ee7ca](https://github.com/kythe/kythe/commit/d83ee7caddf3941360e53d329710968e070698b0))
+* **jvm_indexer:**  allow JVM nodes to be refined by corpus/root/path (#4204) ([952d1568](https://github.com/kythe/kythe/commit/952d15680549942322719d19c7fe6eee344f8d74))
+* **serving:**  return known generators in DecorationsReply (#4201) ([486c10a3](https://github.com/kythe/kythe/commit/486c10a365c8c7afdf4a1af553bc3c123f448ae6))
+
 ## [v0.0.34] - 2019-11-08
 
 #### Bug Fixes
@@ -719,7 +731,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.34...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.35...HEAD
+[v0.0.35] https://github.com/kythe/kythe/compare/v0.0.34...v0.0.35
 [v0.0.34] https://github.com/kythe/kythe/compare/v0.0.33...v0.0.34
 [v0.0.33] https://github.com/kythe/kythe/compare/v0.0.32...v0.0.33
 [v0.0.32] https://github.com/kythe/kythe/compare/v0.0.31...v0.0.32
