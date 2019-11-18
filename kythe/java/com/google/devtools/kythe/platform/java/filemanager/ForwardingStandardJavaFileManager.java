@@ -297,6 +297,10 @@ public class ForwardingStandardJavaFileManager
       String methodName, ReflectiveOperationException error, Class<IOException> declaredType)
       throws IOException {
     if (error instanceof InvocationTargetException) {
+      // Log the exception because the propagated destination may not provide a nice error log.
+      logger.atWarning().withCause(error).log(
+          "Error in underlying filemanager. A more detailed message may have been output to"
+              + " stderr.");
       Throwables.propagateIfPossible(((InvocationTargetException) error).getCause(), declaredType);
     }
     return unsupportedVersionError(methodName, error);
