@@ -42,9 +42,4 @@ cc_binary(
     ],
 )
 
-filegroup(
-    name = "proto_metadata_plugin_source",
-    srcs = [
-        "proto_metadata_plugin.cc",
-    ],
-)
+exports_files(["proto_metadata_plugin.cc"])

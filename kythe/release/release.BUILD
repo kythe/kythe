@@ -74,7 +74,7 @@ proto_lang_toolchain(
 
 cc_binary(
     name = "cc_proto_metadata_plugin",
-    srcs = ["tools/cc_proto_metadata_plugin.cc"],
+    srcs = ["tools/proto_metadata_plugin.cc"],
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
