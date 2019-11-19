@@ -1,6 +1,6 @@
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
@@ -10,6 +10,7 @@ load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
+load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_stream_repository")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@rules_python//python:repositories.bzl", "py_repositories")
 load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_repositories = "repositories")
@@ -25,6 +26,21 @@ def _rule_dependencies():
 
 def _gazelle_ignore(**kwargs):
     """Dummy macro which causes gazelle to see a repository as already defined."""
+
+def _proto_dependencies():
+    # Rather than pull down the entire Bazel source repository for a single file,
+    # just grab the file we need and use it locally.
+    maybe(
+        build_event_stream_repository,
+        name = "build_event_stream_proto",
+        revision = "1.1.0",
+        sha256s = {
+            "build_event_stream.proto": "6942888c75ef5e6ab94364604cdd297f207ab119b425681eb7bf523e206d96a7",
+            "command_line.proto": "a6fb6591aa50794431787169bc4fae16105ef5c401e7c30ecf0f775e0ab25c2c",
+            "invocation_policy.proto": "5312a440a5d16e9bd72cd8561ad2f5d2b29579f19df7e13af1517c6ad9e7fa64",
+            "option_filters.proto": "e3e8dfa9a4e05683bf1853a0be29fae46c753b18ad3d42b92bedcb412577f20f",
+        },
+    )
 
 def _cc_dependencies():
     maybe(
@@ -1141,6 +1157,8 @@ def kythe_dependencies(sample_ui = True):
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
     """
+    _proto_dependencies()
+    _py_dependencies()
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
