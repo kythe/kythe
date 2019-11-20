@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.WatchService;
@@ -193,6 +194,9 @@ public final class CompilationUnitFileSystem extends FileSystem {
     final Path abs = getRootDirectory().resolve(dir).normalize();
     Map<String, String> entries = compilationFileTree.list(abs.toString());
     if (entries == null) {
+      if (!CompilationUnitFileTree.DIRECTORY_DIGEST.equals(digest(abs))) {
+        throw new NotDirectoryException(dir.toString());
+      }
       throw new FileNotFoundException(dir.toString());
     }
     return entries.keySet().stream().map(k -> dir.resolve(k)).collect(Collectors.toSet());
