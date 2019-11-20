@@ -39,7 +39,7 @@ func (e *EncodingFlag) Get() interface{} {
 // Set implements part of the flag.Value interface.
 func (e *EncodingFlag) Set(v string) error {
 	enc, err := kzip.EncodingFor(v)
-	if err != nil {
+	if err == nil {
 		*e = EncodingFlag{enc}
 	}
 	return err
