@@ -25,7 +25,10 @@ def _cc_dependencies():
         name = "rules_cc",
         sha256 = "29daf0159f0cf552fcff60b49d8bcd4f08f08506d2da6e41b07058ec50cfeaec",
         strip_prefix = "rules_cc-b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e",
-        urls = ["https://github.com/bazelbuild/rules_cc/archive/b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e.tar.gz"],
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_cc/archive/b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e.tar.gz",
+            "https://github.com/bazelbuild/rules_cc/archive/b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e.tar.gz",
+        ],
     )
 
     maybe(
@@ -34,7 +37,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:zlib.BUILD",
         sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
         strip_prefix = "zlib-1.2.11",
-        urls = ["https://zlib.net/zlib-1.2.11.tar.gz"],
+        urls = [
+            "https://mirror.bazel.build/zlib.net/zlib-1.2.11.tar.gz",
+            "https://zlib.net/zlib-1.2.11.tar.gz",
+        ],
     )
 
     maybe(
@@ -46,6 +52,7 @@ def _cc_dependencies():
         urls = [
             # Bazel does not like the official download link at libzip.org,
             # so use the GitHub release tag.
+            "https://mirror.bazel.build/github.com/nih-at/libzip/archive/rel-1-5-1.zip",
             "https://github.com/nih-at/libzip/archive/rel-1-5-1.zip",
         ],
     )
@@ -71,7 +78,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:rapidjson.BUILD",
         sha256 = "8e00c38829d6785a2dfb951bb87c6974fa07dfe488aa5b25deec4b8bc0f6a3ab",
         strip_prefix = "rapidjson-1.1.0",
-        url = "https://github.com/Tencent/rapidjson/archive/v1.1.0.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/Tencent/rapidjson/archive/v1.1.0.zip",
+            "https://github.com/Tencent/rapidjson/archive/v1.1.0.zip",
+        ],
     )
 
     # Make sure to update regularly in accordance with Abseil's principle of live at HEAD
@@ -80,7 +90,10 @@ def _cc_dependencies():
         name = "com_google_absl",
         sha256 = "c1b570e3d48527c6eb5d8668cd4d2a24b704110700adc0db44b002c058fdf5d0",
         strip_prefix = "abseil-cpp-c6c3c1b498e4ee939b24be59cae29d59c3863be8",
-        url = "https://github.com/abseil/abseil-cpp/archive/c6c3c1b498e4ee939b24be59cae29d59c3863be8.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/abseil/abseil-cpp/archive/c6c3c1b498e4ee939b24be59cae29d59c3863be8.zip",
+            "https://github.com/abseil/abseil-cpp/archive/c6c3c1b498e4ee939b24be59cae29d59c3863be8.zip",
+        ],
     )
 
     maybe(
@@ -88,7 +101,10 @@ def _cc_dependencies():
         name = "com_google_googletest",
         sha256 = "2f56064481649b68c98afb1b14d7b1c5e2a62ef0b48b6ba0a71f60ddd6628458",
         strip_prefix = "googletest-8756ef905878f727e8122ba25f483c887cbc3c17",
-        url = "https://github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
+            "https://github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
+        ],
     )
 
     maybe(
@@ -96,7 +112,10 @@ def _cc_dependencies():
         name = "com_github_google_glog",
         strip_prefix = "glog-ba8a9f6952d04d1403b97df24e6836227751454e",
         sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
-        url = "https://github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
+            "https://github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
+        ],
         build_file_content = "\n".join([
             "load(\"//:bazel/glog.bzl\", \"glog_library\")",
             "glog_library(with_gflags=0)",
@@ -108,7 +127,10 @@ def _cc_dependencies():
         name = "org_brotli",
         sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
         strip_prefix = "brotli-1.0.7",
-        url = "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/brotli/archive/v1.0.7.tar.gz",
+            "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
+        ],
     )
 
     maybe(
@@ -116,7 +138,10 @@ def _cc_dependencies():
         name = "com_google_riegeli",
         sha256 = "5c1714329c19759201b7f2c6a2cf8b255b6f10c752b197d6e8847b8574dcd96b",
         strip_prefix = "riegeli-6b1dd7be479f6ffffdec06c39f352bd5a87b63b7",
-        url = "https://github.com/google/riegeli/archive/6b1dd7be479f6ffffdec06c39f352bd5a87b63b7.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/riegeli/archive/6b1dd7be479f6ffffdec06c39f352bd5a87b63b7.zip",
+            "https://github.com/google/riegeli/archive/6b1dd7be479f6ffffdec06c39f352bd5a87b63b7.zip",
+        ],
     )
 
     maybe(
@@ -125,7 +150,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:libmemcached.BUILD",
         sha256 = "e22c0bb032fde08f53de9ffbc5a128233041d9f33b5de022c0978a2149885f82",
         strip_prefix = "libmemcached-1.0.18",
-        url = "https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz",
+        urls = [
+            "https://mirror.bazel.build/launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz",
+            "https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz",
+        ],
     )
 
     maybe(
@@ -135,7 +163,7 @@ def _cc_dependencies():
         sha256 = "ff3e80c1ca6a068428726cd7dd19037a47cc538ce58ef61c59587191039b2ca6",
         strip_prefix = "curl-7.49.1",
         urls = [
-            "http://bazel-mirror.storage.googleapis.com/curl.haxx.se/download/curl-7.49.1.tar.gz",
+            "https://mirror.bazel.build/curl.haxx.se/download/curl-7.49.1.tar.gz",
             "https://curl.haxx.se/download/curl-7.49.1.tar.gz",
         ],
     )
@@ -145,7 +173,10 @@ def _cc_dependencies():
         name = "com_googlesource_code_re2",
         sha256 = "ae9b962dbd6427565efd3e9503acb40a1385b21962c29050546c9347ac7fa93f",
         strip_prefix = "re2-2019-01-01",
-        url = "https://github.com/google/re2/archive/2019-01-01.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/re2/archive/2019-01-01.zip",
+            "https://github.com/google/re2/archive/2019-01-01.zip",
+        ],
     )
 
     maybe(
@@ -154,7 +185,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:jq.BUILD",
         sha256 = "998c41babeb57b4304e65b4eb73094279b3ab1e63801b6b4bddd487ce009b39d",
         strip_prefix = "jq-1.4",
-        url = "https://github.com/stedolan/jq/releases/download/jq-1.4/jq-1.4.tar.gz",
+        urls = [
+            "https://mirror.bazel.build/github.com/stedolan/jq/releases/download/jq-1.4/jq-1.4.tar.gz",
+            "https://github.com/stedolan/jq/releases/download/jq-1.4/jq-1.4.tar.gz",
+        ],
     )
 
     maybe(
@@ -163,7 +197,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:snappy.BUILD",
         sha256 = "61e05a0295fd849072668b1f3494801237d809427cfe8fd014cda455036c3ef7",
         strip_prefix = "snappy-1.1.7",
-        url = "https://github.com/google/snappy/archive/1.1.7.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/snappy/archive/1.1.7.zip",
+            "https://github.com/google/snappy/archive/1.1.7.zip",
+        ],
     )
 
     maybe(
@@ -172,7 +209,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:leveldb.BUILD",
         sha256 = "5b2bd7a91489095ad54bb81ca6544561025b48ec6d19cc955325f96755d88414",
         strip_prefix = "leveldb-1.20",
-        url = "https://github.com/google/leveldb/archive/v1.20.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/leveldb/archive/v1.20.zip",
+            "https://github.com/google/leveldb/archive/v1.20.zip",
+        ],
     )
 
     maybe(
@@ -190,7 +230,10 @@ def _java_dependencies():
         name = "google_bazel_common",
         strip_prefix = "bazel-common-b3778739a9c67eaefe0725389f03cf821392ac67",
         sha256 = "4ae0fd0af627be9523a166b88d1298375335f418dcc13a82e9e77a0089a4d254",
-        urls = ["https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip"],
+        urls = [
+            "https://mirror.bazel.build/github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip",
+            "https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip",
+        ],
     )
     maybe(
         git_repository,
@@ -564,7 +607,10 @@ def _go_dependencies():
         name = "org_brotli_go",
         sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
         strip_prefix = "brotli-1.0.7/go",
-        url = "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/brotli/archive/v1.0.7.tar.gz",
+            "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
+        ],
     )
 
 def _bindings():
@@ -611,7 +657,10 @@ def _extractor_image_dependencies():
         name = "com_github_philwo_bazelisk",
         sha256 = "cb6a208f559fd08d205527b69d597ef36f7e1a922fe1df64081e52dd544f7666",
         strip_prefix = "bazelisk-0.0.2",
-        urls = ["https://github.com/philwo/bazelisk/archive/0.0.2.zip"],
+        urls = [
+            "https://mirror.bazel.build/github.com/philwo/bazelisk/archive/0.0.2.zip",
+            "https://github.com/philwo/bazelisk/archive/0.0.2.zip",
+        ],
     )
     go_repository(
         name = "com_github_hashicorp_go_version",
@@ -633,7 +682,10 @@ def _py_dependencies():
         name = "rules_python",  # Needed by com_google_protobuf.
         sha256 = "e5470e92a18aa51830db99a4d9c492cc613761d5bdb7131c04bd92b9834380f6",
         strip_prefix = "rules_python-4b84ad270387a7c439ebdccfd530e2339601ef27",
-        urls = ["https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz"],
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz",
+            "https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz",
+        ],
     )
 
 def kythe_dependencies(sample_ui = True):
@@ -653,7 +705,10 @@ def kythe_dependencies(sample_ui = True):
         name = "com_google_protobuf",
         sha256 = "2ba20d91341ef88259896a5dfaf55666d11648caa0964342991e30a96b7cd630",
         strip_prefix = "protobuf-3.10.0-rc1",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.10.0-rc1.zip"],
+        urls = [
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.10.0-rc1.zip",
+            "https://github.com/protocolbuffers/protobuf/archive/v3.10.0-rc1.zip",
+        ],
         repo_mapping = {"@zlib": "@net_zlib"},
     )
 
@@ -661,7 +716,10 @@ def kythe_dependencies(sample_ui = True):
         http_archive,
         name = "io_kythe_llvmbzlgen",
         sha256 = "6d077cfe818d08ea9184d71f73581135b69c379692771afd88392fa1fee018ac",
-        urls = ["https://github.com/kythe/llvmbzlgen/archive/435bad1d07f7a8d32979d66cd5547e1b32dca812.zip"],
+        urls = [
+            "https://mirror.bazel.build/github.com/kythe/llvmbzlgen/archive/435bad1d07f7a8d32979d66cd5547e1b32dca812.zip",
+            "https://github.com/kythe/llvmbzlgen/archive/435bad1d07f7a8d32979d66cd5547e1b32dca812.zip",
+        ],
         strip_prefix = "llvmbzlgen-435bad1d07f7a8d32979d66cd5547e1b32dca812",
     )
 
