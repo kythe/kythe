@@ -25,7 +25,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "glog/logging.h"
 #include "google/protobuf/compiler/code_generator.h"
 #include "google/protobuf/compiler/cpp/cpp_generator.h"
 #include "google/protobuf/compiler/plugin.h"
@@ -251,7 +250,6 @@ class EmbeddedMetadataGenerator : public CppGenerator {
 }  // namespace kythe
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
   kythe::EmbeddedMetadataGenerator generator;
   return google::protobuf::compiler::PluginMain(argc, argv, &generator);
 }

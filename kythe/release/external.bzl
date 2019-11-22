@@ -30,18 +30,6 @@ def kythe_release_dependencies():
 
     maybe(
         http_archive,
-        name = "com_github_google_glog",
-        strip_prefix = "glog-ba8a9f6952d04d1403b97df24e6836227751454e",
-        sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
-        url = "https://github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
-        build_file_content = "\n".join([
-            "load(\"//:bazel/glog.bzl\", \"glog_library\")",
-            "glog_library(with_gflags=0)",
-        ]),
-    )
-
-    maybe(
-        http_archive,
         name = "com_google_absl",
         sha256 = "c1b570e3d48527c6eb5d8668cd4d2a24b704110700adc0db44b002c058fdf5d0",
         strip_prefix = "abseil-cpp-c6c3c1b498e4ee939b24be59cae29d59c3863be8",
