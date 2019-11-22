@@ -77,6 +77,13 @@ public class JavaIndexerConfig extends IndexerConfig {
       description = "Use the experimental Path-based FileManager on JDK9+")
   private boolean useExperimentalPathFileManager;
 
+  @Parameter(
+      names = "--temp_directory",
+      description =
+          "Directory on the local file system that can be used to store files that the java"
+              + " compiler insists on being read from the local file system.")
+  private String temporaryDirectory;
+
   public static enum JvmMode {
     NAMES,
     SEMANTIC;
@@ -118,6 +125,10 @@ public class JavaIndexerConfig extends IndexerConfig {
     return useExperimentalPathFileManager;
   }
 
+  public String getTemporaryDirectory() {
+    return temporaryDirectory;
+  }
+
   public JavaIndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
     this.ignoreVNamePaths = ignoreVNamePaths;
     return this;
@@ -156,6 +167,11 @@ public class JavaIndexerConfig extends IndexerConfig {
   public JavaIndexerConfig setUseExperimentalPathFileManager(
       boolean useExperimentalPathFileManager) {
     this.useExperimentalPathFileManager = useExperimentalPathFileManager;
+    return this;
+  }
+
+  public JavaIndexerConfig setTemporaryDirectory(String temporaryDirectory) {
+    this.temporaryDirectory = temporaryDirectory;
     return this;
   }
 }

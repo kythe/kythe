@@ -23,6 +23,7 @@ java_library(
         "//third_party/javac",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 
