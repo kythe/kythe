@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
@@ -29,16 +30,23 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.sun.tools.javac.main.Option;
+import com.sun.tools.javac.main.OptionHelper;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
-import javax.tools.JavaFileManager.Location;
+import java.util.stream.Stream;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * StandardJavaFileManager which uses a CompilationUnitFileSystem for managing paths based on on the
@@ -50,12 +58,19 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
 
   private final CompilationUnitFileSystem fileSystem;
   private final ImmutableSet<String> defaultPlatformClassPath;
+  // The path given to us that we are allowed to write in.
+  private final @Nullable Path temporaryDirectoryPrefix;
+  // A temporary directory inside of temporaryDirectoryPrefix that we will use and delete when the
+  // close method is called.
+  private @Nullable Path temporaryDirectory;
 
   public CompilationUnitPathFileManager(
       CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider,
-      StandardJavaFileManager fileManager) {
+      StandardJavaFileManager fileManager,
+      @Nullable Path temporaryDirectory) {
     super(fileManager);
+    this.temporaryDirectoryPrefix = temporaryDirectory;
     defaultPlatformClassPath =
         ImmutableSet.copyOf(
             Iterables.transform(
@@ -70,6 +85,59 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
         findJavaDetails(compilationUnit)
             .map(details -> toLocationMap(details))
             .orElseGet(() -> logEmptyLocationMap()));
+  }
+
+  @Override
+  public boolean handleOption(String current, Iterator<String> remaining) {
+    if (Option.SYSTEM.matches(current)) {
+      try {
+        Option.SYSTEM.handleOption(
+            new OptionHelper.GrumpyHelper(null) {
+              @Override
+              public void put(String name, String value) {}
+
+              @Override
+              public boolean handleFileManagerOption(Option unused, String value) {
+                try {
+                  setSystemOption(value);
+                } catch (IOException exc) {
+                  throw new IllegalArgumentException(exc);
+                }
+                return true;
+              }
+            },
+            current,
+            remaining);
+      } catch (Option.InvalidValueException exc) {
+        throw new IllegalArgumentException(exc);
+      }
+      return true;
+    }
+    return super.handleOption(current, remaining);
+  }
+
+  @Override
+  public void close() throws IOException {
+    super.close();
+    if (temporaryDirectory != null) {
+      Files.walkFileTree(
+          temporaryDirectory,
+          new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                throws IOException {
+              Files.delete(file);
+              return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+                throws IOException {
+              Files.delete(dir);
+              return FileVisitResult.CONTINUE;
+            }
+          });
+    }
   }
 
   /** Extracts the embedded JavaDetails message, if any, from the CompilationUnit. */
@@ -123,6 +191,13 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   private Path getPath(String path, String... rest) {
+    // If this is a path underneath the temporary directory, use it. This is required for --system
+    // flags to work correctly.
+    Path local = Paths.get(path, rest);
+    if (temporaryDirectory != null && local.startsWith(temporaryDirectory)) {
+      logger.atFine().log("Using the filesystem for temporary path %s", local);
+      return local;
+    }
     // In order to support paths passed via command line options rather than
     // JavaDetails, prevent loading source files from outside the
     // CompilationUnit (#818), and allow JDK classes to be provided by the
@@ -144,6 +219,45 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
       } catch (IOException ex) {
         logger.atWarning().withCause(ex).log("error setting location %s", entry);
       }
+    }
+  }
+
+  private void setSystemOption(String value) throws IOException {
+    // There are two kinds of --system flags we need to support:
+    //   1) Bundled system images, with a lib/jrt-fs.jar and lib/modules image.
+    //   2) Exploded system images, where the modules live under a modules subdirectory.
+    // The former must reside in the filesystem as there are multifarious asserts and checks that
+    // this is so.
+    Path sys = fileSystem.getPath(value).normalize();
+    if (Files.exists(sys.resolve("lib").resolve("jrt-fs.jar"))) {
+      if (temporaryDirectoryPrefix == null) {
+        logger.atSevere().log(
+            "Can't create temporary directory to store system module because no temporary"
+                + " directory was provided");
+        throw new IllegalArgumentException("temporary directory needed but not provided");
+      }
+      if (temporaryDirectory != null) {
+        throw new IllegalStateException("Temporary directory set twice");
+      }
+      temporaryDirectory =
+          Files.createTempDirectory(temporaryDirectoryPrefix, "kythe_java_indexer");
+      Path systemRoot = Files.createDirectory(temporaryDirectory.resolve("system"));
+      try (Stream<Path> stream = Files.walk(sys.resolve("lib"))) {
+        for (Path path : (Iterable<Path>) stream::iterator) {
+          Files.copy(
+              path,
+              systemRoot.resolve(path.subpath(sys.getNameCount(), path.getNameCount()).toString()));
+        }
+      }
+      super.handleOption(
+          "--system", Iterators.singletonIterator(systemRoot.toAbsolutePath().toString()));
+    } else if (Files.isDirectory(sys.resolve("modules"))) {
+      // TODO(salguarnieri) Due to a bug in the javac argument validation, bypass it and set the
+      // location directly.
+      setLocationFromPaths(
+          StandardLocation.valueOf("SYSTEM_MODULES"), ImmutableList.of(sys.resolve("modules")));
+    } else {
+      throw new IllegalArgumentException(value);
     }
   }
 }

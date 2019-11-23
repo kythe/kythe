@@ -31,9 +31,11 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
+import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.List;
 import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
@@ -42,9 +44,10 @@ import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Provides a {@link JavacAnalyzer} with access to compilation information. */
-public class JavaCompilationDetails {
+public class JavaCompilationDetails implements AutoCloseable {
   private final JavacTask javac;
   private final DiagnosticCollector<JavaFileObject> diagnostics;
   private final Iterable<? extends CompilationUnitTree> asts;
@@ -60,11 +63,16 @@ public class JavaCompilationDetails {
   private static final Predicate<Diagnostic<?>> ERROR_DIAGNOSTIC =
       diag -> diag.getKind() == Kind.ERROR;
 
+  /**
+   * Create a compilation details object. {@code temporaryDirectory} specifies a directory that can
+   * be used to store files that java must read from a local file system (ex: system module files).
+   */
   public static JavaCompilationDetails createDetails(
       CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider,
       List<Processor> processors,
-      boolean useExperimentalPathFileManager) {
+      boolean useExperimentalPathFileManager,
+      @Nullable Path temporaryDirectory) {
 
     JavaCompiler compiler = JavacAnalysisDriver.getCompiler();
     DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
@@ -82,7 +90,8 @@ public class JavaCompilationDetails {
             ? new CompilationUnitPathFileManager(
                 compilationUnit,
                 fileDataProvider,
-                compiler.getStandardFileManager(diagnosticsCollector, null, null))
+                compiler.getStandardFileManager(diagnosticsCollector, null, null),
+                temporaryDirectory)
             : new CompilationUnitBasedJavaFileManager(
                 fileDataProvider,
                 compilationUnit,
@@ -192,6 +201,15 @@ public class JavaCompilationDetails {
   /** @return The file manager for the source files in this compilation */
   public StandardJavaFileManager getFileManager() {
     return fileManager;
+  }
+
+  @Override
+  public void close() {
+    try {
+      fileManager.close();
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to clean up file manager resources");
+    }
   }
 
   /** Generate options (such as classpath and sourcepath) from the compilation unit. */
