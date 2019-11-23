@@ -47,6 +47,8 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -167,7 +169,12 @@ public class JavaIndexer {
             metadataLoaders);
     plugins.forEach(analyzer::registerPlugin);
 
-    new JavacAnalysisDriver(ImmutableList.of(), config.getUseExperimentalPathFileManager())
+    Path tempPath =
+        Strings.isNullOrEmpty(config.getTemporaryDirectory())
+            ? null
+            : FileSystems.getDefault().getPath(config.getTemporaryDirectory());
+    new JavacAnalysisDriver(
+            ImmutableList.of(), config.getUseExperimentalPathFileManager(), tempPath)
         .analyze(analyzer, desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()));
   }
 
