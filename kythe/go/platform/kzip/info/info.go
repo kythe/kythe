@@ -55,8 +55,8 @@ type Accumulator struct {
 	*apb.KzipInfo
 }
 
-// NewAccumulator creates a new Accumulator instance given the kzip file size
-// (in bytes).
+// NewAccumulator creates a new Accumulator instance given the kzip fileSize (in
+// bytes).
 func NewAccumulator(fileSize int64) *Accumulator {
 	return &Accumulator{
 		KzipInfo: &apb.KzipInfo{
