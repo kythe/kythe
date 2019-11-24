@@ -194,9 +194,11 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     // If this is a path underneath the temporary directory, use it. This is required for --system
     // flags to work correctly.
     Path local = Paths.get(path, rest);
-    if (temporaryDirectory != null && local.startsWith(temporaryDirectory)) {
-      logger.atFine().log("Using the filesystem for temporary path %s", local);
-      return local;
+    if (temporaryDirectory != null) {
+      if (local.toAbsolutePath().startsWith(temporaryDirectory.toAbsolutePath())) {
+        logger.atInfo().log("Using the filesystem for temporary path %s", local);
+        return local;
+      }
     }
     // In order to support paths passed via command line options rather than
     // JavaDetails, prevent loading source files from outside the
@@ -244,11 +246,15 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
       Path systemRoot = Files.createDirectory(temporaryDirectory.resolve("system"));
       try (Stream<Path> stream = Files.walk(sys.resolve("lib"))) {
         for (Path path : (Iterable<Path>) stream::iterator) {
-          Files.copy(
-              path,
-              systemRoot.resolve(path.subpath(sys.getNameCount(), path.getNameCount()).toString()));
+          Path p =
+              Files.copy(
+                  path,
+                  systemRoot.resolve(
+                      path.subpath(sys.getNameCount(), path.getNameCount()).toString()));
+          logger.atInfo().log("Copied file to %s", p.toAbsolutePath());
         }
       }
+      logger.atInfo().log("Setting system path to %s", systemRoot.toAbsolutePath());
       super.handleOption(
           "--system", Iterators.singletonIterator(systemRoot.toAbsolutePath().toString()));
     } else if (Files.isDirectory(sys.resolve("modules"))) {
