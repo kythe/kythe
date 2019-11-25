@@ -10,7 +10,8 @@ order: 10
 
 This document assumes that the latest release archive from
 [https://github.com/kythe/kythe/releases](https://github.com/kythe/kythe/releases)
-has been unpacked into /opt/kythe/.  See /opt/kythe/README for more information.
+has been unpacked into /opt/kythe/.  See /opt/kythe/README.md for more
+information.
 
 ## Extracting Compilations
 
