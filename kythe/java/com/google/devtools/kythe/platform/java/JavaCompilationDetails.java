@@ -37,6 +37,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
 import javax.tools.Diagnostic.Kind;
@@ -50,9 +51,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class JavaCompilationDetails implements AutoCloseable {
   private final JavacTask javac;
   private final DiagnosticCollector<JavaFileObject> diagnostics;
-  private final Iterable<? extends CompilationUnitTree> asts;
+  @Nullable private final Iterable<? extends CompilationUnitTree> asts;
   private final CompilationUnit compilationUnit;
-  private final Throwable analysisCrash;
+  @Nullable private final Throwable analysisCrash;
   private final Charset encoding;
   private final StandardJavaFileManager fileManager;
 
@@ -137,9 +138,9 @@ public class JavaCompilationDetails implements AutoCloseable {
   private JavaCompilationDetails(
       JavacTask javac,
       DiagnosticCollector<JavaFileObject> diagnostics,
-      Iterable<? extends CompilationUnitTree> asts,
+      @Nullable Iterable<? extends CompilationUnitTree> asts,
       CompilationUnit compilationUnit,
-      Throwable analysisCrash,
+      @Nullable Throwable analysisCrash,
       Charset encoding,
       StandardJavaFileManager fileManager) {
     this.javac = javac;
@@ -179,8 +180,8 @@ public class JavaCompilationDetails implements AutoCloseable {
   }
 
   /** Returns the AST for the current analysis target. */
-  public Iterable<? extends CompilationUnitTree> getAsts() {
-    return asts;
+  public Optional<Iterable<? extends CompilationUnitTree>> getAsts() {
+    return Optional.ofNullable(asts);
   }
 
   /** Returns the protocol buffer describing the current analysis target. */
@@ -189,8 +190,8 @@ public class JavaCompilationDetails implements AutoCloseable {
   }
 
   /** Returns any unexpected crash that might have occurred during javac analysis. */
-  public Throwable getAnalysisCrash() {
-    return analysisCrash;
+  public Optional<Throwable> getAnalysisCrash() {
+    return Optional.ofNullable(analysisCrash);
   }
 
   /** Returns he encoding for the source files in this compilation */
