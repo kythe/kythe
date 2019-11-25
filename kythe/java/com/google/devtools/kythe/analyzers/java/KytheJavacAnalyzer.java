@@ -121,7 +121,12 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
       throws AnalysisException {
     Preconditions.checkState(
         entrySets != null, "analyzeCompilationUnit must be called to analyze each file");
-    Context context = ((JavacTaskImpl) details.getJavac()).getContext();
+    if (!details.getJavac().isPresent()) {
+      throw new AnalysisException(
+          "No javac in details while analyzing file: " + ast.getSourceFile().getName());
+    }
+    JavacTaskImpl javac = (JavacTaskImpl) details.getJavac().get();
+    Context context = javac.getContext();
     JCCompilationUnit compilation = (JCCompilationUnit) ast;
     final Map<JCTree, Plugin.KytheNode> nodes = new HashMap<>();
     SourceText src = null;

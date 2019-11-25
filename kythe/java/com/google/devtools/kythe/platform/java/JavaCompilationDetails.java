@@ -49,7 +49,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Provides a {@link JavacAnalyzer} with access to compilation information. */
 public class JavaCompilationDetails implements AutoCloseable {
-  private final JavacTask javac;
+  @Nullable private final JavacTask javac;
   private final DiagnosticCollector<JavaFileObject> diagnostics;
   @Nullable private final Iterable<? extends CompilationUnitTree> asts;
   private final CompilationUnit compilationUnit;
@@ -99,24 +99,25 @@ public class JavaCompilationDetails implements AutoCloseable {
                 compiler.getStandardFileManager(diagnosticsCollector, null, null),
                 encoding);
 
-    Iterable<? extends JavaFileObject> sources =
-        fileManager.getJavaFileObjectsFromStrings(compilationUnit.getSourceFileList());
-
-    // Causes output to go to stdErr
-    Writer javacOut = null;
-
-    // Get a task for compiling the current CompilationUnit.
-    JavacTaskImpl javacTask =
-        (JavacTaskImpl)
-            compiler.getTask(javacOut, fileManager, diagnosticsCollector, options, null, sources);
-
-    if (!processors.isEmpty()) {
-      javacTask.setProcessors(processors);
-    }
-
     Throwable analysisCrash = null;
+    JavacTaskImpl javacTask = null;
     Iterable<? extends CompilationUnitTree> compilationUnits = null;
     try {
+      Iterable<? extends JavaFileObject> sources =
+          fileManager.getJavaFileObjectsFromStrings(compilationUnit.getSourceFileList());
+
+      // Causes output to go to stdErr
+      Writer javacOut = null;
+
+      // Get a task for compiling the current CompilationUnit.
+      javacTask =
+          (JavacTaskImpl)
+              compiler.getTask(javacOut, fileManager, diagnosticsCollector, options, null, sources);
+
+      if (!processors.isEmpty()) {
+        javacTask.setProcessors(processors);
+      }
+
       compilationUnits = javacTask.parse();
       javacTask.analyze();
     } catch (Throwable e) {
@@ -136,7 +137,7 @@ public class JavaCompilationDetails implements AutoCloseable {
   }
 
   private JavaCompilationDetails(
-      JavacTask javac,
+      @Nullable JavacTask javac,
       DiagnosticCollector<JavaFileObject> diagnostics,
       @Nullable Iterable<? extends CompilationUnitTree> asts,
       CompilationUnit compilationUnit,
@@ -165,8 +166,8 @@ public class JavaCompilationDetails implements AutoCloseable {
   }
 
   /** Returns the Javac compiler instance initialized for current analysis target. */
-  public JavacTask getJavac() {
-    return javac;
+  public Optional<JavacTask> getJavac() {
+    return Optional.ofNullable(javac);
   }
 
   /** Returns the Diagnostics reported while analyzing the code for the current analysis target. */
