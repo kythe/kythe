@@ -62,7 +62,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   // path.
   private final @Nullable Path temporaryDirectoryPrefix;
   // A temporary directory inside of temporaryDirectoryPrefix that we will use and delete when the
-  // close method is called. This should be will as an absolute path.
+  // close method is called. This will be stored as an absolute path.
   private @Nullable Path temporaryDirectory;
 
   public CompilationUnitPathFileManager(
