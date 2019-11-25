@@ -51,19 +51,17 @@ public abstract class JavacAnalyzer implements Serializable {
   public void analyzeCompilationUnit(JavaCompilationDetails compilationDetails)
       throws AnalysisException {
     try {
-      if (compilationDetails.getAsts().isPresent()) {
-        for (CompilationUnitTree file : compilationDetails.getAsts().get()) {
-          URI uri = file.getSourceFile().toUri();
-          String fullPath = file.getSourceFile().toUri().getRawPath();
-          if (!uri.getScheme().equals("file")) {
-            fullPath = fullPath.substring(1);
-          }
-          if (Strings.isNullOrEmpty(fullPath)) {
-            continue;
-          }
-          analyzeFile(compilationDetails, file);
-          getStatisticsCollector().incrementCounter("files-analyzed");
+      for (CompilationUnitTree file : compilationDetails.getAsts()) {
+        URI uri = file.getSourceFile().toUri();
+        String fullPath = file.getSourceFile().toUri().getRawPath();
+        if (!uri.getScheme().equals("file")) {
+          fullPath = fullPath.substring(1);
         }
+        if (Strings.isNullOrEmpty(fullPath)) {
+          continue;
+        }
+        analyzeFile(compilationDetails, file);
+        getStatisticsCollector().incrementCounter("files-analyzed");
       }
       getStatisticsCollector().incrementCounter("compilations-analyzed");
     } catch (Throwable t) {

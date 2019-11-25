@@ -180,8 +180,8 @@ public class JavaCompilationDetails implements AutoCloseable {
   }
 
   /** Returns the AST for the current analysis target. */
-  public Optional<Iterable<? extends CompilationUnitTree>> getAsts() {
-    return Optional.ofNullable(asts);
+  public Iterable<? extends CompilationUnitTree> getAsts() {
+    return asts == null ? ImmutableList.of() : asts;
   }
 
   /** Returns the protocol buffer describing the current analysis target. */
