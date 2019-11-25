@@ -58,10 +58,11 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
 
   private final CompilationUnitFileSystem fileSystem;
   private final ImmutableSet<String> defaultPlatformClassPath;
-  // The path given to us that we are allowed to write in.
+  // The path given to us that we are allowed to write in. This should be stored as an absolute
+  // path.
   private final @Nullable Path temporaryDirectoryPrefix;
   // A temporary directory inside of temporaryDirectoryPrefix that we will use and delete when the
-  // close method is called.
+  // close method is called. This should be stored as an absolute path.
   private @Nullable Path temporaryDirectory;
 
   public CompilationUnitPathFileManager(
@@ -70,7 +71,8 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
       StandardJavaFileManager fileManager,
       @Nullable Path temporaryDirectory) {
     super(fileManager);
-    this.temporaryDirectoryPrefix = temporaryDirectory;
+    this.temporaryDirectoryPrefix =
+        temporaryDirectory == null ? null : temporaryDirectory.toAbsolutePath();
     defaultPlatformClassPath =
         ImmutableSet.copyOf(
             Iterables.transform(
@@ -193,9 +195,9 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   private Path getPath(String path, String... rest) {
     // If this is a path underneath the temporary directory, use it. This is required for --system
     // flags to work correctly.
-    Path local = Paths.get(path, rest);
+    Path local = Paths.get(path, rest).toAbsolutePath();
     if (temporaryDirectory != null) {
-      if (local.toAbsolutePath().startsWith(temporaryDirectory.toAbsolutePath())) {
+      if (local.startsWith(temporaryDirectory)) {
         logger.atInfo().log("Using the filesystem for temporary path %s", local);
         return local;
       }
@@ -242,8 +244,10 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
         throw new IllegalStateException("Temporary directory set twice");
       }
       temporaryDirectory =
-          Files.createTempDirectory(temporaryDirectoryPrefix, "kythe_java_indexer");
-      Path systemRoot = Files.createDirectory(temporaryDirectory.resolve("system"));
+          Files.createTempDirectory(temporaryDirectoryPrefix, "kythe_java_indexer")
+              .toAbsolutePath();
+      Path systemRoot =
+          Files.createDirectory(temporaryDirectory.resolve("system")).toAbsolutePath();
       try (Stream<Path> stream = Files.walk(sys.resolve("lib"))) {
         for (Path path : (Iterable<Path>) stream::iterator) {
           Path p =
@@ -254,9 +258,8 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
           logger.atInfo().log("Copied file to %s", p.toAbsolutePath());
         }
       }
-      logger.atInfo().log("Setting system path to %s", systemRoot.toAbsolutePath());
-      super.handleOption(
-          "--system", Iterators.singletonIterator(systemRoot.toAbsolutePath().toString()));
+      logger.atInfo().log("Setting system path to %s", systemRoot);
+      super.handleOption("--system", Iterators.singletonIterator(systemRoot.toString()));
     } else if (Files.isDirectory(sys.resolve("modules"))) {
       // TODO(salguarnieri) Due to a bug in the javac argument validation, bypass it and set the
       // location directly.
