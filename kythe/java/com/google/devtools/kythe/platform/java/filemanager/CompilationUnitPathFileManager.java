@@ -58,11 +58,11 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
 
   private final CompilationUnitFileSystem fileSystem;
   private final ImmutableSet<String> defaultPlatformClassPath;
-  // The path given to us that we are allowed to write in. This should be stored as an absolute
+  // The path given to us that we are allowed to write in. This will be stored as an absolute
   // path.
   private final @Nullable Path temporaryDirectoryPrefix;
   // A temporary directory inside of temporaryDirectoryPrefix that we will use and delete when the
-  // close method is called. This should be stored as an absolute path.
+  // close method is called. This should be will as an absolute path.
   private @Nullable Path temporaryDirectory;
 
   public CompilationUnitPathFileManager(
@@ -71,6 +71,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
       StandardJavaFileManager fileManager,
       @Nullable Path temporaryDirectory) {
     super(fileManager);
+    // Store the absolute path so we can safely do startsWith checks later.
     this.temporaryDirectoryPrefix =
         temporaryDirectory == null ? null : temporaryDirectory.toAbsolutePath();
     defaultPlatformClassPath =
@@ -193,9 +194,10 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   private Path getPath(String path, String... rest) {
+    // Get the absolute path so we can safely do the startsWith check.
+    Path local = Paths.get(path, rest).toAbsolutePath();
     // If this is a path underneath the temporary directory, use it. This is required for --system
     // flags to work correctly.
-    Path local = Paths.get(path, rest).toAbsolutePath();
     if (temporaryDirectory != null) {
       if (local.startsWith(temporaryDirectory)) {
         logger.atInfo().log("Using the filesystem for temporary path %s", local);
