@@ -67,13 +67,6 @@ bazel build -k \
 find -L bazel-out -name '*.kzip'
 {% endhighlight %}
 
-The provided utility script,
-[https://github.com/kythe/kythe/blob/master/kythe/extractors/bazel/extract.sh]({{site.data.development.source_browser}}/kythe/extractors/bazel/extract.sh),
-does a full extraction using Bazel and then moves the compilations into the
-directory structure used by the
-[kythe/kythe]({{site.data.development.source_browser}}/kythe/release/kythe.sh)
-Docker image.
-
 ### Extracting other Bazel based repositories
 
 You can use the Kythe release to extract compilations from other Bazel based
