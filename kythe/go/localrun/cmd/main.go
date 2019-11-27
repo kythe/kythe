@@ -11,6 +11,10 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/localrun"
+	"kythe.io/kythe/go/util/datasize"
+
+	// Side effect import used to register the handler for gsutil
+	_ "kythe.io/kythe/go/storage/leveldb"
 )
 
 var (
@@ -20,6 +24,7 @@ var (
 	kytheRelease      string
 	outputDir         string
 	acceptedLanguages = []string{"go", "java"}
+	cacheSize         = datasize.Flag("cache_size", "3gb", "How much ram to dedicate to handling")
 )
 
 var notEnoughArgsErr = fmt.Errorf("not enough arguments")
@@ -98,8 +103,10 @@ func main() {
 		KytheRelease: "/opt/kythe",
 		WorkingDir:   workingDir,
 		OutputDir:    outputDir,
+		CacheSize:    cacheSize,
 
-		WorkerPoolSize: runtime.GOMAXPROCS(0),
+		//WorkerPoolSize: runtime.GOMAXPROCS(0) * 2,
+		WorkerPoolSize: runtime.GOMAXPROCS(0)*0 + 1,
 
 		Languages: languages,
 		Targets:   targets,
@@ -118,7 +125,7 @@ func main() {
 		log.Fatalf("Error indexing: %v\n", err)
 	}
 
-	if err = r.Postprocess(ctx); err != nil {
+	if err = r.PostProcess(ctx); err != nil {
 		log.Fatalf("Error post processing: %v\n", err)
 	}
 

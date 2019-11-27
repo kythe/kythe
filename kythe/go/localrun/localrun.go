@@ -5,16 +5,31 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"golang.org/x/sync/errgroup"
+
+	"github.com/apache/beam/sdks/go/pkg/beam"
+	"github.com/apache/beam/sdks/go/pkg/beam/x/beamx"
+
+	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/platform/delimited/dedup"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/serving/pipeline"
+	"kythe.io/kythe/go/serving/pipeline/beamio"
+	"kythe.io/kythe/go/serving/xrefs"
+	"kythe.io/kythe/go/util/datasize"
 )
+
+var _ = delimited.Reader{}
+var _ = dedup.Reader{}
 
 const (
 	Cxx Language = iota
@@ -78,6 +93,8 @@ type Runner struct {
 	WorkingDir     string
 	OutputDir      string
 	WorkerPoolSize int
+	CacheSize      *datasize.Size
+	graphStore     graphstore.Service
 
 	// Building/extracting options.
 	Languages []Language
@@ -87,7 +104,8 @@ type Runner struct {
 	Port int
 
 	// Internal state
-	m mode
+	m          mode
+	indexedOut *threadsafeBuffer
 }
 
 func (r *Runner) checkMode(m mode) error {
@@ -109,6 +127,7 @@ func (r *Runner) Extract(ctx context.Context) error {
 	args := append([]string{
 		fmt.Sprintf("--bazelrc=%s/extractors.bazelrc", r.KytheRelease),
 		"build",
+		"--keep_going",
 		// TODO: Is this a good idea? It makes it a lot easier to
 		// develop this since you can see successes/failures but may
 		// break CI workflows.
@@ -178,142 +197,155 @@ func (r *Runner) Index(ctx context.Context) error {
 
 	fmt.Fprintf(os.Stderr, "Beginning indexing\n")
 
-	indexedOut := &bytes.Buffer{}
+	r.indexedOut = &threadsafeBuffer{}
 
 	var countNum uint64
-	//for workerId := 0; workerId < r.WorkerPoolSize; workerId++ {
-	for workerId := 0; workerId < 1; workerId++ {
-		g.Go(func() error {
-			// Capture the workerId so that you can see
-			workerId := workerId
-			fmt.Fprintf(os.Stderr, "Worker %d started\n", workerId)
+	for workerID := 0; workerID < r.WorkerPoolSize; workerID++ {
+		g.Go(func(workerID int) func() error {
+			return func() error {
+				fmt.Fprintf(os.Stderr, "Parallel indexing worker %d started\n", workerID)
 
-			for k := range kzips {
-				log := func(c uint64, m string, v ...interface{}) {
-					den := atomic.LoadUint64(&countDenom)
-					fmt.Fprintf(os.Stderr, "%v %v [%d/%d Worker id: %d]\n", fmt.Sprintf(m, v...), k, c, den, workerId)
+				workerBuf := &bytes.Buffer{}
+
+				for k := range kzips {
+					log := func(c uint64, m string, v ...interface{}) {
+						den := atomic.LoadUint64(&countDenom)
+						fmt.Fprintf(os.Stderr, "[%d/%d] %v \n", c, den, fmt.Sprintf(m, v...))
+					}
+
+					c := atomic.AddUint64(&countNum, 1)
+					log(c, "Started indexing %q", k)
+
+					if f, err := os.Stat(k); err != nil {
+						log(c, "file error: %v", err)
+					} else if f.Size() == 0 {
+						log(c, "skipping empty .kzip")
+						continue
+					}
+
+					parts := strings.Split(k, ".")
+					langStr := parts[len(parts)-2]
+					l, ok := LanguageMap[langStr]
+					if !ok {
+						log(c, "Unrecognized language")
+						return fmt.Errorf("Unrecognized language: %v\n", langStr)
+					}
+
+					cmdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+					defer cancel()
+
+					// Perform the work prescribed
+					cmd := exec.CommandContext(cmdCtx,
+						fmt.Sprintf("/opt/kythe/indexers/%s_indexer", strings.ToLower(l.String())),
+						//"-continue",
+						//"-json",
+						k)
+
+					cmd.Stdout = workerBuf
+					cmd.Stderr = os.Stderr
+					cmd.Dir = r.WorkingDir
+
+					if err := cmd.Run(); err != nil {
+						log(c, "Failed run: %v", cmd.Args)
+						return fmt.Errorf("error indexing[%v] %q: %v", l.String(), k, err)
+					}
+				}
+				fmt.Fprintf(os.Stderr, "Parallel indexing worker %d completed\n", workerID)
+
+				if _, err := workerBuf.WriteTo(r.indexedOut); err != nil {
+					return err
 				}
 
-				c := atomic.AddUint64(&countNum, 1)
-				log(c, "Started indexing")
-
-				parts := strings.Split(k, ".")
-				langStr := parts[len(parts)-2]
-				l, ok := LanguageMap[langStr]
-				if !ok {
-					fmt.Fprintf(os.Stderr, "Unrecognized language: %v\n", langStr)
-					log(c, "Started indexing")
-					return fmt.Errorf("Unrecognized language: %v\n", langStr)
-				}
-
-				cmdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-				defer cancel()
-
-				// Perform the work prescribed
-				cmd := exec.CommandContext(cmdCtx,
-					fmt.Sprintf("/opt/kythe/indexers/%s_indexer", strings.ToLower(l.String())),
-					k)
-				cmd.Stdout = indexedOut
-				cmd.Stderr = os.Stderr
-				cmd.Dir = r.WorkingDir
-
-				log(c, "Running")
-				if err := cmd.Run(); err != nil {
-					log(c, "Failed run")
-					return fmt.Errorf("error indexing[%v] %q: %v", l.String(), k, err)
-				}
-				log(c, "Done running")
-
+				return nil
 			}
-			fmt.Fprintf(os.Stderr, "Worker %d complete\n", workerId)
-			return nil
-		})
+		}(workerID))
 	}
 
-	gCtxDone := make(chan struct{})
-	go func() {
-		fmt.Fprintf(os.Stderr, "Waiting on group...\n\n\n\n")
-		g.Wait()
-		fmt.Fprintf(os.Stderr, "Done waiting on group...\n\n\n\n")
-		gCtxDone <- struct{}{}
-	}()
-dotloop:
-	for {
-		select {
-		case <-gCtxDone:
-			if err := g.Wait(); err != nil {
-				return err
-			}
-			break dotloop
-		case <-time.After(1 * time.Second):
-			fmt.Fprintf(os.Stderr, ".")
-		}
-	}
-	fmt.Fprintf(os.Stderr, "\nFinished indexing\n")
-
-	// Create a write_entries command to write to disk the result of indexing.
-	writeCmd := exec.CommandContext(ctx,
-		fmt.Sprintf("%s/tools/write_entries", r.KytheRelease),
-		"-workers", strconv.Itoa(r.WorkerPoolSize),
-		"-graphstore", r.OutputDir,
-	)
-	writeStdin, err := writeCmd.StdinPipe()
-	if err != nil {
-		return fmt.Errorf("Unable to make write_entries stdin pipe: %v", err)
-	}
-	writeCmd.Stderr = os.Stderr
-	writeCmd.Stdout = os.Stdout
-
-	if err := writeCmd.Start(); err != nil {
-		return fmt.Errorf("error starting write: %v", err)
-	}
-
-	// Perform the work prescribed
-	dedupCmd := exec.CommandContext(ctx,
-		fmt.Sprintf("%s/tools/dedup_stream", r.KytheRelease))
-	dedupW, err := dedupCmd.StdinPipe()
-	if err != nil {
-		return fmt.Errorf("unable to make dedup stdinpipe: %v", err)
-	}
-	dedupCmd.Stderr = os.Stderr
-	dedupCmd.Stdout = writeStdin
-	dedupCmd.Dir = r.WorkingDir
-
-	if err := dedupCmd.Start(); err != nil {
-		return fmt.Errorf("error starting dedup: %v", err)
-	}
-
-	if _, err := indexedOut.WriteTo(dedupW); err != nil {
-		return fmt.Errorf("Unable to write to deduped write buffer: %v", err)
-	}
-
-	if err := dedupW.Close(); err != nil {
+	if err := errGroupWait(g, "indexing workers"); err != nil {
 		return err
 	}
+	fmt.Fprintf(os.Stderr, "\n[%d/%d] Finished indexing\n", countNum, countDenom)
 
-	if err := dedupCmd.Wait(); err != nil {
-		return fmt.Errorf("error in dedup wait: %v", err)
-	}
-	fmt.Fprintf(os.Stderr, "Finished dedup\n")
-
-	if err := writeCmd.Wait(); err != nil {
-		return fmt.Errorf("error in write_entries: %v", err)
-	}
-	fmt.Fprintf(os.Stderr, "Finished write_entries\n")
-
-	// dedup the stream
-	// https://github.com/kythe/kythe/blob/77e1360beca7903bc97728097d2c5e1b82204092/kythe/go/platform/tools/dedup_stream/dedup_stream.go
 	return nil
 }
 
-// Postprocess postprocesses the supplied indexed data.
-func (r *Runner) Postprocess(ctx context.Context) error {
+// PostProcess postprocesses the supplied indexed data.
+func (r *Runner) PostProcess(ctx context.Context) error {
 	if err := r.checkMode(postprocess); err != nil {
 		return err
 	}
 
+	fmt.Fprintf(os.Stderr, "\nStarting postprocessing\n")
+
+	rd, err := dedup.NewReader(r.indexedOut, int(r.CacheSize.Bytes()))
+	if err != nil {
+		return fmt.Errorf("error creating deduped stream: %v", err)
+	}
+
+	tmpfile, err := ioutil.TempFile("", "dedup_kythe_stream.pb")
+	if err != nil {
+		return fmt.Errorf("error creating tmpfile: %v", err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	wr := delimited.NewWriter(tmpfile)
+	if err := delimited.Copy(wr, rd); err != nil {
+		return fmt.Errorf("unable to copy deduped stream to disk: %v", err)
+	}
+
+	p, s := beam.NewPipelineWithRoot()
+	entries, err := beamio.ReadEntries(ctx, s, tmpfile.Name())
+	if err != nil {
+		return fmt.Errorf("error reading entries: %v", err)
+	}
+	k := pipeline.FromEntries(s, entries)
+
+	beamio.WriteLevelDB(s, r.OutputDir, r.WorkerPoolSize,
+		createColumnarMetadata(s),
+		k.SplitCrossReferences(),
+		k.SplitDecorations(),
+		k.CorpusRoots(),
+		k.Directories(),
+		k.Documents(),
+		k.SplitEdges(),
+	)
+
+	g, _ := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		return beamx.Run(ctx, p)
+	})
+	return errGroupWait(g, "postprocessing pipeline")
+
+	// dedup the stream
+	// https://github.com/kythe/kythe/blob/77e1360beca7903bc97728097d2c5e1b82204092/kythe/go/platform/tools/dedup_stream/dedup_stream.go
 	// https://github.com/kythe/kythe/blob/77e1360beca7903bc97728097d2c5e1b82204092/kythe/go/serving/tools/write_tables/write_tables.go#L139
-	return nil
+}
+
+func createColumnarMetadata(s beam.Scope) beam.PCollection {
+	return beam.ParDo(s, emitColumnarMetadata, beam.Impulse(s))
+}
+
+func emitColumnarMetadata(_ []byte) (string, string) { return xrefs.ColumnarTableKeyMarker, "v1" }
+
+func errGroupWait(g *errgroup.Group, msg string) error {
+	done := make(chan error, 1)
+	go func() {
+		fmt.Fprintf(os.Stderr, "Waiting on %s...\n", msg)
+		done <- g.Wait()
+		fmt.Fprintf(os.Stderr, "Done waiting on %s...\n", msg)
+	}()
+
+	for {
+		select {
+		case err := <-done:
+			if err != nil {
+				return fmt.Errorf("errorGroup had an error: %v", err)
+			}
+			return nil
+		case <-time.After(1 * time.Second):
+			fmt.Fprintf(os.Stderr, ".")
+		}
+	}
 }
 
 // Serve starts an http server on the provided port and allows web inspection
@@ -330,14 +362,49 @@ func (r *Runner) Serve(ctx context.Context) error {
 		fmt.Sprintf("%s/tools/http_server", r.KytheRelease),
 		"--listen", listen,
 		"--serving_table", r.OutputDir,
+		"--public_resources", "/usr/local/google/home/achew/kythe/kythe/web/ui/resources/public",
 	)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.Dir = r.WorkingDir
 
-	fmt.Fprintf(os.Stderr, "Starting http server on http://%s", listen)
+	fmt.Fprintf(os.Stderr, "Starting http server on http://%s\n", listen)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("error starting dedup: %v", err)
 	}
 	return nil
+}
+
+// threadsafeBuffer implements a threadsafe form of bytes.Buffer
+type threadsafeBuffer struct {
+	b bytes.Buffer
+	m sync.RWMutex
+}
+
+// Read implements Buffer.Read.
+func (b *threadsafeBuffer) Read(p []byte) (n int, err error) {
+	b.m.RLock()
+	defer b.m.RUnlock()
+	return b.b.Read(p)
+}
+
+// Write implements Buffer.Write.
+func (b *threadsafeBuffer) Write(p []byte) (n int, err error) {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Write(p)
+}
+
+// String implements Buffer.String.
+func (b *threadsafeBuffer) String() string {
+	b.m.RLock()
+	defer b.m.RUnlock()
+	return b.b.String()
+}
+
+// WriteTo implements Buffer.WriteTo.
+func (b *threadsafeBuffer) WriteTo(w io.Writer) (int64, error) {
+	b.m.RLock()
+	defer b.m.RUnlock()
+	return b.b.WriteTo(w)
 }

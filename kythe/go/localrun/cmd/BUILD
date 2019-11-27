@@ -7,5 +7,7 @@ go_binary(
     srcs = ["main.go"],
     deps = [
         "//kythe/go/localrun",
+        "//kythe/go/storage/leveldb",
+        "//kythe/go/util/datasize",
     ],
 )
