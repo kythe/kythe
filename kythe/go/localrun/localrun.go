@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -26,6 +25,8 @@ import (
 	"kythe.io/kythe/go/serving/pipeline/beamio"
 	"kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/util/datasize"
+
+	bespb "kythe.io/third_party/bazel/build_event_stream_go_proto"
 )
 
 var _ = delimited.Reader{}
@@ -106,6 +107,7 @@ type Runner struct {
 	// Internal state
 	m          mode
 	indexedOut *threadsafeBuffer
+	besFile    string
 }
 
 func (r *Runner) checkMode(m mode) error {
@@ -123,6 +125,12 @@ func (r *Runner) Extract(ctx context.Context) error {
 		return err
 	}
 
+	tmpfile, err := ioutil.TempFile("", "bazel_build_event_protocol.pb")
+	if err != nil {
+		return fmt.Errorf("error creating tmpfile: %v", err)
+	}
+	r.besFile = tmpfile.Name()
+
 	// TODO: This is just a simple translation of the compile script into
 	args := append([]string{
 		fmt.Sprintf("--bazelrc=%s/extractors.bazelrc", r.KytheRelease),
@@ -133,9 +141,11 @@ func (r *Runner) Extract(ctx context.Context) error {
 		// break CI workflows.
 		"--color=yes",
 		fmt.Sprintf("--override_repository=kythe_release=%s", r.KytheRelease),
+		fmt.Sprintf("--build_event_binary_file=%s", r.besFile),
 		"--",
 	},
 		r.Targets...)
+	fmt.Fprintf(os.Stderr, "Building with event file at: %s\n", r.besFile)
 
 	cmd := exec.CommandContext(ctx,
 		"bazel",
@@ -157,13 +167,14 @@ func (r *Runner) Index(ctx context.Context) error {
 		return err
 	}
 
-	// TODO: one segment of this path is "k8-fastbuild" which is not always
-	// correct.  filepath.Walk does not follow symlinks (which is the only
-	// thing that Bazel seems to make). Hardcode to a dir inside so we have
-	// something to traverse and come back later.
-	path := filepath.Join(r.WorkingDir, "bazel-out", "k8-fastbuild", "extra_actions")
-
 	g, _ := errgroup.WithContext(ctx)
+
+	file, err := os.Open(r.besFile) // For read access.
+	if err != nil {
+		return fmt.Errorf("Unable to open build event stream file: %v", err)
+	}
+
+	rd := delimited.NewReader(file)
 
 	kzips := make(chan string, r.WorkerPoolSize)
 
@@ -171,24 +182,30 @@ func (r *Runner) Index(ctx context.Context) error {
 	g.Go(func() error {
 		defer close(kzips)
 
-		if err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
+		for {
+			var event bespb.BuildEvent
+			if err := rd.NextProto(&event); err == io.EOF {
+				break
+			} else if err != nil {
+				return fmt.Errorf("error reading length-delimited proto from bes file: %v", err)
 			}
 
-			// TODO: Don't filter out non-go
-			//if !strings.HasSuffix(path, ".kzip") {
-			if !strings.HasSuffix(path, ".go.kzip") {
-				return nil
+			action := event.GetAction()
+			if action == nil {
+				continue
+			}
+
+			if !action.Success && action.Type == "extract_kzip_go_extra_action" {
+				continue
+			}
+
+			actionCompleted := event.Id.GetActionCompleted()
+			if actionCompleted == nil {
+				continue
 			}
 
 			atomic.AddUint64(&countDenom, 1)
-			kzips <- path
-
-			// Create parallel work entries that need to be performed.
-			return nil
-		}); err != nil {
-			return fmt.Errorf("error walking %q: %v", path, err)
+			kzips <- actionCompleted.PrimaryOutput
 		}
 
 		fmt.Fprintf(os.Stderr, "Finished walking tree\n")
