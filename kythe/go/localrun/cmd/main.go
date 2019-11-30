@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	languages         languageFlag = allLanguages()
+	languages         languageFlag = languageFlag{localrun.AllLanguages()}
 	port              int
 	workingDir        string
 	kytheRelease      string
@@ -97,7 +97,7 @@ func main() {
 	}
 
 	log.Printf("Building %v for targets: %s\n",
-		languagesAsString(languages), strings.Join(targets, " "))
+		languages.LanguageList.String(), strings.Join(targets, " "))
 
 	r := &localrun.Runner{
 		KytheRelease: "/opt/kythe",
@@ -108,7 +108,7 @@ func main() {
 		//WorkerPoolSize: runtime.GOMAXPROCS(0) * 2,
 		WorkerPoolSize: runtime.GOMAXPROCS(0)*0 + 1,
 
-		Languages: languages,
+		Languages: languages.LanguageList,
 		Targets:   targets,
 
 		Port: port,
@@ -138,12 +138,14 @@ func main() {
 
 // languageFlag is a flag.Value that accepts either a list of languages or repeated
 // languages for the same flag value.
-type languageFlag []localrun.Language
+type languageFlag struct {
+	localrun.LanguageList
+}
 
 // String implements flag.Value.
-func (i *languageFlag) String() string {
+func (lf *languageFlag) String() string {
 	s := []string{}
-	for _, v := range *i {
+	for _, v := range lf.LanguageList {
 		s = append(s, v.String())
 	}
 
@@ -151,45 +153,29 @@ func (i *languageFlag) String() string {
 }
 
 // Set implements flag.Value.
-func (i *languageFlag) Set(value string) error {
+func (lf *languageFlag) Set(value string) error {
 	for _, v := range strings.Split(value, ",") {
 		l, ok := localrun.LanguageMap[v]
 		if !ok {
-			return fmt.Errorf("the provided language %q is not one of %s", v, languagesAsString(allLanguages()))
+			return fmt.Errorf("the provided language %q is not one of %s", v, localrun.AllLanguages().String())
 		}
 
-		if i.has(l) {
+		if lf.has(l) {
 			continue
 		}
-		*i = append(*i, l)
+		lf.LanguageList = append(lf.LanguageList, l)
 		continue
 	}
 	return nil
 }
 
 // has allows you to check if the flag already has a value set.
-func (i *languageFlag) has(l localrun.Language) bool {
-	for _, v := range *i {
+func (lf *languageFlag) has(l localrun.Language) bool {
+	for _, v := range lf.LanguageList {
 		if v == l {
 			return true
 		}
 	}
 
 	return false
-}
-
-func languagesAsString(l []localrun.Language) string {
-	languages := []string{}
-	for _, l := range l {
-		languages = append(languages, l.String())
-	}
-	return strings.Join(languages, ",")
-}
-
-func allLanguages() []localrun.Language {
-	languages := []localrun.Language{}
-	for c := localrun.Language(0); c.Valid(); c++ {
-		languages = append(languages, c)
-	}
-	return languages
 }

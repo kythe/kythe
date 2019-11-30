@@ -38,9 +38,74 @@ const (
 	Java
 	Jvm
 	Protobuf
+	// TODO: Python isn't shipping in kythe right now by default
 	Python
+	Textproto
+	// TODO: TypeScript isn't shipping in kythe right now by default.
 	TypeScript // Note that typescript must be last, or you must update Valid to refer to the last element.
 )
+
+type metadata struct {
+	kZipExtractorName string
+	indexerPath       string
+}
+
+var languageMetadataMap = makeLanguageMetadata()
+
+func makeLanguageMetadata() map[Language]metadata {
+	m := map[Language]metadata{
+		Cxx: metadata{
+			kZipExtractorName: "extract_kzip_cxx_extra_action",
+			indexerPath:       "cxx_indexer",
+		},
+		Go: metadata{
+			kZipExtractorName: "extract_kzip_go_extra_action",
+			indexerPath:       "go_indexer",
+		},
+		Java: metadata{
+			kZipExtractorName: "extract_kzip_java_extra_action",
+			indexerPath:       "java_indexer.jar",
+		},
+		Jvm: metadata{
+			kZipExtractorName: "extract_kzip_jvm_extra_action",
+			indexerPath:       "jvm_indexer.jar",
+		},
+		Protobuf: metadata{
+			kZipExtractorName: "extract_kzip_protobuf_extra_action",
+			indexerPath:       "proto_indexer",
+		},
+		Python: metadata{
+			kZipExtractorName: "extract_kzip_python_extra_action",
+			indexerPath:       "python_indexer",
+		},
+		Textproto: metadata{
+			kZipExtractorName: "extract_kzip_protobuf_extra_action",
+			indexerPath:       "textproto_indexer",
+		},
+		TypeScript: metadata{
+			kZipExtractorName: "extract_kzip_typeScript_extra_action",
+			indexerPath:       "typescript_indexer",
+		},
+	}
+
+	allLanguages := AllLanguages()
+	for _, l := range allLanguages {
+		if _, ok := m[l]; !ok {
+			panic(fmt.Sprintf("The languageMetadata map needs an entry for %q", l))
+		}
+	}
+
+	for l := range m {
+		if !allLanguages.contains(l) {
+			panic(fmt.Sprintf("You've defined a language %q that isn't in AllLanguages()", l))
+		}
+	}
+
+	if len(m) != len(AllLanguages()) {
+		panic(fmt.Sprintf("The languageMetadata map should have an entry for every language"))
+	}
+	return m
+}
 
 // Language defines
 type Language int
@@ -58,9 +123,57 @@ func (l Language) String() string {
 	}[l]
 }
 
+func (l Language) kZipExtractorName() string {
+	return l.metadata().kZipExtractorName
+}
+
+func (l Language) indexerPath() string {
+	return l.metadata().indexerPath
+}
+
 // Valid determines of the provided language is a valid enum value.
 func (l Language) Valid() bool {
 	return l <= TypeScript
+}
+
+func (l Language) metadata() metadata {
+	return languageMetadataMap[l]
+}
+
+func AllLanguages() LanguageList {
+	languages := LanguageList{}
+	for c := Language(0); c.Valid(); c++ {
+		languages = append(languages, c)
+	}
+	return languages
+}
+
+type LanguageList []Language
+
+func (ll LanguageList) String() string {
+	languages := []string{}
+	for _, l := range ll {
+		languages = append(languages, l.String())
+	}
+	return strings.Join(languages, ",")
+}
+
+func (ll LanguageList) contains(l Language) bool {
+	for _, v := range ll {
+		if v == l {
+			return true
+		}
+	}
+	return false
+}
+
+func (ll LanguageList) hasExtractor(e string) bool {
+	for _, v := range ll {
+		if v.kZipExtractorName() == e {
+			return true
+		}
+	}
+	return false
 }
 
 var LanguageMap map[string]Language = makeLanguageMap()
@@ -98,7 +211,7 @@ type Runner struct {
 	graphStore     graphstore.Service
 
 	// Building/extracting options.
-	Languages []Language
+	Languages LanguageList
 	Targets   []string
 
 	// Serving configuration options.
@@ -195,7 +308,11 @@ func (r *Runner) Index(ctx context.Context) error {
 				continue
 			}
 
-			if !action.Success && action.Type == "extract_kzip_go_extra_action" {
+			if !action.Success {
+				continue
+			}
+			if !r.Languages.hasExtractor(action.Type) {
+				fmt.Sprintf("Didn't find extractor for: %s\n", action.Type)
 				continue
 			}
 
@@ -208,7 +325,7 @@ func (r *Runner) Index(ctx context.Context) error {
 			kzips <- actionCompleted.PrimaryOutput
 		}
 
-		fmt.Fprintf(os.Stderr, "Finished walking tree\n")
+		fmt.Fprintf(os.Stderr, "Finished finding indexable targets\n")
 		return nil
 	})
 
@@ -248,12 +365,12 @@ func (r *Runner) Index(ctx context.Context) error {
 						return fmt.Errorf("Unrecognized language: %v\n", langStr)
 					}
 
-					cmdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+					cmdCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 					defer cancel()
 
 					// Perform the work prescribed
 					cmd := exec.CommandContext(cmdCtx,
-						fmt.Sprintf("/opt/kythe/indexers/%s_indexer", strings.ToLower(l.String())),
+						fmt.Sprintf("%s/indexers/%s", r.KytheRelease, l.indexerPath()),
 						//"-continue",
 						//"-json",
 						k)
