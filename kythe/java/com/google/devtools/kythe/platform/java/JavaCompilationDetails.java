@@ -31,10 +31,13 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
+import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
 import javax.tools.Diagnostic.Kind;
@@ -42,14 +45,15 @@ import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Provides a {@link JavacAnalyzer} with access to compilation information. */
-public class JavaCompilationDetails {
-  private final JavacTask javac;
+public class JavaCompilationDetails implements AutoCloseable {
+  @Nullable private final JavacTask javac;
   private final DiagnosticCollector<JavaFileObject> diagnostics;
-  private final Iterable<? extends CompilationUnitTree> asts;
+  @Nullable private final Iterable<? extends CompilationUnitTree> asts;
   private final CompilationUnit compilationUnit;
-  private final Throwable analysisCrash;
+  @Nullable private final Throwable analysisCrash;
   private final Charset encoding;
   private final StandardJavaFileManager fileManager;
 
@@ -60,11 +64,16 @@ public class JavaCompilationDetails {
   private static final Predicate<Diagnostic<?>> ERROR_DIAGNOSTIC =
       diag -> diag.getKind() == Kind.ERROR;
 
+  /**
+   * Create a compilation details object. {@code temporaryDirectory} specifies a directory that can
+   * be used to store files that java must read from a local file system (ex: system module files).
+   */
   public static JavaCompilationDetails createDetails(
       CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider,
       List<Processor> processors,
-      boolean useExperimentalPathFileManager) {
+      boolean useExperimentalPathFileManager,
+      @Nullable Path temporaryDirectory) {
 
     JavaCompiler compiler = JavacAnalysisDriver.getCompiler();
     DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
@@ -82,31 +91,33 @@ public class JavaCompilationDetails {
             ? new CompilationUnitPathFileManager(
                 compilationUnit,
                 fileDataProvider,
-                compiler.getStandardFileManager(diagnosticsCollector, null, null))
+                compiler.getStandardFileManager(diagnosticsCollector, null, null),
+                temporaryDirectory)
             : new CompilationUnitBasedJavaFileManager(
                 fileDataProvider,
                 compilationUnit,
                 compiler.getStandardFileManager(diagnosticsCollector, null, null),
                 encoding);
 
-    Iterable<? extends JavaFileObject> sources =
-        fileManager.getJavaFileObjectsFromStrings(compilationUnit.getSourceFileList());
-
-    // Causes output to go to stdErr
-    Writer javacOut = null;
-
-    // Get a task for compiling the current CompilationUnit.
-    JavacTaskImpl javacTask =
-        (JavacTaskImpl)
-            compiler.getTask(javacOut, fileManager, diagnosticsCollector, options, null, sources);
-
-    if (!processors.isEmpty()) {
-      javacTask.setProcessors(processors);
-    }
-
     Throwable analysisCrash = null;
+    JavacTaskImpl javacTask = null;
     Iterable<? extends CompilationUnitTree> compilationUnits = null;
     try {
+      Iterable<? extends JavaFileObject> sources =
+          fileManager.getJavaFileObjectsFromStrings(compilationUnit.getSourceFileList());
+
+      // Causes output to go to stdErr
+      Writer javacOut = null;
+
+      // Get a task for compiling the current CompilationUnit.
+      javacTask =
+          (JavacTaskImpl)
+              compiler.getTask(javacOut, fileManager, diagnosticsCollector, options, null, sources);
+
+      if (!processors.isEmpty()) {
+        javacTask.setProcessors(processors);
+      }
+
       compilationUnits = javacTask.parse();
       javacTask.analyze();
     } catch (Throwable e) {
@@ -126,11 +137,11 @@ public class JavaCompilationDetails {
   }
 
   private JavaCompilationDetails(
-      JavacTask javac,
+      @Nullable JavacTask javac,
       DiagnosticCollector<JavaFileObject> diagnostics,
-      Iterable<? extends CompilationUnitTree> asts,
+      @Nullable Iterable<? extends CompilationUnitTree> asts,
       CompilationUnit compilationUnit,
-      Throwable analysisCrash,
+      @Nullable Throwable analysisCrash,
       Charset encoding,
       StandardJavaFileManager fileManager) {
     this.javac = javac;
@@ -155,8 +166,8 @@ public class JavaCompilationDetails {
   }
 
   /** Returns the Javac compiler instance initialized for current analysis target. */
-  public JavacTask getJavac() {
-    return javac;
+  public Optional<JavacTask> getJavac() {
+    return Optional.ofNullable(javac);
   }
 
   /** Returns the Diagnostics reported while analyzing the code for the current analysis target. */
@@ -171,7 +182,7 @@ public class JavaCompilationDetails {
 
   /** Returns the AST for the current analysis target. */
   public Iterable<? extends CompilationUnitTree> getAsts() {
-    return asts;
+    return asts == null ? ImmutableList.of() : asts;
   }
 
   /** Returns the protocol buffer describing the current analysis target. */
@@ -180,8 +191,8 @@ public class JavaCompilationDetails {
   }
 
   /** Returns any unexpected crash that might have occurred during javac analysis. */
-  public Throwable getAnalysisCrash() {
-    return analysisCrash;
+  public Optional<Throwable> getAnalysisCrash() {
+    return Optional.ofNullable(analysisCrash);
   }
 
   /** Returns he encoding for the source files in this compilation */
@@ -192,6 +203,15 @@ public class JavaCompilationDetails {
   /** @return The file manager for the source files in this compilation */
   public StandardJavaFileManager getFileManager() {
     return fileManager;
+  }
+
+  @Override
+  public void close() {
+    try {
+      fileManager.close();
+    } catch (IOException e) {
+      logger.atWarning().withCause(e).log("Unable to clean up file manager resources");
+    }
   }
 
   /** Generate options (such as classpath and sourcepath) from the compilation unit. */

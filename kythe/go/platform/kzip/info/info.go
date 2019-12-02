@@ -29,58 +29,86 @@ import (
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 )
 
-// KzipInfo scans the kzip in f and counts contained files and units, giving a breakdown by corpus
-// and language. It also records the size (in bytes) of the kzip specified by fileSize in the
-// returned KzipInfo.
+// KzipInfo scans the kzip in f and counts contained files and units, giving a
+// breakdown by corpus and language. It also records the size (in bytes) of the
+// kzip specified by fileSize in the returned KzipInfo. This is a convenience
+// method and thin wrapper over the Accumulator. If you need to do more than
+// just calculate KzipInfo while doing a kzip.Scan(), you should use the
+// Accumulator directly.
 func KzipInfo(f kzip.File, fileSize int64, scanOpts ...kzip.ScanOption) (*apb.KzipInfo, error) {
-	// Get file counts broken down by corpus, language.
-	kzipInfo := &apb.KzipInfo{
-		Corpora: make(map[string]*apb.KzipInfo_CorpusInfo),
-		Size:    fileSize,
-	}
-
-	err := kzip.Scan(f, func(rd *kzip.Reader, u *kzip.Unit) error {
-		srcs := stringset.New(u.Proto.SourceFile...)
-		cuLang := u.Proto.GetVName().GetLanguage()
-		if cuLang == "" {
-			msg := fmt.Sprintf("CU does not specify a language %v", u.Proto.GetVName())
-			kzipInfo.CriticalKzipErrors = append(kzipInfo.CriticalKzipErrors, msg)
-			return nil
-		}
-
-		var srcCorpora stringset.Set
-		srcsWithRI := stringset.New()
-		for _, ri := range u.Proto.RequiredInput {
-			riCorpus := requiredInputCorpus(u, ri)
-			if riCorpus == "" {
-				// Trim spaces to work around the fact that log("%v", proto) is inconsistent about trailing spaces in google3 vs open-source go.
-				msg := strings.TrimSpace(fmt.Sprintf("unable to determine corpus for required_input %q in CU %v", ri.Info.Path, u.Proto.GetVName()))
-				kzipInfo.CriticalKzipErrors = append(kzipInfo.CriticalKzipErrors, msg)
-				return nil
-			}
-			requiredInputInfo(riCorpus, cuLang, kzipInfo).Count++
-			if srcs.Contains(ri.Info.Path) {
-				sourceInfo(riCorpus, cuLang, kzipInfo).Count++
-				srcCorpora.Add(riCorpus)
-				srcsWithRI.Add(ri.Info.Path)
-			}
-		}
-		srcsWithoutRI := srcs.Diff(srcsWithRI)
-		for path := range srcsWithoutRI {
-			msg := fmt.Sprintf("source %q in CU %v doesn't have a required_input entry", path, u.Proto.GetVName())
-			kzipInfo.CriticalKzipErrors = append(kzipInfo.CriticalKzipErrors, msg)
-		}
-		if srcCorpora.Len() != 1 {
-			// This is a warning for now, but may become an error.
-			log.Printf("Multiple corpora in unit. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), srcCorpora, u.Proto.SourceFile)
-		}
+	a := NewAccumulator(fileSize)
+	if err := kzip.Scan(f, func(r *kzip.Reader, unit *kzip.Unit) error {
+		a.Accumulate(unit)
 		return nil
-	}, scanOpts...)
-	if err != nil {
+	}, scanOpts...); err != nil {
 		return nil, fmt.Errorf("scanning kzip: %v", err)
 	}
+	return a.Get(), nil
+}
 
-	return kzipInfo, nil
+// Accumulator is used to build a summary of a collection of compilation units.
+// Usage:
+//   a := NewAccumulator(fileSize)
+//   a.Accumulate(unit) // call for each compilation unit
+//   info := a.Get()    // get the resulting KzipInfo
+type Accumulator struct {
+	*apb.KzipInfo
+}
+
+// NewAccumulator creates a new Accumulator instance given the kzip fileSize (in
+// bytes).
+func NewAccumulator(fileSize int64) *Accumulator {
+	return &Accumulator{
+		KzipInfo: &apb.KzipInfo{
+			Corpora: make(map[string]*apb.KzipInfo_CorpusInfo),
+			Size:    fileSize,
+		},
+	}
+}
+
+// Accumulate should be called for each unit in the kzip so its counts can be
+// recorded.
+func (a *Accumulator) Accumulate(u *kzip.Unit) {
+	srcs := stringset.New(u.Proto.SourceFile...)
+	cuLang := u.Proto.GetVName().GetLanguage()
+	if cuLang == "" {
+		msg := fmt.Sprintf("CU does not specify a language %v", u.Proto.GetVName())
+		a.KzipInfo.CriticalKzipErrors = append(a.KzipInfo.CriticalKzipErrors, msg)
+		return
+	}
+
+	var srcCorpora stringset.Set
+	srcsWithRI := stringset.New()
+	for _, ri := range u.Proto.RequiredInput {
+		riCorpus := requiredInputCorpus(u, ri)
+		if riCorpus == "" {
+			// Trim spaces to work around the fact that log("%v", proto) is inconsistent about trailing spaces in google3 vs open-source go.
+			msg := strings.TrimSpace(fmt.Sprintf("unable to determine corpus for required_input %q in CU %v", ri.Info.Path, u.Proto.GetVName()))
+			a.KzipInfo.CriticalKzipErrors = append(a.KzipInfo.CriticalKzipErrors, msg)
+			return
+		}
+		requiredInputInfo(riCorpus, cuLang, a.KzipInfo).Count++
+		if srcs.Contains(ri.Info.Path) {
+			sourceInfo(riCorpus, cuLang, a.KzipInfo).Count++
+			srcCorpora.Add(riCorpus)
+			srcsWithRI.Add(ri.Info.Path)
+		}
+	}
+	srcsWithoutRI := srcs.Diff(srcsWithRI)
+	for path := range srcsWithoutRI {
+		msg := fmt.Sprintf("source %q in CU %v doesn't have a required_input entry", path, u.Proto.GetVName())
+		a.KzipInfo.CriticalKzipErrors = append(a.KzipInfo.CriticalKzipErrors, msg)
+	}
+	if srcCorpora.Len() != 1 {
+		// This is a warning for now, but may become an error.
+		log.Printf("Multiple corpora in unit. unit vname={%v}; src corpora=%v; srcs=%v", u.Proto.GetVName(), srcCorpora, u.Proto.SourceFile)
+	}
+}
+
+// Get returns the final KzipInfo after info from each unit in the kzip has been
+// accumulated.
+func (a *Accumulator) Get() *apb.KzipInfo {
+	return a.KzipInfo
 }
 
 // requiredInputCorpus computes the corpus for a required input. It follows the rules in the

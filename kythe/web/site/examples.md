@@ -10,7 +10,8 @@ order: 10
 
 This document assumes that the latest release archive from
 [https://github.com/kythe/kythe/releases](https://github.com/kythe/kythe/releases)
-has been unpacked into /opt/kythe/.  See /opt/kythe/README for more information.
+has been unpacked into /opt/kythe/.  See /opt/kythe/README.md for more
+information.
 
 ## Extracting Compilations
 
@@ -65,13 +66,6 @@ bazel build -k \
 # Find the extracted .kzip files
 find -L bazel-out -name '*.kzip'
 {% endhighlight %}
-
-The provided utility script,
-[https://github.com/kythe/kythe/blob/master/kythe/extractors/bazel/extract.sh]({{site.data.development.source_browser}}/kythe/extractors/bazel/extract.sh),
-does a full extraction using Bazel and then moves the compilations into the
-directory structure used by the
-[kythe/kythe]({{site.data.development.source_browser}}/kythe/release/kythe.sh)
-Docker image.
 
 ### Extracting other Bazel based repositories
 
