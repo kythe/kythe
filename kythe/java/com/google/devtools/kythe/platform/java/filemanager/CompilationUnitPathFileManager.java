@@ -194,15 +194,12 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   private Path getPath(String path, String... rest) {
-    // Get the absolute path so we can safely do the startsWith check.
-    Path local = Paths.get(path, rest).toAbsolutePath();
     // If this is a path underneath the temporary directory, use it. This is required for --system
     // flags to work correctly.
-    if (temporaryDirectory != null) {
-      if (local.startsWith(temporaryDirectory)) {
-        logger.atInfo().log("Using the filesystem for temporary path %s", local);
-        return local;
-      }
+    Path local = Paths.get(path, rest);
+    if (temporaryDirectory != null && local.toAbsolutePath().startsWith(temporaryDirectory)) {
+      logger.atInfo().log("Using the filesystem for temporary path %s", local);
+      return local;
     }
     // In order to support paths passed via command line options rather than
     // JavaDetails, prevent loading source files from outside the
@@ -214,7 +211,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
       return result;
     }
     logger.atFine().log("Falling back to filesystem for %s", result);
-    return Paths.get(path, rest);
+    return local;
   }
 
   /** For each entry in the provided map, sets the corresponding location in fileManager */
@@ -248,8 +245,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
       temporaryDirectory =
           Files.createTempDirectory(temporaryDirectoryPrefix, "kythe_java_indexer")
               .toAbsolutePath();
-      Path systemRoot =
-          Files.createDirectory(temporaryDirectory.resolve("system")).toAbsolutePath();
+      Path systemRoot = Files.createDirectory(temporaryDirectory.resolve("system"));
       try (Stream<Path> stream = Files.walk(sys.resolve("lib"))) {
         for (Path path : (Iterable<Path>) stream::iterator) {
           Path p =
