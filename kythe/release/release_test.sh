@@ -62,6 +62,9 @@ tools/entrystream < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" | \
 tools/triples < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" >/dev/null
 
 # ensure proto_metadata_plugin builds
+# TODO(justbuchanan): document this if it works
+export HOME="${TMPDIR}/bazelinbazel"
+mkdir -p $HOME
 bazel build //:cc_proto_metadata_plugin
 
 # TODO(zarko): add cxx extractor tests
