@@ -1,5 +1,21 @@
 # Release Notes
 
+## [v0.0.36] - 2019-12-02
+
+#### Bug Fixes
+
+*   updated for Bazel 1.2.1 (#4230) ([d039eb79](https://github.com/kythe/kythe/commit/d039eb798ea41128755387cfefae94ee7cd62a62))
+* **bazel extractor:**  give external paths a root (#4233) ([bddf41f9](https://github.com/kythe/kythe/commit/bddf41f9670d20a9554bf8b30184010763485965))
+* **java indexer:**
+  *  Clean up after exceptions (#4225) ([5b7512c9](https://github.com/kythe/kythe/commit/5b7512c9ddcfcb0cccadfb5beaa2a7165457005e))
+  *  fix startsWith check (#4221) ([229ceabc](https://github.com/kythe/kythe/commit/229ceabc7aca7b76d544e35211350999e74c86bc))
+* **java_common:**  don't modify return path value (#4232) ([9e038f40](https://github.com/kythe/kythe/commit/9e038f40a225a37cd4bc53f619e8106212dab88e))
+* **kzip:**  --encoding flag was previously ignored (#4216) ([0f1bea83](https://github.com/kythe/kythe/commit/0f1bea8362b692e137268034312cd6701cb9caaf))
+
+#### Features
+
+* **java indexer:**  better support system modules (#4218) ([a8cda826](https://github.com/kythe/kythe/commit/a8cda826b5fdf28a3ce3a9b752ed45d5c4cceb11))
+
 ## [v0.0.35] - 2019-11-15
 
 #### Bug Fixes
@@ -731,7 +747,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.35...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.36...HEAD
+[v0.0.36] https://github.com/kythe/kythe/compare/v0.0.35...v0.0.36
 [v0.0.35] https://github.com/kythe/kythe/compare/v0.0.34...v0.0.35
 [v0.0.34] https://github.com/kythe/kythe/compare/v0.0.33...v0.0.34
 [v0.0.33] https://github.com/kythe/kythe/compare/v0.0.32...v0.0.33
