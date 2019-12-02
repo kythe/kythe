@@ -122,6 +122,11 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     Preconditions.checkState(
         entrySets != null, "analyzeCompilationUnit must be called to analyze each file");
     if (!details.getJavac().isPresent()) {
+      if (details.getAnalysisCrash().isPresent()) {
+        throw new AnalysisException(
+            "No javac in details while analyzing file: " + ast.getSourceFile().getName(),
+            details.getAnalysisCrash().get());
+      }
       throw new AnalysisException(
           "No javac in details while analyzing file: " + ast.getSourceFile().getName());
     }
