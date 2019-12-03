@@ -1,5 +1,11 @@
 # Release Notes
 
+## [v0.0.37] - 2019-12-03
+
+#### Bug Fixes
+
+* **extractors:**  use distinct proto meta files for cc_proto_library (#4234) ([24d64419](https://github.com/kythe/kythe/commit/24d644198236d4d6b5b9fe0d2fbc74224991a0b8))
+
 ## [v0.0.36] - 2019-12-02
 
 #### Bug Fixes
@@ -742,7 +748,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.36...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.37...HEAD
+[v0.0.37] https://github.com/kythe/kythe/compare/v0.0.36...v0.0.37
 [v0.0.36] https://github.com/kythe/kythe/compare/v0.0.35...v0.0.36
 [v0.0.35] https://github.com/kythe/kythe/compare/v0.0.34...v0.0.35
 [v0.0.34] https://github.com/kythe/kythe/compare/v0.0.33...v0.0.34
