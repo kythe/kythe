@@ -16,6 +16,14 @@
     }
   },
   {
+    "pattern": "external/([^/]+)/(.*)",
+    "vname": {
+      "corpus": "CORPUS",
+      "root": "external/@1@",
+      "path": "@2@"
+    }
+  },
+  {
     "pattern": "(.*)",
     "vname": {
       "corpus": "CORPUS",
