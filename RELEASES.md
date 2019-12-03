@@ -4,7 +4,6 @@
 
 #### Bug Fixes
 
-*   updated for Bazel 1.2.1 (#4230) ([d039eb79](https://github.com/kythe/kythe/commit/d039eb798ea41128755387cfefae94ee7cd62a62))
 * **bazel extractor:**  give external paths a root (#4233) ([bddf41f9](https://github.com/kythe/kythe/commit/bddf41f9670d20a9554bf8b30184010763485965))
 * **kzip:**  --encoding flag was previously ignored (#4216) ([0f1bea83](https://github.com/kythe/kythe/commit/0f1bea8362b692e137268034312cd6701cb9caaf))
 
