@@ -67,20 +67,6 @@ std::string JoinCommand(const std::vector<std::string>& command) {
   return output;
 }
 
-std::string GetBuildDirectory() {
-  std::string build_dir;
-  {
-    char cwd[MAXPATHLEN];
-    build_dir = getcwd(cwd, MAXPATHLEN);
-  }
-  auto sandbox_start = build_dir.find("/bazel-sandbox/");
-  if (sandbox_start == std::string::npos) return build_dir;
-  auto sandbox_end =
-      build_dir.find("/", sandbox_start + strlen("/bazel-sandbox/"));
-
-  return build_dir.erase(sandbox_start, sandbox_end - sandbox_start);
-}
-
 std::string FormatCompilationCommand(const std::string& source_file,
                                      const std::vector<std::string>& command) {
   rapidjson::StringBuffer buffer;
@@ -89,7 +75,7 @@ std::string FormatCompilationCommand(const std::string& source_file,
   writer.Key("file");
   writer.String(source_file.c_str());
   writer.Key("directory");
-  writer.String(GetBuildDirectory().c_str());
+  writer.String("@BAZEL_ROOT@");
   writer.Key("command");
   writer.String(JoinCommand(command).c_str());
   writer.EndObject();
