@@ -11,14 +11,15 @@ bazel build \
   --noshow_loading_progress \
   $(bazel query 'kind(cc_.*, //...) - attr(tags, manual, //...)') > /dev/null
 
-pushd $(bazel info execution_root) > /dev/null
+BAZEL_ROOT="$(bazel info execution_root)"
+pushd "$BAZEL_ROOT" > /dev/null
 echo "[" > compile_commands.json
 COUNT=0
 find . -name '*.compile_command.json' -print0 | while read -r -d '' fname; do
   if ((COUNT++)); then
     echo ',' >> compile_commands.json
   fi
-  cat "$fname" >> compile_commands.json
+  sed -e "s|@BAZEL_ROOT@|$BAZEL_ROOT|g" < "$fname" >> compile_commands.json
 done
 echo "]" >> compile_commands.json
 popd > /dev/null
