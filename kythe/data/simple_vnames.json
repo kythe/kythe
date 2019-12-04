@@ -16,11 +16,11 @@
     }
   },
   {
-    "pattern": "external/([^/]+)/(.*)",
+    "pattern": "(external/.*)",
     "vname": {
       "corpus": "CORPUS",
-      "root": "external/@1@",
-      "path": "@2@"
+      "root": "external",
+      "path": "@1@"
     }
   },
   {
