@@ -95,9 +95,12 @@ message CompilationUnit {
   // do not provide their own `v_name` field.  As such, the general logic for
   // constructing VNames for entities arising a given source path should be:
   // {
-  //   corpus:   unit.required_input[path].v_name.corpus OR unit.v_name.corpus
-  //   root:     unit.required_input[path].v_name.root OR unit.v_name.root
-  //   path:     unit.required_input[path].v_name.path OR path
+  //   vname := unit.required_input[path].v_name
+  //   if vname.corpus is empty
+  //      vname.corpus := unit.v_name.corpus
+  //      vname.root := unit.v_name.root
+  //   if vname.path is empty
+  //      vname.path := path
   // }
   // The above applies generally, but specific node kinds may have rules which
   // override this logic.
