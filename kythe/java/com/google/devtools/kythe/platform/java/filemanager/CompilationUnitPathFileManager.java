@@ -33,6 +33,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.main.OptionHelper;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -259,10 +260,15 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
       logger.atInfo().log("Setting system path to %s", systemRoot);
       super.handleOption("--system", Iterators.singletonIterator(systemRoot.toString()));
     } else if (Files.isDirectory(sys.resolve("modules"))) {
-      // TODO(salguarnieri) Due to a bug in the javac argument validation, bypass it and set the
-      // location directly.
-      setLocationFromPaths(
-          StandardLocation.valueOf("SYSTEM_MODULES"), ImmutableList.of(sys.resolve("modules")));
+      // TODO(shahms): Due to a bug in both javac argument validation and location validation,
+      // we have to manually enumerate the available modules and set them directly.
+      Location systemLocation = StandardLocation.valueOf("SYSTEM_MODULES");
+      try (DirectoryStream<Path> stream = Files.newDirectoryStream(sys.resolve("modules"))) {
+        for (Path entry : stream) {
+          setLocationForModule(
+              systemLocation, entry.getFileName().toString(), ImmutableList.of(entry));
+        }
+      }
     } else {
       throw new IllegalArgumentException(value);
     }
