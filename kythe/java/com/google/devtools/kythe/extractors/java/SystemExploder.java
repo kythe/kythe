@@ -57,20 +57,6 @@ final class SystemExploder {
     return walkSystemModules(wrap(fileManager));
   }
 
-  public static void main(String[] args) {
-    try {
-      if (args.length == 2) {
-        copySystemModules(args[0], args[1]);
-      } else if (args.length == 1) {
-        dumpSystemPaths(args[0]);
-      } else {
-        dumpSystemPaths();
-      }
-    } catch (IOException e) {
-      System.err.println(e.toString());
-    }
-  }
-
   // In order to work around the lack of the required JDK9 methods in google3, wrap
   // StandardJavaFileManagers before use (for now).
   private static ForwardingStandardJavaFileManager wrap(StandardJavaFileManager fileManager) {
@@ -103,6 +89,20 @@ final class SystemExploder {
     }
     // TODO(shahms): make this a lazy stream.
     return modules.build().stream();
+  }
+
+  public static void main(String[] args) {
+    try {
+      if (args.length == 2) {
+        copySystemModules(args[0], args[1]);
+      } else if (args.length == 1) {
+        dumpSystemPaths(args[0]);
+      } else {
+        dumpSystemPaths();
+      }
+    } catch (IOException e) {
+      System.err.println(e.toString());
+    }
   }
 
   private static void dumpSystemPaths(ForwardingStandardJavaFileManager fileManager)
