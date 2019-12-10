@@ -79,7 +79,6 @@ textproto_verifier_test(
         "external/com_google_protobuf/src",
     ],
     protos = [
-        "any_type.proto",
         "example.proto",
     ],
     textproto = "schema_comments.pbtxt",
