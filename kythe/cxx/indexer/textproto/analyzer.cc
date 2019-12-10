@@ -239,12 +239,8 @@ Status TextprotoAnalyzer::AnalyzeMessage(
 // Given a type url that looks like "type.googleapis.com/example.Message1",
 // returns "example.Message1".
 std::string ProtoMessageNameFromAnyTypeUrl(absl::string_view type_url) {
-  std::vector<std::string> parts = absl::StrSplit(type_url, "/");
-  if (parts.size() != 2) {
-    LOG(ERROR) << "Invalid Any type_url: '" << type_url << "'";
-    return "";
-  }
-  return parts[1];
+  return std::string(
+      type_url.substr(std::min(type_url.size(), type_url.rfind('/') + 1)));
 }
 
 // Example textproto:
