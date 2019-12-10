@@ -264,7 +264,7 @@ Status TextprotoAnalyzer::AnalyzeAnyTypeUrl(
   // Note that line is 1-indexed; a value of zero indicates an empty location.
   if (field_loc.line == 0) return OkStatus();
 
-  re2::StringPiece sp(textproto_content_.begin(), textproto_content_.size());
+  re2::StringPiece sp(textproto_content_.data(), textproto_content_.size());
   const int search_from =
       line_index_.ComputeByteOffset(field_loc.line, field_loc.column);
   sp = sp.substr(search_from);
