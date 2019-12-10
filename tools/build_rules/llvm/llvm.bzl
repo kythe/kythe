@@ -323,6 +323,7 @@ def make_context(**kwargs):
         set = _set_cmake_var,
         configure_file = _configure_file,
         add_llvm_library = _add_llvm_library,
+        add_llvm_component_library = _add_llvm_library,
         add_llvm_target = _add_llvm_target,
         add_clang_library = _add_clang_library,
         add_tablegen = _add_tablegen,
