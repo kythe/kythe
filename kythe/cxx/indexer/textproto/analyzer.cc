@@ -239,6 +239,8 @@ Status TextprotoAnalyzer::AnalyzeMessage(
 // Given a type url that looks like "type.googleapis.com/example.Message1",
 // returns "example.Message1".
 std::string ProtoMessageNameFromAnyTypeUrl(absl::string_view type_url) {
+  // Return the substring from after the last '/' to the end or an empty string.
+  // If there is no slash, returns the entire string.
   return std::string(
       type_url.substr(std::min(type_url.size(), type_url.rfind('/') + 1)));
 }
