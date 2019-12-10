@@ -236,7 +236,6 @@ Status TextprotoAnalyzer::AnalyzeMessage(
   return OkStatus();
 }
 
-namespace {
 // Given a type url that looks like "type.googleapis.com/example.Message1",
 // returns "example.Message1".
 std::string ProtoMessageNameFromAnyTypeUrl(absl::string_view type_url) {
@@ -247,7 +246,6 @@ std::string ProtoMessageNameFromAnyTypeUrl(absl::string_view type_url) {
   }
   return parts[1];
 }
-}  // namespace
 
 // Example textproto:
 //   any_field {
@@ -326,7 +324,8 @@ Status TextprotoAnalyzer::AnalyzeAny(
     return OkStatus();
   }
 
-  if (auto s = AnalyzeAnyTypeUrl(file_vname, *msg_desc, field_loc); !s.ok()) {
+  auto s = AnalyzeAnyTypeUrl(file_vname, *msg_desc, field_loc);
+  if (!s.ok()) {
     return s;
   }
 
