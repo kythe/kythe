@@ -21,6 +21,7 @@
 #include "absl/types/optional.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/Stmt.h"
 #include "indexed_parent_map.h"
 
 namespace kythe {

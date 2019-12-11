@@ -1809,7 +1809,11 @@ Naming convention::
   Signature:::
     *empty*
 Facts::
-  text:::
+  language:::
+    The source language, as used in <<_vname_conventions,VName>>
+    `language`.  This fact is optional; it is intended for use by
+    source browsers, for things like source colorization.
+text:::
     Uninterpreted content as an array of bytes.
   text/encoding:::
     Encoding of the text fact.  See
