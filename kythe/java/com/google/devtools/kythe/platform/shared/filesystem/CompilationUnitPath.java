@@ -238,7 +238,7 @@ final class CompilationUnitPath implements Path {
   }
 
   SeekableByteChannel newByteChannel() throws IOException {
-    return new ByteBufferByteChannel(fileSystem.read(this));
+    return new ByteBufferByteChannel(fileSystem.startRead(this));
   }
 
   DirectoryStream<Path> newDirectoryStream(DirectoryStream.Filter<? super Path> filter)
