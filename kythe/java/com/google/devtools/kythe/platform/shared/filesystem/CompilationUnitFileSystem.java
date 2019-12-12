@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitFileTree;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -36,7 +37,6 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
@@ -202,16 +202,12 @@ public final class CompilationUnitFileSystem extends FileSystem {
     return entries.keySet().stream().map(k -> dir.resolve(k)).collect(Collectors.toSet());
   }
 
-  byte[] read(Path file) throws IOException {
+  ListenableFuture<byte[]> startRead(Path file) throws IOException {
     String digest = digest(file);
     if (digest == null || digest.equals(CompilationUnitFileTree.DIRECTORY_DIGEST)) {
       throw new NoSuchFileException(file.toString());
     }
-    try {
-      return fileDataProvider.startLookup(file.toString(), digest).get();
-    } catch (InterruptedException | ExecutionException exc) {
-      throw new IOException(exc);
-    }
+    return fileDataProvider.startLookup(file.toString(), digest);
   }
 
   CompilationUnitFileAttributes readAttributes(Path path) throws IOException {
