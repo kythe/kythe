@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.util.List;
@@ -253,5 +254,26 @@ public final class CompilationUnitFileSystemTest {
         .isEqualTo("/working/directory/relative/path");
     assertThat(fileSystem.getPath("/absolute/path").toAbsolutePath().toString())
         .isEqualTo("/absolute/path");
+  }
+
+  @Test
+  public void newDirectoryStream_failsMissingFile() {
+    CompilationUnitFileSystem fileSystem =
+        builder()
+            .addFile("relative/nested/path/with/empty/file", "relativeContents")
+            .addFile("/absolute/nested/path/with/empty/file", "absoluteContents")
+            .build();
+
+    try {
+      try (DirectoryStream<Path> stream =
+          Files.newDirectoryStream(fileSystem.getPath("/absolute/path/does/not/exist"))) {
+        assertThat(stream).isEmpty(); // Shouldn't actually get here, but still.
+      }
+      fail("Expected NoSuchFileException not thrown.");
+    } catch (NoSuchFileException exc) {
+      assertThat(exc).hasMessageThat().isEqualTo("/absolute/path/does/not/exist");
+    } catch (IOException exc) {
+      throw new RuntimeException(exc);
+    }
   }
 }
