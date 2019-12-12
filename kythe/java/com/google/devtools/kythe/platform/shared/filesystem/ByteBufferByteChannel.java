@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -31,10 +30,6 @@ import java.util.concurrent.Future;
 class ByteBufferByteChannel implements SeekableByteChannel {
   private Future<byte[]> buffer;
   private long position;
-
-  public ByteBufferByteChannel(byte[] data) {
-    this(CompletableFuture.completedFuture(data));
-  }
 
   public ByteBufferByteChannel(Future<byte[]> data) {
     buffer = data;
