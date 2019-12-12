@@ -6,4 +6,27 @@ str_field: "testing..."
 
 #- @details_field ref DetailsField
 details_field: {
+    #- @"any_type_test.Message2" ref Message2
+    [type.googleapis.com/any_type_test.Message2] {
+        #- @bool_field ref BoolField
+        bool_field: true
+    }
+}
+
+#- @repeated_details_field ref RepeatedDetailsField
+repeated_details_field: {
+    #- @"any_type_test.Message2" ref Message2
+    [type.googleapis.com/any_type_test.Message2] {
+        #- @bool_field ref BoolField
+        bool_field: true
+    }
+}
+
+#- @repeated_details_field ref RepeatedDetailsField
+repeated_details_field {
+    #- @"any_type_test.Message2" ref Message2
+    [  type.googleapis.com/any_type_test.Message2 ] {
+        #- @bool_field ref BoolField
+        bool_field: true
+    }
 }
