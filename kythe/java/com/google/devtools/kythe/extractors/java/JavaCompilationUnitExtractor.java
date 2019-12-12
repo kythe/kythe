@@ -608,7 +608,7 @@ public class JavaCompilationUnitExtractor {
         }
       } catch (IOException e) {
         throw new ExtractionException(
-            String.format("Unable to read file content of %s", strippedPath), false);
+            String.format("Unable to read file content of %s", strippedPath), e, false);
       }
     }
   }
