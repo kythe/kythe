@@ -1,5 +1,19 @@
 # Release Notes
 
+## [v0.0.38] - 2019-12-12
+
+#### Bug Fixes
+
+*   Retain exception cause in JavaCompilationUnitExtractor (#4258) ([70120e55](https://github.com/kythe/kythe/commit/70120e5506a06f02d9c0653e00c852cc9cd5dc5b))
+* **bazel extractor:**  change vnames for external paths (#4241) ([22928892](https://github.com/kythe/kythe/commit/2292889291ab88ebb796a6c4f788f691ad11218d))
+* **cxx_tools:**  replace sandboxed directory with bazel execroot (#4240) ([4814f9f3](https://github.com/kythe/kythe/commit/4814f9f3fcc05c49fbe11f62f1e58a428048da27))
+* **java_common:** fixes and utilities for exploded system directories (#4242) ([13f0fa7d](https://github.com/kythe/kythe/commit/13f0fa7da0959c20da243d6db4aea5dedea53f39), closes [#4213](https://github.com/kythe/kythe/issues/4213))
+* **textproto:**  support direct instantiation of protobuf.Any messages (#4259) ([b64188e4](https://github.com/kythe/kythe/commit/b64188e4fb2200268397a66c99d60e95c7fe7fc5))
+
+#### Features
+
+* **textproto:**  index contents of google.protobuf.Any fields (#4254) ([d429a737](https://github.com/kythe/kythe/commit/d429a73788fd49b08ab15d380cdedf4892684084))
+
 ## [v0.0.37] - 2019-12-03
 
 #### Bug Fixes
@@ -748,7 +762,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.37...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.38...HEAD
+[v0.0.38] https://github.com/kythe/kythe/compare/v0.0.37...v0.0.38
 [v0.0.37] https://github.com/kythe/kythe/compare/v0.0.36...v0.0.37
 [v0.0.36] https://github.com/kythe/kythe/compare/v0.0.35...v0.0.36
 [v0.0.35] https://github.com/kythe/kythe/compare/v0.0.34...v0.0.35

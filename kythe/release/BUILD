@@ -23,7 +23,7 @@ docker_build(
     deps = ["//kythe/release/base"],
 )
 
-release_version = "v0.0.37"
+release_version = "v0.0.38"
 
 genrule(
     name = "release",
