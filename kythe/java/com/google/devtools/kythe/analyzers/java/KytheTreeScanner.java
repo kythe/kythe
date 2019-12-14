@@ -91,6 +91,7 @@ import com.sun.tools.javac.util.Context;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -141,7 +142,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final JvmGraph jvmGraph;
   private final Set<VName> emittedIdentType = new HashSet<>();
 
+  private final Set<String> metadataFilePaths = new HashSet<>();
   private List<Metadata> metadata;
+
   private KytheDocTreeScanner docScanner;
 
   private KytheTreeScanner(
@@ -226,6 +229,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     TreeContext ctx = new TreeContext(filePositions, compilation);
     metadata = new ArrayList<>();
+    loadImplicitAnnotationsFile();
 
     EntrySet fileNode = entrySets.newFileNodeAndEmit(filePositions);
 
@@ -1376,23 +1380,54 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return nodes;
   }
 
+  private void loadAnnotationsFile(String fullPath, FileObject file) {
+    try {
+      InputStream stream = file.openInputStream();
+      Metadata newMetadata = metadataLoaders.parseFile(fullPath, ByteStreams.toByteArray(stream));
+      if (newMetadata == null) {
+        logger.atWarning().log("Can't load metadata %s", fullPath);
+        return;
+      }
+      metadata.add(newMetadata);
+      metadataFilePaths.add(fullPath);
+    } catch (IOException ex) {
+      logger.atWarning().log("Can't read metadata for %s", fullPath);
+    }
+  }
+
+  private void loadImplicitAnnotationsFile() {
+    URI uri = filePositions.getSourceFile().toUri();
+    String name = Paths.get(uri.getPath()).getFileName().toString();
+    try {
+      String fullPath = resolveSourcePath(name + ".pb.meta");
+      if (metadataFilePaths.contains(fullPath)) {
+        return;
+      }
+      FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath), null);
+      if (file == null) {
+        // This is an expected case.
+        return;
+      }
+      loadAnnotationsFile(fullPath, file);
+    } catch (IllegalArgumentException ex) {
+      logger.atWarning().log("Can't read metadata for %s", uri);
+    }
+  }
+
   private void loadAnnotationsFile(String path) {
     URI uri = filePositions.getSourceFile().toUri();
     try {
       String fullPath = resolveSourcePath(path);
+      if (metadataFilePaths.contains(fullPath)) {
+        return;
+      }
       FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath), null);
       if (file == null) {
         logger.atWarning().log("Can't find metadata %s for %s at %s", path, uri, fullPath);
         return;
       }
-      InputStream stream = file.openInputStream();
-      Metadata newMetadata = metadataLoaders.parseFile(fullPath, ByteStreams.toByteArray(stream));
-      if (newMetadata == null) {
-        logger.atWarning().log("Can't load metadata %s for %s", path, uri);
-        return;
-      }
-      metadata.add(newMetadata);
-    } catch (IOException | IllegalArgumentException ex) {
+      loadAnnotationsFile(fullPath, file);
+    } catch (IllegalArgumentException ex) {
       logger.atWarning().log("Can't read metadata %s for %s", path, uri);
     }
   }

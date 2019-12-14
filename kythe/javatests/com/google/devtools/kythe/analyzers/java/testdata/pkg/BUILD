@@ -9,6 +9,7 @@ java_library(
         exclude = [
             # Exclude meta-data tests
             "Metadata.java",
+            "ProtobufImplicitMetadata.java",
             "ProtobufMetadata.java",
             "ProcessingMetadata.java",
             "ProcessingProtobufMetadata.java",
@@ -281,6 +282,21 @@ java_verifier_test(
     ],
     vnames_config = "protobuf_vnames.json",
     deps = ["@maven//:javax_annotation_jsr250_api"],
+)
+
+java_verifier_test(
+    name = "protobuf_implicit_metadata_tests",
+    srcs = [
+        "ProtobufImplicitMetadata.java",
+    ],
+    indexer_opts = [
+        "--verbose",
+        "--default_metadata_corpus=default",
+    ],
+    meta = [
+        "ProtobufImplicitMetadata.java.pb.meta",
+    ],
+    vnames_config = "protobuf_vnames.json",
 )
 
 java_verifier_test(

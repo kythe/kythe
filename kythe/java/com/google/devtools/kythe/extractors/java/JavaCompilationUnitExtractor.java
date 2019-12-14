@@ -72,6 +72,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -791,6 +792,16 @@ public class JavaCompilationUnitExtractor {
             public void finished(TaskEvent e) {
               if (e.getKind() == TaskEvent.Kind.PARSE) {
                 compilationUnits.add(e.getCompilationUnit());
+                try {
+                  String annotationPath =
+                      e.getCompilationUnit().getSourceFile().toUri().getPath() + ".pb.meta";
+                  for (JavaFileObject file :
+                      fileManager.getJavaFileForSources(Arrays.asList(annotationPath))) {
+                    ((UsageAsInputReportingJavaFileObject) file).markUsed();
+                  }
+                } catch (IllegalArgumentException ex) {
+                  // No implicit metadata file or invalid path.
+                }
               }
             }
 
