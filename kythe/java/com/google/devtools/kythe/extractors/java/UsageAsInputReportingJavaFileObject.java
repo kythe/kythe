@@ -39,6 +39,10 @@ class UsageAsInputReportingJavaFileObject implements JavaFileObject {
     usageRecord.markUsed();
   }
 
+  protected void markOptional() {
+    usageRecord.markOptional();
+  }
+
   protected JavaFileObject underlyingFileObject;
   protected InputUsageRecord usageRecord;
 

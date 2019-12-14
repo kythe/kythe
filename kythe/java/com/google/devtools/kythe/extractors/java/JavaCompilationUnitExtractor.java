@@ -460,7 +460,8 @@ public class JavaCompilationUnitExtractor {
           fileManager,
           sourceFiles,
           genSrcDir,
-          results);
+          results,
+          input.isOptional());
     }
   }
 
@@ -470,7 +471,8 @@ public class JavaCompilationUnitExtractor {
       UsageAsInputReportingFileManager fileManager,
       Map<URI, String> sourceFiles,
       Optional<Path> genSrcDir,
-      AnalysisResults results)
+      AnalysisResults results,
+      boolean isOptional)
       throws ExtractionException {
     URI uri = requiredInput.toUri();
     String entryPath;
@@ -608,8 +610,10 @@ public class JavaCompilationUnitExtractor {
           results.sourceFileNames.put(strippedPath, sourceFiles.get(requiredInput.toUri()));
         }
       } catch (IOException e) {
-        throw new ExtractionException(
-            String.format("Unable to read file content of %s", strippedPath), e, false);
+        if (!isOptional) {
+          throw new ExtractionException(
+              String.format("Unable to read file content of %s", strippedPath), e, false);
+        }
       }
     }
   }
@@ -798,9 +802,10 @@ public class JavaCompilationUnitExtractor {
                   for (JavaFileObject file :
                       fileManager.getJavaFileForSources(Arrays.asList(annotationPath))) {
                     ((UsageAsInputReportingJavaFileObject) file).markUsed();
+                    ((UsageAsInputReportingJavaFileObject) file).markOptional();
                   }
                 } catch (IllegalArgumentException ex) {
-                  // No implicit metadata file or invalid path.
+                  // Invalid path.
                 }
               }
             }
