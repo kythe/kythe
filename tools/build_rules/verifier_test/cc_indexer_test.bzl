@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load(
     "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     "CPP_COMPILE_ACTION_NAME",
