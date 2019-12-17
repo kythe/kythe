@@ -1,4 +1,4 @@
-load("@rules_java//java:defs.bzl", "java_library", "java_binary")
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
 
 package(
     default_visibility = ["//kythe:default_visibility"],

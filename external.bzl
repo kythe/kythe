@@ -267,7 +267,7 @@ def _java_dependencies():
             "https://repo1.maven.org/maven2",
         ],
         fetch_sources = True,
-        generate_compat_repositories = True, # Required by bazel-common's dependencies
+        generate_compat_repositories = True,  # Required by bazel-common's dependencies
         version_conflict_policy = "pinned",
     )
 
