@@ -2,9 +2,9 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 load(
     "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
+    "cc_extractor_test",
     "cc_indexer_test",
     "objc_indexer_test",
-    "cc_extractor_test",
 )
 
 cc_indexer_test(
