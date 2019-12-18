@@ -159,7 +159,11 @@ public abstract class AbstractJavacWrapper {
       } else if (!(skipArg
           || arg.startsWith("-J")
           || arg.startsWith("-XD")
-          || arg.startsWith("-Werror"))) {
+          || arg.startsWith("-Werror")
+          // The errorprone plugin complicates the build due to certain other
+          // flags it requires (such as -XDcompilePolicy=byfile) and is not
+          // necessary for extraction.
+          || arg.startsWith("-Xplugin:ErrorProne"))) {
         cleanedUpArgs.add(arg);
       }
       skipArg = false;
