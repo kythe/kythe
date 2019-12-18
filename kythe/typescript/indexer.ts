@@ -1241,14 +1241,28 @@ class Visitor {
           console.error(`TODO: export ${exp.name} has no symbol`);
           continue;
         }
-        // TODO: import a type, not just a value.
         const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
-        const kExport = this.host.getSymbolName(remoteSym, TSNamespace.VALUE);
-        this.emitEdge(this.newAnchor(exp.name), EdgeKind.REF, kExport);
-        if (exp.propertyName) {
-          // Aliased export; propertyName is the 'as <...>' bit.
-          this.emitEdge(
-              this.newAnchor(exp.propertyName), EdgeKind.REF, kExport);
+        const anchor = this.newAnchor(exp.name);
+        // Aliased export; propertyName is the 'as <...>' bit.
+        const propertyAnchor = exp.propertyName ?
+            this.newAnchor(exp.propertyName) : null;
+        // Symbol is a value.
+        if (remoteSym.flags & ts.SymbolFlags.Value) {
+          const kExport =
+              this.host.getSymbolName(remoteSym, TSNamespace.VALUE);
+          this.emitEdge(anchor, EdgeKind.REF, kExport);
+          if (propertyAnchor) {
+            this.emitEdge(propertyAnchor, EdgeKind.REF, kExport);
+          }
+        }
+        // Symbol is a type.
+        if (remoteSym.flags & ts.SymbolFlags.Type) {
+          const kExport =
+              this.host.getSymbolName(remoteSym, TSNamespace.TYPE);
+          this.emitEdge(anchor, EdgeKind.REF, kExport);
+          if (propertyAnchor) {
+            this.emitEdge(propertyAnchor, EdgeKind.REF, kExport);
+          }
         }
       }
     }

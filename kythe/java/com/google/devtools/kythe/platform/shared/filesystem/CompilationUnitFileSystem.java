@@ -35,6 +35,7 @@ import java.nio.file.PathMatcher;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -172,6 +173,26 @@ public final class CompilationUnitFileSystem extends FileSystem {
     }
   }
 
+  public ListenableFuture<byte[]> startRead(Path file) throws IOException {
+    String digest = digest(file);
+    if (digest == null || digest.equals(CompilationUnitFileTree.DIRECTORY_DIGEST)) {
+      throw new NoSuchFileException(file.toString());
+    }
+    return fileDataProvider.startLookup(file.toString(), digest);
+  }
+
+  public Collection<Path> list(Path dir) throws IOException {
+    final Path abs = getRootDirectory().resolve(dir).normalize();
+    Map<String, String> entries = compilationFileTree.list(abs.toString());
+    if (entries == null) {
+      if (digest(abs) == null) {
+        throw new NoSuchFileException(dir.toString());
+      }
+      throw new NotDirectoryException(dir.toString());
+    }
+    return entries.keySet().stream().map(k -> dir.resolve(k)).collect(Collectors.toSet());
+  }
+
   String digest(Path file) {
     checkNotNull(file);
     file = getRootDirectory().resolve(file).normalize();
@@ -188,26 +209,6 @@ public final class CompilationUnitFileSystem extends FileSystem {
     if (digest(path) == null) {
       throw new NoSuchFileException(path.toString());
     }
-  }
-
-  Iterable<Path> list(Path dir) throws IOException {
-    final Path abs = getRootDirectory().resolve(dir).normalize();
-    Map<String, String> entries = compilationFileTree.list(abs.toString());
-    if (entries == null) {
-      if (digest(abs) == null) {
-        throw new NoSuchFileException(dir.toString());
-      }
-      throw new NotDirectoryException(dir.toString());
-    }
-    return entries.keySet().stream().map(k -> dir.resolve(k)).collect(Collectors.toSet());
-  }
-
-  ListenableFuture<byte[]> startRead(Path file) throws IOException {
-    String digest = digest(file);
-    if (digest == null || digest.equals(CompilationUnitFileTree.DIRECTORY_DIGEST)) {
-      throw new NoSuchFileException(file.toString());
-    }
-    return fileDataProvider.startLookup(file.toString(), digest);
   }
 
   CompilationUnitFileAttributes readAttributes(Path path) throws IOException {
