@@ -4,8 +4,7 @@ workspace(
 )
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
-load("//:version.bzl", "check_version", "MAX_VERSION", "MIN_VERSION")
+load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
@@ -38,6 +37,7 @@ maybe(
     name = "io_bazel_rules_go_compat",
 )
 
+# gazelle:repository_macro external.bzl%_go_dependencies
 load("//:external.bzl", "kythe_dependencies")
 
 kythe_dependencies()
@@ -69,4 +69,5 @@ bind(
 )
 
 load("@maven//:compat.bzl", "compat_repositories")
+
 compat_repositories()
