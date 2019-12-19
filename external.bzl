@@ -282,7 +282,7 @@ def _go_dependencies():
         patch_args = ["-p1"],
         patches = [
             "@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch",
-            "@//third_party/go:new_export_license.patch",
+            "@io_kythe//third_party/go:new_export_license.patch",
         ],
         sum = "h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs=",
         version = "v1.3.2",
@@ -293,7 +293,7 @@ def _go_dependencies():
         importpath = "github.com/google/uuid",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:Gkbcsh/GbpXz7lPftLA3P6TYMwjCLYm83jiFQZF/3gY=",
         version = "v1.1.1",
@@ -304,7 +304,7 @@ def _go_dependencies():
         importpath = "github.com/jmhodges/levigo",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:levigo.patch",
+            "@io_kythe//third_party/go:levigo.patch",
         ],
         sum = "h1:q5EC36kV79HWeTBWsod3mG11EgStG3qArTKcvlksN1U=",
         version = "v1.0.0",
@@ -315,7 +315,7 @@ def _go_dependencies():
         importpath = "github.com/google/go-cmp",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:Xye71clBPdm5HgqGwUkwhbynsUJZhDbS20FvLhQ2izg=",
         version = "v0.3.1",
@@ -326,7 +326,7 @@ def _go_dependencies():
         importpath = "golang.org/x/sync",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:vcxGaoTs7kV8m5Np9uUNQin4BrLOthgV7252N8V+FwY=",
         version = "v0.0.0-20190911185100-cd5d95a43a6e",
@@ -337,7 +337,7 @@ def _go_dependencies():
         importpath = "github.com/sourcegraph/jsonrpc2",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:Gebz6aYuWZGkk0GSIRmykKRiN6Z1qgVisisVYERT3IQ=",
         version = "v0.0.0-20191113080033-cee7209801bf",
@@ -348,7 +348,7 @@ def _go_dependencies():
         importpath = "github.com/hanwen/go-fuse",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:GxS9Zrn6c35/BnfiVsZVWmsG803xwE7eVRDvcf/BEVc=",
         version = "v1.0.0",
@@ -359,7 +359,7 @@ def _go_dependencies():
         importpath = "github.com/golang/snappy",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:Qgr9rKW7uDUkrbSmQeiDsGa8SjGyCOGtuasMWwvp2P4=",
         version = "v0.0.1",
@@ -370,7 +370,7 @@ def _go_dependencies():
         importpath = "github.com/sourcegraph/go-langserver",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:lj2sRU7ZMIkW372IDVGb6fE8VAY4c/EMsiDzrB9vmiU=",
         version = "v2.0.0+incompatible",
@@ -381,7 +381,7 @@ def _go_dependencies():
         importpath = "github.com/sergi/go-diff",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:UoZTeCJuGZpwXXqamtSHypwjqpyGdR9smB5iMleBDJ8=",
         version = "v0.0.0-20180205163309-da645544ed44",
@@ -392,7 +392,7 @@ def _go_dependencies():
         importpath = "github.com/google/subcommands",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:/eqq+otEXm5vhfBrbREPCSVQbvofip6kIz+mX5TUH7k=",
         version = "v1.0.1",
@@ -421,7 +421,7 @@ def _go_dependencies():
         patch_args = ["-p1"],
         patches = [
             "@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch",
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:u+nComwpgIe2VK1OTg8C74VQWda+MuB+wkIEsqFeoxY=",
         version = "v0.0.0-20191219192050-56b0b28a00f7",
@@ -432,7 +432,7 @@ def _go_dependencies():
         importpath = "golang.org/x/text",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
         version = "v0.3.2",
@@ -443,7 +443,7 @@ def _go_dependencies():
         importpath = "golang.org/x/net",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:efeOvDhwQ29Dj3SdAV/MJf8oukgn+8D8WgaCaRMchF8=",
         version = "v0.0.0-20191209160850-c0dbc17a3553",
@@ -454,7 +454,7 @@ def _go_dependencies():
         importpath = "github.com/pkg/errors",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=",
         version = "v0.8.1",
@@ -465,7 +465,7 @@ def _go_dependencies():
         importpath = "bitbucket.org/creachadair/stringset",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:gQqe4vs8XWgMyijfyKE6K8o4TcyGGrRXe0JvHgx5H+M=",
         version = "v0.0.8",
@@ -476,7 +476,7 @@ def _go_dependencies():
         importpath = "bitbucket.org/creachadair/shell",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:reJflDbKqnlnqb4Oo2pQ1/BqmY/eCWcNGHrIUO8qIzc=",
         version = "v0.0.6",
@@ -487,7 +487,7 @@ def _go_dependencies():
         importpath = "google.golang.org/grpc",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:2dTRdpdFEEhJYQD8EMLB61nnrzSCTbG38PhqdhvOltg=",
         version = "v1.26.0",
@@ -498,7 +498,7 @@ def _go_dependencies():
         importpath = "golang.org/x/oauth2",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:pE8b58s1HRDMi8RDc79m0HISf9D4TzseP40cEA6IGfs=",
         version = "v0.0.0-20191202225959-858c2ad4c8b6",
@@ -510,7 +510,7 @@ def _go_dependencies():
         importpath = "github.com/apache/beam",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:ynHATeYKpSXh0dUrTUdyOVb7f0bP2p4girHSrWfsD6k=",
         version = "v2.16.0+incompatible",
@@ -521,7 +521,7 @@ def _go_dependencies():
         importpath = "google.golang.org/api",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:yzlyyDW/J0w8yNFJIhiAJy4kq74S+1DOLdawELNxFMA=",
         version = "v0.15.0",
@@ -532,7 +532,7 @@ def _go_dependencies():
         importpath = "cloud.google.com/go",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:0E3eE8MX426vUOs7aHfI7aN1BrIzzzf4ccKCSfSjGmc=",
         version = "v0.50.0",
@@ -543,7 +543,7 @@ def _go_dependencies():
         importpath = "go.opencensus.io",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:75k/FF0Q2YM8QYo07VPddOLBslDt1MZOdEslOHvmzAs=",
         version = "v0.22.2",
@@ -561,7 +561,7 @@ def _go_dependencies():
         importpath = "github.com/minio/highwayhash",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:iMSDhgUILCr0TNm8LWlSjF8N0ZIj2qbO8WHp6Q/J2BA=",
         version = "v1.0.0",
@@ -572,7 +572,7 @@ def _go_dependencies():
         importpath = "golang.org/x/sys",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:Y8q0zsdcgAd+JU8VUA8p8Qv2YhuY9zevDG2ORt5qBUI=",
         version = "v0.0.0-20191218084908-4a24b4065292",
@@ -583,7 +583,7 @@ def _go_dependencies():
         importpath = "github.com/DataDog/zstd",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:+IawcoXhCBylN7ccwdwf8LOH2jKq7NavGpEPanrlTzE=",
         version = "v1.4.4",
@@ -594,7 +594,7 @@ def _go_dependencies():
         importpath = "github.com/beevik/etree",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:T0xke/WvNtMoCqgzPhkX2r4rjY3GDZFi+FjpRZY2Jbs=",
         version = "v1.1.0",
@@ -612,7 +612,7 @@ def _go_dependencies():
         importpath = "sigs.k8s.io/yaml",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:4A07+ZFc2wgJwo8YNlQpr1rVlgUDlxXHhPJciaPY5gs=",
         version = "v1.1.0",
@@ -623,7 +623,7 @@ def _go_dependencies():
         importpath = "gopkg.in/yaml.v2",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:VUgggvou5XRW9mHwD/yXxIYSMtY0zoKQf/v226p2nyo=",
         version = "v2.2.7",
@@ -634,7 +634,7 @@ def _go_dependencies():
         importpath = "github.com/mholt/archiver",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:1dCVxuqs0dJseYEhi5pl7MYPH9zDa1wBi7mF09cbNkU=",
         version = "v3.1.1+incompatible",
@@ -645,7 +645,7 @@ def _go_dependencies():
         importpath = "github.com/dsnet/compress",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:PlZu0n3Tuv04TzpfPbrnI0HW/YwodEXDS+oPKahKF0Q=",
         version = "v0.0.1",
@@ -656,7 +656,7 @@ def _go_dependencies():
         importpath = "github.com/nwaples/rardecode",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:r7vGuS5akxOnR4JQSkko62RJ1ReCMXxQRPtxsiFMBOs=",
         version = "v1.0.0",
@@ -667,7 +667,7 @@ def _go_dependencies():
         importpath = "github.com/pierrec/lz4",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:06usnXXDNcPvCHDkmPpkidf4jTc52UKld7UPfqKatY4=",
         version = "v2.4.0+incompatible",
@@ -678,7 +678,7 @@ def _go_dependencies():
         importpath = "github.com/ulikunitz/xz",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:jGHAfXawEGZQ3blwU5wnWKQJvAraT7Ftq9EXjnXYgt8=",
         version = "v0.5.6",
@@ -689,7 +689,7 @@ def _go_dependencies():
         importpath = "github.com/xi2/xz",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:nIPpBwaJSVYIxUFsDv3M8ofmx9yWTog9BfvIu0q41lo=",
         version = "v0.0.0-20171230120015-48954b6210f8",
@@ -842,7 +842,7 @@ def _go_dependencies():
         importpath = "github.com/googleapis/gax-go/v2",
         patch_args = ["-p1"],
         patches = [
-            "@//third_party/go:add_export_license.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
         ],
         sum = "h1:sjZBwGj9Jlw33ImPtvFviGYvseOtDM7hkSKB7+Tv3SM=",
         version = "v2.0.5",
