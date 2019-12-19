@@ -3,9 +3,9 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@io_bazel_rules_go//go:def.bzl", _go_binary = "go_binary", _go_library = "go_library", _go_test = "go_test")
 
 def go_repository(name, **kwargs):
-    """Macro wrapping the Gazelle go_repository rule.  Works identically, except
-    if custom is provided, an extra git_repository of that name is declared with
-    an overlay built using the "third_party/go:<custom>.BUILD" file.
+    """Macro wrapping the Gazelle go_repository rule.
+
+    This conditionally defines the repository if it hasn't already been.
     """
     if name in native.existing_rules():
         return
