@@ -1,0 +1,11 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+new file mode 100644
+index 00000000..9d12feb0
+--- /dev/null
++++ b/BUILD.bazel
+@@ -0,0 +1,5 @@
++package(default_visibility = ["@//visibility:public"])
++
++licenses(["notice"])
++
++exports_files(glob(["*LICENSE*"]))
