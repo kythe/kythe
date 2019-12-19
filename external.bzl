@@ -19,6 +19,9 @@ def _rule_dependencies():
     rules_java_dependencies()
     rules_proto_dependencies()
 
+def _gazelle_ignore(**kwargs):
+    """Dummy macro which causes gazelle to see a repository as already defined."""
+
 def _cc_dependencies():
     maybe(
         http_archive,
@@ -397,12 +400,6 @@ def _go_dependencies():
 
     go_repository(
         name = "org_golang_x_tools",
-        importpath = "golang.org/x/tools",
-        patch_args = ["-p1"],
-        patches = [
-            "@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch",
-            "@//third_party/go:add_export_license.patch",
-        ],
         build_directives = [
             "gazelle:exclude go/analysis/passes/ctrlflow/testdata",
             "gazelle:exclude go/analysis/passes/pkgfact/testdata",
@@ -420,8 +417,14 @@ def _go_dependencies():
             "gazelle:exclude refactor/rename/mvpkg_test.go",
             "gazelle:exclude go/ast/astutil/imports_test.go",
         ],
-        sum = "h1:EOEfEJsIwjuzoGcjsorXCJwicD/BOp9J4T4NDp6i40E=",
-        version = "v0.0.0-20191219181913-2ad5dca7a53c",
+        importpath = "golang.org/x/tools",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch",
+            "@//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:u+nComwpgIe2VK1OTg8C74VQWda+MuB+wkIEsqFeoxY=",
+        version = "v0.0.0-20191219192050-56b0b28a00f7",
     )
 
     go_repository(
@@ -499,16 +502,6 @@ def _go_dependencies():
         ],
         sum = "h1:pE8b58s1HRDMi8RDc79m0HISf9D4TzseP40cEA6IGfs=",
         version = "v0.0.0-20191202225959-858c2ad4c8b6",
-    )
-
-    go_repository(
-        name = "com_github_google_go_querystring",
-        patch_args = ["-p1"],
-        patches = [
-            "@//third_party/go:add_export_license.patch",
-        ],
-        importpath = "github.com/google/go-querystring",
-        tag = "v1.0.0",
     )
 
     go_repository(
@@ -712,17 +705,21 @@ def _go_dependencies():
             "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
         ],
     )
+    _gazelle_ignore(
+        name = "com_github_bazelbuild_rules_go",
+        actual = "io_bazel_rules_go",
+        importpath = "github.com/bazelbuild/rules_go",
+    )
+    _gazelle_ignore(
+        name = "com_github_google_brotli",
+        actual = "org_brotli_go",
+        importpath = "github.com/google/brotli",
+    )
     go_repository(
         name = "co_honnef_go_tools",
         importpath = "honnef.co/go/tools",
         sum = "h1:3JgtbtFHMiCmsznwGVTUWbgGov+pVqnlf1dEJTNAXeM=",
         version = "v0.0.1-2019.2.3",
-    )
-    go_repository(
-        name = "com_github_bazelbuild_rules_go",
-        importpath = "github.com/bazelbuild/rules_go",
-        sum = "h1:ahj93Bg45YtjubG8O2EoozdW/je4WqgwEuvCPC0hjVA=",
-        version = "v0.20.3",
     )
     go_repository(
         name = "com_github_burntsushi_toml",
@@ -808,23 +805,12 @@ def _go_dependencies():
         sum = "h1:uHTyIjqVhYRhLbJ8nIiOJHkEZZ+5YoOsAbD3sk82NiE=",
         version = "v0.0.0-20191027212112-611e8accdfc9",
     )
-    go_repository(
-        name = "com_github_golang_lint",
-        importpath = "github.com/golang/lint",
-        sum = "h1:2hRPrmiwPrp3fQX967rNJIhQPtiGXdlQWAxKbKw3VHA=",
-        version = "v0.0.0-20180702182130-06c8688daad7",
-    )
+
     go_repository(
         name = "com_github_golang_mock",
         importpath = "github.com/golang/mock",
         sum = "h1:qGJ6qTW+x6xX/my+8YUVl4WNpX9B7+/l2tRsHGZ7f2s=",
         version = "v1.3.1",
-    )
-    go_repository(
-        name = "com_github_google_brotli",
-        importpath = "github.com/google/brotli",
-        sum = "h1:fxwwohNEPaVS6qvtnjwgzRR62Upa70pkw0f9qarjrQs=",
-        version = "v1.0.7",
     )
     go_repository(
         name = "com_github_google_btree",
@@ -933,12 +919,7 @@ def _go_dependencies():
         sum = "h1:izbySO9zDPmjJ8rDjLvkA2zJHIo+HkYXHnf7eN7SSyo=",
         version = "v1.5.0",
     )
-    go_repository(
-        name = "com_github_pkg_profile",
-        importpath = "github.com/pkg/profile",
-        sum = "h1:F++O52m40owAmADcojzM+9gyjmMOY/T4oYJkgFDH8RE=",
-        version = "v1.2.1",
-    )
+
     go_repository(
         name = "com_github_pmezard_go_difflib",
         importpath = "github.com/pmezard/go-difflib",
@@ -1090,10 +1071,10 @@ def _go_dependencies():
         version = "v0.0.0-20191011141410-1b5146add898",
     )
     go_repository(
-        name = "com_github_googleapis_gax_go",
-        importpath = "github.com/googleapis/gax-go",
-        sum = "h1:silFMLAnr330+NRuag/VjIGF7TLp/LBrV2CJKFLWEww=",
-        version = "v2.0.2+incompatible",
+        name = "com_github_frankban_quicktest",
+        importpath = "github.com/frankban/quicktest",
+        sum = "h1:2QxQoC1TS09S7fhCPsrvqYdvP1H5M1P1ih5ABm3BTYk=",
+        version = "v1.7.2",
     )
 
 def _bindings():

@@ -10,8 +10,8 @@ require (
 	github.com/bazelbuild/rules_go v0.20.3
 	github.com/beevik/etree v1.1.0
 	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/frankban/quicktest v1.7.2 // indirect
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
-	github.com/golang/lint v0.0.0-20180702182130-06c8688daad7 // indirect
 	github.com/golang/protobuf v1.3.2
 	github.com/golang/snappy v0.0.1
 	github.com/google/brotli v1.0.7
@@ -19,7 +19,6 @@ require (
 	github.com/google/orderedcode v0.0.1
 	github.com/google/subcommands v1.0.1
 	github.com/google/uuid v1.1.1
-	github.com/googleapis/gax-go v2.0.2+incompatible // indirect
 	github.com/hanwen/go-fuse v1.0.0
 	github.com/jmhodges/levigo v1.0.0
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
@@ -30,7 +29,6 @@ require (
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pierrec/lz4 v2.4.0+incompatible // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/pkg/profile v1.2.1 // indirect
 	github.com/sergi/go-diff v0.0.0-20180205163309-da645544ed44
 	github.com/sourcegraph/go-langserver v2.0.0+incompatible
 	github.com/sourcegraph/jsonrpc2 v0.0.0-20191113080033-cee7209801bf
@@ -42,7 +40,7 @@ require (
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20191218084908-4a24b4065292
 	golang.org/x/text v0.3.2
-	golang.org/x/tools v0.0.0-20191219181913-2ad5dca7a53c
+	golang.org/x/tools v0.0.0-20191219192050-56b0b28a00f7
 	google.golang.org/api v0.15.0
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f // indirect
