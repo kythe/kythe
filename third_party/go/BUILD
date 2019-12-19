@@ -18,7 +18,6 @@ filegroup(
         "@com_github_golang_protobuf//:LICENSE",
         "@com_github_golang_snappy//:LICENSE",
         "@com_github_google_go_cmp//:LICENSE",
-        "@com_github_google_go_querystring//:LICENSE",
         "@com_github_google_subcommands//:LICENSE",
         "@com_github_google_uuid//:LICENSE",
         "@com_github_googleapis_gax_go_v2//:LICENSE",
