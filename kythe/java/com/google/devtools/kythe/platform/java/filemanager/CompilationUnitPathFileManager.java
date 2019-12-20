@@ -107,7 +107,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   @Override
   public Iterable<JavaFileObject> list(
       Location location, String packageName, Set<Kind> kinds, boolean recurse) throws IOException {
-    return Iterables.transform(super.list(location, packageName, kinds, recurse), this::readAhead);
+    return readAhead(super.list(location, packageName, kinds, recurse));
   }
 
   @Override
