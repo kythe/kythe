@@ -1,7 +1,7 @@
 {
   "devDependencies": {
-    "@bazel/jasmine": "^0.42.3",
-    "@bazel/typescript": "^0.41.0",
+    "@bazel/jasmine": "^1.0.0",
+    "@bazel/typescript": "^1.0.0",
     "@commitlint/cli": "^8.2.0",
     "@commitlint/config-conventional": "^8.2.0",
     "@types/jasmine": "^3.5.0",
@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "source-map-support": "^0.5.16",
-    "typescript": "~3.7.3"
+    "typescript": "^3.7.4"
   },
   "license": "Apache-2.0"
 }
