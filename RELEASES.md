@@ -2,10 +2,6 @@
 
 ## [v0.0.39] - 2019-12-19
 
-#### Features
-
-* **java_common:**  move list/startRead to public access (#4267) ([ae4154c3](https://github.com/kythe/kythe/commit/ae4154c328bd39fcbdf287f0fca0ec63716e6e9f))
-
 #### Bug Fixes
 
 * **java:**  disable errorprone plugin for java extraction (#4268) ([08b674ea](https://github.com/kythe/kythe/commit/08b674ea71a5481bbcc9901ae214304e9fd7f658))
