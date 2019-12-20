@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -23,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.google.common.flogger.FluentLogger;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.platform.shared.filesystem.CompilationUnitFileSystem;
@@ -32,6 +35,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.main.OptionHelper;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
@@ -40,11 +44,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
+import javax.tools.FileObject;
+import javax.tools.JavaFileObject;
+import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -57,6 +67,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public final class CompilationUnitPathFileManager extends ForwardingStandardJavaFileManager {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
+  private final ReadAheadDataProvider readAheadProvider;
   private final CompilationUnitFileSystem fileSystem;
   private final ImmutableSet<String> defaultPlatformClassPath;
   // The path given to us that we are allowed to write in. This will be stored as an absolute
@@ -82,13 +93,78 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
                 fileManager.getLocation(StandardLocation.PLATFORM_CLASS_PATH),
                 f -> f.toPath().normalize().toString()));
 
-    fileSystem = CompilationUnitFileSystem.create(compilationUnit, fileDataProvider);
+    readAheadProvider = new ReadAheadDataProvider(fileDataProvider);
+    fileSystem = CompilationUnitFileSystem.create(compilationUnit, readAheadProvider);
     // When compiled for Java 9+ this is ambiguous, so disambiguate to the compatibility shim.
     setPathFactory((ForwardingStandardJavaFileManager.PathFactory) this::getPath);
     setLocations(
         findJavaDetails(compilationUnit)
             .map(details -> toLocationMap(details))
             .orElseGet(() -> logEmptyLocationMap()));
+  }
+
+  @Override
+  public Iterable<JavaFileObject> list(
+      Location location, String packageName, Set<Kind> kinds, boolean recurse) throws IOException {
+    return Iterables.transform(super.list(location, packageName, kinds, recurse), this::readAhead);
+  }
+
+  @Override
+  public JavaFileObject getJavaFileForInput(Location location, String className, Kind kind)
+      throws IOException {
+    return readAhead(super.getJavaFileForInput(location, className, kind));
+  }
+
+  @Override
+  public JavaFileObject getJavaFileForOutput(
+      Location location, String className, Kind kind, FileObject sibling) throws IOException {
+    return readAhead(super.getJavaFileForOutput(location, className, kind, sibling));
+  }
+
+  @Override
+  public FileObject getFileForInput(Location location, String packageName, String relativeName)
+      throws IOException {
+    return readAhead(super.getFileForInput(location, packageName, relativeName));
+  }
+
+  @Override
+  public FileObject getFileForOutput(
+      Location location, String packageName, String relativeName, FileObject sibling)
+      throws IOException {
+    return readAhead(super.getFileForOutput(location, packageName, relativeName, sibling));
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjectsFromFiles(
+      Iterable<? extends File> files) {
+    return Iterables.transform(super.getJavaFileObjectsFromFiles(files), this::readAhead);
+  }
+
+  @Override
+  @SuppressWarnings({"IterablePathParameter"})
+  public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
+      Iterable<? extends Path> path) {
+    return Iterables.transform(super.getJavaFileObjectsFromPaths(path), this::readAhead);
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjectsFromStrings(Iterable<String> names) {
+    return Iterables.transform(super.getJavaFileObjectsFromStrings(names), this::readAhead);
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjects(File... files) {
+    return getJavaFileObjectsFromFiles(Arrays.asList(files));
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjects(Path... paths) {
+    return getJavaFileObjectsFromPaths(Arrays.asList(paths));
+  }
+
+  @Override
+  public Iterable<? extends JavaFileObject> getJavaFileObjects(String... names) {
+    return getJavaFileObjectsFromStrings(Arrays.asList(names));
   }
 
   @Override
@@ -271,6 +347,44 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
       }
     } else {
       throw new IllegalArgumentException(value);
+    }
+  }
+
+  private FileObject readAhead(FileObject fo) {
+    Path path = asPath(fo);
+    if (path.getFileSystem().equals(fileSystem)) {
+      readAheadProvider.readAhead(path.toString(), path.toUri().getHost());
+    }
+    return fo;
+  }
+
+  private JavaFileObject readAhead(JavaFileObject fo) {
+    readAhead((FileObject) fo);
+    return fo;
+  }
+
+  private static class ReadAheadDataProvider implements FileDataProvider {
+    final Map<String, ListenableFuture<byte[]>> cache = new HashMap<>();
+    final FileDataProvider provider;
+
+    ReadAheadDataProvider(FileDataProvider provider) {
+      this.provider = provider;
+    }
+
+    void readAhead(String path, String digest) {
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(digest), "digest is empty");
+      cache.computeIfAbsent(digest, k -> provider.startLookup(path, digest));
+    }
+
+    @Override
+    public ListenableFuture<byte[]> startLookup(String path, String digest) {
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(digest), "digest is empty");
+      return cache.containsKey(digest) ? cache.remove(digest) : provider.startLookup(path, digest);
+    }
+
+    @Override
+    public void close() throws Exception {
+      provider.close();
     }
   }
 }
