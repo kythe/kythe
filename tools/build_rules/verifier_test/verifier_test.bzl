@@ -265,7 +265,7 @@ def _verifier_test_impl(ctx):
                 else:
                     entries_gz += [src[KytheEntries].compressed]
         else:
-            sources += [depset(src.files)]
+            sources += [src.files]
 
     for dep in ctx.attr.deps:
         # TODO(shahms): Allow specifying .entries files directly.
