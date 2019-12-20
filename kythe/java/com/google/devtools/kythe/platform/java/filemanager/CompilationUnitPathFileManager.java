@@ -137,19 +137,19 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   @Override
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromFiles(
       Iterable<? extends File> files) {
-    return Iterables.transform(super.getJavaFileObjectsFromFiles(files), this::readAhead);
+    return readAhead(super.getJavaFileObjectsFromFiles(files));
   }
 
   @Override
   @SuppressWarnings({"IterablePathParameter"})
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromPaths(
       Iterable<? extends Path> path) {
-    return Iterables.transform(super.getJavaFileObjectsFromPaths(path), this::readAhead);
+    return readAhead(super.getJavaFileObjectsFromPaths(path));
   }
 
   @Override
   public Iterable<? extends JavaFileObject> getJavaFileObjectsFromStrings(Iterable<String> names) {
-    return Iterables.transform(super.getJavaFileObjectsFromStrings(names), this::readAhead);
+    return readAhead(super.getJavaFileObjectsFromStrings(names));
   }
 
   @Override
@@ -350,17 +350,22 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     }
   }
 
-  private FileObject readAhead(FileObject fo) {
-    Path path = asPath(fo);
-    if (path.getFileSystem().equals(fileSystem)) {
-      readAheadProvider.readAhead(path.toString(), path.toUri().getHost());
-    }
+  private <T extends FileObject> T readAhead(T fo) {
+    readAhead(asPath(fo));
     return fo;
   }
 
-  private JavaFileObject readAhead(JavaFileObject fo) {
-    readAhead((FileObject) fo);
-    return fo;
+  private <T extends FileObject> Iterable<T> readAhead(Iterable<T> files) {
+    for (T fo : files) {
+      readAhead(fo);
+    }
+    return files;
+  }
+
+  private void readAhead(Path path) {
+    if (path.getFileSystem().equals(fileSystem)) {
+      readAheadProvider.readAhead(path.toString(), path.toUri().getHost());
+    }
   }
 
   private static class ReadAheadDataProvider implements FileDataProvider {
