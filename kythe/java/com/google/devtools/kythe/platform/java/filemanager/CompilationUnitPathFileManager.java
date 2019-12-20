@@ -26,6 +26,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.platform.shared.filesystem.CompilationUnitFileSystem;
@@ -46,11 +47,11 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
@@ -356,10 +357,10 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   private <T extends FileObject> Iterable<T> readAhead(Iterable<T> files) {
-    for (T fo : files) {
-      readAhead(fo);
-    }
-    return files;
+    // While Iterables.transform uses a lazy iterator rather than eagerly initiating readahead,
+    // testing suggesting it results in the biggest performance improvement.
+    // Should that change in the future, this should be made an explicit for loop.
+    return Iterables.transform(files, this::readAhead);
   }
 
   private void readAhead(Path path) {
@@ -369,27 +370,33 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   private static class ReadAheadDataProvider implements FileDataProvider {
-    final Map<String, ListenableFuture<byte[]>> cache = new HashMap<>();
+    final Map<String, ListenableFuture<byte[]>> cache = new ConcurrentHashMap<>();
     final FileDataProvider provider;
 
     ReadAheadDataProvider(FileDataProvider provider) {
       this.provider = provider;
     }
 
+    @SuppressWarnings({"FutureReturnValueIgnored"})
     void readAhead(String path, String digest) {
-      Preconditions.checkArgument(!Strings.isNullOrEmpty(digest), "digest is empty");
-      cache.computeIfAbsent(digest, k -> provider.startLookup(path, digest));
+      readCached(path, digest);
     }
 
     @Override
     public ListenableFuture<byte[]> startLookup(String path, String digest) {
-      Preconditions.checkArgument(!Strings.isNullOrEmpty(digest), "digest is empty");
-      return cache.containsKey(digest) ? cache.remove(digest) : provider.startLookup(path, digest);
+      ListenableFuture<byte[]> result = readCached(path, digest);
+      result.addListener(() -> cache.remove(digest), MoreExecutors.directExecutor());
+      return result;
     }
 
     @Override
     public void close() throws Exception {
       provider.close();
+    }
+
+    private ListenableFuture<byte[]> readCached(String path, String digest) {
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(digest), "digest is empty");
+      return cache.computeIfAbsent(digest, k -> provider.startLookup(path, digest));
     }
   }
 }
