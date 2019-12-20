@@ -358,7 +358,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
 
   private <T extends FileObject> Iterable<T> readAhead(Iterable<T> files) {
     // While Iterables.transform uses a lazy iterator rather than eagerly initiating readahead,
-    // testing suggesting it results in the biggest performance improvement.
+    // testing suggests it results in the biggest performance improvement.
     // Should that change in the future, this should be made an explicit for loop.
     return Iterables.transform(files, this::readAhead);
   }
