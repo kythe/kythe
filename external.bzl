@@ -11,6 +11,7 @@ load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
+load("@rules_python//python:repositories.bzl", "py_repositories")
 
 def _rule_dependencies():
     go_rules_dependencies()
@@ -18,6 +19,7 @@ def _rule_dependencies():
     gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
+    py_repositories()
 
 def _gazelle_ignore(**kwargs):
     """Dummy macro which causes gazelle to see a repository as already defined."""
@@ -1140,24 +1142,11 @@ def _sample_ui_dependencies():
         version = "2.5.3",
     )
 
-def _py_dependencies():
-    maybe(
-        http_archive,
-        name = "rules_python",  # Needed by com_google_protobuf.
-        sha256 = "e5470e92a18aa51830db99a4d9c492cc613761d5bdb7131c04bd92b9834380f6",
-        strip_prefix = "rules_python-4b84ad270387a7c439ebdccfd530e2339601ef27",
-        urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz",
-            "https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz",
-        ],
-    )
-
 def kythe_dependencies(sample_ui = True):
     """Defines external repositories for Kythe dependencies.
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
     """
-    _py_dependencies()
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
