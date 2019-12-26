@@ -352,7 +352,11 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   private <T extends FileObject> T readAhead(T fo) {
-    readAhead(asPath(fo));
+    if (fo != null) {
+      // Some of the methods we wrap will return null to indicate failure,
+      // so handle that uniformly here rather than in each of those methods.
+      readAhead(asPath(fo));
+    }
     return fo;
   }
 
