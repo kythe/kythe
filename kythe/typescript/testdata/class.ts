@@ -21,9 +21,9 @@ interface IExtended extends IFace {
     ifaceMethod(): void;
 }
 
-//- @Class defines/binding Class=vname("Class#type", _, _, _, _)
+//- @Class defines/binding Class=vname("testdata/class/Class#type", _, _, _, _)
 //- Class.node/kind record
-//- @Class defines/binding ClassValue=vname("Class", _, _, _, _)
+//- @Class defines/binding ClassValue=vname("testdata/class/Class", _, _, _, _)
 //- ClassValue.node/kind function
 //- @IFace ref IFace
 class Class implements IFace {
@@ -40,7 +40,7 @@ class Class implements IFace {
     // This ctor declares a new member var named 'otherMember', and also
     // declares an ordinary parameter named 'member' (to ensure we don't get
     // confused about params to the ctor vs true member variables).
-    //- @constructor defines/binding ClassCtor=vname("Class#type.constructor", _, _, _, _)
+    //- @constructor defines/binding ClassCtor=vname("testdata/class/Class#type.constructor", _, _, _, _)
     //- ClassCtor.node/kind function
     //- ClassCtor.subkind constructor
     //- @otherMember defines/binding OtherMember

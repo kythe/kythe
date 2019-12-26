@@ -4,17 +4,17 @@
 class A {
   prop = 0;
 
-  //- @foo defines/binding PropFoo=VName("A#type.foo", _, _, _, _)
+  //- @foo defines/binding PropFoo=VName("testdata/getter_setter/A#type.foo", _, _, _, _)
   //- PropFoo.node/kind variable
   //- PropFoo.subkind implicit
-  //- @foo defines/binding GetFoo=VName("A#type.foo:getter", _, _, _, _)
+  //- @foo defines/binding GetFoo=VName("testdata/getter_setter/A#type.foo:getter", _, _, _, _)
   //- GetFoo.node/kind function
   //- GetFoo property/reads PropFoo
   get foo() {
     return this.prop;
   }
 
-  //- @foo defines/binding SetFoo=VName("A#type.foo:setter", _, _, _, _)
+  //- @foo defines/binding SetFoo=VName("testdata/getter_setter/A#type.foo:setter", _, _, _, _)
   //- SetFoo.node/kind function
   //- SetFoo property/writes PropFoo
   set foo(nFoo) {
@@ -33,10 +33,10 @@ class A {
 class B {
   iProp = 0;
 
-  //- @prop defines/binding PropProp=VName("B#type.prop", _, _, _, _)
+  //- @prop defines/binding PropProp=VName("testdata/getter_setter/B#type.prop", _, _, _, _)
   //- PropProp.node/kind variable
   //- PropProp.subkind implicit
-  //- @prop defines/binding GetProp=VName("B#type.prop:getter", _, _, _, _)
+  //- @prop defines/binding GetProp=VName("testdata/getter_setter/B#type.prop:getter", _, _, _, _)
   //- GetProp.node/kind function
   //- GetProp property/reads PropProp
   get prop() {
@@ -53,10 +53,10 @@ class B {
 class C {
   prop = 0;
 
-  //- @mem defines/binding PropMem=VName("C#type.mem", _, _, _, _)
+  //- @mem defines/binding PropMem=VName("testdata/getter_setter/C#type.mem", _, _, _, _)
   //- PropMem.node/kind variable
   //- PropMem.subkind implicit
-  //- @mem defines/binding SetMem=VName("C#type.mem:setter", _, _, _, _)
+  //- @mem defines/binding SetMem=VName("testdata/getter_setter/C#type.mem:setter", _, _, _, _)
   //- SetMem.node/kind function
   //- SetMem property/writes PropMem
   set mem(nMem) {

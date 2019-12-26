@@ -9,6 +9,6 @@
 // "testdata/fake-genfiles/testdata/alt_module".
 // See the discussion of module names in README.md.
 
-//- @exported ref/imports _Alt=vname("exported", _, _, "testdata/alt_module", _)
-//- @"'./alt_module'" ref/imports _ModRef=vname("module", _, _, "testdata/alt_module", _)
+//- @exported ref/imports _Alt=vname("testdata/alt_module/exported", _, _, "testdata/alt_module", _)
+//- @"'./alt_module'" ref/imports _ModRef=vname("testdata/alt_module", _, _, "testdata/alt_module", _)
 import {exported} from './alt_module';

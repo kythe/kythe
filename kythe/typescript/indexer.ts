@@ -113,11 +113,11 @@ function toArray<T>(it: Iterator<T>): T[] {
 }
 
 /**
- * stripExtension strips the .d.ts or .ts extension from a path.
+ * stripExtension strips the .d.ts, .ts, or .js extension from a path.
  * It's used to map a file path to the module name.
  */
 function stripExtension(path: string): string {
-  return path.replace(/\.(d\.)?ts$/, '');
+  return path.replace(/\.(d\.)?(ts|js)$/, '');
 }
 
 /**
@@ -305,14 +305,29 @@ class StandardIndexerContext implements IndexerHost {
       /** All source file paths in the TypeScript program. */
       public paths: string[],
       public program: ts.Program,
+      pathToTsconfig: string,
+      private readonly packageName?: string,
       private readFile: (path: string) => Buffer = fs.readFileSync,
   ) {
-    this.sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
-    let rootDirs = program.getCompilerOptions().rootDirs || [this.sourceRoot];
+    this.sourceRoot = program.getCompilerOptions().rootDir ||
+        path.dirname(path.resolve(pathToTsconfig));
+    let rootDirs = StandardIndexerContext.getRootDirs(program, this.sourceRoot);
     rootDirs = rootDirs.map(d => d + '/');
     rootDirs.sort((a, b) => b.length - a.length);
     this.rootDirs = rootDirs;
     this.typeChecker = this.program.getTypeChecker();
+  }
+
+  private static getRootDirs(program: ts.Program, sourceRoot: string) {
+    const compilerOptions = program.getCompilerOptions();
+    let finalRootDirs: string[] = [];
+    if (compilerOptions.rootDirs) {
+      finalRootDirs = [...compilerOptions.rootDirs];
+    }
+    if (compilerOptions.baseUrl) {
+      finalRootDirs.push(compilerOptions.baseUrl);
+    }
+    return finalRootDirs.length == 0 ? [sourceRoot] : finalRootDirs;
   }
 
   getOffsetTable(path: string): Readonly<utf8.OffsetTable> {
@@ -565,7 +580,7 @@ class StandardIndexerContext implements IndexerHost {
     }
 
     // The names were gathered from bottom to top, so reverse before joining.
-    const signature = parts.reverse().join('.');
+    const signature = moduleName! + '/' + parts.reverse().join('.');
     return Object.assign(
         this.pathToVName(moduleName!), {signature, language: LANGUAGE});
   }
@@ -633,6 +648,13 @@ class StandardIndexerContext implements IndexerHost {
         break;
       }
     }
+    // Typescript automatically checks in node_modules so we can remove that
+    // part from the path.
+    if (sourcePath.startsWith('node_modules/')) {
+      sourcePath = sourcePath.substr('node_modules/'.length);
+    } else if (this.packageName) {
+      sourcePath = this.packageName + '/' + sourcePath;
+    }
     return stripExtension(sourcePath);
   }
 
@@ -685,7 +707,8 @@ class Visitor {
     this.typeChecker = this.host.program.getTypeChecker();
 
     if (process.env.KYTHE_ROOT_DIRECTORY) {
-      this.kFile = this.newFileVName(path.relative(process.env.KYTHE_ROOT_DIRECTORY, file.fileName));
+      this.kFile = this.newFileVName(
+          path.relative(process.env.KYTHE_ROOT_DIRECTORY, file.fileName));
     } else {
       this.kFile = this.newFileVName(file.fileName);
     }
@@ -708,10 +731,12 @@ class Visitor {
 
   /** newAnchor emits a new anchor entry that covers a TypeScript node. */
   newAnchor(node: ts.Node, start = node.getStart(), end = node.end): VName {
+    const sourceFileName = node.getSourceFile().fileName;
     const name = Object.assign(
-        {...this.kFile}, {signature: `@${start}:${end}`, language: LANGUAGE});
+        {...this.kFile},
+        {signature: `${sourceFileName}@${start}:${end}`, language: LANGUAGE});
     this.emitNode(name, 'anchor');
-    const offsetTable = this.host.getOffsetTable(node.getSourceFile().fileName);
+    const offsetTable = this.host.getOffsetTable(sourceFileName);
     this.emitFact(
         name, FactName.LOC_START, offsetTable.lookupUtf8(start).toString());
     this.emitFact(
@@ -1052,7 +1077,7 @@ class Visitor {
     }
     const modulePath = this.getModulePathFromModuleReference(moduleSym);
     if (modulePath) {
-      const kModule = this.newVName('module', modulePath);
+      const kModule = this.newVName(modulePath, modulePath);
       this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
     } else {
       // Check if module being imported is declared via `declare module`
@@ -1173,8 +1198,8 @@ class Visitor {
    * the first letter in the file as the anchor for this.
    */
   emitModuleAnchor(sf: ts.SourceFile) {
-    const kMod =
-        this.newVName('module', this.host.moduleName(this.file.fileName));
+    const moduleName = this.host.moduleName(this.file.fileName);
+    const kMod = this.newVName(moduleName, moduleName);
     this.emitFact(kMod, FactName.NODE_KIND, 'record');
     this.emitEdge(this.kFile, EdgeKind.CHILD_OF, kMod);
 
@@ -1292,7 +1317,7 @@ class Visitor {
       if (moduleSym) {
         const moduleName = this.getModulePathFromModuleReference(moduleSym);
         if (moduleName) {
-          const kModule = this.newVName('module', moduleName);
+          const kModule = this.newVName(moduleName, moduleName);
           this.emitEdge(
               this.newAnchor(decl.moduleSpecifier), EdgeKind.REF_IMPORTS,
               kModule);
@@ -1880,7 +1905,8 @@ class Visitor {
  */
 export function index(
     vname: VName, pathVNames: Map<string, VName>, paths: string[],
-    program: ts.Program, emit?: (obj: {}) => void, plugins?: Plugin[],
+    program: ts.Program, pathToTsconfig: string, packageName?: string,
+    emit?: (obj: {}) => void, plugins?: Plugin[],
     readFile: (path: string) => Buffer = fs.readFileSync): ts.Diagnostic[] {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
@@ -1896,8 +1922,8 @@ export function index(
   // index programs with errors.  We return these diagnostics at the end
   // so the caller can act on them if it wants.
 
-  const indexingContext =
-      new StandardIndexerContext(vname, pathVNames, paths, program, readFile);
+  const indexingContext = new StandardIndexerContext(
+      vname, pathVNames, paths, program, pathToTsconfig, packageName, readFile);
   if (emit != null) {
     indexingContext.emit = emit;
   }
@@ -1947,6 +1973,15 @@ export function loadTsConfig(
   return config;
 }
 
+function getPackageName(pathToTsconfig: string): string|undefined {
+  const packageJsonPath =
+      path.join(path.dirname(pathToTsconfig), 'package.json');
+  if (fs.existsSync(packageJsonPath)) {
+    return JSON.parse(fs.readFileSync(packageJsonPath).toString()).name;
+  }
+  return undefined;
+}
+
 function main(argv: string[]) {
   if (argv.length < 1) {
     console.error('usage: indexer path/to/tsconfig.json [PATH...]');
@@ -1968,7 +2003,9 @@ function main(argv: string[]) {
     language: '',
   };
   const program = ts.createProgram(inPaths, config.options);
-  index(compilationUnit, new Map(), inPaths, program);
+  index(
+      compilationUnit, new Map(), inPaths, program, argv[0],
+      getPackageName(argv[0]));
   return 0;
 }
 

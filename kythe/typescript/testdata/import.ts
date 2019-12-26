@@ -1,11 +1,11 @@
 // This test imports the same value in a variety of names and ensures
 // they all resolve to the same VName.
 
-//- @"'./module'" ref/imports ModRef=VName("module", _, _, "testdata/module", _)
+//- @"'./module'" ref/imports ModRef=VName("testdata/module", _, _, "testdata/module", _)
 import './module';
 
 //- @mod_imp defines/binding ModLocal
-//- @"'./module'" ref/imports ModRef=VName("module", _, _, "testdata/module", _)
+//- @"'./module'" ref/imports ModRef=VName("testdata/module", _, _, "testdata/module", _)
 import * as mod_imp from './module';
 
 // Importing from a module gets a VName that refers into the other module.

@@ -1,7 +1,7 @@
 // This test uses a default import, which should behave like importing
 // a field named "default".
 
-//- @obj ref/imports ObjDef=vname("default", _, _, "testdata/default_export", _)
+//- @obj ref/imports ObjDef=vname("testdata/default_export/default", _, _, "testdata/default_export", _)
 //- @import defines/binding LocalObj=vname(_, _, _, "testdata/default_import", _)
 //- LocalObj.node/kind variable
 //- LocalObj.subkind import

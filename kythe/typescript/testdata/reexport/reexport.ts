@@ -19,5 +19,5 @@ export {
   //- @#0someFunction ref SomeFunction
   //- @someFunctionAlias ref SomeFunction
   someFunction as someFunctionAlias}
-//- @"'./main'" ref/imports vname("module", _, _, "testdata/reexport/main", _)
+//- @"'./main'" ref/imports vname("testdata/reexport/main", _, _, "testdata/reexport/main", _)
 from './main';

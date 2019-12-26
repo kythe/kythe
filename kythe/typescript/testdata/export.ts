@@ -1,5 +1,5 @@
 // Syntax 1: exporting a value from another module.
-//- @"'./module'" ref/imports vname("module", _, _, "testdata/module", _)
+//- @"'./module'" ref/imports vname("testdata/module", _, _, "testdata/module", _)
 export {value} from './module';
 
 // Syntax 2: a bare "export" statement.
