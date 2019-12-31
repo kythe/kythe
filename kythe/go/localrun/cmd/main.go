@@ -60,21 +60,30 @@ Positional arguments:
 
 Sample invocations:
 
-Build everything:
+"bazel build" and generate cross references for all languages for everything:
 
 	localrun //...
 
-Build just one package:
+"bazel build" a portion of the repository and generate cross references for all languages:
 
 	localrun //just/this/path/...
 
-Build just go code for one path:
+"bazel build" a portion of the repository (including non-go code) and generate cross references
+for just the go code:
 
 	localrun --language=go //just/this/path/...
 
-Build just go and java code:
+"bazel build" and generate cross references for just go and java code in the whole repo:
 
 	localrun --language=go,java //...
+
+Since this uses a standard bazel build invocation to build the targets, any targets that are
+included in the path will be included. If you would like to limit the build to just java_library
+targets you can employ bazel query to this end.
+
+Build only java_library targets and cross reference only java code:
+
+bazel query 'kind(java_library, //...)' | xargs localrun
 `)
 }
 
@@ -97,10 +106,10 @@ func main() {
 	}
 
 	log.Printf("Building %v for targets: %s\n",
-		languages.LanguageList.String(), strings.Join(targets, " "))
+		languages.LanguageSet.String(), strings.Join(targets, " "))
 
 	r := &localrun.Runner{
-		KytheRelease: "/opt/kythe",
+		KytheRelease: kytheRelease,
 		WorkingDir:   workingDir,
 		OutputDir:    outputDir,
 		CacheSize:    cacheSize,
@@ -108,7 +117,7 @@ func main() {
 		//WorkerPoolSize: runtime.GOMAXPROCS(0) * 2,
 		WorkerPoolSize: runtime.GOMAXPROCS(0)*0 + 1,
 
-		Languages: languages.LanguageList,
+		Languages: languages.LanguageSet,
 		Targets:   targets,
 
 		Port: port,
@@ -139,17 +148,12 @@ func main() {
 // languageFlag is a flag.Value that accepts either a list of languages or repeated
 // languages for the same flag value.
 type languageFlag struct {
-	localrun.LanguageList
+	localrun.LanguageSet
 }
 
 // String implements flag.Value.
 func (lf *languageFlag) String() string {
-	s := []string{}
-	for _, v := range lf.LanguageList {
-		s = append(s, v.String())
-	}
-
-	return strings.Join(s, ", ")
+	return lf.LanguageSet.String()
 }
 
 // Set implements flag.Value.
@@ -160,22 +164,11 @@ func (lf *languageFlag) Set(value string) error {
 			return fmt.Errorf("the provided language %q is not one of %s", v, localrun.AllLanguages().String())
 		}
 
-		if lf.has(l) {
+		if lf.LanguageSet.Has(l) {
 			continue
 		}
-		lf.LanguageList = append(lf.LanguageList, l)
+		lf.LanguageSet.Set(l)
 		continue
 	}
 	return nil
-}
-
-// has allows you to check if the flag already has a value set.
-func (lf *languageFlag) has(l localrun.Language) bool {
-	for _, v := range lf.LanguageList {
-		if v == l {
-			return true
-		}
-	}
-
-	return false
 }

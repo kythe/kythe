@@ -18,7 +18,7 @@ package command_line;
 // option java_api_version = 2;
 option java_package = "com.google.devtools.build.lib.runtime.proto";
 
-import "src/main/protobuf/option_filters.proto";
+import "third_party/bazel/src/main/protobuf/option_filters.proto";
 
 // Representation of a Bazel command line.
 message CommandLine {

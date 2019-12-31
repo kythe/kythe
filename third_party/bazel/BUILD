@@ -16,7 +16,6 @@ filegroup(
 proto_library(
     name = "extra_actions_base_proto",
     srcs = ["src/main/protobuf/extra_actions_base.proto"],
-    strip_import_prefix = "/third_party/bazel",
 )
 
 cc_proto_library(
@@ -43,7 +42,6 @@ rust_proto_library(
 proto_library(
     name = "test_status_proto",
     srcs = ["src/main/protobuf/test_status.proto"],
-    strip_import_prefix = "/third_party/bazel",
 )
 
 cc_proto_library(
@@ -65,7 +63,6 @@ java_proto_library(
 proto_library(
     name = "build_event_stream_proto",
     srcs = ["src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.proto"],
-    strip_import_prefix = "/third_party/bazel",
     deps = [
         ":command_line_proto",
         ":invocation_policy_proto",
@@ -85,7 +82,6 @@ go_proto_library(
 proto_library(
     name = "command_line_proto",
     srcs = ["src/main/protobuf/command_line.proto"],
-    strip_import_prefix = "/third_party/bazel",
     deps = [
         ":option_filters_proto",
     ],
@@ -103,7 +99,6 @@ go_proto_library(
 proto_library(
     name = "option_filters_proto",
     srcs = ["src/main/protobuf/option_filters.proto"],
-    strip_import_prefix = "/third_party/bazel",
 )
 
 go_proto_library(
@@ -115,7 +110,6 @@ go_proto_library(
 proto_library(
     name = "invocation_policy_proto",
     srcs = ["src/main/protobuf/invocation_policy.proto"],
-    strip_import_prefix = "/third_party/bazel",
 )
 
 go_proto_library(

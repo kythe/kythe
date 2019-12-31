@@ -4,7 +4,9 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "localrun",
-    srcs = glob(["*.go"]),
+    srcs = [
+        "localrun.go",
+    ],
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/delimited/dedup",
@@ -22,4 +24,10 @@ go_library(
         "@com_github_golang_protobuf//proto:go_default_library",
         "@org_golang_x_sync//errgroup:go_default_library",
     ],
+)
+
+go_test(
+    name = "localrun_test",
+    srcs = ["localrun_test.go"],
+    library = ":localrun",
 )

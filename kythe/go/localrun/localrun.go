@@ -9,11 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
-
-	"golang.org/x/sync/errgroup"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 	"github.com/apache/beam/sdks/go/pkg/beam/x/beamx"
@@ -33,16 +29,18 @@ var _ = delimited.Reader{}
 var _ = dedup.Reader{}
 
 const (
-	Cxx Language = iota
+	// This list must be kept in sync with Language.String.
+	Cxx Language = iota // Note that Cxx must be first, or you must update Language.Valid to refer to the first element.
 	Go
 	Java
 	Jvm
 	Protobuf
-	// TODO: Python isn't shipping in kythe right now by default
+	// TODO: Python isn't shipping in Kythe right now by default
 	Python
+	// TODO: Textproto isn't shipping in Kythe right now by default.
 	Textproto
-	// TODO: TypeScript isn't shipping in kythe right now by default.
-	TypeScript // Note that typescript must be last, or you must update Valid to refer to the last element.
+	// TODO: TypeScript isn't shipping in Kythe right now by default.
+	TypeScript // Note that typescript must be last, or you must update Language.Valid to refer to the last element.
 )
 
 type metadata struct {
@@ -89,15 +87,15 @@ func makeLanguageMetadata() map[Language]metadata {
 	}
 
 	allLanguages := AllLanguages()
-	for _, l := range allLanguages {
+	for l, _ := range allLanguages {
 		if _, ok := m[l]; !ok {
 			panic(fmt.Sprintf("The languageMetadata map needs an entry for %q", l))
 		}
 	}
 
 	for l := range m {
-		if !allLanguages.contains(l) {
-			panic(fmt.Sprintf("You've defined a language %q that isn't in AllLanguages()", l))
+		if !allLanguages.Has(l) {
+			panic(fmt.Sprintf("You've defined a language %v that isn't in AllLanguages()", l))
 		}
 	}
 
@@ -113,14 +111,20 @@ type Language int
 // String provides the string representation of this enum value.
 func (l Language) String() string {
 	return [...]string{
-		"Cxx",
+		"Cxx", // To insert above this line, modify Language.Validate
 		"Go",
 		"Java",
 		"Jvm",
 		"Protobuf",
 		"Python",
-		"TypeScript",
+		"Textproto",
+		"TypeScript", // To insert below this line, modify Language.Validate
 	}[l]
+}
+
+// Valid determines of the provided language is a valid enum value.
+func (l Language) Valid() bool {
+	return l >= Cxx && l <= TypeScript
 }
 
 func (l Language) kZipExtractorName() string {
@@ -131,45 +135,40 @@ func (l Language) indexerPath() string {
 	return l.metadata().indexerPath
 }
 
-// Valid determines of the provided language is a valid enum value.
-func (l Language) Valid() bool {
-	return l <= TypeScript
-}
-
 func (l Language) metadata() metadata {
 	return languageMetadataMap[l]
 }
 
-func AllLanguages() LanguageList {
-	languages := LanguageList{}
+func AllLanguages() LanguageSet {
+	languages := LanguageSet{}
 	for c := Language(0); c.Valid(); c++ {
-		languages = append(languages, c)
+		languages.Set(c)
 	}
 	return languages
 }
 
-type LanguageList []Language
+type LanguageSet map[Language]struct{}
 
-func (ll LanguageList) String() string {
+func (ls LanguageSet) String() string {
 	languages := []string{}
-	for _, l := range ll {
+	for l, _ := range ls {
 		languages = append(languages, l.String())
 	}
 	return strings.Join(languages, ",")
 }
 
-func (ll LanguageList) contains(l Language) bool {
-	for _, v := range ll {
-		if v == l {
-			return true
-		}
-	}
-	return false
+func (ls LanguageSet) Set(l Language) {
+	ls[l] = struct{}{}
 }
 
-func (ll LanguageList) hasExtractor(e string) bool {
-	for _, v := range ll {
-		if v.kZipExtractorName() == e {
+func (ls LanguageSet) Has(l Language) bool {
+	_, ok := ls[l]
+	return ok
+}
+
+func (ls LanguageSet) hasExtractor(e string) bool {
+	for l, _ := range ls {
+		if l.kZipExtractorName() == e {
 			return true
 		}
 	}
@@ -180,8 +179,8 @@ var LanguageMap map[string]Language = makeLanguageMap()
 
 func makeLanguageMap() map[string]Language {
 	r := map[string]Language{}
-	for c := Language(0); c.Valid(); c++ {
-		r[strings.ToLower(c.String())] = c
+	for l, _ := range AllLanguages() {
+		r[strings.ToLower(l.String())] = l
 	}
 	return r
 }
@@ -211,7 +210,7 @@ type Runner struct {
 	graphStore     graphstore.Service
 
 	// Building/extracting options.
-	Languages LanguageList
+	Languages LanguageSet
 	Targets   []string
 
 	// Serving configuration options.
@@ -219,7 +218,7 @@ type Runner struct {
 
 	// Internal state
 	m          mode
-	indexedOut *threadsafeBuffer
+	indexedOut io.Reader
 	besFile    string
 }
 
@@ -280,7 +279,7 @@ func (r *Runner) Index(ctx context.Context) error {
 		return err
 	}
 
-	g, _ := errgroup.WithContext(ctx)
+	kzips := []string{}
 
 	file, err := os.Open(r.besFile) // For read access.
 	if err != nil {
@@ -289,118 +288,46 @@ func (r *Runner) Index(ctx context.Context) error {
 
 	rd := delimited.NewReader(file)
 
-	kzips := make(chan string, r.WorkerPoolSize)
-
-	var countDenom uint64
-	g.Go(func() error {
-		defer close(kzips)
-
-		for {
-			var event bespb.BuildEvent
-			if err := rd.NextProto(&event); err == io.EOF {
-				break
-			} else if err != nil {
-				return fmt.Errorf("error reading length-delimited proto from bes file: %v", err)
-			}
-
-			action := event.GetAction()
-			if action == nil {
-				continue
-			}
-
-			if !action.Success {
-				continue
-			}
-			if !r.Languages.hasExtractor(action.Type) {
-				fmt.Sprintf("Didn't find extractor for: %s\n", action.Type)
-				continue
-			}
-
-			actionCompleted := event.Id.GetActionCompleted()
-			if actionCompleted == nil {
-				continue
-			}
-
-			atomic.AddUint64(&countDenom, 1)
-			kzips <- actionCompleted.PrimaryOutput
+	for {
+		var event bespb.BuildEvent
+		if err := rd.NextProto(&event); err == io.EOF {
+			break
+		} else if err != nil {
+			return fmt.Errorf("error reading length-delimited proto from bes file: %v", err)
 		}
 
-		fmt.Fprintf(os.Stderr, "Finished finding indexable targets\n")
-		return nil
-	})
+		action := event.GetAction()
+		if action == nil {
+			continue
+		}
 
-	fmt.Fprintf(os.Stderr, "Beginning indexing\n")
+		if !action.Success {
+			continue
+		}
+		if !r.Languages.hasExtractor(action.Type) {
+			fmt.Sprintf("Didn't find extractor for: %s\n", action.Type)
+			continue
+		}
 
-	r.indexedOut = &threadsafeBuffer{}
+		actionCompleted := event.Id.GetActionCompleted()
+		if actionCompleted == nil {
+			continue
+		}
 
-	var countNum uint64
-	for workerID := 0; workerID < r.WorkerPoolSize; workerID++ {
-		g.Go(func(workerID int) func() error {
-			return func() error {
-				fmt.Fprintf(os.Stderr, "Parallel indexing worker %d started\n", workerID)
-
-				workerBuf := &bytes.Buffer{}
-
-				for k := range kzips {
-					log := func(c uint64, m string, v ...interface{}) {
-						den := atomic.LoadUint64(&countDenom)
-						fmt.Fprintf(os.Stderr, "[%d/%d] %v \n", c, den, fmt.Sprintf(m, v...))
-					}
-
-					c := atomic.AddUint64(&countNum, 1)
-					log(c, "Started indexing %q", k)
-
-					if f, err := os.Stat(k); err != nil {
-						log(c, "file error: %v", err)
-					} else if f.Size() == 0 {
-						log(c, "skipping empty .kzip")
-						continue
-					}
-
-					parts := strings.Split(k, ".")
-					langStr := parts[len(parts)-2]
-					l, ok := LanguageMap[langStr]
-					if !ok {
-						log(c, "Unrecognized language")
-						return fmt.Errorf("Unrecognized language: %v\n", langStr)
-					}
-
-					cmdCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
-					defer cancel()
-
-					// Perform the work prescribed
-					cmd := exec.CommandContext(cmdCtx,
-						fmt.Sprintf("%s/indexers/%s", r.KytheRelease, l.indexerPath()),
-						//"-continue",
-						//"-json",
-						k)
-
-					cmd.Stdout = workerBuf
-					cmd.Stderr = os.Stderr
-					cmd.Dir = r.WorkingDir
-
-					if err := cmd.Run(); err != nil {
-						log(c, "Failed run: %v", cmd.Args)
-						return fmt.Errorf("error indexing[%v] %q: %v", l.String(), k, err)
-					}
-				}
-				fmt.Fprintf(os.Stderr, "Parallel indexing worker %d completed\n", workerID)
-
-				if _, err := workerBuf.WriteTo(r.indexedOut); err != nil {
-					return err
-				}
-
-				return nil
-			}
-		}(workerID))
+		kzips = append(kzips, actionCompleted.PrimaryOutput)
 	}
 
-	if err := errGroupWait(g, "indexing workers"); err != nil {
-		return err
-	}
-	fmt.Fprintf(os.Stderr, "\n[%d/%d] Finished indexing\n", countNum, countDenom)
+	fmt.Fprintf(os.Stderr, "Finished finding indexable targets\n")
 
-	return nil
+	indexer := &serialIndexer{
+		besFile:      r.besFile,
+		Languages:    r.Languages,
+		KytheRelease: r.KytheRelease,
+		WorkingDir:   r.WorkingDir,
+	}
+
+	r.indexedOut, err = indexer.run(ctx, kzips)
+	return err
 }
 
 // PostProcess postprocesses the supplied indexed data.
@@ -444,11 +371,7 @@ func (r *Runner) PostProcess(ctx context.Context) error {
 		k.SplitEdges(),
 	)
 
-	g, _ := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		return beamx.Run(ctx, p)
-	})
-	return errGroupWait(g, "postprocessing pipeline")
+	return beamx.Run(ctx, p)
 
 	// dedup the stream
 	// https://github.com/kythe/kythe/blob/77e1360beca7903bc97728097d2c5e1b82204092/kythe/go/platform/tools/dedup_stream/dedup_stream.go
@@ -460,27 +383,6 @@ func createColumnarMetadata(s beam.Scope) beam.PCollection {
 }
 
 func emitColumnarMetadata(_ []byte) (string, string) { return xrefs.ColumnarTableKeyMarker, "v1" }
-
-func errGroupWait(g *errgroup.Group, msg string) error {
-	done := make(chan error, 1)
-	go func() {
-		fmt.Fprintf(os.Stderr, "Waiting on %s...\n", msg)
-		done <- g.Wait()
-		fmt.Fprintf(os.Stderr, "Done waiting on %s...\n", msg)
-	}()
-
-	for {
-		select {
-		case err := <-done:
-			if err != nil {
-				return fmt.Errorf("errorGroup had an error: %v", err)
-			}
-			return nil
-		case <-time.After(1 * time.Second):
-			fmt.Fprintf(os.Stderr, ".")
-		}
-	}
-}
 
 // Serve starts an http server on the provided port and allows web inspection
 // of the indexed data.
@@ -509,36 +411,65 @@ func (r *Runner) Serve(ctx context.Context) error {
 	return nil
 }
 
-// threadsafeBuffer implements a threadsafe form of bytes.Buffer
-type threadsafeBuffer struct {
-	b bytes.Buffer
-	m sync.RWMutex
+type indexer interface {
+	run(ctx context.Context, kzips []string) error
 }
 
-// Read implements Buffer.Read.
-func (b *threadsafeBuffer) Read(p []byte) (n int, err error) {
-	b.m.RLock()
-	defer b.m.RUnlock()
-	return b.b.Read(p)
+type serialIndexer struct {
+	besFile      string
+	Languages    LanguageSet
+	KytheRelease string
+	WorkingDir   string
 }
 
-// Write implements Buffer.Write.
-func (b *threadsafeBuffer) Write(p []byte) (n int, err error) {
-	b.m.Lock()
-	defer b.m.Unlock()
-	return b.b.Write(p)
-}
+func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, error) {
+	indexedOut := &bytes.Buffer{}
 
-// String implements Buffer.String.
-func (b *threadsafeBuffer) String() string {
-	b.m.RLock()
-	defer b.m.RUnlock()
-	return b.b.String()
-}
+	fmt.Fprintf(os.Stderr, "Beginning serial indexing\n")
 
-// WriteTo implements Buffer.WriteTo.
-func (b *threadsafeBuffer) WriteTo(w io.Writer) (int64, error) {
-	b.m.RLock()
-	defer b.m.RUnlock()
-	return b.b.WriteTo(w)
+	for i, k := range kzips {
+		log := func(i int, m string, v ...interface{}) {
+			den := len(kzips)
+			fmt.Fprintf(os.Stderr, "[%d/%d] %v \n", i, den, fmt.Sprintf(m, v...))
+		}
+
+		log(i, "Started indexing %q", k)
+
+		if f, err := os.Stat(k); err != nil {
+			log(i, "file error: %v", err)
+		} else if f.Size() == 0 {
+			log(i, "skipping empty .kzip")
+			continue
+		}
+
+		parts := strings.Split(k, ".")
+		langStr := parts[len(parts)-2]
+		l, ok := LanguageMap[langStr]
+		if !ok {
+			log(i, "Unrecognized language")
+			return indexedOut, fmt.Errorf("Unrecognized language: %v\n", langStr)
+		}
+
+		cmdCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
+		defer cancel()
+
+		// Perform the work prescribed
+		cmd := exec.CommandContext(cmdCtx,
+			fmt.Sprintf("%s/indexers/%s", si.KytheRelease, l.indexerPath()),
+			//"-continue",
+			//"-json",
+			k)
+
+		cmd.Stdout = indexedOut
+		cmd.Stderr = os.Stderr
+		cmd.Dir = si.WorkingDir
+
+		if err := cmd.Run(); err != nil {
+			log(i, "Failed run: %v", cmd.Args)
+			return indexedOut, fmt.Errorf("error indexing[%v] %q: %v", l.String(), k, err)
+		}
+	}
+	fmt.Fprintf(os.Stderr, "\n[%d/%d] Finished indexing\n", len(kzips), len(kzips))
+
+	return indexedOut, nil
 }
