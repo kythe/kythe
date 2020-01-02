@@ -684,7 +684,11 @@ class Visitor {
 
     this.typeChecker = this.host.program.getTypeChecker();
 
-    this.kFile = this.newFileVName(file.fileName);
+    if (process.env.KYTHE_ROOT_DIRECTORY) {
+      this.kFile = this.newFileVName(path.relative(process.env.KYTHE_ROOT_DIRECTORY, file.fileName));
+    } else {
+      this.kFile = this.newFileVName(file.fileName);
+    }
   }
 
   /**
