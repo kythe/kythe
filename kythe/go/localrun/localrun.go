@@ -163,12 +163,13 @@ func AllLanguages() LanguageSet {
 	return languages
 }
 
+// LanguageSet is a set implementation that tracks langages.
 type LanguageSet map[Language]struct{}
 
 // String implements Stringer.String.
 func (ls LanguageSet) String() string {
 	languages := []string{}
-	for l_ := range ls {
+	for l := range ls {
 		languages = append(languages, l.String())
 	}
 	return strings.Join(languages, ",")
@@ -469,7 +470,7 @@ func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, er
 		l, ok := LanguageMap[langStr]
 		if !ok {
 			log(i, "Unrecognized language")
-			return indexedOut, fmt.Errorf("Unrecognized language: %v\n", langStr)
+			return indexedOut, fmt.Errorf("unrecognized language: %v", langStr)
 		}
 
 		cmdCtx, cancel := context.WithTimeout(ctx, 300*time.Second)

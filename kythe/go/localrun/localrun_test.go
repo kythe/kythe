@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package localrun
 
 import (
@@ -20,7 +21,7 @@ import (
 )
 
 func TestAllLanguages(t *testing.T) {
-	for l, _ := range AllLanguages() {
+	for l := range AllLanguages() {
 		if l.Valid() != true {
 			t.Errorf("Provided an invalid language: %v", l)
 		}
