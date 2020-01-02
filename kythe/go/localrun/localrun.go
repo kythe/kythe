@@ -1,4 +1,22 @@
-package localrun
+/*
+ * Copyright 2020 The Kythe Authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Package localrun provides helper methods for locall building a kythe indexed
+// repo
+package localrun //import "kythe.io/kythe/go/localrun"
 
 import (
 	"bytes"
@@ -28,18 +46,15 @@ import (
 var _ = delimited.Reader{}
 var _ = dedup.Reader{}
 
+// This list must be kept in sync with Language.String.
 const (
-	// This list must be kept in sync with Language.String.
 	Cxx Language = iota // Note that Cxx must be first, or you must update Language.Valid to refer to the first element.
 	Go
 	Java
 	Jvm
 	Protobuf
-	// TODO: Python isn't shipping in Kythe right now by default
-	Python
-	// TODO: Textproto isn't shipping in Kythe right now by default.
-	Textproto
-	// TODO: TypeScript isn't shipping in Kythe right now by default.
+	Python     // TODO: Python isn't shipping in Kythe right now by default
+	Textproto  // TODO: Textproto isn't shipping in Kythe right now by default.
 	TypeScript // Note that typescript must be last, or you must update Language.Valid to refer to the last element.
 )
 
@@ -87,7 +102,7 @@ func makeLanguageMetadata() map[Language]metadata {
 	}
 
 	allLanguages := AllLanguages()
-	for l, _ := range allLanguages {
+	for l := range allLanguages {
 		if _, ok := m[l]; !ok {
 			panic(fmt.Sprintf("The languageMetadata map needs an entry for %q", l))
 		}
@@ -139,6 +154,7 @@ func (l Language) metadata() metadata {
 	return languageMetadataMap[l]
 }
 
+// AllLanguages returns a language set that contains all available languages.
 func AllLanguages() LanguageSet {
 	languages := LanguageSet{}
 	for c := Language(0); c.Valid(); c++ {
@@ -149,25 +165,28 @@ func AllLanguages() LanguageSet {
 
 type LanguageSet map[Language]struct{}
 
+// String implements Stringer.String.
 func (ls LanguageSet) String() string {
 	languages := []string{}
-	for l, _ := range ls {
+	for l_ := range ls {
 		languages = append(languages, l.String())
 	}
 	return strings.Join(languages, ",")
 }
 
+// Set the provided language in the set.
 func (ls LanguageSet) Set(l Language) {
 	ls[l] = struct{}{}
 }
 
+// Has checks if the provided language is in the set.
 func (ls LanguageSet) Has(l Language) bool {
 	_, ok := ls[l]
 	return ok
 }
 
 func (ls LanguageSet) hasExtractor(e string) bool {
-	for l, _ := range ls {
+	for l := range ls {
 		if l.kZipExtractorName() == e {
 			return true
 		}
@@ -175,11 +194,13 @@ func (ls LanguageSet) hasExtractor(e string) bool {
 	return false
 }
 
+// LanguageMap is a mapping from the string name of each language to the enum
+// value.
 var LanguageMap map[string]Language = makeLanguageMap()
 
 func makeLanguageMap() map[string]Language {
 	r := map[string]Language{}
-	for l, _ := range AllLanguages() {
+	for l := range AllLanguages() {
 		r[strings.ToLower(l.String())] = l
 	}
 	return r
@@ -200,6 +221,7 @@ func (m mode) String() string {
 	return [...]string{"nothing", "extract", "index", "postprocess", "serve"}[m]
 }
 
+// Runner is responsible for indexing the repo with Kythe.
 type Runner struct {
 	// Generally useful configuration
 	KytheRelease   string
@@ -398,7 +420,7 @@ func (r *Runner) Serve(ctx context.Context) error {
 		fmt.Sprintf("%s/tools/http_server", r.KytheRelease),
 		"--listen", listen,
 		"--serving_table", r.OutputDir,
-		"--public_resources", "/usr/local/google/home/achew/kythe/kythe/web/ui/resources/public",
+		"--public_resources", fmt.Sprintf("%s/resources/public", r.KytheRelease),
 	)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
