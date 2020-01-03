@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"kythe.io/kythe/go/localrun"
 	"kythe.io/kythe/go/util/datasize"
@@ -39,6 +40,7 @@ var (
 	workingDir        string
 	kytheRelease      string
 	outputDir         string
+	indexingTimeout   time.Duration
 	acceptedLanguages = []string{"go", "java"}
 	cacheSize         = datasize.Flag("cache_size", "3gb", "How much ram to dedicate to handling")
 )
@@ -113,6 +115,7 @@ func main() {
 	flag.StringVar(&workingDir, "working_dir", wd, "The directory for all bazel oprations to begin relative to")
 	flag.StringVar(&kytheRelease, "kythe_release", "/opt/kythe", "The directory that holds a Kythe release. Releases can be downloaded from https://github.com/kythe/kythe/releases")
 	flag.StringVar(&outputDir, "output_dir", filepath.Join(cacheDir, "output"), "The directory to create intermediate artifacts in")
+	flag.DurationVar(&indexingTimeout, "indexing_timeout", 300*time.Second, "How long to wait before indexing a compilation unit times out")
 	flag.Parse()
 
 	targets, err := getTargets(flag.Args())
@@ -135,6 +138,8 @@ func main() {
 
 		Languages: languages.LanguageSet,
 		Targets:   targets,
+
+		Timeout: 300 * time.Second,
 
 		Port: port,
 	}

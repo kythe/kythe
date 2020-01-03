@@ -239,6 +239,9 @@ type Runner struct {
 	// Serving configuration options.
 	Port int
 
+	// Timeout for indexing.
+	Timeout time.Duration
+
 	// Internal state
 	m          mode
 	indexedOut io.Reader
@@ -347,6 +350,7 @@ func (r *Runner) Index(ctx context.Context) error {
 		Languages:    r.Languages,
 		KytheRelease: r.KytheRelease,
 		WorkingDir:   r.WorkingDir,
+		Timeout:      r.Timeout,
 	}
 
 	r.indexedOut, err = indexer.run(ctx, kzips)
@@ -443,6 +447,7 @@ type serialIndexer struct {
 	Languages    LanguageSet
 	KytheRelease string
 	WorkingDir   string
+	Timeout      time.Duration
 }
 
 func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, error) {
@@ -473,7 +478,7 @@ func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, er
 			return indexedOut, fmt.Errorf("unrecognized language: %v", langStr)
 		}
 
-		cmdCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
+		cmdCtx, cancel := context.WithTimeout(ctx, si.Timeout)
 		defer cancel()
 
 		// Perform the work prescribed
