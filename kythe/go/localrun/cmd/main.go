@@ -53,7 +53,7 @@ var errNotEnoughArgs = errors.New("not enough arguments")
 
 func getTargets(args []string) ([]string, error) {
 	if len(args) < 1 {
-		return nil, fmt.Errorf("You provided %d arguments but expected 2: %w", errNotEnoughArgs)
+		return nil, fmt.Errorf("You provided %d arguments but expected 2: %w", len(args), errNotEnoughArgs)
 	}
 	return args[:], nil
 }

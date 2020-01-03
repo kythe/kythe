@@ -437,7 +437,7 @@ func (r *Runner) Serve(ctx context.Context) error {
 		args = append(args, "--public_resources")
 		args = append(args, r.PublicResources)
 	} else if r.PublicResources != "" {
-		log.Printf("You requested serving public resources from %q, but it doesn't exist.")
+		log.Printf("You requested serving public resources from %q, but it doesn't exist.", r.PublicResources)
 	}
 
 	// Perform the work prescribed
