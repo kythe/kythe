@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
+// Binary localrun is a small binary that can be used to build, extract, index,
+// and serve any bazel repo.
 package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -35,23 +38,22 @@ import (
 )
 
 var (
-	languages         languageFlag = languageFlag{localrun.AllLanguages()}
-	port              int
-	workingDir        string
-	kytheRelease      string
-	outputDir         string
-	indexingTimeout   time.Duration
-	acceptedLanguages = []string{"go", "java"}
-	cacheSize         = datasize.Flag("cache_size", "3gb", "How much ram to dedicate to handling")
+	languages       languageFlag = languageFlag{localrun.AllLanguages()}
+	hostname                     = flag.String("hostname", "localhost", "The host to start the http server on once everything is finished")
+	port                         = flag.Int("port", 8080, "The port to start the http server on once everything is finished")
+	workingDir                   = flag.String("working_dir", "", "The directory for all bazel oprations to begin relative to")
+	kytheRelease                 = flag.String("kythe_release", "/opt/kythe", "The directory that holds a Kythe release. Releases can be downloaded from https://github.com/kythe/kythe/releases")
+	publicResources              = flag.String("public_resources", "", "Path to the public resources to serve in the webserver (default: $kythe_release/resources/public)")
+	outputDir                    = flag.String("output_dir", "", "The directory to create intermediate artifacts in")
+	indexingTimeout              = flag.Duration("indexing_timeout", 300*time.Second, "How long to wait before indexing a compilation unit times out")
+	cacheSize                    = datasize.Flag("cache_size", "3gb", "How much ram to dedicate to handling")
 )
 
-var errNotEnoughArgs = fmt.Errorf("not enough arguments")
+var errNotEnoughArgs = errors.New("not enough arguments")
 
 func getTargets(args []string) ([]string, error) {
 	if len(args) < 1 {
-		// TODO: In go 1.13, replace with this
-		// return []string{}, xerrors.Errorf("You provided %d arguments but expected 2: %w", errNotEnoughArgs)
-		return []string{}, errNotEnoughArgs
+		return nil, fmt.Errorf("You provided %d arguments but expected 2: %w", errNotEnoughArgs)
 	}
 	return args[:], nil
 }
@@ -60,7 +62,7 @@ func getTargets(args []string) ([]string, error) {
 func usage() {
 	fmt.Fprintf(os.Stderr, `localrun
 
-localrun is a small binary that can be used to build, extract, index, and serve any bazel repo
+localrun is a small binary that can be used to build, extract, index, and serve any bazel repo.
 
 Usage:
 
@@ -107,16 +109,16 @@ bazel query 'kind(java_library, //...)' | xargs localrun
 
 // main entrypoint for the program.
 func main() {
-	wd, _ := os.Getwd()
+	*workingDir, _ = os.Getwd()
 	cacheDir, _ := os.UserCacheDir()
+	*outputDir = filepath.Join(cacheDir, "output")
 
 	flag.Var(&languages, "language", "Case insensitive list of languages that should be extracted and indexed")
-	flag.IntVar(&port, "port", 8080, "The port to start the http server on once everything is finished")
-	flag.StringVar(&workingDir, "working_dir", wd, "The directory for all bazel oprations to begin relative to")
-	flag.StringVar(&kytheRelease, "kythe_release", "/opt/kythe", "The directory that holds a Kythe release. Releases can be downloaded from https://github.com/kythe/kythe/releases")
-	flag.StringVar(&outputDir, "output_dir", filepath.Join(cacheDir, "output"), "The directory to create intermediate artifacts in")
-	flag.DurationVar(&indexingTimeout, "indexing_timeout", 300*time.Second, "How long to wait before indexing a compilation unit times out")
 	flag.Parse()
+
+	if *publicResources == "" {
+		*publicResources = *kytheRelease + "/resources/public"
+	}
 
 	targets, err := getTargets(flag.Args())
 	if err != nil {
@@ -128,9 +130,9 @@ func main() {
 		languages.LanguageSet.String(), strings.Join(targets, " "))
 
 	r := &localrun.Runner{
-		KytheRelease: kytheRelease,
-		WorkingDir:   workingDir,
-		OutputDir:    outputDir,
+		KytheRelease: *kytheRelease,
+		WorkingDir:   *workingDir,
+		OutputDir:    *outputDir,
 		CacheSize:    cacheSize,
 
 		//WorkerPoolSize: runtime.GOMAXPROCS(0) * 2,
@@ -139,9 +141,11 @@ func main() {
 		Languages: languages.LanguageSet,
 		Targets:   targets,
 
-		Timeout: 300 * time.Second,
+		Timeout: *indexingTimeout,
 
-		Port: port,
+		Port:            *port,
+		Hostname:        *hostname,
+		PublicResources: *publicResources,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -180,14 +184,11 @@ func (lf *languageFlag) String() string {
 // Set implements flag.Value.
 func (lf *languageFlag) Set(value string) error {
 	for _, v := range strings.Split(value, ",") {
-		l, ok := localrun.LanguageMap[v]
+		l, ok := localrun.KnownLanguage(v)
 		if !ok {
 			return fmt.Errorf("the provided language %q is not one of %s", v, localrun.AllLanguages().String())
 		}
 
-		if lf.LanguageSet.Has(l) {
-			continue
-		}
 		lf.LanguageSet.Set(l)
 		continue
 	}

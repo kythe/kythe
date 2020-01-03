@@ -22,7 +22,7 @@ import (
 
 func TestAllLanguages(t *testing.T) {
 	for l := range AllLanguages() {
-		if l.Valid() != true {
+		if !l.Valid() {
 			t.Errorf("Provided an invalid language: %v", l)
 		}
 	}

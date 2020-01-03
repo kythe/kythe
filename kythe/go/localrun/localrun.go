@@ -24,13 +24,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/apache/beam/sdks/go/pkg/beam"
-	"github.com/apache/beam/sdks/go/pkg/beam/x/beamx"
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/delimited/dedup"
@@ -39,6 +37,9 @@ import (
 	"kythe.io/kythe/go/serving/pipeline/beamio"
 	"kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/util/datasize"
+
+	"github.com/apache/beam/sdks/go/pkg/beam"
+	"github.com/apache/beam/sdks/go/pkg/beam/x/beamx"
 
 	bespb "kythe.io/third_party/bazel/build_event_stream_go_proto"
 )
@@ -104,18 +105,18 @@ func makeLanguageMetadata() map[Language]metadata {
 	allLanguages := AllLanguages()
 	for l := range allLanguages {
 		if _, ok := m[l]; !ok {
-			panic(fmt.Sprintf("The languageMetadata map needs an entry for %q", l))
+			log.Panicf("The languageMetadata map needs an entry for %q", l)
 		}
 	}
 
 	for l := range m {
 		if !allLanguages.Has(l) {
-			panic(fmt.Sprintf("You've defined a language %v that isn't in AllLanguages()", l))
+			log.Panicf("You've defined a language %v that isn't in AllLanguages()", l)
 		}
 	}
 
 	if len(m) != len(AllLanguages()) {
-		panic(fmt.Sprintf("The languageMetadata map should have an entry for every language"))
+		log.Panicf("The languageMetadata map should have an entry for every language")
 	}
 	return m
 }
@@ -207,6 +208,11 @@ func makeLanguageMap() map[string]Language {
 	return r
 }
 
+func KnownLanguage(s string) (Language, bool) {
+	l, ok := LanguageMap[s]
+	return l, ok
+}
+
 const (
 	// Ordered linear set of states the localrun program can be in.
 	nothing mode = iota
@@ -237,7 +243,9 @@ type Runner struct {
 	Targets   []string
 
 	// Serving configuration options.
-	Port int
+	Port            int
+	Hostname        string
+	PublicResources string
 
 	// Timeout for indexing.
 	Timeout time.Duration
@@ -283,7 +291,7 @@ func (r *Runner) Extract(ctx context.Context) error {
 		"--",
 	},
 		r.Targets...)
-	fmt.Fprintf(os.Stderr, "Building with event file at: %s\n", r.besFile)
+	log.Printf("Building with event file at: %s", r.besFile)
 
 	cmd := exec.CommandContext(ctx,
 		"bazel",
@@ -305,7 +313,7 @@ func (r *Runner) Index(ctx context.Context) error {
 		return err
 	}
 
-	kzips := []string{}
+	var kzips []string
 
 	file, err := os.Open(r.besFile) // For read access.
 	if err != nil {
@@ -331,7 +339,7 @@ func (r *Runner) Index(ctx context.Context) error {
 			continue
 		}
 		if !r.Languages.hasExtractor(action.Type) {
-			fmt.Sprintf("Didn't find extractor for: %s\n", action.Type)
+			log.Printf("Didn't find extractor for: %s", action.Type)
 			continue
 		}
 
@@ -343,7 +351,7 @@ func (r *Runner) Index(ctx context.Context) error {
 		kzips = append(kzips, actionCompleted.PrimaryOutput)
 	}
 
-	fmt.Fprintf(os.Stderr, "Finished finding indexable targets\n")
+	log.Println("Finished finding indexable targets")
 
 	indexer := &serialIndexer{
 		besFile:      r.besFile,
@@ -363,7 +371,7 @@ func (r *Runner) PostProcess(ctx context.Context) error {
 		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "\nStarting postprocessing\n")
+	log.Println("Starting postprocessing")
 
 	rd, err := dedup.NewReader(r.indexedOut, int(r.CacheSize.Bytes()))
 	if err != nil {
@@ -418,22 +426,29 @@ func (r *Runner) Serve(ctx context.Context) error {
 		return err
 	}
 
-	listen := fmt.Sprintf(":%d", r.Port)
+	listen := fmt.Sprintf("%s:%d", r.Hostname, r.Port)
 
-	// Perform the work prescribed
-	cmd := exec.CommandContext(ctx,
-		fmt.Sprintf("%s/tools/http_server", r.KytheRelease),
+	args := []string{
 		"--listen", listen,
 		"--serving_table", r.OutputDir,
-		"--public_resources", fmt.Sprintf("%s/resources/public", r.KytheRelease),
-	)
+	}
+
+	if _, err := os.Stat(r.PublicResources); !os.IsNotExist(err) {
+		args = append(args, "--public_resources")
+		args = append(args, r.PublicResources)
+	} else if r.PublicResources != "" {
+		log.Printf("You requested serving public resources from %q, but it doesn't exist.")
+	}
+
+	// Perform the work prescribed
+	cmd := exec.CommandContext(ctx, fmt.Sprintf("%s/tools/http_server", r.KytheRelease), args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.Dir = r.WorkingDir
 
-	fmt.Fprintf(os.Stderr, "Starting http server on http://%s\n", listen)
+	log.Printf("Starting http server on http://%s", listen)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error starting dedup: %v", err)
+		return fmt.Errorf("error starting serve: %w", err)
 	}
 	return nil
 }
@@ -453,12 +468,12 @@ type serialIndexer struct {
 func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, error) {
 	indexedOut := &bytes.Buffer{}
 
-	fmt.Fprintf(os.Stderr, "Beginning serial indexing\n")
+	log.Printf("Beginning serial indexing")
 
 	for i, k := range kzips {
 		log := func(i int, m string, v ...interface{}) {
 			den := len(kzips)
-			fmt.Fprintf(os.Stderr, "[%d/%d] %v \n", i, den, fmt.Sprintf(m, v...))
+			log.Printf("[%d/%d] %v", i, den, fmt.Sprintf(m, v...))
 		}
 
 		log(i, "Started indexing %q", k)
@@ -497,7 +512,7 @@ func (si *serialIndexer) run(ctx context.Context, kzips []string) (io.Reader, er
 			return indexedOut, fmt.Errorf("error indexing[%v] %q: %v", l.String(), k, err)
 		}
 	}
-	fmt.Fprintf(os.Stderr, "\n[%d/%d] Finished indexing\n", len(kzips), len(kzips))
+	log.Printf("\n[%d/%d] Finished indexing", len(kzips), len(kzips))
 
 	return indexedOut, nil
 }
