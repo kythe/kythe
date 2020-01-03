@@ -1961,7 +1961,7 @@ function main(argv: string[]) {
 
   // This program merely demonstrates the API, so use a fake corpus/root/etc.
   const compilationUnit: VName = {
-    corpus: 'corpus',
+    corpus: process.env.KYTHE_CORPUS || 'corpus',
     root: '',
     path: '',
     signature: '',
