@@ -81,8 +81,8 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "doclib",
+cc_binary(
+    name = "doc",
     srcs = [
         "doc.cc",
     ],
@@ -100,12 +100,5 @@ cc_library(
         "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings:str_format",
-    ],
-)
-
-cc_binary(
-    name = "doc",
-    deps = [
-        ":doclib",
     ],
 )

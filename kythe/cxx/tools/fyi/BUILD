@@ -1,13 +1,11 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-cc_library(
-    name = "fyilib",
+cc_binary(
+    name = "fyi",
     srcs = [
         "fyi.cc",
-        "fyi_main.cc",
-    ],
-    hdrs = [
         "fyi.h",
+        "fyi_main.cc",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -35,12 +33,5 @@ cc_library(
         "@org_llvm//:clangRewrite",
         "@org_llvm//:clangSema",
         "@org_llvm//:clangTooling",
-    ],
-)
-
-cc_binary(
-    name = "fyi",
-    deps = [
-        ":fyilib",
     ],
 )
