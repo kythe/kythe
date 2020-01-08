@@ -328,10 +328,25 @@ public class JavaCompilationUnitExtractor {
    * Returns a new list with the same options except header/source destination directory options.
    */
   private static ImmutableList<String> removeDestDirOptions(Iterable<String> options) {
-    // TODO(#3671): Option.D needs to remain in for module support, fix either here or in indexing.
+    // Option.D needs to remain for module support, but shouldn't point to a concrete path
+    // as those are often unique paths which destroy caching.
+    // In order to preserve the existing semantics for non-modular compilations and remain
+    // source-compatible with Java 8, check for the support and presence of a
+    // --module-source-path option.
+    EnumSet<Option> remove =
+        hasModuleSourcePath(options)
+            ? EnumSet.of(Option.S, Option.H)
+            : EnumSet.of(Option.D, Option.S, Option.H);
     return ModifiableOptions.of(options)
-        .removeOptions(EnumSet.of(Option.D, Option.S, Option.H))
+        .removeOptions(remove)
+        .replaceOptionValue(Option.D, "/dev/null")
         .build();
+  }
+
+  /** Returns true if the list of options contains --modules-source-path or equivalent. */
+  private static boolean hasModuleSourcePath(Iterable<String> options) {
+    Option moduleSourcePath = Option.lookup("--module-source-path");
+    return moduleSourcePath == null ? false : Iterables.any(options, moduleSourcePath::matches);
   }
 
   /**

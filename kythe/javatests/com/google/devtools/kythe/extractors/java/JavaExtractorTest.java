@@ -700,6 +700,31 @@ public class JavaExtractorTest extends TestCase {
             join(TEST_DATA_DIR, "/system_modules/lib/modules"));
   }
 
+  public void testModuleSourcePath() throws ExtractionException, InvalidProtocolBufferException {
+    JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
+
+    List<String> sources = testFiles("/mod/module-info.java", "/mod/pkg/A.java", "/mod/pkg/B.java");
+    CompilationDescription description =
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.empty(),
+            ImmutableList.of("--module-source-path", "/", "-d", "/output"),
+            "/output");
+    CompilationUnit unit = description.getCompilationUnit();
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileList()).containsExactlyElementsIn(sources).inOrder();
+    assertThat(unit.getArgumentList())
+        .containsExactly("--module-source-path", "/", "-d", "/dev/null")
+        .inOrder();
+  }
+
   private List<String> testFiles(String... files) {
     List<String> res = new ArrayList<>();
     for (String file : files) {
