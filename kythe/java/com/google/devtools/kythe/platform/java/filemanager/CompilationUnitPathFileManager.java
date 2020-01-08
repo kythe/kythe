@@ -304,11 +304,16 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   }
 
   private void setSystemOption(String value) throws IOException {
-    // There are two kinds of --system flags we need to support:
+    // There are three kinds of --system flags we need to support:
     //   1) Bundled system images, with a lib/jrt-fs.jar and lib/modules image.
     //   2) Exploded system images, where the modules live under a modules subdirectory.
-    // The former must reside in the filesystem as there are multifarious asserts and checks that
+    //   3) "none"; a special value which indicates no system modules should be used.
+    // The first must reside in the filesystem as there are multifarious asserts and checks that
     // this is so.
+    if (value.equals("none")) {
+      super.handleOption("--system", Iterators.singletonIterator("none"));
+      return;
+    }
     Path sys = fileSystem.getPath(value).normalize();
     if (Files.exists(sys.resolve("lib").resolve("jrt-fs.jar"))) {
       if (temporaryDirectoryPrefix == null) {
