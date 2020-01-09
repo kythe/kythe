@@ -25,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.google.common.flogger.FluentLogger;
+import com.google.common.io.Closer;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -204,27 +205,34 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
 
   @Override
   public void close() throws IOException {
-    super.close();
-    fileSystem.close();
-    memFileSystem.close();
-    if (temporaryDirectory != null) {
-      Files.walkFileTree(
-          temporaryDirectory,
-          new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                throws IOException {
-              Files.delete(file);
-              return FileVisitResult.CONTINUE;
-            }
+    Closer closer = Closer.create();
+    closer.register(super::close);
+    closer.register(fileSystem);
+    closer.register(memFileSystem);
+    try {
+      if (temporaryDirectory != null) {
+        Files.walkFileTree(
+            temporaryDirectory,
+            new SimpleFileVisitor<Path>() {
+              @Override
+              public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                  throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+              }
 
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc)
-                throws IOException {
-              Files.delete(dir);
-              return FileVisitResult.CONTINUE;
-            }
-          });
+              @Override
+              public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+                  throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+              }
+            });
+      }
+    } catch (Throwable e) {
+      throw closer.rethrow(e);
+    } finally {
+      closer.close();
     }
   }
 
