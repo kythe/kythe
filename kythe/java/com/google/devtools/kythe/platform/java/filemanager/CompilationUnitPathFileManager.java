@@ -25,6 +25,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.google.common.flogger.FluentLogger;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
@@ -39,6 +41,7 @@ import com.sun.tools.javac.main.OptionHelper;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,6 +73,7 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
 
   private final ReadAheadDataProvider readAheadProvider;
   private final CompilationUnitFileSystem fileSystem;
+  private final FileSystem memFileSystem;
   private final ImmutableSet<String> defaultPlatformClassPath;
   // The path given to us that we are allowed to write in. This will be stored as an absolute
   // path.
@@ -96,12 +100,13 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
 
     readAheadProvider = new ReadAheadDataProvider(fileDataProvider);
     fileSystem = CompilationUnitFileSystem.create(compilationUnit, readAheadProvider);
+    memFileSystem = Jimfs.newFileSystem(Configuration.unix());
     // When compiled for Java 9+ this is ambiguous, so disambiguate to the compatibility shim.
     setPathFactory((ForwardingStandardJavaFileManager.PathFactory) this::getPath);
     setLocations(
         findJavaDetails(compilationUnit)
             .map(details -> toLocationMap(details))
-            .orElseGet(() -> logEmptyLocationMap()));
+            .orElseGet(() -> logMissingDetailsMap()));
   }
 
   @Override
@@ -200,6 +205,8 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   @Override
   public void close() throws IOException {
     super.close();
+    fileSystem.close();
+    memFileSystem.close();
     if (temporaryDirectory != null) {
       Files.walkFileTree(
           temporaryDirectory,
@@ -237,21 +244,33 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
     return Optional.empty();
   }
 
+  /** Returns a default map of Location to Path. */
+  private ImmutableMap.Builder<Location, Collection<Path>> defaultLocationMapBuilder() {
+    return new ImmutableMap.Builder<Location, Collection<Path>>()
+        // While output paths are generally removed by the extractor and aren't used by the
+        // indexer, the compiler front end checks that -d is present in modular builds, so
+        // subvert that check here by defaulting to an in-memory directory path.
+        // We do this here rather than during option processing because we can't reliably detect
+        // modular build options from the file manager.
+        .put(StandardLocation.CLASS_OUTPUT, ImmutableList.of(classOutputPath()));
+  }
+
   /** Logs that path handling will fall back to Javac's option parsing. */
-  private static Map<Location, Collection<Path>> logEmptyLocationMap() {
+  private Map<Location, Collection<Path>> logMissingDetailsMap() {
     // It's expected that extractors which use JavaDetails will remove the corresponding
     // arguments from the command line.  Those extractors which don't use JavaDetails
     // (or options not present in the details), will remain on the command line and be
     // parsed as normal, relying on getPath() to map into the compilation unit.
     logger.atInfo().log("Compilation missing JavaDetails; falling back to flag parsing");
-    return ImmutableMap.of();
+    return defaultLocationMapBuilder().build();
   }
 
   /** Translates the JavaDetails locations into {@code Map<Location, Collection<Path>>} */
   private Map<Location, Collection<Path>> toLocationMap(JavaDetails details) {
     return Maps.filterValues(
-        new ImmutableMap.Builder<Location, Collection<Path>>()
+        defaultLocationMapBuilder()
             .put(StandardLocation.CLASS_PATH, toPaths(details.getClasspathList()))
+            // TODO(shahms): Use StandardLocation.MODULE_PATH directly on JDK9+
             .put(StandardLocation.locationFor("MODULE_PATH"), toPaths(details.getClasspathList()))
             .put(StandardLocation.SOURCE_PATH, toPaths(details.getSourcepathList()))
             .put(
@@ -375,6 +394,15 @@ public final class CompilationUnitPathFileManager extends ForwardingStandardJava
   private void readAhead(Path path) {
     if (path.getFileSystem().equals(fileSystem)) {
       readAheadProvider.readAhead(path.toString(), path.toUri().getHost());
+    }
+  }
+
+  /** Returns a path to a memory-backed temporary directory. */
+  private Path classOutputPath() {
+    try {
+      return Files.createTempDirectory(memFileSystem.getPath("/"), "class-output.");
+    } catch (IOException cause) {
+      throw new IllegalStateException("Unable to create class output path", cause);
     }
   }
 

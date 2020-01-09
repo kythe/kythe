@@ -52,6 +52,7 @@ java_library(
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_guava_guava",
+        "@maven//:com_google_jimfs_jimfs",
         "@maven//:org_checkerframework_checker_qual",
     ],
 )

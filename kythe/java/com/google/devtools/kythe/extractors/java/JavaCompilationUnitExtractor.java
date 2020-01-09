@@ -328,7 +328,6 @@ public class JavaCompilationUnitExtractor {
    * Returns a new list with the same options except header/source destination directory options.
    */
   private static ImmutableList<String> removeDestDirOptions(Iterable<String> options) {
-    // TODO(#3671): Option.D needs to remain in for module support, fix either here or in indexing.
     return ModifiableOptions.of(options)
         .removeOptions(EnumSet.of(Option.D, Option.S, Option.H))
         .build();
