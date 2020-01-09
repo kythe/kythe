@@ -258,6 +258,7 @@ def _java_dependencies():
             "com.google.common.html.types:types:1.0.8",
             "com.google.errorprone:error_prone_annotations:2.3.1",
             "com.google.guava:guava:26.0-jre",
+            "com.google.jimfs:jimfs:1.1",
             "com.google.re2j:re2j:1.2",
             "com.google.truth:truth:1.0",
             "com.googlecode.java-diff-utils:diffutils:1.3.0",
