@@ -52,6 +52,7 @@ def _extract_java_aspect(target, ctx):
     for a in target.actions:
         if a.mnemonic == "Javac":
             deps += a.inputs
+    deps += annotations.processor_classpath
 
     extract(
         ctx = ctx,

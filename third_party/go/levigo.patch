@@ -1,0 +1,22 @@
+--- a/BUILD.bazel	2019-12-19 10:38:38.297182838 -0800
++++ b/BUILD.bazel	2019-12-19 10:38:20.757362349 -0800
+@@ -1,3 +1,9 @@
++package(default_visibility = ["@//visibility:public"])
++
++licenses(["notice"])
++
++exports_files(glob(["*LICENSE*"]))
++
+ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+ 
+ go_library(
+@@ -15,8 +21,8 @@
+         "options.go",
+         "version.go",
+     ],
++    cdeps = ["@com_github_google_leveldb//:leveldb"],
+     cgo = True,
+-    clinkopts = ["-lleveldb"],
+     importpath = "github.com/jmhodges/levigo",
+     visibility = ["//visibility:public"],
+ )

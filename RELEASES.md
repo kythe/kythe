@@ -1,5 +1,13 @@
 # Release Notes
 
+## [v0.0.39] - 2019-12-19
+
+#### Bug Fixes
+
+* **java:**  disable errorprone plugin for java extraction (#4268) ([08b674ea](https://github.com/kythe/kythe/commit/08b674ea71a5481bbcc9901ae214304e9fd7f658))
+* **serving:**  avoid nil when serving data is missing SourceNode (#4269) ([02a41e88](https://github.com/kythe/kythe/commit/02a41e88122ae88a2e4041b766ed8c63d344b76f), closes [#4128](https://github.com/kythe/kythe/issues/4128))
+* **typescript_indexer:**  emit refs to TYPE nodes in export statements (#4247) ([cd3f14df](https://github.com/kythe/kythe/commit/cd3f14df68978b6271f3bedd6f5a720351dfcc72))
+
 ## [v0.0.38] - 2019-12-12
 
 #### Bug Fixes
@@ -762,7 +770,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.38...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.39...HEAD
+[v0.0.39] https://github.com/kythe/kythe/compare/v0.0.38...v0.0.39
 [v0.0.38] https://github.com/kythe/kythe/compare/v0.0.37...v0.0.38
 [v0.0.37] https://github.com/kythe/kythe/compare/v0.0.36...v0.0.37
 [v0.0.36] https://github.com/kythe/kythe/compare/v0.0.35...v0.0.36

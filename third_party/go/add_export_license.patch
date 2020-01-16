@@ -1,0 +1,9 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -0,0 +1,5 @@
++package(default_visibility = ["@//visibility:public"])
++
++licenses(["notice"])
++
++exports_files(glob(["*LICENSE*"]))

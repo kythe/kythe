@@ -732,6 +732,9 @@ func addMergeNode(mergeMap map[string]string, allTickets []string, rootNode, mer
 }
 
 func nodeKind(n *srvpb.Node) string {
+	if n == nil {
+		return ""
+	}
 	for _, f := range n.Fact {
 		if f.Name == facts.NodeKind {
 			return string(f.Value)
