@@ -1403,9 +1403,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (metadataFilePaths.contains(fullPath)) {
         return;
       }
-      FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath), null);
+      FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath));
       if (file == null) {
-        // This is an expected case.
         return;
       }
       loadAnnotationsFile(fullPath, file);
