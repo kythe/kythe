@@ -33,7 +33,6 @@ public class InputUsageRecord {
   private Optional<Location> location;
 
   private boolean isUsed = false;
-  private boolean isOptional = false;
 
   /** @param location of a java file object, if known. */
   public InputUsageRecord(JavaFileObject fileObject, Optional<Location> location) {
@@ -49,16 +48,6 @@ public class InputUsageRecord {
   /** Returns true if the compiler used this file as input. */
   public boolean isUsed() {
     return isUsed;
-  }
-
-  /** Record that this file being missing is not an error. */
-  public void markOptional() {
-    isOptional = true;
-  }
-
-  /** Returns true if this file being missing is not an error. */
-  public boolean isOptional() {
-    return isOptional;
   }
 
   /** Returns the first file object created for this file. */

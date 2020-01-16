@@ -72,7 +72,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -459,8 +458,7 @@ public class JavaCompilationUnitExtractor {
           fileManager,
           sourceFiles,
           genSrcDir,
-          results,
-          input.isOptional());
+          results);
     }
   }
 
@@ -470,8 +468,7 @@ public class JavaCompilationUnitExtractor {
       UsageAsInputReportingFileManager fileManager,
       Map<URI, String> sourceFiles,
       Optional<Path> genSrcDir,
-      AnalysisResults results,
-      boolean isOptional)
+      AnalysisResults results)
       throws ExtractionException {
     URI uri = requiredInput.toUri();
     String entryPath;
@@ -609,10 +606,8 @@ public class JavaCompilationUnitExtractor {
           results.sourceFileNames.put(strippedPath, sourceFiles.get(requiredInput.toUri()));
         }
       } catch (IOException e) {
-        if (!isOptional) {
-          throw new ExtractionException(
-              String.format("Unable to read file content of %s", strippedPath), e, false);
-        }
+        throw new ExtractionException(
+            String.format("Unable to read file content of %s", strippedPath), e, false);
       }
     }
   }
@@ -798,10 +793,10 @@ public class JavaCompilationUnitExtractor {
                 try {
                   String annotationPath =
                       e.getCompilationUnit().getSourceFile().toUri().getPath() + ".pb.meta";
-                  for (JavaFileObject file :
-                      fileManager.getJavaFileForSources(Arrays.asList(annotationPath))) {
-                    ((UsageAsInputReportingJavaFileObject) file).markUsed();
-                    ((UsageAsInputReportingJavaFileObject) file).markOptional();
+                  if (Files.exists(Paths.get(annotationPath))) {
+                    for (JavaFileObject file : fileManager.getJavaFileObjects(annotationPath)) {
+                      ((UsageAsInputReportingJavaFileObject) file).markUsed();
+                    }
                   }
                 } catch (IllegalArgumentException ex) {
                   // Invalid path.
