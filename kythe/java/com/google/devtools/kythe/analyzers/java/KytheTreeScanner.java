@@ -1079,7 +1079,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // related JVM node to accommodate cross-language references.
       Type type = externalType(sym);
       CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
-      if (type instanceof Type.MethodType) {
+      if (sym instanceof Symbol.VarSymbol) {
+        if (((Symbol.VarSymbol) sym).getKind() == ElementKind.FIELD) {
+          ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
+          String fieldName = sym.getSimpleName().toString();
+          return new JavaNode(JvmGraph.getFieldVName(corpusPath, parentClass, fieldName));
+        }
+      } else if (type instanceof Type.MethodType) {
         JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
         ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String methodName = sym.getQualifiedName().toString();
@@ -1087,11 +1093,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             JvmGraph.getMethodVName(corpusPath, parentClass, methodName, methodJvmType));
       } else if (type instanceof Type.ClassType) {
         return new JavaNode(JvmGraph.getReferenceVName(corpusPath, referenceType(sym.type)));
-      } else if (sym instanceof Symbol.VarSymbol
-          && ((Symbol.VarSymbol) sym).getKind() == ElementKind.FIELD) {
-        ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
-        String fieldName = sym.getSimpleName().toString();
-        return new JavaNode(JvmGraph.getFieldVName(corpusPath, parentClass, fieldName));
       }
     }
 
