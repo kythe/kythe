@@ -137,8 +137,7 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 	}
 	cb.unit.SourceFile = sources
 
-	_, err = cb.addFiles(ctx, c.inputs.Elements())
-	if err != nil {
+	if _, err = cb.addFiles(ctx, c.inputs.Elements()); err != nil {
 		return c.Fail("Error adding input files: %v", err)
 	}
 
@@ -162,7 +161,7 @@ type compilationBuilder struct {
 	rules *vnameutil.Rules
 }
 
-// addFiles adds the given files as requied input.
+// addFiles adds the given files as required input.
 // If the path is a directory, its contents are added recursively.
 // Returns the paths of the non-directory files added.
 func (cb *compilationBuilder) addFiles(ctx context.Context, paths []string) ([]string, error) {
