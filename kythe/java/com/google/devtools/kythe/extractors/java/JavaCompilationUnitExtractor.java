@@ -790,6 +790,17 @@ public class JavaCompilationUnitExtractor {
             public void finished(TaskEvent e) {
               if (e.getKind() == TaskEvent.Kind.PARSE) {
                 compilationUnits.add(e.getCompilationUnit());
+                try {
+                  String annotationPath =
+                      e.getCompilationUnit().getSourceFile().toUri().getPath() + ".pb.meta";
+                  if (Files.exists(Paths.get(annotationPath))) {
+                    for (JavaFileObject file : fileManager.getJavaFileObjects(annotationPath)) {
+                      ((UsageAsInputReportingJavaFileObject) file).markUsed();
+                    }
+                  }
+                } catch (IllegalArgumentException ex) {
+                  // Invalid path.
+                }
               }
             }
 
