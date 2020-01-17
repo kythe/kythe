@@ -231,6 +231,8 @@ func (cb *compilationBuilder) done() error {
 	return cb.out.Close()
 }
 
+// tryeMakeRelative attempts to relativize path against unit.WorkingDirectory or CWD,
+// returning path unmodified on failure.
 func (cb *compilationBuilder) tryMakeRelative(path string) string {
 	abs, err := filepath.Abs(path)
 	if err != nil {
