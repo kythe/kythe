@@ -24,6 +24,10 @@ public class Files {
   //- ConstantMember.node/kind variable
   public static final int CONSTANT = 42;
 
+  //- @INSTANCE defines/binding InstanceMember
+  //- InstanceMember.node/kind variable
+  public static final Inner INSTANCE = new Inner();
+
   // Ensure this private member does not affect the class node across compilations.
   private int PRIVATE_MEMBER = -42;
 
