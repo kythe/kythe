@@ -20,6 +20,8 @@ package createcmd // import "kythe.io/kythe/go/platform/tools/kzip/createcmd"
 import (
 	"context"
 	"flag"
+	"path/filepath"
+	"regexp"
 
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/tools/kzip/flags"
@@ -54,6 +56,10 @@ type createCommand struct {
 	encoding     flags.EncodingFlag
 }
 
+var (
+	globPattern = regexp.MustCompile(`[[*?\\]`)
+)
+
 // New creates a new subcommand for merging kzip files.
 func New() subcommands.Command {
 	return &createCommand{
@@ -62,6 +68,7 @@ func New() subcommands.Command {
 Construct a kzip file written to -output with the vname specified by -uri.
 Each of -source_file, -required_input and -details may be specified multiple times with each
 occurrence of the flag being appended to the corresponding field in the compilation unit.
+Directories specified in -source_file or -required_input will be added recursively.
 
 Any additional positional arguments are included as arguments in the compilation unit.
 `),
@@ -76,7 +83,7 @@ func (c *createCommand) SetFlags(fs *flag.FlagSet) {
 	fs.Var(&c.rules, "rules", "Path to vnames.json file (optional)")
 
 	fs.Var(&c.uri, "uri", "A Kythe URI naming the compilation unit VName (required)")
-	fs.Var(&c.source, "source_file", "Repeated paths for input source files (required)")
+	fs.Var(&c.source, "source_file", "Repeated paths for input source files or directories (required)")
 	fs.Var(&c.inputs, "required_input", "Repeated paths for additional required inputs (optional)")
 	fs.BoolVar(&c.hasError, "has_compile_errors", false, "Whether this unit had compilation errors (optional)")
 	fs.Var(&c.argument, "argument", "Repeated arguments to add to compilation unit (optional)")
@@ -117,7 +124,6 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		},
 		HasCompileErrors: c.hasError,
 		Argument:         append(c.argument, fs.Args()...),
-		SourceFile:       c.source.Elements(),
 		OutputKey:        c.outputKey,
 		WorkingDirectory: c.workingDir,
 		EntryContext:     c.entryContext,
@@ -125,10 +131,17 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		Details:          ([]*anypb.Any)(c.details),
 	}, out, &c.rules.Rules}
 
-	c.inputs.Update(c.source)
-	if err := cb.addFiles(ctx, c.inputs.Elements()); err != nil {
+	sources, err := cb.addFiles(ctx, c.source.Elements())
+	if err != nil {
+		return c.Fail("Error adding source files: %v", err)
+	}
+	cb.unit.SourceFile = sources
+
+	_, err = cb.addFiles(ctx, c.inputs.Elements())
+	if err != nil {
 		return c.Fail("Error adding input files: %v", err)
 	}
+
 	if err := cb.done(); err != nil {
 		return c.Fail("Error writing compilation to -output: %v", err)
 	}
@@ -149,25 +162,43 @@ type compilationBuilder struct {
 	rules *vnameutil.Rules
 }
 
-func (cb *compilationBuilder) addFiles(ctx context.Context, paths []string) error {
+// addFiles adds the given files as requied input.
+// If the path is a directory, its contents are added recursively.
+// Returns the paths of the non-directory files added.
+func (cb *compilationBuilder) addFiles(ctx context.Context, paths []string) ([]string, error) {
+	var files []string
 	for _, path := range paths {
-		if err := cb.addFile(ctx, path); err != nil {
-			return err
+		f, err := cb.addFile(ctx, path)
+		if err != nil {
+			return files, err
 		}
+		files = append(files, f...)
 	}
-	return nil
+	return files, nil
 }
 
-func (cb *compilationBuilder) addFile(ctx context.Context, path string) error {
+// addFile adds the given file as a required input.
+// If the path is a directory, its contents are added recursively.
+// Returns the paths of the non-directory files added.
+func (cb *compilationBuilder) addFile(ctx context.Context, path string) ([]string, error) {
+	if info, err := vfs.Stat(ctx, path); err != nil {
+		return nil, err
+	} else if info.IsDir() {
+		files, err := vfs.Glob(ctx, filepath.Join(escapeGlob(path), "*"))
+		if err != nil {
+			return nil, err
+		}
+		return cb.addFiles(ctx, files)
+	}
 	input, err := vfs.Open(ctx, path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer input.Close()
 
 	digest, err := cb.out.AddFile(input)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	vname, ok := cb.rules.Apply(path)
 	if !ok {
@@ -187,7 +218,7 @@ func (cb *compilationBuilder) addFile(ctx context.Context, path string) error {
 			Digest: digest,
 		},
 	})
-	return nil
+	return []string{path}, nil
 }
 
 func (cb *compilationBuilder) done() error {
@@ -197,4 +228,8 @@ func (cb *compilationBuilder) done() error {
 	}
 	cb.unit = nil
 	return cb.out.Close()
+}
+
+func escapeGlob(path string) string {
+	return globPattern.ReplaceAllString(path, `\$0`)
 }
