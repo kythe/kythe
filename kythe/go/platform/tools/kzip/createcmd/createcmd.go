@@ -199,6 +199,8 @@ func (cb *compilationBuilder) addFile(ctx context.Context, path string) ([]strin
 	if err != nil {
 		return nil, err
 	}
+
+	path = cb.tryMakeRelative(path)
 	vname, ok := cb.rules.Apply(path)
 	if !ok {
 		vname = &spb.VName{
@@ -227,6 +229,28 @@ func (cb *compilationBuilder) done() error {
 	}
 	cb.unit = nil
 	return cb.out.Close()
+}
+
+func (cb *compilationBuilder) tryMakeRelative(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return path
+	}
+	var dir string
+	if cb.unit.WorkingDirectory != "" {
+		dir = cb.unit.WorkingDirectory
+	} else {
+		dir, err = filepath.Abs(".")
+		if err != nil {
+			return path
+		}
+	}
+	rel, err := filepath.Rel(dir, abs)
+	if err != nil {
+		return path
+	}
+	return rel
+
 }
 
 func escapeGlob(path string) string {
