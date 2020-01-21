@@ -8,6 +8,8 @@ import static pkg.Files.CONSTANT;
 import static pkg.Files.Inner;
 //- @staticMethod ref/imports JvmStaticMethod
 import static pkg.Files.staticMethod;
+//- @INSTANCE ref/imports JvmInstanceMember
+import static pkg.Files.INSTANCE;
 
 import pkg.Files.Inter;
 import pkg.Files.OtherDecl;
@@ -18,6 +20,7 @@ import pkg.Files.OtherDecl;
 //- Inter generates JvmInter
 //- ODecl generates JvmODecl
 //- StaticMethod generates JvmStaticMethod
+//- InstanceMember generates JvmInstanceMember
 
 //- @pkg ref/doc Package
 /** Tests JVM references within the {@link pkg} package.*/
