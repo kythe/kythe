@@ -1381,6 +1381,24 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return nodes;
   }
 
+  private void loadAnnotationsFile(String path) {
+    URI uri = filePositions.getSourceFile().toUri();
+    try {
+      String fullPath = resolveSourcePath(path);
+      if (metadataFilePaths.contains(fullPath)) {
+        return;
+      }
+      FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath), null);
+      if (file == null) {
+        logger.atWarning().log("Can't find metadata %s for %s at %s", path, uri, fullPath);
+        return;
+      }
+      loadAnnotationsFile(fullPath, file);
+    } catch (IllegalArgumentException ex) {
+      logger.atWarning().withCause(ex).log("Can't read metadata %s for %s", path, uri);
+    }
+  }
+
   private void loadAnnotationsFile(String fullPath, FileObject file) {
     try {
       InputStream stream = file.openInputStream();
@@ -1392,7 +1410,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       metadata.add(newMetadata);
       metadataFilePaths.add(fullPath);
     } catch (IOException ex) {
-      logger.atWarning().log("Can't read metadata for %s", fullPath);
+      logger.atWarning().withCause(ex).log("Can't read metadata for %s", fullPath);
     }
   }
 
@@ -1412,24 +1430,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       loadAnnotationsFile(fullPath, file);
     } catch (IllegalArgumentException ex) {
       logger.atWarning().log("Can't read metadata for %s", uri);
-    }
-  }
-
-  private void loadAnnotationsFile(String path) {
-    URI uri = filePositions.getSourceFile().toUri();
-    try {
-      String fullPath = resolveSourcePath(path);
-      if (metadataFilePaths.contains(fullPath)) {
-        return;
-      }
-      FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath), null);
-      if (file == null) {
-        logger.atWarning().log("Can't find metadata %s for %s at %s", path, uri, fullPath);
-        return;
-      }
-      loadAnnotationsFile(fullPath, file);
-    } catch (IllegalArgumentException ex) {
-      logger.atWarning().log("Can't read metadata %s for %s", path, uri);
     }
   }
 
