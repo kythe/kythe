@@ -197,6 +197,7 @@ func NewReader(r io.ReaderAt, size int64) (*Reader, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Reading kzip with %v encoding", pref)
 	return &Reader{
 		zip:         archive,
 		root:        root,
