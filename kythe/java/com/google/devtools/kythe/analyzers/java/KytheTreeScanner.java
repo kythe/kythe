@@ -1400,8 +1400,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private void loadAnnotationsFile(String fullPath, FileObject file) {
-    try {
-      InputStream stream = file.openInputStream();
+    try (InputStream stream = file.openInputStream()) {
       Metadata newMetadata = metadataLoaders.parseFile(fullPath, ByteStreams.toByteArray(stream));
       if (newMetadata == null) {
         logger.atWarning().log("Can't load metadata %s", fullPath);
@@ -1423,13 +1422,16 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         return;
       }
       FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath));
-      // getJavaFileObjects only check that the path isn't a directory, not whether it exists.
+      // getJavaFileObjects is only guaranteed to check that the path isn't a directory, not whether
+      // it exists.
       if (file == null || !isFileReadable(file)) {
         return;
       }
       loadAnnotationsFile(fullPath, file);
     } catch (IllegalArgumentException ex) {
-      logger.atWarning().log("Can't read metadata for %s", uri);
+      // However, in practice it will also raise IllegalArgumentException if the file
+      // does not exist.
+      logger.atFine().withCause(ex).log("Can't read implicit metadata for %s", uri);
     }
   }
 
