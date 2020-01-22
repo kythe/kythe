@@ -1405,6 +1405,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         return;
       }
       FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath));
+      // getJavaFileObjects only check that the path isn't a directory, not whether it exists.
       if (file == null || !isFileReadable(file)) {
         return;
       }
