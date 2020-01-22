@@ -1423,7 +1423,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         return;
       }
       FileObject file = Iterables.getOnlyElement(fileManager.getJavaFileObjects(fullPath));
-      if (file == null) {
+      // getJavaFileObjects only check that the path isn't a directory, not whether it exists.
+      if (file == null || !isFileReadable(file)) {
         return;
       }
       loadAnnotationsFile(fullPath, file);
@@ -1529,6 +1530,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private static ReferenceType referenceType(Type referent) {
     String qualifiedName = referent.tsym.flatName().toString();
     return JvmGraph.Type.referenceType(qualifiedName);
+  }
+
+  /** Returns true if the FileObject exists and is readable */
+  private static boolean isFileReadable(FileObject file) {
+    try (InputStream stream = file.openInputStream()) {
+      return true;
+    } catch (IOException unused) {
+      return false;
+    }
   }
 
   private static JvmGraph.VoidableType toJvmReturnType(Type type) {
