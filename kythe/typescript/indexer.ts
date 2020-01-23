@@ -253,7 +253,8 @@ class SymbolVNameStore {
  * isParameterPropertyDeclaration wraps ts.isParameterPropertyDeclaration and
  * exposes an API that's compatible across TypeScript 3.5 & 3.6.
  */
-function isParameterPropertyDeclaration(node: ts.Node, parent: ts.Node): node is ts.ParameterPropertyDeclaration {
+function isParameterPropertyDeclaration(
+    node: ts.Node, parent: ts.Node): node is ts.ParameterPropertyDeclaration {
   // TODO: remove/inline once fully on TypeScript 3.6+
   return (ts.isParameterPropertyDeclaration as any)(node, parent);
 }
@@ -1045,7 +1046,8 @@ class Visitor {
       // and if so - output ref to that statement.
       const decl = moduleSym.valueDeclaration;
       if (ts.isModuleDeclaration(decl)) {
-        const kModule =  this.host.getSymbolName(moduleSym, TSNamespace.NAMESPACE);
+        const kModule =
+            this.host.getSymbolName(moduleSym, TSNamespace.NAMESPACE);
         this.emitEdge(this.newAnchor(moduleRef), EdgeKind.REF_IMPORTS, kModule);
       }
     }
@@ -1244,12 +1246,11 @@ class Visitor {
         const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
         const anchor = this.newAnchor(exp.name);
         // Aliased export; propertyName is the 'as <...>' bit.
-        const propertyAnchor = exp.propertyName ?
-            this.newAnchor(exp.propertyName) : null;
+        const propertyAnchor =
+            exp.propertyName ? this.newAnchor(exp.propertyName) : null;
         // Symbol is a value.
         if (remoteSym.flags & ts.SymbolFlags.Value) {
-          const kExport =
-              this.host.getSymbolName(remoteSym, TSNamespace.VALUE);
+          const kExport = this.host.getSymbolName(remoteSym, TSNamespace.VALUE);
           this.emitEdge(anchor, EdgeKind.REF, kExport);
           if (propertyAnchor) {
             this.emitEdge(propertyAnchor, EdgeKind.REF, kExport);
@@ -1257,8 +1258,7 @@ class Visitor {
         }
         // Symbol is a type.
         if (remoteSym.flags & ts.SymbolFlags.Type) {
-          const kExport =
-              this.host.getSymbolName(remoteSym, TSNamespace.TYPE);
+          const kExport = this.host.getSymbolName(remoteSym, TSNamespace.TYPE);
           this.emitEdge(anchor, EdgeKind.REF, kExport);
           if (propertyAnchor) {
             this.emitEdge(propertyAnchor, EdgeKind.REF, kExport);
