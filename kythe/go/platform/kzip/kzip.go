@@ -241,6 +241,17 @@ func unitPrefix(root string, fs []*zip.File) (string, error) {
 	return prefixJSON, nil
 }
 
+// Encoding exposes the file encoding being used to read compilation units.
+func (r *Reader) Encoding() (Encoding, error) {
+	switch {
+	case r.unitsPrefix == prefixJSON:
+		return EncodingJSON, nil
+	case r.unitsPrefix == prefixProto:
+		return EncodingProto, nil
+	}
+	return EncodingAll, fmt.Errorf("unknown encoding prefix: %v", r.unitsPrefix)
+}
+
 func (r *Reader) unitPath(digest string) string { return path.Join(r.root, r.unitsPrefix, digest) }
 func (r *Reader) filePath(digest string) string { return path.Join(r.root, "files", digest) }
 
