@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Streams;
 import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
@@ -48,8 +49,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
 import javax.lang.model.element.Name;
-import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
 /** {@link JavacAnalyzer} to emit Kythe nodes and edges. */
@@ -95,9 +97,14 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
         entrySets == null,
         "JavaEntrySets is non-null (analyzeCompilationUnit was called concurrently?)");
     if (config.getVerboseLogging()) {
-      for (Diagnostic<?> err : details.getCompileErrors()) {
-        logger.atWarning().log("javac compilation error: %s", err);
-      }
+      Streams.stream(details.getCompileErrors())
+          .collect(Collectors.groupingBy(d -> d.getSource()))
+          .forEach(
+              (file, errs) -> {
+                logger.at(levelFor(file)).log(
+                    "javac compilation errors:\n%s",
+                    errs.stream().map(Object::toString).collect(Collectors.joining("\n")));
+              });
     }
     CompilationUnit compilation = details.getCompilationUnit();
     entrySets =
@@ -318,5 +325,11 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     public String toString() {
       return "KytheNode{" + vName.toString().replace("\n", " ").trim() + "}";
     }
+  }
+
+  private static Level levelFor(JavaFileObject file) {
+    return (file != null && file.isNameCompatible("module-info", JavaFileObject.Kind.SOURCE))
+        ? Level.INFO
+        : Level.WARNING;
   }
 }
