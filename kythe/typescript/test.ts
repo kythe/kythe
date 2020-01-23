@@ -91,10 +91,15 @@ function verify(
         shell: true,
       });
 
-  indexer.index(compilationUnit, new Map(), testFiles, program, (obj: {}) => {
-    verifier.stdin.write(JSON.stringify(obj) + '\n');
-  }, plugins);
-  verifier.stdin.end();
+  try {
+    indexer.index(compilationUnit, new Map(), testFiles, program, (obj: {}) => {
+      verifier.stdin.write(JSON.stringify(obj) + '\n');
+    }, plugins);
+  } finally {
+    // Ensure we close stdin on the verifier even on crashes, or otherwise
+    // we hang waiting for the verifier to complete.
+    verifier.stdin.end();
+  }
 
   return new Promise<void>((resolve, reject) => {
     verifier.on('close', (exitCode) => {
