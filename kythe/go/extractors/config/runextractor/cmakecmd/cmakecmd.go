@@ -107,7 +107,9 @@ func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 		return c.Fail("Unable to create build directory: %v", err)
 	}
 
-	if err := runIn(exec.CommandContext(ctx, "cmake", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", sourceDir), buildDir); err != nil {
+	// The Kythe extractor is clang based, so tell cmake to use clang so the right
+	// commands are generated.
+	if err := runIn(exec.CommandContext(ctx, "cmake", "-DCMAKE_CXX_COMPILER=clang++", "-DCMAKE_C_COMPILER=clang", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", sourceDir), buildDir); err != nil {
 		return c.Fail("Error configuring cmake: %v", err)
 	}
 
