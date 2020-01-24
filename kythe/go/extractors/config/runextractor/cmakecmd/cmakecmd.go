@@ -133,6 +133,6 @@ func cleanBuild(dir string) {
 func runIn(cmd *exec.Cmd, dir string) error {
 	cmd.Dir = dir
 	cmd.Stderr = os.Stderr
-	log.Printf("Running: %q in %q", cmd.String(), cmd.Dir)
+	log.Printf("Running: %q in %q", cmd, cmd.Dir)
 	return cmd.Run()
 }
