@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -105,6 +107,8 @@ public class ProtobufMetadataLoader implements MetadataLoader {
       contextVName = VName.newBuilder().setCorpus(defaultCorpus).build();
     }
     Metadata metadata = new Metadata();
+    Set<VName> fileVNames = new HashSet<>();
+
     for (GeneratedCodeInfo.Annotation annotation : info.getAnnotationList()) {
       Metadata.Rule rule = new Metadata.Rule();
       rule.begin = annotation.getBegin();
@@ -126,6 +130,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
                 .setPath(annotation.getSourceFile())
                 .build();
       }
+      fileVNames.add(rule.vname);
       rule.vname =
           rule.vname.toBuilder()
               .setSignature(protoPath.toString())
@@ -134,6 +139,15 @@ public class ProtobufMetadataLoader implements MetadataLoader {
       rule.edgeOut = EdgeKind.GENERATES;
       rule.reverseEdge = true;
       metadata.addRule(rule);
+    }
+    for (VName vname : fileVNames) {
+      Metadata.Rule rule = new Metadata.Rule();
+      rule.begin = -1;
+      rule.end = -1;
+      rule.vname = vname;
+      rule.reverseEdge = true;
+      rule.edgeOut = EdgeKind.GENERATES;
+      metadata.addFileScopeRule(rule);
     }
     return metadata;
   }
