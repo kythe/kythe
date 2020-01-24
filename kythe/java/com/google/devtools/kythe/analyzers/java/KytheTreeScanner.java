@@ -253,7 +253,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private void emitFileScopeMetadata(VName file) {
     for (Metadata data : metadata) {
       for (Metadata.Rule rule : data.getFileScopeRules()) {
-        System.err.println(rule);
         if (rule.reverseEdge) {
           entrySets.emitEdge(rule.vname, rule.edgeOut, file);
         } else {
