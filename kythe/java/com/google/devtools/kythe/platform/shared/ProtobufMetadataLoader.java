@@ -147,7 +147,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
       rule.vname = vname;
       rule.reverseEdge = true;
       rule.edgeOut = EdgeKind.GENERATES;
-      metadata.addRule(rule);
+      metadata.addFileScopeRule(rule);
     }
     return metadata;
   }
