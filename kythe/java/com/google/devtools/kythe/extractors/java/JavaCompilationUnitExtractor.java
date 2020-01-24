@@ -801,7 +801,7 @@ public class JavaCompilationUnitExtractor {
     return results;
   }
 
-  /** Sets the given location using command-line flags and the FileManager API. */
+  /** Sets the given location using the FileManager API. */
   private static void setLocation(
       UsageAsInputReportingFileManager fileManager, Location location, Iterable<String> searchpath)
       throws ExtractionException {
