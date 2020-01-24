@@ -17,6 +17,7 @@
 #### Features
 
 * **java_indexer:**  support implicit protobuf metadata (#4262) ([cace853f](https://github.com/kythe/kythe/commit/cace853fa2d88e7a72b8608628436e4da67ff5b8))
+* **runextractor:**  Tell cmake to use clang (#4319) ([5d10af8b](https://github.com/kythe/kythe/commit/5d10af8bb9bb129efb9cd632811399cfacf7095f))
 * **kzip:**
   *  add source/input directories recursively (#4302) ([d9442588](https://github.com/kythe/kythe/commit/d9442588c2094d3be450b5a4fb49731f024d6d08))
   *  relativize input paths (#4303) ([fff4f9c3](https://github.com/kythe/kythe/commit/fff4f9c37696f78cde72c92aa8072fc5e3a4a969))
