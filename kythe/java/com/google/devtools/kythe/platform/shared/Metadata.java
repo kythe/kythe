@@ -30,7 +30,11 @@ import com.google.devtools.kythe.proto.Storage.VName;
  * path to a loadable metadata file.
  */
 public class Metadata {
-  /** A Rule can generate one additional edge based on input conditions. */
+  /**
+   * A Rule can generate one additional edge based on input conditions.
+   *
+   * <p>begin/end == -1 indicate "whole file".
+   */
   public static class Rule {
     /** The starting byte offset in the source file. */
     public int begin;
