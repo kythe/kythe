@@ -7,7 +7,7 @@
 * **java_extractor:**
   *  add the processor classpath to the extractor action (#4301) ([b079ce3e](https://github.com/kythe/kythe/commit/b079ce3eaa775b6fdf09243e2d9e4df933e66e45))
 * **java_indexer:**
-  *  only attempt to load implilcit metadata if it exists (#4307) ([188b1cec](https://github.com/kythe/kythe/commit/188b1cec439ed4e6559a1719f5851a7a82099aca))
+  *  only attempt to load implicit metadata if it exists (#4307) ([188b1cec](https://github.com/kythe/kythe/commit/188b1cec439ed4e6559a1719f5851a7a82099aca))
   *  correctly reference JVM field nodes (#4304) ([3e4c8add](https://github.com/kythe/kythe/commit/3e4c8add9aacdbde3b0c246b53fcaa33299b9227))
   *  use in-memory class_output path for modular builds (#4299) ([c8d23078](https://github.com/kythe/kythe/commit/c8d2307838c8822aac5d2786cfeb630709d0671a))
   *  handle --system none properly (#4297) ([dc585623](https://github.com/kythe/kythe/commit/dc585623a8671f11e6917da45d5c139f934fb367))
