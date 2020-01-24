@@ -42,23 +42,27 @@ const VERIFIER = RUNFILES ? path.resolve('kythe/cxx/verifier/verifier') :
                             path.resolve(KYTHE_PATH, 'tools/verifier');
 
 /**
- * createTestCompilerHost creates a ts.CompilerHost that caches its default
- * library.  This prevents re-parsing the (big) TypeScript standard library
+ * createTestCompilerHost creates a ts.CompilerHost that caches the default
+ * libraries.  This prevents re-parsing the (big) TypeScript standard library
  * across each test.
  */
 function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
   const compilerHost = ts.createCompilerHost(options);
 
-  const libPath = compilerHost.getDefaultLibFileName(options);
-  const libSource =
-      compilerHost.getSourceFile(libPath, ts.ScriptTarget.ES2015)!;
+  // Map of path to parsed SourceFile for all TS builtin libraries.
+  const libs = new Map<string, ts.SourceFile|undefined>();
+  const libDir = compilerHost.getDefaultLibLocation!();
 
   const hostGetSourceFile = compilerHost.getSourceFile;
   compilerHost.getSourceFile =
       (fileName: string, languageVersion: ts.ScriptTarget,
        onError?: (message: string) => void): ts.SourceFile|undefined => {
-        if (fileName === libPath) return libSource;
-        return hostGetSourceFile(fileName, languageVersion, onError);
+        let sourceFile = libs.get(fileName);
+        if (!sourceFile) {
+          sourceFile = hostGetSourceFile(fileName, languageVersion, onError);
+          if (path.dirname(fileName) === libDir) libs.set(fileName, sourceFile);
+        }
+        return sourceFile;
       };
   return compilerHost;
 }
@@ -87,10 +91,15 @@ function verify(
         shell: true,
       });
 
-  indexer.index(compilationUnit, new Map(), testFiles, program, (obj: {}) => {
-    verifier.stdin.write(JSON.stringify(obj) + '\n');
-  }, plugins);
-  verifier.stdin.end();
+  try {
+    indexer.index(compilationUnit, new Map(), testFiles, program, (obj: {}) => {
+      verifier.stdin.write(JSON.stringify(obj) + '\n');
+    }, plugins);
+  } finally {
+    // Ensure we close stdin on the verifier even on crashes, or otherwise
+    // we hang waiting for the verifier to complete.
+    verifier.stdin.end();
+  }
 
   return new Promise<void>((resolve, reject) => {
     verifier.on('close', (exitCode) => {
