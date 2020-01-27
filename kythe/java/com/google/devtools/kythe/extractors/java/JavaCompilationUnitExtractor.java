@@ -262,12 +262,11 @@ public class JavaCompilationUnitExtractor {
     return extract(
         target,
         sources,
-        ImmutableMap.<Location, Iterable<String>>builder()
-            .put(StandardLocation.CLASS_PATH, classpath)
-            .put(StandardLocation.PLATFORM_CLASS_PATH, bootclasspath)
-            .put(StandardLocation.SOURCE_PATH, sourcepath)
-            .put(StandardLocation.ANNOTATION_PROCESSOR_PATH, processorpath)
-            .build(),
+        ImmutableMap.of(
+            StandardLocation.CLASS_PATH, classpath,
+            StandardLocation.PLATFORM_CLASS_PATH, bootclasspath,
+            StandardLocation.SOURCE_PATH, sourcepath,
+            StandardLocation.ANNOTATION_PROCESSOR_PATH, processorpath),
         processors,
         genSrcDir,
         options,
