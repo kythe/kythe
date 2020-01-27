@@ -292,7 +292,7 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(options);
     Preconditions.checkNotNull(outputPath);
 
-    AnalysisResults results =
+    final AnalysisResults results =
         Iterables.isEmpty(sources)
             ? new AnalysisResults()
             : runJavaAnalysisToExtractCompilationDetails(
@@ -316,7 +316,7 @@ public class JavaCompilationUnitExtractor {
                 })
             .collect(toImmutableList());
 
-    CompilationUnit compilationUnit =
+    final CompilationUnit compilationUnit =
         buildCompilationUnit(
             target,
             removeDestDirOptions(options),
@@ -761,7 +761,7 @@ public class JavaCompilationUnitExtractor {
                   sourceFiles);
       javacTask.addTaskListener(compilationCollector);
       javacTask.setProcessors(
-          loadProcessors(processingClassloader(fileManager), processors, fileManager));
+          loadProcessors(processingClassLoader(fileManager), processors, fileManager));
 
       // Relies on Context.  Must come before javacTask.call, which resets the context.
       Symtab symbolTable = getSymbolTable(javacTask);
@@ -843,7 +843,7 @@ public class JavaCompilationUnitExtractor {
   }
 
   /** Create the ClassLoader to use for annotation processors. */
-  private static ClassLoader processingClassloader(StandardJavaFileManager fileManager)
+  private static ClassLoader processingClassLoader(StandardJavaFileManager fileManager)
       throws ExtractionException {
     // If javac is run with -processor set and -processorpath *unset*, it will fall back to
     // searching the regular classpath for annotation processors.
