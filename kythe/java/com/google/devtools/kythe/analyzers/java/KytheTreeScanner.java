@@ -244,7 +244,22 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     scan(compilation.getImports(), ctx);
+
+    emitFileScopeMetadata(fileNode.getVName());
+
     return new JavaNode(fileNode);
+  }
+
+  private void emitFileScopeMetadata(VName file) {
+    for (Metadata data : metadata) {
+      for (Metadata.Rule rule : data.getFileScopeRules()) {
+        if (rule.reverseEdge) {
+          entrySets.emitEdge(rule.vname, rule.edgeOut, file);
+        } else {
+          entrySets.emitEdge(file, rule.edgeOut, rule.vname);
+        }
+      }
+    }
   }
 
   @Override

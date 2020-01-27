@@ -1,5 +1,27 @@
 # Release Notes
 
+## [v0.0.40] - 2020-01-24
+
+#### Bug Fixes
+
+* **java_extractor:**
+  *  add the processor classpath to the extractor action (#4301) ([b079ce3e](https://github.com/kythe/kythe/commit/b079ce3eaa775b6fdf09243e2d9e4df933e66e45))
+* **java_indexer:**
+  *  only attempt to load implicit metadata if it exists (#4307) ([188b1cec](https://github.com/kythe/kythe/commit/188b1cec439ed4e6559a1719f5851a7a82099aca))
+  *  correctly reference JVM field nodes (#4304) ([3e4c8add](https://github.com/kythe/kythe/commit/3e4c8add9aacdbde3b0c246b53fcaa33299b9227))
+  *  use in-memory class_output path for modular builds (#4299) ([c8d23078](https://github.com/kythe/kythe/commit/c8d2307838c8822aac5d2786cfeb630709d0671a))
+  *  handle --system none properly (#4297) ([dc585623](https://github.com/kythe/kythe/commit/dc585623a8671f11e6917da45d5c139f934fb367))
+  *  handle null FileObjects in readAhead (#4290) ([0b7b623d](https://github.com/kythe/kythe/commit/0b7b623d442bfe6e436cff9a4d921c98e7390041))
+  *  enable readahead in new filemanager (#4284) ([078aba28](https://github.com/kythe/kythe/commit/078aba28a5d575d059e03424ff831530ee46367c))
+
+#### Features
+
+* **java_indexer:**  support implicit protobuf metadata (#4262) ([cace853f](https://github.com/kythe/kythe/commit/cace853fa2d88e7a72b8608628436e4da67ff5b8))
+* **runextractor:**  Tell cmake to use clang (#4319) ([5d10af8b](https://github.com/kythe/kythe/commit/5d10af8bb9bb129efb9cd632811399cfacf7095f))
+* **kzip:**
+  *  add source/input directories recursively (#4302) ([d9442588](https://github.com/kythe/kythe/commit/d9442588c2094d3be450b5a4fb49731f024d6d08))
+  *  relativize input paths (#4303) ([fff4f9c3](https://github.com/kythe/kythe/commit/fff4f9c37696f78cde72c92aa8072fc5e3a4a969))
+
 ## [v0.0.39] - 2019-12-19
 
 #### Bug Fixes
@@ -770,7 +792,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.39...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.40...HEAD
+[v0.0.40] https://github.com/kythe/kythe/compare/v0.0.39...v0.0.40
 [v0.0.39] https://github.com/kythe/kythe/compare/v0.0.38...v0.0.39
 [v0.0.38] https://github.com/kythe/kythe/compare/v0.0.37...v0.0.38
 [v0.0.37] https://github.com/kythe/kythe/compare/v0.0.36...v0.0.37
