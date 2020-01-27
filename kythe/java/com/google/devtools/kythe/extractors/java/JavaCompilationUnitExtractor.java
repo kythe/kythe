@@ -25,6 +25,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
@@ -258,22 +259,44 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(genSrcDir);
     Preconditions.checkNotNull(options);
     Preconditions.checkNotNull(outputPath);
+    return extract(
+        target,
+        sources,
+        ImmutableMap.<Location, Iterable<String>>builder()
+            .put(StandardLocation.CLASS_PATH, classpath)
+            .put(StandardLocation.PLATFORM_CLASS_PATH, bootclasspath)
+            .put(StandardLocation.SOURCE_PATH, sourcepath)
+            .put(StandardLocation.ANNOTATION_PROCESSOR_PATH, processorpath)
+            .build(),
+        processors,
+        genSrcDir,
+        options,
+        outputPath);
+  }
 
-    AnalysisResults results;
-    if (sources.iterator().hasNext()) {
-      results =
-          runJavaAnalysisToExtractCompilationDetails(
-              sources,
-              classpath,
-              bootclasspath,
-              sourcepath,
-              processorpath,
-              processors,
-              genSrcDir,
-              options);
-    } else {
-      results = new AnalysisResults();
-    }
+  /** Extracts required compilation files and arguments into a CompilationDescription. */
+  public CompilationDescription extract(
+      String target,
+      Iterable<String> sources,
+      Map<Location, Iterable<String>> searchPaths,
+      Iterable<String> processors,
+      Optional<Path> genSrcDir,
+      Iterable<String> options,
+      String outputPath)
+      throws ExtractionException {
+    Preconditions.checkNotNull(target);
+    Preconditions.checkNotNull(sources);
+    Preconditions.checkNotNull(searchPaths);
+    Preconditions.checkNotNull(processors);
+    Preconditions.checkNotNull(genSrcDir);
+    Preconditions.checkNotNull(options);
+    Preconditions.checkNotNull(outputPath);
+
+    AnalysisResults results =
+        Iterables.isEmpty(sources)
+            ? new AnalysisResults()
+            : runJavaAnalysisToExtractCompilationDetails(
+                sources, searchPaths, processors, genSrcDir, options);
 
     List<FileData> fileContents = ExtractorUtils.convertBytesToFileDatas(results.fileContents);
     List<FileInput> compilationFileInputs =
@@ -702,10 +725,7 @@ public class JavaCompilationUnitExtractor {
 
   private AnalysisResults runJavaAnalysisToExtractCompilationDetails(
       Iterable<String> sources,
-      Iterable<String> classpath,
-      Iterable<String> bootclasspath,
-      Iterable<String> sourcepath,
-      Iterable<String> processorpath,
+      Map<Location, Iterable<String>> searchPaths,
       Iterable<String> processors,
       Optional<Path> genSrcDir,
       Iterable<String> options)
@@ -725,23 +745,23 @@ public class JavaCompilationUnitExtractor {
 
     // Generate class files in a temporary directory
     try (TemporaryDirectory tempDir = new TemporaryDirectory()) {
-      List<String> completeOptions =
-          completeCompilerOptions(
-              fileManager,
-              options,
-              classpath,
-              bootclasspath,
-              sourcepath,
-              processorpath,
-              tempDir.getPath());
+      for (Map.Entry<Location, Iterable<String>> entry : searchPaths.entrySet()) {
+        setLocation(fileManager, entry.getKey(), entry.getValue());
+      }
+
       // Launch the java compiler with our modified settings and the filemanager wrapper
       JavacTask javacTask =
           (JavacTask)
               compiler.getTask(
-                  null, fileManager, diagnosticCollector, completeOptions, null, sourceFiles);
+                  null,
+                  fileManager,
+                  diagnosticCollector,
+                  completeCompilerOptions(options, tempDir.getPath()),
+                  null,
+                  sourceFiles);
       javacTask.addTaskListener(compilationCollector);
       javacTask.setProcessors(
-          loadProcessors(processingClassloader(classpath, processorpath), processors, fileManager));
+          loadProcessors(processingClassloader(fileManager), processors, fileManager));
 
       // Relies on Context.  Must come before javacTask.call, which resets the context.
       Symtab symbolTable = getSymbolTable(javacTask);
@@ -784,16 +804,9 @@ public class JavaCompilationUnitExtractor {
 
   /** Sets the given location using command-line flags and the FileManager API. */
   private static void setLocation(
-      ModifiableOptions options,
-      UsageAsInputReportingFileManager fileManager,
-      Iterable<String> searchpath,
-      String flag,
-      StandardLocation location)
+      UsageAsInputReportingFileManager fileManager, Location location, Iterable<String> searchpath)
       throws ExtractionException {
-    String joined = Joiner.on(":").join(searchpath);
-    if (!joined.isEmpty()) {
-      options.add(flag);
-      options.add(joined);
+    if (!Iterables.isEmpty(searchpath)) {
       try {
         fileManager.setLocation(location, Iterables.transform(searchpath, File::new));
       } catch (IOException e) {
@@ -830,18 +843,19 @@ public class JavaCompilationUnitExtractor {
   }
 
   /** Create the ClassLoader to use for annotation processors. */
-  private static ClassLoader processingClassloader(
-      Iterable<String> classpath, Iterable<String> processorpath) throws ExtractionException {
+  private static ClassLoader processingClassloader(StandardJavaFileManager fileManager)
+      throws ExtractionException {
     // If javac is run with -processor set and -processorpath *unset*, it will fall back to
     // searching the regular classpath for annotation processors.
-    if (Iterables.isEmpty(processorpath)) {
-      processorpath = classpath;
-    }
+    Iterable<? extends File> files =
+        fileManager.hasLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH)
+            ? fileManager.getLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH)
+            : fileManager.getLocation(StandardLocation.CLASS_PATH);
 
     List<URL> urls = new ArrayList<>();
-    for (String path : processorpath) {
+    for (File file : files) {
       try {
-        urls.add(new File(path).toURI().toURL());
+        urls.add(file.toURI().toURL());
       } catch (MalformedURLException e) {
         throw new ExtractionException("Bad processorpath entry", e, false);
       }
@@ -929,40 +943,12 @@ public class JavaCompilationUnitExtractor {
    * {@link List}.
    */
   private static ImmutableList<String> completeCompilerOptions(
-      UsageAsInputReportingFileManager fileManager,
-      Iterable<String> rawOptions,
-      Iterable<String> classpath,
-      Iterable<String> bootclasspath,
-      Iterable<String> sourcepath,
-      Iterable<String> processorpath,
-      Path tempDestinationDir)
-      throws ExtractionException {
+      Iterable<String> rawOptions, Path tempDestinationDir) throws ExtractionException {
 
-    ModifiableOptions completeOptions =
-        ModifiableOptions.of(rawOptions)
-            .removeUnsupportedOptions()
-            .ensureEncodingSet(StandardCharsets.UTF_8);
-
-    setLocation(completeOptions, fileManager, classpath, "-cp", StandardLocation.CLASS_PATH);
-    setLocation(
-        completeOptions, fileManager, sourcepath, "-sourcepath", StandardLocation.SOURCE_PATH);
-    setLocation(
-        completeOptions,
-        fileManager,
-        processorpath,
-        "-processorpath",
-        StandardLocation.ANNOTATION_PROCESSOR_PATH);
-    setLocation(
-        completeOptions,
-        fileManager,
-        bootclasspath,
-        "-bootclasspath",
-        StandardLocation.PLATFORM_CLASS_PATH);
-
-    return completeOptions
-        .removeOptions(EnumSet.of(Option.D))
-        .add("-d")
-        .add(tempDestinationDir.toString())
+    return ModifiableOptions.of(rawOptions)
+        .removeUnsupportedOptions()
+        .ensureEncodingSet(StandardCharsets.UTF_8)
+        .replaceOptionValue(Option.D, tempDestinationDir.toString())
         .build();
   }
 
