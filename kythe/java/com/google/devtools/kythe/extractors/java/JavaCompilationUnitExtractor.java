@@ -127,6 +127,95 @@ public class JavaCompilationUnitExtractor {
   private final FileVNames fileVNames;
   private String systemDir;
 
+  public static class CompilationTask implements AutoCloseable {
+    private final TemporaryDirectory tempDir = new TemporaryDirectory();
+
+    // Can only be intiailized once the task is created.
+    private Symtab symbolTable;
+
+    private final JavaCompiler compiler = getJavaCompiler();
+    private final DiagnosticCollector<JavaFileObject> diagnosticCollector =
+        new DiagnosticCollector<>();
+    private final CompilationUnitCollector compilationCollector = new CompilationUnitCollector();
+    private final UsageAsInputReportingFileManager fileManager =
+        JavaCompilationUnitExtractor.getFileManager(compiler, diagnosticCollector);
+
+    CompilationTask() throws ExtractionException {}
+
+    public UsageAsInputReportingFileManager getFileManager() {
+      return fileManager;
+    }
+
+    public Collection<Diagnostic<? extends JavaFileObject>> getDiagnostics() {
+      return diagnosticCollector.getDiagnostics();
+    }
+
+    public Collection<CompilationUnitTree> getCompilations() {
+      return compilationCollector.getCompilations();
+    }
+
+    public Symtab getSymbolTable() {
+      return symbolTable;
+    }
+
+    public boolean compileResolved(
+        Iterable<String> options,
+        Iterable<? extends JavaFileObject> sourceFiles,
+        Iterable<Processor> processors)
+        throws ExtractionException {
+      Preconditions.checkNotNull(options);
+      Preconditions.checkNotNull(sourceFiles);
+      Preconditions.checkNotNull(processors);
+      // Launch the java compiler with our modified settings and the filemanager wrapper
+      JavacTask javacTask =
+          (JavacTask)
+              compiler.getTask(
+                  null,
+                  fileManager,
+                  diagnosticCollector,
+                  completeCompilerOptions(options, tempDir.getPath()),
+                  null,
+                  sourceFiles);
+      javacTask.addTaskListener(compilationCollector);
+      javacTask.setProcessors(
+          Iterables.concat(processors, ImmutableList.of(new ProcessAnnotation(fileManager))));
+
+      symbolTable = JavaCompilationUnitExtractor.getSymbolTable(javacTask);
+      boolean result;
+      try {
+        // In order for the compiler to load all required .java & .class files we need to have it go
+        // through parsing, analysis & generate phases.  Unfortunately the latter is needed to get a
+        // complete list, this was found as we were breaking on analyzing certain files.
+        // JavacTask#call() subsumes parse() and generate(), but calling those methods directly may
+        // silently ignore fatal errors.
+        result = javacTask.call();
+      } catch (com.sun.tools.javac.util.Abort e) {
+        logFatalErrors(getDiagnostics());
+        throw new ExtractionException("Fatal error while running javac compiler.", e, false);
+      }
+      return !logErrors(getDiagnostics()) && result;
+    }
+
+    public boolean compile(
+        Iterable<String> options, Iterable<String> sourcePaths, Iterable<String> processors)
+        throws ExtractionException {
+      return compileResolved(
+          options,
+          fileManager.getJavaFileObjectsFromStrings(sourcePaths),
+          loadProcessors(processingClassLoader(fileManager), processors));
+    }
+
+    @Override
+    public void close() {
+      tempDir.close();
+      try {
+        fileManager.close();
+      } catch (IOException err) {
+        logger.atWarning().withCause(err).log("Unable to close file manager");
+      }
+    }
+  }
+
   /**
    * Creates an instance of the JavaExtractor to store java compilation information in an .kindex
    * file.
@@ -345,8 +434,8 @@ public class JavaCompilationUnitExtractor {
    * wildcard. So we add one matching file here.
    */
   private void findOnDemandImportedFiles(
-      Iterable<? extends CompilationUnitTree> compilationUnits,
-      UsageAsInputReportingFileManager fileManager)
+      UsageAsInputReportingFileManager fileManager,
+      Iterable<? extends CompilationUnitTree> compilationUnits)
       throws ExtractionException {
     // Maps package names to source files that wildcard import them.
     Multimap<String, String> pkgs = HashMultimap.create();
@@ -413,9 +502,9 @@ public class JavaCompilationUnitExtractor {
    * is needed as the sharded analysis will need to resolve dependent source files. Also locates
    * sources that do not follow the package == path convention and list them as explicit sources.
    */
-  private void getAdditionalSourcePaths(
-      Iterable<? extends CompilationUnitTree> compilationUnits, AnalysisResults results) {
-
+  private Collection<String> getAdditionalSourcePaths(
+      Iterable<? extends CompilationUnitTree> compilationUnits) {
+    ImmutableList.Builder<String> results = new ImmutableList.Builder<>();
     for (CompilationUnitTree compilationUnit : compilationUnits) {
       ExpressionTree packageExpression = compilationUnit.getPackageName();
       if (packageExpression != null) {
@@ -442,16 +531,16 @@ public class JavaCompilationUnitExtractor {
           // jars, we end up with a double named path.
           int index = path.lastIndexOf(packageSubDir);
           if (index >= 0) {
-            String root = ExtractorUtils.tryMakeRelative(rootDirectory, path.substring(0, index));
-            results.newSourcePath.add(root);
+            results.add(ExtractorUtils.tryMakeRelative(rootDirectory, path.substring(0, index)));
           }
         }
       }
     }
+    return results.build();
   }
 
   // Checks for ".pb.meta" files for each compilation unit and marks it as required if present.
-  private void markMetadataFiles(
+  private void findMetadataFiles(
       UsageAsInputReportingFileManager fileManager,
       Iterable<CompilationUnitTree> compilationUnits) {
     for (CompilationUnitTree compilationUnit : compilationUnits) {
@@ -695,6 +784,8 @@ public class JavaCompilationUnitExtractor {
 
   private static UsageAsInputReportingFileManager getFileManager(
       JavaCompiler compiler, DiagnosticCollector<JavaFileObject> diagnosticCollector) {
+    // We insert a filemanager that wraps the standard filemanager and records the compiler's
+    // usage of .java & .class files.
     StandardJavaFileManager fileManager =
         compiler.getStandardFileManager(diagnosticCollector, null, null);
     setupFSInfo(fileManager);
@@ -731,52 +822,14 @@ public class JavaCompilationUnitExtractor {
       throws ExtractionException {
 
     AnalysisResults results = new AnalysisResults();
-    DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
-    CompilationUnitCollector compilationCollector = new CompilationUnitCollector();
-
-    JavaCompiler compiler = getJavaCompiler();
-    // We insert a filemanager that wraps the standard filemanager and records the compiler's
-    // usage of .java & .class files.
-    final UsageAsInputReportingFileManager fileManager =
-        getFileManager(compiler, diagnosticCollector);
-
-    Iterable<? extends JavaFileObject> sourceFiles = fileManager.getJavaFileForSources(sources);
 
     // Generate class files in a temporary directory
-    try (TemporaryDirectory tempDir = new TemporaryDirectory()) {
+    try (CompilationTask task = new CompilationTask()) {
       for (Map.Entry<Location, Iterable<String>> entry : searchPaths.entrySet()) {
-        setLocation(fileManager, entry.getKey(), entry.getValue());
+        setLocation(task.getFileManager(), entry.getKey(), entry.getValue());
       }
 
-      // Launch the java compiler with our modified settings and the filemanager wrapper
-      JavacTask javacTask =
-          (JavacTask)
-              compiler.getTask(
-                  null,
-                  fileManager,
-                  diagnosticCollector,
-                  completeCompilerOptions(options, tempDir.getPath()),
-                  null,
-                  sourceFiles);
-      javacTask.addTaskListener(compilationCollector);
-      javacTask.setProcessors(
-          loadProcessors(processingClassLoader(fileManager), processors, fileManager));
-
-      // Relies on Context.  Must come before javacTask.call, which resets the context.
-      Symtab symbolTable = getSymbolTable(javacTask);
-
-      try {
-        // In order for the compiler to load all required .java & .class files we need to have it go
-        // through parsing, analysis & generate phases.  Unfortunately the latter is needed to get a
-        // complete list, this was found as we were breaking on analyzing certain files.
-        // JavacTask#call() subsumes parse() and generate(), but calling those methods directly may
-        // silently ignore fatal errors.
-        results.hasErrors = !javacTask.call();
-      } catch (com.sun.tools.javac.util.Abort e) {
-        logFatalErrors(diagnosticCollector);
-        throw new ExtractionException("Fatal error while running javac compiler.", e, false);
-      }
-      results.hasErrors |= logErrors(diagnosticCollector);
+      results.hasErrors = !task.compile(options, sources, processors);
 
       // Ensure generated source directory is relative to root.
       genSrcDir =
@@ -787,15 +840,18 @@ public class JavaCompilationUnitExtractor {
         results.explicitSources.add(ExtractorUtils.tryMakeRelative(rootDirectory, source));
       }
 
+      results.newSourcePath.addAll(getAdditionalSourcePaths(task.getCompilations()));
+
       // Include any .pb.meta files which may reside next to compilations.
-      markMetadataFiles(fileManager, compilationCollector.getCompilations());
-      getAdditionalSourcePaths(compilationCollector.getCompilations(), results);
+      findMetadataFiles(task.getFileManager(), task.getCompilations());
+      // Find files potentially used for resolving .* imports.
+      findOnDemandImportedFiles(task.getFileManager(), task.getCompilations());
+      // Add modular system files directly, if specified explicitly.
       addSystemFiles(results);
 
-      // Find files potentially used for resolving .* imports.
-      findOnDemandImportedFiles(compilationCollector.getCompilations(), fileManager);
-      // We accumulate all file contents from the java compiler so we can store it in the bigtable.
-      findRequiredFiles(fileManager, mapClassesToSources(symbolTable), genSrcDir, results);
+      // We accumulate all file contents from the java compiler.
+      findRequiredFiles(
+          task.getFileManager(), mapClassesToSources(task.getSymbolTable()), genSrcDir, results);
     }
 
     return results;
@@ -1011,17 +1067,14 @@ public class JavaCompilationUnitExtractor {
     return sourceBaseNames;
   }
 
-  private static Iterable<Processor> loadProcessors(
-      ClassLoader loader, Iterable<String> names, UsageAsInputReportingFileManager fileManager)
+  private static Iterable<Processor> loadProcessors(ClassLoader loader, Iterable<String> names)
       throws ExtractionException {
-    // Add any processors passed as flags.
-    Iterable<Processor> processors = loadNamedProcessors(loader, names);
-    if (Iterables.isEmpty(processors)) {
-      // If no --processors were passed, add any processors registered in the META-INF/services
-      // configuration.
-      processors = loadServiceProcessors(loader);
-    }
-    return Iterables.concat(processors, ImmutableList.of(new ProcessAnnotation(fileManager)));
+    return Iterables.isEmpty(names)
+        // If no --processors were passed, add any processors registered in the META-INF/services
+        // configuration.
+        ? loadServiceProcessors(loader)
+        // Add any processors passed as flags.
+        : loadNamedProcessors(loader, names);
   }
 
   private static Iterable<Processor> loadNamedProcessors(ClassLoader loader, Iterable<String> names)
@@ -1042,34 +1095,34 @@ public class JavaCompilationUnitExtractor {
     return ServiceLoader.load(Processor.class, loader);
   }
 
-  private static boolean logErrors(
-      DiagnosticCollector<? extends JavaFileObject> diagnosticCollector) {
+  private static boolean logErrors(Collection<Diagnostic<? extends JavaFileObject>> diagnostics) {
     // If we encountered any compilation errors, we report them even though we
     // still store the compilation information for this set of sources.
-    boolean hasErrors = false;
-    for (Diagnostic<? extends JavaFileObject> diag : diagnosticCollector.getDiagnostics()) {
-      if (diag.getKind() == Diagnostic.Kind.ERROR) {
-        hasErrors = true;
-        if (diag.getSource() != null) {
-          logger.atSevere().log(
-              "compiler error: %s(%d): %s",
-              diag.getSource().getName(), diag.getLineNumber(), diag.getMessage(Locale.ENGLISH));
-        } else {
-          logger.atSevere().log("compiler error: %s", diag.getMessage(Locale.ENGLISH));
-        }
-      }
-    }
-    return hasErrors;
+    return diagnostics.stream()
+            .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
+            .peek(
+                diag -> {
+                  if (diag.getSource() != null) {
+                    logger.atSevere().log(
+                        "compiler error: %s(%d): %s",
+                        diag.getSource().getName(),
+                        diag.getLineNumber(),
+                        diag.getMessage(Locale.ENGLISH));
+                  } else {
+                    logger.atSevere().log("compiler error: %s", diag.getMessage(Locale.ENGLISH));
+                  }
+                })
+            .count()
+        > 0;
   }
 
-  private static void logFatalErrors(
-      DiagnosticCollector<? extends JavaFileObject> diagnosticCollector) {
+  private static void logFatalErrors(Collection<Diagnostic<? extends JavaFileObject>> diagnostics) {
     // Type resolution issues, the diagnostics will give hints on what's going wrong.
-    for (Diagnostic<? extends JavaFileObject> diagnostic : diagnosticCollector.getDiagnostics()) {
-      if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
-        logger.atSevere().log("Fatal error in compiler: %s", diagnostic.getMessage(Locale.ENGLISH));
-      }
-    }
+    diagnostics.stream()
+        .filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
+        .forEach(
+            d ->
+                logger.atSevere().log("Fatal error in compiler: %s", d.getMessage(Locale.ENGLISH)));
   }
 
   private static Symtab getSymbolTable(JavacTask javacTask) {
