@@ -127,7 +127,11 @@ public class JavaCompilationUnitExtractor {
   private final FileVNames fileVNames;
   private String systemDir;
 
-  public static class CompilationTask implements AutoCloseable {
+  /**
+   * ExtractionTask represents a single invocation of the java compiler in order to determine the
+   * required inputs.
+   */
+  public static class ExtractionTask implements AutoCloseable {
     private final TemporaryDirectory tempDir = new TemporaryDirectory();
 
     // Can only be intiailized once the task is created.
@@ -140,7 +144,7 @@ public class JavaCompilationUnitExtractor {
     private final UsageAsInputReportingFileManager fileManager =
         JavaCompilationUnitExtractor.getFileManager(compiler, diagnosticCollector);
 
-    CompilationTask() throws ExtractionException {}
+    ExtractionTask() throws ExtractionException {}
 
     public UsageAsInputReportingFileManager getFileManager() {
       return fileManager;
@@ -824,7 +828,7 @@ public class JavaCompilationUnitExtractor {
     AnalysisResults results = new AnalysisResults();
 
     // Generate class files in a temporary directory
-    try (CompilationTask task = new CompilationTask()) {
+    try (ExtractionTask task = new ExtractionTask()) {
       for (Map.Entry<Location, Iterable<String>> entry : searchPaths.entrySet()) {
         setLocation(task.getFileManager(), entry.getKey(), entry.getValue());
       }
