@@ -916,7 +916,7 @@ class Visitor {
     // This can happen in cases of importing local modules, like
     //   declare namespace Foo {}
     //   import foo = Foo;
-    if (!ts.isSourceFile(sf)) return undefined;
+    if (!sf || !ts.isSourceFile(sf)) return undefined;
     return this.host.moduleName(sf.fileName);
   }
 
@@ -1054,7 +1054,7 @@ class Visitor {
       // Check if module being imported is declared via `declare module`
       // and if so - output ref to that statement.
       const decl = moduleSym.valueDeclaration;
-      if (ts.isModuleDeclaration(decl)) {
+      if (decl && ts.isModuleDeclaration(decl)) {
         const kModule =
             this.host.getSymbolName(moduleSym, TSNamespace.NAMESPACE);
         if (!kModule) return;

@@ -207,7 +207,7 @@ func parseCompileArgs(args []string) *compileArgs {
 		switch flag {
 		case "dep":
 			c.deps = append(c.deps, arg)
-		case "importmap":
+		case "importmap", "arc":
 			// Only record the mappings that change something.
 			ps := strings.SplitN(arg, "=", 2)
 			if len(ps) == 2 && ps[0] != ps[1] {
