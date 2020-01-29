@@ -76,7 +76,7 @@ public class JavaExtractorTest extends TestCase {
             TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, Optional.empty(), EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertThat(unit.getWorkingDirectory()).isEqualTo(ExtractorUtils.getCurrentWorkingDirectory());
+    assertThat(unit.getWorkingDirectory()).isEqualTo("/root");
     assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
 

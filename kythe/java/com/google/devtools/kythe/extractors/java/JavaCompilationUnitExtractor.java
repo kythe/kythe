@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Streams;
 import com.google.common.flogger.FluentLogger;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -294,7 +295,7 @@ public class JavaCompilationUnitExtractor {
       unit.addSourceFile(sourceFile);
     }
     unit.setOutputKey(outputPath);
-    unit.setWorkingDirectory(rootDirectory);
+    unit.setWorkingDirectory(stableRoot(rootDirectory, options, requiredInputs));
     unit.addDetails(
         Any.newBuilder()
             .setTypeUrl(JAVA_DETAILS_URL)
@@ -544,7 +545,7 @@ public class JavaCompilationUnitExtractor {
   }
 
   // Checks for ".pb.meta" files for each compilation unit and marks it as required if present.
-  private void findMetadataFiles(
+  private static void findMetadataFiles(
       UsageAsInputReportingFileManager fileManager,
       Iterable<CompilationUnitTree> compilationUnits) {
     for (CompilationUnitTree compilationUnit : compilationUnits) {
@@ -1135,5 +1136,32 @@ public class JavaCompilationUnitExtractor {
 
   private static Symtab getSymbolTable(Context context) {
     return Symtab.instance(context);
+  }
+
+  // Returns a string to use for the compilation unit working directory.
+  // Attempts to use a stable path for the root, but falls back to the specified rootDirectory
+  // if the stable root is present in an absolutely-qualified requiredInput or the rootDirectory
+  // is mentioned in options.
+  private static String stableRoot(
+      String rootDirectory, Iterable<String> options, Iterable<FileInput> requiredInput) {
+    if (Iterables.any(options, o -> o.contains(rootDirectory))) {
+      logger.atInfo().log("Using real working directory (%s) due to its inclusion in %s", options);
+      return rootDirectory;
+    }
+    ImmutableSet<String> requiredRoots =
+        Streams.stream(requiredInput)
+            .map(
+                fi -> {
+                  Path path = Paths.get(fi.getInfo().getPath());
+                  return path.isAbsolute() ? path.subpath(0, 1).toString() : null;
+                })
+            .filter(p -> p != null)
+            .collect(ImmutableSet.toImmutableSet());
+    for (String root : ImmutableList.of("root", "build", "kythe_java_extractor_root")) {
+      if (!requiredRoots.contains(root)) {
+        return "/" + root;
+      }
+    }
+    return rootDirectory;
   }
 }
