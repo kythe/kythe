@@ -63,7 +63,7 @@ struct Claimant {
 /// \brief Stably compares `Claimants` by vname.
 struct ClaimantPointerLess {
   bool operator()(const Claimant* lhs, const Claimant* rhs) const {
-    return kythe::VNameLess<VName>()(lhs->vname, rhs->vname);
+    return kythe::VNameLess()(lhs->vname, rhs->vname);
   }
 };
 
@@ -95,14 +95,14 @@ static std::vector<CompilationUnit> ReadCompilationUnits(
 }
 
 /// \brief Maps from vnames to claimants (like compilation units).
-using ClaimantMap = std::map<VName, Claimant, kythe::VNameLess<VName>>;
+using ClaimantMap = std::map<VName, Claimant, kythe::VNameLess>;
 
 /// \brief Maps from vnames to claimables.
 ///
 /// The vname for a claimable with a transcript (like a header file)
 /// is formed from the underlying vname with its signature changed to
 /// include the transcript as a prefix.
-using ClaimableMap = std::map<VName, Claimable, kythe::VNameLess<VName>>;
+using ClaimableMap = std::map<VName, Claimable, kythe::VNameLess>;
 
 /// \brief Range wrapper around unpacked ContextDependentVersion rows.
 class FileContextRows {

@@ -23,7 +23,7 @@ namespace kythe {
 /// \brief Defines equality on VNames by pairwise comparison of each vector
 /// component.
 template <typename VName>
-static inline bool VNameEquals(const VName& lhs, const VName& rhs) {
+bool VNameEquals(const VName& lhs, const VName& rhs) {
   return lhs.signature() == rhs.signature() && lhs.corpus() == rhs.corpus() &&
          lhs.root() == rhs.root() && lhs.path() == rhs.path() &&
          lhs.language() == rhs.language();
@@ -31,8 +31,8 @@ static inline bool VNameEquals(const VName& lhs, const VName& rhs) {
 
 /// \brief Defines less-than on VNames as a lexicographic ordering on each
 /// vector component.
-template <typename VName>
 struct VNameLess {
+  template <typename VName>
   bool operator()(const VName& lhs, const VName& rhs) const {
     if (lhs.signature() < rhs.signature()) return true;
     if (lhs.signature() != rhs.signature()) return false;

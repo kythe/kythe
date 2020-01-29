@@ -54,9 +54,7 @@ class DynamicClaimClient : public KytheClaimClient {
 
  private:
   /// A local map from claimables to claimants.
-  std::map<kythe::proto::VName, kythe::proto::VName,
-           VNameLess<kythe::proto::VName>>
-      claim_table_;
+  std::map<kythe::proto::VName, kythe::proto::VName, VNameLess> claim_table_;
   /// A remote map used for dynamic queries.
   ::memcached_st* cache_ = nullptr;
   /// The maximum number of times a VName can be claimed.

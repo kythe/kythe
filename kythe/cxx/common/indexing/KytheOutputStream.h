@@ -29,13 +29,6 @@ using MarkedSource = kythe::proto::common::MarkedSource;
 
 /// A collection of references to the components of a VName.
 class VNameRef {
- private:
-  absl::string_view signature_;
-  absl::string_view corpus_;
-  absl::string_view root_;
-  absl::string_view path_;
-  absl::string_view language_;
-
  public:
   absl::string_view signature() const { return signature_; }
   absl::string_view corpus() const { return corpus_; }
@@ -62,6 +55,13 @@ class VNameRef {
     vname->mutable_path()->assign(path_.data(), path_.size());
     vname->mutable_language()->assign(language_.data(), language_.size());
   }
+
+ private:
+  absl::string_view signature_;
+  absl::string_view corpus_;
+  absl::string_view root_;
+  absl::string_view path_;
+  absl::string_view language_;
 };
 /// A collection of references to the components of a single Kythe fact.
 struct FactRef {
