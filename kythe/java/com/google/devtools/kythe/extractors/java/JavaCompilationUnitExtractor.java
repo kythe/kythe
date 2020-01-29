@@ -1145,7 +1145,8 @@ public class JavaCompilationUnitExtractor {
   private static String stableRoot(
       String rootDirectory, Iterable<String> options, Iterable<FileInput> requiredInput) {
     if (Iterables.any(options, o -> o.contains(rootDirectory))) {
-      logger.atInfo().log("Using real working directory (%s) due to its inclusion in %s", options);
+      logger.atInfo().log(
+          "Using real working directory (%s) due to its inclusion in %s", rootDirectory, options);
       return rootDirectory;
     }
     ImmutableSet<String> requiredRoots =
