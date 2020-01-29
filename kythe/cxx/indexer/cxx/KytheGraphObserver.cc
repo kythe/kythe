@@ -108,7 +108,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
       out_name.set_path(
           RelativizePath(ConvertRef(file_name), ConvertRef(working_directory)));
     } else {
-      out_name.set_path(file_entry->getName());
+      out_name.set_path(std::string(file_entry->getName()));
     }
     out_name.set_corpus(claimant_.corpus());
   }
@@ -1053,7 +1053,7 @@ GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
     LOG(ERROR) << "Missing builtin " << spelling.str();
     MarkedSource sig;
     sig.set_kind(MarkedSource::IDENTIFIER);
-    sig.set_pre_text(spelling);
+    sig.set_pre_text(std::string(spelling));
     builtins_.emplace(spelling.str(), Builtin{NodeId::CreateUncompressed(
                                                   getDefaultClaimToken(),
                                                   spelling.str() + "#builtin"),
@@ -1079,7 +1079,7 @@ void KytheGraphObserver::applyMetadataFile(clang::FileID id,
     return;
   }
   if (auto metadata = meta_supports_->ParseFile(
-          file->getName(),
+          std::string(file->getName()),
           absl::string_view(buffer->getBuffer().data(),
                             buffer->getBufferSize()),
           search_string)) {

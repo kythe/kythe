@@ -426,7 +426,7 @@ class Action : public clang::ASTFrontendAction,
       return clang::TypoCorrection();
     }
     defined_edges_request.add_kind(
-        ToStringRef(absl::StrCat("%", kythe::common::schema::kDefines)));
+        absl::StrCat("%", kythe::common::schema::kDefines));
     if (!factory_.xrefs_->Edges(defined_edges_request, &defined_edges_reply,
                                 &error_text)) {
       absl::FPrintF(stderr, "Xrefs error (defines): %s\n", error_text);
@@ -538,7 +538,8 @@ void ActionFactory::RemapFiles(
        I != E; ++I) {
     FileTracker* tracker = I->second;
     if (llvm::MemoryBuffer* buffer = tracker->memory_buffer()) {
-      remapped_buffers->push_back(std::make_pair(tracker->filename(), buffer));
+      remapped_buffers->push_back(
+          std::make_pair(std::string(tracker->filename()), buffer));
     }
   }
   for (const auto& buffer : builtin_headers_) {

@@ -62,6 +62,7 @@ TARGET_DEFAULTS = {
     "clangBasic": {
         "deps": [
             ":LLVMTarget",
+            ":LLVMFrontendOpenMP",
         ],
         "textual_hdrs": [
             "tools/clang/include/clang/Basic/Version.inc",
@@ -192,7 +193,7 @@ cc_resources(
     strip = "staging/include/",
 )
 
-load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "cmake_defines", "LLVM_TARGETS")
+load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "LLVM_TARGETS", "cmake_defines")
 
 cc_library(
     name = "all_targets",

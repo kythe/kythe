@@ -545,7 +545,7 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
   auto name = decl->getDeclName();
   auto identifier_info = name.getAsIdentifierInfo();
   if (identifier_info && !identifier_info->getName().empty()) {
-    return identifier_info->getName();
+    return std::string(identifier_info->getName());
   } else if (name.getCXXOverloadedOperator() != clang::OO_None) {
     switch (name.getCXXOverloadedOperator()) {
 #define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly) \

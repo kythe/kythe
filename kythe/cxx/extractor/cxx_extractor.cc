@@ -470,7 +470,7 @@ void ExtractorPPCallbacks::FileChanged(
     clang::SrcMgr::CharacteristicKind /*FileType*/, clang::FileID /*PrevFID*/) {
   if (Reason == EnterFile) {
     if (last_inclusion_directive_path_.empty()) {
-      current_files_.push(FileState{GetMainFile()->getName(),
+      current_files_.push(FileState{std::string(GetMainFile()->getName()),
                                     ClaimDirective::NoDirectivesFound});
     } else {
       CHECK(!current_files_.empty());
@@ -519,7 +519,7 @@ PreprocessorTranscript ExtractorPPCallbacks::PopFile() {
 }
 
 void ExtractorPPCallbacks::EndOfMainFile() {
-  AddFile(GetMainFile(), GetMainFile()->getName());
+  AddFile(GetMainFile(), std::string(GetMainFile()->getName()));
   *main_source_file_transcript_ = PopFile();
 }
 
@@ -612,8 +612,8 @@ void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
     const auto* file_ref =
         source_manager_->getFileEntryForID(source_manager_->getFileID(loc));
     if (file_ref) {
-      auto vname = index_writer_->VNameForPath(
-          index_writer_->RelativizePath(FixStdinPath(file_ref, filename_ref)));
+      auto vname = index_writer_->VNameForPath(index_writer_->RelativizePath(
+          FixStdinPath(file_ref, std::string(filename_ref))));
       history()->Update(ToStringRef(vname.signature()));
       history()->Update(ToStringRef(vname.corpus()));
       history()->Update(ToStringRef(vname.root()));
@@ -811,7 +811,7 @@ std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
     CHECK(llvm::sys::path::is_absolute(file_name)) << file_name.str();
     out_name = file_name;
   }
-  std::string out_name_string = out_name.str();
+  std::string out_name_string(out_name.str());
   AddFile(file, out_name_string);
   return out_name_string;
 }
@@ -855,7 +855,7 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
     const auto inputs = getCompilerInstance().getFrontendOpts().Inputs;
     CHECK_EQ(1, inputs.size())
         << "Expected to see only one TU; instead saw " << inputs.size() << ".";
-    main_source_file_ = inputs[0].getFile();
+    main_source_file_ = std::string(inputs[0].getFile());
     auto* preprocessor = &getCompilerInstance().getPreprocessor();
     preprocessor->addPPCallbacks(
         absl::make_unique<ExtractorPPCallbacks>(ExtractorState{

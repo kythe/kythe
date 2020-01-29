@@ -66,7 +66,7 @@ std::string RunScript(const std::string& cmd) {
     }
   }
   pclose(f);
-  return llvm::StringRef(output).trim();
+  return std::string(llvm::StringRef(output).trim());
 }
 
 void FillWithFixedArgs(std::vector<std::string>& args,
