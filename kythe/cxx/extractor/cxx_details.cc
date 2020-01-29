@@ -88,11 +88,11 @@ bool HeaderSearchInfo::CopyFrom(
     switch (iter->getLookupType()) {
       case clang::DirectoryLookup::LT_NormalDir:
         paths.push_back(HeaderSearchInfo::Path{
-            iter->getName(), iter->getDirCharacteristic(), false});
+            std::string(iter->getName()), iter->getDirCharacteristic(), false});
         break;
       case clang::DirectoryLookup::LT_Framework:
         paths.push_back(HeaderSearchInfo::Path{
-            iter->getName(), iter->getDirCharacteristic(), true});
+            std::string(iter->getName()), iter->getDirCharacteristic(), true});
         break;
       default:  // clang::DirectoryLookup::LT_HeaderMap:
         // TODO(zarko): Support LT_HeaderMap.

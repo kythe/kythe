@@ -152,7 +152,7 @@ void IndexerPPCallbacks::MacroDefined(const clang::Token& Token,
     Observer.recordMacroNode(MacroId);
     MarkedSource MacroCode;
     MacroCode.set_kind(MarkedSource::IDENTIFIER);
-    MacroCode.set_pre_text(Token.getIdentifierInfo()->getName());
+    MacroCode.set_pre_text(std::string(Token.getIdentifierInfo()->getName()));
     Observer.recordMarkedSource(MacroId, MacroCode);
   }
   // TODO(zarko): Record information about the definition (like other macro
@@ -283,7 +283,7 @@ GraphObserver::NameId IndexerPPCallbacks::BuildNameIdForMacro(
   CHECK(Spelling.getIdentifierInfo()) << "Macro spelling lacks IdentifierInfo";
   GraphObserver::NameId Id;
   Id.EqClass = GraphObserver::NameId::NameEqClass::Macro;
-  Id.Path = Spelling.getIdentifierInfo()->getName();
+  Id.Path = std::string(Spelling.getIdentifierInfo()->getName());
   return Id;
 }
 
@@ -328,7 +328,8 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
   const auto* file = cxx_extractor::LookupFileForIncludePragma(
       &preprocessor, &search_path, &relative_path, &filename);
   if (!file) {
-    absl::FPrintF(stderr, "Missing metadata file: %s\n", filename.str());
+    absl::FPrintF(stderr, "Missing metadata file: %s\n",
+                  std::string(filename.str()));
     return;
   }
   clang::FileID pragma_file_id =

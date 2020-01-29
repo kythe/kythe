@@ -250,7 +250,7 @@ def _clang_tablegen(ctx, out, *args):
     name = _genfile_name(out)
     kwargs = _make_kwargs(ctx, name, args, ["SOURCE", "TARGET", "-I"], leader = "opts")
     src = _join_path(root, kwargs["source"][0])
-    includes = ["include/", root] + [
+    includes = ["include/", "tools/clang/include", root] + [
         _join_path(root, p)
         for p in kwargs.get("-i", [])
         # We use a "-I" section as a hack to pull out includes, sometimes it fails.
@@ -260,6 +260,7 @@ def _clang_tablegen(ctx, out, *args):
     opts = " ".join(["-I " + _repo_path(i) for i in includes] +
                     kwargs["opts"] +
                     [o for o in kwargs.get("-i", []) if o.startswith("-")])
+
     native.genrule(
         name = name,
         outs = [out],
@@ -267,6 +268,7 @@ def _clang_tablegen(ctx, out, *args):
             _join_path(root, "*.td"),  # local_tds
             _join_path(paths.dirname(src), "*.td"),  # local_tds
             "include/llvm/**/*.td",  # global_tds
+            "tools/clang/include/**/*.td",
         ]),
         tools = [":clang-tblgen"],
         cmd = "$(location :clang-tblgen) %s $(location %s) -o $@" % (opts, src),

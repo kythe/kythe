@@ -50,7 +50,7 @@ std::string FixupPath(llvm::StringRef path, llvm::sys::path::Style style) {
       llvm::sys::path::is_absolute(path, style)) {
     return absl::StrCat("/", path.str());
   }
-  return path;
+  return std::string(path);
 }
 }  // anonymous namespace
 
@@ -151,7 +151,7 @@ bool IndexVFS::get_vname(const clang::FileEntry* entry,
 std::string IndexVFS::get_debug_uid_string(const llvm::sys::fs::UniqueID& uid) {
   auto record = uid_to_record_map_.find(PairFromUid(uid));
   if (record != uid_to_record_map_.end()) {
-    return record->second->status.getName();
+    return std::string(record->second->status.getName());
   }
   return "uid(device: " + std::to_string(uid.getDevice()) +
          " file: " + std::to_string(uid.getFile()) + ")";
@@ -187,7 +187,7 @@ IndexVFS::FileRecord* IndexVFS::FileRecordForPathRoot(const llvm::Twine& path,
                              0);
   }
   FileRecord* name_record = nullptr;
-  auto name_found = root_name_to_root_map_.find(root_name);
+  auto name_found = root_name_to_root_map_.find(std::string(root_name));
   if (name_found != root_name_to_root_map_.end()) {
     name_record = name_found->second;
   } else if (!create_if_missing) {
@@ -198,8 +198,8 @@ IndexVFS::FileRecord* IndexVFS::FileRecordForPathRoot(const llvm::Twine& path,
                            llvm::sys::TimePoint<>(), 0, 0, 0,
                            llvm::sys::fs::file_type::directory_file,
                            llvm::sys::fs::all_read),
-         false, root_name});
-    root_name_to_root_map_[root_name] = name_record;
+         false, std::string(root_name)});
+    root_name_to_root_map_[std::string(root_name)] = name_record;
     uid_to_record_map_[PairFromUid(name_record->status.getUniqueID())] =
         name_record;
   }
@@ -310,7 +310,7 @@ IndexVFS::FileRecord* IndexVFS::AllocOrReturnFileRecord(
       llvm::vfs::Status(out_path, llvm::vfs::getNextVirtualUniqueID(),
                         llvm::sys::TimePoint<>(), 0, 0, size, type,
                         llvm::sys::fs::all_read),
-      false, label};
+      false, std::string(label)};
   parent->children.push_back(new_record);
   uid_to_record_map_[PairFromUid(new_record->status.getUniqueID())] =
       new_record;
