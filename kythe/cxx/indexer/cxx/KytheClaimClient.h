@@ -81,7 +81,9 @@ class StaticClaimClient : public KytheClaimClient {
 
  private:
   /// Maps from claimables to claimants.
-  std::map<kythe::proto::VName, kythe::proto::VName, VNameLess> claim_table_;
+  std::map<kythe::proto::VName, kythe::proto::VName,
+           VNameLess<kythe::proto::VName>>
+      claim_table_;
   /// Process data with unknown claim status?
   bool process_unknown_status_ = true;
 };
