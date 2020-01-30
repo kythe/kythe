@@ -55,7 +55,7 @@ class MetadataFile {
     meta_file->id_ = std::string(id);
     for (auto rule = begin; rule != end; ++rule) {
       if (rule->whole_file) {
-        meta_file->fileScopeRules_.push_back(*rule);
+        meta_file->file_scope_rules_.push_back(*rule);
       } else {
         meta_file->rules_.emplace(rule->begin, *rule);
       }
@@ -67,7 +67,9 @@ class MetadataFile {
   const std::multimap<unsigned, Rule>& rules() const { return rules_; }
 
   /// File-scoped rules.
-  const std::vector<Rule>& fileScopeRules() const { return fileScopeRules_; }
+  const std::vector<Rule>& file_scope_rules() const {
+    return file_scope_rules_;
+  }
 
   absl::string_view id() const { return id_; }
 
@@ -75,7 +77,7 @@ class MetadataFile {
   /// Rules to apply keyed on `begin`.
   std::multimap<unsigned, Rule> rules_;
 
-  std::vector<Rule> fileScopeRules_;
+  std::vector<Rule> file_scope_rules_;
 
   std::string id_;
 };

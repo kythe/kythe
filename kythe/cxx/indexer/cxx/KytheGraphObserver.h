@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "GraphObserver.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/types/optional.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
@@ -532,8 +533,9 @@ class KytheGraphObserver : public GraphObserver {
   /// A map from FileIDs to associated metadata.
   std::multimap<clang::FileID, std::shared_ptr<MetadataFile>> meta_;
   /// The metadata file ids for which we have already emitted file metadata.
-  std::set<std::tuple<std::string, std::string, std::string, std::string>>
-      fileMetaEdgesEmitted_;
+  absl::flat_hash_set<
+      std::tuple<std::string, std::string, std::string, std::string>>
+      file_meta_edges_emitted_;
   /// All files that were ever reached through a header file, including header
   /// files themselves.
   std::set<llvm::sys::fs::UniqueID> transitively_reached_through_header_;

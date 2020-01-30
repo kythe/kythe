@@ -435,18 +435,18 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
 
   // Emit file-scope edges, if the decl VName directly corresponds to a file.
   if (!decl.path().empty()) {
-    VNameRef fileDecl(decl);
-    fileDecl.set_signature("");
-    fileDecl.set_language("");
-    if (MarkFileMetaEdgeEmitted(fileDecl, meta)) {
-      for (const auto& rule : meta.fileScopeRules()) {
+    VNameRef file_decl(decl);
+    file_decl.set_signature("");
+    file_decl.set_language("");
+    if (MarkFileMetaEdgeEmitted(file_decl, meta)) {
+      for (const auto& rule : meta.file_scope_rules()) {
         EdgeKindID edge_kind;
         if (of_spelling(rule.edge_out, &edge_kind)) {
           VNameRef remote(rule.vname);
           if (rule.reverse_edge) {
-            recorder_->AddEdge(remote, edge_kind, fileDecl);
+            recorder_->AddEdge(remote, edge_kind, file_decl);
           } else {
-            recorder_->AddEdge(fileDecl, edge_kind, remote);
+            recorder_->AddEdge(file_decl, edge_kind, remote);
           }
         } else {
           absl::FPrintF(stderr, "Unknown edge kind %s from metadata\n",
@@ -457,12 +457,11 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
   }
 }
 
-bool KytheGraphObserver::MarkFileMetaEdgeEmitted(const VNameRef& fileDecl,
+bool KytheGraphObserver::MarkFileMetaEdgeEmitted(const VNameRef& file_decl,
                                                  const MetadataFile& meta) {
-  return fileMetaEdgesEmitted_
-      .insert(std::make_tuple(
-          std::string(fileDecl.path()), std::string(fileDecl.corpus()),
-          std::string(fileDecl.root()), std::string(meta.id())))
+  return file_meta_edges_emitted_
+      .emplace(file_decl.path(), file_decl.corpus(), file_decl.root(),
+               meta.id())
       .second;
 }
 
