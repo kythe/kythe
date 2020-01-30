@@ -412,7 +412,7 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
         new_signature.append(std::to_string(rule->second.anchor_begin));
         new_signature.append("-");
         new_signature.append(std::to_string(rule->second.anchor_end));
-        remote.signature = new_signature;
+        remote.set_signature(new_signature);
         recorder_->AddProperty(remote, NodeKindID::kAnchor);
         recorder_->AddProperty(remote, PropertyID::kLocationStartOffset,
                                rule->second.anchor_begin);
@@ -572,15 +572,15 @@ absl::optional<GraphObserver::NodeId> KytheGraphObserver::recordFileInitializer(
 VNameRef KytheGraphObserver::VNameRefFromNodeId(
     const GraphObserver::NodeId& node_id) const {
   VNameRef out_ref;
-  out_ref.language = absl::string_view(supported_language::kIndexerLang);
+  out_ref.set_language(absl::string_view(supported_language::kIndexerLang));
   if (const auto* token =
           clang::dyn_cast<KytheClaimToken>(node_id.getToken())) {
     token->DecorateVName(&out_ref);
     if (token->language_independent()) {
-      out_ref.language = absl::string_view();
+      out_ref.set_language(absl::string_view());
     }
   }
-  out_ref.signature = ConvertRef(node_id.IdentityRef());
+  out_ref.set_signature(ConvertRef(node_id.IdentityRef()));
   return out_ref;
 }
 
@@ -890,8 +890,8 @@ void KytheGraphObserver::assignUsr(const NodeId& node, llvm::StringRef usr,
                       std::min(hash.size(), static_cast<size_t>(byte_size))));
   VNameRef node_vname = VNameRefFromNodeId(node);
   VNameRef usr_vname;
-  usr_vname.signature = hex;
-  usr_vname.language = "usr";
+  usr_vname.set_signature(hex);
+  usr_vname.set_language("usr");
   recorder_->AddProperty(usr_vname, NodeKindID::kClangUsr);
   recorder_->AddEdge(usr_vname, EdgeKindID::kClangUsr, node_vname);
 }

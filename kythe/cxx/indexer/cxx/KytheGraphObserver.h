@@ -69,12 +69,12 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   /// \brief Marks a VNameRef as belonging to this token.
   /// This token must outlive the VNameRef.
   void DecorateVName(VNameRef* target) const {
-    target->corpus =
-        absl::string_view(vname_.corpus().data(), vname_.corpus().size());
-    target->root =
-        absl::string_view(vname_.root().data(), vname_.root().size());
-    target->path =
-        absl::string_view(vname_.path().data(), vname_.path().size());
+    target->set_corpus(
+        absl::string_view(vname_.corpus().data(), vname_.corpus().size()));
+    target->set_root(
+        absl::string_view(vname_.root().data(), vname_.root().size()));
+    target->set_path(
+        absl::string_view(vname_.path().data(), vname_.path().size()));
   }
 
   /// \brief Sets a VName that controls the corpus, root and path of claimed
