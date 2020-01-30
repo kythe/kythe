@@ -471,7 +471,7 @@ class KytheGraphObserver : public GraphObserver {
                        const VNameRef& decl);
 
   /// Mark that file-scope rules are emitted for a given file.
-  bool MarkFileMetaEdgeEmitted(const VNameRef& fileDecl,
+  bool MarkFileMetaEdgeEmitted(const VNameRef& file_decl,
                                const MetadataFile& meta);
 
   struct RangeHash {
