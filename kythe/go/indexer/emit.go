@@ -948,16 +948,16 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 
 		if e.frkinds.Contains(rule.EdgeOut) {
 			if rule.VName.Path != "" && target.Path != "" {
-				var rule2 = rule
-				rule2.VName.Signature = ""
-				rule2.VName.Language = ""
-				var t2 = target
-				t2.Signature = ""
-				t2.Language = ""
+				var ruleVName = rule.VName
+				ruleVName.Signature = ""
+				ruleVName.Language = ""
+				var fileTarget = target
+				fileTarget.Signature = ""
+				fileTarget.Language = ""
 				if rule.Reverse {
-					e.writeEdge(rule2.VName, t2, rule.EdgeOut)
+					e.writeEdge(ruleVName, fileTarget, rule.EdgeOut)
 				} else {
-					e.writeEdge(t2, rule2.VName, rule.EdgeOut)
+					e.writeEdge(fileTarget, ruleVName, rule.EdgeOut)
 				}
 			}
 		}
