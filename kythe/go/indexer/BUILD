@@ -172,7 +172,6 @@ go_indexer_test(
     name = "metadata_test",
     srcs = ["testdata/meta.go"],
     data = ["testdata/meta.go.linkage"],
-    derive_generates_file_meta_edges = True,
     metadata_suffix = ".linkage",
 )
 

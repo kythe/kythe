@@ -55,10 +55,6 @@ type EmitOptions struct {
 	// If true, emit linkages specified by metadata rules.
 	EmitLinkages bool
 
-	// If true, when emitting linkages also derive file linkages
-	// for `generates` edges.
-	DeriveLinkageFileGeneratesEdges bool
-
 	// If true, emit childof edges for an anchor's semantic scope.
 	EmitAnchorScopes bool
 
@@ -79,13 +75,6 @@ func (e *EmitOptions) emitAnchorScopes() bool {
 		return false
 	}
 	return e.EmitAnchorScopes
-}
-
-func (e *EmitOptions) emitDerivedLinkageFileGeneratesEdges() bool {
-	if e == nil {
-		return false
-	}
-	return e.DeriveLinkageFileGeneratesEdges
 }
 
 // shouldEmit reports whether the indexer should emit a node for the given
@@ -945,19 +934,17 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 			e.writeEdge(target, rule.VName, rule.EdgeOut)
 		}
 
-		if e.opts.emitDerivedLinkageFileGeneratesEdges() {
-			if rule.VName.Path != "" && target.Path != "" {
-				var ruleVName = rule.VName
-				ruleVName.Signature = ""
-				ruleVName.Language = ""
-				var fileTarget = target
-				fileTarget.Signature = ""
-				fileTarget.Language = ""
-				if rule.Reverse {
-					e.writeEdge(ruleVName, fileTarget, rule.EdgeOut)
-				} else {
-					e.writeEdge(fileTarget, ruleVName, rule.EdgeOut)
-				}
+		if rule.VName.Path != "" && target.Path != "" {
+			var ruleVName = rule.VName
+			ruleVName.Signature = ""
+			ruleVName.Language = ""
+			var fileTarget = target
+			fileTarget.Signature = ""
+			fileTarget.Language = ""
+			if rule.Reverse {
+				e.writeEdge(ruleVName, fileTarget, rule.EdgeOut)
+			} else {
+				e.writeEdge(fileTarget, ruleVName, rule.EdgeOut)
 			}
 		}
 	})
