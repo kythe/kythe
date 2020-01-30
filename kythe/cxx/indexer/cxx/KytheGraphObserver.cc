@@ -63,6 +63,7 @@ struct ClaimedStringFormatter {
 absl::string_view ConvertRef(llvm::StringRef ref) {
   return absl::string_view(ref.data(), ref.size());
 }
+
 }  // anonymous namespace
 
 using clang::SourceLocation;
@@ -431,6 +432,38 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
       }
     }
   }
+
+  // Emit file-scope edges, if the decl VName directly corresponds to a file.
+  if (!decl.path().empty()) {
+    VNameRef fileDecl(decl);
+    fileDecl.set_signature("");
+    fileDecl.set_language("");
+    if (MarkFileMetaEdgeEmitted(fileDecl, meta)) {
+      for (const auto& rule : meta.fileScopeRules()) {
+        EdgeKindID edge_kind;
+        if (of_spelling(rule.edge_out, &edge_kind)) {
+          VNameRef remote(rule.vname);
+          if (rule.reverse_edge) {
+            recorder_->AddEdge(remote, edge_kind, fileDecl);
+          } else {
+            recorder_->AddEdge(fileDecl, edge_kind, remote);
+          }
+        } else {
+          absl::FPrintF(stderr, "Unknown edge kind %s from metadata\n",
+                        rule.edge_out);
+        }
+      }
+    }
+  }
+}
+
+bool KytheGraphObserver::MarkFileMetaEdgeEmitted(const VNameRef& fileDecl,
+                                                 const MetadataFile& meta) {
+  return fileMetaEdgesEmitted_
+      .insert(std::make_tuple(
+          std::string(fileDecl.path()), std::string(fileDecl.corpus()),
+          std::string(fileDecl.root()), std::string(meta.id())))
+      .second;
 }
 
 void KytheGraphObserver::ApplyMetadataRules(

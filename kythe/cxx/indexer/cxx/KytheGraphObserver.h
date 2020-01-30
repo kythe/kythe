@@ -469,6 +469,10 @@ class KytheGraphObserver : public GraphObserver {
                        unsigned range_begin, unsigned range_end,
                        const VNameRef& decl);
 
+  /// Mark that file-scope rules are emitted for a given file.
+  bool MarkFileMetaEdgeEmitted(const VNameRef& fileDecl,
+                               const MetadataFile& meta);
+
   struct RangeHash {
     size_t operator()(const GraphObserver::Range& range) const {
       return std::hash<unsigned>()(
@@ -527,6 +531,9 @@ class KytheGraphObserver : public GraphObserver {
   std::vector<FileState> file_stack_;
   /// A map from FileIDs to associated metadata.
   std::multimap<clang::FileID, std::shared_ptr<MetadataFile>> meta_;
+  /// The metadata file ids for which we have already emitted file metadata.
+  std::set<std::tuple<std::string, std::string, std::string, std::string>>
+      fileMetaEdgesEmitted_;
   /// All files that were ever reached through a header file, including header
   /// files themselves.
   std::set<llvm::sys::fs::UniqueID> transitively_reached_through_header_;
