@@ -28,26 +28,40 @@ namespace kythe {
 using MarkedSource = kythe::proto::common::MarkedSource;
 
 /// A collection of references to the components of a VName.
-struct VNameRef {
-  absl::string_view signature;
-  absl::string_view corpus;
-  absl::string_view root;
-  absl::string_view path;
-  absl::string_view language;
+class VNameRef {
+ public:
+  absl::string_view signature() const { return signature_; }
+  absl::string_view corpus() const { return corpus_; }
+  absl::string_view root() const { return root_; }
+  absl::string_view path() const { return path_; }
+  absl::string_view language() const { return language_; }
+  void set_signature(absl::string_view s) { signature_ = s; }
+  void set_corpus(absl::string_view s) { corpus_ = s; }
+  void set_root(absl::string_view s) { root_ = s; }
+  void set_path(absl::string_view s) { path_ = s; }
+  void set_language(absl::string_view s) { language_ = s; }
+
   explicit VNameRef(const proto::VName& vname)
-      : signature(vname.signature().data(), vname.signature().size()),
-        corpus(vname.corpus().data(), vname.corpus().size()),
-        root(vname.root().data(), vname.root().size()),
-        path(vname.path().data(), vname.path().size()),
-        language(vname.language().data(), vname.language().size()) {}
+      : signature_(vname.signature().data(), vname.signature().size()),
+        corpus_(vname.corpus().data(), vname.corpus().size()),
+        root_(vname.root().data(), vname.root().size()),
+        path_(vname.path().data(), vname.path().size()),
+        language_(vname.language().data(), vname.language().size()) {}
   VNameRef() {}
   void Expand(proto::VName* vname) const {
-    vname->mutable_signature()->assign(signature.data(), signature.size());
-    vname->mutable_corpus()->assign(corpus.data(), corpus.size());
-    vname->mutable_root()->assign(root.data(), root.size());
-    vname->mutable_path()->assign(path.data(), path.size());
-    vname->mutable_language()->assign(language.data(), language.size());
+    vname->mutable_signature()->assign(signature_.data(), signature_.size());
+    vname->mutable_corpus()->assign(corpus_.data(), corpus_.size());
+    vname->mutable_root()->assign(root_.data(), root_.size());
+    vname->mutable_path()->assign(path_.data(), path_.size());
+    vname->mutable_language()->assign(language_.data(), language_.size());
   }
+
+ private:
+  absl::string_view signature_;
+  absl::string_view corpus_;
+  absl::string_view root_;
+  absl::string_view path_;
+  absl::string_view language_;
 };
 /// A collection of references to the components of a single Kythe fact.
 struct FactRef {

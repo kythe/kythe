@@ -22,8 +22,8 @@ namespace kythe {
 
 /// \brief Defines equality on VNames by pairwise comparison of each vector
 /// component.
-static inline bool VNameEquals(const proto::VName& lhs,
-                               const proto::VName& rhs) {
+template <typename VName>
+bool VNameEquals(const VName& lhs, const VName& rhs) {
   return lhs.signature() == rhs.signature() && lhs.corpus() == rhs.corpus() &&
          lhs.root() == rhs.root() && lhs.path() == rhs.path() &&
          lhs.language() == rhs.language();
@@ -32,7 +32,8 @@ static inline bool VNameEquals(const proto::VName& lhs,
 /// \brief Defines less-than on VNames as a lexicographic ordering on each
 /// vector component.
 struct VNameLess {
-  bool operator()(const proto::VName& lhs, const proto::VName& rhs) const {
+  template <typename VName>
+  bool operator()(const VName& lhs, const VName& rhs) const {
     if (lhs.signature() < rhs.signature()) return true;
     if (lhs.signature() != rhs.signature()) return false;
     if (lhs.corpus() < rhs.corpus()) return true;

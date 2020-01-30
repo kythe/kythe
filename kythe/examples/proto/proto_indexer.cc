@@ -295,10 +295,10 @@ kythe::VNameRef* ProtoTreeCursor::anchor_vname() {
   }
   anchor_vname_signature_ =
       "@" + std::to_string(anchor_start_) + ":" + std::to_string(anchor_end_);
-  anchor_vname_ref_.signature = anchor_vname_signature_;
-  anchor_vname_ref_.path = filename_;
-  anchor_vname_ref_.corpus = corpus_;
-  anchor_vname_ref_.language = language_;
+  anchor_vname_ref_.set_signature(anchor_vname_signature_);
+  anchor_vname_ref_.set_path(filename_);
+  anchor_vname_ref_.set_corpus(corpus_);
+  anchor_vname_ref_.set_language(language_);
   return &anchor_vname_ref_;
 }
 
