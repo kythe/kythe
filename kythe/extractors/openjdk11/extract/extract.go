@@ -82,6 +82,11 @@ func (tl *targetList) String() string {
 	return strings.Join(*tl, ",")
 }
 
+// Get implements part of the flag.Getter interface for targetList.
+func (tl *targetList) Get() interface{} {
+	return []string(*tl)
+}
+
 func setupRunfiles() error {
 	if os.Getenv("RUNFILES_DIR") != "" || os.Getenv("RUNFILES_MANIFEST_FILE") != "" {
 		return nil
