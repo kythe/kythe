@@ -46,7 +46,7 @@ const (
 	kytheVNameVar  = "KYTHE_VNAMES"
 
 	javaMakeVar           = "JAVA_CMD"
-	runfilesWrapperPath   = "kythe/extractors/openjdk11/java_wrapper"
+	runfilesWrapperPath   = "kythe/extractors/openjdk11/java_wrapper/java_wrapper"
 	runfilesVNamesPath    = "kythe/extractors/openjdk11/vnames.json"
 	runfilesExtractorPath = "kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac9_extractor_deploy.jar"
 )
