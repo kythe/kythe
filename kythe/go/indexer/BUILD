@@ -172,7 +172,7 @@ go_indexer_test(
     name = "metadata_test",
     srcs = ["testdata/meta.go"],
     data = ["testdata/meta.go.linkage"],
-    derive_file_meta_edge_kinds = ["/kythe/edge/generates"],
+    derive_generates_file_meta_edges = True,
     metadata_suffix = ".linkage",
 )
 

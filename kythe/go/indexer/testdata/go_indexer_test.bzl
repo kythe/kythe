@@ -157,8 +157,8 @@ def _go_entries(ctx):
     if ctx.attr.metadata_suffix:
         iargs += ["-meta", ctx.attr.metadata_suffix]
 
-    if ctx.attr.derive_file_meta_edge_kinds:
-        iargs += ["-derive_file_meta_edge_kinds", ",".join(ctx.attr.derive_file_meta_edge_kinds)]
+    if ctx.attr.derive_generates_file_meta_edges:
+        iargs += ["-derive_generates_file_meta_edges"]
 
     iargs += [kzip.path, "| gzip >" + output.path]
 
@@ -192,7 +192,7 @@ go_entries = rule(
         "metadata_suffix": attr.string(default = ""),
 
         # List of edge kinds for which to derive file-file metadata edges.
-        "derive_file_meta_edge_kinds": attr.string_list(default = []),
+        "derive_generates_file_meta_edges": attr.bool(default = False),
 
         # The location of the Go indexer binary.
         "_indexer": attr.label(
@@ -240,7 +240,7 @@ def _go_indexer(
         emit_anchor_scopes = False,
         allow_duplicates = False,
         metadata_suffix = "",
-        derive_file_meta_edge_kinds = []):
+        derive_generates_file_meta_edges = False):
     if len(deps) > 0:
         # TODO(schroederc): support dependencies
         fail("ERROR: go_indexer_test.deps not supported")
@@ -266,7 +266,7 @@ def _go_indexer(
         emit_anchor_scopes = emit_anchor_scopes,
         kzip = ":" + kzip,
         metadata_suffix = metadata_suffix,
-        derive_file_meta_edge_kinds = derive_file_meta_edge_kinds,
+        derive_generates_file_meta_edges = derive_generates_file_meta_edges,
     )
     return entries
 
@@ -285,7 +285,7 @@ def go_indexer_test(
         emit_anchor_scopes = False,
         allow_duplicates = False,
         metadata_suffix = "",
-        derive_file_meta_edge_kinds = []):
+        derive_generates_file_meta_edges = False):
     entries = _go_indexer(
         name = name,
         srcs = srcs,
@@ -294,7 +294,7 @@ def go_indexer_test(
         emit_anchor_scopes = emit_anchor_scopes,
         importpath = import_path,
         metadata_suffix = metadata_suffix,
-        derive_file_meta_edge_kinds = derive_file_meta_edge_kinds,
+        derive_generates_file_meta_edges = derive_generates_file_meta_edges,
         deps = deps,
     )
     go_verifier_test(
@@ -319,7 +319,7 @@ def go_integration_test(
         size = "small",
         has_marked_source = False,
         metadata_suffix = "",
-        derive_file_meta_edge_kinds = []):
+        derive_generates_file_meta_edges = False):
     entries = _go_indexer(
         name = name,
         srcs = srcs,
@@ -327,7 +327,7 @@ def go_integration_test(
         has_marked_source = has_marked_source,
         import_path = import_path,
         metadata_suffix = metadata_suffix,
-        derive_file_meta_edge_kinds = derive_file_meta_edge_kinds,
+        derive_generates_file_meta_edges = derive_generates_file_meta_edges,
         deps = deps,
     )
     kythe_integration_test(

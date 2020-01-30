@@ -28,8 +28,6 @@ import (
 	"strconv"
 	"strings"
 
-	"bitbucket.org/creachadair/stringset"
-
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/schema/edges"
@@ -58,8 +56,8 @@ type EmitOptions struct {
 	EmitLinkages bool
 
 	// If true, when emitting linkages also derive file linkages
-	// for these edges.
-	DeriveFileLinkageEdgeKinds []string
+	// for `generates` edges.
+	DeriveLinkageFileGeneratesEdges bool
 
 	// If true, emit childof edges for an anchor's semantic scope.
 	EmitAnchorScopes bool
@@ -81,6 +79,13 @@ func (e *EmitOptions) emitAnchorScopes() bool {
 		return false
 	}
 	return e.EmitAnchorScopes
+}
+
+func (e *EmitOptions) emitDerivedLinkageFileGeneratesEdges() bool {
+	if e == nil {
+		return false
+	}
+	return e.DeriveLinkageFileGeneratesEdges
 }
 
 // shouldEmit reports whether the indexer should emit a node for the given
@@ -108,10 +113,6 @@ type impl struct{ A, B types.Object }
 // sink. In case of errors, processing continues as far as possible before the
 // first error encountered is reported.
 func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) error {
-	kinds := stringset.New()
-	if opts != nil {
-		kinds.Add(opts.DeriveFileLinkageEdgeKinds...)
-	}
 	e := &emitter{
 		ctx:      ctx,
 		pi:       pi,
@@ -119,7 +120,6 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 		opts:     opts,
 		impl:     make(map[impl]struct{}),
 		anchored: make(map[ast.Node]struct{}),
-		frkinds:  kinds,
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -187,7 +187,6 @@ type emitter struct {
 	opts     *EmitOptions
 	impl     map[impl]struct{}                    // see checkImplements
 	rmap     map[*ast.File]map[int]metadata.Rules // see applyRules
-	frkinds  stringset.Set                        // see applyRules
 	anchored map[ast.Node]struct{}                // see writeAnchor
 	firstErr error
 	cmap     ast.CommentMap // current file's CommentMap
@@ -946,7 +945,7 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 			e.writeEdge(target, rule.VName, rule.EdgeOut)
 		}
 
-		if e.frkinds.Contains(rule.EdgeOut) {
+		if e.opts.emitDerivedLinkageFileGeneratesEdges() {
 			if rule.VName.Path != "" && target.Path != "" {
 				var ruleVName = rule.VName
 				ruleVName.Signature = ""

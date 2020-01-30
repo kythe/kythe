@@ -10,7 +10,6 @@ go_binary(
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/kzip",
-        "//kythe/go/util/flagutil",
         "//kythe/go/util/metadata",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",
