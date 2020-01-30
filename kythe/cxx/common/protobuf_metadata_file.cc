@@ -24,6 +24,7 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/schema/edges.h"
+#include "kythe/cxx/common/vname_ordering.h"
 
 namespace kythe {
 
@@ -58,9 +59,12 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     LOG(WARNING) << "Failed ParseFromArray: " << raw_filename;
     return nullptr;
   }
+
+  std::set<proto::VName, kythe::VNameLess> vnames;
   std::vector<MetadataFile::Rule> rules;
   for (const auto& annotation : info.annotation()) {
     MetadataFile::Rule rule;
+    rule.whole_file = false;
     rule.begin = annotation.begin();
     rule.end = annotation.end();
     rule.vname = VNameForAnnotation(context_vname, annotation);
@@ -71,7 +75,24 @@ std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
     rule.anchor_begin = 0;
     rule.anchor_end = 0;
     rules.push_back(rule);
+    if (!rule.vname.path().empty()) {
+      vnames.insert(rule.vname);
+    }
   }
-  return MetadataFile::LoadFromRules(rules.begin(), rules.end());
+
+  // Create file-scoped rules for all encountered vnames.
+  for (const auto& vname : vnames) {
+    MetadataFile::Rule rule;
+    rule.whole_file = true;
+    rule.vname = vname;
+    rule.vname.set_signature("");
+    rule.vname.set_language("");
+    rule.edge_out = kythe::common::schema::kGenerates;
+    rule.reverse_edge = true;
+    rule.generate_anchor = false;
+    rules.push_back(rule);
+  }
+
+  return MetadataFile::LoadFromRules(raw_filename, rules.begin(), rules.end());
 }
 }  // namespace kythe
