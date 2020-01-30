@@ -460,8 +460,8 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
 bool KytheGraphObserver::MarkFileMetaEdgeEmitted(const VNameRef& file_decl,
                                                  const MetadataFile& meta) {
   return file_meta_edges_emitted_
-      .insert({std::string(file_decl.path()), std::string(file_decl.corpus()),
-               std::string(file_decl.root()), std::string(meta.id())})
+      .emplace(std::string(file_decl.path()), std::string(file_decl.corpus()),
+               std::string(file_decl.root()), std::string(meta.id()))
       .second;
 }
 
