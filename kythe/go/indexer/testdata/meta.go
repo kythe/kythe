@@ -1,6 +1,7 @@
 package meta
 
 func Foobar() {}
+
 //   ^     ^ offset 25
 //   \ offset 19
 
@@ -13,4 +14,5 @@ func Foobar() {}
 //- FA.loc/end   25
 //- FA defines/binding Foobar
 //- Foobar.node/kind function
-//- _Alt=vname(gsig, gcorp, groot, gpath, glang) generates Foobar
+//- _Alt=vname(gsig, gcorp, groot, gpath, glang) generates Foobar?
+//- vname("", gcorp, groot, gpath, "") generates vname("", kythe, _, "go/indexer/metadata_test", "")

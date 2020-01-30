@@ -28,6 +28,8 @@ import (
 	"strconv"
 	"strings"
 
+	"bitbucket.org/creachadair/stringset"
+
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/schema/edges"
@@ -54,6 +56,10 @@ type EmitOptions struct {
 
 	// If true, emit linkages specified by metadata rules.
 	EmitLinkages bool
+
+	// If true, when emitting linkages also derive file linkages
+	// for these edges.
+	DeriveFileLinkageEdgeKinds []string
 
 	// If true, emit childof edges for an anchor's semantic scope.
 	EmitAnchorScopes bool
@@ -102,6 +108,10 @@ type impl struct{ A, B types.Object }
 // sink. In case of errors, processing continues as far as possible before the
 // first error encountered is reported.
 func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) error {
+	kinds := stringset.New()
+	if opts != nil {
+		kinds.Add(opts.DeriveFileLinkageEdgeKinds...)
+	}
 	e := &emitter{
 		ctx:      ctx,
 		pi:       pi,
@@ -109,6 +119,7 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 		opts:     opts,
 		impl:     make(map[impl]struct{}),
 		anchored: make(map[ast.Node]struct{}),
+		frkinds:  kinds,
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -176,6 +187,7 @@ type emitter struct {
 	opts     *EmitOptions
 	impl     map[impl]struct{}                    // see checkImplements
 	rmap     map[*ast.File]map[int]metadata.Rules // see applyRules
+	frkinds  stringset.Set                        // see applyRules
 	anchored map[ast.Node]struct{}                // see writeAnchor
 	firstErr error
 	cmap     ast.CommentMap // current file's CommentMap
@@ -932,6 +944,22 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 			e.writeEdge(rule.VName, target, rule.EdgeOut)
 		} else {
 			e.writeEdge(target, rule.VName, rule.EdgeOut)
+		}
+
+		if e.frkinds.Contains(rule.EdgeOut) {
+			if rule.VName.Path != "" && target.Path != "" {
+				var rule2 = rule
+				rule2.VName.Signature = ""
+				rule2.VName.Language = ""
+				var t2 = target
+				t2.Signature = ""
+				t2.Language = ""
+				if rule.Reverse {
+					e.writeEdge(rule2.VName, t2, rule.EdgeOut)
+				} else {
+					e.writeEdge(t2, rule2.VName, rule.EdgeOut)
+				}
+			}
 		}
 	})
 
