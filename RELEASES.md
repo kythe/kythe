@@ -1,5 +1,25 @@
 # Release Notes
 
+## [v0.0.41] - 2020-01-31
+
+#### Features
+
+* **cxx_indexer:**  add generates edges for proto-generated files (#4332) ([299950d0](https://github.com/kythe/kythe/commit/299950d06d31c8d323e7b4de75050ca0585dde23))
+* **java_extractor:**
+  * allow passing search paths as a map (#4323) ([2ebd4c9f](https://github.com/kythe/kythe/commit/2ebd4c9f80daa3a0cce1ae156fb682e60baf3a56))
+  * allow excluding modules from openjdk11 extraction (#4341) ([b09b9a7f](https://github.com/kythe/kythe/commit/b09b9a7fdf212be5f6158d2be61f03ef2000a2a2))
+  * allow openjdk11 build and src dirs to differ (#4338) ([b6bb46d4](https://github.com/kythe/kythe/commit/b6bb46d4935b790abc124319a0aeb6219c91198d))
+* **java_indexer:**  add generates edges for proto-generated java files (#4321) ([8f2080d4](https://github.com/kythe/kythe/commit/8f2080d48322e8b749c0753b769d9c5332fae934))
+
+#### Bug Fixes
+
+* **cxx_common:**  rework VNameRef to conform to VName, templatize VNameLess (#4331) ([2a83959d](https://github.com/kythe/kythe/commit/2a83959dc1f7851029347cb31a4b66c3c93a42b9))
+* **go extractor:**  treat -arc flag like -importpath (#4324) ([0f75ac02](https://github.com/kythe/kythe/commit/0f75ac02d55cdc6e9b4fb5b1ab1a9d8927807f57))
+* **java_extractor:**
+  *  indirect runfiles path in opendjk11 extractor (#4335) ([0354d63a](https://github.com/kythe/kythe/commit/0354d63add4ed6dbdaa00ef70acd4af06aad7695))
+  *  wrong number of logger arguments (#4330) ([e645e980](https://github.com/kythe/kythe/commit/e645e980fd0ac008782bc97f95f59a16f35e97a7))
+  *  use a stable working directory if possible (#4329) ([75dd01f0](https://github.com/kythe/kythe/commit/75dd01f06ce9d1b15712d3d5a90d12d48e26075c))
+
 ## [v0.0.40] - 2020-01-24
 
 #### Bug Fixes
@@ -792,7 +812,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.40...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.41...HEAD
+[v0.0.41] https://github.com/kythe/kythe/compare/v0.0.40...v0.0.41
 [v0.0.40] https://github.com/kythe/kythe/compare/v0.0.39...v0.0.40
 [v0.0.39] https://github.com/kythe/kythe/compare/v0.0.38...v0.0.39
 [v0.0.38] https://github.com/kythe/kythe/compare/v0.0.37...v0.0.38
