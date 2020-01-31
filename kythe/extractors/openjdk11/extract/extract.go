@@ -296,5 +296,7 @@ func logCollectedErrors(stderr io.Reader) {
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println("Error extracting modules:\n\t", strings.Join(errors, "\n\t"))
+	if len(errors) > 0 {
+		log.Println("Error extracting modules:\n\t", strings.Join(errors, "\n\t"))
+	}
 }
