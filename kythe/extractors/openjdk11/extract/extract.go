@@ -53,7 +53,8 @@ const (
 )
 
 var (
-	makeDir       string
+	sourceDir     string
+	buildDir      string
 	makeTargets   = targetList{"clean", "jdk"}
 	outputDir     string
 	vNameRules    = defaultVNamesPath()
@@ -171,7 +172,7 @@ func findJavaCommand() (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "make", "-n", "-p")
-	cmd.Dir = makeDir
+	cmd.Dir = buildDir
 	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -219,7 +220,7 @@ func makeEnv() []string {
 		env = setEnvDefault(env, kytheVNameVar, path)
 	}
 	env = append(env,
-		kytheRootVar+"="+makeDir,
+		kytheRootVar+"="+sourceDir,
 		kytheOutputVar+"="+outputDir,
 		wrapperExtractorVar+"="+extractorPath.Expand())
 	return env
@@ -227,7 +228,8 @@ func makeEnv() []string {
 
 func init() {
 	setupRunfiles()
-	flag.StringVar(&makeDir, "jdk", "", "path to the OpenJDK11 source tree (required)")
+	flag.StringVar(&sourceDir, "jdk", "", "path to the OpenJDK11 source tree (required)")
+	flag.StringVar(&buildDir, "build", "", "path to the OpenJDK11 build tree (defaults to -jdk)")
 	flag.StringVar(&outputDir, "output", defaultOutputDir(), "path to which the compilations and errors should be written (optional)")
 	flag.Var(&vNameRules, "rules", "path of vnames.json file (optional)")
 	flag.Var(&wrapperPath, "java_wrapper", "path to the java_wrapper executable (optional)")
@@ -238,7 +240,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	if makeDir == "" {
+	if sourceDir == "" {
 		flagutil.UsageError("missing -jdk")
 	}
 	if wrapperPath.String() == "" {
@@ -247,9 +249,12 @@ func main() {
 	if _, err := os.Stat(wrapperPath.Expand()); err != nil {
 		flagutil.UsageErrorf("java_wrapper not found: %v", err)
 	}
+	if buildDir == "" {
+		buildDir = sourceDir
+	}
 
 	cmd := exec.Command("make", append([]string{javaMakeVar + "=" + wrapperPath.Expand(), "ENABLE_JAVAC_SERVER=no"}, makeTargets...)...)
-	cmd.Dir = makeDir
+	cmd.Dir = buildDir
 	cmd.Env = makeEnv()
 	cmd.Stdout = nil // Quiet, you
 	stderr, err := cmd.StderrPipe()
