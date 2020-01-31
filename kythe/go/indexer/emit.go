@@ -935,7 +935,7 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 		} else {
 			e.writeEdge(target, rule.VName, rule.EdgeOut)
 		}
-		if done, ok := e.fmeta[file]; !ok && !done {
+		if done, ok := e.fmeta[file]; !ok || !done {
 			e.fmeta[file] = true
 			if rule.VName.Path != "" && target.Path != "" {
 				ruleVName := *rule.VName
