@@ -8,6 +8,7 @@ go_binary(
     ],
     deps = [
         "@org_bitbucket_creachadair_shell//:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
         "@org_golang_x_sys//unix:go_default_library",
     ],
 )
