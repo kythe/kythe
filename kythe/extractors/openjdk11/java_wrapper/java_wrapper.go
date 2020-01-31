@@ -30,14 +30,16 @@ import (
 	"strings"
 
 	"bitbucket.org/creachadair/shell"
+	"bitbucket.org/creachadair/stringset"
 	"golang.org/x/sys/unix"
 )
 
 const (
-	javaCommandVar  = "KYTHE_JAVA_COMMAND"       // Path to the real java command, required.
-	extractorJarVar = "KYTHE_JAVA_EXTRACTOR_JAR" // Path to the javac_extractor jar, required.
-	kytheOutputVar  = "KYTHE_OUTPUT_DIRECTORY"   // Extraction output directory, required.
-	kytheTargetVar  = "KYTHE_ANALYSIS_TARGET"    // Extraction analysis target to set, defaults to the java module name.
+	javaCommandVar    = "KYTHE_JAVA_COMMAND"              // Path to the real java command, required.
+	extractorJarVar   = "KYTHE_JAVA_EXTRACTOR_JAR"        // Path to the javac_extractor jar, required.
+	kytheOutputVar    = "KYTHE_OUTPUT_DIRECTORY"          // Extraction output directory, required.
+	kytheTargetVar    = "KYTHE_ANALYSIS_TARGET"           // Extraction analysis target to set, defaults to the java module name.
+	excludeModulesVar = "KYTHE_OPENJDK11_EXCLUDE_MODULES" // Names of for which to skip extraction.
 )
 
 var (
@@ -71,6 +73,13 @@ func mustGetEnvPath(key string) string {
 	}
 	log.Fatal(key + " not set")
 	return ""
+}
+
+func loadExclusions() stringset.Set {
+	if value := os.Getenv(excludeModulesVar); value != "" {
+		return stringset.FromKeys(strings.Split(value, ","))
+	}
+	return stringset.Set{}
 }
 
 func javaCommand() string {
@@ -145,23 +154,26 @@ func shift(args []string) (string, []string) {
 }
 
 func main() {
+	excludeModules := loadExclusions()
 	java := javaCommand()
 	jar := extractorJar()
-	if args := extractorArgs(os.Args[1:], jar); len(args) > 0 {
-		cmd := exec.Command(java, args...)
-		cmd.Env = extractorEnv()
-		log.Printf("*** Extracting: %s", moduleName())
-		if output, err := cmd.CombinedOutput(); err != nil {
-			w, err := os.Create(filepath.Join(outputDir(), moduleName()+".err"))
-			if err != nil {
-				log.Fatalf("Error creating error log for module %s: %v", moduleName(), err)
-			}
-			fmt.Fprintf(w, "--- %s\n", shell.Join(args))
-			w.Write(output)
-			w.Close()
+	if !excludeModules.Contains(moduleName()) {
+		if args := extractorArgs(os.Args[1:], jar); len(args) > 0 {
+			cmd := exec.Command(java, args...)
+			cmd.Env = extractorEnv()
+			log.Printf("*** Extracting: %s", moduleName())
+			if output, err := cmd.CombinedOutput(); err != nil {
+				w, err := os.Create(filepath.Join(outputDir(), moduleName()+".err"))
+				if err != nil {
+					log.Fatalf("Error creating error log for module %s: %v", moduleName(), err)
+				}
+				fmt.Fprintf(w, "--- %s\n", shell.Join(args))
+				w.Write(output)
+				w.Close()
 
-			// Log, but don't abort, on extraction failures.
-			log.Printf("ERROR: extractor failure for module %s: %v", moduleName(), err)
+				// Log, but don't abort, on extraction failures.
+				log.Printf("ERROR: extractor failure for module %s: %v", moduleName(), err)
+			}
 		}
 	}
 	// Always end by running the java command directly, as "java".
