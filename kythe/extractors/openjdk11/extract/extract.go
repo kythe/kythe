@@ -40,10 +40,11 @@ const (
 	javaCommandVar      = "KYTHE_JAVA_COMMAND"
 	wrapperExtractorVar = "KYTHE_JAVA_EXTRACTOR_JAR"
 
-	kytheRootVar   = "KYTHE_ROOT_DIRECTORY"
-	kytheOutputVar = "KYTHE_OUTPUT_DIRECTORY"
-	kytheCorpusVar = "KYTHE_CORPUS"
-	kytheVNameVar  = "KYTHE_VNAMES"
+	kytheRootVar    = "KYTHE_ROOT_DIRECTORY"
+	kytheOutputVar  = "KYTHE_OUTPUT_DIRECTORY"
+	kytheCorpusVar  = "KYTHE_CORPUS"
+	kytheVNameVar   = "KYTHE_VNAMES"
+	kytheExcludeVar = "KYTHE_OPENJDK11_EXCLUDE_MODULES"
 
 	javaMakeVar           = "JAVA_CMD"
 	runfilesPrefix        = "${RUNFILES}"
@@ -53,14 +54,15 @@ const (
 )
 
 var (
-	sourceDir     string
-	buildDir      string
-	makeTargets   = targetList{"clean", "jdk"}
-	outputDir     string
-	vNameRules    = defaultVNamesPath()
-	wrapperPath   = defaultWrapperPath()
-	extractorPath = defaultExtractorPath()
-	errorPattern  = regexp.MustCompile("ERROR: extractor failure for module ([^:]*):")
+	sourceDir      string
+	buildDir       string
+	makeTargets    = targetList{"clean", "jdk"}
+	outputDir      string
+	excludeModules flagutil.StringSet
+	vNameRules     = defaultVNamesPath()
+	wrapperPath    = defaultWrapperPath()
+	extractorPath  = defaultExtractorPath()
+	errorPattern   = regexp.MustCompile("ERROR: extractor failure for module ([^:]*):")
 )
 
 // targetList is a simple comma-separated list of strings used
@@ -219,6 +221,9 @@ func makeEnv() []string {
 	if path := vNameRules.Expand(); path != "" {
 		env = setEnvDefault(env, kytheVNameVar, path)
 	}
+	if len(excludeModules) > 0 {
+		env = append(env, kytheExcludeVar+"="+excludeModules.String())
+	}
 	env = append(env,
 		kytheRootVar+"="+sourceDir,
 		kytheOutputVar+"="+outputDir,
@@ -235,6 +240,7 @@ func init() {
 	flag.Var(&wrapperPath, "java_wrapper", "path to the java_wrapper executable (optional)")
 	flag.Var(&extractorPath, "extractor_jar", "path to the javac_extractor_deploy.jar (optional)")
 	flag.Var(&makeTargets, "targets", "comma-separated list of make targets to build")
+	flag.Var(&excludeModules, "exclude_modules", "comma-separated set of module names to skip")
 	flag.Usage = flagutil.SimpleUsage("Extract a configured openjdk11 source directory", "[--java_wrapper=] [path]")
 }
 
