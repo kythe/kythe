@@ -38,7 +38,7 @@ import (
 	"golang.org/x/tools/go/types/typeutil"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
-	spb "kythe.io/kythe/proto/storage_go_proto"
+	stpb "kythe.io/kythe/proto/storage_go_proto"
 )
 
 // EmitOptions control the behaviour of the Emit function. A nil options
@@ -80,7 +80,7 @@ func (e *EmitOptions) emitAnchorScopes() bool {
 // shouldEmit reports whether the indexer should emit a node for the given
 // vname.  Presently this is true if vname denotes a standard library and the
 // corresponding option is enabled.
-func (e *EmitOptions) shouldEmit(vname *spb.VName) bool {
+func (e *EmitOptions) shouldEmit(vname *stpb.VName) bool {
 	return e != nil && e.EmitStandardLibs && govname.IsStandardLibrary(vname)
 }
 
@@ -218,7 +218,7 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 
 // visitFuncDecl handles function and method declarations and their parameters.
 func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
-	info := &funcInfo{vname: new(spb.VName)}
+	info := &funcInfo{vname: new(stpb.VName)}
 	e.pi.function[decl] = info
 
 	// Get the type of this function, even if its name is blank.
@@ -261,7 +261,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 // emitTApp emits a tapp node and returns its VName.  The new tapp is emitted
 // with given constructor and parameters.  The constructor's kind is also
 // emitted if this is the first time seeing it.
-func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VName, params ...*spb.VName) *spb.VName {
+func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *stpb.VName, params ...*stpb.VName) *stpb.VName {
 	if e.pi.typeEmitted.Add(ctor.Signature) {
 		e.writeFact(ctor, facts.NodeKind, ctorKind)
 		if ctorKind == nodes.TBuiltin {
@@ -272,7 +272,7 @@ func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VNam
 	for _, p := range params {
 		components = append(components, p)
 	}
-	v := &spb.VName{Language: govname.Language, Signature: hashSignature(components)}
+	v := &stpb.VName{Language: govname.Language, Signature: hashSignature(components)}
 	if e.pi.typeEmitted.Add(v.Signature) {
 		e.writeFact(v, facts.NodeKind, nodes.TApp)
 		e.writeEdge(v, ctor, edges.ParamIndex(0))
@@ -288,7 +288,7 @@ func (e *emitter) emitTApp(ms *cpb.MarkedSource, ctorKind string, ctor *spb.VNam
 
 // emitType emits the type as a node and returns its VName.  VNames are cached
 // so the type nodes are only emitted the first time they are seen.
-func (e *emitter) emitType(typ types.Type) *spb.VName {
+func (e *emitter) emitType(typ types.Type) *stpb.VName {
 	v, ok := e.pi.typeVName[typ]
 	if ok {
 		return v
@@ -336,7 +336,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			}
 		}
 
-		var ret *spb.VName
+		var ret *stpb.VName
 		if typ.Results().Len() == 1 {
 			ret = e.emitType(typ.Results().At(0).Type())
 		} else {
@@ -353,7 +353,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			})
 		}
 
-		var recv *spb.VName
+		var recv *stpb.VName
 		if r := typ.Recv(); r != nil {
 			recv = e.emitType(r.Type())
 			ms.Child = append([]*cpb.MarkedSource{{
@@ -370,9 +370,9 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 		}
 
 		v = e.emitTApp(ms, nodes.TBuiltin, govname.FunctionConstructorType(),
-			append([]*spb.VName{ret, recv}, params...)...)
+			append([]*stpb.VName{ret, recv}, params...)...)
 	case *types.Interface:
-		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
+		v = &stpb.VName{Language: govname.Language, Signature: hashSignature(typ)}
 		if e.pi.typeEmitted.Add(v.Signature) {
 			e.writeFact(v, facts.NodeKind, nodes.Interface)
 			if e.opts.emitMarkedSource() {
@@ -383,7 +383,7 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 			}
 		}
 	case *types.Struct:
-		v = &spb.VName{Language: govname.Language, Signature: hashSignature(typ)}
+		v = &stpb.VName{Language: govname.Language, Signature: hashSignature(typ)}
 		if e.pi.typeEmitted.Add(v.Signature) {
 			e.writeFact(v, facts.NodeKind, nodes.Record)
 			if e.opts.emitMarkedSource() {
@@ -401,11 +401,11 @@ func (e *emitter) emitType(typ types.Type) *spb.VName {
 	return v
 }
 
-func (e *emitter) emitTypeOf(expr ast.Expr) *spb.VName { return e.emitType(e.pi.Info.TypeOf(expr)) }
+func (e *emitter) emitTypeOf(expr ast.Expr) *stpb.VName { return e.emitType(e.pi.Info.TypeOf(expr)) }
 
-func (e *emitter) visitTuple(t *types.Tuple) []*spb.VName {
+func (e *emitter) visitTuple(t *types.Tuple) []*stpb.VName {
 	size := t.Len()
-	ts := make([]*spb.VName, size)
+	ts := make([]*stpb.VName, size)
 	for i := 0; i < size; i++ {
 		ts[i] = e.emitType(t.At(i).Type())
 	}
@@ -422,7 +422,7 @@ func (e *emitter) visitFuncLit(flit *ast.FuncLit, stack stackFunc) {
 	}
 
 	fi.numAnons++
-	info := &funcInfo{vname: proto.Clone(fi.vname).(*spb.VName)}
+	info := &funcInfo{vname: proto.Clone(fi.vname).(*stpb.VName)}
 	info.vname.Language = govname.Language
 	info.vname.Signature += "$" + strconv.Itoa(fi.numAnons)
 	e.pi.function[flit] = info
@@ -892,15 +892,15 @@ func (e *emitter) writeSatisfies(src, tgt types.Object) {
 	}
 }
 
-func (e *emitter) writeFact(src *spb.VName, name, value string) {
+func (e *emitter) writeFact(src *stpb.VName, name, value string) {
 	e.check(e.sink.writeFact(e.ctx, src, name, value))
 }
 
-func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
+func (e *emitter) writeEdge(src, tgt *stpb.VName, kind string) {
 	e.check(e.sink.writeEdge(e.ctx, src, tgt, kind))
 }
 
-func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
+func (e *emitter) writeAnchor(node ast.Node, src *stpb.VName, start, end int) {
 	if _, ok := e.anchored[node]; ok {
 		return // this node already has an anchor
 	}
@@ -908,7 +908,7 @@ func (e *emitter) writeAnchor(node ast.Node, src *spb.VName, start, end int) {
 	e.check(e.sink.writeAnchor(e.ctx, src, start, end))
 }
 
-func (e *emitter) writeDiagnostic(src *spb.VName, d diagnostic) {
+func (e *emitter) writeDiagnostic(src *stpb.VName, d diagnostic) {
 	e.check(e.sink.writeDiagnostic(e.ctx, src, d))
 }
 
@@ -921,7 +921,7 @@ func (e *emitter) writeNodeDiagnostic(src ast.Node, d diagnostic) {
 
 // writeRef emits an anchor spanning origin and referring to target with an
 // edge of the given kind. The vname of the anchor is returned.
-func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb.VName {
+func (e *emitter) writeRef(origin ast.Node, target *stpb.VName, kind string) *stpb.VName {
 	file, start, end := e.pi.Span(origin)
 	anchor := e.pi.AnchorVName(file, start, end)
 	e.writeAnchor(origin, anchor, start, end)
@@ -935,7 +935,7 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 		} else {
 			e.writeEdge(target, rule.VName, rule.EdgeOut)
 		}
-		if !e.fmeta[file] {
+		if rule.EdgeOut == "/kythe/edge/generates" && !e.fmeta[file] {
 			e.fmeta[file] = true
 			if rule.VName.Path != "" && target.Path != "" {
 				ruleVName := *rule.VName
@@ -958,7 +958,7 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 
 // mustWriteBinding is as writeBinding, but panics if id does not resolve.  Use
 // this in cases where the object is known already to exist.
-func (e *emitter) mustWriteBinding(id *ast.Ident, kind string, parent *spb.VName) *spb.VName {
+func (e *emitter) mustWriteBinding(id *ast.Ident, kind string, parent *stpb.VName) *stpb.VName {
 	if target := e.writeBinding(id, kind, parent); target != nil {
 		return target
 	}
@@ -967,7 +967,7 @@ func (e *emitter) mustWriteBinding(id *ast.Ident, kind string, parent *spb.VName
 
 // writeVarBinding is as writeBinding, assuming the kind is "variable".
 // If subkind != "", it is also emitted as a subkind.
-func (e *emitter) writeVarBinding(id *ast.Ident, subkind string, parent *spb.VName) *spb.VName {
+func (e *emitter) writeVarBinding(id *ast.Ident, subkind string, parent *stpb.VName) *stpb.VName {
 	vname := e.writeBinding(id, nodes.Variable, parent)
 	if vname != nil && subkind != "" {
 		e.writeFact(vname, facts.Subkind, subkind)
@@ -979,7 +979,7 @@ func (e *emitter) writeVarBinding(id *ast.Ident, subkind string, parent *spb.VNa
 // the identifier is not "_", an anchor for a binding definition of the target
 // is also emitted at id. If parent != nil, the target is also recorded as its
 // child. The target vname is returned.
-func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *spb.VName {
+func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *stpb.VName) *stpb.VName {
 	obj := e.pi.Info.Defs[id]
 	if obj == nil {
 		loc := e.pi.FileSet.Position(id.Pos())
@@ -1005,11 +1005,13 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 
 // writeDef emits a spanning anchor and defines edge for the specified node.
 // This function does not create the target node.
-func (e *emitter) writeDef(node ast.Node, target *spb.VName) { e.writeRef(node, target, edges.Defines) }
+func (e *emitter) writeDef(node ast.Node, target *stpb.VName) {
+	e.writeRef(node, target, edges.Defines)
+}
 
 // writeDoc adds associations between comment groups and a documented node.
 // It also handles marking deprecated facts on the target.
-func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
+func (e *emitter) writeDoc(comments *ast.CommentGroup, target *stpb.VName) {
 	if comments == nil || len(comments.List) == 0 || target == nil {
 		return
 	}
@@ -1017,7 +1019,7 @@ func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 	for _, comment := range comments.List {
 		lines = append(lines, trimComment(comment.Text))
 	}
-	docNode := proto.Clone(target).(*spb.VName)
+	docNode := proto.Clone(target).(*stpb.VName)
 	docNode.Signature += " doc"
 	e.writeFact(docNode, facts.NodeKind, nodes.Doc)
 	e.writeFact(docNode, facts.Text, escComment.Replace(strings.Join(lines, "\n")))
@@ -1027,7 +1029,7 @@ func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
 
 // emitDeprecation emits a deprecated fact for the specified target if the
 // comment lines indicate it is deprecated per https://github.com/golang/go/wiki/Deprecated
-func (e *emitter) emitDeprecation(target *spb.VName, lines []string) {
+func (e *emitter) emitDeprecation(target *stpb.VName, lines []string) {
 	var deplines []string
 	for _, line := range lines {
 		if len(deplines) == 0 {
@@ -1080,7 +1082,7 @@ func (e *emitter) callContext(stack stackFunc) *funcInfo {
 				// initializer for top-level expressions in this file of the
 				// package.  We only do this if there are expressions that need
 				// to be initialized.
-				vname := proto.Clone(e.pi.VName).(*spb.VName)
+				vname := proto.Clone(e.pi.VName).(*stpb.VName)
 				vname.Signature += fmt.Sprintf(".<init>@%d", p.Package)
 				fi = &funcInfo{vname: vname}
 				e.pi.packageInit[p] = fi
@@ -1103,7 +1105,7 @@ func (e *emitter) callContext(stack stackFunc) *funcInfo {
 // nameContext returns the vname for the nearest enclosing parent node, not
 // including the node itself, or the enclosing package vname if the node is at
 // the top level.
-func (e *emitter) nameContext(stack stackFunc) *spb.VName {
+func (e *emitter) nameContext(stack stackFunc) *stpb.VName {
 	if fi := e.callContext(stack); !e.pi.isPackageInit(fi) {
 		return fi.vname
 	}
