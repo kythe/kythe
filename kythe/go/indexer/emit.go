@@ -109,6 +109,7 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 		opts:     opts,
 		impl:     make(map[impl]struct{}),
 		anchored: make(map[ast.Node]struct{}),
+		fmeta:    make(map[*ast.File]bool),
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -176,6 +177,7 @@ type emitter struct {
 	opts     *EmitOptions
 	impl     map[impl]struct{}                    // see checkImplements
 	rmap     map[*ast.File]map[int]metadata.Rules // see applyRules
+	fmeta    map[*ast.File]bool                   // see applyRules
 	anchored map[ast.Node]struct{}                // see writeAnchor
 	firstErr error
 	cmap     ast.CommentMap // current file's CommentMap
@@ -933,18 +935,20 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 		} else {
 			e.writeEdge(target, rule.VName, rule.EdgeOut)
 		}
-
-		if rule.VName.Path != "" && target.Path != "" {
-			var ruleVName = rule.VName
-			ruleVName.Signature = ""
-			ruleVName.Language = ""
-			var fileTarget = target
-			fileTarget.Signature = ""
-			fileTarget.Language = ""
-			if rule.Reverse {
-				e.writeEdge(ruleVName, fileTarget, rule.EdgeOut)
-			} else {
-				e.writeEdge(fileTarget, ruleVName, rule.EdgeOut)
+		if done, ok := e.fmeta[file]; !ok && !done {
+			e.fmeta[file] = true
+			if rule.VName.Path != "" && target.Path != "" {
+				ruleVName := *rule.VName
+				ruleVName.Signature = ""
+				ruleVName.Language = ""
+				fileTarget := *target
+				fileTarget.Signature = ""
+				fileTarget.Language = ""
+				if rule.Reverse {
+					e.writeEdge(&ruleVName, &fileTarget, rule.EdgeOut)
+				} else {
+					e.writeEdge(&fileTarget, &ruleVName, rule.EdgeOut)
+				}
 			}
 		}
 	})

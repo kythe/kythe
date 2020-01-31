@@ -5,6 +5,11 @@ func Foobar() {}
 //   ^     ^ offset 25
 //   \ offset 19
 
+func Barfoo() {}
+
+//   ^     ^ offset 84
+//   \ offset 78
+
 // Note: The locations in this file are connected to the offsets defined in the
 // associated meta file. If you move anything above this comment without
 // updating the metadata, the test may break.
@@ -14,5 +19,11 @@ func Foobar() {}
 //- FA.loc/end   25
 //- FA defines/binding Foobar
 //- Foobar.node/kind function
-//- _Alt=vname(gsig, gcorp, groot, gpath, glang) generates Foobar?
+//- _Alt=vname(gsig, gcorp, groot, gpath, glang) generates Foobar
+//- FB.node/kind anchor
+//- FB.loc/start 78
+//- FB.loc/end   84
+//- FB defines/binding Barfoo
+//- Barfoo.node/kind function
+//- _AltB=vname(gsig2, gcorp, groot, gpath, glang) generates Barfoo
 //- vname("", gcorp, groot, gpath, "") generates vname("", kythe, _, "go/indexer/metadata_test", "")
