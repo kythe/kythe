@@ -48,7 +48,8 @@ public class KytheURI implements Serializable {
   private static final Escaper PATH_ESCAPER = new PercentEscaper(SAFE_CHARS + "/", false);
   private static final Escaper ALL_ESCAPER = new PercentEscaper(SAFE_CHARS, false);
   private static final Splitter SIGNATURE_SPLITTER = Splitter.on('#');
-  private static final Splitter.MapSplitter PARAMS_SPLITTER = Splitter.on('?').withKeyValueSeparator("=");
+  private static final Splitter.MapSplitter PARAMS_SPLITTER =
+      Splitter.on('?').withKeyValueSeparator("=");
   private static final Splitter PATH_SPLITTER = Splitter.on('/');
 
   private final VName vName;
