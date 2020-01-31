@@ -157,8 +157,10 @@ func main() {
 	excludeModules := loadExclusions()
 	java := javaCommand()
 	jar := extractorJar()
-	if !excludeModules.Contains(moduleName()) {
-		if args := extractorArgs(os.Args[1:], jar); len(args) > 0 {
+	if args := extractorArgs(os.Args[1:], jar); len(args) > 0 {
+		if excludeModules.Contains(moduleName()) {
+			log.Printf("*** Skipping: %s", moduleName())
+		} else {
 			cmd := exec.Command(java, args...)
 			cmd.Env = extractorEnv()
 			log.Printf("*** Extracting: %s", moduleName())
