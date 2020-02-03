@@ -20,8 +20,8 @@ package createcmd // import "kythe.io/kythe/go/platform/tools/kzip/createcmd"
 import (
 	"context"
 	"flag"
+	"os"
 	"path/filepath"
-	"regexp"
 
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/tools/kzip/flags"
@@ -55,10 +55,6 @@ type createCommand struct {
 	details      repeatedAny
 	encoding     flags.EncodingFlag
 }
-
-var (
-	globPattern = regexp.MustCompile(`[[*?\\]`)
-)
 
 // New creates a new subcommand for merging kzip files.
 func New() subcommands.Command {
@@ -179,47 +175,45 @@ func (cb *compilationBuilder) addFiles(ctx context.Context, paths []string) ([]s
 // addFile adds the given file as a required input.
 // If the path is a directory, its contents are added recursively.
 // Returns the paths of the non-directory files added.
-func (cb *compilationBuilder) addFile(ctx context.Context, path string) ([]string, error) {
-	if info, err := vfs.Stat(ctx, path); err != nil {
-		return nil, err
-	} else if info.IsDir() {
-		files, err := vfs.Glob(ctx, filepath.Join(escapeGlob(path), "*"))
+func (cb *compilationBuilder) addFile(ctx context.Context, root string) ([]string, error) {
+	var files []string
+	err := vfs.Walk(ctx, root, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+		input, err := vfs.Open(ctx, path)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return cb.addFiles(ctx, files)
-	}
-	input, err := vfs.Open(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-	defer input.Close()
+		defer input.Close()
 
-	digest, err := cb.out.AddFile(input)
-	if err != nil {
-		return nil, err
-	}
-
-	path = cb.tryMakeRelative(path)
-	vname, ok := cb.rules.Apply(path)
-	if !ok {
-		vname = &spb.VName{
-			Corpus: cb.unit.VName.Corpus,
-			Root:   cb.unit.VName.Root,
-			Path:   path,
+		digest, err := cb.out.AddFile(input)
+		if err != nil {
+			return err
 		}
-	} else if vname.Corpus == "" {
-		vname.Corpus = cb.unit.VName.Corpus
 
-	}
-	cb.unit.RequiredInput = append(cb.unit.RequiredInput, &apb.CompilationUnit_FileInput{
-		VName: vname,
-		Info: &apb.FileInfo{
-			Path:   path,
-			Digest: digest,
-		},
+		path = cb.tryMakeRelative(path)
+		vname, ok := cb.rules.Apply(path)
+		if !ok {
+			vname = &spb.VName{
+				Corpus: cb.unit.VName.Corpus,
+				Root:   cb.unit.VName.Root,
+				Path:   path,
+			}
+		} else if vname.Corpus == "" {
+			vname.Corpus = cb.unit.VName.Corpus
+
+		}
+		cb.unit.RequiredInput = append(cb.unit.RequiredInput, &apb.CompilationUnit_FileInput{
+			VName: vname,
+			Info: &apb.FileInfo{
+				Path:   path,
+				Digest: digest,
+			},
+		})
+		return nil
 	})
-	return []string{path}, nil
+	return files, err
 }
 
 func (cb *compilationBuilder) done() error {
@@ -253,8 +247,4 @@ func (cb *compilationBuilder) tryMakeRelative(path string) string {
 	}
 	return rel
 
-}
-
-func escapeGlob(path string) string {
-	return globPattern.ReplaceAllString(path, `\$0`)
 }

@@ -23,7 +23,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/tools/kzip/flags"
@@ -37,9 +39,10 @@ import (
 type mergeCommand struct {
 	cmdutil.Info
 
-	output   string
-	append   bool
-	encoding flags.EncodingFlag
+	output    string
+	append    bool
+	encoding  flags.EncodingFlag
+	recursive bool
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -56,6 +59,7 @@ func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
 	fs.BoolVar(&c.append, "append", false, "Whether to additionally merge the contents of the existing output file, if it exists")
 	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
+	fs.BoolVar(&c.recursive, "recursive", false, "Recurisvely merge .kzip files from directories")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
@@ -80,6 +84,12 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 		}
 	}()
 	archives := fs.Args()
+	if c.recursive {
+		archives, err = recurseDirectories(ctx, archives)
+		if err != nil {
+			return c.Fail("Error reading archives: %s", err)
+		}
+	}
 	if c.append {
 		orig, err := vfs.Open(ctx, c.output)
 		if err == nil {
@@ -160,4 +170,27 @@ func mergeInto(ctx context.Context, wr *kzip.Writer, path string, filesAdded str
 		_, err = wr.AddUnit(u.Proto, u.Index)
 		return err
 	})
+}
+
+func recurseDirectories(ctx context.Context, archives []string) ([]string, error) {
+	var files []string
+	for _, path := range archives {
+		err := vfs.Walk(ctx, path, func(file string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() {
+				return err
+			}
+
+			// Include the file if it was directly specified or ends in .kzip.
+			if file == path || strings.HasSuffix(file, ".kzip") {
+				files = append(files, file)
+			}
+
+			return err
+		})
+		if err != nil {
+			return files, err
+		}
+	}
+	return files, nil
+
 }
