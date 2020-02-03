@@ -306,16 +306,16 @@ func (gw *globWalker) walk(ctx context.Context, path string, info os.FileInfo, w
 	}
 
 	names, err := gw.r.Glob(ctx, filepath.Join(escapeGlob(path), "*"))
-	err1 := walkFn(path, info, err)
+	userErr := walkFn(path, info, err)
 	// If err != nil, walk can't walk into this directory.
-	// err1 != nil means walkFn want walk to skip this directory or stop walking.
-	// Therefore, if one of err and err1 isn't nil, walk will return.
-	if err != nil || err1 != nil {
+	// userErr != nil means walkFn want walk to skip this directory or stop walking.
+	// Therefore, if one of err and userErr isn't nil, walk will return.
+	if err != nil || userErr != nil {
 		// The caller's behavior is controlled by the return value, which is decided
 		// by walkFn. walkFn may ignore err and return nil.
 		// If walkFn returns SkipDir, it will be handled by the caller.
 		// So walk should return whatever walkFn returns.
-		return err1
+		return userErr
 	}
 	for _, name := range names {
 		filename := filepath.Join(path, name)
@@ -324,12 +324,9 @@ func (gw *globWalker) walk(ctx context.Context, path string, info os.FileInfo, w
 			if err := walkFn(filename, fileInfo, err); err != nil && err != filepath.SkipDir {
 				return err
 			}
-		} else {
-			err = gw.walk(ctx, path, info, walkFn)
-			if err != nil {
-				if !fileInfo.IsDir() || err != filepath.SkipDir {
-					return err
-				}
+		} else if err := gw.walk(ctx, path, info, walkFn); err != nil {
+			if !fileInfo.IsDir() || err != filepath.SkipDir {
+				return err
 			}
 		}
 	}
