@@ -26,4 +26,4 @@ func Barfoo() {}
 //- FB defines/binding Barfoo
 //- Barfoo.node/kind function
 //- _AltB=vname(gsig2, gcorp, groot, gpath, glang) generates Barfoo
-//- vname("", gcorp, groot, gpath, "") generates vname("", kythe, _, "go/indexer/metadata_test", "")
+//- vname("", gcorp, groot, gpath, "") generates vname("", kythe, _, "go/indexer/metadata_test/meta.go", "")

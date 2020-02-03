@@ -941,7 +941,7 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 				ruleVName := *rule.VName
 				ruleVName.Signature = ""
 				ruleVName.Language = ""
-				fileTarget := *target
+				fileTarget := *anchor
 				fileTarget.Signature = ""
 				fileTarget.Language = ""
 				if rule.Reverse {
