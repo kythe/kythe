@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -126,6 +127,20 @@ func (r Rules) ApplyDefault(input string, v *spb.VName) *spb.VName {
 	return v
 }
 
+// ToProto returns an equivalent VNameRewriteRules proto.
+func (r Rules) ToProto() *spb.VNameRewriteRules {
+	pb := &spb.VNameRewriteRules{
+		Rule: make([]*spb.VNameRewriteRule, len(r)),
+	}
+	for i, rule := range r {
+		pb.Rule[i] = rule.ToProto()
+	}
+	return pb
+}
+
+// Marshal implements the proto.Marshaler interface.
+func (r Rules) Marshal() ([]byte, error) { return proto.Marshal(r.ToProto()) }
+
 // ConvertRule compiles a VNameRewriteRule proto into a Rule that can be applied to strings.
 func ConvertRule(r *spb.VNameRewriteRule) (Rule, error) {
 	pattern := "^" + strings.TrimSuffix(strings.TrimPrefix(r.Pattern, "^"), "$") + "$"
@@ -178,6 +193,23 @@ func expectDelim(de *json.Decoder, expected json.Delim) error {
 		return fmt.Errorf("expected %s; found %v", expected, tok)
 	}
 	return nil
+}
+
+// ParseProtoRules reads a wire-encoded *spb.VNameRewriteRules.
+func ParseProtoRules(data []byte) (Rules, error) {
+	var pb spb.VNameRewriteRules
+	if err := proto.Unmarshal(data, &pb); err != nil {
+		return nil, err
+	}
+	rules := make(Rules, len(pb.Rule))
+	for i, rp := range pb.Rule {
+		r, err := ConvertRule(rp)
+		if err != nil {
+			return nil, err
+		}
+		rules[i] = r
+	}
+	return rules, nil
 }
 
 // ParseRules reads Rules from JSON-encoded data in a byte array.

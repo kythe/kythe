@@ -198,3 +198,8 @@ message VNameRewriteRule {
   // n'th regexp group on a successful input match.
   VName v_name = 2 [json_name = "vname"];
 }
+
+// VNameRewriteRules is a container for multiple VNameRewriteRules.
+message VNameRewriteRules {
+  repeated VNameRewriteRule rule = 1;
+}
