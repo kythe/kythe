@@ -33,7 +33,7 @@ import (
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
-var jsonMarshaler = &jsonpb.Marshaler{OrigName: true}
+var jsonMarshaler = &jsonpb.Marshaler{}
 
 // A Rule associates a regular expression pattern with a VName template.  A
 // Rule can be applied to a string to produce a VName.
@@ -64,7 +64,7 @@ func (r Rule) Apply(input string) (*spb.VName, bool) {
 // ToProto returns an equivalent VNameRewriteRule proto.
 func (r Rule) ToProto() *spb.VNameRewriteRule {
 	return &spb.VNameRewriteRule{
-		Pattern: r.Regexp.String(),
+		Pattern: trimAnchors(r.Regexp.String()),
 		VName: &spb.VName{
 			Corpus:    unfixTemplate(r.VName.Corpus),
 			Root:      unfixTemplate(r.VName.Root),
@@ -143,7 +143,7 @@ func (r Rules) Marshal() ([]byte, error) { return proto.Marshal(r.ToProto()) }
 
 // ConvertRule compiles a VNameRewriteRule proto into a Rule that can be applied to strings.
 func ConvertRule(r *spb.VNameRewriteRule) (Rule, error) {
-	pattern := "^" + strings.TrimSuffix(strings.TrimPrefix(r.Pattern, "^"), "$") + "$"
+	pattern := "^" + trimAnchors(r.Pattern) + "$"
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return Rule{}, fmt.Errorf("invalid regular expression: %v", err)
@@ -161,9 +161,16 @@ func ConvertRule(r *spb.VNameRewriteRule) (Rule, error) {
 }
 
 var (
-	fieldRE  = regexp.MustCompile(`@(\w+)@`)
-	markerRE = regexp.MustCompile(`([^$]|^)(\$\$)*\${\w+}`)
+	anchorsRE = regexp.MustCompile(`([^\\]|^)(\\\\)*\$+$`)
+	fieldRE   = regexp.MustCompile(`@(\w+)@`)
+	markerRE  = regexp.MustCompile(`([^$]|^)(\$\$)*\${\w+}`)
 )
+
+func trimAnchors(pattern string) string {
+	return anchorsRE.ReplaceAllStringFunc(strings.TrimPrefix(pattern, "^"), func(r string) string {
+		return strings.TrimSuffix(r, "$")
+	})
+}
 
 // fixTemplate rewrites @x@ markers in the template to the ${x} markers used by
 // the regexp.Expand function, to simplify rewriting.
