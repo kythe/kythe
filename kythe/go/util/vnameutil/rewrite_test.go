@@ -25,6 +25,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -97,6 +98,67 @@ func TestParseConsistency(t *testing.T) {
 		t.Error(err)
 	} else if len(r) == 0 {
 		t.Error("empty rules")
+	}
+}
+
+func TestMarshalJSON(t *testing.T) {
+	tests := []string{
+		"[]",
+		`[{"vname":{"corpus":"a"}}]`,
+		`[{"pattern":"something","vname":{"corpus":"b"}}]`,
+		`[{"pattern":"something\\$","vname":{"corpus":"c"}}]`,
+		`[{"pattern":"\\^\\$","vname":{"corpus":"d"}}]`,
+	}
+
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			rules, err := ReadRules(strings.NewReader(test))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Logf("Rules: %s", rules)
+
+			rec, err := json.Marshal(rules)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(string(rec), test, splitLines); diff != "" {
+				t.Errorf("Unexpected diff (- found; + expected):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestTrimAnchors(t *testing.T) {
+	tests := []struct {
+		Pattern  string
+		Expected string
+	}{
+		{"", ""},
+		{"^", ""},
+		{"$", ""},
+		{"^$", ""},
+		{"^a$", "a"},
+		{"^a", "a"},
+		{"a$", "a"},
+		{`\$`, `\$`},
+		{`\^\$`, `\^\$`},
+		{`\^`, `\^`},
+		{`\^^$\$`, `\^^$\$`},
+		{`\\$`, `\\`},
+		{`\\\\$`, `\\\\`},
+		{`\\\$`, `\\\$`},
+		{`^abc[^def$]ghi$`, `abc[^def$]ghi`},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(strconv.Quote(test.Pattern), func(t *testing.T) {
+			if found := trimAnchors(test.Pattern); found != test.Expected {
+				t.Errorf("Found: %q; Expected: %q", found, test.Expected)
+			}
+		})
 	}
 }
 
@@ -251,4 +313,5 @@ func (v V) pb() *spb.VName {
 var (
 	transformRegexp = cmp.Transformer("Regexp", func(r *regexp.Regexp) string { return r.String() })
 	compareVNames   = cmp.Comparer(func(a, b *spb.VName) bool { return proto.Equal(a, b) })
+	splitLines      = cmpopts.AcyclicTransformer("Lines", func(s string) []string { return strings.Split(s, "\n") })
 )
