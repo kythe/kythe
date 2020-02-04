@@ -13,6 +13,7 @@ go_library(
     deps = [
         "//kythe/proto:storage_go_proto",
         "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
+        "@com_github_golang_protobuf//proto:go_default_library",
     ],
 )
 
@@ -23,7 +24,6 @@ go_test(
     library = "vnameutil",
     deps = [
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_google_go_cmp//cmp:go_default_library",
     ],
 )
