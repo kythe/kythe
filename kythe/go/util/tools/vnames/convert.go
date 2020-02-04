@@ -19,17 +19,21 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
 	"os"
 	"strings"
 
-	"github.com/google/subcommands"
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
+
+	"github.com/google/subcommands"
 )
 
 type convertRulesCmd struct {
 	cmdutil.Info
 
-	fromFormat, toFormat string
+	rulesPath, outputPath string
+	fromFormat, toFormat  string
 }
 
 var convertRulesInfo = cmdutil.NewInfo("convert-rules", `convert VName rewrite rules (formats: {"JSON", "PROTO"})`,
@@ -37,7 +41,9 @@ var convertRulesInfo = cmdutil.NewInfo("convert-rules", `convert VName rewrite r
 
 func (c *convertRulesCmd) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.fromFormat, "from", "", "Source format of VName rewrite rules")
+	flag.StringVar(&c.rulesPath, "rules", "", "Path to VName rewrite rules file (default: read from stdin)")
 	flag.StringVar(&c.toFormat, "to", "", "Target format of VName rewrite rules")
+	flag.StringVar(&c.outputPath, "output", "", "Output path to write converted VName rewrite rules (default: write to stdout)")
 }
 func (c *convertRulesCmd) Execute(ctx context.Context, flag *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
 	if c.fromFormat == "" {
@@ -46,11 +52,37 @@ func (c *convertRulesCmd) Execute(ctx context.Context, flag *flag.FlagSet, args 
 		return cmdErrorf("--to <format> must be specified")
 	}
 
-	rules, err := rulesFormat(strings.ToUpper(c.fromFormat)).readRules(os.Stdin)
+	var in io.Reader
+	if c.rulesPath == "" {
+		in = os.Stdin
+	} else {
+		f, err := vfs.Open(ctx, c.rulesPath)
+		if err != nil {
+			return cmdErrorf("opening %q: %v", c.rulesPath, err)
+		}
+		defer f.Close()
+		in = f
+	}
+
+	var out io.WriteCloser
+	if c.outputPath == "" {
+		out = os.Stdout
+	} else {
+		f, err := vfs.Create(ctx, c.outputPath)
+		if err != nil {
+			return cmdErrorf("creating %q: %v", c.outputPath, err)
+		}
+		out = f
+	}
+
+	rules, err := rulesFormat(strings.ToUpper(c.fromFormat)).readRules(in)
 	if err != nil {
 		return cmdErrorf("reading rules: %v", err)
-	} else if err := rulesFormat(strings.ToUpper(c.toFormat)).writeRules(rules, os.Stdout); err != nil {
+	} else if err := rulesFormat(strings.ToUpper(c.toFormat)).writeRules(rules, out); err != nil {
 		return cmdErrorf("writing rules: %v", err)
+	} else if err := out.Close(); err != nil {
+		return cmdErrorf("closing output: %v", err)
 	}
+
 	return subcommands.ExitSuccess
 }
