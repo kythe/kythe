@@ -118,12 +118,49 @@ func TestRoundtripJSON(t *testing.T) {
 				t.Fatal(err)
 			}
 			t.Logf("Rules: %s", expected)
+
 			rec, err := json.Marshal(expected)
 			if err != nil {
 				t.Fatalf("Error marshaling rules %+v: %v", expected, err)
 			}
 
 			r, err := ParseRules(rec)
+			if err != nil {
+				t.Fatalf("Error parsing rules %q: %v", rec, err)
+			}
+
+			if diff := cmp.Diff(r, expected, transformRegexp); diff != "" {
+				t.Errorf("Unexpected diff (- found; + expected):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRoundtripProto(t *testing.T) {
+	tests := []string{
+		"[]",
+		`[{"pattern": "p(.)", "vname": {"corpus": "$@1@"}}]`,
+		`[{
+  "pattern": "(?P<corpus>.+)/(?P<root>.+)::(?P<path>.+)",
+  "vname": {"corpus": "@corpus@", "root": "@root@", "path": "@path@"}
+}]`,
+		testConfig,
+	}
+
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			expected, err := ReadRules(strings.NewReader(test))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Logf("Rules: %s", expected)
+
+			rec, err := expected.Marshal()
+			if err != nil {
+				t.Fatalf("Error marshaling rules %+v: %v", expected, err)
+			}
+
+			r, err := ParseProtoRules(rec)
 			if err != nil {
 				t.Fatalf("Error parsing rules %q: %v", rec, err)
 			}
