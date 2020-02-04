@@ -129,7 +129,7 @@ func TestRoundtripJSON(t *testing.T) {
 				t.Fatalf("Error parsing rules %q: %v", rec, err)
 			}
 
-			if diff := cmp.Diff(r, expected, transformRegexp); diff != "" {
+			if diff := cmp.Diff(r, expected, transformRegexp, compareVNames); diff != "" {
 				t.Errorf("Unexpected diff (- found; + expected):\n%s", diff)
 			}
 		})
@@ -165,7 +165,7 @@ func TestRoundtripProto(t *testing.T) {
 				t.Fatalf("Error parsing rules %q: %v", rec, err)
 			}
 
-			if diff := cmp.Diff(r, expected, transformRegexp); diff != "" {
+			if diff := cmp.Diff(r, expected, transformRegexp, compareVNames); diff != "" {
 				t.Errorf("Unexpected diff (- found; + expected):\n%s", diff)
 			}
 		})
@@ -250,4 +250,5 @@ func (v V) pb() *spb.VName {
 
 var (
 	transformRegexp = cmp.Transformer("Regexp", func(r *regexp.Regexp) string { return r.String() })
+	compareVNames   = cmp.Comparer(func(a, b *spb.VName) bool { return proto.Equal(a, b) })
 )
