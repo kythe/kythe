@@ -211,6 +211,7 @@ func (cb *compilationBuilder) addFile(ctx context.Context, root string) ([]strin
 				Digest: digest,
 			},
 		})
+		files = append(files, path)
 		return nil
 	})
 	return files, err
