@@ -66,7 +66,7 @@ func (c *applyRulesCmd) Execute(ctx context.Context, flag *flag.FlagSet, args ..
 		return cmdErrorf("reading %q: %v", c.rulesPath, err)
 	}
 	s := bufio.NewScanner(os.Stdin)
-	m := jsonpb.Marshaler{OrigName: true}
+	m := jsonpb.Marshaler{OrigName: true, Indent: "  "}
 	for s.Scan() {
 		line := s.Text()
 		v, ok := rules.Apply(line)
@@ -111,7 +111,9 @@ func (f rulesFormat) readRules(r io.Reader) (vnameutil.Rules, error) {
 func (f rulesFormat) writeRules(rules vnameutil.Rules, w io.Writer) error {
 	switch f {
 	case jsonFormat:
-		return json.NewEncoder(w).Encode(rules)
+		en := json.NewEncoder(w)
+		en.SetIndent("", "  ")
+		return en.Encode(rules)
 	case protoFormat:
 		rec, err := rules.Marshal()
 		if err != nil {
