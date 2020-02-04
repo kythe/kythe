@@ -149,6 +149,7 @@ func TestTrimAnchors(t *testing.T) {
 		{`\\$`, `\\`},
 		{`\\\\$`, `\\\\`},
 		{`\\\$`, `\\\$`},
+		{`^abc[^def$]ghi$`, `abc[^def$]ghi`},
 	}
 
 	for _, test := range tests {
