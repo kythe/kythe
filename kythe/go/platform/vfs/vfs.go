@@ -318,13 +318,12 @@ func (gw *globWalker) walk(ctx context.Context, path string, info os.FileInfo, w
 		return userErr
 	}
 	for _, name := range names {
-		filename := filepath.Join(path, name)
-		fileInfo, err := gw.r.Stat(ctx, filename)
+		fileInfo, err := gw.r.Stat(ctx, name)
 		if err != nil {
-			if err := walkFn(filename, fileInfo, err); err != nil && err != filepath.SkipDir {
+			if err := walkFn(name, fileInfo, err); err != nil && err != filepath.SkipDir {
 				return err
 			}
-		} else if err := gw.walk(ctx, path, info, walkFn); err != nil {
+		} else if err := gw.walk(ctx, name, info, walkFn); err != nil {
 			if !fileInfo.IsDir() || err != filepath.SkipDir {
 				return err
 			}
