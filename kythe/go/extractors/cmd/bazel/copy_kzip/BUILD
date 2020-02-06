@@ -7,5 +7,6 @@ go_binary(
     srcs = ["copy_kzip.go"],
     deps = [
         "//kythe/go/extractors/bazel",
+        "//kythe/go/platform/vfs",
     ],
 )

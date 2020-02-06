@@ -19,6 +19,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"io"
 	"log"
@@ -26,6 +27,7 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/extractors/bazel"
+	"kythe.io/kythe/go/platform/vfs"
 )
 
 var (
@@ -65,23 +67,22 @@ func main() {
 }
 
 func copyFile(input, output string) error {
-	f, err := os.Open(input)
+	ctx := context.Background()
+	f, err := vfs.Open(ctx, input)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	o, err := os.Create(output)
+	o, err := vfs.Create(ctx, output)
 	if err != nil {
 		return err
 	}
 
 	if _, err := io.Copy(o, f); err != nil {
+		o.Close()
 		return err
 	}
 
-	if err := o.Close(); o != nil {
-		return err
-	}
-	return nil
+	return o.Close()
 }
