@@ -52,6 +52,9 @@ func main() {
 	}
 	start := time.Now()
 	ai, err := bazel.SpawnAction(info)
+	if err != nil {
+		log.Fatalf("Unable to read SpawnInfo: %v", err)
+	}
 	if len(ai.Outputs) != 1 {
 		log.Fatalf("Can only copy a single output kzip, not %d", len(ai.Outputs))
 	}
