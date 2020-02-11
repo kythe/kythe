@@ -25,7 +25,6 @@
 #include "clang/Index/USRGeneration.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
-#include "clang/Index/USRGeneration.h"
 #include "glog/logging.h"
 #include "kythe/cxx/extractor/path_utils.h"
 #include "llvm/Support/Debug.h"
