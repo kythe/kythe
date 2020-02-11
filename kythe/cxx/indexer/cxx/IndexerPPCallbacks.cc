@@ -22,6 +22,7 @@
 #include "absl/strings/str_format.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Index/USRGeneration.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
 #include "glog/logging.h"
@@ -46,8 +47,9 @@
 namespace kythe {
 
 IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor& PP,
-                                       GraphObserver& GO, enum Verbosity V)
-    : Preprocessor(PP), Observer(GO), Verbosity(V) {
+                                       GraphObserver& GO, enum Verbosity V,
+                                       int UsrByteSize)
+    : Preprocessor(PP), Observer(GO), Verbosity(V), UsrByteSize(UsrByteSize) {
   class MetadataPragmaHandlerWrapper : public clang::PragmaHandler {
    public:
     MetadataPragmaHandlerWrapper(IndexerPPCallbacks* context)
@@ -154,6 +156,14 @@ void IndexerPPCallbacks::MacroDefined(const clang::Token& Token,
     MacroCode.set_kind(MarkedSource::IDENTIFIER);
     MacroCode.set_pre_text(std::string(Token.getIdentifierInfo()->getName()));
     Observer.recordMarkedSource(MacroId, MacroCode);
+    if (UsrByteSize > 0) {
+      llvm::SmallString<128> Usr;
+      if (!clang::index::generateUSRForMacro(
+              Token.getIdentifierInfo()->getName(), Macro->getLocation(),
+              *Observer.getSourceManager(), Usr)) {
+        Observer.assignUsr(MacroId, Usr, UsrByteSize);
+      }
+    }
   }
   // TODO(zarko): Record information about the definition (like other macro
   // references).

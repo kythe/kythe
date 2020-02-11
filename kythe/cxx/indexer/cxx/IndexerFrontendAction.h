@@ -151,7 +151,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   bool BeginSourceFileAction(clang::CompilerInstance& CI) override {
     if (Observer) {
       CI.getPreprocessor().addPPCallbacks(absl::make_unique<IndexerPPCallbacks>(
-          CI.getPreprocessor(), *Observer, Verbosity));
+          CI.getPreprocessor(), *Observer, Verbosity, UsrByteSize));
     }
     CI.getLangOpts().CommentOpts.ParseAllComments = true;
     CI.getLangOpts().RetainCommentsFromSystemHeaders = true;
