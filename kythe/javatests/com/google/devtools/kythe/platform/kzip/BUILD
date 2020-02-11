@@ -4,13 +4,13 @@ java_test(
     name = "kzip_reader_test",
     srcs = ["KZipReaderTest.java"],
     data = [
-        "//kythe/cxx/common/testdata:empty.kzip",
-        "//kythe/cxx/common/testdata:garbage_unit.kzip",
-        "//kythe/cxx/common/testdata:malformed.kzip",
-        "//kythe/cxx/common/testdata:missing-pbunit.kzip",
-        "//kythe/cxx/common/testdata:missing-unit.kzip",
-        "//kythe/cxx/common/testdata:stringset.kzip",
-        "//kythe/cxx/common/testdata:stringset_with_empty_file.kzip",
+        "//kythe/testdata/platform:empty.kzip",
+        "//kythe/testdata/platform:garbage_unit.kzip",
+        "//kythe/testdata/platform:malformed.kzip",
+        "//kythe/testdata/platform:missing-pbunit.kzip",
+        "//kythe/testdata/platform:missing-unit.kzip",
+        "//kythe/testdata/platform:stringset.kzip",
+        "//kythe/testdata/platform:stringset_with_empty_file.kzip",
     ],
     test_class = "com.google.devtools.kythe.platform.kzip.KZipReaderTest",
     deps = [
@@ -30,7 +30,7 @@ java_test(
 java_test(
     name = "kzip_writer_test",
     srcs = ["KZipWriterTest.java"],
-    data = ["//kythe/cxx/common/testdata:stringset.kzip"],
+    data = ["//kythe/testdata/platform:stringset.kzip"],
     test_class = "com.google.devtools.kythe.platform.kzip.KZipWriterTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/kzip",

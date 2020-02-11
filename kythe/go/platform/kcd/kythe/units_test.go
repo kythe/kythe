@@ -131,7 +131,7 @@ func keys(v interface{}) (keys []string) {
 	return
 }
 
-const testDataDir = "../../../../cxx/common/testdata"
+const testDataDir = "../../../../testdata/platform"
 
 func TestDigest(t *testing.T) {
 	tests := []string{
