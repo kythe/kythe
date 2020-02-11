@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package pkg.proto3a;
+
+option java_package = "pkg.proto3a";
+
+//- @Thing defines/binding ThingMessage
+message Thing {
+}
