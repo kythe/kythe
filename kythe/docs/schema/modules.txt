@@ -25,41 +25,33 @@ expressing which components of a *module* are to be *exported* and which
 components are to be *imported* from other modules. It may also be possible
 to refer to the module itself as a first-class value in a program.
 
-A program using these features might look something like:
-
-[source,javascript]
-----
-import './module';
-import * as mod_imp from './module';
-import {value} from './module';
-import {value as renamedValue} from './module';
-----
-
 In the following sections, we'll discuss common user expectations for
 cross-references in programs that use modules. The representation of a module
 itself is not in this document's scope.
 
 == Simple imports
 
-The first line makes the module named `module` available in scope as `module`.
-The exact semantics of what the local `module` is can differ depending on the
-language. In some languages, `module` is simply a local variable that points to
+The second line makes the module named `fmt` available in scope as `fmt`. The
+exact semantics of what the local `fmt` is can differ depending on the
+language. In some languages, `fmt` is simply a local variable that points to
 the (first-class) module object; in others, it is part of a special category of
 identifiers that cannot be rebound. Users generally prefer to see any use of
-`module` *ref* the node representing the module's definition instead of the
+`fmt` *ref* the node representing the module's definition instead of the
 definition of the local alias, which may not even have a sensible syntactic
 location to anchor to:
 
-[source,javascript]
+[source,go]
 ----
-//- @"'./module'" ref/imports Module
-import './module';
-//- @module ref Module
-module.foo();
+import (
+//- @"\"fmt\"" ref/imports FmtModule
+  "fmt"
+)
+//- @fmt ref FmtModule
+fmt.Sprint
 ----
 
 With these edges, users who attempt to navigate from the module's use site will
-be brought to the definition of `Module`, not to the definition of the local
+be brought to the definition of `fmt`, not to the definition of the local
 alias. In the same way, users investigating cross-references from the module's
 definition will see every use of that module in the database (up to re-exporting
 and vexing control-flow), not just the places where it's been imported. In
@@ -72,6 +64,7 @@ should be handled in the same way as module definitions:
 [source,javascript]
 ----
 //- @value ref/imports Value
+//- @"'./module'" ref/imports Module
 import {value} from './module';
 //- @value ref Value
 value;
@@ -79,28 +72,50 @@ value;
 
 == Imports with renaming
 
-It's sometimes possible to choose a different name for the local binding created
-by an import from the target definition's. In this case, the local name *does*
-have a sensible syntactic location and is semantically relevant to the
-programmer. A use site of the local name refers to both the module (or value)
-being imported and to the local alias:
+It's sometimes possible (or is even required) to choose a different name for the
+local binding created by an import from the target definition's. In this case,
+the local name *does* have a sensible syntactic location and is semantically
+relevant to the programmer. A use site of the local name refers to both the
+module (or value) being imported and to the local alias:
 
 [source,javascript]
 ----
-//- "./module'" ref/imports Module
+//- @"'./module'" ref/imports Module
+//- @defaultExport defines/binding DefaultExport
+//- @defaultExport ref/imports DefaultExportDef
+//- DefaultExport.subkind import
+import defaultExport from './module';
+//- @"'./module'" ref/imports Module
 //- @mod_imp defines/binding ModImp
+//- @mod_imp ref/imports Module
 //- ModImp.subkind import
 import * as mod_imp from './module';
+//- @"'./module'" ref/imports Module
 //- @value ref/imports Value
 //- @renamedValue defines/binding RenamedValue
 //- RenamedValue.subkind import
 import {value as renamedValue} from './module';
+//- @defaultExport ref DefaultExportDef
+//- @defaultExport ref DefaultExport
+defaultExport;
 //- @mod_imp ref Module
 //- @mod_imp ref ModImp
 mod_imp.foo;
 //- @renamedValue ref Value
 //- @renamedValue ref RenamedValue
 renamedValue;
+----
+
+== Imports that do not create local bindings
+
+Languages like TypeScript allow modules to be imported strictly for their
+side-effects. In this case, only a `ref/imports` edge should be placed at
+the import site:
+
+[source,javascript]
+----
+//- @"'./module'" ref/imports Module
+import './module';
 ----
 
 == Re-exporting and rebinding
@@ -115,25 +130,25 @@ If a program rebinds an imported name, indexers should make a best effort to
 [source,javascript]
 ----
 //- @"'./module'" ref/imports Module
-import './module';
+import module from './module';
 //- @module ref Module
 module.foo();
 //- @"'./debug/module'" ref/imports DebugModule
-import './debug/module';
+import module from './debug/module';
 //- @module ref DebugModule
 module.foo();
 ----
 
 This is not generally possible to do. In cases where the corresponding module
 can't be determined, indexers should fall back on treating imports as locals.
-This may require some abuse of syntax to find definition sites where none exist:
+This may require some abuse of syntax to find definition sites where none exist.
 
 [source,javascript]
 ----
 //- @"'./module'" ref/imports Module
-//- @import defines/binding ModuleImport
+//- @module defines/binding ModuleImport
 //- ModuleImport.subkind import
-import './module';
+import module from './module';
 //- @module ref ModuleImport
 if (random()) module = otherModule;
 //- @module ref ModuleImport
