@@ -23,7 +23,6 @@ import (
 	"flag"
 	"io"
 	"log"
-	"os"
 	"time"
 
 	"kythe.io/kythe/go/extractors/bazel"
@@ -59,11 +58,8 @@ func main() {
 		log.Fatalf("Can only copy a single output kzip, not %d", len(ai.Outputs))
 	}
 
-	if err := os.Link(ai.Outputs[0], *outputPath); err != nil {
-		log.Printf("Unable to link input to output, falling back to copy: %v", err)
-		if err := copyFile(ai.Outputs[0], *outputPath); err != nil {
-			log.Fatalf("Unable to copy input to output: %v", err)
-		}
+	if err := copyFile(ai.Outputs[0], *outputPath); err != nil {
+		log.Fatalf("Unable to copy input to output: %v", err)
 	}
 
 	log.Printf("Finished extracting [%v elapsed]", time.Since(start))
