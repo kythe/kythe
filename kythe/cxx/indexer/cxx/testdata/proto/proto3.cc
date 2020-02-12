@@ -13,6 +13,3 @@ void fn() {
 }
 //- ContainerMessageField generates CxxGetContainedField
 //- ContainerMessage generates CxxContainerMessage
-
-// required since mentioned in testdata3a.pb.h, transitively included
-//- ThingMessage.node/kind record
