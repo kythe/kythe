@@ -175,7 +175,7 @@ Install Cayley if necessary:
 
 {% highlight bash %}
 # Convert GraphStore to nquads format
-bazel run //kythe/go/storage/tools/triples -- --graphstore /path/to/graphstore | \
+bazel run //kythe/go/storage/tools/triples --graphstore /path/to/graphstore | \
   gzip >kythe.nq.gz
 
 cayley repl --dbpath kythe.nq.gz # or cayley http --dbpath kythe.nq.gz
