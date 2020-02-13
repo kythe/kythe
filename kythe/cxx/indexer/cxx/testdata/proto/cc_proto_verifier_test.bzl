@@ -68,15 +68,6 @@ def cc_proto_verifier_test(
         )
     ]
 
-    if len(proto_deps) != 0:
-        proto_libs += [
-            _invoke(
-                cc_kythe_proto_library,
-                name = name + "_cc_proto2",
-                deps = proto_deps,
-            )
-        ]
-
     cc_kzip = _invoke(
         cc_extract_kzip,
         name = name + "_cc_kzip",
