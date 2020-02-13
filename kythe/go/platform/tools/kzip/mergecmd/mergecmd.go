@@ -33,6 +33,7 @@ import (
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"bitbucket.org/creachadair/stringset"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
 )
 
@@ -43,6 +44,7 @@ type mergeCommand struct {
 	append    bool
 	encoding  flags.EncodingFlag
 	recursive bool
+	rules     vnameRules
 }
 
 // New creates a new subcommand for merging kzip files.
@@ -60,6 +62,7 @@ func (c *mergeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&c.append, "append", false, "Whether to additionally merge the contents of the existing output file, if it exists")
 	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
 	fs.BoolVar(&c.recursive, "recursive", false, "Recurisvely merge .kzip files from directories")
+	fs.Var(&c.rules, "rules", "VName rules to apply while merging (optional)")
 }
 
 // Execute implements the subcommands interface and merges the provided files.
@@ -99,7 +102,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 			}
 		}
 	}
-	if err := mergeArchives(ctx, tmpOut, archives, opt); err != nil {
+	if err := c.mergeArchives(ctx, tmpOut, archives, opt); err != nil {
 		return c.Fail("Error merging archives: %v", err)
 	}
 	if err := vfs.Rename(ctx, tmpName, c.output); err != nil {
@@ -108,7 +111,7 @@ func (c *mergeCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inter
 	return subcommands.ExitSuccess
 }
 
-func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, opts ...kzip.WriterOption) error {
+func (c *mergeCommand) mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, opts ...kzip.WriterOption) error {
 	wr, err := kzip.NewWriteCloser(out, opts...)
 	if err != nil {
 		out.Close()
@@ -117,7 +120,7 @@ func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, o
 
 	filesAdded := stringset.New()
 	for _, path := range archives {
-		if err := mergeInto(ctx, wr, path, filesAdded); err != nil {
+		if err := c.mergeInto(ctx, wr, path, filesAdded); err != nil {
 			wr.Close()
 			return err
 		}
@@ -129,7 +132,7 @@ func mergeArchives(ctx context.Context, out io.WriteCloser, archives []string, o
 	return nil
 }
 
-func mergeInto(ctx context.Context, wr *kzip.Writer, path string, filesAdded stringset.Set) error {
+func (c *mergeCommand) mergeInto(ctx context.Context, wr *kzip.Writer, path string, filesAdded stringset.Set) error {
 	f, err := vfs.Open(ctx, path)
 	if err != nil {
 		return fmt.Errorf("error opening archive: %v", err)
@@ -164,6 +167,9 @@ func mergeInto(ctx context.Context, wr *kzip.Writer, path string, filesAdded str
 				} else if err := r.Close(); err != nil {
 					return fmt.Errorf("error closing file: %v", err)
 				}
+			}
+			if vname, match := c.rules.Apply(ri.Info.Path); match {
+				proto.Merge(ri.VName, vname)
 			}
 		}
 		// TODO(schroederc): duplicate compilations with different revisions
