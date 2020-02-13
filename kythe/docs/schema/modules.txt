@@ -118,6 +118,14 @@ the import site:
 import './module';
 ----
 
+[source,go]
+----
+//- @"\"lib/math\"" ref/imports MathModule
+import (
+  _ "lib/math"
+)
+----
+
 == Re-exporting and rebinding
 
 If a module re-exports a definition (renaming it or not) that it previously
