@@ -33,7 +33,6 @@ import (
 	"kythe.io/kythe/go/util/cmdutil"
 
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
 )
 
@@ -169,7 +168,7 @@ func (c *mergeCommand) mergeInto(ctx context.Context, wr *kzip.Writer, path stri
 				}
 			}
 			if vname, match := c.rules.Apply(ri.Info.Path); match {
-				proto.Merge(ri.VName, vname)
+				ri.VName = vname
 			}
 		}
 		// TODO(schroederc): duplicate compilations with different revisions

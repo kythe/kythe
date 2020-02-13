@@ -29,7 +29,7 @@ type vnameRules struct {
 	vnameutil.Rules
 }
 
-// Set implements part of the flag.Value interface and will append a new value to the flag.
+// Set implements part of the flag.Value interface and will set a new filename for the flag.
 func (f *vnameRules) Set(s string) error {
 	f.filename = s
 	data, err := ioutil.ReadFile(f.filename)
