@@ -337,16 +337,13 @@ function anchor(file_vname, begin, end) {
     fact(anchor_vname, "node/kind", "anchor"),
     fact(anchor_vname, "loc/start", begin.toString()),
     fact(anchor_vname, "loc/end", end.toString()),
-    // This edge is required in the current Kythe release, but it will not be
-    // required in a future release.
-    edge(anchor_vname, "childof", file_vname)
   ];
 }
 ----
 
 The anchor covering the definition of `foo` in our example file, assuming the
 file has the same `VName` as the earlier file, is represented by these three
-facts (leaving out the deprecated `childof` edge mentioned in the code):
+facts:
 
 [source,js]
 ----
@@ -589,10 +586,8 @@ digraph G {
 "App(vname, (foo#0, example, \"\", hello, ex))" [ label=<<TABLE><TR><TD COLSPAN="2">(foo#0, example, &quot;&quot;, hello, ex) = VarFoo</TD></TR><TR><TD>/kythe/node/kind</TD><TD>variable</TD></TR></TABLE>> shape=plaintext  color=blue ];
 "App(vname, (@66:69, example, \"\", hello, ex))" [ shape=circle, label="@foo:1.4", color="blue" ];
 "App(vname, (@66:69, example, \"\", hello, ex))" -> "App(vname, (foo#0, example, \"\", hello, ex))" [ label="/kythe/edge/defines/binding" ];
-"App(vname, (@66:69, example, \"\", hello, ex))" -> "App(vname, (\"\", example, \"\", hello, \"\"))" [ label="/kythe/edge/childof" ];
 "App(vname, (@100:103, example, \"\", hello, ex))" [ shape=circle, label="@foo:4.6", color="blue" ];
 "App(vname, (@100:103, example, \"\", hello, ex))" -> "App(vname, (foo#0, example, \"\", hello, ex))" [ label="/kythe/edge/ref" ];
-"App(vname, (@100:103, example, \"\", hello, ex))" -> "App(vname, (\"\", example, \"\", hello, \"\"))" [ label="/kythe/edge/childof" ];
 }
 ----
 

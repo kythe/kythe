@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package pkg.proto3;
+
+option java_package = "pkg.proto3";
+
+import "kythe/testdata/indexers/proto/testdata3a.proto";
+
+//- @Container defines/binding ContainerMessage
+message Container {
+  //- @contained defines/binding ContainerMessageField
+  optional pkg.proto3a.Thing contained = 1;
+}

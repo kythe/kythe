@@ -44,7 +44,7 @@ absl::string_view TestTmpdir() {
 }
 
 std::string TestFile(absl::string_view basename) {
-  return absl::StrCat(TestSourceRoot(), "kythe/cxx/common/testdata/",
+  return absl::StrCat(TestSourceRoot(), "kythe/testdata/platform/",
                       absl::StripPrefix(basename, "/"));
 }
 

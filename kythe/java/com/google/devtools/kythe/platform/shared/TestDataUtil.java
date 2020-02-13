@@ -27,7 +27,7 @@ public final class TestDataUtil {
    * for the list of files that can be accessed.
    */
   public static File getTestFile(String name) {
-    File testDataRoot = new File(TestDataUtil.getTestRoot(), "kythe/cxx/common/testdata");
+    File testDataRoot = new File(TestDataUtil.getTestRoot(), "kythe/testdata/platform");
     return new File(testDataRoot, name);
   }
 
