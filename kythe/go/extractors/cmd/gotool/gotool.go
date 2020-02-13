@@ -16,7 +16,7 @@
 
 // Binary gotool extracts Kythe compilation information for Go packages named
 // by import path on the command line.  The output compilations are written
-// into an index pack directory.
+// into a kzip.
 package main
 
 import (
