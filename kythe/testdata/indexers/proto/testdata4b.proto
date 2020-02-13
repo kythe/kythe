@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package pkg.proto4b;
+
+option java_package = "pkg.proto4b";
+
+import "kythe/testdata/indexers/proto/testdata4c.proto";
+
+message Thing2 {
+  optional pkg.proto4c.Thing3 thing3 = 1;
+}

@@ -5,9 +5,13 @@ package pkg.proto3;
 option java_package = "pkg.proto3";
 
 import "kythe/testdata/indexers/proto/testdata3a.proto";
+import "kythe/testdata/indexers/proto/testdata3b.proto";
 
 //- @Container defines/binding ContainerMessage
 message Container {
   //- @contained defines/binding ContainerMessageField
   optional pkg.proto3a.Thing contained = 1;
+
+  //- @contained2 defines/binding Container2MessageField
+  optional pkg.proto3a.Thing2 contained2 = 2;
 }
