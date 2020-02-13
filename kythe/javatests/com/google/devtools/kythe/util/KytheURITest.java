@@ -89,6 +89,7 @@ public class KytheURITest extends TestCase {
     checkToString("kythe:?path=%20", "kythe://?path=%20");
     checkToString("kythe:?path=a%2Bb", "kythe://?path=a+b");
     checkToString("kythe:?path=%2B", "kythe://?path=%2B");
+    checkToString("kythe://kythe//branch", "kythe://kythe//branch");
     String hairyUri =
         "kythe://libstdc%2B%2B?lang=c%2B%2B?path=bits/basic_string.h?root=/usr/include/c%2B%2B/4.8";
     checkToString(hairyUri, hairyUri);

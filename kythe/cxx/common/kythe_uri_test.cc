@@ -105,6 +105,7 @@ TEST(KytheUri, Parse) {
       // Corpora with slashes.
       {"kythe:///Users/foo", MakeURI().Corpus("/Users/foo")},
       {"kythe:///", MakeURI().Corpus("/")},
+      {"kythe://kythe//branch", MakeURI().Corpus("kythe//branch")},
 
       // Corpus labels are not cleaned.
       {"//a//?lang=foo?path=b/c/..",

@@ -201,6 +201,7 @@ func TestRoundTripVName(t *testing.T) {
 		{}, // empty
 		{Corpus: "//Users/foo", Path: "/Users/foo/bar", Language: "go", Signature: "∴"},
 		{Corpus: "//////", Root: "←", Language: "c++"},
+		{Corpus: "kythe//branch", Path: "source.ext"},
 	}
 	for _, test := range tests {
 		uri := FromVName(test)
@@ -246,6 +247,9 @@ func TestString(t *testing.T) {
 		{"kythe://?path=a+b", "kythe:?path=a%2Bb"},
 		{"kythe://?path=%20", "kythe:?path=%20"},
 		{"kythe://?path=a/b", "kythe:?path=a/b"},
+
+		// Support branch embedding
+		{"kythe://kythe//branch", "kythe://kythe//branch"},
 
 		// Path cleaning
 		{"kythe://a?path=b/../c#sig", cleaned},
