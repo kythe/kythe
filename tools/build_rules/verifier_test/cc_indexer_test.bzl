@@ -130,9 +130,9 @@ def _compile_and_link(ctx, cc_info_providers, sources, headers):
         linking_contexts = [provider.linking_context for provider in cc_info_providers],
     )
     return struct(
-        transitive_library_file = linking_out,
         compilation_context = compile_ctx,
         linking_context = linking_ctx,
+        transitive_library_file = linking_out,
     )
 
 def _flag(name, typename, value):
@@ -213,7 +213,7 @@ def _cc_kythe_proto_library_aspect_impl(target, ctx):
         mnemonic = "GenerateKytheCCProto",
     )
     cc_info_providers = [lib[CcInfo] for lib in [target, ctx.attr._runtime] if CcInfo in lib]
-    cc_context = _compile_and_link(ctx, cc_info_providers, sources = sources, headers = headers)
+    cc_context = _compile_and_link(ctx, cc_info_providers, headers = headers, sources = sources)
     return [
         _KytheProtoInfo(files = depset(sources + headers)),
         CcInfo(
@@ -250,9 +250,10 @@ _cc_kythe_proto_library_aspect = aspect(
 )
 
 def _cc_kythe_proto_library(ctx):
+    files = [dep[_KytheProtoInfo].files for dep in ctx.attr.deps]
     return [
         ctx.attr.deps[0][CcInfo],
-        DefaultInfo(files = ctx.attr.deps[0][_KytheProtoInfo].files),
+        DefaultInfo(files = depset([], transitive = files)),
     ]
 
 cc_kythe_proto_library = rule(
@@ -278,10 +279,10 @@ def _cc_extract_kzip_impl(ctx):
         extract(
             srcs = depset([src]),
             ctx = ctx,
+            env = env,
             extractor = extractor_toolchain.extractor_binary,
             kzip = ctx.actions.declare_file("{}/{}.kzip".format(ctx.label.name, src.basename)),
             opts = opts,
-            env = env,
             vnames_config = ctx.file.vnames_config,
             deps = depset(
                 direct = ctx.files.srcs,
