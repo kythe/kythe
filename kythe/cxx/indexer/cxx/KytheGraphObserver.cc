@@ -433,20 +433,20 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
     }
   }
 
-  // Emit file-scope edges, if the decl VName directly corresponds to a file.
-  if (!decl.path().empty()) {
-    VNameRef file_decl(decl);
-    file_decl.set_signature("");
-    file_decl.set_language("");
-    if (MarkFileMetaEdgeEmitted(file_decl, meta)) {
+  // Emit file-scope edges, if the anchor VName directly corresponds to a file.
+  if (!anchor.path().empty()) {
+    VNameRef file_vname(anchor);
+    file_vname.set_signature("");
+    file_vname.set_language("");
+    if (MarkFileMetaEdgeEmitted(file_vname, meta)) {
       for (const auto& rule : meta.file_scope_rules()) {
         EdgeKindID edge_kind;
         if (of_spelling(rule.edge_out, &edge_kind)) {
           VNameRef remote(rule.vname);
           if (rule.reverse_edge) {
-            recorder_->AddEdge(remote, edge_kind, file_decl);
+            recorder_->AddEdge(remote, edge_kind, file_vname);
           } else {
-            recorder_->AddEdge(file_decl, edge_kind, remote);
+            recorder_->AddEdge(file_vname, edge_kind, remote);
           }
         } else {
           absl::FPrintF(stderr, "Unknown edge kind %s from metadata\n",
