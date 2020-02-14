@@ -55,6 +55,10 @@ class VNameRef {
     vname->mutable_path()->assign(path_.data(), path_.size());
     vname->mutable_language()->assign(language_.data(), language_.size());
   }
+  std::string DebugString() const {
+    return absl::StrCat("{", corpus_, ",", root_, ",", path_, ",", signature_,
+                        ",", language_, "}");
+  }
 
  private:
   absl::string_view signature_;
