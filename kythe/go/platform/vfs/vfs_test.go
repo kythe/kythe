@@ -26,6 +26,11 @@ import (
 
 const testDataDir = "testdata"
 
+type walkResult struct {
+	Path string
+	Info string
+}
+
 func TestGlobWalker(t *testing.T) {
 	byglob, err := collectFiles(&globWalker{LocalFS{}}, testutil.TestFilePath(t, testDataDir))
 	testutil.FatalOnErrT(t, "unable to collect files from glob", err)
@@ -34,13 +39,13 @@ func TestGlobWalker(t *testing.T) {
 	testutil.FatalOnErrT(t, "local and glob walks differ", testutil.DeepEqual(bylocal, byglob))
 }
 
-func collectFiles(walk Walker, root string) ([]string, error) {
-	var files []string
-	return files, walk.Walk(context.Background(), root, func(path string, info os.FileInfo, err error) error {
+func collectFiles(walk Walker, root string) ([]walkResult, error) {
+	var results []walkResult
+	return results, walk.Walk(context.Background(), root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		files = append(files, path)
+		results = append(results, walkResult{path, info.Name()})
 		return nil
 	})
 }
