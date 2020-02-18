@@ -302,10 +302,7 @@ public class JavaExtractorTest extends TestCase {
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
-    assertThat(unit.getRequiredInputCount()).isEqualTo(1);
-    assertThat(unit.getRequiredInput(0).getInfo().getPath()).isEqualTo(sources.get(0));
-    assertThat(unit.getRequiredInput(0).getInfo().getDigest())
-        .isEqualTo(ExtractorUtils.digestForPath(sources.get(0)));
+    assertThat(getInfos(unit.getRequiredInputList())).contains(makeFileInfo(sources.get(0)));
     assertThat(unit.getSourceFileCount()).isEqualTo(1);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
 
