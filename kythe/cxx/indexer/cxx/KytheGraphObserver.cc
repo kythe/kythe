@@ -438,20 +438,20 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile& meta,
     VNameRef file_vname(anchor);
     file_vname.set_signature("");
     file_vname.set_language("");
-    if (MarkFileMetaEdgeEmitted(file_vname, meta)) {
-      for (const auto& rule : meta.file_scope_rules()) {
-        EdgeKindID edge_kind;
-        if (of_spelling(rule.edge_out, &edge_kind)) {
+    for (const auto& rule : meta.file_scope_rules()) {
+      EdgeKindID edge_kind;
+      if (of_spelling(rule.edge_out, &edge_kind)) {
+        if (MarkFileMetaEdgeEmitted(file_vname, meta)) {
           VNameRef remote(rule.vname);
           if (rule.reverse_edge) {
             recorder_->AddEdge(remote, edge_kind, file_vname);
           } else {
             recorder_->AddEdge(file_vname, edge_kind, remote);
           }
-        } else {
-          absl::FPrintF(stderr, "Unknown edge kind %s from metadata\n",
-                        rule.edge_out);
         }
+      } else {
+        absl::FPrintF(stderr, "Unknown edge kind %s from metadata\n",
+                      rule.edge_out);
       }
     }
   }
