@@ -1,6 +1,6 @@
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
@@ -1158,7 +1158,6 @@ def kythe_dependencies(sample_ui = True):
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
     """
     _proto_dependencies()
-    _py_dependencies()
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
