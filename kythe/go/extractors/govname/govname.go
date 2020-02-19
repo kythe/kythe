@@ -54,6 +54,11 @@ type PackageVNameOptions struct {
 	// Rules optionally provides a list of rules to apply to go package and file
 	// paths to customize output vnames. See the vnameutil package for details.
 	Rules vnameutil.Rules
+
+	// If set, file and package paths are made relative to this directory before
+	// applying vname rules (if any). If unset, the module root (if using
+	// modules) or the gopath directory is used instead.
+	RootDirectory string
 }
 
 // ForPackage returns a VName for a Go package.
@@ -97,9 +102,14 @@ type PackageVNameOptions struct {
 //   }
 func ForPackage(pkg *build.Package, opts *PackageVNameOptions) *spb.VName {
 	if !pkg.Goroot && opts != nil && opts.Rules != nil {
-		relpath, err := filepath.Rel(pkg.Root, pkg.Dir)
+		root := pkg.Root
+		if opts.RootDirectory != "" {
+			root = opts.RootDirectory
+		}
+
+		relpath, err := filepath.Rel(root, pkg.Dir)
 		if err != nil {
-			log.Fatalf("relativizing path %q against dir %q: %v", pkg.Dir, pkg.Root, err)
+			log.Fatalf("relativizing path %q against dir %q: %v", pkg.Dir, root, err)
 		}
 		if relpath == "." {
 			relpath = ""

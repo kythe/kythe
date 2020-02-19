@@ -120,6 +120,7 @@ func main() {
 			DefaultCorpus:             *corpus,
 			Rules:                     rules,
 			CanonicalizePackageCorpus: *canonicalizePackageCorpus,
+			RootDirectory:             os.Getenv("KYTHE_ROOT_DIRECTORY"),
 		},
 	}
 	if *extraFiles != "" {
