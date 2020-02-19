@@ -98,7 +98,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
         "JavaEntrySets is non-null (analyzeCompilationUnit was called concurrently?)");
     if (config.getVerboseLogging()) {
       Streams.stream(details.getCompileErrors())
-          .collect(Collectors.groupingBy(d -> d.getSource()))
+          .collect(Collectors.groupingBy(d -> Optional.ofNullable(d.getSource())))
           .forEach(
               (file, errs) -> {
                 logger.at(levelFor(file)).log(
@@ -327,9 +327,12 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     }
   }
 
-  private static Level levelFor(JavaFileObject file) {
-    return (file != null && file.isNameCompatible("module-info", JavaFileObject.Kind.SOURCE))
-        ? Level.INFO
-        : Level.WARNING;
+  private static Level levelFor(Optional<JavaFileObject> file) {
+    return file.map(
+            f ->
+                f.isNameCompatible("module-info", JavaFileObject.Kind.SOURCE)
+                    ? Level.INFO
+                    : Level.WARNING)
+        .orElse(Level.WARNING);
   }
 }
