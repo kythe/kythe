@@ -22,6 +22,7 @@
 #include "GraphObserver.h"
 #include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/optional.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/CommentLexer.h"
@@ -3510,16 +3511,32 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // pick up weird declaration locations that aren't stable enough for us.
   if (const auto* FD = dyn_cast<FunctionDecl>(Decl)) {
     if (unsigned BuiltinID = FD->getBuiltinID()) {
-      if (FD->hasAttr<GNUInlineAttr>()) {
-        // If _FORTIFY_SOURCE is enabled, some builtin functions will grow
-        // additional definitions (like fread in bits/stdio2.h). These
-        // definitions have declarations that differ from their non-fortified
-        // versions (in the sense that they're different sequences of tokens),
-        // which leads us to generate different code facts for the same node.
-        // This upsets our testing infrastructure. Fortunately, we're able to
-        // use the presence of GNUInlineAttr to distinguish between the
-        // different flavors of decl.
-        Ostream << "#gnuinl";
+      // If _FORTIFY_SOURCE is enabled, some builtin functions will grow
+      // additional definitions (like fread in bits/stdio2.h). These
+      // definitions have declarations that differ from their non-fortified
+      // versions (in the sense that they're different sequences of tokens),
+      // which leads us to generate different code facts for the same node.
+      // This upsets our testing infrastructure. Similarly, some standard
+      // libraries redeclare various builtin function with different aliased
+      // names.  To workaround both of these, include all of the explicit
+      // attributes in the ID unless this is the canonical decl.
+      if (FD != FD->getCanonicalDecl()) {
+        clang::AttrVec attrs;
+        for (clang::Attr* attr : FD->attrs()) {
+          if (!(attr->isImplicit() || attr->isInherited())) {
+            attrs.push_back(attr);
+          }
+        }
+        if (!attrs.empty()) {
+          Ostream << absl::StrFormat(
+              "#attrs(%s)",
+              absl::StrJoin(attrs, "|",
+                            [](std::string* out, const clang::Attr* attr) {
+                              if (!attr->isImplicit()) {
+                                absl::StrAppend(out, attr->getSpelling());
+                              }
+                            }));
+        }
       }
       Ostream << "#builtin";
       GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(),
@@ -3685,7 +3702,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   GraphObserver::NodeId Id(Token, Ostream.str());
   DeclToNodeId.insert(std::make_pair(Decl, Id));
   return Id;
-}
+}  // namespace kythe
 
 bool IndexerASTVisitor::IsDefinition(const FunctionDecl* FunctionDecl) {
   return FunctionDecl->isThisDeclarationADefinition();
