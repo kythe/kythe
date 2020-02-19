@@ -3532,9 +3532,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
               "#attrs(%s)",
               absl::StrJoin(attrs, "|",
                             [](std::string* out, const clang::Attr* attr) {
-                              if (!attr->isImplicit()) {
-                                absl::StrAppend(out, attr->getSpelling());
-                              }
+                              absl::StrAppend(out, attr->getSpelling());
                             }));
         }
       }
