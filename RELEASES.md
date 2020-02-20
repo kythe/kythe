@@ -1,5 +1,46 @@
 # Release Notes
 
+## [v0.0.42] - 2020-02-19
+
+#### Bug Fixes
+
+*   use a more distinct corpus for the URI test (#4373) ([d94420d8](https://github.com/kythe/kythe/commit/d94420d8e3e3df131565dc47824cbcf524f13e69))
+*   increase the coverage of the proto/cc indexing tests (#4370) ([5b565aff](https://github.com/kythe/kythe/commit/5b565aff4e9393d346fde6b3d7c6bb58f160e0c0))
+*   cc_kythe_proto_library handles multiple deps (#4368) ([c952b246](https://github.com/kythe/kythe/commit/c952b2467618c2ba81eccbf94546e80130262d68))
+*   centralize shared testdata protos (#4360) ([625d96f8](https://github.com/kythe/kythe/commit/625d96f807af5f0189de94506182a466fd956aca))
+*   centralize common shared testdata (#4359) ([d5e124b7](https://github.com/kythe/kythe/commit/d5e124b7f4c3676ae958b337a177c63e5332e7ff))
+* **copy_kzip:**
+  *  hard links always fail under bazel so don't try (#4365) ([10540135](https://github.com/kythe/kythe/commit/10540135260c2559171ad4ad68844784133773e9))
+  *  actually use err value (#4355) ([a68e996d](https://github.com/kythe/kythe/commit/a68e996d5bbfc6413d697b101556f85d45aab78b))
+* **cxx_indexer:**
+  *  address marked-source differences on builtin functions (#4379) ([cbd9244c](https://github.com/kythe/kythe/commit/cbd9244c52c9deb0f40772f8e0b5baaf9846be5f))
+  *  emit exactly one file-file generates edge for proto (#4377) ([5ab67169](https://github.com/kythe/kythe/commit/5ab6716903a631d8543f11b39c8ebed6fc8d2fe6))
+  *  use anchor not decl for file-file generates endpoint (#4372) ([6e14dbde](https://github.com/kythe/kythe/commit/6e14dbde996a9edb2cb07c3ede85298be856149e))
+* **example:**  childof edges to files are no longer required (#4361) ([43e46667](https://github.com/kythe/kythe/commit/43e4666781df10b7454adaa52c9f9f981ab2040b))
+* **go_build:**  update deps to fix #4264 (#4382) ([d25a749e](https://github.com/kythe/kythe/commit/d25a749e8865b3c28d6bc77cd39db3132f794978))
+* **go_indexer:**  use the anchor for the file-file generates edges (#4348) ([3d658d1d](https://github.com/kythe/kythe/commit/3d658d1d45deeac5f77d164d9e1b45d7d76f5872))
+* **java_extractor_test:**  make error test less picky on required input (#4376) ([05d937f0](https://github.com/kythe/kythe/commit/05d937f04f091b2a0a982f5960c745d556dfa139))
+* **java_indexer:**  fix NPE on null diagnostic source (#4378) ([5986688f](https://github.com/kythe/kythe/commit/5986688f9a865571778c18fadf15fcb6859521cf))
+* **kzip_merge:**  add a test that globwalker behaves like filepath.Walk (#4353) ([939f3ea7](https://github.com/kythe/kythe/commit/939f3ea7f9d7e0bbfabdbb192e69a2a33bb544ff))
+* **tooling:**
+  *  ensure VNameRewriteRule JSON encoding is canonical (#4352) ([124e000a](https://github.com/kythe/kythe/commit/124e000a1f4998813805f698483334ca160b571a))
+  *  keep track of added source file paths (#4351) ([e753a99a](https://github.com/kythe/kythe/commit/e753a99a87ee85c29a86aff61ba983917104fe0d))
+* **vfs:**  use correct FileInfo in globWalker (#4375) ([59453746](https://github.com/kythe/kythe/commit/59453746275a3e1840ac63cdb5a993e86de96cfc))
+
+#### Features
+
+*   add and use vfs.Walk for recursive merge (#4345) ([e9a71225](https://github.com/kythe/kythe/commit/e9a71225a1bd510a9f4bbaa55b3321ee65607a68))
+* **cxx_indexer:**
+  *  add DebugString to VNameRef (#4371) ([5a20effc](https://github.com/kythe/kythe/commit/5a20effc0c613b10b5423c8505f4ebf31b5af7fd))
+  *  add test for proto/c++ xrefs with included proto (#4363) ([90f7c4e0](https://github.com/kythe/kythe/commit/90f7c4e0a696d91de8a00d2e33d85806a268996f))
+  *  emit USRs for macros (#4315) (#4358) ([87d3be72](https://github.com/kythe/kythe/commit/87d3be72bf54b1f65bde11ba02df79de2dd05304))
+* **extractors:**  add a passthrough bazel extractor (#4354) ([e22e87aa](https://github.com/kythe/kythe/commit/e22e87aa1ae37b97a09f2d4317b0167d279f6f2f))
+* **go extractor:**  relative paths against KYTHE_ROOT_DIRECTORY (#4380) ([18c0563f](https://github.com/kythe/kythe/commit/18c0563fcd9ffbca8f6b071e6a29078a4e8573e9))
+* **go indexer:**  add option to only emit doc/uri facts for stdlib pkgs (#4383) ([255331cb](https://github.com/kythe/kythe/commit/255331cb1e861f1f9741c7afce56988c04a28658))
+* **go_indexer:**  add generates edges for proto-generated files (#4337) ([2f01e628](https://github.com/kythe/kythe/commit/2f01e6281e6bf3ddc1cf15efb87dff3363cb1c3e))
+* **kzip_merge:**  allow applying vname rules during merge (#4366) ([21d68ce6](https://github.com/kythe/kythe/commit/21d68ce62bcd4396e494792287ad4591abe293b6))
+* **tooling:**  add vnames utility for handling rewrite rules (#4347) ([4a75aef1](https://github.com/kythe/kythe/commit/4a75aef1848c689577eb31222a4f8495f667c17f))
+
 ## [v0.0.41] - 2020-01-31
 
 #### Features
@@ -812,7 +853,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.41...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.42...HEAD
+[v0.0.42] https://github.com/kythe/kythe/compare/v0.0.41...v0.0.42
 [v0.0.41] https://github.com/kythe/kythe/compare/v0.0.40...v0.0.41
 [v0.0.40] https://github.com/kythe/kythe/compare/v0.0.39...v0.0.40
 [v0.0.39] https://github.com/kythe/kythe/compare/v0.0.38...v0.0.39
