@@ -12,11 +12,11 @@ check_version(MIN_VERSION, MAX_VERSION)
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "56e75f7c9bb074f35b71a9950917fbd036bd1433f9f5be7c04bace0e68eb804a",
-    strip_prefix = "bazel-toolchains-9bd2748ec99d72bec41c88eecc3b7bd19d91a0c7",
+    sha256 = "4d348abfaddbcee0c077fc51bb1177065c3663191588ab3d958f027cbfe1818b",
+    strip_prefix = "bazel-toolchains-2.1.0",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/9bd2748ec99d72bec41c88eecc3b7bd19d91a0c7.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/archive/9bd2748ec99d72bec41c88eecc3b7bd19d91a0c7.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/releases/download/2.1.0/bazel-toolchains-2.1.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/2.1.0.tar.gz",
     ],
 )
 
@@ -58,3 +58,34 @@ bind(
 load("@maven//:compat.bzl", "compat_repositories")
 
 compat_repositories()
+
+# If the configuration here changes, run tools/platforms/configs/rebuild.sh
+load("@bazel_toolchains//rules:environments.bzl", "clang_env")
+load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
+load("//tools/platforms:toolchain_config_suite_spec.bzl", "DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC")
+
+rbe_autoconfig(
+    name = "rbe_default",
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
+)
+
+rbe_autoconfig(
+    name = "rbe_bazel_minversion",
+    bazel_version = MIN_VERSION,
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
+)
+
+rbe_autoconfig(
+    name = "rbe_bazel_maxversion",
+    bazel_version = MAX_VERSION,
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
+)

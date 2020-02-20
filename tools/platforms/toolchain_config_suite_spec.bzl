@@ -1,4 +1,4 @@
-# Copyright 2018 The Kythe Authors. All rights reserved.
+# Copyright 2020 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# docker build -t gcr.io/kythe-repo/kythe-builder .
-FROM gcr.io/cloud-marketplace/google/rbe-ubuntu18-04@sha256:5703843282226b2f7db86afc0b1535f46d411fa72c1d540e1bd0f8064adb0bdb
+"""RBE toolchain specification."""
 
-RUN apt-get update && \
-    apt-get install -y \
-      # Kythe C++ dependencies
-      uuid-dev flex bison g++ \
-      # Kythe misc dependencies
-      asciidoc source-highlight graphviz && \
-    apt-get clean
+load("//tools/platforms/configs:versions.bzl", "TOOLCHAIN_CONFIG_AUTOGEN_SPEC")
+
+DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC = {
+    "repo_name": "io_kythe",
+    "output_base": "tools/platforms/configs",
+    "container_repo": "kythe-repo/kythe-builder",
+    "container_registry": "gcr.io",
+    "default_java_home": "/usr/lib/jvm/11.29.3-ca-jdk11.0.2/reduced",
+    "toolchain_config_suite_autogen_spec": TOOLCHAIN_CONFIG_AUTOGEN_SPEC,
+}

@@ -12,6 +12,7 @@ load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@rules_python//python:repositories.bzl", "py_repositories")
+load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_repositories = "repositories")
 
 def _rule_dependencies():
     go_rules_dependencies()
@@ -20,6 +21,7 @@ def _rule_dependencies():
     rules_java_dependencies()
     rules_proto_dependencies()
     py_repositories()
+    bazel_toolchains_repositories()
 
 def _gazelle_ignore(**kwargs):
     """Dummy macro which causes gazelle to see a repository as already defined."""
@@ -82,11 +84,11 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "com_google_absl",
-        sha256 = "c1b570e3d48527c6eb5d8668cd4d2a24b704110700adc0db44b002c058fdf5d0",
-        strip_prefix = "abseil-cpp-c6c3c1b498e4ee939b24be59cae29d59c3863be8",
+        sha256 = "4bdb45ca33f5b437d5ccfabea8c26cfe9570031d7bddeabebd5df51800535cb5",
+        strip_prefix = "abseil-cpp-3c814105108680997d0821077694f663693b5382",
         urls = [
-            "https://mirror.bazel.build/github.com/abseil/abseil-cpp/archive/c6c3c1b498e4ee939b24be59cae29d59c3863be8.zip",
-            "https://github.com/abseil/abseil-cpp/archive/c6c3c1b498e4ee939b24be59cae29d59c3863be8.zip",
+            "https://mirror.bazel.build/github.com/abseil/abseil-cpp/archive/3c814105108680997d0821077694f663693b5382.zip",
+            "https://github.com/abseil/abseil-cpp/archive/3c814105108680997d0821077694f663693b5382.zip",
         ],
     )
 
@@ -121,6 +123,10 @@ def _cc_dependencies():
         name = "org_brotli",
         sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
         strip_prefix = "brotli-1.0.7",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party:brotli/brotli-1.0.7-int-float-conversion.patch",
+        ],
         urls = [
             "https://mirror.bazel.build/github.com/google/brotli/archive/v1.0.7.tar.gz",
             "https://github.com/google/brotli/archive/v1.0.7.tar.gz",

@@ -7,6 +7,8 @@ exports_files(["COPYING"])
 
 CURL_COPTS = [
     "-Wno-incompatible-pointer-types-discards-qualifiers",
+    "-Wno-unknown-warning-option",
+    "-Wno-misleading-indentation",
 ]
 
 cc_library(
