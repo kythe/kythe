@@ -1,11 +1,12 @@
 diff --git a/BUILD b/BUILD
-index 4c9b57a..faf3d5e 100644
+index 4c9b57a..8f69d62 100644
 --- a/BUILD
 +++ b/BUILD
-@@ -57,6 +57,7 @@ STRICT_C_OPTIONS = select({
+@@ -57,6 +57,8 @@ STRICT_C_OPTIONS = select({
          "-Wno-strict-aliasing",
          "-Wshadow",
          "-Wsign-compare",
++        "-Wno-unknown-warning-option",
 +        "-Wno-implicit-int-float-conversion",
      ],
  })
