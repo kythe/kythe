@@ -167,6 +167,19 @@ config for a gradle project looks like:
 
 (note: change "MY_CORPUS" to the actual corpus for your project)
 
+You can test your vname config using the `vnames` command line tool. For example:
+
+```shell
+bazel build //kythe/go/util/tools/vnames
+
+echo "some/test/path.java" | ./bazel-bin/kythe/go/util/tools/vnames/vnames apply-rules --rules vnames.json
+> {
+>   "corpus": "MY_CORPUS",
+>   "path": "some/test/path.java"
+> }
+```
+
+
 3. Extraction
 
 ```shell
