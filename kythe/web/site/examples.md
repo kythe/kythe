@@ -113,6 +113,103 @@ $ /opt/kythe/tools/runextractor cmake \
     -sourcedir=$CMAKE_ROOT_DIRECTORY
 ```
 
+## Extracting Gradle based repositories
+
+1. Install compiler wrapper
+
+Extraction works by intercepting all calls to `javac` and saving the compiler arguments and inputs to a "compilation unit", which is stored in a .kzip file. We have a javac-wrapper.sh script that forwards javac calls to the java extractor and then calls javac. Add this to the end of your project's build.gradle:
+
+```groovy
+allprojects {
+  gradle.projectsEvaluated {
+    tasks.withType(JavaCompile) {
+      options.fork = true
+      options.forkOptions.executable = '/opt/kythe/extractors/javac-wrapper.sh'
+    }
+  }
+}
+```
+
+2. VName configuration
+
+Next, you will need to create a vnames.json mapping file, which tells the
+extractor how to assign vnames to files based on their paths. A basic vnames
+config for a gradle project looks like:
+
+```json
+// vnames.json
+[
+  {
+    "pattern": "(build/[^/]+)/(.*)",
+    "vname": {
+      "corpus": "MY_CORPUS",
+      "path": "@2@",
+      "root": "@1@"
+    }
+  },
+  {
+    "pattern": ".*/.gradle/caches/(.*)",
+    "vname": {
+      "corpus": "MY_CORPUS",
+      "path": "@1@",
+      "root": ".gradle/caches"
+    }
+  },
+  {
+    "pattern": "(.*)",
+    "vname": {
+      "corpus": "MY_CORPUS",
+      "path": "@1@"
+    }
+  }
+]
+```
+
+(note: change "MY_CORPUS" to the actual corpus for your project)
+
+You can test your vname config using the `vnames` command line tool. For example:
+
+```shell
+bazel build //kythe/go/util/tools/vnames
+
+echo "some/test/path.java" | ./bazel-bin/kythe/go/util/tools/vnames/vnames apply-rules --rules vnames.json
+> {
+>   "corpus": "MY_CORPUS",
+>   "path": "some/test/path.java"
+> }
+```
+
+
+3. Extraction
+
+```shell
+# note: you may want to use a different javac depending on your install
+export REAL_JAVAC="/usr/bin/javac"
+export JAVA_HOME="$(readlink -f $REAL_JAVAC | sed 's:/bin/javac::')"
+export JAVAC_EXTRACTOR_JAR="/opt/kythe/extractors/javac_extractor.jar"
+
+export KYTHE_VNAMES="$PWD/vnames.json"
+
+export KYTHE_ROOT_DIRECTORY="$PWD" # paths in the compilation unit will be made relative to this
+export KYTHE_OUTPUT_DIRECTORY="/tmp/extracted_gradle_project"
+mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
+
+./gradlew clean build -x test -Dno_werror=true
+
+# merge all kzips into one
+/opt/kythe/tools/kzip merge --output $KYTHE_OUTPUT_DIRECTORY/merged.kzip $KYTHE_OUTPUT_DIRECTORY/*.kzip
+```
+
+4. Examine results
+
+If extraction was successful, the final kzip should be at `$KYTHE_OUTPUT_DIRECTORY/merged.kzip`. The `kzip` tool can be used to inspect the result.
+
+```shell
+$ kzip info --input merged.kzip | jq . # view summary information
+$ kzip view merged.kzip | jq .         # view all compilation units in the kzip
+```
+
+
 ## Indexing Compilations
 
 All Kythe indexers analyze compilations emitted from
