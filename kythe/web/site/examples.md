@@ -115,7 +115,7 @@ $ /opt/kythe/tools/runextractor cmake \
 
 ## Extracting Gradle based repositories
 
-1. Install compiler wrapper
+### Install compiler wrapper
 
 Extraction works by intercepting all calls to `javac` and saving the compiler arguments and inputs to a "compilation unit", which is stored in a .kzip file. We have a javac-wrapper.sh script that forwards javac calls to the java extractor and then calls javac. Add this to the end of your project's build.gradle:
 
@@ -130,14 +130,13 @@ allprojects {
 }
 ```
 
-2. VName configuration
+### VName configuration
 
 Next, you will need to create a vnames.json mapping file, which tells the
 extractor how to assign vnames to files based on their paths. A basic vnames
 config for a gradle project looks like:
 
 ```json
-// vnames.json
 [
   {
     "pattern": "(build/[^/]+)/(.*)",
@@ -180,7 +179,7 @@ echo "some/test/path.java" | ./bazel-bin/kythe/go/util/tools/vnames/vnames apply
 ```
 
 
-3. Extraction
+### Extraction
 
 ```shell
 # note: you may want to use a different javac depending on your install
@@ -200,7 +199,7 @@ mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 /opt/kythe/tools/kzip merge --output $KYTHE_OUTPUT_DIRECTORY/merged.kzip $KYTHE_OUTPUT_DIRECTORY/*.kzip
 ```
 
-4. Examine results
+### Examine results
 
 If extraction was successful, the final kzip should be at `$KYTHE_OUTPUT_DIRECTORY/merged.kzip`. The `kzip` tool can be used to inspect the result.
 
