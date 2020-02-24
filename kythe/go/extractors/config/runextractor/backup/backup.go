@@ -40,7 +40,7 @@ import (
 // file.  The Restore method replaces the contents of the original with the
 // backup, overwriting any changes that were made since the backup was created.
 type File struct {
-	orig, tmp string // file paths
+	Orig, Tmp string // file paths
 }
 
 // New creates a backup copy of the specified file, located in the same
@@ -71,18 +71,18 @@ func New(orig string) (*File, error) {
 
 // Restore puts the original version of the backed up file back in place.
 func (f *File) Restore() error {
-	if err := os.Rename(f.tmp, f.orig); err != nil {
+	if err := os.Rename(f.Tmp, f.Orig); err != nil {
 		return err
 	}
-	f.tmp = ""
+	f.Tmp = ""
 	return nil
 }
 
 // Release removes the temporary file copy if it hasn't already been moved.
 func (f *File) Release() {
-	if f.tmp != "" {
-		if err := os.Remove(f.tmp); err != nil {
-			log.Printf("Warning: removing backup of %q failed: %v", f.orig, err)
+	if f.Tmp != "" {
+		if err := os.Remove(f.Tmp); err != nil {
+			log.Printf("Warning: removing backup of %q failed: %v", f.Orig, err)
 		}
 	}
 }

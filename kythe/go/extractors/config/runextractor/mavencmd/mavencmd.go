@@ -19,6 +19,8 @@ package mavencmd // import "kythe.io/kythe/go/extractors/config/runextractor/mav
 
 import (
 	"context"
+	"log"
+	"strings"
 	"flag"
 	"fmt"
 	"os"
@@ -82,10 +84,27 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 	if err := modifier.PreProcessPomXML(m.pomXML); err != nil {
 		return m.Fail("error modifying maven pom XML %s: %v", m.pomXML, err)
 	}
-	if err := exec.Command("mvn", "clean", "install",
+
+	// Print diff to show changes made to pom.xml.
+	log.Printf("Modified pom.xml. Diff:")
+	diffCmd := exec.Command("diff", "-u", tf.Tmp, tf.Orig)
+	diffCmd.Stderr = os.Stderr
+	diffCmd.Stdout= os.Stdout
+	// Note that `diff` exits with code 1 if the files are different.
+	if err := diffCmd.Run(); err != nil && err.(*exec.ExitError).ExitCode() != 1 {
+		return m.Fail("error diffing modified pom.xml against original: %v", err)
+	}
+
+	mvnArgs := []string{"clean", "install",
 		"-Dmaven.compiler.forceJavaCompilerUser=true",
 		"-Dmaven.compiler.fork=true",
-		fmt.Sprintf("-Dmaven.compiler.executable=%s", m.javacWrapper)).Run(); err != nil {
+		fmt.Sprintf("-Dmaven.compiler.executable=%s", m.javacWrapper),
+	}
+	log.Printf("Running `mvn %v`", strings.Join(mvnArgs, " "))
+	cmd := exec.Command("mvn", mvnArgs...)
+	cmd.Stdout= os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
 		return m.Fail("error executing maven build: %v", err)
 	}
 	// We restore the original config file even during successful runs because
