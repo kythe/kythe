@@ -16,6 +16,7 @@ java_binary(
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "//third_party/javac",
+        "//third_party/javac:javac-9+181-r4173-1.jar",
     ],
 )
 
