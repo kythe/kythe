@@ -20,6 +20,8 @@ package createcmd // import "kythe.io/kythe/go/platform/tools/kzip/createcmd"
 import (
 	"context"
 	"flag"
+	"os"
+	"path/filepath"
 
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/tools/kzip/flags"
@@ -62,6 +64,7 @@ func New() subcommands.Command {
 Construct a kzip file written to -output with the vname specified by -uri.
 Each of -source_file, -required_input and -details may be specified multiple times with each
 occurrence of the flag being appended to the corresponding field in the compilation unit.
+Directories specified in -source_file or -required_input will be added recursively.
 
 Any additional positional arguments are included as arguments in the compilation unit.
 `),
@@ -76,7 +79,7 @@ func (c *createCommand) SetFlags(fs *flag.FlagSet) {
 	fs.Var(&c.rules, "rules", "Path to vnames.json file (optional)")
 
 	fs.Var(&c.uri, "uri", "A Kythe URI naming the compilation unit VName (required)")
-	fs.Var(&c.source, "source_file", "Repeated paths for input source files (required)")
+	fs.Var(&c.source, "source_file", "Repeated paths for input source files or directories (required)")
 	fs.Var(&c.inputs, "required_input", "Repeated paths for additional required inputs (optional)")
 	fs.BoolVar(&c.hasError, "has_compile_errors", false, "Whether this unit had compilation errors (optional)")
 	fs.Var(&c.argument, "argument", "Repeated arguments to add to compilation unit (optional)")
@@ -92,17 +95,17 @@ func (c *createCommand) SetFlags(fs *flag.FlagSet) {
 func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	switch {
 	case c.uri.Corpus == "":
-		return c.Fail("missing required -uri")
+		return c.Fail("Missing required -uri")
 	case c.output == "":
-		return c.Fail("missing required -output")
+		return c.Fail("Missing required -output")
 	case c.source.Len() == 0:
-		return c.Fail("missing required -source_file")
+		return c.Fail("Missing required -source_file")
 	}
 
 	opt := kzip.WithEncoding(c.encoding.Encoding)
 	out, err := openWriter(ctx, c.output, opt)
 	if err != nil {
-		return c.Fail("error opening -output: %v", err)
+		return c.Fail("Error opening -output: %v", err)
 	}
 
 	// Create a new compilation populating its VName with the values specified
@@ -117,7 +120,6 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		},
 		HasCompileErrors: c.hasError,
 		Argument:         append(c.argument, fs.Args()...),
-		SourceFile:       c.source.Elements(),
 		OutputKey:        c.outputKey,
 		WorkingDirectory: c.workingDir,
 		EntryContext:     c.entryContext,
@@ -125,12 +127,18 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		Details:          ([]*anypb.Any)(c.details),
 	}, out, &c.rules.Rules}
 
-	c.inputs.Update(c.source)
-	if err := cb.addFiles(ctx, c.inputs.Elements()); err != nil {
-		return c.Fail("error adding input files: %v", err)
+	sources, err := cb.addFiles(ctx, c.source.Elements())
+	if err != nil {
+		return c.Fail("Error adding source files: %v", err)
 	}
+	cb.unit.SourceFile = sources
+
+	if _, err = cb.addFiles(ctx, c.inputs.Elements()); err != nil {
+		return c.Fail("Error adding input files: %v", err)
+	}
+
 	if err := cb.done(); err != nil {
-		return c.Fail("error writing compilation to -output: %v", err)
+		return c.Fail("Error writing compilation to -output: %v", err)
 	}
 	return subcommands.ExitSuccess
 }
@@ -149,45 +157,64 @@ type compilationBuilder struct {
 	rules *vnameutil.Rules
 }
 
-func (cb *compilationBuilder) addFiles(ctx context.Context, paths []string) error {
+// addFiles adds the given files as required input.
+// If the path is a directory, its contents are added recursively.
+// Returns the paths of the non-directory files added.
+func (cb *compilationBuilder) addFiles(ctx context.Context, paths []string) ([]string, error) {
+	var files []string
 	for _, path := range paths {
-		if err := cb.addFile(ctx, path); err != nil {
-			return err
+		f, err := cb.addFile(ctx, path)
+		if err != nil {
+			return files, err
 		}
+		files = append(files, f...)
 	}
-	return nil
+	return files, nil
 }
 
-func (cb *compilationBuilder) addFile(ctx context.Context, path string) error {
-	input, err := vfs.Open(ctx, path)
-	if err != nil {
-		return err
-	}
-	defer input.Close()
-
-	digest, err := cb.out.AddFile(input)
-	if err != nil {
-		return err
-	}
-	vname, ok := cb.rules.Apply(path)
-	if !ok {
-		vname = &spb.VName{
-			Corpus: cb.unit.VName.Corpus,
-			Root:   cb.unit.VName.Root,
-			Path:   path,
+// addFile adds the given file as a required input.
+// If the path is a directory, its contents are added recursively.
+// Returns the paths of the non-directory files added.
+func (cb *compilationBuilder) addFile(ctx context.Context, root string) ([]string, error) {
+	var files []string
+	err := vfs.Walk(ctx, root, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
 		}
-	} else if vname.Corpus == "" {
-		vname.Corpus = cb.unit.VName.Corpus
+		input, err := vfs.Open(ctx, path)
+		if err != nil {
+			return err
+		}
+		defer input.Close()
 
-	}
-	cb.unit.RequiredInput = append(cb.unit.RequiredInput, &apb.CompilationUnit_FileInput{
-		VName: vname,
-		Info: &apb.FileInfo{
-			Path:   path,
-			Digest: digest,
-		},
+		digest, err := cb.out.AddFile(input)
+		if err != nil {
+			return err
+		}
+
+		path = cb.tryMakeRelative(path)
+		vname, ok := cb.rules.Apply(path)
+		if !ok {
+			vname = &spb.VName{
+				Corpus: cb.unit.VName.Corpus,
+				Root:   cb.unit.VName.Root,
+				Path:   path,
+			}
+		} else if vname.Corpus == "" {
+			vname.Corpus = cb.unit.VName.Corpus
+
+		}
+		cb.unit.RequiredInput = append(cb.unit.RequiredInput, &apb.CompilationUnit_FileInput{
+			VName: vname,
+			Info: &apb.FileInfo{
+				Path:   path,
+				Digest: digest,
+			},
+		})
+		files = append(files, path)
+		return nil
 	})
-	return nil
+	return files, err
 }
 
 func (cb *compilationBuilder) done() error {
@@ -197,4 +224,28 @@ func (cb *compilationBuilder) done() error {
 	}
 	cb.unit = nil
 	return cb.out.Close()
+}
+
+// tryeMakeRelative attempts to relativize path against unit.WorkingDirectory or CWD,
+// returning path unmodified on failure.
+func (cb *compilationBuilder) tryMakeRelative(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return path
+	}
+	var dir string
+	if cb.unit.WorkingDirectory != "" {
+		dir = cb.unit.WorkingDirectory
+	} else {
+		dir, err = filepath.Abs(".")
+		if err != nil {
+			return path
+		}
+	}
+	rel, err := filepath.Rel(dir, abs)
+	if err != nil {
+		return path
+	}
+	return rel
+
 }

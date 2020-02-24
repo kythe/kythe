@@ -143,10 +143,10 @@ Many examples on the site assume you have installed kythe in /opt/kythe.
 # Build a Kythe release
 bazel build //kythe/release
 # Set current Kythe version
-# check bazel-genfiles/kythe/release/ directory to get current version.
+# check bazel-bin/kythe/release/ directory to get current version.
 export KYTHE_RELEASE="x.y.z"
 # Extract our new Kythe release to /opt/ including its version number
-tar -zxf bazel-genfiles/kythe/release/kythe-v${KYTHE_RELEASE}.tar.gz --directory /opt/
+tar -zxf bazel-bin/kythe/release/kythe-v${KYTHE_RELEASE}.tar.gz --directory /opt/
 # Remove the old pointer to Kythe if we had one
 rm -f /opt/kythe
 # Point Kythe to our new version

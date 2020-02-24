@@ -23,7 +23,11 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -81,10 +85,11 @@ public class ProtobufMetadataLoader implements MetadataLoader {
   /** @return a function that looks up the VName for some filename in the given CompilationUnit. */
   private static Function<String, VName> lookupVNameFromCompilationUnit(CompilationUnit unit) {
     HashMap<String, VName> map = new HashMap<>();
+    Path root = Paths.get("/", unit.getWorkingDirectory());
     for (CompilationUnit.FileInput input : unit.getRequiredInputList()) {
-      map.put(input.getInfo().getPath(), input.getVName());
+      map.put(root.resolve(input.getInfo().getPath()).toString(), input.getVName());
     }
-    return map::get;
+    return p -> map.get(root.resolve(p).toString());
   }
 
   @Override
@@ -102,6 +107,8 @@ public class ProtobufMetadataLoader implements MetadataLoader {
       contextVName = VName.newBuilder().setCorpus(defaultCorpus).build();
     }
     Metadata metadata = new Metadata();
+    Set<VName> fileVNames = new HashSet<>();
+
     for (GeneratedCodeInfo.Annotation annotation : info.getAnnotationList()) {
       Metadata.Rule rule = new Metadata.Rule();
       rule.begin = annotation.getBegin();
@@ -123,6 +130,7 @@ public class ProtobufMetadataLoader implements MetadataLoader {
                 .setPath(annotation.getSourceFile())
                 .build();
       }
+      fileVNames.add(rule.vname);
       rule.vname =
           rule.vname.toBuilder()
               .setSignature(protoPath.toString())
@@ -131,6 +139,15 @@ public class ProtobufMetadataLoader implements MetadataLoader {
       rule.edgeOut = EdgeKind.GENERATES;
       rule.reverseEdge = true;
       metadata.addRule(rule);
+    }
+    for (VName vname : fileVNames) {
+      Metadata.Rule rule = new Metadata.Rule();
+      rule.begin = -1;
+      rule.end = -1;
+      rule.vname = vname;
+      rule.reverseEdge = true;
+      rule.edgeOut = EdgeKind.GENERATES;
+      metadata.addFileScopeRule(rule);
     }
     return metadata;
   }

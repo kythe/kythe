@@ -300,6 +300,7 @@ cc_library(
         "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@org_libzip//:zip",
@@ -310,11 +311,11 @@ cc_test(
     name = "kzip_reader_test",
     srcs = ["kzip_reader_test.cc"],
     data = [
-        "//kythe/cxx/common/testdata:empty.kzip",
-        "//kythe/cxx/common/testdata:malformed.kzip",
-        "//kythe/cxx/common/testdata:missing-pbunit.kzip",
-        "//kythe/cxx/common/testdata:missing-unit.kzip",
-        "//kythe/cxx/common/testdata:stringset.kzip",
+        "//kythe/testdata/platform:empty.kzip",
+        "//kythe/testdata/platform:malformed.kzip",
+        "//kythe/testdata/platform:missing-pbunit.kzip",
+        "//kythe/testdata/platform:missing-unit.kzip",
+        "//kythe/testdata/platform:stringset.kzip",
     ],
     deps = [
         ":kzip_reader",
@@ -340,6 +341,7 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@org_libzip//:zip",
@@ -350,7 +352,7 @@ cc_test(
     name = "kzip_writer_test",
     srcs = ["kzip_writer_test.cc"],
     data = [
-        "//kythe/cxx/common/testdata:stringset.kzip",
+        "//kythe/testdata/platform:stringset.kzip",
     ],
     deps = [
         ":kzip_reader",

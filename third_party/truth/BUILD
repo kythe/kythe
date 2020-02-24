@@ -8,6 +8,6 @@ exports_files(["LICENSE"])
 
 java_library(
     name = "truth",
-    exports = ["@com_google_truth_truth//jar"],
-    runtime_deps = ["@com_googlecode_java_diff_utils//jar"],
+    exports = ["@maven//:com_google_truth_truth"],
+    runtime_deps = ["@maven//:com_googlecode_java_diff_utils_diffutils"],
 )

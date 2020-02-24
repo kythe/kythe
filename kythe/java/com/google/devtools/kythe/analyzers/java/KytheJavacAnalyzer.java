@@ -17,7 +17,9 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Streams;
 import com.google.common.flogger.FluentLogger;
+import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.java.Plugin.KytheNode;
 import com.google.devtools.kythe.analyzers.jvm.JvmGraph;
@@ -47,8 +49,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
 import javax.lang.model.element.Name;
-import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
 
 /** {@link JavacAnalyzer} to emit Kythe nodes and edges. */
 public class KytheJavacAnalyzer extends JavacAnalyzer {
@@ -93,9 +97,14 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
         entrySets == null,
         "JavaEntrySets is non-null (analyzeCompilationUnit was called concurrently?)");
     if (config.getVerboseLogging()) {
-      for (Diagnostic<?> err : details.getCompileErrors()) {
-        logger.atWarning().log("javac compilation error: %s", err);
-      }
+      Streams.stream(details.getCompileErrors())
+          .collect(Collectors.groupingBy(d -> Optional.ofNullable(d.getSource())))
+          .forEach(
+              (file, errs) -> {
+                logger.at(levelFor(file)).log(
+                    "javac compilation errors:\n%s",
+                    errs.stream().map(Object::toString).collect(Collectors.joining("\n")));
+              });
     }
     CompilationUnit compilation = details.getCompilationUnit();
     entrySets =
@@ -119,7 +128,17 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
       throws AnalysisException {
     Preconditions.checkState(
         entrySets != null, "analyzeCompilationUnit must be called to analyze each file");
-    Context context = ((JavacTaskImpl) details.getJavac()).getContext();
+    if (!details.getJavac().isPresent()) {
+      if (details.getAnalysisCrash().isPresent()) {
+        throw new AnalysisException(
+            "No javac in details while analyzing file: " + ast.getSourceFile().getName(),
+            details.getAnalysisCrash().get());
+      }
+      throw new AnalysisException(
+          "No javac in details while analyzing file: " + ast.getSourceFile().getName());
+    }
+    JavacTaskImpl javac = (JavacTaskImpl) details.getJavac().get();
+    Context context = javac.getContext();
     JCCompilationUnit compilation = (JCCompilationUnit) ast;
     final Map<JCTree, Plugin.KytheNode> nodes = new HashMap<>();
     SourceText src = null;
@@ -148,7 +167,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
       }
       Plugin.KytheGraph graph =
           new KytheGraphImpl(
-              context, src.getPositions(), symNodes, Collections.unmodifiableMap(nodes));
+              context, entrySets, src.getPositions(), symNodes, Collections.unmodifiableMap(nodes));
       for (Supplier<Plugin> p : plugins) {
         try {
           Plugin plugin = p.get();
@@ -162,16 +181,19 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
 
   private static class KytheGraphImpl implements Plugin.KytheGraph {
     private final Context javaContext;
+    private final JavaEntrySets entrySets;
     private final SourceText.Positions filePositions;
     private final Map<JCTree, Plugin.KytheNode> treeNodes;
     private final Map<Symbol, Plugin.KytheNode> symNodes;
 
     KytheGraphImpl(
         Context javaContext,
+        JavaEntrySets entrySets,
         SourceText.Positions filePositions,
         Map<Symbol, Plugin.KytheNode> symNodes,
         Map<JCTree, Plugin.KytheNode> treeNodes) {
       this.javaContext = javaContext;
+      this.entrySets = entrySets;
       this.filePositions = filePositions;
       this.symNodes = symNodes;
       this.treeNodes = treeNodes;
@@ -180,6 +202,11 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     @Override
     public Context getJavaContext() {
       return javaContext;
+    }
+
+    @Override
+    public Optional<Plugin.KytheNode> getNode(JavaFileObject file) {
+      return Optional.ofNullable(file).map(entrySets::getFileVName).map(KytheNodeImpl::new);
     }
 
     @Override
@@ -194,20 +221,26 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
 
     @Override
     public Optional<Plugin.KytheNode> getJvmNode(Symbol sym) {
+      CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
       switch (sym.getKind()) {
         case CLASS:
         case ENUM:
         case INTERFACE:
-          return referenceJvmType(sym).map(JvmGraph::getReferenceVName).map(KytheNodeImpl::new);
+          return referenceJvmType(sym)
+              .map(t -> JvmGraph.getReferenceVName(corpusPath, t))
+              .map(KytheNodeImpl::new);
         case METHOD:
         case CONSTRUCTOR:
           return forMethodAndEnclosingClass(
               sym,
               (method, enclosingClass) ->
-                  JvmGraph.getMethodVName(enclosingClass, sym.getSimpleName().toString(), method));
+                  JvmGraph.getMethodVName(
+                      corpusPath, enclosingClass, sym.getSimpleName().toString(), method));
         case FIELD:
           return referenceJvmType(sym.enclClass())
-              .map(classType -> JvmGraph.getFieldVName(classType, sym.getSimpleName().toString()))
+              .map(
+                  classType ->
+                      JvmGraph.getFieldVName(corpusPath, classType, sym.getSimpleName().toString()))
               .map(KytheNodeImpl::new);
 
         case PARAMETER:
@@ -216,6 +249,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
               enclosingMethod,
               (methodType, enclosingClass) ->
                   JvmGraph.getParameterVName(
+                      corpusPath,
                       enclosingClass,
                       enclosingMethod.getSimpleName().toString(),
                       methodType,
@@ -291,5 +325,14 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     public String toString() {
       return "KytheNode{" + vName.toString().replace("\n", " ").trim() + "}";
     }
+  }
+
+  private static Level levelFor(Optional<JavaFileObject> file) {
+    return file.map(
+            f ->
+                f.isNameCompatible("module-info", JavaFileObject.Kind.SOURCE)
+                    ? Level.INFO
+                    : Level.WARNING)
+        .orElse(Level.WARNING);
   }
 }

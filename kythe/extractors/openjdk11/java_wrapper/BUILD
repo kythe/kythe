@@ -1,0 +1,14 @@
+load("//tools:build_rules/shims.bzl", "go_binary")
+
+go_binary(
+    name = "java_wrapper",
+    srcs = ["java_wrapper.go"],
+    visibility = [
+        "//kythe/extractors/openjdk11:__subpackages__",
+    ],
+    deps = [
+        "@org_bitbucket_creachadair_shell//:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
+        "@org_golang_x_sys//unix:go_default_library",
+    ],
+)

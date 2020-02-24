@@ -25,6 +25,7 @@
 
 import * as assert from 'assert';
 import * as child_process from 'child_process';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
@@ -41,23 +42,27 @@ const VERIFIER = RUNFILES ? path.resolve('kythe/cxx/verifier/verifier') :
                             path.resolve(KYTHE_PATH, 'tools/verifier');
 
 /**
- * createTestCompilerHost creates a ts.CompilerHost that caches its default
- * library.  This prevents re-parsing the (big) TypeScript standard library
+ * createTestCompilerHost creates a ts.CompilerHost that caches the default
+ * libraries.  This prevents re-parsing the (big) TypeScript standard library
  * across each test.
  */
 function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
   const compilerHost = ts.createCompilerHost(options);
 
-  const libPath = compilerHost.getDefaultLibFileName(options);
-  const libSource =
-      compilerHost.getSourceFile(libPath, ts.ScriptTarget.ES2015)!;
+  // Map of path to parsed SourceFile for all TS builtin libraries.
+  const libs = new Map<string, ts.SourceFile|undefined>();
+  const libDir = compilerHost.getDefaultLibLocation!();
 
   const hostGetSourceFile = compilerHost.getSourceFile;
   compilerHost.getSourceFile =
       (fileName: string, languageVersion: ts.ScriptTarget,
        onError?: (message: string) => void): ts.SourceFile|undefined => {
-        if (fileName === libPath) return libSource;
-        return hostGetSourceFile(fileName, languageVersion, onError);
+        let sourceFile = libs.get(fileName);
+        if (!sourceFile) {
+          sourceFile = hostGetSourceFile(fileName, languageVersion, onError);
+          if (path.dirname(fileName) === libDir) libs.set(fileName, sourceFile);
+        }
+        return sourceFile;
       };
   return compilerHost;
 }
@@ -68,7 +73,7 @@ function createTestCompilerHost(options: ts.CompilerOptions): ts.CompilerHost {
  * be run async; if there's an error, it will reject the promise.
  */
 function verify(
-    host: ts.CompilerHost, options: ts.CompilerOptions, test: string,
+    host: ts.CompilerHost, options: ts.CompilerOptions, testFiles: string[],
     plugins?: indexer.Plugin[]): Promise<void> {
   const compilationUnit: kythe.VName = {
     corpus: 'testcorpus',
@@ -77,18 +82,24 @@ function verify(
     signature: '',
     language: '',
   };
-  const program = ts.createProgram([test], options, host);
+  const program = ts.createProgram(testFiles, options, host);
 
   const verifier = child_process.spawn(
-      `${ENTRYSTREAM} --read_format=json | ${VERIFIER} ${test}`, [], {
+      `${ENTRYSTREAM} --read_format=json | ${VERIFIER} ${testFiles.join(' ')}`,
+      [], {
         stdio: ['pipe', process.stdout, process.stderr],
         shell: true,
       });
 
-  indexer.index(compilationUnit, new Map(), [test], program, (obj: {}) => {
-    verifier.stdin.write(JSON.stringify(obj) + '\n');
-  }, plugins);
-  verifier.stdin.end();
+  try {
+    indexer.index(compilationUnit, new Map(), testFiles, program, (obj: {}) => {
+      verifier.stdin.write(JSON.stringify(obj) + '\n');
+    }, plugins);
+  } finally {
+    // Ensure we close stdin on the verifier even on crashes, or otherwise
+    // we hang waiting for the verifier to complete.
+    verifier.stdin.end();
+  }
 
   return new Promise<void>((resolve, reject) => {
     verifier.on('close', (exitCode) => {
@@ -108,23 +119,77 @@ function testLoadTsConfig() {
   assert.deepEqual(config.fileNames, [path.resolve('testdata/alt.ts')]);
 }
 
-async function testIndexer(args: string[], plugins?: indexer.Plugin[]) {
+function collectTSFilesInDirectoryRecursively(dir: string, result: string[]) {
+  for (const file of fs.readdirSync(dir, {withFileTypes: true})) {
+    if (file.isDirectory()) {
+      collectTSFilesInDirectoryRecursively(`${dir}/${file.name}`, result);
+    } else if (file.name.endsWith('.ts')) {
+      result.push(path.resolve(`${dir}/${file.name}`));
+    }
+  }
+}
+
+/**
+ * Returns list of files to test. Each group of files will be tested together:
+ * all files from a group will be passed to indexer and verifier.
+ *
+ * The rules of constructing groups are the following:
+ * 1. All individual files in testdata will be returned as group of one file.
+ *    So they are tested separately.
+ * 2. All files in subfolders in testdata/ will be returned as one group. These
+ *    are used when cross-file references need to be tested.
+ */
+function getTestFileGroups(): string[][] {
+  const result = [];
+  for (const file of fs.readdirSync('testdata', {withFileTypes: true})) {
+    const relativeName = `testdata/${file.name}`;
+    if (file.isDirectory()) {
+      const group: string[] = [];
+      collectTSFilesInDirectoryRecursively(relativeName, group);
+      result.push(group);
+    } else if (file.name.endsWith('.ts')) {
+      result.push([path.resolve(relativeName)]);
+    }
+  }
+  return result;
+}
+
+/**
+ * Given filters passed as command line arguments by user - returns only
+ * groups that contain at least one file that matches at least one filter.
+ * Matching is done by simply checking for substring.
+ */
+function filterTestFileGroups(
+    testFileGroups: string[][], filters: string[]): string[][] {
+  return testFileGroups.filter(fileGroup => {
+    for (const file of fileGroup) {
+      if (filters.some(filter => file.includes(filter))) {
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
+async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
   const config =
       indexer.loadTsConfig('testdata/tsconfig.for.tests.json', 'testdata');
-  let testPaths = args.map(arg => path.resolve(arg));
-  if (args.length === 0) {
-    // If no tests were passed on the command line, run all the .ts files found
-    // by the tsconfig.json, which covers all the tests in testdata/.
-    testPaths = config.fileNames;
+  let testFilesGroups = getTestFileGroups();
+  if (filters.length !== 0) {
+    testFilesGroups = filterTestFileGroups(testFilesGroups, filters);
   }
 
   const host = createTestCompilerHost(config.options);
-  for (const test of testPaths) {
-    const testName = path.relative(config.options.rootDir!, test);
+  for (const testFiles of testFilesGroups) {
+    const testName = path.relative(config.options.rootDir!, testFiles[0]);
+    if (testName.endsWith('plugin.ts')) {
+      // plugin.ts is tested by testPlugin() test.
+      continue;
+    }
     const start = new Date().valueOf();
     process.stdout.write(`${testName}: `);
     try {
-      await verify(host, config.options, test, plugins);
+      await verify(host, config.options, testFiles, plugins);
     } catch (e) {
       console.log('FAIL');
       throw e;

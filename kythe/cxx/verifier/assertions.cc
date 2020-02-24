@@ -25,15 +25,11 @@ namespace kythe {
 namespace verifier {
 
 void EVar::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
-  printer->Print("EVar(");
-  printer->Print(this);
-  printer->Print(" = ");
   if (AstNode* node = current()) {
     node->Dump(symbol_table, printer);
   } else {
-    printer->Print("<nullptr>");
+    printer->Print("<null>");
   }
-  printer->Print(")");
 }
 
 void Identifier::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
@@ -66,11 +62,9 @@ void Tuple::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
 }
 
 void App::Dump(const SymbolTable& symbol_table, PrettyPrinter* printer) {
-  printer->Print("App(");
   lhs_->Dump(symbol_table, printer);
-  printer->Print(", ");
+  // rhs_ should be a Tuple, which outputs "(...)" around itself.
   rhs_->Dump(symbol_table, printer);
-  printer->Print(")");
 }
 
 bool AssertionParser::ParseInlineRuleString(const std::string& content,

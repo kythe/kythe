@@ -239,6 +239,9 @@ message DecorationsReply {
   // TODO(schroederc): filter spanning diagnostics by build configuration
   repeated common.Diagnostic diagnostic = 5;
 
+  // List of tickets for files that generate the requested file.
+  repeated string generated_by = 6;
+
   // This field will contain one entry, keyed by ticket, for each distinct node
   // referenced by a reference edge that has at least 1 non-filtered fact.
   map<string, common.NodeInfo> nodes = 15;

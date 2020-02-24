@@ -22,9 +22,11 @@ import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.tools.javac.api.JavacTool;
+import java.nio.file.Path;
 import java.util.List;
 import javax.annotation.processing.Processor;
 import javax.tools.JavaCompiler;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Base implementation for the various analysis drivers. Allows running {@link JavacAnalyzer} over
@@ -33,13 +35,20 @@ import javax.tools.JavaCompiler;
 public class JavacAnalysisDriver {
   private static final FluentLogger logger = FluentLogger.forEnclosingClass();
   private final List<Processor> processors;
+  private final boolean useExperimentalPathFileManager;
+  @Nullable private final Path temporaryDirectory;
 
   public JavacAnalysisDriver() {
-    this(ImmutableList.of());
+    this(ImmutableList.of(), false, null);
   }
 
-  public JavacAnalysisDriver(List<Processor> processors) {
+  public JavacAnalysisDriver(
+      List<Processor> processors,
+      boolean useExperimentalPathFileManager,
+      @Nullable Path temporaryDirectory) {
     this.processors = processors;
+    this.useExperimentalPathFileManager = useExperimentalPathFileManager;
+    this.temporaryDirectory = temporaryDirectory;
   }
 
   /**
@@ -61,7 +70,14 @@ public class JavacAnalysisDriver {
       return;
     }
 
-    analyzer.analyzeCompilationUnit(
-        JavaCompilationDetails.createDetails(compilationUnit, fileDataProvider, processors));
+    try (JavaCompilationDetails details =
+        JavaCompilationDetails.createDetails(
+            compilationUnit,
+            fileDataProvider,
+            processors,
+            useExperimentalPathFileManager,
+            temporaryDirectory)) {
+      analyzer.analyzeCompilationUnit(details);
+    }
   }
 }

@@ -23,13 +23,15 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
-/** Read-only {@link SeekableByteChannel} backed by byte[] data. */
+/** Read-only {@link SeekableByteChannel} lazily backed by byte[] data. */
 class ByteBufferByteChannel implements SeekableByteChannel {
-  private byte[] buffer;
+  private Future<byte[]> buffer;
   private long position;
 
-  public ByteBufferByteChannel(byte[] data) {
+  public ByteBufferByteChannel(Future<byte[]> data) {
     buffer = data;
     position = 0;
   }
@@ -41,6 +43,9 @@ class ByteBufferByteChannel implements SeekableByteChannel {
 
   @Override
   public void close() throws IOException {
+    if (buffer != null) {
+      buffer.cancel(true);
+    }
     buffer = null;
   }
 
@@ -55,7 +60,11 @@ class ByteBufferByteChannel implements SeekableByteChannel {
       return -1;
     }
     wanted = (int) Math.min(possible, wanted);
-    dst.put(buffer, (int) position, wanted);
+    try {
+      dst.put(buffer.get(), (int) position, wanted);
+    } catch (InterruptedException | ExecutionException exc) {
+      throw new IOException(exc);
+    }
     position += wanted;
     return wanted;
   }
@@ -79,7 +88,11 @@ class ByteBufferByteChannel implements SeekableByteChannel {
 
   @Override
   public long size() throws IOException {
-    return buffer.length;
+    try {
+      return buffer.get().length;
+    } catch (InterruptedException | ExecutionException exc) {
+      throw new IOException(exc);
+    }
   }
 
   @Override

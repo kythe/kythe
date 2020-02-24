@@ -17,11 +17,15 @@
 package vnameutil
 
 import (
+	"encoding/json"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -94,6 +98,139 @@ func TestParseConsistency(t *testing.T) {
 		t.Error(err)
 	} else if len(r) == 0 {
 		t.Error("empty rules")
+	}
+}
+
+func TestMarshalJSON(t *testing.T) {
+	tests := []string{
+		"[]",
+		`[{"vname":{"corpus":"a"}}]`,
+		`[{"pattern":"something","vname":{"corpus":"b"}}]`,
+		`[{"pattern":"something\\$","vname":{"corpus":"c"}}]`,
+		`[{"pattern":"\\^\\$","vname":{"corpus":"d"}}]`,
+	}
+
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			rules, err := ReadRules(strings.NewReader(test))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Logf("Rules: %s", rules)
+
+			rec, err := json.Marshal(rules)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(string(rec), test, splitLines); diff != "" {
+				t.Errorf("Unexpected diff (- found; + expected):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestTrimAnchors(t *testing.T) {
+	tests := []struct {
+		Pattern  string
+		Expected string
+	}{
+		{"", ""},
+		{"^", ""},
+		{"$", ""},
+		{"^$", ""},
+		{"^a$", "a"},
+		{"^a", "a"},
+		{"a$", "a"},
+		{`\$`, `\$`},
+		{`\^\$`, `\^\$`},
+		{`\^`, `\^`},
+		{`\^^$\$`, `\^^$\$`},
+		{`\\$`, `\\`},
+		{`\\\\$`, `\\\\`},
+		{`\\\$`, `\\\$`},
+		{`^abc[^def$]ghi$`, `abc[^def$]ghi`},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(strconv.Quote(test.Pattern), func(t *testing.T) {
+			if found := trimAnchors(test.Pattern); found != test.Expected {
+				t.Errorf("Found: %q; Expected: %q", found, test.Expected)
+			}
+		})
+	}
+}
+
+func TestRoundtripJSON(t *testing.T) {
+	tests := []string{
+		"[]",
+		`[{"pattern": "p(.)", "vname": {"corpus": "$@1@"}}]`,
+		`[{
+  "pattern": "(?P<corpus>.+)/(?P<root>.+)::(?P<path>.+)",
+  "vname": {"corpus": "@corpus@", "root": "@root@", "path": "@path@"}
+}]`,
+		testConfig,
+	}
+
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			expected, err := ReadRules(strings.NewReader(test))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Logf("Rules: %s", expected)
+
+			rec, err := json.Marshal(expected)
+			if err != nil {
+				t.Fatalf("Error marshaling rules %+v: %v", expected, err)
+			}
+
+			r, err := ParseRules(rec)
+			if err != nil {
+				t.Fatalf("Error parsing rules %q: %v", rec, err)
+			}
+
+			if diff := cmp.Diff(r, expected, transformRegexp, compareVNames); diff != "" {
+				t.Errorf("Unexpected diff (- found; + expected):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRoundtripProto(t *testing.T) {
+	tests := []string{
+		"[]",
+		`[{"pattern": "p(.)", "vname": {"corpus": "$@1@"}}]`,
+		`[{
+  "pattern": "(?P<corpus>.+)/(?P<root>.+)::(?P<path>.+)",
+  "vname": {"corpus": "@corpus@", "root": "@root@", "path": "@path@"}
+}]`,
+		testConfig,
+	}
+
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			expected, err := ReadRules(strings.NewReader(test))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Logf("Rules: %s", expected)
+
+			rec, err := expected.Marshal()
+			if err != nil {
+				t.Fatalf("Error marshaling rules %+v: %v", expected, err)
+			}
+
+			r, err := ParseProtoRules(rec)
+			if err != nil {
+				t.Fatalf("Error parsing rules %q: %v", rec, err)
+			}
+
+			if diff := cmp.Diff(r, expected, transformRegexp, compareVNames); diff != "" {
+				t.Errorf("Unexpected diff (- found; + expected):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -172,3 +309,9 @@ func (v V) pb() *spb.VName {
 		Language:  v.Lang,
 	}
 }
+
+var (
+	transformRegexp = cmp.Transformer("Regexp", func(r *regexp.Regexp) string { return r.String() })
+	compareVNames   = cmp.Comparer(func(a, b *spb.VName) bool { return proto.Equal(a, b) })
+	splitLines      = cmpopts.AcyclicTransformer("Lines", func(s string) []string { return strings.Split(s, "\n") })
+)

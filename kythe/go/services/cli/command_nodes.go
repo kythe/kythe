@@ -73,7 +73,7 @@ func (c *nodesCommand) displayNodes(nodes map[string]*cpb.NodeInfo) error {
 					return err
 				}
 			} else {
-				if _, err := fmt.Fprintf(out, "  %s\n", name); err != nil {
+				if _, err := fmt.Fprintf(out, "  %s\t%s<truncated>\n", name, value[:c.factSizeThreshold]); err != nil {
 					return err
 				}
 			}

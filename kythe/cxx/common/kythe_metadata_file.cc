@@ -163,7 +163,7 @@ absl::optional<MetadataFile::Rule> LoadMetaElement(
 }  // anonymous namespace
 
 std::unique_ptr<MetadataFile> KytheMetadataSupport::LoadFromJSON(
-    absl::string_view json) {
+    absl::string_view id, absl::string_view json) {
   proto::metadata::GeneratedCodeInfo metadata;
   google::protobuf::util::JsonParseOptions options;
   // Existing implementations specify message types using lower-case enum names,
@@ -184,13 +184,13 @@ std::unique_ptr<MetadataFile> KytheMetadataSupport::LoadFromJSON(
       return nullptr;
     }
   }
-  return MetadataFile::LoadFromRules(rules.begin(), rules.end());
+  return MetadataFile::LoadFromRules(id, rules.begin(), rules.end());
 }
 
 std::unique_ptr<kythe::MetadataFile> KytheMetadataSupport::ParseFile(
     const std::string& raw_filename, const std::string& filename,
     absl::string_view buffer) {
-  auto metadata = LoadFromJSON(buffer);
+  auto metadata = LoadFromJSON(raw_filename, buffer);
   if (!metadata) {
     LOG(WARNING) << "Failed loading " << raw_filename;
   }

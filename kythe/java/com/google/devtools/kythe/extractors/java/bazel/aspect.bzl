@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//tools/build_rules/verifier_test:verifier_test.bzl", "extract")
-
 _mnemonic = "Javac"
 
 def _extract_java(target, ctx):
@@ -85,7 +83,7 @@ def _extract_java(target, ctx):
 
     extract_args = ctx.actions.args()
     extract_args.add_all([xa, kzip, ctx.file._java_aspect_vnames_config])
-    deps = [javac_action.inputs]
+    deps = [javac_action.inputs, annotations.processor_classpath]
     ctx.actions.run(
         outputs = [kzip],
         inputs = depset([xa, ctx.file._java_aspect_vnames_config], transitive = deps),

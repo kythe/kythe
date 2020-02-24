@@ -9,6 +9,7 @@ java_library(
         exclude = [
             # Exclude meta-data tests
             "Metadata.java",
+            "ProtobufImplicitMetadata.java",
             "ProtobufMetadata.java",
             "ProcessingMetadata.java",
             "ProcessingProtobufMetadata.java",
@@ -20,7 +21,7 @@ java_library(
     ),
     deps = [
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
-        "@com_google_code_findbugs_jsr305//jar",
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
 )
 
@@ -254,7 +255,7 @@ java_verifier_test(
     meta = [
         "Metadata.java.meta",
     ],
-    deps = ["@javax_annotation_jsr250_api//jar"],
+    deps = ["@maven//:javax_annotation_jsr250_api"],
 )
 
 java_verifier_test(
@@ -280,7 +281,22 @@ java_verifier_test(
         "ProtobufMetadata.java.pb.meta",
     ],
     vnames_config = "protobuf_vnames.json",
-    deps = ["@javax_annotation_jsr250_api//jar"],
+    deps = ["@maven//:javax_annotation_jsr250_api"],
+)
+
+java_verifier_test(
+    name = "protobuf_implicit_metadata_tests",
+    srcs = [
+        "ProtobufImplicitMetadata.java",
+    ],
+    indexer_opts = [
+        "--verbose",
+        "--default_metadata_corpus=default",
+    ],
+    meta = [
+        "ProtobufImplicitMetadata.java.pb.meta",
+    ],
+    vnames_config = "protobuf_vnames.json",
 )
 
 java_verifier_test(
@@ -349,7 +365,7 @@ java_verifier_test(
         "Packages.java",
         "package-info.java",
     ],
-    deps = ["@com_google_code_findbugs_jsr305//jar"],
+    deps = ["@maven//:com_google_code_findbugs_jsr305"],
 )
 
 java_verifier_test(

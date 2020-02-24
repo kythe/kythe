@@ -13,6 +13,7 @@ java_library(
         ":options",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
+        "//kythe/java/com/google/devtools/kythe/platform/java/filemanager:path_filemanager",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
@@ -20,8 +21,9 @@ java_library(
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "//third_party/javac",
-        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 
@@ -33,9 +35,9 @@ java_library(
         "//kythe/proto:java_java_proto",
         "//third_party/guava",
         "//third_party/javac",
-        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
-        "@org_checkerframework_checker_qual//jar",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )

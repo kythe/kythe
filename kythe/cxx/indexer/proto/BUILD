@@ -110,18 +110,13 @@ cc_library(
 
 cc_binary(
     name = "indexer",
-    visibility = ["//visibility:public"],
-    deps = [":cmdlib"],
-)
-
-cc_library(
-    name = "cmdlib",
     srcs = ["kythe_indexer_main.cc"],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":proto_analyzer",
         "//kythe/cxx/common:json_proto",

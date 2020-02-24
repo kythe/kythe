@@ -19,13 +19,21 @@
 package vnameutil // import "kythe.io/kythe/go/util/vnameutil"
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"regexp"
 	"strings"
 
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
+
+var jsonMarshaler = &jsonpb.Marshaler{}
 
 // A Rule associates a regular expression pattern with a VName template.  A
 // Rule can be applied to a string to produce a VName.
@@ -51,6 +59,44 @@ func (r Rule) Apply(input string) (*spb.VName, bool) {
 		Root:      r.expand(m, input, r.Root),
 		Signature: r.expand(m, input, r.Signature),
 	}, true
+}
+
+// ToProto returns an equivalent VNameRewriteRule proto.
+func (r Rule) ToProto() *spb.VNameRewriteRule {
+	return &spb.VNameRewriteRule{
+		Pattern: trimAnchors(r.Regexp.String()),
+		VName: &spb.VName{
+			Corpus:    unfixTemplate(r.VName.Corpus),
+			Root:      unfixTemplate(r.VName.Root),
+			Path:      unfixTemplate(r.VName.Path),
+			Language:  unfixTemplate(r.VName.Language),
+			Signature: unfixTemplate(r.VName.Signature),
+		},
+	}
+}
+
+// String returns a debug string of r.
+func (r Rule) String() string { return r.ToProto().String() }
+
+// MarshalJSON implements the json.Marshaler interface.
+func (r Rule) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	err := jsonMarshaler.Marshal(&buf, r.ToProto())
+	return buf.Bytes(), err
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (r *Rule) UnmarshalJSON(rec []byte) error {
+	var p spb.VNameRewriteRule
+	if err := jsonpb.Unmarshal(bytes.NewReader(rec), &p); err != nil {
+		return err
+	}
+	rule, err := ConvertRule(&p)
+	if err != nil {
+		return err
+	}
+	*r = rule
+	return nil
 }
 
 func (r Rule) expand(match []int, input, template string) string {
@@ -81,32 +127,50 @@ func (r Rules) ApplyDefault(input string, v *spb.VName) *spb.VName {
 	return v
 }
 
-// rewriteRule implements JSON marshaling and unmarshaling for storing rules in
-// a file.
-type rewriteRule struct {
-	Pattern pattern `json:"pattern"`
-	VName   struct {
-		Corpus    string `json:"corpus,omitempty"`
-		Path      string `json:"path,omitempty"`
-		Root      string `json:"root,omitempty"`
-		Signature string `json:"signature,omitempty"`
-	} `json:"vname"`
-}
-
-// toRule converts a rewriteRule to a Rule.
-func (r *rewriteRule) toRule() Rule {
-	return Rule{
-		Regexp: r.Pattern.Regexp,
-		VName: &spb.VName{
-			Corpus:    fixTemplate(r.VName.Corpus),
-			Path:      fixTemplate(r.VName.Path),
-			Root:      fixTemplate(r.VName.Root),
-			Signature: fixTemplate(r.VName.Signature),
-		},
+// ToProto returns an equivalent VNameRewriteRules proto.
+func (r Rules) ToProto() *spb.VNameRewriteRules {
+	pb := &spb.VNameRewriteRules{
+		Rule: make([]*spb.VNameRewriteRule, len(r)),
 	}
+	for i, rule := range r {
+		pb.Rule[i] = rule.ToProto()
+	}
+	return pb
 }
 
-var fieldRE = regexp.MustCompile(`@(\w+)@`)
+// Marshal implements the proto.Marshaler interface.
+func (r Rules) Marshal() ([]byte, error) { return proto.Marshal(r.ToProto()) }
+
+// ConvertRule compiles a VNameRewriteRule proto into a Rule that can be applied to strings.
+func ConvertRule(r *spb.VNameRewriteRule) (Rule, error) {
+	pattern := "^" + trimAnchors(r.Pattern) + "$"
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return Rule{}, fmt.Errorf("invalid regular expression: %v", err)
+	}
+	return Rule{
+		Regexp: re,
+		VName: &spb.VName{
+			Corpus:    fixTemplate(r.VName.GetCorpus()),
+			Path:      fixTemplate(r.VName.GetPath()),
+			Root:      fixTemplate(r.VName.GetRoot()),
+			Language:  fixTemplate(r.VName.GetLanguage()),
+			Signature: fixTemplate(r.VName.GetSignature()),
+		},
+	}, nil
+}
+
+var (
+	anchorsRE = regexp.MustCompile(`([^\\]|^)(\\\\)*\$+$`)
+	fieldRE   = regexp.MustCompile(`@(\w+)@`)
+	markerRE  = regexp.MustCompile(`([^$]|^)(\$\$)*\${\w+}`)
+)
+
+func trimAnchors(pattern string) string {
+	return anchorsRE.ReplaceAllStringFunc(strings.TrimPrefix(pattern, "^"), func(r string) string {
+		return strings.TrimSuffix(r, "$")
+	})
+}
 
 // fixTemplate rewrites @x@ markers in the template to the ${x} markers used by
 // the regexp.Expand function, to simplify rewriting.
@@ -120,32 +184,45 @@ func fixTemplate(s string) string {
 		})
 }
 
-type pattern struct {
-	*regexp.Regexp
+func unfixTemplate(s string) string {
+	return strings.Replace(markerRE.ReplaceAllStringFunc(s, func(s string) string {
+		var prefix int
+		for ; !strings.HasPrefix(s[prefix:], "${"); prefix++ {
+		}
+		return s[:prefix] + "@" + strings.TrimPrefix(strings.TrimSuffix(s[prefix:], "}"), "${") + "@"
+	}), "$$", "$", -1)
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface, accepting a string
-// value that encodes a valid RE2 regular expression.
-func (p *pattern) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
+func expectDelim(de *json.Decoder, expected json.Delim) error {
+	if tok, err := de.Token(); err != nil {
 		return err
+	} else if delim, ok := tok.(json.Delim); !ok || delim != expected {
+		return fmt.Errorf("expected %s; found %v", expected, tok)
 	}
-	if !strings.HasPrefix(s, "^") {
-		s = "^" + s
-	}
-	if !strings.HasSuffix(s, "$") {
-		s += "$"
-	}
-	r, err := regexp.Compile(s)
-	if err != nil {
-		return fmt.Errorf("invalid regular expression: %v", err)
-	}
-	p.Regexp = r
 	return nil
 }
 
-// ParseRules parses Rules from JSON-encoded data in the following format:
+// ParseProtoRules reads a wire-encoded *spb.VNameRewriteRules.
+func ParseProtoRules(data []byte) (Rules, error) {
+	var pb spb.VNameRewriteRules
+	if err := proto.Unmarshal(data, &pb); err != nil {
+		return nil, err
+	}
+	rules := make(Rules, len(pb.Rule))
+	for i, rp := range pb.Rule {
+		r, err := ConvertRule(rp)
+		if err != nil {
+			return nil, err
+		}
+		rules[i] = r
+	}
+	return rules, nil
+}
+
+// ParseRules reads Rules from JSON-encoded data in a byte array.
+func ParseRules(data []byte) (Rules, error) { return ReadRules(bytes.NewReader(data)) }
+
+// ReadRules parses Rules from JSON-encoded data in the following format:
 //
 //   [
 //     {
@@ -161,14 +238,54 @@ func (p *pattern) UnmarshalJSON(data []byte) error {
 // Each pattern is an RE2 regexp pattern.  Patterns are implicitly anchored at
 // both ends.  The template strings may contain markers of the form @n@, that
 // will be replaced by the n'th regexp group on a successful input match.
-func ParseRules(data []byte) (Rules, error) {
-	var rr []*rewriteRule
-	if err := json.Unmarshal(data, &rr); err != nil {
+func ReadRules(r io.Reader) (Rules, error) {
+	de := json.NewDecoder(r)
+
+	// Check for start of array.
+	if err := expectDelim(de, '['); err != nil {
 		return nil, err
 	}
-	var rules Rules
-	for _, r := range rr {
-		rules = append(rules, r.toRule())
+
+	// Parse each element of the array as a VNameRewriteRule.
+	rules := Rules{}
+	for de.More() {
+		var pb spb.VNameRewriteRule
+		if err := jsonpb.UnmarshalNext(de, &pb); err != nil {
+			return nil, err
+		}
+		r, err := ConvertRule(&pb)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, r)
 	}
+
+	// Check for end of array.
+	if err := expectDelim(de, ']'); err != nil {
+		return nil, err
+	}
+
+	// Check for EOF
+	if tok, err := de.Token(); err != io.EOF {
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("expected EOF; found: %s", tok)
+	}
+
 	return rules, nil
+}
+
+// LoadRules loads and parses the vname mapping rules in path.
+// If path == "", this returns nil without error (no rules).
+func LoadRules(path string) (Rules, error) {
+	if path == "" {
+		return nil, nil
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("opening vname rules file: %v", err)
+	}
+	defer f.Close()
+	return ReadRules(f)
 }

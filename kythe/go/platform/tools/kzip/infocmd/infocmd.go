@@ -21,8 +21,10 @@ import (
 	"context"
 	"flag"
 	"os"
+	"runtime"
 	"strings"
 
+	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/platform/kzip/info"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
@@ -35,8 +37,9 @@ import (
 type infoCommand struct {
 	cmdutil.Info
 
-	input       string
-	writeFormat string
+	input           string
+	writeFormat     string
+	readConcurrency int
 }
 
 // New creates a new subcommand for obtaining info on a kzip file.
@@ -51,16 +54,17 @@ func New() subcommands.Command {
 func (c *infoCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.input, "input", "", "Path for input kzip file (required)")
 	fs.StringVar(&c.writeFormat, "write_format", "json", "Output format, can be 'json' or 'proto'")
+	fs.IntVar(&c.readConcurrency, "read_concurrency", runtime.NumCPU(), "Max concurrency of reading compilation units from the kzip. Defaults to the number of cpu cores.")
 }
 
 // Execute implements the subcommands interface and gathers info from the requested file.
 func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if c.input == "" {
-		return c.Fail("required --input path missing")
+		return c.Fail("Required --input path missing")
 	}
 	f, err := vfs.Open(ctx, c.input)
 	if err != nil {
-		return c.Fail("opening archive: %v", err)
+		return c.Fail("Opening archive: %v", err)
 	}
 	defer f.Close()
 
@@ -69,15 +73,19 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 		return c.Fail("Invalid --write_format. Can be 'json' or 'proto'.")
 	}
 
-	kzipInfo, err := info.KzipInfo(f)
+	s, err := os.Stat(c.input)
 	if err != nil {
-		return c.Fail("scanning kzip: %v", err)
+		return c.Fail("Couldn't stat kzip file: %v", err)
+	}
+	kzipInfo, err := info.KzipInfo(f, s.Size(), kzip.ReadConcurrency(c.readConcurrency))
+	if err != nil {
+		return c.Fail("Scanning kzip: %v", err)
 	}
 	switch c.writeFormat {
 	case "json":
 		m := jsonpb.Marshaler{OrigName: true}
 		if err := m.Marshal(os.Stdout, kzipInfo); err != nil {
-			return c.Fail("marshaling json: %v", err)
+			return c.Fail("Marshaling json: %v", err)
 		}
 	case "proto":
 		proto.MarshalText(os.Stdout, kzipInfo)

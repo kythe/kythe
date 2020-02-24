@@ -244,7 +244,10 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		return nil, err
 	}
 
-	reply := &xpb.DecorationsReply{Location: loc}
+	reply := &xpb.DecorationsReply{
+		Location:    loc,
+		GeneratedBy: decor.GeneratedBy,
+	}
 
 	if req.SourceText {
 		reply.Encoding = decor.File.Encoding
@@ -610,7 +613,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
-						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					stats.addAnchors(&crs.Definition, p.Group, req.AnchorText)
 				}
@@ -619,7 +622,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
-						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					stats.addAnchors(&crs.Declaration, p.Group, req.AnchorText)
 				}
@@ -628,7 +631,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
-						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page %v: %v", idx.PageKey, err)
 					}
 					stats.addAnchors(&crs.Reference, p.Group, req.AnchorText)
 				}
@@ -729,6 +732,9 @@ func addMergeNode(mergeMap map[string]string, allTickets []string, rootNode, mer
 }
 
 func nodeKind(n *srvpb.Node) string {
+	if n == nil {
+		return ""
+	}
 	for _, f := range n.Fact {
 		if f.Name == facts.NodeKind {
 			return string(f.Value)

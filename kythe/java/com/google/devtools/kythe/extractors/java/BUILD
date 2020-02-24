@@ -25,12 +25,28 @@ java_library(
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "//third_party/javac",
-        "@com_google_auto_auto_common//jar",
-        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:protobuf_java",
         "@com_google_protobuf//:protobuf_java_util",
-        "@javax_annotation_jsr250_api//jar",
-        "@org_checkerframework_checker_qual//jar",
+        "@maven//:com_google_auto_auto_common",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:javax_annotation_jsr250_api",
+        "@maven//:org_checkerframework_checker_qual",
     ],
+)
+
+java_library(
+    name = "system_exploder",
+    srcs = ["SystemExploder.java"],
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/platform/java/filemanager:forwarding_standard_java_file_manager",
+        "//third_party/guava",
+        "//third_party/javac",
+    ],
+)
+
+java_binary(
+    name = "explodesys",
+    main_class = "com.google.devtools.kythe.extractors.java.SystemExploder",
+    runtime_deps = [":system_exploder"],
 )

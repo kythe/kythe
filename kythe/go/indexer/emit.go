@@ -55,9 +55,15 @@ type EmitOptions struct {
 	// If true, emit linkages specified by metadata rules.
 	EmitLinkages bool
 
+	// If true, emit childof edges for an anchor's semantic scope.
+	EmitAnchorScopes bool
+
 	// If set, use this as the base URL for links to godoc.  The import path is
 	// appended to the path of this URL to obtain the target URL to link to.
 	DocBase *url.URL
+
+	// If true, the doc/uri fact is only emitted for go std library packages.
+	OnlyEmitDocURIsForStandardLibs bool
 }
 
 func (e *EmitOptions) emitMarkedSource() bool {
@@ -65,6 +71,13 @@ func (e *EmitOptions) emitMarkedSource() bool {
 		return false
 	}
 	return e.EmitMarkedSource
+}
+
+func (e *EmitOptions) emitAnchorScopes() bool {
+	if e == nil {
+		return false
+	}
+	return e.EmitAnchorScopes
 }
 
 // shouldEmit reports whether the indexer should emit a node for the given
@@ -77,12 +90,16 @@ func (e *EmitOptions) shouldEmit(vname *spb.VName) bool {
 // docURL returns a documentation URL for the specified package, if one is
 // specified by the options, or "" if not.
 func (e *EmitOptions) docURL(pi *PackageInfo) string {
-	if e != nil && e.DocBase != nil {
-		u := *e.DocBase
-		u.Path = path.Join(u.Path, pi.ImportPath)
-		return u.String()
+	if e == nil || e.DocBase == nil {
+		return ""
 	}
-	return ""
+	if e.OnlyEmitDocURIsForStandardLibs && !govname.IsStandardLibrary(pi.VName) {
+		return ""
+	}
+
+	u := *e.DocBase
+	u.Path = path.Join(u.Path, pi.ImportPath)
+	return u.String()
 }
 
 // An impl records that a type A implements an interface B.
@@ -99,6 +116,7 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 		opts:     opts,
 		impl:     make(map[impl]struct{}),
 		anchored: make(map[ast.Node]struct{}),
+		fmeta:    make(map[*ast.File]bool),
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -120,6 +138,7 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 
 	// Traverse the AST of each file in the package for xref entries.
 	for _, file := range pi.Files {
+		e.cmap = ast.NewCommentMap(pi.FileSet, file, file.Comments)
 		e.writeDoc(file.Doc, pi.VName)                        // capture package comments
 		e.writeRef(file.Name, pi.VName, edges.DefinesBinding) // define a binding for the package
 		ast.Walk(newASTVisitor(func(node ast.Node, stack stackFunc) bool {
@@ -165,8 +184,10 @@ type emitter struct {
 	opts     *EmitOptions
 	impl     map[impl]struct{}                    // see checkImplements
 	rmap     map[*ast.File]map[int]metadata.Rules // see applyRules
+	fmeta    map[*ast.File]bool                   // see applyRules
 	anchored map[ast.Node]struct{}                // see writeAnchor
 	firstErr error
+	cmap     ast.CommentMap // current file's CommentMap
 }
 
 // visitIdent handles referring identifiers. Declaring identifiers are handled
@@ -189,7 +210,10 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		})
 		return
 	}
-	e.writeRef(id, target, edges.Ref)
+	ref := e.writeRef(id, target, edges.Ref)
+	if e.opts.emitAnchorScopes() {
+		e.writeEdge(ref, e.callContext(stack).vname, edges.ChildOf)
+	}
 	if call, ok := isCall(id, obj, stack); ok {
 		callAnchor := e.writeRef(call, target, edges.RefCall)
 
@@ -470,7 +494,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 			mapFields(st.Fields, func(i int, id *ast.Ident) {
 				target := e.writeVarBinding(id, nodes.Field, nil)
 				f := st.Fields.List[i]
-				e.writeDoc(f.Doc, target)
+				e.writeDoc(firstNonEmptyComment(f.Doc, f.Comment), target)
 				e.emitAnonMembers(f.Type)
 			})
 
@@ -491,7 +515,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 					e.writeEdge(anchor, target, edges.DefinesBinding)
 					e.writeFact(target, facts.NodeKind, nodes.Variable)
 					e.writeFact(target, facts.Subkind, nodes.Field)
-					e.writeDoc(field.Doc, target)
+					e.writeDoc(firstNonEmptyComment(field.Doc, field.Comment), target)
 				}
 			}
 		}
@@ -659,7 +683,12 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 		if sig.Params().At(i) != nil {
 			if param := e.writeBinding(id, nodes.Variable, info.vname); param != nil {
 				e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
-				e.emitAnonMembers(ftype.Params.List[i].Type)
+
+				field := ftype.Params.List[i]
+				e.emitAnonMembers(field.Type)
+
+				// Field object does not associate any comments with the parameter; use CommentMap to find them
+				e.writeDoc(firstNonEmptyComment(e.cmap.Filter(field).Comments()...), param)
 			}
 		}
 		paramIndex++
@@ -679,12 +708,12 @@ func (e *emitter) emitAnonMembers(expr ast.Expr) {
 	if st, ok := expr.(*ast.StructType); ok {
 		mapFields(st.Fields, func(i int, id *ast.Ident) {
 			target := e.writeVarBinding(id, nodes.Field, nil) // no parent
-			e.writeDoc(st.Fields.List[i].Doc, target)
+			e.writeDoc(firstNonEmptyComment(st.Fields.List[i].Doc, st.Fields.List[i].Comment), target)
 		})
 	} else if it, ok := expr.(*ast.InterfaceType); ok {
 		mapFields(it.Methods, func(i int, id *ast.Ident) {
 			target := e.writeBinding(id, nodes.Function, nil) // no parent
-			e.writeDoc(it.Methods.List[i].Doc, target)
+			e.writeDoc(firstNonEmptyComment(it.Methods.List[i].Doc, it.Methods.List[i].Comment), target)
 		})
 	}
 }
@@ -913,6 +942,22 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 		} else {
 			e.writeEdge(target, rule.VName, rule.EdgeOut)
 		}
+		if rule.EdgeOut == edges.Generates && !e.fmeta[file] {
+			e.fmeta[file] = true
+			if rule.VName.Path != "" && target.Path != "" {
+				ruleVName := *rule.VName
+				ruleVName.Signature = ""
+				ruleVName.Language = ""
+				fileTarget := *anchor
+				fileTarget.Signature = ""
+				fileTarget.Language = ""
+				if rule.Reverse {
+					e.writeEdge(&ruleVName, &fileTarget, rule.EdgeOut)
+				} else {
+					e.writeEdge(&fileTarget, &ruleVName, rule.EdgeOut)
+				}
+			}
+		}
 	})
 
 	return anchor
@@ -967,7 +1012,9 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 
 // writeDef emits a spanning anchor and defines edge for the specified node.
 // This function does not create the target node.
-func (e *emitter) writeDef(node ast.Node, target *spb.VName) { e.writeRef(node, target, edges.Defines) }
+func (e *emitter) writeDef(node ast.Node, target *spb.VName) {
+	e.writeRef(node, target, edges.Defines)
+}
 
 // writeDoc adds associations between comment groups and a documented node.
 // It also handles marking deprecated facts on the target.
@@ -1194,11 +1241,11 @@ func specComment(spec ast.Spec, stack stackFunc) *ast.CommentGroup {
 	var comment *ast.CommentGroup
 	switch t := spec.(type) {
 	case *ast.TypeSpec:
-		comment = t.Doc
+		comment = firstNonEmptyComment(t.Doc, t.Comment)
 	case *ast.ValueSpec:
-		comment = t.Doc
+		comment = firstNonEmptyComment(t.Doc, t.Comment)
 	case *ast.ImportSpec:
-		comment = t.Doc
+		comment = firstNonEmptyComment(t.Doc, t.Comment)
 	}
 	if comment == nil {
 		if t, ok := stack(1).(*ast.GenDecl); ok {
@@ -1206,4 +1253,13 @@ func specComment(spec ast.Spec, stack stackFunc) *ast.CommentGroup {
 		}
 	}
 	return comment
+}
+
+func firstNonEmptyComment(cs ...*ast.CommentGroup) *ast.CommentGroup {
+	for _, c := range cs {
+		if c != nil && len(c.List) > 0 {
+			return c
+		}
+	}
+	return nil
 }

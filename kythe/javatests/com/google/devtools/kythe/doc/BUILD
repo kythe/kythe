@@ -13,9 +13,9 @@ java_test(
         "//kythe/proto:xref_java_proto",
         "//third_party/guava",
         "//third_party/truth",
-        "@com_google_common_html_types//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@junit_junit//jar",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:junit_junit",
     ],
 )
 
@@ -33,8 +33,8 @@ java_test(
         "//kythe/proto:common_java_proto",
         "//third_party/guava",
         "//third_party/truth",
-        "@com_google_common_html_types//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@junit_junit//jar",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:junit_junit",
     ],
 )

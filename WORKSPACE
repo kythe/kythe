@@ -4,8 +4,7 @@ workspace(
 )
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
-load("//:version.bzl", "check_version", "MAX_VERSION", "MIN_VERSION")
+load("//:version.bzl", "MAX_VERSION", "MIN_VERSION", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
@@ -13,11 +12,11 @@ check_version(MIN_VERSION, MAX_VERSION)
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "56e75f7c9bb074f35b71a9950917fbd036bd1433f9f5be7c04bace0e68eb804a",
-    strip_prefix = "bazel-toolchains-9bd2748ec99d72bec41c88eecc3b7bd19d91a0c7",
+    sha256 = "4d348abfaddbcee0c077fc51bb1177065c3663191588ab3d958f027cbfe1818b",
+    strip_prefix = "bazel-toolchains-2.1.0",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/9bd2748ec99d72bec41c88eecc3b7bd19d91a0c7.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/archive/9bd2748ec99d72bec41c88eecc3b7bd19d91a0c7.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/releases/download/2.1.0/bazel-toolchains-2.1.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/2.1.0.tar.gz",
     ],
 )
 
@@ -25,19 +24,7 @@ load("//:setup.bzl", "kythe_rule_repositories", "maybe")
 
 kythe_rule_repositories()
 
-# TODO(schroederc): remove this.  This needs to be loaded before loading the
-# go_* rules.  Normally, this is done by go_rules_dependencies in external.bzl,
-# but because we want to overload some of those dependencies, we need the go_*
-# rules before go_rules_dependencies.  Likewise, we can't precisely control
-# when loads occur within a Starlark file so we now need to load this
-# manually... https://github.com/bazelbuild/rules_go/issues/1966
-load("@io_bazel_rules_go//go/private:compat/compat_repo.bzl", "go_rules_compat")
-
-maybe(
-    go_rules_compat,
-    name = "io_bazel_rules_go_compat",
-)
-
+# gazelle:repository_macro external.bzl%_go_dependencies
 load("//:external.bzl", "kythe_dependencies")
 
 kythe_dependencies()
@@ -46,7 +33,7 @@ load("//tools/build_rules/external_tools:external_tools_configure.bzl", "externa
 
 external_tools_configure()
 
-load("@build_bazel_rules_nodejs//:defs.bzl", "npm_install")
+load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
 
 npm_install(
     name = "npm",
@@ -65,5 +52,40 @@ ts_setup_workspace()
 # This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
 bind(
     name = "error_prone_annotations",
-    actual = "@com_google_errorprone_error_prone_annotations//jar:jar",
+    actual = "@maven//:com_google_errorprone_error_prone_annotations",
+)
+
+load("@maven//:compat.bzl", "compat_repositories")
+
+compat_repositories()
+
+# If the configuration here changes, run tools/platforms/configs/rebuild.sh
+load("@bazel_toolchains//rules:environments.bzl", "clang_env")
+load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
+load("//tools/platforms:toolchain_config_suite_spec.bzl", "DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC")
+
+rbe_autoconfig(
+    name = "rbe_default",
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
+)
+
+rbe_autoconfig(
+    name = "rbe_bazel_minversion",
+    bazel_version = MIN_VERSION,
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
+)
+
+rbe_autoconfig(
+    name = "rbe_bazel_maxversion",
+    bazel_version = MAX_VERSION,
+    env = clang_env(),
+    export_configs = True,
+    toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
+    use_legacy_platform_definition = False,
 )

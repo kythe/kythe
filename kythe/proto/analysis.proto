@@ -95,9 +95,12 @@ message CompilationUnit {
   // do not provide their own `v_name` field.  As such, the general logic for
   // constructing VNames for entities arising a given source path should be:
   // {
-  //   corpus:   unit.required_input[path].v_name.corpus OR unit.v_name.corpus
-  //   root:     unit.required_input[path].v_name.root OR unit.v_name.root
-  //   path:     unit.required_input[path].v_name.path OR path
+  //   vname := unit.required_input[path].v_name
+  //   if vname.corpus is empty
+  //      vname.corpus := unit.v_name.corpus
+  //      vname.root := unit.v_name.root
+  //   if vname.path is empty
+  //      vname.path := path
   // }
   // The above applies generally, but specific node kinds may have rules which
   // override this logic.
@@ -180,19 +183,32 @@ message CompilationUnit {
 // KzipInfo contains a summary of the contents of a kzip. It provides a
 // breakdown of files and units by corpus and lanugage.
 message KzipInfo {
-  message Count {
-    string language = 1;
-    int32 count = 2;
-  }
+  reserved 2, 3;
 
   message CorpusInfo {
-    map<string, int32> files = 1;
-    map<string, int32> units = 2;
+    reserved 1, 2, 3;
+
+    message RequiredInputs {
+      // TODO(salguarnieri) Add count of unique inputs for this corpus?
+      int32 count = 1;
+    }
+
+    // Map from language to count of required inputs that have this corpus in
+    // their VName.
+    map<string, RequiredInputs> language_required_inputs = 4;
+    // Map from language to count of sources that have this corpus in their
+    // required_input VName.
+    map<string, RequiredInputs> language_sources = 5;
   }
 
+  // Map from corpus name to corpus info.
   map<string, CorpusInfo> corpora = 1;
-  int32 total_files = 2;
-  int32 total_units = 3;
+  // Size in bytes of all the kzips that contributed to this KzipInfo.
+  int64 size = 4;
+  // Error messages detected when computing KzipInfo. For example, source files
+  // with no corresponding required_input. If there are any items in this field,
+  // it indicates that this kzip has serious problems and should not be used.
+  repeated string critical_kzip_errors = 5;
 }
 
 // A FilesRequest specifies a collection of files to be fetched from a

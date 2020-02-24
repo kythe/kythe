@@ -23,7 +23,7 @@ docker_build(
     deps = ["//kythe/release/base"],
 )
 
-release_version = "v0.0.30"
+release_version = "v0.0.42"
 
 genrule(
     name = "release",
@@ -46,6 +46,7 @@ genrule(
         ":cxx_indexer",
         ":go_indexer",
         ":proto_extractor",
+        "@maven//:javax_annotation_jsr250_api",
         ":proto_indexer",
         ":textproto_extractor",
         ":textproto_indexer",
@@ -53,6 +54,7 @@ genrule(
         ":misc",
         "//kythe/proto:public",
         "//third_party:licenses",
+        "//kythe/extractors/bazel:extractors_bazelrc",
     ],
     outs = [
         "kythe-" + release_version + ".tar.gz",
@@ -81,11 +83,13 @@ genrule(
         "--cp $(location bazel_jvm_extractor) extractors/bazel_jvm_extractor.jar",
         "--cp $(location bazel_proto_extractor) extractors/bazel_proto_extractor",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
+        "--cp $(location @maven//:javax_annotation_jsr250_api) jsr250-api-1.0.jar",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--cp $(location go_extractor) extractors/go_extractor",
         "--cp $(location proto_extractor) extractors/proto_extractor",
         "--cp $(location textproto_extractor) extractors/textproto_extractor",
         "--cp $(location cc_proto_metadata_plugin) tools/cc_proto_metadata_plugin",
+        "--cp $(location //kythe/extractors/bazel:extractors_bazelrc) ./",
         "--path tools/ $(locations tools)",
         "--path proto/ $(locations //kythe/proto:public)",
         "--relpaths 'third_party' --path 'third_party' $(locations //third_party:licenses)",
@@ -106,6 +110,7 @@ filegroup(
         "//:LICENSE",
         "//:RELEASES.md",
         "//kythe/data:raw_vnames_config",
+        "//kythe/data:simple_vnames_config",
         "//kythe/data:vnames.bzl",
         "//kythe/extractors:extractors.bzl",
     ],
@@ -237,9 +242,9 @@ filegroup(
     name = "tools",
     srcs = [
         "//kythe/cxx/verifier",
+        "//kythe/go/extractors/config/runextractor",
         "//kythe/go/platform/tools/dedup_stream",
         "//kythe/go/platform/tools/entrystream",
-        "//kythe/go/platform/tools/indexpack",
         "//kythe/go/platform/tools/kzip",
         "//kythe/go/platform/tools/kzip_validator",
         "//kythe/go/platform/tools/viewindex",

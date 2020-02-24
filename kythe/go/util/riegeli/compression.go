@@ -21,27 +21,36 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"io/ioutil"
 
 	"github.com/DataDog/zstd"
+	"github.com/golang/snappy"
 	"github.com/google/brotli/go/cbrotli"
 )
 
 func decompress(r byteReader, c compressionType) ([]byte, error) {
+	size, err := binary.ReadUvarint(r)
+	if err != nil {
+		return nil, fmt.Errorf("bad varint prefix for compressed block: %v", err)
+	}
+
 	var rd io.ReadCloser
 	switch c {
 	case brotliCompression:
 		rd = cbrotli.NewReader(r)
 	case zstdCompression:
 		rd = zstd.NewReader(r)
+	case snappyCompression:
+		// TODO(schroederc): eliminate copy
+		all, err := ioutil.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		return snappy.Decode(make([]byte, size), all)
 	default:
 		return nil, fmt.Errorf("unsupported compression_type: '%s'", []byte{byte(c)})
 	}
 
-	size, err := binary.ReadUvarint(r)
-	if err != nil {
-		rd.Close()
-		return nil, fmt.Errorf("bad varint prefix for compressed block: %v", err)
-	}
 	decoded := make([]byte, size)
 	if _, err := io.ReadFull(rd, decoded); err != nil {
 		rd.Close()
@@ -69,6 +78,11 @@ func newCompressor(opts *WriterOptions) (compressor, error) {
 		lvl := opts.compressionLevel()
 		return &sizePrefixedWriterTo{buf: buf, WriteCloser: &batchCompressor{
 			Compress: func(src []byte) ([]byte, error) { return zstd.CompressLevel(nil, src, lvl) },
+			Buffer:   buf,
+		}}, nil
+	case snappyCompression:
+		return &sizePrefixedWriterTo{buf: buf, WriteCloser: &batchCompressor{
+			Compress: func(src []byte) ([]byte, error) { return snappy.Encode(nil, src), nil },
 			Buffer:   buf,
 		}}, nil
 	default:

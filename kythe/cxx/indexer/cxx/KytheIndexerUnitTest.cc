@@ -412,7 +412,7 @@ class PushPopLintingGraphObserver : public NullGraphObserver {
     }
     if (const clang::FileEntry* file_entry =
             SourceManager->getFileEntryForID(File)) {
-      FileNames.push(file_entry->getName());
+      FileNames.push(std::string(file_entry->getName()));
     } else {
       FileNames.push("null-file");
     }

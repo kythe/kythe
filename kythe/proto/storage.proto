@@ -22,6 +22,8 @@ option go_package = "storage_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
 // VName is a proto representation of a vector name.
+// See also
+// https://kythe.io/docs/kythe-storage.html#_a_id_termvname_a_vector_name_strong_vname_strong
 //
 // Rules:
 //  - All fields must be optional, and must have default values.
@@ -54,6 +56,10 @@ message VName {
   // A path-structured label describing the location of this object relative to
   // the corpus and the root.  For code, this will generally be the relative
   // path to the file containing the code, e.g., "storage/service.go" in kythe.
+  // The individual elements of the path are separated by "/".
+  // The path must not start with "/".
+  // The path must be normalized to a canonical form (with no path
+  // elements "", ".", or "..").
   //
   // However, this need not be a true file path; virtual objects like figments
   // can assign an ad-hoc abstract ID, or omit it entirely.
@@ -178,4 +184,22 @@ message CountReply {
 message ShardRequest {
   int64 index = 1;
   int64 shards = 2;
+}
+
+// A VNameRewriteRule associates a regular expression pattern with a VName
+// template.  A rule can be applied to a string to produce a VName.
+message VNameRewriteRule {
+  // An RE2 pattern to match against an input string.  Patterns are implicitly
+  // anchored at both ends.
+  string pattern = 1;
+
+  // A template VName to populate with matches from the input.  The template
+  // strings may contain markers of the form @n@, that will be replaced by the
+  // n'th regexp group on a successful input match.
+  VName v_name = 2 [json_name = "vname"];
+}
+
+// VNameRewriteRules is a container for multiple VNameRewriteRules.
+message VNameRewriteRules {
+  repeated VNameRewriteRule rule = 1;
 }

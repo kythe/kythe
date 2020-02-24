@@ -17,6 +17,7 @@ package com.google.devtools.kythe.platform.java.filemanager;
 
 import com.google.common.base.Throwables;
 import com.google.common.flogger.FluentLogger;
+import com.google.common.reflect.Reflection;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -32,7 +33,7 @@ import javax.tools.StandardJavaFileManager;
 
 /**
  * Forwards the full suite of {@link StandardJavaFileManager} methods to an underlying {@link
- * StandardJavaFileManager}, including methods introduced in JDK9 (except setPathFactory).
+ * StandardJavaFileManager}, including methods introduced in JDK9.
  */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 public class ForwardingStandardJavaFileManager
@@ -65,6 +66,15 @@ public class ForwardingStandardJavaFileManager
   private static final Method getLocationAsPathsMethod =
       getMethodOrNull("getLocationAsPaths", Location.class);
   private static final Method asPathMethod = getMethodOrNull("asPath", FileObject.class);
+  private static final Class<?> pathFactoryInterface = getClassOrNull("PathFactory");
+  private static final Method setPathFactoryMethod =
+      getMethodOrNull("setPathFactory", pathFactoryInterface);
+
+  /** Equivalent interface for JDK9's StandardJavaFileManager.PathFactory */
+  @FunctionalInterface
+  public static interface PathFactory {
+    Path getPath(String path, String... more);
+  }
 
   protected ForwardingStandardJavaFileManager(StandardJavaFileManager fileManager) {
     super(fileManager);
@@ -75,7 +85,7 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): return fileManager.getLocationForModule(location, fo);
     try {
       return (Location) getLocationForModuleNameMethod.invoke(fileManager, location, moduleName);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("getLocationForModule", e, IOException.class);
     }
   }
@@ -85,7 +95,7 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): return fileManager.getLocationForModule(location, fo);
     try {
       return (Location) getLocationForModuleFileMethod.invoke(fileManager, location, fo);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("getLocationForModule", e, IOException.class);
     }
   }
@@ -97,7 +107,7 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): return fileManager.getServiceLoader(location, service);
     try {
       return (ServiceLoader<S>) getServiceLoaderMethod.invoke(location, service);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("getServiceLoader", e, IOException.class);
     }
   }
@@ -107,7 +117,7 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): return fileManager.inferModuleName(location);
     try {
       return (String) inferModuleNameMethod.invoke(fileManager, location);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("inferModuleName", e, IOException.class);
     }
   }
@@ -118,7 +128,7 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): return fileManager.listLocationsForModules(location);
     try {
       return (Iterable<Set<Location>>) listLocationsForModulesMethod.invoke(fileManager, location);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible(
           "listLocationsForModules", e, IOException.class);
     }
@@ -129,7 +139,7 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): return fileManager.contains(location, fo);
     try {
       return (Boolean) containsMethod.invoke(fileManager, location, fo);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("contains", e, IOException.class);
     }
   }
@@ -148,7 +158,7 @@ public class ForwardingStandardJavaFileManager
     try {
       return (Iterable<? extends JavaFileObject>)
           getJavaFileObjectsFromPathsMethod.invoke(fileManager, paths);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("getJavaFileObjectsFromPaths", e);
     }
   }
@@ -175,7 +185,7 @@ public class ForwardingStandardJavaFileManager
     try {
       return (Iterable<? extends JavaFileObject>)
           getJavaFileObjectsMethod.invoke(fileManager, (Object) paths);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("getJavaFileObjects", e);
     }
   }
@@ -186,7 +196,7 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): fileManager.setLocationFromPaths(location, paths);
     try {
       setLocationFromPathsMethod.invoke(fileManager, location, paths);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("setLocationFromPaths", e, IOException.class);
     }
   }
@@ -197,7 +207,7 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): fileManager.setLocationForModule(location, moduleName, paths);
     try {
       setLocationForModuleMethod.invoke(fileManager, location, moduleName, paths);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("setLocationForModule", e, IOException.class);
     }
   }
@@ -213,7 +223,7 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): return fileManager.getLocationAsPaths(location);
     try {
       return (Iterable<? extends Path>) getLocationAsPathsMethod.invoke(fileManager, location);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("getLocationAsPaths", e);
     }
   }
@@ -233,8 +243,24 @@ public class ForwardingStandardJavaFileManager
     // TODO(shahms): return fileManager.asPath(fo);
     try {
       return (Path) asPathMethod.invoke(fileManager, fo);
-    } catch (ReflectiveOperationException e) {
+    } catch (NullPointerException | ReflectiveOperationException e) {
       throw propagateInvocationTargetErrorIfPossible("asPath", e);
+    }
+  }
+
+  // TODO(shahms): @Override; added in JDK9
+  public void setPathFactory(PathFactory factory) {
+    // TODO(shahms): fileManager.setPathFactory(factory);
+    try {
+      setPathFactoryMethod.invoke(
+          fileManager,
+          Reflection.newProxy(
+              pathFactoryInterface,
+              (proxy, method, args) -> {
+                return factory.getPath((String) args[0], (String[]) args[1]);
+              }));
+    } catch (NullPointerException | ReflectiveOperationException e) {
+      throw propagateInvocationTargetErrorIfPossible("setPathFactory", e);
     }
   }
 
@@ -247,25 +273,42 @@ public class ForwardingStandardJavaFileManager
     return null;
   }
 
-  private static IllegalStateException propagateInvocationTargetErrorIfPossible(
-      String methodName, ReflectiveOperationException error) {
+  private static Class<?> getClassOrNull(String name) {
+    try {
+      return Class.forName(
+          StandardJavaFileManager.class.getCanonicalName() + "$" + name,
+          true,
+          StandardJavaFileManager.class.getClassLoader());
+    } catch (ClassNotFoundException e) {
+      logger.atInfo().withCause(e).log("Failed to find StandardJavaFileManager class");
+    }
+    return null;
+  }
+
+  private static UnsupportedOperationException propagateInvocationTargetErrorIfPossible(
+      String methodName, Throwable error) {
     if (error instanceof InvocationTargetException) {
       Throwables.throwIfUnchecked(((InvocationTargetException) error).getCause());
     }
     return unsupportedVersionError(methodName, error);
   }
 
-  private static IllegalStateException propagateInvocationTargetErrorIfPossible(
-      String methodName, ReflectiveOperationException error, Class<IOException> declaredType)
-      throws IOException {
+  private static UnsupportedOperationException propagateInvocationTargetErrorIfPossible(
+      String methodName, Throwable error, Class<IOException> declaredType) throws IOException {
     if (error instanceof InvocationTargetException) {
-      Throwables.propagateIfPossible(((InvocationTargetException) error).getCause(), declaredType);
+      // Log the exception because the propagated destination may not provide a nice error log.
+      Throwable t = ((InvocationTargetException) error).getCause();
+      logger.atWarning().withCause(t).log(
+          "Error in underlying filemanager. A more detailed message may have been output to"
+              + " stderr.");
+      Throwables.propagateIfPossible(t, declaredType);
     }
     return unsupportedVersionError(methodName, error);
   }
 
-  private static IllegalStateException unsupportedVersionError(
-      String methodName, ReflectiveOperationException cause) {
-    return new IllegalStateException(methodName + " called by unsupported Java version", cause);
+  private static UnsupportedOperationException unsupportedVersionError(
+      String methodName, Throwable cause) {
+    return new UnsupportedOperationException(
+        methodName + " called by unsupported Java version", cause);
   }
 }

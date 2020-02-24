@@ -8,7 +8,6 @@ shell_tool_test(
     tools = {
         "entrystream": "//kythe/go/platform/tools/entrystream",
         "indexer": "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
-        "indexpack": "//kythe/go/platform/tools/indexpack",
     },
 )
 
@@ -49,7 +48,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
         "//third_party/guava",
         "//third_party/truth",
-        "@junit_junit//jar",
+        "@maven//:junit_junit",
     ],
 )
 

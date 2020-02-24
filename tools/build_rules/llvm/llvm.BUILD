@@ -3,6 +3,12 @@ package(
 )
 
 TARGET_DEFAULTS = {
+    "llvm-tblgen": {
+        "srcs": glob([
+            "utils/TableGen/GlobalISel/*.cpp",
+            "utils/TableGen/GlobalISel/*.h",
+        ]),
+    },
     "LLVMSupport": {
         "linkopts": [
             "-pthread",
@@ -29,7 +35,15 @@ TARGET_DEFAULTS = {
     "LLVMRemarks": {
         # Technically BitstreamWriter, but it's header-only
         # and BitstreamReader is equivalent.
-        "deps": [":LLVMBitstreamReader"],
+        "deps": [
+            ":LLVMBitstreamReader",
+            # Below are required by the ObjectFile layering violation.
+            ":LLVMBinaryFormat",
+            ":LLVMMC",
+        ],
+        "srcs": [
+            "/root/include/llvm/Object/ObjectFile.h",
+        ],
     },
     "LLVMScalarOpts": {
         "deps": [":LLVMTarget"],
@@ -48,10 +62,16 @@ TARGET_DEFAULTS = {
     "clangBasic": {
         "deps": [
             ":LLVMTarget",
+            ":LLVMFrontendOpenMP",
         ],
         "textual_hdrs": [
             "tools/clang/include/clang/Basic/Version.inc",
             ":tools_clang_include_clang_Basic_genhdrs",
+        ],
+        "srcs": [
+            ":tools_clang_include_clang_Sema_AttrParsedAttrList_inc",
+            ":tools_clang_include_clang_Sema_AttrParsedAttrKinds_inc",
+            ":tools_clang_include_clang_Sema_AttrSpellingListIndex_inc",
         ],
     },
     "clangCodeGen": {
@@ -173,7 +193,7 @@ cc_resources(
     strip = "staging/include/",
 )
 
-load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "cmake_defines", "LLVM_TARGETS")
+load("@io_kythe//tools/build_rules/llvm:cmake_defines.bzl", "LLVM_TARGETS", "cmake_defines")
 
 cc_library(
     name = "all_targets",

@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "GraphObserver.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/types/optional.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
@@ -69,12 +70,12 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   /// \brief Marks a VNameRef as belonging to this token.
   /// This token must outlive the VNameRef.
   void DecorateVName(VNameRef* target) const {
-    target->corpus =
-        absl::string_view(vname_.corpus().data(), vname_.corpus().size());
-    target->root =
-        absl::string_view(vname_.root().data(), vname_.root().size());
-    target->path =
-        absl::string_view(vname_.path().data(), vname_.path().size());
+    target->set_corpus(
+        absl::string_view(vname_.corpus().data(), vname_.corpus().size()));
+    target->set_root(
+        absl::string_view(vname_.root().data(), vname_.root().size()));
+    target->set_path(
+        absl::string_view(vname_.path().data(), vname_.path().size()));
   }
 
   /// \brief Sets a VName that controls the corpus, root and path of claimed
@@ -469,6 +470,10 @@ class KytheGraphObserver : public GraphObserver {
                        unsigned range_begin, unsigned range_end,
                        const VNameRef& decl);
 
+  /// Mark that file-scope rules are emitted for a given file.
+  bool MarkFileMetaEdgeEmitted(const VNameRef& file_decl,
+                               const MetadataFile& meta);
+
   struct RangeHash {
     size_t operator()(const GraphObserver::Range& range) const {
       return std::hash<unsigned>()(
@@ -527,6 +532,10 @@ class KytheGraphObserver : public GraphObserver {
   std::vector<FileState> file_stack_;
   /// A map from FileIDs to associated metadata.
   std::multimap<clang::FileID, std::shared_ptr<MetadataFile>> meta_;
+  /// The metadata file ids for which we have already emitted file metadata.
+  absl::flat_hash_set<
+      std::tuple<std::string, std::string, std::string, std::string>>
+      file_meta_edges_emitted_;
   /// All files that were ever reached through a header file, including header
   /// files themselves.
   std::set<llvm::sys::fs::UniqueID> transitively_reached_through_header_;

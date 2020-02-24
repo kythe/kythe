@@ -23,6 +23,7 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/memory/memory.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
 #include "glog/logging.h"
@@ -38,6 +39,9 @@ constexpr absl::string_view kRoot = "root/";
 constexpr absl::string_view kJsonUnitRoot = "root/units/";
 constexpr absl::string_view kProtoUnitRoot = "root/pbunits/";
 constexpr absl::string_view kFileRoot = "root/files/";
+// Set all file modified times to 0 so zip file diffs only show content diffs,
+// not zip creation time diffs.
+constexpr time_t kModTime = 0;
 
 std::string SHA256Digest(absl::string_view content) {
   std::array<unsigned char, SHA256_DIGEST_LENGTH> buf;
@@ -51,8 +55,12 @@ Status WriteTextFile(zip_t* archive, const std::string& path,
                      absl::string_view content) {
   if (auto source =
           zip_source_buffer(archive, content.data(), content.size(), 0)) {
-    if (zip_file_add(archive, path.c_str(), source, ZIP_FL_ENC_UTF_8) >= 0) {
-      return OkStatus();
+    auto idx = zip_file_add(archive, path.c_str(), source, ZIP_FL_ENC_UTF_8);
+    if (idx >= 0) {
+      // If a file was added, set the last modified time.
+      if (zip_file_set_mtime(archive, idx, kModTime, 0) == 0) {
+        return OkStatus();
+      }
     }
     zip_source_free(source);
   }
@@ -113,7 +121,13 @@ Status KzipWriter::InitializeArchive(zip_t* archive) {
     dirs.push_back(kProtoUnitRoot);
   }
   for (const auto& name : dirs) {
-    if (zip_dir_add(archive, name.data(), ZIP_FL_ENC_UTF_8) < 0) {
+    auto idx = zip_dir_add(archive, name.data(), ZIP_FL_ENC_UTF_8);
+    if (idx < 0) {
+      Status status = libzip::ToStatus(zip_get_error(archive));
+      zip_error_clear(archive);
+      return status;
+    }
+    if (zip_file_set_mtime(archive, idx, kModTime, 0) < 0) {
       Status status = libzip::ToStatus(zip_get_error(archive));
       zip_error_clear(archive);
       return status;

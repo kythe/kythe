@@ -6,6 +6,9 @@ load("@bazel_skylib//lib:collections.bzl", "collections")
 # CMake paths are all rooted at the fake "/root" path.
 _ROOT_PREFIX = "/root"
 
+def _glob(*args, **kwargs):
+    return native.glob(allow_empty = True, *args, **kwargs)
+
 def _repo_path(path):
     if native.repository_name() == "@":
         return path
@@ -23,6 +26,8 @@ def _root_path(ctx):
 
 def _join_path(root, path):
     """Special handling for absolute paths."""
+    if path.startswith(":"):
+        return path  # Actually a label
     if path.startswith(_ROOT_PREFIX):
         return paths.normalize(paths.relativize(path, _ROOT_PREFIX))
     if root.startswith(_ROOT_PREFIX):
@@ -31,7 +36,7 @@ def _join_path(root, path):
 
 def _llvm_headers(root):
     root = _replace_prefix(root, "lib/", "include/llvm/")
-    return native.glob([_join_path(root, "**/*.*")])
+    return _glob([_join_path(root, "**/*.*")])
 
 def _replace_prefix(value, prefix, repl):
     if value.startswith(prefix):
@@ -40,7 +45,7 @@ def _replace_prefix(value, prefix, repl):
 
 def _clang_headers(root):
     root = _replace_prefix(root, "tools/clang/lib/", "tools/clang/include/clang/")
-    return native.glob([_join_path(root, "**/*.*")])
+    return _glob([_join_path(root, "**/*.*")])
 
 def _llvm_srcglob(root, additional_header_dirs = []):
     srcglob = [_join_path(root, "*.h"), _join_path(root, "*.inc")]
@@ -49,10 +54,10 @@ def _llvm_srcglob(root, additional_header_dirs = []):
             paths.join(_join_path(root, dir), "*.h"),
             paths.join(_join_path(root, dir), "*.inc"),
         ])
-    return native.glob(srcglob)
+    return _glob(srcglob)
 
 def _clang_srcglob(root):
-    return native.glob([_join_path(root, "**/*.h"), _join_path(root, "**/*.inc")])
+    return _glob([_join_path(root, "**/*.h"), _join_path(root, "**/*.inc")])
 
 def _current(ctx):
     return ctx._state[-1]
@@ -105,7 +110,7 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
                kwargs.pop("depends", []) +
                _llvm_build_deps(ctx, name))
     depends = collections.uniq([_colonize(d) for d in depends])
-    defs = native.glob([_join_path(root, "*.def")])
+    defs = _glob([_join_path(root, "*.def")])
     if defs:
         native.cc_library(
             name = name + "_defs",
@@ -129,7 +134,7 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
         target = parts[parts.index("Target") + 1]
         target_root = "/".join(parts[:parts.index("Target") + 2])
         if target_root and target_root != root:
-            sources += native.glob([_join_path(target_root, "**/*.h")])
+            sources += _glob([_join_path(target_root, "**/*.h")])
             includes.append(target_root)
         depends.append(":" + target + "CommonTableGen")
         kind = _replace_prefix(name, "LLVM" + target, "")
@@ -201,12 +206,11 @@ def _add_tablegen(ctx, name, tag, *srcs):
     root = _root_path(ctx)
     kwargs = _make_kwargs(ctx, name, [_join_path(root, s) for s in srcs])
     kwargs["srcs"].extend(_llvm_srcglob(root))
-    deps = [
-        ":LLVMSupport",
-        ":LLVMTableGen",
-        ":LLVMMC",
-    ] + kwargs.pop("deps", [])
-    native.cc_binary(name = name, deps = deps, **kwargs)
+    if name.startswith("llvm-"):
+        kwargs.setdefault("deps", []).extend(_llvm_build_deps(ctx, name[5:]))
+    else:
+        kwargs.setdefault("deps", []).append(":LLVMTableGen")
+    native.cc_binary(name = name, **kwargs)
 
 def _set_cmake_var(ctx, key, *args):
     if key in ("LLVM_TARGET_DEFINITIONS", "LLVM_LINK_COMPONENTS", "sources"):
@@ -223,7 +227,7 @@ def _llvm_tablegen(ctx, kind, out, *opts):
     native.genrule(
         name = _genfile_name(out),
         outs = [out],
-        srcs = native.glob([
+        srcs = _glob([
             _join_path(root, "*.td"),  # local_tds
             "include/llvm/**/*.td",  # global_tds
         ]),
@@ -249,7 +253,7 @@ def _clang_tablegen(ctx, out, *args):
     name = _genfile_name(out)
     kwargs = _make_kwargs(ctx, name, args, ["SOURCE", "TARGET", "-I"], leader = "opts")
     src = _join_path(root, kwargs["source"][0])
-    includes = ["include/", root] + [
+    includes = ["include/", "tools/clang/include", root] + [
         _join_path(root, p)
         for p in kwargs.get("-i", [])
         # We use a "-I" section as a hack to pull out includes, sometimes it fails.
@@ -259,13 +263,15 @@ def _clang_tablegen(ctx, out, *args):
     opts = " ".join(["-I " + _repo_path(i) for i in includes] +
                     kwargs["opts"] +
                     [o for o in kwargs.get("-i", []) if o.startswith("-")])
+
     native.genrule(
         name = name,
         outs = [out],
-        srcs = native.glob([
+        srcs = _glob([
             _join_path(root, "*.td"),  # local_tds
             _join_path(paths.dirname(src), "*.td"),  # local_tds
             "include/llvm/**/*.td",  # global_tds
+            "tools/clang/include/**/*.td",
         ]),
         tools = [":clang-tblgen"],
         cmd = "$(location :clang-tblgen) %s $(location %s) -o $@" % (opts, src),
@@ -322,6 +328,7 @@ def make_context(**kwargs):
         set = _set_cmake_var,
         configure_file = _configure_file,
         add_llvm_library = _add_llvm_library,
+        add_llvm_component_library = _add_llvm_library,
         add_llvm_target = _add_llvm_target,
         add_clang_library = _add_clang_library,
         add_tablegen = _add_tablegen,

@@ -42,7 +42,7 @@ VName conventions
 -----------------
 
 By default, assume that the VNames of nodes should be chosen according to the
-following rules:
+following rules (more details are given in the link:../kythe-storage.html#TermVName[storage model]):
 
   * `language`: the source language.
   * `corpus`: the node's containing corpus.
@@ -596,9 +596,9 @@ Brief description::
 Commonly arises from::
   code generation
 Points from::
-  semantic nodes
+  semantic nodes, files
 Points toward::
-  semantic nodes
+  semantic nodes, files
 Ordinals are used::
   never
 See also::
@@ -610,8 +610,8 @@ and target languages do not share Kythe indexers, it is still semantically
 useful to connect the nodes they emit. For example, one might want to list
 all the $$C++$$ and Java uses of a particular service call, starting at the
 specification of that service. The specification and its generated artifacts
-may be joined by the *generates* edge.
-
+may be joined by the *generates* edge.  Either both the specification and its
+generated artifact are file nodes or both are semantic nodes.
 
 [[instantiates]]
 instantiates
@@ -1604,6 +1604,8 @@ anchor
 
 Brief description::
   An *anchor* connects concrete syntax to abstract syntax.
+  An *anchor* is within the <<file>> with the same *Path*, *Root*, *Corpus*
+  (<<file>>s do not have a *Language*, so it is not used for matching).
 Naming convention::
   Path:::
     The *Path* of the <<file>> containing this anchor (or empty if there is no
@@ -1807,7 +1809,11 @@ Naming convention::
   Signature:::
     *empty*
 Facts::
-  text:::
+  language:::
+    The source language, as used in <<_vname_conventions,VName>>
+    `language`.  This fact is optional; it is intended for use by
+    source browsers, for things like source colorization.
+text:::
     Uninterpreted content as an array of bytes.
   text/encoding:::
     Encoding of the text fact.  See

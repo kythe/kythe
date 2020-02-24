@@ -23,11 +23,6 @@ load(
     "//kythe/cxx/indexer/proto/testdata:proto_verifier_test.bzl",
     "proto_extract_kzip",
 )
-load(
-    "@bazel_tools//tools/jdk:toolchain_utils.bzl",
-    "find_java_runtime_toolchain",
-    "find_java_toolchain",
-)
 load("//kythe/java/com/google/devtools/kythe/extractors/java/bazel:aspect.bzl", "extract_java")
 
 KytheGeneratedSourcesInfo = provider(
@@ -70,8 +65,8 @@ def _java_extract_kzip_impl(ctx):
     # Actually compile the sources to be used as a dependency for other tests
     jar = ctx.actions.declare_file(ctx.outputs.kzip.basename + ".jar", sibling = ctx.outputs.kzip)
 
-    java_toolchain = find_java_toolchain(ctx, ctx.attr._java_toolchain)
-    host_javabase = find_java_runtime_toolchain(ctx, ctx.attr._host_javabase)
+    java_toolchain = ctx.attr._java_toolchain[java_common.JavaToolchainInfo]
+    host_javabase = ctx.attr._host_javabase[java_common.JavaRuntimeInfo]
     java_info = java_common.compile(
         ctx,
         javac_opts = ctx.attr.opts,
@@ -362,7 +357,7 @@ def java_proto_verifier_test(
         vnames_config = vnames_config,
         deps = [
             "@com_google_protobuf//:protobuf_java",
-            "@javax_annotation_jsr250_api//jar",
+            "@maven//:javax_annotation_jsr250_api",
         ],
     )
 

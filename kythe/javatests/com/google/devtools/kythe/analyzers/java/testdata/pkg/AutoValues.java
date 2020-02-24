@@ -2,6 +2,14 @@ package com.google.devtools.kythe.analyzers.java.testdata.pkg;
 
 import com.google.auto.value.AutoValue;
 
+//- File=vname("", Corpus, Root, Path, "").node/kind file
+//- GeneratedFile=vname("", GenCorpus, GenRoot, GenPath, "").node/kind file
+//- File generates GeneratedFile
+
+//- GeneratedDef=vname(_, GenCorpus, GenRoot, GenPath, _).node/kind anchor
+//- GeneratedDef defines/binding AutoStringPair
+
+//- @AutoValues=vname(_, Corpus, Root, Path, _).node/kind anchor
 public final class AutoValues {
   @AutoValue
   //- @StringPair defines/binding StringPair
@@ -71,6 +79,30 @@ public final class AutoValues {
       public abstract Builder setBool(boolean b);
 
       public abstract WithPrefixes build();
+    }
+  }
+
+  @AutoValue
+  public abstract static class AsInterface {
+    //- @getObject defines/binding GetObject
+    //- GetObject property/reads ObjectProp
+    public abstract Object getObject();
+
+    //- GetObject generates GetObjectImpl
+    //- GetObjectImpl overrides GetObject
+    //- GetObjectImpl property/reads ObjectProp
+
+    @AutoValue.Builder
+    interface Builder {
+      //- @object defines/binding SetObject
+      //- SetObject property/writes ObjectProp
+      public Builder object(Object o);
+
+      //- SetObject generates SetObjectImpl
+      //- SetObjectImpl overrides SetObject
+      //- SetObjectImpl property/writes ObjectProp
+
+      public AsInterface build();
     }
   }
 }

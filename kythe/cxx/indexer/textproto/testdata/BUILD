@@ -57,9 +57,9 @@ textproto_verifier_test(
     ],
     protos = [
         "any_type.proto",
+        "@com_google_protobuf//:well_known_protos",
     ],
     textproto = "any_type.pbtxt",
-    deps = ["@com_google_protobuf//:well_known_protos"],
 )
 
 textproto_verifier_test(
@@ -79,7 +79,6 @@ textproto_verifier_test(
         "external/com_google_protobuf/src",
     ],
     protos = [
-        "any_type.proto",
         "example.proto",
     ],
     textproto = "schema_comments.pbtxt",

@@ -113,6 +113,12 @@ const (
 	prefixProto = "pbunits"
 )
 
+var (
+	// Use a constant file modification time in the kzip so file diffs only compare the contents,
+	// not when the kzips were created.
+	modifiedTime = time.Unix(0, 0)
+)
+
 // EncodingFor converts a string to an Encoding.
 func EncodingFor(v string) (Encoding, error) {
 	v = strings.ToUpper(v)
@@ -209,9 +215,6 @@ func unitPrefix(root string, fs []*zip.File) (string, error) {
 		return fs[i].Name > protoDir
 	})
 	hasProto := p < len(fs) && strings.HasPrefix(fs[p].Name, protoDir)
-	if !hasJSON && !hasProto {
-		return "", fmt.Errorf("no compilation units found")
-	}
 	if hasJSON && hasProto {
 		// validate that they have identical units based on hash
 		for p < len(fs) && j < len(fs) {
@@ -236,6 +239,17 @@ func unitPrefix(root string, fs []*zip.File) (string, error) {
 		return prefixProto, nil
 	}
 	return prefixJSON, nil
+}
+
+// Encoding exposes the file encoding being used to read compilation units.
+func (r *Reader) Encoding() (Encoding, error) {
+	switch {
+	case r.unitsPrefix == prefixJSON:
+		return EncodingJSON, nil
+	case r.unitsPrefix == prefixProto:
+		return EncodingProto, nil
+	}
+	return EncodingAll, fmt.Errorf("unknown encoding prefix: %v", r.unitsPrefix)
 }
 
 func (r *Reader) unitPath(digest string) string { return path.Join(r.root, r.unitsPrefix, digest) }
@@ -468,11 +482,11 @@ func NewWriter(w io.Writer, options ...WriterOption) (*Writer, error) {
 	archive := zip.NewWriter(w)
 	// Create an entry for the root directory, which must be first.
 	root := &zip.FileHeader{
-		Name:    "root/",
-		Comment: "kzip root directory",
+		Name:     "root/",
+		Comment:  "kzip root directory",
+		Modified: modifiedTime,
 	}
 	root.SetMode(os.ModeDir | 0755)
-	root.SetModTime(time.Now())
 	if _, err := archive.CreateHeader(root); err != nil {
 		return nil, err
 	}
@@ -513,9 +527,7 @@ var toJSON = &jsonpb.Marshaler{OrigName: true}
 func (w *Writer) AddUnit(cu *apb.CompilationUnit, index *apb.IndexedCompilation_Index) (string, error) {
 	unit := kythe.Unit{Proto: cu}
 	unit.Canonicalize()
-	hash := sha256.New()
-	unit.Digest(hash)
-	digest := hex.EncodeToString(hash.Sum(nil))
+	digest := unit.Digest()
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -608,7 +620,7 @@ func (w *Writer) Close() error {
 func newFileHeader(parts ...string) *zip.FileHeader {
 	fh := &zip.FileHeader{Name: path.Join(parts...), Method: zip.Deflate}
 	fh.SetMode(0600)
-	fh.SetModTime(time.Now())
+	fh.Modified = modifiedTime
 	return fh
 }
 

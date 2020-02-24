@@ -24,8 +24,8 @@ go_test(
     name = "kzip_test",
     srcs = ["kzip_test.go"],
     data = [
-        "//kythe/cxx/common/testdata:missing-pbunit.kzip",
-        "//kythe/cxx/common/testdata:missing-unit.kzip",
+        "//kythe/testdata/platform:missing-pbunit.kzip",
+        "//kythe/testdata/platform:missing-unit.kzip",
     ],
     deps = [
         ":kzip",

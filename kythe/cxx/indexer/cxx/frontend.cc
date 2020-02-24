@@ -242,7 +242,7 @@ bool IndexerContext::HasIndexArguments() {
 
 void IndexerContext::LoadDataFromIndex(const std::string& file_or_cu,
                                        const CompilationVisitCallback& visit) {
-  std::string name = strip_silent_input_prefix(file_or_cu);
+  std::string name(strip_silent_input_prefix(file_or_cu));
   const bool silent = !name.empty();
   if (name.empty()) {
     name = file_or_cu;
@@ -266,7 +266,7 @@ void IndexerContext::LoadDataFromUnpackedFile(
   std::string source_file_name = default_filename;
   llvm::SmallString<1024> cwd;
   CHECK(!llvm::sys::fs::current_path(cwd));
-  job.unit.set_working_directory(cwd.str());
+  job.unit.set_working_directory(std::string(cwd.str()));
   if (absl::GetFlag(FLAGS_i) != "-") {
     source_file_name = absl::GetFlag(FLAGS_i);
     read_fd = open(source_file_name.c_str(), O_RDONLY);
@@ -291,7 +291,7 @@ void IndexerContext::LoadDataFromUnpackedFile(
   // not be in range of the StringRef. std::string ends with \0.
   proto::FileData file_data;
   file_data.mutable_info()->set_path(source_file_name);
-  file_data.set_content(source_data.str());
+  file_data.set_content(std::string(source_data.str()));
   job.virtual_files.push_back(std::move(file_data));
   job.unit.add_source_file(source_file_name);
   for (const auto& arg : args_) {

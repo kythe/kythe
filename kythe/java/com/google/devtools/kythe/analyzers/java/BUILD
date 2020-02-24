@@ -1,4 +1,4 @@
-load("@rules_java//java:defs.bzl", "java_library", "java_binary")
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -26,6 +26,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/java/com/google/devtools/kythe/common:flogger",
         "//kythe/java/com/google/devtools/kythe/platform/java",
+        "//kythe/java/com/google/devtools/kythe/platform/java/filemanager:forwarding_standard_java_file_manager",
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
@@ -38,10 +39,10 @@ java_library(
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
         "//third_party/javac",
-        "@com_beust_jcommander//jar",
-        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_protobuf//:protobuf_java",
-        "@org_checkerframework_checker_qual//jar",
+        "@maven//:com_beust_jcommander",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_checkerframework_checker_qual",
     ],
 )
 
@@ -78,7 +79,6 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:stream_fact_emitter",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
-        "//kythe/java/com/google/devtools/kythe/platform/indexpack",
         "//kythe/java/com/google/devtools/kythe/platform/java",
         "//kythe/java/com/google/devtools/kythe/platform/kzip",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
@@ -89,9 +89,9 @@ java_binary(
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:storage_java_proto",
         "//third_party/guava",
-        "@com_beust_jcommander//jar",
         "@com_google_common_flogger//api",
         "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_beust_jcommander",
     ],
 )
 

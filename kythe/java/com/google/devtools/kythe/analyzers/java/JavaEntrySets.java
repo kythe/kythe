@@ -199,6 +199,11 @@ public class JavaEntrySets extends KytheEntrySets {
     return node;
   }
 
+  /** Returns the {@link VName} for the given file. */
+  public VName getFileVName(JavaFileObject sourceFile) {
+    return getFileVName(getDigest(sourceFile));
+  }
+
   /** Emits and returns a new {@link EntrySet} representing the Java file. */
   public EntrySet newFileNodeAndEmit(Positions file) {
     return newFileNodeAndEmit(getDigest(file.getSourceFile()), file.getData(), file.getEncoding());
@@ -329,6 +334,12 @@ public class JavaEntrySets extends KytheEntrySets {
     int h = hashes.hashCode();
     symbolHashes.put(sym, h);
     return h;
+  }
+
+  /** Returns the JVM {@link CorpusPath} for the given {@link Symbol}. */
+  public CorpusPath jvmCorpusPath(Symbol sym) {
+    return new CorpusPath(
+        Optional.ofNullable(lookupVName(sym.enclClass())).map(VName::getCorpus).orElse(""), "", "");
   }
 
   @Nullable

@@ -13,6 +13,7 @@ go_binary(
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
         "//kythe/go/serving/graph",
+        "//kythe/go/serving/identifiers",
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",

@@ -26,7 +26,11 @@ const (
 	//- @+3"baz" defines/binding Baz
 
 	// baz comment
-	baz = "quux"
+	baz = "quux" // doc comments are preferred
+
+	//- @+2"ほげ" defines/binding JFoo
+
+	ほげ = 42 // the japanese equivalent of foo
 )
 
 // Names without their own comments inherit the block comment, if present.
@@ -43,10 +47,32 @@ const (
 //- BazComment.text "baz comment"
 //- BazComment documents Baz
 
+// Line comments are used when there is no above-line "doc" comment.
+//- !{ _BazLineComment.text "doc comments are preferred" }
+//- LineComment documents JFoo
+//- LineComment.node/kind doc
+//- LineComment.text "the japanese equivalent of foo"
+
 //- @+3"alpha" defines/binding Alpha
 
 // alpha is a function.
 func alpha() {}
+
+//- ImportantComment documents Param
+//- ImportantComment.text "load-bearing comment"
+//- EhComment documents Eh
+//- EhComment.text "idk"
+
+//- @+5"importantParam" defines/binding Param
+//- @+6"ehParam" defines/binding Eh
+
+func beta(
+	// load-bearing comment
+	importantParam string,
+
+	ehParam string, // idk
+) {
+}
 
 //- Alpha.node/kind function
 //- AlphaDoc.node/kind doc
@@ -74,6 +100,12 @@ type widget struct {
 
 	// What went wrong.
 	error
+
+	//- LineDoc documents ByLineField
+	//- LineDoc.text "this is a line comment"
+	//- @+2ByLine defines/binding ByLineField
+
+	ByLine int // this is a line comment
 }
 
 //- Widget.node/kind record

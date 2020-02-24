@@ -3,6 +3,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
+load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
 load("@io_kythe//:setup.bzl", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
@@ -10,6 +11,8 @@ load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
 load("@io_kythe//tools/build_rules/lexyacc:lexyacc.bzl", "lexyacc_configure")
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
+load("@rules_python//python:repositories.bzl", "py_repositories")
+load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_repositories = "repositories")
 
 def _rule_dependencies():
     go_rules_dependencies()
@@ -17,23 +20,23 @@ def _rule_dependencies():
     gazelle_dependencies()
     rules_java_dependencies()
     rules_proto_dependencies()
+    py_repositories()
+    bazel_toolchains_repositories()
+
+def _gazelle_ignore(**kwargs):
+    """Dummy macro which causes gazelle to see a repository as already defined."""
 
 def _cc_dependencies():
-    maybe(
-        http_archive,
-        name = "rules_cc",
-        sha256 = "29daf0159f0cf552fcff60b49d8bcd4f08f08506d2da6e41b07058ec50cfeaec",
-        strip_prefix = "rules_cc-b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e",
-        urls = ["https://github.com/bazelbuild/rules_cc/archive/b7fe9697c0c76ab2fd431a891dbb9a6a32ed7c3e.tar.gz"],
-    )
-
     maybe(
         http_archive,
         name = "net_zlib",
         build_file = "@io_kythe//third_party:zlib.BUILD",
         sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
         strip_prefix = "zlib-1.2.11",
-        urls = ["https://zlib.net/zlib-1.2.11.tar.gz"],
+        urls = [
+            "https://mirror.bazel.build/zlib.net/zlib-1.2.11.tar.gz",
+            "https://zlib.net/zlib-1.2.11.tar.gz",
+        ],
     )
 
     maybe(
@@ -45,17 +48,24 @@ def _cc_dependencies():
         urls = [
             # Bazel does not like the official download link at libzip.org,
             # so use the GitHub release tag.
+            "https://mirror.bazel.build/github.com/nih-at/libzip/archive/rel-1-5-1.zip",
             "https://github.com/nih-at/libzip/archive/rel-1-5-1.zip",
         ],
     )
 
     maybe(
-        http_archive,
-        name = "boringssl",  # Must match upstream workspace name.
-        # Gitiles creates gzip files with an embedded timestamp, so we cannot use
-        # sha256 to validate the archives.  We must rely on the commit hash and https.
+        git_repository,
+        name = "boringssl",
+        # Use the github mirror because the official source at
+        # https://boringssl.googlesource.com/boringssl does not allow
+        # unauthenticated git clone and the archives suffer from
+        # https://github.com/google/gitiles/issues/84 preventing the use of
+        # sha256sum on archives.
+        remote = "https://github.com/google/boringssl",
         # Commits must come from the master-with-bazel branch.
-        url = "https://boringssl.googlesource.com/boringssl/+archive/4be3aa87917b20fedc45fa1fc5b6a2f3738612ad.tar.gz",
+        # branch = "master-with-bazel",
+        commit = "e0c35d6c06fd800de1092f0b4d4326570ca2617a",
+        shallow_since = "1566966435 +0000",
     )
 
     maybe(
@@ -64,16 +74,22 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:rapidjson.BUILD",
         sha256 = "8e00c38829d6785a2dfb951bb87c6974fa07dfe488aa5b25deec4b8bc0f6a3ab",
         strip_prefix = "rapidjson-1.1.0",
-        url = "https://github.com/Tencent/rapidjson/archive/v1.1.0.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/Tencent/rapidjson/archive/v1.1.0.zip",
+            "https://github.com/Tencent/rapidjson/archive/v1.1.0.zip",
+        ],
     )
 
     # Make sure to update regularly in accordance with Abseil's principle of live at HEAD
     maybe(
         http_archive,
         name = "com_google_absl",
-        sha256 = "c1b570e3d48527c6eb5d8668cd4d2a24b704110700adc0db44b002c058fdf5d0",
-        strip_prefix = "abseil-cpp-c6c3c1b498e4ee939b24be59cae29d59c3863be8",
-        url = "https://github.com/abseil/abseil-cpp/archive/c6c3c1b498e4ee939b24be59cae29d59c3863be8.zip",
+        sha256 = "4bdb45ca33f5b437d5ccfabea8c26cfe9570031d7bddeabebd5df51800535cb5",
+        strip_prefix = "abseil-cpp-3c814105108680997d0821077694f663693b5382",
+        urls = [
+            "https://mirror.bazel.build/github.com/abseil/abseil-cpp/archive/3c814105108680997d0821077694f663693b5382.zip",
+            "https://github.com/abseil/abseil-cpp/archive/3c814105108680997d0821077694f663693b5382.zip",
+        ],
     )
 
     maybe(
@@ -81,7 +97,10 @@ def _cc_dependencies():
         name = "com_google_googletest",
         sha256 = "2f56064481649b68c98afb1b14d7b1c5e2a62ef0b48b6ba0a71f60ddd6628458",
         strip_prefix = "googletest-8756ef905878f727e8122ba25f483c887cbc3c17",
-        url = "https://github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
+            "https://github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
+        ],
     )
 
     maybe(
@@ -89,7 +108,10 @@ def _cc_dependencies():
         name = "com_github_google_glog",
         strip_prefix = "glog-ba8a9f6952d04d1403b97df24e6836227751454e",
         sha256 = "9b4867ab66c33c41e2672b5de7e3133d38411cdb75eeb0d2b72c88bb10375c71",
-        url = "https://github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
+            "https://github.com/google/glog/archive/ba8a9f6952d04d1403b97df24e6836227751454e.zip",
+        ],
         build_file_content = "\n".join([
             "load(\"//:bazel/glog.bzl\", \"glog_library\")",
             "glog_library(with_gflags=0)",
@@ -99,17 +121,27 @@ def _cc_dependencies():
     maybe(
         http_archive,
         name = "org_brotli",
-        sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
-        strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9",
-        url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+        sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
+        strip_prefix = "brotli-1.0.7",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party:brotli/brotli-1.0.7-int-float-conversion.patch",
+        ],
+        urls = [
+            "https://mirror.bazel.build/github.com/google/brotli/archive/v1.0.7.tar.gz",
+            "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
+        ],
     )
 
     maybe(
         http_archive,
         name = "com_google_riegeli",
-        sha256 = "5c1714329c19759201b7f2c6a2cf8b255b6f10c752b197d6e8847b8574dcd96b",
-        strip_prefix = "riegeli-6b1dd7be479f6ffffdec06c39f352bd5a87b63b7",
-        url = "https://github.com/google/riegeli/archive/6b1dd7be479f6ffffdec06c39f352bd5a87b63b7.zip",
+        sha256 = "762b838bcf3ddc02e1b334103ef21f02316e57be373444ff7c7461781935c8b6",
+        strip_prefix = "riegeli-a624e7f8e98aff394904685ecbba2e5ee664606a",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/riegeli/archive/a624e7f8e98aff394904685ecbba2e5ee664606a.zip",
+            "https://github.com/google/riegeli/archive/a624e7f8e98aff394904685ecbba2e5ee664606a.zip",
+        ],
     )
 
     maybe(
@@ -118,7 +150,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:libmemcached.BUILD",
         sha256 = "e22c0bb032fde08f53de9ffbc5a128233041d9f33b5de022c0978a2149885f82",
         strip_prefix = "libmemcached-1.0.18",
-        url = "https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz",
+        urls = [
+            "https://mirror.bazel.build/launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz",
+            "https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz",
+        ],
     )
 
     maybe(
@@ -128,7 +163,7 @@ def _cc_dependencies():
         sha256 = "ff3e80c1ca6a068428726cd7dd19037a47cc538ce58ef61c59587191039b2ca6",
         strip_prefix = "curl-7.49.1",
         urls = [
-            "http://bazel-mirror.storage.googleapis.com/curl.haxx.se/download/curl-7.49.1.tar.gz",
+            "https://mirror.bazel.build/curl.haxx.se/download/curl-7.49.1.tar.gz",
             "https://curl.haxx.se/download/curl-7.49.1.tar.gz",
         ],
     )
@@ -138,7 +173,10 @@ def _cc_dependencies():
         name = "com_googlesource_code_re2",
         sha256 = "ae9b962dbd6427565efd3e9503acb40a1385b21962c29050546c9347ac7fa93f",
         strip_prefix = "re2-2019-01-01",
-        url = "https://github.com/google/re2/archive/2019-01-01.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/re2/archive/2019-01-01.zip",
+            "https://github.com/google/re2/archive/2019-01-01.zip",
+        ],
     )
 
     maybe(
@@ -147,7 +185,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:jq.BUILD",
         sha256 = "998c41babeb57b4304e65b4eb73094279b3ab1e63801b6b4bddd487ce009b39d",
         strip_prefix = "jq-1.4",
-        url = "https://github.com/stedolan/jq/releases/download/jq-1.4/jq-1.4.tar.gz",
+        urls = [
+            "https://mirror.bazel.build/github.com/stedolan/jq/releases/download/jq-1.4/jq-1.4.tar.gz",
+            "https://github.com/stedolan/jq/releases/download/jq-1.4/jq-1.4.tar.gz",
+        ],
     )
 
     maybe(
@@ -156,7 +197,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:snappy.BUILD",
         sha256 = "61e05a0295fd849072668b1f3494801237d809427cfe8fd014cda455036c3ef7",
         strip_prefix = "snappy-1.1.7",
-        url = "https://github.com/google/snappy/archive/1.1.7.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/snappy/archive/1.1.7.zip",
+            "https://github.com/google/snappy/archive/1.1.7.zip",
+        ],
     )
 
     maybe(
@@ -165,7 +209,10 @@ def _cc_dependencies():
         build_file = "@io_kythe//third_party:leveldb.BUILD",
         sha256 = "5b2bd7a91489095ad54bb81ca6544561025b48ec6d19cc955325f96755d88414",
         strip_prefix = "leveldb-1.20",
-        url = "https://github.com/google/leveldb/archive/v1.20.zip",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/leveldb/archive/v1.20.zip",
+            "https://github.com/google/leveldb/archive/v1.20.zip",
+        ],
     )
 
     maybe(
@@ -182,7 +229,11 @@ def _java_dependencies():
         http_archive,
         name = "google_bazel_common",
         strip_prefix = "bazel-common-b3778739a9c67eaefe0725389f03cf821392ac67",
-        urls = ["https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip"],
+        sha256 = "4ae0fd0af627be9523a166b88d1298375335f418dcc13a82e9e77a0089a4d254",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip",
+            "https://github.com/google/bazel-common/archive/b3778739a9c67eaefe0725389f03cf821392ac67.zip",
+        ],
     )
     maybe(
         git_repository,
@@ -190,456 +241,841 @@ def _java_dependencies():
         commit = "ca8ad22bc1479b5675118308f88ef3fff7d26c1f",
         remote = "https://github.com/google/flogger",
     )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_code_gson_gson",
-        artifact = "com.google.code.gson:gson:2.8.5",
-        sha1 = "f645ed69d595b24d4cf8b3fbb64cc505bede8829",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_guava_guava",
-        artifact = "com.google.guava:guava:26.0-jre",
-        sha1 = "6a806eff209f36f635f943e16d97491f00f6bfab",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_re2j_re2j",
-        artifact = "com.google.re2j:re2j:1.2",
-        sha1 = "4361eed4abe6f84d982cbb26749825f285996dd2",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_code_findbugs_jsr305",
-        artifact = "com.google.code.findbugs:jsr305:3.0.1",
-        sha1 = "f7be08ec23c21485b9b5a1cf1654c2ec8c58168d",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_errorprone_error_prone_annotations",
-        artifact = "com.google.errorprone:error_prone_annotations:2.3.1",
-        sha1 = "a6a2b2df72fd13ec466216049b303f206bd66c5d",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "org_checkerframework_checker_qual",
-        artifact = "org.checkerframework:checker-qual:2.9.0",
-        sha1 = "8f783c7cdcda9f3639459d33cad5d5307b5512ba",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "org_ow2_asm_asm",
-        artifact = "org.ow2.asm:asm:7.0",
-        sha1 = "d74d4ba0dee443f68fb2dcb7fcdb945a2cd89912",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "junit_junit",
-        artifact = "junit:junit:4.12",
-        sha1 = "2973d150c0dc1fefe998f834810d68f278ea58ec",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_beust_jcommander",
-        artifact = "com.beust:jcommander:1.48",
-        sha1 = "bfcb96281ea3b59d626704f74bc6d625ff51cbce",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_truth_truth",
-        artifact = "com.google.truth:truth:1.0",
-        sha1 = "998e5fb3fa31df716574b4c9e8d374855e800451",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_googlecode_java_diff_utils",
-        artifact = "com.googlecode.java-diff-utils:diffutils:1.3.0",
-        sha1 = "7e060dd5b19431e6d198e91ff670644372f60fbd",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_auto_value_auto_value",
-        artifact = "com.google.auto.value:auto-value:1.5.4",
-        sha1 = "65183ddd1e9542d69d8f613fdae91540d04e1476",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_auto_service_auto_service",
-        artifact = "com.google.auto.service:auto-service:1.0-rc4",
-        sha1 = "44954d465f3b9065388bbd2fc08a3eb8fd07917c",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_auto_auto_common",
-        artifact = "com.google.auto:auto-common:0.10",
-        sha1 = "c8f153ebe04a17183480ab4016098055fb474364",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "javax_annotation_jsr250_api",
-        artifact = "javax.annotation:jsr250-api:1.0",
-        sha1 = "5025422767732a1ab45d93abfea846513d742dcf",
-    )
-
-    maybe(
-        native.maven_jar,
-        name = "com_google_common_html_types",
-        artifact = "com.google.common.html.types:types:1.0.8",
-        sha1 = "9e9cf7bc4b2a60efeb5f5581fe46d17c068e0777",
+    maven_install(
+        name = "maven",
+        artifacts = [
+            "com.beust:jcommander:1.48",
+            "com.google.auto.service:auto-service:1.0-rc4",
+            "com.google.auto.value:auto-value:1.5.4",
+            "com.google.auto:auto-common:0.10",
+            "com.google.code.findbugs:jsr305:3.0.1",
+            "com.google.code.gson:gson:2.8.5",
+            "com.google.common.html.types:types:1.0.8",
+            "com.google.errorprone:error_prone_annotations:2.3.1",
+            "com.google.guava:guava:26.0-jre",
+            "com.google.jimfs:jimfs:1.1",
+            "com.google.re2j:re2j:1.2",
+            "com.google.truth:truth:1.0",
+            "com.googlecode.java-diff-utils:diffutils:1.3.0",
+            "javax.annotation:jsr250-api:1.0",
+            "junit:junit:4.12",
+            "org.checkerframework:checker-qual:2.9.0",
+            "org.ow2.asm:asm:7.0",
+        ],
+        repositories = [
+            "https://jcenter.bintray.com",
+            "https://maven.google.com",
+            "https://repo1.maven.org/maven2",
+        ],
+        fetch_sources = True,
+        generate_compat_repositories = True,  # Required by bazel-common's dependencies
+        version_conflict_policy = "pinned",
     )
 
 def _go_dependencies():
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_golang_protobuf",
         build_file_proto_mode = "disable_global",
-        custom = "protobuf",
         importpath = "github.com/golang/protobuf",
         patch_args = ["-p1"],
-        patches = ["@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch"],
-        tag = "v1.3.1",
+        patches = [
+            "@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch",
+            "@io_kythe//third_party/go:new_export_license.patch",
+        ],
+        # Need to use tag instead of version+sum due to the protobuf-extras patch above.
+        # In go-mod mode, it fails because github.com/golang/protobuf/protoc-gen-go/testdata/grpc
+        # is its own module and not included in the download.
+        tag = "v1.3.3",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_google_uuid",
-        custom = "uuid",
         importpath = "github.com/google/uuid",
-        tag = "v1.1.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:Gkbcsh/GbpXz7lPftLA3P6TYMwjCLYm83jiFQZF/3gY=",
+        version = "v1.1.1",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_jmhodges_levigo",
-        custom = "levigo",
         importpath = "github.com/jmhodges/levigo",
-        tag = "v1.0.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:levigo.patch",
+        ],
+        sum = "h1:q5EC36kV79HWeTBWsod3mG11EgStG3qArTKcvlksN1U=",
+        version = "v1.0.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_google_go_cmp",
-        custom = "cmp",
         importpath = "github.com/google/go-cmp",
-        tag = "v0.2.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:xsAVV57WRhGj6kEIi8ReJzQlHHqcBYCElAvkovg3B/4=",
+        version = "v0.4.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "org_golang_x_sync",
-        commit = "112230192c58",
-        custom = "sync",
-        custom_git = "https://github.com/golang/sync.git",
         importpath = "golang.org/x/sync",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:vcxGaoTs7kV8m5Np9uUNQin4BrLOthgV7252N8V+FwY=",
+        version = "v0.0.0-20190911185100-cd5d95a43a6e",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_sourcegraph_jsonrpc2",
-        commit = "a3d86c792f0f5a0c0c2c4ed9157125e914cb5534",
-        custom = "jsonrpc2",
         importpath = "github.com/sourcegraph/jsonrpc2",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:5VGNYxMxzZ8Jb2bARgVl1DNg8vpcd9S8b4MbbjWQ8/w=",
+        version = "v0.0.0-20191222043438-96c4efab7ee2",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_hanwen_go_fuse",
-        custom = "go_fuse",
         importpath = "github.com/hanwen/go-fuse",
-        tag = "v1.0.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:GxS9Zrn6c35/BnfiVsZVWmsG803xwE7eVRDvcf/BEVc=",
+        version = "v1.0.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_golang_snappy",
-        custom = "snappy",
         importpath = "github.com/golang/snappy",
-        tag = "v0.0.1",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:Qgr9rKW7uDUkrbSmQeiDsGa8SjGyCOGtuasMWwvp2P4=",
+        version = "v0.0.1",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_sourcegraph_go_langserver",
-        commit = "e526744fd766a8f42e55bd92a3843c2afcdbf08c",
-        custom = "langserver",
         importpath = "github.com/sourcegraph/go-langserver",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:lj2sRU7ZMIkW372IDVGb6fE8VAY4c/EMsiDzrB9vmiU=",
+        version = "v2.0.0+incompatible",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_sergi_go_diff",
-        commit = "da645544ed44df016359bd4c0e3dc60ee3a0da43",
-        custom = "diff",
         importpath = "github.com/sergi/go-diff",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:we8PVUC3FE2uYfodKH/nBHMSetSfHDR6scGdBi+erh0=",
+        version = "v1.1.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_google_subcommands",
-        custom = "subcommands",
         importpath = "github.com/google/subcommands",
-        tag = "1.0.1",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:vWQspBTo2nEqTUFita5/KeEWlUL8kQObDFbub/EN9oE=",
+        version = "v1.2.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "org_golang_x_tools",
-        commit = "c8855242db9c1762032abe33c2dff50de3ec9d05",
-        custom = "x_tools",
-        custom_git = "https://github.com/golang/tools.git",
+        build_directives = [
+            "gazelle:exclude go/analysis/passes/ctrlflow/testdata",
+            "gazelle:exclude go/analysis/passes/pkgfact/testdata",
+            "gazelle:exclude go/analysis/passes/printf/testdata",
+            "gazelle:exclude go/analysis/passes/structtag/testdata",
+            "gazelle:exclude go/analysis/passes/tests/testdata",
+            "gazelle:exclude go/loader/testdata",
+            "gazelle:exclude go/packages/packagestest/testdata/groups/two/modules/example.com/",
+            "gazelle:exclude go/internal/gccgoimporter/testdata",
+            "gazelle:exclude go/internal/gcimporter/testdata",
+            "gazelle:exclude cmd/fiximports/testdata",
+            "gazelle:exclude cmd/bundle",
+            "gazelle:exclude cmd/guru",
+            "gazelle:exclude cmd/godoc/godoc_test.go",
+            "gazelle:exclude internal/lsp/testdata",
+            "gazelle:exclude refactor/rename/mvpkg_test.go",
+            "gazelle:exclude go/ast/astutil/imports_test.go",
+        ],
         importpath = "golang.org/x/tools",
         patch_args = ["-p1"],
-        patches = ["@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch"],
+        patches = [
+            "@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch",
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:2/D+HOSyyGL4t3L/lSdwKneCXHGwWOIVSTm5SUwY8/E=",
+        version = "v0.0.0-20200219184216-c4d4ea9c797c",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "org_golang_x_text",
-        custom = "x_text",
-        custom_git = "https://github.com/golang/text.git",
         importpath = "golang.org/x/text",
-        tag = "v0.3.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
+        version = "v0.3.2",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "org_golang_x_net",
-        commit = "3b0461eec859",
-        custom = "x_net",
-        custom_git = "https://github.com/golang/net.git",
         importpath = "golang.org/x/net",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:dB42wwhNuwPvh8f+5zZWNcU+F2Xs/B9wXXwvUCOH7r8=",
+        version = "v0.0.0-20200219183655-46282727080f",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_pkg_errors",
-        custom = "errors",
         importpath = "github.com/pkg/errors",
-        tag = "v0.8.1",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+        version = "v0.9.1",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "org_bitbucket_creachadair_stringset",
-        custom = "stringset",
-        custom_git = "https://bitbucket.org/creachadair/stringset.git",
         importpath = "bitbucket.org/creachadair/stringset",
-        tag = "v0.0.3",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:gQqe4vs8XWgMyijfyKE6K8o4TcyGGrRXe0JvHgx5H+M=",
+        version = "v0.0.8",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "org_bitbucket_creachadair_shell",
-        custom = "shell",
-        custom_git = "https://bitbucket.org/creachadair/shell.git",
         importpath = "bitbucket.org/creachadair/shell",
-        tag = "v0.0.5",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:reJflDbKqnlnqb4Oo2pQ1/BqmY/eCWcNGHrIUO8qIzc=",
+        version = "v0.0.6",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "org_golang_google_grpc",
-        custom = "grpc",
-        custom_git = "https://github.com/grpc/grpc-go.git",
         importpath = "google.golang.org/grpc",
-        tag = "v1.16.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:zvIju4sqAGvwKspUQOhwnpcqSbzi7/H6QomNNjTL4sk=",
+        version = "v1.27.1",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "org_golang_x_oauth2",
-        commit = "d2e6202438beef2727060aa7cabdd924d92ebfd9",
-        custom = "x_oauth2",
-        custom_git = "https://github.com/golang/oauth2.git",
         importpath = "golang.org/x/oauth2",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:TzXSXBo42m9gQenoE3b9BGiEpg5IG2JkU5FkPIawgtw=",
+        version = "v0.0.0-20200107190931-bf48bf16ab8d",
     )
 
-    maybe(
-        go_repository,
-        name = "com_github_google_go_querystring",
-        custom = "querystring",
-        importpath = "github.com/google/go-querystring",
-        tag = "v1.0.0",
-    )
-
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_apache_beam",
         build_file_proto_mode = "disable",
-        commit = "7688bcfc8ebb4bedf26c5c3b3fe0e13c0ec2aa6d",
-        custom = "beam",
         importpath = "github.com/apache/beam",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:Dm4cSxkGeH8l9OG2jkOodp2Dg6uZjorV0XU8vDy/fa4=",
+        version = "v2.19.0+incompatible",
     )
 
-    maybe(
-        go_repository,
-        name = "com_github_googleapis_gax_go",
-        build_file_proto_mode = "disable",
-        custom = "googleapis_gax",
-        importpath = "github.com/googleapis/gax-go",
-        tag = "v1.0.1",
-    )
-
-    maybe(
-        go_repository,
+    go_repository(
         name = "org_golang_google_api",
-        commit = "3097bf831ede4a24e08a3316254e29ca726383e3",
-        custom = "google_api",
-        custom_git = "https://github.com/google/google-api-go-client.git",
         importpath = "google.golang.org/api",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:0q95w+VuFtv4PAx4PZVQdBMmYbaCHbnfKaEiDIcVyag=",
+        version = "v0.17.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_google_cloud_go",
-        custom = "google_cloud",
-        custom_git = "https://github.com/GoogleCloudPlatform/google-cloud-go.git",
         importpath = "cloud.google.com/go",
-        tag = "v0.26.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:MZQCQQaRwOrAcuKjiHWHrgKykt4fZyuwF2dtiG3fGW8=",
+        version = "v0.53.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "io_opencensus_go",
-        custom = "opencensus",
-        custom_git = "https://github.com/census-instrumentation/opencensus-go.git",
         importpath = "go.opencensus.io",
-        tag = "v0.15.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:8sGtKOrtQqkN1bp2AtX+misvLIlOmsEsNd+9NIcPEm8=",
+        version = "v0.22.3",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_syndtr_goleveldb",
-        commit = "5d6fca44a948d2be89a9702de7717f0168403d3d",
         importpath = "github.com/syndtr/goleveldb",
+        sum = "h1:fBdIW9lB4Iz0n9khmH8w27SJ3QEJ7+IgjPEwGSZiFdE=",
+        version = "v1.0.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_minio_highwayhash",
-        custom = "highwayhash",
         importpath = "github.com/minio/highwayhash",
-        tag = "v1.0.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:iMSDhgUILCr0TNm8LWlSjF8N0ZIj2qbO8WHp6Q/J2BA=",
+        version = "v1.0.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "org_golang_x_sys",
-        commit = "d0b11bdaac8a",
-        custom = "x_sys",
-        custom_git = "https://github.com/golang/sys.git",
         importpath = "golang.org/x/sys",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:jceGD5YNJGgGMkJz79agzOln1K9TaZUjv5ird16qniQ=",
+        version = "v0.0.0-20200219091948-cb0a6d8edb6c",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_datadog_zstd",
-        custom = "zstd",
         importpath = "github.com/DataDog/zstd",
-        tag = "v1.3.5",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:+IawcoXhCBylN7ccwdwf8LOH2jKq7NavGpEPanrlTzE=",
+        version = "v1.4.4",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_beevik_etree",
-        custom = "etree",
         importpath = "github.com/beevik/etree",
-        tag = "v1.1.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:T0xke/WvNtMoCqgzPhkX2r4rjY3GDZFi+FjpRZY2Jbs=",
+        version = "v1.1.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_google_orderedcode",
         importpath = "github.com/google/orderedcode",
-        tag = "v0.0.1",
+        sum = "h1:UzfcAexk9Vhv8+9pNOgRu41f16lHq725vPwnSeiG/Us=",
+        version = "v0.0.1",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "io_k8s_sigs_yaml",
-        custom = "k8s_yaml",
-        custom_git = "https://github.com/kubernetes-sigs/yaml",
         importpath = "sigs.k8s.io/yaml",
-        tag = "v1.1.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:kr/MCeFWJWTwyaHoR9c8EjH9OumOmoF9YGiZd7lFm/Q=",
+        version = "v1.2.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "in_gopkg_yaml_v2",
-        custom = "yaml",
         importpath = "gopkg.in/yaml.v2",
-        tag = "v2.2.2",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:obN1ZagJSUGI0Ek/LBmuj4SNLPfIny3KsKFopxRdj10=",
+        version = "v2.2.8",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_mholt_archiver",
-        custom = "archiver",
         importpath = "github.com/mholt/archiver",
-        tag = "v3.1.1",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:1dCVxuqs0dJseYEhi5pl7MYPH9zDa1wBi7mF09cbNkU=",
+        version = "v3.1.1+incompatible",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_dsnet_compress",
-        custom = "compress",
         importpath = "github.com/dsnet/compress",
-        tag = "v0.0.1",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:PlZu0n3Tuv04TzpfPbrnI0HW/YwodEXDS+oPKahKF0Q=",
+        version = "v0.0.1",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_nwaples_rardecode",
-        custom = "rardecode",
         importpath = "github.com/nwaples/rardecode",
-        tag = "v1.0.0",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:r7vGuS5akxOnR4JQSkko62RJ1ReCMXxQRPtxsiFMBOs=",
+        version = "v1.0.0",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_pierrec_lz4",
-        custom = "lz4",
         importpath = "github.com/pierrec/lz4",
-        tag = "v2.0.8",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:mFe7ttWaflA46Mhqh+jUfjp2qTbPYxLB2/OyBppH9dg=",
+        version = "v2.4.1+incompatible",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_ulikunitz_xz",
-        commit = "590df8077fbcb06ad62d7714da06c00e5dd2316d",
-        custom = "xz",
         importpath = "github.com/ulikunitz/xz",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:jGHAfXawEGZQ3blwU5wnWKQJvAraT7Ftq9EXjnXYgt8=",
+        version = "v0.5.6",
     )
 
-    maybe(
-        go_repository,
+    go_repository(
         name = "com_github_xi2_xz",
-        commit = "48954b6210f8d154cb5f8484d3a3e1f83489309e",
-        custom = "xi2xz",
         importpath = "github.com/xi2/xz",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:nIPpBwaJSVYIxUFsDv3M8ofmx9yWTog9BfvIu0q41lo=",
+        version = "v0.0.0-20171230120015-48954b6210f8",
     )
 
     maybe(
         http_archive,
         name = "org_brotli_go",
-        sha256 = "fb511e09ea284fcd18fe2a2632744609a77f69c345428b9f0d2cc15171215f06",
-        strip_prefix = "brotli-ee2a5e1540cbd6ef883a897499d9596307f7f7f9/go",
-        url = "https://github.com/google/brotli/archive/ee2a5e1540cbd6ef883a897499d9596307f7f7f9.zip",
+        sha256 = "4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c",
+        strip_prefix = "brotli-1.0.7/go",
+        urls = [
+            "https://mirror.bazel.build/github.com/google/brotli/archive/v1.0.7.tar.gz",
+            "https://github.com/google/brotli/archive/v1.0.7.tar.gz",
+        ],
+    )
+    _gazelle_ignore(
+        name = "com_github_bazelbuild_rules_go",
+        actual = "io_bazel_rules_go",
+        importpath = "github.com/bazelbuild/rules_go",
+    )
+    _gazelle_ignore(
+        name = "com_github_google_brotli",
+        actual = "org_brotli_go",
+        importpath = "github.com/google/brotli",
+    )
+    go_repository(
+        name = "co_honnef_go_tools",
+        importpath = "honnef.co/go/tools",
+        sum = "h1:3JgtbtFHMiCmsznwGVTUWbgGov+pVqnlf1dEJTNAXeM=",
+        version = "v0.0.1-2019.2.3",
+    )
+    go_repository(
+        name = "com_github_burntsushi_toml",
+        importpath = "github.com/BurntSushi/toml",
+        sum = "h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=",
+        version = "v0.3.1",
+    )
+    go_repository(
+        name = "com_github_burntsushi_xgb",
+        importpath = "github.com/BurntSushi/xgb",
+        sum = "h1:1BDTz0u9nC3//pOCMdNH+CiXJVYJh5UQNCOBG7jbELc=",
+        version = "v0.0.0-20160522181843-27f122750802",
+    )
+    go_repository(
+        name = "com_github_census_instrumentation_opencensus_proto",
+        importpath = "github.com/census-instrumentation/opencensus-proto",
+        sum = "h1:glEXhBS5PSLLv4IXzLA5yPRVX4bilULVyxxbrfOtDAk=",
+        version = "v0.2.1",
+    )
+    go_repository(
+        name = "com_github_client9_misspell",
+        importpath = "github.com/client9/misspell",
+        sum = "h1:ta993UF76GwbvJcIo3Y68y/M3WxlpEHPWIGDkJYwzJI=",
+        version = "v0.3.4",
+    )
+    go_repository(
+        name = "com_github_creachadair_staticfile",
+        importpath = "github.com/creachadair/staticfile",
+        sum = "h1:QG0u27/Ietu0UVOk1aMbF6jrWrEzPIdZP4ju3c1PPfY=",
+        version = "v0.1.2",
+    )
+    go_repository(
+        name = "com_github_davecgh_go_spew",
+        importpath = "github.com/davecgh/go-spew",
+        sum = "h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=",
+        version = "v1.1.1",
+    )
+    go_repository(
+        name = "com_github_dsnet_golib",
+        importpath = "github.com/dsnet/golib",
+        sum = "h1:tFh1tRc4CA31yP6qDcu+Trax5wW5GuMxvkIba07qVLY=",
+        version = "v0.0.0-20171103203638-1ea166775780",
+    )
+    go_repository(
+        name = "com_github_envoyproxy_go_control_plane",
+        importpath = "github.com/envoyproxy/go-control-plane",
+        sum = "h1:4cmBvAEBNJaGARUEs3/suWRyfyBfhf7I60WBZq+bv2w=",
+        version = "v0.9.1-0.20191026205805-5f8ba28d4473",
+    )
+    go_repository(
+        name = "com_github_envoyproxy_protoc_gen_validate",
+        importpath = "github.com/envoyproxy/protoc-gen-validate",
+        sum = "h1:EQciDnbrYxy13PgWoY8AqoxGiPrpgBZ1R8UNe3ddc+A=",
+        version = "v0.1.0",
+    )
+    go_repository(
+        name = "com_github_fsnotify_fsnotify",
+        importpath = "github.com/fsnotify/fsnotify",
+        sum = "h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=",
+        version = "v1.4.7",
+    )
+    go_repository(
+        name = "com_github_go_gl_glfw",
+        importpath = "github.com/go-gl/glfw",
+        sum = "h1:QbL/5oDUmRBzO9/Z7Seo6zf912W/a6Sr4Eu0G/3Jho0=",
+        version = "v0.0.0-20190409004039-e6da0acd62b1",
+    )
+    go_repository(
+        name = "com_github_go_gl_glfw_v3_3_glfw",
+        importpath = "github.com/go-gl/glfw/v3.3/glfw",
+        sum = "h1:b+9H1GAsx5RsjvDFLoS5zkNBzIQMuVKUYQDmxU3N5XE=",
+        version = "v0.0.0-20191125211704-12ad95a8df72",
+    )
+    go_repository(
+        name = "com_github_golang_glog",
+        importpath = "github.com/golang/glog",
+        sum = "h1:VKtxabqXZkF25pY9ekfRL6a582T4P37/31XEstQ5p58=",
+        version = "v0.0.0-20160126235308-23def4e6c14b",
+    )
+    go_repository(
+        name = "com_github_golang_groupcache",
+        importpath = "github.com/golang/groupcache",
+        sum = "h1:1r7pUrabqp18hOBcwBwiTsbnFeTZHV9eER/QT5JVZxY=",
+        version = "v0.0.0-20200121045136-8c9f03a8e57e",
+    )
+
+    go_repository(
+        name = "com_github_golang_mock",
+        importpath = "github.com/golang/mock",
+        sum = "h1:Rd1kQnQu0Hq3qvJppYSG0HtP+f5LPPUiDswTLiEegLg=",
+        version = "v1.4.0",
+    )
+    go_repository(
+        name = "com_github_google_btree",
+        importpath = "github.com/google/btree",
+        sum = "h1:0udJVsspx3VBr5FwtLhQQtuAsVc79tTq0ocGIPAU6qo=",
+        version = "v1.0.0",
+    )
+    go_repository(
+        name = "com_github_google_martian",
+        importpath = "github.com/google/martian",
+        sum = "h1:/CP5g8u/VJHijgedC/Legn3BAbAaWPgecwXBIDzw5no=",
+        version = "v2.1.0+incompatible",
+    )
+    go_repository(
+        name = "com_github_google_pprof",
+        importpath = "github.com/google/pprof",
+        sum = "h1:TgXhFz35pKlZuUz1pNlOKk1UCSXPpuUIc144Wd7SxCA=",
+        version = "v0.0.0-20200212024743-f11f1df84d12",
+    )
+    go_repository(
+        name = "com_github_google_renameio",
+        importpath = "github.com/google/renameio",
+        sum = "h1:GOZbcHa3HfsPKPlmyPyN2KEohoMXOhdMbHrvbpl2QaA=",
+        version = "v0.1.0",
+    )
+    go_repository(
+        name = "com_github_googleapis_gax_go_v2",
+        build_file_proto_mode = "disable",
+        importpath = "github.com/googleapis/gax-go/v2",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_kythe//third_party/go:add_export_license.patch",
+        ],
+        sum = "h1:sjZBwGj9Jlw33ImPtvFviGYvseOtDM7hkSKB7+Tv3SM=",
+        version = "v2.0.5",
+    )
+    go_repository(
+        name = "com_github_gorilla_websocket",
+        importpath = "github.com/gorilla/websocket",
+        sum = "h1:q7AeDBpnBk8AogcD4DSag/Ukw/KV+YhzLj2bP5HvKCM=",
+        version = "v1.4.1",
+    )
+    go_repository(
+        name = "com_github_hashicorp_golang_lru",
+        importpath = "github.com/hashicorp/golang-lru",
+        sum = "h1:0hERBMJE1eitiLkihrMvRVBYAkpHzc/J3QdDN+dAcgU=",
+        version = "v0.5.1",
+    )
+    go_repository(
+        name = "com_github_hpcloud_tail",
+        importpath = "github.com/hpcloud/tail",
+        sum = "h1:nfCOvKYfkgYP8hkirhJocXT2+zOD8yUNjXaWfTlyFKI=",
+        version = "v1.0.0",
+    )
+    go_repository(
+        name = "com_github_jstemmer_go_junit_report",
+        importpath = "github.com/jstemmer/go-junit-report",
+        sum = "h1:6QPYqodiu3GuPL+7mfx+NwDdp2eTkp9IfEUpgAwUN0o=",
+        version = "v0.9.1",
+    )
+    go_repository(
+        name = "com_github_kisielk_gotool",
+        importpath = "github.com/kisielk/gotool",
+        sum = "h1:AV2c/EiW3KqPNT9ZKl07ehoAGi4C5/01Cfbblndcapg=",
+        version = "v1.0.0",
+    )
+    go_repository(
+        name = "com_github_klauspost_compress",
+        importpath = "github.com/klauspost/compress",
+        sum = "h1:8VMb5+0wMgdBykOV96DwNwKFQ+WTI4pzYURP99CcB9E=",
+        version = "v1.4.1",
+    )
+    go_repository(
+        name = "com_github_klauspost_cpuid",
+        importpath = "github.com/klauspost/cpuid",
+        sum = "h1:NMpwD2G9JSFOE1/TJjGSo5zG7Yb2bTe7eq1jH+irmeE=",
+        version = "v1.2.0",
+    )
+    go_repository(
+        name = "com_github_kr_pretty",
+        importpath = "github.com/kr/pretty",
+        sum = "h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=",
+        version = "v0.1.0",
+    )
+    go_repository(
+        name = "com_github_kr_pty",
+        importpath = "github.com/kr/pty",
+        sum = "h1:VkoXIwSboBpnk99O/KFauAEILuNHv5DVFKZMBN/gUgw=",
+        version = "v1.1.1",
+    )
+    go_repository(
+        name = "com_github_kr_text",
+        importpath = "github.com/kr/text",
+        sum = "h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=",
+        version = "v0.1.0",
+    )
+    go_repository(
+        name = "com_github_onsi_ginkgo",
+        importpath = "github.com/onsi/ginkgo",
+        sum = "h1:VkHVNpR4iVnU8XQR6DBm8BqYjN7CRzw+xKUbVVbbW9w=",
+        version = "v1.8.0",
+    )
+    go_repository(
+        name = "com_github_onsi_gomega",
+        importpath = "github.com/onsi/gomega",
+        sum = "h1:izbySO9zDPmjJ8rDjLvkA2zJHIo+HkYXHnf7eN7SSyo=",
+        version = "v1.5.0",
+    )
+
+    go_repository(
+        name = "com_github_pmezard_go_difflib",
+        importpath = "github.com/pmezard/go-difflib",
+        sum = "h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=",
+        version = "v1.0.0",
+    )
+    go_repository(
+        name = "com_github_prometheus_client_model",
+        importpath = "github.com/prometheus/client_model",
+        sum = "h1:gQz4mCbXsO+nc9n1hCxHcGA3Zx3Eo+UHZoInFGUIXNM=",
+        version = "v0.0.0-20190812154241-14fe0d1b01d4",
+    )
+    go_repository(
+        name = "com_github_rogpeppe_go_internal",
+        importpath = "github.com/rogpeppe/go-internal",
+        sum = "h1:RR9dF3JtopPvtkroDZuVD7qquD0bnHlKSqaQhgwt8yk=",
+        version = "v1.3.0",
+    )
+    go_repository(
+        name = "com_github_stretchr_objx",
+        importpath = "github.com/stretchr/objx",
+        sum = "h1:4G4v2dO3VZwixGIRoQ5Lfboy6nUhCyYzaqnIAPPhYs4=",
+        version = "v0.1.0",
+    )
+    go_repository(
+        name = "com_github_stretchr_testify",
+        importpath = "github.com/stretchr/testify",
+        sum = "h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=",
+        version = "v1.4.0",
+    )
+    go_repository(
+        name = "com_google_cloud_go_bigquery",
+        importpath = "cloud.google.com/go/bigquery",
+        sum = "h1:sAbMqjY1PEQKZBWfbu6Y6bsupJ9c4QdHnzg/VvYTLcE=",
+        version = "v1.3.0",
+    )
+    go_repository(
+        name = "com_google_cloud_go_datastore",
+        importpath = "cloud.google.com/go/datastore",
+        sum = "h1:Kt+gOPPp2LEPWp8CSfxhsM8ik9CcyE/gYu+0r+RnZvM=",
+        version = "v1.0.0",
+    )
+    go_repository(
+        name = "com_google_cloud_go_pubsub",
+        importpath = "cloud.google.com/go/pubsub",
+        sum = "h1:9/vpR43S4aJaROxqQHQ3nH9lfyKKV0dC3vOmnw8ebQQ=",
+        version = "v1.1.0",
+    )
+    go_repository(
+        name = "com_google_cloud_go_storage",
+        importpath = "cloud.google.com/go/storage",
+        sum = "h1:RPUcBvDeYgQFMfQu1eBMq6piD1SXmLH+vK3qjewZPus=",
+        version = "v1.5.0",
+    )
+    go_repository(
+        name = "com_shuralyov_dmitri_gpu_mtl",
+        importpath = "dmitri.shuralyov.com/gpu/mtl",
+        sum = "h1:VpgP7xuJadIUuKccphEpTJnWhS2jkQyMt6Y7pJCD7fY=",
+        version = "v0.0.0-20190408044501-666a987793e9",
+    )
+    go_repository(
+        name = "in_gopkg_check_v1",
+        importpath = "gopkg.in/check.v1",
+        sum = "h1:YR8cESwS4TdDjEe65xsg0ogRM/Nc3DYOhEAlW+xobZo=",
+        version = "v1.0.0-20190902080502-41f04d3bba15",
+    )
+    go_repository(
+        name = "in_gopkg_errgo_v2",
+        importpath = "gopkg.in/errgo.v2",
+        sum = "h1:0vLT13EuvQ0hNvakwLuFZ/jYrLp5F3kcWHXdRggjCE8=",
+        version = "v2.1.0",
+    )
+    go_repository(
+        name = "in_gopkg_fsnotify_v1",
+        importpath = "gopkg.in/fsnotify.v1",
+        sum = "h1:xOHLXZwVvI9hhs+cLKq5+I5onOuwQLhQwiu63xxlHs4=",
+        version = "v1.4.7",
+    )
+    go_repository(
+        name = "in_gopkg_tomb_v1",
+        importpath = "gopkg.in/tomb.v1",
+        sum = "h1:uRGJdciOHaEIrze2W8Q3AKkepLTh2hOroT7a+7czfdQ=",
+        version = "v1.0.0-20141024135613-dd632973f1e7",
+    )
+    go_repository(
+        name = "io_rsc_binaryregexp",
+        importpath = "rsc.io/binaryregexp",
+        sum = "h1:HfqmD5MEmC0zvwBuF187nq9mdnXjXsSivRiXN7SmRkE=",
+        version = "v0.2.0",
+    )
+    go_repository(
+        name = "org_golang_google_appengine",
+        importpath = "google.golang.org/appengine",
+        sum = "h1:tycE03LOZYQNhDpS27tcQdAzLCVMaj7QT2SXxebnpCM=",
+        version = "v1.6.5",
+    )
+    go_repository(
+        name = "org_golang_google_genproto",
+        importpath = "google.golang.org/genproto",
+        sum = "h1:jB9+PJSvu5tBfmJHy/OVapFdjDF3WvpkqRhxqrmzoEU=",
+        version = "v0.0.0-20200218151345-dad8c97a84f5",
+    )
+    go_repository(
+        name = "org_golang_x_crypto",
+        importpath = "golang.org/x/crypto",
+        sum = "h1:ObdrDkeb4kJdCP557AjRjq69pTHfNouLtWZG7j9rPN8=",
+        version = "v0.0.0-20191011191535-87dc89f01550",
+    )
+    go_repository(
+        name = "org_golang_x_exp",
+        importpath = "golang.org/x/exp",
+        sum = "h1:tm4MMkqdvahr61SDpB2su1XZfifRH4XMRQODT1z3p2Q=",
+        version = "v0.0.0-20200213203834-85f925bdd4d0",
+    )
+    go_repository(
+        name = "org_golang_x_image",
+        importpath = "golang.org/x/image",
+        sum = "h1:+qEpEAPhDZ1o0x3tHzZTQDArnOixOzGD9HUJfcg0mb4=",
+        version = "v0.0.0-20190802002840-cff245a6509b",
+    )
+    go_repository(
+        name = "org_golang_x_lint",
+        importpath = "golang.org/x/lint",
+        sum = "h1:0IiAsCRByjO2QjX7ZPkw5oU9x+n1YqRL802rjC0c3Aw=",
+        version = "v0.0.0-20200130185559-910be7a94367",
+    )
+    go_repository(
+        name = "org_golang_x_mobile",
+        importpath = "golang.org/x/mobile",
+        sum = "h1:4+4C/Iv2U4fMZBiMCc98MG1In4gJY5YRhtpDNeDeHWs=",
+        version = "v0.0.0-20190719004257-d2bd2a29d028",
+    )
+    go_repository(
+        name = "org_golang_x_mod",
+        importpath = "golang.org/x/mod",
+        sum = "h1:KU7oHjnv3XNWfa5COkzUifxZmxp1TyI7ImMXqFxLwvQ=",
+        version = "v0.2.0",
+    )
+    go_repository(
+        name = "org_golang_x_time",
+        importpath = "golang.org/x/time",
+        sum = "h1:SvFZT6jyqRaOeXpc5h/JSfZenJ2O330aBsf7JfSUXmQ=",
+        version = "v0.0.0-20190308202827-9d24e82272b4",
+    )
+    go_repository(
+        name = "org_golang_x_xerrors",
+        importpath = "golang.org/x/xerrors",
+        sum = "h1:E7g+9GITq07hpfrRu66IVDexMakfv52eLZ2CXBWiKr4=",
+        version = "v0.0.0-20191204190536-9bdfabe68543",
+    )
+    go_repository(
+        name = "com_github_frankban_quicktest",
+        importpath = "github.com/frankban/quicktest",
+        sum = "h1:2QxQoC1TS09S7fhCPsrvqYdvP1H5M1P1ih5ABm3BTYk=",
+        version = "v1.7.2",
     )
 
 def _bindings():
@@ -670,7 +1106,7 @@ def _bindings():
     maybe(
         native.bind,
         name = "gson",  # required by @com_google_protobuf
-        actual = "@com_google_code_gson_gson//jar",
+        actual = "@maven//:com_google_code_gson_gson",
     )
 
     maybe(
@@ -686,7 +1122,10 @@ def _extractor_image_dependencies():
         name = "com_github_philwo_bazelisk",
         sha256 = "cb6a208f559fd08d205527b69d597ef36f7e1a922fe1df64081e52dd544f7666",
         strip_prefix = "bazelisk-0.0.2",
-        urls = ["https://github.com/philwo/bazelisk/archive/0.0.2.zip"],
+        urls = [
+            "https://mirror.bazel.build/github.com/philwo/bazelisk/archive/0.0.2.zip",
+            "https://github.com/philwo/bazelisk/archive/0.0.2.zip",
+        ],
     )
     go_repository(
         name = "com_github_hashicorp_go_version",
@@ -702,34 +1141,26 @@ def _sample_ui_dependencies():
         version = "2.5.3",
     )
 
-def _py_dependencies():
-    maybe(
-        http_archive,
-        name = "rules_python",  # Needed by com_google_protobuf.
-        sha256 = "e5470e92a18aa51830db99a4d9c492cc613761d5bdb7131c04bd92b9834380f6",
-        strip_prefix = "rules_python-4b84ad270387a7c439ebdccfd530e2339601ef27",
-        urls = ["https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz"],
-    )
-
 def kythe_dependencies(sample_ui = True):
     """Defines external repositories for Kythe dependencies.
 
     Call this once in your WORKSPACE file to load all @io_kythe dependencies.
     """
-    _py_dependencies()
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
 
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
-    # TODO(justbuchanan): update to the next tagged release when available
     maybe(
         http_archive,
         name = "com_google_protobuf",
-        sha256 = "ee128d0b67751cd1095009849c9a13a30b2562f0351d91d30c1ea36379443a07",
-        strip_prefix = "protobuf-402c28a321fce010ad0b9f99010a78890cae7f34",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/402c28a321fce010ad0b9f99010a78890cae7f34.zip"],
+        sha256 = "2ba20d91341ef88259896a5dfaf55666d11648caa0964342991e30a96b7cd630",
+        strip_prefix = "protobuf-3.10.0-rc1",
+        urls = [
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.10.0-rc1.zip",
+            "https://github.com/protocolbuffers/protobuf/archive/v3.10.0-rc1.zip",
+        ],
         repo_mapping = {"@zlib": "@net_zlib"},
     )
 
@@ -737,7 +1168,10 @@ def kythe_dependencies(sample_ui = True):
         http_archive,
         name = "io_kythe_llvmbzlgen",
         sha256 = "6d077cfe818d08ea9184d71f73581135b69c379692771afd88392fa1fee018ac",
-        urls = ["https://github.com/kythe/llvmbzlgen/archive/435bad1d07f7a8d32979d66cd5547e1b32dca812.zip"],
+        urls = [
+            "https://mirror.bazel.build/github.com/kythe/llvmbzlgen/archive/435bad1d07f7a8d32979d66cd5547e1b32dca812.zip",
+            "https://github.com/kythe/llvmbzlgen/archive/435bad1d07f7a8d32979d66cd5547e1b32dca812.zip",
+        ],
         strip_prefix = "llvmbzlgen-435bad1d07f7a8d32979d66cd5547e1b32dca812",
     )
 

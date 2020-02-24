@@ -6,7 +6,6 @@ VERIFIER="../verifier"
 cd "$(dirname "$0")"
 "${VERIFIER}" --file_vnames=false --goal_regex='\s*\/\/\-\s*\[(.*)\]' \
     regex_input.txt < /dev/null 2>&1 \
-    | sed '/0x[0-9a-fA-F]*/d' \
     | diff - regex_expected_error.txt
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[2]} )
 if [ ${RESULTS[0]} -ne 1 ]; then

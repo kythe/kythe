@@ -47,6 +47,10 @@ public class KytheURI implements Serializable {
   private static final String SAFE_CHARS = ".-_~";
   private static final Escaper PATH_ESCAPER = new PercentEscaper(SAFE_CHARS + "/", false);
   private static final Escaper ALL_ESCAPER = new PercentEscaper(SAFE_CHARS, false);
+  private static final Splitter SIGNATURE_SPLITTER = Splitter.on('#');
+  private static final Splitter.MapSplitter PARAMS_SPLITTER =
+      Splitter.on('?').withKeyValueSeparator("=");
+  private static final Splitter PATH_SPLITTER = Splitter.on('/');
 
   private final VName vName;
 
@@ -164,7 +168,7 @@ public class KytheURI implements Serializable {
     String lang = null;
 
     // Split corpus/attributes from signature.
-    Iterator<String> parts = Splitter.on('#').split(str).iterator();
+    Iterator<String> parts = SIGNATURE_SPLITTER.split(str).iterator();
     String head = parts.next();
     if (parts.hasNext()) {
       signature = parts.next();
@@ -184,8 +188,7 @@ public class KytheURI implements Serializable {
     // If there are any attributes, parse them.  We allow valid attributes to
     // occur in any order, even if it is not canonical.
     if (!head.isEmpty()) {
-      Map<String, String> params =
-          Splitter.on('?').withKeyValueSeparator("=").split(head.substring(1));
+      Map<String, String> params = PARAMS_SPLITTER.split(head.substring(1));
 
       for (Map.Entry<String, String> e : params.entrySet()) {
         switch (e.getKey()) {
@@ -279,7 +282,7 @@ public class KytheURI implements Serializable {
    */
   private static String cleanPath(String path) {
     ArrayList<String> clean = new ArrayList<>();
-    for (String part : Splitter.on('/').split(path)) {
+    for (String part : PATH_SPLITTER.split(path)) {
       if (part.isEmpty() || part.equals(".")) {
         continue; // skip empty path components and "here" markers.
       } else if (part.equals("..") && !clean.isEmpty()) {

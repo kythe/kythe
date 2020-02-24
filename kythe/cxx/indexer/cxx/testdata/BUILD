@@ -1,35 +1,15 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load(
-    "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
-    "cc_indexer_test",
-    "objc_indexer_test",
+exports_files(
+    ["test_vnames.json"],
+    visibility = ["//kythe:default_visibility"],
 )
 
-sh_test(
-    name = "kindex",
-    size = "small",
-    srcs = [
-        "test_kindex.sh",
-    ],
-    data = [
-        "kindex_repo_test.header",
-        "kindex_repo_test.header2",
-        "kindex_repo_test.main",
-        "kindex_repo_test.unit",
-        "kindex_repo_test.verify",
-        "kindex_test.header",
-        "kindex_test.main",
-        "kindex_test.unit",
-        "kindex_test.verify",
-        "windows_test.header",
-        "windows_test.main",
-        "windows_test.unit",
-        "windows_test.verify",
-        "//kythe/cxx/indexer/cxx:indexer",
-        "//kythe/cxx/tools:kindex_tool",
-        "//kythe/cxx/verifier",
-    ],
+load(
+    "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
+    "cc_extractor_test",
+    "cc_indexer_test",
+    "objc_indexer_test",
 )
 
 cc_indexer_test(
@@ -690,6 +670,16 @@ cc_indexer_test(
 cc_indexer_test(
     name = "usr_function",
     srcs = ["basic/usr_function.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
+    name = "usr_macro",
+    srcs = ["basic/usr_macro.cc"],
     check_for_singletons = True,
     experimental_usr_byte_size = 20,
     ignore_dups = True,
@@ -1582,6 +1572,14 @@ cc_indexer_test(
     tags = ["libraries"],
 )
 
+# Note: this depends on the platform <memory> header and
+# as such is a cc_extractor_test rather than hermetic cc_indexer_test.
+cc_extractor_test(
+    name = "make_shared_factories",
+    srcs = ["libraries/make_shared_factories.cc"],
+    tags = ["libraries"],
+)
+
 test_suite(
     name = "indexer_libraries",
     tags = ["libraries"],
@@ -2056,6 +2054,7 @@ cc_indexer_test(
 cc_indexer_test(
     name = "template_depname_path_graph",
     srcs = ["template/template_depname_path_graph.cc"],
+    ignore_dups = True,
     tags = ["template"],
 )
 
@@ -2617,6 +2616,7 @@ objc_indexer_test(
     srcs = ["objc/marked_property.m"],
     check_for_singletons = True,
     convert_marked_source = True,
+    ignore_dups = True,
     tags = [
         "marked_source",
         "objc",
@@ -2687,6 +2687,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "category",
     srcs = ["objc/categories/base+foo.m"],
+    ignore_dups = True,
     tags = ["objc"],
     deps = [
         "objc/categories/base.h",
@@ -3071,18 +3072,21 @@ objc_indexer_test(
 objc_indexer_test(
     name = "property_custom_getter_setter",
     srcs = ["objc/property_custom_getter_setter.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
 objc_indexer_test(
     name = "property_decl_defn",
     srcs = ["objc/property_decl_defn.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
 objc_indexer_test(
     name = "property_decl_defn_class",
     srcs = ["objc/property_decl_defn_class.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
@@ -3098,6 +3102,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "property_getter_setter",
     srcs = ["objc/property_getter_setter.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
@@ -3172,6 +3177,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "single_file_category",
     srcs = ["objc/categories/single_file_category.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 

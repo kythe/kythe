@@ -13,6 +13,7 @@ message MessageFields {
   //- @field_name defines/binding FieldNameNode
   //- FieldNameNode childof MessageFieldsNode
   //- FieldNameNode.node/kind variable
+  //- FieldNameNode.subkind field
   //- FieldNameNode typed Type1Node
   //- FieldNameNode code FNRoot
   //- FNRoot child.0 FNQualName
@@ -34,6 +35,7 @@ message MessageFields {
   //- @repeated_field_name defines/binding RepeatedNode
   //- RepeatedNode childof MessageFieldsNode
   //- RepeatedNode.node/kind variable
+  //- RepeatedNode.subkind field
   //- FieldNameNode typed Type1Node
   repeated Type1 repeated_field_name = 2;
 }
@@ -45,7 +47,7 @@ message Type1 {
   //- @test defines/binding TestNode
   //- TestNode childof Type1Node
   //- TestNode.node/kind variable
+  //- TestNode.subkind field
   //- !{ TestNode typed _AnyTypeNode }
   required string test = 1;
 }
-
