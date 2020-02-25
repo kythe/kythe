@@ -24,10 +24,14 @@ import com.google.common.collect.Lists;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
+import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
+import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.devtools.kythe.proto.Storage.VNameRewriteRule;
+import com.google.devtools.kythe.proto.Storage.VNameRewriteRules;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.File;
@@ -76,6 +80,7 @@ public class JavaExtractorTest extends TestCase {
             TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, Optional.empty(), EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
+    assertThat(unit.getVName().getCorpus()).isEqualTo(CORPUS);
     assertThat(unit.getWorkingDirectory()).isEqualTo("/root");
     assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
@@ -87,6 +92,55 @@ public class JavaExtractorTest extends TestCase {
     // With the expected sources as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
         .containsAtLeastElementsIn(getExpectedInfos(sources));
+
+    // And the correct sourcepath set to replay the compilation.
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
+  }
+
+  /** Tests the extraction with a {@link FileVNames}. */
+  public void testJavaExtractorFileVNames() throws Exception {
+    JavaCompilationUnitExtractor java =
+        new JavaCompilationUnitExtractor(
+            FileVNames.fromProto(
+                VNameRewriteRules.newBuilder()
+                    .addRule(
+                        VNameRewriteRule.newBuilder()
+                            .setPattern("(.*A.*)")
+                            .setVName(VName.newBuilder().setCorpus("A").setPath("@1@").build()))
+                    .addRule(
+                        VNameRewriteRule.newBuilder()
+                            .setPattern("(.*B.*)")
+                            .setVName(VName.newBuilder().setCorpus("B").setPath("@1@").build())
+                            .build())
+                    .build()));
+
+    List<String> sources = testFiles("/pkg/A.java", "/pkg/B.java");
+
+    // Index the specified sources
+    CompilationDescription description =
+        java.extract(
+            TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, Optional.empty(), EMPTY, "output");
+
+    CompilationUnit unit = description.getCompilationUnit();
+    assertThat(unit.getVName().getCorpus()).isEmpty(); // source files are from different corpora
+    assertThat(unit.getWorkingDirectory()).isEqualTo("/root");
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+
+    // With the expected sources as explicit sources.
+    assertThat(unit.getSourceFileCount()).isEqualTo(2);
+    assertThat(unit.getSourceFileList()).containsExactly(sources.get(0), sources.get(1)).inOrder();
+
+    // With the expected sources as required inputs.
+    assertThat(getInfos(unit.getRequiredInputList()))
+        .containsAtLeastElementsIn(getExpectedInfos(sources));
+
+    // With the expected VNames based on the FileVNames configuration.
+    assertThat(getVNames(unit.getRequiredInputList()))
+        .containsAtLeast(
+            VName.newBuilder().setCorpus("A").setPath(join(TEST_DATA_DIR, "/pkg/A.java")).build(),
+            VName.newBuilder().setCorpus("B").setPath(join(TEST_DATA_DIR, "/pkg/B.java")).build());
 
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
@@ -707,6 +761,10 @@ public class JavaExtractorTest extends TestCase {
 
   private static List<FileInfo> getInfos(List<FileInput> files) {
     return Lists.transform(files, FileInput::getInfo);
+  }
+
+  private static List<VName> getVNames(List<FileInput> files) {
+    return Lists.transform(files, FileInput::getVName);
   }
 
   private static List<FileInfo> getExpectedInfos(List<String> files, FileInfo... extra) {
