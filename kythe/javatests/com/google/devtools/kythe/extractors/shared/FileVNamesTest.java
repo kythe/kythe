@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.devtools.kythe.proto.Storage.VNameRewriteRule;
+import com.google.devtools.kythe.proto.Storage.VNameRewriteRules;
 import junit.framework.TestCase;
 
 /** Tests for {@link FileVNames}. */
@@ -87,6 +89,19 @@ public class FileVNamesTest extends TestCase {
                 "]"
               });
 
+  // Equivalent proto of TEST_CONFIG
+  private static final VNameRewriteRules TEST_PROTO =
+      VNameRewriteRules.newBuilder()
+          .addRule(rule("static/path", v("static", "root", "")))
+          .addRule(rule("dup/path", v("first", "", "")))
+          .addRule(rule("dup/path2", v("second", "", "")))
+          .addRule(rule("(grp1)/(\\d+)/(.*)", v("@1@/@3@", "@2@", "")))
+          .addRule(rule("bazel-bin/([^/]+)/java/.*[.]jar!/.*", v("@1@", "java", "")))
+          .addRule(rule("third_party/([^/]+)/.*[.]jar!/.*", v("third_party", "@1@", "")))
+          .addRule(rule("([^/]+)/java/.*", v("@1@", "java", "")))
+          .addRule(rule("([^/]+)/.*", v("@1@", "", "")))
+          .build();
+
   private FileVNames f;
 
   @Override
@@ -96,6 +111,10 @@ public class FileVNamesTest extends TestCase {
 
   public void testParsing() {
     assertThat(f).isNotNull();
+  }
+
+  public void testToProto() {
+    assertThat(f.toProto()).isEqualTo(TEST_PROTO);
   }
 
   public void testLookup_default() {
@@ -126,5 +145,13 @@ public class FileVNamesTest extends TestCase {
         .isEqualTo(VName.newBuilder().setCorpus("kythe").setRoot("java").build());
     assertThat(f.lookupBaseVName("otherCorpus/java/com/google/devtools/kythe/util/KytheURI.java"))
         .isEqualTo(VName.newBuilder().setCorpus("otherCorpus").setRoot("java").build());
+  }
+
+  private static VNameRewriteRule rule(String pattern, VName v) {
+    return VNameRewriteRule.newBuilder().setPattern(pattern).setVName(v).build();
+  }
+
+  private static VName v(String corpus, String root, String path) {
+    return VName.newBuilder().setCorpus(corpus).setRoot(root).setPath(path).build();
   }
 }

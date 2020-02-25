@@ -35,8 +35,8 @@ you will have to specify the volume in your build step:
 ### Gradle
 
 In order to run Kythe extraction on a gradle repo, we must first modify the
-`gradle.build` file to hook into a separate javac wrapper binary.
-`gradle_build_modifier.go` takes an input `gradle.build` file and appends the
+`build.gradle` file to hook into a separate javac wrapper binary.
+`gradle_build_modifier.go` takes an input `build.gradle` file and appends the
 bits necessary for replacing javac calls with Kythe's `javac-wrapper.sh`.
 
 ```

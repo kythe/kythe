@@ -78,6 +78,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -287,12 +288,23 @@ public class JavaCompilationUnitExtractor {
       List<String> sourceFiles,
       String outputPath) {
     CompilationUnit.Builder unit = CompilationUnit.newBuilder();
-    unit.setVName(VName.newBuilder().setSignature(target).setLanguage("java"));
+    unit.getVNameBuilder().setSignature(target).setLanguage("java");
     unit.addAllArgument(options);
     unit.setHasCompileErrors(hasErrors);
     unit.addAllRequiredInput(requiredInputs);
+    ImmutableMap<String, String> inputCorpus =
+        Streams.stream(requiredInputs)
+            .collect(
+                ImmutableMap.toImmutableMap(
+                    f -> f.getInfo().getPath(), f -> f.getVName().getCorpus()));
+    Set<String> sourceFileCorpora = new HashSet<>();
     for (String sourceFile : sourceFiles) {
       unit.addSourceFile(sourceFile);
+      sourceFileCorpora.add(inputCorpus.getOrDefault(sourceFile, ""));
+    }
+    if (sourceFileCorpora.size() == 1) {
+      // Attribute the source files' corpus to the CompilationUnit if it is unambiguous.
+      unit.getVNameBuilder().setCorpus(Iterables.getOnlyElement(sourceFileCorpora));
     }
     unit.setOutputKey(outputPath);
     unit.setWorkingDirectory(stableRoot(rootDirectory, options, requiredInputs));
