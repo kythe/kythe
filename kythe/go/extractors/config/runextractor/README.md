@@ -13,7 +13,7 @@ extracting that is common to the build-system.  So for example any configuration
 that is on a per-repo basis should be handled upstream, not in this binary.
 
 `runextractor` is expected to be run from the root of a repository, so that
-any access to config files (`gradle.build`, `pom.xml`, etc) is sensible, and
+any access to config files (`build.gradle`, `pom.xml`, etc) is sensible, and
 also so that execution of build/compile commands works.
 
 Use:
@@ -56,8 +56,8 @@ We support Kythe extraction on a few different build systems.
 ### Gradle
 
 In order to run Kythe extraction on a gradle repo, we must first modify the
-`gradle.build` file to hook into a separate javac wrapper binary.
-`gradle_build_modifier.go` takes an input `gradle.build` file and appends the
+`build.gradle` file to hook into a separate javac wrapper binary.
+`gradle_build_modifier.go` takes an input `build.gradle` file and appends the
 bits necessary for replacing javac calls with Kythe's `javac-wrapper.sh`.
 
 ```
