@@ -51,7 +51,7 @@ func New() subcommands.Command {
 // flags for gradle extraction.
 func (g *gradleCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&g.javacWrapper, "javac_wrapper", "", "A required executable that wraps javac for Kythe extraction.")
-	fs.StringVar(&g.buildFile, "build_file", "build.gradle", "The config file for a gradle repo, defaults to 'gradle.build'")
+	fs.StringVar(&g.buildFile, "build_file", "build.gradle", "The config file for a gradle repo, defaults to 'build.gradle'")
 }
 
 func (g gradleCommand) verifyFlags() error {
@@ -61,7 +61,7 @@ func (g gradleCommand) verifyFlags() error {
 		}
 	}
 	if g.buildFile == "" {
-		return fmt.Errorf("gradle build file (e.g. 'gradle.build') not set")
+		return fmt.Errorf("gradle build file (e.g. 'build.gradle') not set")
 	}
 	if g.javacWrapper == "" {
 		return fmt.Errorf("required -javac_wrapper not set")

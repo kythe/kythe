@@ -46,7 +46,7 @@ func kytheMatcher(javacWrapper string) *regexp.Regexp {
 // edge cases which already modify javac.
 var javacMatcher = regexp.MustCompile(`\n\s*options\.forkOptions\.executable\ =`)
 
-// PreProcessBuildGradle takes a gradle.build file and either verifies that it
+// PreProcessBuildGradle takes a build.gradle file and either verifies that it
 // already has the bits necessary to run kythe's javac wrapper, or adds that
 // functionality.
 //
