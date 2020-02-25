@@ -1079,7 +1079,6 @@ void IndexerASTVisitor::VisitRecordDeclComment(
 
 bool IndexerASTVisitor::TraverseCXXConstructorDecl(
     clang::CXXConstructorDecl* CD) {
-  LOG(ERROR) << DumpString(*CD);
   auto DNI = CD->getNameInfo();
   if (DNI.getNamedTypeInfo() == nullptr && !CD->isImplicit()) {
     // Clang does not currently set the NamedTypeInfo for constructors,
