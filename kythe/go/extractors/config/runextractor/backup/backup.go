@@ -34,6 +34,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 // A File records the locations of an original file and a backup copy of that
@@ -85,4 +87,17 @@ func (f *File) Release() {
 			log.Printf("Warning: removing backup of %q failed: %v", f.orig, err)
 		}
 	}
+}
+
+// GetDiff compares the modified file against the original and returns a diff.
+func (f *File) GetDiff() (string, error) {
+	before, err := ioutil.ReadFile(f.tmp)
+	if err != nil {
+		return "", err
+	}
+	after, err := ioutil.ReadFile(f.orig)
+	if err != nil {
+		return "", err
+	}
+	return cmp.Diff(string(before), string(after)), nil
 }
