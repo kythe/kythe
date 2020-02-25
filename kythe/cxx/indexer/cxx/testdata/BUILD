@@ -1805,6 +1805,12 @@ cc_indexer_test(
     tags = ["rec"],
 )
 
+cc_indexer_test(
+    name = "rec_ctor_dtor_ref_class",
+    srcs = ["rec/rec_ctor_dtor_ref_class.cc"],
+    tags = ["rec"],
+)
+
 test_suite(
     name = "indexer_rec",
     tags = ["rec"],
