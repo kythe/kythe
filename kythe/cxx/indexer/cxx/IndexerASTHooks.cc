@@ -1077,6 +1077,20 @@ void IndexerASTVisitor::VisitRecordDeclComment(
   }
 }
 
+bool IndexerASTVisitor::TraverseCXXConstructorDecl(
+    clang::CXXConstructorDecl* CD) {
+  auto DNI = CD->getNameInfo();
+  if (DNI.getNamedTypeInfo() == nullptr) {
+    // Clang does not currently set the NamedTypeInfo for constructors,
+    // but does for destructors and conversion operators.  As such, work
+    // around this here.
+    DNI.setNamedTypeInfo(Context.getTrivialTypeSourceInfo(
+        QualType(CD->getParent()->getTypeForDecl(), 0), CD->getLocation()));
+  }
+  return RecursiveASTVisitor::TraverseCXXConstructorDecl(CD) &&
+         TraverseDeclarationNameInfo(DNI);
+}
+
 bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
   if (ShouldStopIndexing()) {
     return false;
@@ -1952,11 +1966,23 @@ NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
 
 bool IndexerASTVisitor::TraverseDeclarationNameInfo(
     clang::DeclarationNameInfo NameInfo) {
-  // For ConversionFunctions this leads to duplicate edges as the return value
-  // is visited both here and via TraverseFunctionProtoTypeLoc.
-  if (NameInfo.getName().getNameKind() ==
-      clang::DeclarationName::CXXConversionFunctionName) {
-    return true;
+  switch (NameInfo.getName().getNameKind()) {
+    case DeclarationName::CXXConversionFunctionName:
+      // For ConversionFunctions this leads to duplicate edges as the return
+      // value is visited both here and via TraverseFunctionProtoTypeLoc.
+      return true;
+    case DeclarationName::CXXConstructorName:
+      // The default visitation uses the null TypeSourceInfo, which we work
+      // around in TraverseCXXConstructorDecl by re-traversing with a
+      // manually constructed TSI.  In order to avoid duplicate edges, suppress
+      // the default visitation.
+      // Note: if this is resolved in Clang, tests will fail due to duplicate
+      // edges and this workaround can be removed.
+      if (NameInfo.getNamedTypeInfo() == nullptr) {
+        return true;
+      }
+    default:
+      break;
   }
   return Base::TraverseDeclarationNameInfo(NameInfo);
 }

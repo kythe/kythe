@@ -173,6 +173,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitEnumConstantDecl(const clang::EnumConstantDecl* Decl);
   bool VisitFunctionDecl(clang::FunctionDecl* Decl);
   bool TraverseDecl(clang::Decl* Decl);
+  bool TraverseCXXConstructorDecl(clang::CXXConstructorDecl* CD);
 
   bool TraverseConstructorInitializer(clang::CXXCtorInitializer* Init);
   bool TraverseCXXNewExpr(clang::CXXNewExpr* E);
