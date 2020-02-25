@@ -39,6 +39,7 @@ type mavenCommand struct {
 
 	pomXML       string
 	javacWrapper string
+	verbose      bool
 }
 
 // New creates a new subcommand for running maven extraction.
@@ -54,6 +55,7 @@ func New() subcommands.Command {
 func (m *mavenCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&m.javacWrapper, "javac_wrapper", "", "A required executable that wraps javac for Kythe extraction.")
 	fs.StringVar(&m.pomXML, "pom_xml", "pom.xml", "The config file for a maven repo, defaults to 'pom.xml'")
+	fs.BoolVar(&m.verbose, "v", false, "Enable verbose mode to print more debug info.")
 }
 
 func (m mavenCommand) verifyFlags() error {
@@ -85,14 +87,14 @@ func (m *mavenCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 		return m.Fail("error modifying maven pom XML %s: %v", m.pomXML, err)
 	}
 
-	// Print diff to show changes made to pom.xml.
-	log.Printf("Modified pom.xml. Diff:")
-	diffCmd := exec.Command("diff", "-u", tf.Tmp, tf.Orig)
-	diffCmd.Stderr = os.Stderr
-	diffCmd.Stdout = os.Stdout
-	// Note that `diff` exits with code 1 if the files are different.
-	if err := diffCmd.Run(); err != nil && err.(*exec.ExitError).ExitCode() != 1 {
-		return m.Fail("error diffing modified pom.xml against original: %v", err)
+	if m.verbose {
+		// Print diff to show changes made to pom.xml.
+		log.Printf("Modified pom.xml. Diff:")
+		diff, err := tf.GetDiff()
+		if err != nil {
+			m.Fail("Error diffing pom.xml: %v", err)
+		}
+		log.Print(diff)
 	}
 
 	mvnArgs := []string{"clean", "install",

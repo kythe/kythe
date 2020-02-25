@@ -34,13 +34,15 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 // A File records the locations of an original file and a backup copy of that
 // file.  The Restore method replaces the contents of the original with the
 // backup, overwriting any changes that were made since the backup was created.
 type File struct {
-	Orig, Tmp string // file paths
+	orig, tmp string // file paths
 }
 
 // New creates a backup copy of the specified file, located in the same
@@ -71,18 +73,31 @@ func New(orig string) (*File, error) {
 
 // Restore puts the original version of the backed up file back in place.
 func (f *File) Restore() error {
-	if err := os.Rename(f.Tmp, f.Orig); err != nil {
+	if err := os.Rename(f.tmp, f.orig); err != nil {
 		return err
 	}
-	f.Tmp = ""
+	f.tmp = ""
 	return nil
 }
 
 // Release removes the temporary file copy if it hasn't already been moved.
 func (f *File) Release() {
-	if f.Tmp != "" {
-		if err := os.Remove(f.Tmp); err != nil {
-			log.Printf("Warning: removing backup of %q failed: %v", f.Orig, err)
+	if f.tmp != "" {
+		if err := os.Remove(f.tmp); err != nil {
+			log.Printf("Warning: removing backup of %q failed: %v", f.orig, err)
 		}
 	}
+}
+
+// GetDiff compares the modified file against the original and returns a diff.
+func (f *File) GetDiff() (string, error) {
+	before, err := ioutil.ReadFile(f.tmp)
+	if err != nil {
+		return "", err
+	}
+	after, err := ioutil.ReadFile(f.orig)
+	if err != nil {
+		return "", err
+	}
+	return cmp.Diff(string(before), string(after)), nil
 }
