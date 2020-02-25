@@ -1079,11 +1079,12 @@ void IndexerASTVisitor::VisitRecordDeclComment(
 
 bool IndexerASTVisitor::TraverseCXXConstructorDecl(
     clang::CXXConstructorDecl* CD) {
+  LOG(ERROR) << DumpString(*CD);
   auto DNI = CD->getNameInfo();
-  if (DNI.getNamedTypeInfo() == nullptr) {
+  if (DNI.getNamedTypeInfo() == nullptr && !CD->isImplicit()) {
     // Clang does not currently set the NamedTypeInfo for constructors,
     // but does for destructors and conversion operators.  As such, work
-    // around this here.
+    // around this here. Implicit constructors do not get TypeSourceInfo.
     DNI.setNamedTypeInfo(Context.getTrivialTypeSourceInfo(
         QualType(CD->getParent()->getTypeForDecl(), 0), CD->getLocation()));
   }
