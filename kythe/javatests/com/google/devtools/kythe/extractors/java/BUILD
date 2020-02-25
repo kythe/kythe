@@ -12,6 +12,7 @@ java_test(
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
+        "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/proto:analysis_java_proto",
         "//kythe/proto:java_java_proto",
         "//kythe/proto:storage_java_proto",
