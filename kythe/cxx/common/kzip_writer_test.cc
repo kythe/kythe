@@ -78,28 +78,29 @@ StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
 CopyIndex(IndexReader* reader, IndexWriter* writer) {
   absl::Status error;
   std::unordered_map<std::string, std::unordered_set<std::string>> digests;
-  absl::Status scan = reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
-    auto unit = reader->ReadUnit(digest);
-    if (!unit.ok()) {
-      return unit.status();
-    }
-    auto written_digest = writer->WriteUnit(*unit);
-    if (!written_digest.ok()) {
-      return written_digest.status();
-    }
-    for (const auto& file : unit->unit().required_input()) {
-      auto data = reader->ReadFile(file.info().digest());
-      if (!data.ok()) {
-        return data.status();
-      }
-      auto written_file = writer->WriteFile(*data);
-      if (!written_file.ok()) {
-        return written_file.status();
-      }
-      digests[*written_digest].insert(*written_file);
-    }
-    return absl::OkStatus();
-  }));
+  absl::Status scan =
+      reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
+        auto unit = reader->ReadUnit(digest);
+        if (!unit.ok()) {
+          return unit.status();
+        }
+        auto written_digest = writer->WriteUnit(*unit);
+        if (!written_digest.ok()) {
+          return written_digest.status();
+        }
+        for (const auto& file : unit->unit().required_input()) {
+          auto data = reader->ReadFile(file.info().digest());
+          if (!data.ok()) {
+            return data.status();
+          }
+          auto written_file = writer->WriteFile(*data);
+          if (!written_file.ok()) {
+            return written_file.status();
+          }
+          digests[*written_digest].insert(*written_file);
+        }
+        return absl::OkStatus();
+      }));
   if (!scan.ok()) {
     return scan;
   }
@@ -113,16 +114,17 @@ StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
 ReadDigests(IndexReader* reader) {
   absl::Status error;
   std::unordered_map<std::string, std::unordered_set<std::string>> digests;
-  absl::Status scan = reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
-    auto unit = reader->ReadUnit(digest);
-    if (!unit.ok()) {
-      return unit.status();
-    }
-    for (const auto& file : unit->unit().required_input()) {
-      digests[std::string(digest)].insert(file.info().digest());
-    }
-    return absl::OkStatus();
-  }));
+  absl::Status scan =
+      reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
+        auto unit = reader->ReadUnit(digest);
+        if (!unit.ok()) {
+          return unit.status();
+        }
+        for (const auto& file : unit->unit().required_input()) {
+          digests[std::string(digest)].insert(file.info().digest());
+        }
+        return absl::OkStatus();
+      }));
   if (!scan.ok()) {
     return scan;
   }

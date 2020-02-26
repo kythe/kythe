@@ -106,31 +106,33 @@ class TextprotoAnalyzer {
 
   // Recursively analyzes the message and any submessages, emitting "ref" edges
   // for all fields.
-  absl::Status AnalyzeMessage(const proto::VName& file_vname, const Message& proto,
-                        const Descriptor& descriptor,
-                        const TextFormat::ParseInfoTree& parse_tree);
+  absl::Status AnalyzeMessage(const proto::VName& file_vname,
+                              const Message& proto,
+                              const Descriptor& descriptor,
+                              const TextFormat::ParseInfoTree& parse_tree);
 
   // Analyzes the message contained inside a google.protobuf.Any field. The
   // parse location of the field (if nonzero) is used to add an anchor for the
   // Any's type specifier (i.e. [some.url/mypackage.MyMessage]).
   absl::Status AnalyzeAny(const proto::VName& file_vname, const Message& proto,
-                    const Descriptor& descriptor,
-                    const TextFormat::ParseInfoTree& parse_tree,
-                    TextFormat::ParseLocation field_loc);
+                          const Descriptor& descriptor,
+                          const TextFormat::ParseInfoTree& parse_tree,
+                          TextFormat::ParseLocation field_loc);
 
   StatusOr<proto::VName> AnalyzeAnyTypeUrl(const proto::VName& file_vname,
                                            TextFormat::ParseLocation field_loc);
 
   absl::Status AnalyzeSchemaComments(const proto::VName& file_vname,
-                               const Descriptor& msg_descriptor);
+                                     const Descriptor& msg_descriptor);
 
   void EmitDiagnostic(const proto::VName& file_vname,
                       absl::string_view signature, absl::string_view msg);
 
  private:
-  absl::Status AnalyzeField(const proto::VName& file_vname, const Message& proto,
-                      const TextFormat::ParseInfoTree& parse_tree,
-                      const FieldDescriptor& field, int field_index);
+  absl::Status AnalyzeField(const proto::VName& file_vname,
+                            const Message& proto,
+                            const TextFormat::ParseInfoTree& parse_tree,
+                            const FieldDescriptor& field, int field_index);
 
   proto::VName CreateAndAddAnchorNode(const proto::VName& file, int begin,
                                       int end);
@@ -572,10 +574,11 @@ std::string FullPathToRelative(
 }  // namespace
 
 absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
-                              const std::vector<proto::FileData>& files,
-                              KytheGraphRecorder* recorder) {
+                                    const std::vector<proto::FileData>& files,
+                                    KytheGraphRecorder* recorder) {
   if (unit.source_file().size() != 1) {
-    return absl::FailedPreconditionError("Expected Unit to contain 1 source file");
+    return absl::FailedPreconditionError(
+        "Expected Unit to contain 1 source file");
   }
   if (files.size() < 2) {
     return absl::FailedPreconditionError(
@@ -691,7 +694,8 @@ absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
                              &file_substitution_cache, recorder,
                              descriptor_pool);
 
-  absl::Status status = analyzer.AnalyzeSchemaComments(*file_vname, *descriptor);
+  absl::Status status =
+      analyzer.AnalyzeSchemaComments(*file_vname, *descriptor);
   if (!status.ok()) {
     std::string msg =
         absl::StrCat("Error analyzing schema comments: ", status.ToString());

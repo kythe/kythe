@@ -30,7 +30,9 @@ class ABSL_MUST_USE_RESULT StatusOr final {
  public:
   /// \brief `StatusOr<T>` is constructible from either `Status` or `T`.
   StatusOr(const absl::Status& status) : status_(status) { DCHECK(!ok()); }
-  StatusOr(absl::Status&& status) : status_(std::move(status)) { DCHECK(!ok()); }
+  StatusOr(absl::Status&& status) : status_(std::move(status)) {
+    DCHECK(!ok());
+  }
   StatusOr(const T& value) : value_(value) {}
   StatusOr(T&& value) : value_(std::move(value)) {}
 
