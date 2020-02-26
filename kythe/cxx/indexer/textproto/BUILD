@@ -12,6 +12,7 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/status",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -23,7 +24,6 @@ cc_library(
     deps = [
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:path_utils",
-        "//kythe/cxx/common:status",
         "//kythe/cxx/common:status_or",
         "//kythe/cxx/common:utf8_line_index",
         "//kythe/cxx/common/indexing:output",
@@ -34,6 +34,7 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",

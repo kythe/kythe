@@ -21,6 +21,7 @@
 
 #include <unordered_map>
 
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/common/index_writer.h"
 #include "kythe/cxx/common/kzip_encoding.h"
@@ -59,7 +60,7 @@ class KzipWriter : public IndexWriterInterface {
 
   /// \brief Flushes accumulated writes and closes the kzip file.
   /// Close must be called before the KzipWriter is destroyed!
-  Status Close() override;
+  absl::Status Close() override;
 
  private:
   using Path = std::string;
@@ -71,7 +72,7 @@ class KzipWriter : public IndexWriterInterface {
   StatusOr<std::string> InsertFile(absl::string_view path,
                                    absl::string_view content);
 
-  Status InitializeArchive(zip_t* archive);
+  absl::Status InitializeArchive(zip_t* archive);
 
   static KzipEncoding DefaultEncoding();
 

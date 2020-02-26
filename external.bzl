@@ -5,7 +5,7 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_depe
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies")
-load("@io_kythe//:setup.bzl", "maybe")
+load("@io_kythe//:setup.bzl", "github_archive", "maybe")
 load("@io_kythe//tools:build_rules/shims.bzl", "go_repository")
 load("@io_kythe//tools/build_rules/llvm:repo.bzl", "git_llvm_repository")
 load("@io_kythe//third_party/leiningen:lein_repo.bzl", "lein_repository")
@@ -82,14 +82,11 @@ def _cc_dependencies():
 
     # Make sure to update regularly in accordance with Abseil's principle of live at HEAD
     maybe(
-        http_archive,
+        github_archive,
         name = "com_google_absl",
-        sha256 = "4bdb45ca33f5b437d5ccfabea8c26cfe9570031d7bddeabebd5df51800535cb5",
-        strip_prefix = "abseil-cpp-3c814105108680997d0821077694f663693b5382",
-        urls = [
-            "https://mirror.bazel.build/github.com/abseil/abseil-cpp/archive/3c814105108680997d0821077694f663693b5382.zip",
-            "https://github.com/abseil/abseil-cpp/archive/3c814105108680997d0821077694f663693b5382.zip",
-        ],
+        repo_name = "abseil/abseil-cpp",
+        commit = "0033c9ea91a52ade7c6b725aa2ef3cbe15463421",
+        sha256 = "a245e059514f2e3bd0bd6ca455b6a66e34656b1b447fec3dc98419153af23b14",
     )
 
     maybe(

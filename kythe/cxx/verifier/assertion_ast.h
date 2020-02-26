@@ -18,6 +18,7 @@
 #define KYTHE_CXX_VERIFIER_ASSERTION_AST_H_
 
 #include <ctype.h>
+
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
