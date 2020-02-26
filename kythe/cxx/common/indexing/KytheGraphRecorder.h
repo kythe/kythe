@@ -119,6 +119,8 @@ enum class EdgeKindID {
   kRefInitImplicit,
   kImputes,
   kTagged,
+  kPropertyReads,
+  kPropertyWrites,
   kClangUsr
 };
 

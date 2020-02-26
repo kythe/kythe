@@ -77,6 +77,8 @@ static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/ref/init/implicit"),
     new std::string("/kythe/edge/imputes"),
     new std::string("/kythe/edge/tagged"),
+    new std::string("/kythe/edge/property/reads"),
+    new std::string("/kythe/edge/property/writes"),
     new std::string("/clang/usr"),
 };
 
