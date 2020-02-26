@@ -236,7 +236,7 @@ StatusOr<PartialLocation> FileDescriptorWalker::ParseLocation(
     location.start_column = span[1];
     location.end_column = span[2];
   } else {
-    return UnknownError("");
+    return absl::UnknownError("");
   }
   return location;
 }

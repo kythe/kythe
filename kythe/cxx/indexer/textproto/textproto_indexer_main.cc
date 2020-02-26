@@ -23,6 +23,7 @@
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
+#include "absl/status/status.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/indexing/KytheCachingOutput.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
@@ -113,7 +114,7 @@ Example:
   DecodeKzipFile(absl::GetFlag(FLAGS_index_file),
                  [&](const proto::CompilationUnit& unit,
                      std::vector<proto::FileData> file_data) {
-                   Status status = lang_textproto::AnalyzeCompilationUnit(
+                   absl::Status status = lang_textproto::AnalyzeCompilationUnit(
                        unit, file_data, &recorder);
                    CHECK(status.ok()) << status;
                  });

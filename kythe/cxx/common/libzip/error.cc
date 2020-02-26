@@ -16,13 +16,14 @@
 
 #include "kythe/cxx/common/libzip/error.h"
 
+#include "absl/status/status.h"
 #include "kythe/cxx/common/status.h"
 
 namespace kythe {
 namespace libzip {
 namespace {
 
-StatusCode GetStatusCode(zip_error_t* error) {
+absl::StatusCode GetStatusCode(zip_error_t* error) {
   switch (zip_error_system_type(error)) {
     case ZIP_ET_SYS:
       return ErrnoToStatusCode(zip_error_code_system(error));
@@ -36,21 +37,22 @@ StatusCode GetStatusCode(zip_error_t* error) {
 
 }  // namespace
 
-Status Error::ToStatus() { return kythe::libzip::ToStatus(get()); }
-Status Error::ToStatus() const {
+absl::Status Error::ToStatus() { return kythe::libzip::ToStatus(get()); }
+absl::Status Error::ToStatus() const {
   // Due to caching in zip_error_strerror, it can't be const so we must copy.
   return Error(*this).ToStatus();
 }
 
-Status ToStatus(zip_error_t* error) {
-  StatusCode code = GetStatusCode(error);
-  if (code == StatusCode::kOk) {
-    return OkStatus();
+absl::Status ToStatus(zip_error_t* error) {
+  absl::StatusCode code = GetStatusCode(error);
+  if (code == absl::StatusCode::kOk) {
+    return absl::OkStatus();
   }
-  return Status(code, zip_error_strerror(error));
+  return absl::Status(code, zip_error_strerror(error));
 }
 
-StatusCode ZlibStatusCode(int zlib_error) {
+absl::StatusCode ZlibStatusCode(int zlib_error) {
+  using absl::StatusCode;
   switch (zlib_error) {
     case ZIP_ER_OK:  // No error
       return StatusCode::kOk;

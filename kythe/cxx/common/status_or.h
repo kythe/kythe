@@ -18,9 +18,9 @@
 #define KYTHE_CXX_COMMON_STATUS_OR_H_
 
 #include "absl/base/attributes.h"
+#include "absl/status/status.h"
 #include "absl/types/optional.h"
 #include "glog/logging.h"
-#include "kythe/cxx/common/status.h"
 
 namespace kythe {
 
@@ -29,8 +29,8 @@ template <typename T>
 class ABSL_MUST_USE_RESULT StatusOr final {
  public:
   /// \brief `StatusOr<T>` is constructible from either `Status` or `T`.
-  StatusOr(const Status& status) : status_(status) { DCHECK(!ok()); }
-  StatusOr(Status&& status) : status_(std::move(status)) { DCHECK(!ok()); }
+  StatusOr(const absl::Status& status) : status_(status) { DCHECK(!ok()); }
+  StatusOr(absl::Status&& status) : status_(std::move(status)) { DCHECK(!ok()); }
   StatusOr(const T& value) : value_(value) {}
   StatusOr(T&& value) : value_(std::move(value)) {}
 
@@ -41,8 +41,8 @@ class ABSL_MUST_USE_RESULT StatusOr final {
   StatusOr& operator=(StatusOr&&) = default;
 
   /// \brief `StatusOr<T>` is assignable from both `Status` or `T`.
-  StatusOr& operator=(const Status& status);
-  StatusOr& operator=(Status&& status);
+  StatusOr& operator=(const absl::Status& status);
+  StatusOr& operator=(absl::Status&& status);
   StatusOr& operator=(const T& value);
   StatusOr& operator=(T&& value);
 
@@ -63,8 +63,8 @@ class ABSL_MUST_USE_RESULT StatusOr final {
   ABSL_MUST_USE_RESULT bool ok() const { return this->status().ok(); }
 
   /// \brief Returns the contained status.
-  const Status& status() const& { return this->status_; }
-  Status status() && { return std::move(this->status_); }
+  const absl::Status& status() const& { return this->status_; }
+  absl::Status status() && { return std::move(this->status_); }
 
   /// \brief Equivalent to this->ok().
   explicit operator bool() const { return this->ok(); }
@@ -113,14 +113,14 @@ class ABSL_MUST_USE_RESULT StatusOr final {
 
   // As we always have to have a Status reference for the accessor,
   // unconditionally include such a member.
-  Status status_ = OkStatus();
+  absl::Status status_ = absl::OkStatus();
   // But we also need to support non-default constructible T so defer
   // to `absl::optional` for the heavy lifting there.
   absl::optional<T> value_;
 };
 
 template <typename T>
-StatusOr<T>& StatusOr<T>::operator=(const Status& status) {
+StatusOr<T>& StatusOr<T>::operator=(const absl::Status& status) {
   this->status_ = status;
   this->value_.reset();
   DCHECK(!this->ok());
@@ -128,7 +128,7 @@ StatusOr<T>& StatusOr<T>::operator=(const Status& status) {
 }
 
 template <typename T>
-StatusOr<T>& StatusOr<T>::operator=(Status&& status) {
+StatusOr<T>& StatusOr<T>::operator=(absl::Status&& status) {
   this->status_ = std::move(status);
   this->value_.reset();
   DCHECK(!this->ok());
@@ -138,14 +138,14 @@ StatusOr<T>& StatusOr<T>::operator=(Status&& status) {
 template <typename T>
 StatusOr<T>& StatusOr<T>::operator=(const T& value) {
   this->value_ = value;
-  this->status_ = OkStatus();
+  this->status_ = absl::OkStatus();
   return *this;
 }
 
 template <typename T>
 StatusOr<T>& StatusOr<T>::operator=(T&& value) {
   this->value_ = std::move(value);
-  this->status_ = OkStatus();
+  this->status_ = absl::OkStatus();
   return *this;
 }
 

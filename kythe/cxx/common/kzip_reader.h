@@ -22,6 +22,7 @@
 #include <functional>
 #include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/common/index_reader.h"
 #include "kythe/cxx/common/kzip_encoding.h"
@@ -42,7 +43,7 @@ class KzipReader : public IndexReaderInterface {
   /// but the caller is responsible for `source` on error.
   static StatusOr<IndexReader> FromSource(zip_source_t* source);
 
-  Status Scan(const ScanCallback& callback) override;
+  absl::Status Scan(const ScanCallback& callback) override;
 
   StatusOr<kythe::proto::IndexedCompilation> ReadUnit(
       absl::string_view digest) override;

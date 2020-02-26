@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
@@ -55,12 +56,12 @@ struct WithStatusFn {
     return status->ok();
   }
 
-  Status* status;
+  absl::Status* status;
   T function;
 };
 
 template <typename T>
-WithStatusFn<T> WithStatus(Status* status, T function) {
+WithStatusFn<T> WithStatus(absl::Status* status, T function) {
   return WithStatusFn<T>{status, std::move(function)};
 }
 
@@ -75,9 +76,9 @@ std::string TestOutputFile(absl::string_view basename) {
 
 StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
 CopyIndex(IndexReader* reader, IndexWriter* writer) {
-  Status error;
+  absl::Status error;
   std::unordered_map<std::string, std::unordered_set<std::string>> digests;
-  Status scan = reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
+  absl::Status scan = reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
     auto unit = reader->ReadUnit(digest);
     if (!unit.ok()) {
       return unit.status();
@@ -97,7 +98,7 @@ CopyIndex(IndexReader* reader, IndexWriter* writer) {
       }
       digests[*written_digest].insert(*written_file);
     }
-    return OkStatus();
+    return absl::OkStatus();
   }));
   if (!scan.ok()) {
     return scan;
@@ -110,9 +111,9 @@ CopyIndex(IndexReader* reader, IndexWriter* writer) {
 
 StatusOr<std::unordered_map<std::string, std::unordered_set<std::string>>>
 ReadDigests(IndexReader* reader) {
-  Status error;
+  absl::Status error;
   std::unordered_map<std::string, std::unordered_set<std::string>> digests;
-  Status scan = reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
+  absl::Status scan = reader->Scan(WithStatus(&error, [&](absl::string_view digest) {
     auto unit = reader->ReadUnit(digest);
     if (!unit.ok()) {
       return unit.status();
@@ -120,7 +121,7 @@ ReadDigests(IndexReader* reader) {
     for (const auto& file : unit->unit().required_input()) {
       digests[std::string(digest)].insert(file.info().digest());
     }
-    return OkStatus();
+    return absl::OkStatus();
   }));
   if (!scan.ok()) {
     return scan;

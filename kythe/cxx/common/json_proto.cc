@@ -16,6 +16,7 @@
 
 #include "json_proto.h"
 
+#include "absl/status/status.h"
 #include "absl/strings/escaping.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -85,7 +86,7 @@ std::unique_ptr<TypeResolver, MaybeDeleteResolver> MakeTypeResolverForPool(
       new PermissiveTypeResolver(pool));
 }
 
-Status WriteMessageAsJsonToStringInternal(
+absl::Status WriteMessageAsJsonToStringInternal(
     const google::protobuf::Message& message, std::string* out) {
   auto resolver =
       MakeTypeResolverForPool(message.GetDescriptor()->file()->pool());
@@ -97,10 +98,10 @@ Status WriteMessageAsJsonToStringInternal(
       resolver.get(), message.GetDescriptor()->full_name(),
       message.SerializeAsString(), out, options);
   if (!status.ok()) {
-    return Status(static_cast<StatusCode>(status.error_code()),
-                  std::string(status.error_message()));
+    return absl::Status(static_cast<absl::StatusCode>(status.error_code()),
+                        std::string(status.error_message()));
   }
-  return OkStatus();
+  return absl::OkStatus();
 }
 
 JsonParseOptions DefaultParseOptions() {
@@ -192,9 +193,9 @@ bool MergeJsonWithMessage(const std::string& in, std::string* format_key,
   return false;
 }
 
-Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
-                           const JsonParseOptions& options,
-                           google::protobuf::Message* message) {
+absl::Status ParseFromJsonStream(
+    google::protobuf::io::ZeroCopyInputStream* input,
+    const JsonParseOptions& options, google::protobuf::Message* message) {
   auto resolver =
       MakeTypeResolverForPool(message->GetDescriptor()->file()->pool());
 
@@ -205,30 +206,31 @@ Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
       options);
 
   if (!status.ok()) {
-    return Status(static_cast<StatusCode>(status.error_code()),
-                  std::string(status.error_message()));
+    return absl::Status(static_cast<absl::StatusCode>(status.error_code()),
+                        std::string(status.error_message()));
   }
   if (!message->ParseFromString(binary)) {
-    return InvalidArgumentError(
+    return absl::InvalidArgumentError(
         "JSON transcoder produced invalid protobuf output.");
   }
-  return OkStatus();
+  return absl::OkStatus();
 }
 
-Status ParseFromJsonStream(google::protobuf::io::ZeroCopyInputStream* input,
-                           google::protobuf::Message* message) {
+absl::Status ParseFromJsonStream(
+    google::protobuf::io::ZeroCopyInputStream* input,
+    google::protobuf::Message* message) {
   return ParseFromJsonStream(input, DefaultParseOptions(), message);
 }
 
-Status ParseFromJsonString(absl::string_view input,
-                           const JsonParseOptions& options,
-                           google::protobuf::Message* message) {
+absl::Status ParseFromJsonString(absl::string_view input,
+                                 const JsonParseOptions& options,
+                                 google::protobuf::Message* message) {
   google::protobuf::io::ArrayInputStream stream(input.data(), input.size());
   return ParseFromJsonStream(&stream, options, message);
 }
 
-Status ParseFromJsonString(absl::string_view input,
-                           google::protobuf::Message* message) {
+absl::Status ParseFromJsonString(absl::string_view input,
+                                 google::protobuf::Message* message) {
   return ParseFromJsonString(input, DefaultParseOptions(), message);
 }
 
