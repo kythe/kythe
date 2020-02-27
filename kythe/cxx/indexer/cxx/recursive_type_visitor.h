@@ -84,13 +84,13 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
   bool TraverseTypePair(clang::TypeLoc TL, clang::QualType T);
 
   // Declare Traverse*() for all concrete TypeLoc classes.
-  // Note: We're using TypeNodes.def as QualifiedTypeLoc needs to be handled
+  // Note: We're using TypeNodes.inc as QualifiedTypeLoc needs to be handled
   // specially.
 #define ABSTRACT_TYPE(CLASS, BASE)
 #define TYPE(CLASS, BASE)                                  \
   bool Traverse##CLASS##TypePair(clang::CLASS##TypeLoc TL, \
                                  const clang::CLASS##Type* T);
-#include "clang/AST/TypeNodes.def"
+#include "clang/AST/TypeNodes.inc"
 
   bool TraverseQualifiedTypePair(clang::QualifiedTypeLoc TL, clang::QualType T);
 
@@ -111,7 +111,7 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
                               const clang::CLASS##Type* T) {      \
     return getDerived().Visit##CLASS##TypeLoc(TL);                \
   }
-#include "clang/AST/TypeNodes.def"
+#include "clang/AST/TypeNodes.inc"
 
  private:
   bool ShouldInterceptTypeLoc(clang::TypeLoc TL) const {
@@ -157,7 +157,7 @@ bool RecursiveTypeVisitor<Derived>::TraverseTypePair(clang::TypeLoc TL,
         clang::isa<clang::CLASS##Type>(T.getTypePtr())        \
             ? clang::cast<clang::CLASS##Type>(T.getTypePtr()) \
             : TL.castAs<clang::CLASS##TypeLoc>().getTypePtr());
-#include "clang/AST/TypeNodes.def"
+#include "clang/AST/TypeNodes.inc"
   }
 
   return true;
