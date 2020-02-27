@@ -17,7 +17,6 @@
 #define KYTHE_CXX_INDEXER_CXX_RECURSIVE_TYPE_VISITOR_H_
 
 #include <algorithm>
-#include <vector>
 
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Type.h"
@@ -28,7 +27,8 @@ namespace kythe {
 
 // RecursiveTypeVisitor is a subclass of clang::RecursiveASTVisitor which
 //  visits type-as-written and resolved type in parallel, via "TypePair"
-//  member functions.
+//  member functions, where the TypeLoc argument is the type-as-written
+//  and the Type* argument the resolved type.
 template <typename Derived>
 class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
   using Base = clang::RecursiveASTVisitor<Derived>;
@@ -38,30 +38,20 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
 
   bool TraverseDecl(clang::Decl* Decl) {
     if (auto* DD = clang::dyn_cast<clang::DeclaratorDecl>(Decl)) {
-      if (DD->getTypeSourceInfo()) {
-        auto cleanup = PushScope(decl_stack_, DD);
-        return Base::TraverseDecl(Decl);
+      if (auto* TSI = DD->getTypeSourceInfo();
+          TSI && TSI->getType()->isUndeducedType()) {
+        return Base::TraverseDecl(Decl) &&
+               getDerived().TraverseTypePair(TSI->getTypeLoc(), DD->getType());
       }
     }
     return Base::TraverseDecl(Decl);
   }
 
-  bool TraverseObjCPropertyDecl(clang::ObjCPropertyDecl* Decl) {
-    if (!getDerived().shouldTraversePostOrder()) {
-      if (!getDerived().WalkUpFromObjCPropertyDecl(Decl)) {
-        return false;
-      }
-    }
-    if (auto* TSI = Decl->getTypeSourceInfo()) {
-      return getDerived().TraverseTypePair(TSI->getTypeLoc(), Decl->getType());
-    }
-    return getDerived().TraverseType(Decl->getType());
-  }
-
   bool TraverseTemplateArgumentLoc(const clang::TemplateArgumentLoc& ArgLoc) {
     const auto& Arg = ArgLoc.getArgument();
     if (Arg.getKind() == clang::TemplateArgument::Type) {
-      if (auto* TSI = ArgLoc.getTypeSourceInfo()) {
+      if (auto* TSI = ArgLoc.getTypeSourceInfo();
+          TSI->getType()->isUndeducedType()) {
         return getDerived().TraverseTypePair(TSI->getTypeLoc(),
                                              Arg.getAsType());
       }
@@ -69,10 +59,15 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
     return Base::TraverseTemplateArgumentLoc(ArgLoc);
   }
 
-  // Intercept calls to TraverseTypeLoc so that they are dispatched
-  // via TraverseTypePair.
   bool TraverseTypeLoc(clang::TypeLoc TL) {
-    return getDerived().TraverseTypePair(TL, InterceptResolvedType(TL));
+    if (TL.getType()->isUndeducedType()) {
+      // Types which can be deduced, but whose-type-as-written has not been
+      // should be traversed via TraverseTypePair.  In order to inhibit
+      // double-visitation, don't visit type locs if they contain an undeduced
+      // deducible type.
+      return true;
+    }
+    return Base::TraverseTypeLoc(TL);
   }
 
   /// Recursively vist a type-as-written with location in parallel
@@ -112,29 +107,6 @@ class RecursiveTypeVisitor : public clang::RecursiveASTVisitor<Derived> {
     return getDerived().Visit##CLASS##TypeLoc(TL);                \
   }
 #include "clang/AST/TypeNodes.inc"
-
- private:
-  bool ShouldInterceptTypeLoc(clang::TypeLoc TL) const {
-    if (decl_stack_.empty()) {
-      return false;
-    }
-    if (decl_stack_.back() == nullptr) {
-      return false;
-    }
-    if (decl_stack_.back()->getTypeSourceInfo() == nullptr) {
-      return false;
-    }
-    return decl_stack_.back()->getTypeSourceInfo()->getTypeLoc() == TL;
-  }
-
-  clang::QualType InterceptResolvedType(clang::TypeLoc TL) const {
-    if (ShouldInterceptTypeLoc(TL)) {
-      return decl_stack_.back()->getType();
-    }
-    return TL.getType();
-  }
-
-  std::vector<clang::DeclaratorDecl*> decl_stack_;
 };
 
 template <typename Derived>
@@ -340,7 +312,8 @@ DEF_TRAVERSE_TYPEPAIR(ParenType, {
   return getDerived().TraverseTypePair(TL.getInnerLoc(), T->getInnerType());
 });
 DEF_TRAVERSE_TYPEPAIR(MacroQualifiedType, {
-  return getDerived().TraverseTypePair(TL.getInnerLoc(), T->getUnderlyingType());
+  return getDerived().TraverseTypePair(TL.getInnerLoc(),
+                                       T->getUnderlyingType());
 });
 DEF_TRAVERSE_TYPEPAIR(AttributedType, {
   return getDerived().TraverseTypePair(TL.getModifiedLoc(),
