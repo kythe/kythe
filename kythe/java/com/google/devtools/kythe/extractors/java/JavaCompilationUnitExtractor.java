@@ -696,7 +696,8 @@ public class JavaCompilationUnitExtractor {
 
     // Identify generated sources by checking if the source file is under the SOURCE_OUTPUT
     // directory.
-    if (isGeneratedSource(fileManager, requiredInput)) {
+    if (location == StandardLocation.SOURCE_OUTPUT
+        || (location == null && isGeneratedSource(fileManager, requiredInput))) {
       results.explicitSources.add(strippedPath);
       Iterables.addAll(
           results.newSourcePath,
