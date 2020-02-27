@@ -351,6 +351,7 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> sourcepath,
       Iterable<String> processorpath,
       Iterable<String> processors,
+      Optional<Path> genSrcDir,
       Iterable<String> options,
       String outputPath)
       throws ExtractionException {
@@ -361,6 +362,7 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(sourcepath);
     Preconditions.checkNotNull(processorpath);
     Preconditions.checkNotNull(processors);
+    Preconditions.checkNotNull(genSrcDir);
     Preconditions.checkNotNull(options);
     Preconditions.checkNotNull(outputPath);
     return extract(
@@ -372,6 +374,7 @@ public class JavaCompilationUnitExtractor {
             StandardLocation.SOURCE_PATH, sourcepath,
             StandardLocation.ANNOTATION_PROCESSOR_PATH, processorpath),
         processors,
+        genSrcDir,
         options,
         outputPath);
   }
@@ -382,6 +385,7 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> sources,
       Map<Location, Iterable<String>> searchPaths,
       Iterable<String> processors,
+      Optional<Path> genSrcDir,
       Iterable<String> options,
       String outputPath)
       throws ExtractionException {
@@ -389,13 +393,15 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(sources);
     Preconditions.checkNotNull(searchPaths);
     Preconditions.checkNotNull(processors);
+    Preconditions.checkNotNull(genSrcDir);
     Preconditions.checkNotNull(options);
     Preconditions.checkNotNull(outputPath);
 
     final AnalysisResults results =
         Iterables.isEmpty(sources)
             ? new AnalysisResults()
-            : runJavaAnalysisToExtractCompilationDetails(sources, searchPaths, processors, options);
+            : runJavaAnalysisToExtractCompilationDetails(
+                sources, searchPaths, processors, genSrcDir, options);
 
     List<FileData> fileContents = ExtractorUtils.convertBytesToFileDatas(results.fileContents);
     List<FileInput> compilationFileInputs =
@@ -571,11 +577,17 @@ public class JavaCompilationUnitExtractor {
   private void findRequiredFiles(
       UsageAsInputReportingFileManager fileManager,
       Map<URI, String> sourceFiles,
+      Optional<Path> genSrcDir,
       AnalysisResults results)
       throws ExtractionException {
     for (InputUsageRecord input : fileManager.getUsages()) {
       processRequiredInput(
-          input.fileObject(), input.location().orElse(null), fileManager, sourceFiles, results);
+          input.fileObject(),
+          input.location().orElse(null),
+          fileManager,
+          sourceFiles,
+          genSrcDir,
+          results);
     }
   }
 
@@ -584,6 +596,7 @@ public class JavaCompilationUnitExtractor {
       Location location,
       UsageAsInputReportingFileManager fileManager,
       Map<URI, String> sourceFiles,
+      Optional<Path> genSrcDir,
       AnalysisResults results)
       throws ExtractionException {
     URI uri = requiredInput.toUri();
@@ -694,16 +707,13 @@ public class JavaCompilationUnitExtractor {
       }
     }
 
-    // Identify generated sources by checking if the source file is under the SOURCE_OUTPUT
-    // directory.
-    if (location == StandardLocation.SOURCE_OUTPUT
-        || (location == null && isGeneratedSource(fileManager, requiredInput))) {
+    // Identify generated sources by checking if the source file is under the genSrcDir.
+    if (genSrcDir.isPresent()
+        && !isJarPath
+        && requiredInput.getKind() == Kind.SOURCE
+        && Paths.get(relativePath).startsWith(genSrcDir.get())) {
       results.explicitSources.add(strippedPath);
-      Iterables.addAll(
-          results.newSourcePath,
-          Iterables.transform(
-              fileManager.getLocation(StandardLocation.SOURCE_OUTPUT),
-              f -> ExtractorUtils.tryMakeRelative(rootDirectory, f.toString())));
+      results.newSourcePath.add(genSrcDir.get().toString());
     }
 
     if (!results.fileContents.containsKey(strippedPath)) {
@@ -824,6 +834,7 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> sources,
       Map<Location, Iterable<String>> searchPaths,
       Iterable<String> processors,
+      Optional<Path> genSrcDir,
       Iterable<String> options)
       throws ExtractionException {
 
@@ -836,6 +847,11 @@ public class JavaCompilationUnitExtractor {
       }
 
       results.hasErrors = !task.compile(options, sources, processors);
+
+      // Ensure generated source directory is relative to root.
+      genSrcDir =
+          genSrcDir.map(
+              p -> Paths.get(ExtractorUtils.tryMakeRelative(rootDirectory, p.toString())));
 
       for (String source : sources) {
         results.explicitSources.add(ExtractorUtils.tryMakeRelative(rootDirectory, source));
@@ -851,7 +867,8 @@ public class JavaCompilationUnitExtractor {
       addSystemFiles(results);
 
       // We accumulate all file contents from the java compiler.
-      findRequiredFiles(task.getFileManager(), mapClassesToSources(task.getSymbolTable()), results);
+      findRequiredFiles(
+          task.getFileManager(), mapClassesToSources(task.getSymbolTable()), genSrcDir, results);
     }
 
     return results;
@@ -1159,16 +1176,5 @@ public class JavaCompilationUnitExtractor {
       }
     }
     return rootDirectory;
-  }
-
-  private static boolean isGeneratedSource(
-      UsageAsInputReportingFileManager fileManager, JavaFileObject file) {
-    try {
-      return fileManager.hasLocation(StandardLocation.SOURCE_OUTPUT)
-          && file.getKind() == Kind.SOURCE
-          && fileManager.contains(StandardLocation.SOURCE_OUTPUT, file);
-    } catch (IOException err) {
-      return false;
-    }
   }
 }
