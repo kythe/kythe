@@ -21,7 +21,6 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
-#include "kythe/cxx/common/scope_guard.h"
 
 namespace kythe {
 
