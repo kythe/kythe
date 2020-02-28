@@ -782,7 +782,7 @@ void InsertAnchorMarks(std::string& Text, std::vector<MiniAnchor>& Anchors) {
 
 void IndexerASTVisitor::HandleFileLevelComments(
     clang::FileID Id, const GraphObserver::NodeId& FileNode) {
-  const auto& RCL = Context.getRawCommentList();
+  const auto& RCL = Context.Comments;
   // Find the block of comments for the given file. This behavior is not well-
   // defined by Clang, which commits only to the RawComments being
   // "sorted in order of appearance in the translation unit".
