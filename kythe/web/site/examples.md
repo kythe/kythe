@@ -100,8 +100,10 @@ Set the following three environment variables:
 
 ```shell
 $ export KYTHE_ROOT_DIRECTORY="/absolute/path/to/repo/root"
-$ export KYTHE_OUTPUT_DIRECTORY="/tmp/kythe-output"
 $ export KYTHE_CORPUS="github.com/myproject/myrepo"
+
+$ export KYTHE_OUTPUT_DIRECTORY="/tmp/kythe-output"
+$ mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 
 # $CMAKE_ROOT_DIRECTORY is passed into the -sourcedir flag. This value should be
 # the directory that contains the top-level CMakeLists.txt file. In many
