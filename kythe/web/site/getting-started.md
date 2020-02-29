@@ -31,7 +31,7 @@ Kythe relies on the following external dependencies:
 
 * asciidoc
 * bison-3.0.4
-* clang >= 3.8
+* clang >= 8
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
 * flex-2.5
 * go >= 1.7
