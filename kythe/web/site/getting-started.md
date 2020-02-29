@@ -57,7 +57,7 @@ apt-get update
 
 apt-get install \
     asciidoc asciidoctor source-highlight graphviz \
-    gcc uuid-dev libncurses-dev flex clang-3.8 bison \
+    gcc uuid-dev libncurses-dev flex clang-8 bison \
     openjdk-8-jdk \
     parallel \
     wget
@@ -72,14 +72,14 @@ You must either have `/usr/bin/clang` aliased properly, or the `CC` env var set
 for Bazel:
 
 {% highlight bash %}
-echo 'build --client_env=CC=/usr/bin/clang-3.8' >>~/.bazelrc
+echo 'build --client_env=CC=/usr/bin/clang-8' >>~/.bazelrc
 {% endhighlight %}
 
 OR:
 
 {% highlight bash %}
-sudo ln -s /usr/bin/clang-3.8 /usr/bin/clang
-sudo ln -s /usr/bin/clang++-3.8 /usr/bin/clang++
+sudo ln -s /usr/bin/clang-8 /usr/bin/clang
+sudo ln -s /usr/bin/clang++-8 /usr/bin/clang++
 {% endhighlight %}
 
 OR:
