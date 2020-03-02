@@ -113,6 +113,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitVarDecl(const clang::VarDecl* Decl);
   bool VisitNamespaceDecl(const clang::NamespaceDecl* Decl);
   bool VisitBindingDecl(const clang::BindingDecl* Decl);
+  bool VisitSizeOfPackExpr(const clang::SizeOfPackExpr* Expr);
   bool VisitDeclRefExpr(const clang::DeclRefExpr* DRE);
   bool VisitDesignatedInitExpr(const clang::DesignatedInitExpr* DIE);
   bool VisitCXXConstructExpr(const clang::CXXConstructExpr* E);
@@ -139,6 +140,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   template <typename TypeLoc, typename Type>
   bool VisitTemplateSpecializationTypePairHelper(TypeLoc Written,
                                                  const Type* Resolved);
+
   bool VisitTemplateSpecializationTypeLoc(
       clang::TemplateSpecializationTypeLoc TL);
   bool VisitDeducedTemplateSpecializationTypePair(
@@ -146,7 +148,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
       const clang::DeducedTemplateSpecializationType* T);
 
   bool VisitAutoTypePair(clang::AutoTypeLoc TL, const clang::AutoType* T);
-
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);

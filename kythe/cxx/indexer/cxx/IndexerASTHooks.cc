@@ -18,7 +18,6 @@
 
 #include <algorithm>
 #include <tuple>
-#include <type_traits>
 
 #include "GraphObserver.h"
 #include "absl/flags/flag.h"
@@ -1723,6 +1722,15 @@ void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
       }
     }
   }
+}
+
+bool IndexerASTVisitor::VisitSizeOfPackExpr(const clang::SizeOfPackExpr* Expr) {
+  if (auto RCC = ExpandedRangeInCurrentContext(Expr->getPackLoc())) {
+    auto NodeId = BuildNodeIdForRefToDecl(Expr->getPack());
+    Observer.recordDeclUseLocation(
+        *RCC, NodeId, GraphObserver::Claimability::Claimable, IsImplicit(*RCC));
+  }
+  return true;
 }
 
 bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr* DRE) {
@@ -3948,7 +3956,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateExpansion(clang::TemplateName Name) {
 
 absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
     const clang::Expr* Expr, EmitRanges ER) {
-  if (!Verbosity) {
+  if (!Verbosity || Expr == nullptr) {
     return absl::nullopt;
   }
   clang::Expr::EvalResult Result;
