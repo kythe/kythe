@@ -38,7 +38,6 @@
 #include "indexed_parent_map.h"
 #include "indexer_worklist.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
-#include "kythe/cxx/indexer/cxx/recursive_type_visitor.h"
 #include "kythe/cxx/indexer/cxx/semantic_hash.h"
 #include "marked_source.h"
 #include "type_map.h"
@@ -85,9 +84,7 @@ class PruneCheck;
 
 /// \brief An AST visitor that extracts information for a translation unit and
 /// writes it to a `GraphObserver`.
-class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
-  using Base = RecursiveTypeVisitor;
-
+class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
  public:
   IndexerASTVisitor(clang::ASTContext& C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, Verbosity V,
@@ -136,17 +133,14 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitSubstTemplateTypeParmTypeLoc(
       clang::SubstTemplateTypeParmTypeLoc TL);
 
-  template <typename TypeLoc, typename Type>
-  bool VisitTemplateSpecializationTypePairHelper(TypeLoc Written,
-                                                 const Type* Resolved);
+  template <typename T>
+  bool VisitTemplateSpecializationTypeLocHelper(T TL);
   bool VisitTemplateSpecializationTypeLoc(
       clang::TemplateSpecializationTypeLoc TL);
-  bool VisitDeducedTemplateSpecializationTypePair(
-      clang::DeducedTemplateSpecializationTypeLoc TL,
-      const clang::DeducedTemplateSpecializationType* T);
+  bool VisitDeducedTemplateSpecializationTypeLoc(
+      clang::DeducedTemplateSpecializationTypeLoc TL);
 
-  bool VisitAutoTypePair(clang::AutoTypeLoc TL, const clang::AutoType* T);
-
+  bool VisitAutoTypeLoc(clang::AutoTypeLoc TL);
   bool VisitDecltypeTypeLoc(clang::DecltypeTypeLoc TL);
   bool VisitElaboratedTypeLoc(clang::ElaboratedTypeLoc TL);
   bool VisitTypedefTypeLoc(clang::TypedefTypeLoc TL);
@@ -164,8 +158,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   // Emit edges for an anchor pointing to the indicated type.
   NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc TL);
-  NodeSet RecordTypeLocSpellingLocation(clang::TypeLoc Written,
-                                        const clang::Type* Resolved);
 
   bool TraverseDeclarationNameInfo(clang::DeclarationNameInfo NameInfo);
 
@@ -271,7 +263,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// NodeIds.
   NodeSet BuildNodeSetForType(const clang::TypeLoc& TL);
   NodeSet BuildNodeSetForType(const clang::QualType& QT);
-  NodeSet BuildNodeSetForType(const clang::Type* T);
 
   NodeSet BuildNodeSetForBuiltin(clang::BuiltinTypeLoc TL) const;
   NodeSet BuildNodeSetForEnum(clang::EnumTypeLoc TL);
@@ -348,15 +339,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// This function will invent a `TypeLoc` with an invalid location.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
       const clang::QualType& QT);
-
-  /// \brief Builds a stable node ID for `T`.
-  /// \param T The type that is being identified.
-  /// \return The Node ID for `T`.
-  ///
-  /// This function will invent a `TypeLoc` with an invalid location and
-  /// no qualifiers.
-  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::Type* T);
 
   /// \brief Builds a stable node ID for the given `TemplateName`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateName(
@@ -698,6 +680,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   GraphObserver::Implicit IsImplicit(const GraphObserver::Range& range);
 
  private:
+  using Base = RecursiveASTVisitor;
+
   friend class PruneCheck;
 
   /// Whether we should stop on missing cases or continue on.
@@ -787,6 +771,19 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
 
   GraphObserver::NodeId ApplyBuiltinTypeConstructor(
       const char* BuiltinName, const GraphObserver::NodeId& Param);
+
+  /// \brief Ascribes a type to `AscribeTo`.
+  /// \param Type The `TypeLoc` referring to the type
+  /// \param DType A possibly deduced type (or simply Type->getType()).
+  /// \param AscribeTo The node to which the type should be ascribed.
+  ///
+  /// `auto` does not update TypeSourceInfo records after deduction, so
+  /// a deduced `auto` in the source text will appear to be undeduced.
+  /// In this case, it's useful to query the object being ascribed for its
+  /// unlocated QualType, as this does get updated.
+  void AscribeSpelledType(const clang::TypeLoc& Type,
+                          const clang::QualType& TrueType,
+                          const GraphObserver::NodeId& AscribeTo);
 
   /// \brief Returns the parent of the given node, along with the index
   /// at which the node appears underneath each parent.
