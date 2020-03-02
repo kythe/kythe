@@ -27,6 +27,7 @@ cc_library(
         ":status_or",
         "@com_github_google_glog//:glog",
         "@com_github_tencent_rapidjson//:rapidjson",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:cc_wkt_protos",
         "@com_google_protobuf//:protobuf",
@@ -52,8 +53,10 @@ cc_library(
     hdrs = ["path_utils.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
+        ":status",
         ":status_or",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -260,6 +263,7 @@ cc_library(
     deps = [
         ":status_or",
         "//kythe/proto:analysis_cc_proto",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -271,6 +275,7 @@ cc_library(
     deps = [
         ":status_or",
         "//kythe/proto:analysis_cc_proto",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -301,6 +306,7 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@org_libzip//:zip",
@@ -311,11 +317,11 @@ cc_test(
     name = "kzip_reader_test",
     srcs = ["kzip_reader_test.cc"],
     data = [
-        "//kythe/cxx/common/testdata:empty.kzip",
-        "//kythe/cxx/common/testdata:malformed.kzip",
-        "//kythe/cxx/common/testdata:missing-pbunit.kzip",
-        "//kythe/cxx/common/testdata:missing-unit.kzip",
-        "//kythe/cxx/common/testdata:stringset.kzip",
+        "//kythe/testdata/platform:empty.kzip",
+        "//kythe/testdata/platform:malformed.kzip",
+        "//kythe/testdata/platform:missing-pbunit.kzip",
+        "//kythe/testdata/platform:missing-unit.kzip",
+        "//kythe/testdata/platform:stringset.kzip",
     ],
     deps = [
         ":kzip_reader",
@@ -323,6 +329,7 @@ cc_test(
         ":testutil",
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
         "//third_party:gtest_main",
+        "@com_google_absl//absl/status",
     ],
 )
 
@@ -342,6 +349,7 @@ cc_library(
         "@boringssl//:crypto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
         "@org_libzip//:zip",
@@ -352,7 +360,7 @@ cc_test(
     name = "kzip_writer_test",
     srcs = ["kzip_writer_test.cc"],
     data = [
-        "//kythe/cxx/common/testdata:stringset.kzip",
+        "//kythe/testdata/platform:stringset.kzip",
     ],
     deps = [
         ":kzip_reader",
@@ -361,6 +369,7 @@ cc_test(
         ":testutil",
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
         "//third_party:gtest_main",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -373,6 +382,7 @@ cc_library(
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -382,9 +392,9 @@ cc_library(
     hdrs = ["status_or.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
-        ":status",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
     ],
@@ -396,6 +406,7 @@ cc_library(
     hdrs = ["libzip/error.h"],
     deps = [
         ":status",
+        "@com_google_absl//absl/status",
         "@org_libzip//:zip",
     ],
 )

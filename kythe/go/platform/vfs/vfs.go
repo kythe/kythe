@@ -323,7 +323,7 @@ func (gw *globWalker) walk(ctx context.Context, path string, info os.FileInfo, w
 			if err := walkFn(name, fileInfo, err); err != nil && err != filepath.SkipDir {
 				return err
 			}
-		} else if err := gw.walk(ctx, name, info, walkFn); err != nil {
+		} else if err := gw.walk(ctx, name, fileInfo, walkFn); err != nil {
 			if !fileInfo.IsDir() || err != filepath.SkipDir {
 				return err
 			}

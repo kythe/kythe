@@ -20,6 +20,7 @@
 #include <functional>
 #include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/proto/analysis.pb.h"
@@ -41,7 +42,7 @@ class IndexReaderInterface {
 
   /// \brief Invokes `scan` for each IndexedCompilation unit digest or until it
   /// returns false.
-  virtual Status Scan(const ScanCallback& scan) = 0;
+  virtual absl::Status Scan(const ScanCallback& scan) = 0;
 
   /// \brief Reads and returns requested IndexCompilation.
   ///  Returns kNotFound if the digest isn't present.
@@ -68,7 +69,7 @@ class IndexReader {
 
   /// \brief Invokes `scan` for each IndexedCompilation unit digest or until it
   /// returns false.
-  Status Scan(const ScanCallback& scan) { return impl_->Scan(scan); }
+  absl::Status Scan(const ScanCallback& scan) { return impl_->Scan(scan); }
 
   /// \brief Reads and returns requested IndexCompilation.
   ///  Returns kNotFound if the digest isn't present.

@@ -22,6 +22,7 @@
 #include "GraphObserver.h"
 #include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/optional.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/CommentLexer.h"
@@ -801,7 +802,7 @@ void InsertAnchorMarks(std::string& Text, std::vector<MiniAnchor>& Anchors) {
 
 void IndexerASTVisitor::HandleFileLevelComments(
     clang::FileID Id, const GraphObserver::NodeId& FileNode) {
-  const auto& RCL = Context.getRawCommentList();
+  const auto& RCL = Context.Comments;
   // Find the block of comments for the given file. This behavior is not well-
   // defined by Clang, which commits only to the RawComments being
   // "sorted in order of appearance in the translation unit".
@@ -1074,6 +1075,20 @@ void IndexerASTVisitor::VisitRecordDeclComment(
       Decl->getDefinition() == Decl) {
     VisitComment(Comment, DCxt, DCID.value());
   }
+}
+
+bool IndexerASTVisitor::TraverseCXXConstructorDecl(
+    clang::CXXConstructorDecl* CD) {
+  auto DNI = CD->getNameInfo();
+  if (DNI.getNamedTypeInfo() == nullptr && !CD->isImplicit()) {
+    // Clang does not currently set the NamedTypeInfo for constructors,
+    // but does for destructors and conversion operators.  As such, work
+    // around this here. Implicit constructors do not get TypeSourceInfo.
+    DNI.setNamedTypeInfo(Context.getTrivialTypeSourceInfo(
+        QualType(CD->getParent()->getTypeForDecl(), 0), CD->getLocation()));
+  }
+  return RecursiveASTVisitor::TraverseCXXConstructorDecl(CD) &&
+         TraverseDeclarationNameInfo(DNI);
 }
 
 bool IndexerASTVisitor::TraverseDecl(clang::Decl* Decl) {
@@ -1951,11 +1966,23 @@ NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
 
 bool IndexerASTVisitor::TraverseDeclarationNameInfo(
     clang::DeclarationNameInfo NameInfo) {
-  // For ConversionFunctions this leads to duplicate edges as the return value
-  // is visited both here and via TraverseFunctionProtoTypeLoc.
-  if (NameInfo.getName().getNameKind() ==
-      clang::DeclarationName::CXXConversionFunctionName) {
-    return true;
+  switch (NameInfo.getName().getNameKind()) {
+    case DeclarationName::CXXConversionFunctionName:
+      // For ConversionFunctions this leads to duplicate edges as the return
+      // value is visited both here and via TraverseFunctionProtoTypeLoc.
+      return true;
+    case DeclarationName::CXXConstructorName:
+      // The default visitation uses the null TypeSourceInfo, which we work
+      // around in TraverseCXXConstructorDecl by re-traversing with a
+      // manually constructed TSI.  In order to avoid duplicate edges, suppress
+      // the default visitation.
+      // Note: if this is resolved in Clang, tests will fail due to duplicate
+      // edges and this workaround can be removed.
+      if (NameInfo.getNamedTypeInfo() == nullptr) {
+        return true;
+      }
+    default:
+      break;
   }
   return Base::TraverseDeclarationNameInfo(NameInfo);
 }
@@ -3510,16 +3537,30 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // pick up weird declaration locations that aren't stable enough for us.
   if (const auto* FD = dyn_cast<FunctionDecl>(Decl)) {
     if (unsigned BuiltinID = FD->getBuiltinID()) {
-      if (FD->hasAttr<GNUInlineAttr>()) {
-        // If _FORTIFY_SOURCE is enabled, some builtin functions will grow
-        // additional definitions (like fread in bits/stdio2.h). These
-        // definitions have declarations that differ from their non-fortified
-        // versions (in the sense that they're different sequences of tokens),
-        // which leads us to generate different code facts for the same node.
-        // This upsets our testing infrastructure. Fortunately, we're able to
-        // use the presence of GNUInlineAttr to distinguish between the
-        // different flavors of decl.
-        Ostream << "#gnuinl";
+      // If _FORTIFY_SOURCE is enabled, some builtin functions will grow
+      // additional definitions (like fread in bits/stdio2.h). These
+      // definitions have declarations that differ from their non-fortified
+      // versions (in the sense that they're different sequences of tokens),
+      // which leads us to generate different code facts for the same node.
+      // This upsets our testing infrastructure. Similarly, some standard
+      // libraries redeclare various builtin function with different aliased
+      // names.  To workaround both of these, include all of the explicit
+      // attributes in the ID unless this is the canonical decl.
+      if (FD != FD->getCanonicalDecl()) {
+        clang::AttrVec attrs;
+        for (clang::Attr* attr : FD->attrs()) {
+          if (!(attr->isImplicit() || attr->isInherited())) {
+            attrs.push_back(attr);
+          }
+        }
+        if (!attrs.empty()) {
+          Ostream << absl::StrFormat(
+              "#attrs(%s)",
+              absl::StrJoin(attrs, "|",
+                            [](std::string* out, const clang::Attr* attr) {
+                              absl::StrAppend(out, attr->getSpelling());
+                            }));
+        }
       }
       Ostream << "#builtin";
       GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(),
@@ -3685,7 +3726,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   GraphObserver::NodeId Id(Token, Ostream.str());
   DeclToNodeId.insert(std::make_pair(Decl, Id));
   return Id;
-}
+}  // namespace kythe
 
 bool IndexerASTVisitor::IsDefinition(const FunctionDecl* FunctionDecl) {
   return FunctionDecl->isThisDeclarationADefinition();

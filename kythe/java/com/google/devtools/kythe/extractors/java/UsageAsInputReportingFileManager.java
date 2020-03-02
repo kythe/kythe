@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -145,7 +146,17 @@ class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager
 
   @Override
   public boolean contains(Location location, FileObject fo) throws IOException {
-    return super.contains(location, unwrap(fo));
+    try {
+      return super.contains(location, unwrap(fo));
+    } catch (UnsupportedOperationException err) {
+      Path path = asPath(fo);
+      for (Path dir : getLocationAsPaths(location)) {
+        if (path.startsWith(dir)) {
+          return true;
+        }
+      }
+      return false;
+    }
   }
 
   @Override
@@ -158,7 +169,15 @@ class UsageAsInputReportingFileManager extends ForwardingStandardJavaFileManager
 
   @Override
   public Path asPath(FileObject fo) {
-    return super.asPath(unwrap(fo));
+    try {
+      return super.asPath(unwrap(fo));
+    } catch (UnsupportedOperationException err) {
+      try {
+        return Paths.get(fo.toUri());
+      } catch (Throwable t) {
+        throw err; // Re-throw the original error.
+      }
+    }
   }
 
   // StandardJavaFileManager doesn't like it when it's asked about a JavaFileObject

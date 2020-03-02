@@ -22,6 +22,7 @@
 #include <string>
 #include <system_error>
 
+#include "absl/status/status.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/common/status_or.h"
 
@@ -115,7 +116,7 @@ TEST(PathUtilsTest, RealPath) {
   // guarantees about its behavior, but we would like it to return an
   // error if a path doesn't exist.
   StatusOr<std::string> result = RealPath("/this/path/should/not/exist");
-  EXPECT_EQ(StatusCode::kNotFound, result.status().code());
+  EXPECT_EQ(absl::StatusCode::kNotFound, result.status().code());
 
   // Some systems symlink their temporary directory, so use RealPath()
   // here to deal with that.

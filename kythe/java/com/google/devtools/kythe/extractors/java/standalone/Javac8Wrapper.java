@@ -26,12 +26,9 @@ import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Options;
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 
@@ -100,9 +97,6 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
       outputDirectory = ".";
     }
 
-    // Find generated source directory by the -s argument.
-    Optional<Path> genSrcDir = Optional.ofNullable(options.get(Option.S)).map(Paths::get);
-
     String analysisTarget =
         readEnvironmentVariable("KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sources));
     return javaCompilationUnitExtractor.extract(
@@ -113,7 +107,6 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
         sourcePaths,
         processorPaths,
         processors,
-        genSrcDir,
         completeOptions,
         outputDirectory);
   }

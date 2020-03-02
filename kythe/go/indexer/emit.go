@@ -61,6 +61,9 @@ type EmitOptions struct {
 	// If set, use this as the base URL for links to godoc.  The import path is
 	// appended to the path of this URL to obtain the target URL to link to.
 	DocBase *url.URL
+
+	// If true, the doc/uri fact is only emitted for go std library packages.
+	OnlyEmitDocURIsForStandardLibs bool
 }
 
 func (e *EmitOptions) emitMarkedSource() bool {
@@ -87,12 +90,16 @@ func (e *EmitOptions) shouldEmit(vname *spb.VName) bool {
 // docURL returns a documentation URL for the specified package, if one is
 // specified by the options, or "" if not.
 func (e *EmitOptions) docURL(pi *PackageInfo) string {
-	if e != nil && e.DocBase != nil {
-		u := *e.DocBase
-		u.Path = path.Join(u.Path, pi.ImportPath)
-		return u.String()
+	if e == nil || e.DocBase == nil {
+		return ""
 	}
-	return ""
+	if e.OnlyEmitDocURIsForStandardLibs && !govname.IsStandardLibrary(pi.VName) {
+		return ""
+	}
+
+	u := *e.DocBase
+	u.Path = path.Join(u.Path, pi.ImportPath)
+	return u.String()
 }
 
 // An impl records that a type A implements an interface B.

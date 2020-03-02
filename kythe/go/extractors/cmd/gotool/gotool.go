@@ -16,7 +16,7 @@
 
 // Binary gotool extracts Kythe compilation information for Go packages named
 // by import path on the command line.  The output compilations are written
-// into an index pack directory.
+// into a kzip.
 package main
 
 import (
@@ -120,6 +120,7 @@ func main() {
 			DefaultCorpus:             *corpus,
 			Rules:                     rules,
 			CanonicalizePackageCorpus: *canonicalizePackageCorpus,
+			RootDirectory:             os.Getenv("KYTHE_ROOT_DIRECTORY"),
 		},
 	}
 	if *extraFiles != "" {

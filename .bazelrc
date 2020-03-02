@@ -4,6 +4,9 @@ startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 # Disable persistent workers for Typescript (#3816)
 build --strategy=TypeScriptCompile=sandboxed,local
 
+# Compatibility flags to avoid regressions.
+build --incompatible_disallow_empty_glob
+
 # Required for build_bazel_rules_nodejs
 common --experimental_allow_incremental_repository_updates
 
@@ -12,8 +15,8 @@ build --auto_cpu_environment_group=//buildenv:cpu
 
 # Ensure clang is used, by default, over any other C++ installation (e.g. gcc).
 build --client_env=CC=clang
-# We require C++14, but bazel defaults to C++0x (pre-C++11).
-build --cxxopt=-std=c++14 --host_cxxopt=-std=c++14 --client_env=BAZEL_CXXOPTS=-std=c++14
+# We require C++17, but bazel defaults to C++0x (pre-C++11).
+build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 --client_env=BAZEL_CXXOPTS=-std=c++17
 
 # Ensure environment variables are static across machines; allows for cross-user caching.
 build --experimental_strict_action_env
@@ -42,18 +45,18 @@ build:remote --remote_executor=grpcs://remotebuildexecution.googleapis.com
 # # defined. See https://github.com/bazelbuild/bazel/issues/7480
 build:remote --define=EXECUTOR=remote
 
-build:remote --host_javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.2:jdk11
-build:remote --javabase=@bazel_toolchains//configs/ubuntu16_04_clang/1.2:jdk11
+build:remote --host_javabase=@rbe_default//java:jdk
+build:remote --javabase=@rbe_default//java:jdk
 build:remote --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
 build:remote --java_toolchain=@bazel_tools//tools/jdk:toolchain_java8
 
 build:remote --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
-build:remote --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/1.2/bazel_0.25.0/default:toolchain
-build:remote --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/1.2/bazel_0.25.0/cpp:cc-toolchain-clang-x86_64-default
+build:remote --crosstool_top=@rbe_default//cc:toolchain
+build:remote --extra_toolchains=@rbe_default//config:cc-toolchain
 
-build:remote --extra_execution_platforms=//tools/platforms:rbe
-build:remote --host_platform=//tools/platforms:rbe
-build:remote --platforms=//tools/platforms:rbe
+build:remote --extra_execution_platforms=@rbe_default//config:platform
+build:remote --host_platform=@rbe_default//config:platform
+build:remote --platforms=@rbe_default//config:platform
 
 build:remote --extra_toolchains=@io_kythe//tools/build_rules/lexyacc:lexyacc_remote_toolchain
 

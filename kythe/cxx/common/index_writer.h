@@ -17,6 +17,7 @@
 #ifndef KYTHE_CXX_COMMON_INDEX_WRITER_H_
 #define KYTHE_CXX_COMMON_INDEX_WRITER_H_
 
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/proto/analysis.pb.h"
@@ -43,7 +44,7 @@ class IndexWriterInterface {
   virtual StatusOr<std::string> WriteFile(absl::string_view content) = 0;
 
   /// \brief Flush and finalize any outstanding writes.
-  virtual Status Close() = 0;
+  virtual absl::Status Close() = 0;
 };
 
 /// \brief Pimpl wrapper around IndexWriterInterface.
@@ -69,7 +70,7 @@ class IndexWriter final {
   }
 
   /// \brief Flush and finalize any outstanding writes.
-  Status Close() { return impl_->Close(); }
+  absl::Status Close() { return impl_->Close(); }
 
  private:
   std::unique_ptr<IndexWriterInterface> impl_;

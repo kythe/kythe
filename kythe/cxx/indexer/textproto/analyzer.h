@@ -20,9 +20,9 @@
 #include <cstdio>
 #include <string>
 
+#include "absl/status/status.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
-#include "kythe/cxx/common/status.h"
 #include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
@@ -51,9 +51,9 @@ extern const absl::string_view kLanguageName;
 /// \param file_data The file contents of the textproto and relevant protos.
 /// \param The name of the message type that defines the schema for the
 /// textproto file (including namespace).
-Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
-                              const std::vector<proto::FileData>& files,
-                              KytheGraphRecorder* recorder);
+absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
+                                    const std::vector<proto::FileData>& files,
+                                    KytheGraphRecorder* recorder);
 
 }  // namespace lang_textproto
 }  // namespace kythe

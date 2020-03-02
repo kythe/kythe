@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
+#include "absl/status/status.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
 #include "glog/logging.h"
@@ -51,15 +52,15 @@ std::string SHA256Digest(absl::string_view content) {
       absl::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()));
 }
 
-Status WriteTextFile(zip_t* archive, const std::string& path,
-                     absl::string_view content) {
+absl::Status WriteTextFile(zip_t* archive, const std::string& path,
+                           absl::string_view content) {
   if (auto source =
           zip_source_buffer(archive, content.data(), content.size(), 0)) {
     auto idx = zip_file_add(archive, path.c_str(), source, ZIP_FL_ENC_UTF_8);
     if (idx >= 0) {
       // If a file was added, set the last modified time.
       if (zip_file_set_mtime(archive, idx, kModTime, 0) == 0) {
-        return OkStatus();
+        return absl::OkStatus();
       }
     }
     zip_source_free(source);
@@ -112,7 +113,7 @@ KzipWriter::~KzipWriter() {
 }
 
 // Creates entries for the three directories if not already present.
-Status KzipWriter::InitializeArchive(zip_t* archive) {
+absl::Status KzipWriter::InitializeArchive(zip_t* archive) {
   std::vector<absl::string_view> dirs = {kRoot, kFileRoot};
   if (HasEncoding(encoding_, KzipEncoding::kJson)) {
     dirs.push_back(kJsonUnitRoot);
@@ -123,17 +124,17 @@ Status KzipWriter::InitializeArchive(zip_t* archive) {
   for (const auto& name : dirs) {
     auto idx = zip_dir_add(archive, name.data(), ZIP_FL_ENC_UTF_8);
     if (idx < 0) {
-      Status status = libzip::ToStatus(zip_get_error(archive));
+      absl::Status status = libzip::ToStatus(zip_get_error(archive));
       zip_error_clear(archive);
       return status;
     }
     if (zip_file_set_mtime(archive, idx, kModTime, 0) < 0) {
-      Status status = libzip::ToStatus(zip_get_error(archive));
+      absl::Status status = libzip::ToStatus(zip_get_error(archive));
       zip_error_clear(archive);
       return status;
     }
   }
-  return OkStatus();
+  return absl::OkStatus();
 }
 
 StatusOr<std::string> KzipWriter::WriteUnit(
@@ -150,7 +151,7 @@ StatusOr<std::string> KzipWriter::WriteUnit(
     return json.status();
   }
   auto digest = SHA256Digest(*json);
-  StatusOr<std::string> result = InternalError("unsupported encoding");
+  StatusOr<std::string> result = absl::InternalError("unsupported encoding");
   ;
   if (HasEncoding(encoding_, KzipEncoding::kJson)) {
     result = InsertFile(absl::StrCat(kJsonUnitRoot, digest), *json);
@@ -161,7 +162,7 @@ StatusOr<std::string> KzipWriter::WriteUnit(
   if (HasEncoding(encoding_, KzipEncoding::kProto)) {
     std::string contents;
     if (!unit.SerializeToString(&contents)) {
-      return InternalError("Failure serializing compilation unit");
+      return absl::InternalError("Failure serializing compilation unit");
     }
     result = InsertFile(absl::StrCat(kProtoUnitRoot, digest), contents);
   }
@@ -179,10 +180,10 @@ StatusOr<std::string> KzipWriter::WriteFile(absl::string_view content) {
   return InsertFile(absl::StrCat(kFileRoot, SHA256Digest(content)), content);
 }
 
-Status KzipWriter::Close() {
+absl::Status KzipWriter::Close() {
   DCHECK(archive_ != nullptr);
 
-  Status result = OkStatus();
+  absl::Status result = absl::OkStatus();
   if (zip_close(archive_) != 0) {
     result = libzip::ToStatus(zip_get_error(archive_));
     zip_discard(archive_);

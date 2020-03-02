@@ -678,6 +678,16 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "usr_macro",
+    srcs = ["basic/usr_macro.cc"],
+    check_for_singletons = True,
+    experimental_usr_byte_size = 20,
+    ignore_dups = True,
+    ignore_unimplemented = True,
+    tags = ["basic"],
+)
+
+cc_indexer_test(
     name = "usr_record",
     srcs = ["basic/usr_record.cc"],
     check_for_singletons = True,
@@ -1792,6 +1802,12 @@ cc_indexer_test(
     name = "rec_class_member_ptr",
     srcs = ["rec/rec_class_member_ptr.cc"],
     check_for_singletons = True,
+    tags = ["rec"],
+)
+
+cc_indexer_test(
+    name = "rec_ctor_dtor_ref_class",
+    srcs = ["rec/rec_ctor_dtor_ref_class.cc"],
     tags = ["rec"],
 )
 

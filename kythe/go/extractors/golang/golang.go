@@ -377,12 +377,21 @@ func (p *Package) EachUnit(ctx context.Context, f func(cu *apb.CompilationUnit, 
 // The digest will be the complete path as written -- this will be replaced
 // with the content digest in the fetcher.
 func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []string) {
+	// If a root directory is specified, use it instead of the the root from the
+	// go package loader.
+	if p.ext.RootDirectory != "" {
+		root = p.ext.RootDirectory
+	}
+	if !strings.HasSuffix(root, "/") {
+		root += "/"
+	}
+
 	for _, name := range names {
 		path := name
 		if base != "" {
 			path = filepath.Join(base, name)
 		}
-		trimmed := strings.TrimPrefix(path, root+"/")
+		trimmed := strings.TrimPrefix(path, root)
 		vn := &spb.VName{
 			Corpus: p.ext.DefaultCorpus,
 			Path:   trimmed,

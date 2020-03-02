@@ -1,4 +1,4 @@
-#include "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/proto/testdata.pb.h"
+#include "kythe/testdata/indexers/proto/testdata.pb.h"
 
 
 void fn() {

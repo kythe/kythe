@@ -19,7 +19,7 @@
 
 #include <zip.h>
 
-#include "kythe/cxx/common/status.h"
+#include "absl/status/status.h"
 
 namespace kythe {
 namespace libzip {
@@ -47,9 +47,9 @@ class Error {
   }
   ~Error() { zip_error_fini(get()); }
 
-  /// \brief Converts the Error into a Kythe::Status.
-  Status ToStatus() const;
-  Status ToStatus();
+  /// \brief Converts the Error into a absl::Status.
+  absl::Status ToStatus() const;
+  absl::Status ToStatus();
 
   zip_error_t* get() { return &error_; }
   const zip_error_t* get() const { return &error_; }
@@ -62,11 +62,11 @@ class Error {
   zip_error_t error_;
 };
 
-/// \brief Converts a zip_error_t into kythe::Status.
-Status ToStatus(zip_error_t* error);
+/// \brief Converts a zip_error_t into absl::Status.
+absl::Status ToStatus(zip_error_t* error);
 
 /// \brief Translates a ZLIB_ER_* constant into a StatusCode.
-StatusCode ZlibStatusCode(int zlib_error);
+absl::StatusCode ZlibStatusCode(int zlib_error);
 
 }  // namespace libzip
 }  // namespace kythe

@@ -19,6 +19,7 @@
 #include <functional>
 #include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
@@ -29,6 +30,8 @@
 
 namespace kythe {
 namespace {
+
+using absl::StatusCode;
 
 /// \brief Returns an error for any command except ZIP_SOURCE_ERROR.
 zip_int64_t BadZipSource(void* state, void* data, zip_uint64_t len,
@@ -60,7 +63,7 @@ zip_source_t* ZipSourceFunctionCreate(ZipCallback* callback,
 }
 
 std::string TestFile(absl::string_view basename) {
-  return absl::StrCat(TestSourceRoot(), "kythe/cxx/common/testdata/",
+  return absl::StrCat(TestSourceRoot(), "kythe/testdata/platform/",
                       absl::StripPrefix(basename, "/"));
 }
 
