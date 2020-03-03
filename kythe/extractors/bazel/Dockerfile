@@ -36,7 +36,7 @@ ADD kythe/extractors/bazel/bazel_wrapper.sh /kythe/
 ADD kythe/release/base/fix_permissions.sh /kythe/
 
 # Bazelisk
-ADD external/com_github_philwo_bazelisk/linux_amd64_stripped/bazelisk /kythe/
+ADD external/com_github_bazelbuild_bazelisk/linux_amd64_stripped/bazelisk /kythe/
 
 
 ENTRYPOINT ["/kythe/extract.sh"]
