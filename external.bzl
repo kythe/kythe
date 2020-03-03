@@ -1118,7 +1118,7 @@ def _extractor_image_dependencies():
         http_archive,
         name = "com_github_bazelbuild_bazelisk",
         sha256 = "a38d364a193cedd0b4623aa61463e118c018013f0787e368cdf52139ce21b4ed",
-        strip_prefix = "bazelisk-v1.3.0",
+        strip_prefix = "bazelisk-1.3.0",
         urls = [
             "https://github.com/bazelbuild/bazelisk/archive/v1.3.0.zip",
         ],
