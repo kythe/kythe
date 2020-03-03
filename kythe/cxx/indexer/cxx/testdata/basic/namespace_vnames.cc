@@ -5,17 +5,16 @@
 //- @namespace ref vname(_,"bundle","","test.cc","c++")
 namespace { }
 
-// Named namespaces drop path and root but keep corpus.
-//- @ns ref vname(_,"bundle","","","c++")
+// Named namespaces drop path and root and use the default corpus.
+//- @ns ref vname(_,"","","","c++")
 namespace ns { }
 #example acorpus_aroot_apath.h
 #pragma kythe_claim
 
-// Anonymous namespaces in headers act like named namespaces in headers.
+// Anonymous namespaces in headers drop path and root, but use the file corpus.
 //- @namespace ref vname(_,"acorpus","","","c++")
 namespace { }
 
-// Named namespaces in headers drop path and root and adopt the corpus of
-// the surrounding include.
-//- @ns ref vname(_,"acorpus","","","c++")
+// Named namespaces behave the same way in headers and sources.
+//- @ns ref vname(_,"","","","c++")
 namespace ns { }
