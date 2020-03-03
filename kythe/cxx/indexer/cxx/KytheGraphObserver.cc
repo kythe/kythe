@@ -1385,7 +1385,7 @@ KytheGraphObserver::getNamespaceTokens(clang::SourceLocation loc) const {
         type_token_.vname().corpus());
     iter->second.named.set_rough_claimed(file_token->rough_claimed());
     // Anonymous namespaces are unique to the translation in which they're
-    // defined, which we approximate by using the file.
+    // defined, which we approximate by using the file's corpus.
     iter->second.anonymous.mutable_vname()->set_corpus(
         file_token->vname().corpus());
     iter->second.anonymous.set_rough_claimed(file_token->rough_claimed());
