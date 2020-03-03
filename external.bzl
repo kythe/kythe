@@ -1128,6 +1128,12 @@ def _extractor_image_dependencies():
         importpath = "github.com/hashicorp/go-version",
         tag = "v1.1.0",
     )
+    go_repository(
+        name = "com_github_mitchellh_go_homedir",
+        importpath = "github.com/mitchellh/go-homedir",
+        sum = "h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG+4E0Y=",
+        version = "v1.1.0",
+    )
 
 def _sample_ui_dependencies():
     """Defines external repositories necessary for building the sample UI."""
