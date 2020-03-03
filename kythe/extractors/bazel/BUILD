@@ -8,7 +8,7 @@ docker_build(
         "extract.sh",
         "//kythe/release",
         "//kythe/release/base:fix_permissions.sh",
-        "@com_github_philwo_bazelisk//:bazelisk",
+        "@com_github_bazelbuild_bazelisk//:bazelisk",
     ],
     image_name = "gcr.io/kythe-public/bazel-extractor",
     tags = ["manual"],

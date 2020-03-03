@@ -1116,12 +1116,11 @@ def _extractor_image_dependencies():
     """Defines external repositories necessary for extractor images."""
     maybe(
         http_archive,
-        name = "com_github_philwo_bazelisk",
-        sha256 = "cb6a208f559fd08d205527b69d597ef36f7e1a922fe1df64081e52dd544f7666",
-        strip_prefix = "bazelisk-0.0.2",
+        name = "com_github_bazelbuild_bazelisk",
+        sha256 = "a38d364a193cedd0b4623aa61463e118c018013f0787e368cdf52139ce21b4ed",
+        strip_prefix = "bazelisk-v1.3.0",
         urls = [
-            "https://mirror.bazel.build/github.com/philwo/bazelisk/archive/0.0.2.zip",
-            "https://github.com/philwo/bazelisk/archive/0.0.2.zip",
+            "https://github.com/bazelbuild/bazelisk/archive/v1.3.0.zip",
         ],
     )
     go_repository(
