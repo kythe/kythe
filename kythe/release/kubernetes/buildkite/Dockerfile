@@ -37,7 +37,7 @@ RUN curl -L https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz | tar -C /usr/l
 ENV PATH=$PATH:/usr/local/go/bin
 
 # Install bazelisk.
-RUN go get github.com/philwo/bazelisk && \
+RUN go get github.com/bazelbuild/bazelisk && \
   ln -s /root/go/bin/bazelisk /usr/local/bin/bazel
 
 ADD bazelrc /root/.bazelrc
