@@ -75,33 +75,31 @@ value;
 It's sometimes possible (or is even required) to choose a different name for the
 local binding created by an import from the target definition's. In this case,
 the local name *does* have a sensible syntactic location and is semantically
-relevant to the programmer. A use site of the local name refers to both the
-module (or value) being imported and to the local alias:
+relevant to the programmer. A use site of the local name refers to the local
+alias, which in turn aliases the module (or value) being imported.
 
 [source,javascript]
 ----
 //- @"'./module'" ref/imports Module
 //- @defaultExport defines/binding DefaultExport
-//- @defaultExport ref/imports DefaultExportDef
+//- DefaultExport aliases DefaultExportDef
 //- DefaultExport.subkind import
 import defaultExport from './module';
 //- @"'./module'" ref/imports Module
 //- @mod_imp defines/binding ModImp
-//- @mod_imp ref/imports Module
+//- ModImp aliases Module
 //- ModImp.subkind import
 import * as mod_imp from './module';
 //- @"'./module'" ref/imports Module
 //- @value ref/imports Value
 //- @renamedValue defines/binding RenamedValue
+//- RenamedValue aliases Value
 //- RenamedValue.subkind import
 import {value as renamedValue} from './module';
-//- @defaultExport ref DefaultExportDef
 //- @defaultExport ref DefaultExport
 defaultExport;
-//- @mod_imp ref Module
 //- @mod_imp ref ModImp
 mod_imp.foo;
-//- @renamedValue ref Value
 //- @renamedValue ref RenamedValue
 renamedValue;
 ----
@@ -132,30 +130,36 @@ If a module re-exports a definition (renaming it or not) that it previously
 imported, that re-export site should be considered to be the definition of that
 name.
 
-If a program rebinds an imported name, indexers should make a best effort to
-*ref* the corresponding module:
+If a program rebinds an imported name, indexers may treat the new name as a
+different variable:
 
 [source,javascript]
 ----
 //- @"'./module'" ref/imports Module
+//- @module defines/binding DefaultOne
+//- DefaultOne aliases DefaultOneDef
 import module from './module';
-//- @module ref Module
+//- @module ref DefaultOne
 module.foo();
 //- @"'./debug/module'" ref/imports DebugModule
+//- @module defines/binding DefaultTwo
+//- DefaultTwo aliases DefaultTwoDef
 import module from './debug/module';
-//- @module ref DebugModule
+//- @module ref DefaultTwo
+//- ! { @module ref DefaultOne }
 module.foo();
 ----
 
-This is not generally possible to do. In cases where the corresponding module
-can't be determined, indexers should fall back on treating imports as locals.
-This may require some abuse of syntax to find definition sites where none exist.
+It may not be possible to determine that an import is changing, or to determine
+the value it's being changed to. In this case, indexers can treat import names
+like ordinary variables:
 
 [source,javascript]
 ----
 //- @"'./module'" ref/imports Module
 //- @module defines/binding ModuleImport
 //- ModuleImport.subkind import
+//- ModuleImport aliases Module
 import module from './module';
 //- @module ref ModuleImport
 if (random()) module = otherModule;
