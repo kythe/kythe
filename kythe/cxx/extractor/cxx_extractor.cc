@@ -1139,6 +1139,11 @@ void CompilationWriter::WriteIndex(
 
   kythe::proto::VName main_vname = VNameForPath(main_source_file);
   *unit_vname = main_vname;
+  if (!corpus_.empty()) {
+    // Use the explicit build corpus as the unit corpus in preference to that of
+    // the primary file.
+    unit_vname->set_corpus(corpus_);
+  }
   unit_vname->set_language(supported_language::ToString(lang));
   unit_vname->clear_path();
 

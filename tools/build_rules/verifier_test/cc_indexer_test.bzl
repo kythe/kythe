@@ -67,6 +67,7 @@ _INDEXER_FLAGS = {
     "ignore_unimplemented": False,
     "index_template_instantiations": True,
     "ibuild_config": "",
+    "use_compilation_corpus_as_default": False,
 }
 
 def _compiler_options(ctx, extractor_toolchain, copts, cc_info):
@@ -274,7 +275,13 @@ def _cc_extract_kzip_impl(ctx):
         for src in ctx.attr.srcs + ctx.attr.deps
         if CcInfo in src
     ])
-    opts, env = _compiler_options(ctx, extractor_toolchain, ctx.attr.opts, cc_info)
+    opts, cc_env = _compiler_options(ctx, extractor_toolchain, ctx.attr.opts, cc_info)
+    if ctx.attr.corpus:
+        env = {"KYTHE_CORPUS": ctx.attr.corpus}
+        env.update(cc_env)
+    else:
+        env = cc_env
+
     outputs = depset([
         extract(
             srcs = depset([src]),
@@ -326,6 +333,10 @@ cc_extract_kzip = rule(
         ),
         "opts": attr.string_list(
             doc = "Options which will be passed to the extractor as arguments.",
+        ),
+        "corpus": attr.string(
+            doc = "The compilation unit corpus to use.",
+            default = "",
         ),
         "vnames_config": attr.label(
             doc = "vnames_config file to be used by the extractor.",

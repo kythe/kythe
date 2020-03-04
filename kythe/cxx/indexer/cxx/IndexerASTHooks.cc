@@ -3726,7 +3726,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   GraphObserver::NodeId Id(Token, Ostream.str());
   DeclToNodeId.insert(std::make_pair(Decl, Id));
   return Id;
-}  // namespace kythe
+}
 
 bool IndexerASTVisitor::IsDefinition(const FunctionDecl* FunctionDecl) {
   return FunctionDecl->isThisDeclarationADefinition();

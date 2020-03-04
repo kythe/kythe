@@ -52,6 +52,8 @@ ABSL_FLAG(bool, experimental_drop_cpp_fwd_decl_docs, false,
           "Drop comments for C++ forward declarations.");
 ABSL_FLAG(int, experimental_usr_byte_size, 0,
           "Use this many bytes to represent a USR (or don't at all if 0).");
+ABSL_FLAG(bool, use_compilation_corpus_as_default, false,
+          "Use the CompilationUnit VName corpus as the default.");
 
 namespace kythe {
 
@@ -83,6 +85,8 @@ int main(int argc, char* argv[]) {
   options.UsrByteSize = absl::GetFlag(FLAGS_experimental_usr_byte_size) <= 0
                             ? 0
                             : absl::GetFlag(FLAGS_experimental_usr_byte_size);
+  options.UseCompilationCorpusAsDefault =
+      absl::GetFlag(FLAGS_use_compilation_corpus_as_default);
   options.DropInstantiationIndependentData =
       absl::GetFlag(FLAGS_experimental_drop_instantiation_independent_data);
   options.AllowFSAccess = context.allow_filesystem_access();
