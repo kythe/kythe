@@ -14,9 +14,9 @@
 
 FROM debian:sid
 
-# Install C++ compilers for cc_* rule support.
+# Install C++ compilers and other deps
 RUN apt-get update && \
-    apt-get install -y git clang-8 build-essential && \
+    apt-get install -y git clang-8 build-essential zip python openjdk-8-jdk && \
     apt-get clean
 
 # Create clang symlinks
