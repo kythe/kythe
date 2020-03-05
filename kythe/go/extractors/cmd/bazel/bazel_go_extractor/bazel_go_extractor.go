@@ -200,8 +200,8 @@ type compileArgs struct {
 
 func parseCompileArgs(args []string) *compileArgs {
 	c := &compileArgs{
-		original:  args,
-		importMap: make(map[string]string),
+		original:         args,
+		importMap:        make(map[string]string),
 		archiveImportMap: make(map[string]string),
 	}
 
