@@ -7,6 +7,7 @@ go_binary(
     srcs = ["bazel_go_extractor.go"],
     deps = [
         "//kythe/go/extractors/bazel",
+        "//kythe/go/util/ptypes",
         "//kythe/go/extractors/govname",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_go_proto",
