@@ -1114,15 +1114,15 @@ def _bindings():
 
 def _extractor_image_dependencies():
     """Defines external repositories necessary for extractor images."""
-    maybe(
-        http_archive,
-        name = "com_github_philwo_bazelisk",
-        sha256 = "cb6a208f559fd08d205527b69d597ef36f7e1a922fe1df64081e52dd544f7666",
-        strip_prefix = "bazelisk-0.0.2",
-        urls = [
-            "https://mirror.bazel.build/github.com/philwo/bazelisk/archive/0.0.2.zip",
-            "https://github.com/philwo/bazelisk/archive/0.0.2.zip",
-        ],
+    go_repository(
+        name = "com_github_bazelbuild_bazelisk",
+        importpath = "github.com/bazelbuild/bazelisk",
+        tag = "v1.3.0",
+    )
+    go_repository(
+        name = "com_github_mitchellh_go_homedir",
+        importpath = "github.com/mitchellh/go-homedir",
+        tag = "v1.1.0",
     )
     go_repository(
         name = "com_github_hashicorp_go_version",

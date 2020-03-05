@@ -7,6 +7,7 @@ exports_files(
 
 load(
     "//tools/build_rules/verifier_test:cc_indexer_test.bzl",
+    "cc_extract_kzip",
     "cc_extractor_test",
     "cc_indexer_test",
     "objc_indexer_test",
@@ -862,6 +863,22 @@ cc_indexer_test(
     tags = [
         "basic",
     ],
+)
+
+cc_extract_kzip(
+    name = "vname_corpus_kzip",
+    srcs = ["basic/vname_corpus.cc"],
+    corpus = "unit",
+    vnames_config = "basic/vname_corpus.json",
+)
+
+cc_indexer_test(
+    name = "vname_corpus",
+    srcs = [":vname_corpus_kzip"],
+    tags = [
+        "basic",
+    ],
+    use_compilation_corpus_as_default = True,
 )
 
 test_suite(

@@ -30,11 +30,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
 	"kythe.io/kythe/go/indexer"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/metadata"
 
+	protopb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
@@ -120,11 +122,16 @@ func checkMetadata(ri *apb.CompilationUnit_FileInput, f indexer.Fetcher) (*index
 	}
 	bits, err := f.Fetch(ri.Info.GetPath(), ri.Info.GetDigest())
 	if err != nil {
-		return nil, fmt.Errorf("reading metadata file: %v", err)
+		return nil, fmt.Errorf("reading metadata file: %w", err)
 	}
 	rules, err := metadata.Parse(bytes.NewReader(bits))
 	if err != nil {
-		return nil, err
+		// Check if file is actually a GeneratedCodeInfo proto.
+		var gci protopb.GeneratedCodeInfo
+		if err := proto.UnmarshalText(string(bits), &gci); err != nil {
+			return nil, fmt.Errorf("cannot parse .meta file as JSON or textproto: %w", err)
+		}
+		rules = metadata.FromGeneratedCodeInfo(&gci, ri.VName)
 	}
 	return &indexer.Ruleset{
 		Path:  strings.TrimSuffix(ri.Info.GetPath(), *metaSuffix),
