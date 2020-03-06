@@ -1,9 +1,4 @@
-// This test works with the default version of clang on darwin and does not
-// work with our minimum version of clang on Linux.
-//
-// Checks that Objective-C properties are declared and defined. This test uses
-// syntax that isn't supported by default in clang, however it is syntax that
-// is supported with newer versions of XCode.
+// Checks that Objective-C synthezied properties are declared and defined.
 
 //- @Box defines/binding BoxDecl
 //- BoxDecl.node/kind record
@@ -76,4 +71,3 @@
 int main(int argc, char **argv) {
   return 0;
 }
-

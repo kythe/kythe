@@ -784,7 +784,8 @@ def objc_indexer_test(
         deps = deps,
         tags = tags,
         size = size,
-        copts = ["-fblocks"],
+        # Newer ObjC features are only enabled on the "modern" runtime.
+        copts = ["-fblocks", "-fobjc-runtime=macosx"],
         restricted_to = restricted_to,
         bundled = bundled,
         expect_fail_verify = expect_fail_verify,

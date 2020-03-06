@@ -3,7 +3,7 @@
 // Note: Extensions are allowed to declare new ivars and properties, categories
 // are not.
 
-#import "extension_property_xcode.h"
+#import "extension_property.h"
 
 //- @Box defines/binding BoxExt
 //- BoxExt extends/category BoxDecl
