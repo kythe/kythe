@@ -3210,7 +3210,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "subscript_ref",
     srcs = ["objc/subscript_ref.m"],
-    #restricted_to = ["//buildenv:darwin"],
     tags = ["objc"],
 )
 
