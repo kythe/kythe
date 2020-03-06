@@ -7,8 +7,3 @@ tasks:
     test_targets:
       - "--"
       - "//kythe/..."
-      # These tests only work on macOS.
-      - "//kythe/cxx/indexer/cxx/testdata:extension_property_xcode"
-      - "//kythe/cxx/indexer/cxx/testdata:property_decl_defn_xcode_only"
-      - "//kythe/cxx/indexer/cxx/testdata:selector"
-      - "//kythe/cxx/indexer/cxx/testdata:subscript_ref"
