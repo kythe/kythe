@@ -2819,13 +2819,12 @@ objc_indexer_test(
     deps = ["objc/categories/extension.h"],
 )
 
-# This test passes on darwin but fails on Linux.
 objc_indexer_test(
-    name = "extension_property_xcode",
-    srcs = ["objc/categories/extension_property_xcode.m"],
-    restricted_to = ["//buildenv:darwin"],
+    name = "extension_property",
+    srcs = ["objc/categories/extension_property.m"],
+    ignore_dups = True,
     tags = ["objc"],
-    deps = ["objc/categories/extension_property_xcode.h"],
+    deps = ["objc/categories/extension_property.h"],
 )
 
 objc_indexer_test(
@@ -3120,12 +3119,10 @@ objc_indexer_test(
     tags = ["objc"],
 )
 
-# This test passes on darwin but fails on linux. The version of syntax
-# supported appears to be dependent on the machine.
 objc_indexer_test(
-    name = "property_decl_defn_xcode_only",
-    srcs = ["objc/property_decl_defn_xcode_only.m"],
-    restricted_to = ["//buildenv:darwin"],
+    name = "property_decl_defn_synth",
+    srcs = ["objc/property_decl_defn_synth.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
@@ -3200,7 +3197,6 @@ objc_indexer_test(
 objc_indexer_test(
     name = "selector",
     srcs = ["objc/selector.m"],
-    restricted_to = ["//buildenv:darwin"],
     tags = ["objc"],
 )
 
@@ -3214,7 +3210,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "subscript_ref",
     srcs = ["objc/subscript_ref.m"],
-    restricted_to = ["//buildenv:darwin"],
+    #restricted_to = ["//buildenv:darwin"],
     tags = ["objc"],
 )
 
