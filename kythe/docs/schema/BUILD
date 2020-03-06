@@ -34,3 +34,8 @@ asciidoc_with_verifier(
     name = "marked-source",
     src = "marked-source.txt",
 )
+
+asciidoc_with_verifier(
+    name = "modules",
+    src = "modules.txt",
+)
