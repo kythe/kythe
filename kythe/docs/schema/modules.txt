@@ -1,0 +1,175 @@
+// Copyright 2020 The Kythe Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Providing cross-references for module systems
+=============================================
+:Revision: 1.0
+:toc2:
+:toclevels: 3
+:priority: 999
+
+Many languages provide top-level mechanisms for organization that make
+writing large systems easier. These have explicit syntactic forms for
+expressing which components of a *module* are to be *exported* and which
+components are to be *imported* from other modules. It may also be possible
+to refer to the module itself as a first-class value in a program.
+
+In the following sections, we'll discuss common user expectations for
+cross-references in programs that use modules. The representation of a module
+itself is not in this document's scope.
+
+== Simple imports
+
+The second line makes the module named `fmt` available in scope as `fmt`. The
+exact semantics of what the local `fmt` is can differ depending on the
+language. In some languages, `fmt` is simply a local variable that points to
+the (first-class) module object; in others, it is part of a special category of
+identifiers that cannot be rebound. Users generally prefer to see any use of
+`fmt` *ref* the node representing the module's definition instead of the
+definition of the local alias, which may not even have a sensible syntactic
+location to anchor to:
+
+[source,go]
+----
+import (
+//- @"\"fmt\"" ref/imports FmtModule
+  "fmt"
+)
+//- @fmt ref FmtModule
+fmt.Sprint
+----
+
+With these edges, users who attempt to navigate from the module's use site will
+be brought to the definition of `fmt`, not to the definition of the local
+alias. In the same way, users investigating cross-references from the module's
+definition will see every use of that module in the database (up to re-exporting
+and vexing control-flow), not just the places where it's been imported. In
+addition, other information (like documentation) will be available at every use
+site.
+
+Some languages allow particular values to be imported into local scope. These
+should be handled in the same way as module definitions:
+
+[source,javascript]
+----
+//- @value ref/imports Value
+//- @"'./module'" ref/imports Module
+import {value} from './module';
+//- @value ref Value
+value;
+----
+
+== Imports with renaming
+
+It's sometimes possible (or is even required) to choose a different name for the
+local binding created by an import from the target definition's. In this case,
+the local name *does* have a sensible syntactic location and is semantically
+relevant to the programmer. A use site of the local name refers to the local
+alias, which in turn aliases the module (or value) being imported.
+
+[source,javascript]
+----
+//- @"'./module'" ref/imports Module
+//- @defaultExport defines/binding DefaultExport
+//- DefaultExport aliases DefaultExportDef
+//- DefaultExport.subkind import
+import defaultExport from './module';
+//- @"'./module'" ref/imports Module
+//- @mod_imp defines/binding ModImp
+//- ModImp aliases Module
+//- ModImp.subkind import
+import * as mod_imp from './module';
+//- @"'./module'" ref/imports Module
+//- @value ref/imports Value
+//- @renamedValue defines/binding RenamedValue
+//- RenamedValue aliases Value
+//- RenamedValue.subkind import
+import {value as renamedValue} from './module';
+//- @defaultExport ref DefaultExport
+defaultExport;
+//- @mod_imp ref ModImp
+mod_imp.foo;
+//- @renamedValue ref RenamedValue
+renamedValue;
+----
+
+== Imports that do not create local bindings
+
+Languages like TypeScript allow modules to be imported strictly for their
+side-effects. In this case, only a `ref/imports` edge should be placed at
+the import site:
+
+[source,javascript]
+----
+//- @"'./module'" ref/imports Module
+import './module';
+----
+
+[source,go]
+----
+//- @"\"lib/math\"" ref/imports MathModule
+import (
+  _ "lib/math"
+)
+----
+
+== Re-exporting and rebinding
+
+If a module re-exports a definition (renaming it or not) that it previously
+imported, that re-export site should be considered to be the definition of that
+name.
+
+If a program rebinds an imported name, indexers may treat the new name as a
+different variable:
+
+[source,javascript]
+----
+//- @"'./module'" ref/imports Module
+//- @module defines/binding DefaultOne
+//- DefaultOne aliases DefaultOneDef
+import module from './module';
+//- @module ref DefaultOne
+module.foo();
+//- @"'./debug/module'" ref/imports DebugModule
+//- @module defines/binding DefaultTwo
+//- DefaultTwo aliases DefaultTwoDef
+import module from './debug/module';
+//- @module ref DefaultTwo
+//- ! { @module ref DefaultOne }
+module.foo();
+----
+
+It may not be possible to determine that an import is changing, or to determine
+the value it's being changed to. In this case, indexers can treat import names
+like ordinary variables:
+
+[source,javascript]
+----
+//- @"'./module'" ref/imports Module
+//- @module defines/binding ModuleImport
+//- ModuleImport.subkind import
+//- ModuleImport aliases Module
+import module from './module';
+//- @module ref ModuleImport
+if (random()) module = otherModule;
+//- @module ref ModuleImport
+module.foo();
+----
+
+== Caveats
+
+Downstream consumers of the graph should tolerate overlapping references.
+Variables defined by imports should have subkind `import`. Consumers may
+choose to prioritize showing documentation or definitions of non-`import`
+nodes over `import` nodes.
