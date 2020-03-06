@@ -261,52 +261,56 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param TL The TypeLoc for which to build a NodeSet.
   /// \returns NodeSet instance indicating claimability of the contained
   /// NodeIds.
-  NodeSet BuildNodeSetForType(const clang::TypeLoc& TL);
   NodeSet BuildNodeSetForType(const clang::QualType& QT);
+  NodeSet BuildNodeSetForType(const clang::Type* T);
+  NodeSet BuildNodeSetForType(const clang::TypeLoc& TL);
 
-  NodeSet BuildNodeSetForBuiltin(clang::BuiltinTypeLoc TL) const;
-  NodeSet BuildNodeSetForEnum(clang::EnumTypeLoc TL);
-  NodeSet BuildNodeSetForRecord(clang::RecordTypeLoc TL);
-  NodeSet BuildNodeSetForInjectedClassName(clang::InjectedClassNameTypeLoc TL);
-  NodeSet BuildNodeSetForTemplateTypeParm(clang::TemplateTypeParmTypeLoc TL);
-  NodeSet BuildNodeSetForPointer(clang::PointerTypeLoc TL);
-  NodeSet BuildNodeSetForMemberPointer(clang::MemberPointerTypeLoc TL);
-  NodeSet BuildNodeSetForLValueReference(clang::LValueReferenceTypeLoc TL);
-  NodeSet BuildNodeSetForRValueReference(clang::RValueReferenceTypeLoc TL);
+  NodeSet BuildNodeSetForTypeInternal(const clang::Type& T);
+  NodeSet BuildNodeSetForTypeInternal(const clang::QualType& QT);
 
-  NodeSet BuildNodeSetForAuto(clang::AutoTypeLoc TL);
+  NodeSet BuildNodeSetForBuiltin(const clang::BuiltinType& T) const;
+  NodeSet BuildNodeSetForEnum(const clang::EnumType& T);
+  NodeSet BuildNodeSetForRecord(const clang::RecordType& T);
+  NodeSet BuildNodeSetForInjectedClassName(
+      const clang::InjectedClassNameType& T);
+  NodeSet BuildNodeSetForTemplateTypeParm(const clang::TemplateTypeParmType& T);
+  NodeSet BuildNodeSetForPointer(const clang::PointerType& T);
+  NodeSet BuildNodeSetForMemberPointer(const clang::MemberPointerType& T);
+  NodeSet BuildNodeSetForLValueReference(const clang::LValueReferenceType& T);
+  NodeSet BuildNodeSetForRValueReference(const clang::RValueReferenceType& T);
+
+  NodeSet BuildNodeSetForAuto(const clang::AutoType& TL);
   NodeSet BuildNodeSetForDeducedTemplateSpecialization(
-      clang::DeducedTemplateSpecializationTypeLoc TL);
+      const clang::DeducedTemplateSpecializationType& TL);
+  // Helper used for Auto and DeducedTemplateSpecialization.
+  NodeSet BuildNodeSetForDeduced(const clang::DeducedType& T);
 
-  NodeSet BuildNodeSetForQualified(clang::QualifiedTypeLoc TL);
-  NodeSet BuildNodeSetForConstantArray(clang::ConstantArrayTypeLoc TL);
-  NodeSet BuildNodeSetForIncompleteArray(clang::IncompleteArrayTypeLoc TL);
+  NodeSet BuildNodeSetForConstantArray(const clang::ConstantArrayType& TL);
+  NodeSet BuildNodeSetForIncompleteArray(const clang::IncompleteArrayType& TL);
   NodeSet BuildNodeSetForDependentSizedArray(
-      clang::DependentSizedArrayTypeLoc TL);
-  NodeSet BuildNodeSetForFunctionProto(clang::FunctionProtoTypeLoc TL);
-  NodeSet BuildNodeSetForFunctionNoProto(clang::FunctionNoProtoTypeLoc TL);
-  NodeSet BuildNodeSetForParen(clang::ParenTypeLoc TL);
-  NodeSet BuildNodeSetForDecltype(clang::DecltypeTypeLoc TL);
-  NodeSet BuildNodeSetForElaborated(clang::ElaboratedTypeLoc TL);
-  NodeSet BuildNodeSetForTypedef(clang::TypedefTypeLoc TL);
+      const clang::DependentSizedArrayType& T);
+  NodeSet BuildNodeSetForFunctionProto(const clang::FunctionProtoType& T);
+  NodeSet BuildNodeSetForFunctionNoProto(const clang::FunctionNoProtoType& T);
+  NodeSet BuildNodeSetForParen(const clang::ParenType& T);
+  NodeSet BuildNodeSetForDecltype(const clang::DecltypeType& T);
+  NodeSet BuildNodeSetForElaborated(const clang::ElaboratedType& T);
+  NodeSet BuildNodeSetForTypedef(const clang::TypedefType& T);
 
   NodeSet BuildNodeSetForSubstTemplateTypeParm(
-      clang::SubstTemplateTypeParmTypeLoc TL);
-  NodeSet BuildNodeSetForDependentName(clang::DependentNameTypeLoc TL);
+      const clang::SubstTemplateTypeParmType& T);
+  NodeSet BuildNodeSetForDependentName(const clang::DependentNameType& T);
   NodeSet BuildNodeSetForTemplateSpecialization(
-      clang::TemplateSpecializationTypeLoc TL);
-  NodeSet BuildNodeSetForPackExpansion(clang::PackExpansionTypeLoc TL);
-  NodeSet BuildNodeSetForBlockPointer(clang::BlockPointerTypeLoc TL);
-  NodeSet BuildNodeSetForObjCObjectPointer(clang::ObjCObjectPointerTypeLoc TL);
-  NodeSet BuildNodeSetForObjCObject(clang::ObjCObjectTypeLoc TL);
-  NodeSet BuildNodeSetForObjCTypeParam(clang::ObjCTypeParamTypeLoc TL);
-  NodeSet BuildNodeSetForObjCInterface(clang::ObjCInterfaceTypeLoc TL);
-  NodeSet BuildNodeSetForAttributed(clang::AttributedTypeLoc TL);
+      const clang::TemplateSpecializationType& T);
+  NodeSet BuildNodeSetForPackExpansion(const clang::PackExpansionType& T);
+  NodeSet BuildNodeSetForBlockPointer(const clang::BlockPointerType& T);
+  NodeSet BuildNodeSetForObjCObjectPointer(
+      const clang::ObjCObjectPointerType& T);
+  NodeSet BuildNodeSetForObjCObject(const clang::ObjCObjectType& T);
+  NodeSet BuildNodeSetForObjCTypeParam(const clang::ObjCTypeParamType& T);
+  NodeSet BuildNodeSetForObjCInterface(const clang::ObjCInterfaceType& T);
+  NodeSet BuildNodeSetForAttributed(const clang::AttributedType& T);
   NodeSet BuildNodeSetForDependentAddressSpace(
-      clang::DependentAddressSpaceTypeLoc TL);
-
-  // Helper used for Auto and DeducedTemplateSpecialization.
-  NodeSet BuildNodeSetForDeduced(clang::DeducedTypeLoc TL);
+      const clang::DependentAddressSpaceType& T);
 
   // Helper function which constructs marked source and records
   // a tnominal node for the given `Decl`.
@@ -316,15 +320,18 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   NodeSet BuildNodeSetForNonSpecializedRecordDecl(
       const clang::RecordDecl* Decl);
 
-  const clang::TemplateTypeParmDecl* FindTemplateTypeParmTypeLocDecl(
-      clang::TemplateTypeParmTypeLoc TL) const;
+  const clang::TemplateTypeParmDecl* FindTemplateTypeParmTypeDecl(
+      const clang::TemplateTypeParmType& T) const;
 
   absl::optional<GraphObserver::NodeId> BuildNodeIdForObjCProtocols(
-      clang::ObjCObjectTypeLoc TL);
+      const clang::ObjCObjectType& T);
   GraphObserver::NodeId BuildNodeIdForObjCProtocols(
-      const clang::ObjCObjectType* T);
-  GraphObserver::NodeId BuildNodeIdForObjCProtocols(
-      GraphObserver::NodeId BaseType, const clang::ObjCObjectType* T);
+      absl::Span<const GraphObserver::NodeId> ProtocolIds);
+
+  std::vector<GraphObserver::NodeId> BuildNodeIdsForObjCProtocols(
+      GraphObserver::NodeId BaseType, const clang::ObjCObjectType& T);
+  std::vector<GraphObserver::NodeId> BuildNodeIdsForObjCProtocols(
+      const clang::ObjCObjectType& T);
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param TypeLoc The type that is being identified.
@@ -339,6 +346,14 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// This function will invent a `TypeLoc` with an invalid location.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
       const clang::QualType& QT);
+
+  /// \brief Builds a stable node ID for `QT`.
+  /// \param QT The type that is being identified.
+  /// \return The Node ID for `QT`.
+  ///
+  /// This function will invent a `TypeLoc` with an invalid location.
+  absl::optional<GraphObserver::NodeId> BuildNodeIdForType(
+      const clang::Type* T);
 
   /// \brief Builds a stable node ID for the given `TemplateName`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateName(
