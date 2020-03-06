@@ -13,5 +13,7 @@ go_binary(
         "//kythe/go/util/metadata",
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:storage_go_proto",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
     ],
 )

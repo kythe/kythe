@@ -265,6 +265,9 @@ struct IndexerOptions {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+  /// \brief Whether or not to use the CompilationUnit VName corpus as the
+  /// default corpus.
+  bool UseCompilationCorpusAsDefault = false;
 };
 
 /// \brief Indexes `Unit`, reading from `Files` in the assumed and writing

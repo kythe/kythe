@@ -185,6 +185,9 @@ std::string IndexCompilationUnit(
     Observer.DropRedundantWraiths();
   }
   Observer.set_claimant(Unit.v_name());
+  if (Options.UseCompilationCorpusAsDefault) {
+    Observer.set_default_corpus(Unit.v_name().corpus());
+  }
   Observer.set_starting_context(Unit.entry_context());
   for (const auto& Input : Unit.required_input()) {
     if (Input.has_info() && !Input.info().path().empty() &&
