@@ -182,6 +182,7 @@ cc_library(
         ":kythe_claim_client",
         ":marked_source",
         ":node_set",
+        ":recursive_type_visitor",
         ":semantic_hash",
         ":type_map",
         "//kythe/cxx/common:lib",
@@ -493,6 +494,23 @@ cc_test(
         "@org_llvm//:clangAST",
         "@org_llvm//:clangFrontend",
         "@org_llvm//:clangTooling",
+    ],
+)
+
+cc_library(
+    name = "recursive_type_visitor",
+    hdrs = ["recursive_type_visitor.h"],
+    deps = [
+        "@org_llvm//:clangAST",
+    ],
+)
+
+cc_test(
+    name = "recursive_type_visitor_test",
+    srcs = ["recursive_type_visitor_test.cc"],
+    deps = [
+        ":recursive_type_visitor",
+        "//third_party:gtest_main",
     ],
 )
 

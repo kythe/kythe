@@ -2032,6 +2032,13 @@ cc_indexer_test(
 )
 
 cc_indexer_test(
+    name = "template/template_dependent_name_ref",
+    srcs = ["template/template_dependent_name_ref.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cc_indexer_test(
     name = "template_dependent_sized_array",
     srcs = ["template/template_dependent_sized_array.cc"],
     tags = ["template"],
