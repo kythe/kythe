@@ -119,6 +119,6 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-tar czf "$OUT" -C "$OUT.dir" .
+tar czf "$OUT" -C "$OUT.dir" "$(basename "$PBASE")"
 
 $SHASUM_TOOL "$OUT" > "$OUT.sha256"
