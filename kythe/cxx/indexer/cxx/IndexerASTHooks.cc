@@ -4014,8 +4014,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       return BuildNodeIdForSpecialTemplateArgument("null");
     case TemplateArgument::Type:
       CHECK(!Arg.getAsType().isNull());
-      return BuildNodeIdForType(
-          Context.getTrivialTypeSourceInfo(Arg.getAsType(), L)->getTypeLoc());
+      return BuildNodeIdForType(Arg.getAsType());
     case TemplateArgument::Declaration:
       return BuildNodeIdForDecl(Arg.getAsDecl());
     case TemplateArgument::NullPtr:
@@ -4092,13 +4091,13 @@ void IndexerASTVisitor::DumpTypeContext(unsigned Depth, unsigned Index) {
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForBuiltin(
-    clang::BuiltinTypeLoc TL) const {
-  return Observer.getNodeIdForBuiltinType(TL.getTypePtr()->getName(
-      clang::PrintingPolicy(*Observer.getLangOptions())));
+    const clang::BuiltinType& T) const {
+  return Observer.getNodeIdForBuiltinType(
+      T.getName(clang::PrintingPolicy(*Observer.getLangOptions())));
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForEnum(clang::EnumTypeLoc TL) {
-  EnumDecl* Decl = TL.getDecl();
+NodeSet IndexerASTVisitor::BuildNodeSetForEnum(const clang::EnumType& T) {
+  EnumDecl* Decl = T.getDecl();
   if (EnumDecl* Defn = Decl->getDefinition()) {
     return {BuildNodeIdForDecl(Defn), GraphObserver::Claimability::Unclaimable};
   }
@@ -4109,8 +4108,8 @@ NodeSet IndexerASTVisitor::BuildNodeSetForEnum(clang::EnumTypeLoc TL) {
   return {BuildNominalNodeIdForDecl(Decl), BuildNodeIdForDecl(Decl)};
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForRecord(clang::RecordTypeLoc TL) {
-  RecordDecl* Decl = CHECK_NOTNULL(TL.getDecl());
+NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
+  RecordDecl* Decl = CHECK_NOTNULL(T.getDecl());
   if (const auto* Spec = dyn_cast<ClassTemplateSpecializationDecl>(Decl)) {
     // TODO(shahms): Simplify building template argument lists.
     const auto& TAL = Spec->getTemplateArgs();
@@ -4139,6 +4138,289 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(clang::RecordTypeLoc TL) {
   }
 }
 
+NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
+    const clang::InjectedClassNameType& T) {
+  // TODO(zarko): Replace with logic that uses InjectedType.
+  return BuildNodeSetForNonSpecializedRecordDecl(T.getDecl());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForTemplateTypeParm(
+    const clang::TemplateTypeParmType& T) {
+  if (const auto* Decl = FindTemplateTypeParmTypeDecl(T)) {
+    return BuildNodeIdForDecl(Decl);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForPointer(const clang::PointerType& T) {
+  if (auto PointeeID = BuildNodeIdForType(T.getPointeeType())) {
+    return ApplyBuiltinTypeConstructor("ptr", *PointeeID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForMemberPointer(
+    const clang::MemberPointerType& T) {
+  if (auto PointeeID = BuildNodeIdForType(T.getPointeeType())) {
+    if (auto ClassID = BuildNodeIdForType(T.getClass())) {
+      auto tapp = Observer.getNodeIdForBuiltinType("mptr");
+      return Observer.recordTappNode(tapp, {*PointeeID, *ClassID});
+    }
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForLValueReference(
+    const clang::LValueReferenceType& T) {
+  if (auto PointeeID = BuildNodeIdForType(T.getPointeeType())) {
+    return ApplyBuiltinTypeConstructor("lvr", *PointeeID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForRValueReference(
+    const clang::RValueReferenceType& T) {
+  if (auto PointeeID = BuildNodeIdForType(T.getPointeeType())) {
+    return ApplyBuiltinTypeConstructor("rvr", *PointeeID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForAuto(const clang::AutoType& T) {
+  return BuildNodeSetForDeduced(T);
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDeducedTemplateSpecialization(
+    const clang::DeducedTemplateSpecializationType& T) {
+  // TODO(shahms): This should look more like TemplateSpecialization than Auto.
+  // They currently return the same thing, but only via the indirection through
+  // the deduced type.  We should also potentially emit implicit references to
+  // the deduced template parameters.
+  return BuildNodeSetForDeduced(T);
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDeduced(const clang::DeducedType& T) {
+  auto DeducedQT = T.getDeducedType();
+  if (DeducedQT.isNull()) {
+    // We still need to come up with a name here--it's more useful than
+    // returning None, since we might be down a branch of some structural
+    // type. We might also have an unconstrained type variable,
+    // as with `auto foo();` with no definition.
+    // TODO(zarko): Is "auto" the correct thing to return here for
+    // a DeducedTemplateSpecialization?
+    return Observer.getNodeIdForBuiltinType("auto");
+  }
+  return BuildNodeSetForType(DeducedQT);
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForConstantArray(
+    const clang::ConstantArrayType& T) {
+  if (auto ElementID = BuildNodeIdForType(T.getElementType())) {
+    // TODO(zarko): Record size expression.
+    return ApplyBuiltinTypeConstructor("carr", *ElementID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForIncompleteArray(
+    const clang::IncompleteArrayType& T) {
+  if (auto ElementID = BuildNodeIdForType(T.getElementType())) {
+    return ApplyBuiltinTypeConstructor("iarr", *ElementID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentSizedArray(
+    const clang::DependentSizedArrayType& T) {
+  if (auto ElemID = BuildNodeIdForType(T.getElementType())) {
+    if (auto ExprID = BuildNodeIdForExpr(T.getSizeExpr(), EmitRanges::No)) {
+      return Observer.recordTappNode(Observer.getNodeIdForBuiltinType("darr"),
+                                     {*ElemID, *ExprID});
+    } else {
+      return ApplyBuiltinTypeConstructor("darr", *ElemID);
+    }
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForFunctionProto(
+    const clang::FunctionProtoType& T) {
+  std::vector<GraphObserver::NodeId> NodeIds;
+  auto ReturnType = BuildNodeIdForType(T.getReturnType());
+  if (!ReturnType) {
+    return NodeSet::Empty();
+  }
+  NodeIds.push_back(*ReturnType);
+
+  for (const auto& param : T.getParamTypes()) {
+    if (auto ParmType = BuildNodeIdForType(param)) {
+      NodeIds.push_back(*ParmType);
+    } else {
+      return NodeSet::Empty();
+    }
+  }
+
+  const char* Tycon = T.isVariadic() ? "fnvararg" : "fn";
+  return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
+                                 NodeIds);
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForFunctionNoProto(
+    const clang::FunctionNoProtoType& T) {
+  return Observer.getNodeIdForBuiltinType("knrfn");
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForParen(const clang::ParenType& T) {
+  return BuildNodeSetForType(T.getInnerType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDecltype(
+    const clang::DecltypeType& T) {
+  return BuildNodeSetForType(T.getUnderlyingType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForElaborated(
+    const clang::ElaboratedType& T) {
+  return BuildNodeSetForType(T.getNamedType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForTypedef(const clang::TypedefType& T) {
+  // TODO(zarko): Return canonicalized versions as well.
+  GraphObserver::NameId AliasID = BuildNameIdForDecl(T.getDecl());
+  // We're retrieving the type of an alias here, so we shouldn't thread
+  // through the deduced type.
+  if (auto AliasedTypeID =
+          BuildNodeIdForType(T.getDecl()->getTypeSourceInfo()->getTypeLoc())) {
+    // TODO(shahms): Move caching here and use
+    // `Observer.nodeIdForTypeAliasNode()` when already built?
+    // Or is always using the cached id sufficient?
+    NodeId ID = Observer.nodeIdForTypeAliasNode(AliasID, *AliasedTypeID);
+    auto Marks = MarkedSources.Generate(T.getDecl());
+    AssignUSR(ID, T.getDecl());
+    return Observer.recordTypeAliasNode(
+        ID, *AliasedTypeID, BuildNodeIdForType(FollowAliasChain(T.getDecl())),
+        Marks.GenerateMarkedSource(ID));
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForSubstTemplateTypeParm(
+    const clang::SubstTemplateTypeParmType& T) {
+  return BuildNodeSetForType(T.getReplacementType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
+    const clang::DependentNameType& T) {
+  return BuildNodeIdForDependentIdentifier(T.getQualifier(), T.getIdentifier());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
+    const clang::TemplateSpecializationType& T) {
+  clang::SourceLocation InvalidLoc;
+  // This refers to a particular class template, type alias template,
+  // or template template parameter. Non-dependent template
+  // specializations appear as different types.
+  if (auto TemplateName = BuildNodeIdForTemplateName(T.getTemplateName())) {
+    std::vector<GraphObserver::NodeId> TemplateArgs;
+    TemplateArgs.reserve(T.getNumArgs());
+    for (const auto& arg : T.template_arguments()) {
+      if (auto ArgId = BuildNodeIdForTemplateArgument(arg, InvalidLoc)) {
+        TemplateArgs.push_back(*ArgId);
+      } else {
+        return NodeSet::Empty();
+      }
+    }
+    return Observer.recordTappNode(*TemplateName, TemplateArgs);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForPackExpansion(
+    const clang::PackExpansionType& T) {
+  return BuildNodeSetForType(T.getPattern());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForBlockPointer(
+    const clang::BlockPointerType& T) {
+  if (auto ID = BuildNodeIdForType(T.getPointeeType())) {
+    return ApplyBuiltinTypeConstructor("ptr", *ID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForObjCObjectPointer(
+    const clang::ObjCObjectPointerType& T) {
+  if (auto ID = BuildNodeIdForType(T.getPointeeType())) {
+    return ApplyBuiltinTypeConstructor("ptr", *ID);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForObjCObject(
+    const clang::ObjCObjectType& T) {
+  if (auto BaseId = BuildNodeIdForObjCProtocols(T)) {
+    if (T.getTypeArgsAsWritten().size() == 0) {
+      return *std::move(BaseId);
+    }
+    std::vector<NodeId> GenericArgIds;
+    GenericArgIds.reserve(T.getTypeArgsAsWritten().size());
+    for (const auto& QT : T.getTypeArgsAsWritten()) {
+      if (auto Arg = BuildNodeIdForType(QT)) {
+        GenericArgIds.push_back(*Arg);
+      } else {
+        return NodeSet::Empty();
+      }
+    }
+    return Observer.recordTappNode(*BaseId, GenericArgIds);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForObjCTypeParam(
+    const clang::ObjCTypeParamType& T) {
+  if (const auto* Decl = T.getDecl()) {
+    return BuildNodeIdForDecl(Decl);
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForObjCInterface(
+    const clang::ObjCInterfaceType& T) {
+  const auto* IFace = CHECK_NOTNULL(T.getDecl());
+  // Link to the implementation if we have one, otherwise link to the
+  // interface. If we just have a forward declaration, link to the nominal
+  // type node.
+  if (const auto* Impl = IFace->getImplementation()) {
+    return {BuildNodeIdForDecl(Impl), Claimability::Unclaimable};
+  } else if (!IsObjCForwardDecl(IFace)) {
+    return {BuildNodeIdForDecl(IFace), Claimability::Unclaimable};
+  } else {
+    // Thanks to the ODR, we shouldn't record multiple nominal type nodes
+    // for the same TU: given distinct names, NameIds will be distinct,
+    // there may be only one definition bound to each name, and we
+    // memoize the NodeIds we give to types.
+    return BuildNominalNodeIdForDecl(IFace);
+  }
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForAttributed(
+    const clang::AttributedType& T) {
+  return BuildNodeSetForType(T.getModifiedType());
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentAddressSpace(
+    const clang::DependentAddressSpaceType& T) {
+  return BuildNodeSetForType(T.getPointeeType());
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNominalNodeIdForDecl(
+    const clang::NamedDecl* Decl) {
+  auto NominalID = Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
+  return Observer.recordNominalTypeNode(
+      NominalID, MarkedSources.Generate(Decl).GenerateMarkedSource(NominalID),
+      GetDeclChildOf(Decl));
+}
+
 NodeSet IndexerASTVisitor::BuildNodeSetForNonSpecializedRecordDecl(
     const clang::RecordDecl* Decl) {
   if (const RecordDecl* Defn = Decl->getDefinition()) {
@@ -4165,341 +4447,26 @@ NodeSet IndexerASTVisitor::BuildNodeSetForNonSpecializedRecordDecl(
   }
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForTemplateTypeParm(
-    clang::TemplateTypeParmTypeLoc TL) {
-  if (const auto* Decl = FindTemplateTypeParmTypeLocDecl(TL)) {
-    return BuildNodeIdForDecl(Decl);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForObjCInterface(
-    clang::ObjCInterfaceTypeLoc TL) {
-  const auto* IFace = CHECK_NOTNULL(TL.getIFaceDecl());
-  // Link to the implementation if we have one, otherwise link to the
-  // interface. If we just have a forward declaration, link to the nominal
-  // type node.
-  if (const auto* Impl = IFace->getImplementation()) {
-    return {BuildNodeIdForDecl(Impl), Claimability::Unclaimable};
-  } else if (!IsObjCForwardDecl(IFace)) {
-    return {BuildNodeIdForDecl(IFace), Claimability::Unclaimable};
-  } else {
-    // Thanks to the ODR, we shouldn't record multiple nominal type nodes
-    // for the same TU: given distinct names, NameIds will be distinct,
-    // there may be only one definition bound to each name, and we
-    // memoize the NodeIds we give to types.
-    return BuildNominalNodeIdForDecl(IFace);
-  }
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForPointer(clang::PointerTypeLoc TL) {
-  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    return ApplyBuiltinTypeConstructor("ptr", *PointeeID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForMemberPointer(
-    clang::MemberPointerTypeLoc TL) {
-  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    if (auto ClassID = BuildNodeIdForType(TL.getClass())) {
-      auto tapp = Observer.getNodeIdForBuiltinType("mptr");
-      return Observer.recordTappNode(tapp, {*PointeeID, *ClassID});
-    }
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForLValueReference(
-    clang::LValueReferenceTypeLoc TL) {
-  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    return ApplyBuiltinTypeConstructor("lvr", *PointeeID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForRValueReference(
-    clang::RValueReferenceTypeLoc TL) {
-  if (auto PointeeID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    return ApplyBuiltinTypeConstructor("rvr", *PointeeID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForAuto(clang::AutoTypeLoc TL) {
-  return BuildNodeSetForDeduced(TL);
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDeducedTemplateSpecialization(
-    clang::DeducedTemplateSpecializationTypeLoc TL) {
-  // TODO(shahms): This should look more like TemplateSpecialization than Auto.
-  // They currently return the same thing, but only via the indirection through
-  // the deduced type.  We should also potentially emit implicit references to
-  // the deduced template parameters.
-  return BuildNodeSetForDeduced(TL);
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDeduced(clang::DeducedTypeLoc TL) {
-  auto DeducedQT = TL.getTypePtr()->getDeducedType();
-  if (DeducedQT.isNull()) {
-    // We still need to come up with a name here--it's more useful than
-    // returning None, since we might be down a branch of some structural
-    // type. We might also have an unconstrained type variable,
-    // as with `auto foo();` with no definition.
-    // TODO(zarko): Is "auto" the correct thing to return here for
-    // a DeducedTemplateSpecialization?
-    return Observer.getNodeIdForBuiltinType("auto");
-  }
-  return BuildNodeSetForType(DeducedQT);
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForQualified(
-    clang::QualifiedTypeLoc TL) {
-  // TODO(zarko): ObjC tycons; embedded C tycons (address spaces).
-  if (auto ID = BuildNodeIdForType(TL.getUnqualifiedLoc())) {
-    // Don't look down into type aliases. We'll have hit those during the
-    // BuildNodeIdForType call above.
-    // TODO(zarko): also add canonical edges (what do we call the edges?
-    // 'expanded' seems reasonable).
-    //   using ConstInt = const int;
-    //   using CVInt1 = volatile ConstInt;
-    if (TL.getType().isLocalConstQualified()) {
-      ID = ApplyBuiltinTypeConstructor("const", *ID);
-    }
-    if (TL.getType().isLocalRestrictQualified()) {
-      ID = ApplyBuiltinTypeConstructor("restrict", *ID);
-    }
-    if (TL.getType().isLocalVolatileQualified()) {
-      ID = ApplyBuiltinTypeConstructor("volatile", *ID);
-    }
-    return std::move(ID).value();
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForConstantArray(
-    clang::ConstantArrayTypeLoc TL) {
-  if (auto ElementID = BuildNodeIdForType(TL.getElementLoc())) {
-    // TODO(zarko): Record size expression.
-    return ApplyBuiltinTypeConstructor("carr", *ElementID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForIncompleteArray(
-    clang::IncompleteArrayTypeLoc TL) {
-  if (auto ElementID = BuildNodeIdForType(TL.getElementLoc())) {
-    return ApplyBuiltinTypeConstructor("iarr", *ElementID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDependentSizedArray(
-    clang::DependentSizedArrayTypeLoc TL) {
-  if (auto ElemID = BuildNodeIdForType(TL.getElementLoc())) {
-    if (auto ExprID = BuildNodeIdForExpr(TL.getSizeExpr(), EmitRanges::No)) {
-      return Observer.recordTappNode(Observer.getNodeIdForBuiltinType("darr"),
-                                     {*ElemID, *ExprID});
-    } else {
-      return ApplyBuiltinTypeConstructor("darr", *ElemID);
-    }
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForFunctionProto(
-    clang::FunctionProtoTypeLoc TL) {
-  std::vector<GraphObserver::NodeId> NodeIds;
-  auto ReturnType = BuildNodeIdForType(TL.getReturnLoc());
-  if (!ReturnType) {
-    return NodeSet::Empty();
-  }
-  NodeIds.push_back(*ReturnType);
-
-  for (const auto& param : TL.getTypePtr()->getParamTypes()) {
-    if (auto ParmType = BuildNodeIdForType(param)) {
-      NodeIds.push_back(*ParmType);
-    } else {
-      return NodeSet::Empty();
-    }
-  }
-
-  const char* Tycon = TL.getTypePtr()->isVariadic() ? "fnvararg" : "fn";
-  return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
-                                 NodeIds);
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForFunctionNoProto(
-    clang::FunctionNoProtoTypeLoc TL) {
-  return Observer.getNodeIdForBuiltinType("knrfn");
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForParen(clang::ParenTypeLoc TL) {
-  return BuildNodeSetForType(TL.getInnerLoc());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDecltype(clang::DecltypeTypeLoc TL) {
-  return BuildNodeSetForType(TL.getTypePtr()->getUnderlyingType());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForElaborated(
-    clang::ElaboratedTypeLoc TL) {
-  return BuildNodeSetForType(TL.getNamedTypeLoc());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForTypedef(clang::TypedefTypeLoc TL) {
-  // TODO(zarko): Return canonicalized versions as well.
-  GraphObserver::NameId AliasID = BuildNameIdForDecl(TL.getTypedefNameDecl());
-  // We're retrieving the type of an alias here, so we shouldn't thread
-  // through the deduced type.
-  if (auto AliasedTypeID = BuildNodeIdForType(
-          TL.getTypedefNameDecl()->getTypeSourceInfo()->getTypeLoc())) {
-    // TODO(shahms): Move caching here and use
-    // `Observer.nodeIdForTypeAliasNode()` when already built?
-    // Or is always using the cached id sufficient?
-    NodeId ID = Observer.nodeIdForTypeAliasNode(AliasID, *AliasedTypeID);
-    auto Marks = MarkedSources.Generate(TL.getTypedefNameDecl());
-    AssignUSR(ID, TL.getTypedefNameDecl());
-    return Observer.recordTypeAliasNode(
-        ID, *AliasedTypeID,
-        BuildNodeIdForType(FollowAliasChain(TL.getTypedefNameDecl())),
-        Marks.GenerateMarkedSource(ID));
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForSubstTemplateTypeParm(
-    clang::SubstTemplateTypeParmTypeLoc TL) {
-  return BuildNodeSetForType(TL.getTypePtr()->getReplacementType());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForInjectedClassName(
-    clang::InjectedClassNameTypeLoc TL) {
-  // TODO(zarko): Replace with logic that uses InjectedType.
-  return BuildNodeSetForNonSpecializedRecordDecl(TL.getDecl());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
-    clang::DependentNameTypeLoc TL) {
-  return BuildNodeIdForDependentIdentifier(
-      TL.getQualifierLoc().getNestedNameSpecifier(),
-      TL.getTypePtr()->getIdentifier());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
-    clang::TemplateSpecializationTypeLoc TL) {
-  // This refers to a particular class template, type alias template,
-  // or template template parameter. Non-dependent template
-  // specializations appear as different types.
-  if (auto TemplateName =
-          BuildNodeIdForTemplateName(TL.getTypePtr()->getTemplateName())) {
-    std::vector<GraphObserver::NodeId> TemplateArgs;
-    TemplateArgs.reserve(TL.getNumArgs());
-    for (unsigned A = 0, AE = TL.getNumArgs(); A != AE; ++A) {
-      if (auto ArgA =
-              BuildNodeIdForTemplateArgument(TL.getArgLoc(A), EmitRanges::No)) {
-        TemplateArgs.push_back(ArgA.value());
-      } else {
-        return NodeSet::Empty();
-      }
-    }
-    return Observer.recordTappNode(*TemplateName, TemplateArgs);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForPackExpansion(
-    clang::PackExpansionTypeLoc TL) {
-  return BuildNodeSetForType(TL.getPatternLoc());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForBlockPointer(
-    clang::BlockPointerTypeLoc TL) {
-  if (auto ID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    return ApplyBuiltinTypeConstructor("ptr", *ID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForObjCObjectPointer(
-    clang::ObjCObjectPointerTypeLoc TL) {
-  if (auto ID = BuildNodeIdForType(TL.getPointeeLoc())) {
-    return ApplyBuiltinTypeConstructor("ptr", *ID);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForObjCObject(
-    clang::ObjCObjectTypeLoc TL) {
-  if (auto BaseId = BuildNodeIdForObjCProtocols(TL)) {
-    if (TL.getNumTypeArgs() == 0) {
-      return *std::move(BaseId);
-    }
-    std::vector<NodeId> GenericArgIds;
-    GenericArgIds.reserve(TL.getNumTypeArgs());
-    for (unsigned int i = 0; i < TL.getNumTypeArgs(); ++i) {
-      const auto* TI = TL.getTypeArgTInfo(i);
-      if (auto Arg = BuildNodeIdForType(TI->getTypeLoc())) {
-        GenericArgIds.push_back(*Arg);
-      } else {
-        return NodeSet::Empty();
-      }
-    }
-    return Observer.recordTappNode(*BaseId, GenericArgIds);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForObjCTypeParam(
-    clang::ObjCTypeParamTypeLoc TL) {
-  if (const auto* Decl = TL.getDecl()) {
-    return BuildNodeIdForDecl(Decl);
-  }
-  return NodeSet::Empty();
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForAttributed(
-    clang::AttributedTypeLoc TL) {
-  return BuildNodeSetForType(TL.getModifiedLoc());
-}
-
-NodeSet IndexerASTVisitor::BuildNodeSetForDependentAddressSpace(
-    clang::DependentAddressSpaceTypeLoc TL) {
-  return BuildNodeSetForType(TL.getPointeeTypeLoc());
-}
-
-GraphObserver::NodeId IndexerASTVisitor::BuildNominalNodeIdForDecl(
-    const clang::NamedDecl* Decl) {
-  auto NominalID = Observer.nodeIdForNominalTypeNode(BuildNameIdForDecl(Decl));
-  return Observer.recordNominalTypeNode(
-      NominalID, MarkedSources.Generate(Decl).GenerateMarkedSource(NominalID),
-      GetDeclChildOf(Decl));
-}
-
 const clang::TemplateTypeParmDecl*
-IndexerASTVisitor::FindTemplateTypeParmTypeLocDecl(
-    clang::TemplateTypeParmTypeLoc TL) const {
+IndexerASTVisitor::FindTemplateTypeParmTypeDecl(
+    const clang::TemplateTypeParmType& T) const {
   // Either the `TemplateTypeParm` will link directly to a relevant
   // `TemplateTypeParmDecl` or (particularly in the case of canonicalized
   // types) we will find the Decl in the `Job->TypeContext` according to the
   // parameter's depth and index.
   // Depths count from the outside-in; each Template*ParmDecl has only
   // one possible (depth, index).
-  if (auto* Decl = TL.getDecl()) {
+  if (auto* Decl = T.getDecl()) {
     return Decl;
   }
   LOG(INFO) << "Immediate TemplateTypeParmDecl not found, falling back to "
                "TypeContext";
-  if (auto* TypeParm = TL.getTypePtr()) {
-    if (TypeParm->getDepth() < Job->TypeContext.size() &&
-        TypeParm->getIndex() < Job->TypeContext[TypeParm->getDepth()]->size()) {
-      return cast<clang::TemplateTypeParmDecl>(
-          Job->TypeContext[TypeParm->getDepth()]->getParam(
-              TypeParm->getIndex()));
-    }
+  if (T.getDepth() < Job->TypeContext.size() &&
+      T.getIndex() < Job->TypeContext[T.getDepth()]->size()) {
+    return cast<clang::TemplateTypeParmDecl>(
+        Job->TypeContext[T.getDepth()]->getParam(T.getIndex()));
   }
-  LOG(ERROR)
-      << "Unable to find TemplateTypeParmDecl for TemplateTypeParmTypeLoc";
+  LOG(ERROR) << "Unable to find TemplateTypeParmDecl for TemplateTypeParmType";
   return nullptr;
 }
 
@@ -4514,188 +4481,197 @@ absl::optional<NodeId> IndexerASTVisitor::BuildNodeIdForType(
 }
 
 absl::optional<NodeId> IndexerASTVisitor::BuildNodeIdForType(
-    const clang::Type* Type) {
-  return BuildNodeSetForType(Type).AsOptional();
+    const clang::Type* T) {
+  return BuildNodeSetForType(T).AsOptional();
 }
 
 NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::Type* T) {
+  CHECK(T != nullptr);
   return BuildNodeSetForType(clang::QualType(T, 0));
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::QualType& QT) {
-  // TODO(shahms): This be barkwards; we should build NodeSets from
-  // `clang::Type*` subclasses, rather than TypeLoc's with occasionally empty
-  // locations.
-  CHECK(!QT.isNull());
-  TypeSourceInfo* TSI = Context.getTrivialTypeSourceInfo(QT, SourceLocation());
-  return BuildNodeSetForType(TSI->getTypeLoc());
+NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::TypeLoc& TL) {
+  return BuildNodeSetForType(TL.getType());
 }
 
-NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::TypeLoc& TL) {
-  TypeKey Key(Context, TL.getType(), TL.getTypePtr());
-  const auto& Prev = TypeNodes.find(Key);
-  if (Prev != TypeNodes.end()) {
-    return Prev->second;
+NodeSet IndexerASTVisitor::BuildNodeSetForType(const clang::QualType& QT) {
+  CHECK(!QT.isNull());
+  TypeKey Key(Context, QT, QT.getTypePtr());
+  auto [iter, inserted] = TypeNodes.insert({Key, NodeSet::Empty()});
+  if (inserted) {
+    iter->second = QT.hasLocalQualifiers()
+                       ? BuildNodeSetForTypeInternal(QT)
+                       : BuildNodeSetForTypeInternal(*QT.getTypePtr());
   }
-  NodeSet Nodes = [&]() -> NodeSet {
+  return iter->second;
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(
+    const clang::QualType& QT) {
+  CHECK(!QT.isNull() && QT.hasLocalQualifiers());
+  // TODO(zarko): ObjC tycons; embedded C tycons (address spaces).
+  if (auto ID = BuildNodeSetForType(QT.getTypePtr())) {
+    // Don't look down into type aliases. We'll have hit those during the
+    // BuildNodeIdForType call above.
+    // TODO(zarko): also add canonical edges (what do we call the edges?
+    // 'expanded' seems reasonable).
+    //   using ConstInt = const int;
+    //   using CVInt1 = volatile ConstInt;
+    if (QT.isLocalConstQualified()) {
+      ID = ApplyBuiltinTypeConstructor("const", *ID);
+    }
+    if (QT.isLocalRestrictQualified()) {
+      ID = ApplyBuiltinTypeConstructor("restrict", *ID);
+    }
+    if (QT.isLocalVolatileQualified()) {
+      ID = ApplyBuiltinTypeConstructor("volatile", *ID);
+    }
+    return ID;
+  }
+  return NodeSet::Empty();
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
   // There aren't too many types in C++, as it turns out. See
   // clang/AST/TypeNodes.def.
-
-#define UNSUPPORTED_CLANG_TYPE(t)                  \
-  case TypeLoc::t:                                 \
-    if (IgnoreUnimplemented) {                     \
-      return NodeSet::Empty();                     \
-    } else {                                       \
-      LOG(FATAL) << "TypeLoc::" #t " unsupported"; \
-    }                                              \
+#define UNSUPPORTED_CLANG_TYPE(t)               \
+  case clang::Type::t:                          \
+    if (IgnoreUnimplemented) {                  \
+      return NodeSet::Empty();                  \
+    } else {                                    \
+      LOG(FATAL) << "Type::" #t " unsupported"; \
+    }                                           \
     break
 
 #define DELEGATE_TYPE(t) \
-  case TypeLoc::t:       \
-    return BuildNodeSetFor##t(TL.castAs<t##TypeLoc>());
-    // We only care about leaves in the type hierarchy (eg, we shouldn't match
-    // on Reference, but instead on LValueReference or RValueReference).
-    switch (TL.getTypeLocClass()) {
-      DELEGATE_TYPE(Builtin);           // Leaf.
-      DELEGATE_TYPE(Enum);              // Leaf.
-      DELEGATE_TYPE(TemplateTypeParm);  // Leaf.
-      DELEGATE_TYPE(Record);            // Leaf.
-      DELEGATE_TYPE(ObjCInterface);     // Leaf.
-      DELEGATE_TYPE(ObjCObjectPointer);
-      DELEGATE_TYPE(ObjCTypeParam);
-      DELEGATE_TYPE(ObjCObject);
-      DELEGATE_TYPE(Pointer);
-      DELEGATE_TYPE(MemberPointer);
-      DELEGATE_TYPE(LValueReference);
-      DELEGATE_TYPE(RValueReference);
-      DELEGATE_TYPE(Auto);
-      DELEGATE_TYPE(DeducedTemplateSpecialization);
-      DELEGATE_TYPE(Qualified);
-      DELEGATE_TYPE(ConstantArray);
-      DELEGATE_TYPE(IncompleteArray);
-      DELEGATE_TYPE(DependentSizedArray);
-      DELEGATE_TYPE(FunctionProto);
-      DELEGATE_TYPE(FunctionNoProto);
-      DELEGATE_TYPE(Paren);
-      DELEGATE_TYPE(Typedef);
-      DELEGATE_TYPE(Decltype);
-      DELEGATE_TYPE(Elaborated);
-      // "Within an instantiated template, all template type parameters have
-      // been replaced with these. They are used solely to record that a type
-      // was originally written as a template type parameter; therefore they are
-      // never canonical."
-      DELEGATE_TYPE(SubstTemplateTypeParm);
-      DELEGATE_TYPE(InjectedClassName);
-      DELEGATE_TYPE(DependentName);
-      DELEGATE_TYPE(PackExpansion);
-      DELEGATE_TYPE(BlockPointer);
-      DELEGATE_TYPE(TemplateSpecialization);
-      DELEGATE_TYPE(Attributed);
-      DELEGATE_TYPE(DependentAddressSpace);
-      UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
-      UNSUPPORTED_CLANG_TYPE(Complex);
-      UNSUPPORTED_CLANG_TYPE(VariableArray);
-      UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
-      UNSUPPORTED_CLANG_TYPE(Vector);
-      UNSUPPORTED_CLANG_TYPE(ExtVector);
-      UNSUPPORTED_CLANG_TYPE(Adjusted);
-      UNSUPPORTED_CLANG_TYPE(Decayed);
-      UNSUPPORTED_CLANG_TYPE(TypeOfExpr);
-      UNSUPPORTED_CLANG_TYPE(TypeOf);
-      UNSUPPORTED_CLANG_TYPE(UnresolvedUsing);
-      UNSUPPORTED_CLANG_TYPE(UnaryTransform);
-      // "When a pack expansion in the source code contains multiple parameter
-      // packs and those parameter packs correspond to different levels of
-      // template parameter lists, this type node is used to represent a
-      // template type parameter pack from an outer level, which has already had
-      // its argument pack substituted but that still lives within a pack
-      // expansion that itself could not be instantiated. When actually
-      // performing a substitution into that pack expansion (e.g., when all
-      // template parameters have corresponding arguments), this type will be
-      // replaced with the SubstTemplateTypeParmType at the current pack
-      // substitution index."
-      UNSUPPORTED_CLANG_TYPE(SubstTemplateTypeParmPack);
-      UNSUPPORTED_CLANG_TYPE(Atomic);
-      UNSUPPORTED_CLANG_TYPE(Pipe);
-      UNSUPPORTED_CLANG_TYPE(DependentVector);
-      UNSUPPORTED_CLANG_TYPE(MacroQualified);
-    }
+  case clang::Type::t:   \
+    return BuildNodeSetFor##t(clang::cast<t##Type>(T));
+  // We only care about leaves in the type hierarchy (eg, we shouldn't match
+  // on Reference, but instead on LValueReference or RValueReference).
+  switch (T.getTypeClass()) {
+    DELEGATE_TYPE(Builtin);           // Leaf.
+    DELEGATE_TYPE(Enum);              // Leaf.
+    DELEGATE_TYPE(TemplateTypeParm);  // Leaf.
+    DELEGATE_TYPE(Record);            // Leaf.
+    DELEGATE_TYPE(ObjCInterface);     // Leaf.
+    DELEGATE_TYPE(ObjCObjectPointer);
+    DELEGATE_TYPE(ObjCTypeParam);
+    DELEGATE_TYPE(ObjCObject);
+    DELEGATE_TYPE(Pointer);
+    DELEGATE_TYPE(MemberPointer);
+    DELEGATE_TYPE(LValueReference);
+    DELEGATE_TYPE(RValueReference);
+    DELEGATE_TYPE(Auto);
+    DELEGATE_TYPE(DeducedTemplateSpecialization);
+    DELEGATE_TYPE(ConstantArray);
+    DELEGATE_TYPE(IncompleteArray);
+    DELEGATE_TYPE(DependentSizedArray);
+    DELEGATE_TYPE(FunctionProto);
+    DELEGATE_TYPE(FunctionNoProto);
+    DELEGATE_TYPE(Paren);
+    DELEGATE_TYPE(Typedef);
+    DELEGATE_TYPE(Decltype);
+    DELEGATE_TYPE(Elaborated);
+    // "Within an instantiated template, all template type parameters have
+    // been replaced with these. They are used solely to record that a type
+    // was originally written as a template type parameter; therefore they are
+    // never canonical."
+    DELEGATE_TYPE(SubstTemplateTypeParm);
+    DELEGATE_TYPE(InjectedClassName);
+    DELEGATE_TYPE(DependentName);
+    DELEGATE_TYPE(PackExpansion);
+    DELEGATE_TYPE(BlockPointer);
+    DELEGATE_TYPE(TemplateSpecialization);
+    DELEGATE_TYPE(Attributed);
+    DELEGATE_TYPE(DependentAddressSpace);
+    UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
+    UNSUPPORTED_CLANG_TYPE(Complex);
+    UNSUPPORTED_CLANG_TYPE(VariableArray);
+    UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
+    UNSUPPORTED_CLANG_TYPE(Vector);
+    UNSUPPORTED_CLANG_TYPE(ExtVector);
+    UNSUPPORTED_CLANG_TYPE(Adjusted);
+    UNSUPPORTED_CLANG_TYPE(Decayed);
+    UNSUPPORTED_CLANG_TYPE(TypeOfExpr);
+    UNSUPPORTED_CLANG_TYPE(TypeOf);
+    UNSUPPORTED_CLANG_TYPE(UnresolvedUsing);
+    UNSUPPORTED_CLANG_TYPE(UnaryTransform);
+    // "When a pack expansion in the source code contains multiple parameter
+    // packs and those parameter packs correspond to different levels of
+    // template parameter lists, this type node is used to represent a
+    // template type parameter pack from an outer level, which has already had
+    // its argument pack substituted but that still lives within a pack
+    // expansion that itself could not be instantiated. When actually
+    // performing a substitution into that pack expansion (e.g., when all
+    // template parameters have corresponding arguments), this type will be
+    // replaced with the SubstTemplateTypeParmType at the current pack
+    // substitution index."
+    UNSUPPORTED_CLANG_TYPE(SubstTemplateTypeParmPack);
+    UNSUPPORTED_CLANG_TYPE(Atomic);
+    UNSUPPORTED_CLANG_TYPE(Pipe);
+    UNSUPPORTED_CLANG_TYPE(DependentVector);
+    UNSUPPORTED_CLANG_TYPE(MacroQualified);
+  }
 #undef UNSUPPORTED_CLANG_TYPE
 #undef DELEGATE_TYPE
-  }();
-  return (TypeNodes[Key] = Nodes);
 }
 
 absl::optional<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdForObjCProtocols(clang::ObjCObjectTypeLoc TL) {
-  if (TL.getTypePtr()->getInterface()) {
-    if (auto BaseId = BuildNodeIdForType(TL.getBaseLoc())) {
-      return BuildNodeIdForObjCProtocols(*BaseId, TL.getTypePtr());
+IndexerASTVisitor::BuildNodeIdForObjCProtocols(const clang::ObjCObjectType& T) {
+  if (T.getInterface()) {
+    if (auto BaseId = BuildNodeIdForType(T.getBaseType())) {
+      return BuildNodeIdForObjCProtocols(
+          BuildNodeIdsForObjCProtocols(*BaseId, T));
     } else {
       return absl::nullopt;
     }
   } else {
-    return BuildNodeIdForObjCProtocols(TL.getTypePtr());
+    return BuildNodeIdForObjCProtocols(BuildNodeIdsForObjCProtocols(T));
   }
+}
+
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
+    absl::Span<const GraphObserver::NodeId> ProtocolIds) {
+  if (ProtocolIds.empty()) {
+    return Observer.getNodeIdForBuiltinType("id");
+  } else if (ProtocolIds.size() == 1) {
+    // We have something like id<P1>. This is a special case of the following
+    // code that handles id<P1, P2> because *this* case can skip the
+    // intermediate union tapp.
+    return ProtocolIds.front();
+  }
+  // Create/find the Union node.
+  auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
+  return Observer.recordTappNode(UnionTApp, ProtocolIds);
 }
 
 // Base case where we don't have a separate BaseType to contend with
 // (BaseType is just an `id` node).
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
-    const ObjCObjectType* T) {
+std::vector<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdsForObjCProtocols(const ObjCObjectType& T) {
   // Use a multimap since it is sorted by key and we want our nodes sorted by
   // their (uncompressed) name. We want the items sorted by the original class
   // name because the user should be able to write down a union type
   // for the verifier and they can only do that if they know the order in
   // which the types will be passed as parameters.
   std::multimap<std::string, GraphObserver::NodeId> ProtocolNodes;
-  for (ObjCProtocolDecl* P : T->getProtocols()) {
+  for (ObjCProtocolDecl* P : T.getProtocols()) {
     ProtocolNodes.insert({P->getNameAsString(), BuildNodeIdForDecl(P)});
   }
-  if (ProtocolNodes.empty()) {
-    return Observer.getNodeIdForBuiltinType("id");
-  } else if (ProtocolNodes.size() == 1) {
-    // We have something like id<P1>. This is a special case of the following
-    // code that handles id<P1, P2> because *this* case can skip the
-    // intermediate union tapp.
-    return ProtocolNodes.begin()->second;
-  }
-  // We have something like id<P1, P2>  union of types P1 and P2.
   std::vector<GraphObserver::NodeId> ProtocolIds;
   ProtocolIds.reserve(ProtocolNodes.size());
   for (const auto& PN : ProtocolNodes) {
     ProtocolIds.push_back(PN.second);
   }
-  // Create/find the Union node.
-  auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
-  return Observer.recordTappNode(UnionTApp, ProtocolIds);
+  return ProtocolIds;
 }
 
-GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForObjCProtocols(
-    GraphObserver::NodeId BaseType, const ObjCObjectType* T) {
-  // Use a multimap since it is sorted by key and we want our nodes sorted by
-  // their (uncompressed) name. We want the items sorted by the original class
-  // name because the user should be able to write down a union type
-  // for the verifier and they can only do that if they know the order in
-  // which the types will be passed as parameters.
-  std::multimap<std::string, GraphObserver::NodeId> ProtocolNodes;
-  for (ObjCProtocolDecl* P : T->getProtocols()) {
-    ProtocolNodes.insert({P->getNameAsString(), BuildNodeIdForDecl(P)});
-  }
-  if (ProtocolNodes.empty()) {
-    return BaseType;
-  }
-  // We have something like id<P1, P2> or P1<P2>, which means this is a union
-  // of types P1 and P2.
-  std::vector<GraphObserver::NodeId> ProtocolIds;
-  ProtocolIds.reserve(ProtocolNodes.size() + 1);
-  ProtocolIds.push_back(BaseType);
-  for (const auto& PN : ProtocolNodes) {
-    ProtocolIds.push_back(PN.second);
-  }
-  // Create/find the Union node.
-  auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
-  return Observer.recordTappNode(UnionTApp, ProtocolIds);
+std::vector<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdsForObjCProtocols(GraphObserver::NodeId BaseType,
+                                                const ObjCObjectType& T) {
+  auto ProtocolIds = BuildNodeIdsForObjCProtocols(T);
+  ProtocolIds.insert(ProtocolIds.begin(), BaseType);
+  return ProtocolIds;
 }
 
 // This is the synthesize statement.
