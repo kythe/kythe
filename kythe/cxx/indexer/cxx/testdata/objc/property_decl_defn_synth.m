@@ -1,4 +1,4 @@
-// Checks that Objective-C synthezied properties are declared and defined.
+// Checks that Objective-C synthesized properties are declared and defined.
 
 //- @Box defines/binding BoxDecl
 //- BoxDecl.node/kind record
