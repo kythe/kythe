@@ -1,5 +1,40 @@
 # Release Notes
 
+## [v0.0.43] - 2020-03-10
+
+#### Bug Fixes
+
+*   update to latest bazel version (#4394) ([d9e92d69](https://github.com/kythe/kythe/commit/d9e92d698303bc5b654b6eec855cf5e56e9ca298))
+* **bazel extractor:**  add missing deps to docker image (#4424) ([79e8f548](https://github.com/kythe/kythe/commit/79e8f54870a3fa91c4b884f11a80e1298436fe4c))
+* **bazel-extractor:**  update docker image for c++17 (#4422) ([0dba85b3](https://github.com/kythe/kythe/commit/0dba85b338c8721e7d2ab89fd803245f33862f0f))
+* **bazel_go_extractor:**  record canonical importpath for archives (#4425) ([9f999295](https://github.com/kythe/kythe/commit/9f99929540d712f534425e15d1b9016d3589f4f1))
+* **build:**
+  *  add dep for new version of bazelisk (#4420) ([628725a2](https://github.com/kythe/kythe/commit/628725a2d853f2415bad2f51881f4c1e13ed3b97))
+  *  fix uses of empty globs (#4386) ([f36577f3](https://github.com/kythe/kythe/commit/f36577f32fcdfbc6c6b3da1d7058e13f59acfaea))
+* **cmake docs:**  make output directory before extracting (#4409) ([2ceb0305](https://github.com/kythe/kythe/commit/2ceb03051225c83b43aae688440e4bcaab12a42c))
+* **cxx_common:**  migrate to absl::Status (#4404) ([c9ecd628](https://github.com/kythe/kythe/commit/c9ecd62893325bfbbb2a6783dc8bd133a1f02c7b))
+* **cxx_indexer:**
+  *  avoid allocating TypeSourceInfo for type ids (#4429) ([630b56db](https://github.com/kythe/kythe/commit/630b56db0a0d7364a88fbd4221d240d1ed4f5fa8))
+  *  refactor TypeLoc visitation into separate class (#4415) ([ed8cc51e](https://github.com/kythe/kythe/commit/ed8cc51e736737911ecfc6c59707d52649abc1ce))
+  *  refactor TypeLoc visitation into separate class (#4407) ([8e0da974](https://github.com/kythe/kythe/commit/8e0da974a179fcc5347e9e8b3931a18414158773))
+  *  emit ref to class from ctor (#4400) ([3a9b2a7c](https://github.com/kythe/kythe/commit/3a9b2a7c8499eaaf2001792a31b3b43ad58f10dc))
+* **docs:**
+  *  improve formatting of gradle extraction example (#4391) ([fe87355c](https://github.com/kythe/kythe/commit/fe87355c76e7b23349a6c452cd02175acd2b4de5))
+  *  s/gradle.build/build.gradle/ (#4398) ([3f1549c5](https://github.com/kythe/kythe/commit/3f1549c504191c4adbd3610521d544331963f77b))
+* **objc_tests:**  run objc tests on more platforms (#4426) ([9ddf0176](https://github.com/kythe/kythe/commit/9ddf017685d189ede377d9a4ae9dc925e1a4f75e))
+* **release:**  don't include the current working directory in release (#4431) ([4b59891c](https://github.com/kythe/kythe/commit/4b59891cf3633bd75a5ef5f4a570c214392a4036))
+* **runextractor:**  set --build_file default to build.gradle (#4393) ([eff63cb2](https://github.com/kythe/kythe/commit/eff63cb2f333f030bee12beada233c5c146100b1))
+
+#### Features
+
+* **bazel_toolchains:**  add update script (#4417) ([21b38cbd](https://github.com/kythe/kythe/commit/21b38cbdc7b42055393f3e34d3f243fd65886d3f))
+* **build:**  switch to an autoconfigured ubuntu 18.04 image and C++17 (#4385) ([509d7c61](https://github.com/kythe/kythe/commit/509d7c618a5203682566fbcf5fc0572a87dddef2))
+* **cxx_indexer:**  allow using compilation corpus instead of empty (#4418) ([4cb88737](https://github.com/kythe/kythe/commit/4cb8873793db76e8329875e3a588c66aec4af366))
+* **example:**  recommend a way to handle TypeScript/&c-style modules (#4357) ([9e9a6571](https://github.com/kythe/kythe/commit/9e9a6571d2d557b4fd84c3a3e0c6a2c98d28d985))
+* **go_indexer:**  support GeneratedCodeInfo .meta textproto files (#4414) ([7c44d34c](https://github.com/kythe/kythe/commit/7c44d34c8a4b92d2821dbf9abaf672fa07c20791))
+* **java_extractor:**  attribute corpus based on sources if unambiguous (#4399) ([7f3868cf](https://github.com/kythe/kythe/commit/7f3868cf9c6fc6dc34646a4ef15affdbdd054bef))
+* **runextractor:**  improved debug info for maven subcommand (#4397) ([0f012925](https://github.com/kythe/kythe/commit/0f01292596a0dba056d7ebac3b9848f37ba678bc))
+
 ## [v0.0.42] - 2020-02-19
 
 #### Bug Fixes
@@ -839,7 +874,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.42...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.43...HEAD
+[v0.0.43] https://github.com/kythe/kythe/compare/v0.0.42...v0.0.43
 [v0.0.42] https://github.com/kythe/kythe/compare/v0.0.41...v0.0.42
 [v0.0.41] https://github.com/kythe/kythe/compare/v0.0.40...v0.0.41
 [v0.0.40] https://github.com/kythe/kythe/compare/v0.0.39...v0.0.40
