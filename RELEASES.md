@@ -1,5 +1,23 @@
 # Release Notes
 
+## [v0.0.43] - 2020-03-10
+
+#### Bug Fixes
+
+* **bazel_go_extractor:**  record canonical importpath for archives (#4425) ([9f999295](https://github.com/kythe/kythe/commit/9f99929540d712f534425e15d1b9016d3589f4f1))
+* **cmake docs:**  make output directory before extracting (#4409) ([2ceb0305](https://github.com/kythe/kythe/commit/2ceb03051225c83b43aae688440e4bcaab12a42c))
+* **cxx_indexer:**
+  *  emit ref to class from ctor (#4400) ([3a9b2a7c](https://github.com/kythe/kythe/commit/3a9b2a7c8499eaaf2001792a31b3b43ad58f10dc))
+* **objc_tests:**  run objc tests on more platforms (#4426) ([9ddf0176](https://github.com/kythe/kythe/commit/9ddf017685d189ede377d9a4ae9dc925e1a4f75e))
+* **runextractor:**  set --build_file default to build.gradle (#4393) ([eff63cb2](https://github.com/kythe/kythe/commit/eff63cb2f333f030bee12beada233c5c146100b1))
+
+#### Features
+
+* **build:**  switch to an autoconfigured ubuntu 18.04 image and C++17 (#4385) ([509d7c61](https://github.com/kythe/kythe/commit/509d7c618a5203682566fbcf5fc0572a87dddef2))
+* **example:**  recommend a way to handle TypeScript/&c-style modules (#4357) ([9e9a6571](https://github.com/kythe/kythe/commit/9e9a6571d2d557b4fd84c3a3e0c6a2c98d28d985))
+* **go_indexer:**  support GeneratedCodeInfo .meta textproto files (#4414) ([7c44d34c](https://github.com/kythe/kythe/commit/7c44d34c8a4b92d2821dbf9abaf672fa07c20791))
+* **java_extractor:**  attribute corpus based on sources if unambiguous (#4399) ([7f3868cf](https://github.com/kythe/kythe/commit/7f3868cf9c6fc6dc34646a4ef15affdbdd054bef))
+
 ## [v0.0.42] - 2020-02-19
 
 #### Bug Fixes
@@ -839,7 +857,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.42...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.43...HEAD
+[v0.0.43] https://github.com/kythe/kythe/compare/v0.0.42...v0.0.43
 [v0.0.42] https://github.com/kythe/kythe/compare/v0.0.41...v0.0.42
 [v0.0.41] https://github.com/kythe/kythe/compare/v0.0.40...v0.0.41
 [v0.0.40] https://github.com/kythe/kythe/compare/v0.0.39...v0.0.40
