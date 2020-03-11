@@ -361,16 +361,19 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   static boolean fromJDK(@Nullable Symbol sym) {
-    if (sym == null
-        || sym.enclClass() == null
-        || sym.enclClass().classfile == null
-        || sym.enclClass().sourcefile != null) {
+    if (sym == null) {
       return false;
     }
-    String cls = sym.enclClass().className();
+    ClassSymbol enclClass = sym.enclClass();
+    if (enclClass == null
+        || enclClass.classfile == null
+        || enclClass.classfile.getKind() == JavaFileObject.Kind.SOURCE) {
+      return false;
+    }
+    String cls = enclClass.className();
     // For performance, first check common package prefixes, then delegate
     // to the slower loadedByJDKClassLoader() method.
-    return SignatureGenerator.isArrayHelperClass(sym.enclClass())
+    return SignatureGenerator.isArrayHelperClass(enclClass)
         || cls.startsWith("java.")
         || cls.startsWith("javax.")
         || cls.startsWith("com.sun.")
