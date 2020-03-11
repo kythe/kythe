@@ -1201,6 +1201,33 @@ public class E {
 }
 --------------------------------------------------------------------------------
 
+[[refid]]
+ref/id
+~~~~~~~~~~~
+Brief description::
+  A *ref/name* B if A does not *ref* or *define* B but A's contents are
+  determined by the identifier of B.
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+
+[kythe,C++,"Constructors are named after their classes."]
+--------------------------------------------------------------------------------
+//- @C defines/binding ClassC
+class C {
+  //- @C defines/binding CtorC
+  //- // @C ref/id ClassC
+  C(int i);
+};
+
+//- @"C(1)" ref/call CtorC
+//- // @C ref/id ClassC
+void f() { auto c = C(1); }
+--------------------------------------------------------------------------------
+
 [[refincludes]]
 ref/includes
 ~~~~~~~~~~~~
