@@ -361,7 +361,10 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   static boolean fromJDK(@Nullable Symbol sym) {
-    if (sym == null || sym.enclClass() == null) {
+    if (sym == null
+        || sym.enclClass() == null
+        || sym.enclClass().classfile == null
+        || sym.enclClass().sourcefile != null) {
       return false;
     }
     String cls = sym.enclClass().className();
