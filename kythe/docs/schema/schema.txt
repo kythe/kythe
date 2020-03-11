@@ -1205,8 +1205,8 @@ public class E {
 ref/id
 ~~~~~~~~~~~
 Brief description::
-  A *ref/name* B if A does not *ref* or *define* B but A's contents are
-  determined by the identifier of B.
+  A *ref/id* B if A does not otherwise *ref* or *define* B but the bytes of A's
+  span are determined by the identifier of B.
 Points from::
   anchors
 Points toward::
@@ -1224,6 +1224,7 @@ class C {
 };
 
 //- @"C(1)" ref/call CtorC
+//- @C ref CtorC
 //- // @C ref/id ClassC
 void f() { auto c = C(1); }
 --------------------------------------------------------------------------------
