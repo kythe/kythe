@@ -1214,7 +1214,7 @@ Points toward::
 Ordinals are used::
   never
 
-[kythe,C++,"Constructors are named after their classes."]
+[kythe,C++,"Constructors and destructors are named after their classes."]
 --------------------------------------------------------------------------------
 //- @C defines/binding ClassC
 class C {
