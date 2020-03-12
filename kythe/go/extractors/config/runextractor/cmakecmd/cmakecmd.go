@@ -28,6 +28,7 @@ import (
 
 	"kythe.io/kythe/go/extractors/config/runextractor/compdb"
 	"kythe.io/kythe/go/util/cmdutil"
+	"kythe.io/kythe/go/util/flagutil"
 
 	"github.com/google/subcommands"
 	"github.com/google/uuid"
@@ -36,9 +37,10 @@ import (
 type cmakeCommand struct {
 	cmdutil.Info
 
-	extractor string
-	buildDir  string
-	sourceDir string
+	extractor      string
+	buildDir       string
+	sourceDir      string
+	extraCmakeArgs flagutil.StringList
 }
 
 // New creates a new subcommand for running cmake extraction.
@@ -54,6 +56,7 @@ func (c *cmakeCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.extractor, "extractor", "", "A required path to the extractor binary to use.")
 	fs.StringVar(&c.sourceDir, "sourcedir", ".", "A required path to the repository root. Defaults to the current directory.")
 	fs.StringVar(&c.buildDir, "builddir", "", "An optional path to the directory in which to build. If empty, defaults to a unique subdirectory of sourcedir.")
+	fs.Var(&c.extraCmakeArgs, "extra_cmake_args", "A comma-separated list of extra arguments to pass to CMake.")
 }
 
 func (c *cmakeCommand) verifyFlags() error {
@@ -109,7 +112,9 @@ func (c *cmakeCommand) Execute(ctx context.Context, fs *flag.FlagSet, args ...in
 
 	// The Kythe extractor is clang based, so tell cmake to use clang so the right
 	// commands are generated.
-	if err := runIn(exec.CommandContext(ctx, "cmake", "-DCMAKE_CXX_COMPILER=clang++", "-DCMAKE_C_COMPILER=clang", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", sourceDir), buildDir); err != nil {
+	cmakeArgs := []string{"-DCMAKE_CXX_COMPILER=clang++", "-DCMAKE_C_COMPILER=clang", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", sourceDir}
+	cmakeArgs = append(cmakeArgs, c.extraCmakeArgs...)
+	if err := runIn(exec.CommandContext(ctx, "cmake", cmakeArgs...), buildDir); err != nil {
 		return c.Fail("Error configuring cmake: %v", err)
 	}
 
