@@ -354,8 +354,6 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
 
   // Messages are record types.
   if (!Expr->getType()->isRecordType()) {
-    LOG(ERROR) << "Found a proto that is not a record type: "
-               << Expr->getType().getAsString();
     return;
   }
 
@@ -373,12 +371,13 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
   const clang::StringLiteral* Literal = nullptr;
   if (const auto* const HelperCallExpr =
           clang::dyn_cast<clang::CallExpr>(ParseProtoExpr)) {
-    // We're matching against a call to ParseTextProtoOrDieAt, a function
+    // We're matching against a call to ParseTextProtoOrDie, a function
     // template that returns some proto type T via ParseProtoHelper's
-    // operator() (which performs the actual message parsing).
+    // operator T() (which performs the actual message parsing).
     // Get the inner stringpiece.
-    if (HelperCallExpr->getNumArgs() != 4) {
-      LOG(ERROR) << "Unknown signature for ParseTextProtoOrDieAt";
+    if (HelperCallExpr->getNumArgs() != 3) {
+      LOG(ERROR) << "Unknown signature for ParseTextProtoOrDie";
+      HelperCallExpr->dump();
       return;
     }
     const auto* const StringpieceCtorExpr =
