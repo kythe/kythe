@@ -6,7 +6,7 @@ class string;
 
 int main() {
   const some::package::Outer msg =
-      ::proto2::contrib::parse_proto::ParseTextProtoOrDieAt(
+      ::proto2::contrib::parse_proto::ParseTextProtoOrDie(
           //- @inner ref InnerAccessor
           " inner {"
           //- @my_int ref MyIntAccessor
@@ -14,7 +14,7 @@ int main() {
           " }"
           //- @my_string ref MyStringAccessor
           "	my_string: 'blah'",
-          false, __FILE__, __LINE__);
+          {}, {});
   //- @my_string ref MyStringAccessor
   msg.my_string();
   //- @inner ref InnerAccessor
