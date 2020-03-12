@@ -43,12 +43,12 @@ git_llvm_repository = repository_rule(
     implementation = _git,
     attrs = {
         "_commit": attr.string(
-            default = "84bd26afb62d6b6f3f7e22dd3b76aac65ceee023",
+            default = "bbe6764711b6ca5dff8046ed1aec867d67aafb02",
         ),
         "_sha256": attr.string(
             # Make sure to update this along with the commit as its presence will cache the download,
             # even if the rules or commit change.
-            default = "4db9df2be2f1442369fd2848af1da707e49be250358fd451fbe4beb9cd55ceb8",
+            default = "5158a93b2846e58a541b5cb0efa9a711b66d28d277d90141af6b7d2f5e48c1c3",
         ),
     },
 )
