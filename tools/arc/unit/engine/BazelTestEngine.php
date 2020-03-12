@@ -115,6 +115,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
 
     $tag_filters = join(",", array_map(function($s) { return "-$s"; }, self::$omit_tags));
     $future = new ExecFuture($this->bazelCommand("test", array_merge([
+        "--config=prepush",
         "--verbose_failures",
         "--test_tag_filters=$tag_filters",
         "--noshow_loading_progress",
