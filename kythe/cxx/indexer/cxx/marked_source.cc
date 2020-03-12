@@ -20,6 +20,7 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/PrettyPrinter.h"
+#include "clang/Basic/FileManager.h"
 #include "clang/Format/Format.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Sema/Template.h"
