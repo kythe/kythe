@@ -377,7 +377,6 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
     // Get the inner stringpiece.
     if (HelperCallExpr->getNumArgs() != 3) {
       LOG(ERROR) << "Unknown signature for ParseTextProtoOrDie";
-      HelperCallExpr->dump();
       return;
     }
     const auto* const StringpieceCtorExpr =
