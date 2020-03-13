@@ -191,7 +191,9 @@ func init() {
 	proto.RegisterType((*FindReply_Match)(nil), "kythe.proto.FindReply.Match")
 }
 
-func init() { proto.RegisterFile("kythe/proto/identifier.proto", fileDescriptor_e4e74f173922aaa6) }
+func init() {
+	proto.RegisterFile("kythe/proto/identifier.proto", fileDescriptor_e4e74f173922aaa6)
+}
 
 var fileDescriptor_e4e74f173922aaa6 = []byte{
 	// 325 bytes of a gzipped FileDescriptorProto

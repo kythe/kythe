@@ -1583,7 +1583,9 @@ func init() {
 	proto.RegisterType((*DocumentationReply_Document)(nil), "kythe.proto.DocumentationReply.Document")
 }
 
-func init() { proto.RegisterFile("kythe/proto/xref.proto", fileDescriptor_c0b69b838b524f8a) }
+func init() {
+	proto.RegisterFile("kythe/proto/xref.proto", fileDescriptor_c0b69b838b524f8a)
+}
 
 var fileDescriptor_c0b69b838b524f8a = []byte{
 	// 2163 bytes of a gzipped FileDescriptorProto

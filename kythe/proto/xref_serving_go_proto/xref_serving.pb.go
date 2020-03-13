@@ -1374,7 +1374,9 @@ func init() {
 	proto.RegisterType((*CrossReferences_NodeDefinition)(nil), "kythe.proto.serving.xrefs.CrossReferences.NodeDefinition")
 }
 
-func init() { proto.RegisterFile("kythe/proto/xref_serving.proto", fileDescriptor_4321824b5a70238a) }
+func init() {
+	proto.RegisterFile("kythe/proto/xref_serving.proto", fileDescriptor_4321824b5a70238a)
+}
 
 var fileDescriptor_4321824b5a70238a = []byte{
 	// 1172 bytes of a gzipped FileDescriptorProto

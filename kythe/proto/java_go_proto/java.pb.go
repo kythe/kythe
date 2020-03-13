@@ -208,7 +208,9 @@ func init() {
 	proto.RegisterType((*JavaDetails)(nil), "kythe.proto.JavaDetails")
 }
 
-func init() { proto.RegisterFile("kythe/proto/java.proto", fileDescriptor_4e5838ccc9a1d029) }
+func init() {
+	proto.RegisterFile("kythe/proto/java.proto", fileDescriptor_4e5838ccc9a1d029)
+}
 
 var fileDescriptor_4e5838ccc9a1d029 = []byte{
 	// 298 bytes of a gzipped FileDescriptorProto

@@ -410,7 +410,9 @@ func init() {
 	proto.RegisterType((*LogRequest)(nil), "kythe.driver.LogRequest")
 }
 
-func init() { proto.RegisterFile("kythe/proto/driver.proto", fileDescriptor_269be22dd770bd8b) }
+func init() {
+	proto.RegisterFile("kythe/proto/driver.proto", fileDescriptor_269be22dd770bd8b)
+}
 
 var fileDescriptor_269be22dd770bd8b = []byte{
 	// 368 bytes of a gzipped FileDescriptorProto

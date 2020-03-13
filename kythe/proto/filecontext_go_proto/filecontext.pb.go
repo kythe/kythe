@@ -167,7 +167,9 @@ func init() {
 	proto.RegisterType((*ContextDependentVersion_Row)(nil), "kythe.proto.ContextDependentVersion.Row")
 }
 
-func init() { proto.RegisterFile("kythe/proto/filecontext.proto", fileDescriptor_3706b0669a30df70) }
+func init() {
+	proto.RegisterFile("kythe/proto/filecontext.proto", fileDescriptor_3706b0669a30df70)
+}
 
 var fileDescriptor_3706b0669a30df70 = []byte{
 	// 270 bytes of a gzipped FileDescriptorProto

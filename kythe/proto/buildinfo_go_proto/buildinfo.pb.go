@@ -79,7 +79,9 @@ func init() {
 	proto.RegisterType((*BuildDetails)(nil), "kythe.proto.BuildDetails")
 }
 
-func init() { proto.RegisterFile("kythe/proto/buildinfo.proto", fileDescriptor_eab47dfb43d1d01f) }
+func init() {
+	proto.RegisterFile("kythe/proto/buildinfo.proto", fileDescriptor_eab47dfb43d1d01f)
+}
 
 var fileDescriptor_eab47dfb43d1d01f = []byte{
 	// 175 bytes of a gzipped FileDescriptorProto

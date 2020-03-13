@@ -381,7 +381,9 @@ func init() {
 	proto.RegisterMapType((map[string]int64)(nil), "kythe.proto.EdgesReply.TotalEdgesByKindEntry")
 }
 
-func init() { proto.RegisterFile("kythe/proto/graph.proto", fileDescriptor_fdd66e9c25a95983) }
+func init() {
+	proto.RegisterFile("kythe/proto/graph.proto", fileDescriptor_fdd66e9c25a95983)
+}
 
 var fileDescriptor_fdd66e9c25a95983 = []byte{
 	// 598 bytes of a gzipped FileDescriptorProto

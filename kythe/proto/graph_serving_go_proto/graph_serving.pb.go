@@ -314,7 +314,9 @@ func init() {
 	proto.RegisterType((*Edges_Target)(nil), "kythe.proto.serving.graph.Edges.Target")
 }
 
-func init() { proto.RegisterFile("kythe/proto/graph_serving.proto", fileDescriptor_6a9dc9f3ff73c6a9) }
+func init() {
+	proto.RegisterFile("kythe/proto/graph_serving.proto", fileDescriptor_6a9dc9f3ff73c6a9)
+}
 
 var fileDescriptor_6a9dc9f3ff73c6a9 = []byte{
 	// 380 bytes of a gzipped FileDescriptorProto
