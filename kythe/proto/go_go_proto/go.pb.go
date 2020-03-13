@@ -151,7 +151,9 @@ func init() {
 	proto.RegisterType((*GoPackageInfo)(nil), "kythe.proto.GoPackageInfo")
 }
 
-func init() { proto.RegisterFile("kythe/proto/go.proto", fileDescriptor_01b832ac89a99f34) }
+func init() {
+	proto.RegisterFile("kythe/proto/go.proto", fileDescriptor_01b832ac89a99f34)
+}
 
 var fileDescriptor_01b832ac89a99f34 = []byte{
 	// 250 bytes of a gzipped FileDescriptorProto

@@ -34,13 +34,12 @@ def kythe_rule_repositories():
     )
 
     maybe(
-        http_archive,
+        # TODO(shahms): Update to a release version >= 0.22.2
+        github_archive,
         name = "io_bazel_rules_go",
-        urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.21.3/rules_go-v0.21.3.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.21.3/rules_go-v0.21.3.tar.gz",
-        ],
-        sha256 = "af04c969321e8f428f63ceb73463d6ea817992698974abeff0161e069cd08bd6",
+        repo_name = "bazelbuild/rules_go",
+        commit = "2a0e3a07e9ed9aa9b7afd1a222638ba52166e52d",
+        sha256 = "9f405b66fa5b2c5317d46ff8b0954a12961736e8e806f665521f96d90a5b58eb",
     )
 
     maybe(

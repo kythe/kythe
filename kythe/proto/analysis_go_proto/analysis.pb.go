@@ -857,7 +857,9 @@ func init() {
 	proto.RegisterType((*IndexedCompilation_Index)(nil), "kythe.proto.IndexedCompilation.Index")
 }
 
-func init() { proto.RegisterFile("kythe/proto/analysis.proto", fileDescriptor_8e4ea7eca60afe48) }
+func init() {
+	proto.RegisterFile("kythe/proto/analysis.proto", fileDescriptor_8e4ea7eca60afe48)
+}
 
 var fileDescriptor_8e4ea7eca60afe48 = []byte{
 	// 1068 bytes of a gzipped FileDescriptorProto

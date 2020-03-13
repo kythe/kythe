@@ -405,7 +405,9 @@ func init() {
 	proto.RegisterType((*LinkReply)(nil), "kythe.proto.LinkReply")
 }
 
-func init() { proto.RegisterFile("kythe/proto/link.proto", fileDescriptor_bd0775c667ce666e) }
+func init() {
+	proto.RegisterFile("kythe/proto/link.proto", fileDescriptor_bd0775c667ce666e)
+}
 
 var fileDescriptor_bd0775c667ce666e = []byte{
 	// 536 bytes of a gzipped FileDescriptorProto

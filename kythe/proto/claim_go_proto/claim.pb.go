@@ -72,7 +72,9 @@ func init() {
 	proto.RegisterType((*ClaimAssignment)(nil), "kythe.proto.ClaimAssignment")
 }
 
-func init() { proto.RegisterFile("kythe/proto/claim.proto", fileDescriptor_4321fa1d8e7ef1ee) }
+func init() {
+	proto.RegisterFile("kythe/proto/claim.proto", fileDescriptor_4321fa1d8e7ef1ee)
+}
 
 var fileDescriptor_4321fa1d8e7ef1ee = []byte{
 	// 191 bytes of a gzipped FileDescriptorProto

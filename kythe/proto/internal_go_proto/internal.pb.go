@@ -644,7 +644,9 @@ func init() {
 	proto.RegisterType((*Path_Edge)(nil), "kythe.proto.internal.Path.Edge")
 }
 
-func init() { proto.RegisterFile("kythe/proto/internal.proto", fileDescriptor_d090b936cefd43c7) }
+func init() {
+	proto.RegisterFile("kythe/proto/internal.proto", fileDescriptor_d090b936cefd43c7)
+}
 
 var fileDescriptor_d090b936cefd43c7 = []byte{
 	// 799 bytes of a gzipped FileDescriptorProto

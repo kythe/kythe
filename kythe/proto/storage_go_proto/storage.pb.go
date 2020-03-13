@@ -751,7 +751,9 @@ func init() {
 	proto.RegisterType((*VNameRewriteRules)(nil), "kythe.proto.VNameRewriteRules")
 }
 
-func init() { proto.RegisterFile("kythe/proto/storage.proto", fileDescriptor_b1438903ecc9440e) }
+func init() {
+	proto.RegisterFile("kythe/proto/storage.proto", fileDescriptor_b1438903ecc9440e)
+}
 
 var fileDescriptor_b1438903ecc9440e = []byte{
 	// 554 bytes of a gzipped FileDescriptorProto

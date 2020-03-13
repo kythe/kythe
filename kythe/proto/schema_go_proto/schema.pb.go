@@ -935,7 +935,9 @@ func init() {
 	proto.RegisterExtension(E_Metadata)
 }
 
-func init() { proto.RegisterFile("kythe/proto/schema.proto", fileDescriptor_a9abda27437812b0) }
+func init() {
+	proto.RegisterFile("kythe/proto/schema.proto", fileDescriptor_a9abda27437812b0)
+}
 
 var fileDescriptor_a9abda27437812b0 = []byte{
 	// 2555 bytes of a gzipped FileDescriptorProto

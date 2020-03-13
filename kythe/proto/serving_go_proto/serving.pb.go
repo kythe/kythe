@@ -1917,7 +1917,9 @@ func init() {
 	proto.RegisterType((*Callgraph)(nil), "kythe.proto.serving.Callgraph")
 }
 
-func init() { proto.RegisterFile("kythe/proto/serving.proto", fileDescriptor_fa5eced3c734cc8b) }
+func init() {
+	proto.RegisterFile("kythe/proto/serving.proto", fileDescriptor_fa5eced3c734cc8b)
+}
 
 var fileDescriptor_fa5eced3c734cc8b = []byte{
 	// 1840 bytes of a gzipped FileDescriptorProto

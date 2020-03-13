@@ -21,7 +21,9 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-func init() { proto.RegisterFile("kythe/proto/storage_service.proto", fileDescriptor_67be6a87f67c26cd) }
+func init() {
+	proto.RegisterFile("kythe/proto/storage_service.proto", fileDescriptor_67be6a87f67c26cd)
+}
 
 var fileDescriptor_67be6a87f67c26cd = []byte{
 	// 241 bytes of a gzipped FileDescriptorProto
