@@ -314,7 +314,9 @@ func init() {
 	proto.RegisterType((*DecorationPiece_Definition)(nil), "kythe.proto.pipeline.DecorationPiece.Definition")
 }
 
-func init() { proto.RegisterFile("kythe/proto/pipeline.proto", fileDescriptor_1b726955a4487b4b) }
+func init() {
+	proto.RegisterFile("kythe/proto/pipeline.proto", fileDescriptor_1b726955a4487b4b)
+}
 
 var fileDescriptor_1b726955a4487b4b = []byte{
 	// 461 bytes of a gzipped FileDescriptorProto

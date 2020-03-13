@@ -675,7 +675,9 @@ func init() {
 	proto.RegisterType((*SymbolInfo)(nil), "kythe.proto.common.SymbolInfo")
 }
 
-func init() { proto.RegisterFile("kythe/proto/common.proto", fileDescriptor_4bc2df0444c25309) }
+func init() {
+	proto.RegisterFile("kythe/proto/common.proto", fileDescriptor_4bc2df0444c25309)
+}
 
 var fileDescriptor_4bc2df0444c25309 = []byte{
 	// 947 bytes of a gzipped FileDescriptorProto

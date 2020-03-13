@@ -87,8 +87,10 @@ type CxxCompilationUnitDetails_HeaderSearchDir struct {
 func (m *CxxCompilationUnitDetails_HeaderSearchDir) Reset() {
 	*m = CxxCompilationUnitDetails_HeaderSearchDir{}
 }
-func (m *CxxCompilationUnitDetails_HeaderSearchDir) String() string { return proto.CompactTextString(m) }
-func (*CxxCompilationUnitDetails_HeaderSearchDir) ProtoMessage()    {}
+func (m *CxxCompilationUnitDetails_HeaderSearchDir) String() string {
+	return proto.CompactTextString(m)
+}
+func (*CxxCompilationUnitDetails_HeaderSearchDir) ProtoMessage() {}
 func (*CxxCompilationUnitDetails_HeaderSearchDir) Descriptor() ([]byte, []int) {
 	return fileDescriptor_01bf80ce9e4f99a5, []int{0, 0}
 }
@@ -289,7 +291,9 @@ func init() {
 	proto.RegisterType((*CxxCompilationUnitDetails_StatPath)(nil), "kythe.proto.CxxCompilationUnitDetails.StatPath")
 }
 
-func init() { proto.RegisterFile("kythe/proto/cxx.proto", fileDescriptor_01bf80ce9e4f99a5) }
+func init() {
+	proto.RegisterFile("kythe/proto/cxx.proto", fileDescriptor_01bf80ce9e4f99a5)
+}
 
 var fileDescriptor_01bf80ce9e4f99a5 = []byte{
 	// 418 bytes of a gzipped FileDescriptorProto

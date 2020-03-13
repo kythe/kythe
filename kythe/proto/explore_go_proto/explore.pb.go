@@ -800,7 +800,9 @@ func init() {
 	proto.RegisterMapType((map[string]*Tickets)(nil), "kythe.proto.ChildrenReply.InputToChildrenEntry")
 }
 
-func init() { proto.RegisterFile("kythe/proto/explore.proto", fileDescriptor_ee5b2ef3873ea484) }
+func init() {
+	proto.RegisterFile("kythe/proto/explore.proto", fileDescriptor_ee5b2ef3873ea484)
+}
 
 var fileDescriptor_ee5b2ef3873ea484 = []byte{
 	// 958 bytes of a gzipped FileDescriptorProto

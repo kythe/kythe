@@ -236,7 +236,9 @@ func init() {
 	proto.RegisterType((*StatusReply_Language)(nil), "kythe.proto.StatusReply.Language")
 }
 
-func init() { proto.RegisterFile("kythe/proto/status_service.proto", fileDescriptor_a6ff3b5f197dffee) }
+func init() {
+	proto.RegisterFile("kythe/proto/status_service.proto", fileDescriptor_a6ff3b5f197dffee)
+}
 
 var fileDescriptor_a6ff3b5f197dffee = []byte{
 	// 357 bytes of a gzipped FileDescriptorProto
