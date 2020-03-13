@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
@@ -287,7 +288,7 @@ public class SignatureGenerator
     if (!typeParams.isEmpty()) {
       Set<TypeVar> typeVars = new HashSet<>();
       for (TypeParameterElement aType : typeParams) {
-        typeVars.add((TypeVar) ((TypeSymbol) aType).type);
+        typeVars.add((TypeVar) ((TypeSymbol) aType).type.stripMetadata());
       }
       boundedVars.addAll(typeVars);
       sb.append("<");
@@ -451,16 +452,16 @@ public class SignatureGenerator
 
   @Override
   public Void visitTypeVar(TypeVar t, StringBuilder sbout) {
-    if (boundedVars.contains(t)) {
+    if (boundedVars.contains((TypeVar) t.stripMetadata())) {
       sbout.append(t.tsym.name);
     } else {
       if (!visitedTypes.containsKey(t)) {
-        boundedVars.add(t);
+        boundedVars.add((TypeVar) t.stripMetadata());
         StringBuilder sb = new StringBuilder();
         t.tsym.owner.accept(this, sb);
         sb.append("~").append(t.tsym.name);
         visitedTypes.put(t, sb.toString());
-        boundedVars.remove(t);
+        boundedVars.remove((TypeVar) t.stripMetadata());
       }
       sbout.append(visitedTypes.get(t));
     }
@@ -505,7 +506,10 @@ public class SignatureGenerator
   public Void visitForAll(ForAll t, StringBuilder sbout) {
     if (!visitedTypes.containsKey(t)) {
       StringBuilder sb = new StringBuilder();
-      List<TypeVar> typeVars = t.getTypeVariables();
+      List<TypeVar> typeVars =
+          t.getTypeVariables().stream()
+              .map(v -> (TypeVar) v.stripMetadata())
+              .collect(Collectors.toList());
       boundedVars.addAll(typeVars);
       visitParameterTypes(t.getParameterTypes(), sb);
       boundedVars.removeAll(typeVars);

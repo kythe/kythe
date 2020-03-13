@@ -470,10 +470,7 @@ java_library(
 java_verifier_test(
     name = "cross_file_xa_test",
     compilation = ":cross_file",
-    verifier_opts = [
-        "--ignore_dups",
-        "--nocheck_for_singletons",  # TODO(schroederc): verify Files.java goals
-    ],
+    verifier_deps = [":files_xa_test"],
 )
 
 java_library(

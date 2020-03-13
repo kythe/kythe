@@ -14,8 +14,26 @@ extract_java(
     visibility = ["//visibility:public"],
 )
 
+java_library(
+    name = "nullable",
+    srcs = ["Nullable.java"],
+)
+
+java_library(
+    name = "nullable_ref",
+    srcs = ["NullableRef.java"],
+    deps = [":nullable"],
+)
+
 java_verifier_test(
     name = "nullable_test",
-    size = "small",
-    srcs = ["Nullable.java"],
+    compilation = ":nullable",
+    indexer_opts = ["--ignore_vname_paths"],
+)
+
+java_verifier_test(
+    name = "nullable_ref_test",
+    compilation = ":nullable_ref",
+    indexer_opts = ["--ignore_vname_paths"],
+    verifier_deps = [":nullable_test"],
 )
