@@ -59,7 +59,7 @@ rest of these instructions assume you have it.
 To install most of the [external dependencies][ext], run
 
 {% highlight bash %}
-for pkg in asciidoc bison brotli go graphviz leveldb node opendk parallel source-highlight wget ; do
+for pkg in asciidoc bison brotli go graphviz leveldb node openjdk parallel source-highlight wget ; do
    brew install $pkg
 done
 
