@@ -1396,10 +1396,10 @@ KytheGraphObserver::getNamespaceTokens(clang::SourceLocation loc) const {
 void KytheGraphObserver::RegisterBuiltins() {
   auto RegisterBuiltin = [&](const std::string& name,
                              const MarkedSource& marked_source) {
-    builtins_.emplace(std::make_pair(
-        name, Builtin{NodeId::CreateUncompressed(getDefaultClaimToken(),
-                                                 name + "#builtin"),
-                      marked_source, false}));
+    builtins_.emplace(name,
+                      Builtin{NodeId::CreateUncompressed(getDefaultClaimToken(),
+                                                         name + "#builtin"),
+                              marked_source, false});
   };
   auto RegisterTokenBuiltin = [&](const std::string& name,
                                   const std::string& token) {

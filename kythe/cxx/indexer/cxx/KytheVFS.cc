@@ -28,7 +28,7 @@ namespace kythe {
 
 static inline std::pair<uint64_t, uint64_t> PairFromUid(
     const llvm::sys::fs::UniqueID& uid) {
-  return std::make_pair(uid.getDevice(), uid.getFile());
+  return {uid.getDevice(), uid.getFile()};
 }
 
 absl::optional<llvm::sys::path::Style>
