@@ -1631,8 +1631,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
       // Prefer arguments as they were written in source files.
       NIDS.reserve(NumArgsAsWritten);
       for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I],
-                                                        EmitRanges::Yes)) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I])) {
           NIDS.push_back(ArgId.value());
         } else {
           CouldGetAllTypes = false;
@@ -1642,8 +1641,7 @@ IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
     } else {
       NIDS.reserve(Args->size());
       for (unsigned I = 0; I < Args->size(); ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(
-                Args->get(I), clang::SourceLocation())) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(Args->get(I))) {
           NIDS.push_back(ArgId.value());
         } else {
           CouldGetAllTypes = false;
@@ -2024,8 +2022,7 @@ IndexerASTVisitor::BuildTemplateArgumentList(ArrayRef<TemplateArgument> Args) {
   std::vector<NodeId> result;
   result.reserve(Args.size());
   for (const auto& Arg : Args) {
-    if (auto ArgId =
-            BuildNodeIdForTemplateArgument(Arg, clang::SourceLocation())) {
+    if (auto ArgId = BuildNodeIdForTemplateArgument(Arg)) {
       result.push_back(*ArgId);
     } else {
       return absl::nullopt;
@@ -2040,7 +2037,7 @@ IndexerASTVisitor::BuildTemplateArgumentList(
   std::vector<NodeId> result;
   result.reserve(Args.size());
   for (const auto& ArgLoc : Args) {
-    if (auto ArgId = BuildNodeIdForTemplateArgument(ArgLoc, EmitRanges::Yes)) {
+    if (auto ArgId = BuildNodeIdForTemplateArgument(ArgLoc)) {
       result.push_back(*ArgId);
     } else {
       return absl::nullopt;
@@ -2911,8 +2908,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     if (ArgsAsWritten) {
       NIDS.reserve(NumArgsAsWritten);
       for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I],
-                                                        EmitRanges::Yes)) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I])) {
           NIDS.push_back(ArgId.value());
         } else {
           CouldGetAllTypes = false;
@@ -2922,8 +2918,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     } else {
       NIDS.reserve(Args->size());
       for (unsigned I = 0; I < Args->size(); ++I) {
-        if (auto ArgId = BuildNodeIdForTemplateArgument(
-                Args->get(I), clang::SourceLocation())) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(Args->get(I))) {
           NIDS.push_back(ArgId.value());
         } else {
           CouldGetAllTypes = false;
@@ -4000,13 +3995,9 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
   return ResultId;
 }
 
-// The duplication here is unfortunate, but `TemplateArgumentLoc` is
-// different enough from `TemplateArgument * SourceLocation` that
-// we can't factor it out.
-
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForTemplateArgument(
-    const clang::TemplateArgument& Arg, clang::SourceLocation L) {
+    const clang::TemplateArgument& Arg) {
   // TODO(zarko): Do we need to canonicalize `Arg`?
   // Maybe with Context.getCanonicalTemplateArgument()?
   switch (Arg.getKind()) {
@@ -4034,7 +4025,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       std::vector<GraphObserver::NodeId> Nodes;
       Nodes.reserve(Arg.pack_size());
       for (const auto& Element : Arg.pack_elements()) {
-        auto Id = BuildNodeIdForTemplateArgument(Element, L);
+        auto Id = BuildNodeIdForTemplateArgument(Element);
         if (!Id) {
           return absl::nullopt;
         }
@@ -4048,34 +4039,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
 
 absl::optional<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForTemplateArgument(
-    const clang::TemplateArgumentLoc& ArgLoc, EmitRanges EmitRanges) {
-  // TODO(zarko): Do we need to canonicalize `Arg`?
-  // Maybe with Context.getCanonicalTemplateArgument()?
-  const TemplateArgument& Arg = ArgLoc.getArgument();
-  switch (Arg.getKind()) {
-    case TemplateArgument::Null:
-      return BuildNodeIdForSpecialTemplateArgument("null");
-    case TemplateArgument::Type:
-      return BuildNodeIdForType(ArgLoc.getTypeSourceInfo()->getTypeLoc());
-    case TemplateArgument::Declaration:
-      return BuildNodeIdForDecl(Arg.getAsDecl());
-    case TemplateArgument::NullPtr:
-      return BuildNodeIdForSpecialTemplateArgument("nullptr");
-    case TemplateArgument::Integral:
-      return BuildNodeIdForSpecialTemplateArgument(
-          Arg.getAsIntegral().toString(10) + "i");
-    case TemplateArgument::Template:
-      return BuildNodeIdForTemplateName(Arg.getAsTemplate());
-    case TemplateArgument::TemplateExpansion:
-      return BuildNodeIdForTemplateExpansion(
-          Arg.getAsTemplateOrTemplatePattern());
-    case TemplateArgument::Expression:
-      CHECK(ArgLoc.getSourceExpression() != nullptr);
-      return BuildNodeIdForExpr(ArgLoc.getSourceExpression(), EmitRanges);
-    case TemplateArgument::Pack:
-      return BuildNodeIdForTemplateArgument(Arg, ArgLoc.getLocation());
-  }
-  return absl::nullopt;
+    const clang::TemplateArgumentLoc& ArgLoc) {
+  return BuildNodeIdForTemplateArgument(ArgLoc.getArgument());
 }
 
 void IndexerASTVisitor::DumpTypeContext(unsigned Depth, unsigned Index) {
@@ -4116,8 +4081,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForRecord(const clang::RecordType& T) {
     std::vector<GraphObserver::NodeId> TemplateArgs;
     TemplateArgs.reserve(TAL.size());
     for (const auto& Arg : TAL.asArray()) {
-      if (auto ArgA =
-              BuildNodeIdForTemplateArgument(Arg, Spec->getLocation())) {
+      if (auto ArgA = BuildNodeIdForTemplateArgument(Arg)) {
         TemplateArgs.push_back(ArgA.value());
       } else {
         return NodeSet::Empty();
@@ -4316,7 +4280,6 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentName(
 
 NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
     const clang::TemplateSpecializationType& T) {
-  clang::SourceLocation InvalidLoc;
   // This refers to a particular class template, type alias template,
   // or template template parameter. Non-dependent template
   // specializations appear as different types.
@@ -4324,7 +4287,7 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTemplateSpecialization(
     std::vector<GraphObserver::NodeId> TemplateArgs;
     TemplateArgs.reserve(T.getNumArgs());
     for (const auto& arg : T.template_arguments()) {
-      if (auto ArgId = BuildNodeIdForTemplateArgument(arg, InvalidLoc)) {
+      if (auto ArgId = BuildNodeIdForTemplateArgument(arg)) {
         TemplateArgs.push_back(*ArgId);
       } else {
         return NodeSet::Empty();
@@ -5096,7 +5059,7 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl* Decl) {
   }
 
   absl::optional<GraphObserver::NodeId> FunctionType =
-      CreateObjCMethodTypeNode(Decl, EmitRanges::Yes);
+      CreateObjCMethodTypeNode(Decl);
 
   if (FunctionType) {
     Observer.recordTypeEdge(Node, FunctionType.value());
@@ -5412,8 +5375,7 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
 }
 
 absl::optional<GraphObserver::NodeId>
-IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD,
-                                            EmitRanges EmitRanges) {
+IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD) {
   std::vector<GraphObserver::NodeId> NodeIds;
   // If we are in an implicit method (for example: property access), we may
   // not get return type source information and we will have to rely on the
