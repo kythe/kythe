@@ -247,7 +247,7 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   // Objective C methods don't have TypeSourceInfo so we must construct a type
   // for the methods to be used in the graph.
   absl::optional<GraphObserver::NodeId> CreateObjCMethodTypeNode(
-      const clang::ObjCMethodDecl* MD, EmitRanges ER);
+      const clang::ObjCMethodDecl* MD);
 
   /// \brief Builds a stable node ID for a compile-time expression.
   /// \param Expr The expression to represent.
@@ -364,13 +364,13 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateName(
       const clang::TemplateName& Name);
 
-  /// \brief Builds a stable node ID for the given `TemplateArgument`.
+  /// \brief Builds a stable node ID for the given `TemplateArgumentLoc`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
-      const clang::TemplateArgumentLoc& Arg, EmitRanges EmitRanges);
+      const clang::TemplateArgumentLoc& ArgLoc);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
   absl::optional<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
-      const clang::TemplateArgument& Arg, clang::SourceLocation L);
+      const clang::TemplateArgument& Arg);
 
   /// \brief Builds a stable node ID for `Stmt`.
   ///
