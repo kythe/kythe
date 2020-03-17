@@ -900,7 +900,7 @@ void IndexerASTVisitor::VisitComment(
     unsigned offset = Tok.getLocation().getRawEncoding() -
                       Comment->getSourceRange().getBegin().getRawEncoding();
     OffsetsInStrippedRawText.insert(
-        std::make_pair(Tok.getLocation(), StrippedRawText.size()));
+        {Tok.getLocation(), StrippedRawText.size()});
     StrippedRawText.append(Text.substr(offset, Tok.getLength()));
     switch (Tok.getKind()) {
       case clang::comments::tok::text: {
@@ -3531,7 +3531,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
       Ostream << "#builtin";
       GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(),
                                Ostream.str());
-      DeclToNodeId.insert(std::make_pair(Decl, Id));
+      DeclToNodeId.insert({Decl, Id});
       return Id;
     }
   }
@@ -3539,7 +3539,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   if (const auto* BTD = dyn_cast<BuiltinTemplateDecl>(Decl)) {
     Ostream << "#builtin";
     GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(), Ostream.str());
-    DeclToNodeId.insert(std::make_pair(Decl, Id));
+    DeclToNodeId.insert({Decl, Id});
     return Id;
   }
 
@@ -3549,7 +3549,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     // There's a special way to name type aliases but we want to handle type
     // parameters for Objective-C as "normal" named decls.
     if (auto TypedefNameId = BuildNodeIdForTypedefNameDecl(TND)) {
-      DeclToNodeId.insert(std::make_pair(Decl, TypedefNameId.value()));
+      DeclToNodeId.insert({Decl, TypedefNameId.value()});
       return TypedefNameId.value();
     }
   } else if (const auto* NS = dyn_cast<NamespaceDecl>(Decl)) {
@@ -3560,7 +3560,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
             ? Observer.getAnonymousNamespaceClaimToken(NS->getLocation())
             : Observer.getNamespaceClaimToken(NS->getLocation()),
         Ostream.str());
-    DeclToNodeId.insert(std::make_pair(Decl, Id));
+    DeclToNodeId.insert({Decl, Id});
     return Id;
   }
 
@@ -3637,14 +3637,14 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     if (Rec->getDefinition() == Rec && Rec->getDeclName()) {
       Ostream << "#" << HashToString(Hash(Rec));
       GraphObserver::NodeId Id(Token, Ostream.str());
-      DeclToNodeId.insert(std::make_pair(Decl, Id));
+      DeclToNodeId.insert({Decl, Id});
       return Id;
     }
   } else if (const auto* Enum = dyn_cast<clang::EnumDecl>(Decl)) {
     if (Enum->getDefinition() == Enum) {
       Ostream << "#" << HashToString(Hash(Enum));
       GraphObserver::NodeId Id(Token, Ostream.str());
-      DeclToNodeId.insert(std::make_pair(Decl, Id));
+      DeclToNodeId.insert({Decl, Id});
       return Id;
     }
   } else if (const auto* ECD = dyn_cast<clang::EnumConstantDecl>(Decl)) {
@@ -3652,7 +3652,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
       if (E->getDefinition() == E) {
         Ostream << "#" << HashToString(Hash(E));
         GraphObserver::NodeId Id(Token, Ostream.str());
-        DeclToNodeId.insert(std::make_pair(Decl, Id));
+        DeclToNodeId.insert({Decl, Id});
         return Id;
       }
     }
@@ -3690,7 +3690,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     Ostream << "invalid";
   }
   GraphObserver::NodeId Id(Token, Ostream.str());
-  DeclToNodeId.insert(std::make_pair(Decl, Id));
+  DeclToNodeId.insert({Decl, Id});
   return Id;
 }
 
