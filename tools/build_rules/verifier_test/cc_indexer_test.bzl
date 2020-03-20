@@ -567,10 +567,14 @@ def _cc_index_impl(ctx):
         if kzip not in ctx.files.deps
     ]
 
-    entries = depset(intermediates)
-    for dep in ctx.attr.deps:
-        if KytheEntries in dep:
-            entries += dep[KytheEntries].files
+    entries = depset(
+        intermediates,
+        transitive = [
+            dep[KytheEntries].files
+            for dep in ctx.attr.deps
+            if KytheEntries in dep
+        ],
+    )
 
     ctx.actions.run_shell(
         outputs = [ctx.outputs.entries],
