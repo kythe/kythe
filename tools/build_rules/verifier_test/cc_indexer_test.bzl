@@ -303,9 +303,11 @@ def _cc_extract_kzip_impl(ctx):
         for src in ctx.files.srcs
         if not src.path.endswith(".h")  # Don't extract headers.
     ])
-    for dep in ctx.attr.deps:
-        if CxxCompilationUnits in dep:
-            outputs += dep[CxxCompilationUnits].files
+    outputs = depset(transitive = [outputs] + [
+        dep[CxxCompilationUnits].files
+        for dep in ctx.attr.deps
+        if CxxCompilationUnits in dep
+    ])
     return [
         DefaultInfo(files = outputs),
         CxxCompilationUnits(files = outputs),
