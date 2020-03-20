@@ -50,6 +50,7 @@
 #include "clang/Sema/Lookup.h"
 #include "indexed_parent_iterator.h"
 #include "kythe/cxx/common/scope_guard.h"
+#include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 #include "kythe/cxx/indexer/cxx/node_set.h"
@@ -448,91 +449,11 @@ bool IndexerASTVisitor::IsDefinition(const clang::VarDecl* VD) {
   return VD->isThisDeclarationADefinition() != VarDecl::DeclarationOnly;
 }
 
-SourceRange IndexerASTVisitor::ConsumeToken(
-    SourceLocation StartLocation, clang::tok::TokenKind ExpectedKind) const {
-  clang::Token Token;
-  if (getRawToken(StartLocation, Token) == LexerResult::Success) {
-    // We can't use findLocationAfterToken() as that also uses "raw" lexing,
-    // which does not respect |lang_opts_.CXXOperatorNames| and will happily
-    // give |tok::raw_identifier| for tokens such as "compl" and then decide
-    // that "compl" doesn't match tok::tilde.  We want raw lexing so that
-    // macro expansion is suppressed, but then we need to manually re-map
-    // C++'s "alternative tokens" to the correct token kinds.
-    clang::tok::TokenKind ActualKind = Token.getKind();
-    if (Token.is(clang::tok::raw_identifier)) {
-      llvm::StringRef TokenSpelling(Token.getRawIdentifier());
-      const clang::IdentifierInfo& II =
-          Observer.getPreprocessor()->getIdentifierTable().get(TokenSpelling);
-      ActualKind = II.getTokenID();
-    }
-    if (ActualKind == ExpectedKind) {
-      const SourceLocation Begin = Token.getLocation();
-      return SourceRange(
-          Begin, GetLocForEndOfToken(*Observer.getSourceManager(),
-                                     *Observer.getLangOptions(), Begin));
-    }
-  }
-  return SourceRange();  // invalid location signals error/mismatch.
-}
-
 clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
     const clang::NamedDecl* Decl) const {
-  const SourceLocation StartLocation = Decl->getLocation();
-  if (StartLocation.isInvalid()) {
-    return SourceRange();
-  }
-  if (StartLocation.isFileID()) {
-    if (isa<clang::CXXDestructorDecl>(Decl)) {
-      // If the first token is "~" (or its alternate spelling, "compl") and
-      // the second is the name of class (rather than the name of a macro),
-      // then span two tokens.  Otherwise span just one.
-      const SourceLocation NextLocation =
-          ConsumeToken(StartLocation, clang::tok::tilde).getEnd();
-
-      if (NextLocation.isValid()) {
-        // There was a tilde (or its alternate token, "compl", which is
-        // technically valid for a destructor even if it's awful style).
-        // The "name" of the destructor is "~Type" even if the source
-        // code says "compl Type".
-        clang::Token SecondToken;
-        if (getRawToken(NextLocation, SecondToken) == LexerResult::Success &&
-            SecondToken.is(clang::tok::raw_identifier) &&
-            ("~" + std::string(SecondToken.getRawIdentifier())) ==
-                Decl->getNameAsString()) {
-          const SourceLocation EndLocation = GetLocForEndOfToken(
-              *Observer.getSourceManager(), *Observer.getLangOptions(),
-              SecondToken.getLocation());
-          return clang::SourceRange(StartLocation, EndLocation);
-        }
-      }
-    } else if (auto* M = dyn_cast<clang::ObjCMethodDecl>(Decl)) {
-      // Only take the first selector (if we have one). This simplifies what
-      // consumers of this data have to do but it is not correct.
-
-      if (M->getNumSelectorLocs() == 0) {
-        // Take the whole declaration. For decls this goes up to but does not
-        // include the ";". For definitions this goes up to but does not include
-        // the "{". This range will include other fields, such as the return
-        // type, parameter types, and parameter names.
-
-        auto S = M->getSelectorStartLoc();
-        auto E = M->getDeclaratorEndLoc();
-        return SourceRange(S, E);
-      }
-      // TODO(salguarnieri) Return multiple ranges, one for each portion of the
-      // selector.
-      const SourceLocation& Loc = M->getSelectorLoc(0);
-      if (Loc.isValid() && Loc.isFileID()) {
-        return RangeForSingleToken(Loc);
-      }
-
-      // If the selector location is not valid or is not a file, return the
-      // whole range of the selector and hope for the best.
-      LogErrorWithASTDump("Could not get source range", M);
-      return M->getSourceRange();
-    }
-  }
-  return RangeForASTEntity(StartLocation);
+  return ClangRangeFinder(Observer.getSourceManager(),
+                          Observer.getLangOptions())
+      .RangeForNameOf(Decl);
 }
 
 clang::SourceRange IndexerASTVisitor::RangeForASTEntity(
@@ -2192,22 +2113,7 @@ bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl* Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   // Use the range covering `namespace` for anonymous namespaces.
-  SourceRange NameRange;
-  if (Decl->isAnonymousNamespace()) {
-    SourceLocation Loc = Decl->getBeginLoc();
-    if (Decl->isInline() && Loc.isValid() && Loc.isFileID()) {
-      // Skip the `inline` keyword.
-      Loc = RangeForSingleToken(Loc).getEnd();
-      if (Loc.isValid() && Loc.isFileID()) {
-        SkipWhitespace(*Observer.getSourceManager(), &Loc);
-      }
-    }
-    if (Loc.isValid() && Loc.isFileID()) {
-      NameRange = RangeForASTEntity(Loc);
-    }
-  } else {
-    NameRange = RangeForNameOfDeclaration(Decl);
-  }
+  SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   // Namespaces are never defined; they are only invoked.
   if (auto RCC =
           RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
@@ -3670,13 +3576,17 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
       // for enums and records because of the code above.
       Ostream << "#D";
     }
+  } else if (const auto* OD = dyn_cast<clang::ObjCInterfaceDecl>(Decl)) {
+    if (OD->isThisDeclarationADefinition()) {
+      // TODO(zarko): Investigate why Clang colocates incomplete and
+      // definition instances of VarDecls. This may have been masked
+      // for enums and records because of the code above.
+      Ostream << "#D";
+    }
   }
   clang::SourceRange DeclRange;
   if (const auto* named_decl = dyn_cast<NamedDecl>(Decl)) {
-    // RangeForNameOfDeclaration doesn't work well with some ObjCInterfaceDecls.
-    if (!isa<ObjCInterfaceDecl>(Decl)) {
-      DeclRange = RangeForNameOfDeclaration(named_decl);
-    }
+    DeclRange = RangeForNameOfDeclaration(named_decl);
   }
   if (!DeclRange.isValid()) {
     DeclRange = clang::SourceRange(Decl->getBeginLoc(), Decl->getEndLoc());
@@ -4675,20 +4585,19 @@ bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
   // not give them to us. We expect something of the form:
   // @compatibility_alias AliasName OriginalClassName
   // Note that this does not work in the presence of macros with parameters.
-  SourceRange AtSign = RangeForNameOfDeclaration(Decl);
-  const auto KeywordRange(
-      ConsumeToken(AtSign.getEnd(), clang::tok::identifier));
-  const auto AliasRange(
-      ConsumeToken(KeywordRange.getEnd(), clang::tok::identifier));
-  const auto OrgClassRange(
-      ConsumeToken(AliasRange.getEnd(), clang::tok::identifier));
+  const auto AliasRange = RangeForNameOfDeclaration(Decl);
 
   // Record a ref to the original type
-  if (const auto& ERCC = ExplicitRangeInCurrentContext(OrgClassRange)) {
-    const auto& ID = BuildNodeIdForDecl(Decl->getClassInterface());
-    Observer.recordDeclUseLocation(ERCC.value(), ID,
-                                   GraphObserver::Claimability::Claimable,
-                                   IsImplicit(ERCC.value()));
+  if (const auto OrigClass = clang::Lexer::findNextToken(
+          AliasRange.getEnd(), *Observer.getSourceManager(),
+          *Observer.getLangOptions())) {
+    if (const auto& ERCC = ExplicitRangeInCurrentContext(clang::SourceRange(
+            OrigClass->getLocation(), OrigClass->getEndLoc()))) {
+      const auto& ID = BuildNodeIdForDecl(Decl->getClassInterface());
+      Observer.recordDeclUseLocation(ERCC.value(), ID,
+                                     GraphObserver::Claimability::Claimable,
+                                     IsImplicit(ERCC.value()));
+    }
   }
 
   // Record the type alias

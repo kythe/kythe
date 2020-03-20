@@ -553,16 +553,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   clang::SourceRange RangeForSingleToken(
       clang::SourceLocation start_location) const;
 
-  /// Consume a token of the `ExpectedKind` from the `StartLocation`,
-  /// returning the range for that token on success and an invalid
-  /// range otherwise.
-  ///
-  /// The begin location for the returned range may be different than
-  /// StartLocation. For example, this can happen if StartLocation points to
-  /// whitespace before the start of the token.
-  clang::SourceRange ConsumeToken(clang::SourceLocation StartLocation,
-                                  clang::tok::TokenKind ExpectedKind) const;
-
   bool TraverseClassTemplateDecl(clang::ClassTemplateDecl* TD);
   bool TraverseClassTemplateSpecializationDecl(
       clang::ClassTemplateSpecializationDecl* TD);
