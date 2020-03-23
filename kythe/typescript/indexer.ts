@@ -1249,7 +1249,7 @@ class Visitor {
    * and that case is handled as part of the ordinary declaration handling.
    */
   visitExportDeclaration(decl: ts.ExportDeclaration) {
-    if (decl.exportClause) {
+    if (decl.exportClause && ts.isNamedExports(decl.exportClause)) {
       for (const exp of decl.exportClause.elements) {
         const localSym = this.host.getSymbolAtLocation(exp.name);
         if (!localSym) {
