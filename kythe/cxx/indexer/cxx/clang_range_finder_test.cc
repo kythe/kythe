@@ -159,7 +159,7 @@ TEST_F(ClangRangeFinderTest, CXXNamedDecl) {
 TEST_F(ClangRangeFinderTest, CXXMacroDecls) {
   std::vector<NamedDeclTestCase> decls = {
       {"#define CLASS(X) class X\nCLASS(%s) ;"},
-      {"#define FUN(T) T ()\nstruct Type { FUN(%sType); };", "~",
+      {"#define FUN(T) T ()\nstruct Type { FUN(%s); };", "~Type",
        &FindLastDeclOf<clang::CXXDestructorDecl>},
       {"#define  T Type\nstruct Type { %s (); };", "~ T",
        &FindLastDeclOf<clang::CXXDestructorDecl>},

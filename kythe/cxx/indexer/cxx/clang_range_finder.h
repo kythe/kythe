@@ -19,6 +19,7 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclarationName.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
@@ -57,8 +58,8 @@ class ClangRangeFinder {
   const clang::LangOptions& lang_options() const { return *lang_options_; }
 
  private:
-  clang::SourceRange RangeForNameOfDtor(
-      const clang::CXXDestructorDecl& decl) const;
+  clang::SourceRange RangeForNameInfo(
+      const clang::DeclarationNameInfo& info) const;
   clang::SourceRange RangeForNameOfAlias(
       const clang::ObjCCompatibleAliasDecl& decl) const;
   clang::SourceRange RangeForNameOfMethod(

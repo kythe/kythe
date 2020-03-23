@@ -20,6 +20,7 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
+#include "clang/AST/DeclarationName.h"
 #include "clang/AST/NestedNameSpecifier.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Lexer.h"
@@ -94,8 +95,8 @@ SourceRange ClangRangeFinder::RangeForNameOf(
   if (decl == nullptr) {
     return SourceRange();
   }
-  if (auto dtor = dyn_cast<clang::CXXDestructorDecl>(decl)) {
-    return RangeForNameOfDtor(*dtor);
+  if (auto func = dyn_cast<clang::FunctionDecl>(decl)) {
+    return RangeForNameInfo(func->getNameInfo());
   } else if (auto alias = dyn_cast<clang::ObjCCompatibleAliasDecl>(decl)) {
     return RangeForNameOfAlias(*alias);
   } else if (auto method = dyn_cast<clang::ObjCMethodDecl>(decl)) {
@@ -103,22 +104,18 @@ SourceRange ClangRangeFinder::RangeForNameOf(
   } else if (auto ns = dyn_cast<clang::NamespaceDecl>(decl)) {
     return RangeForNamespace(*ns);
   }
-  return RangeForEntityAt(decl->getLocation());
+  return NormalizeRange(decl->getLocation());
 }
 
-SourceRange ClangRangeFinder::RangeForNameOfDtor(
-    const clang::CXXDestructorDecl& decl) const {
-  SourceLocation loc = decl.getLocation();
-  if (loc.isValid() && loc.isFileID()) {
-    // TODO(shahms): The prior implementation checked this token against
-    // the name of the class and only used it if they matched.
-    // Do we want to replicate that or not?
-    if (auto next = clang::Lexer::findNextToken(loc, source_manager(),
-                                                lang_options())) {
-      return SourceRange(loc, next->getEndLoc());
-    }
+SourceRange ClangRangeFinder::RangeForNameInfo(
+    const clang::DeclarationNameInfo& info) const {
+  if (info.getName().getNameKind() ==
+      clang::DeclarationName::CXXConversionFunctionName) {
+    // For legacy reasons, in C++ conversion functions we intentionally omit the
+    // type name and cover only the operator keyword.
+    return NormalizeRange(info.getLoc());
   }
-  return RangeForEntityAt(loc);
+  return NormalizeRange(info.getSourceRange());
 }
 
 SourceRange ClangRangeFinder::RangeForNameOfAlias(
@@ -136,7 +133,7 @@ SourceRange ClangRangeFinder::RangeForNameOfAlias(
       return SourceRange(next->getLocation(), next->getEndLoc());
     }
   }
-  return RangeForEntityAt(loc);
+  return NormalizeRange(loc);
 }
 
 SourceRange ClangRangeFinder::RangeForNameOfMethod(
@@ -147,7 +144,7 @@ SourceRange ClangRangeFinder::RangeForNameOfMethod(
     if (auto loc = decl.getSelectorLoc(0); loc.isValid() && loc.isFileID()) {
       // Only take the first selector (if we have one). This simplifies what
       // consumers of this data have to do but it is not correct.
-      return RangeForTokenAt(loc);
+      return NormalizeRange(loc);
     }
   } else {
     // Take the whole declaration. For decls this goes up to but does not
@@ -160,7 +157,7 @@ SourceRange ClangRangeFinder::RangeForNameOfMethod(
   // If the selector location is not valid or is not a file, return the
   // whole range of the selector and hope for the best.
   LOG(ERROR) << "Unable to determine source range for: " << DumpString(decl);
-  return decl.getSourceRange();
+  return NormalizeRange(decl.getSourceRange());
 }
 
 SourceRange ClangRangeFinder::RangeForNamespace(
@@ -172,9 +169,9 @@ SourceRange ClangRangeFinder::RangeForNamespace(
         return SourceRange(next->getLocation(), next->getEndLoc());
       }
     }
-    return RangeForTokenAt(decl.getBeginLoc());
+    return NormalizeRange(decl.getBeginLoc());
   }
-  return RangeForEntityAt(decl.getLocation());
+  return NormalizeRange(decl.getLocation());
 }
 
 SourceRange ClangRangeFinder::NormalizeRange(SourceLocation start) const {
