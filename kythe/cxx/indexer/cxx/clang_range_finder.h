@@ -37,8 +37,19 @@ class ClangRangeFinder {
       : source_manager_(CHECK_NOTNULL(source_manager)),
         lang_options_(CHECK_NOTNULL(lang_options)) {}
 
+  /// \brief Returns a suitable range for the entity beginning at `start`.
+  clang::SourceRange RangeForEntityAt(clang::SourceLocation start) const;
+  /// \brief Returns a range for the single token beginning at `start`.
+  clang::SourceRange RangeForTokenAt(clang::SourceLocation start) const;
   /// \brief Returns a range encompassing the name of the decl.
   clang::SourceRange RangeForNameOf(const clang::NamedDecl* decl) const;
+
+  /// \brief Retruns a range of characters between start and end in the ultimate
+  /// file.
+  clang::SourceRange NormalizeRange(clang::SourceRange range) const;
+  clang::SourceRange NormalizeRange(clang::SourceLocation start) const;
+  clang::SourceRange NormalizeRange(clang::SourceLocation start,
+                                    clang::SourceLocation end) const;
 
   const clang::SourceManager& source_manager() const {
     return *source_manager_;
@@ -46,11 +57,6 @@ class ClangRangeFinder {
   const clang::LangOptions& lang_options() const { return *lang_options_; }
 
  private:
-  /// \brief Returns a suitable range for the entity beginning at `start`.
-  clang::SourceRange RangeForEntityAt(clang::SourceLocation start) const;
-  /// \brief Returns a range for the single token beginning at `start`.
-  clang::SourceRange RangeForTokenAt(clang::SourceLocation start) const;
-
   clang::SourceRange RangeForNameOfDtor(
       const clang::CXXDestructorDecl& decl) const;
   clang::SourceRange RangeForNameOfAlias(
@@ -61,9 +67,8 @@ class ClangRangeFinder {
   // TODO(shahms): If possible, treat all "anonymous" declarations alike.
   clang::SourceRange RangeForNamespace(const clang::NamespaceDecl& decl) const;
 
-  /// \brief For a possibly token oriented range, returns a char range in the
-  /// ultimate file.
-  clang::SourceRange ExpansionRange(clang::SourceRange range) const;
+  /// \brief Converts a CharSourceRange to a character-oriented SourceRange.
+  clang::SourceRange ToCharRange(clang::CharSourceRange range) const;
 
   const clang::SourceManager* source_manager_;
   const clang::LangOptions* lang_options_;

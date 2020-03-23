@@ -53,8 +53,13 @@ class ClangRangeFinderTest : public ::testing::Test {
 
   const clang::Decl* top_level_back() { return *(ast_->top_level_end() - 1); }
 
-  clang::SourceManager& source_manager() { return ast_->getSourceManager(); }
+  clang::SourceManager& source_manager() const {
+    return ast_->getSourceManager();
+  }
   const clang::LangOptions& lang_options() const { return ast_->getLangOpts(); }
+  ClangRangeFinder range_finder() const {
+    return ClangRangeFinder(&source_manager(), &lang_options());
+  }
 
  private:
   std::unique_ptr<clang::ASTUnit> ast_;
@@ -100,7 +105,7 @@ class NamedDeclTestCase {
   std::string SourceText() const { return absl::StrFormat(*format_, name_); }
 
   const clang::NamedDecl* FindDecl(clang::ASTUnit& ast) const {
-    return find_decl_(ast);
+    return CHECK_NOTNULL(find_decl_(ast));
   }
 
   absl::string_view name() const { return name_; }
@@ -112,9 +117,6 @@ class NamedDeclTestCase {
 };
 
 TEST_F(ClangRangeFinderTest, CXXNamedDecl) {
-  // These should all use the same name for the entity and that entity should be
-  // more than a single character and include a variety of spaces after the
-  // name, but before the next token.
   std::vector<NamedDeclTestCase> decls = {
       {"class %s ;"},
       {"struct %s ;"},
@@ -126,9 +128,10 @@ TEST_F(ClangRangeFinderTest, CXXNamedDecl) {
       {"inline namespace %s {}"},     // namespace declarations.
       {"%s {}", "namespace"},         // anonymous namespace.
       {"inline %s {}", "namespace"},  // anonymous inline namespace.
-      {"%s {};", "struct"},           // anonymous struct.
-      {"int %s ;"},                   // simple var decls.
-      {"void %s ();"},                // trivial function decl.
+      {"%s {} n;", "struct",
+       &FindLastDeclOf<clang::TagDecl>},         // anonymous struct.
+      {"int %s ;"},                              // simple var decls.
+      {"void %s ();"},                           // trivial function decl.
       {"namespace ns {} namespace %s = ::ns;"},  // namespace alias.
       {"template <typename> struct %s {};"},     // template class.
       {"template <typename> void %s () {}"},     // function template.
@@ -143,6 +146,24 @@ TEST_F(ClangRangeFinderTest, CXXNamedDecl) {
        &FindLastDeclOf<clang::CXXDestructorDecl>},
       {"struct Type { %s   (); };", "compl   Type",  // awkward destructor.
        &FindLastDeclOf<clang::CXXDestructorDecl>},
+  };
+  for (const auto& test : decls) {
+    ASTUnit& ast = Parse(test.SourceText());
+    ClangRangeFinder finder(&source_manager(), &lang_options());
+
+    EXPECT_EQ(GetSourceText(finder.RangeForNameOf(test.FindDecl(ast))),
+              test.name());
+  }
+}
+
+TEST_F(ClangRangeFinderTest, CXXMacroDecls) {
+  std::vector<NamedDeclTestCase> decls = {
+      {"#define CLASS(X) class X\nCLASS(%s) ;"},
+      {"#define FUN(T) T ()\nstruct Type { FUN(%sType); };", "~",
+       &FindLastDeclOf<clang::CXXDestructorDecl>},
+      {"#define  T Type\nstruct Type { %s (); };", "~ T",
+       &FindLastDeclOf<clang::CXXDestructorDecl>},
+
   };
   for (const auto& test : decls) {
     ASTUnit& ast = Parse(test.SourceText());
@@ -170,6 +191,38 @@ TEST_F(ClangRangeFinderTest, ObjCNamedDecl) {
     EXPECT_EQ(GetSourceText(finder.RangeForNameOf(test.FindDecl(ast))),
               test.name());
   }
+}
+
+TEST_F(ClangRangeFinderTest, RangeForTokenAtExpandsSingleToken) {
+  ASTUnit& ast = Parse("void func();");
+  clang::SourceRange void_range =
+      range_finder().RangeForTokenAt(ast.getStartOfMainFileID());
+  ASSERT_EQ(GetSourceText(void_range), "void");
+  clang::SourceRange func_range =
+      range_finder().RangeForTokenAt(void_range.getEnd().getLocWithOffset(1));
+  EXPECT_EQ(GetSourceText(func_range), "func");
+}
+
+TEST_F(ClangRangeFinderTest, RangeForEntityAtExpandsOperator) {
+  for (absl::string_view op : {"operator<<", "operator <<", "operator\n<<"}) {
+    ASTUnit& ast = Parse(absl::StrFormat("void %s(int, struct T&);", op));
+    clang::SourceRange void_range =
+        range_finder().RangeForEntityAt(ast.getStartOfMainFileID());
+    ASSERT_EQ(GetSourceText(void_range), "void");
+    clang::SourceRange func_range = range_finder().RangeForEntityAt(
+        void_range.getEnd().getLocWithOffset(1));
+    EXPECT_EQ(GetSourceText(func_range), op);
+  }
+}
+
+TEST_F(ClangRangeFinderTest, NormalizeRangeExpandsZeroWidthRange) {
+  ASTUnit& ast = Parse("void func();");
+  ASSERT_EQ(
+      GetSourceText(range_finder().NormalizeRange(ast.getStartOfMainFileID())),
+      "void");
+  EXPECT_EQ(GetSourceText(range_finder().NormalizeRange(
+                ast.getStartOfMainFileID(), ast.getStartOfMainFileID())),
+            "void");
 }
 }  // namespace
 }  // namespace kythe

@@ -29,6 +29,7 @@
 
 namespace kythe {
 namespace {
+using ::clang::CharSourceRange;
 using ::clang::dyn_cast;
 using ::clang::SourceLocation;
 using ::clang::SourceRange;
@@ -39,6 +40,43 @@ std::string DumpString(const clang::Decl& decl) {
   decl.dump(out);
   return out.str();
 }
+
+CharSourceRange GetImmediateFileRange(
+    const clang::SourceManager& source_manager, const SourceLocation loc) {
+  return source_manager.isMacroArgExpansion(loc)
+             ? CharSourceRange::getTokenRange(
+                   source_manager.getImmediateSpellingLoc(loc))
+             : source_manager.getImmediateExpansionRange(loc);
+}
+
+CharSourceRange GetFileRange(const clang::SourceManager& source_manager,
+                             const SourceLocation loc) {
+  if (loc.isFileID()) {
+    return CharSourceRange::getTokenRange(loc);
+  }
+  CharSourceRange range = GetImmediateFileRange(source_manager, loc);
+  // Resolve both start and end to their ultimate expansion point.
+  while (!range.getBegin().isFileID()) {
+    range.setBegin(
+        GetImmediateFileRange(source_manager, range.getBegin()).getBegin());
+  }
+  while (!range.getEnd().isFileID()) {
+    CharSourceRange end = GetImmediateFileRange(source_manager, range.getEnd());
+    range.setEnd(end.getEnd());
+    range.setTokenRange(end.isTokenRange());
+  }
+  return range;
+}
+
+CharSourceRange GetFileRange(const clang::SourceManager& source_manager,
+                             const SourceRange range) {
+  if (range.getBegin() == range.getEnd()) {
+    return GetFileRange(source_manager, range.getBegin());
+  }
+  CharSourceRange result = GetFileRange(source_manager, range.getEnd());
+  result.setBegin(source_manager.getFileLoc(range.getBegin()));
+  return result;
+}
 }  // namespace
 
 SourceRange ClangRangeFinder::RangeForEntityAt(SourceLocation start) const {
@@ -48,7 +86,7 @@ SourceRange ClangRangeFinder::RangeForEntityAt(SourceLocation start) const {
 }
 
 SourceRange ClangRangeFinder::RangeForTokenAt(SourceLocation start) const {
-  return ExpansionRange(SourceRange(start, start));
+  return NormalizeRange(start);
 }
 
 SourceRange ClangRangeFinder::RangeForNameOf(
@@ -70,8 +108,8 @@ SourceRange ClangRangeFinder::RangeForNameOf(
 
 SourceRange ClangRangeFinder::RangeForNameOfDtor(
     const clang::CXXDestructorDecl& decl) const {
-  if (SourceLocation loc = decl.getLocation();
-      loc.isValid() && loc.isFileID()) {
+  SourceLocation loc = decl.getLocation();
+  if (loc.isValid() && loc.isFileID()) {
     // TODO(shahms): The prior implementation checked this token against
     // the name of the class and only used it if they matched.
     // Do we want to replicate that or not?
@@ -80,7 +118,7 @@ SourceRange ClangRangeFinder::RangeForNameOfDtor(
       return SourceRange(loc, next->getEndLoc());
     }
   }
-  return RangeForEntityAt(decl.getLocation());
+  return RangeForEntityAt(loc);
 }
 
 SourceRange ClangRangeFinder::RangeForNameOfAlias(
@@ -89,7 +127,8 @@ SourceRange ClangRangeFinder::RangeForNameOfAlias(
   // not give them to us. We expect something of the form:
   // @compatibility_alias AliasName OriginalClassName
   // But all of the locations stored in the decl point to @ alone.
-  if (auto loc = decl.getLocation(); loc.isValid() && loc.isFileID()) {
+  SourceLocation loc = decl.getLocation();
+  if (loc.isValid() && loc.isFileID()) {
     // Use an offset because the immediately following token is
     // "compatibility_alias" and we want the name.
     if (auto next = clang::Lexer::findNextToken(
@@ -97,7 +136,7 @@ SourceRange ClangRangeFinder::RangeForNameOfAlias(
       return SourceRange(next->getLocation(), next->getEndLoc());
     }
   }
-  return RangeForEntityAt(decl.getLocation());
+  return RangeForEntityAt(loc);
 }
 
 SourceRange ClangRangeFinder::RangeForNameOfMethod(
@@ -138,9 +177,21 @@ SourceRange ClangRangeFinder::RangeForNamespace(
   return RangeForEntityAt(decl.getLocation());
 }
 
-SourceRange ClangRangeFinder::ExpansionRange(SourceRange range) const {
-  return clang::Lexer::getAsCharRange(source_manager().getExpansionRange(range),
-                                      source_manager(), lang_options())
+SourceRange ClangRangeFinder::NormalizeRange(SourceLocation start) const {
+  return ToCharRange(GetFileRange(source_manager(), start));
+}
+
+SourceRange ClangRangeFinder::NormalizeRange(SourceLocation start,
+                                             SourceLocation end) const {
+  return ToCharRange(GetFileRange(source_manager(), SourceRange(start, end)));
+}
+
+SourceRange ClangRangeFinder::NormalizeRange(SourceRange range) const {
+  return ToCharRange(GetFileRange(source_manager(), range));
+}
+
+SourceRange ClangRangeFinder::ToCharRange(clang::CharSourceRange range) const {
+  return clang::Lexer::getAsCharRange(range, source_manager(), lang_options())
       .getAsRange();
 }
 }  // namespace kythe

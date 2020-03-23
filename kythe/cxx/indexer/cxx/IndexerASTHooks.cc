@@ -2428,47 +2428,6 @@ bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
   return true;
 }
 
-clang::SourceRange IndexerASTVisitor::ExpandRangeIfEmptyFileID(
-    const clang::SourceRange& SR) {
-  // Clang frequently handes out zero-width ranges at the start of an identifier
-  // or other AST entity.  In this case, we use
-  // RangeForASTEntity to fill out the full SourceRange.
-  if (SR.isValid() && SR.getBegin().isFileID() &&
-      SR.getBegin() == SR.getEnd()) {
-    return RangeForASTEntity(SR.getBegin());
-  }
-  return SR;
-}
-
-clang::SourceRange IndexerASTVisitor::MapRangeToFileIfMacroID(
-    const clang::SourceRange& SR) {
-  if (SR.isValid() && SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
-    auto NewSR = RangeForASTEntity(SR.getBegin());
-    if (SR.getBegin() != SR.getEnd()) {
-      auto EndSR = RangeForASTEntity(SR.getEnd());
-      NewSR.setEnd(EndSR.getEnd());
-    }
-    if (NewSR.isValid() && NewSR.getBegin() != NewSR.getEnd() &&
-        NewSR.getBegin().isFileID() && NewSR.getEnd().isFileID() &&
-        NewSR.getBegin() < NewSR.getEnd() &&
-        Observer.getSourceManager()->getFileID(NewSR.getBegin()) ==
-            Observer.getSourceManager()->getFileID(NewSR.getEnd())) {
-      return NewSR;
-    }
-  }
-  return SR;
-}
-
-absl::optional<GraphObserver::Range>
-IndexerASTVisitor::ExpandedFileRangeInCurrentContext(
-    const clang::SourceRange& SR) {
-  if (!SR.isValid()) {
-    return absl::nullopt;
-  }
-  return ExplicitRangeInCurrentContext(
-      ExpandRangeIfEmptyFileID(MapRangeToFileIfMacroID(SR)));
-}
-
 absl::optional<GraphObserver::Range>
 IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange& SR) {
   if (!SR.getBegin().isValid()) {
@@ -2487,24 +2446,14 @@ IndexerASTVisitor::ExpandedRangeInCurrentContext(clang::SourceRange SR) {
   if (!SR.isValid()) {
     return absl::nullopt;
   }
-  // If this type reference came from a macro context, try to see whether we
-  // can attribute it back to a source file.
-  if (SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
-    auto NewSR = RangeForASTEntity(SR.getBegin());
-    if (SR.getBegin() != SR.getEnd()) {
-      auto EndSR = RangeForASTEntity(SR.getEnd());
-      NewSR.setEnd(EndSR.getEnd());
-    }
-    if (NewSR.isValid() && NewSR.getBegin() != NewSR.getEnd() &&
-        NewSR.getBegin().isFileID() && NewSR.getEnd().isFileID() &&
-        NewSR.getBegin() < NewSR.getEnd() &&
-        Observer.getSourceManager()->getFileID(NewSR.getBegin()) ==
-            Observer.getSourceManager()->getFileID(NewSR.getEnd())) {
-      SR = NewSR;
-    }
-  }
-  return ExplicitRangeInCurrentContext(
-      SR.getBegin() == SR.getEnd() ? RangeForASTEntity(SR.getBegin()) : SR);
+  return ExplicitRangeInCurrentContext(NormalizeRange(SR));
+}
+
+clang::SourceRange IndexerASTVisitor::NormalizeRange(
+    clang::SourceRange SR) const {
+  return ClangRangeFinder(Observer.getSourceManager(),
+                          Observer.getLangOptions())
+      .NormalizeRange(SR);
 }
 
 absl::optional<GraphObserver::Range> IndexerASTVisitor::RangeInCurrentContext(
@@ -5171,14 +5120,7 @@ bool IndexerASTVisitor::VisitObjCIvarRefExpr(
 
 bool IndexerASTVisitor::VisitObjCMessageExpr(
     const clang::ObjCMessageExpr* Expr) {
-  SourceRange SR = Expr->getSourceRange();
-  // The end of the source range for ObjCMessageExpr is the location of the
-  // right brace. We actually want to include the right brace in the range
-  // we record, so get the location *after* the right brace.
-  if (SR.getBegin() != SR.getEnd()) {
-    SR.setEnd(SR.getEnd().getLocWithOffset(1));
-  }
-  if (auto RCC = ExpandedRangeInCurrentContext(SR)) {
+  if (auto RCC = ExpandedRangeInCurrentContext(Expr->getSourceRange())) {
     // This does not take dynamic dispatch into account when looking for the
     // method definition.
     if (const auto* Callee = FindMethodDefn(Expr->getMethodDecl(),
