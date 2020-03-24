@@ -547,12 +547,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   clang::SourceRange RangeForNameOfDeclaration(
       const clang::NamedDecl* Decl) const;
 
-  /// \brief Gets a suitable range for an AST entity from the `start_location`.
-  clang::SourceRange RangeForASTEntity(
-      clang::SourceLocation start_location) const;
-  clang::SourceRange RangeForSingleToken(
-      clang::SourceLocation start_location) const;
-
   bool TraverseClassTemplateDecl(clang::ClassTemplateDecl* TD);
   bool TraverseClassTemplateSpecializationDecl(
       clang::ClassTemplateSpecializationDecl* TD);

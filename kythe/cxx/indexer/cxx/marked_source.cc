@@ -25,6 +25,7 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Sema/Template.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
 ABSL_FLAG(bool, reformat_marked_source, false,
@@ -49,6 +50,12 @@ bool IsValidRange(const clang::SourceManager& source_manager,
     return false;
   }
   return true;
+}
+
+clang::SourceRange NormalizeRange(const clang::SourceManager& source_manager,
+                                  const clang::LangOptions& lang_options,
+                                  const clang::SourceRange& range) {
+  return ClangRangeFinder(&source_manager, &lang_options).NormalizeRange(range);
 }
 
 llvm::StringRef GetTextRange(const clang::SourceManager& source_manager,
@@ -358,9 +365,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (const auto* type_source_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_source_info->getType(),
                           type_source_info->getTypeLoc().getSourceRange())) {
-        auto type_loc = ExpandRangeBySingleToken(
-            cache_->source_manager(), cache_->lang_options(),
-            type_source_info->getTypeLoc().getSourceRange());
+        auto type_loc =
+            NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                           type_source_info->getTypeLoc().getSourceRange());
         InsertTypeAnnotation(type_loc, clang::SourceRange{});
       }
     }
@@ -369,9 +376,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (const auto* type_source_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_source_info->getType(),
                           type_source_info->getTypeLoc().getSourceRange())) {
-        auto type_loc = ExpandRangeBySingleToken(
-            cache_->source_manager(), cache_->lang_options(),
-            type_source_info->getTypeLoc().getSourceRange());
+        auto type_loc =
+            NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                           type_source_info->getTypeLoc().getSourceRange());
         InsertTypeAnnotation(type_loc, clang::SourceRange{});
       }
     }
@@ -380,9 +387,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     if (const auto* type_source_info = decl->getTypeSourceInfo()) {
       if (!ShouldSkipDecl(decl, type_source_info->getType(),
                           type_source_info->getTypeLoc().getSourceRange())) {
-        auto type_loc = ExpandRangeBySingleToken(
-            cache_->source_manager(), cache_->lang_options(),
-            type_source_info->getTypeLoc().getSourceRange());
+        auto type_loc =
+            NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                           type_source_info->getTypeLoc().getSourceRange());
         InsertTypeAnnotation(type_loc, clang::SourceRange{});
       }
     }
@@ -395,9 +402,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
         if (auto function_type = type_info->getTypeLoc()
                                      .IgnoreParens()
                                      .getAs<clang::FunctionTypeLoc>()) {
-          arg_list = ExpandRangeBySingleToken(cache_->source_manager(),
-                                              cache_->lang_options(),
-                                              function_type.getParensRange());
+          arg_list =
+              NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                             function_type.getParensRange());
           InsertAnnotation(arg_list, Annotation{Annotation::ArgListWithParens});
         }
       }
@@ -409,10 +416,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     }
     if (!ShouldSkipDecl(decl, decl->getReturnType(), type_range) &&
         type_range.isValid()) {
-      InsertTypeAnnotation(
-          ExpandRangeBySingleToken(cache_->source_manager(),
-                                   cache_->lang_options(), type_range),
-          arg_list);
+      InsertTypeAnnotation(NormalizeRange(cache_->source_manager(),
+                                          cache_->lang_options(), type_range),
+                           arg_list);
     }
   }
 
@@ -424,9 +430,9 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     // -(void) myFunc:(int)size withTimeout:(int)time. The "name" should be
     // myFunc:withTimeout and the arguments should be something like
     // "(int)size, (int)time".
-    auto ret_type_range = ExpandRangeBySingleToken(
-        cache_->source_manager(), cache_->lang_options(),
-        decl->getReturnTypeSourceRange());
+    auto ret_type_range =
+        NormalizeRange(cache_->source_manager(), cache_->lang_options(),
+                       decl->getReturnTypeSourceRange());
     if (ret_type_range.isValid()) {
       InsertAnnotation(ret_type_range, Annotation{Annotation::Type});
     } else {

@@ -5,6 +5,6 @@ class C {
   int operator+(int q) { return 0; }
 };
 int a(C& c) {
-  //- @"c +" ref/call OperatorPlus
+  //- @"c + 1" ref/call OperatorPlus
   return c + 1;
 }
