@@ -17,15 +17,15 @@
 # ==============================================================================
 # This .ycm_extra_conf will be picked up automatically for code completion using
 # YouCompleteMe.
-# 
+#
 # See https://valloric.github.io/YouCompleteMe/ for instructions on setting up
 # YouCompleteMe using Vim. This .ycm_extra_conf file also works with any other
 # completion engine that uses YCMD (https://github.com/Valloric/ycmd).
-# 
+#
 # Code completion depends on a Clang compilation database. This is placed in a
 # file named `compile_commands.json` in your execution root path. I.e. it will
 # be at the path returned by `bazel info execution_root`.
-# 
+#
 # If the compilation database isn't available, this script will generate one
 # using tools/cpp/generate_compilation_database.sh. This process can be slow if
 # you haven't built the sources yet. It's always a good idea to run
@@ -38,6 +38,7 @@ import os
 import shlex
 import subprocess
 import time
+import logging
 
 # If all else fails, then return this list of flags.
 DEFAULT_FLAGS = []
@@ -128,7 +129,8 @@ def InitBazelConfig():
 
   Initialize COMPILATION_DATABASE_PATH, WORKSPACE_PATH, and
   CANONICAL_SOURCE_FILE based on Bazel. These values are not expected to change
-  during the session."""
+  during the session.
+  """
   global COMPILATION_DATABASE_PATH
   global WORKSPACE_PATH
   global CANONICAL_SOURCE_FILE
@@ -140,11 +142,11 @@ def InitBazelConfig():
                                                  WORKSPACE_PATH)
 
 
-def GenerateCompilationDatabaseSlowly():
+def GenerateCompilationDatabaseSlowly(filename):
   """Generate compilation database. May take a while."""
   script_path = os.path.join(WORKSPACE_PATH, 'tools', 'cpp',
                              'generate_compilation_database.sh')
-  ProcessOutput(script_path)
+  ProcessOutput([script_path, filename])
 
 
 def ExpandAndNormalizePath(filename, basepath=WORKSPACE_PATH):
@@ -193,7 +195,7 @@ def PrepareCompileFlags(compile_command, basepath):
       continue
 
     if flag.startswith('-I'):
-      HandleFlag('-I', flags[3:], combine=False)
+      HandleFlag('-I', flag[2:], combine=False)
       continue
 
     flags_to_return.append(flag)
@@ -201,9 +203,9 @@ def PrepareCompileFlags(compile_command, basepath):
   return flags_to_return
 
 
-def LoadCompilationDatabase():
+def LoadCompilationDatabase(filename):
   if not os.path.exists(COMPILATION_DATABASE_PATH):
-    GenerateCompilationDatabaseSlowly()
+    GenerateCompilationDatabaseSlowly(filename)
 
   with open(COMPILATION_DATABASE_PATH, 'r') as database:
     database_dict = json.load(database)
@@ -247,14 +249,14 @@ def FindAlternateFile(filename):
 def FlagsForFile(filename, **kwargs):
   global LAST_INIT_FAILURE_TIME
 
-  if len(COMPILATION_DATABASE) == 0:
+  if len(COMPILATION_DATABASE) == 0 or filename not in COMPILATION_DATABASE:
     if LAST_INIT_FAILURE_TIME is not None and time.clock(
     ) - LAST_INIT_FAILURE_TIME < RETRY_TIMEOUT_SECONDS:
       return {'flags': DEFAULT_FLAGS}
 
     try:
       InitBazelConfig()
-      LoadCompilationDatabase()
+      LoadCompilationDatabase(filename)
     except Exception as e:
       LAST_INIT_FAILURE_TIME = time.clock()
       return {'flags': DEFAULT_FLAGS}
