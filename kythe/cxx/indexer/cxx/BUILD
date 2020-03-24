@@ -91,23 +91,6 @@ cc_library(
     ],
 )
 
-cc_test(
-    name = "clang_utils_test",
-    srcs = [
-        "clang_utils_test.cc",
-    ],
-    deps = [
-        ":clang_utils",
-        "//third_party:gtest_main",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/strings",
-        "@org_llvm//:LLVMSupport",
-        "@org_llvm//:clangAST",
-        "@org_llvm//:clangFrontend",
-        "@org_llvm//:clangTooling",
-    ],
-)
-
 cc_library(
     name = "google_flags_library_support",
     srcs = [
@@ -345,6 +328,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":clang_range_finder",
         ":clang_utils",
         ":graph_observer",
         ":kythe_claim_client",
@@ -539,7 +523,6 @@ cc_library(
     srcs = ["clang_range_finder.cc"],
     hdrs = ["clang_range_finder.h"],
     deps = [
-        ":clang_utils",
         "@com_github_google_glog//:glog",
         "@org_llvm//:LLVMSupport",
         "@org_llvm//:clangAST",

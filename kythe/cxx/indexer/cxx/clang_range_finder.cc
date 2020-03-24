@@ -25,7 +25,6 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Lexer.h"
 #include "glog/logging.h"
-#include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace kythe {
@@ -79,16 +78,6 @@ CharSourceRange GetFileRange(const clang::SourceManager& source_manager,
   return result;
 }
 }  // namespace
-
-SourceRange ClangRangeFinder::RangeForEntityAt(SourceLocation start) const {
-  // TODO(shahms): Move the implementations of these here.
-  return RangeForASTEntityFromSourceLocation(source_manager(), lang_options(),
-                                             start);
-}
-
-SourceRange ClangRangeFinder::RangeForTokenAt(SourceLocation start) const {
-  return NormalizeRange(start);
-}
 
 SourceRange ClangRangeFinder::RangeForNameOf(
     const clang::NamedDecl* decl) const {

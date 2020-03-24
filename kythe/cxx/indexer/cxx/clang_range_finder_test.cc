@@ -193,28 +193,6 @@ TEST_F(ClangRangeFinderTest, ObjCNamedDecl) {
   }
 }
 
-TEST_F(ClangRangeFinderTest, RangeForTokenAtExpandsSingleToken) {
-  ASTUnit& ast = Parse("void func();");
-  clang::SourceRange void_range =
-      range_finder().RangeForTokenAt(ast.getStartOfMainFileID());
-  ASSERT_EQ(GetSourceText(void_range), "void");
-  clang::SourceRange func_range =
-      range_finder().RangeForTokenAt(void_range.getEnd().getLocWithOffset(1));
-  EXPECT_EQ(GetSourceText(func_range), "func");
-}
-
-TEST_F(ClangRangeFinderTest, RangeForEntityAtExpandsOperator) {
-  for (absl::string_view op : {"operator<<", "operator <<", "operator\n<<"}) {
-    ASTUnit& ast = Parse(absl::StrFormat("void %s(int, struct T&);", op));
-    clang::SourceRange void_range =
-        range_finder().RangeForEntityAt(ast.getStartOfMainFileID());
-    ASSERT_EQ(GetSourceText(void_range), "void");
-    clang::SourceRange func_range = range_finder().RangeForEntityAt(
-        void_range.getEnd().getLocWithOffset(1));
-    EXPECT_EQ(GetSourceText(func_range), op);
-  }
-}
-
 TEST_F(ClangRangeFinderTest, NormalizeRangeExpandsZeroWidthRange) {
   ASTUnit& ast = Parse("void func();");
   ASSERT_EQ(

@@ -456,18 +456,6 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
       .RangeForNameOf(Decl);
 }
 
-clang::SourceRange IndexerASTVisitor::RangeForASTEntity(
-    const clang::SourceLocation start_location) const {
-  return RangeForASTEntityFromSourceLocation(
-      *Observer.getSourceManager(), *Observer.getLangOptions(), start_location);
-}
-
-clang::SourceRange IndexerASTVisitor::RangeForSingleToken(
-    const clang::SourceLocation start_location) const {
-  return RangeForSingleTokenFromSourceLocation(
-      *Observer.getSourceManager(), *Observer.getLangOptions(), start_location);
-}
-
 void IndexerASTVisitor::MaybeRecordDefinitionRange(
     const absl::optional<GraphObserver::Range>& R,
     const GraphObserver::NodeId& Id,
@@ -1148,8 +1136,8 @@ bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
 
   if (auto DepNodeId = RecordEdgesForDependentName(
           E->getQualifierLoc(), E->getMember(), E->getMemberLoc(), Root)) {
-    if (auto RCC = ExplicitRangeInCurrentContext(
-            RangeForASTEntity(E->getMemberLoc()))) {
+    if (auto RCC =
+            ExplicitRangeInCurrentContext(NormalizeRange(E->getMemberLoc()))) {
       Observer.recordDeclUseLocation(*RCC, *DepNodeId,
                                      GraphObserver::Claimability::Claimable,
                                      IsImplicit(*RCC));
@@ -1158,8 +1146,7 @@ bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
       if (auto ArgIds = BuildTemplateArgumentList(E->template_arguments())) {
         auto TappNodeId = Observer.recordTappNode(*DepNodeId, *ArgIds);
         auto StmtId = BuildNodeIdForImplicitStmt(E);
-        auto Range = clang::SourceRange(E->getMemberLoc(),
-                                        E->getEndLoc().getLocWithOffset(1));
+        auto Range = NormalizeRange({E->getMemberLoc(), E->getEndLoc()});
         if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
           Observer.recordDeclUseLocation(
               RCC.value(), TappNodeId, GraphObserver::Claimability::Unclaimable,
@@ -1185,7 +1172,7 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr* E) {
     }
   }
   if (const auto* FieldDecl = E->getMemberDecl()) {
-    auto Range = RangeForASTEntity(E->getMemberLoc());
+    auto Range = NormalizeRange(E->getMemberLoc());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       Observer.recordDeclUseLocation(
@@ -1224,23 +1211,14 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr* E,
     VisitDeclRefOrIvarRefExpr(E, Callee, RefLoc, IsImplicit);
 
     clang::SourceRange SR = E->getSourceRange();
-    if (RPL.isValid()) {
-      // This loses the right paren without the offset.
-      SR.setEnd(RPL.getLocWithOffset(1));
-    } else if (TSI != nullptr) {
-      SR.setEnd(TSI->getTypeLoc().getEndLoc().getLocWithOffset(1));
-    } else if (SR.getBegin() == SR.getEnd()) {
-      // For zero-width ranges, attempt to figure out the real extent of the
-      // expression.  This includes calls to default constructors and
-      // conversions from string literals, among others.
-      SR = RangeForASTEntity(SR.getBegin());
-    } else {
-      // Otherwise, include the final character in the expression forming an
-      // implicit ctor call.
-      SR.setEnd(SR.getEnd().getLocWithOffset(1));
+    // If there are not arguments and no braces or parens, getEndLoc()
+    // is the same as getLocation(), rather than the type.
+    // TODO(shahms): Upstream this into CXXConstructExpr::getEndLoc.
+    if (TSI != nullptr && SR.getBegin() == SR.getEnd()) {
+      SR.setEnd(TSI->getTypeLoc().getEndLoc());
     }
     auto StmtId = BuildNodeIdForImplicitStmt(E);
-    if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
+    if (auto RCC = RangeInCurrentContext(StmtId, NormalizeRange(SR))) {
       RecordCallEdges(*RCC, BuildNodeIdForRefToDecl(Callee));
     }
   }
@@ -1312,8 +1290,7 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr* E) {
                                        DtorName, E->getBeginLoc(), TyId);
   }
   if (DDId) {
-    clang::SourceRange SR = E->getSourceRange();
-    SR.setEnd(SR.getEnd().getLocWithOffset(1));
+    clang::SourceRange SR = NormalizeRange(E->getSourceRange());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), DDId.value());
@@ -1351,9 +1328,7 @@ bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr* E) {
     auto NewId = BuildNodeIdForRefToDecl(New);
     clang::SourceLocation NewLoc = E->getBeginLoc();
     if (NewLoc.isFileID()) {
-      clang::SourceRange NewRange(
-          NewLoc, GetLocForEndOfToken(*Observer.getSourceManager(),
-                                      *Observer.getLangOptions(), NewLoc));
+      clang::SourceRange NewRange = NormalizeRange(NewLoc);
       if (auto RCC = RangeInCurrentContext(StmtId, NewRange)) {
         Observer.recordDeclUseLocation(RCC.value(), NewId,
                                        GraphObserver::Claimability::Unclaimable,
@@ -1384,14 +1359,14 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
       CanQualType::CreateUnsafe(DTCan));
   if (auto DDId = RecordEdgesForDependentName(NNSLoc, DtorName,
                                               E->getTildeLoc(), TyId)) {
-    if (auto RCC = ExplicitRangeInCurrentContext(
-            RangeForASTEntity(E->getTildeLoc()))) {
+    if (auto RCC =
+            ExplicitRangeInCurrentContext(NormalizeRange(E->getTildeLoc()))) {
       Observer.recordDeclUseLocation(*RCC, *DDId,
                                      GraphObserver::Claimability::Claimable,
                                      IsImplicit(*RCC));
     }
     clang::SourceRange SR = E->getSourceRange();
-    SR.setEnd(RangeForASTEntity(SR.getEnd()).getEnd());
+    SR.setEnd(NormalizeRange(SR.getEnd()).getEnd());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), DDId.value());
@@ -1415,12 +1390,7 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
       CanQualType::CreateUnsafe(QTCan));
   if (auto LookupId = RecordEdgesForDependentName(
           clang::NestedNameSpecifierLoc(), CtorName, E->getBeginLoc(), TyId)) {
-    clang::SourceLocation RPL = E->getRParenLoc();
-    clang::SourceRange SR = E->getSourceRange();
-    // This loses the right paren without the offset.
-    if (RPL.isValid()) {
-      SR.setEnd(RPL.getLocWithOffset(1));
-    }
+    clang::SourceRange SR = NormalizeRange(E->getSourceRange());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), LookupId.value());
@@ -1430,12 +1400,7 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
 }
 
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr* E) {
-  clang::SourceLocation RPL = E->getRParenLoc();
-  clang::SourceRange SR = E->getSourceRange();
-  if (RPL.isValid()) {
-    // This loses the right paren without the offset.
-    SR.setEnd(RPL.getLocWithOffset(1));
-  }
+  clang::SourceRange SR = NormalizeRange(E->getSourceRange());
   auto StmtId = BuildNodeIdForImplicitStmt(E);
   if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
     if (const auto* Callee = E->getCalleeDecl()) {
@@ -1756,7 +1721,7 @@ bool IndexerASTVisitor::VisitDependentNameTypeLoc(
     clang::DependentNameTypeLoc TL) {
   if (auto Nodes = RecordTypeLocSpellingLocation(TL)) {
     if (auto RCC =
-            ExplicitRangeInCurrentContext(RangeForASTEntity(TL.getNameLoc()))) {
+            ExplicitRangeInCurrentContext(NormalizeRange(TL.getNameLoc()))) {
       Observer.recordDeclUseLocation(*RCC, Nodes.ForReference(),
                                      GraphObserver::Claimability::Claimable,
                                      IsImplicit(*RCC));
@@ -1912,7 +1877,7 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     return true;
   }
   if (SL.isValid()) {
-    SourceRange Range = RangeForASTEntity(SL);
+    SourceRange Range = NormalizeRange(SL);
     if (IsImplicit) {
       // Mark implicit ranges by making them zero-length.
       Range.setEnd(Range.getBegin());
@@ -2048,9 +2013,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl* Decl) {
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
       BuildNodeIdForDefnOfDecl(Decl));
-  Marks.set_marked_source_end(GetLocForEndOfToken(
-      *Observer.getSourceManager(), *Observer.getLangOptions(),
-      Decl->getSourceRange().getEnd()));
+  Marks.set_marked_source_end(NormalizeRange(Decl->getSourceRange()).getEnd());
   Marks.set_name_range(NameRange);
   if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
     Observer.recordTypeEdge(BodyDeclNode, *TyNodeId);
@@ -2152,9 +2115,7 @@ bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl* Decl) {
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
       absl::nullopt);
   Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
-  Marks.set_marked_source_end(GetLocForEndOfToken(
-      *Observer.getSourceManager(), *Observer.getLangOptions(),
-      Decl->getSourceRange().getEnd()));
+  Marks.set_marked_source_end(NormalizeRange(Decl->getSourceRange()).getEnd());
   Marks.set_name_range(NameRange);
   // TODO(zarko): Record completeness data. This is relevant for static fields,
   // which may be declared along with a complete class definition but later
@@ -2178,9 +2139,7 @@ bool IndexerASTVisitor::VisitEnumConstantDecl(
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  Marks.set_marked_source_end(GetLocForEndOfToken(
-      *Observer.getSourceManager(), *Observer.getLangOptions(),
-      Decl->getSourceRange().getEnd()));
+  Marks.set_marked_source_end(NormalizeRange(Decl->getSourceRange()).getEnd());
   Marks.set_name_range(NameRange);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
@@ -2201,9 +2160,8 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl* Decl) {
   if (Decl->isThisDeclarationADefinition() && Decl->getBody() != nullptr) {
     Marks.set_marked_source_end(Decl->getBody()->getSourceRange().getBegin());
   } else {
-    Marks.set_marked_source_end(GetLocForEndOfToken(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        Decl->getSourceRange().getEnd()));
+    Marks.set_marked_source_end(
+        NormalizeRange(Decl->getSourceRange()).getEnd());
   }
   Marks.set_name_range(NameRange);
   MaybeRecordDefinitionRange(
@@ -2810,9 +2768,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
       Decl->getBody() != nullptr) {
     Marks.set_marked_source_end(Decl->getBody()->getSourceRange().getBegin());
   } else {
-    Marks.set_marked_source_end(GetLocForEndOfToken(
-        *Observer.getSourceManager(), *Observer.getLangOptions(),
-        Decl->getSourceRange().getEnd()));
+    Marks.set_marked_source_end(
+        NormalizeRange(Decl->getSourceRange()).getEnd());
   }
   Marks.set_name_range(NameRange);
   auto NameRangeInContext =
@@ -2839,7 +2796,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
     SourceRange DefinitionRange(
         TemplateKeywordLoc.isValid() ? TemplateKeywordLoc
                                      : Decl->getSourceRange().getBegin(),
-        RangeForASTEntity(Decl->getSourceRange().getEnd()).getEnd());
+        NormalizeRange(Decl->getSourceRange().getEnd()).getEnd());
     auto DefinitionRangeInContext =
         RangeInCurrentContext(Decl->isImplicit(), OuterNode, DefinitionRange);
     MaybeRecordFullDefinitionRange(DefinitionRangeInContext, OuterNode,
@@ -2906,7 +2863,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
           // for the variable we are initializing.
           const SourceLocation& Loc = Init->getMemberLocation();
           if (Loc.isValid() && Loc.isFileID()) {
-            MemberSR = RangeForSingleToken(Loc);
+            MemberSR = NormalizeRange(Loc);
           }
           if (auto RCC = ExplicitRangeInCurrentContext(MemberSR)) {
             const auto& ID = BuildNodeIdForRefToDecl(M);
@@ -2926,9 +2883,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
             if (auto LookupId = RecordEdgesForDependentName(
                     clang::NestedNameSpecifierLoc(), DepName,
                     Init->getSourceLocation(), TyId)) {
-              clang::SourceLocation RPL = Init->getRParenLoc();
-              clang::SourceRange SR = Init->getSourceRange();
-              SR.setEnd(SR.getEnd().getLocWithOffset(1));
+              clang::SourceRange SR = NormalizeRange(Init->getSourceRange());
               if (Init->isWritten()) {
                 if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
                   RecordCallEdges(RCC.value(), LookupId.value());
@@ -3820,7 +3775,7 @@ absl::optional<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
   llvm::raw_string_ostream TOstream(Text);
   bool IsBindingSite = false;
   auto RCC = RangeInCurrentContext(BuildNodeIdForImplicitStmt(Expr),
-                                   RangeForASTEntity(Expr->getExprLoc()));
+                                   NormalizeRange(Expr->getExprLoc()));
   if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
     // TODO(zarko): Represent constant values of any type as nodes in the
     // graph; link ranges to them. Right now we don't emit any node data for
@@ -4616,7 +4571,7 @@ bool IndexerASTVisitor::VisitObjCImplementationDecl(
 bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
     const clang::ObjCCategoryImplDecl* ImplDecl) {
   auto Marks = MarkedSources.Generate(ImplDecl);
-  SourceRange NameRange = RangeForASTEntity(ImplDecl->getCategoryNameLoc());
+  SourceRange NameRange = NormalizeRange(ImplDecl->getCategoryNameLoc());
   auto ImplDeclNode = BuildNodeIdForDecl(ImplDecl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(ImplDecl->isImplicit(), ImplDeclNode, NameRange),
@@ -4655,7 +4610,7 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
       LOG(ERROR) << "Class extensions should not have a category impl.";
       return true;
     }
-    auto Range = RangeForASTEntity(ImplDecl->getCategoryNameLoc());
+    auto Range = NormalizeRange(ImplDecl->getCategoryNameLoc());
     if (auto RCC = ExplicitRangeInCurrentContext(Range)) {
       auto ID = BuildNodeIdForDecl(CategoryDecl);
       Observer.recordDeclUseLocation(RCC.value(), ID,
@@ -4673,8 +4628,7 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
     auto ClassInterfaceNode = BuildNodeIdForDecl(BaseClassInterface);
     // The location for the category decl is actually the location of the
     // interface name.
-    const SourceRange& IFaceNameRange =
-        RangeForASTEntity(ImplDecl->getLocation());
+    const SourceRange& IFaceNameRange = NormalizeRange(ImplDecl->getLocation());
     if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
       Observer.recordDeclUseLocation(RCC.value(), ClassInterfaceNode,
                                      GraphObserver::Claimability::Claimable,
@@ -4706,7 +4660,7 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
   // Draw a ref edge from the superclass usage in the interface declaration to
   // the superclass declaration.
   if (auto SC = IFace->getSuperClass()) {
-    auto SuperRange = RangeForASTEntity(IFace->getSuperClassLoc());
+    auto SuperRange = NormalizeRange(IFace->getSuperClassLoc());
     if (auto SCRCC = ExplicitRangeInCurrentContext(SuperRange)) {
       auto SCID = BuildNodeIdForDecl(SC);
       Observer.recordDeclUseLocation(SCRCC.value(), SCID,
@@ -4738,7 +4692,7 @@ void IndexerASTVisitor::ConnectToProtocols(
     Observer.recordExtendsEdge(BodyDeclNode, BuildNodeIdForDecl(*PIt),
                                false /* isVirtual */,
                                clang::AccessSpecifier::AS_none);
-    auto Range = RangeForASTEntity(*PLocIt);
+    auto Range = NormalizeRange(*PLocIt);
     if (auto ERCC = ExplicitRangeInCurrentContext(Range)) {
       auto PID = BuildNodeIdForDecl(*PIt);
       Observer.recordDeclUseLocation(ERCC.value(), PID,
@@ -4806,7 +4760,7 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
   if (Decl->IsClassExtension()) {
     NameRange = RangeForNameOfDeclaration(Decl);
   } else {
-    NameRange = RangeForASTEntity(Decl->getCategoryNameLoc());
+    NameRange = NormalizeRange(Decl->getCategoryNameLoc());
   }
 
   auto DeclNode = BuildNodeIdForDecl(Decl);
@@ -4826,7 +4780,7 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
     auto ClassInterfaceNode = BuildNodeIdForDecl(BaseClassInterface);
     // The location for the category decl is actually the location of the
     // interface name.
-    const SourceRange& IFaceNameRange = RangeForASTEntity(Decl->getLocation());
+    const SourceRange& IFaceNameRange = NormalizeRange(Decl->getLocation());
     if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
       Observer.recordDeclUseLocation(RCC.value(), ClassInterfaceNode,
                                      GraphObserver::Claimability::Claimable,
@@ -5060,9 +5014,7 @@ void IndexerASTVisitor::ConnectParam(const Decl* Decl,
   Marks.set_name_range(Range);
   Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation ||
                      DeclIsImplicit);
-  Marks.set_marked_source_end(GetLocForEndOfToken(
-      *Observer.getSourceManager(), *Observer.getLangOptions(),
-      Param->getSourceRange().getEnd()));
+  Marks.set_marked_source_end(NormalizeRange(Param->getSourceRange()).getEnd());
   Observer.recordVariableNode(VarNodeId,
                               IsFunctionDefinition
                                   ? GraphObserver::Completeness::Definition
@@ -5141,7 +5093,7 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
         // make it easier for frontends to make use of this data.
         const SourceLocation& Loc = Expr->getSelectorLoc(0);
         if (Loc.isValid() && Loc.isFileID()) {
-          const SourceRange& range = RangeForSingleToken(Loc);
+          SourceRange range = NormalizeRange(Loc);
           if (auto R = ExplicitRangeInCurrentContext(range)) {
             Observer.recordDeclUseLocation(
                 R.value(), DeclId, GraphObserver::Claimability::Unclaimable,
@@ -5195,7 +5147,7 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
   if (SL.isValid()) {
     // This gives us the property name. If we just call Expr->getSourceRange()
     // we just get the range for the object's name.
-    SourceRange SR = RangeForASTEntity(SL);
+    SourceRange SR = NormalizeRange(SL);
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       // Record the "field" access if this has an explicit property.

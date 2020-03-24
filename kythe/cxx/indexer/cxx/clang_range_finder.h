@@ -33,20 +33,21 @@ namespace kythe {
 /// which is most suitable location to attribute to that entity.
 class ClangRangeFinder {
  public:
+  /// \brief Constructs a new ClangRangeFinder using the provided SourceManager
+  /// and LangOptions.
   explicit ClangRangeFinder(const clang::SourceManager* source_manager,
                             const clang::LangOptions* lang_options)
       : source_manager_(CHECK_NOTNULL(source_manager)),
         lang_options_(CHECK_NOTNULL(lang_options)) {}
 
-  /// \brief Returns a suitable range for the entity beginning at `start`.
-  clang::SourceRange RangeForEntityAt(clang::SourceLocation start) const;
-  /// \brief Returns a range for the single token beginning at `start`.
-  clang::SourceRange RangeForTokenAt(clang::SourceLocation start) const;
   /// \brief Returns a range encompassing the name of the decl.
   clang::SourceRange RangeForNameOf(const clang::NamedDecl* decl) const;
 
   /// \brief Retruns a range of characters between start and end in the ultimate
-  /// file.
+  /// file. Notably, this resolves macro IDs to the either their expansion range
+  /// or spelling range, depending on if the location is in an argument or body.
+  /// This also expands the end location to include the characters comprising
+  /// the final token.
   clang::SourceRange NormalizeRange(clang::SourceRange range) const;
   clang::SourceRange NormalizeRange(clang::SourceLocation start) const;
   clang::SourceRange NormalizeRange(clang::SourceLocation start,
@@ -64,8 +65,6 @@ class ClangRangeFinder {
       const clang::ObjCCompatibleAliasDecl& decl) const;
   clang::SourceRange RangeForNameOfMethod(
       const clang::ObjCMethodDecl& decl) const;
-
-  // TODO(shahms): If possible, treat all "anonymous" declarations alike.
   clang::SourceRange RangeForNamespace(const clang::NamespaceDecl& decl) const;
 
   /// \brief Converts a CharSourceRange to a character-oriented SourceRange.
