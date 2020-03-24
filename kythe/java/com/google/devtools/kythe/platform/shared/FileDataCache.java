@@ -40,12 +40,7 @@ public class FileDataCache implements FileDataProvider {
     Set<String> addedFiles = new HashSet<>();
     for (FileData data : fileData) {
       String digest = data.getInfo().getDigest();
-      if (addedFiles.contains(digest)) {
-        logger.atWarning().log(
-            "File %s with digest %s occurs multiple times in compilation unit.",
-            data.getInfo().getPath(), digest);
-      } else {
-        addedFiles.add(digest);
+      if (addedFiles.add(digest)) {
         builder.put(digest, data.getContent().toByteArray());
       }
     }
