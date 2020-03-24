@@ -1118,7 +1118,6 @@ cc_indexer_test(
     name = "function_operator_overload_names",
     size = "small",
     srcs = ["function/function_operator_overload_names.cc"],
-    ignore_dups = True,
     tags = ["function"],
 )
 

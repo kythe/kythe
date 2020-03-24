@@ -553,16 +553,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   clang::SourceRange RangeForSingleToken(
       clang::SourceLocation start_location) const;
 
-  /// Consume a token of the `ExpectedKind` from the `StartLocation`,
-  /// returning the range for that token on success and an invalid
-  /// range otherwise.
-  ///
-  /// The begin location for the returned range may be different than
-  /// StartLocation. For example, this can happen if StartLocation points to
-  /// whitespace before the start of the token.
-  clang::SourceRange ConsumeToken(clang::SourceLocation StartLocation,
-                                  clang::tok::TokenKind ExpectedKind) const;
-
   bool TraverseClassTemplateDecl(clang::ClassTemplateDecl* TD);
   bool TraverseClassTemplateSpecializationDecl(
       clang::ClassTemplateSpecializationDecl* TD);
@@ -616,20 +606,6 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief Returns the ASTContext.
   const clang::ASTContext& getASTContext() { return Context; }
 
-  /// If `SR` is empty (getBegin() == getEnd()) and a valid file id, expands the
-  /// range. Otherwise, returns the input unmodified.
-  clang::SourceRange ExpandRangeIfEmptyFileID(const clang::SourceRange& SR);
-
-  // If `SR` is a valid macro id, attempt to map it to a file range,
-  // otherwise returns the input unmodified.
-  clang::SourceRange MapRangeToFileIfMacroID(const clang::SourceRange& SR);
-
-  /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
-  /// RangeContext after expanding empty ranges and mapping macros to a file
-  /// location.
-  absl::optional<GraphObserver::Range> ExpandedFileRangeInCurrentContext(
-      const clang::SourceRange& SR);
-
   /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
   absl::optional<GraphObserver::Range> ExplicitRangeInCurrentContext(
@@ -641,6 +617,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// via RangeForASTEntityFromSourceLocation.
   absl::optional<GraphObserver::Range> ExpandedRangeInCurrentContext(
       clang::SourceRange SR);
+  /// Returns `SR` as a character-based file range.
+  clang::SourceRange NormalizeRange(clang::SourceRange SR) const;
 
   /// If `Implicit` is true, returns `Id` as an implicit Range; otherwise,
   /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
