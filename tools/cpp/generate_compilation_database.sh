@@ -8,6 +8,8 @@ set -e
 FILENAME=${1:?Missing required source path}
 bazel build \
   --experimental_action_listener=//kythe/cxx/tools/generate_compile_commands:extract_json \
+  --noshow_progress \
+  --noshow_loading_progress \
   --output_groups=compilation_outputs \
   --compile_one_dependency \
   "$FILENAME" > /dev/null
