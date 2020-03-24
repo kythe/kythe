@@ -1365,8 +1365,7 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
                                      GraphObserver::Claimability::Claimable,
                                      IsImplicit(*RCC));
     }
-    clang::SourceRange SR = E->getSourceRange();
-    SR.setEnd(NormalizeRange(SR.getEnd()).getEnd());
+    clang::SourceRange SR = NormalizeRange(E->getSourceRange());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.value(), DDId.value());
@@ -2793,10 +2792,10 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl* Decl) {
 
   if (IsFunctionDefinition && !Decl->isImplicit() &&
       Decl->getBody() != nullptr) {
-    SourceRange DefinitionRange(
-        TemplateKeywordLoc.isValid() ? TemplateKeywordLoc
-                                     : Decl->getSourceRange().getBegin(),
-        NormalizeRange(Decl->getSourceRange().getEnd()).getEnd());
+    SourceRange DefinitionRange = NormalizeRange(
+        {TemplateKeywordLoc.isValid() ? TemplateKeywordLoc
+                                      : Decl->getSourceRange().getBegin(),
+         Decl->getSourceRange().getEnd()});
     auto DefinitionRangeInContext =
         RangeInCurrentContext(Decl->isImplicit(), OuterNode, DefinitionRange);
     MaybeRecordFullDefinitionRange(DefinitionRangeInContext, OuterNode,
