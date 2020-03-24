@@ -77,12 +77,6 @@ public class KytheEntrySets {
         // Ensure file VName has digest signature
         name = name.setSignature(digest);
       }
-      if (inputVNames.containsKey(digest)) {
-        statistics.incrementCounter("file-digest-collision");
-        logger.atWarning().log(
-            "Found two files with the same digest [%s]: %s and %s",
-            digest, name, inputVNames.get(digest));
-      }
       inputVNames.put(digest, name.build());
     }
   }
