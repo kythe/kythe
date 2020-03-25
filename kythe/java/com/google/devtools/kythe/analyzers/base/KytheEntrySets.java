@@ -18,7 +18,6 @@ package com.google.devtools.kythe.analyzers.base;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.flogger.FluentLogger;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Diagnostic;
@@ -46,8 +45,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * <p>This class is meant to be subclassed to build indexer-specific nodes and edges.
  */
 public class KytheEntrySets {
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
-
   public static final String NODE_PREFIX = "/kythe/";
 
   private final StatisticsCollector statistics;
