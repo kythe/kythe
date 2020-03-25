@@ -1,11 +1,10 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
+load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load(":go.bzl", "go_kythe_proto")
 
 package(default_visibility = ["//kythe:proto_visibility"])
-
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
-load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
-load(":go.bzl", "go_kythe_proto")
 
 filegroup(
     name = "public",

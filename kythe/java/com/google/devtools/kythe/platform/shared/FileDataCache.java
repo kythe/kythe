@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.flogger.FluentLogger;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.proto.Analysis.FileData;
@@ -30,8 +29,6 @@ import java.util.Set;
  * FileData}.
  */
 public class FileDataCache implements FileDataProvider {
-
-  private static final FluentLogger logger = FluentLogger.forEnclosingClass();
 
   private final Map<String, byte[]> fileContents;
 
