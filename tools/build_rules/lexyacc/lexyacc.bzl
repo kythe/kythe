@@ -86,7 +86,7 @@ def lexyacc_toolchain(name, lex, yacc):
     )
 
 def _check_flex_version(repository_ctx, min_version):
-    flex = repository_ctx.which("flex")
+    flex = repository_ctx.os.environ.get("FLEX", repository_ctx.which("flex"))
     if flex == None:
         fail("Unable to find flex binary")
     flex_result = repository_ctx.execute([flex, "--version"])
