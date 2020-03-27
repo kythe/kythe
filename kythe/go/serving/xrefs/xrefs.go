@@ -898,13 +898,19 @@ func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.Nod
 			continue
 		}
 
-		if n := nodeToInfo(patterns, node); n != nil {
-			nodes[node.Ticket] = n
-			if def := node.DefinitionLocation; def != nil {
-				n.Definition = def.Ticket
-				if _, ok := defs[def.Ticket]; !ok {
-					defs[def.Ticket] = a2a(def, false).Anchor
-				}
+		nodes[node.Ticket] = nodeToInfo(patterns, node)
+		if def := node.DefinitionLocation; def != nil {
+			n := nodes[node.Ticket]
+			if n == nil {
+				// Add an empty NodeInfo to attach definition location even if no facts
+				// are requested.
+				n = &cpb.NodeInfo{}
+				nodes[node.Ticket] = n
+			}
+
+			n.Definition = def.Ticket
+			if _, ok := defs[def.Ticket]; !ok {
+				defs[def.Ticket] = a2a(def, false).Anchor
 			}
 		}
 	}

@@ -136,6 +136,7 @@ var (
 			Fact: makeFactList(
 				"/kythe/node/kind", "record",
 			),
+			DefinitionLocation: &srvpb.ExpandedAnchor{Ticket: "kythe:?path=def/location#defDoc"},
 		}, {
 			Ticket: "kythe:#documentedBy",
 			Fact: makeFactList(
@@ -1758,12 +1759,18 @@ func TestDocumentation(t *testing.T) {
 			},
 		}},
 		Nodes: nodeInfos(getNodes("kythe:#documented")),
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=def/location#defDoc": &xpb.Anchor{
+				Ticket: "kythe:?path=def/location#defDoc",
+				Parent: "kythe:?path=def/location",
+			},
+		},
 	}
 
 	if reply == nil || err != nil {
 		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
-	} else if err := testutil.DeepEqual(expected, reply); err != nil {
-		t.Fatal(err)
+	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
 	}
 }
 
@@ -1803,12 +1810,18 @@ func TestDocumentationChildren(t *testing.T) {
 			"kythe:#documented",
 			"kythe:#secondChildDoc",
 		)),
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=def/location#defDoc": &xpb.Anchor{
+				Ticket: "kythe:?path=def/location#defDoc",
+				Parent: "kythe:?path=def/location",
+			},
+		},
 	}
 
 	if reply == nil || err != nil {
 		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
-	} else if err := testutil.DeepEqual(expected, reply); err != nil {
-		t.Fatal(err)
+	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
 	}
 }
 
@@ -1830,12 +1843,18 @@ func TestDocumentationIndirection(t *testing.T) {
 			},
 		}},
 		Nodes: nodeInfos(getNodes("kythe:#documented", "kythe:#documentedBy")),
+		DefinitionLocations: map[string]*xpb.Anchor{
+			"kythe:?path=def/location#defDoc": &xpb.Anchor{
+				Ticket: "kythe:?path=def/location#defDoc",
+				Parent: "kythe:?path=def/location",
+			},
+		},
 	}
 
 	if reply == nil || err != nil {
 		t.Fatalf("Documentation call failed: (reply: %v; error: %v)", reply, err)
-	} else if err := testutil.DeepEqual(expected, reply); err != nil {
-		t.Fatal(err)
+	} else if diff := compare.ProtoDiff(expected, reply); diff != "" {
+		t.Fatalf("(-expected; +found):\n%s", diff)
 	}
 }
 
@@ -1850,11 +1869,14 @@ func (s byOffset) Less(i, j int) bool {
 }
 
 func nodeInfo(n *srvpb.Node) *cpb.NodeInfo {
-	ni := &cpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
+	ni := &cpb.NodeInfo{
+		Facts:      make(map[string][]byte, len(n.Fact)),
+		Definition: n.DefinitionLocation.GetTicket(),
+	}
 	for _, f := range n.Fact {
 		ni.Facts[f.Name] = f.Value
 	}
-	if len(ni.Facts) == 0 {
+	if len(ni.Facts) == 0 && ni.Definition == "" {
 		return nil
 	}
 	return ni
