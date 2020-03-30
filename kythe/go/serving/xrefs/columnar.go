@@ -282,6 +282,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 			return nil, err
 		}
 		it, err := c.DB.ScanPrefix(ctx, prefix, &keyvalue.Options{LargeRead: true})
+		defer it.Close()
 		if err != nil {
 			return nil, err
 		}
