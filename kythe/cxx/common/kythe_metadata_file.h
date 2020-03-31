@@ -23,6 +23,7 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+#include "kythe/proto/metadata.pb.h"
 #include "kythe/proto/storage.pb.h"
 #include "rapidjson/document.h"
 
@@ -62,6 +63,10 @@ class MetadataFile {
     }
     return meta_file;
   }
+
+  //// Attempts to convert `mapping` to a `Rule`.
+  static absl::optional<MetadataFile::Rule> LoadMetaElement(
+      const kythe::proto::metadata::MappingRule& mapping);
 
   /// Rules to apply keyed on `begin`.
   const std::multimap<unsigned, Rule>& rules() const { return rules_; }
