@@ -33,7 +33,7 @@ def _proto_dependencies():
     maybe(
         build_event_stream_repository,
         name = "build_event_stream_proto",
-        revision = "1.1.0",
+        revision = "2.1.0",
         sha256s = {
             "build_event_stream.proto": "6942888c75ef5e6ab94364604cdd297f207ab119b425681eb7bf523e206d96a7",
             "command_line.proto": "a6fb6591aa50794431787169bc4fae16105ef5c401e7c30ecf0f775e0ab25c2c",
