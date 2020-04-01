@@ -36,14 +36,16 @@ def _bes_repo(repository_ctx):
     }
     proto_srcs = []
     for path in _FILES:
+        url = _URL_TEMPLATE.format(
+            revision = repository_ctx.attr.revision,
+            path = path,
+        )
         filename = paths.basename(path)
         proto_srcs.append("\"%s\"" % path)
         attrs["sha256s"][filename] = repository_ctx.download(
-            _URL_TEMPLATE.format(
-                revision = repository_ctx.attr.revision,
-                path = path,
-            ),
+            url,
             output = path,
+            canonical_id = url,
             sha256 = repository_ctx.attr.sha256s.get(filename, ""),
         ).sha256
 
