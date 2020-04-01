@@ -257,6 +257,71 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "bazel_event_reader",
+    srcs = ["bazel_event_reader.cc"],
+    hdrs = ["bazel_event_reader.h"],
+    deps = [
+        "@build_event_stream_proto//:build_event_stream_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/types:variant",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "bazel_event_reader_test",
+    srcs = ["bazel_event_reader_test.cc"],
+    deps = [
+        ":bazel_event_reader",
+        "//third_party:gtest_main",
+        "@build_event_stream_proto//:build_event_stream_cc_proto",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "bazel_artifact_reader",
+    srcs = ["bazel_artifact_reader.cc"],
+    hdrs = ["bazel_artifact_reader.h"],
+    deps = [
+        ":bazel_event_reader",
+        "@build_event_stream_proto//:build_event_stream_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:variant",
+    ],
+)
+
+cc_test(
+    name = "bazel_artifact_reader_test",
+    srcs = ["bazel_artifact_reader_test.cc"],
+    deps = [
+        ":bazel_artifact_reader",
+        ":bazel_event_reader",
+        "//third_party:gtest_main",
+        "@build_event_stream_proto//:build_event_stream_cc_proto",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_binary(
+    name = "dump_bazel_artifacts",
+    srcs = ["dump_bazel_artifacts.cc"],
+    deps = [
+        ":bazel_artifact_reader",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
 sh_binary(
     name = "xcode_wrapper",
     srcs = ["xcode_wrapper.sh"],
