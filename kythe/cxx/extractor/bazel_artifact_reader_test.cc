@@ -18,9 +18,9 @@
 #include <sstream>
 
 #include "absl/strings/str_cat.h"
+#include "gmock/gmock.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/util/delimited_message_util.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "kythe/cxx/extractor/bazel_event_reader.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
