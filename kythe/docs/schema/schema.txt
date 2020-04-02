@@ -1303,7 +1303,7 @@ Ordinals are used::
 [kythe,C++,"Initializers inside template instantiations are implicit."]
 --------------------------------------------------------------------------------
 template<typename T> class C {
-  //- @x ref/init/implicit MemberX
+  //- @"1" ref/init/implicit MemberX
   T t = {.x = 1};
 };
 //- @x defines/binding MemberX

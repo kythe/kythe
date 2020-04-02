@@ -1806,8 +1806,16 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
   for (const auto& D : DIE->designators()) {
     if (!D.isFieldDesignator()) continue;
     if (const auto* F = D.getField()) {
-      if (!VisitDeclRefOrIvarRefExpr(DIE, F, D.getFieldLoc(), false, true)) {
+      if (!VisitDeclRefOrIvarRefExpr(DIE, F, D.getFieldLoc(), false)) {
         return false;
+      }
+      clang::Expr* Init = DIE->getInit();
+      if (auto RCC =
+              RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
+                                    NormalizeRange(Init->getSourceRange()))) {
+        Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(F),
+                                    GraphObserver::Claimability::Unclaimable,
+                                    this->IsImplicit(*RCC));
       }
     }
   }
@@ -1857,20 +1865,13 @@ bool IndexerASTVisitor::TraverseDeclarationNameInfo(
 // instantiations.
 bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     const clang::Expr* Expr, const NamedDecl* const FoundDecl,
-    SourceLocation SL, bool IsImplicit, bool IsInit) {
+    SourceLocation SL, bool IsImplicit) {
   // TODO(zarko): check to see if this DeclRefExpr has already been indexed.
   // (Use a simple N=1 cache.)
   // TODO(zarko): Point at the capture as well as the thing being captured;
   // port over RemapDeclIfCaptured.
   // const NamedDecl* const TargetDecl = RemapDeclIfCaptured(FoundDecl);
-  const NamedDecl* TargetDecl = FoundDecl;
-  if (const auto* IFD = dyn_cast<clang::IndirectFieldDecl>(FoundDecl)) {
-    // An IndirectFieldDecl is just an alias; we want to record this as a
-    // reference to the underlying entity.
-    // TODO(jdennett): Would this be better done in BuildNodeIdForDecl?
-    TargetDecl = IFD->getAnonField();
-  }
-  if (isa<clang::VarDecl>(TargetDecl) && TargetDecl->isImplicit()) {
+  if (isa<clang::VarDecl>(FoundDecl) && FoundDecl->isImplicit()) {
     // Ignore variable declarations synthesized from for-range loops, as they
     // are just a clang implementation detail.
     return true;
@@ -1884,18 +1885,12 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
 
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
-      GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(TargetDecl);
-      if (IsInit) {
-        Observer.recordInitLocation(RCC.value(), DeclId,
-                                    GraphObserver::Claimability::Unclaimable,
-                                    this->IsImplicit(RCC.value()));
-      } else {
-        Observer.recordDeclUseLocation(RCC.value(), DeclId,
-                                       GraphObserver::Claimability::Unclaimable,
-                                       this->IsImplicit(RCC.value()));
-      }
+      GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
+      Observer.recordDeclUseLocation(RCC.value(), DeclId,
+                                     GraphObserver::Claimability::Unclaimable,
+                                     this->IsImplicit(RCC.value()));
       for (const auto& S : Supports) {
-        S->InspectDeclRef(*this, SL, RCC.value(), DeclId, TargetDecl);
+        S->InspectDeclRef(*this, SL, RCC.value(), DeclId, FoundDecl);
       }
     }
   }
@@ -3295,6 +3290,12 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
 
   if (absl::GetFlag(FLAGS_experimental_alias_template_instantiations)) {
     Decl = FindSpecializedTemplate(Decl);
+  }
+
+  if (const auto* IFD = dyn_cast<clang::IndirectFieldDecl>(Decl)) {
+    // An IndirectFieldDecl is just an alias; we want to record this as a
+    // reference to the underlying entity.
+    Decl = IFD->getAnonField();
   }
 
   // find, not insert, since we might generate other IDs in the process of

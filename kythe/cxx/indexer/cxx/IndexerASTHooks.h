@@ -857,12 +857,10 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   ///
   /// DeclRefExpr and ObjCIvarRefExpr are similar entities and can be processed
   /// in the same way but do not have a useful common ancestry.
-  ///
-  /// \param IsInit set to true if this is an initializing reference.
   bool VisitDeclRefOrIvarRefExpr(const clang::Expr* Expr,
                                  const clang::NamedDecl* const FoundDecl,
                                  clang::SourceLocation SL,
-                                 bool IsImplicit = false, bool IsInit = false);
+                                 bool IsImplicit = false);
 
   /// \brief Connect a NodeId to the super and implemented protocols for a
   /// ObjCInterfaceDecl.
