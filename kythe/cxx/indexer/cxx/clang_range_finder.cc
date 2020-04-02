@@ -43,6 +43,7 @@ std::string DumpString(const clang::Decl& decl) {
 
 CharSourceRange GetImmediateFileRange(
     const clang::SourceManager& source_manager, const SourceLocation loc) {
+  CHECK(!loc.isFileID());
   return source_manager.isMacroArgExpansion(loc)
              ? CharSourceRange::getTokenRange(
                    source_manager.getImmediateSpellingLoc(loc))
@@ -50,32 +51,34 @@ CharSourceRange GetImmediateFileRange(
 }
 
 CharSourceRange GetFileRange(const clang::SourceManager& source_manager,
-                             const SourceLocation loc) {
-  if (loc.isFileID()) {
-    return CharSourceRange::getTokenRange(loc);
-  }
-  CharSourceRange range = GetImmediateFileRange(source_manager, loc);
-  // Resolve both start and end to their ultimate expansion point.
+                             CharSourceRange range) {
+  bool begin_in_macro_body = false;
   while (!range.getBegin().isFileID()) {
+    begin_in_macro_body = source_manager.isMacroBodyExpansion(range.getBegin());
     range.setBegin(
         GetImmediateFileRange(source_manager, range.getBegin()).getBegin());
   }
+  bool end_in_macro_body = false;
   while (!range.getEnd().isFileID()) {
+    end_in_macro_body = source_manager.isMacroBodyExpansion(range.getEnd());
     CharSourceRange end = GetImmediateFileRange(source_manager, range.getEnd());
     range.setEnd(end.getEnd());
     range.setTokenRange(end.isTokenRange());
+  }
+  if (begin_in_macro_body && end_in_macro_body) {
+    // For macro body ranges we want to return a zero-width range
+    // pointing to the beginning of the macro expansion so that any
+    // edges originating from within the macro body are suppressed.
+    // TODO(shahms): Emit the properly expanded range in all cases once UI
+    // issues are addressed.
+    return CharSourceRange::getCharRange(range.getBegin());
   }
   return range;
 }
 
 CharSourceRange GetFileRange(const clang::SourceManager& source_manager,
                              const SourceRange range) {
-  if (range.getBegin() == range.getEnd()) {
-    return GetFileRange(source_manager, range.getBegin());
-  }
-  CharSourceRange result = GetFileRange(source_manager, range.getEnd());
-  result.setBegin(source_manager.getFileLoc(range.getBegin()));
-  return result;
+  return GetFileRange(source_manager, CharSourceRange::getTokenRange(range));
 }
 }  // namespace
 
