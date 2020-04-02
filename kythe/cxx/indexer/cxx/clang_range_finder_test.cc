@@ -18,7 +18,9 @@
 #include <functional>
 #include <memory>
 
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -26,12 +28,15 @@
 #include "clang/Lex/Lexer.h"
 #include "clang/Tooling/Tooling.h"
 #include "glog/logging.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace kythe {
 namespace {
 using ::clang::ASTUnit;
 using ::clang::tooling::buildASTFromCode;
+using ::testing::ElementsAre;
+using ::testing::Pair;
 
 class ClangRangeFinderTest : public ::testing::Test {
  public:
@@ -65,6 +70,13 @@ class ClangRangeFinderTest : public ::testing::Test {
   std::unique_ptr<clang::ASTUnit> ast_;
 };
 
+// Returns a matcher checking for an empty absl::string_view starting at data.
+auto EmptyAt(const char* data) {
+  return ::testing::AllOf(
+      ::testing::Property(&absl::string_view::data, ::testing::Eq(data)),
+      ::testing::IsEmpty());
+}
+
 const clang::NamedDecl* FindLastDecl(clang::ASTUnit& ast) {
   CHECK(!ast.top_level_empty());
   return clang::dyn_cast<clang::NamedDecl>(*(ast.top_level_end() - 1));
@@ -89,6 +101,21 @@ T* FindLastDeclOf(clang::ASTUnit& ast) {
     visitor.TraverseDecl(*iter);
   }
   return visitor.result;
+}
+
+std::vector<const clang::NamedDecl*> FindAllNamedDecls(clang::ASTUnit& ast) {
+  struct NamedDeclCollector : clang::RecursiveASTVisitor<NamedDeclCollector> {
+    bool VisitNamedDecl(clang::NamedDecl* decl) {
+      decls.push_back(decl);
+      return true;
+    }
+
+    std::vector<const clang::NamedDecl*> decls;
+  } visitor;
+  for (auto iter = ast.top_level_begin(); iter != ast.top_level_end(); iter++) {
+    visitor.TraverseDecl(*iter);
+  }
+  return visitor.decls;
 }
 
 class NamedDeclTestCase {
@@ -201,6 +228,59 @@ TEST_F(ClangRangeFinderTest, NormalizeRangeExpandsZeroWidthRange) {
   EXPECT_EQ(GetSourceText(range_finder().NormalizeRange(
                 ast.getStartOfMainFileID(), ast.getStartOfMainFileID())),
             "void");
+}
+
+// Verifies that references to non-argument macro entities result in a
+// zero-width range as the start of the range.
+TEST_F(ClangRangeFinderTest, TerribleMacrosAreZeroWidth) {
+  // A fairly involved and convoluted macro that, through several layers of
+  // expansion, results in a variety of ranges both from the macro body and
+  // macro arguments.  We want to ensure that only ranges originating from
+  // explicit macro arguments are expanded and all others are zero-width from
+  // the front of the macro expansion.
+  absl::string_view macro = R"(
+#define ASSIGN_OR_RETURN(...)                                            \
+  IMPL_GET_VARIADIC_(                                                    \
+      (__VA_ARGS__, IMPL_ASSIGN_OR_RETURN_3_, IMPL_ASSIGN_OR_RETURN_2_)) \
+  (__VA_ARGS__)
+#define IMPL_GET_VARIADIC_HELPER_(_1, _2, _3, NAME, ...) NAME
+#define IMPL_GET_VARIADIC_(args) IMPL_GET_VARIADIC_HELPER_ args
+#define IMPL_ASSIGN_OR_RETURN_2_(lhs, rexpr) \
+  IMPL_ASSIGN_OR_RETURN_3_(lhs, rexpr, _)
+#define IMPL_ASSIGN_OR_RETURN_3_(lhs, rexpr, error)                            \
+  IMPL_ASSIGN_OR_RETURN_(IMPL_CONCAT_(_status_or_value, __LINE__), lhs, rexpr, \
+                         error)
+#define IMPL_CONCAT_INNER_(x, y) x##y
+#define IMPL_CONCAT_(x, y) IMPL_CONCAT_INNER_(x, y)
+#define IMPL_ASSIGN_OR_RETURN_(statusor, lhs, rexpr, error) \
+  auto statusor = (rexpr);                                  \
+  if (!statusor) {                                          \
+    int* _ = nullptr;                                       \
+    return (error);                                         \
+  }                                                         \
+  lhs = *statusor;
+)";
+  std::string source = absl::StrCat(
+      macro, absl::StrJoin({"int* get(int, int);", "int* f() { ", "int a, b;",
+                            "ASSIGN_OR_RETURN(int r, get(a, b));",
+                            "return nullptr;", "}"},
+                           "\n"));
+  std::vector<std::pair<std::string, absl::string_view>> ranges;
+  for (const auto* decl : FindAllNamedDecls(Parse(source))) {
+    if (decl->getName().empty()) continue;
+    ranges.push_back({decl->getNameAsString(),
+                      GetSourceText(range_finder().RangeForNameOf(decl))});
+  }
+  llvm::StringRef main_buffer =
+      source_manager().getBufferData(source_manager().getMainFileID());
+  const char* expansion =
+      main_buffer.substr(main_buffer.find("ASSIGN_OR_RETURN(int r")).data();
+
+  EXPECT_THAT(ranges,
+              ElementsAre(Pair("get", "get"), Pair("f", "f"), Pair("a", "a"),
+                          Pair("b", "b"),
+                          Pair("_status_or_value25", EmptyAt(expansion)),
+                          Pair("_", EmptyAt(expansion)), Pair("r", "r")));
 }
 }  // namespace
 }  // namespace kythe

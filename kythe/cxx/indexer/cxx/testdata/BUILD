@@ -881,6 +881,13 @@ cc_indexer_test(
     use_compilation_corpus_as_default = True,
 )
 
+cc_indexer_test(
+    name = "macro_body",
+    srcs = ["basic/macro_body.cc"],
+    ignore_dups = True,
+    tags = ["basic"],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],

@@ -106,14 +106,11 @@ def _cc_dependencies():
     )
 
     maybe(
-        http_archive,
+        github_archive,
         name = "com_google_googletest",
-        sha256 = "2f56064481649b68c98afb1b14d7b1c5e2a62ef0b48b6ba0a71f60ddd6628458",
-        strip_prefix = "googletest-8756ef905878f727e8122ba25f483c887cbc3c17",
-        urls = [
-            "https://mirror.bazel.build/github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
-            "https://github.com/google/googletest/archive/8756ef905878f727e8122ba25f483c887cbc3c17.zip",
-        ],
+        repo_name = "google/googletest",
+        sha256 = "4a4cbf4bb09606f42a0cdd6f0893fbf1e257243fda64bc5b585d027808a3a64b",
+        commit = "61f010d703b32de9bfb20ab90ece38ab2f25977f",
     )
 
     maybe(
