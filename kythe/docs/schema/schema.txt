@@ -511,6 +511,7 @@ class C { };
 [[exports]]
 exports
 ~~~~~~~~
+
 Brief description::
   A *exports* B if process node A exports process node B.
 Commonly arises from::
@@ -591,6 +592,7 @@ class B : public A { };
 [[generates]]
 generates
 ~~~~~~~~~
+
 Brief description::
   A *generates* B if A is related to B through some extralingual process.
 Commonly arises from::
@@ -1180,7 +1182,7 @@ Ordinals are used::
 
 [[refimports]]
 ref/imports
-~~~~~~~~~~~~
+~~~~~~~~~~~
 
 Brief description::
   A *ref/imports* B if B is imported at the site of A.
@@ -1203,7 +1205,8 @@ public class E {
 
 [[refid]]
 ref/id
-~~~~~~~~~~~
+~~~~~~
+
 Brief description::
   A *ref/id* B if A does not otherwise *ref* or *define* B but the bytes of A's
   span are determined by the identifier of B.
@@ -1217,7 +1220,7 @@ Ordinals are used::
 [kythe,C++,"Constructors and destructors are named after their classes."]
 --------------------------------------------------------------------------------
 //- @C defines/binding ClassC
-class C {
+struct C {
   //- @C defines/binding CtorC
   //- // @C ref/id ClassC
   C(int i);
@@ -1429,6 +1432,7 @@ template <> bool id(bool x) { return !(!x); }
 [[specializesspeculative]]
 specializes/speculative
 ~~~~~~~~~~~~~~~~~~~~~~~
+
 See <<instantiatesspeculative,[instantiates/speculative]>>.
 
 
@@ -1788,6 +1792,7 @@ Facts::
 [[doc]]
 doc
 ~~~
+
 Brief description::
   A *doc* is text that documents a node.
 Facts::
@@ -1958,6 +1963,7 @@ using S = typename T<int>::D::E::F;
 [[macro]]
 macro
 ~~~~~
+
 Brief description::
   A *macro* is a metaprogram that operates on source text.
 Notes::
@@ -1978,6 +1984,7 @@ See also::
 [[meta]]
 meta
 ~~~~
+
 Brief description::
   A *meta* is a node that describes details about a particular language.
 Naming convention::
