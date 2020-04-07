@@ -298,7 +298,6 @@ llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
       result.push_back(Field);
     }
   }
-  CHECK(result.size() == ILE->getNumInits()) << DumpString(*ILE);
   return result;
 }
 
@@ -1841,11 +1840,12 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
 bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
   // We need the resolved type of the InitListExpr and all of the fields, but
   // don't want to do so redundantly for both syntactic and semantic forms.
-  if (!ILE->isSemanticForm()) return true;
-  auto Decls = GetInitExprDecls(ILE);
-  auto DI = Decls.begin();
-  for (const clang::Expr* Init : ILE->inits()) {
-    const clang::Decl* Decl = *DI++;
+  if (!ILE->isSemanticForm() || ILE->getNumInits() == 0) return true;
+
+  auto II = ILE->inits().begin();
+  for (const clang::Decl* Decl : GetInitExprDecls(ILE)) {
+    CHECK(II != ILE->inits().end()) << "\n" << DumpString(*ILE);
+    const clang::Expr* Init = *II++;
     if (auto RCC =
             RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
                                   NormalizeRange(Init->getSourceRange()))) {
