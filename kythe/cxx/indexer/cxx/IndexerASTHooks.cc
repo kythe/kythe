@@ -1864,7 +1864,7 @@ bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
   // because only the syntactic form retains designated initializers while the
   // semantic form is required for mapping from initializing expression to the
   // field/base which it initializes.
-  // TODO(shahms): Supress the redundant visitation.
+  // TODO(shahms): Suppress the redundant visitation.
   return Base::TraverseInitListExpr(ILE);
 }
 
