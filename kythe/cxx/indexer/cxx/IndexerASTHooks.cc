@@ -271,31 +271,6 @@ const clang::Decl* FindImplicitDeclForStmt(
   return nullptr;
 }
 
-struct FieldInit {
-  const clang::FieldDecl* Field;
-  const clang::Expr* Init;
-};
-
-llvm::SmallVector<FieldInit, 5> GetFieldInitializers(
-    const clang::InitListExpr* ILE) {
-  // We need the resolved type of the InitListExpr and all of the fields.
-  ILE = ILE->isSemanticForm() ? ILE : ILE->getSemanticForm();
-  if (const clang::FieldDecl* Field = ILE->getInitializedFieldInUnion()) {
-    return {FieldInit{Field, ILE->inits().front()}};
-  }
-  llvm::SmallVector<FieldInit, 5> result;
-  if (const auto* Decl = ILE->getType()->getAsRecordDecl();
-      Decl && (Decl = Decl->getDefinition())) {
-    result.reserve(ILE->getNumInits());
-    auto field_iter = Decl->fields().begin();
-    for (const clang::Expr* Init : ILE->inits()) {
-      CHECK(field_iter != Decl->fields().end());
-      result.push_back(FieldInit{*field_iter++, Init});
-    }
-  }
-  return result;
-}
-
 template <typename T>
 std::string DumpString(const T& val) {
   std::string s;
@@ -303,6 +278,30 @@ std::string DumpString(const T& val) {
   val.dump(ss);
   return s;
 }
+
+llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
+    const clang::InitListExpr* ILE) {
+  CHECK(ILE->isSemanticForm());
+  if (const clang::FieldDecl* Field = ILE->getInitializedFieldInUnion()) {
+    return {Field};
+  }
+  llvm::SmallVector<const clang::Decl*, 5> result;
+  if (const auto* Decl = ILE->getType()->getAsCXXRecordDecl();
+      Decl && (Decl = Decl->getDefinition())) {
+    for (const auto& Base : Decl->bases()) {
+      result.push_back(CHECK_NOTNULL(Base.getType()->getAsTagDecl()));
+    }
+  }
+  if (const auto* Decl = ILE->getType()->getAsRecordDecl();
+      Decl && (Decl = Decl->getDefinition())) {
+    for (const clang::Decl* Field : Decl->fields()) {
+      result.push_back(Field);
+    }
+  }
+  CHECK(result.size() == ILE->getNumInits()) << DumpString(*ILE);
+  return result;
+}
+
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -1840,11 +1839,17 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
 }
 
 bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
-  for (const auto& [Field, Init] : GetFieldInitializers(ILE)) {
+  // We need the resolved type of the InitListExpr and all of the fields, but
+  // don't want to do so redundantly for both syntactic and semantic forms.
+  if (!ILE->isSemanticForm()) return true;
+  auto Decls = GetInitExprDecls(ILE);
+  auto DI = Decls.begin();
+  for (const clang::Expr* Init : ILE->inits()) {
+    const clang::Decl* Decl = *DI++;
     if (auto RCC =
             RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
                                   NormalizeRange(Init->getSourceRange()))) {
-      Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(Field),
+      Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(Decl),
                                   GraphObserver::Claimability::Unclaimable,
                                   this->IsImplicit(*RCC));
     }
@@ -1854,11 +1859,13 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
 
 bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
   if (ILE == nullptr) return true;
-  // Only traverse once and prefer the syntactic form, which includes
-  // designated initializers. Because we visit implicit code, the default
-  // traversal can visit these expressions twice.
-  return TraverseSynOrSemInitListExpr(
-      ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
+  // Because we visit implicit code, the default traversal will visit both
+  // syntactic and semantic forms, resulting in duplicate edges.  This is
+  // because only the syntactic form retains designated initializers while the
+  // semantic form is required for mapping from initializing expression to the
+  // field/base which it initializes.
+  // TODO(shahms): Supress the redundant visitation.
+  return Base::TraverseInitListExpr(ILE);
 }
 
 NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
