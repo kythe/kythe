@@ -1611,6 +1611,9 @@ test_suite(
 cc_indexer_test(
     name = "rec_agg_init",
     srcs = ["rec/rec_agg_init.cc"],
+    # The compiler-generated move constructor inserts a DeclRefExpr to the enclosing class for each member at the class name.
+    # TODO(shahms): Suppress these spurious references.
+    ignore_dups = True,
     tags = ["rec"],
 )
 
@@ -1685,7 +1688,6 @@ cc_indexer_test(
 cc_indexer_test(
     name = "rec_designated_initializer",
     srcs = ["rec/rec_designated_initializer.c"],
-    ignore_dups = True,  # clang visits these expressions multiple times.
     std = "c99",
     tags = ["rec"],
 )

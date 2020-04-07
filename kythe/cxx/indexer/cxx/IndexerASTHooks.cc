@@ -271,6 +271,30 @@ const clang::Decl* FindImplicitDeclForStmt(
   return nullptr;
 }
 
+struct FieldInit {
+  const clang::FieldDecl* Field;
+  const clang::Expr* Init;
+};
+
+llvm::SmallVector<FieldInit, 5> GetFieldInitializers(
+    const clang::InitListExpr* ILE) {
+  CHECK(ILE->isSemanticForm());
+  if (const clang::FieldDecl* Field = ILE->getInitializedFieldInUnion()) {
+    return {FieldInit{Field, ILE->inits().front()}};
+  }
+  llvm::SmallVector<FieldInit, 5> result;
+  if (const auto* Decl = ILE->getType()->getAsRecordDecl();
+      Decl && (Decl = Decl->getDefinition())) {
+    result.reserve(ILE->getNumInits());
+    auto field_iter = Decl->fields().begin();
+    for (const clang::Expr* Init : ILE->inits()) {
+      CHECK(field_iter != Decl->fields().end());
+      result.push_back(FieldInit{*field_iter++, Init});
+    }
+  }
+  return result;
+}
+
 template <typename T>
 std::string DumpString(const T& val) {
   std::string s;
@@ -1809,17 +1833,33 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
       if (!VisitDeclRefOrIvarRefExpr(DIE, F, D.getFieldLoc(), false)) {
         return false;
       }
-      clang::Expr* Init = DIE->getInit();
-      if (auto RCC =
-              RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
-                                    NormalizeRange(Init->getSourceRange()))) {
-        Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(F),
-                                    GraphObserver::Claimability::Unclaimable,
-                                    this->IsImplicit(*RCC));
-      }
     }
   }
   return true;
+}
+
+bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
+  // We need the resolved type of the InitListExpr and all of the fields.
+  ILE = ILE->isSemanticForm() ? ILE : ILE->getSemanticForm();
+  for (const auto& [Field, Init] : GetFieldInitializers(ILE)) {
+    if (auto RCC =
+            RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
+                                  NormalizeRange(Init->getSourceRange()))) {
+      Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(Field),
+                                  GraphObserver::Claimability::Unclaimable,
+                                  this->IsImplicit(*RCC));
+    }
+  }
+  return true;
+}
+
+bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
+  if (ILE == nullptr) return true;
+  // Only traverse once and prefer the syntactic form, which includes
+  // designated initializers. Because we visit implicit code, the default
+  // traversal can visit these expressions twice.
+  return TraverseSynOrSemInitListExpr(
+      ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
 }
 
 NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {

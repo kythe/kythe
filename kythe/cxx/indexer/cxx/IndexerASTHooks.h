@@ -115,7 +115,11 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitBindingDecl(const clang::BindingDecl* Decl);
   bool VisitSizeOfPackExpr(const clang::SizeOfPackExpr* Expr);
   bool VisitDeclRefExpr(const clang::DeclRefExpr* DRE);
+
+  bool TraverseInitListExpr(clang::InitListExpr* ILE);
+  bool VisitInitListExpr(const clang::InitListExpr* ILE);
   bool VisitDesignatedInitExpr(const clang::DesignatedInitExpr* DIE);
+
   bool VisitCXXConstructExpr(const clang::CXXConstructExpr* E);
   bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr* E);
   bool VisitCXXNewExpr(const clang::CXXNewExpr* E);
