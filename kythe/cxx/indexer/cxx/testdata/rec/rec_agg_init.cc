@@ -44,6 +44,8 @@ void f() {
 
   //- @T ref StructT
   //- @"{1,2}" ref/init StructS
+  //- @"1" ref/init FieldA
+  //- @"2" ref/init FieldB
   //- @"3" ref/init FieldJ
   //- @"4" ref/init FieldL
   //- @"5" ref/init FieldM
