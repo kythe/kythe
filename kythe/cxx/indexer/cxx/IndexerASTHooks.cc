@@ -278,7 +278,8 @@ struct FieldInit {
 
 llvm::SmallVector<FieldInit, 5> GetFieldInitializers(
     const clang::InitListExpr* ILE) {
-  CHECK(ILE->isSemanticForm());
+  // We need the resolved type of the InitListExpr and all of the fields.
+  ILE = ILE->isSemanticForm() ? ILE : ILE->getSemanticForm();
   if (const clang::FieldDecl* Field = ILE->getInitializedFieldInUnion()) {
     return {FieldInit{Field, ILE->inits().front()}};
   }
@@ -1839,8 +1840,6 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
 }
 
 bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
-  // We need the resolved type of the InitListExpr and all of the fields.
-  ILE = ILE->isSemanticForm() ? ILE : ILE->getSemanticForm();
   for (const auto& [Field, Init] : GetFieldInitializers(ILE)) {
     if (auto RCC =
             RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
