@@ -278,6 +278,29 @@ std::string DumpString(const T& val) {
   val.dump(ss);
   return s;
 }
+
+llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
+    const clang::InitListExpr* ILE) {
+  CHECK(ILE->isSemanticForm());
+  if (const clang::FieldDecl* Field = ILE->getInitializedFieldInUnion()) {
+    return {Field};
+  }
+  llvm::SmallVector<const clang::Decl*, 5> result;
+  if (const auto* Decl = ILE->getType()->getAsCXXRecordDecl();
+      Decl && (Decl = Decl->getDefinition())) {
+    for (const auto& Base : Decl->bases()) {
+      result.push_back(CHECK_NOTNULL(Base.getType()->getAsTagDecl()));
+    }
+  }
+  if (const auto* Decl = ILE->getType()->getAsRecordDecl();
+      Decl && (Decl = Decl->getDefinition())) {
+    for (const clang::Decl* Field : Decl->fields()) {
+      result.push_back(Field);
+    }
+  }
+  return result;
+}
+
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -1809,17 +1832,40 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
       if (!VisitDeclRefOrIvarRefExpr(DIE, F, D.getFieldLoc(), false)) {
         return false;
       }
-      clang::Expr* Init = DIE->getInit();
-      if (auto RCC =
-              RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
-                                    NormalizeRange(Init->getSourceRange()))) {
-        Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(F),
-                                    GraphObserver::Claimability::Unclaimable,
-                                    this->IsImplicit(*RCC));
-      }
     }
   }
   return true;
+}
+
+bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
+  // We need the resolved type of the InitListExpr and all of the fields, but
+  // don't want to do so redundantly for both syntactic and semantic forms.
+  if (!ILE->isSemanticForm() || ILE->getNumInits() == 0) return true;
+
+  auto II = ILE->inits().begin();
+  for (const clang::Decl* Decl : GetInitExprDecls(ILE)) {
+    CHECK(II != ILE->inits().end()) << "\n" << DumpString(*ILE);
+    const clang::Expr* Init = *II++;
+    if (auto RCC =
+            RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
+                                  NormalizeRange(Init->getSourceRange()))) {
+      Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(Decl),
+                                  GraphObserver::Claimability::Unclaimable,
+                                  this->IsImplicit(*RCC));
+    }
+  }
+  return true;
+}
+
+bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
+  if (ILE == nullptr) return true;
+  // Because we visit implicit code, the default traversal will visit both
+  // syntactic and semantic forms, resulting in duplicate edges.  This is
+  // because only the syntactic form retains designated initializers while the
+  // semantic form is required for mapping from initializing expression to the
+  // field/base which it initializes.
+  // TODO(shahms): Suppress the redundant visitation.
+  return Base::TraverseInitListExpr(ILE);
 }
 
 NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
