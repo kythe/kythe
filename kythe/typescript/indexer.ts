@@ -786,13 +786,34 @@ class Visitor {
    * - class implements => type
    * - interface implements => illegal
    */
-  visitHeritage(heritageClauses: ReadonlyArray<ts.HeritageClause>) {
+  visitHeritage(
+      classOrInterface: VName | undefined,
+      heritageClauses: ReadonlyArray<ts.HeritageClause>) {
     for (const heritage of heritageClauses) {
       if (heritage.token === ts.SyntaxKind.ExtendsKeyword && heritage.parent &&
           heritage.parent.kind !== ts.SyntaxKind.InterfaceDeclaration) {
         this.visit(heritage);
       } else {
         this.visitType(heritage);
+      }
+      // Add extends edges.
+      if (classOrInterface == null) {
+        // classOrInterface is null for anonymous classes.
+        // But anonymous classes can implement and extends other
+        // classes and interfaces. So currently this edge
+        // is missing. Once we have nodes for anonymous classes -
+        // we can add this missing edges.
+        continue;
+      }
+      for (const baseType of heritage.types) {
+        const type = this.typeChecker.getTypeAtLocation(baseType);
+        if (!type || !type.symbol) {
+          continue;
+        }
+        const vname = this.host.getSymbolName(type.symbol, TSNamespace.TYPE);
+        if (vname) {
+          this.emitEdge(classOrInterface, EdgeKind.EXTENDS, vname);
+        }
       }
     }
   }
@@ -812,7 +833,7 @@ class Visitor {
     }
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
-    if (decl.heritageClauses) this.visitHeritage(decl.heritageClauses);
+    if (decl.heritageClauses) this.visitHeritage(kType, decl.heritageClauses);
     for (const member of decl.members) {
       this.visit(member);
     }
@@ -1366,6 +1387,51 @@ class Visitor {
     return vname;
   }
 
+  /**
+   * Emit "overrides" edges if this method overrides extended classes or
+   * implemented interfaces, which are listed in the Heritage Clauses of
+   * a class or interface.
+   *     class X extends A implements B, C {}
+   *             ^^^^^^^^^-^^^^^^^^^^^^^^^----- `HeritageClause`s
+   * Look at each type listed in the heritage clauses and traverse its
+   * members. If the type has a member that matches the method visited in
+   * this function (`kFunc`), emit an "overrides" edge to that member.
+   */
+  emitOverridesEdgeForFunction(
+      funcSym: ts.Symbol, funcVName: VName,
+      parent: ts.ClassLikeDeclaration|ts.InterfaceDeclaration) {
+    if (parent.heritageClauses == null) {
+      return;
+    }
+    for (const heritage of parent.heritageClauses) {
+      for (const baseType of heritage.types) {
+        const type =
+            this.typeChecker.getTypeAtLocation(baseType.expression);
+        if (!type || !type.symbol || !type.symbol.members) {
+          continue;
+        }
+
+        const funcName = funcSym.name;
+        const funcFlags = funcSym.flags;
+
+        // Find a member of with the same type (same flags) and same name
+        // as the overriding method.
+        const overriddenCondition = (sym: ts.Symbol) =>
+            Boolean(sym.flags & funcFlags) && sym.name === funcName;
+
+        const overridden =
+            toArray(type.symbol.members.values()).find(overriddenCondition);
+        if (overridden) {
+          const base =
+              this.host.getSymbolName(overridden, TSNamespace.VALUE);
+          if (base) {
+            this.emitEdge(funcVName, EdgeKind.OVERRIDES, base);
+          }
+        }
+      }
+    }
+  }
+
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
     this.visitDecorators(decl.decorators || []);
     let kFunc: VName;
@@ -1429,43 +1495,8 @@ class Visitor {
             this.emitEdge(kFunc, EdgeKind.CHILD_OF, kParent);
           }
         }
-
-        // Emit "overrides" edges if this method overrides extended classes or
-        // implemented interfaces, which are listed in the Heritage Clauses of
-        // a class or interface.
-        //     class X extends A implements B, C {}
-        //             ^^^^^^^^^-^^^^^^^^^^^^^^^----- `HeritageClause`s
-        // Look at each type listed in the heritage clauses and traverse its
-        // members. If the type has a member that matches the method visited in
-        // this function (`kFunc`), emit an "overrides" edge to that member.
-        if (funcSym && decl.parent.heritageClauses) {
-          for (const heritage of decl.parent.heritageClauses) {
-            for (const baseType of heritage.types) {
-              const baseSym =
-                  this.host.getSymbolAtLocation(baseType.expression);
-              if (!baseSym || !baseSym.members) {
-                continue;
-              }
-
-              const funcName = funcSym.name;
-              const funcFlags = funcSym.flags;
-
-              // Find a member of with the same type (same flags) and same name
-              // as the overriding method.
-              const overriddenCondition = (sym: ts.Symbol) =>
-                  Boolean(sym.flags & funcFlags) && sym.name === funcName;
-
-              const overridden =
-                  toArray(baseSym.members.values()).find(overriddenCondition);
-              if (overridden) {
-                const base =
-                    this.host.getSymbolName(overridden, TSNamespace.VALUE);
-                if (base) {
-                  this.emitEdge(kFunc, EdgeKind.OVERRIDES, base);
-                }
-              }
-            }
-          }
+        if (funcSym) {
+          this.emitOverridesEdgeForFunction(funcSym, kFunc, decl.parent);
         }
       }
     }
@@ -1612,6 +1643,7 @@ class Visitor {
 
   visitClassDeclaration(decl: ts.ClassDeclaration) {
     this.visitDecorators(decl.decorators || []);
+    let kClass: VName|undefined;
     if (decl.name) {
       const sym = this.host.getSymbolAtLocation(decl.name);
       if (!sym) {
@@ -1623,7 +1655,7 @@ class Visitor {
       // A 'class' declaration declares both a type (a 'record', representing
       // instances of the class) and a value (least ambigiously, also the
       // class declaration).
-      const kClass = this.host.getSymbolName(sym, TSNamespace.TYPE);
+      kClass = this.host.getSymbolName(sym, TSNamespace.TYPE);
       if (!kClass) return;
       this.emitNode(kClass, 'record');
       const kClassCtor = this.host.getSymbolName(sym, TSNamespace.VALUE);
@@ -1653,7 +1685,7 @@ class Visitor {
       this.visitJSDoc(decl, kClass);
     }
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
-    if (decl.heritageClauses) this.visitHeritage(decl.heritageClauses);
+    if (decl.heritageClauses) this.visitHeritage(kClass, decl.heritageClauses);
     for (const member of decl.members) {
       this.visit(member);
     }

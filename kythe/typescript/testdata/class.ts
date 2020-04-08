@@ -15,6 +15,8 @@ interface IFace {
 }
 
 //- @IFace ref IFace
+//- @IExtended defines/binding IExtended
+//- IExtended extends IFace
 interface IExtended extends IFace {
     //- @ifaceMethod defines/binding ExtendedIFaceMethod
     //- ExtendedIFaceMethod overrides IFaceMethod
@@ -26,6 +28,7 @@ interface IExtended extends IFace {
 //- @Class defines/binding ClassValue=vname("Class", _, _, _, _)
 //- ClassValue.node/kind function
 //- @IFace ref IFace
+//- Class extends IFace
 class Class implements IFace {
     //- @member defines/binding Member
     //- Member.node/kind variable
