@@ -1882,8 +1882,28 @@ bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
   // because only the syntactic form retains designated initializers while the
   // semantic form is required for mapping from initializing expression to the
   // field/base which it initializes.
-  // TODO(shahms): Suppress the redundant visitation.
-  return Base::TraverseInitListExpr(ILE);
+  if (ILE->isSemanticForm() && ILE->isSyntacticForm()) {
+    return Base::TraverseSynOrSemInitListExpr(ILE);
+  }
+
+  // The only thing we need from the syntactic form are designated initializers,
+  // so visit them directly, but don't recurse into InitListExprs.
+  struct DesignatedInitVisitor : RecursiveASTVisitor<DesignatedInitVisitor> {
+    bool VisitDesignatedInitExpr(const clang::DesignatedInitExpr* DIE) {
+      return parent.VisitDesignatedInitExpr(DIE);
+    }
+
+    bool TraverseInitListExpr(const clang::InitListExpr*) {
+      return true;  // Disable recursion on InitListExpr.
+    }
+
+    IndexerASTVisitor& parent;
+  } visitor{{}, *this};
+
+  return visitor.TraverseSynOrSemInitListExpr(
+             ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm()) &&
+         Base::TraverseSynOrSemInitListExpr(
+             ILE->isSemanticForm() ? ILE : ILE->getSemanticForm());
 }
 
 NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
