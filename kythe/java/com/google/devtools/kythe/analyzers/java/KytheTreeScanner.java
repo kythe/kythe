@@ -1118,12 +1118,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private boolean isExternal(Symbol sym) {
-    // TODO(schroederc): check if Symbol comes from any source file in compilation
     // TODO(schroederc): research other methods to hueristically determine if a Symbol is defined in
     //                   a Java compilation (vs. some other JVM language)
     ClassSymbol cls = sym.enclClass();
     return cls != null
-        && cls.sourcefile != filePositions.getSourceFile()
+        && (cls.sourcefile == null || cls.sourcefile.getKind() != JavaFileObject.Kind.SOURCE)
         && !JavaEntrySets.fromJDK(sym);
   }
 
