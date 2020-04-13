@@ -44,6 +44,7 @@ import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Name;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -80,6 +81,8 @@ public class SignatureGenerator
     implements ElementVisitor<Void, StringBuilder>, Visitor<Void, StringBuilder> {
 
   private final boolean useJvmSignatures;
+
+  private final boolean ignoreTypesigExceptions;
 
   private static boolean isJavaLangObject(Type type) {
     return type.tsym.getQualifiedName().contentEquals(Object.class.getName());
@@ -151,8 +154,10 @@ public class SignatureGenerator
   }
 
   public SignatureGenerator(
-      CompilationUnitTree compilationUnit, Context context, boolean useJvmSignatures) {
+      CompilationUnitTree compilationUnit, Context context, boolean useJvmSignatures,
+      boolean ignoreTypesigExceptions) {
     this.useJvmSignatures = useJvmSignatures;
+    this.ignoreTypesigExceptions = ignoreTypesigExceptions;
     this.memoizedTreePathScanner = new MemoizedTreePathScanner(compilationUnit, context);
     sigGen = new SigGen(Types.instance(context));
   }
@@ -186,7 +191,26 @@ public class SignatureGenerator
       } else if (symbol instanceof MethodSymbol) {
         return Optional.of(sigGen.getSignature((MethodSymbol) symbol));
       } else if (symbol instanceof VarSymbol) {
-        return Optional.of(sigGen.getSignature((VarSymbol) symbol));
+        try {
+          return Optional.of(sigGen.getSignature((VarSymbol) symbol));
+        } catch (Types.SignatureGenerator.InvalidSignatureException e) {
+          final String action;
+          if (ignoreTypesigExceptions) {
+            action = "omitting reference";
+          } else {
+            action = "consider --ignore_typesig_exceptions";
+          }
+          logger.atWarning()
+            .atMostEvery(5, TimeUnit.SECONDS)
+            .log("Likely hitting bug JDK-8212750, %s"
+                    + " (VarSymbol [%s] in class [%s], package [%s], type [%s])",
+                action,
+                symbol, symbol.outermostClass(), symbol.packge(), symbol.type);
+          if (ignoreTypesigExceptions) {
+            return Optional.empty();
+          }
+          throw new RuntimeException("Hit JDK-8212750, see logs for details.", e);
+        }
       }
     }
     try {

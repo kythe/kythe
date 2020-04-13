@@ -25,6 +25,15 @@ public class JavaIndexerConfig extends IndexerConfig {
   private boolean emitJvmSignatures;
 
   @Parameter(
+      names = "--ignore_typesig_exceptions",
+      description =
+          "To be used in conjunction with --emit_jvm_signatures, to avoid indexing"
+              + " problems when encountering https://bugs.openjdk.java.net/browse/JDK-8212750."
+              + " As a side-effect, the definition and references to problematic"
+              + " lambda arguments are not emitted.")
+  private boolean ignoreTypesigExceptions;
+
+  @Parameter(
       names = "--ignore_vname_paths",
       description =
           "Determines whether the analyzer should ignore the path components of the {@link VName}s"
@@ -107,6 +116,10 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public boolean getEmitJvmSignatures() {
     return emitJvmSignatures;
+  }
+
+  public boolean getIgnoreTypesigExceptions() {
+    return ignoreTypesigExceptions;
   }
 
   public JvmMode getJvmMode() {
