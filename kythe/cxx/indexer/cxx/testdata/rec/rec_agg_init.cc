@@ -30,6 +30,8 @@ union U {
   long y;
 };
 
+S FromValue();
+
 template <typename...T>
 void fn(T&&...);
 
@@ -57,4 +59,7 @@ void f() {
 
   //- @S ref StructS
   fn(S{});
+
+  //- !{ @"FromValue()" ref/init _ }
+  S v{FromValue()};
 }

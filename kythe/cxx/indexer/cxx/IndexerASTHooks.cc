@@ -279,20 +279,34 @@ std::string DumpString(const T& val) {
   return s;
 }
 
+template <typename T>
+std::string DumpString(const T& val, clang::SourceManager& source_manager) {
+  std::string s;
+  llvm::raw_string_ostream ss(s);
+  val.dump(ss, source_manager);
+  return s;
+}
+
 llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
     const clang::InitListExpr* ILE) {
   CHECK(ILE->isSemanticForm());
+  QualType Type = ILE->getType();
+  if (!Type->isAggregateType() ||
+      // Ignore copy initialization.
+      (ILE->getNumInits() == 1 && ILE->getInit(0)->getType() == Type)) {
+    return {};
+  }
   if (const clang::FieldDecl* Field = ILE->getInitializedFieldInUnion()) {
     return {Field};
   }
   llvm::SmallVector<const clang::Decl*, 5> result;
-  if (const auto* Decl = ILE->getType()->getAsCXXRecordDecl();
+  if (const auto* Decl = Type->getAsCXXRecordDecl();
       Decl && (Decl = Decl->getDefinition())) {
     for (const auto& Base : Decl->bases()) {
       result.push_back(CHECK_NOTNULL(Base.getType()->getAsTagDecl()));
     }
   }
-  if (const auto* Decl = ILE->getType()->getAsRecordDecl();
+  if (const auto* Decl = Type->getAsRecordDecl();
       Decl && (Decl = Decl->getDefinition())) {
     for (const clang::Decl* Field : Decl->fields()) {
       result.push_back(Field);
@@ -1844,7 +1858,11 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
 
   auto II = ILE->inits().begin();
   for (const clang::Decl* Decl : GetInitExprDecls(ILE)) {
-    CHECK(II != ILE->inits().end()) << "\n" << DumpString(*ILE);
+    if (II == ILE->inits().end()) {
+      LOG(ERROR) << "Fewer initializers than decls:\n"
+                 << DumpString(*ILE, *Observer.getSourceManager());
+      break;
+    }
     const clang::Expr* Init = *II++;
     if (auto RCC =
             RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
