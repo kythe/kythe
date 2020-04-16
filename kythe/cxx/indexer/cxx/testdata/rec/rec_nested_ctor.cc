@@ -28,7 +28,7 @@ struct S::T::V { };
 
 void scope() {
   //- @S ref StructS
-  //- @T ref StructT
+  //- @T ref/id StructT
   //- @T ref ConstructT
   //- @"ns::S::T()" ref/call ConstructT
   //- !{ @ns ref StructT }
@@ -43,7 +43,7 @@ void scope() {
 
   //- @S ref StructS
   //- @T ref StructT
-  //- @U ref StructU
+  //- @U ref/id StructU
   //- @U ref ConstructU
   //- @"ns::S::T::U()" ref/call ConstructU
   //- !{ @ns ref StructU }
