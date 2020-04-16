@@ -1930,13 +1930,17 @@ bool IndexerASTVisitor::TraverseDeclarationNameInfo(
       // value is visited both here and via TraverseFunctionProtoTypeLoc.
       return true;
     case DeclarationName::CXXConstructorName:
-      // The default visitation uses the null TypeSourceInfo, which we work
-      // around in TraverseCXXConstructorDecl by re-traversing with a
-      // manually constructed TSI.  In order to avoid duplicate edges, suppress
-      // the default visitation.
-      // Note: if this is resolved in Clang, tests will fail due to duplicate
-      // edges and this workaround can be removed.
-      if (NameInfo.getNamedTypeInfo() == nullptr) {
+    case DeclarationName::CXXDestructorName:
+      if (clang::TypeSourceInfo* TSI = NameInfo.getNamedTypeInfo()) {
+        if (auto RCC = ExpandedRangeInCurrentContext(
+                TSI->getTypeLoc().getSourceRange())) {
+          if (auto Nodes =
+                  BuildNodeSetForType(TSI->getTypeLoc().getTypePtr())) {
+            Observer.recordTypeIdSpellingLocation(*RCC, Nodes.ForReference(),
+                                                  Nodes.claimability(),
+                                                  IsImplicit(*RCC));
+          }
+        }
         return true;
       }
     default:

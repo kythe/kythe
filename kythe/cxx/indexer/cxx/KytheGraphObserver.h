@@ -286,6 +286,11 @@ class KytheGraphObserver : public GraphObserver {
                                   Claimability claimability,
                                   Implicit i) override;
 
+  void recordTypeIdSpellingLocation(const Range& source_range,
+                                    const NodeId& type_id,
+                                    Claimability claimability,
+                                    Implicit i) override;
+
   void recordChildOfEdge(const NodeId& child_id,
                          const NodeId& parent_id) override;
 

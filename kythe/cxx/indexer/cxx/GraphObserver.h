@@ -833,6 +833,15 @@ class GraphObserver {
                                           const NodeId& TypeId, Claimability Cl,
                                           Implicit I) {}
 
+  /// \brief Records that a type was spelled out at a particular location, while
+  /// referencing a different entity.
+  /// \param SourceRange The source range covering the type spelling.
+  /// \param TypeNode The identifier for the type being spelled out.
+  /// \param Cr Whether this information can be dropped by claiming.
+  virtual void recordTypeIdSpellingLocation(const Range& SourceRange,
+                                            const NodeId& TypeId,
+                                            Claimability Cl, Implicit I) {}
+
   /// \brief Records that a macro was defined.
   virtual void recordMacroNode(const NodeId& MacroNode) {}
 
