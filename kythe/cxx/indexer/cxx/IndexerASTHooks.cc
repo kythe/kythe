@@ -1264,7 +1264,8 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr* E,
   // record.
   if (TSI != nullptr) {
     clang::TypeLoc TL = TSI->getTypeLoc().getAsAdjusted<clang::RecordTypeLoc>();
-    if (TL && TL.getTypePtr() == E->getType()->getAsAdjusted<clang::RecordType>()) {
+    if (TL &&
+        TL.getTypePtr() == E->getType()->getAsAdjusted<clang::RecordType>()) {
       if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
         if (auto Nodes = BuildNodeSetForType(TL.getTypePtr())) {
           Observer.recordTypeIdSpellingLocation(*RCC, Nodes.ForReference(),
