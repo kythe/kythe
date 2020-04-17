@@ -30,7 +30,7 @@ java_library(
         "@com_google_protobuf//:protobuf_java_util",
         "@maven//:com_google_auto_auto_common",
         "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:javax_annotation_jsr250_api",
+        "@maven//:org_apache_tomcat_tomcat_annotations_api",
         "@maven//:org_checkerframework_checker_qual",
     ],
 )
