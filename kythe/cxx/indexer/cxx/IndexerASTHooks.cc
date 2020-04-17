@@ -1259,6 +1259,22 @@ bool IndexerASTVisitor::IndexConstructExpr(const clang::CXXConstructExpr* E,
       RecordCallEdges(*RCC, BuildNodeIdForRefToDecl(Callee));
     }
   }
+  // This is a hack which pairs with that from VisitRecordTypeLoc to emit ref/id
+  // rather than ref for types visited as part of a constructor expr for that
+  // record.
+  if (TSI != nullptr) {
+    clang::TypeLoc TL = TSI->getTypeLoc().getAsAdjusted<clang::RecordTypeLoc>();
+    if (TL &&
+        TL.getTypePtr() == E->getType()->getAsAdjusted<clang::RecordType>()) {
+      if (auto RCC = ExpandedRangeInCurrentContext(TL.getSourceRange())) {
+        if (auto Nodes = BuildNodeSetForType(TL.getTypePtr())) {
+          Observer.recordTypeIdSpellingLocation(*RCC, Nodes.ForReference(),
+                                                Nodes.claimability(),
+                                                IsImplicit(*RCC));
+        }
+      }
+    }
+  }
   return true;
 }
 
@@ -1357,6 +1373,16 @@ bool IndexerASTVisitor::TraverseCXXNewExpr(clang::CXXNewExpr* E) {
     return false;
   }
   return Base::TraverseCXXNewExpr(E);
+}
+
+bool IndexerASTVisitor::TraverseCXXTemporaryObjectExpr(
+    clang::CXXTemporaryObjectExpr* E) {
+  if (E == nullptr) return true;
+  if (IndexConstructExpr(E, E->getTypeSourceInfo())) {
+    auto Scope = PushScope(Job->ConstructorStack, E);
+    return Base::TraverseCXXTemporaryObjectExpr(E);
+  }
+  return false;
 }
 
 bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr* E) {
@@ -1670,6 +1696,15 @@ bool IndexerASTVisitor::VisitEnumTypeLoc(clang::EnumTypeLoc TL) {
 }
 
 bool IndexerASTVisitor::VisitRecordTypeLoc(clang::RecordTypeLoc TL) {
+  // This is a hack to see if we're being visited as part of a construct expr
+  // constructing the type in question. When visiting a CXXConstructExpr, we
+  // emit the ref/id to the class in question directly.
+  if (!Job->ConstructorStack.empty() &&
+      Job->ConstructorStack.back()
+              ->getType()
+              ->getAsAdjusted<clang::RecordType>() == TL.getTypePtr()) {
+    return true;
+  }
   RecordTypeLocSpellingLocation(TL);
   return true;
 }
@@ -1930,13 +1965,17 @@ bool IndexerASTVisitor::TraverseDeclarationNameInfo(
       // value is visited both here and via TraverseFunctionProtoTypeLoc.
       return true;
     case DeclarationName::CXXConstructorName:
-      // The default visitation uses the null TypeSourceInfo, which we work
-      // around in TraverseCXXConstructorDecl by re-traversing with a
-      // manually constructed TSI.  In order to avoid duplicate edges, suppress
-      // the default visitation.
-      // Note: if this is resolved in Clang, tests will fail due to duplicate
-      // edges and this workaround can be removed.
-      if (NameInfo.getNamedTypeInfo() == nullptr) {
+    case DeclarationName::CXXDestructorName:
+      if (clang::TypeSourceInfo* TSI = NameInfo.getNamedTypeInfo()) {
+        if (auto RCC = ExpandedRangeInCurrentContext(
+                TSI->getTypeLoc().getSourceRange())) {
+          if (auto Nodes =
+                  BuildNodeSetForType(TSI->getTypeLoc().getTypePtr())) {
+            Observer.recordTypeIdSpellingLocation(*RCC, Nodes.ForReference(),
+                                                  Nodes.claimability(),
+                                                  IsImplicit(*RCC));
+          }
+        }
         return true;
       }
     default:

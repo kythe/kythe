@@ -2,14 +2,14 @@
 
 //- @C defines/binding CStruct
 struct C {
-  //- @C ref CStruct
+  //- @C ref/id CStruct
   C();
-  //- @C ref CStruct
+  //- @C ref/id CStruct
   explicit C(int);
-  //- @C ref CStruct
+  //- @C ref/id CStruct
   ~C();
 };
 
 //- @#0C ref CStruct
-//- @#1C ref CStruct
+//- @#1C ref/id CStruct
 C::C() {}

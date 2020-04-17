@@ -1222,13 +1222,13 @@ Ordinals are used::
 //- @C defines/binding ClassC
 struct C {
   //- @C defines/binding CtorC
-  //- // @C ref/id ClassC
+  //- @C ref/id ClassC
   C(int i);
 };
 
 //- @"C(1)" ref/call CtorC
 //- @C ref CtorC
-//- // @C ref/id ClassC
+//- @C ref/id ClassC
 void f() { auto c = C(1); }
 --------------------------------------------------------------------------------
 
