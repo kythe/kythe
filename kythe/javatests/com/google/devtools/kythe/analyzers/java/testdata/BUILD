@@ -16,6 +16,7 @@ java_verifier_test(
 java_library(
     name = "testdata",
     srcs = glob(["*.java"]),
+    javacopts = ["-Xep:DefaultPackage:OFF"],
     deps = ["@maven//:com_google_code_findbugs_jsr305"],  # needed for pkg/package-info.java
 )
 
