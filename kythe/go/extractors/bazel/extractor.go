@@ -297,9 +297,13 @@ func (c *Config) fetchInputs(ctx context.Context, paths []string, file func(int,
 				log.Printf("ERROR: Reading input file: %v", err)
 				return err
 			}
-			files[i] <- rc
-			close(files[i])
-			return nil
+			select {
+			case <-gCtx.Done():
+				rc.Close()
+				return gCtx.Err()
+			case files[i] <- rc:
+				return nil
+			}
 		})
 	}
 	return g.Wait()
