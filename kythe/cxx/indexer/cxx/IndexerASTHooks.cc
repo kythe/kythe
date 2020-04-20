@@ -4144,6 +4144,20 @@ NodeSet IndexerASTVisitor::BuildNodeSetForDependentSizedArray(
   return NodeSet::Empty();
 }
 
+NodeSet IndexerASTVisitor::BuildNodeSetForExtInt(const clang::ExtIntType& T) {
+  return Observer.getNodeIdForBuiltinType(absl::StrCat(
+      T.isUnsigned() ? "unsigned _ExtInt" : "_ExtInt", "#", T.getNumBits()));
+}
+
+NodeSet IndexerASTVisitor::BuildNodeSetForDependentExtInt(
+    const clang::DependentExtIntType& T) {
+  if (auto ExprID = BuildNodeIdForExpr(T.getNumBitsExpr(), EmitRanges::No)) {
+    return ApplyBuiltinTypeConstructor(
+        T.isUnsigned() ? "unsigned _ExtInt" : "_ExtInt", *ExprID);
+  }
+  return NodeSet::Empty();
+}
+
 NodeSet IndexerASTVisitor::BuildNodeSetForFunctionProto(
     const clang::FunctionProtoType& T) {
   std::vector<GraphObserver::NodeId> NodeIds;
@@ -4484,6 +4498,8 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     DELEGATE_TYPE(TemplateSpecialization);
     DELEGATE_TYPE(Attributed);
     DELEGATE_TYPE(DependentAddressSpace);
+    DELEGATE_TYPE(ExtInt);
+    DELEGATE_TYPE(DependentExtInt);
     UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
     UNSUPPORTED_CLANG_TYPE(Complex);
     UNSUPPORTED_CLANG_TYPE(VariableArray);
