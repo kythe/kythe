@@ -1,5 +1,36 @@
 # Release Notes
 
+## [v0.0.44] - 2020-04-21
+
+#### Features
+
+*   add lib for reading artifacts from bazel event streams (#4460) ([0a124804](https://github.com/kythe/kythe/commit/0a12480436fdd76d3cca5e2585f94cb73bd1dcee))
+* **api:**  return Documentation node defs even if no facts are found (#4458) ([f03e8e67](https://github.com/kythe/kythe/commit/f03e8e673ef556e8e7b37935f38cfba61d858b86))
+* **build:**  have arc run build test with named config (#4438) ([756521e8](https://github.com/kythe/kythe/commit/756521e8aec17cd5a607be841f95617f6d1f899d))
+* **cxx_extractor:**  cache symlink resolution in PathRealizer (#4483) ([0f3c7f47](https://github.com/kythe/kythe/commit/0f3c7f47491d30488bf85108e6a3cd539fc72d77))
+* **cxx_indexer:**
+  *  emit ref/id to class when class and ctor overlap (#4476) ([0f9ced3e](https://github.com/kythe/kythe/commit/0f9ced3e2490c0dcd2661d8da8cf27168885748d))
+  *  expose a useful internal metadata loading function (#4459) ([f196b3e8](https://github.com/kythe/kythe/commit/f196b3e8b1321395f17ec3e3a5eb6e43e9094046))
+* **indexing:**  add ref/id edge (#4435) ([82ce8fc6](https://github.com/kythe/kythe/commit/82ce8fc68e7669790b5c838b270696071978ef71))
+* **runextractor cmake:**  add -extra_cmake_args option (#4436) ([489b5aec](https://github.com/kythe/kythe/commit/489b5aec0b1920ab528d6c9cd65f58dd690cbe97))
+
+#### Bug Fixes
+
+*   require flex version 2.6 or newer (#4456) ([70f2eeea](https://github.com/kythe/kythe/commit/70f2eeea4c642adbd1897efb91b1a4aab10bbec0))
+* **cxx_indexer:**
+  *  don't check-fail on copy-init-list (#4471) ([addc2410](https://github.com/kythe/kythe/commit/addc2410c5ae9dc94410361ba0185dd08c217f26))
+  *  properly emit ref/init edges in all cases (#4468) ([62d89fe8](https://github.com/kythe/kythe/commit/62d89fe8c1bc7340341ef98874cf1b18ab1460b1))
+  *  emit ref and ref/init for designated inits (#4462) ([5522b38a](https://github.com/kythe/kythe/commit/5522b38a555f7216eaa2502b2ecb91c53e8f98bc))
+  *  emit zero-width spans for entities in macro bodies (#4461) ([118afbe2](https://github.com/kythe/kythe/commit/118afbe2d2c2e32f499eb2be4689b62bbb805002))
+  *  update proto literal support to mirror current lib (#4439) ([74dfc7b2](https://github.com/kythe/kythe/commit/74dfc7b29c73d7111255fec3adccf6d600531a1b))
+* **extraction:**  deterministically write files to kzip (#4479) ([04e2fc9e](https://github.com/kythe/kythe/commit/04e2fc9e0d959ebd3bbed6c1d2f3ff7675e5242c))
+* **java_indexer:**
+  *  only consider Symbols without a source file external (#4472) ([059806cf](https://github.com/kythe/kythe/commit/059806cfc546fe1a8507ed9107da401329661462))
+  *  ensure annotated type vars generate consistent VNames (#4441) ([fd91ce0a](https://github.com/kythe/kythe/commit/fd91ce0a0a9b8e6878c6ba576985a2e59247e9d1))
+  *  only apply jdk override for non-source symbols (#4434) ([1d4ced6c](https://github.com/kythe/kythe/commit/1d4ced6c7da3c33cf367b993d59da7424e19ac55))
+* **java_tests:**  export jdk_kzip (#4443) ([c76ad892](https://github.com/kythe/kythe/commit/c76ad89265154351b27725d49d5cd97795d0b046))
+* **ts_indexer:**  bug related to overriden functions. (#4463) ([7288552a](https://github.com/kythe/kythe/commit/7288552abf729989c10d75e7256fe482cd665a12))
+
 ## [v0.0.43] - 2020-03-10
 
 #### Bug Fixes
@@ -857,7 +888,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.43...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.44...HEAD
+[v0.0.44] https://github.com/kythe/kythe/compare/v0.0.43...v0.0.44
 [v0.0.43] https://github.com/kythe/kythe/compare/v0.0.42...v0.0.43
 [v0.0.42] https://github.com/kythe/kythe/compare/v0.0.41...v0.0.42
 [v0.0.41] https://github.com/kythe/kythe/compare/v0.0.40...v0.0.41
