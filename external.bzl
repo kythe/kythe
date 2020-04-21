@@ -267,7 +267,7 @@ def _java_dependencies():
             "com.google.re2j:re2j:1.2",
             "com.google.truth:truth:1.0",
             "com.googlecode.java-diff-utils:diffutils:1.3.0",
-            "javax.annotation:jsr250-api:1.0",
+            "org.apache.tomcat:tomcat-annotations-api:9.0.34",
             "junit:junit:4.12",
             "org.checkerframework:checker-qual:2.9.0",
             "org.ow2.asm:asm:7.0",
