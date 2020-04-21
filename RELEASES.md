@@ -29,7 +29,7 @@
   *  ensure annotated type vars generate consistent VNames (#4441) ([fd91ce0a](https://github.com/kythe/kythe/commit/fd91ce0a0a9b8e6878c6ba576985a2e59247e9d1))
   *  only apply jdk override for non-source symbols (#4434) ([1d4ced6c](https://github.com/kythe/kythe/commit/1d4ced6c7da3c33cf367b993d59da7424e19ac55))
 * **java_tests:**  export jdk_kzip (#4443) ([c76ad892](https://github.com/kythe/kythe/commit/c76ad89265154351b27725d49d5cd97795d0b046))
-* **ts_indexer:**  bug related to overriden functions. (#4463) ([7288552a](https://github.com/kythe/kythe/commit/7288552abf729989c10d75e7256fe482cd665a12))
+* **ts_indexer:**  bug related to overridden functions. (#4463) ([7288552a](https://github.com/kythe/kythe/commit/7288552abf729989c10d75e7256fe482cd665a12))
 
 ## [v0.0.43] - 2020-03-10
 
