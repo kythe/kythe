@@ -73,7 +73,7 @@ class PathRealizer {
   class PathCache {
    public:
     template <typename K, typename Fn>
-    StatusOr<std::string> FindOrInsert(K&& key, Fn&& fn);
+    StatusOr<std::string> FindOrInsert(K&& key, Fn&& make);
 
    private:
     absl::Mutex mu_;
