@@ -968,6 +968,11 @@ kythe::proto::VName CompilationWriter::VNameForPath(const std::string& path) {
 }
 
 std::string CompilationWriter::RelativizePath(absl::string_view path) {
+  // Don't attempt to relativize builtin resource paths.
+  if (absl::StartsWith(path, kBuiltinResourceDirectory)) {
+    return std::string(path);
+  }
+
   if (!canonicalizer_.has_value()) {
     if (StatusOr<PathCanonicalizer> canonicalizer =
             PathCanonicalizer::Create(root_directory_, path_policy_)) {

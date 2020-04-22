@@ -137,12 +137,34 @@ StatusOr<PathRealizer> PathRealizer::Create(absl::string_view root) {
   }
 }
 
-StatusOr<std::string> PathRealizer::Relativize(absl::string_view path) const {
-  if (StatusOr<std::string> resolved = RealPath(path)) {
-    return std::string(TrimPathPrefix(*std::move(resolved), root_));
-  } else {
-    return resolved.status();
+// We do not copy the cache on assignment or construction to retain thread
+// safety.
+PathRealizer::PathRealizer(const PathRealizer& other) : root_(other.root_) {}
+PathRealizer& PathRealizer::operator=(const PathRealizer& other) {
+  root_ = other.root_;
+  return *this;
+}
+
+template <typename K, typename Fn>
+StatusOr<std::string> PathRealizer::PathCache::FindOrInsert(K&& key,
+                                                            Fn&& make) {
+  absl::MutexLock lock(&mu_);
+  auto [iter, inserted] = cache_.try_emplace(std::forward<K>(key), "");
+  if (inserted) {
+    iter->second = std::forward<Fn>(make)();
   }
+  return iter->second;
+}
+
+StatusOr<std::string> PathRealizer::Relativize(absl::string_view path) const {
+  return cache_->FindOrInsert(
+      CleanPath(path), [this, path]() -> StatusOr<std::string> {
+        if (StatusOr<std::string> resolved = RealPath(path)) {
+          return std::string(TrimPathPrefix(*std::move(resolved), root_));
+        } else {
+          return resolved.status();
+        }
+      });
 }
 
 StatusOr<PathCanonicalizer> PathCanonicalizer::Create(absl::string_view root,
