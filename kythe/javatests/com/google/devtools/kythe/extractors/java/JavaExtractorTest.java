@@ -62,9 +62,9 @@ public class JavaExtractorTest extends TestCase {
   private static final FileInfo GENERATED_ANNOTATION_CLASS =
       FileInfo.newBuilder()
           .setPath(join(JDK_ANNOTATION_PATH, "javax/annotation/Generated.class"))
-          // This digest depends on the external javax_annotation_jsr250_api dependency.  If it is
-          // updated, this will also need to change.
-          .setDigest("e5ee743f5c6df4923a934cba33c73d3d73e19d277c8ddec5c4e7ac59788fc674")
+          // This digest depends on the external org_apache_tomcat_tomcat_annotations_api
+          // dependency.  If it is updated, this will also need to change.
+          .setDigest("33d95d043232aa7dc76f00e831495f9b0e89f9c3f6fe440660390514624ec08c")
           .build();
 
   /** Tests the basic case of indexing a java compilation with two sources. */
