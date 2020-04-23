@@ -28,7 +28,9 @@ public class CrossFile {
   //- @Inter ref Inter
   Inter i;
 
-  public static void main(String[] args) {
+  //- @Exception ref Exception
+  //- Exception named _JVMException=vname(_, _, _, _, "jvm")
+  public static void main(String[] args) throws Exception {
     //- @staticMethod ref StaticMethod
     Files.staticMethod();
     //- @staticMethod ref StaticMethod
