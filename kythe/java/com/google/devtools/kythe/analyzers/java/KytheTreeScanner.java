@@ -348,6 +348,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         VName jvmNode =
             jvmGraph.emitClassNode(entrySets.jvmCorpusPath(classDef.sym), referenceType);
         entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
+        entrySets.emitEdge(classNode, EdgeKind.NAMED, jvmNode);
       } else {
         // Emit NAME nodes for the jvm binary name of classes.
         VName nameNode = entrySets.getJvmNameAndEmit(classDef.sym.flatname.toString()).getVName();
@@ -499,12 +500,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       String methodName = methodDef.name.toString();
       VName jvmNode = jvmGraph.emitMethodNode(corpusPath, parentClass, methodName, methodJvmType);
       entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
+      entrySets.emitEdge(methodNode, EdgeKind.NAMED, jvmNode);
 
       for (int i = 0; i < params.size(); i++) {
         JavaNode param = params.get(i);
         VName paramJvmNode =
             jvmGraph.emitParameterNode(corpusPath, parentClass, methodName, methodJvmType, i);
         entrySets.emitEdge(param.getVName(), EdgeKind.GENERATES, paramJvmNode);
+        entrySets.emitEdge(param.getVName(), EdgeKind.NAMED, paramJvmNode);
         entrySets.emitEdge(jvmNode, EdgeKind.PARAM, paramJvmNode, i);
       }
     }
@@ -666,6 +669,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
               referenceType(externalType(varDef.sym.enclClass())),
               varDef.name.toString());
       entrySets.emitEdge(varNode, EdgeKind.GENERATES, jvmNode);
+      entrySets.emitEdge(varNode, EdgeKind.NAMED, jvmNode);
     }
 
     getScope(ctx).ifPresent(scope -> entrySets.emitEdge(varNode, EdgeKind.CHILDOF, scope));
@@ -1089,32 +1093,42 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return new JavaNode(entrySets.newPackageNodeAndEmit((PackageSymbol) sym).getVName());
     }
 
-    if (jvmGraph != null && config.getEmitJvmReferences() && isExternal(sym)) {
-      // Symbol is external to the analyzed compilation and may not be defined in Java.  Return the
-      // related JVM node to accommodate cross-language references.
+    VName jvmNode = null;
+    if (jvmGraph != null) {
       Type type = externalType(sym);
       CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
       if (sym instanceof Symbol.VarSymbol) {
         if (((Symbol.VarSymbol) sym).getKind() == ElementKind.FIELD) {
           ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
           String fieldName = sym.getSimpleName().toString();
-          return new JavaNode(JvmGraph.getFieldVName(corpusPath, parentClass, fieldName));
+          jvmNode = JvmGraph.getFieldVName(corpusPath, parentClass, fieldName);
         }
       } else if (type instanceof Type.MethodType) {
         JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
         ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String methodName = sym.getQualifiedName().toString();
-        return new JavaNode(
-            JvmGraph.getMethodVName(corpusPath, parentClass, methodName, methodJvmType));
+        jvmNode = JvmGraph.getMethodVName(corpusPath, parentClass, methodName, methodJvmType);
       } else if (type instanceof Type.ClassType) {
-        return new JavaNode(JvmGraph.getReferenceVName(corpusPath, referenceType(sym.type)));
+        jvmNode = JvmGraph.getReferenceVName(corpusPath, referenceType(sym.type));
       }
     }
 
-    return signatureGenerator
-        .getSignature(sym)
-        .map(sig -> new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null)))
-        .orElse(null);
+    JavaNode node =
+        signatureGenerator
+            .getSignature(sym)
+            .map(sig -> new JavaNode(entrySets.getNode(signatureGenerator, sym, sig, null)))
+            .orElse(null);
+    if (node != null && jvmNode != null) {
+      entrySets.emitEdge(node.getVName(), EdgeKind.NAMED, jvmNode);
+    }
+
+    if (jvmNode != null && config.getEmitJvmReferences() && isExternal(sym)) {
+      // Symbol is external to the analyzed compilation and may not be defined in Java.  Return the
+      // related JVM node to accommodate cross-language references.
+      return new JavaNode(jvmNode);
+    }
+
+    return node;
   }
 
   private boolean isExternal(Symbol sym) {
