@@ -24,13 +24,40 @@
 
 namespace kythe {
 
-/// \brief Reads BazelEvent messages from a binary Bazel event stream.
-class BazelEventReader {
+/// \brief Interface used for iterating through Bazel BuildEvent messages.
+class BazelEventReaderInterface {
  public:
   using value_type = ::build_event_stream::BuildEvent;
   using reference = value_type&;
   using const_reference = const value_type&;
 
+  /// \brief Advances the reading to the next record.
+  virtual void Next() = 0;
+  /// \brief Returns false if there are no more records to read.
+  virtual bool Done() const = 0;
+  /// \brief Returns a reference to the current record.
+  /// Requires: !Done()
+  virtual reference Ref() = 0;
+  /// \brief Returns a const-reference to the current record.
+  /// Requires: !Done()
+  virtual const_reference Ref() const = 0;
+  /// \brief Returns the overall status of the iteration.
+  virtual absl::Status status() const = 0;
+
+  virtual ~BazelEventReaderInterface() = default;
+
+ protected:
+  /// \brief While BazelEventReaderInterface is not itself copyable, subclasses
+  /// choose to be.
+  BazelEventReaderInterface() = default;
+  BazelEventReaderInterface(const BazelEventReaderInterface&) = default;
+  BazelEventReaderInterface& operator=(const BazelEventReaderInterface&) =
+      default;
+};
+
+/// \brief Reads BazelEvent messages from a binary Bazel event stream.
+class BazelEventReader final : public BazelEventReaderInterface {
+ public:
   /// \brief Constructs a new BazelEventReader
   explicit BazelEventReader(google::protobuf::io::CodedInputStream* stream)
       : stream_(stream) {
@@ -43,12 +70,14 @@ class BazelEventReader {
     Next();
   }
 
-  void Next();
+  void Next() override;
 
-  bool Done() const { return value_.index() != 0; }
-  reference Ref() { return absl::get<value_type>(value_); }
-  const_reference Ref() const { return absl::get<value_type>(value_); }
-  absl::Status status() const { return absl::get<absl::Status>(value_); }
+  bool Done() const override { return value_.index() != 0; }
+  reference Ref() override { return absl::get<value_type>(value_); }
+  const_reference Ref() const override { return absl::get<value_type>(value_); }
+  absl::Status status() const override {
+    return absl::get<absl::Status>(value_);
+  }
 
  private:
   absl::variant<value_type, absl::Status> value_;

@@ -55,7 +55,7 @@ class BazelArtifactReader {
   static std::vector<ArtifactSelector> DefaultSelectors();
 
   explicit BazelArtifactReader(
-      BazelEventReader* event_reader,
+      BazelEventReaderInterface* event_reader,
       std::vector<ArtifactSelector> selectors = DefaultSelectors())
       : event_reader_(CHECK_NOTNULL(event_reader)),
         selectors_(std::move(selectors)) {
@@ -73,7 +73,7 @@ class BazelArtifactReader {
   void Select();
 
   absl::variant<value_type, absl::Status> value_;
-  BazelEventReader* event_reader_;
+  BazelEventReaderInterface* event_reader_;
   std::vector<ArtifactSelector> selectors_;
 };
 
