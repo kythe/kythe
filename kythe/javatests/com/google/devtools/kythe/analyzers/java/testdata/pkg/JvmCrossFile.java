@@ -14,6 +14,14 @@ import static pkg.Files.INSTANCE;
 import pkg.Files.Inter;
 import pkg.Files.OtherDecl;
 
+//- ConstantMember named JvmConstantMember
+//- FilesClass named JvmFilesClass
+//- InnerClass named JvmInnerClass
+//- Inter named JvmInter
+//- ODecl named JvmODecl
+//- StaticMethod named JvmStaticMethod
+//- InstanceMember named JvmInstanceMember
+
 //- ConstantMember generates JvmConstantMember
 //- FilesClass generates JvmFilesClass
 //- InnerClass generates JvmInnerClass

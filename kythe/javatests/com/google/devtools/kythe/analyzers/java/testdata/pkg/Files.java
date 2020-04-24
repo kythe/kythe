@@ -42,6 +42,9 @@ public class Files {
   interface Inter<T> {}
 }
 
+//- FilesClass named JVMFiles=vname(_, _, _, _, "jvm")
+//- JVMFiles.node/kind record
+
 //- File=vname("","kythe","","kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Files.java","")
 //-   .node/kind file
 //- File.text/encoding "UTF-8"
