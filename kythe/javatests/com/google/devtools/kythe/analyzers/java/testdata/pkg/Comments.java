@@ -14,6 +14,9 @@ package pkg;
 public class Comments
     implements Comparable<Comments> {
 
+  /** This is a {@link long}. */
+  long immaLong;
+
   //- DocNode.node/kind doc
   //- DocNode.subkind "javadoc"
   //- DocNode documents CommentsClass
