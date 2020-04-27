@@ -1094,19 +1094,18 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     VName jvmNode = null;
-    if (jvmGraph != null) {
+    if (jvmGraph != null && sym.enclClass() != null) {
       Type type = externalType(sym);
-      Type enclType = externalType(sym.enclClass());
       CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
       if (sym instanceof Symbol.VarSymbol) {
-        if (sym.getKind() == ElementKind.FIELD && enclType != null) {
-          ReferenceType parentClass = referenceType(enclType);
+        if (sym.getKind() == ElementKind.FIELD) {
+          ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
           String fieldName = sym.getSimpleName().toString();
           jvmNode = JvmGraph.getFieldVName(corpusPath, parentClass, fieldName);
         }
-      } else if (type instanceof Type.MethodType && enclType != null) {
+      } else if (type instanceof Type.MethodType) {
         JvmGraph.Type.MethodType methodJvmType = toMethodJvmType((Type.MethodType) type);
-        ReferenceType parentClass = referenceType(enclType);
+        ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
         String methodName = sym.getQualifiedName().toString();
         jvmNode = JvmGraph.getMethodVName(corpusPath, parentClass, methodName, methodJvmType);
       } else if (type instanceof Type.ClassType) {
@@ -1521,7 +1520,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private Type externalType(Symbol sym) {
-    return sym == null ? null : sym.externalType(Types.instance(javaContext));
+    return sym.externalType(Types.instance(javaContext));
   }
 
   static JvmGraph.Type toJvmType(Type type) {
