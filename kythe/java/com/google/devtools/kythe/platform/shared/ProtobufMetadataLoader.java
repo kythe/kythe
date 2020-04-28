@@ -23,6 +23,7 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -87,7 +88,12 @@ public class ProtobufMetadataLoader implements MetadataLoader {
     HashMap<String, VName> map = new HashMap<>();
     Path root = Paths.get("/", unit.getWorkingDirectory());
     for (CompilationUnit.FileInput input : unit.getRequiredInputList()) {
-      map.put(root.resolve(input.getInfo().getPath()).toString(), input.getVName());
+      try {
+        map.put(root.resolve(input.getInfo().getPath()).toString(), input.getVName());
+      } catch (InvalidPathException ipe) {
+        logger.atWarning().withCause(ipe).log(
+            "Found invalid path in CompilationUnit: %s", input.getInfo());
+      }
     }
     return p -> map.get(root.resolve(p).toString());
   }
