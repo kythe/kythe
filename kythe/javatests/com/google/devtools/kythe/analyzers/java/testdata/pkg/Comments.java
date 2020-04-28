@@ -9,13 +9,13 @@ package pkg;
 
 /**
  * This is a Javadoc comment with links to {@link String}, {@link java.lang.Integer},
- * {@link Inner}, and {@link pkg}.
+ * {@link Inner}, and {@link pkg}. It references {@value IM_A_LONG}.
  */
 public class Comments
     implements Comparable<Comments> {
 
-  /** This is a {@link long}. */
-  long immaLong;
+  /** This is a {@link long} with a value of {@value}. */
+  public static final long IM_A_LONG = 4;
 
   //- DocNode.node/kind doc
   //- DocNode.subkind "javadoc"
@@ -24,7 +24,7 @@ public class Comments
   //- DocNode param.1 IntegerClass
   //- DocNode param.2 InnerClass
   //- DocNode param.3 Package
-  //- DocNode.text " This is a Javadoc comment with links to {@link [String]}, {@link [java.lang.Integer]},\n {@link [Inner]}, and {@link [pkg]}.\n"
+  //- DocNode.text " This is a Javadoc comment with links to {@link [String]}, {@link [java.lang.Integer]},\n {@link [Inner]}, and {@link [pkg]}. It references {@value [IM_A_LONG]}.\n"
 
   //- @fieldOne defines/binding _FieldOne
   private static int fieldOne; // inline comment here
