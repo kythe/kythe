@@ -138,7 +138,8 @@ public class ProtobufMetadataLoader implements MetadataLoader {
       }
       fileVNames.add(rule.vname);
       rule.vname =
-          rule.vname.toBuilder()
+          rule.vname
+              .toBuilder()
               .setSignature(protoPath.toString())
               .setLanguage(PROTOBUF_LANGUAGE)
               .build();
