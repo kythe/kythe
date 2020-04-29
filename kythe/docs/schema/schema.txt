@@ -795,7 +795,7 @@ Commonly arises from::
 Points from::
   semantic nodes
 Points toward::
-  names
+  name/linkage nodes
 Ordinals are used::
   never
 See also::
@@ -805,8 +805,8 @@ See also::
 --------------------------------------------------------------------------------
 package pkg;
 //- @E defines/binding EClass
-//- EClass named EClassName = vname("pkg.E", "", "", "", "jvm")
-//- EClassName.node/kind name
+//- EClass named EClassName = vname("pkg.E", "kythe", "", "", "jvm")
+//- EClassName.node/kind record
 public class E {}
 --------------------------------------------------------------------------------
 
@@ -2017,21 +2017,7 @@ Naming convention::
     *empty*
 Notes::
   The namespace is some domain in which the names are expected to be unique at linkage
-  time and/or runtime, such as JVM binary names, or the Itanium C++ ABI.
-
-[kythe,Java,"JVM binary class names, as used for classloading, are names."]
---------------------------------------------------------------------------------
-package pkg;
-//- @E defines/binding EClass
-//- EClass named EClassName = vname("pkg.E", "", "", "", "jvm")
-//- EClassName.node/kind name
-public class E {
-  //- @Inner defines/binding InnerClass
-  //- InnerClass named InnerClassName = vname("pkg.E$Inner", "", "", "", "jvm")
-  //- InnerClassName.node/kind name
-  public class Inner {}
-}
---------------------------------------------------------------------------------
+  time and/or runtime, such as the Itanium C++ ABI.
 
 [[package]]
 package
