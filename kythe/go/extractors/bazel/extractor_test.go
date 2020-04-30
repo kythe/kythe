@@ -269,21 +269,23 @@ func TestFetchInputs(t *testing.T) {
 	// the other file.
 	if err == nil {
 		t.Error("fetchInputs was expected to report an error, but did not")
-	} else if len(fds) != 1 {
-		t.Fatalf("fetchInputs: got %d files, wanted %d", len(fds), 1)
+	} else if len(fds) > 1 {
+		t.Fatalf("fetchInputs: got %d files, wanted ≤%d", len(fds), 1)
 	}
 
-	// There should be as many entries in the result as in the input; any that
-	// were not successfully loaded should be nil.
-	want := &apb.FileData{
-		Content: nil,
-		Info: &apb.FileInfo{
-			Path:   goodFile,
-			Digest: emptyDigest,
-		},
-	}
-	if !proto.Equal(fds[0], want) {
-		t.Errorf("FileData[0]: got %+v, want %+v", fds[0], want)
+	if len(fds) == 1 {
+		// There may be 1 FileData in the result if its read was attempted before
+		// the non-existent file.
+		want := &apb.FileData{
+			Content: nil,
+			Info: &apb.FileInfo{
+				Path:   goodFile,
+				Digest: emptyDigest,
+			},
+		}
+		if !proto.Equal(fds[0], want) {
+			t.Errorf("FileData[0]: got %+v, want %+v", fds[0], want)
+		}
 	}
 }
 

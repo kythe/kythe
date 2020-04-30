@@ -1005,6 +1005,15 @@ void KytheGraphObserver::recordTypeSpellingLocation(
                claimability);
 }
 
+void KytheGraphObserver::recordTypeIdSpellingLocation(
+    const GraphObserver::Range& type_source_range, const NodeId& type_id,
+    Claimability claimability, Implicit i) {
+  RecordAnchor(
+      type_source_range, type_id,
+      i == Implicit::Yes ? EdgeKindID::kRefImplicit : EdgeKindID::kRefId,
+      claimability);
+}
+
 void KytheGraphObserver::recordCategoryExtendsEdge(const NodeId& from,
                                                    const NodeId& to) {
   recorder_->AddEdge(VNameRefFromNodeId(from), EdgeKindID::kExtendsCategory,

@@ -255,7 +255,7 @@ java_verifier_test(
     meta = [
         "Metadata.java.meta",
     ],
-    deps = ["@maven//:javax_annotation_jsr250_api"],
+    deps = ["@maven//:org_apache_tomcat_tomcat_annotations_api"],
 )
 
 java_verifier_test(
@@ -281,7 +281,7 @@ java_verifier_test(
         "ProtobufMetadata.java.pb.meta",
     ],
     vnames_config = "protobuf_vnames.json",
-    deps = ["@maven//:javax_annotation_jsr250_api"],
+    deps = ["@maven//:org_apache_tomcat_tomcat_annotations_api"],
 )
 
 java_verifier_test(
@@ -383,7 +383,7 @@ java_verifier_test(
 
 java_verifier_test(
     name = "jvm_reference_tests",
-    size = "small",
+    timeout = "long",
     srcs = ["JvmCrossFile.java"],
     indexer_opts = ["--emit_jvm_references"],
     verifier_deps = [":files_tests"],

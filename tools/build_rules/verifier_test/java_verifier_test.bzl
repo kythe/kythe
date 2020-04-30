@@ -152,6 +152,7 @@ def java_verifier_test(
         verifier_deps = [],
         deps = [],
         size = "small",
+        timeout = None,
         tags = [],
         extractor = None,
         extractor_opts = _default_java_extractor_opts,
@@ -229,6 +230,7 @@ def java_verifier_test(
         verifier_test,
         name = name,
         size = size,
+        timeout = timeout,
         srcs = goals,
         opts = verifier_opts,
         tags = tags,
@@ -357,7 +359,7 @@ def java_proto_verifier_test(
         vnames_config = vnames_config,
         deps = [
             "@com_google_protobuf//:protobuf_java",
-            "@maven//:javax_annotation_jsr250_api",
+            "@maven//:org_apache_tomcat_tomcat_annotations_api",
         ],
     )
 

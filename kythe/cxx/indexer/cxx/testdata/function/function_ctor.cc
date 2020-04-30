@@ -19,18 +19,26 @@ class C {
 };
 void g() {
   //- @c ref/call CtorC
+  //- @C ref ClassC
+  //- !{ @C ref/id ClassC }
   C c;
 
   //- @"C(42)" ref/call CtorC2
   //- @C ref CtorC2
+  //- @C ref/id ClassC
+  //- !{ @C ref ClassC }
   C(42);
 
   //- @"::ns::C(42)" ref/call CtorC2
   //- @C ref CtorC2
+  //- @C ref/id ClassC
+  //- !{ @C ref ClassC }
   ::ns::C(42);
 
   //- @"::ns::C(42, nullptr)" ref/call CtorC2
   //- @C ref CtorC2
+  //- @C ref/id ClassC
+  //- !{ @C ref ClassC }
   ::ns::C(42, nullptr);
 }
 }
