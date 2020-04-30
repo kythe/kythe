@@ -52,14 +52,6 @@ public class JavaIndexerConfig extends IndexerConfig {
   private String overrideJdkCorpus;
 
   @Parameter(
-      names = "--emit_jvm",
-      description =
-          "Whether to emit name nodes or full JVM language semantic nodes for each Java class(must"
-              + " be either \"names\" or \"semantic\"; \"semantic\" is the default and \"names\""
-              + " is deprecated)")
-  private JvmMode jvmMode = JvmMode.SEMANTIC;
-
-  @Parameter(
       names = "--emit_jvm_references",
       description =
           "Whether to reference the JVM graph when encountering nodes from outside the analyzed"
@@ -84,11 +76,6 @@ public class JavaIndexerConfig extends IndexerConfig {
               + " compiler insists on being read from the local file system.")
   private String temporaryDirectory;
 
-  public static enum JvmMode {
-    NAMES,
-    SEMANTIC;
-  }
-
   public JavaIndexerConfig(String programName) {
     super(programName);
   }
@@ -107,10 +94,6 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public boolean getEmitJvmSignatures() {
     return emitJvmSignatures;
-  }
-
-  public JvmMode getJvmMode() {
-    return jvmMode;
   }
 
   public boolean getEmitJvmReferences() {
@@ -141,11 +124,6 @@ public class JavaIndexerConfig extends IndexerConfig {
 
   public JavaIndexerConfig setOverrideJdkCorpus(String overrideJdkCorpus) {
     this.overrideJdkCorpus = overrideJdkCorpus;
-    return this;
-  }
-
-  public JavaIndexerConfig setJvmMode(JvmMode jvmMode) {
-    this.jvmMode = jvmMode;
     return this;
   }
 

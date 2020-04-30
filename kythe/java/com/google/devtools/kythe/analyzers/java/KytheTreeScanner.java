@@ -201,9 +201,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             nodeConsumer,
             fileManager,
             metadataLoaders,
-            config.getJvmMode() == JavaIndexerConfig.JvmMode.SEMANTIC
-                ? new JvmGraph(statistics, entrySets.getEmitter())
-                : null,
+            new JvmGraph(statistics, entrySets.getEmitter()),
             config)
         .scan(compilation, null);
   }
@@ -342,18 +340,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     NestingKind nestingKind = classDef.sym.getNestingKind();
     if (nestingKind != NestingKind.LOCAL && nestingKind != NestingKind.ANONYMOUS) {
-      if (jvmGraph != null) {
-        // Emit corresponding JVM node
-        JvmGraph.Type.ReferenceType referenceType = referenceType(classDef.sym.type);
-        VName jvmNode =
-            jvmGraph.emitClassNode(entrySets.jvmCorpusPath(classDef.sym), referenceType);
-        entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
-        entrySets.emitEdge(classNode, EdgeKind.NAMED, jvmNode);
-      } else {
-        // Emit NAME nodes for the jvm binary name of classes.
-        VName nameNode = entrySets.getJvmNameAndEmit(classDef.sym.flatname.toString()).getVName();
-        entrySets.emitEdge(classNode, EdgeKind.NAMED, nameNode);
-      }
+      // Emit corresponding JVM node
+      JvmGraph.Type.ReferenceType referenceType = referenceType(classDef.sym.type);
+      VName jvmNode = jvmGraph.emitClassNode(entrySets.jvmCorpusPath(classDef.sym), referenceType);
+      entrySets.emitEdge(classNode, EdgeKind.GENERATES, jvmNode);
+      entrySets.emitEdge(classNode, EdgeKind.NAMED, jvmNode);
     }
 
     Span classIdent = filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
@@ -492,24 +483,22 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     boolean documented = visitDocComment(methodNode, absNode, methodDef.getModifiers());
 
     // Emit corresponding JVM node
-    if (jvmGraph != null) {
-      CorpusPath corpusPath = entrySets.jvmCorpusPath(methodDef.sym);
-      JvmGraph.Type.MethodType methodJvmType =
-          toMethodJvmType((Type.MethodType) externalType(methodDef.sym));
-      ReferenceType parentClass = referenceType(externalType(methodDef.sym.enclClass()));
-      String methodName = methodDef.name.toString();
-      VName jvmNode = jvmGraph.emitMethodNode(corpusPath, parentClass, methodName, methodJvmType);
-      entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
-      entrySets.emitEdge(methodNode, EdgeKind.NAMED, jvmNode);
+    CorpusPath corpusPath = entrySets.jvmCorpusPath(methodDef.sym);
+    JvmGraph.Type.MethodType methodJvmType =
+        toMethodJvmType((Type.MethodType) externalType(methodDef.sym));
+    ReferenceType parentClass = referenceType(externalType(methodDef.sym.enclClass()));
+    String methodName = methodDef.name.toString();
+    VName jvmNode = jvmGraph.emitMethodNode(corpusPath, parentClass, methodName, methodJvmType);
+    entrySets.emitEdge(methodNode, EdgeKind.GENERATES, jvmNode);
+    entrySets.emitEdge(methodNode, EdgeKind.NAMED, jvmNode);
 
-      for (int i = 0; i < params.size(); i++) {
-        JavaNode param = params.get(i);
-        VName paramJvmNode =
-            jvmGraph.emitParameterNode(corpusPath, parentClass, methodName, methodJvmType, i);
-        entrySets.emitEdge(param.getVName(), EdgeKind.GENERATES, paramJvmNode);
-        entrySets.emitEdge(param.getVName(), EdgeKind.NAMED, paramJvmNode);
-        entrySets.emitEdge(jvmNode, EdgeKind.PARAM, paramJvmNode, i);
-      }
+    for (int i = 0; i < params.size(); i++) {
+      JavaNode param = params.get(i);
+      VName paramJvmNode =
+          jvmGraph.emitParameterNode(corpusPath, parentClass, methodName, methodJvmType, i);
+      entrySets.emitEdge(param.getVName(), EdgeKind.GENERATES, paramJvmNode);
+      entrySets.emitEdge(param.getVName(), EdgeKind.NAMED, paramJvmNode);
+      entrySets.emitEdge(jvmNode, EdgeKind.PARAM, paramJvmNode, i);
     }
 
     VName ret = null;
@@ -600,8 +589,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitAnchor(ctx, EdgeKind.DEFINES, lambdaNode);
 
     for (Type target : getTargets(lambda)) {
-      VName targetNode = getNode(target.asElement());
-      entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
+      if (target != null) {
+        VName targetNode = getNode(target.asElement());
+        entrySets.emitEdge(lambdaNode, EdgeKind.EXTENDS, targetNode);
+      }
     }
 
     scan(lambda.body, ctx);
@@ -662,7 +653,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     // Emit corresponding JVM node
-    if (jvmGraph != null && varDef.sym.getKind().isField()) {
+    if (varDef.sym.getKind().isField()) {
       VName jvmNode =
           jvmGraph.emitFieldNode(
               entrySets.jvmCorpusPath(varDef.sym),
@@ -1094,11 +1085,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     VName jvmNode = null;
-    if (jvmGraph != null) {
+    if (sym.enclClass() != null) {
       Type type = externalType(sym);
       CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
       if (sym instanceof Symbol.VarSymbol) {
-        if (((Symbol.VarSymbol) sym).getKind() == ElementKind.FIELD) {
+        if (sym.getKind() == ElementKind.FIELD) {
           ReferenceType parentClass = referenceType(externalType(sym.enclClass()));
           String fieldName = sym.getSimpleName().toString();
           jvmNode = JvmGraph.getFieldVName(corpusPath, parentClass, fieldName);
@@ -1551,8 +1542,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       case SHORT:
         return JvmGraph.Type.shortType();
 
+      case ERROR:
+        // Assume reference type; avoid crashing
+        return referenceType(type);
+
       default:
-        throw new IllegalStateException("unhandled Java Type: " + type.getTag());
+        throw new IllegalStateException("unhandled Java Type: " + type.getTag() + " -- " + type);
     }
   }
 

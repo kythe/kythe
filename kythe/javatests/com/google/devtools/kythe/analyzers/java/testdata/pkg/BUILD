@@ -225,13 +225,6 @@ java_verifier_test(
 )
 
 java_verifier_test(
-    name = "names_tests",
-    size = "small",
-    srcs = ["Names.java"],
-    indexer_opts = ["--emit_jvm=names"],
-)
-
-java_verifier_test(
     name = "marked_source_tests",
     size = "small",
     srcs = ["MarkedSource.java"],
@@ -348,7 +341,6 @@ java_verifier_test(
     name = "plugin_tests",
     size = "small",
     srcs = ["PluginTests.java"],
-    indexer_opts = ["--emit_jvm=semantic"],
     load_plugin = "//kythe/javatests/com/google/devtools/kythe/analyzers/java:test_plugin",
 )
 
@@ -483,4 +475,14 @@ java_verifier_test(
     name = "auto_values_test",
     compilation = ":auto_values",
     load_plugin = "//kythe/java/com/google/devtools/kythe/analyzers/java:auto_value_plugin",
+)
+
+java_library(
+    name = "special_members",
+    srcs = ["SpecialMembers.java"],
+)
+
+java_verifier_test(
+    name = "special_members_test",
+    compilation = ":special_members",
 )
