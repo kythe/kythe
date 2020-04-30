@@ -1085,7 +1085,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     VName jvmNode = null;
-    if (sym.enclClass() != null) {
+    if (!sym.asType().isErroneous() && sym.enclClass() != null) {
       Type type = externalType(sym);
       CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
       if (sym instanceof Symbol.VarSymbol) {
