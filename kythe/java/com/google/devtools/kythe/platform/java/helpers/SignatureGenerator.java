@@ -82,8 +82,6 @@ public class SignatureGenerator
 
   private final boolean useJvmSignatures;
 
-  private final boolean ignoreTypesigExceptions;
-
   private static boolean isJavaLangObject(Type type) {
     return type.tsym.getQualifiedName().contentEquals(Object.class.getName());
   }
@@ -154,10 +152,8 @@ public class SignatureGenerator
   }
 
   public SignatureGenerator(
-      CompilationUnitTree compilationUnit, Context context, boolean useJvmSignatures,
-      boolean ignoreTypesigExceptions) {
+      CompilationUnitTree compilationUnit, Context context, boolean useJvmSignatures) {
     this.useJvmSignatures = useJvmSignatures;
-    this.ignoreTypesigExceptions = ignoreTypesigExceptions;
     this.memoizedTreePathScanner = new MemoizedTreePathScanner(compilationUnit, context);
     sigGen = new SigGen(Types.instance(context));
   }
@@ -194,22 +190,12 @@ public class SignatureGenerator
         try {
           return Optional.of(sigGen.getSignature((VarSymbol) symbol));
         } catch (Types.SignatureGenerator.InvalidSignatureException e) {
-          final String action;
-          if (ignoreTypesigExceptions) {
-            action = "omitting reference";
-          } else {
-            action = "consider --ignore_typesig_exceptions";
-          }
           logger.atWarning()
             .atMostEvery(5, TimeUnit.SECONDS)
-            .log("Likely hitting bug JDK-8212750, %s"
+            .log("Likely hitting bug JDK-8212750, omitting reference"
                     + " (VarSymbol [%s] in class [%s], package [%s], type [%s])",
-                action,
                 symbol, symbol.outermostClass(), symbol.packge(), symbol.type);
-          if (ignoreTypesigExceptions) {
-            return Optional.empty();
-          }
-          throw new RuntimeException("Hit JDK-8212750, see logs for details.", e);
+          return Optional.empty();
         }
       }
     }

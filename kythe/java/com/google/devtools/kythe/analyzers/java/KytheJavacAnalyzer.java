@@ -145,8 +145,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     try {
       src = new SourceText(context, compilation, details.getEncoding());
       SignatureGenerator signatureGenerator =
-          new SignatureGenerator(
-              ast, context, config.getEmitJvmSignatures(), config.getIgnoreTypesigExceptions());
+          new SignatureGenerator(ast, context, config.getEmitJvmSignatures());
       KytheTreeScanner.emitEntries(
           context,
           getStatisticsCollector(),
