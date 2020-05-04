@@ -850,6 +850,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     scanList(newClass.getArguments(), ctx);
     scan(newClass.getEnclosingExpression(), ctx);
     scan(newClass.getClassBody(), ctx);
+
     return scan(newClass.getIdentifier(), ctx);
   }
 
@@ -1085,7 +1086,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     VName jvmNode = null;
-    if (!sym.asType().isErroneous() && sym.enclClass() != null) {
+    if (!isErroneous(sym) && sym.enclClass() != null) {
       Type type = externalType(sym);
       CorpusPath corpusPath = entrySets.jvmCorpusPath(sym);
       if (sym instanceof Symbol.VarSymbol) {
@@ -1508,6 +1509,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       fullPath = fullPath.substring(1);
     }
     return fullPath;
+  }
+
+  /** Check if a {@link Symbol} is erroneous or produces a {@link Symbol.CompletionFailure}. */
+  private static boolean isErroneous(Symbol sym) {
+    try {
+      return sym.asType().isErroneous();
+    } catch (Symbol.CompletionFailure f) {
+      return true;
+    }
   }
 
   private Type externalType(Symbol sym) {
