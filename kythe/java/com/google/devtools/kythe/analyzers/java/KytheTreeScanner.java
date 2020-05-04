@@ -1511,11 +1511,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return fullPath;
   }
 
-  /** Check if a {@link Symbol} is erroneous or produces a {@link Symbol.CompletionFailure}. */
+  /**
+   * Check if a {@link Symbol} is erroneous or produces a {@link Symbol.CompletionFailure}/{@link
+   * AssertionError}.
+   */
   private static boolean isErroneous(Symbol sym) {
     try {
       return sym.asType().isErroneous();
-    } catch (Symbol.CompletionFailure f) {
+    } catch (Symbol.CompletionFailure | AssertionError f) {
       return true;
     }
   }
