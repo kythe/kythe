@@ -52,7 +52,7 @@ class Class implements IFace {
     //- FakeMember.node/kind variable
     constructor(public otherMember: number, member: string) {
       //- @Class ref ClassValue
-      //- @Class ref/call ClassCtor
+      //- @"new Class(0, 'a')" ref/call ClassValue
       new Class(0, 'a');
     }
 
