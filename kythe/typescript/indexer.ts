@@ -773,7 +773,9 @@ class Visitor {
    * https://kythe.io/docs/schema/callgraph.html
    */
   visitCallOrNewExpression(node: ts.CallExpression|ts.NewExpression) {
-    ts.forEachChild(node, n => this.visit(n));
+    ts.forEachChild(node, n => {
+      this.visit(n);
+    });
     const callAnchor = this.newAnchor(node);
     const symbol = this.host.getSymbolAtLocation(node.expression);
     if (!symbol) { return; }
@@ -1928,7 +1930,8 @@ class Visitor {
         return this.visitModuleDeclaration(node as ts.ModuleDeclaration);
       case ts.SyntaxKind.CallExpression:
       case ts.SyntaxKind.NewExpression:
-        return this.visitCallOrNewExpression(node as ts.CallExpression|ts.NewExpression);
+        this.visitCallOrNewExpression(node as ts.CallExpression|ts.NewExpression);
+        return;
       default:
         // Use default recursive processing.
         return ts.forEachChild(node, n => this.visit(n));
