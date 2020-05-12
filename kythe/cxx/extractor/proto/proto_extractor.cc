@@ -90,7 +90,7 @@ proto::CompilationUnit ProtoExtractor::ExtractProtos(
 
   // Add path substitutions to src_tree.
   RecordingDiskSourceTree src_tree;
-  src_tree.MapPath("", "");  // Add current directory to VFS.
+  src_tree.MapPath(root_directory, "");  // Add root directory to VFS.
   for (const auto& sub : path_substitutions) {
     src_tree.MapPath(sub.first, sub.second);
   }
