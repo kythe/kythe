@@ -4527,6 +4527,8 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     UNSUPPORTED_CLANG_TYPE(Pipe);
     UNSUPPORTED_CLANG_TYPE(DependentVector);
     UNSUPPORTED_CLANG_TYPE(MacroQualified);
+    UNSUPPORTED_CLANG_TYPE(ConstantMatrix);
+    UNSUPPORTED_CLANG_TYPE(DependentSizedMatrix);
   }
 #undef UNSUPPORTED_CLANG_TYPE
 #undef DELEGATE_TYPE
