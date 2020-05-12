@@ -45,7 +45,7 @@ if ! env \
 fi
 
 # Index the file.
-if ! "$JAVA_INDEXER_BIN" --emit_jvm=NAMES "${TEST_FILE}.kzip" >"${TEST_FILE}.entries"; then
+if ! "$JAVA_INDEXER_BIN" "${TEST_FILE}.kzip" >"${TEST_FILE}.entries"; then
   error INDEX
 fi
 

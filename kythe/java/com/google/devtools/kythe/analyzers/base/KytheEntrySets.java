@@ -178,14 +178,6 @@ public class KytheEntrySets {
     return emitAndReturn(anchor);
   }
 
-  /**
-   * Emits and returns a NAME node representing the specified JVM binary name (See
-   * https://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1).
-   */
-  public EntrySet getJvmNameAndEmit(String name) {
-    return emitAndReturn(new NodeBuilder(NodeKind.NAME, "jvm").setSignature(name).build());
-  }
-
   /** Emits and returns a DIAGNOSTIC node attached to no file. */
   public EntrySet emitDiagnostic(Diagnostic d) {
     return emitDiagnostic(null, d);

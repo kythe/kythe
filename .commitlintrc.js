@@ -16,21 +16,22 @@
 
 module.exports = {
   // https://www.conventionalcommits.org/en/v1.0.0-beta.2/
-  extends: ['@commitlint/config-conventional'],
-  rules: {
-    'scope-case': [2, 'always', 'snake-case'],
-    'scope-empty': [1, 'never'],
-    'scope-enum': [
+  extends : [ '@commitlint/config-conventional' ],
+  rules : {
+    'scope-case' : [ 2, 'always', 'snake-case' ],
+    'scope-empty' : [ 1, 'never' ],
+    'scope-enum' : [
       1, 'always',
       [
-        'api',              // user-facing API (e.g. XRefService)
-        'dev',              // developer tooling/scripting (e.g. linting)
-        'example',          // example tools or docs (e.g. sample web ui)
-        'extraction',       // compilation extraction
-        'indexing',         // semantic analysis over compilations
-        'post_processing',  // serving data construction
-        'serving',          // server logic or data formats
-        'tooling',          // CLI utilities (e.g. entrystream)
+        'api',             // user-facing API (e.g. XRefService)
+        'dev',             // developer tooling/scripting (e.g. linting)
+        'example',         // example tools or docs (e.g. sample web ui)
+        'extraction',      // compilation extraction
+        'indexing',        // semantic analysis over compilations
+        'post_processing', // serving data construction
+        'schema',          // graph schema design
+        'serving',         // server logic or data formats
+        'tooling',         // CLI utilities (e.g. entrystream)
 
         // Language-specific scopes
         'cxx_common',
@@ -50,7 +51,7 @@ module.exports = {
         'typescript_indexer',
       ]
     ],
-    'type-enum': [
+    'type-enum' : [
       2, 'always',
       [
         'build',
