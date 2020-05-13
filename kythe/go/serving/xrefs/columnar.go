@@ -285,6 +285,7 @@ func (c *ColumnarTable) CrossReferences(ctx context.Context, req *xpb.CrossRefer
 		if err != nil {
 			return nil, err
 		}
+		defer it.Close()
 
 		k, val, err := it.Next()
 		if err == io.EOF || !bytes.Equal(k, prefix) {

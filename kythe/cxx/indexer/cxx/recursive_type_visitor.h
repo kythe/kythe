@@ -232,6 +232,16 @@ DEF_TRAVERSE_TYPEPAIR(DependentVectorType, {
 DEF_TRAVERSE_TYPEPAIR(ExtVectorType, {
   return getDerived().TraverseType(TL.getTypePtr()->getElementType());
 });
+DEF_TRAVERSE_TYPEPAIR(ConstantMatrixType, {
+  return getDerived().TraverseType(TL.getTypePtr()->getElementType());
+});
+DEF_TRAVERSE_TYPEPAIR(DependentSizedMatrixType, {
+  if (T->getRowExpr())
+    if (!getDerived().TraverseStmt(T->getRowExpr())) return false;
+  if (T->getColumnExpr())
+    if (!getDerived().TraverseStmt(T->getColumnExpr())) return false;
+  return getDerived().TraverseType(TL.getTypePtr()->getElementType());
+});
 DEF_TRAVERSE_TYPEPAIR(FunctionNoProtoType, {
   return getDerived().TraverseTypePair(TL.getReturnLoc(), T->getReturnType());
 });
