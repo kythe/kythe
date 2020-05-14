@@ -38,6 +38,14 @@ union U {
   long y;
 };
 
+//- @V defines/binding StructV
+struct V {
+  //- @s defines/binding FieldS
+  S s;
+  //- @t defines/binding FieldT
+  T t;
+};
+
 S FromValue();
 
 template <typename...T>
@@ -72,5 +80,14 @@ void f() {
   fn(S{});
 
   //- !{ @"FromValue()" ref/init _ }
-  S v{FromValue()};
+  S c{FromValue()};
+
+  //- V ref StructV
+  //- @"{1}" ref/init FieldS
+  //- @"1" ref/init FieldA
+  //- @"2" ref/init FieldT
+  //- @"2" ref/init FieldA
+  //- !{ @#0"}" ref/init _ }
+  //- !{ @#1"}" ref/init _ }
+  V v{{1}, 2};
 }
