@@ -1899,6 +1899,13 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
       break;
     }
     const clang::Expr* Init = *II++;
+    if (!Init->getEndLoc().isValid() || Init->getEndLoc() == ILE->getEndLoc()) {
+      // When visiting the semantic form initializers which aren't explicitly
+      // specified either have an invalid location (for uninitialized fields) or
+      // share a location with the end of the ILE (for default initialized
+      // fields).  Skip these.
+      continue;
+    }
     if (auto RCC =
             RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
                                   NormalizeRange(Init->getSourceRange()))) {

@@ -1,11 +1,19 @@
 // Tests that aggregate initialization references struct.
 
+struct Default {
+  Default();
+};
+
 //- @S defines/binding StructS
 struct S {
   //- @a defines/binding FieldA
   int a;
   //- @b defines/binding FieldB
   long b;
+  //- @c defines/binding FieldC
+  bool c = false;
+  //- @d defines/binding FieldD
+  Default d;
 };
 
 //- @T defines/binding StructT
@@ -38,6 +46,9 @@ void fn(T&&...);
 void f() {
   //- @S ref StructS
   //- @"1" ref/init FieldA
+  //- !{ @"}" ref/init FieldB }
+  //- !{ @"}" ref/init FieldC }
+  //- !{ @"}" ref/init FieldD }
   auto s = S{1};
 
   //- @T ref StructT
