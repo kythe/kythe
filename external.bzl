@@ -406,34 +406,27 @@ def _go_dependencies():
         version = "v1.2.0",
     )
 
-    go_repository(
+    http_archive(
         name = "org_golang_x_tools",
-        build_directives = [
-            "gazelle:exclude go/analysis/passes/ctrlflow/testdata",
-            "gazelle:exclude go/analysis/passes/pkgfact/testdata",
-            "gazelle:exclude go/analysis/passes/printf/testdata",
-            "gazelle:exclude go/analysis/passes/structtag/testdata",
-            "gazelle:exclude go/analysis/passes/tests/testdata",
-            "gazelle:exclude go/loader/testdata",
-            "gazelle:exclude go/packages/packagestest/testdata/groups/two/modules/example.com/",
-            "gazelle:exclude go/internal/gccgoimporter/testdata",
-            "gazelle:exclude go/internal/gcimporter/testdata",
-            "gazelle:exclude cmd/fiximports/testdata",
-            "gazelle:exclude cmd/bundle",
-            "gazelle:exclude cmd/guru",
-            "gazelle:exclude cmd/godoc/godoc_test.go",
-            "gazelle:exclude internal/lsp/testdata",
-            "gazelle:exclude refactor/rename/mvpkg_test.go",
-            "gazelle:exclude go/ast/astutil/imports_test.go",
+        urls = [
+            "https://mirror.bazel.build/github.com/golang/tools/archive/2bc93b1c0c88b2406b967fcd19a623d1ff9ea0cd.zip",
+            "https://github.com/golang/tools/archive/2bc93b1c0c88b2406b967fcd19a623d1ff9ea0cd.zip",
         ],
-        importpath = "golang.org/x/tools",
-        patch_args = ["-p1"],
+        sha256 = "b05c5b5b9091a35ecb433227ea30aa75cb6b9d9409b308bc75d0975d4a291912",
+        strip_prefix = "tools-2bc93b1c0c88b2406b967fcd19a623d1ff9ea0cd",
         patches = [
+            # deletegopls removes the gopls subdirectory. It contains a nested
+            # module with additional dependencies. It's not needed by rules_go.
+            "@io_bazel_rules_go//third_party:org_golang_x_tools-deletegopls.patch",
+            # gazelle args: -repo_root . -go_prefix golang.org/x/tools
+            "@io_bazel_rules_go//third_party:org_golang_x_tools-gazelle.patch",
+            # extras adds go_tool_library rules for packages under
+            # go/analysis/passes and their dependencies. These are needed by
+            # nogo.
             "@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch",
             "@io_kythe//third_party/go:add_export_license.patch",
         ],
-        sum = "h1:6TB4+MaZlkcSsJDu+BS5yxSEuZIYhjWz+jhbSLEZylI=",
-        version = "v0.0.0-20200312194400-c312e98713c2",
+        patch_args = ["-p1"],
     )
 
     go_repository(
