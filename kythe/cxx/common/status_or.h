@@ -28,6 +28,8 @@ namespace kythe {
 template <typename T>
 class ABSL_MUST_USE_RESULT StatusOr final {
  public:
+  using element_type = T;
+
   /// \brief `StatusOr<T>` is constructible from either `Status` or `T`.
   StatusOr(const absl::Status& status) : status_(status) { DCHECK(!ok()); }
   StatusOr(absl::Status&& status) : status_(std::move(status)) {
