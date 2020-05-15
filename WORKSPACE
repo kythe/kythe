@@ -24,6 +24,20 @@ load("//:setup.bzl", "kythe_rule_repositories", "maybe")
 
 kythe_rule_repositories()
 
+# TODO(schroederc): remove this.  This needs to be loaded before loading the
+# go_* rules.  Normally, this is done by go_rules_dependencies in external.bzl,
+# but because we want to overload some of those dependencies, we need the go_*
+# rules before go_rules_dependencies.  Likewise, we can't precisely control
+# when loads occur within a Starlark file so we now need to load this
+# manually...
+load("@io_bazel_rules_go//go/private:repositories.bzl", "go_name_hack")
+
+maybe(
+    go_name_hack,
+    name = "io_bazel_rules_go_name_hack",
+    is_rules_go = False,
+)
+
 # gazelle:repository_macro external.bzl%_go_dependencies
 load("//:external.bzl", "kythe_dependencies")
 
