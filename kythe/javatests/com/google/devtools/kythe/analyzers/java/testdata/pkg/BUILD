@@ -377,7 +377,6 @@ java_verifier_test(
     name = "jvm_reference_tests",
     timeout = "long",
     srcs = ["JvmCrossFile.java"],
-    indexer_opts = ["--emit_jvm_references"],
     verifier_deps = [":files_tests"],
 )
 
