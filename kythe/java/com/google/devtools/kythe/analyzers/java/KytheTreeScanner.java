@@ -1100,12 +1100,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       entrySets.emitEdge(node.getVName(), EdgeKind.NAMED, jvmNode);
     }
 
-    if (jvmNode != null && config.getEmitJvmReferences() && isExternal(sym)) {
-      // Symbol is external to the analyzed compilation and may not be defined in Java.  Return the
-      // related JVM node to accommodate cross-language references.
-      return new JavaNode(jvmNode);
-    }
-
     return node;
   }
 
@@ -1131,15 +1125,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return JvmGraph.getReferenceVName(corpusPath, referenceType(sym.type));
     }
     return null;
-  }
-
-  private boolean isExternal(Symbol sym) {
-    // TODO(schroederc): research other methods to hueristically determine if a Symbol is defined in
-    //                   a Java compilation (vs. some other JVM language)
-    ClassSymbol cls = sym.enclClass();
-    return cls != null
-        && (cls.sourcefile == null || cls.sourcefile.getKind() != JavaFileObject.Kind.SOURCE)
-        && !JavaEntrySets.fromJDK(sym);
   }
 
   private void visitAnnotations(
