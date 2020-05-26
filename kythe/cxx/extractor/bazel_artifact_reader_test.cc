@@ -15,7 +15,7 @@
  */
 #include "kythe/cxx/extractor/bazel_artifact_reader.h"
 
-#include <sstream>
+#include <utility>
 
 #include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
@@ -35,7 +35,14 @@ template <typename T, typename U>
 auto Artifact(T&& t, U&& u) {
   return ::testing::AllOf(
       ::testing::Field(&BazelArtifact::label, std::forward<T>(t)),
-      ::testing::Field(&BazelArtifact::uris, std::forward<U>(u)));
+      ::testing::Field(&BazelArtifact::files, std::forward<U>(u)));
+}
+
+template <typename T, typename U>
+auto File(T&& path, U&& uri) {
+  return ::testing::AllOf(
+      ::testing::Field(&BazelArtifactFile::local_path, std::forward<T>(path)),
+      ::testing::Field(&BazelArtifactFile::uri, std::forward<U>(uri)));
 }
 
 TEST(BazelArtifactReaderTest, ReadsExpectedArtifacts) {
@@ -44,7 +51,7 @@ TEST(BazelArtifactReaderTest, ReadsExpectedArtifacts) {
   for (int i = 0; i < kArtifactCount; i++) {
     build_event_stream::BuildEvent event;
     auto* id = event.mutable_id()->mutable_action_completed();
-    id->set_primary_output("unused");
+    id->set_primary_output("local/path/to/file.kzip");
     id->set_label(absl::StrCat("//id/label:", i));
     auto* payload = event.mutable_action();
     payload->set_success(true);
@@ -65,11 +72,16 @@ TEST(BazelArtifactReaderTest, ReadsExpectedArtifacts) {
   EXPECT_THAT(
       artifacts,
       ElementsAre(
-          Artifact("//id/label:0", ElementsAre("file:///dummy/0.kzip")),
-          Artifact("//id/label:1", ElementsAre("file:///dummy/1.kzip")),
-          Artifact("//id/label:2", ElementsAre("file:///dummy/2.kzip")),
-          Artifact("//id/label:3", ElementsAre("file:///dummy/3.kzip")),
-          Artifact("//id/label:4", ElementsAre("file:///dummy/4.kzip"))));
+          Artifact("//id/label:0", ElementsAre(File("local/path/to/file.kzip",
+                                                    "file:///dummy/0.kzip"))),
+          Artifact("//id/label:1", ElementsAre(File("local/path/to/file.kzip",
+                                                    "file:///dummy/1.kzip"))),
+          Artifact("//id/label:2", ElementsAre(File("local/path/to/file.kzip",
+                                                    "file:///dummy/2.kzip"))),
+          Artifact("//id/label:3", ElementsAre(File("local/path/to/file.kzip",
+                                                    "file:///dummy/3.kzip"))),
+          Artifact("//id/label:4", ElementsAre(File("local/path/to/file.kzip",
+                                                    "file:///dummy/4.kzip")))));
 }
 
 }  // namespace

@@ -19,6 +19,7 @@
 
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.pb.h"
 
@@ -40,6 +41,13 @@ std::string AsUri(const build_event_stream::File& primary_output) {
   }
   LOG(FATAL) << "Unexpected build_event_stream::File case!"
              << primary_output.file_case();
+}
+
+std::string AsLocalPath(const build_event_stream::File& primary_output) {
+  std::vector<std::string> parts(primary_output.path_prefix().begin(),
+                                 primary_output.path_prefix().end());
+  parts.push_back(primary_output.name());
+  return absl::StrJoin(parts, "/");
 }
 
 std::vector<std::string> FileSetIds(
@@ -83,7 +91,11 @@ bool ExtraActionSelector::operator()(
   if (event.id().has_action_completed() && event.action().success() &&
       (action_types.empty() || action_types.contains(event.action().type()))) {
     result->label = event.id().action_completed().label();
-    result->uris = {AsUri(event.action().primary_output())};
+    result->files = {{
+        .local_path = event.id().action_completed().primary_output(),
+        .uri = AsUri(event.action().primary_output()),
+
+    }};
     return true;
   }
   return false;
@@ -98,29 +110,30 @@ bool OutputGroupSelector::operator()(
   if (!event.id().has_target_completed()) {
     return false;
   }
-  std::vector<std::string> uris;
+  std::vector<BazelArtifactFile> files;
   for (const auto& group : event.completed().output_group()) {
     if (group_names_.contains(group.name())) {
-      FindNamedUris(FileSetIds(group.file_sets()), &uris);
+      FindNamedFiles(FileSetIds(group.file_sets()), &files);
     }
   }
-  if (!uris.empty()) {
+  if (!files.empty()) {
     result->label = event.id().target_completed().label();
-    result->uris = std::move(uris);
+    result->files = std::move(files);
     return true;
   }
   return false;
 }
 
-void OutputGroupSelector::FindNamedUris(std::vector<std::string> ids,
-                                        std::vector<std::string>* result) {
+void OutputGroupSelector::FindNamedFiles(
+    std::vector<std::string> ids, std::vector<BazelArtifactFile>* result) {
   while (!ids.empty()) {
     std::string id = std::move(ids.back());
     ids.pop_back();
     if (auto iter = filesets_.find(id); iter != filesets_.end()) {
       result->reserve(result->size() + iter->second.files().size());
       for (const auto& file : iter->second.files()) {
-        result->push_back(AsUri(file));
+        result->push_back(
+            {.local_path = AsLocalPath(file), .uri = AsUri(file)});
       }
 
       ids.reserve(ids.size() + iter->second.file_sets().size());
