@@ -29,7 +29,7 @@ import (
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/util/dedup"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // Reader implements the Reader interface.  Duplicate records are removed by

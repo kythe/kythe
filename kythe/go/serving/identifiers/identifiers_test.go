@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/test/testutil"

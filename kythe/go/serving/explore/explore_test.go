@@ -25,7 +25,7 @@ import (
 	"kythe.io/kythe/go/test/testutil"
 
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	epb "kythe.io/kythe/proto/explore_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"
