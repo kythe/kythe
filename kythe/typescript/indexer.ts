@@ -794,25 +794,20 @@ class Visitor {
     });
     const callAnchor = this.newAnchor(node);
     const symbol = this.host.getSymbolAtLocation(node.expression);
-    if (!symbol) {
-      return;
-    }
+    if (!symbol) { return; }
     const name = this.host.getSymbolName(symbol, TSNamespace.VALUE);
-    if (!name) {
-      return;
-    }
+    if (!name) { return; }
     this.emitEdge(callAnchor, EdgeKind.REF_CALL, name);
 
     // Each call should have a childof edge to its containing function
     // scope.
     const containingFunction = this.getContainingFunctionNode(node);
-    let containingVName: VName|undefined;
+    let containingVName : VName|undefined;
     if (ts.isSourceFile(containingFunction)) {
       containingVName = this.getSyntheticFileInitVName();
     } else {
       containingVName =
-          this.getSymbolAndVNameForFunctionDeclaration(containingFunction)
-              .vname;
+          this.getSymbolAndVNameForFunctionDeclaration(containingFunction).vname;
     }
     if (containingVName) {
       this.emitEdge(callAnchor, EdgeKind.CHILD_OF, containingVName);
@@ -838,7 +833,7 @@ class Visitor {
    * - interface implements => illegal
    */
   visitHeritage(
-      classOrInterface: VName|undefined,
+      classOrInterface: VName | undefined,
       heritageClauses: ReadonlyArray<ts.HeritageClause>) {
     for (const heritage of heritageClauses) {
       if (heritage.token === ts.SyntaxKind.ExtendsKeyword && heritage.parent &&
@@ -1026,10 +1021,9 @@ class Visitor {
     }
     if (node.name) {
       const sym = this.host.getSymbolAtLocation(node.name);
-      if (!sym) {
-        return {};
-      }
-      const vname = this.host.getSymbolName(sym, TSNamespace.VALUE, context);
+      if (!sym) { return {}; }
+      const vname =
+          this.host.getSymbolName(sym, TSNamespace.VALUE, context);
       return {sym, vname};
     } else {
       // TODO: choose VName for anonymous functions and return symbol
@@ -1049,8 +1043,7 @@ class Visitor {
    * For 'b' node this function will return 'foo' node.
    * For 'c' node this function will return SourceFile node.
    */
-  getContainingFunctionNode(node: ts.Node): ts.FunctionLikeDeclaration
-      |ts.SourceFile {
+  getContainingFunctionNode(node: ts.Node): ts.FunctionLikeDeclaration|ts.SourceFile {
     node = node.parent;
     for (; node.kind !== ts.SyntaxKind.SourceFile; node = node.parent) {
       const kind = node.kind;
@@ -1550,7 +1543,8 @@ class Visitor {
     }
     for (const heritage of parent.heritageClauses) {
       for (const baseType of heritage.types) {
-        const type = this.typeChecker.getTypeAtLocation(baseType.expression);
+        const type =
+            this.typeChecker.getTypeAtLocation(baseType.expression);
         if (!type || !type.symbol || !type.symbol.members) {
           continue;
         }
@@ -1566,7 +1560,8 @@ class Visitor {
         const overridden =
             toArray(type.symbol.members.values()).find(overriddenCondition);
         if (overridden) {
-          const base = this.host.getSymbolName(overridden, TSNamespace.VALUE);
+          const base =
+              this.host.getSymbolName(overridden, TSNamespace.VALUE);
           if (base) {
             this.emitEdge(funcVName, EdgeKind.OVERRIDES, base);
           }
@@ -1989,8 +1984,7 @@ class Visitor {
         return this.visitModuleDeclaration(node as ts.ModuleDeclaration);
       case ts.SyntaxKind.CallExpression:
       case ts.SyntaxKind.NewExpression:
-        this.visitCallOrNewExpression(
-            node as ts.CallExpression | ts.NewExpression);
+        this.visitCallOrNewExpression(node as ts.CallExpression|ts.NewExpression);
         return;
       default:
         // Use default recursive processing.
