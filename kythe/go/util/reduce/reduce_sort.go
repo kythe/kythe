@@ -24,7 +24,7 @@ import (
 
 	"kythe.io/kythe/go/util/disksort"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	ipb "kythe.io/kythe/proto/internal_go_proto"
 )

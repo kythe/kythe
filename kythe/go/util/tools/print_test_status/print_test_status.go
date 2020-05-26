@@ -29,7 +29,7 @@ import (
 
 	"kythe.io/kythe/go/platform/vfs"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	tspb "kythe.io/third_party/bazel/test_status_go_proto"
 )

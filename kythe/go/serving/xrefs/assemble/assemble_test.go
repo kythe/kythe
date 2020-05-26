@@ -22,7 +22,7 @@ import (
 
 	"kythe.io/kythe/go/test/testutil"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	ipb "kythe.io/kythe/proto/internal_go_proto"
 	srvpb "kythe.io/kythe/proto/serving_go_proto"

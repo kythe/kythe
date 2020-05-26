@@ -43,7 +43,7 @@ import (
 	"kythe.io/kythe/go/util/sortutil"
 	"kythe.io/kythe/go/util/span"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	ftpb "kythe.io/kythe/proto/filetree_go_proto"
 	ipb "kythe.io/kythe/proto/internal_go_proto"
