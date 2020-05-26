@@ -85,7 +85,8 @@ function verify(
   const program = ts.createProgram(testFiles, options, host);
 
   const verifier = child_process.spawn(
-      `${ENTRYSTREAM} --read_format=json | ${VERIFIER} ${testFiles.join(' ')}`,
+      `${ENTRYSTREAM} --read_format=json | \
+        ${VERIFIER} --convert_marked_source ${testFiles.join(' ')}`,
       [], {
         stdio: ['pipe', process.stdout, process.stderr],
         shell: true,

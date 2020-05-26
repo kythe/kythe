@@ -63,6 +63,10 @@ load("@npm_bazel_typescript//:index.bzl", "ts_setup_workspace")
 
 ts_setup_workspace()
 
+load("@npm_bazel_labs//:package.bzl", "npm_bazel_labs_dependencies")
+
+npm_bazel_labs_dependencies()
+
 # This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
 bind(
     name = "error_prone_annotations",
