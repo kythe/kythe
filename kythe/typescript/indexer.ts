@@ -662,6 +662,54 @@ class StandardIndexerContext implements IndexerHost {
   };
 }
 
+const RE_FIRST_NON_WS = /\S|$/;
+const RE_NEWLINE = /\r?\n/;
+const MAX_MS_TEXT_LENGTH = 1_000;
+/**
+ * Formats a MarkedSource text component by
+ * - stripping the text to its first MAX_MS_TEXT_LENGTH characters
+ * - trimming the text
+ * - stripping the leading whitespace of each line in multi-line string by the
+ *   shortest non-zero whitespace length. For example,
+ *   [
+ *       1,
+ *       2,
+ *     ]
+ *   becomes
+ *   [
+ *     1,
+ *     2,
+ *   ]
+ */
+function fmtMarkedSource(s: string) {
+  if (s.search(RE_FIRST_NON_WS) === s.length) {
+    // String is all whitespace, keep as-is
+    return s;
+  }
+  let isChopped = false;
+  if (s.length > MAX_MS_TEXT_LENGTH) {
+    // Trim left first to pick up more chars before chopping the string
+    s = s.trimLeft();
+    s = s.substring(0, MAX_MS_TEXT_LENGTH);
+    isChopped = true;
+  }
+  s = s.replace(/\t/g, '    ');  // normalize tabs for display
+  const lines = s.split(RE_NEWLINE);
+  let shortestLeading = lines[lines.length - 1].search(RE_FIRST_NON_WS);
+  for (let i = 1; i < lines.length - 1; ++i) {
+    shortestLeading =
+        Math.min(shortestLeading, lines[i].search(RE_FIRST_NON_WS));
+  }
+  for (let i = 1; i < lines.length; ++i) {
+    lines[i] = lines[i].substring(shortestLeading);
+  }
+  s = lines.join('\n');
+  if (isChopped) {
+    s += '...';
+  }
+  return s;
+}
+
 function makeMarkedSource({
   kind,
   preText,
@@ -675,8 +723,8 @@ function makeMarkedSource({
 }): MarkedSource {
   const ms = new MarkedSource();
   if (kind !== undefined) ms.setKind(MarkedSource.Kind[kind]);
-  if (preText !== undefined) ms.setPreText(preText);
-  if (postText !== undefined) ms.setPostText(postText);
+  if (preText !== undefined) ms.setPreText(fmtMarkedSource(preText));
+  if (postText !== undefined) ms.setPostText(fmtMarkedSource(postText));
   if (childList !== undefined) ms.setChildList(childList);
   return ms;
 }
