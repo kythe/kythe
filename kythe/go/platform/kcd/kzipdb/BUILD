@@ -9,7 +9,7 @@ go_library(
         "//kythe/go/platform/kcd",
         "//kythe/go/platform/kcd/kythe",
         "//kythe/go/platform/kzip",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )
 

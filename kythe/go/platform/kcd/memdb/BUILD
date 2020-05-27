@@ -7,7 +7,7 @@ go_library(
     srcs = ["memdb.go"],
     deps = [
         "//kythe/go/platform/kcd",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )
 

@@ -1,10 +1,3 @@
-package(
-    features = [
-        "layering_check",
-        "parse_headers",
-    ],
-)
-
 cc_library(
     name = "proto_graph_builder",
     srcs = ["proto_graph_builder.cc"],

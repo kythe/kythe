@@ -10,7 +10,7 @@ require (
 	github.com/beevik/etree v1.1.0
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/frankban/quicktest v1.7.2 // indirect
-	github.com/golang/protobuf v1.3.5
+	github.com/golang/protobuf v1.4.1
 	github.com/golang/snappy v0.0.1
 	github.com/google/brotli v1.0.7
 	github.com/google/go-cmp v0.4.0
@@ -41,6 +41,7 @@ require (
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200313141609-30c55424f95d // indirect
 	google.golang.org/grpc v1.28.0
+	google.golang.org/protobuf v1.22.0
 	sigs.k8s.io/yaml v1.2.0
 )
 

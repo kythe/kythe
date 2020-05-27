@@ -25,10 +25,10 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	gpb "kythe.io/kythe/proto/graph_go_proto"
