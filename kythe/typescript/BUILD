@@ -25,8 +25,10 @@ ts_library(
     tsconfig = ":tsconfig",
     deps = [
         ":kythe",
+        "//kythe/proto:common_ts_proto",
         "@npm//@types/node",
         "@npm//typescript",
+        "@npm//google-protobuf",
     ],
 )
 
