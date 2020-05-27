@@ -32,8 +32,8 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/identifiers"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/google/subcommands"
+	"google.golang.org/protobuf/proto"
 )
 
 // DisplayJSON is true if the user wants all service responses to be displayed

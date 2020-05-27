@@ -21,9 +21,9 @@ import (
 	"errors"
 	"testing"
 
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	ipb "kythe.io/kythe/proto/identifier_go_proto"
