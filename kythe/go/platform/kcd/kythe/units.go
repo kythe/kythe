@@ -27,15 +27,15 @@ import (
 	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/util/ptypes"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"
 	bipb "kythe.io/kythe/proto/buildinfo_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
 
-var toJSON = &jsonpb.Marshaler{OrigName: true}
+var toJSON = &protojson.MarshalOptions{UseProtoNames: true}
 
 // Format is the format key used to denote Kythe compilations, stored
 // as kythe.proto.CompilationUnit messages.
@@ -49,7 +49,7 @@ func (u Unit) MarshalBinary() ([]byte, error) { return proto.Marshal(u.Proto) }
 
 // MarshalJSON satisfies the json.Marshaler interface.
 func (u Unit) MarshalJSON() ([]byte, error) {
-	s, err := toJSON.MarshalToString(u.Proto)
+	s, err := toJSON.Marshal(u.Proto)
 	if err != nil {
 		return nil, err
 	}

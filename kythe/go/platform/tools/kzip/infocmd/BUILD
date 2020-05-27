@@ -12,8 +12,9 @@ go_library(
         "//kythe/go/platform/kzip/info",
         "//kythe/go/platform/vfs",
         "//kythe/go/util/cmdutil",
-        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
-        "@com_github_golang_protobuf//proto:go_default_library",
         "@com_github_google_subcommands//:go_default_library",
+        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
+        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

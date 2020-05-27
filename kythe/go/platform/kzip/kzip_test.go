@@ -29,7 +29,7 @@ import (
 
 	"kythe.io/kythe/go/test/testutil"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"kythe.io/kythe/go/platform/kzip"
 
 	apb "kythe.io/kythe/proto/analysis_go_proto"

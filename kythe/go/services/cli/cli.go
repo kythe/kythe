@@ -32,7 +32,7 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/identifiers"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"github.com/google/subcommands"
 )
 
@@ -48,7 +48,7 @@ var (
 var jsonMarshaler = web.JSONMarshaler
 
 func init() {
-	jsonMarshaler.Indent = "  "
+	jsonMarshaler.Options.Indent = "  "
 	flag.BoolVar(&DisplayJSON, "json", DisplayJSON, "Display results as JSON")
 }
 
