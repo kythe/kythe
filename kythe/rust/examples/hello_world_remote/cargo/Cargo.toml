@@ -1,0 +1,17 @@
+[package]
+name = "hello_world"
+version = "0.1.0"
+authors = ["Wyatt Calandro <wcalandro@google.com>"]
+edition = "2018"
+
+# Mandatory (or Cargo tooling is unhappy)
+[lib]
+path = "fake_lib.rs"
+
+[dependencies]
+colored = "1.9.3"
+
+[raze]
+workspace_path = "//cargo"
+genmode = "Remote"
+target = "x86_64-unknown-linux-gnu"
