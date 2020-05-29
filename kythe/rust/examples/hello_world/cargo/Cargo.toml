@@ -12,5 +12,6 @@ path = "fake_lib.rs"
 colored = "1.9.3"
 
 [raze]
-workspace_path = "//cargo"
+workspace_path = "//kythe/rust/examples/hello_world/cargo"
+genmode = "Remote"
 target = "x86_64-unknown-linux-gnu"

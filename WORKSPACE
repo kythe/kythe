@@ -107,3 +107,40 @@ rbe_autoconfig(
     toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
     use_legacy_platform_definition = False,
 )
+
+# Pulls the latest Rust build rules as of 05/28/2020
+# http_archive(
+#     name = "io_bazel_rules_rust",
+#     sha256 = "adac39970e0579d45249a768d43a1b75d293315610ba0424b2a636aa93465456",
+#     strip_prefix = "rules_rust-57c6f4ec6b25b07958d91c658d0142dc0943e848",
+#     urls = [
+#         "https://github.com/bazelbuild/rules_rust/archive/57c6f4ec6b25b07958d91c658d0142dc0943e848.zip",
+#     ],
+# )
+# My bugfix rule that are waiting to be merged.
+http_archive(
+    name = "io_bazel_rules_rust",
+    sha256 = "7202114a851426c6114564015f30c65f6eacb9b84cf2a40c823be3dd18b4c48d",
+    strip_prefix = "rules_rust-703b6d455497dc5f22f2cd912030a216183e111d",
+    urls = [
+        "https://github.com/Arm1stice/rules_rust/archive/703b6d455497dc5f22f2cd912030a216183e111d.zip",
+    ],
+)
+
+http_archive(
+    name = "bazel_skylib",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
+    ],
+    sha256 = "97e70364e9249702246c0e9444bccdc4b847bed1eb03c5a3ece4f83dfe6abc44",
+)
+
+load("@io_bazel_rules_rust//rust:repositories.bzl", "rust_repositories")
+rust_repositories(version = "nightly", iso_date = "2020-05-15")
+
+load("@io_bazel_rules_rust//:workspace.bzl", "bazel_version")
+bazel_version(name = "bazel_version")
+
+load("//:external.bzl", "rust_dependencies")
+rust_dependencies()

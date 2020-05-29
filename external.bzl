@@ -15,6 +15,10 @@ load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_tool
 load("@rules_python//python:repositories.bzl", "py_repositories")
 load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_repositories = "repositories")
 
+# The raze macros automatically check for duplicated dependencies so we can
+# simply load each macro here.
+load("//kythe/rust/examples/hello_world/cargo:crates.bzl", fetch_example_hello_world_remote_crates = "raze_fetch_remote_crates")
+
 def _rule_dependencies():
     go_rules_dependencies()
     go_register_toolchains()
@@ -1183,3 +1187,6 @@ def kythe_dependencies(sample_ui = True):
     if sample_ui:
         _sample_ui_dependencies()
     _extractor_image_dependencies()
+
+def rust_dependencies():
+    fetch_example_hello_world_remote_crates()

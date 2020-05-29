@@ -4,5 +4,5 @@ rust_binary(
     name = "hello_world",
     srcs = ["src/main.rs"],
     edition = "2018",
-    deps = ["//cargo:colored"]
+    deps = ["//kythe/rust/examples/hello_world/cargo:colored"]
 )

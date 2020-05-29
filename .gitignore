@@ -37,9 +37,5 @@ kythe/web/site/_vendor/
 # User bazelrc overrides
 /user.bazelrc
 
-# Ignore Rust example projects build artifacts
+# Ignore Rust build artifacts
 kythe/rust/**/target
-kythe/rust/examples/**/vendor
-kythe/rust/examples/**/remote
-kythe/rust/examples/**/cargo/crates.bzl
-kythe/rust/examples/**/cargo/BUILD
