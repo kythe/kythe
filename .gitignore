@@ -20,7 +20,7 @@ MANIFEST-*
 *.deb
 
 # Build artifacts
-bazel-*
+/bazel-*
 /doxygen-out
 /node_modules
 
