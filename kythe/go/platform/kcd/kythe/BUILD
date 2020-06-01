@@ -11,8 +11,8 @@ go_library(
         "//kythe/proto:analysis_go_proto",
         "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )
 
@@ -30,5 +30,6 @@ go_test(
     deps = [
         "//kythe/go/test/testutil",
         "@io_bazel_rules_go//proto/wkt:any_go_proto",
+        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
     ],
 )

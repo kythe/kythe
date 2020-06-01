@@ -7,7 +7,7 @@ go_library(
     srcs = ["web.go"],
     deps = [
         "//kythe/go/util/httpencoding",
-        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

@@ -53,8 +53,8 @@ java_proto_library(
 # Common Kythe protocol buffer definitions shared among other libraries
 proto_library(
     name = "common_proto",
-    visibility = [PUBLIC_PROTO_VISIBILITY],
     srcs = ["common.proto"],
+    visibility = [PUBLIC_PROTO_VISIBILITY],
 )
 
 cc_proto_library(
@@ -73,8 +73,8 @@ java_proto_library(
 
 ts_proto_library(
     name = "common_ts_proto",
-    visibility = [PUBLIC_PROTO_VISIBILITY],
     proto = ":common_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
 )
 
 # Public Kythe GraphStore analyzer output format
@@ -155,7 +155,6 @@ go_kythe_proto(
     deps = [
         ":filecontext_go_proto",
         ":storage_go_proto",
-        "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )
 
@@ -192,7 +191,6 @@ go_kythe_proto(
         ":analysis_go_proto",
         ":filecontext_go_proto",
         ":storage_go_proto",
-        "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )
 
