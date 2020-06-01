@@ -29,9 +29,9 @@ import (
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/cmdutil"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/subcommands"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/encoding/prototext"
 )
 
 type infoCommand struct {
@@ -81,14 +81,22 @@ func (c *infoCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interf
 	if err != nil {
 		return c.Fail("Scanning kzip: %v", err)
 	}
+	var rec []byte
 	switch c.writeFormat {
 	case "json":
-		m := jsonpb.Marshaler{OrigName: true}
-		if err := m.Marshal(os.Stdout, kzipInfo); err != nil {
+		m := protojson.MarshalOptions{UseProtoNames: true}
+		rec, err = m.Marshal(kzipInfo)
+		if err != nil {
 			return c.Fail("Marshaling json: %v", err)
 		}
 	case "proto":
-		proto.MarshalText(os.Stdout, kzipInfo)
+		rec, err = prototext.Marshal(kzipInfo)
+		if err != nil {
+			return c.Fail("Marshaling text: %v", err)
+		}
+	}
+	if _, err := os.Stdout.Write(rec); err != nil {
+		return c.Fail("Writing unit: %v", err)
 	}
 
 	return subcommands.ExitSuccess

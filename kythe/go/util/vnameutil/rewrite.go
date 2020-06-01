@@ -27,13 +27,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )
-
-var jsonMarshaler = &jsonpb.Marshaler{}
 
 // A Rule associates a regular expression pattern with a VName template.  A
 // Rule can be applied to a string to produce a VName.
@@ -80,15 +78,13 @@ func (r Rule) String() string { return r.ToProto().String() }
 
 // MarshalJSON implements the json.Marshaler interface.
 func (r Rule) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	err := jsonMarshaler.Marshal(&buf, r.ToProto())
-	return buf.Bytes(), err
+	return protojson.Marshal(r.ToProto())
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (r *Rule) UnmarshalJSON(rec []byte) error {
 	var p spb.VNameRewriteRule
-	if err := jsonpb.Unmarshal(bytes.NewReader(rec), &p); err != nil {
+	if err := protojson.Unmarshal(rec, &p); err != nil {
 		return err
 	}
 	rule, err := ConvertRule(&p)
@@ -249,8 +245,12 @@ func ReadRules(r io.Reader) (Rules, error) {
 	// Parse each element of the array as a VNameRewriteRule.
 	rules := Rules{}
 	for de.More() {
+		var raw json.RawMessage
+		if err := de.Decode(&raw); err != nil {
+			return nil, err
+		}
 		var pb spb.VNameRewriteRule
-		if err := jsonpb.UnmarshalNext(de, &pb); err != nil {
+		if err := protojson.Unmarshal(raw, &pb); err != nil {
 			return nil, err
 		}
 		r, err := ConvertRule(&pb)

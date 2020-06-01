@@ -23,9 +23,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )

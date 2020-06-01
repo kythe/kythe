@@ -22,13 +22,14 @@ package config
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/extractors/config/base"
 
-	"github.com/golang/protobuf/jsonpb"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	ecpb "kythe.io/kythe/proto/extraction_config_go_proto"
 )
@@ -57,9 +58,13 @@ func findConfig(configPath, repoDir string) (*ecpb.ExtractionConfiguration, erro
 
 // load parses an extraction configuration from the specified reader.
 func load(r io.Reader) (*ecpb.ExtractionConfiguration, error) {
+	rec, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
 	// attempt to deserialize the extraction config
 	extractionConfig := &ecpb.ExtractionConfiguration{}
-	if err := jsonpb.Unmarshal(r, extractionConfig); err != nil {
+	if err := protojson.Unmarshal(rec, extractionConfig); err != nil {
 		return nil, err
 	}
 
