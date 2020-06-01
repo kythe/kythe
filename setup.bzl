@@ -103,3 +103,13 @@ def kythe_rule_repositories():
             "https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz",
         ],
     )
+
+    maybe(
+        http_archive,
+        name = "io_bazel_rules_rust",
+        sha256 = "fbdb7d0c88969fa6e71609bbbb20660e1cb7dcaa6ce84d8713c06bea5880cbb2",
+        strip_prefix = "rules_rust-6d00e2576688500dc857dd668cf1db1255b2976e",
+        urls = [
+            "https://github.com/bazelbuild/rules_rust/archive/6d00e2576688500dc857dd668cf1db1255b2976e.tar.gz",
+        ],
+    )

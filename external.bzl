@@ -14,6 +14,12 @@ load("@io_kythe//tools/build_rules/build_event_stream:repo.bzl", "build_event_st
 load("@io_kythe//kythe/cxx/extractor:toolchain.bzl", cxx_extractor_register_toolchains = "register_toolchains")
 load("@rules_python//python:repositories.bzl", "py_repositories")
 load("@bazel_toolchains//repositories:repositories.bzl", bazel_toolchains_repositories = "repositories")
+load("@io_bazel_rules_rust//rust:repositories.bzl", "rust_repositories")
+load("@io_bazel_rules_rust//:workspace.bzl", "bazel_version")
+
+# The raze macros automatically check for duplicated dependencies so we can
+# simply load each macro here.
+load("//kythe/rust/examples/hello_world/cargo:crates.bzl", fetch_example_hello_world_remote_crates = "raze_fetch_remote_crates")
 
 def _rule_dependencies():
     go_rules_dependencies()
@@ -23,6 +29,8 @@ def _rule_dependencies():
     rules_proto_dependencies()
     py_repositories()
     bazel_toolchains_repositories()
+    rust_repositories(version = "1.43.1")
+    bazel_version(name = "bazel_version")
 
 def _gazelle_ignore(**kwargs):
     """Dummy macro which causes gazelle to see a repository as already defined."""
@@ -1079,6 +1087,9 @@ def _go_dependencies():
         version = "v1.7.2",
     )
 
+def _rust_dependencies():
+    fetch_example_hello_world_remote_crates()
+
 def _bindings():
     maybe(
         native.bind,
@@ -1151,7 +1162,8 @@ def kythe_dependencies(sample_ui = True):
     _cc_dependencies()
     _go_dependencies()
     _java_dependencies()
-
+    _rust_dependencies()
+    
     # proto_library, cc_proto_library, and java_proto_library rules implicitly
     # depend on @com_google_protobuf for protoc and proto runtimes.
     maybe(

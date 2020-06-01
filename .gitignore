@@ -36,3 +36,6 @@ kythe/web/site/_vendor/
 
 # User bazelrc overrides
 /user.bazelrc
+
+# Ignore Rust build artifacts
+kythe/rust/**/target
