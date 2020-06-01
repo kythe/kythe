@@ -107,31 +107,3 @@ rbe_autoconfig(
     toolchain_config_suite_spec = DEFAULT_TOOLCHAIN_CONFIG_SUITE_SPEC,
     use_legacy_platform_definition = False,
 )
-
-# Pulls the latest Rust build rules as of 05/28/2020
-http_archive(
-    name = "io_bazel_rules_rust",
-    sha256 = "fbdb7d0c88969fa6e71609bbbb20660e1cb7dcaa6ce84d8713c06bea5880cbb2",
-    strip_prefix = "rules_rust-6d00e2576688500dc857dd668cf1db1255b2976e",
-    urls = [
-        "https://github.com/bazelbuild/rules_rust/archive/6d00e2576688500dc857dd668cf1db1255b2976e.tar.gz",
-    ],
-)
-
-http_archive(
-    name = "bazel_skylib",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
-        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
-    ],
-    sha256 = "97e70364e9249702246c0e9444bccdc4b847bed1eb03c5a3ece4f83dfe6abc44",
-)
-
-load("@io_bazel_rules_rust//rust:repositories.bzl", "rust_repositories")
-rust_repositories(version = "nightly", iso_date = "2020-05-15")
-
-load("@io_bazel_rules_rust//:workspace.bzl", "bazel_version")
-bazel_version(name = "bazel_version")
-
-load("//:external.bzl", "rust_dependencies")
-rust_dependencies()
