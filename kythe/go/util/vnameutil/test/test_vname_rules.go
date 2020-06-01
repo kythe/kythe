@@ -24,7 +24,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	"kythe.io/kythe/go/util/vnameutil"
 

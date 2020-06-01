@@ -21,6 +21,7 @@ package config // import "kythe.io/kythe/go/extractors/gcp/config"
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -28,8 +29,8 @@ import (
 
 	rpb "kythe.io/kythe/proto/repo_go_proto"
 
-	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/protobuf/encoding/protojson"
 	"sigs.k8s.io/yaml"
 )
 
@@ -137,7 +138,11 @@ func readConfigFile(input string) (*rpb.Config, error) {
 		return nil, fmt.Errorf("opening input file %s: %v", input, err)
 	}
 	defer file.Close()
-	if err := jsonpb.Unmarshal(file, conf); err != nil {
+	rec, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("reading json file %s: %v", input, err)
+	}
+	if err := protojson.Unmarshal(rec, conf); err != nil {
 		return nil, fmt.Errorf("parsing json file %s: %v", input, err)
 	}
 	return conf, nil
