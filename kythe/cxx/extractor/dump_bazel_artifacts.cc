@@ -50,7 +50,7 @@ int DumpArtifacts(const std::string filename) {
   BazelArtifactReader artifacts(&events);
   for (; !artifacts.Done(); artifacts.Next()) {
     std::cout << artifacts.Ref().label << std::endl;
-    for (const auto& uri : artifacts.Ref().uris) {
+    for (const auto& [local_path, uri] : artifacts.Ref().files) {
       std::cout << "  " << Basename(uri) << std::endl;
     }
   }

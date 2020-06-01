@@ -22,6 +22,6 @@ go_test(
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

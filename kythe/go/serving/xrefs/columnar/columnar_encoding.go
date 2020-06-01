@@ -25,7 +25,7 @@ import (
 	"kythe.io/kythe/go/util/keys"
 	"kythe.io/kythe/go/util/kytheuri"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	scpb "kythe.io/kythe/proto/schema_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"

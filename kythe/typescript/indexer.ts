@@ -15,10 +15,12 @@
  */
 
 import 'source-map-support/register';
+
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
+import {MarkedSource} from '../proto/common_pb';
 import {EdgeKind, FactName, JSONEdge, JSONFact, makeOrdinalEdge, NodeKind, OrdinalEdge, Subkind, VName} from './kythe';
 import * as utf8 from './utf8';
 
@@ -660,10 +662,72 @@ class StandardIndexerContext implements IndexerHost {
   };
 }
 
-type ImportVNameSet = {
-  [where in 'type' | 'value']?:
-      {local: Readonly<VName>, remote: Readonly<VName>}
-};
+const RE_FIRST_NON_WS = /\S|$/;
+const RE_NEWLINE = /\r?\n/;
+const MAX_MS_TEXT_LENGTH = 1_000;
+/**
+ * Formats a MarkedSource text component by
+ * - stripping the text to its first MAX_MS_TEXT_LENGTH characters
+ * - trimming the text
+ * - stripping the leading whitespace of each line in multi-line string by the
+ *   shortest non-zero whitespace length. For example,
+ *   [
+ *       1,
+ *       2,
+ *     ]
+ *   becomes
+ *   [
+ *     1,
+ *     2,
+ *   ]
+ */
+function fmtMarkedSource(s: string) {
+  if (s.search(RE_FIRST_NON_WS) === s.length) {
+    // String is all whitespace, keep as-is
+    return s;
+  }
+  let isChopped = false;
+  if (s.length > MAX_MS_TEXT_LENGTH) {
+    // Trim left first to pick up more chars before chopping the string
+    s = s.trimLeft();
+    s = s.substring(0, MAX_MS_TEXT_LENGTH);
+    isChopped = true;
+  }
+  s = s.replace(/\t/g, '    ');  // normalize tabs for display
+  const lines = s.split(RE_NEWLINE);
+  let shortestLeading = lines[lines.length - 1].search(RE_FIRST_NON_WS);
+  for (let i = 1; i < lines.length - 1; ++i) {
+    shortestLeading =
+        Math.min(shortestLeading, lines[i].search(RE_FIRST_NON_WS));
+  }
+  for (let i = 1; i < lines.length; ++i) {
+    lines[i] = lines[i].substring(shortestLeading);
+  }
+  s = lines.join('\n');
+  if (isChopped) {
+    s += '...';
+  }
+  return s;
+}
+
+function makeMarkedSource({
+  kind,
+  preText,
+  postText,
+  childList,
+}: {
+  kind?: keyof typeof MarkedSource.Kind,
+  preText?: string,
+  postText?: string,
+  childList?: MarkedSource[]
+}): MarkedSource {
+  const ms = new MarkedSource();
+  if (kind !== undefined) ms.setKind(MarkedSource.Kind[kind]);
+  if (preText !== undefined) ms.setPreText(fmtMarkedSource(preText));
+  if (postText !== undefined) ms.setPostText(fmtMarkedSource(postText));
+  if (childList !== undefined) ms.setChildList(childList);
+  return ms;
+}
 
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Visitor {
@@ -726,7 +790,7 @@ class Visitor {
   }
 
   /** emitFact emits a new fact entry, tying an attribute to a VName. */
-  emitFact(source: VName, name: FactName, value: string) {
+  emitFact(source: VName, name: FactName, value: string|Uint8Array) {
     this.host.emit({
       source,
       fact_name: name,
@@ -1428,7 +1492,7 @@ class Visitor {
     name: ts.BindingName|ts.PropertyName,
     type?: ts.TypeNode,
     initializer?: ts.Expression, kind: ts.SyntaxKind,
-  }): VName|undefined {
+  }&ts.Node): VName|undefined {
     let vname: VName|undefined;
     switch (decl.name.kind) {
       case ts.SyntaxKind.Identifier:
@@ -1460,6 +1524,12 @@ class Visitor {
       default:
         break;
     }
+
+    if (vname && ts.isVariableDeclaration(decl)) {
+      // TODO: handle all other variable declaration kinds
+      this.emitVariableDeclarationCode(decl, vname);
+    }
+
     if (decl.type) this.visitType(decl.type);
     if (decl.initializer) this.visit(decl.initializer);
     if (vname && decl.kind === ts.SyntaxKind.PropertyDeclaration) {
@@ -1469,6 +1539,38 @@ class Visitor {
       }
     }
     return vname;
+  }
+
+  /**
+   * Emits a code fact for a variable declaration, specifying how the
+   * declaration should be presented to users.
+   *
+   * The form of the code fact is
+   *     ((local var)|const|let) <name>: <type>( = <initializer>)?
+   * where `(local var)` is the declaration of a variable in a catch clause.
+   */
+  emitVariableDeclarationCode(decl: ts.VariableDeclaration, declVName: VName) {
+    const codeParts: MarkedSource[] = [];
+    const initializerList = decl.parent;
+    const declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
+        '(local var)' :
+        initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
+    const ty = this.typeChecker.getTypeAtLocation(decl);
+    const tyStr = this.typeChecker.typeToString(ty, decl);
+    codeParts.push(makeMarkedSource({kind: 'CONTEXT', preText: declKw}));
+    codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' '}));
+    codeParts.push(
+        makeMarkedSource({kind: 'IDENTIFIER', preText: decl.name.getText()}));
+    codeParts.push(
+        makeMarkedSource({kind: 'TYPE', preText: ': ', postText: tyStr}));
+    if (decl.initializer) {
+      const init = decl.initializer.getText();
+      codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' = '}));
+      codeParts.push(makeMarkedSource({kind: 'INITIALIZER', preText: init}));
+    }
+
+    const markedSource = makeMarkedSource({kind: 'BOX', childList: codeParts});
+    this.emitFact(declVName, FactName.CODE, markedSource.serializeBinary());
   }
 
   /**

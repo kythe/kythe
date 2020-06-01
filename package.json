@@ -1,6 +1,7 @@
 {
   "devDependencies": {
     "@bazel/jasmine": "^1.5.0",
+    "@bazel/labs": "^1.5.0",
     "@bazel/typescript": "^1.5.0",
     "@commitlint/cli": "^8.3.5",
     "@commitlint/config-conventional": "^8.3.4",
@@ -8,6 +9,7 @@
     "@types/node": "^12.12.34"
   },
   "dependencies": {
+    "google-protobuf": "^3.12.1",
     "source-map-support": "^0.5.16",
     "typescript": "^3.8.3"
   },

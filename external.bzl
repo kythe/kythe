@@ -292,8 +292,8 @@ def _go_dependencies():
             "@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch",
             "@io_kythe//third_party/go:new_export_license.patch",
         ],
-        sum = "h1:F768QJ1E9tib+q5Sc8MkdJi1RxLTbRcTf8LJV56aRls=",
-        version = "v1.3.5",
+        sum = "h1:ZFgWrT+bLgsYPirOnRfKLYJLvssAegOj/hgyMFdJZe0=",
+        version = "v1.4.1",
     )
 
     go_repository(

@@ -6,6 +6,7 @@
         "noFallthroughCasesInSwitch": true,
         "noImplicitReturns": true,
         "lib": ["es6"],
+        "rootDirs": [".", "../../bazel-bin/kythe/typescript"],
         "sourceMap": true
     },
     "include": [
