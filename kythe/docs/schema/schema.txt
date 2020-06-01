@@ -1217,6 +1217,15 @@ Points toward::
 Ordinals are used::
   never
 
+A *ref/id* edge captures a relationship between multiple objects that are
+grammatically required to share a name, such as a class and its constructors.
+
+Add a *ref/id* edge at a usage of the governed object (e.g., the constructor)
+pointing to the governing object (e.g., the class). This captures the fact that
+the two are linked, but allows a client to distinguish the cross-references of
+the constructor from those of the class.
+
+
 [kythe,C++,"Constructors and destructors are named after their classes."]
 --------------------------------------------------------------------------------
 //- @C defines/binding ClassC
