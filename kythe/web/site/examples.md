@@ -85,18 +85,39 @@ bazel --bazelrc=$KYTHE_DIR/extractors.bazelrc \
     //...
 {% endhighlight %}
 
-## Extracting CMake based repositories
+## runextractor tool
 
-**These instructions assume your environment is already set up to successfully
-run cmake for your repository**.
+`runextractor` is a generic extraction tool that works with any build system capable of emitting a [compile_commands.json](https://clang.llvm.org/docs/JSONCompilationDatabase.html) file. `runextractor` invokes an extractor for each compilation action listed in compile_commands.json and generates a kzip in the output directory for each.
 
-Set the following three environment variables:
+Build systems capable of emitting a `compile_commands.json` include CMake, Ninja, [gn](https://gn.googlesource.com/gn/+/master/docs/reference.md), waf, and others.
+
+
+### runextractor configuration
+
+`runextractor` is configured via a set of environment variables:
 
 *   `KYTHE_ROOT_DIRECTORY`: The absolute path for file input to be extracted.
     This is generally the root of the repository. All files extracted will be
     stored relative to this path.
 *   `KYTHE_OUTPUT_DIRECTORY`: The absolute path for storing output.
 *   `KYTHE_CORPUS`: The corpus label for extracted files.
+
+
+### Extracting from a compile_commands.json file
+
+This example uses Ninja, but the first step can be adapted for others.
+
+1. Begin by building your project with compile_commands.json enabled. For ninja, the command is `ninja -t compdb > compile_commands.json`
+2. Set environment variables - see above section.
+3. Invoke runextractor: `runextractor compdb -extractor /opt/kythe/extractors/cxx_extractor`
+4. If successful, the output directory should contain one kzip for each compilation action. An optional last step is to merge these into one kzip with `/opt/kythe/tools/kzip merge --output $KYTHE_OUTPUT_DIRECTORY/merged.kzip $KYTHE_OUTPUT_DIRECTORY/*.kzip`.
+
+### Extracting CMake based repositories
+
+The `runextractor` tool has a convenience subcommand for cmake-based repositories that first invokes CMake to generate a compile_commands.json, then processes the listed compilation actions. However the same result could be achieved by invoking CMake manually, then using the generic `runextractor compdb` command.
+
+**These instructions assume your environment is already set up to successfully
+run cmake for your repository**.
 
 ```shell
 $ export KYTHE_ROOT_DIRECTORY="/absolute/path/to/repo/root"
