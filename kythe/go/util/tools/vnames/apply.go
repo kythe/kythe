@@ -32,8 +32,8 @@ import (
 	"kythe.io/kythe/go/util/cmdutil"
 	"kythe.io/kythe/go/util/vnameutil"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/subcommands"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type rulesFormat string
@@ -66,12 +66,15 @@ func (c *applyRulesCmd) Execute(ctx context.Context, flag *flag.FlagSet, args ..
 		return cmdErrorf("reading %q: %v", c.rulesPath, err)
 	}
 	s := bufio.NewScanner(os.Stdin)
-	m := jsonpb.Marshaler{OrigName: true, Indent: "  "}
+	m := protojson.MarshalOptions{UseProtoNames: true, Indent: "  "}
 	for s.Scan() {
 		line := s.Text()
 		v, ok := rules.Apply(line)
 		if ok || c.allowEmpty {
-			if err := m.Marshal(os.Stdout, v); err != nil {
+			rec, err := m.Marshal(v)
+			if err != nil {
+				return cmdErrorf("encoding VName: %v", err)
+			} else if _, err := os.Stdout.Write(rec); err != nil {
 				return cmdErrorf("writing VName: %v", err)
 			} else if _, err := fmt.Fprintln(os.Stdout, ""); err != nil {
 				return cmdErrorf("writing newline: %v", err)
