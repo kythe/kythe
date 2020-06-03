@@ -77,6 +77,9 @@ mnemonic: "some action"
 			ExtraAction: xaPath, VNameRules: "nonesuch"},
 		{Corpus: "foo", Language: "bar", SourceFiles: "zort",
 			ExtraAction: "nonesuch", VNameRules: vjPath},
+		{Corpus: "foo", Language: "bar", SourceArgs: "blub",
+			SourceFiles: "ging", ExtraAction: xaPath,
+			VNameRules: vjPath, ProtoFormat: "notcorrect"},
 	}
 	for _, test := range failures {
 		t.Logf("Test settings: %+v", test)
@@ -96,6 +99,7 @@ mnemonic: "some action"
 		SourceFiles: "ging",
 		ExtraAction: xaPath,
 		VNameRules:  vjPath,
+		ProtoFormat: "json",
 	})
 	if err != nil {
 		t.Fatalf("NewFromSettings: unexpected error: %v", err)

@@ -46,11 +46,12 @@ const (
 	// The digest of an empty input, cf. openssl sha256 /dev/null
 	emptyDigest = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
-	testCorpus = "test/corpus"
-	testTarget = "//target"
-	testLang   = "foo"
-	testOutput = "outfile"
-	wantDigest = emptyDigest
+	testCorpus      = "test/corpus"
+	testTarget      = "//target"
+	testLang        = "foo"
+	testOutput      = "outfile"
+	wantDigest      = emptyDigest
+	testProtoFormat = "json"
 )
 
 var (
@@ -99,8 +100,9 @@ type results struct {
 func (r *results) newConfig() *Config {
 	fixed := false // see FixUnit, below
 	return &Config{
-		Corpus:   testCorpus,
-		Language: testLang,
+		Corpus:      testCorpus,
+		Language:    testLang,
+		ProtoFormat: testProtoFormat,
 
 		CheckAction: func(_ context.Context, info *ActionInfo) error {
 			r.gotInfo = info
