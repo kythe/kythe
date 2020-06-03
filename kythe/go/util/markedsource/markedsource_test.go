@@ -25,7 +25,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 )
@@ -49,13 +50,14 @@ func runOracle(t *testing.T, ms *cpb.MarkedSource) *oracleResults {
 	cmd := exec.Command(docPath, "--common_signatures")
 	// The doc utility expects its stdin to be a single text-format MarkedSource
 	// proto message.
-	in := &bytes.Buffer{}
-	if err := proto.CompactText(in, ms); err != nil {
+	opts := prototext.MarshalOptions{Multiline: false}
+	rec, err := opts.Marshal(ms)
+	if err != nil {
 		t.Fatal(err)
 	}
-	// The utility's output is a series of lines, one per
+	// The utility's output is a series of lines, one per rendering
 	out := &bytes.Buffer{}
-	cmd.Stdin = in
+	cmd.Stdin = bytes.NewReader(rec)
 	cmd.Stdout = out
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -254,7 +256,7 @@ func TestQName(t *testing.T) {
 
 	for _, test := range tests {
 		var ms cpb.MarkedSource
-		if err := proto.UnmarshalText(test.input, &ms); err != nil {
+		if err := prototext.Unmarshal([]byte(test.input), &ms); err != nil {
 			t.Errorf("Invalid test input: %v\nInput was %#q", err, test.input)
 			continue
 		}

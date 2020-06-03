@@ -291,7 +291,7 @@ func parseTransposeStateMachine(src io.Reader, hdr byteReader, compressionType c
 
 			// End of submessage is encoded as protoSubmessageType.
 			if protoWireType(tag&7) == protoSubmessageType {
-				tag -= protoSubmessageType - protoBytesType
+				tag -= uint64(protoSubmessageType - protoBytesType)
 				subtype = delimitedEndOfSubmessageSubtype
 			}
 
