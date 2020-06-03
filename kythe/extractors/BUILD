@@ -177,6 +177,7 @@ extractor_action(
         "--rules=$(location //external:vnames_config)",
         "--scoped=true",
         "--source='\\.rs$$'",
+        "--proto_format=proto"
     ],
     data = ["//external:vnames_config"],
     extractor = "@io_kythe//kythe/go/extractors/cmd/bazel:extract_kzip",
