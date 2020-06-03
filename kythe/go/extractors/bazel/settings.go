@@ -78,7 +78,7 @@ func (s *Settings) SetFlags(f *flag.FlagSet, prefix string) func() {
 		"Enable verbose (per-file) logging")
 	// Set default KzipEncoding
 	s.KzipEncoding.Set("json")
-	f.Var(&s.KzipEncoding, p("proto_format"),
+	f.Var(&s.KzipEncoding, p("kzip_encoding"),
 		`Output format of Protobuf compilation units. Accepts "json" or "proto" (default "json")`)
 
 	// A default usage message the caller may use to populate flag.Usage.
