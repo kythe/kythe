@@ -130,7 +130,7 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
         if paths.dirname(s)
     }.keys()
 
-    # Upstream LLVM has a single inconsistent-case header directory
+    # Upstream LLVM has some inconsistent-case header directories
     # which causes breakages on macOS.
     # Adjust the case here if we encounter it.
     # https://github.com/kythe/kythe/issues/4535
