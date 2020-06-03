@@ -135,7 +135,7 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
     # Adjust the case here if we encounter it.
     # https://github.com/kythe/kythe/issues/4535
     additional_header_dirs = [
-        _replace_suffix(dir, {"/Elf": "/ELF", "/AsmParser": "/ASMParser"})
+        _replace_suffix(dir, {"/Elf": "/ELF", "/ASMParser": "/AsmParser"})
         for dir in additional_header_dirs
     ]
     sources = (
