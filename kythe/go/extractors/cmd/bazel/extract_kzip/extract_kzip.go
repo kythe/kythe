@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/extractors/bazel"
-	"kythe.io/kythe/go/extractors/bazel/extutil"
 )
 
 var (
@@ -57,7 +56,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Invalid extra action: %v", err)
 	}
-	if err := extutil.ExtractAndWrite(ctx, config, ai, *outputPath); err != nil {
+	if err := config.ExtractToKzip(ctx, ai, *outputPath); err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
 	log.Printf("Finished extracting [%v elapsed]", time.Since(start))

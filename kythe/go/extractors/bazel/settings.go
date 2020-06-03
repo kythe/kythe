@@ -41,9 +41,9 @@ type Settings struct {
 	Exclude     string // exclude files matching this RE2 ("" excludes no files)
 	SourceFiles string // mark files matching this RE2 as sources ("" marks none)
 	SourceArgs  string // mark arguments matching this RE2 as sources ("" marks none)
-
-	Scoped  bool // only match source paths within the target package
-	Verbose bool // enable verbose per-file logging
+	ProtoFormat string // designates the output format of the compilation unit protobufs (default "json")
+	Scoped      bool   // only match source paths within the target package
+	Verbose     bool   // enable verbose per-file logging
 }
 
 // SetFlags adds flags to f for each of the fields of s.  The specified prefix
@@ -74,6 +74,8 @@ func (s *Settings) SetFlags(f *flag.FlagSet, prefix string) func() {
 		"Only match source paths within the target package")
 	f.BoolVar(&s.Verbose, p("verbose"), false,
 		"Enable verbose (per-file) logging")
+	f.StringVar(&s.ProtoFormat, p("proto_format"), "json",
+		`Output format of Protobuf compilation units. Accepts "json" or "proto" (default "json")`)
 
 	// A default usage message the caller may use to populate flag.Usage.
 	return func() {
@@ -199,6 +201,13 @@ func NewFromSettings(s Settings) (*Config, *xapb.ExtraActionInfo, error) {
 		}
 		config.FixUnit = FindSourceArgs(r)
 	}
+
+	// Ensure proto format argument is valid
+	if s.ProtoFormat != "json" && s.ProtoFormat != "proto" {
+		return nil, nil, fmt.Errorf(
+			`Invalid proto_format: %s. Expected "json" or "proto"`, s.ProtoFormat)
+	}
+	config.ProtoFormat = s.ProtoFormat
 
 	return config, info, nil
 }

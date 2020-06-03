@@ -58,12 +58,13 @@ func Write(w io.WriterTo, path string) error {
 
 // NewKZIP creates a kzip writer at path, replacing any existing file at that
 // location. Closing the returned writer also closes the underlying file.
-func NewKZIP(path string) (*kzip.Writer, error) {
+// Additionally accepts options passed to create the kzip Writer
+func NewKZIP(path string, options ...kzip.WriterOption) (*kzip.Writer, error) {
 	f, err := os.Create(path)
 	if err != nil {
 		return nil, fmt.Errorf("creating output file: %v", err)
 	}
-	w, err := kzip.NewWriteCloser(f)
+	w, err := kzip.NewWriteCloser(f, options...)
 	if err != nil {
 		f.Close()
 		return nil, err
