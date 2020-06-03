@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 func newTransposeChunkWriter(opts *WriterOptions) (recordWriter, error) {
@@ -265,21 +265,21 @@ func isProtoMessage(rec []byte) bool {
 		}
 
 		switch protoWireType(tag & 7) {
-		case proto.WireVarint:
+		case protoVarintType:
 			if _, err := binary.ReadUvarint(rd); err != nil {
 				return false
 			}
-		case proto.WireFixed32:
+		case protoFixed32Type:
 			if rd.Len() < 4 {
 				return false
 			}
 			rd.Seek(4, io.SeekCurrent)
-		case proto.WireFixed64:
+		case protoFixed64Type:
 			if rd.Len() < 8 {
 				return false
 			}
 			rd.Seek(8, io.SeekCurrent)
-		case proto.WireBytes:
+		case protoBytesType:
 			size, err := binary.ReadUvarint(rd)
 			if err != nil {
 				return false
@@ -287,9 +287,9 @@ func isProtoMessage(rec []byte) bool {
 				return false
 			}
 			rd.Seek(int64(size), io.SeekCurrent)
-		case proto.WireStartGroup:
+		case protoStartGroupType:
 			groupStack = append(groupStack, field)
-		case proto.WireEndGroup:
+		case protoEndGroupType:
 			if len(groupStack) == 0 || groupStack[len(groupStack)-1] != field {
 				return false
 			}
@@ -418,7 +418,7 @@ func (t *transposedChunkWriter) buildStateMachine(bufferIndices map[nodeID]int) 
 			tag = uint64(et.tagID)
 		} else if protoWireType(et.tag&7) == protoBytesType {
 			if et.subtype == delimitedEndOfSubmessageSubtype {
-				tag = ((tag >> 3) << 3) | protoSubmessageType
+				tag = ((tag >> 3) << 3) | uint64(protoSubmessageType)
 			} else if et.subtype == delimitedStartOfSubmessageSubtype {
 				tag = uint64(startOfSubmessageTag)
 			}

@@ -43,6 +43,12 @@ def _replace_prefix(value, prefix, repl):
         return repl + value[len(prefix):]
     return value
 
+def _replace_suffix(value, suffix_map):
+    for suffix, repl in suffix_map.items():
+        if value.endswith(suffix):
+            return value[:len(value) - len(suffix)] + repl
+    return value
+
 def _clang_headers(root):
     root = _replace_prefix(root, "tools/clang/lib/", "tools/clang/include/clang/")
     return _glob([_join_path(root, "**/*.*")])
@@ -123,6 +129,15 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
         for s in srcs
         if paths.dirname(s)
     }.keys()
+
+    # Upstream LLVM has some inconsistent-case header directories
+    # which causes breakages on macOS.
+    # Adjust the case here if we encounter it.
+    # https://github.com/kythe/kythe/issues/4535
+    additional_header_dirs = [
+        _replace_suffix(dir, {"/Elf": "/ELF", "/ASMParser": "/AsmParser"})
+        for dir in additional_header_dirs
+    ]
     sources = (
         [_join_path(root, s) for s in srcs] +
         _llvm_srcglob(root, additional_header_dirs + subdirs) +

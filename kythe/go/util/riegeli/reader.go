@@ -23,7 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"
 )

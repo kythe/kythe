@@ -32,7 +32,8 @@ import (
 
 	"kythe.io/kythe/go/platform/vfs"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
@@ -61,7 +62,7 @@ func main() {
 	}
 
 	var xa xapb.ExtraActionInfo
-	if err := proto.UnmarshalText(string(txt), &xa); err != nil {
+	if err := prototext.Unmarshal(txt, &xa); err != nil {
 		log.Fatal(err)
 	}
 
