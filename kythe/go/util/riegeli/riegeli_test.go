@@ -26,7 +26,7 @@ import (
 
 	"kythe.io/kythe/go/util/compare"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	rtpb "kythe.io/kythe/go/util/riegeli/riegeli_test_go_proto"
 	rmpb "kythe.io/third_party/riegeli/records_metadata_go_proto"

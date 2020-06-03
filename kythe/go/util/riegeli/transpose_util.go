@@ -20,7 +20,7 @@ import (
 	"encoding/binary"
 	"io"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protowire"
 )
 
 // A tagID is an overload of the protocol buffer wire key encodings.
@@ -39,13 +39,13 @@ const (
 type protoWireType int
 
 const (
-	protoVarintType     protoWireType = proto.WireVarint
-	protoFixed64Type                  = proto.WireFixed64
-	protoBytesType                    = proto.WireBytes
-	protoStartGroupType               = proto.WireStartGroup
-	protoEndGroupType                 = proto.WireEndGroup
-	protoFixed32Type                  = proto.WireFixed32
-	protoSubmessageType               = 6
+	protoVarintType     = protoWireType(protowire.VarintType)
+	protoFixed64Type    = protoWireType(protowire.Fixed64Type)
+	protoBytesType      = protoWireType(protowire.BytesType)
+	protoStartGroupType = protoWireType(protowire.StartGroupType)
+	protoEndGroupType   = protoWireType(protowire.EndGroupType)
+	protoFixed32Type    = protoWireType(protowire.Fixed32Type)
+	protoSubmessageType = protoWireType(6)
 )
 
 // A tagSubtype differentiates varint/delimited tag types.
@@ -54,13 +54,13 @@ type tagSubtype int
 const (
 	trivialSubtype tagSubtype = 0
 
-	// proto.WireVarint subtypes
+	// protowire.VarintType subtypes
 	varint1Subtype         = 0
 	varintMaxSubtype       = varint1Subtype + binary.MaxVarintLen64 - 1
 	varintInline0Subtype   = varintMaxSubtype + 1
 	varintInlineMaxSubtype = varintInline0Subtype + 0x7f
 
-	// proto.WireBytes subtypes
+	// protowire.BytesType subtypes
 	delimitedStringSubtype            = 0
 	delimitedStartOfSubmessageSubtype = 1
 	delimitedEndOfSubmessageSubtype   = 2
