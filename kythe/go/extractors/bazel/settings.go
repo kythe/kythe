@@ -26,6 +26,7 @@ import (
 	"regexp"
 
 	"kythe.io/kythe/go/platform/kzip"
+	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
@@ -34,17 +35,17 @@ import (
 // Settings control the construction of an extractor config from common path
 // and name filtering settings.
 type Settings struct {
-	Corpus      string // the corpus label to assign
-	Language    string // the language label to assign (required)
-	ExtraAction string // path of blaze.ExtraActionInfo file (required)
-	VNameRules  string // path of vnames.json file (optional)
-	Include     string // include files matching this RE2 ("" includes all files)
-	Exclude     string // exclude files matching this RE2 ("" excludes no files)
-	SourceFiles string // mark files matching this RE2 as sources ("" marks none)
-	SourceArgs  string // mark arguments matching this RE2 as sources ("" marks none)
-	ProtoFormat string // designates the output format of the compilation unit protobufs (default "json")
-	Scoped      bool   // only match source paths within the target package
-	Verbose     bool   // enable verbose per-file logging
+	Corpus       string             // the corpus label to assign
+	Language     string             // the language label to assign (required)
+	ExtraAction  string             // path of blaze.ExtraActionInfo file (required)
+	VNameRules   string             // path of vnames.json file (optional)
+	Include      string             // include files matching this RE2 ("" includes all files)
+	Exclude      string             // exclude files matching this RE2 ("" excludes no files)
+	SourceFiles  string             // mark files matching this RE2 as sources ("" marks none)
+	SourceArgs   string             // mark arguments matching this RE2 as sources ("" marks none)
+	KzipEncoding flags.EncodingFlag // designates the output format of the compilation unit protobufs (default "json")
+	Scoped       bool               // only match source paths within the target package
+	Verbose      bool               // enable verbose per-file logging
 }
 
 // SetFlags adds flags to f for each of the fields of s.  The specified prefix
@@ -75,7 +76,9 @@ func (s *Settings) SetFlags(f *flag.FlagSet, prefix string) func() {
 		"Only match source paths within the target package")
 	f.BoolVar(&s.Verbose, p("verbose"), false,
 		"Enable verbose (per-file) logging")
-	f.StringVar(&s.ProtoFormat, p("proto_format"), "json",
+	// Set default KzipEncoding
+	s.KzipEncoding.Set("json")
+	f.Var(&s.KzipEncoding, p("proto_format"),
 		`Output format of Protobuf compilation units. Accepts "json" or "proto" (default "json")`)
 
 	// A default usage message the caller may use to populate flag.Usage.
@@ -142,11 +145,12 @@ func NewFromSettings(s Settings) (*Config, *xapb.ExtraActionInfo, error) {
 	}
 
 	config := &Config{
-		Corpus:     s.Corpus,
-		Language:   s.Language,
-		Rules:      rules,
-		Verbose:    s.Verbose,
-		CheckInput: func(path string) (string, bool) { return path, true },
+		Corpus:       s.Corpus,
+		Language:     s.Language,
+		Rules:        rules,
+		Verbose:      s.Verbose,
+		CheckInput:   func(path string) (string, bool) { return path, true },
+		KzipEncoding: s.KzipEncoding.Get().(kzip.Encoding),
 	}
 
 	// If there is a file inclusion regexp, replace the input filter with it.
@@ -201,17 +205,6 @@ func NewFromSettings(s Settings) (*Config, *xapb.ExtraActionInfo, error) {
 			return nil, nil, fmt.Errorf("invalid source args regexp: %v", err)
 		}
 		config.FixUnit = FindSourceArgs(r)
-	}
-
-	// Ensure proto format argument is valid
-	switch s.ProtoFormat {
-	case "json":
-		config.ProtoFormat = kzip.EncodingJSON
-	case "proto":
-		config.ProtoFormat = kzip.EncodingProto
-	default:
-		return nil, nil, fmt.Errorf(
-			`Invalid proto_format: %s. Expected "json" or "proto"`, s.ProtoFormat)
 	}
 
 	return config, info, nil

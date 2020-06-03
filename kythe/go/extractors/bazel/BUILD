@@ -14,6 +14,7 @@ go_library(
     deps = [
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/kzip",
+        "//kythe/go/platform/tools/kzip/flags",
         "//kythe/go/util/ptypes",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_go_proto",

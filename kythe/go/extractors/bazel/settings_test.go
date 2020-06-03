@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"kythe.io/kythe/go/platform/tools/kzip/flags"
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
 )
 
@@ -77,9 +78,6 @@ mnemonic: "some action"
 			ExtraAction: xaPath, VNameRules: "nonesuch"},
 		{Corpus: "foo", Language: "bar", SourceFiles: "zort",
 			ExtraAction: "nonesuch", VNameRules: vjPath},
-		{Corpus: "foo", Language: "bar", SourceArgs: "blub",
-			SourceFiles: "ging", ExtraAction: xaPath,
-			VNameRules: vjPath, ProtoFormat: "notcorrect"},
 	}
 	for _, test := range failures {
 		t.Logf("Test settings: %+v", test)
@@ -91,15 +89,18 @@ mnemonic: "some action"
 		}
 	}
 
+	jsonEncodingFlag := flags.EncodingFlag{}
+	jsonEncodingFlag.Set("json")
+
 	// When all the stars align, the fates allow us grace.
 	got, info, err := NewFromSettings(Settings{
-		Corpus:      "foo",
-		Language:    "bar",
-		SourceArgs:  "blub",
-		SourceFiles: "ging",
-		ExtraAction: xaPath,
-		VNameRules:  vjPath,
-		ProtoFormat: "json",
+		Corpus:       "foo",
+		Language:     "bar",
+		SourceArgs:   "blub",
+		SourceFiles:  "ging",
+		ExtraAction:  xaPath,
+		VNameRules:   vjPath,
+		KzipEncoding: jsonEncodingFlag,
 	})
 	if err != nil {
 		t.Fatalf("NewFromSettings: unexpected error: %v", err)

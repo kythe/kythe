@@ -68,11 +68,11 @@ import (
 // Finally, the "Fixup" stage gives the caller a final opportunity to edit the
 // resulting compilation record before it is returned.
 type Config struct {
-	Corpus      string          // the default corpus label to use
-	Language    string          // the language label to apply
-	Rules       vnameutil.Rules // rules for rewriting file VNames
-	Verbose     bool            // whether to emit verbose (per-file) logging
-	ProtoFormat kzip.Encoding   // output format of compilation unit (json or proto)
+	Corpus       string          // the default corpus label to use
+	Language     string          // the language label to apply
+	Rules        vnameutil.Rules // rules for rewriting file VNames
+	Verbose      bool            // whether to emit verbose (per-file) logging
+	KzipEncoding kzip.Encoding   // output format of compilation unit (json or proto)
 
 	// If set, this function checks whether the given spawn action should be
 	// further processed. If it returns an error, the action will be rejected.
@@ -163,7 +163,7 @@ func (c *Config) ExtractToKzip(ctx context.Context, ai *ActionInfo, outputPath s
 		return fmt.Errorf("unknown output extension %q", ext)
 	}
 
-	w, err := NewKZIP(outputPath, kzip.WithEncoding(c.ProtoFormat))
+	w, err := NewKZIP(outputPath, kzip.WithEncoding(c.KzipEncoding))
 	if err != nil {
 		return fmt.Errorf("creating kzip writer: %v", err)
 	}
