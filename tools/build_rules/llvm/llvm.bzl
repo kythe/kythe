@@ -43,9 +43,10 @@ def _replace_prefix(value, prefix, repl):
         return repl + value[len(prefix):]
     return value
 
-def _replace_suffix(value, suffix, repl):
-    if value.endswith(suffix):
-        return value[:len(value) - len(suffix)] + repl
+def _replace_suffix(value, suffix_map):
+    for suffix, repl in suffix_map.items():
+        if value.endswith(suffix):
+            return value[:len(value) - len(suffix)] + repl
     return value
 
 def _clang_headers(root):
@@ -134,7 +135,7 @@ def _llvm_library(ctx, name, srcs, hdrs = [], deps = [], additional_header_dirs 
     # Adjust the case here if we encounter it.
     # https://github.com/kythe/kythe/issues/4535
     additional_header_dirs = [
-        _replace_suffix(dir, "/Elf", "/ELF")
+        _replace_suffix(dir, {"/Elf": "/ELF", "/AsmParser": "/ASMParser"})
         for dir in additional_header_dirs
     ]
     sources = (
