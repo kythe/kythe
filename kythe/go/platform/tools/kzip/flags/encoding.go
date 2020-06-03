@@ -23,24 +23,24 @@ import (
 
 // EncodingFlag encapsulates an Encoding for use as a flag.
 type EncodingFlag struct {
-	kzip.Encoding
+	encoding kzip.Encoding
 }
 
 // String implements part of the flag.Value interface.
 func (e *EncodingFlag) String() string {
-	return e.Encoding.String()
+	return e.encoding.String()
 }
 
 // Get implements part of the flag.Getter interface.
 func (e *EncodingFlag) Get() interface{} {
-	return e.Encoding
+	return e.encoding
 }
 
 // Set implements part of the flag.Value interface.
 func (e *EncodingFlag) Set(v string) error {
 	enc, err := kzip.EncodingFor(v)
 	if err == nil {
-		*e = EncodingFlag{enc}
+		e.encoding = enc
 	}
 	return err
 }
