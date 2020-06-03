@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"kythe.io/kythe/go/platform/kzip"
 	"kythe.io/kythe/go/util/vnameutil"
 
 	xapb "kythe.io/third_party/bazel/extra_actions_base_go_proto"
@@ -203,11 +204,15 @@ func NewFromSettings(s Settings) (*Config, *xapb.ExtraActionInfo, error) {
 	}
 
 	// Ensure proto format argument is valid
-	if s.ProtoFormat != "json" && s.ProtoFormat != "proto" {
+	switch s.ProtoFormat {
+	case "json":
+		config.ProtoFormat = kzip.EncodingJSON
+	case "proto":
+		config.ProtoFormat = kzip.EncodingProto
+	default:
 		return nil, nil, fmt.Errorf(
 			`Invalid proto_format: %s. Expected "json" or "proto"`, s.ProtoFormat)
 	}
-	config.ProtoFormat = s.ProtoFormat
 
 	return config, info, nil
 }

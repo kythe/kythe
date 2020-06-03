@@ -72,7 +72,7 @@ type Config struct {
 	Language    string          // the language label to apply
 	Rules       vnameutil.Rules // rules for rewriting file VNames
 	Verbose     bool            // whether to emit verbose (per-file) logging
-	ProtoFormat string          // output format of compilation unit (json or proto)
+	ProtoFormat kzip.Encoding   // output format of compilation unit (json or proto)
 
 	// If set, this function checks whether the given spawn action should be
 	// further processed. If it returns an error, the action will be rejected.
@@ -163,18 +163,7 @@ func (c *Config) ExtractToKzip(ctx context.Context, ai *ActionInfo, outputPath s
 		return fmt.Errorf("unknown output extension %q", ext)
 	}
 
-	// Set output format of Protobuf based
-	var outputFormat kzip.WriterOption
-	switch c.ProtoFormat {
-	case "json":
-		outputFormat = kzip.WithEncoding(kzip.EncodingJSON)
-	case "proto":
-		outputFormat = kzip.WithEncoding(kzip.EncodingProto)
-	default:
-		return fmt.Errorf("Invalid proto format: %s", c.ProtoFormat)
-	}
-
-	w, err := NewKZIP(outputPath, outputFormat)
+	w, err := NewKZIP(outputPath, kzip.WithEncoding(c.ProtoFormat))
 	if err != nil {
 		return fmt.Errorf("creating kzip writer: %v", err)
 	}

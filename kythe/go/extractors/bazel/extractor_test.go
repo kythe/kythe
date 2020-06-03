@@ -51,7 +51,7 @@ const (
 	testLang        = "foo"
 	testOutput      = "outfile"
 	wantDigest      = emptyDigest
-	testProtoFormat = "json"
+	testProtoFormat = kzip.EncodingJSON
 )
 
 var (
