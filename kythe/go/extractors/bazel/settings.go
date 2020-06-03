@@ -205,8 +205,7 @@ func NewFromSettings(s Settings) (*Config, *xapb.ExtraActionInfo, error) {
 	// Ensure proto format argument is valid
 	if s.ProtoFormat != "json" && s.ProtoFormat != "proto" {
 		return nil, nil, fmt.Errorf(
-			`Invalid proto_format: %s. Expected "json" or "proto"`,
-			s.ProtoFormat || "(none)")
+			`Invalid proto_format: %s. Expected "json" or "proto"`, s.ProtoFormat)
 	}
 	config.ProtoFormat = s.ProtoFormat
 
