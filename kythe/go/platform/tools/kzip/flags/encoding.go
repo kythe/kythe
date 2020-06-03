@@ -36,6 +36,11 @@ func (e *EncodingFlag) Get() interface{} {
 	return e.encoding
 }
 
+// GetEncoding returns the encoding with an explicit type
+func (e *EncodingFlag) GetEncoding() kzip.Encoding {
+	return e.encoding
+}
+
 // Set implements part of the flag.Value interface.
 func (e *EncodingFlag) Set(v string) error {
 	enc, err := kzip.EncodingFor(v)

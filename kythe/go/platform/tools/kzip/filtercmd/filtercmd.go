@@ -44,9 +44,12 @@ type filterCommand struct {
 
 // New creates a new subcommand for merging kzip files.
 func New() subcommands.Command {
+	var jsonEncodingFlag flags.EncodingFlag
+	jsonEncodingFlag.Set("json")
+
 	return &filterCommand{
 		Info:     cmdutil.NewInfo("filter", "filter units from kzip file", "--input path --output path unit-hash*"),
-		encoding: flags.EncodingFlag{Encoding: kzip.EncodingJSON},
+		encoding: jsonEncodingFlag,
 	}
 }
 
@@ -66,7 +69,7 @@ func (c *filterCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 	if c.input == "" {
 		return c.Fail("Required --input path missing")
 	}
-	opt := kzip.WithEncoding(c.encoding.Encoding)
+	opt := kzip.WithEncoding(c.encoding.GetEncoding())
 	dir, file := filepath.Split(c.output)
 	if dir == "" {
 		dir = "."

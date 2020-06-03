@@ -58,6 +58,9 @@ type createCommand struct {
 
 // New creates a new subcommand for merging kzip files.
 func New() subcommands.Command {
+	var jsonEncodingFlag flags.EncodingFlag
+	jsonEncodingFlag.Set("json")
+
 	return &createCommand{
 		Info: cmdutil.NewInfo("create", "create simple kzip archives", `[options] -- arguments*
 
@@ -68,7 +71,7 @@ Directories specified in -source_file or -required_input will be added recursive
 
 Any additional positional arguments are included as arguments in the compilation unit.
 `),
-		encoding: flags.EncodingFlag{Encoding: kzip.EncodingJSON},
+		encoding: jsonEncodingFlag,
 	}
 }
 
@@ -102,7 +105,7 @@ func (c *createCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...inte
 		return c.Fail("Missing required -source_file")
 	}
 
-	opt := kzip.WithEncoding(c.encoding.Encoding)
+	opt := kzip.WithEncoding(c.encoding.GetEncoding())
 	out, err := openWriter(ctx, c.output, opt)
 	if err != nil {
 		return c.Fail("Error opening -output: %v", err)
