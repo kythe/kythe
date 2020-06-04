@@ -24,13 +24,15 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"bitbucket.org/creachadair/shell"
-	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -52,37 +54,58 @@ func ExtractCompilations(ctx context.Context, extractor, path string) error {
 	if err != nil {
 		return err
 	}
+
+	var failCount uint64
 	sem := semaphore.NewWeighted(128) // Limit concurrency.
-	extraction, ctx := errgroup.WithContext(ctx)
+	var wg sync.WaitGroup
+	wg.Add(len(commands))
 	for _, entry := range commands {
-		entry := entry
-		extraction.Go(func() error {
+		go func(entry compileCommand) {
+			defer wg.Done()
 			if err := sem.Acquire(ctx, 1); err != nil {
-				return err
+				atomic.AddUint64(&failCount, 1)
+				log.Print(err)
+				return
 			}
 			defer sem.Release(1)
 
-			cmd := exec.CommandContext(ctx, extractor, "--with_executable")
-			args, ok := shell.Split(entry.Command)
-			if !ok {
-				return fmt.Errorf("unable to split command line")
+			if err := extractOne(ctx, extractor, entry, env); err != nil {
+				// Log error, but continue processing other compilations.
+				atomic.AddUint64(&failCount, 1)
+				log.Printf("Error extracting compilation: %v", err)
 			}
-			cmd.Args = append(cmd.Args, args...)
-			cmd.Dir, err = filepath.Abs(entry.Directory)
-			if err != nil {
-				return fmt.Errorf("unable to resolve cmake directory: %v", err)
-			}
-			cmd.Env = env
-			if _, err := cmd.Output(); err != nil {
-				if exit, ok := err.(*exec.ExitError); ok {
-					return fmt.Errorf("error running extractor: %v (%s)", exit, exit.Stderr)
-				}
-				return fmt.Errorf("error running extractor: %v", err)
-			}
-			return nil
-		})
+		}(entry)
 	}
-	return extraction.Wait()
+	wg.Wait()
+
+	if failCount != 0 {
+		return fmt.Errorf("Failed to extract %d compilations", failCount)
+	}
+
+	return nil
+}
+
+// extractOne invokes the extractor for the given compileCommand.
+func extractOne(ctx context.Context, extractor string, cc compileCommand, env []string) error {
+	cmd := exec.CommandContext(ctx, extractor, "--with_executable")
+	args, ok := shell.Split(cc.Command)
+	if !ok {
+		return fmt.Errorf("unable to split command line")
+	}
+	cmd.Args = append(cmd.Args, args...)
+	var err error
+	cmd.Dir, err = filepath.Abs(cc.Directory)
+	if err != nil {
+		return fmt.Errorf("unable to resolve cmake directory: %v", err)
+	}
+	cmd.Env = env
+	if _, err := cmd.Output(); err != nil {
+		if exit, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("error running extractor: %v (%s)", exit, exit.Stderr)
+		}
+		return fmt.Errorf("error running extractor: %v", err)
+	}
+	return nil
 }
 
 // readCommands reads the JSON file at path into a slice of compileCommands.
@@ -96,7 +119,6 @@ func readCommands(path string) ([]compileCommand, error) {
 		return nil, err
 	}
 	return commands, nil
-
 }
 
 // extractorEnv copies the existing environment and modifies it to be suitable for an extractor invocation.
