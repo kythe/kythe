@@ -19,6 +19,8 @@ package com.google.devtools.kythe.analyzers.java;
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.proto.Storage.VName;
+import java.util.List;
+import java.util.Optional;
 
 /** Kythe graph node representing a Java language construct. */
 class JavaNode {
@@ -26,6 +28,9 @@ class JavaNode {
   // (i.e. types and abstractions)
   private final VName vName;
   private JavaNode type;
+
+  private List<VName> classConstructors = ImmutableList.of();
+  private Optional<VName> classInit = Optional.empty();
 
   // I think order matters for the wildcards because the abs node will be connected to them with
   // param edges, which are numbered. If order doesn't matter, we should change this to something
@@ -64,5 +69,23 @@ class JavaNode {
 
   JavaNode getType() {
     return type;
+  }
+
+  JavaNode setClassConstructors(List<VName> constructors) {
+    this.classConstructors = constructors;
+    return this;
+  }
+
+  List<VName> getClassConstructors() {
+    return classConstructors;
+  }
+
+  JavaNode setClassInit(VName classInit) {
+    this.classInit = Optional.ofNullable(classInit);
+    return this;
+  }
+
+  Optional<VName> getClassInit() {
+    return classInit;
   }
 }
