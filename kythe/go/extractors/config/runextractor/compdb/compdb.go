@@ -72,7 +72,7 @@ func ExtractCompilations(ctx context.Context, extractor, path string) error {
 			if err := extractOne(ctx, extractor, entry, env); err != nil {
 				// Log error, but continue processing other compilations.
 				atomic.AddUint64(&failCount, 1)
-				log.Printf("Error extracting compilation: %v", err)
+				log.Printf("Error extracting compilation with command '%s': %v", entry.Command, err)
 			}
 		}(entry)
 	}
