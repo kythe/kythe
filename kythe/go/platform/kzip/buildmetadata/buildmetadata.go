@@ -42,7 +42,7 @@ func CreateMetadataUnit(timestamp time.Time) (*apb.CompilationUnit, error) {
 	if err != nil {
 		return nil, fmt.Errorf("marshaling timestamp: %v", err)
 	}
-	meta := &spb.BuildMetadata{
+	meta := &apb.BuildMetadata{
 		CommitTimestamp: tp,
 	}
 	det, err := kptypes.MarshalAny(meta)

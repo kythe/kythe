@@ -85,9 +85,6 @@ proto_library(
         "//kythe:proto_visibility",
         "//third_party/llvm/src:__pkg__",
     ],
-    deps = [
-        "@com_google_protobuf//:timestamp_proto",
-    ],
 )
 
 cc_proto_library(
@@ -143,6 +140,7 @@ proto_library(
         ":filecontext_proto",
         ":storage_proto",
         "@com_google_protobuf//:any_proto",
+        "@com_google_protobuf//:timestamp_proto",
     ],
 )
 
