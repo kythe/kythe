@@ -21,6 +21,8 @@ package kythe.proto;
 option go_package = "storage_go_proto";
 option java_package = "com.google.devtools.kythe.proto";
 
+import "google/protobuf/timestamp.proto";
+
 // VName is a proto representation of a vector name.
 // See also
 // https://kythe.io/docs/kythe-storage.html#_a_id_termvname_a_vector_name_strong_vname_strong
@@ -149,8 +151,7 @@ message WriteRequest {
 }
 
 // Response to a WriteRequest
-message WriteReply {
-}
+message WriteReply {}
 
 // Request for a stream of Entry objects resulting from a full scan of a
 // GraphStore.
@@ -202,4 +203,11 @@ message VNameRewriteRule {
 // VNameRewriteRules is a container for multiple VNameRewriteRules.
 message VNameRewriteRules {
   repeated VNameRewriteRule rule = 1;
+}
+
+// RepoMetadata provides storage for additional information about a specific
+// build from a repository. This message is stored in the
+// CompilationUnit.details field.
+message BuildMetadata {
+  google.protobuf.Timestamp commit_timestamp = 1;
 }

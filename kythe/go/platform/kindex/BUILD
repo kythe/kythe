@@ -28,6 +28,7 @@ go_test(
         "//kythe/proto:go_go_proto",
         "//kythe/proto:storage_go_proto",
         "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_golang_protobuf//ptypes:go_default_library",
         "@io_bazel_rules_go//proto/wkt:any_go_proto",
     ],
 )
