@@ -30,8 +30,8 @@ import (
 )
 
 const (
-	// BuildMetadataLanguage is the language recorded in the VName for
-	// BuildMetadata compilation units.
+	// Language is the language recorded in the VName for BuildMetadata
+	// compilation units.
 	Language = "kythe_build_metadata"
 )
 
