@@ -20,6 +20,7 @@ package metadatacmd // import "kythe.io/kythe/go/platform/tools/kzip/metadatacmd
 import (
 	"context"
 	"flag"
+	"log"
 	"time"
 
 	"kythe.io/kythe/go/platform/kzip"
@@ -40,6 +41,7 @@ type metadataCommand struct {
 	cmdutil.Info
 
 	output          string
+	corpus          string
 	encoding        flags.EncodingFlag
 	commitTimestamp string
 	timestampFormat string
@@ -57,6 +59,7 @@ func New() subcommands.Command {
 // for merging kzip files.
 func (c *metadataCommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.output, "output", "", "Path to output kzip file")
+	fs.StringVar(&c.corpus, "corpus", "", "Corpus to set in the unit's VName")
 	fs.StringVar(&c.commitTimestamp, "commit_timestamp", "", "Timestamp when this version of the repository was checked in")
 	fs.StringVar(&c.timestampFormat, "timestamp_format", GitDateFormat, "Format of timestamp passed to --commit_timestamp. Defaults to git's default date format: 'Mon Jan 2 15:04:05 2006 -0700'")
 	fs.Var(&c.encoding, "encoding", "Encoding to use on output, one of JSON, PROTO, or ALL")
@@ -79,6 +82,11 @@ func (c *metadataCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...in
 	if err != nil {
 		return c.Fail("Error creating compilation unit: %v", err)
 	}
+
+	if c.corpus == "" {
+		log.Printf("WARNING: No --corpus provided")
+	}
+	unit.VName.Corpus = c.corpus
 
 	f, err := vfs.Create(ctx, c.output)
 	if err != nil {

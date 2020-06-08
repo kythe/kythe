@@ -12,6 +12,7 @@ echo "Commit timestamp: $TIMESTAMP"
 
 $KZIP create_metadata \
     --output meta.kzip \
+    --corpus test_corpus \
     --commit_timestamp "$TIMESTAMP"
 
 $KZIP view meta.kzip | $JQ .
