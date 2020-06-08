@@ -37,7 +37,7 @@ const (
 
 // CreateMetadataUnit creates a compilation unit containing a BuildMetadata with
 // the given timestamp.
-func CreateMetadataUnit(timestamp time.Time) (*apb.CompilationUnit, error) {
+func CreateMetadataUnit(corpus string, timestamp time.Time) (*apb.CompilationUnit, error) {
 	tp, err := ptypes.TimestampProto(timestamp)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling timestamp: %v", err)
@@ -52,6 +52,7 @@ func CreateMetadataUnit(timestamp time.Time) (*apb.CompilationUnit, error) {
 	return &apb.CompilationUnit{
 		VName: &spb.VName{
 			Language: Language,
+			Corpus:   corpus,
 		},
 		Details: []*kptypes.Any{det},
 	}, nil

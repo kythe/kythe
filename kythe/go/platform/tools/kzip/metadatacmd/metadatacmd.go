@@ -66,27 +66,25 @@ func (c *metadataCommand) SetFlags(fs *flag.FlagSet) {
 }
 
 // Execute implements the subcommands interface and creates a metadata kzip file.
-func (c *metadataCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (c *metadataCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...interface{}) (exitcode subcommands.ExitStatus) {
 	if c.output == "" {
 		return c.Fail("Required --output path missing")
 	}
 	if c.commitTimestamp == "" {
 		return c.Fail("Required --commit_timestamp missing")
 	}
+	if c.corpus == "" {
+		log.Printf("WARNING: No --corpus provided")
+	}
 
 	t, err := time.Parse(c.timestampFormat, c.commitTimestamp)
 	if err != nil {
 		return c.Fail("Unable to parse timestamp: '%s'", c.commitTimestamp)
 	}
-	unit, err := buildmetadata.CreateMetadataUnit(t)
+	unit, err := buildmetadata.CreateMetadataUnit(c.corpus, t)
 	if err != nil {
 		return c.Fail("Error creating compilation unit: %v", err)
 	}
-
-	if c.corpus == "" {
-		log.Printf("WARNING: No --corpus provided")
-	}
-	unit.VName.Corpus = c.corpus
 
 	f, err := vfs.Create(ctx, c.output)
 	if err != nil {
@@ -98,8 +96,8 @@ func (c *metadataCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...in
 		f.Close()
 		return c.Fail("Failed to close writer: %v", err)
 	}
-	defer w.Close()
 	if _, err := w.AddUnit(unit, nil); err != nil {
+		w.Close()
 		return c.Fail("Failed to add unit", err)
 	}
 	if err := w.Close(); err != nil {
