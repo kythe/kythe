@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	// GitDateLayout is the default date format used by `git log`.
+	// GitDateFormat is the default date format used by `git log`.
 	GitDateFormat = "Mon Jan 2 15:04:05 2006 -0700"
 )
 
