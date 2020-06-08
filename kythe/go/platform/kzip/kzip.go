@@ -130,7 +130,7 @@ func EncodingFor(v string) (Encoding, error) {
 	case v == "PROTO":
 		return EncodingProto, nil
 	default:
-		return EncodingJSON, fmt.Errorf("unknown encoding %s", v)
+		return EncodingProto, fmt.Errorf("unknown encoding %s", v)
 	}
 }
 
@@ -156,7 +156,7 @@ func defaultEncoding() Encoding {
 		}
 		log.Printf("Unknown kzip encoding: %s", e)
 	}
-	return EncodingJSON
+	return EncodingProto
 }
 
 // A Reader permits reading and scanning compilation records and file contents

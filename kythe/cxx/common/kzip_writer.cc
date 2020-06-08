@@ -224,9 +224,9 @@ KzipEncoding KzipWriter::DefaultEncoding() {
     if (enc == "ALL") {
       return KzipEncoding::kAll;
     }
-    LOG(ERROR) << "Unknown encoding '" << enc << "', using JSON";
+    LOG(ERROR) << "Unknown encoding '" << enc << "', using PROTO";
   }
-  return KzipEncoding::kJson;
+  return KzipEncoding::kProto;
 }
 
 }  // namespace kythe
