@@ -90,6 +90,7 @@ func (c *metadataCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...in
 		f.Close()
 		return c.Fail("Failed to close writer: %v", err)
 	}
+	defer w.Close()
 	if _, err := w.AddUnit(unit, nil); err != nil {
 		return c.Fail("Failed to add unit", err)
 	}

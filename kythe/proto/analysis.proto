@@ -216,6 +216,11 @@ message KzipInfo {
 // build from a repository. This message is stored in the
 // CompilationUnit.details field.
 message BuildMetadata {
+  // The commit_timestamp is generally the timestamp at which the source for
+  // this build was checked into version control, but can be any timestamp
+  // associated with the origin of this build. In the case that a project is
+  // made up of multiple repositories, this timestamp should be the one
+  // associated with the primary/super repository.
   google.protobuf.Timestamp commit_timestamp = 1;
 }
 
