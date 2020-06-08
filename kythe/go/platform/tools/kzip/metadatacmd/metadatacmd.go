@@ -98,7 +98,7 @@ func (c *metadataCommand) Execute(ctx context.Context, fs *flag.FlagSet, _ ...in
 	}
 	if _, err := w.AddUnit(unit, nil); err != nil {
 		w.Close()
-		return c.Fail("Failed to add unit", err)
+		return c.Fail("Failed to add unit: %v", err)
 	}
 	if err := w.Close(); err != nil {
 		return c.Fail("Failed to close kzip: %v", err)
