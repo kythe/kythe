@@ -24,9 +24,11 @@ TIMESTAMP="Thu Jun 4 23:15:09 2020 -0700"
 
 echo "Commit timestamp: $TIMESTAMP"
 
+OUTFILE="$TEST_TMPDIR/meta.kzip"
+
 $KZIP create_metadata \
-    --output meta.kzip \
+    --output "$OUTFILE" \
     --corpus test_corpus \
     --commit_timestamp "$TIMESTAMP"
 
-$KZIP view meta.kzip
+$KZIP view "$OUTFILE"
