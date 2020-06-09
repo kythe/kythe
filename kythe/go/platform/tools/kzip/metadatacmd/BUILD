@@ -22,7 +22,6 @@ shell_tool_test(
     name = "test",
     scriptfile = "test.sh",
     tools = {
-        "JQ": "@com_github_stedolan_jq//:jq",
         "KZIP": "//kythe/go/platform/tools/kzip",
     },
 )

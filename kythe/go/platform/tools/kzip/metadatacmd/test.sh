@@ -29,4 +29,4 @@ $KZIP create_metadata \
     --corpus test_corpus \
     --commit_timestamp "$TIMESTAMP"
 
-$KZIP view meta.kzip | $JQ .
+$KZIP view meta.kzip
