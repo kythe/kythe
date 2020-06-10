@@ -14,7 +14,7 @@
 
 #!/bin/sh
 
-for f in $(find src/ -name '*.rs')
+for f in $(find src/ tests/ -name '*.rs')
 do
     echo "Formatting $f";
     rustfmt $f;
