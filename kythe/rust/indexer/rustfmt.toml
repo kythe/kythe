@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-format_code_in_doc_comments = true
-tab_spaces = 2
-wrap_comments = true
+# Based on Fuchsia's rustfmt.toml
+edition = "2018"
+use_small_heuristics = "Max"
+newline_style = "Unix"
