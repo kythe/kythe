@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Copyright 2020 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/sh
-
 for f in $(find src/ tests/ -name '*.rs')
 do
     echo "Formatting $f";
-    rustfmt $f;
+    rustfmt "$f";
 done
