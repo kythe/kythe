@@ -1,5 +1,27 @@
 # Release Notes
 
+## [v0.0.45] - 2020-06-11
+
+#### Bug Fixes
+
+* **cxx_indexer:**  don't emit ref/init for unspecified fields (#4516) ([6e60a52c](https://github.com/kythe/kythe/commit/6e60a52c7752085ff6a023913469e2fd40597016))
+* **java_indexer:**
+  *  don't emit JVM nodes for erroneous types (#4509) ([7f9e3d98](https://github.com/kythe/kythe/commit/7f9e3d98c60e01a9c2d4495ebf6743831365862d))
+* **serving:**  avoid returning a nil node in map (#4487) ([4e303666](https://github.com/kythe/kythe/commit/4e3036668a59804cbc34c7e0a1bd9d987b81a294))
+* **ts_indexer:**  emit ref/call edges from calls. (#4478) ([920aeaae](https://github.com/kythe/kythe/commit/920aeaae6631aa22be14a8bdc4965dfbdb44240c))
+
+#### Features
+
+*   Change kzip writer implementations to use proto kzip encoding by default. (#4547) ([566a83bd](https://github.com/kythe/kythe/commit/566a83bd8f84bb8474e9d4d4078e13fb4edb7567))
+* **compdb:**
+  *  print out command for failed extractions (#4546) ([da636ca2](https://github.com/kythe/kythe/commit/da636ca268677df5a3a6d7b372099a110fa42a0b))
+  *  continue processing other compilations on error (#4544) ([a6022c91](https://github.com/kythe/kythe/commit/a6022c916611835a415c4e79a407806afabbdf20))
+* **java_indexer:**  experimentally emit named edges to JVM nodes (#4490) ([9753c0f6](https://github.com/kythe/kythe/commit/9753c0f68392aad3f63d5133c317ad3b2c82227d))
+* **kzip:**  add subcommand and proto for metadata kzips (#4545) ([f063dae5](https://github.com/kythe/kythe/commit/f063dae5813ed2e135ac57a93699dc493652709a))
+* **rust:**
+  *  Remove deprecated Rust indexer ([4140adfc](https://github.com/kythe/kythe/commit/4140adfca08c894828d0eb91c6c8d3b74fa1886e))
+  *  Add basic Rust extractor ([b31406b8](https://github.com/kythe/kythe/commit/b31406b8523852b8e4f67dd64418c1a700b45f07))
+
 ## [v0.0.44] - 2020-04-21
 
 #### Features
@@ -888,7 +910,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.44...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.45...HEAD
+[v0.0.45] https://github.com/kythe/kythe/compare/v0.0.44...v0.0.45
 [v0.0.44] https://github.com/kythe/kythe/compare/v0.0.43...v0.0.44
 [v0.0.43] https://github.com/kythe/kythe/compare/v0.0.42...v0.0.43
 [v0.0.42] https://github.com/kythe/kythe/compare/v0.0.41...v0.0.42
