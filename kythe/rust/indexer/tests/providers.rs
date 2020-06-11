@@ -13,7 +13,10 @@
 // limitations under the License.
 
 extern crate kythe_rust_indexer;
-use kythe_rust_indexer::{error::KytheError, providers::{FileProvider, KzipFileProvider}};
+use kythe_rust_indexer::{
+  error::KytheError,
+  providers::{FileProvider, KzipFileProvider},
+};
 use std::env;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -48,17 +51,15 @@ fn test_kzip_provider() {
   };
 
   // Create a new FileProvider using the test kzip
-  let mut kzip_provider =
-    match KzipFileProvider::new(kzip_file) {
-      Ok(provider) => provider,
-      Err(_e) => {
-        panic!("Could not create a KzipFileProvider from the kzip");
-      }
-    };
+  let mut kzip_provider = match KzipFileProvider::new(kzip_file) {
+    Ok(provider) => provider,
+    Err(_e) => {
+      panic!("Could not create a KzipFileProvider from the kzip");
+    }
+  };
 
   // Check the `exists` function
-  let file_hash =
-    "c9d04c9565fc665c80681fb1d829938026871f66e14f501e08531df66938a789";
+  let file_hash = "c9d04c9565fc665c80681fb1d829938026871f66e14f501e08531df66938a789";
   assert_eq!(
     kzip_provider.exists(file_hash),
     true,
@@ -73,22 +74,29 @@ fn test_kzip_provider() {
   // Check the `contents` function
   match kzip_provider.contents(file_hash) {
     Ok(contents) => {
-      assert_eq!(contents, "Test\n", "File contents did not match expected contents");
-    },
+      assert_eq!(
+        contents, "Test\n",
+        "File contents did not match expected contents"
+      );
+    }
     Err(KytheError::FileNotFoundError) => {
       panic!("Got FileNotFoundError when the file exists");
-    },
+    }
     Err(KytheError::FileReadError) => {
       panic!("Failed to read file to a string");
-    },
+    }
     _ => {
       panic!("Got unexpected error when reading file contents");
     }
   };
   let invalid_file_contents = kzip_provider.contents("invalid");
-  assert_eq!(invalid_file_contents.is_err(), true, "Expected Err but got Ok while reading invalid file contents");
+  assert_eq!(
+    invalid_file_contents.is_err(),
+    true,
+    "Expected Err but got Ok while reading invalid file contents"
+  );
   match invalid_file_contents.err().unwrap() {
-    KytheError::FileNotFoundError => {},
+    KytheError::FileNotFoundError => {}
     _ => {
       panic!("Expected FileNotFoundError but got other error");
     }
@@ -98,7 +106,7 @@ fn test_kzip_provider() {
   match kzip_provider.get_compilation_units() {
     Ok(units) => {
       assert_eq!(units.len(), 0, "Expected units vector to be empty");
-    },
+    }
     Err(_) => {
       panic!("Got error when getting compilation units from kzip");
     }

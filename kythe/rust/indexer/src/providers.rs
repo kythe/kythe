@@ -77,9 +77,7 @@ impl KzipFileProvider {
   ///
   /// If a file cannot be parsed, a
   /// [ProtobufParseError][KytheError::ProtobufParseError] will be returned.
-  pub fn get_compilation_units(
-    &self,
-  ) -> Result<Vec<CompilationUnit>, KytheError> {
+  pub fn get_compilation_units(&self) -> Result<Vec<CompilationUnit>, KytheError> {
     let mut compilation_units = Vec::new();
     for entry in self.zip_archive.entries() {
       // Protobuf files are in the pbunits folder
@@ -87,12 +85,11 @@ impl KzipFileProvider {
         // Read the file into a compilation unit protobuf
         match entry.contents() {
           EntryContents::File(f) => {
-            let mut entry_reader = f.entry.reader(|offset| {
-              positioned_io::Cursor::new_pos(&self.file, offset)
-            });
-            let bundle = match ::protobuf::parse_from_reader::<CompilationBundle>(
-              &mut entry_reader,
-            ) {
+            let mut entry_reader = f
+              .entry
+              .reader(|offset| positioned_io::Cursor::new_pos(&self.file, offset));
+            let bundle = match ::protobuf::parse_from_reader::<CompilationBundle>(&mut entry_reader)
+            {
               Ok(bundle) => bundle,
               Err(_e) => return Err(KytheError::ProtobufParseError),
             };
@@ -133,16 +130,15 @@ impl FileProvider for KzipFileProvider {
   /// # Errors
   ///
   /// If the file does not exist in the kzip, a
-  /// [FileNotFoundError][KytheError::FileNotFoundError] is returned.
-  /// If the file cannot be read into a string, a
+  /// [FileNotFoundError][KytheError::FileNotFoundError] is returned. If the
+  /// file cannot be read into a string, a
   /// [FileReadError][KytheError::FileReadError] is returned.
   fn contents(&mut self, file_hash: &str) -> Result<String, KytheError> {
     // Ensure file exists in the kzip
     if let Some(position) = self.get_file_position(file_hash) {
       let entries = &self.zip_archive.entries();
       let entry = &entries[position];
-      let mut reader = entry
-        .reader(|offset| positioned_io::Cursor::new_pos(&self.file, offset));
+      let mut reader = entry.reader(|offset| positioned_io::Cursor::new_pos(&self.file, offset));
 
       let mut file_contents = String::new();
       match reader.read_to_string(&mut file_contents) {
