@@ -21,9 +21,11 @@
 #include <sys/stat.h>
 
 #include <string>
+#include <fstream>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "cxx_extractor.h"
 #include "glog/logging.h"
@@ -67,12 +69,23 @@ int main(int argc, char* argv[]) {
                   remain[0]);
     return 1;
   }
+
   std::string extra_action_file = remain[1];
   std::string output_file = remain[2];
   std::string vname_config = remain[3];
   blaze::ExtraActionInfo info;
   blaze::CppCompileInfo cpp_info;
   LoadExtraAction(extra_action_file, &info, &cpp_info);
+
+  const std::string& source = cpp_info.source_file();
+  if (absl::EndsWith(source, ".s") || absl::EndsWith(source, ".asm")) {
+    // Assembly files can be in the srcs of CppCompile actions (created with
+    // cc_* rules or Starlark rules using cc_common.compile). However, these
+    // actions don't actually run the compiler, so there's nothing to extract.
+    std::ofstream output(output_file);
+    return 0;
+  }
+
   kythe::ExtractorConfiguration config;
   std::vector<std::string> args;
   args.push_back(cpp_info.tool());
