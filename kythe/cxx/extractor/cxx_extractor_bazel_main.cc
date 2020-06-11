@@ -20,8 +20,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#include <string>
 #include <fstream>
+#include <string>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -69,7 +69,6 @@ int main(int argc, char* argv[]) {
                   remain[0]);
     return 1;
   }
-
   std::string extra_action_file = remain[1];
   std::string output_file = remain[2];
   std::string vname_config = remain[3];
