@@ -1,5 +1,42 @@
 # Release Notes
 
+## [v0.0.45] - 2020-06-11
+
+#### Bug Fixes
+
+* **build:**
+  *  remove jq dependency (#4548) ([e6907cd2](https://github.com/kythe/kythe/commit/e6907cd2e10c23b66c138298d21af3079d8c9db7))
+  *  special case inconsistently-cased paths in LLVM build (#4540) ([8179c1a8](https://github.com/kythe/kythe/commit/8179c1a862f1a9851efa43bdd101fe64c388497f))
+* **cxx_common:**
+  *  typo in kzip_encoding.h (#4543) ([da43b751](https://github.com/kythe/kythe/commit/da43b75166fe67664e5a1f3d812012a45f284135))
+  *  add compatibility type alias to StatusOr (#4517) ([dca9c597](https://github.com/kythe/kythe/commit/dca9c597252436d39a12de0cb8fcf008ac97e866))
+* **cxx_indexer:**  don't emit ref/init for unspecified fields (#4516) ([6e60a52c](https://github.com/kythe/kythe/commit/6e60a52c7752085ff6a023913469e2fd40597016))
+* **java_indexer:**
+  *  don't emit JVM nodes for erroneous types (#4509) ([7f9e3d98](https://github.com/kythe/kythe/commit/7f9e3d98c60e01a9c2d4495ebf6743831365862d))
+  *  guard against exceptions when checking for errors (#4508) ([86e99ce5](https://github.com/kythe/kythe/commit/86e99ce58ed2c6f5ca97dec8a409e4f8ba7fcef2))
+  *  skip erroneous types to avoid NPEs (#4507) ([a5968105](https://github.com/kythe/kythe/commit/a5968105a6c26a4e86906a2a715994d58eb8037f))
+  *  handle ERROR types to avoid crashes (#4503) ([14e09eeb](https://github.com/kythe/kythe/commit/14e09eeb80bdcf83baf312157316be2283b6b991))
+  *  don't crash on invalid paths in metadata loader (#4498) ([ed323d70](https://github.com/kythe/kythe/commit/ed323d7057c8dac79c0ed83f245295e3a548284f))
+  *  avoid NPE when visiting lambda targets (#4499) ([b2c64334](https://github.com/kythe/kythe/commit/b2c643341ca49775bf186cd2122b3083d6f0211f))
+  *  expand scope of null guard to handle primitives (#4496) ([3842dabd](https://github.com/kythe/kythe/commit/3842dabd95eb2adf4852d5ad04fb2bc6279e9e70))
+  *  do not crash visiting special members (#4495) ([4ff5033e](https://github.com/kythe/kythe/commit/4ff5033eed5059a16a0cb46bafd6c0df3819d093))
+* **serving:**  avoid returning a nil node in map (#4487) ([4e303666](https://github.com/kythe/kythe/commit/4e3036668a59804cbc34c7e0a1bd9d987b81a294))
+* **ts_indexer:**  emit ref/call edges from calls. (#4478) ([920aeaae](https://github.com/kythe/kythe/commit/920aeaae6631aa22be14a8bdc4965dfbdb44240c))
+
+#### Features
+
+*   Change kzip writer implementations to use proto kzip encoding by default. (#4547) ([566a83bd](https://github.com/kythe/kythe/commit/566a83bd8f84bb8474e9d4d4078e13fb4edb7567))
+*   include local path for bazel artifacts (#4522) ([7497ca35](https://github.com/kythe/kythe/commit/7497ca357eef86e3cdc6638f125fb188b2b72506))
+*   add BazelEventReaderInterface (#4492) ([0e1ddfa8](https://github.com/kythe/kythe/commit/0e1ddfa82a60d6620c7ee9eb30290dd8b821d029))
+* **compdb:**
+  *  print out command for failed extractions (#4546) ([da636ca2](https://github.com/kythe/kythe/commit/da636ca268677df5a3a6d7b372099a110fa42a0b))
+  *  continue processing other compilations on error (#4544) ([a6022c91](https://github.com/kythe/kythe/commit/a6022c916611835a415c4e79a407806afabbdf20))
+* **java_indexer:**  experimentally emit named edges to JVM nodes (#4490) ([9753c0f6](https://github.com/kythe/kythe/commit/9753c0f68392aad3f63d5133c317ad3b2c82227d))
+* **kzip:**  add subcommand and proto for metadata kzips (#4545) ([f063dae5](https://github.com/kythe/kythe/commit/f063dae5813ed2e135ac57a93699dc493652709a))
+* **rust:**
+  *  Remove deprecated Rust indexer ([4140adfc](https://github.com/kythe/kythe/commit/4140adfca08c894828d0eb91c6c8d3b74fa1886e))
+  *  Add basic Rust extractor ([b31406b8](https://github.com/kythe/kythe/commit/b31406b8523852b8e4f67dd64418c1a700b45f07))
+
 ## [v0.0.44] - 2020-04-21
 
 #### Features
@@ -888,7 +925,8 @@ https://github.com/kythe/kythe/compare/v0.0.26...v0.0.27
 
 Initial release
 
-[Unreleased] https://github.com/kythe/kythe/compare/v0.0.44...HEAD
+[Unreleased] https://github.com/kythe/kythe/compare/v0.0.45...HEAD
+[v0.0.45] https://github.com/kythe/kythe/compare/v0.0.44...v0.0.45
 [v0.0.44] https://github.com/kythe/kythe/compare/v0.0.43...v0.0.44
 [v0.0.43] https://github.com/kythe/kythe/compare/v0.0.42...v0.0.43
 [v0.0.42] https://github.com/kythe/kythe/compare/v0.0.41...v0.0.42
