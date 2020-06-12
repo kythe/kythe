@@ -12,16 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// An enum containing all the errors that this library can return.
-pub enum KytheError {
-  // The FileProvider failed to find the file
-  FileNotFoundError,
-  // The FileProvider failed to read the file
-  FileReadError,
-  // The KzipFileProvider couldn't read the provided file
-  KzipFileError,
-  // There was an error parsing the Protobuf
-  ProtobufParseError,
-  // The KytheWriter encounters an error
-  WriterError,
+use protobuf::error::ProtobufError;
+
+quick_error! {
+    #[derive(Debug)]
+    pub enum KytheError {
+        // The FileProvider failed to find the file
+        FileNotFoundError {
+            display("The requested file could not be found")
+        }
+        // The FileProvider failed to read the file
+        FileReadError(err: std::io::Error) {
+            from()
+            display("Failed to read contents of file: {}", err)
+        }
+        // The KzipFileProvider couldn't read the provided file
+        KzipFileError(err: rc_zip::Error) {
+            from()
+            display("Failed to open kzip: {}", err)
+        }
+        // There was an error parsing the Protobuf
+        ProtobufParseError(err: ProtobufError) {
+            from()
+            display("Failed to parse Protobuf: {}", err)
+        }
+        // The KytheWriter encounters an error
+        WriterError {}
+        // An unknown error occured
+        UnknownError(err: Box<dyn std::error::Error>) {
+            from()
+            display("An unknown error occurred: {}", err)
+        }
+    }
 }

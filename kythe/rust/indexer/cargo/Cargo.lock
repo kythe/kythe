@@ -157,6 +157,7 @@ version = "0.1.0"
 dependencies = [
  "positioned-io",
  "protobuf",
+ "quick-error",
  "rc-zip",
 ]
 
@@ -272,6 +273,12 @@ name = "protobuf"
 version = "2.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "70731852eec72c56d11226c8a5f96ad5058a3dab73647ca5f7ee351e464f2571"
+
+[[package]]
+name = "quick-error"
+version = "1.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
 
 [[package]]
 name = "rc-zip"

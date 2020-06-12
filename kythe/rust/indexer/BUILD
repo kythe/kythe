@@ -12,6 +12,7 @@ rust_library(
     "//kythe/proto:analysis_rust_proto",
     "//kythe/rust/indexer/cargo:positioned_io",
     "//kythe/rust/indexer/cargo:protobuf",
+    "//kythe/rust/indexer/cargo:quick_error",
     "//kythe/rust/indexer/cargo:rc_zip",
   ] + PROTO_COMPILE_DEPS,
   edition = "2018",
@@ -25,6 +26,10 @@ rust_test(
 rust_test(
   name = "integration_tests",
   srcs = glob(["tests/*.rs"]),
-  deps = [":kythe_rust_indexer", ":inline_tests"],
+  deps = [
+    ":kythe_rust_indexer",
+    ":inline_tests",
+    "@io_bazel_rules_rust//tools/runfiles",
+  ],
   data = glob(["testfiles/**"]),
 )

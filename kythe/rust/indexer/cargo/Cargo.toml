@@ -23,9 +23,10 @@ edition = "2018"
 path = "../src/lib.rs"
 
 [dependencies]
-rc-zip = "0.0.1"
-protobuf = "=2.8.2"
 positioned-io = "0.2.2"
+protobuf = "=2.8.2"
+quick-error = "1.2.3"
+rc-zip = "0.0.1"
 
 [raze]
 workspace_path = "//kythe/rust/indexer/cargo"
@@ -34,7 +35,7 @@ target = "x86_64-unknown-linux-gnu"
 
 # Locked on protobuf 2.8.2 until rules_rust increases their version
 # https://github.com/bazelbuild/rules_rust/tree/master/proto/raze/patch
-# We need to match rules_rust's version so avoid errors with different
+# We need to match rules_rust's version to avoid errors with different
 # protobuf crates.
 [raze.crates.protobuf.'2.8.2']
 patches = ["@io_bazel_rules_rust//proto/raze/patch:protobuf-2.8.2.patch"]

@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Copyright 2020 The Kythe Authors. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Based on Fuchsia's rustfmt.toml
-edition = "2018"
-use_small_heuristics = "Max"
-newline_style = "Unix"
-wrap_comments = true
+for f in $(find src/ tests/ -name '*.rs')
+do
+    echo "Formatting $f";
+    rustfmt "$f";
+done

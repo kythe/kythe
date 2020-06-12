@@ -311,6 +311,15 @@ def raze_fetch_remote_crates():
     )
 
     _new_http_archive(
+        name = "raze__quick_error__1_2_3",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/quick-error/quick-error-1.2.3.crate",
+        type = "tar.gz",
+        sha256 = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0",
+        strip_prefix = "quick-error-1.2.3",
+        build_file = Label("//kythe/rust/indexer/cargo/remote:quick-error-1.2.3.BUILD"),
+    )
+
+    _new_http_archive(
         name = "raze__rc_zip__0_0_1",
         url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/rc-zip/rc-zip-0.0.1.crate",
         type = "tar.gz",
