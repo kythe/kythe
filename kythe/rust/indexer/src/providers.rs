@@ -21,7 +21,7 @@ use std::io::Read;
 
 /// A trait for retrieving files during indexing.
 pub trait FileProvider {
-    /// Checks whether a file exists and that the contents is available.
+    /// Checks whether a file exists and that the contents are available.
     ///
     /// This function takes a file hash and returns whether
     /// the file exists and that the contents can be requested.
