@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2020 The Kythe Authors. All rights reserved.
 #
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find src/ tests/ -name '*.rs' -print0 | while read -d $'\0' f
+find src/ tests/ -name '*.rs' -print0 | while read -r -d $'\0' f
 do
     echo "Formatting $f";
     rustfmt "$f";
