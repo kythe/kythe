@@ -2018,6 +2018,22 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
+      if (ShouldHaveBlameContext(FoundDecl)) {
+        if (Job->BlameStack.empty()) {
+          if (auto FileId = Observer.recordFileInitializer(RCC.value())) {
+            Observer.recordBlameLocation(
+                RCC.value(), FileId.value(),
+                GraphObserver::Claimability::Unclaimable,
+                this->IsImplicit(RCC.value()));
+          }
+        } else {
+          for (const auto& Context : Job->BlameStack.back()) {
+            Observer.recordBlameLocation(
+                RCC.value(), Context, GraphObserver::Claimability::Unclaimable,
+                this->IsImplicit(RCC.value()));
+          }
+        }
+      }
       Observer.recordDeclUseLocation(RCC.value(), DeclId,
                                      GraphObserver::Claimability::Unclaimable,
                                      this->IsImplicit(RCC.value()));
