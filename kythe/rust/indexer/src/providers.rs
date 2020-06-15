@@ -55,7 +55,7 @@ pub struct KzipFileProvider {
 
 impl KzipFileProvider {
     /// Create a new instance using a valid [File] object of a kzip
-    /// file.KytheError
+    /// file.
     ///
     /// # Errors
     ///
