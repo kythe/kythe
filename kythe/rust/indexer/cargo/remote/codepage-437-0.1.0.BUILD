@@ -22,7 +22,12 @@ load(
     "rust_test",
 )
 
-rust_binary(
+load(
+    "@io_bazel_rules_rust//cargo:cargo_build_script.bzl",
+    "cargo_build_script",
+)
+
+cargo_build_script(
     name = "codepage_437_build_script",
     srcs = glob(["**/*.rs"]),
     crate_root = "build.rs",
@@ -35,29 +40,9 @@ rust_binary(
     ],
     crate_features = [
     ],
-    data = glob(["*"]),
+    data = glob(["**"]),
     version = "0.1.0",
     visibility = ["//visibility:private"],
-)
-
-genrule(
-    name = "codepage_437_build_script_executor",
-    srcs = glob(["*", "**/*.rs"]),
-    outs = ["codepage_437_out_dir_outputs.tar.gz"],
-    tools = [
-      ":codepage_437_build_script",
-    ],
-    tags = ["no-sandbox"],
-    cmd = "mkdir -p $$(dirname $@)/codepage_437_out_dir_outputs/;"
-        + " (export CARGO_MANIFEST_DIR=\"$$PWD/$$(dirname $(location :Cargo.toml))\";"
-        # TODO(acmcarther): This needs to be revisited as part of the cross compilation story.
-        #                   See also: https://github.com/google/cargo-raze/pull/54
-        + " export TARGET='x86_64-unknown-linux-gnu';"
-        + " export RUST_BACKTRACE=1;"
-        + " export OUT_DIR=$$PWD/$$(dirname $@)/codepage_437_out_dir_outputs;"
-        + " export BINARY_PATH=\"$$PWD/$(location :codepage_437_build_script)\";"
-        + " export OUT_TAR=$$PWD/$@;"
-        + " cd $$(dirname $(location :Cargo.toml)) && $$BINARY_PATH && tar -czf $$OUT_TAR -C $$OUT_DIR .)"
 )
 
 
@@ -68,11 +53,11 @@ rust_library(
     edition = "2015",
     srcs = glob(["**/*.rs"]),
     deps = [
+        ":codepage_437_build_script",
     ],
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    out_dir_tar = ":codepage_437_build_script_executor",
     version = "0.1.0",
     crate_features = [
     ],

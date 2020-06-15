@@ -45,17 +45,7 @@ patch_args = ["-p1"]
 gen_buildrs = true
 
 [raze.crates.lexical-core.'0.6.7']
-additional_flags = [
-    "--cfg=has_range_bounds",
-    "--cfg=has_slice_index",
-    "--cfg=has_full_range_inclusive",
-    "--cfg=has_const_index",
-    "--cfg=has_i128",
-    "--cfg=has_ops_bound",
-    "--cfg=has_pointer_methods",
-    "--cfg=has_range_inclusive",
-    "--cfg=limb_width_64",
-]
+gen_buildrs = true
 
 [raze.crates.bstr.'0.2.13']
 data_attr = 'glob(["**/*.dfa"])'
