@@ -88,12 +88,11 @@ find bazel-out/*/extra_actions/external/kythe_release -name '*.kzip' | \
   xargs -r /kythe/tools/kzip merge --append --encoding "$KYTHE_KZIP_ENCODING" --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
 
 # Record the timestamp of the git commit in a metadata kzip.
-METADATA_KZIP="buildmetadata.kzip"
 /kythe/tools/kzip create_metadata \
-  --output "$METADATA_KZIP" \
+  --output buildmetadata.kzip \
   --corpus "$KYTHE_CORPUS" \
   --commit_timestamp "$(git log --pretty='%ad' -n 1 HEAD)"
-/kythe/tools/kzip merge --append --encoding "$KYTHE_KZIP_ENCODING" --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip" "$METADATA_KZIP"
+/kythe/tools/kzip merge --append --encoding "$KYTHE_KZIP_ENCODING" --output "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip" buildmetadata.kzip
 
 /kythe/fix_permissions.sh "$KYTHE_OUTPUT_DIRECTORY"
 test -f "$KYTHE_OUTPUT_DIRECTORY/compilations.kzip"
