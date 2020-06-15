@@ -31,6 +31,9 @@ bool isObjCSelector(const clang::DeclarationName& DN);
 /// instantiated. Otherwise, returns `decl`.
 const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl);
 
+/// \return true if a reference to `decl` should be given blame context.
+bool ShouldHaveBlameContext(const clang::Decl* decl);
+
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_INDEXER_CXX_CLANG_UTILS_H_

@@ -239,6 +239,10 @@ class KytheGraphObserver : public GraphObserver {
                              GraphObserver::Claimability cl,
                              GraphObserver::Implicit i) override;
 
+  void recordBlameLocation(const Range& source_range, const NodeId& blame,
+                           GraphObserver::Claimability cl,
+                           GraphObserver::Implicit i) override;
+
   void recordInitLocation(const Range& source_range, const NodeId& node,
                           GraphObserver::Claimability cl,
                           GraphObserver::Implicit i) override;

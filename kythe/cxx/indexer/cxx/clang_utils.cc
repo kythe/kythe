@@ -83,4 +83,14 @@ const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl) {
   }
   return decl;
 }
+
+bool ShouldHaveBlameContext(const clang::Decl* decl) {
+  // TODO(zarko): introduce more blameable decls.
+  switch (decl->getKind()) {
+    case clang::Decl::Kind::Var:
+      return true;
+    default:
+      return false;
+  }
+}
 }  // namespace kythe
