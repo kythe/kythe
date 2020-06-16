@@ -51,9 +51,6 @@ cd "$TMPDIR/release"
 cd kythe-*
 
 # Ensure the various tools work on test inputs
-# TODO(justbuchanan): remove `viewindex` in favor of `kzip view`
-tools/viewindex "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" | \
-  jq . >/dev/null
 tools/kzip view "$TEST_REPOSRCDIR/kythe/testdata/test.kzip" | \
   jq . >/dev/null
 tools/entrystream < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" | \
