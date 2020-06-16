@@ -2034,11 +2034,10 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
         }
       }
       auto semantic = IsUsedAsWrite(*getAllParents(), Expr)
-                          ? GraphObserver::UseKind::Write
-                          : GraphObserver::UseKind::Unknown;
+                          ? GraphObserver::UseKind::kWrite
+                          : GraphObserver::UseKind::kUnknown;
       Observer.recordSemanticDeclUseLocation(
-          *RCC, DeclId, semantic,
-          GraphObserver::Claimability::Unclaimable,
+          *RCC, DeclId, semantic, GraphObserver::Claimability::Unclaimable,
           this->IsImplicit(*RCC));
       for (const auto& S : Supports) {
         S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl);

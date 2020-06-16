@@ -64,6 +64,18 @@ absl::string_view ConvertRef(llvm::StringRef ref) {
   return absl::string_view(ref.data(), ref.size());
 }
 
+EdgeKindID EdgeKindForUseKind(GraphObserver::UseKind kind,
+                              GraphObserver::Implicit i) {
+  switch (kind) {
+    case GraphObserver::UseKind::kUnknown:
+      return (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefImplicit
+                                                : EdgeKindID::kRef);
+    case GraphObserver::UseKind::kWrite:
+      return (i == GraphObserver::Implicit::Yes ? EdgeKindID::kRefWritesImplicit
+                                                : EdgeKindID::kRefWrites);
+  }
+}
+
 }  // anonymous namespace
 
 using clang::SourceLocation;
@@ -1074,18 +1086,7 @@ void KytheGraphObserver::recordBlameLocation(
 void KytheGraphObserver::recordSemanticDeclUseLocation(
     const GraphObserver::Range& source_range, const NodeId& node, UseKind kind,
     Claimability claimability, Implicit i) {
-  EdgeKindID edge_kind;
-  switch (kind) {
-    case UseKind::Unknown:
-      edge_kind =
-          (i == Implicit::Yes ? EdgeKindID::kRefImplicit : EdgeKindID::kRef);
-      break;
-    case UseKind::Write:
-      edge_kind = (i == Implicit::Yes ? EdgeKindID::kRefWritesImplicit
-                                      : EdgeKindID::kRefWrites);
-      break;
-  }
-  RecordAnchor(source_range, node, edge_kind, claimability);
+  RecordAnchor(source_range, node, EdgeKindForUseKind(kind, i), claimability);
 }
 
 void KytheGraphObserver::recordInitLocation(

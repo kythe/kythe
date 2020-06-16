@@ -21,6 +21,7 @@
 #include "clang/AST/DeclarationName.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceManager.h"
+#include "kythe/cxx/indexer/cxx/indexed_parent_map.h"
 
 namespace kythe {
 /// \return true if `DN` is an Objective-C selector.

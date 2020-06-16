@@ -4,7 +4,7 @@
 void f() {
   //- @x defines/binding VarX
 	int x;
-  //- @x ref VarX
+  //- @x ref/writes VarX
   //- @x childof FnF
 	x = 3;
 }

@@ -828,9 +828,9 @@ class GraphObserver {
   /// \brief Classifies a use site.
   enum class UseKind {
     /// No specific determination. Similar to a read.
-    Unknown,
+    kUnknown,
     /// This use site is a write.
-    Write
+    kWrite
   };
 
   /// \brief Records a use site for some decl with additional semantic
