@@ -3219,6 +3219,7 @@ objc_indexer_test(
 objc_indexer_test(
     name = "subscript_ref",
     srcs = ["objc/subscript_ref.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
@@ -3240,6 +3241,6 @@ cc_indexer_test(
 )
 
 test_suite(
-	name = "indexer_df",
-	tags = ["df"],
+    name = "indexer_df",
+    tags = ["df"],
 )
