@@ -82,6 +82,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":indexed_parent_map",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
         "@org_llvm//:LLVMSupport",

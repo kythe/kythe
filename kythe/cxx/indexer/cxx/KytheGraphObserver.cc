@@ -1071,6 +1071,23 @@ void KytheGraphObserver::recordBlameLocation(
                Claimability::Claimable);
 }
 
+void KytheGraphObserver::recordSemanticDeclUseLocation(
+    const GraphObserver::Range& source_range, const NodeId& node, UseKind kind,
+    Claimability claimability, Implicit i) {
+  EdgeKindID edge_kind;
+  switch (kind) {
+    case UseKind::Unknown:
+      edge_kind =
+          (i == Implicit::Yes ? EdgeKindID::kRefImplicit : EdgeKindID::kRef);
+      break;
+    case UseKind::Write:
+      edge_kind = (i == Implicit::Yes ? EdgeKindID::kRefWritesImplicit
+                                      : EdgeKindID::kRefWrites);
+      break;
+  }
+  RecordAnchor(source_range, node, edge_kind, claimability);
+}
+
 void KytheGraphObserver::recordInitLocation(
     const GraphObserver::Range& source_range, const NodeId& node,
     Claimability claimability, Implicit i) {
