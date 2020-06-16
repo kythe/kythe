@@ -26,6 +26,7 @@
 
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/memory/memory.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
@@ -115,6 +116,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitBindingDecl(const clang::BindingDecl* Decl);
   bool VisitSizeOfPackExpr(const clang::SizeOfPackExpr* Expr);
   bool VisitDeclRefExpr(const clang::DeclRefExpr* DRE);
+
+  bool TraverseBinAssign(clang::BinaryOperator* BO);
 
   bool TraverseInitListExpr(clang::InitListExpr* ILE);
   bool VisitInitListExpr(const clang::InitListExpr* ILE);
@@ -978,6 +981,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   /// \brief The number of (raw) bytes to use to represent a USR. If 0,
   /// no USRs will be recorded.
   int UsrByteSize = 0;
+
+  /// \brief The current stack of influence sets.
+  std::vector<absl::flat_hash_set<const clang::Decl*>> influence_sets_;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.

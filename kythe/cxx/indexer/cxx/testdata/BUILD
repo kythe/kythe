@@ -3246,6 +3246,13 @@ cc_indexer_test(
     tags = ["df"],
 )
 
+cc_indexer_test(
+    name = "df_var_influence",
+    srcs = ["df/df_var_influence.cc"],
+    ignore_dups = True,
+    tags = ["df"],
+)
+
 test_suite(
     name = "indexer_df",
     tags = ["df"],

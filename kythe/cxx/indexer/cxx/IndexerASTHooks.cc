@@ -1943,6 +1943,30 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
   return true;
 }
 
+bool IndexerASTVisitor::TraverseBinAssign(clang::BinaryOperator* BO) {
+  if (auto rhs = BO->getRHS(), lhs = BO->getLHS();
+      lhs != nullptr && rhs != nullptr) {
+    if (!WalkUpFromBinAssign(BO)) return false;
+    if (!TraverseStmt(lhs)) return false;
+    influence_sets_.push_back({});
+    if (!TraverseStmt(rhs)) {
+      influence_sets_.pop_back();
+      return false;
+    }
+    if (auto expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(lhs);
+        expr != nullptr && expr->getFoundDecl() != nullptr &&
+        expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var) {
+      for (const auto* decl : influence_sets_.back()) {
+        Observer.recordInfluences(BuildNodeIdForDecl(decl),
+                                  BuildNodeIdForDecl(expr->getFoundDecl()));
+      }
+    }
+    influence_sets_.pop_back();
+    return true;
+  }
+  return Base::TraverseBinAssign(BO);
+}
+
 bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
   if (ILE == nullptr) return true;
   // Because we visit implicit code, the default traversal will visit both
@@ -2058,6 +2082,10 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
       auto semantic = IsUsedAsWrite(*getAllParents(), Expr)
                           ? GraphObserver::UseKind::kWrite
                           : GraphObserver::UseKind::kUnknown;
+      if (!influence_sets_.empty() &&
+          FoundDecl->getKind() == clang::Decl::Kind::Var) {
+        influence_sets_.back().insert(FoundDecl);
+      }
       Observer.recordSemanticDeclUseLocation(
           *RCC, DeclId, semantic, GraphObserver::Claimability::Unclaimable,
           this->IsImplicit(*RCC));
