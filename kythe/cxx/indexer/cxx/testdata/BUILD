@@ -3219,10 +3219,28 @@ objc_indexer_test(
 objc_indexer_test(
     name = "subscript_ref",
     srcs = ["objc/subscript_ref.m"],
+    ignore_dups = True,
     tags = ["objc"],
 )
 
 test_suite(
     name = "indexer_objc",
     tags = ["objc"],
+)
+
+cc_indexer_test(
+    name = "df_var_ref_blame",
+    srcs = ["df/df_var_ref_blame.cc"],
+    tags = ["df"],
+)
+
+cc_indexer_test(
+    name = "df_var_ref_file_blame",
+    srcs = ["df/df_var_ref_file_blame.cc"],
+    tags = ["df"],
+)
+
+test_suite(
+    name = "indexer_df",
+    tags = ["df"],
 )

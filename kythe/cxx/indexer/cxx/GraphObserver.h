@@ -820,6 +820,11 @@ class GraphObserver {
                                      const NodeId& DeclId, Claimability Cl,
                                      Implicit I) {}
 
+  /// \brief Blames a given source range on the given context.
+  virtual void recordBlameLocation(const Range& SourceRange,
+                                   const NodeId& BlameId, Claimability Cl,
+                                   Implicit I) {}
+
   /// \brief Records an init site for some decl.
   virtual void recordInitLocation(const Range& SourceRange,
                                   const NodeId& DeclId, Claimability Cl,

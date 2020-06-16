@@ -1064,6 +1064,13 @@ void KytheGraphObserver::recordDeclUseLocation(
                claimability);
 }
 
+void KytheGraphObserver::recordBlameLocation(
+    const GraphObserver::Range& source_range, const NodeId& blame,
+    Claimability claimability, Implicit i) {
+  RecordAnchor(source_range, blame, EdgeKindID::kChildOf,
+               Claimability::Claimable);
+}
+
 void KytheGraphObserver::recordInitLocation(
     const GraphObserver::Range& source_range, const NodeId& node,
     Claimability claimability, Implicit i) {
