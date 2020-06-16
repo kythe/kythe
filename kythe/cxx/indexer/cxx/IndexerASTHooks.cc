@@ -2020,25 +2020,24 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
       if (ShouldHaveBlameContext(FoundDecl)) {
         if (Job->BlameStack.empty()) {
-          if (auto FileId = Observer.recordFileInitializer(RCC.value())) {
+          if (auto FileId = Observer.recordFileInitializer(*RCC)) {
             Observer.recordBlameLocation(
-                RCC.value(), FileId.value(),
-                GraphObserver::Claimability::Unclaimable,
-                this->IsImplicit(RCC.value()));
+                *RCC, *FileId, GraphObserver::Claimability::Unclaimable,
+                this->IsImplicit(*RCC));
           }
         } else {
           for (const auto& Context : Job->BlameStack.back()) {
             Observer.recordBlameLocation(
-                RCC.value(), Context, GraphObserver::Claimability::Unclaimable,
-                this->IsImplicit(RCC.value()));
+                *RCC, Context, GraphObserver::Claimability::Unclaimable,
+                this->IsImplicit(*RCC));
           }
         }
       }
-      Observer.recordDeclUseLocation(RCC.value(), DeclId,
+      Observer.recordDeclUseLocation(*RCC, DeclId,
                                      GraphObserver::Claimability::Unclaimable,
-                                     this->IsImplicit(RCC.value()));
+                                     this->IsImplicit(*RCC));
       for (const auto& S : Supports) {
-        S->InspectDeclRef(*this, SL, RCC.value(), DeclId, FoundDecl);
+        S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl);
       }
     }
   }
