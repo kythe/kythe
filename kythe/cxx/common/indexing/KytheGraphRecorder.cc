@@ -81,6 +81,8 @@ static const std::string* kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/property/writes"),
     new std::string("/clang/usr"),
     new std::string("/kythe/edge/ref/id"),
+    new std::string("/kythe/edge/ref/writes"),
+    new std::string("/kythe/edge/ref/writes/implicit"),
 };
 
 bool of_spelling(absl::string_view str, EdgeKindID* edge_id) {

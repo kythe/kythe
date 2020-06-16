@@ -3240,6 +3240,12 @@ cc_indexer_test(
     tags = ["df"],
 )
 
+cc_indexer_test(
+    name = "df_var_rw",
+    srcs = ["df/df_var_rw.cc"],
+    tags = ["df"],
+)
+
 test_suite(
     name = "indexer_df",
     tags = ["df"],

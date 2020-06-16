@@ -825,6 +825,20 @@ class GraphObserver {
                                    const NodeId& BlameId, Claimability Cl,
                                    Implicit I) {}
 
+  /// \brief Classifies a use site.
+  enum class UseKind {
+    /// No specific determination. Similar to a read.
+    kUnknown,
+    /// This use site is a write.
+    kWrite
+  };
+
+  /// \brief Records a use site for some decl with additional semantic
+  /// information.
+  virtual void recordSemanticDeclUseLocation(const Range& SourceRange,
+                                             const NodeId& DeclId, UseKind K,
+                                             Claimability Cl, Implicit I) {}
+
   /// \brief Records an init site for some decl.
   virtual void recordInitLocation(const Range& SourceRange,
                                   const NodeId& DeclId, Claimability Cl,
