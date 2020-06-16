@@ -23,7 +23,7 @@ docker_build(
     deps = ["//kythe/release/base"],
 )
 
-release_version = "v0.0.44"
+release_version = "v0.0.45"
 
 genrule(
     name = "release",
@@ -131,7 +131,6 @@ sh_test(
         "//kythe/go/platform/tools/shasum_tool",
         "//kythe/java/com/google/devtools/kythe/util:test_srcs",
         "//kythe/testdata:entries",
-        "//kythe/testdata:test.kindex",
         "//kythe/testdata:test.kzip",
         "//third_party/guava",
         "//third_party/javac:javac_jar",
@@ -247,7 +246,6 @@ filegroup(
         "//kythe/go/platform/tools/entrystream",
         "//kythe/go/platform/tools/kzip",
         "//kythe/go/platform/tools/kzip_validator",
-        "//kythe/go/platform/tools/viewindex",
         "//kythe/go/serving/tools:http_server",
         "//kythe/go/serving/tools:kythe",
         "//kythe/go/serving/tools:write_tables",

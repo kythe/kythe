@@ -38,7 +38,7 @@ import (
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	spb "kythe.io/kythe/proto/storage_go_proto"

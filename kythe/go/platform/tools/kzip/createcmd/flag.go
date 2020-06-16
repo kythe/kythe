@@ -27,7 +27,7 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/vnameutil"
 
-	"github.com/golang/protobuf/jsonpb"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	anypb "github.com/golang/protobuf/ptypes/any"
 	apb "kythe.io/kythe/proto/analysis_go_proto"
@@ -143,8 +143,12 @@ type repeatedAny []*anypb.Any
 func (f *repeatedAny) Set(s string) error {
 	dec := json.NewDecoder(strings.NewReader(s))
 	for dec.More() {
+		var raw json.RawMessage
+		if err := dec.Decode(&raw); err != nil {
+			return err
+		}
 		var detail anypb.Any
-		if err := jsonpb.UnmarshalNext(dec, &detail); err != nil {
+		if err := protojson.Unmarshal(raw, &detail); err != nil {
 			return err
 		}
 		*f = append(*f, &detail)
@@ -152,7 +156,7 @@ func (f *repeatedAny) Set(s string) error {
 	return nil
 }
 
-var toJSON = &jsonpb.Marshaler{OrigName: true}
+var toJSON = &protojson.MarshalOptions{UseProtoNames: true}
 
 // String implements part of the flag.Getter interface and returns a string-ish value for the flag.
 func (f *repeatedAny) String() string {
@@ -161,11 +165,11 @@ func (f *repeatedAny) String() string {
 	}
 	var result []string
 	for _, val := range *f {
-		str, err := toJSON.MarshalToString(val)
+		rec, err := toJSON.Marshal(val)
 		if err != nil {
 			panic(err)
 		}
-		result = append(result, str)
+		result = append(result, string(rec))
 	}
 	return strings.Join(result, " ")
 }

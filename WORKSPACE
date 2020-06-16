@@ -12,17 +12,31 @@ check_version(MIN_VERSION, MAX_VERSION)
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "144290c4166bd67e76a54f96cd504ed86416ca3ca82030282760f0823c10be48",
-    strip_prefix = "bazel-toolchains-3.1.1",
+    sha256 = "db48eed61552e25d36fe051a65d2a329cc0fb08442627e8f13960c5ab087a44e",
+    strip_prefix = "bazel-toolchains-3.2.0",
     urls = [
-        "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.1.1/bazel-toolchains-3.1.1.tar.gz",
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/3.1.1/bazel-toolchains-3.1.1.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.2.0/bazel-toolchains-3.2.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/3.2.0/bazel-toolchains-3.2.0.tar.gz",
     ],
 )
 
 load("//:setup.bzl", "kythe_rule_repositories", "maybe")
 
 kythe_rule_repositories()
+
+# TODO(schroederc): remove this.  This needs to be loaded before loading the
+# go_* rules.  Normally, this is done by go_rules_dependencies in external.bzl,
+# but because we want to overload some of those dependencies, we need the go_*
+# rules before go_rules_dependencies.  Likewise, we can't precisely control
+# when loads occur within a Starlark file so we now need to load this
+# manually...
+load("@io_bazel_rules_go//go/private:repositories.bzl", "go_name_hack")
+
+maybe(
+    go_name_hack,
+    name = "io_bazel_rules_go_name_hack",
+    is_rules_go = False,
+)
 
 # gazelle:repository_macro external.bzl%_go_dependencies
 load("//:external.bzl", "kythe_dependencies")
@@ -48,6 +62,10 @@ install_bazel_dependencies()
 load("@npm_bazel_typescript//:index.bzl", "ts_setup_workspace")
 
 ts_setup_workspace()
+
+load("@npm_bazel_labs//:package.bzl", "npm_bazel_labs_dependencies")
+
+npm_bazel_labs_dependencies()
 
 # This binding is needed for protobuf. See https://github.com/protocolbuffers/protobuf/pull/5811
 bind(

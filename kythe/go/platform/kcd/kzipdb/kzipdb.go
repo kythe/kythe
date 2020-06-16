@@ -21,7 +21,7 @@ package kzipdb // import "kythe.io/kythe/go/platform/kcd/kzipdb"
 import (
 	"context"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/platform/kcd/kythe"
 	"kythe.io/kythe/go/platform/kzip"

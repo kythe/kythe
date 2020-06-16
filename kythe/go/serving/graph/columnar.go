@@ -35,7 +35,7 @@ import (
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_go_proto"
 	gpb "kythe.io/kythe/proto/graph_go_proto"

@@ -291,9 +291,8 @@ llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
     const clang::InitListExpr* ILE) {
   CHECK(ILE->isSemanticForm());
   QualType Type = ILE->getType();
-  if (!Type->isAggregateType() ||
-      // Ignore copy initialization.
-      (ILE->getNumInits() == 1 && ILE->getInit(0)->getType() == Type)) {
+  // Ignore non-aggregate and copy initialization.
+  if (!Type->isAggregateType() || ILE->isTransparent()) {
     return {};
   }
   if (const clang::FieldDecl* Field = ILE->getInitializedFieldInUnion()) {
@@ -314,7 +313,6 @@ llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
   }
   return result;
 }
-
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -1890,6 +1888,7 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
   // We need the resolved type of the InitListExpr and all of the fields, but
   // don't want to do so redundantly for both syntactic and semantic forms.
   if (!ILE->isSemanticForm() || ILE->getNumInits() == 0) return true;
+  clang::SourceRange ListRange = NormalizeRange(ILE->getSourceRange());
 
   auto II = ILE->inits().begin();
   for (const clang::Decl* Decl : GetInitExprDecls(ILE)) {
@@ -1899,6 +1898,16 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
       break;
     }
     const clang::Expr* Init = *II++;
+    clang::SourceRange InitRange = NormalizeRange(Init->getSourceRange());
+    if (!InitRange.isValid() || (InitRange.getBegin() != ListRange.getBegin() &&
+                                 InitRange.getEnd() == ListRange.getEnd())) {
+      // When visiting the semantic form initializers which aren't explicitly
+      // specified either have an invalid location (for uninitialized fields) or
+      // share a location with the end of the ILE (for default initialized
+      // fields).  Skip these, but only if they don't share a start location as
+      // that indicates an implicit init list expr of only the contained value.
+      continue;
+    }
     if (auto RCC =
             RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
                                   NormalizeRange(Init->getSourceRange()))) {
@@ -4527,6 +4536,8 @@ NodeSet IndexerASTVisitor::BuildNodeSetForTypeInternal(const clang::Type& T) {
     UNSUPPORTED_CLANG_TYPE(Pipe);
     UNSUPPORTED_CLANG_TYPE(DependentVector);
     UNSUPPORTED_CLANG_TYPE(MacroQualified);
+    UNSUPPORTED_CLANG_TYPE(ConstantMatrix);
+    UNSUPPORTED_CLANG_TYPE(DependentSizedMatrix);
   }
 #undef UNSUPPORTED_CLANG_TYPE
 #undef DELEGATE_TYPE

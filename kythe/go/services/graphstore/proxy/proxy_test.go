@@ -25,7 +25,7 @@ import (
 
 	"kythe.io/kythe/go/services/graphstore"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_go_proto"
 )

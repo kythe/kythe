@@ -2,13 +2,13 @@ package pkg;
 
 // Check that nodes unify across file/compilation boundaries
 
-//- @CONSTANT ref/imports JvmConstantMember
+//- @CONSTANT ref/imports ConstantMember
 import static pkg.Files.CONSTANT;
-//- @Inner ref/imports JvmInnerClass
+//- @Inner ref/imports InnerClass
 import static pkg.Files.Inner;
-//- @staticMethod ref/imports JvmStaticMethod
+//- @staticMethod ref/imports StaticMethod
 import static pkg.Files.staticMethod;
-//- @INSTANCE ref/imports JvmInstanceMember
+//- @INSTANCE ref/imports InstanceMember
 import static pkg.Files.INSTANCE;
 
 import pkg.Files.Inter;
@@ -33,30 +33,30 @@ import pkg.Files.OtherDecl;
 //- @pkg ref/doc Package
 /** Tests JVM references within the {@link pkg} package.*/
 public class JvmCrossFile {
-  //- @Files ref JvmFilesClass
+  //- @Files ref FilesClass
   Files f1;
 
-  //- @Files ref JvmFilesClass
-  //- @Inner ref JvmInnerClass
+  //- @Files ref FilesClass
+  //- @Inner ref InnerClass
   Files.Inner f2;
 
-  //- @OtherDecl ref JvmODecl
+  //- @OtherDecl ref ODecl
   OtherDecl f3;
 
-  //- @Inter ref JvmInter
+  //- @Inter ref Inter
   Inter i;
 
   //- @InterSub defines/binding InterSub
   //- InterSub.node/kind interface
-  //- InterSub extends JvmInter
+  //- InterSub extends Inter
   interface InterSub extends Inter {}
 
   public static void main(String[] args) {
-    //- @staticMethod ref JvmStaticMethod
+    //- @staticMethod ref StaticMethod
     Files.staticMethod();
-    //- @staticMethod ref JvmStaticMethod
+    //- @staticMethod ref StaticMethod
     staticMethod();
-    //- @CONSTANT ref JvmConstantMember
+    //- @CONSTANT ref ConstantMember
     System.out.println(Files.CONSTANT);
   }
 }

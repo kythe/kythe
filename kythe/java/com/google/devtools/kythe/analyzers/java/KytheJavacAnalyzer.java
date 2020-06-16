@@ -113,9 +113,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
             emitter,
             compilation.getVName(),
             compilation.getRequiredInputList(),
-            config.getIgnoreVNamePaths(),
-            config.getIgnoreVNameRoots(),
-            config.getOverrideJdkCorpus());
+            config);
     try {
       super.analyzeCompilationUnit(details);
     } finally {

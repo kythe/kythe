@@ -8,6 +8,7 @@ go_binary(
     deps = [
         "//kythe/go/platform/vfs",
         "//third_party/bazel:extra_actions_base_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//encoding/prototext:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

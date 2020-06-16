@@ -3,7 +3,7 @@ load("//tools:build_rules/testing.bzl", "shell_tool_test")
 
 shell_tool_test(
     name = "indexer_test",
-    data = ["//kythe/testdata:test.kindex"],
+    data = ["//kythe/testdata:test.kzip"],
     scriptfile = "indexer_test.sh",
     tools = {
         "entrystream": "//kythe/go/platform/tools/entrystream",

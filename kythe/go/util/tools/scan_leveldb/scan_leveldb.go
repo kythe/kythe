@@ -28,14 +28,15 @@ import (
 	"io"
 	"log"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/util/flagutil"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 
 	_ "kythe.io/kythe/proto/serving_go_proto"
 	_ "kythe.io/kythe/proto/storage_go_proto"
@@ -64,11 +65,12 @@ func main() {
 		flagutil.UsageError("Missing path to LevelDB")
 	}
 
-	var protoValueType reflect.Type
+	var protoValueType protoreflect.MessageType
 	if *protoValue != "" {
-		protoValueType = proto.MessageType(*protoValue)
-		if protoValueType == nil {
-			flagutil.UsageErrorf("could not understand protocol buffer type: %q", *protoValue)
+		var err error
+		protoValueType, err = protoregistry.GlobalTypes.FindMessageByName(protoreflect.FullName(*protoValue))
+		if err != nil {
+			flagutil.UsageErrorf("could not understand protocol buffer type: %q: %v", *protoValue, err)
 		}
 	}
 
@@ -114,7 +116,7 @@ func main() {
 						v = base64.StdEncoding.EncodeToString(val)
 					}
 				} else {
-					p := reflect.New(protoValueType.Elem()).Interface().(proto.Message)
+					p := protoValueType.New().Interface()
 					if err := proto.Unmarshal(val, p); err != nil {
 						log.Fatalf("Error unmarshaling value to %q: %v", *protoValue, err)
 					}

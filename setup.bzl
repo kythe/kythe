@@ -34,12 +34,11 @@ def kythe_rule_repositories():
     )
 
     maybe(
-        # TODO(shahms): Update to a release version >= 0.22.2
         github_archive,
         name = "io_bazel_rules_go",
         repo_name = "bazelbuild/rules_go",
-        commit = "2a0e3a07e9ed9aa9b7afd1a222638ba52166e52d",
-        sha256 = "9f405b66fa5b2c5317d46ff8b0954a12961736e8e806f665521f96d90a5b58eb",
+        commit = "930516755a7f39854500e146477906ea5a9e22e1",
+        sha256 = "16a49cb0e581d1e17650aabac26990e33fd0155a30f8f318c05dc439967e231c",
     )
 
     maybe(
@@ -72,11 +71,11 @@ def kythe_rule_repositories():
     maybe(
         http_archive,
         name = "bazel_gazelle",
+        sha256 = "bfd86b3cbe855d6c16c6fce60d76bd51f5c8dbc9cfcaef7a2bb5c1aafd0710e8",
         urls = [
-            "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz",
-            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.0/bazel-gazelle-v0.21.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.0/bazel-gazelle-v0.21.0.tar.gz",
         ],
-        sha256 = "d8c45ee70ec39a57e7a05e5027c32b1576cc7f16d9dd37135b0eddde45cf1b10",
     )
 
     maybe(
@@ -102,5 +101,15 @@ def kythe_rule_repositories():
         urls = [
             "https://mirror.bazel.build/github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz",
             "https://github.com/bazelbuild/rules_python/archive/4b84ad270387a7c439ebdccfd530e2339601ef27.tar.gz",
+        ],
+    )
+
+    maybe(
+        http_archive,
+        name = "io_bazel_rules_rust",
+        sha256 = "fbdb7d0c88969fa6e71609bbbb20660e1cb7dcaa6ce84d8713c06bea5880cbb2",
+        strip_prefix = "rules_rust-6d00e2576688500dc857dd668cf1db1255b2976e",
+        urls = [
+            "https://github.com/bazelbuild/rules_rust/archive/6d00e2576688500dc857dd668cf1db1255b2976e.tar.gz",
         ],
     )

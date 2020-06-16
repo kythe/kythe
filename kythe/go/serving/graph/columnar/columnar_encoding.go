@@ -22,7 +22,7 @@ import (
 
 	"kythe.io/kythe/go/util/keys"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	gspb "kythe.io/kythe/proto/graph_serving_go_proto"
 	scpb "kythe.io/kythe/proto/schema_go_proto"

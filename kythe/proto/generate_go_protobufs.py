@@ -66,7 +66,7 @@ for rule in go_protos:
     print('Copying Go protobuf source for %s' % rule)
     generated_file = re.sub('.proto$', '.pb.go', proto_file)
     generated_path = glob.glob(
-        os.path.join(bazel_bin, rule_dir, '*', proto + '%', import_base, proto,
+        os.path.join(bazel_bin, rule_dir, proto + '_', import_base, proto,
                      generated_file)).pop()
 
     if os.path.isdir(output_dir):

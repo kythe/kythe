@@ -14,6 +14,6 @@ go_binary(
         "//kythe/go/util/flagutil",
         "//kythe/go/util/riegeli",
         "//kythe/proto:storage_go_proto",
-        "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )

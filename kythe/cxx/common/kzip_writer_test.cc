@@ -196,7 +196,7 @@ TEST(KzipWriterTest, IncludesDirectoryEntries) {
       // We don't really care about the rest of the entries, but it's easy
       // enough to fix the order of the subdirectories and minimally harmful.
       ElementsAre(
-          "root/", "root/files/", "root/units/",
+          "root/", "root/files/", "root/pbunits/",
           "root/files/"
           "d1b2a59fbea7e20077af9f91b27e95e865061b270be03ff539ab3b73587882e8"));
 }

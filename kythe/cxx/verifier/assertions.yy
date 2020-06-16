@@ -30,19 +30,19 @@ class AssertionParser;
 }
 }
 %}
-%parse-param { ::kythe::verifier::AssertionParser &context }
-%lex-param { ::kythe::verifier::AssertionParser &context }
+%parse-param { ::kythe::verifier::AssertionParser &parser_context }
+%lex-param { ::kythe::verifier::AssertionParser &parser_context }
 %locations
 %initial-action
 {
-  @$.initialize(&context.file());
+  @$.initialize(&parser_context.file());
   @$.begin.column = 1;
   @$.end.column = 1;
 };
 %define parse.trace
 %{
 #include "kythe/cxx/verifier/assertions.h"
-#define newAst new (context.arena_) kythe::verifier::
+#define newAst new (parser_context.arena_) kythe::verifier::
 %}
 %token
   END 0 "end of file"
@@ -83,15 +83,18 @@ unit: goals  { };
 
 goals:
   /* empty */ {}
-| goals goal { context.AppendGoal(context.group_id(), $2); }
-| goals LBRACE { context.EnterGoalGroup(@2, false); }
-    nested_goals RBRACE { context.ExitGoalGroup(@5); }
-| goals BANG LBRACE { context.EnterGoalGroup(@2, true); }
-    nested_goals RBRACE { context.ExitGoalGroup(@5); }
+| goals goal { parser_context.AppendGoal(parser_context.group_id(), $2); }
+| goals LBRACE { parser_context.EnterGoalGroup(@2, false); }
+    nested_goals RBRACE { parser_context.ExitGoalGroup(@5); }
+| goals BANG LBRACE { parser_context.EnterGoalGroup(@2, true); }
+    nested_goals RBRACE { parser_context.ExitGoalGroup(@5); }
 
 nested_goals:
-  nested_goals goal { context.AppendGoal(context.group_id(), $2); $$ = 0; }
-| goal { context.AppendGoal(context.group_id(), $1); $$ = 0; }
+  nested_goals goal {
+    parser_context.AppendGoal(parser_context.group_id(), $2);
+    $$ = 0;
+  }
+| goal { parser_context.AppendGoal(parser_context.group_id(), $1); $$ = 0; }
 
 string_or_identifier:
   "identifier" { $$ = $1; }
@@ -99,66 +102,80 @@ string_or_identifier:
 
 goal:
   exp string_or_identifier exp {
-    $$ = context.CreateSimpleEdgeFact(@1 + @3, $1, $2, $3, nullptr);
+    $$ = parser_context.CreateSimpleEdgeFact(@1 + @3, $1, $2, $3, nullptr);
   }
 | exp "." string_or_identifier exp {
-    $$ = context.CreateSimpleNodeFact(@1 + @4, $1, $3, $4);
+    $$ = parser_context.CreateSimpleNodeFact(@1 + @4, $1, $3, $4);
   }
 | exp string_or_identifier "." atom exp {
-    $$ = context.CreateSimpleEdgeFact(@1 + @5, $1, $2, $5, $4);
+    $$ = parser_context.CreateSimpleEdgeFact(@1 + @5, $1, $2, $5, $4);
   }
 
 exp:
   atom exp_tuple_star { $$ = newAst App($1, $2); };
 | atom { $$ = $1; };
 | atom "=" exp {
-    context.AppendGoal(context.group_id(),
-                       context.CreateEqualityConstraint(@2, $1, $3));
+    parser_context.AppendGoal(
+        parser_context.group_id(),
+        parser_context.CreateEqualityConstraint(@2, $1, $3)
+    );
     $$ = $1;
   };
 
 atom:
-    "identifier"       { $$ = context.CreateAtom(@1, $1); }
-  | "string"           { $$ = context.CreateIdentifier(@1, $1); }
-  | "_"                { $$ = context.CreateDontCare(@1); }
-  | "number"           { $$ = context.CreateIdentifier(@1, $1); };
-  | "@" location_spec_hash  { $$ = context.CreateAnchorSpec(@1); };
-  | "@^" location_spec_hash { $$ = context.CreateOffsetSpec(@1, false); };
-  | "@$" location_spec_hash { $$ = context.CreateOffsetSpec(@1, true); };
-  | "identifier" "?"   { $$ = context.CreateInspect(@2, $1,
-                                                    context.CreateAtom(@1, $1));
-                       }
-  | "_" "?"            { $$ = context.CreateInspect(@2, "_",
-                                                    context.CreateDontCare(@1));
-                       }
+    "identifier"       { $$ = parser_context.CreateAtom(@1, $1); }
+  | "string"           { $$ = parser_context.CreateIdentifier(@1, $1); }
+  | "_"                { $$ = parser_context.CreateDontCare(@1); }
+  | "number"           { $$ = parser_context.CreateIdentifier(@1, $1); };
+  | "@" location_spec_hash  { $$ = parser_context.CreateAnchorSpec(@1); };
+  | "@^" location_spec_hash {
+      $$ = parser_context.CreateOffsetSpec(@1, false);
+    };
+  | "@$" location_spec_hash {
+      $$ = parser_context.CreateOffsetSpec(@1, true);
+    };
+  | "identifier" "?" {
+      $$ = parser_context.CreateInspect(
+          @2,
+          $1,
+          parser_context.CreateAtom(@1, $1)
+      );
+    }
+  | "_" "?" {
+      $$ = parser_context.CreateInspect(
+          @2,
+          "_",
+          parser_context.CreateDontCare(@1)
+      );
+    }
 
 exp_tuple_plus:
-    exp_tuple_plus "," exp { context.PushNode($3); $$ = $1 + 1; }
-  | exp { context.PushNode($1); $$ = 1; }
+    exp_tuple_plus "," exp { parser_context.PushNode($3); $$ = $1 + 1; }
+  | exp { parser_context.PushNode($1); $$ = 1; }
 
 exp_tuple_star:
     "(" ")" { $$ = newAst Tuple(@1, 0, nullptr); }
   | "(" exp_tuple_plus ")" {
-    $$ = newAst Tuple(@1, $2, context.PopNodes($2));
+    $$ = newAst Tuple(@1, $2, parser_context.PopNodes($2));
   }
 
 location_spec:
-    string_or_identifier { context.PushLocationSpec($1); $$ = 0; }
+    string_or_identifier { parser_context.PushLocationSpec($1); $$ = 0; }
   | ":" "number" string_or_identifier {
-    context.PushAbsoluteLocationSpec($3, $2); $$ = 0;
+    parser_context.PushAbsoluteLocationSpec($3, $2); $$ = 0;
   }
   | "+" "number" string_or_identifier {
-    context.PushRelativeLocationSpec($3, $2); $$ = 0;
+    parser_context.PushRelativeLocationSpec($3, $2); $$ = 0;
   }
 
 location_spec_hash:
     location_spec { $$ = $1; }
   | HASH_NUMBER location_spec {
-    context.SetTopLocationSpecMatchNumber($1); $$ = $2;
+    parser_context.SetTopLocationSpecMatchNumber($1); $$ = $2;
   }
 
 %%
 void yy::AssertionParserImpl::error(const location_type &l,
                                     const std::string &m) {
-  context.Error(l, m);
+  parser_context.Error(l, m);
 }

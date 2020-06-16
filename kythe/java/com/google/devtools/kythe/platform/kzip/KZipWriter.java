@@ -38,7 +38,7 @@ public final class KZipWriter implements KZip.Writer {
   private static final KZip.Encoding DEFAULT_ENCODING;
 
   static {
-    KZip.Encoding encoding = KZip.Encoding.JSON;
+    KZip.Encoding encoding = KZip.Encoding.PROTO;
     String encodingStr = System.getenv("KYTHE_KZIP_ENCODING");
     if (encodingStr != null) {
       try {
