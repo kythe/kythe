@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # "MIT"
+  "notice", # MIT from expression "MIT"
 ])
 
 load(
@@ -27,16 +27,16 @@ load(
 
 rust_library(
     name = "libflate",
-    crate_root = "src/lib.rs",
     crate_type = "lib",
-    edition = "2015",
-    srcs = glob(["**/*.rs"]),
     deps = [
         "@raze__adler32__1_0_4//:adler32",
         "@raze__crc32fast__1_2_0//:crc32fast",
         "@raze__rle_decode_fast__1_0_1//:rle_decode_fast",
         "@raze__take_mut__0_2_2//:take_mut",
     ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/lib.rs",
+    edition = "2015",
     rustc_flags = [
         "--cap-lints=allow",
     ],

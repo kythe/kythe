@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # "MIT"
+  "notice", # MIT from expression "MIT"
 ])
 
 load(
@@ -26,10 +26,7 @@ load(
 
 rust_library(
     name = "rc_zip",
-    crate_root = "src/lib.rs",
     crate_type = "lib",
-    edition = "2018",
-    srcs = glob(["**/*.rs"]),
     deps = [
         "@raze__chardet__0_2_4//:chardet",
         "@raze__chrono__0_4_11//:chrono",
@@ -44,6 +41,9 @@ rust_library(
         "@raze__positioned_io__0_2_2//:positioned_io",
         "@raze__pretty_hex__0_1_1//:pretty_hex",
     ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/lib.rs",
+    edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
     ],

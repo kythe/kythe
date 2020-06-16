@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # "MIT,Apache-2.0"
+  "notice", # MIT from expression "MIT OR Apache-2.0"
 ])
 
 load(
@@ -55,10 +55,7 @@ cargo_build_script(
 
 rust_library(
     name = "lexical_core",
-    crate_root = "src/lib.rs",
     crate_type = "lib",
-    edition = "2015",
-    srcs = glob(["**/*.rs"]),
     deps = [
         ":lexical_core_build_script",
         "@raze__arrayvec__0_4_12//:arrayvec",
@@ -67,6 +64,9 @@ rust_library(
         "@raze__ryu__1_0_5//:ryu",
         "@raze__static_assertions__0_3_4//:static_assertions",
     ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/lib.rs",
+    edition = "2015",
     rustc_flags = [
         "--cap-lints=allow",
     ],

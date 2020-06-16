@@ -12,8 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # "MIT"
-  "unencumbered", # "Unlicense"
+  "unencumbered", # Unlicense from expression "Unlicense OR MIT"
 ])
 
 load(
@@ -34,10 +33,7 @@ load(
 
 rust_library(
     name = "csv",
-    crate_root = "src/lib.rs",
     crate_type = "lib",
-    edition = "2018",
-    srcs = glob(["**/*.rs"]),
     deps = [
         "@raze__bstr__0_2_13//:bstr",
         "@raze__csv_core__0_1_10//:csv_core",
@@ -45,6 +41,9 @@ rust_library(
         "@raze__ryu__1_0_5//:ryu",
         "@raze__serde__1_0_111//:serde",
     ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/lib.rs",
+    edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
     ],

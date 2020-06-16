@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # "MIT OR Apache-2.0"
+  "notice", # MIT from expression "MIT OR Apache-2.0"
 ])
 
 load(
@@ -26,16 +26,16 @@ load(
 
 rust_library(
     name = "bstr",
-    crate_root = "src/lib.rs",
     crate_type = "lib",
-    edition = "2015",
-    srcs = glob(["**/*.rs"]),
     deps = [
         "@raze__lazy_static__1_4_0//:lazy_static",
         "@raze__memchr__2_3_3//:memchr",
         "@raze__regex_automata__0_1_9//:regex_automata",
         "@raze__serde__1_0_111//:serde",
     ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/lib.rs",
+    edition = "2015",
     rustc_flags = [
         "--cap-lints=allow",
     ],

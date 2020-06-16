@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "restricted", # "LGPL-3.0"
+  "restricted", # LGPL-3.0 from expression "LGPL-3.0"
 ])
 
 load(
@@ -26,12 +26,12 @@ load(
 
 rust_library(
     name = "chardet",
-    crate_root = "src/lib.rs",
     crate_type = "lib",
-    edition = "2015",
-    srcs = glob(["**/*.rs"]),
     deps = [
     ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/lib.rs",
+    edition = "2015",
     rustc_flags = [
         "--cap-lints=allow",
     ],

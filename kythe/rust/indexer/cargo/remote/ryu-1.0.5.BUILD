@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "restricted", # "Apache-2.0 OR BSL-1.0"
+  "notice", # Apache-2.0 from expression "Apache-2.0 OR BSL-1.0"
 ])
 
 load(
@@ -33,12 +33,12 @@ load(
 
 rust_library(
     name = "ryu",
-    crate_root = "src/lib.rs",
     crate_type = "lib",
-    edition = "2018",
-    srcs = glob(["**/*.rs"]),
     deps = [
     ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/lib.rs",
+    edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
     ],
