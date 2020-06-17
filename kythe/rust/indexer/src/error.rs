@@ -27,7 +27,7 @@ quick_error! {
             display("Failed to read contents of file: {}", err)
         }
         // The KzipFileProvider couldn't read the provided file
-        KzipFileError(err: rc_zip::Error) {
+        KzipFileError(err: zip::result::ZipError) {
             from()
             display("Failed to open kzip: {}", err)
         }

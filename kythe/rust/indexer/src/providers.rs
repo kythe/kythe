@@ -14,10 +14,9 @@
 
 use crate::error::KytheError;
 use analysis_rust_proto::*;
-use rc_zip::{prelude::*, Archive, EntryContents};
-use std::collections::HashMap;
 use std::fs::File;
-use std::io::Read;
+use std::io::{BufReader, Read};
+use zip::ZipArchive;
 
 /// A trait for retrieving files during indexing.
 pub trait FileProvider {
@@ -48,9 +47,7 @@ pub trait FileProvider {
 
 /// A [FileProvider] that backed by a .kzip file.
 pub struct KzipFileProvider {
-    file: File,
-    file_map: HashMap<String, usize>,
-    zip_archive: Archive,
+    zip_archive: ZipArchive<BufReader<File>>,
 }
 
 impl KzipFileProvider {
@@ -62,18 +59,9 @@ impl KzipFileProvider {
     /// If the file is not a valid zip archive, a
     /// [KzipFileError][KytheError::KzipFileError] will be returned.
     pub fn new(file: File) -> Result<Self, KytheError> {
-        let zip_archive = file.read_zip()?;
-        let mut file_map = HashMap::new();
-        let kzip_entries = &zip_archive.entries();
-        // Store file names and their entry indexes in a hashmap
-        for (i, entry) in kzip_entries.iter().enumerate() {
-            if let EntryContents::File(_) = entry.contents() {
-                if entry.name().contains("files/") {
-                    file_map.insert(entry.name().replace("files/", ""), i);
-                }
-            }
-        }
-        Ok(Self { file, file_map, zip_archive })
+        let reader = BufReader::new(file);
+        let zip_archive = ZipArchive::new(reader)?;
+        Ok(Self { zip_archive })
     }
 
     /// Retrieve the Compilation Units from the kzip.
@@ -85,21 +73,15 @@ impl KzipFileProvider {
     ///
     /// If a file cannot be parsed, a
     /// [ProtobufParseError][KytheError::ProtobufParseError] will be returned.
-    pub fn get_compilation_units(&self) -> Result<Vec<CompilationUnit>, KytheError> {
+    pub fn get_compilation_units(&mut self) -> Result<Vec<CompilationUnit>, KytheError> {
         let mut compilation_units = Vec::new();
-        for entry in self.zip_archive.entries() {
+        for i in 0..self.zip_archive.len() {
             // Protobuf files are in the pbunits folder
-            if let EntryContents::File(f) = entry.contents() {
-                // Binary operations with `if let` are not currently supported,
-                // so we must have an inner if-statement
-                if entry.name().contains("/pbunits/") {
-                    // Read the file into a compilation unit protobuf
-                    let mut entry_reader =
-                        f.entry.reader(|offset| positioned_io::Cursor::new_pos(&self.file, offset));
-                    let bundle =
-                        protobuf::parse_from_reader::<CompilationBundle>(&mut entry_reader)?;
-                    compilation_units.push(bundle.get_unit().clone());
-                }
+            let file = self.zip_archive.by_index(i)?;
+            if file.is_file() && file.name().contains("/pbunits/") {
+                let mut reader = BufReader::new(file);
+                let bundle = protobuf::parse_from_reader::<CompilationBundle>(&mut reader)?;
+                compilation_units.push(bundle.get_unit().clone());
             }
         }
         Ok(compilation_units)
@@ -109,7 +91,8 @@ impl KzipFileProvider {
 impl FileProvider for KzipFileProvider {
     /// Given a file hash, returns whether the file exists in the kzip.
     fn exists(&mut self, file_hash: &str) -> bool {
-        self.file_map.contains_key(file_hash)
+        let name = format!("files/{}", file_hash);
+        self.zip_archive.by_name(&name).is_ok()
     }
 
     /// Given a file hash, returns the string contents of the file from the
@@ -123,12 +106,9 @@ impl FileProvider for KzipFileProvider {
     /// [FileReadError][KytheError::FileReadError] is returned.
     fn contents(&mut self, file_hash: &str) -> Result<String, KytheError> {
         // Ensure the file exists in the kzip
-        let position = self.file_map.get(file_hash).ok_or(KytheError::FileNotFoundError)?;
-        let entries = &self.zip_archive.entries();
-        // We clone here because a dereference would transfer ownership
-        let entry = &entries[position.clone()];
-        let mut reader = entry.reader(|offset| positioned_io::Cursor::new_pos(&self.file, offset));
-
+        let name = format!("files/{}", file_hash);
+        let file = self.zip_archive.by_name(&name).map_err(|_| KytheError::FileNotFoundError)?;
+        let mut reader = BufReader::new(file);
         let mut file_contents = String::new();
         reader.read_to_string(&mut file_contents)?;
         Ok(file_contents)

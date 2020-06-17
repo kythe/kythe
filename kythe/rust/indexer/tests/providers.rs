@@ -48,8 +48,9 @@ fn test_kzip_provider() {
     assert!(!kzip_provider.exists("invalid"), "File shouldn't exist but does");
 
     // Check the `contents` function
-    let contents = kzip_provider.contents(file_hash).unwrap();
-    assert_eq!(contents, "Test\n", "File contents did not match expected contents");
+    let contents_result = kzip_provider.contents(file_hash);
+    assert!(!contents_result.is_err());
+    assert_eq!(contents_result.unwrap(), "Test\n", "File contents did not match expected contents");
 
     let invalid_contents = kzip_provider.contents("invalid");
     assert!(invalid_contents.is_err(), "Expected Err while reading contents for non-existent file");

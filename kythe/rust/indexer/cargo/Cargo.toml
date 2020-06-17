@@ -23,10 +23,9 @@ edition = "2018"
 path = "../src/lib.rs"
 
 [dependencies]
-positioned-io = "0.2.2"
 protobuf = "=2.8.2"
 quick-error = "1.2.3"
-rc-zip = "0.0.1"
+zip = "0.5.6"
 
 [raze]
 workspace_path = "//kythe/rust/indexer/cargo"
@@ -41,11 +40,11 @@ target = "x86_64-unknown-linux-gnu"
 patches = ["@io_bazel_rules_rust//proto/raze/patch:protobuf-2.8.2.patch"]
 patch_args = ["-p1"]
 
-[raze.crates.codepage-437.'0.1.0']
-gen_buildrs = true
-
 [raze.crates.lexical-core.'0.6.7']
 gen_buildrs = true
 
 [raze.crates.bstr.'0.2.13']
 data_attr = 'glob(["**/*.dfa"])'
+
+[raze.crates.bzip2-sys.'0.1.9+1.0.8']
+gen_buildrs = true
