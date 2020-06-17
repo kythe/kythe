@@ -27,7 +27,7 @@ struct T : S {
   //- @l defines/binding FieldL
   int l;
   //- @m defines/binding FieldM
-  char m;
+  char m = 0;
 };
 
 //- @U defines/binding UnionU
@@ -44,6 +44,7 @@ struct V {
   S s;
   //- @t defines/binding FieldT
   T t;
+  T u;
 };
 
 S FromValue();
