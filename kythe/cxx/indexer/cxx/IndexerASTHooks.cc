@@ -2018,11 +2018,29 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
-      Observer.recordDeclUseLocation(RCC.value(), DeclId,
-                                     GraphObserver::Claimability::Unclaimable,
-                                     this->IsImplicit(RCC.value()));
+      if (ShouldHaveBlameContext(FoundDecl)) {
+        if (Job->BlameStack.empty()) {
+          if (auto FileId = Observer.recordFileInitializer(*RCC)) {
+            Observer.recordBlameLocation(
+                *RCC, *FileId, GraphObserver::Claimability::Unclaimable,
+                this->IsImplicit(*RCC));
+          }
+        } else {
+          for (const auto& Context : Job->BlameStack.back()) {
+            Observer.recordBlameLocation(
+                *RCC, Context, GraphObserver::Claimability::Unclaimable,
+                this->IsImplicit(*RCC));
+          }
+        }
+      }
+      auto semantic = IsUsedAsWrite(*getAllParents(), Expr)
+                          ? GraphObserver::UseKind::kWrite
+                          : GraphObserver::UseKind::kUnknown;
+      Observer.recordSemanticDeclUseLocation(
+          *RCC, DeclId, semantic, GraphObserver::Claimability::Unclaimable,
+          this->IsImplicit(*RCC));
       for (const auto& S : Supports) {
-        S->InspectDeclRef(*this, SL, RCC.value(), DeclId, FoundDecl);
+        S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl);
       }
     }
   }

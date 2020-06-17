@@ -15,7 +15,7 @@
 //- @Box defines/binding BoxImpl
 @implementation Box
 -(int)foo {
-  //- @data ref Data
+  //- @data ref/writes Data
   self->data = 300;
   return self->data;
 }

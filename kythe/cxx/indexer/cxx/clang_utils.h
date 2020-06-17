@@ -21,6 +21,7 @@
 #include "clang/AST/DeclarationName.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceManager.h"
+#include "kythe/cxx/indexer/cxx/indexed_parent_map.h"
 
 namespace kythe {
 /// \return true if `DN` is an Objective-C selector.
@@ -30,6 +31,13 @@ bool isObjCSelector(const clang::DeclarationName& DN);
 /// returns the primary template or the partial specialization being
 /// instantiated. Otherwise, returns `decl`.
 const clang::Decl* FindSpecializedTemplate(const clang::Decl* decl);
+
+/// \return true if a reference to `decl` should be given blame context.
+bool ShouldHaveBlameContext(const clang::Decl* decl);
+
+/// \return true if `stmt` is being used in a write position according to
+/// `map`.
+bool IsUsedAsWrite(const IndexedParentMap& map, const clang::Stmt* stmt);
 
 }  // namespace kythe
 
