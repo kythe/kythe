@@ -15,6 +15,6 @@ void fn() {
   int C::* mptr;
   //- @C ref CDecl
   //- @member ref MemberDecl
-  //- @mptr ref PtrDecl
+  //- @mptr ref/writes PtrDecl
   mptr = &C::member;
 }

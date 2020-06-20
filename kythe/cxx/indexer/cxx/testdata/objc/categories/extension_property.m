@@ -29,7 +29,7 @@
 @synthesize val = data;
 
 -(int) foo {
-  //- @data ref Data
+  //- @data ref/writes Data
   self->data = 300;
 
   //- @x defines/binding XVar

@@ -122,7 +122,9 @@ enum class EdgeKindID {
   kPropertyReads,
   kPropertyWrites,
   kClangUsr,
-  kRefId
+  kRefId,
+  kRefWrites,
+  kRefWritesImplicit
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`

@@ -307,12 +307,27 @@ llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
   }
   if (const auto* Decl = Type->getAsRecordDecl();
       Decl && (Decl = Decl->getDefinition())) {
-    for (const clang::Decl* Field : Decl->fields()) {
-      result.push_back(Field);
+    for (const auto* Field : Decl->fields()) {
+      if (!Field->isUnnamedBitfield()) {
+        result.push_back(Field);
+      }
     }
   }
   return result;
 }
+
+clang::InitListExpr* GetSemanticForm(clang::InitListExpr* ILE) {
+  return (ILE->isSemanticForm() ? ILE : ILE->getSemanticForm());
+}
+
+clang::InitListExpr* GetSyntacticForm(clang::InitListExpr* ILE) {
+  return (ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
+}
+
+const clang::InitListExpr* GetSyntacticForm(const clang::InitListExpr* ILE) {
+  return (ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm());
+}
+
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl* decl) {
@@ -1887,8 +1902,19 @@ bool IndexerASTVisitor::VisitDesignatedInitExpr(
 bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
   // We need the resolved type of the InitListExpr and all of the fields, but
   // don't want to do so redundantly for both syntactic and semantic forms.
-  if (!ILE->isSemanticForm() || ILE->getNumInits() == 0) return true;
-  clang::SourceRange ListRange = NormalizeRange(ILE->getSourceRange());
+  // Skip emitting ref/init if there aren't any syntactic initializers.
+  const auto* SynILE = GetSyntacticForm(ILE);
+  if (!ILE->isSemanticForm() || SynILE->getNumInits() == 0) {
+    return true;
+  }
+
+  // SourceRange covering the *syntactic* initializers.
+  clang::SourceRange ListRange =
+      NormalizeRange({(*SynILE->inits().begin())->getBeginLoc(),
+                      (*SynILE->inits().rbegin())->getEndLoc()});
+  if (!ListRange.isValid()) {
+    return true;
+  }
 
   auto II = ILE->inits().begin();
   for (const clang::Decl* Decl : GetInitExprDecls(ILE)) {
@@ -1899,18 +1925,16 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
     }
     const clang::Expr* Init = *II++;
     clang::SourceRange InitRange = NormalizeRange(Init->getSourceRange());
-    if (!InitRange.isValid() || (InitRange.getBegin() != ListRange.getBegin() &&
-                                 InitRange.getEnd() == ListRange.getEnd())) {
+    if (!(InitRange.isValid() && ListRange.fullyContains(InitRange))) {
       // When visiting the semantic form initializers which aren't explicitly
       // specified either have an invalid location (for uninitialized fields) or
       // share a location with the end of the ILE (for default initialized
-      // fields).  Skip these, but only if they don't share a start location as
-      // that indicates an implicit init list expr of only the contained value.
+      // fields). Skip these by checking that their location is wholly contained
+      // by the syntactic initializers, rather than the enclosing ILE itself.
       continue;
     }
-    if (auto RCC =
-            RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
-                                  NormalizeRange(Init->getSourceRange()))) {
+    if (auto RCC = RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
+                                         InitRange)) {
       Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(Decl),
                                   GraphObserver::Claimability::Unclaimable,
                                   this->IsImplicit(*RCC));
@@ -1944,10 +1968,8 @@ bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
     IndexerASTVisitor& parent;
   } visitor{{}, *this};
 
-  return visitor.TraverseSynOrSemInitListExpr(
-             ILE->isSyntacticForm() ? ILE : ILE->getSyntacticForm()) &&
-         Base::TraverseSynOrSemInitListExpr(
-             ILE->isSemanticForm() ? ILE : ILE->getSemanticForm());
+  return visitor.TraverseSynOrSemInitListExpr(GetSyntacticForm(ILE)) &&
+         Base::TraverseSynOrSemInitListExpr(GetSemanticForm(ILE));
 }
 
 NodeSet IndexerASTVisitor::RecordTypeLocSpellingLocation(clang::TypeLoc TL) {
@@ -2018,11 +2040,29 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(FoundDecl);
-      Observer.recordDeclUseLocation(RCC.value(), DeclId,
-                                     GraphObserver::Claimability::Unclaimable,
-                                     this->IsImplicit(RCC.value()));
+      if (ShouldHaveBlameContext(FoundDecl)) {
+        if (Job->BlameStack.empty()) {
+          if (auto FileId = Observer.recordFileInitializer(*RCC)) {
+            Observer.recordBlameLocation(
+                *RCC, *FileId, GraphObserver::Claimability::Unclaimable,
+                this->IsImplicit(*RCC));
+          }
+        } else {
+          for (const auto& Context : Job->BlameStack.back()) {
+            Observer.recordBlameLocation(
+                *RCC, Context, GraphObserver::Claimability::Unclaimable,
+                this->IsImplicit(*RCC));
+          }
+        }
+      }
+      auto semantic = IsUsedAsWrite(*getAllParents(), Expr)
+                          ? GraphObserver::UseKind::kWrite
+                          : GraphObserver::UseKind::kUnknown;
+      Observer.recordSemanticDeclUseLocation(
+          *RCC, DeclId, semantic, GraphObserver::Claimability::Unclaimable,
+          this->IsImplicit(*RCC));
       for (const auto& S : Supports) {
-        S->InspectDeclRef(*this, SL, RCC.value(), DeclId, FoundDecl);
+        S->InspectDeclRef(*this, SL, *RCC, DeclId, FoundDecl);
       }
     }
   }

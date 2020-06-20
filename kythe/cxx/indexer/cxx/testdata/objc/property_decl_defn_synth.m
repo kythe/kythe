@@ -45,7 +45,7 @@
 @synthesize d = newvar;
 
 -(void) foo {
-  //- @width ref WidthIVarDecl
+  //- @width ref/writes WidthIVarDecl
   self->width = 100;
 
   //- @a ref ADecl
@@ -53,17 +53,17 @@
 
   //- @b ref BDecl
   self.b = 300;
-  //- @"_b" ref BIvarDecl
+  //- @"_b" ref/writes BIvarDecl
   self->_b = 301;
 
   //- @c ref CDecl
   self.c = 400;
-  //- @c ref CIvarDecl
+  //- @c ref/writes CIvarDecl
   self->c = 401;
 
   //- @d ref DDecl
   self.d = 500;
-  //- @newvar ref NewvarIVarDecl
+  //- @newvar ref/writes NewvarIVarDecl
   self->newvar = 501;
 }
 @end
