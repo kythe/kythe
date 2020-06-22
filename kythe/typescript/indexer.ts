@@ -726,6 +726,22 @@ function makeMarkedSource({
   return ms;
 }
 
+/**
+ * Returns the property "index" of a bound element in a binding pattern.
+ * For example,
+ * - `1` has index `2` in the binding pattern `[3, 2, 1]`
+ * - `c` has index `c` in the binding pattern `{a, b, c}`
+ * - `calias` has index `c` in the binding pattern `{a, b, c: calias}`
+ */
+function bindingElemIndex(elem: ts.BindingElement): string|number{
+  const bindingPat = elem.parent;
+  if (ts.isObjectBindingPattern(bindingPat)) {
+    return (elem.propertyName || elem.name).getText();
+  } else {
+    return bindingPat.elements.indexOf(elem);
+  }
+}
+
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Visitor {
   /** kFile is the VName for the 'file' node representing the source file. */
@@ -1562,15 +1578,18 @@ class Visitor {
     const codeParts: MarkedSource[] = [];
     const initializerList = decl.parent;
     let varDecl;
+    const bindingPath: Array<string|number> = [];
     if (ts.isBindingElement(decl)) {
       // The node we want to emit code for is a BindingElement. This parent of
       // this is always a BindingPattern; the parent of the BindingPattern is
       // another BindingPattern, a ParameterDeclaration, or VariableDeclaration.
       // We handle ParameterDeclarations in `visitParameters`, so here we only
       // care about the declaration from a VariableDeclaration.
+      bindingPath.push(bindingElemIndex(decl));
       varDecl = decl.parent.parent;
       while (!ts.isVariableDeclaration(varDecl)) {
         if (ts.isParameter(varDecl)) return;
+        bindingPath.push(bindingElemIndex(varDecl));
         varDecl = varDecl.parent.parent;
       }
     } else {
@@ -1594,16 +1613,48 @@ class Visitor {
     codeParts.push(
         makeMarkedSource({kind: 'TYPE', preText: ': ', postText: tyStr}));
     if (varDecl.initializer) {
-      // TODO: for binding elements with literal initializers, we could be a
-      // little smarter and provide the value of the relevant property
-      // assignment.
-      const init = varDecl.initializer.getText();
+      let init: ts.Node = varDecl.initializer;
+      if (ts.isObjectLiteralExpression(init) || ts.isArrayLiteralExpression(init)) {
+        let narrowedInit = this.walkObjectLikeLiteral(init, bindingPath.reverse());
+        init = narrowedInit || init;
+      }
       codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' = '}));
-      codeParts.push(makeMarkedSource({kind: 'INITIALIZER', preText: init}));
+      codeParts.push(makeMarkedSource({kind: 'INITIALIZER', preText: init.getText()}));
     }
 
     const markedSource = makeMarkedSource({kind: 'BOX', childList: codeParts});
     this.emitFact(declVName, FactName.CODE, markedSource.serializeBinary());
+  }
+
+  /**
+   * Given a path of properties, walks the properties/elements of an
+   * object/array literal, yielding the final node along the path.
+   *
+   * If the path or object literal is malformed (i.e. the property does not
+   * exist or the object to walk is not a literal), nothing is returned.
+   */
+  walkObjectLikeLiteral(
+      objLiteral: ts.ArrayLiteralExpression|ts.ObjectLiteralExpression,
+      path: Array<string|number>,
+  ): ts.Node|undefined {
+    let node: ts.Node = objLiteral;
+    for (const prop of path) {
+      let next: ts.Node|undefined;
+      if (ts.isObjectLiteralExpression(node)) {
+        next = node.properties.find(p => p.name && p.name.getText() === prop);
+        if (next && ts.isPropertyAssignment(next)) {
+          next = next.initializer;
+        }
+      } else if (ts.isArrayLiteralExpression(node) && typeof prop === 'number') {
+        next = (node as ts.ArrayLiteralExpression).elements[prop];
+      }
+      if (!next) {
+        todo(this.sourceRoot, node, `expected to be an object-like literal with property '${prop}'`)
+        return;
+      }
+      node = next;
+    }
+    return node;
   }
 
   /**

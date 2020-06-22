@@ -96,19 +96,43 @@ try {
 //- FCode child.4 FEq
 //- FEq.pre_text " = "
 //- FCode child.5 FInit
-//- FInit.pre_text "{f: 0, g: 0}"
-//- @#0g defines/binding G
-//- G code GCode
-//- GCode child.0 GContext
-//- GContext.pre_text "let"
-//- GCode child.1 GSpace
-//- GSpace.pre_text " "
-//- GCode child.2 GName
-//- GName.pre_text "g"
-//- GCode child.3 GTy
-//- GTy.post_text "number"
-//- GCode child.4 GEq
-//- GEq.pre_text " = "
-//- GCode child.5 GInit
-//- GInit.pre_text "{f: 0, g: 0}"
-let {f, g} = {f: 0, g: 0};
+//- FInit.pre_text "0"
+//- @halias defines/binding H
+//- H code HCode
+//- HCode child.0 HContext
+//- HContext.pre_text "let"
+//- HCode child.1 HSpace
+//- HSpace.pre_text " "
+//- HCode child.2 HName
+//- HName.pre_text "halias"
+//- HCode child.3 HTy
+//- HTy.post_text "number"
+//- HCode child.4 HEq
+//- HEq.pre_text " = "
+//- HCode child.5 HInit
+//- HInit.pre_text "1"
+let {f, g: {h: halias}} = {f: 0, g: {h: 1}};
+
+//- @i defines/binding I
+//- I code ICode
+//- ICode child.0 IContext
+//- IContext.pre_text "let"
+//- ICode child.1 ISpace
+//- ISpace.pre_text " "
+//- ICode child.2 IName
+//- IName.pre_text "i"
+//- ICode child.3 ITy
+//- ITy.post_text "number"
+//- ICode child.4 IEq
+//- IEq.pre_text " = "
+//- ICode child.5 IInit
+//- IInit.pre_text "3"
+let [_, [i]] = [2, [3]];
+
+// We can't narrow the initializer of j here, so the initializer should be the
+// whole RHS of the variable declaration.
+//- @#0j defines/binding J
+//- J code JCode
+//- JCode child.5 JInit
+//- JInit.pre_text "(() => { return {j : 1}; })()"
+let {j} = (() => { return {j : 1}; })();
