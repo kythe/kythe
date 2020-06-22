@@ -82,3 +82,33 @@ try {
   //- !{ECode child.4 _ETy}
 } catch (e) {
 }
+
+//- @#0f defines/binding F
+//- F code FCode
+//- FCode child.0 FContext
+//- FContext.pre_text "let"
+//- FCode child.1 FSpace
+//- FSpace.pre_text " "
+//- FCode child.2 FName
+//- FName.pre_text "f"
+//- FCode child.3 FTy
+//- FTy.post_text "number"
+//- FCode child.4 FEq
+//- FEq.pre_text " = "
+//- FCode child.5 FInit
+//- FInit.pre_text "{f: 0, g: 0}"
+//- @#0g defines/binding G
+//- G code GCode
+//- GCode child.0 GContext
+//- GContext.pre_text "let"
+//- GCode child.1 GSpace
+//- GSpace.pre_text " "
+//- GCode child.2 GName
+//- GName.pre_text "g"
+//- GCode child.3 GTy
+//- GTy.post_text "number"
+//- GCode child.4 GEq
+//- GEq.pre_text " = "
+//- GCode child.5 GInit
+//- GInit.pre_text "{f: 0, g: 0}"
+let {f, g} = {f: 0, g: 0};

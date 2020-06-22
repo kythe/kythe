@@ -1531,7 +1531,7 @@ class Visitor {
 
     if (vname &&
         (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
-         ts.isPropertyDeclaration(decl))) {
+         ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl))) {
       // TODO: handle all other variable declaration kinds
       this.emitDeclarationCode(decl, vname);
     }
@@ -1556,15 +1556,32 @@ class Visitor {
    * where `(local var)` is the declaration of a variable in a catch clause.
    */
   emitDeclarationCode(
-      decl: ts.VariableDeclaration|ts.PropertyAssignment|ts.PropertyDeclaration,
+      decl: ts.VariableDeclaration|ts.PropertyAssignment|
+      ts.PropertyDeclaration|ts.BindingElement,
       declVName: VName) {
     const codeParts: MarkedSource[] = [];
     const initializerList = decl.parent;
+    let varDecl;
+    if (ts.isBindingElement(decl)) {
+      // The node we want to emit code for is a BindingElement. This parent of
+      // this is always a BindingPattern; the parent of the BindingPattern is
+      // another BindingPattern, a ParameterDeclaration, or VariableDeclaration.
+      // We handle ParameterDeclarations in `visitParameters`, so here we only
+      // care about the declaration from a VariableDeclaration.
+      varDecl = decl.parent.parent;
+      while (!ts.isVariableDeclaration(varDecl)) {
+        if (ts.isParameter(varDecl)) return;
+        varDecl = varDecl.parent.parent;
+      }
+    } else {
+      varDecl = decl;
+    }
+
     let declKw;
-    if (ts.isVariableDeclaration(decl) ) {
+    if (ts.isVariableDeclaration(varDecl)) {
       declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
-        '(local var)' :
-        initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
+          '(local var)' :
+          initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
     } else {
       declKw = '(property)';
     }
@@ -1576,8 +1593,11 @@ class Visitor {
         makeMarkedSource({kind: 'IDENTIFIER', preText: decl.name.getText()}));
     codeParts.push(
         makeMarkedSource({kind: 'TYPE', preText: ': ', postText: tyStr}));
-    if (decl.initializer) {
-      const init = decl.initializer.getText();
+    if (varDecl.initializer) {
+      // TODO: for binding elements with literal initializers, we could be a
+      // little smarter and provide the value of the relevant property
+      // assignment.
+      const init = varDecl.initializer.getText();
       codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' = '}));
       codeParts.push(makeMarkedSource({kind: 'INITIALIZER', preText: init}));
     }
