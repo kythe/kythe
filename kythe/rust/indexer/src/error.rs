@@ -37,6 +37,8 @@ quick_error! {
             display("Failed to parse Protobuf: {}", err)
         }
         // The KytheWriter encounters an error
-        WriterError {}
+        WriterError(err: ProtobufError) {
+            display("Writer encountered an error: {}", err)
+        }
     }
 }

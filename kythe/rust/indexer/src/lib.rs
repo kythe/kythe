@@ -17,3 +17,4 @@ extern crate quick_error;
 
 pub mod error;
 pub mod providers;
+pub mod writer;
