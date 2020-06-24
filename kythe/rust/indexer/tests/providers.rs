@@ -50,7 +50,9 @@ fn test_kzip_provider() {
     // Check the `contents` function
     let contents_result = kzip_provider.contents(file_hash);
     assert!(!contents_result.is_err());
-    assert_eq!(contents_result.unwrap(), "Test\n", "File contents did not match expected contents");
+    let contents_string =
+        String::from_utf8(contents_result.unwrap()).expect("File contents was not valid UTF-8");
+    assert_eq!(contents_string, "Test\n", "File contents did not match expected contents");
 
     let invalid_contents = kzip_provider.contents("invalid");
     assert!(invalid_contents.is_err(), "Expected Err while reading contents for non-existent file");
