@@ -50,8 +50,8 @@ impl<'a> StreamWriter<'a> {
     ///
     /// # Errors
     ///
-    /// If the CodedOutputStream fails flush its buffer, a [KytheError::WriterError] will be
-    /// returned.
+    /// If the CodedOutputStream fails flush its buffer, a
+    /// [KytheError::WriterError] will be returned.
     pub fn flush(&mut self) -> Result<(), KytheError> {
         self.output_stream.flush().map_err(KytheError::WriterError)
     }
