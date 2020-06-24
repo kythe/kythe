@@ -38,10 +38,5 @@ quick_error! {
         }
         // The KytheWriter encounters an error
         WriterError {}
-        // An unknown error occured
-        UnknownError(err: Box<dyn std::error::Error>) {
-            from()
-            display("An unknown error occurred: {}", err)
-        }
     }
 }
