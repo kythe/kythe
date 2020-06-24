@@ -30,6 +30,14 @@ pub trait KytheWriter {
     /// If the writer fails to write the entry to output, a
     /// [WriterError][KytheError::WriterError] will be returned.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError>;
+
+    /// Flushes the CodedOutputStream buffer to output
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs while flushing, a [KytheError::WriterError] will be
+    /// returned.
+    fn flush(&mut self) -> Result<(), KytheError>;
 }
 
 /// A [KytheWriter] that writes entries to a [CodedOutputStream]
@@ -44,16 +52,6 @@ impl<'a> StreamWriter<'a> {
     /// and returns a new [StreamWriter].
     pub fn new(writer: &'a mut dyn Write) -> StreamWriter<'a> {
         Self { output_stream: CodedOutputStream::new(writer) }
-    }
-
-    /// Flushes the CodedOutputStream buffer to output
-    ///
-    /// # Errors
-    ///
-    /// If the CodedOutputStream fails flush its buffer, a
-    /// [KytheError::WriterError] will be returned.
-    pub fn flush(&mut self) -> Result<(), KytheError> {
-        self.output_stream.flush().map_err(KytheError::WriterError)
     }
 }
 
@@ -70,6 +68,10 @@ impl<'a> KytheWriter for StreamWriter<'a> {
         let entry_size = entry.compute_size();
         self.output_stream.write_raw_varint32(entry_size).map_err(KytheError::WriterError)?;
         entry.write_to_with_cached_sizes(&mut self.output_stream).map_err(KytheError::WriterError)
+    }
+
+    fn flush(&mut self) -> Result<(), KytheError> {
+        self.output_stream.flush().map_err(KytheError::WriterError)
     }
 }
 
@@ -94,6 +96,10 @@ impl KytheWriter for ArrayWriter {
     /// Given an [Entry], push it onto the vector. Never returns an error.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError> {
         self.entries.push(entry);
+        Ok(())
+    }
+
+    fn flush(&mut self) -> Result<(), KytheError> {
         Ok(())
     }
 }
@@ -123,8 +129,6 @@ mod tests {
         let mut bytes: Vec<u8> = Vec::new();
         let mut writer = StreamWriter::new(&mut bytes);
         assert!(writer.write_entry(entry.clone()).is_ok());
-
-        // We must flush to make sure that the vec gets written to
         assert!(writer.flush().is_ok());
         assert_eq!(bytes.len(), 10);
 
