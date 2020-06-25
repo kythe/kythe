@@ -1948,20 +1948,19 @@ bool IndexerASTVisitor::TraverseBinAssign(clang::BinaryOperator* BO) {
       lhs != nullptr && rhs != nullptr) {
     if (!WalkUpFromBinAssign(BO)) return false;
     if (!TraverseStmt(lhs)) return false;
-    influence_sets_.push_back({});
+    auto scope_guard = PushScope(Job->InfluenceSets,
+                                 absl::flat_hash_set<const clang::Decl*>());
     if (!TraverseStmt(rhs)) {
-      influence_sets_.pop_back();
       return false;
     }
     if (auto expr = llvm::dyn_cast_or_null<clang::DeclRefExpr>(lhs);
         expr != nullptr && expr->getFoundDecl() != nullptr &&
         expr->getFoundDecl()->getKind() == clang::Decl::Kind::Var) {
-      for (const auto* decl : influence_sets_.back()) {
+      for (const auto* decl : Job->InfluenceSets.back()) {
         Observer.recordInfluences(BuildNodeIdForDecl(decl),
                                   BuildNodeIdForDecl(expr->getFoundDecl()));
       }
     }
-    influence_sets_.pop_back();
     return true;
   }
   return Base::TraverseBinAssign(BO);
@@ -2082,9 +2081,9 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
       auto semantic = IsUsedAsWrite(*getAllParents(), Expr)
                           ? GraphObserver::UseKind::kWrite
                           : GraphObserver::UseKind::kUnknown;
-      if (!influence_sets_.empty() &&
+      if (!Job->InfluenceSets.empty() &&
           FoundDecl->getKind() == clang::Decl::Kind::Var) {
-        influence_sets_.back().insert(FoundDecl);
+        Job->InfluenceSets.back().insert(FoundDecl);
       }
       Observer.recordSemanticDeclUseLocation(
           *RCC, DeclId, semantic, GraphObserver::Claimability::Unclaimable,
