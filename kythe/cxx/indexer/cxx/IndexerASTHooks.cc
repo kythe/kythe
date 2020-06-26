@@ -1948,8 +1948,7 @@ bool IndexerASTVisitor::TraverseBinAssign(clang::BinaryOperator* BO) {
       lhs != nullptr && rhs != nullptr) {
     if (!WalkUpFromBinAssign(BO)) return false;
     if (!TraverseStmt(lhs)) return false;
-    auto scope_guard = PushScope(Job->InfluenceSets,
-                                 absl::flat_hash_set<const clang::Decl*>());
+    auto scope_guard = PushScope(Job->InfluenceSets, {});
     if (!TraverseStmt(rhs)) {
       return false;
     }
