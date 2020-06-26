@@ -647,6 +647,12 @@ void KytheGraphObserver::recordTypeEdge(const NodeId& term_id,
                      VNameRefFromNodeId(type_id));
 }
 
+void KytheGraphObserver::recordInfluences(const NodeId& influencer,
+                                          const NodeId& influenced) {
+  recorder_->AddEdge(VNameRefFromNodeId(influencer), EdgeKindID::kInfluences,
+                     VNameRefFromNodeId(influenced));
+}
+
 void KytheGraphObserver::recordUpperBoundEdge(const NodeId& TypeNodeId,
                                               const NodeId& TypeBoundNodeId) {
   recorder_->AddEdge(VNameRefFromNodeId(TypeNodeId), EdgeKindID::kBoundedUpper,

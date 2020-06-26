@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "clang/AST/Decl.h"
 #include "clang/Sema/Template.h"
 #include "kythe/cxx/indexer/cxx/GraphObserver.h"
@@ -101,6 +102,9 @@ struct IndexJob {
 
   /// \brief A stack of CXXConstructExprs we've already visited.
   std::vector<const clang::CXXConstructExpr*> ConstructorStack;
+
+  /// \brief The current stack of influence sets.
+  std::vector<absl::flat_hash_set<const clang::Decl*>> InfluenceSets;
 };
 
 class IndexerASTVisitor;
