@@ -4,6 +4,7 @@ load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load(":go.bzl", "go_kythe_proto")
 load("@npm_bazel_labs//:index.bzl", "ts_proto_library")
+load("@io_bazel_rules_rust//proto:proto.bzl", "rust_proto_library")
 
 package(default_visibility = ["//kythe:proto_visibility"])
 
@@ -101,6 +102,12 @@ java_proto_library(
     deps = [":storage_proto"],
 )
 
+rust_proto_library(
+    name = "storage_rust_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = [":storage_proto"],
+)
+
 # Public Kythe GraphStore service API
 proto_library(
     name = "storage_service_proto",
@@ -161,6 +168,12 @@ go_kythe_proto(
 
 java_proto_library(
     name = "analysis_java_proto",
+    visibility = [PUBLIC_PROTO_VISIBILITY],
+    deps = [":analysis_proto"],
+)
+
+rust_proto_library(
+    name = "analysis_rust_proto",
     visibility = [PUBLIC_PROTO_VISIBILITY],
     deps = [":analysis_proto"],
 )

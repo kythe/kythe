@@ -715,6 +715,10 @@ class GraphObserver {
   virtual void recordTypeEdge(const NodeId& TermNodeId,
                               const NodeId& TypeNodeId) {}
 
+  /// \brief Records that `Influencer` influences `Influenced`.
+  virtual void recordInfluences(const NodeId& Influencer,
+                                const NodeId& Influenced) {}
+
   /// \brief Records an upper bound for the type of a node as an edge in the
   /// graph.
   /// \param TypeNodeId The identifier for the node to given a bounded type.
