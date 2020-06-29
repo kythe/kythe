@@ -1950,6 +1950,8 @@ class Visitor {
    * for JSDoc comments.
    */
   visitJSDoc(node: ts.Node, target: VName) {
+    this.maybeTagDeprecated(node, target);
+
     const text = node.getFullText();
     const comments = ts.getLeadingCommentRanges(text, 0);
     if (!comments) return;
@@ -1975,6 +1977,19 @@ class Visitor {
     this.emitNode(doc, NodeKind.DOC);
     this.emitEdge(doc, EdgeKind.DOCUMENTS, target);
     this.emitFact(doc, FactName.TEXT, jsdoc);
+  }
+
+  /**
+   * Tags a node as deprecated if its JSDoc marks it as so.
+   * TODO(TS 4.0): TS 4.0 exposes a JSDocDeprecatedTag.
+   */
+  maybeTagDeprecated(node: ts.Node, nodeVName: VName) {
+    const deprecatedTag =
+        ts.getJSDocTags(node).find(tag => tag.tagName.text === 'deprecated');
+    if (deprecatedTag) {
+      this.emitFact(
+          nodeVName, FactName.TAG_DEPRECATED, deprecatedTag.comment || '');
+    }
   }
 
   /** visit is the main dispatch for visiting AST nodes. */

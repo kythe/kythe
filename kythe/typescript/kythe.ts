@@ -155,6 +155,7 @@ export enum FactName {
   SNIPPET_END = '/kythe/snippet/end',
   SNIPPET_START = '/kythe/snippet/start',
   SUBKIND = '/kythe/subkind',
+  TAG_DEPRECATED = '/kythe/tag/deprecated',
   TEXT = '/kythe/text',
   TEXT_ENCODING = '/kythe/text/encoding',
   VISIBILITY = '/kythe/visibility',
