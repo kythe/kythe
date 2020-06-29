@@ -732,8 +732,18 @@ function makeMarkedSource({
  * - `1` has index `2` in the binding pattern `[3, 2, 1]`
  * - `c` has index `c` in the binding pattern `{a, b, c}`
  * - `calias` has index `c` in the binding pattern `{a, b, c: calias}`
+ *
+ * NB: The "index" is actually the text of the property node name. This is
+ * distinct from a constant property key string value, particularly in the case
+ * of computed property names. For example, in the object
+ *   { ['red' + 'cat'] }
+ * The "constant" property name is "redcat", but figuring this out requires more
+ * constant evaluation than we want to perform in an indexer so instead we use
+ * the text of the property name node ("['red' + 'cat']") as the property index.
+ * Thus, a walker of the binding element path should compare against the text of
+ * property name nodes.
  */
-function bindingElemIndex(elem: ts.BindingElement): string|number{
+function bindingElemIndex(elem: ts.BindingElement): string|number {
   const bindingPat = elem.parent;
   if (ts.isObjectBindingPattern(bindingPat)) {
     return (elem.propertyName || elem.name).getText();
@@ -1587,10 +1597,15 @@ class Visitor {
       // care about the declaration from a VariableDeclaration.
       bindingPath.push(bindingElemIndex(decl));
       varDecl = decl.parent.parent;
-      while (!ts.isVariableDeclaration(varDecl)) {
+      while (!ts.isVariableDeclaration(varDecl) && varDecl !== undefined) {
         if (ts.isParameter(varDecl)) return;
         bindingPath.push(bindingElemIndex(varDecl));
         varDecl = varDecl.parent.parent;
+      }
+      if (varDecl === undefined) {
+        todo(
+            this.sourceRoot, decl,
+            `Does not have variable and parameter declaration.`);
       }
     } else {
       varDecl = decl;
@@ -1614,12 +1629,15 @@ class Visitor {
         makeMarkedSource({kind: 'TYPE', preText: ': ', postText: tyStr}));
     if (varDecl.initializer) {
       let init: ts.Node = varDecl.initializer;
-      if (ts.isObjectLiteralExpression(init) || ts.isArrayLiteralExpression(init)) {
-        let narrowedInit = this.walkObjectLikeLiteral(init, bindingPath.reverse());
+      if (ts.isObjectLiteralExpression(init) ||
+          ts.isArrayLiteralExpression(init)) {
+        let narrowedInit =
+            this.walkObjectLikeLiteral(init, bindingPath.reverse());
         init = narrowedInit || init;
       }
       codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' = '}));
-      codeParts.push(makeMarkedSource({kind: 'INITIALIZER', preText: init.getText()}));
+      codeParts.push(
+          makeMarkedSource({kind: 'INITIALIZER', preText: init.getText()}));
     }
 
     const markedSource = makeMarkedSource({kind: 'BOX', childList: codeParts});
@@ -1636,20 +1654,25 @@ class Visitor {
   walkObjectLikeLiteral(
       objLiteral: ts.ArrayLiteralExpression|ts.ObjectLiteralExpression,
       path: Array<string|number>,
-  ): ts.Node|undefined {
+      ): ts.Node|undefined {
     let node: ts.Node = objLiteral;
     for (const prop of path) {
       let next: ts.Node|undefined;
       if (ts.isObjectLiteralExpression(node)) {
+        // The property name node text is the "index" of the property. See
+        // `bindingElemIndex` for more details.
         next = node.properties.find(p => p.name && p.name.getText() === prop);
         if (next && ts.isPropertyAssignment(next)) {
           next = next.initializer;
         }
-      } else if (ts.isArrayLiteralExpression(node) && typeof prop === 'number') {
+      } else if (
+          ts.isArrayLiteralExpression(node) && typeof prop === 'number') {
         next = (node as ts.ArrayLiteralExpression).elements[prop];
       }
       if (!next) {
-        todo(this.sourceRoot, node, `expected to be an object-like literal with property '${prop}'`)
+        todo(
+            this.sourceRoot, node,
+            `expected to be an object-like literal with property '${prop}'`)
         return;
       }
       node = next;

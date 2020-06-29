@@ -135,4 +135,6 @@ let [_, [i]] = [2, [3]];
 //- J code JCode
 //- JCode child.5 JInit
 //- JInit.pre_text "(() => { return {j : 1}; })()"
-let {j} = (() => { return {j : 1}; })();
+let {j} = (() => {
+  return {j: 1};
+})();
