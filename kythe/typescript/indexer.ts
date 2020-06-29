@@ -1979,7 +1979,10 @@ class Visitor {
     this.emitFact(doc, FactName.TEXT, jsdoc);
   }
 
-  /** Tags a node as deprecated if its JSDoc marks it as so. */
+  /**
+   * Tags a node as deprecated if its JSDoc marks it as so.
+   * TODO(TS 4.0): TS 4.0 exposes a JSDocDeprecatedTag.
+   */
   maybeTagDeprecated(node: ts.Node, nodeVName: VName) {
     const deprecatedTag =
         ts.getJSDocTags(node).find(tag => tag.tagName.text === 'deprecated');
