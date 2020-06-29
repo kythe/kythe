@@ -1529,9 +1529,11 @@ class Visitor {
         break;
     }
 
-    if (vname && ts.isVariableDeclaration(decl)) {
+    if (vname &&
+        (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
+         ts.isPropertyDeclaration(decl))) {
       // TODO: handle all other variable declaration kinds
-      this.emitVariableDeclarationCode(decl, vname);
+      this.emitDeclarationCode(decl, vname);
     }
 
     if (decl.type) this.visitType(decl.type);
@@ -1546,19 +1548,26 @@ class Visitor {
   }
 
   /**
-   * Emits a code fact for a variable declaration, specifying how the
-   * declaration should be presented to users.
+   * Emits a code fact for a variable or property declaration, specifying how
+   * the declaration should be presented to users.
    *
    * The form of the code fact is
-   *     ((local var)|const|let) <name>: <type>( = <initializer>)?
+   *     ((property)|(local var)|const|let) <name>: <type>( = <initializer>)?
    * where `(local var)` is the declaration of a variable in a catch clause.
    */
-  emitVariableDeclarationCode(decl: ts.VariableDeclaration, declVName: VName) {
+  emitDeclarationCode(
+      decl: ts.VariableDeclaration|ts.PropertyAssignment|ts.PropertyDeclaration,
+      declVName: VName) {
     const codeParts: MarkedSource[] = [];
     const initializerList = decl.parent;
-    const declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
+    let declKw;
+    if (ts.isVariableDeclaration(decl) ) {
+      declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
         '(local var)' :
         initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
+    } else {
+      declKw = '(property)';
+    }
     const ty = this.typeChecker.getTypeAtLocation(decl);
     const tyStr = this.typeChecker.typeToString(ty, decl);
     codeParts.push(makeMarkedSource({kind: 'CONTEXT', preText: declKw}));
