@@ -9,6 +9,15 @@ cc_library(
     hdrs = ["scope_guard.h"],
 )
 
+cc_test(
+    name = "scope_guard_test",
+    srcs = ["scope_guard_test.cc"],
+    deps = [
+        ":scope_guard",
+        "//third_party:gtest_main",
+    ],
+)
+
 cc_library(
     name = "json_proto",
     srcs = [

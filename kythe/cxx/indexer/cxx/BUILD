@@ -194,6 +194,7 @@ cc_library(
         "//kythe/cxx/extractor:supported_language",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/memory",
         "@org_llvm//:LLVMSupport",
