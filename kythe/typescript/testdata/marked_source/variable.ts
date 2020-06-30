@@ -111,7 +111,21 @@ try {
 //- HEq.pre_text " = "
 //- HCode child.5 HInit
 //- HInit.pre_text "1"
-let {f, g: {h: halias}} = {f: 0, g: {h: 1}};
+//- @#0redcat defines/binding Redcat
+//- Redcat code RedcatCode
+//- RedcatCode child.0 RedcatContext
+//- RedcatContext.pre_text "let"
+//- RedcatCode child.1 RedcatSpace
+//- RedcatSpace.pre_text " "
+//- RedcatCode child.2 RedcatName
+//- RedcatName.pre_text "redcat"
+//- RedcatCode child.3 RedcatTy
+//- RedcatTy.post_text "number"
+//- RedcatCode child.4 RedcatEq
+//- RedcatEq.pre_text " = "
+//- RedcatCode child.5 RedcatInit
+//- RedcatInit.pre_text "2"
+let {f, g: {h: halias}, redcat} = {f: 0, g: {h: 1}, ['redcat']: 2};
 
 //- @i defines/binding I
 //- I code ICode
@@ -134,7 +148,7 @@ let [_, [i]] = [2, [3]];
 //- @#0j defines/binding J
 //- J code JCode
 //- JCode child.5 JInit
-//- JInit.pre_text "(() => { return {j : 1}; })()"
+//- JInit.pre_text "(() => {\n  return {j: 1};\n})()"
 let {j} = (() => {
   return {j: 1};
 })();
