@@ -292,7 +292,7 @@ llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
   CHECK(ILE->isSemanticForm());
   QualType Type = ILE->getType();
   // Ignore non-aggregate and copy initialization.
-  if (!Type->isAggregateType() || ILE->isTransparent()) {
+  if (Type.isNull() || !Type->isAggregateType() || ILE->isTransparent()) {
     return {};
   }
   if (const clang::FieldDecl* Field = ILE->getInitializedFieldInUnion()) {
