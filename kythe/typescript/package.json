@@ -5,10 +5,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "browse": "node indexer.js tsconfig.json | ./browse",
-    "test": "yarn build && yarn runtest",
-    "runtest": "yarn unit_test && yarn e2e_test",
-    "e2e_test": "node test.js",
-    "unit_test": "jasmine utf8_test.js",
+    "test": "bazel test //kythe/typescript:indexer_test",
+    "unit_test": "bazel test //kythe/typescript:utf8_test",
     "fmt": "clang-format -i *.ts"
   },
   "dependencies": {
@@ -16,6 +14,7 @@
     "typescript": "~3.5.3"
   },
   "devDependencies": {
+    "@bazel/bazelisk": "^1.5.0",
     "@types/jasmine": "^2.8.8",
     "@types/node": "^10.15.3",
     "jasmine": "^3.1.0"
