@@ -23,6 +23,7 @@
 #include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/CommentLexer.h"
@@ -271,19 +272,11 @@ const clang::Decl* FindImplicitDeclForStmt(
   return nullptr;
 }
 
-template <typename T>
-std::string DumpString(const T& val) {
+template <typename T, typename... Tail>
+std::string DumpString(const T& val, Tail&&... tail) {
   std::string s;
   llvm::raw_string_ostream ss(s);
-  val.dump(ss);
-  return s;
-}
-
-template <typename T>
-std::string DumpString(const T& val, clang::SourceManager& source_manager) {
-  std::string s;
-  llvm::raw_string_ostream ss(s);
-  val.dump(ss, source_manager);
+  val.dump(ss, std::forward<Tail>(tail)...);
   return s;
 }
 
@@ -1919,8 +1912,7 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
   auto II = ILE->inits().begin();
   for (const clang::Decl* Decl : GetInitExprDecls(ILE)) {
     if (II == ILE->inits().end()) {
-      LOG(ERROR) << "Fewer initializers than decls:\n"
-                 << DumpString(*ILE, *Observer.getSourceManager());
+      LogErrorWithASTDump("Fewer initializers than decls:\n", ILE);
       break;
     }
     const clang::Expr* Init = *II++;
@@ -1943,10 +1935,13 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
   return true;
 }
 
-bool IndexerASTVisitor::TraverseBinAssign(clang::BinaryOperator* BO) {
+bool IndexerASTVisitor::TraverseBinaryOperator(clang::BinaryOperator* BO) {
+  if (BO->getOpcode() != clang::BO_Assign)
+    return Base::TraverseBinaryOperator(BO);
+
   if (auto rhs = BO->getRHS(), lhs = BO->getLHS();
       lhs != nullptr && rhs != nullptr) {
-    if (!WalkUpFromBinAssign(BO)) return false;
+    if (!WalkUpFromBinaryOperator(BO)) return false;
     if (!TraverseStmt(lhs)) return false;
     auto scope_guard = PushScope(Job->InfluenceSets, {});
     if (!TraverseStmt(rhs)) {
@@ -1962,7 +1957,7 @@ bool IndexerASTVisitor::TraverseBinAssign(clang::BinaryOperator* BO) {
     }
     return true;
   }
-  return Base::TraverseBinAssign(BO);
+  return Base::TraverseBinaryOperator(BO);
 }
 
 bool IndexerASTVisitor::TraverseInitListExpr(clang::InitListExpr* ILE) {
@@ -5425,7 +5420,7 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl* MD) {
                                  NodeIds);
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(const std::string& msg,
+void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
                                             const clang::Decl* Decl) const {
   std::string s;
   llvm::raw_string_ostream ss(s);
@@ -5433,11 +5428,11 @@ void IndexerASTVisitor::LogErrorWithASTDump(const std::string& msg,
   LOG(ERROR) << msg << " :" << std::endl << s;
 }
 
-void IndexerASTVisitor::LogErrorWithASTDump(const std::string& msg,
+void IndexerASTVisitor::LogErrorWithASTDump(absl::string_view msg,
                                             const clang::Expr* Expr) const {
   std::string s;
   llvm::raw_string_ostream ss(s);
-  Expr->dump(ss);
+  Expr->dump(ss, Context);
   LOG(ERROR) << msg << " :" << std::endl << s;
 }
 

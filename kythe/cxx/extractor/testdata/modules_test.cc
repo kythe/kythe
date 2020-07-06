@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "absl/algorithm/container.h"
+#include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -84,6 +86,8 @@ TEST(CxxExtractorTest, TestModulesExtraction) {
       "/dummy/bin/g++",
       "-fmodules",
       "-fmodule-map-file=kythe/cxx/extractor/testdata/modfoo.modulemap",
+      absl::StrCat("-fmodules-cache-path=", testing::TempDir(),
+                   "/module-cache"),
       "-I./kythe/cxx/extractor",
       "./kythe/cxx/extractor/testdata/modules.cc",
   }});
@@ -91,6 +95,10 @@ TEST(CxxExtractorTest, TestModulesExtraction) {
   unit.set_argument(2, "dummy-target");
   unit.set_working_directory("TEST_CWD");
   unit.clear_details();
+  unit.mutable_argument()->erase(
+      absl::c_find_if(unit.argument(), [](absl::string_view arg) {
+        return absl::StartsWith(arg, "-fmodules-cache-path=");
+      }));
 
   EXPECT_THAT(unit, EquivToCompilation(kExpectedCompilation));
 }
