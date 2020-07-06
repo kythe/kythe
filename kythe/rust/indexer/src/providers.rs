@@ -66,11 +66,7 @@ impl KzipFileProvider {
 
         // Get the name of the root folder of the kzip. This should be almost always be
         // "root" by the kzip spec doesn't guarantee it.
-        let root_name: String;
-        // Extra scrope is needed because we are borrowing zip_archive for file. File
-        // needs to get dropped so release the zip_archive borrow before we move
-        // it into a struct.
-        {
+        let root_name = {
             let file = zip_archive.by_index(0)?;
             let mut path = Path::new(file.name());
             while let Some(p) = path.parent() {
@@ -81,8 +77,8 @@ impl KzipFileProvider {
                 }
                 path = p;
             }
-            root_name = path.to_str().unwrap().into();
-        }
+            path.to_str().unwrap().into()
+        };
         // Safe to unwrap because kzip read would have failed if the internal paths
         // weren't UTF-8
         Ok(Self { zip_archive, root_name })
