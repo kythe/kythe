@@ -1274,8 +1274,11 @@ void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
     final_args_.insert(final_args_.begin() + 1, "-resource-dir");
   }
   final_args_.insert(final_args_.begin() + 1, "-DKYTHE_IS_RUNNING=1");
-  // Store the arguments post-filtering.
+  // Store the arguments in the compilation unit post-filtering.
   index_writer_.set_args(final_args_);
+  // Disable all warnings when running the extractor, but don't propogate this
+  // to the indexer.
+  final_args_.push_back("--no-warnings");
 }
 
 void ExtractorConfiguration::InitializeFromEnvironment() {
