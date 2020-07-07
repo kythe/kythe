@@ -234,9 +234,9 @@ absl::Status ParseFromJsonString(absl::string_view input,
   return ParseFromJsonString(input, DefaultParseOptions(), message);
 }
 
-void PackAny(const google::protobuf::Message& message, const char* type_uri,
-             google::protobuf::Any* out) {
-  out->set_type_url(type_uri);
+void PackAny(const google::protobuf::Message& message,
+             absl::string_view type_uri, google::protobuf::Any* out) {
+  out->set_type_url(type_uri.data(), type_uri.size());
   google::protobuf::io::StringOutputStream stream(out->mutable_value());
   google::protobuf::io::CodedOutputStream coded_output_stream(&stream);
   message.SerializeToCodedStream(&coded_output_stream);

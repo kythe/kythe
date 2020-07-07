@@ -99,8 +99,8 @@ StatusOr<std::string> WriteMessageAsJsonToString(
 /// \param message The message to wrap.
 /// \param type_uri The URI of the message type.
 /// \param out The resulting Any.
-void PackAny(const google::protobuf::Message& message, const char* type_uri,
-             google::protobuf::Any* out);
+void PackAny(const google::protobuf::Message& message,
+             absl::string_view type_uri, google::protobuf::Any* out);
 
 /// \brief Unpack a protobuf from an Any.
 /// \param any The Any to unpack.
