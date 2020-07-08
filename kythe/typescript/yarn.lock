@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@bazel/bazelisk@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@bazel/bazelisk/-/bazelisk-1.5.0.tgz#61f583ed93be138b47be7180403938ea4057f54b"
+  integrity sha512-qhOGN1WmfZYNJXGrRL/0byii9hX5FBomMv3WWI2OEL2+Bxm4t/bR3zMxN3xwQX1C8meSSrAfKGSzxVOZfpJsOg==
+
 "@types/jasmine@^2.8.8":
   version "2.8.16"
   resolved "https://registry.yarnpkg.com/@types/jasmine/-/jasmine-2.8.16.tgz#a6cb24b1149d65293bd616923500014838e14e7d"

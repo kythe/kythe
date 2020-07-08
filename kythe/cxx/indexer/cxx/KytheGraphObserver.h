@@ -304,6 +304,9 @@ class KytheGraphObserver : public GraphObserver {
 
   void recordTypeEdge(const NodeId& term_id, const NodeId& type_id) override;
 
+  void recordInfluences(const NodeId& influencer,
+                        const NodeId& influenced) override;
+
   void recordUpperBoundEdge(const NodeId& TypeNodeId,
                             const NodeId& TypeBoundNodeId) override;
 

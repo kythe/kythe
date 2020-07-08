@@ -194,6 +194,7 @@ cc_test(
         "//kythe/cxx/extractor:testlib",
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest_main",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/strings",
     ],
 )

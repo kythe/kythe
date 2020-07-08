@@ -80,7 +80,8 @@ struct BackPopper {
 
 /// \brief Pushes the value onto the stack and returns a sentinel which will
 /// remove it at destruction.
-template <typename StackType, typename ValueType>
+template <typename StackType,
+          typename ValueType = typename StackType::value_type>
 ScopeGuard<BackPopper<StackType>> PushScope(StackType& Target,
                                             ValueType&& Value) {
   Target.push_back(std::forward<ValueType>(Value));
