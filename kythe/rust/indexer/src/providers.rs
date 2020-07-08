@@ -126,10 +126,7 @@ impl FileProvider for KzipFileProvider {
     ///
     /// # Errors
     ///
-    /// If the file does not exist in the kzip, a
-    /// [FileNotFoundError][KytheError::FileNotFoundError] is returned.
-    /// If the file cannot be read, a FileReadError][KytheError::FileReadError]
-    /// is returned.
+    /// An error will be returned if the file does not exist or cannot be read.
     fn contents(&mut self, file_hash: &str) -> Result<Vec<u8>, KytheError> {
         // Ensure the file exists in the kzip
         let name = format!("{}files/{}", self.root_name, file_hash);
