@@ -55,7 +55,7 @@ fn test_kzip_provider() {
     assert_eq!(contents_string, "Test\n", "File contents did not match expected contents");
 
     let invalid_contents = kzip_provider.contents("invalid");
-    assert!(invalid_contents.is_err(), "Expected Err while reading contents for non-existent file");
+    assert!(invalid_contents.is_err(), "Expected Err while reading contents for non-existent file, but received file contents: {:?}", invalid_contents.unwrap());
     let contents_error = invalid_contents.err().unwrap();
     match contents_error {
         KytheError::FileNotFoundError => {}
