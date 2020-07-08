@@ -81,10 +81,10 @@ impl KzipFileProvider {
                 }
                 path = p;
             }
+            // Safe to unwrap because kzip read would have failed if the internal paths
+            // weren't UTF-8
             root_name = path.to_str().unwrap().into();
         }
-        // Safe to unwrap because kzip read would have failed if the internal paths
-        // weren't UTF-8
         Ok(Self { zip_archive, root_name })
     }
 
@@ -116,12 +116,12 @@ impl FileProvider for KzipFileProvider {
     /// Given a file hash, returns whether the file exists in the kzip.
     fn exists(&mut self, file_hash: &str) -> bool {
         // root_name contains a trailing forward-slash, so it's needed in the format
-        // string.
+        // string. For example, the extractor kzip that will have a root name of "root/"
         let name = format!("{}files/{}", self.root_name, file_hash);
         self.zip_archive.by_name(&name).is_ok()
     }
 
-    /// Given a file hash, returns the vect of bytes of the file from the
+    /// Given a file hash, returns the vector of bytes of the file from the
     /// kzip.
     ///
     /// # Errors
