@@ -374,16 +374,16 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
     // We're matching against a call to ParseTextProtoOrDie, a function
     // template that returns some proto type T via ParseProtoHelper's
     // operator T() (which performs the actual message parsing).
-    // Get the inner stringpiece.
-    if (HelperCallExpr->getNumArgs() != 3) {
+    // Get the inner string_view.
+    if (HelperCallExpr->getNumArgs() < 1) {
       LOG(ERROR) << "Unknown signature for ParseTextProtoOrDie";
       return;
     }
-    const auto* const StringpieceCtorExpr =
+    const auto* const StringViewCtorExpr =
         HelperCallExpr->getArg(0)->IgnoreParenImpCasts();
-    // TODO(courbet): Handle the case when the stringpiece is not a temporary.
+    // TODO(courbet): Handle the case when the string_view is not a temporary.
     if (const auto* const CxxConstruct =
-            clang::dyn_cast<clang::CXXConstructExpr>(StringpieceCtorExpr)) {
+            clang::dyn_cast<clang::CXXConstructExpr>(StringViewCtorExpr)) {
       // StringPiece(StringPiece&&) has a single parameter.
       if (CxxConstruct->getNumArgs() != 1) {
         return;
@@ -397,7 +397,7 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
       if (clang::isa<clang::StringLiteral>(Arg)) {
         Literal = clang::dyn_cast<clang::StringLiteral>(Arg);
       } else {
-        // TODO(courbet): Handle the case when the input is not a const char*
+        // TODO(courbet): Handle the case when the input is not a string
         // literal.
         return;
       }

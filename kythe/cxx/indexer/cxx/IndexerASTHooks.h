@@ -27,6 +27,7 @@
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
@@ -115,6 +116,8 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   bool VisitBindingDecl(const clang::BindingDecl* Decl);
   bool VisitSizeOfPackExpr(const clang::SizeOfPackExpr* Expr);
   bool VisitDeclRefExpr(const clang::DeclRefExpr* DRE);
+
+  bool TraverseBinaryOperator(clang::BinaryOperator* BO);
 
   bool TraverseInitListExpr(clang::InitListExpr* ILE);
   bool VisitInitListExpr(const clang::InitListExpr* ILE);
@@ -917,9 +920,9 @@ class IndexerASTVisitor : public RecursiveTypeVisitor<IndexerASTVisitor> {
   void ConnectCategoryToBaseClass(const GraphObserver::NodeId& DeclNode,
                                   const clang::ObjCInterfaceDecl* IFace);
 
-  void LogErrorWithASTDump(const std::string& msg,
+  void LogErrorWithASTDump(absl::string_view msg,
                            const clang::Decl* Decl) const;
-  void LogErrorWithASTDump(const std::string& msg,
+  void LogErrorWithASTDump(absl::string_view msg,
                            const clang::Expr* Expr) const;
 
   /// \brief This is used to handle the visitation of a clang::TypedefDecl

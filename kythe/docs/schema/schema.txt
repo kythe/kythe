@@ -615,6 +615,38 @@ specification of that service. The specification and its generated artifacts
 may be joined by the *generates* edge.  Either both the specification and its
 generated artifact are file nodes or both are semantic nodes.
 
+[[influences]]
+influences
+~~~~~~~~~~
+
+Brief description::
+  A *influences* B if A directly affects B during the evaluation of a program.
+Commonly arises from::
+  assignment
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+Notes::
+  This is an experimental definition and is expected to undergo refinement.
+
+[kythe,C++,"Assignment causes influence"]
+--------------------------------------------------------------------------------
+void f() {
+  //- @x defines/binding VarX
+  //- @y defines/binding VarY
+  //- @z defines/binding VarZ
+  int x = 0, y = 1, z = 2;
+  //- VarZ influences VarY
+  //- VarY influences VarX
+  //- !{VarZ influences VarX}
+  //- !{VarY influences VarZ}
+  x = y = z;
+}
+--------------------------------------------------------------------------------
+
 [[instantiates]]
 instantiates
 ~~~~~~~~~~~~

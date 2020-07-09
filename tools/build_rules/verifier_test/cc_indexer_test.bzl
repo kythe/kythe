@@ -244,6 +244,14 @@ _cc_kythe_proto_library_aspect = aspect(
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
+        # Attribute to make importing easier as the internal API requires this parameter.
+        # Unused externally.
+        "_grep_includes": attr.label(
+            allow_single_file = True,
+            executable = True,
+            cfg = "host",
+            default = Label("//tools/cpp:grep-includes"),
+        ),
     },
     fragments = ["cpp"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
