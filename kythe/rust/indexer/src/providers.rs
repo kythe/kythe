@@ -79,8 +79,9 @@ impl KzipFileProvider {
             }
             // Safe to unwrap because kzip read would have failed if the internal paths
             // weren't UTF-8
-            root_name = path.to_str().unwrap().into();
-        }
+            path.to_str().unwrap().to_owned()
+        };
+
         Ok(Self { zip_archive, root_name })
     }
 
