@@ -35,7 +35,6 @@ impl ArrayWriter {
 }
 
 impl KytheWriter for ArrayWriter {
-    /// Given an [Entry], push it onto the vector. Never returns an error.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError> {
         self.entries.push(entry);
         Ok(())

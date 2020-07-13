@@ -58,8 +58,8 @@ impl KzipFileProvider {
     ///
     /// # Errors
     ///
-    /// If an error occurs while reading the kzip, a
-    /// [KzipFileError][KytheError::KzipFileError] will be returned.
+    /// If an error occurs while reading the kzip, a [KzipFileError] will be
+    /// returned.
     pub fn new(file: File) -> Result<Self, KytheError> {
         let reader = BufReader::new(file);
         let mut zip_archive = ZipArchive::new(reader)?;
