@@ -28,10 +28,6 @@ impl ArrayWriter {
     pub fn new() -> Self {
         Self { entries: Vec::new() }
     }
-    /// Returns a clone of the stored vector of entries.
-    pub fn get_entries(&self) -> Vec<Entry> {
-        self.entries.clone()
-    }
 }
 
 impl KytheWriter for ArrayWriter {
@@ -45,6 +41,12 @@ impl KytheWriter for ArrayWriter {
     }
 }
 
+impl AsRef<Vec<Entry>> for ArrayWriter {
+    fn as_ref(&self) -> &Vec<Entry> {
+        self.entries.as_ref()
+    }
+}
+
 #[test]
 fn array_writer_test() {
     let entry = Entry::new();
@@ -53,5 +55,5 @@ fn array_writer_test() {
 
     let mut writer = ArrayWriter::new();
     assert_eq!(writer.write_entry(entry).unwrap(), ());
-    assert_eq!(writer.get_entries(), test_vec);
+    assert_eq!(writer.as_ref().clone(), test_vec);
 }
