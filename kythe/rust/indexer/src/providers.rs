@@ -49,6 +49,7 @@ pub trait FileProvider {
 /// A [FileProvider] that backed by a .kzip file.
 pub struct KzipFileProvider {
     zip_archive: ZipArchive<BufReader<File>>,
+    /// The top level folder name inside of the zip archive
     root_name: String,
 }
 
