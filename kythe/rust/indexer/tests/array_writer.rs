@@ -52,6 +52,6 @@ fn array_writer_test() {
     test_vec.push(entry.clone());
 
     let mut writer = ArrayWriter::new();
-    assert!(writer.write_entry(entry).is_ok());
+    assert_eq!(writer.write_entry(entry).unwrap(), ());
     assert_eq!(writer.get_entries(), test_vec);
 }
