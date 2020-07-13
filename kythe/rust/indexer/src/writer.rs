@@ -48,8 +48,8 @@ pub struct StreamWriter<'a> {
 impl<'a> StreamWriter<'a> {
     /// Create a new instance of StreamWriter
     ///
-    /// Given a writer that implements [Write], initializes a CodedOutputStream
-    /// and returns a new [StreamWriter].
+    /// Given a writer that implements the `Write` trait, initializes a
+    /// CodedOutputStream and returns a new [StreamWriter](crate::StreamWriter).
     pub fn new(writer: &'a mut dyn Write) -> StreamWriter<'a> {
         Self { output_stream: CodedOutputStream::new(writer) }
     }
@@ -62,8 +62,7 @@ impl<'a> KytheWriter for StreamWriter<'a> {
     ///
     /// # Errors
     ///
-    /// If any of these writes fails, a [WriterError][KytheError::WriterError]
-    /// is returned.
+    /// An error is returned if the write fails.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError> {
         let entry_size = entry.compute_size();
         self.output_stream.write_raw_varint32(entry_size).map_err(KytheError::WriterError)?;
