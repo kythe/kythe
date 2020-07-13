@@ -4,6 +4,9 @@ struct Default {
   Default();
 };
 
+//- @I defines/binding StructI
+struct I;
+
 //- @S defines/binding StructS
 struct S {
   //- @a defines/binding FieldA
@@ -49,6 +52,8 @@ struct V {
 
 S FromValue();
 
+const I& ReturnsIncomplete();
+
 template <typename...T>
 void fn(T&&...);
 
@@ -91,4 +96,7 @@ void f() {
   //- !{ @#0"}" ref/init _ }
   //- !{ @#1"}" ref/init _ }
   V v{{1}, 2};
+
+  //- @#0I ref StructI
+  const I& i{ReturnsIncomplete()};
 }
