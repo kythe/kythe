@@ -48,9 +48,7 @@ pub struct CodedOutputStreamWriter<'a> {
 impl<'a> CodedOutputStreamWriter<'a> {
     /// Create a new instance of CodedOutputStreamWriter
     ///
-    /// Given a writer that implements the `Write` trait, initializes a
-    /// CodedOutputStream and returns a new
-    /// [CodedOutputStreamWriter](crate::CodedOutputStreamWriter).
+    /// Takes a writer that implements the `Write` trait as the only argument.
     pub fn new(writer: &'a mut dyn Write) -> CodedOutputStreamWriter<'a> {
         Self { output_stream: CodedOutputStream::new(writer) }
     }
