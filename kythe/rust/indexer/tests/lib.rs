@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate quick_error;
+extern crate kythe_rust_indexer;
+extern crate runfiles;
+extern crate storage_rust_proto;
 
-pub mod error;
-pub mod providers;
-pub mod writer;
+pub mod array_writer;
+mod providers;

@@ -49,6 +49,7 @@ pub trait FileProvider {
 /// A [FileProvider] that backed by a .kzip file.
 pub struct KzipFileProvider {
     zip_archive: ZipArchive<BufReader<File>>,
+    /// The top level folder name inside of the zip archive
     root_name: String,
 }
 
@@ -58,19 +59,15 @@ impl KzipFileProvider {
     ///
     /// # Errors
     ///
-    /// If an error occurs while reading the kzip, a
-    /// [KzipFileError][KytheError::KzipFileError] will be returned.
+    /// If an error occurs while reading the kzip, a [KzipFileError] will be
+    /// returned.
     pub fn new(file: File) -> Result<Self, KytheError> {
         let reader = BufReader::new(file);
         let mut zip_archive = ZipArchive::new(reader)?;
 
         // Get the name of the root folder of the kzip. This should be almost always be
         // "root" by the kzip spec doesn't guarantee it.
-        let root_name: String;
-        // Extra scrope is needed because we are borrowing zip_archive for file. File
-        // needs to get dropped so release the zip_archive borrow before we move
-        // it into a struct.
-        {
+        let root_name = {
             let file = zip_archive.by_index(0)?;
             let mut path = Path::new(file.name());
             while let Some(p) = path.parent() {
@@ -83,8 +80,9 @@ impl KzipFileProvider {
             }
             // Safe to unwrap because kzip read would have failed if the internal paths
             // weren't UTF-8
-            root_name = path.to_str().unwrap().into();
-        }
+            path.to_str().unwrap().to_owned()
+        };
+
         Ok(Self { zip_archive, root_name })
     }
 
