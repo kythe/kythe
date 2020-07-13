@@ -41,21 +41,22 @@ pub trait KytheWriter {
 }
 
 /// A [KytheWriter] that writes entries to a [CodedOutputStream]
-pub struct StreamWriter<'a> {
+pub struct CodedOutputStreamWriter<'a> {
     output_stream: CodedOutputStream<'a>,
 }
 
-impl<'a> StreamWriter<'a> {
-    /// Create a new instance of StreamWriter
+impl<'a> CodedOutputStreamWriter<'a> {
+    /// Create a new instance of CodedOutputStreamWriter
     ///
     /// Given a writer that implements the `Write` trait, initializes a
-    /// CodedOutputStream and returns a new [StreamWriter](crate::StreamWriter).
-    pub fn new(writer: &'a mut dyn Write) -> StreamWriter<'a> {
+    /// CodedOutputStream and returns a new
+    /// [CodedOutputStreamWriter](crate::CodedOutputStreamWriter).
+    pub fn new(writer: &'a mut dyn Write) -> CodedOutputStreamWriter<'a> {
         Self { output_stream: CodedOutputStream::new(writer) }
     }
 }
 
-impl<'a> KytheWriter for StreamWriter<'a> {
+impl<'a> KytheWriter for CodedOutputStreamWriter<'a> {
     /// Given an [Entry], writes the entry using a [CodedOutputStream].
     /// First writes a varint32 of the size of the entry, then writes the actual
     /// entry.
@@ -86,7 +87,7 @@ mod tests {
 
         // Write to a vec of bytes
         let mut bytes: Vec<u8> = Vec::new();
-        let mut writer = StreamWriter::new(&mut bytes);
+        let mut writer = CodedOutputStreamWriter::new(&mut bytes);
         assert!(writer.write_entry(entry.clone()).is_ok());
         assert!(writer.flush().is_ok());
         assert_eq!(bytes.len(), 10);
