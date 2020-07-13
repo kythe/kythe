@@ -762,7 +762,8 @@ void FileDescriptorWalker::VisitNestedFields(const std::string& name_prefix,
 
 void FileDescriptorWalker::AddComments(const VName& v_name,
                                        const std::vector<int>& path) {
-  const auto* protoc_location = FindOrNull(path_location_map_, path);
+  const auto* protoc_location =
+      google::protobuf::FindOrNull(path_location_map_, path);
   StatusOr<PartialLocation> readable_location =
       ParseLocation(location_map_[path]);
   if (protoc_location != nullptr && readable_location.ok()) {
