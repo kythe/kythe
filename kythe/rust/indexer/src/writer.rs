@@ -64,8 +64,8 @@ impl<'a> KytheWriter for StreamWriter<'a> {
     ///
     /// An error is returned if the write fails.
     fn write_entry(&mut self, entry: Entry) -> Result<(), KytheError> {
-        let entry_size = entry.compute_size();
-        self.output_stream.write_raw_varint32(entry_size).map_err(KytheError::WriterError)?;
+        let entry_size_bytes = entry.compute_size();
+        self.output_stream.write_raw_varint32(entry_size_bytes).map_err(KytheError::WriterError)?;
         entry.write_to_with_cached_sizes(&mut self.output_stream).map_err(KytheError::WriterError)
     }
 
