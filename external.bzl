@@ -31,7 +31,7 @@ def _rule_dependencies():
     rules_proto_dependencies()
     py_repositories()
     bazel_toolchains_repositories()
-    rust_repositories(version = "1.43.1")
+    rust_repositories(version = "nightly", iso_date = "2020-06-23", dev_components = True)
     rust_proto_repositories()
     bazel_version(name = "bazel_version")
 

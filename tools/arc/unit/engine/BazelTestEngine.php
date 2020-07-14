@@ -69,7 +69,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     $files = join($files, " ");
     $this->debugPrint("files: " . $files);
 
-    $cmd = $this->bazelCommand("query", ["%s"]);
+    $cmd = $this->bazelCommand("query", ["-k", "%s"]);
     $tag_filter = join("|", self::$omit_tags);
     $query = 'rdeps(//..., set('.$files.')) except attr(tags, "'.$tag_filter.'", //...)';
     $this->debugPrint($query);
