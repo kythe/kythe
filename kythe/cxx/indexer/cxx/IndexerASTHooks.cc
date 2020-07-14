@@ -280,12 +280,20 @@ std::string DumpString(const T& val, Tail&&... tail) {
   return s;
 }
 
+bool IsCompleteAggregateType(clang::QualType Type) {
+  if (Type.isNull()) {
+    return false;
+  }
+  Type = Type.getCanonicalType();
+  return !Type->isIncompleteType() && Type->isAggregateType();
+}
+
 llvm::SmallVector<const clang::Decl*, 5> GetInitExprDecls(
     const clang::InitListExpr* ILE) {
   CHECK(ILE->isSemanticForm());
   QualType Type = ILE->getType();
   // Ignore non-aggregate and copy initialization.
-  if (Type.isNull() || !Type->isAggregateType() || ILE->isTransparent()) {
+  if (!IsCompleteAggregateType(Type) || ILE->isTransparent()) {
     return {};
   }
   if (const clang::FieldDecl* Field = ILE->getInitializedFieldInUnion()) {
