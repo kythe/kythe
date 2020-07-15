@@ -16,6 +16,7 @@ use crate::error::KytheError;
 use analysis_rust_proto::*;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::path::Path;
 use zip::ZipArchive;
 
 /// A trait for retrieving files during indexing.
@@ -31,23 +32,25 @@ pub trait FileProvider {
     /// will be returned.
     fn exists(&mut self, file_hash: &str) -> bool;
 
-    /// Retrieves the string contents of a file.
+    /// Retrieves the byte contents of a file.
     ///
-    /// This function takes a file hash and returns the string contents of the
-    /// file.
+    /// This function takes a file hash and returns the bytes contents of the
+    /// file in a vector.
     ///
     /// # Errors
     ///
     /// If the file does not exist, a
     /// [FileNotFoundError][KytheError::FileNotFoundError] will be returned.
-    /// If the file can't be read into a String, a
-    /// [FileReadError][KytheError::FileReadError] will be returned.
-    fn contents(&mut self, file_hash: &str) -> Result<String, KytheError>;
+    /// If the file can't be read, a [FileReadError][KytheError::FileReadError]
+    /// will be returned.
+    fn contents(&mut self, file_hash: &str) -> Result<Vec<u8>, KytheError>;
 }
 
 /// A [FileProvider] that backed by a .kzip file.
 pub struct KzipFileProvider {
     zip_archive: ZipArchive<BufReader<File>>,
+    /// The top level folder name inside of the zip archive
+    root_name: String,
 }
 
 impl KzipFileProvider {
@@ -56,12 +59,31 @@ impl KzipFileProvider {
     ///
     /// # Errors
     ///
-    /// If the file is not a valid zip archive, a
-    /// [KzipFileError][KytheError::KzipFileError] will be returned.
+    /// If an error occurs while reading the kzip, a [KzipFileError] will be
+    /// returned.
     pub fn new(file: File) -> Result<Self, KytheError> {
         let reader = BufReader::new(file);
-        let zip_archive = ZipArchive::new(reader)?;
-        Ok(Self { zip_archive })
+        let mut zip_archive = ZipArchive::new(reader)?;
+
+        // Get the name of the root folder of the kzip. This should be almost always be
+        // "root" by the kzip spec doesn't guarantee it.
+        let root_name = {
+            let file = zip_archive.by_index(0)?;
+            let mut path = Path::new(file.name());
+            while let Some(p) = path.parent() {
+                // Last parent will be blank path so break when p is empty. path will contain
+                // root
+                if p == Path::new("") {
+                    break;
+                }
+                path = p;
+            }
+            // Safe to unwrap because kzip read would have failed if the internal paths
+            // weren't UTF-8
+            path.to_str().unwrap().to_owned()
+        };
+
+        Ok(Self { zip_archive, root_name })
     }
 
     /// Retrieve the Compilation Units from the kzip.
@@ -91,26 +113,25 @@ impl KzipFileProvider {
 impl FileProvider for KzipFileProvider {
     /// Given a file hash, returns whether the file exists in the kzip.
     fn exists(&mut self, file_hash: &str) -> bool {
-        let name = format!("files/{}", file_hash);
+        // root_name contains a trailing forward-slash, so it's needed in the format
+        // string. For example, the extractor kzip that will have a root name of "root/"
+        let name = format!("{}files/{}", self.root_name, file_hash);
         self.zip_archive.by_name(&name).is_ok()
     }
 
-    /// Given a file hash, returns the string contents of the file from the
+    /// Given a file hash, returns the vector of bytes of the file from the
     /// kzip.
     ///
     /// # Errors
     ///
-    /// If the file does not exist in the kzip, a
-    /// [FileNotFoundError][KytheError::FileNotFoundError] is returned.
-    /// If the file cannot be read into a string, a
-    /// [FileReadError][KytheError::FileReadError] is returned.
-    fn contents(&mut self, file_hash: &str) -> Result<String, KytheError> {
+    /// An error will be returned if the file does not exist or cannot be read.
+    fn contents(&mut self, file_hash: &str) -> Result<Vec<u8>, KytheError> {
         // Ensure the file exists in the kzip
-        let name = format!("files/{}", file_hash);
+        let name = format!("{}files/{}", self.root_name, file_hash);
         let file = self.zip_archive.by_name(&name).map_err(|_| KytheError::FileNotFoundError)?;
         let mut reader = BufReader::new(file);
-        let mut file_contents = String::new();
-        reader.read_to_string(&mut file_contents)?;
+        let mut file_contents: Vec<u8> = Vec::new();
+        reader.read_to_end(&mut file_contents)?;
         Ok(file_contents)
     }
 }
