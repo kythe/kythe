@@ -1,3 +1,5 @@
+package(features = ["layering_check"])
+
 cc_binary(
     name = "textproto_indexer",
     srcs = ["textproto_indexer_main.cc"],
@@ -38,5 +40,6 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
