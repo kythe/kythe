@@ -14,6 +14,7 @@ MANIFEST-*
 .DS_Store
 .vscode
 .clangd
+.cache
 
 # Binary files
 *.class
