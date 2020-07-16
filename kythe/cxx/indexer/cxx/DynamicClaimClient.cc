@@ -15,7 +15,7 @@
  */
 #include "kythe/cxx/indexer/cxx/DynamicClaimClient.h"
 
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 #include <openssl/sha.h>
 
 #include "absl/strings/str_format.h"
