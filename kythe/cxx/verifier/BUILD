@@ -1,4 +1,7 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load("//tools/build_rules/lexyacc:lexyacc.bzl", "genlex", "genyacc")
@@ -75,6 +78,7 @@ cc_library(
         "//kythe/proto:storage_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
