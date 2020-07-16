@@ -926,6 +926,7 @@ class Visitor {
     if (kType) {
       this.emitNode(kType, NodeKind.INTERFACE);
       this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kType);
+      this.visitJSDoc(decl, kType);
     }
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
@@ -947,6 +948,7 @@ class Visitor {
     if (!kType) return;
     this.emitNode(kType, NodeKind.TALIAS);
     this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kType);
+    this.visitJSDoc(decl, kType);
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     const kAlias = this.visitType(decl.type);
@@ -1561,10 +1563,11 @@ class Visitor {
     const codeParts: MarkedSource[] = [];
     const initializerList = decl.parent;
     let declKw;
-    if (ts.isVariableDeclaration(decl) ) {
+    if (ts.isVariableDeclaration(decl)) {
       declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
-        '(local var)' :
-        initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
+                                                       '(local var)' :
+          initializerList.flags & ts.NodeFlags.Const ? 'const' :
+                                                       'let';
     } else {
       declKw = '(property)';
     }
