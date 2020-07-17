@@ -135,19 +135,25 @@ function collectTSFilesInDirectoryRecursively(dir: string, result: string[]) {
  * all files from a group will be passed to indexer and verifier.
  *
  * The rules of constructing groups are the following:
- * 1. All individual files in testdata will be returned as group of one file.
+ * 1. All individual files in testdata/ will be returned as group of one file.
  *    So they are tested separately.
- * 2. All files in subfolders in testdata/ will be returned as one group. These
- *    are used when cross-file references need to be tested.
+ * 2. All files in subfolders ending with '_group' will be returned as one
+ *    group. These are used when cross-file references need to be tested.
+ * 3. All individual files in subfolders not ending with '_group' will be
+ *    returned as group of one file. So they are tested separately.
  */
-function getTestFileGroups(): string[][] {
+function getTestFileGroups(dir: string): string[][] {
   const result = [];
-  for (const file of fs.readdirSync('testdata', {withFileTypes: true})) {
-    const relativeName = `testdata/${file.name}`;
+  for (const file of fs.readdirSync(dir, {withFileTypes: true})) {
+    const relativeName = `${dir}/${file.name}`;
     if (file.isDirectory()) {
-      const group: string[] = [];
-      collectTSFilesInDirectoryRecursively(relativeName, group);
-      result.push(group);
+      if (file.name.endsWith('_group')) {
+        const group: string[] = [];
+        collectTSFilesInDirectoryRecursively(relativeName, group);
+        result.push(group);
+      } else {
+        result.push(...getTestFileGroups(`${dir}/${file.name}`));
+      }
     } else if (file.name.endsWith('.ts')) {
       result.push([path.resolve(relativeName)]);
     }
@@ -175,28 +181,30 @@ function filterTestFileGroups(
 async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
   const config =
       indexer.loadTsConfig('testdata/tsconfig.for.tests.json', 'testdata');
-  let testFilesGroups = getTestFileGroups();
+  let testFilesGroups = getTestFileGroups('testdata');
   if (filters.length !== 0) {
     testFilesGroups = filterTestFileGroups(testFilesGroups, filters);
   }
 
   const host = createTestCompilerHost(config.options);
   for (const testFiles of testFilesGroups) {
-    const testName = path.relative(config.options.rootDir!, testFiles[0]);
-    if (testName.endsWith('plugin.ts')) {
-      // plugin.ts is tested by testPlugin() test.
-      continue;
+    for (const testFile of testFiles) {
+      const testName = path.relative(config.options.rootDir!, testFile);
+      if (testName.endsWith('plugin.ts')) {
+        // plugin.ts is tested by testPlugin() test.
+        continue;
+      }
+      const start = new Date().valueOf();
+      process.stdout.write(`${testName}: `);
+      try {
+        await verify(host, config.options, testFiles, plugins);
+      } catch (e) {
+        console.log('FAIL');
+        throw e;
+      }
+      const time = new Date().valueOf() - start;
+      console.log('PASS', time + 'ms');
     }
-    const start = new Date().valueOf();
-    process.stdout.write(`${testName}: `);
-    try {
-      await verify(host, config.options, testFiles, plugins);
-    } catch (e) {
-      console.log('FAIL');
-      throw e;
-    }
-    const time = new Date().valueOf() - start;
-    console.log('PASS', time + 'ms');
   }
   return 0;
 }
