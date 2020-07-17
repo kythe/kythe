@@ -203,7 +203,7 @@ async function testIndexer(filters: string[], plugins?: indexer.Plugin[]) {
         throw e;
       }
       const time = new Date().valueOf() - start;
-      console.log('PASS', time + 'ms');
+      console.log('PASS', `${time}ms`);
     }
   }
   return 0;
