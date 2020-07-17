@@ -1,4 +1,5 @@
 # Build file for tools integrating Bazel with clang tooling.
+package(features = ["layering_check"])
 
 # Extracts a single compile command from an extra action.
 cc_binary(

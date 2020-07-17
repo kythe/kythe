@@ -10,6 +10,5 @@ go_library(
         "//kythe/go/util/cmdutil",
         "//kythe/go/util/flagutil",
         "@com_github_google_subcommands//:go_default_library",
-        "@com_github_google_uuid//:go_default_library",
     ],
 )

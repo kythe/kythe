@@ -12,11 +12,11 @@ check_version(MIN_VERSION, MAX_VERSION)
 
 http_archive(
     name = "bazel_toolchains",
-    sha256 = "a802b753e127a6f73f3f300db5dd83fb618cd798bc880b6a87db9a8777b7939f",
-    strip_prefix = "bazel-toolchains-3.3.0",
+    sha256 = "882fecfc88d3dc528f5c5681d95d730e213e39099abff2e637688a91a9619395",
+    strip_prefix = "bazel-toolchains-3.4.0",
     urls = [
-        "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.3.0/bazel-toolchains-3.3.0.tar.gz",
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/3.3.0/bazel-toolchains-3.3.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.4.0/bazel-toolchains-3.4.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/3.4.0/bazel-toolchains-3.4.0.tar.gz",
     ],
 )
 

@@ -1,3 +1,7 @@
+package(
+    features = ["layering_check"],
+)
+
 cc_binary(
     name = "proto_extractor",
     srcs = ["proto_extractor_main.cc"],

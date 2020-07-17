@@ -58,6 +58,19 @@ OUT="$OUTPUT/compilations.kzip"
 if [[ -f "$OUT" ]]; then
   OUT="$(mktemp -p "$OUTPUT/" compilations.XXXXX.kzip)"
 fi
+
+# cd into the top-level git directory of our package and query git for the
+# commit timestamp.
+pushd "/workspace/gopath/src/$(dirname ${PACKAGES[1]})"
+TIMESTAMP="$(git log --pretty='%ad' -n 1 HEAD)"
+popd
+
+# Record the timestamp of the git commit in a metadata kzip.
+kzip create_metadata \
+  --output "$OUTPUT/buildmetadata.kzip" \
+  --corpus "$KYTHE_CORPUS" \
+  --commit_timestamp "$TIMESTAMP"
+
 echo "Merging compilations into $OUT" >&2
-kzip merge --encoding "$KYTHE_KZIP_ENCODING" --output "$OUT" "$TMPDIR"/out.*.kzip
+kzip merge --encoding "$KYTHE_KZIP_ENCODING" --output "$OUT" "$TMPDIR"/out.*.kzip "$OUTPUT/buildmetadata.kzip"
 fix_permissions.sh "$OUTPUT"

@@ -17,31 +17,28 @@ use protobuf::error::ProtobufError;
 quick_error! {
     #[derive(Debug)]
     pub enum KytheError {
-        // The FileProvider failed to find the file
+        /// The FileProvider failed to find the file
         FileNotFoundError {
             display("The requested file could not be found")
         }
-        // The FileProvider failed to read the file
+        /// The FileProvider failed to read the file
         FileReadError(err: std::io::Error) {
             from()
             display("Failed to read contents of file: {}", err)
         }
-        // The KzipFileProvider couldn't read the provided file
+        /// The KzipFileProvider couldn't read the provided file
         KzipFileError(err: zip::result::ZipError) {
             from()
             display("Failed to open kzip: {}", err)
         }
-        // There was an error parsing the Protobuf
+        /// There was an error parsing the Protobuf
         ProtobufParseError(err: ProtobufError) {
             from()
             display("Failed to parse Protobuf: {}", err)
         }
-        // The KytheWriter encounters an error
-        WriterError {}
-        // An unknown error occured
-        UnknownError(err: Box<dyn std::error::Error>) {
-            from()
-            display("An unknown error occurred: {}", err)
+        /// The KytheWriter encounters an error
+        WriterError(err: ProtobufError) {
+            display("Writer encountered an error: {}", err)
         }
     }
 }
