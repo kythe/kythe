@@ -930,6 +930,7 @@ class Visitor {
     if (kType) {
       this.emitNode(kType, NodeKind.INTERFACE);
       this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kType);
+      this.visitJSDoc(decl, kType);
     }
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
@@ -951,6 +952,7 @@ class Visitor {
     if (!kType) return;
     this.emitNode(kType, NodeKind.TALIAS);
     this.emitEdge(this.newAnchor(decl.name), EdgeKind.DEFINES_BINDING, kType);
+    this.visitJSDoc(decl, kType);
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     const kAlias = this.visitType(decl.type);
