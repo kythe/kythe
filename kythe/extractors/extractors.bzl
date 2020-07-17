@@ -23,16 +23,17 @@ def extractor_action(name, extractor, args, mnemonics, output, needs_output = Fa
       output: The output file template (string).
       data: A list of data dependencies (optional).
       tags: A list of build tags (optional).
-      env: A list of environment variable KEY=VALUE strings (optional).
+      env: A dict of environment variables (optional).
     """
     xa_name = name + "_extra_action"
 
+    env_vars = ["{}={}".format(item[0], item[1]) for item in envs.items()]
     native.extra_action(
         name = xa_name,
         data = data,
         out_templates = [output],
         tools = [extractor],
-        cmd = " ".join(env + ["$(location %s)" % extractor] + args),
+        cmd = " ".join(env_vars + ["$(location %s)" % extractor] + args),
         tags = tags,
         requires_action_output = needs_output,
     )
