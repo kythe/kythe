@@ -4,7 +4,7 @@ The extractor_action macro plumbs together a Kythe extractor to an extra_action
 with an associated action_listener.
 """
 
-def extractor_action(name, extractor, args, mnemonics, output, needs_output = False, data = [], tags = [], env = []):
+def extractor_action(name, extractor, args, mnemonics, output, needs_output = False, data = [], tags = [], env = {}):
     """Creates an extra_action and an associated action_listener.
 
     The action_listener is given the specified name and mnemonics.
