@@ -27,7 +27,7 @@ def extractor_action(name, extractor, args, mnemonics, output, needs_output = Fa
     """
     xa_name = name + "_extra_action"
 
-    env_vars = ["{}={}".format(item[0], item[1]) for item in env.items()]
+    env_vars = ["{}={}".format(*item) for item in env.items()]
     native.extra_action(
         name = xa_name,
         data = data,
