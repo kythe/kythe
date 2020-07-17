@@ -1538,7 +1538,7 @@ class Visitor {
     if (vname) {
       if (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
           ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl)) {
-        this.emitDeclarationCode(decl, vname);
+        this.emitVarLikeDeclarationCode(decl, vname);
       } else {
         todo(this.sourceRoot, decl, 'Emit variable delaration code');
       }
@@ -1555,17 +1555,19 @@ class Visitor {
     return vname;
   }
 
+  // clang-format off
   /**
    * Emits a code fact for a variable or property declaration, specifying how
    * the declaration should be presented to users.
    *
    * The form of the code fact is
-   *     ((property)|(local var)|const|let) <name>: <type>( = <initializer>)?
+   *     ((parameter)|(property)|(local var)|const|let) <name>: <type>( = <initializer>)?
    * where `(local var)` is the declaration of a variable in a catch clause.
    */
-  emitDeclarationCode(
+  // clang-format on
+  emitVarLikeDeclarationCode(
       decl: ts.VariableDeclaration|ts.PropertyAssignment|
-      ts.PropertyDeclaration|ts.BindingElement,
+      ts.PropertyDeclaration|ts.BindingElement|ts.ParameterDeclaration,
       declVName: VName) {
     const codeParts: MarkedSource[] = [];
     const initializerList = decl.parent;
@@ -1575,11 +1577,10 @@ class Visitor {
       // The node we want to emit code for is a BindingElement. This parent of
       // this is always a BindingPattern; the parent of the BindingPattern is
       // another BindingPattern, a ParameterDeclaration, or VariableDeclaration.
-      // We handle ParameterDeclarations in `visitParameters`, so here we only
-      // care about the declaration from a VariableDeclaration.
       bindingPath.push(this.bindingElemIndex(decl));
       varDecl = decl.parent.parent;
-      while (!ts.isVariableDeclaration(varDecl) && varDecl !== undefined) {
+      while (!ts.isVariableDeclaration(varDecl) && !ts.isParameter(varDecl) &&
+             varDecl !== undefined) {
         if (ts.isParameter(varDecl)) return;
         bindingPath.push(this.bindingElemIndex(varDecl));
         varDecl = varDecl.parent.parent;
@@ -1587,7 +1588,7 @@ class Visitor {
       if (varDecl === undefined) {
         todo(
             this.sourceRoot, decl,
-            `Does not have variable and parameter declaration.`);
+            `Does not have a variable or parameter declaration.`);
       }
     } else {
       varDecl = decl;
@@ -1596,8 +1597,11 @@ class Visitor {
     let declKw;
     if (ts.isVariableDeclaration(varDecl)) {
       declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
-          '(local var)' :
-          initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
+                                                       '(local var)' :
+          initializerList.flags & ts.NodeFlags.Const ? 'const' :
+                                                       'let';
+    } else if (ts.isParameter(varDecl)) {
+      declKw = '(parameter)';
     } else {
       declKw = '(property)';
     }
@@ -1863,6 +1867,7 @@ class Visitor {
               this.emitEdge(
                   kFunc, makeOrdinalEdge(EdgeKind.PARAM, paramNum), kParam);
               ++paramNum;
+              this.emitVarLikeDeclarationCode(param, kParam);
 
               if (isParameterPropertyDeclaration(param, param.parent)) {
                 // Class members defined in the parameters of a constructor are
@@ -1892,8 +1897,6 @@ class Visitor {
                   recurseVisit(element);
                 }
               }
-              break;
-            default:
               break;
           }
 
