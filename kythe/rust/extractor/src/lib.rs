@@ -31,6 +31,11 @@ pub fn generate_analysis(
 ) -> Result<(), ()> {
     let mut callback_shim = CallbackShim::new(output_dir);
 
+    std::env::set_var(
+        "RUST_SAVE_ANALYSIS_CONFIG",
+        "{\"output_file\":null,\"full_docs\":true,\"pub_only\":false,\"reachable_only\":false,\"distro_crate\":false,\"signatures\":false,\"borrow_data\":false}"
+    );
+
     rustc_driver::install_ice_hook();
     rustc_driver::catch_fatal_errors(|| {
         run_compiler(
