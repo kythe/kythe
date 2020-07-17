@@ -185,3 +185,21 @@ extractor_action(
     ],
     output = "$(ACTION_ID).rust.kzip",
 )
+
+extractor_action(
+    name = "extract_kzip_rust2",
+    args = [
+        "--extra_action=$(EXTRA_ACTION_FILE)",
+        "--output=$(output $(ACTION_ID).rust.kzip)",
+    ],
+    data = ["//external:vnames_config"],
+    extractor = "@io_kythe//kythe/rust/extractor",
+    mnemonics = [
+        "Rustc",
+    ],
+    output = "$(ACTION_ID).rust.kzip",
+    envs = [
+        "LD_LIBRARY_PATH=external/rust_linux_x86_64/lib",
+        "RUST_LOG=error"
+    ]
+)
