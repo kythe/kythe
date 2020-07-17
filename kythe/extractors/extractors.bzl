@@ -4,7 +4,7 @@ The extractor_action macro plumbs together a Kythe extractor to an extra_action
 with an associated action_listener.
 """
 
-def extractor_action(name, extractor, args, mnemonics, output, needs_output = False, data = [], tags = [], envs = []):
+def extractor_action(name, extractor, args, mnemonics, output, needs_output = False, data = [], tags = [], envs = {}):
     """Creates an extra_action and an associated action_listener.
 
     The action_listener is given the specified name and mnemonics.
@@ -23,16 +23,17 @@ def extractor_action(name, extractor, args, mnemonics, output, needs_output = Fa
       output: The output file template (string).
       data: A list of data dependencies (optional).
       tags: A list of build tags (optional).
-      envs: A list of environment variables (optional).
+      envs: A dict of environment variables (optional).
     """
     xa_name = name + "_extra_action"
 
+    env_vars = ["{}={}".format(item[0], item[1]) for item in envs.items()]
     native.extra_action(
         name = xa_name,
         data = data,
         out_templates = [output],
         tools = [extractor],
-        cmd = " ".join(envs + ["$(location %s)" % extractor] + args),
+        cmd = " ".join(env_vars + ["$(location %s)" % extractor] + args),
         tags = tags,
         requires_action_output = needs_output,
     )
