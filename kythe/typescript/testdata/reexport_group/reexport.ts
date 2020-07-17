@@ -13,11 +13,11 @@ export {
   //- @#0Interface ref Interface
   //- @InterfaceAlias ref Interface
   Interface as InterfaceAlias,
-  //- @#0Type ref Type
-  //- @TypeAlias ref Type
-  Type as TypeAlias,
   //- @#0someFunction ref SomeFunction
   //- @someFunctionAlias ref SomeFunction
-  someFunction as someFunctionAlias}
-//- @"'./main'" ref/imports vname("module", _, _, "testdata/reexport/main", _)
+  someFunction as someFunctionAlias,
+  //- @#0Type ref Type
+  //- @TypeAlias ref Type
+  Type as TypeAlias}
+//- @"'./main'" ref/imports vname("module", _, _, "testdata/reexport_group/main", _)
 from './main';

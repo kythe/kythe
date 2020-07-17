@@ -25,7 +25,7 @@
         "rootDir": "..",
         "rootDirs": [
           "..",
-          "./fake-genfiles"
+          "./fake-genfiles_group"
         ]
     },
     "exclude": [
