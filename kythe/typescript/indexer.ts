@@ -726,6 +726,10 @@ function makeMarkedSource({
   return ms;
 }
 
+function isNonNullableArray<T>(arr: Array<T>): arr is Array<NonNullable<T>> {
+  return arr.findIndex(el => el === undefined || el === null) === -1;
+}
+
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Visitor {
   /** kFile is the VName for the 'file' node representing the source file. */
@@ -1529,11 +1533,13 @@ class Visitor {
         break;
     }
 
-    if (vname &&
-        (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
-         ts.isPropertyDeclaration(decl))) {
-      // TODO: handle all other variable declaration kinds
-      this.emitDeclarationCode(decl, vname);
+    if (vname) {
+      if (ts.isVariableDeclaration(decl) || ts.isPropertyAssignment(decl) ||
+          ts.isPropertyDeclaration(decl) || ts.isBindingElement(decl)) {
+        this.emitDeclarationCode(decl, vname);
+      } else {
+        todo(this.sourceRoot, decl, 'Emit variable delaration code');
+      }
     }
 
     if (decl.type) this.visitType(decl.type);
@@ -1556,15 +1562,40 @@ class Visitor {
    * where `(local var)` is the declaration of a variable in a catch clause.
    */
   emitDeclarationCode(
-      decl: ts.VariableDeclaration|ts.PropertyAssignment|ts.PropertyDeclaration,
+      decl: ts.VariableDeclaration|ts.PropertyAssignment|
+      ts.PropertyDeclaration|ts.BindingElement,
       declVName: VName) {
     const codeParts: MarkedSource[] = [];
     const initializerList = decl.parent;
+    let varDecl;
+    const bindingPath: Array<string|number|undefined> = [];
+    if (ts.isBindingElement(decl)) {
+      // The node we want to emit code for is a BindingElement. This parent of
+      // this is always a BindingPattern; the parent of the BindingPattern is
+      // another BindingPattern, a ParameterDeclaration, or VariableDeclaration.
+      // We handle ParameterDeclarations in `visitParameters`, so here we only
+      // care about the declaration from a VariableDeclaration.
+      bindingPath.push(this.bindingElemIndex(decl));
+      varDecl = decl.parent.parent;
+      while (!ts.isVariableDeclaration(varDecl) && varDecl !== undefined) {
+        if (ts.isParameter(varDecl)) return;
+        bindingPath.push(this.bindingElemIndex(varDecl));
+        varDecl = varDecl.parent.parent;
+      }
+      if (varDecl === undefined) {
+        todo(
+            this.sourceRoot, decl,
+            `Does not have variable and parameter declaration.`);
+      }
+    } else {
+      varDecl = decl;
+    }
+
     let declKw;
-    if (ts.isVariableDeclaration(decl) ) {
+    if (ts.isVariableDeclaration(varDecl)) {
       declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
-        '(local var)' :
-        initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
+          '(local var)' :
+          initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
     } else {
       declKw = '(property)';
     }
@@ -1576,14 +1607,110 @@ class Visitor {
         makeMarkedSource({kind: 'IDENTIFIER', preText: decl.name.getText()}));
     codeParts.push(
         makeMarkedSource({kind: 'TYPE', preText: ': ', postText: tyStr}));
-    if (decl.initializer) {
-      const init = decl.initializer.getText();
+    if (varDecl.initializer) {
+      let init: ts.Node = varDecl.initializer;
+
+      if (ts.isObjectLiteralExpression(init) ||
+          ts.isArrayLiteralExpression(init)) {
+        const narrowedInit = isNonNullableArray(bindingPath) &&
+            this.walkObjectLikeLiteral(init, bindingPath.reverse());
+        init = narrowedInit || init;
+      }
+
       codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' = '}));
-      codeParts.push(makeMarkedSource({kind: 'INITIALIZER', preText: init}));
+      codeParts.push(
+          makeMarkedSource({kind: 'INITIALIZER', preText: init.getText()}));
     }
 
     const markedSource = makeMarkedSource({kind: 'BOX', childList: codeParts});
     this.emitFact(declVName, FactName.CODE, markedSource.serializeBinary());
+  }
+
+  /**
+   * Given a path of properties, walks the properties/elements of an
+   * object/array literal, yielding the final node along the path.
+   *
+   * If the path or object literal is malformed (i.e. the property does not
+   * exist or the object to walk is not a literal), nothing is returned.
+   */
+  walkObjectLikeLiteral(
+      objLiteral: ts.ArrayLiteralExpression|ts.ObjectLiteralExpression,
+      path: Array<string|number>,
+      ): ts.Node|undefined {
+    let node: ts.Node = objLiteral;
+    for (const prop of path) {
+      let next: ts.Node|undefined;
+      if (ts.isObjectLiteralExpression(node)) {
+        // The property name node text is the "index" of the property. See
+        // `bindingElemIndex` for more details.
+        next = node.properties.find(
+            p => p.name && this.getPropertyNameStr(p.name) === prop);
+        if (next && ts.isPropertyAssignment(next)) {
+          next = next.initializer;
+        }
+      } else if (
+          ts.isArrayLiteralExpression(node) && typeof prop === 'number') {
+        next = (node as ts.ArrayLiteralExpression).elements[prop];
+      }
+      if (!next) {
+        todo(
+            this.sourceRoot, node,
+            `expected to be an object-like literal with property '${prop}'`)
+        return;
+      }
+      node = next;
+    }
+    return node;
+  }
+
+  /**
+   * Returns the property "index" of a bound element in a binding pattern, if
+   * known. For example,
+   * - `1` has index `2` in the binding pattern `[3, 2, 1]`
+   * - `c` has index `c` in the binding pattern `{a, b, c}`
+   * - `calias` has index `c` in the binding pattern `{a, b, c: calias}`
+   */
+  bindingElemIndex(elem: ts.BindingElement): string|number|undefined {
+    const bindingPat = elem.parent;
+    if (ts.isObjectBindingPattern(bindingPat)) {
+      if (elem.propertyName) {
+        return this.getPropertyNameStr(elem.propertyName);
+      }
+      switch (elem.name.kind) {
+        case ts.SyntaxKind.Identifier:
+          return elem.name.text;
+        case ts.SyntaxKind.ArrayBindingPattern:
+        case ts.SyntaxKind.ObjectBindingPattern:
+          return undefined;
+      }
+    } else {
+      return bindingPat.elements.indexOf(elem);
+    }
+  }
+
+  /**
+   * Returns the string content of a property name, if known.
+   * The name of complex computed properties is often not known.
+   */
+  getPropertyNameStr(elem: ts.PropertyName): string|undefined {
+    switch (elem.kind) {
+      case ts.SyntaxKind.Identifier:
+      case ts.SyntaxKind.StringLiteral:
+      case ts.SyntaxKind.NumericLiteral:
+      case ts.SyntaxKind.PrivateIdentifier:
+        return elem.text;
+      case ts.SyntaxKind.ComputedPropertyName:
+        const name = this.host.getSymbolAtLocation(elem)?.name;
+        // If the computed property expression is more complicated than an
+        // identifier (e.g. `['red' + 'cat']` or `[fn()]`), the name isn't
+        // resolved and the symbol name is marked as "__computed". This doesn't
+        // help us for indexing, so return "undefined" in such cases.
+        // Constant evaluation of the computed property name is not always
+        // possible (e.g. the expression may be a function call), and usage of
+        // computed properties is probably rare enough that handling the "simple
+        // case" is good enough for now.
+        return name !== '__computed' ? name : undefined;
+    }
   }
 
   /**
