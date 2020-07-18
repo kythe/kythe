@@ -81,7 +81,7 @@ impl Callbacks for CallbackShim {
         // instead.
         std::env::set_var(
             "RUST_SAVE_ANALYSIS_CONFIG",
-            "{\"output_file\":null,\"full_docs\":true,\"pub_only\":false,\"reachable_only\":false,\"distro_crate\":false,\"signatures\":false,\"borrow_data\":false}"
+            r#"{"output_file":null,"full_docs":true,"pub_only":false,"reachable_only":false,"distro_crate":false,"signatures":false,"borrow_data":false}"#,
         );
 
         // Perform the save_analysis and dump it to the directory
