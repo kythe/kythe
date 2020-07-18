@@ -152,3 +152,21 @@ let [_, [i]] = [2, [3]];
 let {j} = (() => {
   return {j: 1};
 })();
+
+//- @k defines/binding K
+//- K code KCode
+//- KCode child.0 KContext
+//- KContext.pre_text "var"
+var k = function() {
+  //- @l defines/binding L
+  //- L code LCode
+  //- LCode child.0 LContext
+  //- LContext.pre_text "(local var)"
+  var l = () => {
+    //- @m defines/binding M
+    //- M code MCode
+    //- MCode child.0 MContext
+    //- MContext.pre_text "(local var)"
+    var m;
+  }
+};

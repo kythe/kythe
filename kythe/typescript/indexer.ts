@@ -730,6 +730,67 @@ function isNonNullableArray<T>(arr: Array<T>): arr is Array<NonNullable<T>> {
   return arr.findIndex(el => el === undefined || el === null) === -1;
 }
 
+/**
+ * Returns whether the script element kind should be parenthesized when
+ * displayed.
+ */
+function shouldWrapElementKind(kind: ts.ScriptElementKind): boolean {
+  switch (kind) {
+    case ts.ScriptElementKind.variableElement:
+    case ts.ScriptElementKind.functionElement:
+    case ts.ScriptElementKind.letElement:
+    case ts.ScriptElementKind.constElement:
+    case ts.ScriptElementKind.constructorImplementationElement:
+      return false;
+    default:
+      return true;
+  }
+}
+
+
+/** Retrieves the declaration context of a node. */
+function getContext(node: ts.Node): string {
+  let context: ts.ScriptElementKind;
+  if (ts.isVariableDeclaration(node)) {
+    if (node.parent.flags & ts.NodeFlags.Let) {
+      context = ts.ScriptElementKind.letElement;
+    } else if (node.parent.flags & ts.NodeFlags.Const) {
+      context = ts.ScriptElementKind.constElement;
+    } else {
+      let isLocal = false;
+      for (let parent: ts.Node = node; parent !== undefined;
+           parent = parent.parent) {
+        if (ts.isFunctionLike(parent) || ts.isCatchClause(parent)) {
+          isLocal = true;
+          break;
+        }
+      }
+      context = isLocal ? ts.ScriptElementKind.localVariableElement :
+                          ts.ScriptElementKind.variableElement;
+    }
+  } else if (ts.isPropertyAssignment(node) || ts.isPropertyDeclaration(node)) {
+    context = ts.ScriptElementKind.memberVariableElement;
+  } else {
+    todo(
+        node.getSourceFile().fileName, node,
+        `Unknown context for ${node.getText()}`);
+    context = ts.ScriptElementKind.unknown;
+  }
+  let displayParts: ts.SymbolDisplayPart[];
+  if (shouldWrapElementKind(context)) {
+    displayParts = [
+      {text: '(', kind: 'punctuation'},
+      {text: context, kind: 'text'},
+      {text: ')', kind: 'punctuation'},
+    ];
+  } else {
+    displayParts = [
+      {text: context, kind: 'text'},
+    ];
+  }
+  return ts.displayPartsToString(displayParts);
+}
+
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Visitor {
   /** kFile is the VName for the 'file' node representing the source file. */
@@ -1568,7 +1629,6 @@ class Visitor {
       ts.PropertyDeclaration|ts.BindingElement,
       declVName: VName) {
     const codeParts: MarkedSource[] = [];
-    const initializerList = decl.parent;
     let varDecl;
     const bindingPath: Array<string|number|undefined> = [];
     if (ts.isBindingElement(decl)) {
@@ -1593,17 +1653,10 @@ class Visitor {
       varDecl = decl;
     }
 
-    let declKw;
-    if (ts.isVariableDeclaration(varDecl)) {
-      declKw = initializerList.kind === ts.SyntaxKind.CatchClause ?
-          '(local var)' :
-          initializerList.flags & ts.NodeFlags.Const ? 'const' : 'let';
-    } else {
-      declKw = '(property)';
-    }
+    const context = getContext(varDecl);
     const ty = this.typeChecker.getTypeAtLocation(decl);
     const tyStr = this.typeChecker.typeToString(ty, decl);
-    codeParts.push(makeMarkedSource({kind: 'CONTEXT', preText: declKw}));
+    codeParts.push(makeMarkedSource({kind: 'CONTEXT', preText: context}));
     codeParts.push(makeMarkedSource({kind: 'BOX', preText: ' '}));
     codeParts.push(
         makeMarkedSource({kind: 'IDENTIFIER', preText: decl.name.getText()}));
