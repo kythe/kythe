@@ -50,7 +50,7 @@ pub fn generate_analysis(
         run_compiler(&rustc_arguments, &mut callback_shim, None, None)
     })
     .map(|_| ())
-    .map_err(|_| "A compiler error occured".to_string())?;
+    .map_err(|_| "A compiler error occurred".to_string())?;
 
     Ok(())
 }
