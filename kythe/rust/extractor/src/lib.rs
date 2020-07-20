@@ -14,7 +14,6 @@
 #![feature(rustc_private)]
 
 extern crate rustc_driver;
-extern crate rustc_errors;
 extern crate rustc_interface;
 extern crate rustc_save_analysis;
 extern crate rustc_session;
@@ -31,7 +30,17 @@ use std::path::PathBuf;
 /// first element must be an empty string.
 /// The save_analysis JSON output file will be located at
 /// {output_dir}/save-analysis/{crate_name}.json
-pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> Result<(), ()> {
+pub fn generate_analysis(
+    rustc_arguments: Vec<String>,
+    output_dir: PathBuf,
+) -> Result<(), String> {
+    let first_arg = rustc_arguments
+        .get(0)
+        .ok_or("Arguments vector should not be empty".to_string())?;
+    if *first_arg != "".to_string() {
+        return Err("The first argument must be an empty string".into())
+    }
+
     let mut callback_shim = CallbackShim::new(output_dir);
 
     // Enable the output of compilation errors to stderr
@@ -41,7 +50,7 @@ pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> R
         run_compiler(&rustc_arguments, &mut callback_shim, None, None)
     })
     .map(|_| ())
-    .map_err(|_| ())?;
+    .map_err(|_| "A compiler error occured".to_string())?;
 
     Ok(())
 }
@@ -53,6 +62,7 @@ struct CallbackShim {
 }
 
 impl CallbackShim {
+    /// Create a new CallbackShim that dumps save_analysis files to `output_dir`
     pub fn new(output_dir: PathBuf) -> Self {
         Self { output_dir }
     }
