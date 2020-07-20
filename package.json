@@ -11,7 +11,7 @@
   "dependencies": {
     "google-protobuf": "^3.12.2",
     "source-map-support": "^0.5.19",
-    "typescript": "^3.9.7"
+    "typescript": "~3.8"
   },
   "license": "Apache-2.0"
 }
