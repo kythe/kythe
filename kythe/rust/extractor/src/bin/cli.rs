@@ -15,6 +15,7 @@
 use clap::{App, Arg};
 use std::path::PathBuf;
 
+/// Contains the configuration options for the extractor
 pub struct ExtractorConfig {
     pub extra_action_path: PathBuf,
     // pub vnames_config_path: PathBuf,
@@ -27,6 +28,7 @@ impl ExtractorConfig {
     }
 }
 
+/// Parse the command line arguments into an `ExtractorConfig`
 pub fn parse_arguments() -> ExtractorConfig {
     let matches = App::new("Kythe Rust Extractor")
         .arg(

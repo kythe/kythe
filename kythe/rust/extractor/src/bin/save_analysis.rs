@@ -18,10 +18,8 @@ use std::path::PathBuf;
 
 pub fn run_analysis(arguments: Vec<String>, output_dir: PathBuf) -> Result<()> {
     let rustc_arguments = generate_arguments(arguments, &output_dir)?;
-    let _input_files = kythe_rust_extractor::generate_analysis(
-        rustc_arguments,
-        output_dir,
-    ).map_err(|_| anyhow!("Failed to generate save_analysis"))?;
+    let _input_files = kythe_rust_extractor::generate_analysis(rustc_arguments, output_dir)
+        .map_err(|_| anyhow!("Failed to generate save_analysis"))?;
     Ok(())
 }
 
