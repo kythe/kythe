@@ -37,5 +37,5 @@ genrule(
     tools = [":extractor_test_binary"],
     outs = ["output.txt"],
     testonly = True,
-    tags = ["no-sandbox"],
+    local = True,
 )
