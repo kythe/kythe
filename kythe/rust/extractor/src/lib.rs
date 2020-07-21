@@ -36,8 +36,8 @@ pub fn generate_analysis(
 ) -> Result<(), String> {
     let first_arg = rustc_arguments
         .get(0)
-        .ok_or("Arguments vector should not be empty".to_string())?;
-    if *first_arg != "".to_string() {
+        .ok_or_else(|| "Arguments vector should not be empty".to_string())?;
+    if first_arg != &"".to_string() {
         return Err("The first argument must be an empty string".into())
     }
 
