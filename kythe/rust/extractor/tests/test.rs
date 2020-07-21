@@ -59,5 +59,6 @@ fn correct_arguments_succeed() {
     assert_eq!(result.unwrap(), (), "generate_analysis result wasn't void");
 
     // Ensure the save_analysis file exists
-    let _ = File::open(Path::new(temp_dir.path()).join("save-analysis/test_crate.json")).expect("save_analysis did not exist in the expected path");
+    let _ = File::open(Path::new(temp_dir.path()).join("save-analysis/test_crates.json"))
+        .expect("save_analysis did not exist in the expected path");
 }
