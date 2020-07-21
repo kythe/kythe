@@ -39,9 +39,6 @@ pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> R
 
     let mut callback_shim = CallbackShim::new(output_dir);
 
-    // Enable the output of compilation errors to stderr
-    rustc_driver::install_ice_hook();
-
     rustc_driver::catch_fatal_errors(|| {
         run_compiler(&rustc_arguments, &mut callback_shim, None, None)
     })
