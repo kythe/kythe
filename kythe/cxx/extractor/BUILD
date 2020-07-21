@@ -1,4 +1,7 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load(":toolchain.bzl", "cxx_extractor_toolchain")
@@ -111,6 +114,7 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
         "//kythe/proto:cxx_cc_proto",
+        "//kythe/proto:filecontext_cc_proto",
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/llvm/src:preprocessor_util_lib",
         "@boringssl//:crypto",
@@ -118,9 +122,13 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
         "@org_llvm//:LLVMSupport",
+        "@org_llvm//:clangFrontend",
+        "@org_llvm//:clangLex",
         "@org_llvm//:clangTooling",
     ],
 )
@@ -173,11 +181,13 @@ cc_binary(
         ":lib",
         ":supported_language",
         "//external:zlib",
+        "//kythe/cxx/common:path_utils",
         "//third_party/bazel:extra_actions_base_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
@@ -204,6 +214,7 @@ cc_binary(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
@@ -228,6 +239,7 @@ cc_test(
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/memory",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
         "@org_llvm//:LLVMSupport",
@@ -276,6 +288,7 @@ cc_test(
     srcs = ["bazel_event_reader_test.cc"],
     deps = [
         ":bazel_event_reader",
+        "//third_party:gtest",
         "//third_party:gtest_main",
         "@build_event_stream_proto//:build_event_stream_cc_proto",
         "@com_google_absl//absl/strings",
@@ -305,6 +318,7 @@ cc_test(
     deps = [
         ":bazel_artifact_reader",
         ":bazel_event_reader",
+        "//third_party:gtest",
         "//third_party:gtest_main",
         "@build_event_stream_proto//:build_event_stream_cc_proto",
         "@com_google_absl//absl/strings",
@@ -317,8 +331,10 @@ cc_binary(
     srcs = ["dump_bazel_artifacts.cc"],
     deps = [
         ":bazel_artifact_reader",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )

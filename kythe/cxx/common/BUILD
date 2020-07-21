@@ -1,4 +1,7 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(
+    default_visibility = ["//kythe:default_visibility"],
+    features = ["layering_check"],
+)
 
 licenses(["notice"])
 
@@ -14,6 +17,7 @@ cc_test(
     srcs = ["scope_guard_test.cc"],
     deps = [
         ":scope_guard",
+        "//third_party:gtest",
         "//third_party:gtest_main",
     ],
 )
@@ -66,6 +70,7 @@ cc_library(
         ":status_or",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
@@ -77,7 +82,10 @@ cc_test(
     srcs = ["path_utils_test.cc"],
     deps = [
         ":path_utils",
+        ":status_or",
+        "//third_party:gtest",
         "//third_party:gtest_main",
+        "@com_google_absl//absl/status",
     ],
 )
 
@@ -126,6 +134,7 @@ cc_library(
         "//kythe/proto:metadata_cc_proto",
         "//kythe/proto:storage_cc_proto",
         "@com_github_google_glog//:glog",
+        "@com_github_tencent_rapidjson//:rapidjson",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
@@ -150,6 +159,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":json_proto",
         ":lib",
         "//external:zlib",
         "//kythe/proto:graph_cc_proto",
@@ -204,6 +214,7 @@ cc_library(
         ":json_proto",
         "//kythe/proto:analysis_cc_proto",
         "//third_party:gtest",
+        "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
@@ -212,7 +223,10 @@ cc_library(
 cc_test(
     name = "json_proto_test",
     size = "small",
-    deps = [":json_proto_testlib"],
+    deps = [
+        ":json_proto_testlib",
+        "@com_github_google_glog//:glog",
+    ],
 )
 
 cc_library(
@@ -227,8 +241,11 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        ":json_proto",
         ":net_client",
         "//external:zlib",
+        "//kythe/proto:common_cc_proto",
+        "//kythe/proto:graph_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
@@ -254,6 +271,7 @@ cc_library(
     ],
     deps = [
         ":kythe_uri",
+        ":vname_ordering",
         "//third_party:gtest",
         "@com_github_google_glog//:glog",
         "@com_google_protobuf//:protobuf",
@@ -319,6 +337,7 @@ cc_library(
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
         "@org_libzip//:zip",
     ],
@@ -339,8 +358,10 @@ cc_test(
         ":libzip/error",
         ":testutil",
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
+        "//third_party:gtest",
         "//third_party:gtest_main",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -379,9 +400,12 @@ cc_test(
         ":libzip/error",
         ":testutil",
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
+        "//third_party:gtest",
         "//third_party:gtest_main",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
+        "@org_libzip//:zip",
     ],
 )
 
@@ -391,10 +415,7 @@ cc_library(
     hdrs = ["status.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
         "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -405,6 +426,7 @@ cc_library(
     deps = [
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
@@ -451,7 +473,9 @@ cc_test(
     srcs = ["utf8_line_index_test.cc"],
     deps = [
         ":utf8_line_index",
+        "//third_party:gtest",
         "//third_party:gtest_main",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
     ],
 )
