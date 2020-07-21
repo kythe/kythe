@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use anyhow::Result;
-use kythe_rust_extractor;
 use std::path::PathBuf;
 
 pub fn run_analysis(arguments: Vec<String>, output_dir: PathBuf) -> Result<()> {
