@@ -171,25 +171,6 @@ extractor_action(
     name = "extract_kzip_rust",
     args = [
         "--extra_action=$(EXTRA_ACTION_FILE)",
-        "--language=rust",
-        "--include='\\.(rs|rlib)$$'",
-        "--output=$(output $(ACTION_ID).rust.kzip)",
-        "--rules=$(location //external:vnames_config)",
-        "--scoped=true",
-        "--source='\\.rs$$'",
-    ],
-    data = ["//external:vnames_config"],
-    extractor = "@io_kythe//kythe/go/extractors/cmd/bazel:extract_kzip",
-    mnemonics = [
-        "Rustc",
-    ],
-    output = "$(ACTION_ID).rust.kzip",
-)
-
-extractor_action(
-    name = "extract_kzip_rust2",
-    args = [
-        "--extra_action=$(EXTRA_ACTION_FILE)",
         "--output=$(output $(ACTION_ID).rust.kzip)",
     ],
     data = ["//external:vnames_config"],
