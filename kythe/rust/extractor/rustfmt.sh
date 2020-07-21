@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find src/ -name '*.rs' -print0 | while read -r -d $'\0' f
+find src/ tests/ -name '*.rs' -print0 | while read -r -d $'\0' f
 do
     echo "Formatting $f";
     rustfmt "$f";

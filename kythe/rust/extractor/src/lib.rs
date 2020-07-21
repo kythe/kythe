@@ -30,15 +30,11 @@ use std::path::PathBuf;
 /// first element must be an empty string.
 /// The save_analysis JSON output file will be located at
 /// {output_dir}/save-analysis/{crate_name}.json
-pub fn generate_analysis(
-    rustc_arguments: Vec<String>,
-    output_dir: PathBuf,
-) -> Result<(), String> {
-    let first_arg = rustc_arguments
-        .get(0)
-        .ok_or_else(|| "Arguments vector should not be empty".to_string())?;
+pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> Result<(), String> {
+    let first_arg =
+        rustc_arguments.get(0).ok_or_else(|| "Arguments vector should not be empty".to_string())?;
     if first_arg != &"".to_string() {
-        return Err("The first argument must be an empty string".into())
+        return Err("The first argument must be an empty string".into());
     }
 
     let mut callback_shim = CallbackShim::new(output_dir);

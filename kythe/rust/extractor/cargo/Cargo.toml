@@ -23,6 +23,7 @@ edition = "2018"
 path = "../src/lib.rs"
 
 [dependencies]
+tempdir = "0.3.7"
 
 [raze]
 workspace_path = "//kythe/rust/extractor/cargo"
