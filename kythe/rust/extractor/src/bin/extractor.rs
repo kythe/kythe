@@ -36,7 +36,7 @@ fn main() -> Result<()> {
 
     // Create temporary directory and run the analysis
     let tmp_dir = TempDir::new("rust_extractor")
-        .with_context(|| format!("Failed to make temporary directory"))?;
+        .with_context(|| "Failed to make temporary directory".to_string())?;
     let compiler_arguments: Vec<String> = spawn_info.get_argument().to_vec();
     save_analysis::run_analysis(compiler_arguments.clone(), PathBuf::new().join(tmp_dir.path()))?;
 
@@ -52,7 +52,7 @@ fn main() -> Result<()> {
         .to_vec()
         .iter()
         .filter(|file| file.ends_with(".rs"))
-        .map(|file| String::from(file)) // Map the &String to a new String
+        .map(String::from) // Map the &String to a new String
         .collect();
     let mut required_input: Vec<CompilationUnit_FileInput> = Vec::new();
     for file_path in &rust_source_files {
@@ -79,11 +79,11 @@ fn main() -> Result<()> {
     let mut indexed_compilation_bytes: Vec<u8> = Vec::new();
     indexed_compilation
         .write_to_vec(&mut indexed_compilation_bytes)
-        .with_context(|| format!("Failed to serialize IndexedCompilation to bytes"))?;
+        .with_context(|| "Failed to serialize IndexedCompilation to bytes".to_string())?;
     let indexed_compilation_digest = sha256digest(&indexed_compilation_bytes);
     kzip_add_file(
         format!("pbunits/{}", indexed_compilation_digest),
-        indexed_compilation_bytes.as_slice(),
+        &indexed_compilation_bytes,
         &mut kzip,
     )?;
 
@@ -136,10 +136,10 @@ fn create_indexed_compilation(
 }
 
 /// Generate sha256 hex digest of a vector of bytes
-fn sha256digest(bytes: &Vec<u8>) -> String {
+fn sha256digest(bytes: &[u8]) -> String {
     let mut sha256 = Sha256::new();
-    sha256.input(bytes.as_slice());
-    sha256.result_str().to_owned()
+    sha256.input(bytes);
+    sha256.result_str()
 }
 
 /// Add a file from a path to the kzip and the list of required inputs
@@ -155,7 +155,7 @@ fn kzip_add_required_input(
         .read_to_end(&mut source_file_contents)
         .with_context(|| format!("Failed read file {:?}", file_path_string))?;
     let digest = sha256digest(&source_file_contents);
-    kzip_add_file(format!("files/{}", digest), source_file_contents.as_slice(), zip_writer)?;
+    kzip_add_file(format!("files/{}", digest), &source_file_contents, zip_writer)?;
 
     // Generate FileInput and add it to the list of required inputs
     let mut file_input = CompilationUnit_FileInput::new();
@@ -166,7 +166,7 @@ fn kzip_add_required_input(
 
     let mut file_info = FileInfo::new();
     file_info.set_path(file_path_string.to_string());
-    file_info.set_digest(digest.clone());
+    file_info.set_digest(digest);
     file_input.set_info(file_info);
 
     required_inputs.push(file_input);
