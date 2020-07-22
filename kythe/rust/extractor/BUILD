@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@io_bazel_rules_rust//rust:rust.bzl", "rust_clippy", "rust_library", "rust_test")
+load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library")
+load(":extractor_test.bzl", "rust_extractor_test")
 
 rust_library(
     name = "kythe_rust_extractor",
@@ -18,7 +19,7 @@ rust_clippy(
     ],
 )
 
-rust_test(
+rust_binary(
     name = "extractor_test_binary",
     srcs = glob(["tests/**/*.rs"]),
     edition = "2018",
@@ -26,23 +27,21 @@ rust_test(
         ":kythe_rust_extractor",
         "//kythe/rust/extractor/cargo:tempdir",
     ],
+    rustc_flags = [
+        "--test",
+    ],
 )
 
-genrule(
+rust_extractor_test(
     name = "extractor_test",
-    cmd = "echo \"Log available at $@\" && " +
-          select({
-              "//:darwin": "LD_LIBRARY_PATH=external/rust_linux_x86_64/lib:external/rust_darwin_x86_64/lib/rustlib/x86_64-apple-darwin/lib SYSROOT=external/rust_darwin_x86_64/lib/rustlib/x86_64-apple-darwin/lib ",
-              "//conditions:default": "LD_LIBRARY_PATH=external/rust_linux_x86_64/lib:external/rust_linux_x86_64/lib/rustlib/x86_64-unknown-linux-gnu/lib SYSROOT=external/rust_linux_x86_64/lib/rustlib/x86_64-unknown-linux-gnu/lib ",
-          }) +
-          "TEST_FILE=\"$(SRCS)\" ./$(location :extractor_test_binary) > $@ && cat $@",
-    srcs = [
-        "testfiles/main.rs",
-    ],
-    tools = [":extractor_test_binary"] + select({
-        "//:darwin": ["@rust_darwin_x86_64//:rustc_lib", "@rust_darwin_x86_64//:rust_lib-x86_64-apple-darwin"],
-        "//conditions:default": ["@rust_linux_x86_64//:rustc_lib", "@rust_linux_x86_64//:rust_lib-x86_64-unknown-linux-gnu"],
+    src = ":extractor_test_binary",
+    lib = select({
+        "//:darwin": "@rust_darwin_x86_64//:rustc_lib",
+        "//conditions:default": "@rust_linux_x86_64//:rustc_lib"
     }),
-    outs = ["output.txt"],
-    testonly = True,
+    sysroot = select({
+        "//:darwin": "@rust_darwin_x86_64//:rust_lib-x86_64-apple-darwin",
+        "//conditions:default": "@rust_linux_x86_64//:rust_lib-x86_64-unknown-linux-gnu",
+    }),
+    test_file = "testfiles/main.rs",
 )
