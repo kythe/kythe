@@ -179,7 +179,7 @@ extractor_action(
         "Rustc",
     ],
     output = "$(ACTION_ID).rust.kzip",
-    envs = {
+    env = {
         "LD_LIBRARY_PATH": "external/rust_linux_x86_64/lib"
     }
 )
