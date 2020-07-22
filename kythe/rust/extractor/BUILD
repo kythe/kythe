@@ -30,12 +30,19 @@ rust_test(
 
 genrule(
     name = "extractor_test",
-    cmd = "echo \"Log available at $@\" && LD_LIBRARY_PATH=external/rust_linux_x86_64/lib TEST_FILE=\"$(SRCS)\" ./$(location :extractor_test_binary) > $@ && cat $@",
+    cmd = "echo \"Log available at $@\" && " +
+          select({
+              "//:darwin": "LD_LIBRARY_PATH=external/rust_darwin_x86_64/lib SYSROOT=external/rust_darwin_x86_64/lib/rustlib/x86_64-apple-darwin/lib ",
+              "//conditions:default": "LD_LIBRARY_PATH=external/rust_linux_x86_64/lib SYSROOT=external/rust_linux_x86_64/lib/rustlib/x86_64-unknown-linux-gnu/lib ",
+          }) +
+          "TEST_FILE=\"$(SRCS)\" ./$(location :extractor_test_binary) > $@ && cat $@",
     srcs = [
         "testfiles/main.rs",
     ],
-    tools = [":extractor_test_binary"],
+    tools = [":extractor_test_binary"] + select({
+        "//:darwin": ["@rust_darwin_x86_64//:rustc_lib", "@rust_darwin_x86_64//:rust_lib-x86_64-apple-darwin"],
+        "//conditions:default": ["@rust_linux_x86_64//:rustc_lib", "@rust_linux_x86_64//:rust_lib-x86_64-unknown-linux-gnu"],
+    }),
     outs = ["output.txt"],
     testonly = True,
-    local = True,
 )
