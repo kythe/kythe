@@ -11,20 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def _rust_extractor_test_impl(ctx):
     test_binary = ctx.executable.src
 
     lib = ctx.files.lib
     sysroot = ctx.files.sysroot
-    # Get the parent directories for the library and sysroot files
-    lib_path = "/".join(lib[0].path.split("/")[:-1])
-    sysroot_path = "/".join(sysroot[0].path.split("/")[:-1])
 
     test_file = ctx.file.test_file
     script = "\n".join(
-        ["export LD_LIBRARY_PATH=%s" % lib_path] +
-        ["export SYSROOT=%s" % sysroot_path] +
+        ["export LD_LIBRARY_PATH=%s" % paths.dirname(lib[0].path)] +
+        ["export SYSROOT=%s" % paths.dirname(sysroot[0].path)] +
         ["export TEST_FILE=%s" % test_file.path] +
         ["./%s" % test_binary.short_path]
     )
