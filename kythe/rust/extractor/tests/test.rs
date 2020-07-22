@@ -47,7 +47,7 @@ fn correct_arguments_succeed() {
     // Get sysroot location
     let sysroot_var = env::var_os("SYSROOT").expect("SYSROOT variable not set");
     let sysroot =
-    sysroot_var.into_string().expect("Failed to convert SYSROOT env variable to string");
+        sysroot_var.into_string().expect("Failed to convert SYSROOT env variable to string");
 
     // Generate the save_analysis
     let temp_dir = TempDir::new("extractor_test").expect("Could not create temporary directory");
