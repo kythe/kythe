@@ -77,7 +77,7 @@ impl Callbacks for CallbackShim {
 
         // Configure the save_analysis to include full documentation.
         // Normally this would be set using a `rls_data::config::Config` struct on the
-        // fourth paramater of `process_crate`. However, the Rust compiler
+        // fourth parameter of `process_crate`. However, the Rust compiler
         // falsely claims that there is a mismatch between rustc_save_analysis's
         // `rls_data::config::Config` and ours, even though we use the same version.
         // This forces us to use the environment variable method of configuration
