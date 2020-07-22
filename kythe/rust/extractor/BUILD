@@ -43,5 +43,4 @@ rust_extractor_test(
         "//:darwin": "@rust_darwin_x86_64//:rust_lib-x86_64-apple-darwin",
         "//conditions:default": "@rust_linux_x86_64//:rust_lib-x86_64-unknown-linux-gnu",
     }),
-    test_file = "testfiles/main.rs",
 )

@@ -19,11 +19,21 @@ def _rust_extractor_test_impl(ctx):
     lib = ctx.files.lib
     sysroot = ctx.files.sysroot
 
-    test_file = ctx.file.test_file
+    source_file = ctx.actions.declare_file("main.rs")
+    source_content = """
+    fn main() {
+        println!("Hello, world!");
+    }
+    """
+    ctx.actions.write(
+        output = source_file,
+        content = source_content
+    )
+
     script = "\n".join(
         ["export LD_LIBRARY_PATH=%s" % paths.dirname(lib[0].path)] +
         ["export SYSROOT=%s" % paths.dirname(sysroot[0].path)] +
-        ["export TEST_FILE=%s" % test_file.path] +
+        ["export TEST_FILE=%s" % source_file.short_path] +
         ["./%s" % test_binary.short_path]
     )
     ctx.actions.write(
@@ -32,7 +42,7 @@ def _rust_extractor_test_impl(ctx):
     )
 
     runfiles = ctx.runfiles(
-        files = [test_binary, test_file, ctx.outputs.executable] + lib + sysroot
+        files = [test_binary, source_file, ctx.outputs.executable] + lib + sysroot
     )
 
     return [DefaultInfo(runfiles = runfiles)]
@@ -55,11 +65,6 @@ rust_extractor_test = rule(
             mandatory = True,
             allow_files = True,
             doc = "A label for the filegroup containing the rustc sysroot files"
-        ),
-        "test_file": attr.label(
-            mandatory = True,
-            allow_single_file = [".rs"],
-            doc = "The Rust file to test the extractor with",
         )
     },
     test = True,
