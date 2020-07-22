@@ -16,8 +16,8 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 def _rust_extractor_test_impl(ctx):
     test_binary = ctx.executable.src
 
-    lib = ctx.files.lib
-    sysroot = ctx.files.sysroot
+    lib = ctx.files._lib
+    sysroot = ctx.files._sysroot
 
     source_file = ctx.actions.declare_file("main.rs")
     source_content = """
@@ -56,15 +56,13 @@ rust_extractor_test = rule(
             cfg = "target",
             doc = "The Rust binary to be executed",
         ),
-        "lib": attr.label(
-            mandatory = True,
+        "_lib": attr.label(
+            default = Label("//kythe/rust/extractor:rust_lib"),
             allow_files = True,
-            doc = "A label for the filegroup containing the rustc library files"
         ),
-        "sysroot": attr.label(
-            mandatory = True,
+        "_sysroot": attr.label(
+            default = Label("//kythe/rust/extractor:rust_sysroot"),
             allow_files = True,
-            doc = "A label for the filegroup containing the rustc sysroot files"
         )
     },
     test = True,

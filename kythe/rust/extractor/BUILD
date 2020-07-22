@@ -32,15 +32,23 @@ rust_binary(
     ],
 )
 
+# These are used by the rust_extractor_test rule
+alias(
+    name = "rust_lib",
+    actual = select({
+        "//:darwin": "@rust_darwin_x86_64//:rustc_lib",
+        "//conditions:default": "@rust_linux_x86_64//:rustc_lib"
+    })
+)
+alias(
+    name = "rust_sysroot",
+    actual = select({
+        "//:darwin": "@rust_darwin_x86_64//:rust_lib-x86_64-apple-darwin",
+        "//conditions:default": "@rust_linux_x86_64//:rust_lib-x86_64-unknown-linux-gnu",
+    })
+)
+
 rust_extractor_test(
     name = "extractor_test",
     src = ":extractor_test_binary",
-    lib = select({
-        "//:darwin": "@rust_darwin_x86_64//:rustc_lib",
-        "//conditions:default": "@rust_linux_x86_64//:rustc_lib"
-    }),
-    sysroot = select({
-        "//:darwin": "@rust_darwin_x86_64//:rust_lib-x86_64-apple-darwin",
-        "//conditions:default": "@rust_linux_x86_64//:rust_lib-x86_64-unknown-linux-gnu",
-    }),
 )
