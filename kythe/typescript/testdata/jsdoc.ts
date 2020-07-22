@@ -69,3 +69,13 @@ interface String {
   /** @deprecated */
   big: () => string;
 }
+
+//- @:76"PromiseAlias" defines/binding PromiseAlias
+//- PromiseAlias.tag/deprecated "dont use me"
+/** @deprecated dont use me */
+type PromiseAlias<T> = Promise<T>;
+
+//- @:81"Foo" defines/binding IFoo
+//- IFoo.tag/deprecated "use Bar"
+/** @deprecated use Bar */
+interface Foo {}

@@ -10,11 +10,6 @@ rust_library(
         exclude = ["src/bin/**"],
     ),
     edition = "2018",
-    deps = [
-        "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/extractor/cargo:protobuf",
-        "//kythe/rust/extractor/cargo:rls_data",
-    ] + PROTO_COMPILE_DEPS,
 )
 
 rust_binary(
@@ -39,6 +34,24 @@ rust_clippy(
     name = "clippy",
     deps = [
         ":kythe_rust_extractor",
-        ":extractor",
+	":extractor",
     ],
+)
+
+rust_binary(
+    name = "extractor_test_binary",
+    srcs = glob(["tests/**/*.rs"]),
+    edition = "2018",
+    deps = [
+        ":kythe_rust_extractor",
+        "//kythe/rust/extractor/cargo:tempdir",
+    ],
+    rustc_flags = [
+        "--test",
+    ],
+)
+
+rust_extractor_test(
+    name = "extractor_test",
+    src = ":extractor_test_binary",
 )

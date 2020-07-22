@@ -30,21 +30,14 @@ use std::path::PathBuf;
 /// first element must be an empty string.
 /// The save_analysis JSON output file will be located at
 /// {output_dir}/save-analysis/{crate_name}.json
-pub fn generate_analysis(
-    rustc_arguments: Vec<String>,
-    output_dir: PathBuf,
-) -> Result<(), String> {
-    let first_arg = rustc_arguments
-        .get(0)
-        .ok_or_else(|| "Arguments vector should not be empty".to_string())?;
+pub fn generate_analysis(rustc_arguments: Vec<String>, output_dir: PathBuf) -> Result<(), String> {
+    let first_arg =
+        rustc_arguments.get(0).ok_or_else(|| "Arguments vector should not be empty".to_string())?;
     if first_arg != &"".to_string() {
-        return Err("The first argument must be an empty string".into())
+        return Err("The first argument must be an empty string".into());
     }
 
     let mut callback_shim = CallbackShim::new(output_dir);
-
-    // Enable the output of compilation errors to stderr
-    rustc_driver::install_ice_hook();
 
     rustc_driver::catch_fatal_errors(|| {
         run_compiler(&rustc_arguments, &mut callback_shim, None, None)
@@ -84,7 +77,7 @@ impl Callbacks for CallbackShim {
 
         // Configure the save_analysis to include full documentation.
         // Normally this would be set using a `rls_data::config::Config` struct on the
-        // fourth paramater of `process_crate`. However, the Rust compiler
+        // fourth parameter of `process_crate`. However, the Rust compiler
         // falsely claims that there is a mismatch between rustc_save_analysis's
         // `rls_data::config::Config` and ours, even though we use the same version.
         // This forces us to use the environment variable method of configuration

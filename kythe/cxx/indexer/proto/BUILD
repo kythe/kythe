@@ -1,3 +1,5 @@
+package(features = ["layering_check"])
+
 cc_library(
     name = "proto_graph_builder",
     srcs = ["proto_graph_builder.cc"],
@@ -143,6 +145,7 @@ cc_test(
     srcs = ["comments_test.cc"],
     deps = [
         ":comments",
+        "//third_party:gtest",
         "//third_party:gtest_main",
     ],
 )
