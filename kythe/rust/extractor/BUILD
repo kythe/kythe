@@ -32,8 +32,8 @@ genrule(
     name = "extractor_test",
     cmd = "echo \"Log available at $@\" && " +
           select({
-              "//:darwin": "LD_LIBRARY_PATH=external/rust_darwin_x86_64/lib SYSROOT=external/rust_darwin_x86_64/lib/rustlib/x86_64-apple-darwin/lib ",
-              "//conditions:default": "LD_LIBRARY_PATH=external/rust_linux_x86_64/lib SYSROOT=external/rust_linux_x86_64/lib/rustlib/x86_64-unknown-linux-gnu/lib ",
+              "//:darwin": "LD_LIBRARY_PATH=external/rust_linux_x86_64/lib:external/rust_darwin_x86_64/lib/rustlib/x86_64-apple-darwin/lib SYSROOT=external/rust_darwin_x86_64/lib/rustlib/x86_64-apple-darwin/lib ",
+              "//conditions:default": "LD_LIBRARY_PATH=external/rust_linux_x86_64/lib:external/rust_linux_x86_64/lib/rustlib/x86_64-unknown-linux-gnu/lib SYSROOT=external/rust_linux_x86_64/lib/rustlib/x86_64-unknown-linux-gnu/lib ",
           }) +
           "TEST_FILE=\"$(SRCS)\" ./$(location :extractor_test_binary) > $@ && cat $@",
     srcs = [
