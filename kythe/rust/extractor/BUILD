@@ -3,6 +3,22 @@ package(default_visibility = ["//visibility:public"])
 load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library")
 load(":extractor_test.bzl", "rust_extractor_test")
 
+# These are used by the rust_extractor_test rule
+alias(
+    name = "rust_lib",
+    actual = select({
+        "//:darwin": "@rust_darwin_x86_64//:rustc_lib",
+        "//conditions:default": "@rust_linux_x86_64//:rustc_lib"
+    })
+)
+alias(
+    name = "rust_sysroot",
+    actual = select({
+        "//:darwin": "@rust_darwin_x86_64//:rust_lib-x86_64-apple-darwin",
+        "//conditions:default": "@rust_linux_x86_64//:rust_lib-x86_64-unknown-linux-gnu",
+    })
+)
+
 rust_library(
     name = "kythe_rust_extractor",
     srcs = glob(
@@ -30,22 +46,6 @@ rust_binary(
     rustc_flags = [
         "--test",
     ],
-)
-
-# These are used by the rust_extractor_test rule
-alias(
-    name = "rust_lib",
-    actual = select({
-        "//:darwin": "@rust_darwin_x86_64//:rustc_lib",
-        "//conditions:default": "@rust_linux_x86_64//:rustc_lib"
-    })
-)
-alias(
-    name = "rust_sysroot",
-    actual = select({
-        "//:darwin": "@rust_darwin_x86_64//:rust_lib-x86_64-apple-darwin",
-        "//conditions:default": "@rust_linux_x86_64//:rust_lib-x86_64-unknown-linux-gnu",
-    })
 )
 
 rust_extractor_test(
