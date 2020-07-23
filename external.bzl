@@ -22,6 +22,7 @@ load("@io_bazel_rules_rust//:workspace.bzl", "bazel_version")
 # simply load each macro here.
 load("//kythe/rust/examples/hello_world/cargo:crates.bzl", fetch_example_hello_world_remote_crates = "raze_fetch_remote_crates")
 load("//kythe/rust/indexer/cargo:crates.bzl", fetch_indexer_remote_crates = "raze_fetch_remote_crates")
+load("//kythe/rust/extractor/cargo:crates.bzl", fetch_extractor_remote_crates = "raze_fetch_remote_crates")
 
 def _rule_dependencies():
     go_rules_dependencies()
@@ -1093,6 +1094,7 @@ def _go_dependencies():
 def _rust_dependencies():
     fetch_example_hello_world_remote_crates()
     fetch_indexer_remote_crates()
+    fetch_extractor_remote_crates()
 
 def _bindings():
     maybe(
