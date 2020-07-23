@@ -23,10 +23,12 @@ load(
 )
 
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
+# Unsupported target "benchmark" with type "bench" omitted
+# Unsupported target "bytes" with type "test" omitted
+# Unsupported target "io" with type "test" omitted
 
 rust_library(
-    name = "winapi",
+    name = "podio",
     crate_type = "lib",
     deps = [
     ],
@@ -36,24 +38,9 @@ rust_library(
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.3.9",
+    version = "0.1.7",
     tags = ["cargo-raze"],
     crate_features = [
-        "consoleapi",
-        "errhandlingapi",
-        "fileapi",
-        "minwinbase",
-        "minwindef",
-        "ntdef",
-        "ntsecapi",
-        "processenv",
-        "profileapi",
-        "std",
-        "sysinfoapi",
-        "timezoneapi",
-        "winbase",
-        "winerror",
-        "winnt",
     ],
 )
 

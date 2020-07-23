@@ -23,9 +23,33 @@ edition = "2018"
 path = "../src/lib.rs"
 
 [dependencies]
-tempdir = "0.3.7"
+protobuf = "=2.8.2"
+quick-error = "1.2.3"
+zip = "0.5.6"
+rls-data = "0.19"
+clap = "2.33.1"
+anyhow = "1.0"
+tempdir = "0.3"
+rust-crypto = "0.2.36"
 
 [raze]
 workspace_path = "//kythe/rust/extractor/cargo"
 genmode = "Remote"
 target = "x86_64-unknown-linux-gnu"
+
+# Locked on protobuf 2.8.2 until rules_rust increases their version
+# https://github.com/bazelbuild/rules_rust/tree/master/proto/raze/patch
+# We need to match rules_rust's version to avoid errors with different
+# protobuf crates.
+[raze.crates.protobuf.'2.8.2']
+patches = ["@io_bazel_rules_rust//proto/raze/patch:protobuf-2.8.2.patch"]
+patch_args = ["-p1"]
+
+[raze.crates.lexical-core.'0.6.7']
+gen_buildrs = true
+
+[raze.crates.bstr.'0.2.13']
+data_attr = 'glob(["**/*.dfa"])'
+
+[raze.crates.bzip2-sys.'0.1.9+1.0.8']
+gen_buildrs = true
