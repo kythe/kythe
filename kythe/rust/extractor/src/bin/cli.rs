@@ -18,6 +18,7 @@ use std::path::PathBuf;
 /// Contains the configuration options for the extractor
 pub struct ExtractorConfig {
     pub extra_action_path: PathBuf,
+    // TODO(Arm1stice): To be re-added when vname configs are supported
     // pub vnames_config_path: PathBuf,
     pub output_path: PathBuf,
 }

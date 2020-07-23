@@ -38,7 +38,10 @@ fn main() -> Result<()> {
     let tmp_dir = TempDir::new("rust_extractor")
         .with_context(|| "Failed to make temporary directory".to_string())?;
     let compiler_arguments: Vec<String> = spawn_info.get_argument().to_vec();
-    save_analysis::run_analysis(compiler_arguments.clone(), PathBuf::new().join(tmp_dir.path()))?;
+    save_analysis::generate_save_analysis(
+        compiler_arguments.clone(),
+        PathBuf::new().join(tmp_dir.path()),
+    )?;
 
     // Create the output kzip
     let kzip_file = File::create(&config.output_path)
@@ -111,6 +114,14 @@ fn get_spawn_info(file_path: impl AsRef<Path>) -> Result<SpawnInfo> {
     SPAWN_INFO.get(&extra_action).ok_or_else(|| anyhow!("SpawnInfo extension missing"))
 }
 
+/// Create an IndexedCompilation protobuf from the supplied arguments
+///
+/// * `source_files` - The names of the source files required by the build
+///   target
+/// * `arguments` - The arguments used to compile the target
+/// * `build_output_path` - The output path of the build target
+/// * `required_input` - The generated data for the CompilationUnit
+///   `required_input` field
 fn create_indexed_compilation(
     source_files: Vec<String>,
     arguments: Vec<String>,
@@ -120,11 +131,10 @@ fn create_indexed_compilation(
     let mut compilation_unit = CompilationUnit::new();
 
     let mut vname = VName::new();
-    // TODO: Determine proper Corpus/Root/Path for VName
+    // TODO(Arm1stice): Determine proper Corpus/Root/Path for VName
     vname.set_corpus("kythe".into());
     vname.set_language("rust".into());
     compilation_unit.set_v_name(vname);
-
     compilation_unit.set_source_file(protobuf::RepeatedField::from_vec(source_files));
     compilation_unit.set_argument(protobuf::RepeatedField::from_vec(arguments));
     compilation_unit.set_required_input(protobuf::RepeatedField::from_vec(required_input));
@@ -143,6 +153,11 @@ fn sha256digest(bytes: &[u8]) -> String {
 }
 
 /// Add a file from a path to the kzip and the list of required inputs
+///
+/// * `file_path_string` - The string path of the file target
+/// * `zip_writer` - The ZipWriter to be written to
+/// * `required_inputs` - The vector that the new CompilationUnit_FileInput will
+///   be added to
 fn kzip_add_required_input(
     file_path_string: &str,
     zip_writer: &mut ZipWriter<File>,
@@ -174,6 +189,10 @@ fn kzip_add_required_input(
 }
 
 /// Add a file to the kzip with the specified name and contents
+///
+/// * `file_name` - The new file's path inside the zip archive
+/// * `file_bytes` - The byte contents of the new file
+/// * `zip_writer` - The ZipWriter to be written to
 fn kzip_add_file(
     file_name: String,
     file_bytes: &[u8],
@@ -188,16 +207,20 @@ fn kzip_add_file(
     Ok(())
 }
 
-/// Generate the string path of the save_analysis file using the SpawnInfo and
-/// the temporary base directory
+/// Generate the string path of the save_analysis file using the build target's
+/// output path and the temporary base directory
 fn analysis_path_string(build_output_path: &str, temp_dir_path: &Path) -> Result<String> {
+    // Take the build output path and change the extension to .json
     let analysis_file_name = Path::new(build_output_path).with_extension("json");
+    // Extract the file name from the path and convert to a string
     let analysis_file_str = analysis_file_name
         .file_name()
         .unwrap()
         .to_str()
         .ok_or_else(|| anyhow!("Failed to convert path to string"))?;
 
+    // Join the temp_dir_path with "save-analysis/${analysis_file_str}" to get the
+    // full path of the save_analysis JSON file
     temp_dir_path
         .join("save-analysis")
         .join(analysis_file_str)

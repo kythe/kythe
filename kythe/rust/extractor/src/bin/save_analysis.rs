@@ -15,29 +15,40 @@
 use anyhow::Result;
 use std::path::PathBuf;
 
-pub fn run_analysis(arguments: Vec<String>, output_dir: PathBuf) -> Result<()> {
+/// Generates a save analysis in `output_dir`
+///
+/// * `arguments` - The Bazel arguments extracted from the extra action protobuf
+/// * `output_dir` - The base directory to output the save_analysis
+pub fn generate_save_analysis(arguments: Vec<String>, output_dir: PathBuf) -> Result<()> {
     let rustc_arguments = generate_arguments(arguments, &output_dir)?;
     let _input_files = kythe_rust_extractor::generate_analysis(rustc_arguments, output_dir)
         .map_err(|_| anyhow!("Failed to generate save_analysis"))?;
     Ok(())
 }
 
+/// Extracts the Rust compiler arguments from `arguments` and changes the
+/// compiler output directory to `output_dir`
+///
+/// * `arguments` - The Bazel arguments extracted from the extra action protobuf
+/// * `output_dir` - The directory to output the binary produced by the Rust
+///   compiler
 fn generate_arguments(arguments: Vec<String>, output_dir: &PathBuf) -> Result<Vec<String>> {
     let argument_position = arguments
         .iter()
         .position(|arg| arg == "--")
         .ok_or_else(|| anyhow!("Could not find the start of the rustc arguments"))?;
 
-    // Keep the "--" argument and replace it with an empty string.
-    // The first argument must be an empty string.
+    // Keep the "--" argument and replace it with an empty string because
+    // `kythe_rust_extractor::generate_analysis` requires the first argument in
+    // `arguments` to be an empty string
     let mut rustc_arguments = arguments.split_at(argument_position).1.to_vec();
     rustc_arguments[0] = String::from("");
 
-    // Change the output to the temporary directory
+    // Change the original compiler output to the temporary directory
     let outdir_position = rustc_arguments
         .iter()
         .position(|arg| arg.contains("--out-dir"))
-        .ok_or_else(|| anyhow!("Could not find the output directory argument"))?;
+        .ok_or_else(|| anyhow!("Could not find the output directory argument: {:?}", arguments))?;
     let outdir_str =
         output_dir.to_str().ok_or_else(|| anyhow!("Couldn't convert temporary path to string"))?;
     rustc_arguments[outdir_position] = format!("--out-dir={}", outdir_str);
