@@ -34,7 +34,7 @@ rust_library(
     name = "crypto",
     crate_type = "lib",
     deps = [
-        "@raze__libc__0_2_72//:libc",
+        "@raze__libc__0_2_73//:libc",
         "@raze__rand__0_3_23//:rand",
         "@raze__rustc_serialize__0_3_24//:rustc_serialize",
         "@raze__time__0_1_43//:time",

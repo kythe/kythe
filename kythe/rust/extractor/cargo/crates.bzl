@@ -152,12 +152,12 @@ def raze_fetch_remote_crates():
     )
 
     _new_http_archive(
-        name = "raze__libc__0_2_72",
-        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/libc/libc-0.2.72.crate",
+        name = "raze__libc__0_2_73",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/libc/libc-0.2.73.crate",
         type = "tar.gz",
-        sha256 = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701",
-        strip_prefix = "libc-0.2.72",
-        build_file = Label("//kythe/rust/extractor/cargo/remote:libc-0.2.72.BUILD"),
+        sha256 = "bd7d4bd64732af4bf3a67f367c27df8520ad7e230c5817b8ff485864d80242b9",
+        strip_prefix = "libc-0.2.73",
+        build_file = Label("//kythe/rust/extractor/cargo/remote:libc-0.2.73.BUILD"),
     )
 
     _new_http_archive(

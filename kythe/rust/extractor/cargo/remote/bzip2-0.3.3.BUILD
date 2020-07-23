@@ -29,7 +29,7 @@ rust_library(
     crate_type = "lib",
     deps = [
         "@raze__bzip2_sys__0_1_9_1_0_8//:bzip2_sys",
-        "@raze__libc__0_2_72//:libc",
+        "@raze__libc__0_2_73//:libc",
     ],
     srcs = glob(["**/*.rs"]),
     crate_root = "src/lib.rs",

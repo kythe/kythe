@@ -28,7 +28,7 @@ rust_library(
     name = "rand",
     crate_type = "lib",
     deps = [
-        "@raze__libc__0_2_72//:libc",
+        "@raze__libc__0_2_73//:libc",
         "@raze__rand__0_4_6//:rand",
     ],
     srcs = glob(["**/*.rs"]),

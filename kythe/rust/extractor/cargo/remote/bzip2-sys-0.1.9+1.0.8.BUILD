@@ -55,7 +55,7 @@ rust_library(
     crate_type = "lib",
     deps = [
         ":bzip2_sys_build_script",
-        "@raze__libc__0_2_72//:libc",
+        "@raze__libc__0_2_73//:libc",
     ],
     srcs = glob(["**/*.rs"]),
     crate_root = "lib.rs",

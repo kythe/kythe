@@ -40,7 +40,7 @@ rust_library(
     deps = [
         "@raze__cfg_if__0_1_10//:cfg_if",
         "@raze__crc32fast__1_2_0//:crc32fast",
-        "@raze__libc__0_2_72//:libc",
+        "@raze__libc__0_2_73//:libc",
         "@raze__miniz_oxide__0_4_0//:miniz_oxide",
     ],
     srcs = glob(["**/*.rs"]),
