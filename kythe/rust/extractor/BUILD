@@ -9,15 +9,16 @@ alias(
     name = "rust_lib",
     actual = select({
         "//:darwin": "@rust_darwin_x86_64//:rustc_lib",
-        "//conditions:default": "@rust_linux_x86_64//:rustc_lib"
-    })
+        "//conditions:default": "@rust_linux_x86_64//:rustc_lib",
+    }),
 )
+
 alias(
     name = "rust_sysroot",
     actual = select({
         "//:darwin": "@rust_darwin_x86_64//:rust_lib-x86_64-apple-darwin",
         "//conditions:default": "@rust_linux_x86_64//:rust_lib-x86_64-unknown-linux-gnu",
-    })
+    }),
 )
 
 rust_library(
@@ -50,25 +51,48 @@ rust_binary(
 rust_clippy(
     name = "clippy",
     deps = [
+        ":extractor",
+        ":extractor_integration_test_binary",
         ":kythe_rust_extractor",
-	":extractor",
     ],
 )
 
 rust_binary(
     name = "extractor_test_binary",
-    srcs = glob(["tests/**/*.rs"]),
+    srcs = glob(["tests/test.rs"]),
     edition = "2018",
+    rustc_flags = [
+        "--test",
+    ],
     deps = [
         ":kythe_rust_extractor",
         "//kythe/rust/extractor/cargo:tempdir",
-    ],
-    rustc_flags = [
-        "--test",
     ],
 )
 
 rust_extractor_test(
     name = "extractor_test",
     src = ":extractor_test_binary",
+)
+
+rust_binary(
+    name = "extractor_integration_test_binary",
+    srcs = glob(["tests/integration_test.rs"]),
+    edition = "2018",
+    deps = [
+        "//kythe/proto:analysis_rust_proto",
+        "//kythe/rust/extractor/cargo:anyhow",
+        "//kythe/rust/extractor/cargo:assert_cmd",
+        "//kythe/rust/extractor/cargo:predicates",
+        "//kythe/rust/extractor/cargo:protobuf",
+        "//kythe/rust/extractor/cargo:tempdir",
+        "//kythe/rust/extractor/cargo:zip",
+        "//third_party/bazel:extra_actions_base_rust_proto",
+    ],
+)
+
+rust_extractor_test(
+    name = "extractor_integration_test",
+    src = ":extractor_integration_test_binary",
+    tags = ["no-cache"],
 )

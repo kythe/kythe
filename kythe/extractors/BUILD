@@ -180,6 +180,6 @@ extractor_action(
     ],
     output = "$(ACTION_ID).rust.kzip",
     env = {
-        "LD_LIBRARY_PATH": "external/rust_linux_x86_64/lib"
+        "LD_LIBRARY_PATH": "external/rust_linux_x86_64/lib:external/rust_darwin_x86_64/lib"
     }
 )

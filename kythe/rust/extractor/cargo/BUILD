@@ -14,8 +14,18 @@ alias(
     tags = ["cargo-raze"],
 )
 alias(
+    name = "assert_cmd",
+    actual = "@raze__assert_cmd__1_0_1//:assert_cmd",
+    tags = ["cargo-raze"],
+)
+alias(
     name = "clap",
     actual = "@raze__clap__2_33_1//:clap",
+    tags = ["cargo-raze"],
+)
+alias(
+    name = "predicates",
+    actual = "@raze__predicates__1_0_5//:predicates",
     tags = ["cargo-raze"],
 )
 alias(

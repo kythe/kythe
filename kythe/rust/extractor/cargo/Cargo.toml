@@ -32,6 +32,10 @@ anyhow = "1.0"
 tempdir = "0.3"
 rust-crypto = "0.2.36"
 
+[dev-dependencies]
+assert_cmd = "1.0"
+predicates = "1.0.5"
+
 [raze]
 workspace_path = "//kythe/rust/extractor/cargo"
 genmode = "Remote"
@@ -53,3 +57,7 @@ data_attr = 'glob(["**/*.dfa"])'
 
 [raze.crates.bzip2-sys.'0.1.9+1.0.8']
 gen_buildrs = true
+
+# assert_cmd doctests its README.md at compile-time
+[raze.crates.assert_cmd.'1.0.1']
+data_attr = '["README.md"]'

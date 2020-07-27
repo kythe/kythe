@@ -37,9 +37,9 @@ fn main() -> Result<()> {
     // Create temporary directory and run the analysis
     let tmp_dir = TempDir::new("rust_extractor")
         .with_context(|| "Failed to make temporary directory".to_string())?;
-    let compiler_arguments: Vec<String> = spawn_info.get_argument().to_vec();
+    let build_target_arguments: Vec<String> = spawn_info.get_argument().to_vec();
     save_analysis::generate_save_analysis(
-        compiler_arguments.clone(),
+        build_target_arguments.clone(),
         PathBuf::new().join(tmp_dir.path()),
     )?;
 
@@ -47,6 +47,10 @@ fn main() -> Result<()> {
     let kzip_file = File::create(&config.output_path)
         .with_context(|| format!("Failed to create kzip file at path {:?}", config.output_path))?;
     let mut kzip = ZipWriter::new(kzip_file);
+
+    // Get KYTHE_CORPUS variable
+    let corpus = std::env::var("KYTHE_CORPUS")
+        .with_context(|| "KYTHE_CORPUS environment variable is not set".to_string())?;
 
     // Loop through each source file and insert into kzip
     // Collect input files
@@ -59,7 +63,7 @@ fn main() -> Result<()> {
         .collect();
     let mut required_input: Vec<CompilationUnit_FileInput> = Vec::new();
     for file_path in &rust_source_files {
-        kzip_add_required_input(file_path, &mut kzip, &mut required_input)?;
+        kzip_add_required_input(file_path, &corpus, &mut kzip, &mut required_input)?;
     }
 
     // Grab the build target's output path
@@ -70,12 +74,12 @@ fn main() -> Result<()> {
 
     // Add save analysis to kzip
     let save_analysis_path: String = analysis_path_string(&build_output_path, &tmp_dir.path())?;
-    kzip_add_required_input(&save_analysis_path, &mut kzip, &mut required_input)?;
+    kzip_add_required_input(&save_analysis_path, &corpus, &mut kzip, &mut required_input)?;
 
     // Create the IndexedCompilation and add it to the kzip
     let indexed_compilation = create_indexed_compilation(
         rust_source_files,
-        compiler_arguments,
+        build_target_arguments,
         build_output_path.to_string(),
         required_input,
     );
@@ -95,10 +99,14 @@ fn main() -> Result<()> {
 }
 
 // Inspired by https://gist.github.com/Igosuki/27e18369fec5a05d4019ac5d321e1779
+const SPAWN_INFO_FIELD_NUMBER: u32 = 1003;
 const SPAWN_INFO: protobuf::ext::ExtFieldOptional<
     ExtraActionInfo,
     protobuf::types::ProtobufTypeMessage<SpawnInfo>,
-> = protobuf::ext::ExtFieldOptional { field_number: 1003, phantom: ::std::marker::PhantomData };
+> = protobuf::ext::ExtFieldOptional {
+    field_number: SPAWN_INFO_FIELD_NUMBER,
+    phantom: ::std::marker::PhantomData,
+};
 
 /// Attempt to parse ExtraActionInfo protobuf from file_path and extract the
 /// SpawnInfo extension
@@ -155,11 +163,13 @@ fn sha256digest(bytes: &[u8]) -> String {
 /// Add a file from a path to the kzip and the list of required inputs
 ///
 /// * `file_path_string` - The string path of the file target
+/// * `corpus` - The corpus to populate in the VName
 /// * `zip_writer` - The ZipWriter to be written to
 /// * `required_inputs` - The vector that the new CompilationUnit_FileInput will
 ///   be added to
 fn kzip_add_required_input(
     file_path_string: &str,
+    corpus: &str,
     zip_writer: &mut ZipWriter<File>,
     required_inputs: &mut Vec<CompilationUnit_FileInput>,
 ) -> Result<()> {
@@ -175,7 +185,7 @@ fn kzip_add_required_input(
     // Generate FileInput and add it to the list of required inputs
     let mut file_input = CompilationUnit_FileInput::new();
     let mut file_vname = VName::new();
-    file_vname.set_corpus("kythe".to_string());
+    file_vname.set_corpus(corpus.to_string());
     file_vname.set_path(file_path_string.to_string());
     file_input.set_v_name(file_vname);
 
