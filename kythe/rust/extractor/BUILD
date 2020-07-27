@@ -95,4 +95,5 @@ rust_extractor_test(
     name = "extractor_integration_test",
     src = ":extractor_integration_test_binary",
     tags = ["no-cache"],
+    restricted_to = ["//buildenv:linux"],
 )
