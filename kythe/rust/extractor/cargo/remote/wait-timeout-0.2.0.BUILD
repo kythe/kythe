@@ -1,0 +1,108 @@
+"""
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+package(default_visibility = [
+  # Public for visibility by "@raze__crate__version//" targets.
+  #
+  # Prefer access through "//kythe/rust/extractor/cargo", which limits external
+  # visibility to explicit Cargo.toml dependencies.
+  "//visibility:public",
+])
+
+licenses([
+  "notice", # MIT from expression "MIT OR Apache-2.0"
+])
+
+load(
+    "@io_bazel_rules_rust//rust:rust.bzl",
+    "rust_library",
+    "rust_binary",
+    "rust_test",
+)
+
+
+rust_binary(
+    # Prefix bin name to disambiguate from (probable) collision with lib name
+    # N.B.: The exact form of this is subject to change.
+    name = "cargo_bin_exit",
+    deps = [
+        # Binaries get an implicit dependency on their crate's lib
+        ":wait_timeout",
+        "@raze__libc__0_2_73//:libc",
+    ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/bin/exit.rs",
+    edition = "2015",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    version = "0.2.0",
+    tags = ["cargo-raze"],
+    crate_features = [
+    ],
+)
+
+rust_binary(
+    # Prefix bin name to disambiguate from (probable) collision with lib name
+    # N.B.: The exact form of this is subject to change.
+    name = "cargo_bin_reader",
+    deps = [
+        # Binaries get an implicit dependency on their crate's lib
+        ":wait_timeout",
+        "@raze__libc__0_2_73//:libc",
+    ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/bin/reader.rs",
+    edition = "2015",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    version = "0.2.0",
+    tags = ["cargo-raze"],
+    crate_features = [
+    ],
+)
+
+rust_binary(
+    # Prefix bin name to disambiguate from (probable) collision with lib name
+    # N.B.: The exact form of this is subject to change.
+    name = "cargo_bin_sleep",
+    deps = [
+        # Binaries get an implicit dependency on their crate's lib
+        ":wait_timeout",
+        "@raze__libc__0_2_73//:libc",
+    ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/bin/sleep.rs",
+    edition = "2015",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    version = "0.2.0",
+    tags = ["cargo-raze"],
+    crate_features = [
+    ],
+)
+
+# Unsupported target "smoke" with type "test" omitted
+
+rust_library(
+    name = "wait_timeout",
+    crate_type = "lib",
+    deps = [
+        "@raze__libc__0_2_73//:libc",
+    ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/lib.rs",
+    edition = "2015",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    version = "0.2.0",
+    tags = ["cargo-raze"],
+    crate_features = [
+    ],
+)
+

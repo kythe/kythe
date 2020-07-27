@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # MIT from expression "MIT OR Apache-2.0"
+  "notice", # MIT from expression "MIT"
 ])
 
 load(
@@ -23,12 +23,18 @@ load(
 )
 
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
 
 rust_library(
-    name = "winapi",
+    name = "clap",
     crate_type = "lib",
     deps = [
+        "@raze__ansi_term__0_11_0//:ansi_term",
+        "@raze__atty__0_2_14//:atty",
+        "@raze__bitflags__1_2_1//:bitflags",
+        "@raze__strsim__0_8_0//:strsim",
+        "@raze__textwrap__0_11_0//:textwrap",
+        "@raze__unicode_width__0_1_8//:unicode_width",
+        "@raze__vec_map__0_8_2//:vec_map",
     ],
     srcs = glob(["**/*.rs"]),
     crate_root = "src/lib.rs",
@@ -36,24 +42,16 @@ rust_library(
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.3.9",
+    version = "2.33.1",
     tags = ["cargo-raze"],
     crate_features = [
-        "consoleapi",
-        "errhandlingapi",
-        "fileapi",
-        "minwinbase",
-        "minwindef",
-        "ntdef",
-        "ntsecapi",
-        "processenv",
-        "profileapi",
-        "std",
-        "sysinfoapi",
-        "timezoneapi",
-        "winbase",
-        "winerror",
-        "winnt",
+        "ansi_term",
+        "atty",
+        "color",
+        "default",
+        "strsim",
+        "suggestions",
+        "vec_map",
     ],
 )
 
