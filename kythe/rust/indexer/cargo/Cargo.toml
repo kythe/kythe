@@ -15,7 +15,7 @@
 [package]
 name = "kythe_rust_indexer"
 version = "0.1.0"
-authors = ["Wyatt Calandro <wcalandro@google.com>"]
+authors = ["The Kythe Authors"]
 edition = "2018"
 
 # Mandatory (or Cargo tooling is unhappy)
