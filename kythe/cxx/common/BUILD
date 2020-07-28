@@ -410,6 +410,43 @@ cc_test(
 )
 
 cc_library(
+    name = "kzip_writer_c_api",
+    srcs = ["kzip_writer_c_api.cc"],
+    hdrs = ["kzip_writer_c_api.h"],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":index_writer",
+        ":kzip_writer",
+        ":status_or",
+        "//kythe/proto:analysis_cc_proto",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "kzip_writer_c_api_test",
+    srcs = ["kzip_writer_c_api_test.cc"],
+    data = [
+        "//kythe/testdata/platform:stringset.kzip",
+    ],
+    deps = [
+        ":kzip_reader",
+        ":kzip_writer_c_api",
+        ":libzip/error",
+        "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@org_libzip//:zip",
+    ],
+)
+
+cc_library(
     name = "status",
     srcs = ["status.cc"],
     hdrs = ["status.h"],
