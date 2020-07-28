@@ -23,14 +23,14 @@ load(
 )
 
 
-# Unsupported target "bench" with type "bench" omitted
-# Unsupported target "build-script-build" with type "custom-build" omitted
+# Unsupported target "smoke" with type "test" omitted
 
 rust_library(
-    name = "crc32fast",
+    name = "tempdir",
     crate_type = "lib",
     deps = [
-        "@raze__cfg_if__0_1_9//:cfg_if",
+        "@raze__rand__0_4_6//:rand",
+        "@raze__remove_dir_all__0_5_3//:remove_dir_all",
     ],
     srcs = glob(["**/*.rs"]),
     crate_root = "src/lib.rs",
@@ -38,11 +38,9 @@ rust_library(
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "1.2.0",
+    version = "0.3.7",
     tags = ["cargo-raze"],
     crate_features = [
-        "default",
-        "std",
     ],
 )
 

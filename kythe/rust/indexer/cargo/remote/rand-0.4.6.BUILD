@@ -24,13 +24,14 @@ load(
 
 
 # Unsupported target "bench" with type "bench" omitted
-# Unsupported target "build-script-build" with type "custom-build" omitted
+# Unsupported target "generators" with type "bench" omitted
+# Unsupported target "misc" with type "bench" omitted
 
 rust_library(
-    name = "crc32fast",
+    name = "rand",
     crate_type = "lib",
     deps = [
-        "@raze__cfg_if__0_1_9//:cfg_if",
+        "@raze__libc__0_2_71//:libc",
     ],
     srcs = glob(["**/*.rs"]),
     crate_root = "src/lib.rs",
@@ -38,10 +39,11 @@ rust_library(
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "1.2.0",
+    version = "0.4.6",
     tags = ["cargo-raze"],
     crate_features = [
         "default",
+        "libc",
         "std",
     ],
 )

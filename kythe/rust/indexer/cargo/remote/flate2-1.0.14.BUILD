@@ -50,6 +50,7 @@ rust_library(
         "--cap-lints=allow",
     ],
     version = "1.0.14",
+    tags = ["cargo-raze"],
     crate_features = [
         "miniz_oxide",
         "rust_backend",

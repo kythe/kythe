@@ -50,6 +50,7 @@ rust_library(
         "--cap-lints=allow",
     ],
     version = "0.5.6",
+    tags = ["cargo-raze"],
     crate_features = [
         "bzip2",
         "default",

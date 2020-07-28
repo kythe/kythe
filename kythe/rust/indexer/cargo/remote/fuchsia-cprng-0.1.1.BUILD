@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # MIT from expression "MIT OR Apache-2.0"
+  "restricted", # no license
 ])
 
 load(
@@ -23,26 +23,21 @@ load(
 )
 
 
-# Unsupported target "bench" with type "bench" omitted
-# Unsupported target "build-script-build" with type "custom-build" omitted
 
 rust_library(
-    name = "crc32fast",
+    name = "fuchsia_cprng",
     crate_type = "lib",
     deps = [
-        "@raze__cfg_if__0_1_9//:cfg_if",
     ],
     srcs = glob(["**/*.rs"]),
     crate_root = "src/lib.rs",
-    edition = "2015",
+    edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "1.2.0",
+    version = "0.1.1",
     tags = ["cargo-raze"],
     crate_features = [
-        "default",
-        "std",
     ],
 )
 

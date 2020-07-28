@@ -37,14 +37,21 @@ rust_library(
         "--cap-lints=allow",
     ],
     version = "0.3.8",
+    tags = ["cargo-raze"],
     crate_features = [
+        "errhandlingapi",
+        "fileapi",
         "minwinbase",
         "minwindef",
         "ntdef",
+        "ntsecapi",
         "profileapi",
         "std",
         "sysinfoapi",
         "timezoneapi",
+        "winbase",
+        "winerror",
+        "winnt",
     ],
 )
 

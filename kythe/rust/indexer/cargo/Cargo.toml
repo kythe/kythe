@@ -26,6 +26,8 @@ path = "../src/lib.rs"
 protobuf = "=2.8.2"
 quick-error = "1.2.3"
 zip = "0.5.6"
+tempdir = "0.3.7"
+anyhow = "1.0.31"
 
 [raze]
 workspace_path = "//kythe/rust/indexer/cargo"

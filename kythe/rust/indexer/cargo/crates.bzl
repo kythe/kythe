@@ -26,6 +26,15 @@ def raze_fetch_remote_crates():
     )
 
     _new_http_archive(
+        name = "raze__anyhow__1_0_32",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/anyhow/anyhow-1.0.32.crate",
+        type = "tar.gz",
+        sha256 = "6b602bfe940d21c130f3895acd65221e8a61270debe89d628b9cb4e3ccb8569b",
+        strip_prefix = "anyhow-1.0.32",
+        build_file = Label("//kythe/rust/indexer/cargo/remote:anyhow-1.0.32.BUILD"),
+    )
+
+    _new_http_archive(
         name = "raze__bzip2__0_3_3",
         url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/bzip2/bzip2-0.3.3.crate",
         type = "tar.gz",
@@ -77,6 +86,15 @@ def raze_fetch_remote_crates():
         sha256 = "2cfff41391129e0a856d6d822600b8d71179d46879e310417eb9c762eb178b42",
         strip_prefix = "flate2-1.0.14",
         build_file = Label("//kythe/rust/indexer/cargo/remote:flate2-1.0.14.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__fuchsia_cprng__0_1_1",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/fuchsia-cprng/fuchsia-cprng-0.1.1.crate",
+        type = "tar.gz",
+        sha256 = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba",
+        strip_prefix = "fuchsia-cprng-0.1.1",
+        build_file = Label("//kythe/rust/indexer/cargo/remote:fuchsia-cprng-0.1.1.BUILD"),
     )
 
     _new_http_archive(
@@ -137,6 +155,60 @@ def raze_fetch_remote_crates():
         sha256 = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0",
         strip_prefix = "quick-error-1.2.3",
         build_file = Label("//kythe/rust/indexer/cargo/remote:quick-error-1.2.3.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__rand__0_4_6",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/rand/rand-0.4.6.crate",
+        type = "tar.gz",
+        sha256 = "552840b97013b1a26992c11eac34bdd778e464601a4c2054b5f0bff7c6761293",
+        strip_prefix = "rand-0.4.6",
+        build_file = Label("//kythe/rust/indexer/cargo/remote:rand-0.4.6.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__rand_core__0_3_1",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/rand_core/rand_core-0.3.1.crate",
+        type = "tar.gz",
+        sha256 = "7a6fdeb83b075e8266dcc8762c22776f6877a63111121f5f8c7411e5be7eed4b",
+        strip_prefix = "rand_core-0.3.1",
+        build_file = Label("//kythe/rust/indexer/cargo/remote:rand_core-0.3.1.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__rand_core__0_4_2",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/rand_core/rand_core-0.4.2.crate",
+        type = "tar.gz",
+        sha256 = "9c33a3c44ca05fa6f1807d8e6743f3824e8509beca625669633be0acbdf509dc",
+        strip_prefix = "rand_core-0.4.2",
+        build_file = Label("//kythe/rust/indexer/cargo/remote:rand_core-0.4.2.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__rdrand__0_4_0",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/rdrand/rdrand-0.4.0.crate",
+        type = "tar.gz",
+        sha256 = "678054eb77286b51581ba43620cc911abf02758c91f93f479767aed0f90458b2",
+        strip_prefix = "rdrand-0.4.0",
+        build_file = Label("//kythe/rust/indexer/cargo/remote:rdrand-0.4.0.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__remove_dir_all__0_5_3",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/remove_dir_all/remove_dir_all-0.5.3.crate",
+        type = "tar.gz",
+        sha256 = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7",
+        strip_prefix = "remove_dir_all-0.5.3",
+        build_file = Label("//kythe/rust/indexer/cargo/remote:remove_dir_all-0.5.3.BUILD"),
+    )
+
+    _new_http_archive(
+        name = "raze__tempdir__0_3_7",
+        url = "https://crates-io.s3-us-west-1.amazonaws.com/crates/tempdir/tempdir-0.3.7.crate",
+        type = "tar.gz",
+        sha256 = "15f2b5fb00ccdf689e0149d1b1b3c03fead81c2b37735d812fa8bddbbf41b6d8",
+        strip_prefix = "tempdir-0.3.7",
+        build_file = Label("//kythe/rust/indexer/cargo/remote:tempdir-0.3.7.BUILD"),
     )
 
     _new_http_archive(

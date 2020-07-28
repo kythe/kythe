@@ -41,8 +41,10 @@ cargo_build_script(
     ],
     crate_features = [
     ],
+    build_script_env = {
+    },
     data = glob(["**"]),
-    tags = ["no-sandbox"],
+    tags = ["cargo-raze"],
     version = "0.1.9+1.0.8",
     visibility = ["//visibility:private"],
 )
@@ -62,6 +64,7 @@ rust_library(
         "--cap-lints=allow",
     ],
     version = "0.1.9+1.0.8",
+    tags = ["cargo-raze"],
     crate_features = [
     ],
 )
