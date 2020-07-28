@@ -1,6 +1,8 @@
+load("//tools/cpp:cc_release_binary.bzl", "cc_release_binary")
+
 package(features = ["layering_check"])
 
-cc_binary(
+cc_release_binary(
     name = "textproto_indexer",
     srcs = ["textproto_indexer_main.cc"],
     visibility = ["//visibility:public"],

@@ -1,8 +1,10 @@
+load("//tools/cpp:cc_release_binary.bzl", "cc_release_binary")
+
 package(
     features = ["layering_check"],
 )
 
-cc_binary(
+cc_release_binary(
     name = "proto_extractor",
     srcs = ["proto_extractor_main.cc"],
     visibility = ["//visibility:public"],

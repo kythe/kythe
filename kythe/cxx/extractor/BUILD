@@ -5,6 +5,7 @@ package(
 
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load(":toolchain.bzl", "cxx_extractor_toolchain")
+load("//tools/cpp:cc_release_binary.bzl", "cc_release_binary")
 
 cc_library(
     name = "cxx_details",
@@ -133,7 +134,7 @@ cc_library(
     ],
 )
 
-cc_binary(
+cc_release_binary(
     name = "cxx_extractor",
     srcs = ["cxx_extractor_main.cc"],
     deps = [
@@ -166,7 +167,7 @@ cc_test(
     ],
 )
 
-cc_binary(
+cc_release_binary(
     name = "cxx_extractor_bazel",
     srcs = [
         "cxx_extractor_bazel_main.cc",

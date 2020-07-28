@@ -164,12 +164,12 @@ filegroup(
 
 filegroup(
     name = "cxx_extractor",
-    srcs = ["//kythe/cxx/extractor:cxx_extractor"],
+    srcs = ["//kythe/cxx/extractor:cxx_extractor_static"],
 )
 
 filegroup(
     name = "bazel_cxx_extractor",
-    srcs = ["//kythe/cxx/extractor:cxx_extractor_bazel"],
+    srcs = ["//kythe/cxx/extractor:cxx_extractor_bazel_static"],
 )
 
 filegroup(
@@ -204,7 +204,7 @@ filegroup(
 
 filegroup(
     name = "cxx_indexer",
-    srcs = ["//kythe/cxx/indexer/cxx:indexer"],
+    srcs = ["//kythe/cxx/indexer/cxx:indexer_static"],
 )
 
 filegroup(
@@ -214,33 +214,33 @@ filegroup(
 
 filegroup(
     name = "proto_extractor",
-    srcs = ["//kythe/cxx/extractor/proto:proto_extractor"],
+    srcs = ["//kythe/cxx/extractor/proto:proto_extractor_static"],
 )
 
 filegroup(
     name = "proto_indexer",
-    srcs = ["//kythe/cxx/indexer/proto:indexer"],
+    srcs = ["//kythe/cxx/indexer/proto:indexer_static"],
 )
 
 filegroup(
     name = "textproto_extractor",
-    srcs = ["//kythe/cxx/extractor/textproto:textproto_extractor"],
+    srcs = ["//kythe/cxx/extractor/textproto:textproto_extractor_static"],
 )
 
 filegroup(
     name = "textproto_indexer",
-    srcs = ["//kythe/cxx/indexer/textproto:textproto_indexer"],
+    srcs = ["//kythe/cxx/indexer/textproto:textproto_indexer_static"],
 )
 
 filegroup(
     name = "cc_proto_metadata_plugin",
-    srcs = ["//kythe/cxx/tools:proto_metadata_plugin"],
+    srcs = ["//kythe/cxx/tools:proto_metadata_plugin_static"],
 )
 
 filegroup(
     name = "tools",
     srcs = [
-        "//kythe/cxx/verifier",
+        "//kythe/cxx/verifier:verifier_static",
         "//kythe/go/extractors/config/runextractor",
         "//kythe/go/platform/tools/dedup_stream",
         "//kythe/go/platform/tools/entrystream",

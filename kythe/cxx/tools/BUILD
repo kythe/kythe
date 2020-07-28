@@ -1,3 +1,5 @@
+load("//tools/cpp:cc_release_binary.bzl", "cc_release_binary")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
@@ -28,7 +30,7 @@ cc_binary(
     ],
 )
 
-cc_binary(
+cc_release_binary(
     name = "proto_metadata_plugin",
     srcs = ["proto_metadata_plugin.cc"],
     deps = [

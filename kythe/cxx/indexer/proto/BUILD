@@ -1,3 +1,5 @@
+load("//tools/cpp:cc_release_binary.bzl", "cc_release_binary")
+
 package(features = ["layering_check"])
 
 cc_library(
@@ -103,7 +105,7 @@ cc_library(
     ],
 )
 
-cc_binary(
+cc_release_binary(
     name = "indexer",
     srcs = ["kythe_indexer_main.cc"],
     copts = [

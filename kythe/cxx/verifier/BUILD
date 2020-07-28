@@ -1,3 +1,5 @@
+load("//tools/cpp:cc_release_binary.bzl", "cc_release_binary")
+
 package(
     default_visibility = ["//kythe:default_visibility"],
     features = ["layering_check"],
@@ -86,7 +88,7 @@ cc_library(
     ],
 )
 
-cc_binary(
+cc_release_binary(
     name = "verifier",
     srcs = [
         "verifier_main.cc",
