@@ -95,18 +95,6 @@ StatusOr<IndexWriter> KzipWriter::Create(absl::string_view path,
 }
 
 /* static */
-StatusOr<std::unique_ptr<IndexWriter>> KzipWriter::CreateUnique(absl::string_view path,
-                                         KzipEncoding encoding) {
-  int error;
-  if (auto archive =
-          zip_open(std::string(path).c_str(), ZIP_CREATE | ZIP_EXCL, &error)) {
-    return std::make_unique<IndexWriter>(
-        absl::WrapUnique(new KzipWriter(archive, encoding)));
-  }
-  return libzip::Error(error).ToStatus();
-}
-
-/* static */
 StatusOr<IndexWriter> KzipWriter::FromSource(zip_source_t* source,
                                              KzipEncoding encoding,
                                              const int flags) {

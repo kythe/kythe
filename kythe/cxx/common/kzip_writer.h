@@ -39,12 +39,6 @@ class KzipWriter : public IndexWriterInterface {
   /// \param encoding Encoding to use for compilation units.
   static StatusOr<IndexWriter> Create(
       absl::string_view path, KzipEncoding encoding = DefaultEncoding());
-  /// \brief Constructs a Kzip IndexWriter which will create and write to
-  /// \param path Path to the file to create. Must not currently exist.
-  /// \param encoding Encoding to use for compilation units.
-  /// Same as `Create` except it returns a pointer.
-  static StatusOr<std::unique_ptr<IndexWriter>> CreateUnique(
-      absl::string_view path, KzipEncoding encoding = DefaultEncoding());
   /// \brief Constructs an IndexWriter from the libzip source pointer.
   /// \param source zip_source_t to use as backing store.
   /// See https://libzip.org/documentation/zip_source.html for ownership.

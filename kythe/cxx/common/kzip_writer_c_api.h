@@ -68,7 +68,9 @@ int32_t KzipWriter_Close(struct KzipWriter* writer);
 /// The content is
 /// specified using both the pointer to the beginning and the size.  The caller
 /// must provide a buffer to put the digest into, and a buffer size.  Nonzero
-/// status is returned in case of an error writing.
+/// status is returned in case of an error writing.  Specifically, if there is
+/// insufficient space in the buffer, KZIP_WRITER_BUFFER_TOO_SMALL_ERROR is
+/// returned.
 /// \param writer The writer to write into.
 /// \param content The file content buffer to write.
 /// \param content_length The length of the buffer to write.

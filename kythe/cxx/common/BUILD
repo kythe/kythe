@@ -421,6 +421,7 @@ cc_library(
         ":kzip_writer",
         ":status_or",
         "//kythe/proto:analysis_cc_proto",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
@@ -440,6 +441,7 @@ cc_test(
         "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
         "//third_party:gtest",
         "//third_party:gtest_main",
+        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@org_libzip//:zip",
@@ -447,8 +449,9 @@ cc_test(
 )
 
 cc_library(
-    # The name can not be just 'status' as it conflicts with absl's status
-    # library at link time.  Weird, but true.
+    # Having this library be named "status" just as that of absl status
+    # affects linking this library with Rust FFI code.
+    # See for details: https://github.com/bazelbuild/rules_rust/issues/385.
     name = "common_status",
     srcs = ["status.cc"],
     hdrs = ["status.h"],

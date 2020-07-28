@@ -11,8 +11,8 @@ rust_library(
     deps = [
       "//kythe/cxx/common:kzip_writer_c_api",
       "//kythe/proto:analysis_rust_proto",
-      "//kythe/rust/extractor/cargo:anyhow",
-      "//kythe/rust/extractor/cargo:protobuf",
+      "//kythe/rust/cargo:anyhow",
+      "//kythe/rust/cargo:protobuf",
       "@com_google_absl//absl/status",
     ],
     edition = "2018",
@@ -22,7 +22,7 @@ rust_test(
     name = "fuchsia_extractor_lib_test",
     crate = ":fuchsia_extractor_lib",
     deps = [
-      "//kythe/rust/extractor/cargo:tempdir",
+      "//kythe/rust/cargo:tempdir",
     ],
     edition = "2018",
 )
