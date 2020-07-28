@@ -219,7 +219,7 @@ filegroup(
 
 filegroup(
     name = "proto_indexer",
-    srcs = ["//kythe/cxx/indexer/proto:indexer_static"],
+    srcs = ["//kythe/cxx/indexer/proto:indexer"],
 )
 
 filegroup(
@@ -229,18 +229,18 @@ filegroup(
 
 filegroup(
     name = "textproto_indexer",
-    srcs = ["//kythe/cxx/indexer/textproto:textproto_indexer_static"],
+    srcs = ["//kythe/cxx/indexer/textproto:textproto_indexer"],
 )
 
 filegroup(
     name = "cc_proto_metadata_plugin",
-    srcs = ["//kythe/cxx/tools:proto_metadata_plugin_static"],
+    srcs = ["//kythe/cxx/tools:proto_metadata_plugin"],
 )
 
 filegroup(
     name = "tools",
     srcs = [
-        "//kythe/cxx/verifier:verifier_static",
+        "//kythe/cxx/verifier",
         "//kythe/go/extractors/config/runextractor",
         "//kythe/go/platform/tools/dedup_stream",
         "//kythe/go/platform/tools/entrystream",
