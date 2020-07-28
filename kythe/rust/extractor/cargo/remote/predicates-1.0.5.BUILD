@@ -23,37 +23,32 @@ load(
 )
 
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
+# Unsupported target "case_tree" with type "example" omitted
 
 rust_library(
-    name = "winapi",
+    name = "predicates",
     crate_type = "lib",
     deps = [
+        "@raze__difference__2_0_0//:difference",
+        "@raze__float_cmp__0_8_0//:float_cmp",
+        "@raze__normalize_line_endings__0_3_0//:normalize_line_endings",
+        "@raze__predicates_core__1_0_0//:predicates_core",
+        "@raze__regex__1_3_9//:regex",
     ],
     srcs = glob(["**/*.rs"]),
     crate_root = "src/lib.rs",
-    edition = "2015",
+    edition = "2018",
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.3.9",
+    version = "1.0.5",
     tags = ["cargo-raze"],
     crate_features = [
-        "consoleapi",
-        "errhandlingapi",
-        "fileapi",
-        "minwinbase",
-        "minwindef",
-        "ntdef",
-        "ntsecapi",
-        "processenv",
-        "profileapi",
-        "std",
-        "sysinfoapi",
-        "timezoneapi",
-        "winbase",
-        "winerror",
-        "winnt",
+        "default",
+        "difference",
+        "float-cmp",
+        "normalize-line-endings",
+        "regex",
     ],
 )
 

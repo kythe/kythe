@@ -23,10 +23,10 @@ load(
 )
 
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
+# Unsupported target "cc_env" with type "test" omitted
 
 rust_library(
-    name = "winapi",
+    name = "gcc",
     crate_type = "lib",
     deps = [
     ],
@@ -36,24 +36,30 @@ rust_library(
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.3.9",
+    version = "0.3.55",
     tags = ["cargo-raze"],
     crate_features = [
-        "consoleapi",
-        "errhandlingapi",
-        "fileapi",
-        "minwinbase",
-        "minwindef",
-        "ntdef",
-        "ntsecapi",
-        "processenv",
-        "profileapi",
-        "std",
-        "sysinfoapi",
-        "timezoneapi",
-        "winbase",
-        "winerror",
-        "winnt",
     ],
 )
 
+rust_binary(
+    # Prefix bin name to disambiguate from (probable) collision with lib name
+    # N.B.: The exact form of this is subject to change.
+    name = "cargo_bin_gcc_shim",
+    deps = [
+        # Binaries get an implicit dependency on their crate's lib
+        ":gcc",
+    ],
+    srcs = glob(["**/*.rs"]),
+    crate_root = "src/bin/gcc-shim.rs",
+    edition = "2015",
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    version = "0.3.55",
+    tags = ["cargo-raze"],
+    crate_features = [
+    ],
+)
+
+# Unsupported target "test" with type "test" omitted

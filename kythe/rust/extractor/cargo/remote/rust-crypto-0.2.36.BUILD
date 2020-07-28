@@ -24,11 +24,20 @@ load(
 
 
 # Unsupported target "build-script-build" with type "custom-build" omitted
+alias(
+  name = "rust_crypto",
+  actual = ":crypto",
+  tags = ["cargo-raze"],
+)
 
 rust_library(
-    name = "winapi",
+    name = "crypto",
     crate_type = "lib",
     deps = [
+        "@raze__libc__0_2_73//:libc",
+        "@raze__rand__0_3_23//:rand",
+        "@raze__rustc_serialize__0_3_24//:rustc_serialize",
+        "@raze__time__0_1_43//:time",
     ],
     srcs = glob(["**/*.rs"]),
     crate_root = "src/lib.rs",
@@ -36,24 +45,10 @@ rust_library(
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.3.9",
+    version = "0.2.36",
     tags = ["cargo-raze"],
     crate_features = [
-        "consoleapi",
-        "errhandlingapi",
-        "fileapi",
-        "minwinbase",
-        "minwindef",
-        "ntdef",
-        "ntsecapi",
-        "processenv",
-        "profileapi",
-        "std",
-        "sysinfoapi",
-        "timezoneapi",
-        "winbase",
-        "winerror",
-        "winnt",
     ],
 )
 
+# Unsupported target "symmetriccipher" with type "example" omitted
