@@ -66,7 +66,7 @@ cc_library(
     hdrs = ["path_utils.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
-        ":status",
+        ":common_status",
         ":status_or",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -447,7 +447,9 @@ cc_test(
 )
 
 cc_library(
-    name = "status",
+    # The name can not be just 'status' as it conflicts with absl's status
+    # library at link time.  Weird, but true.
+    name = "common_status",
     srcs = ["status.cc"],
     hdrs = ["status.h"],
     visibility = [PUBLIC_VISIBILITY],
@@ -475,7 +477,7 @@ cc_library(
     srcs = ["libzip/error.cc"],
     hdrs = ["libzip/error.h"],
     deps = [
-        ":status",
+        ":common_status",
         "@com_google_absl//absl/status",
         "@org_libzip//:zip",
     ],

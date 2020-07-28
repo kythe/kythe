@@ -13,6 +13,7 @@ rust_library(
       "//kythe/proto:analysis_rust_proto",
       "//kythe/rust/extractor/cargo:anyhow",
       "//kythe/rust/extractor/cargo:protobuf",
+      "@com_google_absl//absl/status",
     ],
     edition = "2018",
 )

@@ -17,7 +17,6 @@ use {
     analysis_rust_proto::*,
     anyhow::{Context, Result},
     protobuf::Message,
-    std::ffi::CStr,
     std::ffi::OsStr,
 };
 
@@ -116,8 +115,8 @@ impl Writer {
             return Err(anyhow::anyhow!("kzip::write_file: error code: {}", status));
         }
         // This should always be a UTF-8 clean string since it's a digest.
-        let cstr = CStr::from_bytes_with_nul(&buf[..]).expect("utf8 clean");
-        Ok(cstr.to_str()?.to_string())
+        buf.resize(resulting_buffer_size as usize, 0);
+        Ok(String::from_utf8(buf)?)
     }
 
     /// Writes the specified compilation unit.  Returns the resulting file digest.
@@ -142,14 +141,14 @@ impl Writer {
             return Err(anyhow::anyhow!("kzip::write_file: error code: {}", status));
         }
         // This should always be a UTF-8 clean string since it's a digest.
-        let cstr = CStr::from_bytes_with_nul(&buf[..]).expect("utf8 clean");
-        Ok(cstr.to_str()?.to_string())
+        buf.resize(resulting_buffer_size as usize, 0);
+        Ok(String::from_utf8(buf)?)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use {super::*, tempdir::TempDir};
+    use {super::*, std::path::Path, tempdir::TempDir};
 
     #[test]
     fn check_zip_exists() {
@@ -157,6 +156,11 @@ mod tests {
         let output_file = temp_dir.path().join("out.kzip");
         let content = "content";
         let unit = CompilationUnit::new();
+        assert!(
+            !Path::exists(&output_file),
+            "file exists but should not: {:?}",
+            &output_file
+        );
         {
             let mut writer =
                 Writer::try_new(&output_file, Encoding::Proto).expect("created writer");
@@ -167,6 +171,10 @@ mod tests {
                 .write_unit(&unit)
                 .expect("wrote compilation unit with success");
         }
-        // File should exist here.
+        assert!(
+            Path::exists(&output_file),
+            "file does not exist but should: {:?}",
+            &output_file
+        );
     }
 }
