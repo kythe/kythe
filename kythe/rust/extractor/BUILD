@@ -38,13 +38,13 @@ rust_binary(
         ":kythe_rust_extractor",
         "//third_party/bazel:extra_actions_base_rust_proto",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/extractor/cargo:protobuf",
-        "//kythe/rust/extractor/cargo:zip",
-        "//kythe/rust/extractor/cargo:rls_data",
-        "//kythe/rust/extractor/cargo:clap",
-        "//kythe/rust/extractor/cargo:anyhow",
-        "//kythe/rust/extractor/cargo:tempdir",
-        "//kythe/rust/extractor/cargo:rust_crypto",
+        "//kythe/rust/cargo:protobuf",
+        "//kythe/rust/cargo:zip",
+        "//kythe/rust/cargo:rls_data",
+        "//kythe/rust/cargo:clap",
+        "//kythe/rust/cargo:anyhow",
+        "//kythe/rust/cargo:tempdir",
+        "//kythe/rust/cargo:rust_crypto",
     ] + PROTO_COMPILE_DEPS,
 )
 
@@ -66,7 +66,7 @@ rust_binary(
     ],
     deps = [
         ":kythe_rust_extractor",
-        "//kythe/rust/extractor/cargo:tempdir",
+        "//kythe/rust/cargo:tempdir",
     ],
 )
 
@@ -81,12 +81,12 @@ rust_binary(
     edition = "2018",
     deps = [
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/extractor/cargo:anyhow",
-        "//kythe/rust/extractor/cargo:assert_cmd",
-        "//kythe/rust/extractor/cargo:predicates",
-        "//kythe/rust/extractor/cargo:protobuf",
-        "//kythe/rust/extractor/cargo:tempdir",
-        "//kythe/rust/extractor/cargo:zip",
+        "//kythe/rust/cargo:anyhow",
+        "//kythe/rust/cargo:assert_cmd",
+        "//kythe/rust/cargo:predicates",
+        "//kythe/rust/cargo:protobuf",
+        "//kythe/rust/cargo:tempdir",
+        "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
     ],
 )
