@@ -30,9 +30,9 @@ rust_binary(
         ":kythe_rust_indexer",
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
-        "//kythe/rust/indexer/cargo:anyhow",
-        "//kythe/rust/indexer/cargo:protobuf",
-        "//kythe/rust/indexer/cargo:tempdir",
+        "//kythe/rust/cargo:anyhow",
+        "//kythe/rust/cargo:protobuf",
+        "//kythe/rust/cargo:tempdir",
     ],
 )
 
