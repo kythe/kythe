@@ -86,12 +86,7 @@ fn main() -> Result<()> {
 
     missing_arguments_fail();
     bad_extra_action_path_fails();
-    correct_arguments_succeed(
-        &extra_action_path_str,
-        &temp_dir_str,
-        &output_key,
-        arguments,
-    );
+    correct_arguments_succeed(&extra_action_path_str, &temp_dir_str, &output_key, arguments);
 
     Ok(())
 }
