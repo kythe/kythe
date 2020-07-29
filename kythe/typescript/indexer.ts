@@ -1581,7 +1581,6 @@ class Visitor {
       varDecl = decl.parent.parent;
       while (!ts.isVariableDeclaration(varDecl) && !ts.isParameter(varDecl) &&
              varDecl !== undefined) {
-        if (ts.isParameter(varDecl)) return;
         bindingPath.push(this.bindingElemIndex(varDecl));
         varDecl = varDecl.parent.parent;
       }
