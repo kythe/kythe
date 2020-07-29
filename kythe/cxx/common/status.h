@@ -17,12 +17,7 @@
 #ifndef KYTHE_CXX_COMMON_STATUS_H_
 #define KYTHE_CXX_COMMON_STATUS_H_
 
-#include <ostream>
-#include <string>
-
-#include "absl/base/attributes.h"
 #include "absl/status/status.h"
-#include "absl/strings/string_view.h"
 
 namespace kythe {
 
