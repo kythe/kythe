@@ -23,13 +23,9 @@ use std::fs::File;
 use std::path::PathBuf;
 
 /// Get the path of the provided runfile
-///
-/// # Panics
-///
-/// Will panic if the TEST_SRCDIR environment variable isn't set.
 fn get_runfile(file: &str) -> PathBuf {
     let r = Runfiles::create().unwrap();
-    let location = String::from("io_kythe/kythe/rust/indexer/testfiles/");
+    let location = String::from("io_kythe/kythe/rust/indexer/tests/");
     r.rlocation(location + file)
 }
 
