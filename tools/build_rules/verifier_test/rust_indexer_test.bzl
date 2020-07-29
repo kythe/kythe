@@ -39,7 +39,6 @@ def _rust_extract_impl(ctx):
     extra_action_file = ctx.actions.declare_file(ctx.label.name + ".xa")
     xa_maker = ctx.executable._extra_action
     xa_script = " ".join(
-        ["set -e;"] +
         [xa_maker.path] +
         ["--src_files=%s" % ",".join([f.path for f in ctx.files.srcs])] +
         ["--output=%s" % extra_action_file.path] +
@@ -57,7 +56,6 @@ def _rust_extract_impl(ctx):
     # Generate the kzip
     output = ctx.outputs.kzip
     extract_script = " ".join(
-        ["set -e;"] +
         ["export LD_LIBRARY_PATH=external/rust_linux_x86_64/lib:external/rust_darwin_x86_64/lib;"] +
         ["export KYTHE_CORPUS=test_corpus;"] +
         [ctx.executable._extractor.path] +
