@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate quick_error;
+/// FFI for the kzip reader-writer.
+pub mod kzip_sys;
 
-pub mod error;
-pub mod indexer;
-pub mod providers;
-pub mod writer;
+/// High-level interface for the kzip writer.
+pub mod kzip;
