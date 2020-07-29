@@ -75,7 +75,7 @@ int32_t KzipWriter_Close(struct KzipWriter* writer);
 /// \param content The file content buffer to write.
 /// \param content_length The length of the buffer to write.
 /// \param digest_buffer The output buffer to store the digest into.  Must be
-///        large enough to hold a digest.
+///        large enough to hold a digest.  The buffer is NOT NUL-terminated.
 /// \param buffer_length The length of digest_buffer in bytes.
 int32_t KzipWriter_WriteFile(struct KzipWriter* writer, const char* content,
                              const size_t content_length, char* digest_buffer,
@@ -85,7 +85,8 @@ int32_t KzipWriter_WriteFile(struct KzipWriter* writer, const char* content,
 /// \brief Writes a compilation unit into the kzip, returning a digest.
 //
 /// The caller must provide a buffer to put the digest into, and a buffer size.
-/// Nonzero status is returned in case of an error while writing.
+/// Nonzero status is returned in case of an error while writing.  The result
+/// in the buffer is NOT NUL-terminated.
 int32_t KzipWriter_WriteUnit(struct KzipWriter* writer, const char* proto,
                              size_t proto_length, char* digest_buffer,
                              size_t buffer_length,
