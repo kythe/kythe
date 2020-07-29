@@ -66,7 +66,7 @@ cc_library(
     hdrs = ["path_utils.h"],
     visibility = [PUBLIC_VISIBILITY],
     deps = [
-        ":status",
+        ":common_status",
         ":status_or",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -410,7 +410,49 @@ cc_test(
 )
 
 cc_library(
-    name = "status",
+    name = "kzip_writer_c_api",
+    srcs = ["kzip_writer_c_api.cc"],
+    hdrs = ["kzip_writer_c_api.h"],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":index_writer",
+        ":kzip_writer",
+        ":status_or",
+        "//kythe/proto:analysis_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "kzip_writer_c_api_test",
+    srcs = ["kzip_writer_c_api_test.cc"],
+    data = [
+        "//kythe/testdata/platform:stringset.kzip",
+    ],
+    deps = [
+        ":kzip_reader",
+        ":kzip_writer_c_api",
+        ":libzip/error",
+        "//kythe/proto:go_cc_proto",  # Used in stringset.kzip.
+        "//third_party:gtest",
+        "//third_party:gtest_main",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@org_libzip//:zip",
+    ],
+)
+
+cc_library(
+    # Having this library be named "status" just as that of absl status
+    # affects linking this library with Rust FFI code.
+    # See for details: https://github.com/bazelbuild/rules_rust/issues/385.
+    name = "common_status",
     srcs = ["status.cc"],
     hdrs = ["status.h"],
     visibility = [PUBLIC_VISIBILITY],
@@ -438,7 +480,7 @@ cc_library(
     srcs = ["libzip/error.cc"],
     hdrs = ["libzip/error.h"],
     deps = [
-        ":status",
+        ":common_status",
         "@com_google_absl//absl/status",
         "@org_libzip//:zip",
     ],
