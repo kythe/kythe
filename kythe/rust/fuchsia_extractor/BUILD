@@ -25,6 +25,13 @@ rust_test(
       "//kythe/rust/cargo:tempdir",
     ],
     edition = "2018",
+    # See https://github.com/bazelbuild/rules_rust/issues/118.  Without this,
+    # rust binaries require their deps to be compiled with -fPIC, which is not
+    # always the case. fastbuild and dbg use -fPIC, but opt does not; and rust
+    # build rules are not yet sophisticated enough to know the difference.
+    rustc_flags = [
+        "-Crelocation-model=static",
+    ],
 )
 
 rust_clippy(
