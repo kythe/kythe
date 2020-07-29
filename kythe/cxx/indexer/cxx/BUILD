@@ -461,6 +461,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@org_llvm//:LLVMSupport",
+        "@org_llvm//:clangBasic",
         "@org_llvm//:clangFrontend",
         "@org_llvm//:clangLex",
         "@org_llvm//:clangTooling",
