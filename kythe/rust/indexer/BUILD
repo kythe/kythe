@@ -13,9 +13,9 @@ rust_library(
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
-        "//kythe/rust/indexer/cargo:protobuf",
-        "//kythe/rust/indexer/cargo:quick_error",
-        "//kythe/rust/indexer/cargo:zip",
+        "//kythe/rust/cargo:protobuf",
+        "//kythe/rust/cargo:quick_error",
+        "//kythe/rust/cargo:zip",
     ] + PROTO_COMPILE_DEPS,
 )
 
