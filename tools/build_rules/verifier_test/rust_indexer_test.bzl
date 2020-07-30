@@ -43,8 +43,8 @@ def _rust_extract_impl(ctx):
     # Generate extra_action file to be used by the extractor
     extra_action_file = ctx.actions.declare_file(ctx.label.name + ".xa")
     xa_maker = ctx.executable._extra_action
-    xa_script = " ".join([
-        xa_maker.path,
+    xa_maker_args = ctx.actions.args()
+    xa_maker_args.add_all([
         "--src_files=%s" % ",".join([f.path for f in ctx.files.srcs]),
         "--output=%s" % extra_action_file.path,
         "--owner=%s" % ctx.label.name,
@@ -52,33 +52,28 @@ def _rust_extract_impl(ctx):
         "--sysroot=%s" % paths.dirname(rust_lib[0].path),
         "--linker=%s" % linker_path
     ])
-    xa_script_file = ctx.actions.declare_file(ctx.label.name + "-xa.sh")
-    ctx.actions.write(
-        output = xa_script_file,
-        content = xa_script,
-    )
     ctx.actions.run(
-        executable = xa_script_file,
+        executable = xa_maker,
+        arguments = [
+        "--src_files=%s" % ",".join([f.path for f in ctx.files.srcs]),
+        "--output=%s" % extra_action_file.path,
+        "--owner=%s" % ctx.label.name,
+        "--crate_name=%s" % ctx.attr.crate_name,
+        "--sysroot=%s" % paths.dirname(rust_lib[0].path),
+        "--linker=%s" % linker_path
+        ],
         outputs = [extra_action_file],
-        tools = [xa_maker]
     )
 
     # Generate the kzip
     output = ctx.outputs.kzip
-    extract_script = " ".join(
-        [ctx.executable._extractor.path] +
-        ["--extra_action=%s" % extra_action_file.path] +
-        ["--output=%s" % output.path]
-    )
-    extract_script_file = ctx.actions.declare_file(ctx.label.name + "-extract.sh")
-    ctx.actions.write(
-        output = extract_script_file,
-        content = extract_script
-    )
     ctx.actions.run(
         mnemonic = "RustExtract",
-        executable = extract_script_file,
-        tools = [ctx.executable._extractor],
+        executable = ctx.executable._extractor,
+        arguments = [
+            "--extra_action=%s" % extra_action_file.path,
+            "--output=%s" % output.path,
+        ],
         inputs = [extra_action_file] + rustc_lib + rust_lib + ctx.files.srcs,
         outputs = [output],
         env = {
@@ -146,15 +141,9 @@ def _rust_entries_impl(ctx):
     iargs += [kzip.path, "| gzip >" + output.path]
 
     cmds = ["set -e", "set -o pipefail", " ".join(iargs), ""]
-
-    indexer_script_file = ctx.actions.declare_file(ctx.label.name + "-indexer.sh")
-    ctx.actions.write(
-        output = indexer_script_file,
-        content = "\n".join(cmds)
-    )
-    ctx.actions.run(
+    ctx.actions.run_shell(
         mnemonic = "RustIndexer",
-        executable = indexer_script_file,
+        command = "\n".join(cmds),
         outputs = [output],
         inputs = [kzip],
         tools = [indexer],
