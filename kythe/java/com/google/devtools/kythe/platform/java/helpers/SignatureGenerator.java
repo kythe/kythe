@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -186,7 +187,15 @@ public class SignatureGenerator
       } else if (symbol instanceof MethodSymbol) {
         return Optional.of(sigGen.getSignature((MethodSymbol) symbol));
       } else if (symbol instanceof VarSymbol) {
-        return Optional.of(sigGen.getSignature((VarSymbol) symbol));
+        try {
+          return Optional.of(sigGen.getSignature((VarSymbol) symbol));
+        } catch (Types.SignatureGenerator.InvalidSignatureException e) {
+          logger.atWarning().atMostEvery(5, TimeUnit.SECONDS).log(
+              "Likely hitting bug JDK-8212750, omitting reference"
+                  + " (VarSymbol [%s] in class [%s], package [%s], type [%s])",
+              symbol, symbol.outermostClass(), symbol.packge(), symbol.type);
+          return Optional.empty();
+        }
       }
     }
     try {
