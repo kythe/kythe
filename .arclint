@@ -4,7 +4,7 @@
       "type": "spelling",
       "exclude": "(^third_party)",
       "severity.rules": {
-        "(^SPELL)": "advice",
+        "(^SPELL)": "advice"
       }
     },
     "chmod": {
