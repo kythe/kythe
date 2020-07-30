@@ -127,6 +127,7 @@ def _rust_entries_impl(ctx):
     iargs = [indexer.path]
     output = ctx.outputs.entries
 
+    # TODO(Arm1stice): Pass arguments to indexer based on rule attributes
     # # If the test wants marked source, enable support for it in the indexer.
     # if ctx.attr.has_marked_source:
     #     iargs.append("-code")
