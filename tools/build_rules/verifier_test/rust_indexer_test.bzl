@@ -47,8 +47,13 @@ def _rust_extract_impl(ctx):
         ["--sysroot=%s" % paths.dirname(ctx.files._sysroot[0].path)] +
         ["--linker=%s" % linker_path]
     )
-    ctx.actions.run_shell(
-        command = xa_script,
+    xa_script_file = ctx.actions.declare_file(ctx.label.name + "-xa.sh")
+    ctx.actions.write(
+        output = xa_script_file,
+        content = xa_script,
+    )
+    ctx.actions.run(
+        executable = xa_script_file,
         outputs = [extra_action_file],
         tools = [xa_maker]
     )
@@ -56,18 +61,25 @@ def _rust_extract_impl(ctx):
     # Generate the kzip
     output = ctx.outputs.kzip
     extract_script = " ".join(
-        ["export LD_LIBRARY_PATH=external/rust_linux_x86_64/lib:external/rust_darwin_x86_64/lib;"] +
-        ["export KYTHE_CORPUS=test_corpus;"] +
         [ctx.executable._extractor.path] +
         ["--extra_action=%s" % extra_action_file.path] +
         ["--output=%s" % output.path]
     )
-    ctx.actions.run_shell(
+    extract_script_file = ctx.actions.declare_file(ctx.label.name + "-extract.sh")
+    ctx.actions.write(
+        output = extract_script_file,
+        content = extract_script
+    )
+    ctx.actions.run(
         mnemonic = "RustExtract",
-        command = extract_script,
+        executable = extract_script_file,
         tools = [ctx.executable._extractor],
         inputs = [extra_action_file] + ctx.files.srcs + ctx.files._lib + ctx.files._sysroot,
         outputs = [output],
+        env = {
+            "LD_LIBRARY_PATH": "external/rust_linux_x86_64/lib:external/rust_darwin_x86_64/lib",
+            "KYTHE_CORPUS": "test_corpus",
+        }
     )
 
     return struct(kzip = output)
