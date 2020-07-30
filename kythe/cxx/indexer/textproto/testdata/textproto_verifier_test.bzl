@@ -32,13 +32,16 @@ def _invoke(rulefn, name, **kwargs):
     return "//{}:{}".format(native.package_name(), name)
 
 def _textproto_extract_kzip_impl(ctx):
+    plugin_args = []
+    if len(ctx.attr.plugins):
+        plugin_args = ["--kythe_textproto_plugins", ",".join(ctx.attr.plugins)]
     extract(
         srcs = ctx.files.srcs,
         ctx = ctx,
         extractor = ctx.executable.extractor,
         kzip = ctx.outputs.kzip,
         mnemonic = "TextprotoExtractKZip",
-        opts = ["--", "--proto_path", ctx.label.package] + ctx.attr.opts,
+        opts = plugin_args + ["--", "--proto_path", ctx.label.package] + ctx.attr.opts,
         vnames_config = ctx.file.vnames_config,
         deps = ctx.files.deps,
     )
@@ -58,6 +61,7 @@ textproto_extract_kzip = rule(
             cfg = "host",
         ),
         "opts": attr.string_list(),
+        "plugins": attr.string_list(),
         "vnames_config": attr.label(
             default = Label("//external:vnames_config"),
             allow_single_file = True,
@@ -79,6 +83,7 @@ def textproto_verifier_test(
         proto_extractor_opts = [],
         indexer_opts = [],
         verifier_opts = [],
+        plugins=[],
         convert_marked_source = False,
         vnames_config = None,
         visibility = None):
@@ -96,6 +101,7 @@ def textproto_verifier_test(
       proto_extractor_opts: List of options passed to the proto extractor tool
       indexer_opts: List of options passed to the indexer tool
       verifier_opts: List of options passed to the verifier tool
+      plugins: List of textproto indexer plugins to enable
       convert_marked_source: Whether the verifier should convert marked source.
       vnames_config: Optional path to a VName configuration file
       visibility: Visibility of underlying build targets
@@ -112,6 +118,7 @@ def textproto_verifier_test(
         extractor = extractor,
         opts = extractor_opts,
         tags = tags,
+        plugins=plugins,
         visibility = visibility,
         vnames_config = vnames_config,
         deps = deps + protos,

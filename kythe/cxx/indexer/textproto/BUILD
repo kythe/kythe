@@ -9,6 +9,7 @@ cc_binary(
         "//kythe/cxx/common:kzip_reader",
         "//kythe/cxx/common/indexing:caching_output",
         "//kythe/cxx/common/indexing:output",
+        "//kythe/cxx/indexer/textproto/plugins/example:plugin",
         "//kythe/proto:analysis_cc_proto",
         "//kythe/proto:buildinfo_cc_proto",
         "@com_google_absl//absl/flags:flag",
@@ -24,6 +25,7 @@ cc_library(
     srcs = ["analyzer.cc"],
     hdrs = ["analyzer.h"],
     deps = [
+        ":plugin",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:path_utils",
         "//kythe/cxx/common:status_or",
@@ -40,6 +42,20 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:optional",
         "@com_google_protobuf//:protobuf",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)
+
+cc_library(
+    name = "plugin",
+    hdrs = ["plugin.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//kythe/cxx/common:status_or",
+        "//kythe/cxx/indexer/proto:vname_util",
+        "//kythe/proto:analysis_cc_proto",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
         "@com_googlesource_code_re2//:re2",
     ],
 )

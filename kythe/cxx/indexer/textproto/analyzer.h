@@ -21,9 +21,9 @@
 #include <string>
 
 #include "absl/status/status.h"
-#include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/proto/analysis.pb.h"
+#include "plugin.h"
 
 namespace kythe {
 namespace lang_textproto {
@@ -52,6 +52,13 @@ extern const absl::string_view kLanguageName;
 /// \param The name of the message type that defines the schema for the
 /// textproto file (including namespace).
 absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
+                                    const std::vector<proto::FileData>& files,
+                                    KytheGraphRecorder* recorder);
+
+// Override AnalyzeCompilationUnit() that accepts a PluginLoadCallback for
+// loading plugins.
+absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
+                                    const proto::CompilationUnit& unit,
                                     const std::vector<proto::FileData>& files,
                                     KytheGraphRecorder* recorder);
 

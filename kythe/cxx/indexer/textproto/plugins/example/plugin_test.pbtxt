@@ -1,0 +1,14 @@
+# proto-file: example.proto
+# proto-message: example.Message
+
+# The 'example' plugin adds a ref from the value to the proto descriptor for the
+# field.
+
+#- @field1 ref Field1
+#- @hello ref Field1
+field1: "hello"
+
+#- @repeated_field ref RepeatedField
+#- @hello ref RepeatedField
+#- @def ref RepeatedField
+repeated_field  : [    "hello"  , "def"    ]
