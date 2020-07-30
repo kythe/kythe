@@ -35,6 +35,11 @@ def _rust_extract_impl(ctx):
         action_name = "c++-link-executable"
     )
 
+    # Rust toolchain
+    rust_toolchain = ctx.toolchains["@io_bazel_rules_rust//rust:toolchain"]
+    rustc_lib = rust_toolchain.rustc_lib.files.to_list()
+    rust_lib = rust_toolchain.rust_lib.files.to_list()
+
     # Generate extra_action file to be used by the extractor
     extra_action_file = ctx.actions.declare_file(ctx.label.name + ".xa")
     xa_maker = ctx.executable._extra_action
@@ -44,7 +49,7 @@ def _rust_extract_impl(ctx):
         ["--output=%s" % extra_action_file.path] +
         ["--owner=%s" % ctx.label.name] +
         ["--crate_name=%s" % ctx.attr.crate_name] +
-        ["--sysroot=%s" % paths.dirname(ctx.files._sysroot[0].path)] +
+        ["--sysroot=%s" % paths.dirname(rust_lib[0].path)] +
         ["--linker=%s" % linker_path]
     )
     xa_script_file = ctx.actions.declare_file(ctx.label.name + "-xa.sh")
@@ -74,10 +79,10 @@ def _rust_extract_impl(ctx):
         mnemonic = "RustExtract",
         executable = extract_script_file,
         tools = [ctx.executable._extractor],
-        inputs = [extra_action_file] + ctx.files.srcs + ctx.files._lib + ctx.files._sysroot,
+        inputs = [extra_action_file] + rustc_lib + rust_lib + ctx.files.srcs,
         outputs = [output],
         env = {
-            "LD_LIBRARY_PATH": paths.dirname(ctx.files._lib[0].path),
+            "LD_LIBRARY_PATH": paths.dirname(rustc_lib[0].path),
             "KYTHE_CORPUS": "test_corpus",
         }
     )
@@ -111,14 +116,6 @@ rust_extract = rule(
             executable = True,
             cfg = "target",
         ),
-        "_lib": attr.label(
-            default = Label("//kythe/rust/extractor:rust_lib"),
-            allow_files = True,
-        ),
-        "_sysroot": attr.label(
-            default = Label("//kythe/rust/extractor:rust_sysroot"),
-            allow_files = True,
-        ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
             allow_files = True,
@@ -126,6 +123,7 @@ rust_extract = rule(
     },
     outputs = {"kzip": "%{name}.kzip"},
     fragments = ["cpp"],
+    toolchains = ["@io_bazel_rules_rust//rust:toolchain"]
 )
 
 def _rust_entries_impl(ctx):
