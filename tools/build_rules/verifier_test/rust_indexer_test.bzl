@@ -68,8 +68,8 @@ def _rust_extract_impl(ctx):
         inputs = [extra_action_file] + rustc_lib + rust_lib + ctx.files.srcs,
         outputs = [output],
         env = {
-            "LD_LIBRARY_PATH": paths.dirname(rustc_lib[0].path),
             "KYTHE_CORPUS": "test_corpus",
+            "LD_LIBRARY_PATH": paths.dirname(rustc_lib[0].path),
         }
     )
 
