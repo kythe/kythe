@@ -31,6 +31,12 @@ textproto_verifier_test(
 )
 
 textproto_verifier_test(
+    name = "enum_value_test",
+    protos = ["example.proto"],
+    textproto = "enum_value.pbtxt",
+)
+
+textproto_verifier_test(
     name = "imports_test",
     protos = [
         "example.proto",
