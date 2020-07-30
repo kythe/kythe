@@ -40,14 +40,10 @@ fn nonempty_string_first_fails() {
 #[test]
 fn correct_arguments_succeed() {
     // Get location of test file to be compiled
-    let test_file_var = env::var_os("TEST_FILE").expect("TEST_FILE variable not set");
-    let test_file =
-        test_file_var.into_string().expect("Failed to convert TEST_FILE env variable to string");
+    let test_file = env::var("TEST_FILE").expect("TEST_FILE variable not set");
 
     // Get sysroot location
-    let sysroot_var = env::var_os("SYSROOT").expect("SYSROOT variable not set");
-    let sysroot =
-        sysroot_var.into_string().expect("Failed to convert SYSROOT env variable to string");
+    let sysroot = env::var("SYSROOT").expect("SYSROOT variable not set");
 
     // Generate the save_analysis
     let temp_dir = TempDir::new("extractor_test").expect("Could not create temporary directory");
