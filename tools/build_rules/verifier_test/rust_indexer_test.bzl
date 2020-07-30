@@ -77,7 +77,7 @@ def _rust_extract_impl(ctx):
         inputs = [extra_action_file] + ctx.files.srcs + ctx.files._lib + ctx.files._sysroot,
         outputs = [output],
         env = {
-            "LD_LIBRARY_PATH": "external/rust_linux_x86_64/lib:external/rust_darwin_x86_64/lib",
+            "LD_LIBRARY_PATH": paths.dirname(ctx.files._lib[0].path),
             "KYTHE_CORPUS": "test_corpus",
         }
     )
