@@ -43,15 +43,15 @@ def _rust_extract_impl(ctx):
     # Generate extra_action file to be used by the extractor
     extra_action_file = ctx.actions.declare_file(ctx.label.name + ".xa")
     xa_maker = ctx.executable._extra_action
-    xa_script = " ".join(
-        [xa_maker.path] +
-        ["--src_files=%s" % ",".join([f.path for f in ctx.files.srcs])] +
-        ["--output=%s" % extra_action_file.path] +
-        ["--owner=%s" % ctx.label.name] +
-        ["--crate_name=%s" % ctx.attr.crate_name] +
-        ["--sysroot=%s" % paths.dirname(rust_lib[0].path)] +
-        ["--linker=%s" % linker_path]
-    )
+    xa_script = " ".join([
+        xa_maker.path,
+        "--src_files=%s" % ",".join([f.path for f in ctx.files.srcs]),
+        "--output=%s" % extra_action_file.path,
+        "--owner=%s" % ctx.label.name,
+        "--crate_name=%s" % ctx.attr.crate_name,
+        "--sysroot=%s" % paths.dirname(rust_lib[0].path),
+        "--linker=%s" % linker_path
+    ])
     xa_script_file = ctx.actions.declare_file(ctx.label.name + "-xa.sh")
     ctx.actions.write(
         output = xa_script_file,
@@ -109,12 +109,12 @@ rust_extract = rule(
         "_extractor": attr.label(
             default = Label("//kythe/rust/extractor"),
             executable = True,
-            cfg = "target",
+            cfg = "host",
         ),
         "_extra_action": attr.label(
             default = Label("//tools/rust/extra_action"),
             executable = True,
-            cfg = "target",
+            cfg = "host",
         ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
@@ -146,10 +146,15 @@ def _rust_entries_impl(ctx):
     iargs += [kzip.path, "| gzip >" + output.path]
 
     cmds = ["set -e", "set -o pipefail", " ".join(iargs), ""]
-    ctx.actions.run_shell(
+
+    indexer_script_file = ctx.actions.declare_file(ctx.label.name + "-indexer.sh")
+    ctx.actions.write(
+        output = indexer_script_file,
+        content = "\n".join(cmds)
+    )
+    ctx.actions.run(
         mnemonic = "RustIndexer",
-        progress_message = "Generating index",
-        command = "\n".join(cmds),
+        executable = indexer_script_file,
         outputs = [output],
         inputs = [kzip],
         tools = [indexer],
@@ -176,7 +181,7 @@ rust_entries = rule(
         "_indexer": attr.label(
             default = Label("//kythe/rust/indexer"),
             executable = True,
-            cfg = "target",
+            cfg = "host",
         ),
     },
     outputs = {"entries": "%{name}.entries.gz"},

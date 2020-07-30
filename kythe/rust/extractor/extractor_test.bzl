@@ -60,13 +60,13 @@ rust_extractor_test = rule(
         "src": attr.label(
             mandatory = True,
             executable = True,
-            cfg = "target",
+            cfg = "host",
             doc = "The Rust binary to be executed",
         ),
         "_extractor": attr.label(
             default = Label("//kythe/rust/extractor:extractor"),
             executable = True,
-            cfg = "target",
+            cfg = "host",
         ),
     },
     test = True,
