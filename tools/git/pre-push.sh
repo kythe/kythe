@@ -49,6 +49,8 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     git checkout -q "$branch"
   fi
   # TODO(#3173): remove need for arcanist
-  arc lint --rev "$remote/master"
+  if [[ "$KYTHE_SKIP_ARC_LINT" -ne 0 ]]; then
+    arc lint --rev "$remote/master"
+  fi
   arc unit --rev "$remote/master"
 done

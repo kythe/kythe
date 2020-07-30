@@ -2,10 +2,7 @@
   "linters": {
     "spelling": {
       "type": "spelling",
-      "exclude": "(^third_party)",
-      "severity.rules": {
-        "(^SPELL)": "advice"
-      }
+      "exclude": "(^third_party)"
     },
     "chmod": {
       "type": "chmod",
