@@ -89,7 +89,7 @@ fn main() -> Result<()> {
         .with_context(|| "Failed to serialize IndexedCompilation to bytes".to_string())?;
     let indexed_compilation_digest = sha256digest(&indexed_compilation_bytes);
     kzip_add_file(
-        format!("pbunits/{}", indexed_compilation_digest),
+        format!("root/pbunits/{}", indexed_compilation_digest),
         &indexed_compilation_bytes,
         &mut kzip,
     )?;
@@ -180,7 +180,7 @@ fn kzip_add_required_input(
         .read_to_end(&mut source_file_contents)
         .with_context(|| format!("Failed read file {:?}", file_path_string))?;
     let digest = sha256digest(&source_file_contents);
-    kzip_add_file(format!("files/{}", digest), &source_file_contents, zip_writer)?;
+    kzip_add_file(format!("root/files/{}", digest), &source_file_contents, zip_writer)?;
 
     // Generate FileInput and add it to the list of required inputs
     let mut file_input = CompilationUnit_FileInput::new();
