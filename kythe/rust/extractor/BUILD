@@ -4,23 +4,6 @@ load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_
 load("@io_bazel_rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
 load(":extractor_test.bzl", "rust_extractor_test")
 
-# These are used by the rust_extractor_test rule
-alias(
-    name = "rust_lib",
-    actual = select({
-        "//:darwin": "@rust_darwin_x86_64//:rustc_lib",
-        "//conditions:default": "@rust_linux_x86_64//:rustc_lib",
-    }),
-)
-
-alias(
-    name = "rust_sysroot",
-    actual = select({
-        "//:darwin": "@rust_darwin_x86_64//:rust_lib-x86_64-apple-darwin",
-        "//conditions:default": "@rust_linux_x86_64//:rust_lib-x86_64-unknown-linux-gnu",
-    }),
-)
-
 rust_library(
     name = "kythe_rust_extractor",
     srcs = glob(
@@ -38,13 +21,13 @@ rust_binary(
         ":kythe_rust_extractor",
         "//third_party/bazel:extra_actions_base_rust_proto",
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/extractor/cargo:protobuf",
-        "//kythe/rust/extractor/cargo:zip",
-        "//kythe/rust/extractor/cargo:rls_data",
-        "//kythe/rust/extractor/cargo:clap",
-        "//kythe/rust/extractor/cargo:anyhow",
-        "//kythe/rust/extractor/cargo:tempdir",
-        "//kythe/rust/extractor/cargo:rust_crypto",
+        "//kythe/rust/cargo:protobuf",
+        "//kythe/rust/cargo:zip",
+        "//kythe/rust/cargo:rls_data",
+        "//kythe/rust/cargo:clap",
+        "//kythe/rust/cargo:anyhow",
+        "//kythe/rust/cargo:tempdir",
+        "//kythe/rust/cargo:rust_crypto",
     ] + PROTO_COMPILE_DEPS,
 )
 
@@ -66,7 +49,7 @@ rust_binary(
     ],
     deps = [
         ":kythe_rust_extractor",
-        "//kythe/rust/extractor/cargo:tempdir",
+        "//kythe/rust/cargo:tempdir",
     ],
 )
 
@@ -81,12 +64,12 @@ rust_binary(
     edition = "2018",
     deps = [
         "//kythe/proto:analysis_rust_proto",
-        "//kythe/rust/extractor/cargo:anyhow",
-        "//kythe/rust/extractor/cargo:assert_cmd",
-        "//kythe/rust/extractor/cargo:predicates",
-        "//kythe/rust/extractor/cargo:protobuf",
-        "//kythe/rust/extractor/cargo:tempdir",
-        "//kythe/rust/extractor/cargo:zip",
+        "//kythe/rust/cargo:anyhow",
+        "//kythe/rust/cargo:assert_cmd",
+        "//kythe/rust/cargo:predicates",
+        "//kythe/rust/cargo:protobuf",
+        "//kythe/rust/cargo:tempdir",
+        "//kythe/rust/cargo:zip",
         "//third_party/bazel:extra_actions_base_rust_proto",
     ],
 )
@@ -94,6 +77,4 @@ rust_binary(
 rust_extractor_test(
     name = "extractor_integration_test",
     src = ":extractor_integration_test_binary",
-    tags = ["no-cache"],
-    restricted_to = ["//buildenv:linux"],
 )

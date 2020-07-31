@@ -86,12 +86,7 @@ fn main() -> Result<()> {
 
     missing_arguments_fail();
     bad_extra_action_path_fails();
-    correct_arguments_succeed(
-        &extra_action_path_str,
-        &temp_dir_str,
-        &output_key,
-        arguments,
-    );
+    correct_arguments_succeed(&extra_action_path_str, &temp_dir_str, &output_key, arguments);
 
     Ok(())
 }
@@ -148,7 +143,7 @@ fn correct_arguments_succeed(
     let mut kzip = zip::ZipArchive::new(kzip_file).expect("Couldn't read kzip archive");
 
     // Ensure the source file from the test macro is in the kzip
-    kzip.by_name("files/7cb3b3c74ecdf86f434548ba15c1651c92bf03b6690fd0dfc053ab09d094cf03").unwrap();
+    kzip.by_name("root/files/7cb3b3c74ecdf86f434548ba15c1651c92bf03b6690fd0dfc053ab09d094cf03").unwrap();
 
     // Ensure protobuf is in the kzip
     let mut cu_path_str = String::from("");
