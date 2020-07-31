@@ -395,7 +395,6 @@ StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeEnumValue(
     // Match the enum value, which may be an identifier or an integer.
     re2::StringPiece match;
     if (!re2::RE2::PartialMatch(input, R"(^([_\w\d]+))", &match)) {
-      LOG(ERROR) << "FAILED WITH input = \n" << input;
       return absl::UnknownError("Failed to find text span for enum value: " +
                                 field.full_name());
     }
