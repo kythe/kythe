@@ -193,7 +193,7 @@ public class SignatureGenerator
           logger.atWarning().atMostEvery(5, TimeUnit.SECONDS).log(
               "Likely hitting bug JDK-8212750, omitting reference"
                   + " (VarSymbol [%s] in class [%s], package [%s], type [%s])",
-              symbol, symbol.outermostClass(), symbol.packge(), symbol.type);
+              symbol, symbol.outermostClass(), symbol.packge(), symbol.type); // @suppress SPELL1
           return Optional.empty();
         }
       }
