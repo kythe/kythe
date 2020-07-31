@@ -1,7 +1,8 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@io_bazel_rules_rust//rust:rust.bzl", "rust_clippy", "rust_library", "rust_test")
+load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
 load("@io_bazel_rules_rust//proto:toolchain.bzl", "PROTO_COMPILE_DEPS")
+load("//tools/build_rules/verifier_test:rust_indexer_test.bzl", "rust_indexer_test")
 
 rust_library(
     name = "kythe_rust_indexer",
@@ -13,10 +14,27 @@ rust_library(
     deps = [
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
-        "//kythe/rust/indexer/cargo:protobuf",
-        "//kythe/rust/indexer/cargo:quick_error",
-        "//kythe/rust/indexer/cargo:zip",
+        "//kythe/rust/cargo:protobuf",
+        "//kythe/rust/cargo:quick_error",
+        "//kythe/rust/cargo:zip",
     ] + PROTO_COMPILE_DEPS,
+)
+
+rust_binary(
+    name = "indexer",
+    srcs = glob(
+        include = ["src/bin/**/*.rs"],
+    ),
+    crate_root = ":src/bin/main.rs",
+    edition = "2018",
+    deps = [
+        ":kythe_rust_indexer",
+        "//kythe/proto:analysis_rust_proto",
+        "//kythe/proto:storage_rust_proto",
+        "//kythe/rust/cargo:anyhow",
+        "//kythe/rust/cargo:protobuf",
+        "//kythe/rust/cargo:tempdir",
+    ],
 )
 
 rust_test(
@@ -27,7 +45,7 @@ rust_test(
 rust_test(
     name = "integration_tests",
     srcs = glob(["tests/*.rs"]),
-    data = glob(["testfiles/**"]),
+    data = ["tests/testkzip.kzip"],
     deps = [
         ":kythe_rust_indexer",
         ":inline_tests",
@@ -40,6 +58,12 @@ rust_test(
 rust_clippy(
     name = "clippy",
     deps = [
+        ":indexer",
         ":kythe_rust_indexer",
     ],
+)
+
+rust_indexer_test(
+    name = "verifier_macro_test",
+    srcs = ["testdata/basic.rs"],
 )
