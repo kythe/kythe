@@ -113,9 +113,7 @@ impl KzipFileProvider {
 impl FileProvider for KzipFileProvider {
     /// Given a file hash, returns whether the file exists in the kzip.
     fn exists(&mut self, file_hash: &str) -> bool {
-        // root_name contains a trailing forward-slash, so it's needed in the format
-        // string. For example, the extractor kzip that will have a root name of "root/"
-        let name = format!("{}files/{}", self.root_name, file_hash);
+        let name = format!("{}/files/{}", self.root_name, file_hash);
         self.zip_archive.by_name(&name).is_ok()
     }
 
@@ -127,7 +125,7 @@ impl FileProvider for KzipFileProvider {
     /// An error will be returned if the file does not exist or cannot be read.
     fn contents(&mut self, file_hash: &str) -> Result<Vec<u8>, KytheError> {
         // Ensure the file exists in the kzip
-        let name = format!("{}files/{}", self.root_name, file_hash);
+        let name = format!("{}/files/{}", self.root_name, file_hash);
         let file = self.zip_archive.by_name(&name).map_err(|_| KytheError::FileNotFoundError)?;
         let mut reader = BufReader::new(file);
         let mut file_contents: Vec<u8> = Vec::new();
