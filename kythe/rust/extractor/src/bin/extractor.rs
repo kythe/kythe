@@ -80,8 +80,9 @@ fn main() -> Result<()> {
     let indexed_compilation = create_indexed_compilation(
         rust_source_files,
         build_target_arguments,
-        build_output_path.to_string(),
+        &build_output_path,
         required_input,
+        &corpus,
     );
     let mut indexed_compilation_bytes: Vec<u8> = Vec::new();
     indexed_compilation
@@ -133,20 +134,21 @@ fn get_spawn_info(file_path: impl AsRef<Path>) -> Result<SpawnInfo> {
 fn create_indexed_compilation(
     source_files: Vec<String>,
     arguments: Vec<String>,
-    build_output_path: String,
+    build_output_path: &str,
     required_input: Vec<CompilationUnit_FileInput>,
+    corpus: &str,
 ) -> IndexedCompilation {
     let mut compilation_unit = CompilationUnit::new();
 
     let mut vname = VName::new();
     // TODO(Arm1stice): Determine proper Corpus/Root/Path for VName
-    vname.set_corpus("kythe".into());
+    vname.set_corpus(corpus.to_string());
     vname.set_language("rust".into());
     compilation_unit.set_v_name(vname);
     compilation_unit.set_source_file(protobuf::RepeatedField::from_vec(source_files));
     compilation_unit.set_argument(protobuf::RepeatedField::from_vec(arguments));
     compilation_unit.set_required_input(protobuf::RepeatedField::from_vec(required_input));
-    compilation_unit.set_output_key(build_output_path);
+    compilation_unit.set_output_key(build_output_path.to_string());
 
     let mut indexed_compilation = IndexedCompilation::new();
     indexed_compilation.set_unit(compilation_unit);

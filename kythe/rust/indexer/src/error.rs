@@ -26,6 +26,11 @@ quick_error! {
             from()
             display("Failed to read contents of file: {}", err)
         }
+        // The KytheIndexer encountered an error
+        IndexerError(err: String) {
+            from()
+            display("An error occurred while indexing: {}", err)
+        }
         /// The KzipFileProvider couldn't read the provided file
         KzipFileError(err: zip::result::ZipError) {
             from()

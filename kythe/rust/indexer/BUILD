@@ -17,6 +17,8 @@ rust_library(
         "//kythe/rust/cargo:protobuf",
         "//kythe/rust/cargo:quick_error",
         "//kythe/rust/cargo:zip",
+        "//kythe/rust/cargo:rls_analysis",
+        "//kythe/rust/cargo:rls_data",
     ] + PROTO_COMPILE_DEPS,
 )
 
@@ -64,6 +66,6 @@ rust_clippy(
 )
 
 rust_indexer_test(
-    name = "verifier_macro_test",
-    srcs = ["testdata/basic.rs"],
+    name = "function_test",
+    srcs = ["testdata/function.rs"],
 )
