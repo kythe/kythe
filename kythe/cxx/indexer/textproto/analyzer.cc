@@ -122,9 +122,8 @@ class TextprotoAnalyzer {
   StatusOr<proto::VName> AnalyzeAnyTypeUrl(const proto::VName& file_vname,
                                            TextFormat::ParseLocation field_loc);
 
-  StatusOr<proto::VName> AnalyzeEnumValue(const proto::VName& file_vname,
-                                          const FieldDescriptor& field,
-                                          int start_offset);
+  absl::Status AnalyzeEnumValue(const proto::VName& file_vname,
+                                const FieldDescriptor& field, int start_offset);
 
   absl::Status AnalyzeSchemaComments(const proto::VName& file_vname,
                                      const Descriptor& msg_descriptor);
@@ -373,9 +372,9 @@ void ConsumeTextprotoWhitespace(re2::StringPiece* sp) {
 
 // Adds an anchor and ref edge for usage of enum values. For example, in
 // `my_field: VALUE1`, this adds an anchor for "VALUE1".
-StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeEnumValue(
-    const proto::VName& file_vname, const FieldDescriptor& field,
-    int start_offset) {
+absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
+                                                 const FieldDescriptor& field,
+                                                 int start_offset) {
   // Start after the last character of the field name and match for the value,
   // which can be an identifier or an integer.
   re2::StringPiece input(textproto_content_.data(), textproto_content_.size());
@@ -421,7 +420,7 @@ StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeEnumValue(
 
     if (!array_format) break;
 
-    // Consume trailing comma and whitespace, exit if there's no comma.
+    // Consume trailing comma and whitespace; exit if there's no comma.
     ConsumeTextprotoWhitespace(&input);
     if (!re2::RE2::Consume(&input, ",")) {
       break;
@@ -497,7 +496,7 @@ absl::Status TextprotoAnalyzer::AnalyzeField(
       auto s = AnalyzeEnumValue(file_vname, field, end);
       if (!s.ok()) {
         // Log this error, but don't block further progress
-        LOG(ERROR) << "Error analyzing enum value: " << s.status();
+        LOG(ERROR) << "Error analyzing enum value: " << s;
       }
     }
   }
