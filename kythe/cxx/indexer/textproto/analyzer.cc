@@ -365,7 +365,7 @@ absl::Status TextprotoAnalyzer::AnalyzeAny(
   return AnalyzeMessage(file_vname, *value_proto, *msg_desc, parse_tree);
 }
 
-// Trims whitespace (including newlines), and comments from the start of the
+// Trims whitespace (including newlines) and comments from the start of the
 // input.
 void ConsumeTextprotoWhitespace(re2::StringPiece* sp) {
   re2::RE2::Consume(sp, R"((\s+|#[^\n]*)*)");
@@ -376,8 +376,7 @@ void ConsumeTextprotoWhitespace(re2::StringPiece* sp) {
 absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
                                                  const FieldDescriptor& field,
                                                  int start_offset) {
-  // Start after the last character of the field name and match for the value,
-  // which can be an identifier or an integer.
+  // Start after the last character of the field name.
   re2::StringPiece input(textproto_content_.data(), textproto_content_.size());
   input = input.substr(start_offset);
 
@@ -389,7 +388,8 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
   ConsumeTextprotoWhitespace(&input);
 
   // Detect 'array format' for repeated fields and trim the leading '['.
-  const bool array_format = re2::RE2::Consume(&input, R"(\[)");
+  const bool array_format =
+      field.is_repeated() && re2::RE2::Consume(&input, "\\[");
   if (array_format) ConsumeTextprotoWhitespace(&input);
 
   while (true) {
