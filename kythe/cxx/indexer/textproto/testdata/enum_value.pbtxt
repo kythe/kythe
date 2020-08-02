@@ -49,4 +49,4 @@ repeated_enum_field
 #- @repeated_enum_field ref RepeatedEnumField
 #- @ENUM_VALUE2 ref EnumValue2
 #- @ENUM_VALUE1 ref EnumValue1
-repeated_enum_field: [ENUM_VALUE2, ENUM_VALUE1]
+repeated_enum_field: [  ENUM_VALUE2     , ENUM_VALUE1  ]
