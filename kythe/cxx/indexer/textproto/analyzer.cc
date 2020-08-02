@@ -21,6 +21,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
@@ -371,7 +372,7 @@ void ConsumeTextprotoWhitespace(re2::StringPiece* sp) {
 }
 
 // Adds an anchor and ref edge for usage of enum values. For example, in
-// `my_field: VALUE1`, this adds an anchor for "VALUE1".
+// `my_enum_field: VALUE1`, this adds an anchor for "VALUE1".
 absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
                                                  const FieldDescriptor& field,
                                                  int start_offset) {
@@ -401,13 +402,20 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
     input = input.substr(value_str.size());
 
     // Lookup EnumValueDescriptor based on the matched value.
-    const google::protobuf::EnumDescriptor* enum_desc = field.enum_type();
+    const google::protobuf::EnumDescriptor* enum_field = field.enum_type();
     const google::protobuf::EnumValueDescriptor* enum_val =
-        enum_desc->FindValueByName(value_str);
-    if (!enum_val)
-      enum_val = enum_desc->FindValueByNumber(std::atoi(value_str.c_str()));
+        enum_field->FindValueByName(value_str);
+    // If name lookup failed, try it as a number.
     if (!enum_val) {
-      return absl::UnknownError(
+      int value_int;
+      if (!absl::SimpleAtoi(value_str, &value_int)) {
+        return absl::InvalidArgumentError(
+            absl::StrFormat("Unable to parse enum value: '%s'", value_str));
+      }
+      enum_val = enum_field->FindValueByNumber(value_int);
+    }
+    if (!enum_val) {
+      return absl::InvalidArgumentError(
           absl::StrFormat("Unable to find enum value for '%s'", value_str));
     }
 
