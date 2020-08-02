@@ -390,6 +390,7 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
 
   // Detect 'array format' for repeated fields and trim the leading '['.
   const bool array_format = re2::RE2::Consume(&input, R"(\[)");
+  if (array_format) ConsumeTextprotoWhitespace(&input);
 
   while (true) {
     // Match the enum value, which may be an identifier or an integer.
