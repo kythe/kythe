@@ -10,43 +10,22 @@ enum_field: ENUM_VALUE1
 repeated_enum_field: ENUM_VALUE1
 
 #- @repeated_enum_field ref RepeatedEnumField
-#- @ENUM_VALUE2 ref EnumValue2
-repeated_enum_field: ENUM_VALUE2
-#- @repeated_enum_field ref RepeatedEnumField
-#- @ENUM_VALUE2 ref EnumValue2
-repeated_enum_field  :ENUM_VALUE2 # comment
-#- @repeated_enum_field ref RepeatedEnumField
-#- @+3ENUM_VALUE2 ref EnumValue2
 repeated_enum_field 
   :
+#- @ENUM_VALUE2 ref EnumValue2
   ENUM_VALUE2 # comment
-
-#- @repeated_enum_field ref RepeatedEnumField
-#- @"1" ref EnumValue1
-repeated_enum_field: 1
 
 #- @repeated_enum_field ref RepeatedEnumField
 #- @"2" ref EnumValue2
 repeated_enum_field: 2
 
 #- @repeated_enum_field ref RepeatedEnumField
-#- @"1" ref EnumValue1
 #- @"2" ref EnumValue2
-repeated_enum_field: [1, 2]
-
-
-#- @repeated_enum_field ref RepeatedEnumField
-#- @ENUM_VALUE2 ref EnumValue2
-#- @ENUM_VALUE1 ref EnumValue1
-repeated_enum_field: [ENUM_VALUE2, ENUM_VALUE1]
+#- @"1" ref EnumValue1
+repeated_enum_field: [2, 1]
 
 #- @repeated_enum_field ref RepeatedEnumField
+#- @+3ENUM_VALUE1 ref EnumValue1
+#- @+2ENUM_VALUE2 ref EnumValue2
 repeated_enum_field 
-  :
-#- @ENUM_VALUE2 ref EnumValue2
-  ENUM_VALUE2 # comment
-
-#- @repeated_enum_field ref RepeatedEnumField
-#- @ENUM_VALUE2 ref EnumValue2
-#- @ENUM_VALUE1 ref EnumValue1
-repeated_enum_field: [  ENUM_VALUE2     , ENUM_VALUE1  ]
+  : [      ENUM_VALUE1   , ENUM_VALUE2   ]
