@@ -33,6 +33,11 @@ namespace lang_textproto {
 // The plugin's interface to the indexer.
 class PluginApi {
  public:
+  PluginApi() {}
+  PluginApi(const PluginApi&) = delete;
+  PluginApi& operator=(const PluginApi&) = delete;
+  virtual ~PluginApi() = default;
+
   virtual proto::VName CreateAndAddAnchorNode(const proto::VName& file,
                                               int begin, int end) = 0;
 
@@ -70,7 +75,7 @@ class PluginApi {
 // All plugins must subclass this class.
 class Plugin {
  public:
-  virtual ~Plugin() {}
+  virtual ~Plugin() = default;
   // Main entrypoint for plugins.
   virtual absl::Status AnalyzeStringField(
       PluginApi* api, const proto::VName& file_vname,
