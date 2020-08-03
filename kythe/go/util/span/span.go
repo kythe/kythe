@@ -52,9 +52,15 @@ type Patcher struct {
 }
 
 // NewPatcher returns a Patcher based on the diff between oldText and newText.
-func NewPatcher(oldText, newText []byte) *Patcher {
+func NewPatcher(oldText, newText []byte) (p *Patcher, err error) {
+	defer func() {
+		// dmp may panic on some large requests; catch it and return an error instead
+		if r := recover(); r != nil {
+			err = fmt.Errorf("diffmatchpatch panic: %v", r)
+		}
+	}()
 	dmp := diffmatchpatch.New()
-	return &Patcher{dmp, dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), true))}
+	return &Patcher{dmp, dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), true))}, nil
 }
 
 // Patch returns the resulting span of mapping the given span from the Patcher's
