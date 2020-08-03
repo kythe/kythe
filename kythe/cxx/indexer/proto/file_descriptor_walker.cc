@@ -656,7 +656,6 @@ void FileDescriptorWalker::VisitEnumValues(const EnumDescriptor* dp,
                           EnumValueDescriptorProto::kNameFieldNumber);
     Location value_location;
     InitializeLocation(location_map_[lookup_path], &value_location);
-    std::string value_vname = dp->full_name() + "." + val_dp->name();
 
     builder_->AddValueToEnum(*enum_node, v_name, value_location);
     if (val_dp->options().deprecated()) {

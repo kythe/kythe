@@ -21,6 +21,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/strip.h"
 #include "absl/types/optional.h"
@@ -122,6 +123,9 @@ class TextprotoAnalyzer {
   StatusOr<proto::VName> AnalyzeAnyTypeUrl(const proto::VName& file_vname,
                                            TextFormat::ParseLocation field_loc);
 
+  absl::Status AnalyzeEnumValue(const proto::VName& file_vname,
+                                const FieldDescriptor& field, int start_offset);
+
   absl::Status AnalyzeSchemaComments(const proto::VName& file_vname,
                                      const Descriptor& msg_descriptor);
 
@@ -136,6 +140,9 @@ class TextprotoAnalyzer {
 
   proto::VName CreateAndAddAnchorNode(const proto::VName& file, int begin,
                                       int end);
+
+  proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
+                                      re2::StringPiece sp);
 
   absl::optional<proto::VName> VNameForRelPath(
       absl::string_view simplified_path) const;
@@ -195,7 +202,6 @@ absl::Status TextprotoAnalyzer::AnalyzeMessage(
        field_index++) {
     const FieldDescriptor& field = *descriptor.field(field_index);
     if (field.is_repeated()) {
-      // Handle repeated field.
       const int count = reflection->FieldSize(proto, &field);
       if (count == 0) {
         continue;
@@ -284,11 +290,7 @@ StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
   }
 
   // Add anchor.
-  const int begin = match.begin() - textproto_content_.begin();
-  const int end = begin + match.size();
-  proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, begin, end);
-
-  return anchor_vname;
+  return CreateAndAddAnchorNode(file_vname, match);
 }
 
 // When the textproto parser finds an Any message in the input, it parses the
@@ -363,6 +365,83 @@ absl::Status TextprotoAnalyzer::AnalyzeAny(
   return AnalyzeMessage(file_vname, *value_proto, *msg_desc, parse_tree);
 }
 
+// Trims whitespace (including newlines) and comments from the start of the
+// input.
+void ConsumeTextprotoWhitespace(re2::StringPiece* sp) {
+  re2::RE2::Consume(sp, R"((\s+|#[^\n]*)*)");
+}
+
+// Adds an anchor and ref edge for usage of enum values. For example, in
+// `my_enum_field: VALUE1`, this adds an anchor for "VALUE1".
+absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
+                                                 const FieldDescriptor& field,
+                                                 int start_offset) {
+  // Start after the last character of the field name.
+  re2::StringPiece input(textproto_content_.data(), textproto_content_.size());
+  input = input.substr(start_offset);
+
+  // Consume whitespace and colon after field name.
+  ConsumeTextprotoWhitespace(&input);
+  if (!re2::RE2::Consume(&input, ":")) {
+    return absl::UnknownError("Failed to find ':' when analyzing enum value");
+  }
+  ConsumeTextprotoWhitespace(&input);
+
+  // Detect 'array format' for repeated fields and trim the leading '['.
+  const bool array_format =
+      field.is_repeated() && re2::RE2::Consume(&input, "\\[");
+  if (array_format) ConsumeTextprotoWhitespace(&input);
+
+  while (true) {
+    // Match the enum value, which may be an identifier or an integer.
+    re2::StringPiece match;
+    if (!re2::RE2::PartialMatch(input, R"(^([_\w\d]+))", &match)) {
+      return absl::UnknownError("Failed to find text span for enum value: " +
+                                field.full_name());
+    }
+    const std::string value_str = match.ToString();
+    input = input.substr(value_str.size());
+
+    // Lookup EnumValueDescriptor based on the matched value.
+    const google::protobuf::EnumDescriptor* enum_field = field.enum_type();
+    const google::protobuf::EnumValueDescriptor* enum_val =
+        enum_field->FindValueByName(value_str);
+    // If name lookup failed, try it as a number.
+    if (!enum_val) {
+      int value_int;
+      if (!absl::SimpleAtoi(value_str, &value_int)) {
+        return absl::InvalidArgumentError(
+            absl::StrFormat("Unable to parse enum value: '%s'", value_str));
+      }
+      enum_val = enum_field->FindValueByNumber(value_int);
+    }
+    if (!enum_val) {
+      return absl::InvalidArgumentError(
+          absl::StrFormat("Unable to find enum value for '%s'", value_str));
+    }
+
+    // Add ref from matched text to enum value descriptor.
+    proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, match);
+    auto enum_vname = VNameForDescriptor(enum_val);
+    if (!enum_vname.ok()) return enum_vname.status();
+    recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
+                       VNameRef(*enum_vname));
+
+    if (!array_format) break;
+
+    // Consume trailing comma and whitespace; exit if there's no comma.
+    ConsumeTextprotoWhitespace(&input);
+    if (!re2::RE2::Consume(&input, ",")) {
+      break;
+    }
+    ConsumeTextprotoWhitespace(&input);
+  }
+
+  return absl::OkStatus();
+}
+
+// Analyzes the field and returns the number of values indexed. Typically this
+// is 1, but it could be 1+ when list syntax is used in the textproto.
 absl::Status TextprotoAnalyzer::AnalyzeField(
     const proto::VName& file_vname, const Message& proto,
     const TextFormat::ParseInfoTree& parse_tree, const FieldDescriptor& field,
@@ -420,6 +499,15 @@ absl::Status TextprotoAnalyzer::AnalyzeField(
     if (!field_vname.ok()) return field_vname.status();
     recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
                        VNameRef(*field_vname));
+
+    // Add refs for enum values.
+    if (field.type() == FieldDescriptor::TYPE_ENUM) {
+      auto s = AnalyzeEnumValue(file_vname, field, end);
+      if (!s.ok()) {
+        // Log this error, but don't block further progress
+        LOG(ERROR) << "Error analyzing enum value: " << s;
+      }
+    }
   }
 
   // Handle submessage.
@@ -499,6 +587,18 @@ proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
   recorder_->AddProperty(VNameRef(anchor), PropertyID::kLocationEndOffset, end);
 
   return anchor;
+}
+
+// Adds an anchor node, using the StringPiece's offset relative to
+// `textproto_content_` as the start location.
+proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
+    const proto::VName& file_vname, re2::StringPiece sp) {
+  CHECK(sp.begin() >= textproto_content_.begin() &&
+        sp.end() <= textproto_content_.end())
+      << "StringPiece not in range of source text";
+  const int begin = sp.begin() - textproto_content_.begin();
+  const int end = begin + sp.size();
+  return CreateAndAddAnchorNode(file_vname, begin, end);
 }
 
 void TextprotoAnalyzer::EmitDiagnostic(const proto::VName& file_vname,
