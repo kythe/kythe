@@ -190,6 +190,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let mut def_vname = file_vname.clone();
             let def_signature = format!("{}_def_{}", krate_signature, def.id.index);
             def_vname.set_signature(def_signature.clone());
+            def_vname.set_language("rust".to_string());
             self.emit_definition_node(&def_vname, &def)?;
         }
 
@@ -263,7 +264,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     fn generate_crate_vname(&self, signature: &str) -> VName {
         let mut crate_v_name = self.unit_vname.clone();
         crate_v_name.set_signature(signature.to_string());
-        crate_v_name.clear_language();
+        crate_v_name.set_language("rust".to_string());
         crate_v_name
     }
 }

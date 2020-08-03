@@ -66,11 +66,17 @@ rust_clippy(
 )
 
 rust_indexer_test(
-    name = "function_test",
-    srcs = ["testdata/function.rs"],
+    name = "anchors_test",
+    srcs = ["testdata/anchors.rs"],
 )
 
 rust_indexer_test(
     name = "comment_test",
     srcs = ["testdata/comment.rs"],
 )
+
+rust_indexer_test(
+    name = "function_test",
+    srcs = ["testdata/function.rs"],
+)
+

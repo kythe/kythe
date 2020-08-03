@@ -1,3 +1,5 @@
+// Verifies that documentation nodes are emitted for indexed elements
+
 //- @+2"main" defines/binding FnMain
 /// The main function
 fn main() {
