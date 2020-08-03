@@ -50,8 +50,7 @@ impl AnalysisLoader for Loader {
     }
 }
 
-/// Takes a PathBuf, loads the save_analysis files from the path, and returns a
-/// Vec<Crate>
+/// Takes a PathBuf and loads the save_analysis files from the path
 pub fn load_analysis(root_dir: &PathBuf) -> Vec<Crate> {
     let path = (*root_dir).clone();
     let loader = Loader::new(path);
