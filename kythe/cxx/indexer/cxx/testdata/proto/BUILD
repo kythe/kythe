@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":cc_proto_verifier_test.bzl", "cc_proto_verifier_test")
 
 cc_proto_verifier_test(
@@ -50,4 +51,9 @@ cc_proto_verifier_test(
         "//kythe/testdata/indexers/proto:testdata4b.proto",
         "//kythe/testdata/indexers/proto:testdata4a.proto",
     ],
+)
+
+bzl_library(
+    name = "cc_proto_verifier_test_bzl",
+    srcs = ["cc_proto_verifier_test.bzl"],
 )

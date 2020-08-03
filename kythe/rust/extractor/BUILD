@@ -1,3 +1,5 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
 package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_test")
@@ -77,4 +79,9 @@ rust_binary(
 rust_extractor_test(
     name = "extractor_integration_test",
     src = ":extractor_integration_test_binary",
+)
+
+bzl_library(
+    name = "extractor_test_bzl",
+    srcs = ["extractor_test.bzl"],
 )

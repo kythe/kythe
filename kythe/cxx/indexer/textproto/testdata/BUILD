@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":textproto_verifier_test.bzl", "textproto_verifier_test")
 
 textproto_verifier_test(
@@ -28,6 +29,12 @@ textproto_verifier_test(
     name = "default_value_test",
     protos = ["example.proto"],
     textproto = "default_value.pbtxt",
+)
+
+textproto_verifier_test(
+    name = "enum_value_test",
+    protos = ["example.proto"],
+    textproto = "enum_value.pbtxt",
 )
 
 textproto_verifier_test(
@@ -83,4 +90,9 @@ textproto_verifier_test(
     ],
     textproto = "schema_comments.pbtxt",
     deps = ["@com_google_protobuf//:well_known_protos"],
+)
+
+bzl_library(
+    name = "textproto_verifier_test_bzl",
+    srcs = ["textproto_verifier_test.bzl"],
 )
