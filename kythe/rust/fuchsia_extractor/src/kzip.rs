@@ -116,11 +116,12 @@ impl Writer {
 
     /// Writes the specified compilation unit.  Returns the resulting file
     /// digest.
-    pub fn write_unit(&mut self, unit: &CompilationUnit) -> Result<String> {
+    pub fn write_unit(&mut self, unit: &IndexedCompilation) -> Result<String> {
         const CAPACITY: usize = 200;
         let mut buf: Vec<u8> = vec![0; CAPACITY];
         let mut resulting_buffer_size: sys::size_t = 0;
-        let content = unit.write_to_bytes().with_context(|| "while writing protobuf")?;
+        let content = unit.write_to_bytes()
+            .with_context(|| "kzip::write_unit: while writing protobuf")?;
         let status = unsafe {
             sys::KzipWriter_WriteUnit(
                 self.rep.as_ptr(),
@@ -132,7 +133,9 @@ impl Writer {
             )
         };
         if status != 0 {
-            return Err(anyhow::anyhow!("kzip::write_file: error code: {}", status));
+            return Err(anyhow::anyhow!(
+                    "kzip::write_unit: error code: {}, while writing {} bytes",
+                    status, content.len()));
         }
         // This should always be a UTF-8 clean string since it's a digest.
         buf.resize(resulting_buffer_size as usize, 0);
@@ -149,7 +152,7 @@ mod tests {
         let temp_dir = TempDir::new("check_zip_exists").expect("temp dir created");
         let output_file = temp_dir.path().join("out.kzip");
         let content = "content";
-        let unit = CompilationUnit::new();
+        let unit = analysis::IndexedCompilation::new();
         assert!(!Path::exists(&output_file), "file exists but should not: {:?}", &output_file);
         {
             let mut writer =

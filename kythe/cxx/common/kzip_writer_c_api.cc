@@ -97,6 +97,7 @@ int32_t KzipWriter_WriteFile(KzipWriter* writer, const char* content,
   }
   const std::string& digest = *digest_or;
   if (digest.length() > buffer_length) {
+    LOG(ERROR) << "Digest buffer too small to fit digest: " << digest;
     return KZIP_WRITER_BUFFER_TOO_SMALL_ERROR;
   }
   memcpy(digest_buffer, digest.c_str(), digest.length());
@@ -113,6 +114,8 @@ int32_t KzipWriter_WriteUnit(KzipWriter* writer, const char* proto,
   kythe::proto::IndexedCompilation unit;
   const bool success = unit.ParseFromArray(proto, proto_length);
   if (!success) {
+    LOG(ERROR) 
+      << "Protobuf could not be parsed, at len: " << proto_length;
     return KZIP_WRITER_PROTO_PARSING_ERROR;
   }
   StatusOr<std::string> digest_or = w->WriteUnit(unit);
