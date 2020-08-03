@@ -700,11 +700,11 @@ void TextprotoAnalyzer::EmitDiagnostic(const proto::VName& file_vname,
 // argument from @args if found.
 absl::optional<std::string> ParseProtoMessageArg(
     std::vector<std::string>* args) {
-  for (size_t i = 0; i < args->size(); i++) {
-    if (args->at(i) == "--proto_message") {
-      if (i + 1 < args->size()) {
-        std::string v = args->at(i + 1);
-        args->erase(args->begin() + i, args->begin() + i + 2);
+  for (auto iter = args->begin(); iter != args->end(); iter++) {
+    if (*iter == "--proto_message") {
+      if (iter + 1 < args->end()) {
+        std::string v = *(iter + 1);
+        args->erase(iter, iter + 2);
         return v;
       }
       return absl::nullopt;
@@ -715,12 +715,12 @@ absl::optional<std::string> ParseProtoMessageArg(
 
 absl::optional<std::vector<std::string>> ParsePluginArg(
     std::vector<std::string>* args) {
-  for (size_t i = 0; i < args->size(); i++) {
-    if (args->at(i) == "--kythe_textproto_plugins") {
-      if (i + 1 < args->size()) {
-        std::string v = args->at(i + 1);
-        args->erase(args->begin() + i, args->begin() + i + 2);
-        return absl::StrSplit(v, ",");
+  for (auto iter = args->begin(); iter != args->end(); iter++) {
+    if (*iter == "--kythe_textproto_plugins") {
+      if (iter + 1 < args->end()) {
+        std::string value = *(iter + 1);
+        args->erase(iter, iter + 2);
+        return absl::StrSplit(value, ",");
       }
       return absl::nullopt;
     }
