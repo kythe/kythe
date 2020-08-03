@@ -1,4 +1,5 @@
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -39,6 +40,12 @@ go_test(
         "//kythe/go/test/testutil",
         "@com_github_golang_protobuf//proto:go_default_library",
     ],
+)
+
+bzl_library(
+    name = "go_indexer_test_bzl",
+    srcs = ["testdata/go_indexer_test.bzl"],
+    visibility = ["//visibility:private"],
 )
 
 load(":testdata/go_indexer_test.bzl", "go_indexer_test")

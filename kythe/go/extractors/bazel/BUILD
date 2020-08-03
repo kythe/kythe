@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//:visibility.bzl", "PUBLIC_VISIBILITY")
 load("//tools:build_rules/shims.bzl", "go_library", "go_test")
 
@@ -20,8 +21,8 @@ go_library(
         "//kythe/proto:buildinfo_go_proto",
         "//kythe/proto:storage_go_proto",
         "//third_party/bazel:extra_actions_base_go_proto",
-        "@org_bitbucket_creachadair_stringset//:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
+        "@org_bitbucket_creachadair_stringset//:go_default_library",
         "@org_golang_x_sync//errgroup:go_default_library",
     ],
 )
@@ -34,4 +35,9 @@ go_test(
         "settings_test.go",
     ],
     library = ":bazel",
+)
+
+bzl_library(
+    name = "extractors_bzl",
+    srcs = ["extractors.bzl"],
 )

@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_proto_library")
 load("//:visibility.bzl", "PUBLIC_PROTO_VISIBILITY")
@@ -677,4 +678,9 @@ proto_library(
 cc_proto_library(
     name = "metadata_cc_proto",
     deps = [":metadata_proto"],
+)
+
+bzl_library(
+    name = "go_bzl",
+    srcs = ["go.bzl"],
 )
