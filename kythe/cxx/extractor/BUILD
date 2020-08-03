@@ -1,3 +1,5 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
 package(
     default_visibility = ["//kythe:default_visibility"],
     features = ["layering_check"],
@@ -388,4 +390,9 @@ toolchain(
     ],
     toolchain = ":cxx_extractor_macos",
     toolchain_type = ":toolchain_type",
+)
+
+bzl_library(
+    name = "toolchain_bzl",
+    srcs = ["toolchain.bzl"],
 )

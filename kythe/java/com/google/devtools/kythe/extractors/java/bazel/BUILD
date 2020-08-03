@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_java//java:defs.bzl", "java_binary")
 
 package(default_visibility = ["//visibility:public"])
@@ -19,4 +20,9 @@ java_binary(
         "@com_google_protobuf//:protobuf_java",
         "@com_google_protobuf//:protobuf_java_util",
     ],
+)
+
+bzl_library(
+    name = "aspect_bzl",
+    srcs = ["aspect.bzl"],
 )
