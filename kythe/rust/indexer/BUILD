@@ -69,3 +69,8 @@ rust_indexer_test(
     name = "function_test",
     srcs = ["testdata/function.rs"],
 )
+
+rust_indexer_test(
+    name = "comment_test",
+    srcs = ["testdata/comment.rs"],
+)

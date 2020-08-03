@@ -202,13 +202,14 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let mut facts: HashMap<&str, Vec<u8>> = HashMap::new();
 
         // Generate the facts to be emitted
-        // TODO(Arm1stice): Remove once more definitions are added to the match statement
+        // TODO(Arm1stice): Remove once more definitions are added to the match
+        // statement
         #[allow(clippy::single_match)]
         match def.kind {
             DefKind::Function => {
                 facts.insert("/kythe/node/kind", b"function".to_vec());
                 facts.insert("/kythe/complete", b"definition".to_vec());
-            },
+            }
             // TODO(Arm1stice): Support other types of definitions
             _ => {}
         }
@@ -246,7 +247,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             let doc_signature = format!("{}_doc", def_vname.get_signature());
             doc_vname.set_signature(doc_signature);
             self.emitter.emit_node(&doc_vname, "/kythe/node/kind", b"doc".to_vec())?;
-            self.emitter.emit_node(&doc_vname, "/kythe/text", def.docs.clone().into_bytes())?;
+            self.emitter.emit_node(
+                &doc_vname,
+                "/kythe/text",
+                def.docs.trim().as_bytes().to_vec(),
+            )?;
             self.emitter.emit_edge(&doc_vname, def_vname, "/kythe/edge/documents")?;
         }
 
