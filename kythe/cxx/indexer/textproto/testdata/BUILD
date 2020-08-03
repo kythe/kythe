@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":textproto_verifier_test.bzl", "textproto_verifier_test")
 
 textproto_verifier_test(
@@ -83,4 +84,9 @@ textproto_verifier_test(
     ],
     textproto = "schema_comments.pbtxt",
     deps = ["@com_google_protobuf//:well_known_protos"],
+)
+
+bzl_library(
+    name = "textproto_verifier_test_bzl",
+    srcs = ["textproto_verifier_test.bzl"],
 )

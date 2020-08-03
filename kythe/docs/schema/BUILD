@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":asciidoc_with_verifier.bzl", "asciidoc_with_verifier", "build_example_sh")
 
 package(default_visibility = ["//kythe:default_visibility"])
@@ -38,4 +39,9 @@ asciidoc_with_verifier(
 asciidoc_with_verifier(
     name = "modules",
     src = "modules.txt",
+)
+
+bzl_library(
+    name = "asciidoc_with_verifier_bzl",
+    srcs = ["asciidoc_with_verifier.bzl"],
 )
