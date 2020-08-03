@@ -1923,21 +1923,24 @@ bool IndexerASTVisitor::VisitInitListExpr(const clang::InitListExpr* ILE) {
       LogErrorWithASTDump("Fewer initializers than decls:\n", ILE);
       break;
     }
-    const clang::Expr* Init = *II++;
-    clang::SourceRange InitRange = NormalizeRange(Init->getSourceRange());
-    if (!(InitRange.isValid() && ListRange.fullyContains(InitRange))) {
-      // When visiting the semantic form initializers which aren't explicitly
-      // specified either have an invalid location (for uninitialized fields) or
-      // share a location with the end of the ILE (for default initialized
-      // fields). Skip these by checking that their location is wholly contained
-      // by the syntactic initializers, rather than the enclosing ILE itself.
-      continue;
-    }
-    if (auto RCC = RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
-                                         InitRange)) {
-      Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(Decl),
-                                  GraphObserver::Claimability::Unclaimable,
-                                  this->IsImplicit(*RCC));
+    // On rare occasions, the init Expr we get from clang is null.
+    if (const clang::Expr* Init = *II++) {
+      clang::SourceRange InitRange = NormalizeRange(Init->getSourceRange());
+      if (!(InitRange.isValid() && ListRange.fullyContains(InitRange))) {
+        // When visiting the semantic form initializers which aren't explicitly
+        // specified either have an invalid location (for uninitialized fields)
+        // or share a location with the end of the ILE (for default initialized
+        // fields). Skip these by checking that their location is wholly
+        // contained by the syntactic initializers, rather than the enclosing
+        // ILE itself.
+        continue;
+      }
+      if (auto RCC = RangeInCurrentContext(BuildNodeIdForImplicitStmt(Init),
+                                           InitRange)) {
+        Observer.recordInitLocation(*RCC, BuildNodeIdForRefToDecl(Decl),
+                                    GraphObserver::Claimability::Unclaimable,
+                                    this->IsImplicit(*RCC));
+      }
     }
   }
   return true;
