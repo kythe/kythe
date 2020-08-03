@@ -593,6 +593,9 @@ proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
 // `textproto_content_` as the start location.
 proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
     const proto::VName& file_vname, re2::StringPiece sp) {
+  CHECK(sp.begin() >= textproto_content_.begin() &&
+        sp.end() <= textproto_content_.end())
+      << "StringPiece not in range of source text";
   const int begin = sp.begin() - textproto_content_.begin();
   const int end = begin + sp.size();
   return CreateAndAddAnchorNode(file_vname, begin, end);
