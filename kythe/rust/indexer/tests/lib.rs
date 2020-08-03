@@ -17,4 +17,5 @@ extern crate runfiles;
 extern crate storage_rust_proto;
 
 pub mod array_writer;
+mod indexer_entries;
 mod providers;
