@@ -472,12 +472,9 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
     // quotation marks.
     std::string token_text;
     {
-      // Note: doing input.ToString() for each field is *very* inefficient.
-      // TODO: use a ZeroCopyReader backed by a string_view, not a string, which
-      // requires copying.
-      std::istringstream iss(input.ToString());
-      google::protobuf::io::IstreamInputStream iis(&iss);
-      google::protobuf::io::Tokenizer t(&iis, nullptr);
+      google::protobuf::io::ArrayInputStream array_stream(input.data(),
+                                                          input.size());
+      google::protobuf::io::Tokenizer t(&array_stream, nullptr);
       if (!t.Next()) {
         return absl::UnknownError("tokenizer ended");
       }
