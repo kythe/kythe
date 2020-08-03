@@ -1,7 +1,7 @@
-package(default_visibility = ["//visibility:public"])
-
 load("@rules_python//python:defs.bzl", "py_binary")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
+package(default_visibility = ["//visibility:public"])
 
 exports_files(["verifier_test.sh.in"])
 
