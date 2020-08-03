@@ -31,7 +31,7 @@ class ExamplePlugin : public Plugin {
   absl::Status AnalyzeStringField(
       PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,
-      re2::StringPiece input) override;
+      absl::string_view input) override;
 };
 
 }  // namespace lang_textproto

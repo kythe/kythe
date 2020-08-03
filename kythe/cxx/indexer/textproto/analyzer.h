@@ -55,7 +55,7 @@ absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
                                     const std::vector<proto::FileData>& files,
                                     KytheGraphRecorder* recorder);
 
-// Override AnalyzeCompilationUnit() that accepts a PluginLoadCallback for
+// Override for AnalyzeCompilationUnit() that accepts a PluginLoadCallback for
 // loading plugins.
 absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                                     const proto::CompilationUnit& unit,

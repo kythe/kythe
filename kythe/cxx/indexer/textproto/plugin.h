@@ -26,7 +26,6 @@
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/cxx/indexer/proto/vname_util.h"
 #include "kythe/proto/analysis.pb.h"
-#include "re2/re2.h"
 
 namespace kythe {
 namespace lang_textproto {
@@ -38,7 +37,7 @@ class PluginApi {
                                               int begin, int end) = 0;
 
   virtual proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
-                                              re2::StringPiece sp) = 0;
+                                              absl::string_view sp) = 0;
 
   virtual KytheGraphRecorder* recorder() = 0;
 
@@ -76,7 +75,7 @@ class Plugin {
   virtual absl::Status AnalyzeStringField(
       PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,
-      re2::StringPiece input) = 0;
+      absl::string_view input) = 0;
 };
 
 // Callback function to instantiate a plugin by name. Returns nil if the name

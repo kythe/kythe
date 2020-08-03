@@ -56,6 +56,5 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
-        "@com_googlesource_code_re2//:re2",
     ],
 )

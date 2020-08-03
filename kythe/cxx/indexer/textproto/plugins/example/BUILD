@@ -11,7 +11,7 @@ cc_library(
         "//kythe/cxx/indexer/textproto:plugin",
         "//kythe/proto:analysis_cc_proto",
         "@com_google_absl//absl/status",
-        "@com_googlesource_code_re2//:re2",
+        "@com_google_absl//absl/strings",
     ],
 )
 

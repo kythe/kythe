@@ -21,7 +21,7 @@ namespace lang_textproto {
 
 absl::Status ExamplePlugin::AnalyzeStringField(
     PluginApi* api, const proto::VName& file_vname,
-    const google::protobuf::FieldDescriptor& field, re2::StringPiece input) {
+    const google::protobuf::FieldDescriptor& field, absl::string_view input) {
   // Create an anchor covering the field value's text span.
   proto::VName anchor_vname = api->CreateAndAddAnchorNode(file_vname, input);
 

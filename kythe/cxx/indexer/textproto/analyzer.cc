@@ -146,8 +146,11 @@ class TextprotoAnalyzer : public PluginApi {
   proto::VName CreateAndAddAnchorNode(const proto::VName& file, int begin,
                                       int end) override;
 
+  virtual proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
+                                              absl::string_view sp) override;
+
   proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
-                                      re2::StringPiece sp) override;
+                                      re2::StringPiece sp);
 
   absl::optional<proto::VName> VNameForRelPath(
       absl::string_view simplified_path) const override;
@@ -480,12 +483,12 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
       }
       token_text = t.current().text;
     }
-    re2::StringPiece valueSpan(input);
-    valueSpan = valueSpan.substr(1, token_text.size() - 2);  // trim quotes
+    absl::string_view value_span(input.data(), input.size());
+    value_span = value_span.substr(1, token_text.size() - 2);  // trim quotes
     input = input.substr(token_text.size());
 
     for (auto& p : plugins_) {
-      auto s = p->AnalyzeStringField(this, file_vname, field, valueSpan);
+      auto s = p->AnalyzeStringField(this, file_vname, field, value_span);
       if (!s.ok()) {
         LOG(ERROR) << "Plugin error: " << s;
       }
@@ -657,6 +660,18 @@ proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
   recorder_->AddProperty(VNameRef(anchor), PropertyID::kLocationEndOffset, end);
 
   return anchor;
+}
+
+// Adds an anchor node, using the string_view's offset relative to
+// `textproto_content_` as the start location.
+proto::VName TextprotoAnalyzer::CreateAndAddAnchorNode(
+    const proto::VName& file_vname, absl::string_view sp) {
+  CHECK(sp.begin() >= textproto_content_.begin() &&
+        sp.end() <= textproto_content_.end())
+      << "string_view not in range of source text";
+  const int begin = sp.begin() - textproto_content_.begin();
+  const int end = begin + sp.size();
+  return CreateAndAddAnchorNode(file_vname, begin, end);
 }
 
 // Adds an anchor node, using the StringPiece's offset relative to
