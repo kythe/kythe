@@ -1,3 +1,5 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
 package(default_visibility = ["//kythe:default_visibility"])
 
 load("//tools:build_rules/testing.bzl", "shell_tool_test")
@@ -51,4 +53,9 @@ test_vname_rules(
     name = "go_vnames_test",
     rules = "vnames.go.json",
     tests = "vnames_test.go.json",
+)
+
+bzl_library(
+    name = "vnames_bzl",
+    srcs = ["vnames.bzl"],
 )

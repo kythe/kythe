@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_proto//proto:defs.bzl", "proto_lang_toolchain")
 load("@rules_java//java:defs.bzl", "java_library")
 
@@ -174,12 +175,17 @@ extractor_action(
         "--output=$(output $(ACTION_ID).rust.kzip)",
     ],
     data = ["//external:vnames_config"],
+    env = {
+        "LD_LIBRARY_PATH": "external/rust_linux_x86_64/lib:external/rust_darwin_x86_64/lib",
+    },
     extractor = "@io_kythe//kythe/rust/extractor",
     mnemonics = [
         "Rustc",
     ],
     output = "$(ACTION_ID).rust.kzip",
-    env = {
-        "LD_LIBRARY_PATH": "external/rust_linux_x86_64/lib:external/rust_darwin_x86_64/lib"
-    }
+)
+
+bzl_library(
+    name = "extractors_bzl",
+    srcs = ["extractors.bzl"],
 )

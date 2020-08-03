@@ -1,3 +1,5 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
 licenses(["notice"])  # Apache 2.0
 
 exports_files(["LICENSE"])
@@ -122,4 +124,9 @@ proto_verifier_test(
 test_suite(
     name = "indexer_corner_cases",
     tags = ["corner_cases"],
+)
+
+bzl_library(
+    name = "proto_verifier_test_bzl",
+    srcs = ["proto_verifier_test.bzl"],
 )
