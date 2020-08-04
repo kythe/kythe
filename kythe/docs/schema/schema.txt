@@ -2068,9 +2068,8 @@ Brief description::
   A *package* defines a module containing declarations.
 Notes::
   Languages in which a module is implicitly defined based on the file name
-  should use a zero-width anchor at offset 0 in that file for the
-  `defines/binding` edge and a span covering the entire file for any `defines`
-  edge.
+  should emit a `defines` edge from a zero-width anchor at offset 0 in that
+  file to the corresponding package node.
 
 [kythe,Java,"Top-level declarations are children of package nodes."]
 --------------------------------------------------------------------------------
