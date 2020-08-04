@@ -455,6 +455,43 @@ public class E {
 int x;
 --------------------------------------------------------------------------------
 
+[[definesimplicit]]
+defines/implicit
+~~~~~~~~~~~~~~~~
+
+Brief description::
+  A *defines/implicit* B if A semantically defines an entity B, but that
+  definition is not explicitly related to the decorated text.
+Commonly arises from::
+  filename-based packages, C++ special member functions
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+See also::
+  <<package>>
+Notes::
+  The most common situations in which this edge should be used are in languages
+  for which modules don't have an explicit syntactic marker, deriving the module
+  name from the file or directory path and C++'s compiler-defined special member
+  functions.
+
+[kythe,C++,"Implicit destructor definition."]
+--------------------------------------------------------------------------------
+///- @X defines/implicit XDtor
+///- XDtor.subkind destructor
+class X {};
+--------------------------------------------------------------------------------
+
+[kythe,TypeScript,"Implicit module definition."]
+--------------------------------------------------------------------------------
+///- Mod=vname(_, _, _,_, _).node/kind package
+///- ModAnchor.node/kind anchor
+///- ModAnchor./kythe/loc/start 0
+///- ModAnchor./kythe/loc/end 0
+///- ModAnchor defines/implicit Mod
+--------------------------------------------------------------------------------
+
 [[depends]]
 depends
 ~~~~~~~
@@ -2068,8 +2105,8 @@ Brief description::
   A *package* defines a module containing declarations.
 Notes::
   Languages in which a module is implicitly defined based on the file name
-  should emit a `defines` edge from a zero-width anchor at offset 0 in that
-  file to the corresponding package node.
+  should emit a `defines/implicit` edge from a zero-width anchor at offset 0 in
+  that file to the corresponding package node.
 
 [kythe,Java,"Top-level declarations are children of package nodes."]
 --------------------------------------------------------------------------------
