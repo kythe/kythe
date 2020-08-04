@@ -47,13 +47,14 @@ rust_test(
 rust_test(
     name = "integration_tests",
     srcs = glob(["tests/*.rs"]),
-    data = ["tests/testkzip.kzip"],
+    data = ["tests/testkzip.kzip", "tests/testanalysis.json"],
     deps = [
         ":kythe_rust_indexer",
         ":inline_tests",
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
         "@io_bazel_rules_rust//tools/runfiles",
+        "//kythe/rust/cargo:tempdir",
     ] + PROTO_COMPILE_DEPS,
 )
 
