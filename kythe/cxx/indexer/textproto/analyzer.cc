@@ -76,14 +76,20 @@ class LoggingMultiFileErrorCollector
   }
 };
 
-absl::optional<proto::VName> LookupVNameForFullPath(
-    absl::string_view full_path, const proto::CompilationUnit& unit) {
+// Finds the file in the compilation unit's inputs and returns its vname.
+// Returns an empty vname if the file is not found.
+proto::VName LookupVNameForFullPath(absl::string_view full_path,
+                                    const proto::CompilationUnit& unit) {
   for (const auto& input : unit.required_input()) {
     if (input.info().path() == full_path) {
       return input.v_name();
     }
   }
-  return absl::nullopt;
+  LOG(ERROR) << "Unable to find file path in compilation unit: '" << full_path
+             << "'. This likely indicates a bug in the textproto indexer, "
+                "which should only need to construct VNames for files in "
+                "the compilation unit";
+  return proto::VName{};
 }
 
 // The TextprotoAnalyzer maintains state needed across indexing operations and
@@ -152,11 +158,18 @@ class TextprotoAnalyzer : public PluginApi {
   proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
                                       re2::StringPiece sp);
 
-  absl::optional<proto::VName> VNameForRelPath(
+  proto::VName VNameForRelPath(
       absl::string_view simplified_path) const override;
 
   void AddPlugin(std::unique_ptr<Plugin> p) {
     plugins_.push_back(std::move(p));
+  }
+
+  // Convenience method for constructing proto descriptor vnames.
+  template <typename SomeDescriptor>
+  proto::VName VNameForDescriptor(const SomeDescriptor* descriptor) {
+    return ::kythe::lang_proto::VNameForDescriptor(
+        descriptor, [this](auto path) { return VNameForRelPath(path); });
   }
 
  private:
@@ -179,7 +192,7 @@ class TextprotoAnalyzer : public PluginApi {
   const DescriptorPool* descriptor_pool_;
 };
 
-absl::optional<proto::VName> TextprotoAnalyzer::VNameForRelPath(
+proto::VName TextprotoAnalyzer::VNameForRelPath(
     absl::string_view simplified_path) const {
   absl::string_view full_path;
   auto it = file_substitution_cache_->find(simplified_path);
@@ -341,11 +354,8 @@ absl::Status TextprotoAnalyzer::AnalyzeAny(
 
   // Add ref from type_url to proto message.
   auto msg_vname = VNameForDescriptor(msg_desc);
-  if (!msg_vname.ok()) {
-    return msg_vname.status();
-  }
   recorder_->AddEdge(VNameRef(type_url_anchor), EdgeKindID::kRef,
-                     VNameRef(*msg_vname));
+                     VNameRef(msg_vname));
 
   // Deserialize Any value into the appropriate message type.
   std::string value_bytes = reflection->GetString(proto, value_desc);
@@ -426,9 +436,8 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
     // Add ref from matched text to enum value descriptor.
     proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, match);
     auto enum_vname = VNameForDescriptor(enum_val);
-    if (!enum_vname.ok()) return enum_vname.status();
     recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
-                       VNameRef(*enum_vname));
+                       VNameRef(enum_vname));
 
     if (!array_format) break;
 
@@ -560,9 +569,8 @@ absl::Status TextprotoAnalyzer::AnalyzeField(
 
     // Add ref to proto field.
     auto field_vname = VNameForDescriptor(&field);
-    if (!field_vname.ok()) return field_vname.status();
     recorder_->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
-                       VNameRef(*field_vname));
+                       VNameRef(field_vname));
 
     // Add refs for enum values.
     if (field.type() == FieldDescriptor::TYPE_ENUM) {
@@ -618,9 +626,7 @@ absl::Status TextprotoAnalyzer::AnalyzeSchemaComments(
 
     // Add ref edge to proto message.
     auto msg_vname = VNameForDescriptor(&msg_descriptor);
-    if (!msg_vname.ok()) return msg_vname.status();
-    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef,
-                       VNameRef(*msg_vname));
+    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef, VNameRef(msg_vname));
   }
 
   // Handle 'proto-file' and 'proto-import' comments if present.
@@ -634,12 +640,8 @@ absl::Status TextprotoAnalyzer::AnalyzeSchemaComments(
     proto::VName anchor = CreateAndAddAnchorNode(file_vname, begin, end);
 
     // Add ref edge to file.
-    auto v = VNameForRelPath(file);
-    if (!v.has_value()) {
-      return absl::UnknownError(
-          absl::StrCat("Unable to lookup vname for rel path: ", file));
-    }
-    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef, VNameRef(*v));
+    proto::VName v = VNameForRelPath(file);
+    recorder_->AddEdge(VNameRef(anchor), EdgeKindID::kRef, VNameRef(v));
   }
 
   return absl::OkStatus();
@@ -892,15 +894,10 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
   }
 
   // Emit file node.
-  absl::optional<proto::VName> file_vname =
-      LookupVNameForFullPath(textproto_name, unit);
-  if (!file_vname.has_value()) {
-    return absl::UnknownError(
-        absl::StrCat("Unable to find vname for textproto: ", textproto_name));
-  }
-  recorder->AddProperty(VNameRef(*file_vname), NodeKindID::kFile);
+  proto::VName file_vname = LookupVNameForFullPath(textproto_name, unit);
+  recorder->AddProperty(VNameRef(file_vname), NodeKindID::kFile);
   // Record source text as a fact.
-  recorder->AddProperty(VNameRef(*file_vname), PropertyID::kText,
+  recorder->AddProperty(VNameRef(file_vname), PropertyID::kText,
                         textproto_file_data->content());
 
   // Analyze!
@@ -923,16 +920,15 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
                  << absl::StrJoin(plugin_names, ",");
   }
 
-  absl::Status status =
-      analyzer.AnalyzeSchemaComments(*file_vname, *descriptor);
+  absl::Status status = analyzer.AnalyzeSchemaComments(file_vname, *descriptor);
   if (!status.ok()) {
     std::string msg =
         absl::StrCat("Error analyzing schema comments: ", status.ToString());
     LOG(ERROR) << msg << status;
-    analyzer.EmitDiagnostic(*file_vname, "schema_comments", msg);
+    analyzer.EmitDiagnostic(file_vname, "schema_comments", msg);
   }
 
-  return analyzer.AnalyzeMessage(*file_vname, *proto, *descriptor, parse_tree);
+  return analyzer.AnalyzeMessage(file_vname, *proto, *descriptor, parse_tree);
 }
 
 }  // namespace lang_textproto

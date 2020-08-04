@@ -21,10 +21,7 @@
 #include <string>
 
 #include "absl/status/status.h"
-#include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
-#include "kythe/cxx/common/status_or.h"
-#include "kythe/cxx/indexer/proto/vname_util.h"
 #include "kythe/proto/analysis.pb.h"
 
 namespace kythe {
@@ -50,26 +47,8 @@ class PluginApi {
                               absl::string_view signature,
                               absl::string_view msg) = 0;
 
-  virtual absl::optional<proto::VName> VNameForRelPath(
+  virtual proto::VName VNameForRelPath(
       absl::string_view simplified_path) const = 0;
-
-  // Create a VName for a proto descriptor.
-  template <typename SomeDescriptor>
-  StatusOr<proto::VName> VNameForDescriptor(const SomeDescriptor* descriptor) {
-    absl::Status vname_lookup_status = absl::OkStatus();
-    proto::VName vname = ::kythe::lang_proto::VNameForDescriptor(
-        descriptor, [this, &vname_lookup_status](const std::string& path) {
-          auto v = VNameForRelPath(path);
-          if (!v.has_value()) {
-            vname_lookup_status = absl::UnknownError(
-                absl::StrCat("Unable to lookup vname for rel path: ", path));
-            return proto::VName();
-          }
-          return *v;
-        });
-    return vname_lookup_status.ok() ? StatusOr<proto::VName>(vname)
-                                    : vname_lookup_status;
-  }
 };
 
 // All plugins must subclass this class.

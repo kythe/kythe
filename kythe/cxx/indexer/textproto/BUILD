@@ -51,8 +51,6 @@ cc_library(
     hdrs = ["plugin.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//kythe/cxx/common:status_or",
-        "//kythe/cxx/indexer/proto:vname_util",
         "//kythe/proto:analysis_cc_proto",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",

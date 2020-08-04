@@ -16,6 +16,8 @@
 
 #include "plugin.h"
 
+#include "kythe/cxx/indexer/proto/vname_util.h"
+
 namespace kythe {
 namespace lang_textproto {
 
@@ -25,12 +27,12 @@ absl::Status ExamplePlugin::AnalyzeStringField(
   // Create an anchor covering the field value's text span.
   proto::VName anchor_vname = api->CreateAndAddAnchorNode(file_vname, input);
 
-  auto target_vname = api->VNameForDescriptor(&field);
-  if (!target_vname.ok()) return target_vname.status();
+  auto target_vname = ::kythe::lang_proto::VNameForDescriptor(
+      &field, [api](auto path) { return api->VNameForRelPath(path); });
 
   // Add a ref edge from the anchor to the proto field descriptor.
   api->recorder()->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,
-                           VNameRef(*target_vname));
+                           VNameRef(target_vname));
 
   return absl::OkStatus();
 }
