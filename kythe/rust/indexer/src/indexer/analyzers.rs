@@ -58,15 +58,23 @@ impl<'a> UnitAnalyzer<'a> {
         let mut file_vnames = HashMap::new();
         for required_input in unit.get_required_input() {
             let analysis_vname = required_input.get_v_name();
+<<<<<<< HEAD
             // The required input has a VName of type analysis_rust_proto::analysis::VName.
             // We need storage_rust_proto::storage::VName to create an Entry. Therefore, we
             // must use unsafe rust to transmute the VName.
             let storage_vname: VName = unsafe { ::std::mem::transmute(analysis_vname.clone()) };
+=======
+            let storage_vname: VName = analysis_to_storage_vname(&analysis_vname);
+>>>>>>> master
             let path = storage_vname.get_path().to_owned();
             file_vnames.insert(path, storage_vname);
         }
 
+<<<<<<< HEAD
         let unit_storage_vname: VName = unsafe { ::std::mem::transmute(unit.get_v_name().clone()) };
+=======
+        let unit_storage_vname: VName = analysis_to_storage_vname(&unit.get_v_name());
+>>>>>>> master
         Self { unit, unit_storage_vname, emitter: EntryEmitter::new(writer), root_dir, file_vnames }
     }
 
@@ -224,6 +232,11 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         anchor_vname.set_signature(format!("{}_anchor", def_vname.get_signature()));
         // If the definition is a Mod, place the anchor at the first byte only,
         // otherwise use the entire span
+<<<<<<< HEAD
+=======
+        // TODO(Arm1stice): Improve this mechanism to be more accurate for modules
+        // defined inside of files
+>>>>>>> master
         if def.kind == DefKind::Mod {
             self.emitter.emit_anchor(
                 &anchor_vname,
@@ -268,3 +281,17 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         crate_v_name
     }
 }
+<<<<<<< HEAD
+=======
+
+/// Convert a VName from analysis_rust_proto to a VName from storage_rust_proto
+fn analysis_to_storage_vname(analysis_vname: &analysis_rust_proto::VName) -> VName {
+    let mut vname = VName::new();
+    vname.set_signature(analysis_vname.get_signature().to_string());
+    vname.set_corpus(analysis_vname.get_corpus().to_string());
+    vname.set_root(analysis_vname.get_root().to_string());
+    vname.set_path(analysis_vname.get_path().to_string());
+    vname.set_language(analysis_vname.get_signature().to_string());
+    vname
+}
+>>>>>>> master
