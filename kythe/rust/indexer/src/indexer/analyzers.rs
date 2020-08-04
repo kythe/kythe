@@ -21,6 +21,7 @@ use analysis_rust_proto::CompilationUnit;
 use rls_analysis::Crate;
 use rls_data::{Def, DefKind};
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -200,14 +201,16 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let mut facts: HashMap<&str, Vec<u8>> = HashMap::new();
 
         // Generate the facts to be emitted
-        // TODO(Arm1stice): Remove once more definitions are added to the match
-        // statement
-        #[allow(clippy::single_match)]
         match def.kind {
             DefKind::Function => {
                 facts.insert("/kythe/node/kind", b"function".to_vec());
                 facts.insert("/kythe/complete", b"definition".to_vec());
-            }
+            },
+            DefKind::Mod => {
+                facts.insert("/kythe/node/kind", b"record".to_vec());
+                facts.insert("/kythe/subkind", b"module".to_vec());
+                facts.insert("/kythe/complete", b"definition".to_vec());
+            },
             // TODO(Arm1stice): Support other types of definitions
             _ => {}
         }
@@ -219,17 +222,23 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         let mut anchor_vname = def_vname.clone();
         anchor_vname.set_signature(format!("{}_anchor", def_vname.get_signature()));
-        // If the definition is a Mod, place the anchor at the first byte only,
-        // otherwise use the entire span
-        // TODO(Arm1stice): Improve this mechanism to be more accurate for modules
-        // defined inside of files
+        // Module definitions need special logic
         if def.kind == DefKind::Mod {
-            self.emitter.emit_anchor(
-                &anchor_vname,
-                def_vname,
-                def.span.byte_start,
-                def.span.byte_start + 1,
-            )?;
+            if self.is_module_implicit(def) {
+                // Emit a 0-length anchor and defines edge at the top of the file
+                self.emitter.emit_node(&anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
+                self.emitter.emit_node(&anchor_vname, "/kythe/loc/start", b"0".to_vec())?;
+                self.emitter.emit_node(&anchor_vname, "/kythe/loc/end", b"0".to_vec())?;
+                self.emitter.emit_edge(&anchor_vname, def_vname, "/kythe/edge/defines/implicit")?;
+            } else {
+                // Emit an anchor and defines/binding edge over the module name
+                self.emitter.emit_anchor(
+                    &anchor_vname,
+                    def_vname,
+                    def.span.byte_start,
+                    def.span.byte_end,
+                )?;
+            }
         } else {
             self.emitter.emit_anchor(
                 &anchor_vname,
@@ -265,6 +274,48 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         crate_v_name.set_signature(signature.to_string());
         crate_v_name.set_language("rust".to_string());
         crate_v_name
+    }
+
+    /// Given a definition for a module, returns the byte span
+    /// for the module definition
+    ///
+    /// # Notes:
+    /// If the definition provided isn't for a module, `false` is returned.
+    /// If the span file name is called `mod.rs` but there is no parent
+    /// directory, `false` is returned.
+    fn is_module_implicit(&self, def: &Def) -> bool {
+        // Ensure that this defition is for a module
+        if def.kind != DefKind::Mod {
+            return false;
+        }
+
+        // Check if this is the primary module of the crate. If so, the module starts at
+        // the top of the file
+        if def.qualname == "::" {
+            return true;
+        }
+
+        let file_path = def.span.file_name.clone();
+
+        // The name we expect if the module definition is the file itself
+        let expected_name: String;
+
+        // If the file name is mod.rs, then the expected name is the directory name
+        if Some(OsStr::new("mod.rs")) == file_path.file_name() {
+            if let Some(parent_directory) = file_path.parent() {
+                expected_name = parent_directory.file_name().unwrap().to_str().unwrap().to_string();
+            } else {
+                // This should only happen if there is something wrong with the file path we
+                // were provided in the CompilationUnit
+                return false;
+            }
+        } else {
+            // Get the file name without the extension and convert to a string
+            expected_name = file_path.file_stem().unwrap().to_str().unwrap().to_string();
+        }
+
+        // If the names match, the module definition is implicit
+        def.name == expected_name
     }
 }
 
