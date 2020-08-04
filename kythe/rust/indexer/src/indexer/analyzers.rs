@@ -43,6 +43,7 @@ pub struct CrateAnalyzer<'a, 'b> {
     unit_vname: &'b VName,
     krate: Crate,
     krate_ids: HashMap<u32, String>,
+    krate_vname: VName
 }
 
 impl<'a> UnitAnalyzer<'a> {
@@ -130,7 +131,14 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         unit_vname: &'b VName,
         krate: Crate,
     ) -> Self {
-        Self { emitter, file_vnames, krate, unit_vname, krate_ids: HashMap::new() }
+        Self {
+            emitter,
+            file_vnames,
+            krate,
+            unit_vname,
+            krate_ids: HashMap::new(),
+            krate_vname: VName::new(),
+        }
     }
 
     /// Generates and emits package nodes for the main crate and external crates
@@ -148,6 +156,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let krate_id = &krate_prelude.crate_id;
         let krate_signature = format!("{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1);
         let krate_vname = self.generate_crate_vname(&krate_signature);
+        self.krate_vname = krate_vname.clone();
         self.emitter.emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
         self.krate_ids.insert(0u32, krate_signature);
 
@@ -205,12 +214,14 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             DefKind::Function => {
                 facts.insert("/kythe/node/kind", b"function".to_vec());
                 facts.insert("/kythe/complete", b"definition".to_vec());
-            },
+            }
             DefKind::Mod => {
                 facts.insert("/kythe/node/kind", b"record".to_vec());
                 facts.insert("/kythe/subkind", b"module".to_vec());
                 facts.insert("/kythe/complete", b"definition".to_vec());
-            },
+                // Emit the childof edge on the crate
+                self.emitter.emit_edge(def_vname, &self.krate_vname, "/kythe/edge/childof")?;
+            }
             // TODO(Arm1stice): Support other types of definitions
             _ => {}
         }
