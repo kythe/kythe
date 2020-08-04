@@ -22,10 +22,10 @@
 namespace kythe {
 namespace lang_textproto {
 
-// The example plugin demonstrates implementation of a textproto plugin and
-// serves as a test that the plugin system works. It adds a an anchor for every
-// string field *value*, which `ref`s the proto descriptor for the field. See
-// `plugin_test.pbtxt` for an example.
+// The example plugin demonstrates the implementation of a textproto plugin and
+// serves as a test that the plugin system works. It adds an anchor for every
+// string field *value*  and a `ref` edge from that to the proto descriptor for
+// the field. See `plugin_test.pbtxt` for an example.
 class ExamplePlugin : public Plugin {
  public:
   absl::Status AnalyzeStringField(
