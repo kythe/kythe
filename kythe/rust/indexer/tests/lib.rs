@@ -15,7 +15,6 @@
 extern crate kythe_rust_indexer;
 extern crate runfiles;
 extern crate storage_rust_proto;
-extern crate tempdir;
 
 pub mod array_writer;
 mod indexer_entries;
