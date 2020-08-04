@@ -54,7 +54,6 @@ rust_test(
         "//kythe/proto:analysis_rust_proto",
         "//kythe/proto:storage_rust_proto",
         "@io_bazel_rules_rust//tools/runfiles",
-        "//kythe/rust/cargo:tempdir",
     ] + PROTO_COMPILE_DEPS,
 )
 

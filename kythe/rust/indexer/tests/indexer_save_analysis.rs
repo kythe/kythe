@@ -18,23 +18,21 @@ use kythe_rust_indexer::indexer::save_analysis::load_analysis;
 extern crate runfiles;
 use runfiles::Runfiles;
 
-extern crate tempdir;
-use tempdir::TempDir;
-
 use std::fs;
 use std::path::PathBuf;
 
+// Ensures that the load_analysis function loads the crate from the
+// save_analysis file in a given directory
 #[test]
 fn load_analysis_works_properly() {
-    let temp_dir = TempDir::new("analysis_test").expect("Couldn't create temporary directory");
-    let temp_path = PathBuf::new().join(temp_dir.path());
-
+    // rls_analysis can't see files that are symlinks, so we must copy the test file
+    // to a temporary directory for the test to properly work
+    let temp_path = PathBuf::new().join(std::env::var("TEST_TMPDIR").unwrap());
     let r = Runfiles::create().unwrap();
-    let path =  r.rlocation("io_kythe/kythe/rust/indexer/tests/testanalysis.json");
+    let path = r.rlocation("io_kythe/kythe/rust/indexer/tests/testanalysis.json");
     fs::copy(&path, temp_path.join("main.json")).expect("Couldn't copy file");
 
+    // We load the analysis and check that there is one Crate returned
     let crates = load_analysis(&temp_path);
-    temp_dir.close().expect("Couldn't clean up temporary directory");
-
     assert_eq!(crates.len(), 1);
 }
