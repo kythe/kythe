@@ -268,7 +268,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
     }
 }
 
-// Convert a VName from analysis_rust_proto to a VName from storage_rust_proto
+/// Convert a VName from analysis_rust_proto to a VName from storage_rust_proto
 fn analysis_to_storage_vname(analysis_vname: &analysis_rust_proto::VName) -> VName {
     let mut vname = VName::new();
     vname.set_signature(analysis_vname.get_signature().to_string());
