@@ -29,6 +29,7 @@ clap = "2.33.1"
 colored = "2.0.0"
 protobuf = "=2.8.2"
 quick-error = "1.2.3"
+rls-analysis = "0.18.1"
 rls-data = "0.19"
 rust-crypto = "0.2.36"
 tempdir = "0.3"
@@ -60,6 +61,9 @@ data_attr = 'glob(["**/*.dfa"])'
 gen_buildrs = true
 
 [raze.crates.lexical-core.'0.6.7']
+gen_buildrs = true
+
+[raze.crates.proc-macro2.'1.0.19']
 gen_buildrs = true
 
 # Locked on protobuf 2.8.2 until rules_rust increases their version
