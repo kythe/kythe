@@ -29,7 +29,6 @@
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/kzip_reader.h"
 #include "kythe/cxx/indexer/textproto/analyzer.h"
-#include "kythe/cxx/indexer/textproto/plugin_registry.h"
 #include "kythe/cxx/indexer/textproto/plugins/example/plugin.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/buildinfo.pb.h"
@@ -113,16 +112,15 @@ Example:
       absl::GetFlag(FLAGS_flush_after_each_entry));
   KytheGraphRecorder recorder(&kythe_output);
 
-  // Plugin registry
-  kythe::lang_textproto::PluginRegistry plugin_registry;
-  plugin_registry.RegisterPlugin<kythe::lang_textproto::ExamplePlugin>(
-      "example", {"kythe_plugin_example.Message"});
-
   // Plugin loader callback
   const kythe::lang_textproto::PluginLoadCallback plugin_loader =
-      [&plugin_registry](std::string msg_name,
-                         const google::protobuf::Message& proto) {
-        return plugin_registry.ConstructPluginsForMessage(msg_name, proto);
+      [](std::string msg_name, const google::protobuf::Message& proto) {
+        std::vector<std::unique_ptr<Plugin>> plugins;
+        if (msg_name == "kythe_plugin_example.Message") {
+          plugins.push_back(
+              std::make_unique<kythe::lang_textproto::ExamplePlugin>(proto));
+        }
+        return plugins;
       };
 
   DecodeKzipFile(absl::GetFlag(FLAGS_index_file),

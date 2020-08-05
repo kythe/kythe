@@ -6,7 +6,6 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":analyzer",
-        ":plugin_registry",
         "//kythe/cxx/common:kzip_reader",
         "//kythe/cxx/common/indexing:caching_output",
         "//kythe/cxx/common/indexing:output",
@@ -56,16 +55,5 @@ cc_library(
         "//kythe/proto:analysis_cc_proto",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "plugin_registry",
-    srcs = ["plugin_registry.cc"],
-    hdrs = ["plugin_registry.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":plugin",
-        "@com_github_google_glog//:glog",
     ],
 )
