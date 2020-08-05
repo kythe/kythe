@@ -15,9 +15,3 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
-
-textproto_verifier_test(
-    name = "plugin_test",
-    protos = ["example.proto"],
-    textproto = "plugin_test.pbtxt",
-)
