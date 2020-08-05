@@ -43,7 +43,7 @@ pub struct CrateAnalyzer<'a, 'b> {
     unit_vname: &'b VName,
     krate: Crate,
     krate_ids: HashMap<u32, String>,
-    krate_vname: VName
+    krate_vname: VName,
 }
 
 impl<'a> UnitAnalyzer<'a> {
@@ -221,6 +221,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
                 facts.insert("/kythe/complete", b"definition".to_vec());
                 // Emit the childof edge on the crate
                 self.emitter.emit_edge(def_vname, &self.krate_vname, "/kythe/edge/childof")?;
+                // Emit childof edges for the module's children. Module definitions have a
+                // children field defined but children don't have the parent field defined
+                self.emit_children(def_vname, def)?;
             }
             // TODO(Arm1stice): Support other types of definitions
             _ => {}
@@ -327,6 +330,27 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         // If the names match, the module definition is implicit
         def.name == expected_name
+    }
+
+    /// Emits childof edges from each a definition's children to itself
+    fn emit_children(&mut self, parent_vname: &VName, def: &Def) -> Result<(), KytheError> {
+        for child in def.children.iter() {
+            // Create the VName for the child based on it's crate and index
+            let krate_signature = self.krate_ids.get(&child.krate).ok_or_else(||{
+                KytheError::IndexerError(format!(
+                    "Child of definition \"{}\" referenced crate \"{}\" which was not found in the krate_ids HashMap",
+                    def.qualname, def.id.krate
+                ))}
+            )?;
+            let child_signature = format!("{}_def_{}", krate_signature, child.index);
+            let mut child_vname = parent_vname.clone();
+            child_vname.set_signature(child_signature);
+
+            // Emit a childof edge from the child to the parent
+            self.emitter.emit_edge(&child_vname, parent_vname, "/kythe/edge/childof")?;
+        }
+
+        Ok(())
     }
 }
 

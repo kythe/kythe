@@ -10,6 +10,8 @@
 //- ImplicitModAnchor.loc/end 0
 //- ImplicitModAnchor defines/implicit ImplicitMod
 
+//- @main defines/binding MainFn
+//- MainFn childof ImplicitMod
 fn main() {
     explicit_module::hello_world();
 }
@@ -19,6 +21,8 @@ fn main() {
 //- ExplicitMod.complete definition
 //- @explicit_module defines/binding ExplicitMod
 mod explicit_module {
+    //- @hello_world defines/binding HelloFn
+    //- HelloFn childof ExplicitMod
     pub fn hello_world() {
         println!("Hello, world!");
     }
