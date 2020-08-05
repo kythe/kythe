@@ -39,10 +39,9 @@ using ::kythe::proto::VName;
 ProtoAnalyzer::ProtoAnalyzer(
     const proto::CompilationUnit* unit,
     google::protobuf::DescriptorDatabase* descriptor_db,
-    FileVNameGenerator* file_vnames, KytheGraphRecorder* recorder,
+    KytheGraphRecorder* recorder,
     absl::flat_hash_map<std::string, std::string>* path_substitution_cache)
     : unit_(unit),
-      file_vnames_(file_vnames),
       recorder_(recorder),
       path_substitution_cache_(path_substitution_cache),
       descriptor_db_(descriptor_db) {}
@@ -116,7 +115,7 @@ VName ProtoAnalyzer::VNameFromFullPath(const std::string& path) const {
       return input.v_name();
     }
   }
-  return file_vnames_->LookupVName(path);
+  return VName{};
 }
 
 }  // namespace lang_proto

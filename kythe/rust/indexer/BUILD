@@ -17,6 +17,8 @@ rust_library(
         "//kythe/rust/cargo:protobuf",
         "//kythe/rust/cargo:quick_error",
         "//kythe/rust/cargo:zip",
+        "//kythe/rust/cargo:rls_analysis",
+        "//kythe/rust/cargo:rls_data",
     ] + PROTO_COMPILE_DEPS,
 )
 
@@ -45,7 +47,7 @@ rust_test(
 rust_test(
     name = "integration_tests",
     srcs = glob(["tests/*.rs"]),
-    data = ["tests/testkzip.kzip"],
+    data = ["tests/testkzip.kzip", "tests/testanalysis.json"],
     deps = [
         ":kythe_rust_indexer",
         ":inline_tests",
@@ -64,6 +66,17 @@ rust_clippy(
 )
 
 rust_indexer_test(
-    name = "verifier_macro_test",
-    srcs = ["testdata/basic.rs"],
+    name = "anchors_test",
+    srcs = ["testdata/anchors.rs"],
 )
+
+rust_indexer_test(
+    name = "comment_test",
+    srcs = ["testdata/comment.rs"],
+)
+
+rust_indexer_test(
+    name = "function_test",
+    srcs = ["testdata/function.rs"],
+)
+

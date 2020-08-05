@@ -44,6 +44,11 @@ alias(
     tags = ["cargo-raze"],
 )
 alias(
+    name = "rls_analysis",
+    actual = "@raze__rls_analysis__0_18_1//:rls_analysis",
+    tags = ["cargo-raze"],
+)
+alias(
     name = "rls_data",
     actual = "@raze__rls_data__0_19_0//:rls_data",
     tags = ["cargo-raze"],
