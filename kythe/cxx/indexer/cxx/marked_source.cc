@@ -25,6 +25,7 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Sema/Template.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/scope_guard.h"
 #include "kythe/cxx/indexer/cxx/clang_range_finder.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
@@ -588,22 +589,16 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
   return "";
 }
 
-namespace {
-class : public clang::DiagnosticConsumer {
-  void HandleDiagnostic(clang::DiagnosticsEngine::Level,
-                        const clang::Diagnostic&) override {}
-} ignoring_diagnostic_consumer;
-}  // anonymous namespace
-
 void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     MarkedSource* marked_source_node,
     const clang::ClassTemplateSpecializationDecl* decl) {
   // While we try to figure out which template arguments are defaults, silence
   // diagnostics from the typechecker.
+  clang::IgnoringDiagConsumer consumer;
   auto* diags = &cache_->source_manager().getDiagnostics();
   bool owned = diags->ownsClient();
   auto* client = diags->getClient();
-  diags->setClient(&ignoring_diagnostic_consumer, false);
+  diags->setClient(&consumer, false);
   auto guard = MakeScopeGuard([=] { diags->setClient(client, owned); });
 
   auto* template_decl = decl->getSpecializedTemplate();
