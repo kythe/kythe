@@ -161,9 +161,7 @@ class TextprotoAnalyzer : public PluginApi {
   proto::VName VNameForRelPath(
       absl::string_view simplified_path) const override;
 
-  void AddPlugin(std::unique_ptr<Plugin> p) {
-    plugins_.push_back(std::move(p));
-  }
+  void SetPlugins(std::vector<std::unique_ptr<Plugin>> p) { plugins_ = p; }
 
   // Convenience method for constructing proto descriptor vnames.
   template <typename SomeDescriptor>
@@ -881,9 +879,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
 
   // Load plugins
   if (plugin_loader) {
-    for (auto& p : plugin_loader(descriptor->full_name(), *proto.get())) {
-      analyzer.AddPlugin(std::move(p));
-    }
+    analyzer.SetPlugins(plugin_loader(descriptor->full_name(), *proto.get()));
   }
 
   absl::Status status = analyzer.AnalyzeSchemaComments(file_vname, *descriptor);
