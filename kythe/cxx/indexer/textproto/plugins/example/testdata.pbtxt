@@ -1,4 +1,4 @@
-# proto-file: example.proto
+# proto-file: testdata.proto
 # proto-message: kythe_plugin_example.Message
 
 # The 'example' plugin adds a ref from the value to the proto descriptor for the

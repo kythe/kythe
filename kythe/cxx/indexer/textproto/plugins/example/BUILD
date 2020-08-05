@@ -1,6 +1,6 @@
 load("//kythe/cxx/indexer/textproto/testdata:textproto_verifier_test.bzl", "textproto_verifier_test")
 
-package(default_visibility = ["//visibility:public"])  # TODO
+package(default_visibility = ["//kythe/cxx/indexer/textproto:__subpackages__"])
 
 cc_library(
     name = "plugin",
@@ -18,6 +18,6 @@ cc_library(
 
 textproto_verifier_test(
     name = "plugin_test",
-    protos = ["example.proto"],
-    textproto = "plugin_test.pbtxt",
+    protos = ["testdata.proto"],
+    textproto = "testdata.pbtxt",
 )
