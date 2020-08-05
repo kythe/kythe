@@ -161,7 +161,9 @@ class TextprotoAnalyzer : public PluginApi {
   proto::VName VNameForRelPath(
       absl::string_view simplified_path) const override;
 
-  void SetPlugins(std::vector<std::unique_ptr<Plugin>> p) { plugins_ = p; }
+  void SetPlugins(std::vector<std::unique_ptr<Plugin>> p) {
+    plugins_ = std::move(p);
+  }
 
   // Convenience method for constructing proto descriptor vnames.
   template <typename SomeDescriptor>
