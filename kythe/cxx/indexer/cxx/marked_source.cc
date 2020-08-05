@@ -588,9 +588,24 @@ std::string GetDeclName(const clang::LangOptions& lang_options,
   return "";
 }
 
+namespace {
+class : public clang::DiagnosticConsumer {
+  void HandleDiagnostic(clang::DiagnosticsEngine::Level,
+                        const clang::Diagnostic&) override {}
+} ignoring_diagnostic_consumer;
+}  // anonymous namespace
+
 void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     MarkedSource* marked_source_node,
     const clang::ClassTemplateSpecializationDecl* decl) {
+  // While we try to figure out which template arguments are defaults, silence
+  // diagnostics from the typechecker.
+  auto* diags = &cache_->source_manager().getDiagnostics();
+  bool owned = diags->ownsClient();
+  auto* client = diags->getClient();
+  diags->setClient(&ignoring_diagnostic_consumer, false);
+  auto guard = MakeScopeGuard([=] { diags->setClient(client, owned); });
+
   auto* template_decl = decl->getSpecializedTemplate();
   auto* template_params = template_decl->getTemplateParameters();
   auto cached_default = cache_->first_default_template_argument()->find(decl);
@@ -658,6 +673,10 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
           break;
         }
       }
+      // Integral template arguments cause an assert failure inside clang.
+      if (template_args.get(noprint).getKind() ==
+          clang::TemplateArgument::Integral)
+        break;
       add_template_argument(template_args.get(noprint));
     }
     (*cache_->first_default_template_argument())[decl] = noprint;
