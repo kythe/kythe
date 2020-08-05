@@ -120,8 +120,9 @@ Example:
 
   // Plugin loader callback
   const kythe::lang_textproto::PluginLoadCallback plugin_loader =
-      [&plugin_registry](std::string msg_name) {
-        return plugin_registry.ConstructPluginsForMessage(msg_name);
+      [&plugin_registry](std::string msg_name,
+                         const google::protobuf::Message& proto) {
+        return plugin_registry.ConstructPluginsForMessage(msg_name, proto);
       };
 
   DecodeKzipFile(absl::GetFlag(FLAGS_index_file),

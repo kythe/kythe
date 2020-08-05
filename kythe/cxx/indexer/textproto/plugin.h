@@ -51,10 +51,16 @@ class PluginApi {
       absl::string_view simplified_path) const = 0;
 };
 
-// All plugins must subclass this class.
+// Superclass for all plugins. A new plugin is instantated for each textproto
+// handled by the indexer.
 class Plugin {
  public:
+  // Instantiate the plugin given the message resulting from parsing the
+  // textproto file.
+  Plugin(const google::protobuf::Message& proto) {}
+
   virtual ~Plugin() = default;
+
   // Main entrypoint for plugins.
   virtual absl::Status AnalyzeStringField(
       PluginApi* api, const proto::VName& file_vname,

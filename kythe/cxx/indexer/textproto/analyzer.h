@@ -56,8 +56,8 @@ absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
                                     KytheGraphRecorder* recorder);
 
 // Callback function to instantiate plugins for a given proto message type.
-using PluginLoadCallback =
-    std::function<std::vector<std::unique_ptr<Plugin>>(std::string msg_name)>;
+using PluginLoadCallback = std::function<std::vector<std::unique_ptr<Plugin>>(
+    std::string msg_name, const google::protobuf::Message& proto)>;
 
 // Override for AnalyzeCompilationUnit() that accepts a PluginLoadCallback for
 // loading plugins.

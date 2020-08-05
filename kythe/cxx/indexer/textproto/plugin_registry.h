@@ -32,7 +32,7 @@ class PluginRegistry {
 
   // Instantiate a set of plugins for the given proto message type.
   std::vector<std::unique_ptr<Plugin>> ConstructPluginsForMessage(
-      const std::string& message_name);
+      const std::string& message_name, const google::protobuf::Message& proto);
 
   // Register a plugin to be run on certain types of textprotos.
   template <typename PLUGIN_TYPE>
@@ -45,7 +45,8 @@ class PluginRegistry {
   }
 
  private:
-  using Instantiator = std::function<std::unique_ptr<Plugin>()>;
+  using Instantiator =
+      std::function<std::unique_ptr<Plugin>(const google::protobuf::Message&)>;
 
   void RegisterPlugin(const std::string& name,
                       std::vector<std::string> proto_messages, Instantiator c);

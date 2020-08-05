@@ -883,7 +883,7 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
   // load plugins
   if (plugin_loader) {
     // TODO: qualified_name instead of name?
-    for (auto& p : plugin_loader(descriptor->full_name())) {
+    for (auto& p : plugin_loader(descriptor->full_name(), *proto.get())) {
       analyzer.AddPlugin(std::move(p));
     }
   }

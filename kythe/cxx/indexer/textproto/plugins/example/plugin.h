@@ -28,7 +28,7 @@ namespace lang_textproto {
 // the field. See `plugin_test.pbtxt` for an example.
 class ExamplePlugin : public Plugin {
  public:
-  ExamplePlugin() {}
+  ExamplePlugin(const google::protobuf::Message& proto) : Plugin(proto) {}
   absl::Status AnalyzeStringField(
       PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,
