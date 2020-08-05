@@ -62,11 +62,6 @@ class Plugin {
       absl::string_view input) = 0;
 };
 
-// Callback function to instantiate a plugin by name. Returns nil if the name
-// doesn't refer to a valid plugin.
-using PluginLoadCallback =
-    std::function<std::unique_ptr<Plugin>(absl::string_view name)>;
-
 }  // namespace lang_textproto
 }  // namespace kythe
 

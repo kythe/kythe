@@ -18,7 +18,6 @@ cc_library(
 
 textproto_verifier_test(
     name = "plugin_test",
-    plugins = ["example"],
     protos = ["example.proto"],
     textproto = "plugin_test.pbtxt",
 )

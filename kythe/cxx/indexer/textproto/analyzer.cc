@@ -452,7 +452,7 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
   return absl::OkStatus();
 }
 
-// TODO: refactor to share more code with AnalyzeEnumValue().
+// TODO(justbuchanan): refactor to share more code with AnalyzeEnumValue().
 absl::Status TextprotoAnalyzer::AnalyzeStringValue(
     const proto::VName& file_vname, const Message& proto,
     const FieldDescriptor& field, int start_offset) {
@@ -715,21 +715,6 @@ absl::optional<std::string> ParseProtoMessageArg(
   return absl::nullopt;
 }
 
-absl::optional<std::vector<std::string>> ParsePluginArg(
-    std::vector<std::string>* args) {
-  for (auto iter = args->begin(); iter != args->end(); iter++) {
-    if (*iter == "--kythe_textproto_plugins") {
-      if (iter + 1 < args->end()) {
-        std::string value = *(iter + 1);
-        args->erase(iter, iter + 2);
-        return absl::StrSplit(value, ",");
-      }
-      return absl::nullopt;
-    }
-  }
-  return absl::nullopt;
-}
-
 /// Given a full file path, returns a path relative to a directory in the
 /// current search path. If the mapping isn't already in the cache, it is added.
 /// \param full_path Full path to proto file
@@ -779,7 +764,6 @@ absl::Status AnalyzeCompilationUnit(const proto::CompilationUnit& unit,
 }
 
 absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
-
                                     const proto::CompilationUnit& unit,
                                     const std::vector<proto::FileData>& files,
                                     KytheGraphRecorder* recorder) {
@@ -812,15 +796,6 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
     message_name = *opt_message_name;
   }
   LOG(INFO) << "Proto message name: " << message_name;
-
-  std::vector<std::string> plugin_names;
-  {
-    auto opt_plugins = ParsePluginArg(&args);
-    if (opt_plugins.has_value()) {
-      plugin_names = *opt_plugins;
-    }
-  }
-  LOG(INFO) << "Enabled plugin names: " << absl::StrJoin(plugin_names, ", ");
 
   // Load all proto files into in-memory SourceTree.
   PreloadedProtoFileTree file_reader(&path_substitutions,
@@ -907,17 +882,10 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
 
   // load plugins
   if (plugin_loader) {
-    for (auto& name : plugin_names) {
-      auto plugin = plugin_loader(name);
-      if (plugin) {
-        analyzer.AddPlugin(std::move(plugin));
-      } else {
-        LOG(ERROR) << "Invalid plugin name: " << name;
-      }
+    // TODO: qualified_name instead of name?
+    for (auto& p : plugin_loader(descriptor->full_name())) {
+      analyzer.AddPlugin(std::move(p));
     }
-  } else if (!plugin_names.empty()) {
-    LOG(WARNING) << "No plugin loader provided, not loading plugins: "
-                 << absl::StrJoin(plugin_names, ",");
   }
 
   absl::Status status = analyzer.AnalyzeSchemaComments(file_vname, *descriptor);

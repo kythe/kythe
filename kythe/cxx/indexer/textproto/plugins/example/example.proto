@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package example;
+package kythe_plugin_example;
 
 message Message {
   //- @field1 defines/binding Field1?

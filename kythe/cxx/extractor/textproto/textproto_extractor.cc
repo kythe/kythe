@@ -47,8 +47,6 @@ ABSL_FLAG(std::string, proto_message, "",
 ABSL_FLAG(std::vector<std::string>, proto_files, {},
           "A comma-separated list of proto files needed to fully define "
           "the textproto's schema.");
-ABSL_FLAG(std::vector<std::string>, kythe_textproto_plugins, {},
-          "A comma-separated list of textproto indexer plugins to enable");
 
 namespace kythe {
 namespace lang_textproto {
@@ -152,14 +150,6 @@ Examples:
   compilation.mutable_unit()->add_argument(textproto_filename);
   compilation.mutable_unit()->add_argument("--proto_message");
   compilation.mutable_unit()->add_argument(std::string(schema.proto_message));
-
-  // Record list of enabled plugins in compilation unit.
-  const std::vector<std::string> plugin_names =
-      absl::GetFlag(FLAGS_kythe_textproto_plugins);
-  if (!plugin_names.empty()) {
-    compilation.mutable_unit()->add_argument("--kythe_textproto_plugins");
-    compilation.mutable_unit()->add_argument(absl::StrJoin(plugin_names, ","));
-  }
 
   // Add protoc args.
   if (!proto_extractor.path_substitutions.empty()) {

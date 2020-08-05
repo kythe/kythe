@@ -1,5 +1,5 @@
 # proto-file: example.proto
-# proto-message: example.Message
+# proto-message: kythe_plugin_example.Message
 
 # The 'example' plugin adds a ref from the value to the proto descriptor for the
 # field.
