@@ -28,7 +28,8 @@ absl::Status ExamplePlugin::AnalyzeStringField(
   proto::VName anchor_vname = api->CreateAndAddAnchorNode(file_vname, input);
 
   auto target_vname = ::kythe::lang_proto::VNameForDescriptor(
-      &field, [api](auto path) { return api->VNameForRelPath(path); });
+      &field,
+      [api](absl::string_view path) { return api->VNameForRelPath(path); });
 
   // Add a ref edge from the anchor to the proto field descriptor.
   api->recorder()->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,

@@ -471,7 +471,7 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
       field.is_repeated() && re2::RE2::Consume(&input, "\\[");
   if (array_format) ConsumeTextprotoWhitespace(&input);
 
-  while (true) {
+  while (!input.empty()) {
     char c = input[0];
     if (c != '"' && c != '\'') {
       return absl::UnknownError("Can't find string");

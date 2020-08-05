@@ -30,7 +30,7 @@ namespace lang_textproto {
 // The plugin's interface to the indexer.
 class PluginApi {
  public:
-  PluginApi() {}
+  PluginApi() = default;
   PluginApi(const PluginApi&) = delete;
   PluginApi& operator=(const PluginApi&) = delete;
   virtual ~PluginApi() = default;
