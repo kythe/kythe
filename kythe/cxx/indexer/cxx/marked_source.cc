@@ -596,11 +596,10 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
   // diagnostics from the typechecker.
   clang::IgnoringDiagConsumer consumer;
   auto* diags = &cache_->source_manager().getDiagnostics();
-  bool owned = diags->ownsClient();
-  auto* client = diags->getClient();
+  auto guard = MakeScopeGuard(
+      [diags = diags, client = diags->getClient(),
+       owned = diags->ownsClient()] { diags->setClient(client, owned); });
   diags->setClient(&consumer, false);
-  auto guard = MakeScopeGuard([=] { diags->setClient(client, owned); });
-
   auto* template_decl = decl->getSpecializedTemplate();
   auto* template_params = template_decl->getTemplateParameters();
   auto cached_default = cache_->first_default_template_argument()->find(decl);
