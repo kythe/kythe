@@ -351,6 +351,7 @@ cc_library(
         ":clang_utils",
         ":graph_observer",
         ":kythe_claim_client",
+        "//kythe/cxx/common:scope_guard",
         "//third_party/llvm/src:clang_builtin_headers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/flags:flag",
