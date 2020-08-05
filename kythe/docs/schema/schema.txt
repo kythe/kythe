@@ -485,7 +485,7 @@ class X {};
 
 [kythe,clike,"Implicit module definition."]
 --------------------------------------------------------------------------------
-///- Mod=vname(_, _, _,_, _).node/kind package
+///- Mod=vname(_, _, _, _, _).node/kind package
 ///- ModAnchor.node/kind anchor
 ///- ModAnchor./kythe/loc/start 0
 ///- ModAnchor./kythe/loc/end 0
