@@ -875,14 +875,12 @@ absl::Status AnalyzeCompilationUnit(PluginLoadCallback plugin_loader,
   recorder->AddProperty(VNameRef(file_vname), PropertyID::kText,
                         textproto_file_data->content());
 
-  // Analyze!
   TextprotoAnalyzer analyzer(&unit, textproto_file_data->content(),
                              &file_substitution_cache, recorder,
                              descriptor_pool);
 
-  // load plugins
+  // Load plugins
   if (plugin_loader) {
-    // TODO: qualified_name instead of name?
     for (auto& p : plugin_loader(descriptor->full_name(), *proto.get())) {
       analyzer.AddPlugin(std::move(p));
     }
