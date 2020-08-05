@@ -25,7 +25,8 @@ std::vector<std::unique_ptr<Plugin>> PluginRegistry::ConstructPluginsForMessage(
     const std::string& message_name, const google::protobuf::Message& proto) {
   std::vector<std::unique_ptr<Plugin>> plugins;
   for (const auto& plugin_name : plugins_by_msg_.find(message_name)->second) {
-    plugins.push_back(plugins_.at(plugin_name).create(proto));
+    const auto& entry = plugins_.at(plugin_name);
+    plugins.push_back(entry.create(proto));
   }
   return plugins;
 }
