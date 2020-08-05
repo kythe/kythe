@@ -123,26 +123,32 @@ public final class Nodes {
     return b.build();
   }
 
+  /** Returns the kind {@link String} of the given {@link Node}. */
+  public static String getNodeKind(Node node) {
+    if (!node.getKytheKind().equals(NodeKind.UNKNOWN_NODE_KIND)) {
+      return Schema.nodeKindString(node.getKytheKind());
+    }
+    return node.getGenericKind();
+  }
+
+  /** Returns the subkind {@link String} of the given {@link Node}. */
+  public static String getSubkind(Node node) {
+    if (!node.getKytheSubkind().equals(Subkind.UNKNOWN_SUBKIND)) {
+      return Schema.subkindString(node.getKytheSubkind());
+    }
+    return node.getGenericSubkind();
+  }
+
   /** Converts a {@link Node} to a {@link Source}. */
   public static Source convertToSource(Node node) {
     Source.Builder src = Source.newBuilder().setTicket(KytheURI.asString(node.getSource()));
-    if (!node.getKytheKind().equals(NodeKind.UNKNOWN_NODE_KIND)) {
-      src.putFacts(
-          Schema.factNameString(FactName.NODE_KIND),
-          ByteString.copyFromUtf8(Schema.nodeKindString(node.getKytheKind())));
-    } else if (!node.getGenericKind().isEmpty()) {
-      src.putFacts(
-          Schema.factNameString(FactName.NODE_KIND),
-          ByteString.copyFromUtf8(node.getGenericKind()));
+    String nodeKind = getNodeKind(node);
+    if (!nodeKind.isEmpty()) {
+      src.putFacts(Schema.factNameString(FactName.NODE_KIND), ByteString.copyFromUtf8(nodeKind));
     }
-    if (!node.getKytheSubkind().equals(Subkind.UNKNOWN_SUBKIND)) {
-      src.putFacts(
-          Schema.factNameString(FactName.SUBKIND),
-          ByteString.copyFromUtf8(Schema.subkindString(node.getKytheSubkind())));
-    } else if (!node.getGenericSubkind().isEmpty()) {
-      src.putFacts(
-          Schema.factNameString(FactName.SUBKIND),
-          ByteString.copyFromUtf8(node.getGenericSubkind()));
+    String subkind = getSubkind(node);
+    if (!subkind.isEmpty()) {
+      src.putFacts(Schema.factNameString(FactName.SUBKIND), ByteString.copyFromUtf8(subkind));
     }
     for (Fact f : node.getFactList()) {
       src.putFacts(
