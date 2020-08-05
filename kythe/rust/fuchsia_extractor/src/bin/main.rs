@@ -542,7 +542,7 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod testing {
-    use {super::*, std::fs, std::io::Read};
+    use {super::*, std::collections::HashSet, std::fs, std::io::Read};
 
     /// Rebases the given `relative_path`, such that it is relative to `rebase_dir`.
     /// For example, "./foo/bar/file.txt", relative to "./foo" is "bar/file.txt".  But,
@@ -709,14 +709,16 @@ mod testing {
         }
 
         // Reading save analysis directory gives the save analysis files.
-        let result: Vec<String> =
+        let result: HashSet<String> =
             read_save_analysis_dir(Some(&save_analysis_dir.to_string_lossy().to_string()))
                 .expect("read was a success")
                 .iter()
                 .map(|e| e.to_string_lossy().to_string())
                 .collect();
         assert_eq!(
-            vec!["src-root-dir/save-analysis-dir/save-analysis.json"],
+            vec!["src-root-dir/save-analysis-dir/save-analysis.json".into()]
+                .into_iter()
+                .collect::<HashSet<String>>(),
             result
         );
 
@@ -731,17 +733,20 @@ mod testing {
         assert_eq!(expected, result);
 
         // Recursing all directories yields only files, regardless of the directory.
-        let result: Vec<String> = read_dir(&base_dir, true, &Regex::new(".*").unwrap())
+        // Using HashSet so this is order independent.
+        let result: HashSet<String> = read_dir(&base_dir, true, &Regex::new(".*").unwrap())
             .expect("read was a success")
             .iter()
             .map(|e| e.to_string_lossy().to_string())
             .collect();
         assert_eq!(
             vec![
-                "src-root-dir/save-analysis-dir/save-analysis.json",
-                "src-root-dir/save-analysis-dir/save-analysis.txt",
-                "src-root-dir/some-file.txt",
-            ],
+                "src-root-dir/save-analysis-dir/save-analysis.json".into(),
+                "src-root-dir/save-analysis-dir/save-analysis.txt".into(),
+                "src-root-dir/some-file.txt".into(),
+            ]
+            .into_iter()
+            .collect::<HashSet<String>>(),
             result
         );
 
@@ -847,7 +852,10 @@ mod testing {
         assert_eq!(
             "third_party/rust_crates/vendor/nom/lib.rs",
             ru_info.get_path(),
-            "Expected to be relative to the root of its respective corpus, e.g. src"
+            concat!(
+                "Expected to be relative to the root of its respective corpus",
+                " for example for ../../dir/file.txt it will be dir/file.txt"
+            )
         );
         assert_eq!("nom", cu_vname.get_signature());
     }

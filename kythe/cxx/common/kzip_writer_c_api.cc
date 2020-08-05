@@ -114,8 +114,7 @@ int32_t KzipWriter_WriteUnit(KzipWriter* writer, const char* proto,
   kythe::proto::IndexedCompilation unit;
   const bool success = unit.ParseFromArray(proto, proto_length);
   if (!success) {
-    LOG(ERROR) 
-      << "Protobuf could not be parsed, at len: " << proto_length;
+    LOG(ERROR) << "Protobuf could not be parsed, at len: " << proto_length;
     return KZIP_WRITER_PROTO_PARSING_ERROR;
   }
   StatusOr<std::string> digest_or = w->WriteUnit(unit);
