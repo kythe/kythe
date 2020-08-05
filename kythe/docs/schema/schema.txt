@@ -483,7 +483,7 @@ Notes::
 class X {};
 --------------------------------------------------------------------------------
 
-[kythe,TypeScript,"Implicit module definition."]
+[kythe,clike,"Implicit module definition."]
 --------------------------------------------------------------------------------
 ///- Mod=vname(_, _, _,_, _).node/kind package
 ///- ModAnchor.node/kind anchor
