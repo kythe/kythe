@@ -31,7 +31,6 @@
 #include "absl/flags/usage.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/file_utils.h"
@@ -150,7 +149,6 @@ Examples:
   compilation.mutable_unit()->add_argument(textproto_filename);
   compilation.mutable_unit()->add_argument("--proto_message");
   compilation.mutable_unit()->add_argument(std::string(schema.proto_message));
-
   // Add protoc args.
   if (!proto_extractor.path_substitutions.empty()) {
     compilation.mutable_unit()->add_argument("--");
