@@ -37,6 +37,10 @@ use {
     std::path::PathBuf,
 };
 
+/// By convention, the source corpus name is "".
+const SOURCE_CORPUS_NAME: &'static str = "";
+const RLIBS_CORPUS_NAME: &'static str = "rlibs";
+
 /// Reads the entire directory pointed at by `dir`.  The returned result contains only names of
 /// regular files found.  The names must match `pattern`.  If `recursive` is set, any directories
 /// found will be recursed into.
@@ -349,6 +353,7 @@ fn process_file(
             &crate_root_directory
         )
     })?;
+
     // The assumption is that the directory is 2 levels above base_dir, which
     // is true today in Fuchsia.
     let src_base_dir = &options.base_dir.join("../../");
@@ -357,7 +362,7 @@ fn process_file(
             &mut archive,
             &options.corpus_name,
             &src_path,
-            "src",
+            SOURCE_CORPUS_NAME,
             &src_base_dir,
             &options.base_dir,
             &mut required_inputs,
@@ -374,7 +379,7 @@ fn process_file(
             &mut archive,
             &options.corpus_name,
             &rlib,
-            "rlibs",
+            RLIBS_CORPUS_NAME,
             &options.base_dir,
             &options.base_dir,
             &mut required_inputs,
@@ -819,7 +824,6 @@ mod testing {
 
         // The checks below are a bit tedious, but we probably need it to guard
         // kzip conformance.
-        //
         let expected_arguments = vec![
             "--extern",
             "lazy_static=x64-shared/obj/third_party/rust_crates/liblazy_static-cdf593bd3fb3d68f.rlib",
@@ -846,7 +850,7 @@ mod testing {
         let ri_one_file = compilation_unit.get_required_input().get(1).unwrap();
         let ru_vname = ri_one_file.get_v_name();
         assert_eq!("fuchsia", ru_vname.get_corpus());
-        assert_eq!("src", ru_vname.get_root());
+        assert_eq!(SOURCE_CORPUS_NAME, ru_vname.get_root());
 
         let ru_info = ri_one_file.get_info();
         assert_eq!(

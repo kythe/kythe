@@ -17,12 +17,9 @@ libraries are available, we can update the indexer and the extractor to match.
 [gn]: https://gn.googlesource.com/gn/
 
 Technically, this extractor produces `kzip` files as any other extractor does,
-and the `kzip` file specification is well known.  However, in practice, the
-kzip specification is open for interpretation (for example, what if you need
-to inject a specific extra file to a compilation unit?).  That in turn can
-lead to mismatches in the interpretations that would break the ingestion
-pipeline.
-
+and the `kzip` file specification is well known.  However, the `kzip`
+specification is not normative, so we made a best effort to interpret the
+specification.  This means, some errors in the interpretation are possible.
 This document is an attempt to lay out any such assumptions for
 `fuchsia_extractor` going forward.
 
@@ -47,26 +44,30 @@ directory in `$FUCHSIA_DIR/out/terminal.x64`, though this last path component
 can be given a different name by the developer.  Let us call this directory
 `$FUCHSIA_OUT` for short.
 
-Multiple corpus roots exist in `$FUCHSIA_DIR` and `$FUCHSIA_OUT`.  The "source"
-corpus is at `../../` relative to the build root.  FIDL generated code is at
-`./fidling`, Banjo generated code is at `./banjoing` and so on.  Multiple
-corpus roots are used to satisfy the spec requirement for `FileInput.path`,
-which requires each file path to be relative to its corpus root, *and* not use
-any "parent" references (such as `../../`, which would be needed for the "src"
-corpus files).
+> The following is my best effort interpretation of the description from
+> the [vname documentation][vname].
+
+[vname]: https://www.kythe.io/docs/kythe-storage.html#_a_id_termvname_a_vector_name_strong_vname_strong
+
+Multiple top-level directories exist in `$FUCHSIA_DIR` and `$FUCHSIA_OUT`.  The
+"source" corpus is at `../../` relative to the build directory.  FIDL generated
+code is at `./fidling`, Banjo generated code is at `./banjoing` and so on.
+Multiple roots are used to satisfy the spec requirement for `VName`, which
+requires each file path to be relative to its root, *and* not use any "parent"
+references.
 
 When filling out compilation unit data, we need to ensure that when we refer to
 files, their names are expressed relative to some of those directories, and
 then to correct ones.  Furthermore, sometimes relative paths are needed with
-respect to the corpus root, and sometimes with respect to the build directory.
-For example, generated code lives in `$FUCHSIA_OUT/gen`.  Object code, such as
-`.o` files, live in `$FUCHSIA_OUT/obj`, and there are about a dozen of such
-different corpus roots.
+respect to the root directory of the repository tree, and sometimes with
+respect to the build directory.  For example, generated code lives in
+`$FUCHSIA_OUT/gen`.  Object code, such as `.o` files, live in
+`$FUCHSIA_OUT/obj`, and there are about a dozen of such different roots.
 
-Even further, though, even as the relationships between these directories are fixed,
-infrastructure builds may take liberties with the arrangement of these directories.
-This means that we need to keep options open to retarget these directories
-as the developer sees fit for their use.  Hence the many flags.
+Even further, though, even as the relationships between these directories are
+fixed, infrastructure builds may take liberties with the arrangement of these
+directories.  This means that we need to keep options open to retarget these
+directories as the developer sees fit for their use.  Hence the many flags.
 
 # Flags
 
