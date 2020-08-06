@@ -16,14 +16,14 @@ use crate::error::KytheError;
 use crate::writer::KytheWriter;
 
 use super::entries::EntryEmitter;
+use super::offset::OffsetIndex;
 
 use analysis_rust_proto::CompilationUnit;
 use rls_analysis::Crate;
 use rls_data::{Def, DefKind};
 use std::collections::HashMap;
 use std::ffi::OsStr;
-use std::fs::File;
-use std::io::Read;
+use std::fs;
 use std::path::{Path, PathBuf};
 use storage_rust_proto::*;
 
@@ -34,6 +34,7 @@ pub struct UnitAnalyzer<'a> {
     emitter: EntryEmitter<'a>,
     root_dir: &'a PathBuf,
     file_vnames: HashMap<String, VName>,
+    offset_index: OffsetIndex,
 }
 
 /// A data structure to analyze and index individual crates
@@ -44,6 +45,12 @@ pub struct CrateAnalyzer<'a, 'b> {
     krate: Crate,
     krate_ids: HashMap<u32, String>,
     krate_vname: VName,
+    // Stores the parent of a child definition so that a childof edge can be emitted when the
+    // child's definition is analyzed
+    children_ids: HashMap<rls_data::Id, VName>,
+    // Stores VNames for emitted definitions based on definition Id
+    definition_vnames: HashMap<rls_data::Id, VName>,
+    offset_index: &'b OffsetIndex,
 }
 
 impl<'a> UnitAnalyzer<'a> {
@@ -66,11 +73,19 @@ impl<'a> UnitAnalyzer<'a> {
         }
 
         let unit_storage_vname: VName = analysis_to_storage_vname(&unit.get_v_name());
-        Self { unit, unit_storage_vname, emitter: EntryEmitter::new(writer), root_dir, file_vnames }
+        Self {
+            unit,
+            unit_storage_vname,
+            emitter: EntryEmitter::new(writer),
+            root_dir,
+            file_vnames,
+            offset_index: OffsetIndex::default(),
+        }
     }
 
-    /// Emits file nodes for all of the source files in a CompilationUnit
-    pub fn emit_file_nodes(&mut self) -> Result<(), KytheError> {
+    /// Emits file nodes for all of the source files in a CompilationUnit and
+    /// generate the OffsetIndex
+    pub fn handle_files(&mut self) -> Result<(), KytheError> {
         // https://kythe.io/docs/schema/#file
         for source_file in self.unit.get_source_file() {
             let vname = self.get_file_vname(source_file)?;
@@ -83,12 +98,13 @@ impl<'a> UnitAnalyzer<'a> {
 
             // Read the file contents and set it on the fact
             // Returns a FileReadError if we can't read the file
-            let mut file = File::open(self.root_dir.join(Path::new(&source_file)))?;
-            let mut file_contents: Vec<u8> = Vec::new();
-            file.read_to_end(&mut file_contents)?;
+            let file_contents = fs::read_to_string(self.root_dir.join(Path::new(&source_file)))?;
+
+            // Add the file to the OffsetIndex
+            self.offset_index.add_file(&source_file, &file_contents);
 
             // Create text fact
-            self.emitter.emit_node(&vname, "/kythe/text", file_contents)?;
+            self.emitter.emit_node(&vname, "/kythe/text", file_contents.into_bytes())?;
         }
         Ok(())
     }
@@ -100,6 +116,7 @@ impl<'a> UnitAnalyzer<'a> {
             &self.file_vnames,
             &self.unit_storage_vname,
             krate,
+            &self.offset_index,
         );
         crate_analyzer.emit_crate_nodes()?;
         crate_analyzer.emit_definitions()?;
@@ -130,6 +147,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         file_vnames: &'b HashMap<String, VName>,
         unit_vname: &'b VName,
         krate: Crate,
+        offset_index: &'b OffsetIndex,
     ) -> Self {
         Self {
             emitter,
@@ -138,6 +156,9 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             unit_vname,
             krate_ids: HashMap::new(),
             krate_vname: VName::new(),
+            children_ids: HashMap::new(),
+            definition_vnames: HashMap::new(),
+            offset_index,
         }
     }
 
@@ -201,65 +222,108 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
             self.emit_definition_node(&def_vname, &def)?;
         }
 
+        // Normally you'd want to have a catch-all here where you emit childof edges
+        // that may have been missed if the child's definition came before the parent's
+        // definition. However, it is possible for the parent's children to contain an
+        // Id that doesn't appear in the list of definitions (?) so we handle the "child
+        // before parent" case in `emit_definition_node` and clear the HashMap
+        // here to drop the orphans and save memory.
+        self.children_ids.clear();
+
+        for (child_id, parent_vname) in self.children_ids.iter() {
+            let child_vname = self.definition_vnames.remove(child_id).ok_or_else(|| {
+                KytheError::IndexerError(format!(
+                    "Failed to get vname for child {:?} when emitting childof edge",
+                    child_id
+                ))
+            })?;
+            self.emitter.emit_edge(&child_vname, parent_vname, "/kythe/edge/childof")?;
+        }
+
         Ok(())
     }
 
     /// Emit all of the Kythe graph nodes and edges, including anchors for the
     /// definition using the provided VName
     fn emit_definition_node(&mut self, def_vname: &VName, def: &Def) -> Result<(), KytheError> {
-        let mut facts: HashMap<&str, Vec<u8>> = HashMap::new();
+        // Track children to emit childof nodes later
+        for child in def.children.iter() {
+            if let Some(child_vname) = self.definition_vnames.get(child) {
+                // The child definition has already been visited and we can emit the childof
+                // edge now
+                self.emitter.emit_edge(child_vname, def_vname, "/kythe/edge/childof")?;
+            } else {
+                self.children_ids.insert(*child, def_vname.clone());
+            }
+        }
 
-        // Generate the facts to be emitted
+        // Check if the current definition is a child of another node and remove the
+        // entry if it existed
+        if let Some(parent_vname) = self.children_ids.remove(&def.id) {
+            self.emitter.emit_edge(def_vname, &parent_vname, "/kythe/edge/childof")?;
+        }
+
+        // Store the definition's VName so it can be referenced by its id later
+        self.definition_vnames.insert(def.id, def_vname.clone());
+
+        // (fact_name, fact_value)
+        let mut facts: Vec<(&str, &[u8])> = Vec::new();
+
+        // Generate the facts to be emitted and emit some edges as necessary
         match def.kind {
             DefKind::Function => {
-                facts.insert("/kythe/node/kind", b"function".to_vec());
-                facts.insert("/kythe/complete", b"definition".to_vec());
+                facts.push(("/kythe/node/kind", b"function"));
+                facts.push(("/kythe/complete", b"definition"));
             }
             DefKind::Mod => {
-                facts.insert("/kythe/node/kind", b"record".to_vec());
-                facts.insert("/kythe/subkind", b"module".to_vec());
-                facts.insert("/kythe/complete", b"definition".to_vec());
-                // Emit the childof edge on the crate
-                self.emitter.emit_edge(def_vname, &self.krate_vname, "/kythe/edge/childof")?;
-                // Emit childof edges for the module's children. Module definitions have a
-                // children field defined but children don't have the parent field defined
-                self.emit_children(def_vname, def)?;
+                facts.push(("/kythe/node/kind", b"record"));
+                facts.push(("/kythe/subkind", b"module"));
+                facts.push(("/kythe/complete", b"definition"));
+                // Emit the childof edge on the crate if this is the main module
+                if def.qualname == "::" {
+                    self.emitter.emit_edge(def_vname, &self.krate_vname, "/kythe/edge/childof")?;
+                }
             }
             // TODO(Arm1stice): Support other types of definitions
             _ => {}
         }
 
         // Emit nodes for all fact/value pairs
-        for (fact_name, fact_value) in &facts {
-            self.emitter.emit_node(def_vname, fact_name, fact_value.clone())?;
+        for (fact_name, fact_value) in facts.iter() {
+            self.emitter.emit_node(def_vname, fact_name, fact_value.to_vec())?;
         }
+
+        // Calculate the byte_start and byte_end using the OffsetIndex
+        let byte_start = self
+            .offset_index
+            .get_byte_offset(def_vname.get_path(), def.span.line_start.0, def.span.column_start.0)
+            .ok_or_else(|| {
+                KytheError::IndexerError(format!(
+                    "Failed to get starting offset for definition {:?}",
+                    def.id
+                ))
+            })?;
+        let byte_end = self
+            .offset_index
+            .get_byte_offset(def_vname.get_path(), def.span.line_end.0, def.span.column_end.0)
+            .ok_or_else(|| {
+                KytheError::IndexerError(format!(
+                    "Failed to get ending offset for definition {:?}",
+                    def.id
+                ))
+            })?;
 
         let mut anchor_vname = def_vname.clone();
         anchor_vname.set_signature(format!("{}_anchor", def_vname.get_signature()));
-        // Module definitions need special logic
-        if def.kind == DefKind::Mod {
-            if self.is_module_implicit(def) {
-                // Emit a 0-length anchor and defines edge at the top of the file
-                self.emitter.emit_node(&anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
-                self.emitter.emit_node(&anchor_vname, "/kythe/loc/start", b"0".to_vec())?;
-                self.emitter.emit_node(&anchor_vname, "/kythe/loc/end", b"0".to_vec())?;
-                self.emitter.emit_edge(&anchor_vname, def_vname, "/kythe/edge/defines/implicit")?;
-            } else {
-                // Emit an anchor and defines/binding edge over the module name
-                self.emitter.emit_anchor(
-                    &anchor_vname,
-                    def_vname,
-                    def.span.byte_start,
-                    def.span.byte_end,
-                )?;
-            }
+        // Module definitions need special logic if they are implicit
+        if def.kind == DefKind::Mod && self.is_module_implicit(def) {
+            // Emit a 0-length anchor and defines edge at the top of the file
+            self.emitter.emit_node(&anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
+            self.emitter.emit_node(&anchor_vname, "/kythe/loc/start", b"0".to_vec())?;
+            self.emitter.emit_node(&anchor_vname, "/kythe/loc/end", b"0".to_vec())?;
+            self.emitter.emit_edge(&anchor_vname, def_vname, "/kythe/edge/defines/implicit")?;
         } else {
-            self.emitter.emit_anchor(
-                &anchor_vname,
-                def_vname,
-                def.span.byte_start,
-                def.span.byte_end,
-            )?;
+            self.emitter.emit_anchor(&anchor_vname, def_vname, byte_start, byte_end)?;
         }
 
         // If documentation isn't "" also generate a documents node
@@ -330,27 +394,6 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         // If the names match, the module definition is implicit
         def.name == expected_name
-    }
-
-    /// Emits childof edges from each a definition's children to itself
-    fn emit_children(&mut self, parent_vname: &VName, def: &Def) -> Result<(), KytheError> {
-        for child in def.children.iter() {
-            // Create the VName for the child based on it's crate and index
-            let krate_signature = self.krate_ids.get(&child.krate).ok_or_else(||{
-                KytheError::IndexerError(format!(
-                    "Child of definition \"{}\" referenced crate \"{}\" which was not found in the krate_ids HashMap",
-                    def.qualname, def.id.krate
-                ))}
-            )?;
-            let child_signature = format!("{}_def_{}", krate_signature, child.index);
-            let mut child_vname = parent_vname.clone();
-            child_vname.set_signature(child_signature);
-
-            // Emit a childof edge from the child to the parent
-            self.emitter.emit_edge(&child_vname, parent_vname, "/kythe/edge/childof")?;
-        }
-
-        Ok(())
     }
 }
 

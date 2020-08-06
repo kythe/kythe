@@ -82,5 +82,5 @@ rust_indexer_test(
 
 rust_indexer_test(
     name = "modules_test",
-    srcs = ["testdata/function.rs"],
+    srcs = glob(["testdata/modules/*"]),
 )
