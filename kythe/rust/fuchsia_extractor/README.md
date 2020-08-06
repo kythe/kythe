@@ -1,10 +1,10 @@
 # A compilation extractor for Rust, for Fuchsia OS
 
 This directory contains a Rust compilation extractor made specifically for the
-[Fuchsia OS][fx].  It can not be applied in general to a different GN build, 
+[Fuchsia OS][fx].  It can not be applied in general to a different GN build,
 since it requries Fuchsia-specific compiler instrumentation.
 
-At the moment, the split between the build-system specific work and the 
+At the moment, the split between the build-system specific work and the
 language-specific work is not as clean as it could be.  This is for two main
 reasons.  First and foremost, the Rust compiler toolchain is not yet factored
 to allow for easy reuse of the components that an indexer would need. Second,
@@ -47,9 +47,13 @@ directory in `$FUCHSIA_DIR/out/terminal.x64`, though this last path component
 can be given a different name by the developer.  Let us call this directory
 `$FUCHSIA_OUT` for short.
 
-Multiple code corpora exist in `$FUCHSIA_DIR` and `$FUCHSIA_OUT`.  There is C
-and C++ code, Rust code, go code, test fixtures, dart and flutter code, and
-dedicated IDL generated code for languages called FIDL and Banjo.
+Multiple corpus roots exist in `$FUCHSIA_DIR` and `$FUCHSIA_OUT`.  The "source"
+corpus is at `../../` relative to the build root.  FIDL generated code is at
+`./fidling`, Banjo generated code is at `./banjoing` and so on.  Multiple
+corpus roots are used to satisfy the spec requirement for `FileInput.path`,
+which requires each file path to be relative to its corpus root, *and* not use
+any "parent" references (such as `../../`, which would be needed for the "src"
+corpus files).
 
 When filling out compilation unit data, we need to ensure that when we refer to
 files, their names are expressed relative to some of those directories, and
@@ -76,8 +80,9 @@ single flat directory, which is normally at `$FUCHSIA_OUT/save-analysis-temp`
 (with limited options to rename the directory).  Required.
 
 ;`--inputfiles FILES`: A comma-separated list of specific `save-analysis` files
-to read, in case the `--inputdir` flag is too broad.  If this is specified together
-with `--inputdir`, the
+to read, in case the `--inputdir` flag is too broad.  If this is specified
+together with `--inputdir`, the result of reading the input directory and
+the list of profided input files are concatenated.
 
 ;`--outputdir OUTPUT_DIR`: The directory that will contain the resulting `kzip`
 files.  Note that `fuchsia_extractor` will refuse to overwrite any existing
@@ -128,7 +133,8 @@ bazel run //kythe/rust/fuchsia_extractor:fuchsia_extractor -- \
 The processing is sequential, and therefore fairly slow.  Expect on the order
 of 10 seconds to generate a single `kzip` for a single compilation unit. This
 sequential processing is not a fundamental limitation, but will be addressed
-only if needed. The infrastructure may.
+only if needed.  For example, the test infrastructure may produce a sharded
+list for the program to process, and invoke a new instance per each shard.
 
 The script will sparingly output the progress of the conversion.
 
