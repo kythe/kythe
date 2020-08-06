@@ -35,6 +35,7 @@
 #include "kythe/cxx/common/status_or.h"
 #include "kythe/cxx/common/utf8_line_index.h"
 #include "kythe/cxx/extractor/textproto/textproto_schema.h"
+#include "kythe/cxx/indexer/proto/offset_util.h"
 #include "kythe/cxx/indexer/proto/search_path.h"
 #include "kythe/cxx/indexer/proto/source_tree.h"
 #include "kythe/cxx/indexer/proto/vname_util.h"
@@ -144,6 +145,8 @@ class TextprotoAnalyzer {
   proto::VName CreateAndAddAnchorNode(const proto::VName& file_vname,
                                       re2::StringPiece sp);
 
+  int ComputeByteOffset(int line_number, int column_number) const;
+
   absl::optional<proto::VName> VNameForRelPath(
       absl::string_view simplified_path) const;
 
@@ -175,6 +178,22 @@ class TextprotoAnalyzer {
   // protobuf.Any types.
   const DescriptorPool* descriptor_pool_;
 };
+
+// Converts from a proto line/column (both 0 based, and where column counts
+// bytes except that tabs move to the next multiple of 8) to a byte offset
+// from the start of the current file.  Returns -1 on error.
+int TextprotoAnalyzer::ComputeByteOffset(int line_number,
+                                         int column_number) const {
+  int byte_offset_of_start_of_line =
+      line_index_.ComputeByteOffset(line_number, 0);
+  absl::string_view line_text = line_index_.GetLine(line_number);
+  int byte_offset_into_line =
+      lang_proto::ByteOffsetIntoLine(column_number, line_text);
+  if (byte_offset_into_line < 0) {
+    return byte_offset_into_line;
+  }
+  return byte_offset_of_start_of_line + byte_offset_into_line;
+}
 
 absl::optional<proto::VName> TextprotoAnalyzer::VNameForRelPath(
     absl::string_view simplified_path) const {
@@ -270,8 +289,7 @@ StatusOr<proto::VName> TextprotoAnalyzer::AnalyzeAnyTypeUrl(
   if (field_loc.line == 0) return absl::OkStatus();
 
   re2::StringPiece sp(textproto_content_.data(), textproto_content_.size());
-  const int search_from =
-      line_index_.ComputeByteOffset(field_loc.line, field_loc.column);
+  const int search_from = ComputeByteOffset(field_loc.line, field_loc.column);
   sp = sp.substr(search_from);
 
   // Consume rest of field name, colon (optional) and open brace.
@@ -490,7 +508,7 @@ absl::Status TextprotoAnalyzer::AnalyzeField(
     if (field.is_extension()) {
       loc.column++;  // Skip leading "[" for extensions.
     }
-    const int begin = line_index_.ComputeByteOffset(loc.line, loc.column);
+    const int begin = ComputeByteOffset(loc.line, loc.column);
     const int end = begin + len;
     proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, begin, end);
 

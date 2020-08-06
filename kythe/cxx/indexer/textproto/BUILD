@@ -31,6 +31,7 @@ cc_library(
         "//kythe/cxx/common:utf8_line_index",
         "//kythe/cxx/common/indexing:output",
         "//kythe/cxx/extractor/textproto:textproto_schema",
+        "//kythe/cxx/indexer/proto:offset_util",
         "//kythe/cxx/indexer/proto:search_path",
         "//kythe/cxx/indexer/proto:source_tree",
         "//kythe/cxx/indexer/proto:vname_util",
