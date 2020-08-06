@@ -1,9 +1,17 @@
-# Fuchsia Rust compilation extractor
+# A compilation extractor for Rust, for Fuchsia OS
 
-This directory contains a Rust compilation extractor for the [Fuchsia OS][fx].
-Fuchsia build system is a bit specific, and is custom built on top of [GN][gn].
-At the moment the approach is not generalized to all gn builds though
-potentially it could be with some additional GN configuration.
+This directory contains a Rust compilation extractor made specifically for the
+[Fuchsia OS][fx].  It can not be applied in general to a different GN build, 
+since it requries Fuchsia-specific compiler instrumentation.
+
+At the moment, the split between the build-system specific work and the 
+language-specific work is not as clean as it could be.  This is for two main
+reasons.  First and foremost, the Rust compiler toolchain is not yet factored
+to allow for easy reuse of the components that an indexer would need. Second,
+the build system at the moment does not produce a compilation extraction that
+an ideal Rust extractor can use.  As work is underway to improve both of these
+two issues, we decided to go with a pragmatic approach first, and once the
+libraries are available, we can update the indexer and the extractor to match.
 
 [fx]: https://www.fuchsia.dev
 [gn]: https://gn.googlesource.com/gn/
