@@ -23,13 +23,26 @@ namespace lang_textproto {
 
 absl::Status ExamplePlugin::AnalyzeStringField(
     PluginApi* api, const proto::VName& file_vname,
-    const google::protobuf::FieldDescriptor& field, absl::string_view input) {
-  // Create an anchor covering the field value's text span.
-  proto::VName anchor_vname = api->CreateAndAddAnchorNode(file_vname, input);
+    const google::protobuf::FieldDescriptor& field,
+    std::vector<StringToken> tokens) {
+  // Create an anchor spanning the full range of the string value.
+  const char* begin = tokens.front().source_text.data();
+  const char* end = tokens.back().source_text.end();
+  const absl::string_view full_span = absl::string_view(begin, end - begin);
+  const proto::VName anchor_vname =
+      api->CreateAndAddAnchorNode(file_vname, full_span);
 
   auto target_vname = ::kythe::lang_proto::VNameForDescriptor(
       &field,
       [api](absl::string_view path) { return api->VNameForRelPath(path); });
+
+  std::string full_value;
+  for (const auto& t : tokens) {
+    full_value += t.parsed_value;
+  }
+
+  LOG(ERROR) << "[Example Plugin] String value:" << full_value;
+  LOG(ERROR) << "[Example Plugin] String value full span: " << full_span;
 
   // Add a ref edge from the anchor to the proto field descriptor.
   api->recorder()->AddEdge(VNameRef(anchor_vname), EdgeKindID::kRef,

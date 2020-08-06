@@ -6,12 +6,12 @@ field1: "hello"
 
 #- @repeated_message ref RepeatedMessage
 repeated_message {
-    #- @str_field ref Message1StrField
-    str_field: "hello"
+	#- @str_field ref Message1StrField
+	str_field: "hello"
 }
 
 #- @repeated_message ref RepeatedMessage
 repeated_message {
-    #- @str_field ref Message1StrField
-    str_field: "hello"
+	#- @str_field ref Message1StrField
+	str_field: "hello"
 }

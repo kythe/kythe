@@ -9,6 +9,26 @@
 field1: "hello"
 
 #- @repeated_field ref RepeatedField
+#- @"hello\" \"world" ref RepeatedField
+repeated_field: "hello" "world"
+
+#- @repeated_field ref RepeatedField
 #- @hello ref RepeatedField
-#- @def ref RepeatedField
-repeated_field  : [    "hello"  , "def"    ]
+#- @world ref RepeatedField
+repeated_field: [ "hello",  "world" ]
+
+#- @repeated_field ref RepeatedField
+#- StrValue ref RepeatedField
+repeated_field:
+#- StrValue.loc/start @^hello
+  "hello"
+#- StrValue.loc/end @$universe
+  "universe"
+
+#- @repeated_field ref RepeatedField
+#- @"he\\n\\n\\nllo" ref RepeatedField
+repeated_field: "he\n\n\nllo"
+
+#- @repeated_field ref RepeatedField
+#- @"hello" ref RepeatedField
+	repeated_field	:	"hello"

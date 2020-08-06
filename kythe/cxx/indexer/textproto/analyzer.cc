@@ -16,6 +16,7 @@
 
 #include "analyzer.h"
 
+#include <algorithm>
 #include <memory>
 
 #include "absl/container/flat_hash_map.h"
@@ -178,6 +179,10 @@ class TextprotoAnalyzer : public PluginApi {
                             const TextFormat::ParseInfoTree& parse_tree,
                             const FieldDescriptor& field, int field_index);
 
+  std::vector<StringToken> ReadStringTokens(absl::string_view input);
+
+  int ComputeByteOffset(int line_number, int column_number) const;
+
   std::vector<std::unique_ptr<Plugin>> plugins_;
 
   const proto::CompilationUnit* unit_;
@@ -191,6 +196,44 @@ class TextprotoAnalyzer : public PluginApi {
   // protobuf.Any types.
   const DescriptorPool* descriptor_pool_;
 };
+
+// TODO: de-dupe with the one in file_descriptor_walker.cc
+// Figures out just how many bytes one needs to go into `line_text` to reach
+// what the proto compiler calls column `column_number`.
+int ByteOffsetIntoLine(int column_number, absl::string_view line_text) {
+  int computed_column = 0;
+  int offset = 0;
+  while (computed_column < column_number && offset < line_text.size()) {
+    if (line_text[offset] == '\t') {
+      // In proto land, tabs go to the next multiple of 8.  There are a million
+      // ways of computing this.  This one will do.
+      computed_column = (computed_column + 8) - (computed_column % 8);
+    } else {
+      ++computed_column;
+    }
+    ++offset;
+  }
+  if (computed_column != column_number) {
+    LOG(ERROR) << "Error computing byte offset: expected " << column_number
+               << " columns but counted up to " << computed_column
+               << " in line \"" << line_text << "\"";
+    return -1;
+  }
+  return offset;
+}
+
+// copied from proto indexer's file_descriptor_walker.cc
+int TextprotoAnalyzer::ComputeByteOffset(int line_number,
+                                         int column_number) const {
+  int byte_offset_of_start_of_line =
+      line_index_.ComputeByteOffset(line_number, 0);
+  absl::string_view line_text = line_index_.GetLine(line_number);
+  int byte_offset_into_line = ByteOffsetIntoLine(column_number, line_text);
+  if (byte_offset_into_line < 0) {
+    return byte_offset_into_line;
+  }
+  return byte_offset_of_start_of_line + byte_offset_into_line;
+}
 
 proto::VName TextprotoAnalyzer::VNameForRelPath(
     absl::string_view simplified_path) const {
@@ -452,6 +495,75 @@ absl::Status TextprotoAnalyzer::AnalyzeEnumValue(const proto::VName& file_vname,
   return absl::OkStatus();
 }
 
+std::vector<StringToken> TextprotoAnalyzer::ReadStringTokens(
+    absl::string_view input) {
+  // Create a tokenizer for the input.
+  google::protobuf::io::ArrayInputStream array_stream(input.data(),
+                                                      input.size());
+  google::protobuf::io::Tokenizer tokenizer(&array_stream, nullptr);
+  // '#' starts a comment.
+  tokenizer.set_comment_style(
+      google::protobuf::io::Tokenizer::SH_COMMENT_STYLE);
+  tokenizer.set_require_space_after_number(false);
+  tokenizer.set_allow_multiline_strings(true);
+
+  if (!tokenizer.Next() || tokenizer.current().type !=
+                               google::protobuf::io::Tokenizer::TYPE_STRING) {
+    return {};  // We require at least one string token.
+  }
+
+  // NOTE: the proto tokenizer uses 0-indexed line numbers, while UTF8LineIndex
+  // expects them 1-indexed. Both use zero-indexed column numbers.
+  const size_t start_offset = input.data() - textproto_content_.data();
+  const size_t start_line = line_index_.LineNumber(start_offset);
+
+  // TODO: we need to use proto's notion of 'column number' here. I guess we
+  // could cound # of tabs and multiply by 4 (or is it 8?)?
+  CharacterPosition pos =
+      line_index_.ComputePositionForByteOffset(start_offset);
+  CHECK(pos.line_number != -1);
+  absl::string_view start_line_content = line_index_.GetLine(pos.line_number);
+  const int start_col = pos.column_number;  // TODO
+  LOG(ERROR) << "substr start_col" << start_line_content.substr(start_col);
+
+  // Account for proto's tab behavior and its affect on what 'column number'
+  // means :(.
+  int proto_start_col = 0;
+  for (int i = 0; i < start_col; ++i) {
+    if (start_line_content[i] == '\t') {
+      // tabs advance to the nearest 8th column
+      proto_start_col += 8 - (proto_start_col % 8);
+    } else {
+      proto_start_col += 1;
+    }
+  }
+
+  // Read all TYPE_STRING tokens.
+  std::vector<StringToken> tokens;
+  do {
+    auto t = tokenizer.current();
+
+    // adjust token line/col according to where we started the tokenizer.
+    int column = t.column + (t.line == 0 ? proto_start_col : 0);
+    int line = t.line + start_line;
+    LOG(ERROR) << "token col=" << column << "; line=" << line;
+
+    StringToken st;
+    tokenizer.ParseStringAppend(t.text, &st.parsed_value);
+    size_t token_offset = ComputeByteOffset(line, column);
+    // create the string_view, trimming the first and last character, which are
+    // quotes.
+    st.source_text = absl::string_view(
+        textproto_content_.data() + token_offset + 1, t.text.size() - 2);
+    tokens.push_back(st);
+    LOG(ERROR) << "token span: " << st.source_text;
+  } while (tokenizer.Next() &&
+           tokenizer.current().type ==
+               google::protobuf::io::Tokenizer::TYPE_STRING);
+
+  return tokens;
+}
+
 // TODO(justbuchanan): refactor to share more code with AnalyzeEnumValue().
 absl::Status TextprotoAnalyzer::AnalyzeStringValue(
     const proto::VName& file_vname, const Message& proto,
@@ -477,28 +589,21 @@ absl::Status TextprotoAnalyzer::AnalyzeStringValue(
       return absl::UnknownError("Can't find string");
     }
 
-    // Use tokenizer to get range of entire string. The result contains the
-    // quotation marks.
-    std::string token_text;
-    {
-      google::protobuf::io::ArrayInputStream array_stream(input.data(),
-                                                          input.size());
-      google::protobuf::io::Tokenizer t(&array_stream, nullptr);
-      if (!t.Next()) {
-        return absl::UnknownError("tokenizer ended");
-      }
-      token_text = t.current().text;
+    std::vector<StringToken> tokens =
+        ReadStringTokens(absl::string_view(input.data(), input.size()));
+    if (tokens.empty()) {
+      return absl::UnknownError("Unable to find a string value for field: " +
+                                field.name());
     }
-    absl::string_view value_span(input.data(), input.size());
-    value_span = value_span.substr(1, token_text.size() - 2);  // trim quotes
-    input = input.substr(token_text.size());
-
     for (auto& p : plugins_) {
-      auto s = p->AnalyzeStringField(this, file_vname, field, value_span);
+      auto s = p->AnalyzeStringField(this, file_vname, field, tokens);
       if (!s.ok()) {
         LOG(ERROR) << "Plugin error: " << s;
       }
     }
+    // TODO: clarify the -3
+    input = input.substr(tokens.back().source_text.end() - 3 -
+                         textproto_content_.begin() - start_offset);
 
     if (!array_format) break;
 
@@ -563,7 +668,7 @@ absl::Status TextprotoAnalyzer::AnalyzeField(
     if (field.is_extension()) {
       loc.column++;  // Skip leading "[" for extensions.
     }
-    const int begin = line_index_.ComputeByteOffset(loc.line, loc.column);
+    const int begin = ComputeByteOffset(loc.line, loc.column);
     const int end = begin + len;
     proto::VName anchor_vname = CreateAndAddAnchorNode(file_vname, begin, end);
 

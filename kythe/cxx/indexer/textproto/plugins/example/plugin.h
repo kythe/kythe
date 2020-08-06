@@ -32,7 +32,7 @@ class ExamplePlugin : public Plugin {
   absl::Status AnalyzeStringField(
       PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,
-      absl::string_view input) override;
+      std::vector<StringToken> tokens) override;
 };
 
 }  // namespace lang_textproto

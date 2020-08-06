@@ -51,6 +51,14 @@ class PluginApi {
       absl::string_view simplified_path) const = 0;
 };
 
+struct StringToken {
+  // Parsed string value with escape codes resolved.
+  std::string parsed_value;
+  // The span of source text in the input. The underlying string that the view
+  // references is owned by the `PluginApi`.
+  absl::string_view source_text;
+};
+
 // Superclass for all plugins. A new plugin is instantated for each textproto
 // handled by the indexer.
 class Plugin {
@@ -61,11 +69,20 @@ class Plugin {
 
   virtual ~Plugin() = default;
 
-  // Main entrypoint for plugins.
+  // Main entrypoint for plugins. In the common case, `tokens` will contain a
+  // single entry with the `parsed_value` and `source_text` fields equal in
+  // string value. If string concatenation syntax is used, for example:
+  //
+  //   my_field: "abc" "def"
+  //
+  // There will be one StringToken per string "piece" ("abc" and "def" here). If
+  // the string value contains escape codes, the parsed_value may be shorter
+  // than the source_text as the multi-character escape code is replaced by a
+  // single character.
   virtual absl::Status AnalyzeStringField(
       PluginApi* api, const proto::VName& file_vname,
       const google::protobuf::FieldDescriptor& field,
-      absl::string_view input) = 0;
+      std::vector<StringToken> tokens) = 0;
 };
 
 }  // namespace lang_textproto
