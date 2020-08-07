@@ -177,6 +177,7 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
         let krate_id = &krate_prelude.crate_id;
         let krate_signature = format!("{}_{}", krate_id.disambiguator.0, krate_id.disambiguator.1);
         let krate_vname = self.generate_crate_vname(&krate_signature);
+        self.krate_vname = krate_vname.clone();
         self.emitter.emit_node(&krate_vname, "/kythe/node/kind", b"package".to_vec())?;
         self.krate_ids.insert(0u32, krate_signature);
 
@@ -359,24 +360,15 @@ impl<'a, 'b> CrateAnalyzer<'a, 'b> {
 
         let mut anchor_vname = def_vname.clone();
         anchor_vname.set_signature(format!("{}_anchor", def_vname.get_signature()));
-        // If the definition is a Mod, place the anchor at the first byte only,
-        // otherwise use the entire span
-        // TODO(Arm1stice): Improve this mechanism to be more accurate for modules
-        // defined inside of files
-        if def.kind == DefKind::Mod {
-            self.emitter.emit_anchor(
-                &anchor_vname,
-                def_vname,
-                def.span.byte_start,
-                def.span.byte_start + 1,
-            )?;
+        // Module definitions need special logic if they are implicit
+        if def.kind == DefKind::Mod && self.is_module_implicit(def) {
+            // Emit a 0-length anchor and defines edge at the top of the file
+            self.emitter.emit_node(&anchor_vname, "/kythe/node/kind", b"anchor".to_vec())?;
+            self.emitter.emit_node(&anchor_vname, "/kythe/loc/start", b"0".to_vec())?;
+            self.emitter.emit_node(&anchor_vname, "/kythe/loc/end", b"0".to_vec())?;
+            self.emitter.emit_edge(&anchor_vname, def_vname, "/kythe/edge/defines/implicit")?;
         } else {
-            self.emitter.emit_anchor(
-                &anchor_vname,
-                def_vname,
-                def.span.byte_start,
-                def.span.byte_end,
-            )?;
+            self.emitter.emit_anchor(&anchor_vname, def_vname, byte_start, byte_end)?;
         }
 
         // If documentation isn't "" also generate a documents node
