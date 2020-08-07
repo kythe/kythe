@@ -52,6 +52,7 @@ genrule(
         ":textproto_indexer",
         ":tools",
         ":misc",
+        ":fuchsia_rust_extractor",
         "//kythe/proto:public",
         "//third_party:licenses",
         "//kythe/extractors/bazel:extractors_bazelrc",
@@ -83,6 +84,7 @@ genrule(
         "--cp $(location bazel_jvm_extractor) extractors/bazel_jvm_extractor.jar",
         "--cp $(location bazel_proto_extractor) extractors/bazel_proto_extractor",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
+        "--cp $(location fuchsia_rust_extractor) extractors/fuchsia_rust_extractor",
         "--cp $(location @maven//:org_apache_tomcat_tomcat_annotations_api) jsr250-api-1.0.jar",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--cp $(location go_extractor) extractors/go_extractor",
@@ -235,6 +237,11 @@ filegroup(
 filegroup(
     name = "cc_proto_metadata_plugin",
     srcs = ["//kythe/cxx/tools:proto_metadata_plugin"],
+)
+
+filegroup(
+    name = "fuchsia_rust_extractor",
+    srcs = ["//kythe/rust/fuchsia_extractor"],
 )
 
 filegroup(
